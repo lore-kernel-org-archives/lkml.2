@@ -1,188 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab0IAIuN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 04:50:13 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56673 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab0IAIuK convert rfc822-to-8bit (ORCPT
+	id S1753951Ab0IAIxP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 04:53:15 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36191 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752767Ab0IAIxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 04:50:10 -0400
-Message-ID: <4C7E13CE.7070603@cn.fujitsu.com>
-Date: Wed, 01 Sep 2010 16:50:22 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Wed, 1 Sep 2010 04:53:12 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Neil Brown <neilb@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [REGRESSION PATCH v2] NFS: let NFS_V4 and NFSD_V4 enforce CRYPTO
+Date: Wed,  1 Sep 2010 10:52:50 +0200
+Message-Id: <1283331170-11440-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100830121022.GA14459@pengutronix.de>
+References: <20100830121022.GA14459@pengutronix.de>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Nauman Rafique <nauman@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Moyer <jmoyer@redhat.com>, Divyesh Shah <dpshah@google.com>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC] [PATCH] cfq-iosched: add cfq group hierarchical scheduling
- support
-References: <4C7B54C0.7080008@cn.fujitsu.com> <20100830203644.GA15903@redhat.com> <4C7C4CE0.5080402@cn.fujitsu.com> <20100831125737.GA2527@redhat.com> <AANLkTi=daFyrx+ts4DoAHwR8EHUfF0nYyv45zJkBFm--@mail.gmail.com> <20100831192524.GD2527@redhat.com>
-In-Reply-To: <20100831192524.GD2527@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Tue, Aug 31, 2010 at 08:40:19AM -0700, Nauman Rafique wrote:
->> On Tue, Aug 31, 2010 at 5:57 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->>> On Tue, Aug 31, 2010 at 08:29:20AM +0800, Gui Jianfeng wrote:
->>>> Vivek Goyal wrote:
->>>>> On Mon, Aug 30, 2010 at 02:50:40PM +0800, Gui Jianfeng wrote:
->>>>>> Hi All,
->>>>>>
->>>>>> This patch enables cfq group hierarchical scheduling.
->>>>>>
->>>>>> With this patch, you can create a cgroup directory deeper than level 1.
->>>>>> Now, I/O Bandwidth is distributed in a hierarchy way. For example:
->>>>>> We create cgroup directories as following(the number represents weight):
->>>>>>
->>>>>>             Root grp
->>>>>>            /       \
->>>>>>        grp_1(100) grp_2(400)
->>>>>>        /    \
->>>>>>   grp_3(200) grp_4(300)
->>>>>>
->>>>>> If grp_2 grp_3 and grp_4 are contending for I/O Bandwidth,
->>>>>> grp_2 will share 80% of total bandwidth.
->>>>>> For sub_groups, grp_3 shares 8%(20% * 40%), grp_4 shares 12%(20% * 60%)
->>>>>>
->>>>>> Design:
->>>>>>   o Each cfq group has its own group service tree.
->>>>>>   o Each cfq group contains a "group schedule entity" (gse) that
->>>>>>     schedules on parent cfq group's service tree.
->>>>>>   o Each cfq group contains a "queue schedule entity"(qse), it
->>>>>>     represents all cfqqs located on this cfq group. It schedules
->>>>>>     on this group's service tree. For the time being, root group
->>>>>>     qse's weight is 1000, and subgroup qse's weight is 500.
->>>>>>   o All gses and qse which belones to a same cfq group schedules
->>>>>>     on the same group service tree.
->>>>> Hi Gui,
->>>>>
->>>>> Thanks for the patch. I have few questions.
->>>>>
->>>>> - So how does the hierarchy look like, w.r.t root group. Something as
->>>>>   follows?
->>>>>
->>>>>
->>>>>                     root
->>>>>                    / | \
->>>>>                  q1  q2 G1
->>>>>
->>>>> Assume there are two processes doin IO in root group and q1 and q2 are
->>>>> cfqq queues for those processes and G1 is the cgroup created by user.
->>>>>
->>>>> If yes, then what algorithm do you use to do scheduling between q1, q2
->>>>> and G1? IOW, currently we have two algorithms operating in CFQ. One for
->>>>> cfqq and other for groups. Group algorithm does not use the logic of
->>>>> cfq_slice_offset().
->>>> Hi Vivek,
->>>>
->>>> This patch doesn't break the original sheduling logic. That is cfqg => st => cfqq.
->>>> If q1 and q2 in root group, I treat q1 and q2 bundle as a queue sched entity, and
->>>> it will schedule on root group service with G1, as following:
->>>>
->>>>                          root group
->>>>                         /         \
->>>>                     qse(q1,q2)    gse(G1)
->>>>
->>> Ok. That's interesting. That raises another question that how hierarchy
->>> should look like. IOW, how queue and groups should be treated in
->>> hierarchy.
->>>
->>> CFS cpu scheduler treats queues and group at the same level. That is as
->>> follows.
->>>
->>>                        root
->>>                        / | \
->>>                       q1 q2 G1
->>>
->>> In the past I had raised this question and Jens and corrado liked treating
->>> queues and group at same level.
->>>
->>> Logically, q1, q2 and G1 are all children of root, so it makes sense to
->>> treat them at same level and not group q1 and q2 in to a single entity and
->>> group.
->>>
->>> One of the possible way forward could be this.
->>>
->>> - Treat queue and group at same level (like CFS)
->>>
->>> - Get rid of cfq_slice_offset() logic. That means without idling on, there
->>>  will be no ioprio difference between cfq queues. I think anyway as of
->>>  today that logic helps in so little situations that I would not mind
->>>  getting rid of it. Just that Jens should agree to it.
->>>
->>> - With this new scheme, it will break the existing semantics of root group
->>>  being at same level as child groups. To avoid that, we can probably
->>>  implement two modes (flat and hierarchical), something similar to what
->>>  memory cgroup controller has done. May be one tunable in root cgroup of
->>>  blkio "use_hierarchy".  By default everything will be in flat mode and
->>>  if user wants hiearchical control, he needs to set user_hierarchy in
->>>  root group.
->> Vivek, may be I am reading you wrong here. But you are first
->> suggesting to add more complexity to treat queues and group at the
->> same level. Then you are suggesting add even more complexity to fix
->> the problems caused by that approach.
->>
->> Why do we need to treat queues and group at the same level? "CFS does
->> it" is not a good argument.
-> 
-> Sure it is not a very good argument but at the same time one would need
-> a very good argument that why we should do things differently.
-> 
-> - If a user has mounted cpu and blkio controller together and both the
->   controllers are viewing the same hierarchy differently, then it is
->   odd. We need a good reason that why different arrangement makes sense.
+Hello,
 
-Hi Vivek，
+here comes a v2 of the patch that improves the commit log with a more
+detailed analysis of the breakage introduced by df486a2
+(= v2.6.36-rc2~34^2~1 BTW) and additionally undoes the "default y" for
+RPCSEC_GSS_KRB5.
 
-Even if we mount cpu and blkio together, to me, it's ok for cpu and blkio
-having their own logic, since they are totally different cgroup subsystems.
+So compared to the state before df486a2 the changes are:
 
-> 
-> - To me, both group and cfq queue are children of root group and it
->   makes sense to treat them independent childrens instead of putting
->   all the queues in one logical group which inherits the weight of
->   parent.
-> 
-> - With this new scheme, I am finding it hard to visualize the hierachy.
->   How do you assign the weights to queue entities of a group. It is more
->   like a invisible group with-in group. We shall have to create new
->   tunable which can speicy the weight for this hidden group.
+        NFS_V4 selects CRYPTO
+        NFSD_V4 selects CRYPTO
+	RPCSEC_GSS_KRB5 doesn't depend on EXPERIMENTAL anymore
+	RPCSEC_GSS_KRB5 now depends on CRYPTO instead of selecting it
 
-For the time being, the root "qse" weight is 1000 and others is 500, they don't
-inherit the weight of parent. I was thinking that maybe we can determine the qse
-weight in term of the queue number and weight in this group and subgroups. 
+Best regards
+Uwe
 
-Thanks,
-Gui
+----------------------------->8----------------------------
 
-> 
-> 
-> So in summary I am liking the "queue at same level as group" scheme for
-> two reasons.
-> 
-> - It is more intutive to visualize and implement. It follows the true
->   hierarchy as seen by cgroup file system.
-> 
-> - CFS has already implemented this scheme. So we need a strong arguemnt
->   to justify why we should not follow the same thing. Especially for
->   the case where user has co-mounted cpu and blkio controller.
-> 
-> - It can achieve the same goal as "hidden group" proposal just by 
->   creating a cgroup explicitly and moving all threads in that group.
-> 
-> Why do you think that "hidden group" proposal is better than "treating
-> queue at same level as group" ? 
-> 
-> Thanks
-> Vivek
-> 
-> 
+This is a follow up to
+
+	df486a2 (NFS: Fix the selection of security flavours in Kconfig)
+
+Before df486a2 NFS_V4 selected RPCSEC_GSS_KRB5 but didn't enforce the
+latter's dependency EXPERIMENTAL.  df486a2 removed RPCSEC_GSS_KRB5's
+dependency on EXPERIMENTAL but additionally let it depend on CRYPTO
+(instead of select CRYPTO before).  So it was still possible to have a
+config that has NFS_V4 but not RPCSEC_GSS_KRB5.  Moreover df486a2
+changed the dependency of NFS_V4 and NFSD_V4 on RPCSEC_GSS_KRB5 from
+
+	config NFS_V4
+		...
+		select RPCSEC_GSS_KRB5
+
+to
+
+	config RPCSEC_GSS_KRB5
+		...
+		prompt "..." if !(NFS_V4 || NFSD_V4)
+		default y
+
+This works but is ugly as it hides the dependencies of NFSD?_V4 in a
+different Kconfig file.  So this is undone here, too.
+
+The following ARM defconfigs were affected by this problem:
+	mx1 pxa3xx qil-a9260 usb-a9260 usb-a9263
+
+These builds ended in:
+
+	  LD      init/built-in.o
+	  LD      .tmp_vmlinux1
+	fs/built-in.o: In function `nfs_callback_authenticate':
+	compr_zlib.c:(.text+0x7c040): undefined reference to `svc_gss_principal'
+	make[2]: *** [.tmp_vmlinux1] Error 1
+	make[1]: *** [sub-make] Error 2
+	make: *** [all] Error 2
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ fs/nfs/Kconfig     |    2 ++
+ fs/nfsd/Kconfig    |    2 ++
+ net/sunrpc/Kconfig |    6 ++----
+ 3 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+index 6c2aad4..5b9f870 100644
+--- a/fs/nfs/Kconfig
++++ b/fs/nfs/Kconfig
+@@ -63,6 +63,8 @@ config NFS_V3_ACL
+ config NFS_V4
+ 	bool "NFS client support for NFS version 4"
+ 	depends on NFS_FS
++	select CRYPTO # recursive select: RPCSEC_GSS_KRB5 depends on CRYPTO
++	select RPCSEC_GSS_KRB5
+ 	help
+ 	  This option enables support for version 4 of the NFS protocol
+ 	  (RFC 3530) in the kernel's NFS client.
+diff --git a/fs/nfsd/Kconfig b/fs/nfsd/Kconfig
+index 95932f5..3678a16 100644
+--- a/fs/nfsd/Kconfig
++++ b/fs/nfsd/Kconfig
+@@ -69,6 +69,8 @@ config NFSD_V4
+ 	depends on NFSD && PROC_FS && EXPERIMENTAL
+ 	select NFSD_V3
+ 	select FS_POSIX_ACL
++	select CRYPTO # recursive select: RPCSEC_GSS_KRB5 depends on CRYPTO
++	select RPCSEC_GSS_KRB5
+ 	help
+ 	  This option enables support in your system's NFS server for
+ 	  version 4 of the NFS protocol (RFC 3530).
+diff --git a/net/sunrpc/Kconfig b/net/sunrpc/Kconfig
+index 3376d76..523be24 100644
+--- a/net/sunrpc/Kconfig
++++ b/net/sunrpc/Kconfig
+@@ -18,10 +18,8 @@ config SUNRPC_XPRT_RDMA
+ 	  If unsure, say N.
+ 
+ config RPCSEC_GSS_KRB5
+-	tristate
++	tristate "Secure RPC: Kerberos V mechanism"
+ 	depends on SUNRPC && CRYPTO
+-	prompt "Secure RPC: Kerberos V mechanism" if !(NFS_V4 || NFSD_V4)
+-	default y
+ 	select SUNRPC_GSS
+ 	select CRYPTO_MD5
+ 	select CRYPTO_DES
+@@ -35,7 +33,7 @@ config RPCSEC_GSS_KRB5
+ 	  available from http://linux-nfs.org/.  In addition, user-space
+ 	  Kerberos support should be installed.
+ 
+-	  If unsure, say Y.
++	  If unsure, say N.
+ 
+ config RPCSEC_GSS_SPKM3
+ 	tristate "Secure RPC: SPKM3 mechanism (EXPERIMENTAL)"
+-- 
+1.7.1
 
