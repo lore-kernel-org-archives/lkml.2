@@ -1,39 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab0IAWIF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 18:08:05 -0400
-Received: from sati.usurf.usu.edu ([129.123.194.129]:38629 "EHLO
-	echo.usurf.usu.edu" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab0IAWIE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 18:08:04 -0400
-From: Jonathan Haws <Jonathan.Haws@sdl.usu.edu>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-net@vger.kernel.org" <linux-net@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: RE: Memory allocation modifications in ibm_newemac driver
-Thread-Topic: Memory allocation modifications in ibm_newemac driver
-Thread-Index: ActKFh1163SqUHTiROCjSFgwjSee2wABD/h2AAHTCpE=
-Date: Wed, 1 Sep 2010 22:04:34 +0000
-Message-ID: <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A301B@Mercury.usurf.usu.edu>
-References: <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A2F09@Mercury.usurf.usu.edu>,<5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A2FBE@Mercury.usurf.usu.edu>
-In-Reply-To: <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A2FBE@Mercury.usurf.usu.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755821Ab0IAWEc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 18:04:32 -0400
+Received: from xenotime.net ([72.52.115.56]:60627 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753322Ab0IAWEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 18:04:30 -0400
+Message-ID: <41621.148.87.67.139.1283378664.squirrel@www.xenotime.net>
+In-Reply-To: <20100901213318.19353.54619.stgit@localhost.localdomain>
+References: <20100901213318.19353.54619.stgit@localhost.localdomain>
+Date: Wed, 1 Sep 2010 15:04:24 -0700 (PDT)
+Subject: Re: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
+From: rdunlap@xenotime.net
+To: "Peter P Waskiewicz Jr" <peter.p.waskiewicz.jr@intel.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        netdev@vger.kernel.org, peter.p.waskiewicz.jr@intel.com
+User-Agent: SquirrelMail/1.5.1
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Okay, I think I have all the issues worked out and can now send and receive any size packet without a hiccup.  I have tested this in our system setup as well with data being sent out to disk and did not see any problems there either (since it only ever allocates a single page, never more).
+On Wed, September 1, 2010 2:33 pm, Peter P Waskiewicz Jr wrote:
+> Documentation/x86/x86_64/boot-options.txt |    4 ++++
+> arch/x86/mm/srat_64.c                     |   20 +++++++++++++++++--- 2
+> files changed, 21 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c index
+> f9897f7..8719472 100644 --- a/arch/x86/mm/srat_64.c
+> +++ b/arch/x86/mm/srat_64.c
+> @@ -351,6 +351,15 @@ int __init acpi_get_nodes(struct bootnode *physnodes)
+>  return ret; }
+>
+>
+> +int srat_bypass_bios = 0;
 
-Is this something that may be wanted in the mainline?  I have not run full benchmarks, but I anticipate that my modified driver is slightly slower than the mainline driver because we keep track of an SKB ring, as well as a ring of pages and allocate both on each packet received.
+static int srat_bypass_bios;
 
-Thanks,
+Don't need to init to 0.
 
-Jonathan
+> +
+> +static int __init srat_bypass_bios_setup(char *str)
+> +{
+> +        srat_bypass_bios = 1;
+> +        return 0;
+> +}
+> +early_param("sratbypassbios", srat_bypass_bios_setup);
+> +
+> /* Use the information discovered above to actually set up the nodes. */
+> int __init acpi_scan_nodes(unsigned long start, unsigned long end) {
+> @@ -425,9 +434,14 @@ int __init acpi_scan_nodes(unsigned long start,
+> unsigned long end) nodes[i].end >> PAGE_SHIFT); /* for out of order entries
+> in SRAT */ sort_node_map(); -	if (!nodes_cover_memory(nodes)) {
+> -		bad_srat();
+> -		return -1;
+> +	if (!srat_bypass_bios) {
+> +		if (!nodes_cover_memory(nodes)) {
+> +			bad_srat();
+> +			return -1;
+> +		}
+> +	} else {
+> +		printk(KERN_INFO
+> +		           "SRAT: Bypassing NUMA sanity check...bad BIOS...\n");
+> }
+
 
