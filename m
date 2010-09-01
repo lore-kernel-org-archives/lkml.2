@@ -1,96 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab0IAGht (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 02:37:49 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:39251 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab0IAGhq (ORCPT
+	id S1753502Ab0IAGiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 02:38:55 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:13152 "HELO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752209Ab0IAGiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 02:37:46 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 1 Sep 2010 08:37:43 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: 2.6.36-rc3: inconsistent lock state (iprune_sem,
- shrink_icache_memory)
-To: linux-fsdevel@vger.kernel.org
-cc: linux-kernel@vger.kernel.org
-Message-ID: <tkrat.ed8eda6bc8ffe64e@s5r6.in-berlin.de>
+	Wed, 1 Sep 2010 02:38:52 -0400
+Message-ID: <4C7DF4EF.30109@snapgear.com>
+Date: Wed, 1 Sep 2010 16:38:39 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+To: David Howells <dhowells@redhat.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/22] Fix M68K irqflags
+References: <AANLkTikJ5pio3WYmZFAyWpD32hssZoDxX7XSTXN_qV09@mail.gmail.com> <20100827015905.27277.39167.stgit@warthog.procyon.org.uk> <20100827020038.27277.27239.stgit@warthog.procyon.org.uk> <4C7B59E1.6010904@snapgear.com> <26799.1283201411@redhat.com> <11403.1283270415@redhat.com>
+In-Reply-To: <11403.1283270415@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Sep 2010 06:38:49.0396 (UTC) FILETIME=[55D74F40:01CB49A0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I switched from 2.6.35 to 2.6.36-rc3 a few days ago and while doing so
-enabled lockdep.  Just got the following report during normal desktop
-usage:
+On 01/09/10 02:00, David Howells wrote:
+> Geert Uytterhoeven<geert@linux-m68k.org>  wrote:
+>
+>> Indeed, m68k doesn't use generic hardirqs yet, m68knommu does.
+>
+> That's orthogonal to this patch series, however.  I'm dealing with IRQ flags
+> management, not hardirq support.
+>
+> Out of interest, will the m68knommu arch be integrated into the m68k arch at
+> some point?  It's certainly possible to have an arch that is bimodal in this
+> aspect (FRV has CONFIG_MMU as a config option).
 
-=================================
-[ INFO: inconsistent lock state ]
-2.6.36-rc3 #3
----------------------------------
-inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
-kswapd0/436 [HC0[0]:SC0[0]:HE1:SE1] takes:
- (iprune_sem){+++++-}, at: [<ffffffff810bde0b>] shrink_icache_memory+0x48/0x217
-{RECLAIM_FS-ON-W} state was registered at:
-  [<ffffffff810598b3>] mark_held_locks+0x4d/0x6b
-  [<ffffffff8105995f>] lockdep_trace_alloc+0x8e/0xa7
-  [<ffffffff810a5a7f>] kmem_cache_alloc+0x2a/0xc8
-  [<ffffffff810d4f8a>] fsnotify_create_event+0x39/0x160
-  [<ffffffff810d49e8>] send_to_group+0x108/0x13f
-  [<ffffffff810d4b86>] fsnotify+0x167/0x266
-  [<ffffffff810d57d0>] fsnotify_unmount_inodes+0xb8/0xf9
-  [<ffffffff810bda9b>] invalidate_inodes+0x4b/0x13a
-  [<ffffffff810ad3e5>] generic_shutdown_super+0x42/0xd2
-  [<ffffffff810ad497>] kill_block_super+0x22/0x3a
-  [<ffffffff810aca61>] deactivate_locked_super+0x21/0x41
-  [<ffffffff810acc39>] deactivate_super+0x40/0x44
-  [<ffffffff810c1c29>] mntput_no_expire+0xdc/0x10a
-  [<ffffffff810c2e5d>] sys_umount+0x2a4/0x2d1
-  [<ffffffff81001feb>] system_call_fastpath+0x16/0x1b
-irq event stamp: 281663
-hardirqs last  enabled at (281663): [<ffffffff81072d32>] __call_rcu+0x119/0x125
-hardirqs last disabled at (281662): [<ffffffff81072c41>] __call_rcu+0x28/0x125
-softirqs last  enabled at (278242): [<ffffffff81038cff>] __do_softirq+0x14a/0x15b
-softirqs last disabled at (278217): [<ffffffff81002e8c>] call_softirq+0x1c/0x28
+At some point it will happen. Steven King sent a script to
+largely automate for a first pass about a year ago.
 
-other info that might help us debug this:
-1 lock held by kswapd0/436:
- #0:  (shrinker_rwsem){++++..}, at: [<ffffffff810891d7>] shrink_slab+0x38/0x164
-
-stack backtrace:
-Pid: 436, comm: kswapd0 Not tainted 2.6.36-rc3 #3
-Call Trace:
- [<ffffffff8105933b>] print_usage_bug+0x1af/0x1c0
- [<ffffffff81059e81>] ? check_usage_forwards+0x0/0xcd
- [<ffffffff81059637>] mark_lock+0x2eb/0x51a
- [<ffffffff8105af8c>] __lock_acquire+0x862/0x182c
- [<ffffffff810ba6ea>] ? shrink_dcache_memory+0x114/0x1a9
- [<ffffffff810ba6f3>] ? shrink_dcache_memory+0x11d/0x1a9
- [<ffffffff810ba6ea>] ? shrink_dcache_memory+0x114/0x1a9
- [<ffffffff8105bfb0>] lock_acquire+0x5a/0x71
- [<ffffffff810bde0b>] ? shrink_icache_memory+0x48/0x217
- [<ffffffff8133cb68>] down_read+0x42/0x55
- [<ffffffff810bde0b>] ? shrink_icache_memory+0x48/0x217
- [<ffffffff810bde0b>] shrink_icache_memory+0x48/0x217
- [<ffffffff81089280>] shrink_slab+0xe1/0x164
- [<ffffffff81089893>] kswapd+0x590/0x7e2
- [<ffffffff8104b1d6>] ? autoremove_wake_function+0x0/0x38
- [<ffffffff8133deff>] ? _raw_spin_unlock_irqrestore+0x4c/0x68
- [<ffffffff81089303>] ? kswapd+0x0/0x7e2
- [<ffffffff8104ade2>] kthread+0x81/0x89
- [<ffffffff81002d94>] kernel_thread_helper+0x4/0x10
- [<ffffffff8102d5ba>] ? finish_task_switch+0x69/0xa9
- [<ffffffff8133e3c0>] ? restore_args+0x0/0x30
- [<ffffffff8104ad61>] ? kthread+0x0/0x89
- [<ffffffff81002d90>] ? kernel_thread_helper+0x0/0x10
+Regards
+Greg
 
 
-A web search finds reports of this kind from months ago.  I haven't read
-up on them yet whether there were any conclusions from them.
--- 
-Stefan Richter
--=====-==-=- =--= ----=
-http://arcgraph.de/sr/
 
