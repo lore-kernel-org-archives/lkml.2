@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab0IAGiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 02:38:55 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:13152 "HELO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752209Ab0IAGiw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 02:38:52 -0400
-Message-ID: <4C7DF4EF.30109@snapgear.com>
-Date: Wed, 1 Sep 2010 16:38:39 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1753464Ab0IAGkg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 02:40:36 -0400
+Received: from proxima.lp0.eu ([81.2.80.65]:49822 "EHLO proxima.lp0.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751269Ab0IAGkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 02:40:32 -0400
+Message-ID: <4C7DF55A.3080007@simon.arlott.org.uk>
+Date: Wed, 01 Sep 2010 07:40:26 +0100
+From: Simon Arlott <simon@fire.lp0.eu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100605 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/22] Fix M68K irqflags
-References: <AANLkTikJ5pio3WYmZFAyWpD32hssZoDxX7XSTXN_qV09@mail.gmail.com> <20100827015905.27277.39167.stgit@warthog.procyon.org.uk> <20100827020038.27277.27239.stgit@warthog.procyon.org.uk> <4C7B59E1.6010904@snapgear.com> <26799.1283201411@redhat.com> <11403.1283270415@redhat.com>
-In-Reply-To: <11403.1283270415@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Ondrej Zary <linux@rainbow-software.org>
+CC: accessrunner-general@lists.sourceforge.net, netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: cxacru: USB ethernet port of CX82310-based ADSL routers?
+References: <201008312313.39171.linux@rainbow-software.org> <4C7D7F15.9040402@simon.arlott.org.uk> <201009010048.44644.linux@rainbow-software.org>
+In-Reply-To: <201009010048.44644.linux@rainbow-software.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Sep 2010 06:38:49.0396 (UTC) FILETIME=[55D74F40:01CB49A0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/10 02:00, David Howells wrote:
-> Geert Uytterhoeven<geert@linux-m68k.org>  wrote:
->
->> Indeed, m68k doesn't use generic hardirqs yet, m68knommu does.
->
-> That's orthogonal to this patch series, however.  I'm dealing with IRQ flags
-> management, not hardirq support.
->
-> Out of interest, will the m68knommu arch be integrated into the m68k arch at
-> some point?  It's certainly possible to have an arch that is bimodal in this
-> aspect (FRV has CONFIG_MMU as a config option).
+On 31/08/10 23:48, Ondrej Zary wrote:
+> On Wednesday 01 September 2010 00:15:49 Simon Arlott wrote:
+>> On 31/08/10 22:13, Ondrej Zary wrote:
+>> > Hello,
+>> > I have an ADSL router based on Conexant CX82310 chip. This chip provides
+>> > both ethernet and USB interfaces. The ethernet interface is often
+>> > internally connected to a 5-port switch (in my case too). The USB
+>> > interface works as an ethernet card in Windows (using proprietary
+>> > driver). In Linux, the cxacru driver binds to the device but does not
+>> > work (no wonder - it's doing firmware things in an attempt to bring an
+>> > ADSL modem up).
 
-At some point it will happen. Steven King sent a script to
-largely automate for a first pass about a year ago.
+If you get the firmware loaded, it may implement an existing protocol
+for ethernet over USB like all the ATM modems linux supports do.
 
-Regards
-Greg
+>> > I wonder how to implement support for this device in cxacru driver. Or
+>> > would be a separate driver better?
+>>
+>> Support for this shouldn't really go into the cxacru driver, as that's
+>> for an USB ATM interface (it depends on usbatm for actual ATM traffic)
+>> not ethernet.
+> 
+> That's what I was afraid of...
 
+The firmware loading process is likely to be similar if not identical,
+but these devices usually don't respond to the status command after
+loading with the ADSL firmware.
 
+>> Unfortunately it doesn't look like a trivial task to auto-detect which
+>> driver should handle it... your device itself claims to be an "ADSL
+>> Modem".
+> 
+> In fact, it does not. The idProduct text is from usb.ids file (which is often 
+> incorrect). The device says that it's "USB NET CARD" (iProduct). But I don't 
+> know if Linux can match drivers by iProduct string.
 
+The probe function could ignore it allowing another driver to take it.
+
+> 
+> Maybe ignoring the device if class is 255 and iProduct is "USB NET CARD" (or 
+> does not contain "MODEM"?). 
+> 
+> All these devices seem to use bDeviceClass 0 and iProduct "ADSL USB MODEM".
+> 
+
+However, there may be others that don't. I only have three variants of
+a generic device rebranded... although they don't appear to have a way
+of replacing that string. Ignoring "USB NET CARD" would be reasonable.
+
+-- 
+Simon Arlott
