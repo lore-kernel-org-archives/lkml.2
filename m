@@ -1,66 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab0IAKnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 06:43:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41767 "EHLO mx2.suse.de"
+	id S1754850Ab0IAKna (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 06:43:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2050 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754710Ab0IAKnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 06:43:09 -0400
-Date: Wed, 1 Sep 2010 12:43:07 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <stefan_achatz@web.de>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Stephane Chatty <chatty@enac.fr>,
-        Don Prince <dhprince-devel@yahoo.co.uk>,
-        Dmitry Torokhov <dtor@mail.ru>, Kees Bakker <kees.bakker@xs4all.nl>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH] HID: roccat: Normalized reported profile number for pyra
- button events.
-In-Reply-To: <1283196536.2059.0.camel@neuromancer>
-Message-ID: <alpine.LNX.2.00.1009011242570.26813@pobox.suse.cz>
-References: <1283196536.2059.0.camel@neuromancer>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754055Ab0IAKn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 06:43:28 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4C7DF3B7.7010305@snapgear.com>
+References: <4C7DF3B7.7010305@snapgear.com> <4C7B59E1.6010904@snapgear.com> <20100827015905.27277.39167.stgit@warthog.procyon.org.uk> <20100827020038.27277.27239.stgit@warthog.procyon.org.uk> <26799.1283201411@redhat.com>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/22] Fix M68K irqflags
+Date: Wed, 01 Sep 2010 11:43:13 +0100
+Message-ID: <2084.1283337793@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Aug 2010, Stefan Achatz wrote:
+Greg Ungerer <gerg@snapgear.com> wrote:
 
-> Pyra uses profile numbers in range 0-4 for everything except button
-> events. Using range 1-5 consistent now.
-> 
-> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-> ---
->  drivers/hid/hid-roccat-pyra.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-roccat-pyra.c
-> b/drivers/hid/hid-roccat-pyra.c
-> index 6c09c15..9bf2304 100644
-> --- a/drivers/hid/hid-roccat-pyra.c
-> +++ b/drivers/hid/hid-roccat-pyra.c
-> @@ -902,7 +902,11 @@ static void pyra_report_to_chrdev(struct
-> pyra_device const *pyra,
->  		if (button_event->data2 == PYRA_MOUSE_EVENT_BUTTON_PRESS) {
->  			roccat_report.type = button_event->type;
->  			roccat_report.key = button_event->data1;
-> -			roccat_report.value = pyra->actual_profile;
-> +			/*
-> +			 * pyra reports profile numbers with range 1-5.
-> +			 * Keeping this behaviour.
-> +			 */
-> +			roccat_report.value = pyra->actual_profile + 1;
->  			roccat_report_event(pyra->chrdev_minor,
->  					(uint8_t const *)&roccat_report,
->  					sizeof(struct pyra_roccat_report));
+> Here is a spin of the same patch, only with a single irqflags.h.
+> It is closely modeled on the mm version, merging (and cleaning)
+> the non-mmu bits as needed. There is a fair bit of common code
+> in here.
 
-Applied.
+Thanks!
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+I can compile test, but I can't run test (no h/w).
+
+David
