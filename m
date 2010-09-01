@@ -1,34 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab0IALbt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 07:31:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7706 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751103Ab0IALbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 07:31:46 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4C7E378D.5090907@snapgear.com>
-References: <4C7E378D.5090907@snapgear.com> <4C7DF3B7.7010305@snapgear.com> <4C7B59E1.6010904@snapgear.com> <20100827015905.27277.39167.stgit@warthog.procyon.org.uk> <20100827020038.27277.27239.stgit@warthog.procyon.org.uk> <26799.1283201411@redhat.com> <2281.1283337985@redhat.com>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/22] Fix M68K irqflags
-Date: Wed, 01 Sep 2010 12:31:32 +0100
-Message-ID: <15186.1283340692@redhat.com>
+	id S1752922Ab0IALcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 07:32:55 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:45830 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751103Ab0IALcx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 07:32:53 -0400
+Message-ID: <4C7E39CC.80402@euromail.se>
+Date: Wed, 01 Sep 2010 13:32:28 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephane Chatty <chatty@enac.fr>
+Subject: Re: [PATCH] hid: Add a hid quirk for input sync override
+References: <1282640084-19217-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1009011252450.26813@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1009011252450.26813@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OqlYY-0002pn-74.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OqlYY-0002pn-74 a4a671f4cb542b076e363c28e17edd65
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Ungerer <gerg@snapgear.com> wrote:
+On 09/01/2010 12:54 PM, Jiri Kosina wrote:
 
-> Bugger :-(  Sorry about that. After I test it tomorrow I'll
-> resend an updated version.
+> On Tue, 24 Aug 2010, Henrik Rydberg wrote:
+> 
+>> From: Henrik Rydberg <rydberg@thabit.(none)>
+>>
+>> As of lately, HID devices which send per-frame data split over several
+>> HID reports have started to emerge. This patch adds a quirk which
+>> allows the HID driver to take over the input layer synchronization,
+>> and hence the control of the frame boundary.
+>>
+>> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+>> ---
+>> Jiri, Dmitry, Stephane,
+>>
+>> No doubt, this is not a final solution, but it serves the purpose of
+>> being able to make existing drivers functional while a satisfactory
+>> solution is being worked out.
+> 
+> Hi Henrik,
+> 
+> I obviously don't have any major objections to the patch, as it was my 
+> initial idea :)
 
-Don't worry about it.  I just substituted the bits of my patch that removed
-from system.h.
 
-David
+Ah! Then all is fine. :-)
+
+> 
+> I'd like to merge it together with driver which actually uses it though.
+
+
+Sounds good. I suppose Stephane wants to have a say regarding the 3m driver
+first, but no rush. What version are you targeting?
+
+Thanks,
+Henrik
