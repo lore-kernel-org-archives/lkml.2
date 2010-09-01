@@ -1,137 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab0IAArb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 20:47:31 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64198 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573Ab0IAAr3 (ORCPT
+	id S1754109Ab0IAAsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 20:48:55 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55662 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091Ab0IAAsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 20:47:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=mcfSrhIylMlmowjy6jV38/Z964H51dNS3PjtH1dqUpCDvb0fjibI1A4GjE7EY0DvN8
-         UBZrsKuhtDC2GvmKOXiZMQn7ybKVLYkxTJHCmaDa0yFM1hI+Y+J+DEaKdvTmXnemj97c
-         chHIlkZOEuMqADxtNEnN9wXoXSpZgyc1MBO5I=
-Subject: Re: [PATCH] Add quick erase format option
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Stefani Seibold <stefani@seibold.net>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Enzinger, Robert (EXT-Other - DE/Munich)" 
-	<robert.enzinger.ext@nsn.com>
-In-Reply-To: <1283236978.6083.28.camel@wall-e.seibold.net>
-References: <1281342353-18180-1-git-send-email-stefani@seibold.net>
-	 <1281343038.12908.25.camel@localhost>
-	 <1281343974.18398.13.camel@wall-e.seibold.net>
-	 <1281353344.2332.8.camel@brekeke>
-	 <1281362069.20181.16.camel@wall-e.seibold.net>
-	 <1283081435.2131.24.camel@brekeke>
-	 <1283236978.6083.28.camel@wall-e.seibold.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Sep 2010 03:47:23 +0300
-Message-ID: <1283302043.2018.92.camel@brekeke>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 8bit
+	Tue, 31 Aug 2010 20:48:54 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: "M. Vefa Bicakci" <bicave@superonline.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
+Cc: kosaki.motohiro@jp.fujitsu.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org
+In-Reply-To: <4C7BE25B.1020504@superonline.com>
+References: <20100830083704.5231.A69D9226@jp.fujitsu.com> <4C7BE25B.1020504@superonline.com>
+Message-Id: <20100901093219.9744.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed,  1 Sep 2010 09:48:51 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefani,
+> === 8< ===
+> PM: Marking nosave pages: ...0009f000 - ...000100000
+> PM: basic memory bitmaps created
+> PM: Syncing filesystems ... done
+> Freezing user space processes ... (elapsed 0.01 seconds) done.
+> Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+> PM: Preallocating image memory...
+> shrink_all_memory start
+> PM: shrink memory: pass=1, req:310171 reclaimed:15492 free:360936
+> PM: shrink memory: pass=2, req:294679 reclaimed:28864 free:373981
+> PM: shrink memory: pass=3, req:265815 reclaimed:60311 free:405374
+> PM: shrink memory: pass=4, req:205504 reclaimed:97870 free:443024
+> PM: shrink memory: pass=5, req:107634 reclaimed:146948 free:492141
+> shrink_all_memory: req:107634 reclaimed:146948 free:492141
+> PM: preallocate_image_highmem 556658 278329
+> PM: preallocate_image_memory 103139 103139
+> PM: preallocate_highmem_fraction 183908 556658 760831 -> 183908
+> === >8 ===
 
-you have strong points, but I'm still not entirely convinced.
+Rafael, this log mean hibernate_preallocate_memory() has a bug.
+It allocate memory as following order.
+ 1. preallocate_image_highmem()  (i.e. __GFP_HIGHMEM)
+ 2. preallocate_image_memory()   (i.e. GFP_KERNEL)
+ 3. preallocate_highmem_fraction (i.e. __GFP_HIGHMEM)
+ 4. preallocate_image_memory()   (i.e. GFP_KERNEL)
 
-On Tue, 2010-08-31 at 08:42 +0200, Stefani Seibold wrote:
-> > I would like to change the option name so that it would reflect the
-> > exact use-case we are creating it for: wiped out flash. So I'd be
-> > happier with something like --pristine-flash.
-> 
-> "Pristine" is not a word which non native speaker have in its
-> vocabulary.
+But, please imazine following scenario (as Vefa's scenario).
+ - system has 3GB memory. 1GB is normal. 2GB is highmem.
+ - all normal memory is free
+ - 1.5GB memory of highmem are used for tmpfs. rest 500MB is free.
 
-Agree, not very simple word, when I met it in JFFS2 sources, I looked it
-up in the dictionary :-)
+At that time, hibernate_preallocate_memory() works as following.
 
->  Quick-format is the best, because it is exactly what it is
-> doing.
+1. call preallocate_image_highmem(1GB)
+2. call preallocate_image_memory(500M)		total 1.5GB allocated
+3. call preallocate_highmem_fraction(660M)	total 2.2GB allocated
 
-No, it is misleading. If I was a dumb user, I'd be thinking: oh, why I
-should do slow format if I can do quick? It is probably like my FAT32
-partition formatting in Windows, I always shoos quick format.
+then, all of normal zone memory was exhaust. next preallocate_image_memory()
+makes OOM, and oom_killer_disabled makes infinite loop.
+(oom_killer_disabled careless is vmscan bug. I'll fix it soon)
 
-This is why I do not like your naming - it encourages to use it, while
-my name discourages.
+The problem is, alloc_pages(__GFP_HIGHMEM) -> alloc_pages(GFP_KERNEL) is
+wrong order. alloc_pages(__GFP_HIGHMEM) may allocate page from lower zone.
+then, next alloc_pages(GFP_KERNEL) lead to OOM.
 
-Also, your use-case is new/virgin/pristine/whatever NOR chips, which are
-guaranteed to be erased, and I wanted to use option name which reflects
-your use-case.
+Please consider alloc_pages(GFP_KERNEL) -> alloc_pages(__GFP_HIGHMEM) order.
+Even though vmscan fix can avoid infinite loop, OOM situation might makes
+big slow down on highmem machine. It seems no good.
 
-How about:
 
---virgin
---factory
---brand-new
---all-erased
+Thanks.
 
-Or --do-not-use-me :-)
-
-> > OK. But did you consider to pre-create the image with ubinize and
-> > mkfs.ubifs tools and just flash the raw image in production? This is the
-> > fastest possible way.
-> > 
-> 
-> This did not work in our NSN transport environment. It would take to
-> much time to explain why, because the PCU software managment server is a
-> 10 year old application which handles a wide range of transport boards
-> in the same way, including the old JFFS2 systems and the new UBIFS based
-> boards.
-
-OK :-)
-
-> > It does assume that if the beginning of the flash contains 0xFFs then it
-> > is safe to treat it as erased. Instead, I think you should just trust
-> > the user and not even check the beginning of the flash. And this will be
-> > also faster.
-> > 
-> 
-> Never trust the user. And why should we remove this check? The coast is
-> very minimal and it will make live much easier.
-
-Well, this is a good principle, no doubts. But on NAND, it will hurt
-performance, because we'll end up with reading whole page. And since
-NAND erase is ultra-fast, comparing to NOR, reading whole page will
-introduce a noticeable overhead.
-
-IOW, as the maintainer, I have to care about code in general, not only
-specific use-cases.
-
-How about checking only the first and last eraseblocks? It would give
-_some_ sanity check at least, with less overhead?
-
-Or, do the check only if this is NOR, but I'm less happy about this
-approach.
-
-> For example: In our production environment everything is automated by
-> scripts, so the software bring up did not know if the flash is already
-> erased or not. It is possible that an broken used board is returned into
-> the production after it was repaired.
-
-Well, you can check the flash before running ubiformat.
-
-> What you assume is that the user or the scripts does know the status of
-> the flash, but this is not true in real production environment, where
-> thousands of boards are prepared.
-
-Again, I do not mind to add checks if they are cheap in general, but
-this one is not cheap for NAND.
-
--- 
-Best Regards,
-Artem Bityutskiy (Битюцкий Артём)
 
