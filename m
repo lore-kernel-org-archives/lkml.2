@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab0IAB7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 21:59:13 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57675 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733Ab0IAB7I (ORCPT
+	id S1752746Ab0IACBq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 22:01:46 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47045 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab0IACBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 21:59:08 -0400
+	Tue, 31 Aug 2010 22:01:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:content-transfer-encoding:user-agent;
-        b=ud2nFlB0bcbAyPXXiSGZiwhY8bFjb0R7TpHAfceRCAHqlHLiyUQ8WTPaXEdz3bv7o7
-         Q6vNvvLzOWhGzcHqHd1NwkvKxoVu4OXWwguWpCcUi8kBy6VTEOYOZSVNIP/4fU5bkD1x
-         wXH6/u8jWIXMRZn86wQlxxdIQyp2jtKQLSWM8=
-Date: Tue, 31 Aug 2010 18:59:03 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: tpmdd-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        David Safford <safford@watson.ibm.com>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RESEND] [PATCH] TPM: change 'tpm_suspend_pcr' to be module parameter
-Message-ID: <20100901015903.GA23585@core.coreip.homeip.net>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=vKUto8i1dJIR+RdUS16iG5NzBr9lz+GYdMIn5NTefkRVzhPfQ59hqYsIg6GTLqMSEx
+         bCr7pXxUXVV2CjaCQdYRMDrTFKjpOE1+jmQ7SYH3bNliDLVi0fo/6qf5JroETYkUsPhJ
+         BF7bwaQhze0J675+AFKj7ieREAQ1TyqNS8MXk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100901105232.974F.A69D9226@jp.fujitsu.com>
+References: <20100901092430.9741.A69D9226@jp.fujitsu.com>
+	<AANLkTikXfvEVXEyw_5_eJs2v-3J6Xhd=CT9X-0D+GMCA@mail.gmail.com>
+	<20100901105232.974F.A69D9226@jp.fujitsu.com>
+Date: Wed, 1 Sep 2010 11:01:43 +0900
+Message-ID: <AANLkTinxHbeCUh80i515FPMpF-GY4S0kh9PHqUNtYP-m@mail.gmail.com>
+Subject: Re: [BUGFIX][PATCH] vmscan: don't use return value trick when oom_killer_disabled
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "M. Vefa Bicakci" <bicave@superonline.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This gets rid of the following warning:
+On Wed, Sep 1, 2010 at 10:55 AM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> Hi
+>
+> Thank you for good commenting!
+>
+>
+>> I don't like use oom_killer_disabled directly.
+>> That's because we have wrapper inline functions to handle the
+>> variable(ex, oom_killer_[disable/enable]).
+>> It means we are reluctant to use the global variable directly.
+>> So should we make new function as is_oom_killer_disable?
+>>
+>> I think NO.
+>>
+>> As I read your description, this problem is related to only hibernation.
+>> Since hibernation freezes all processes(include kswapd), this problem
+>> happens. Of course, now oom_killer_disabled is used by only
+>> hibernation. But it can be used others in future(Off-topic : I don't
+>> want it). Others can use it without freezing processes. Then kswapd
+>> can set zone->all_unreclaimable and the problem can't happen.
+>>
+>> So I want to use sc->hibernation_mode which is already used
+>> do_try_to_free_pages instead of oom_killer_disabled.
+>
+> Unfortunatelly, It's impossible. shrink_all_memory() turn on
+> sc->hibernation_mode. but other hibernation caller merely call
+> alloc_pages(). so we don't have any hint.
+>
+Ahh.. True. Sorry for that.
+I will think some better method.
+if I can't find it, I don't mind this patch. :)
 
-drivers/char/tpm/tpm.c:1085: warning: ‘tpm_suspend_setup’ defined but not used
-
-and makes the workaround operable in case when TPM is compiled as a module.
-As a side-effect the option will be called tpm.suspend_pcr
-
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
----
-
- drivers/char/tpm/tpm.c |   22 ++++++++++------------
- 1 files changed, 10 insertions(+), 12 deletions(-)
+Thanks.
 
 
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 05ad4a1..7c41335 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -47,6 +47,16 @@ enum tpm_duration {
- #define TPM_MAX_PROTECTED_ORDINAL 12
- #define TPM_PROTECTED_ORDINAL_MASK 0xFF
- 
-+/*
-+ * Bug workaround - some TPM's don't flush the most
-+ * recently changed pcr on suspend, so force the flush
-+ * with an extend to the selected _unused_ non-volatile pcr.
-+ */
-+static int tpm_suspend_pcr;
-+module_param_named(suspend_pcr, tpm_suspend_pcr, uint, 0644);
-+MODULE_PARM_DESC(suspend_pcr,
-+		 "PCR to use for dummy writes to faciltate flush on suspend.");
-+
- static LIST_HEAD(tpm_chip_list);
- static DEFINE_SPINLOCK(driver_lock);
- static DECLARE_BITMAP(dev_mask, TPM_NUM_DEVICES);
-@@ -1077,18 +1087,6 @@ static struct tpm_input_header savestate_header = {
- 	.ordinal = TPM_ORD_SAVESTATE
- };
- 
--/* Bug workaround - some TPM's don't flush the most
-- * recently changed pcr on suspend, so force the flush
-- * with an extend to the selected _unused_ non-volatile pcr.
-- */
--static int tpm_suspend_pcr;
--static int __init tpm_suspend_setup(char *str)
--{
--	get_option(&str, &tpm_suspend_pcr);
--	return 1;
--}
--__setup("tpm_suspend_pcr=", tpm_suspend_setup);
--
- /*
-  * We are about to suspend. Save the TPM state
-  * so that it can be restored.
 -- 
-Dmitry
+Kind regards,
+Minchan Kim
