@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab0IAHBL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 03:01:11 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37980 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab0IAHBH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 03:01:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=RuA0ES462DPVrD9ZQ4hYIiiPa6kjCj+XigZdS9ec+kcXvtxdSep/9MtzWFQ5qq8Ec7
-         /bOlCWyrx2bT9WlpcW+F26/yiSsMQXTjwC7Spn/GMsK/1aUyjIyh3AsdOrXTvajD1D7P
-         mG4yY7B2sydaaFqYocgpAV+wI5Q4dwMTrGxWA=
+	id S1752906Ab0IAHLA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 03:11:00 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:44726 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937Ab0IAHK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 03:10:57 -0400
+Date: Wed, 1 Sep 2010 08:10:43 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 1/3] mm: page allocator: Update free page counters
+	after pages are placed on the free list
+Message-ID: <20100901071042.GD13677@csn.ul.ie>
+References: <1283276257-1793-1-git-send-email-mel@csn.ul.ie> <1283276257-1793-2-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1008311317160.867@router.home>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim_O0CXMCv_qVDKOP72=VC63eoZuvpKWm=mme7k@mail.gmail.com>
-References: <1283310009-22168-1-git-send-email-dzickus@redhat.com>
-	<1283310009-22168-2-git-send-email-dzickus@redhat.com>
-	<20100901053055.GA14316@elte.hu>
-	<AANLkTim_O0CXMCv_qVDKOP72=VC63eoZuvpKWm=mme7k@mail.gmail.com>
-Date: Wed, 1 Sep 2010 11:01:06 +0400
-Message-ID: <AANLkTim1s=O6+OEvwLsaxbkpfyQk-Mypr5wE7H4fh9V0@mail.gmail.com>
-Subject: Re: [PATCH 1/3] [lockup detector] sync touch_*_watchdog back to old semantics
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Don Zickus <dzickus@redhat.com>, peterz@infradead.org, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1008311317160.867@router.home>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/1/10, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On 9/1/10, Ingo Molnar <mingo@elte.hu> wrote:
->>
->> * Don Zickus <dzickus@redhat.com> wrote:
->>
->>>  void touch_nmi_watchdog(void)
->>>  {
->>> -	__get_cpu_var(watchdog_nmi_touch) = true;
->>> +	if (watchdog_enabled) {
->>> +		unsigned cpu;
->>> +
->>> +		for_each_present_cpu(cpu) {
->>> +			if (per_cpu(watchdog_nmi_touch, cpu) != true)
->>> +				per_cpu(watchdog_nmi_touch, cpu) = true;
->>> +		}
->>
->> Hm, this is going to be a scalability nightmare with lots of CPUs. Not
->> only do we have a nr_cpus loop, but we touch per-cpu areas of _other_
->> CPUs - a big scalability nono.
->>
->> Why do we need to do this? We never needed to touch other CPU's NMI
->> lockup accounting data areas - why has this changed? The changelog does
->> not explain this.
->>
->> Thanks,
->>
->> 	Ingo
->>
-> I believe this came from old nmi watchdog code where it might be
-> useful when nmi watchdog activated via io-apic. I'm trying to figure
-> out if we really need it still.
->
-Well, we can't drop it or make per-cpu specific, for example we need
-it in case of panic with watchdog enabled and panic timeout set, or
-boot delay set and etc. Seems same applies to printk_delay. Hmm...
+On Tue, Aug 31, 2010 at 01:17:44PM -0500, Christoph Lameter wrote:
+> 
+> I already did a
+> 
+> Reviewed-by: Christoph Lameter <cl@linux.com>
+> 
+> I believe?
+> 
+
+You did and I omitted it. It's included now. Thanks
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
