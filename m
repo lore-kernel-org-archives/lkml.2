@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab0IAGkg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 02:40:36 -0400
-Received: from proxima.lp0.eu ([81.2.80.65]:49822 "EHLO proxima.lp0.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab0IAGkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 02:40:32 -0400
-Message-ID: <4C7DF55A.3080007@simon.arlott.org.uk>
-Date: Wed, 01 Sep 2010 07:40:26 +0100
-From: Simon Arlott <simon@fire.lp0.eu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100605 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Ondrej Zary <linux@rainbow-software.org>
-CC: accessrunner-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: cxacru: USB ethernet port of CX82310-based ADSL routers?
-References: <201008312313.39171.linux@rainbow-software.org> <4C7D7F15.9040402@simon.arlott.org.uk> <201009010048.44644.linux@rainbow-software.org>
-In-Reply-To: <201009010048.44644.linux@rainbow-software.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753270Ab0IAGpK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 02:45:10 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38242 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab0IAGpH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 02:45:07 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 1 Sep 2010 15:39:51 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        gthelen@google.com, Munehiro Ikeda <m-ikeda@ds.jp.nec.com>,
+        menage@google.com, "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
+Subject: [PATCH 0/5] memcg: towards I/O aware memcg v7.
+Message-Id: <20100901153951.bc82c021.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/08/10 23:48, Ondrej Zary wrote:
-> On Wednesday 01 September 2010 00:15:49 Simon Arlott wrote:
->> On 31/08/10 22:13, Ondrej Zary wrote:
->> > Hello,
->> > I have an ADSL router based on Conexant CX82310 chip. This chip provides
->> > both ethernet and USB interfaces. The ethernet interface is often
->> > internally connected to a 5-port switch (in my case too). The USB
->> > interface works as an ethernet card in Windows (using proprietary
->> > driver). In Linux, the cxacru driver binds to the device but does not
->> > work (no wonder - it's doing firmware things in an attempt to bring an
->> > ADSL modem up).
 
-If you get the firmware loaded, it may implement an existing protocol
-for ethernet over USB like all the ATM modems linux supports do.
+Major changes from v6 is
+ a) added documentation about CSS ID.
+ b) fixed typos and bugs.
+ c) refleshed some comments
 
->> > I wonder how to implement support for this device in cxacru driver. Or
->> > would be a separate driver better?
->>
->> Support for this shouldn't really go into the cxacru driver, as that's
->> for an USB ATM interface (it depends on usbatm for actual ATM traffic)
->> not ethernet.
-> 
-> That's what I was afraid of...
+based on mmotm-2010-08-27
 
-The firmware loading process is likely to be similar if not identical,
-but these devices usually don't respond to the status command after
-loading with the ADSL firmware.
+Patch brief view:
+ 1. changes css ID allocation in kernel/cgroup.c
+ 2. use ID-array in memcg.
+ 3. record ID to page_cgroup rather than pointer.
+ 4. make update_file_mapped to be RCU aware routine instead of spinlock.
+ 5. make update_file_mapped as general-purpose function.
 
->> Unfortunately it doesn't look like a trivial task to auto-detect which
->> driver should handle it... your device itself claims to be an "ADSL
->> Modem".
-> 
-> In fact, it does not. The idProduct text is from usb.ids file (which is often 
-> incorrect). The device says that it's "USB NET CARD" (iProduct). But I don't 
-> know if Linux can match drivers by iProduct string.
 
-The probe function could ignore it allowing another driver to take it.
+Thanks,
+-Kame
 
-> 
-> Maybe ignoring the device if class is 255 and iProduct is "USB NET CARD" (or 
-> does not contain "MODEM"?). 
-> 
-> All these devices seem to use bDeviceClass 0 and iProduct "ADSL USB MODEM".
-> 
-
-However, there may be others that don't. I only have three variants of
-a generic device rebranded... although they don't appear to have a way
-of replacing that string. Ignoring "USB NET CARD" would be reasonable.
-
--- 
-Simon Arlott
