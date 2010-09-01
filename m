@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab0IAVqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 17:46:49 -0400
-Received: from void.printf.net ([89.145.121.20]:50195 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754285Ab0IAVqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 17:46:47 -0400
-Date: Wed, 1 Sep 2010 22:46:44 +0100
-From: Chris Ball <cjb@laptop.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+	id S1756032Ab0IAVrA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 17:47:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54015 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755566Ab0IAVq7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 17:46:59 -0400
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 5/15]  5: uprobes: Uprobes
+ (un)registration and exception handling.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Adrian Hunter <adrian.hunter@nokia.com>
-Subject: Re: [PATCH 0/3] mmc_test: show test results via sysfs
-Message-ID: <20100901214644.GA4436@void.printf.net>
-References: <cover.1283276161.git.ext-andriy.shevchenko@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1283276161.git.ext-andriy.shevchenko@nokia.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20100825134224.5447.89998.sendpatchset@localhost6.localdomain6>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+	 <20100825134224.5447.89998.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 01 Sep 2010 23:46:35 +0200
+Message-ID: <1283377595.2059.1733.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+On Wed, 2010-08-25 at 19:12 +0530, Srikar Dronamraju wrote:
+> The uprobes infrastructure enables a user to dynamically establish
+> probepoints in user applications and collect information by executing
+> a handler function when a probepoint is hit.
+> 
+Right, so in short, I think that if you rework this to be inode:offset
+based you'll end up with a much simpler codebase.
 
-On Wed, Sep 01, 2010 at 09:26:44AM +0300, Andy Shevchenko wrote:
-> There is a patchset which brings possibility to get test results via sysfs. It
-> helps to do tests non-interactively.
 
-Thanks for the patchset.  It doesn't apply to 2.6.36-rc3 without some
-(trivial) merge conflicts -- could you rebase with your next version?
-
-Tested-by: Chris Ball <cjb@laptop.org>
-
-Unrelated to this patch, I'm hitting:
-
-  drivers/mmc/core/core.c:174:
-    BUG_ON(mrq->data->blocks * mrq->data->blksz > host->max_req_size);
-
-when running the transfer tests under 2.6.36-rc3.  The request that
-fires the BUG() has blocks=8192 * blksz=512 > max_req_size=524288,
-on a Ricoh Co Ltd R5C822/1180:0822 in a Dell M6300 laptop.  Anyone
-have any experience with that bug, before I dig deeper?
-
-Thanks,
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
