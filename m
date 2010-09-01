@@ -1,130 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab0IAO2O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 10:28:14 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64304 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713Ab0IAO2K (ORCPT
+	id S1755380Ab0IAOjx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 10:39:53 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40194 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233Ab0IAOju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 10:28:10 -0400
+	Wed, 1 Sep 2010 10:39:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=DlPx+aynjyXpucGnMQBKbDNqodZtbI4yABfuyaVDFsfEoKAflggGixDPLTgSUCD4Vv
-         kb8s+grL97dDcrNEy1S0+TB5IYogEvsHhmo8W2UBXOv0fEvtEeVHwVE9Wys+xrD3LEEJ
-         E+G1BfDugMB+JkYanFXv/z9vHm01+zLrKGYB0=
-Date: Wed, 1 Sep 2010 07:28:04 -0700
-From: mark gross <markgross@thegnar.org>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: markgross@thegnar.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <james.bottomley@suse.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
-Message-ID: <20100901142804.GA13985@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <1282882403-29824-1-git-send-email-skannan@codeaurora.org>
- <1282882403-29824-2-git-send-email-skannan@codeaurora.org>
- <20100827064153.GB3414@gvim.org>
- <b3ebe52382d37d37e93021c33cb4d6d9.squirrel@codeaurora.org>
- <20100828020540.GB8341@gvim.org>
- <4C787AA9.4090906@codeaurora.org>
- <20100828225255.GA12402@gvim.org>
- <878w3o3p55.fsf@deeprootsystems.com>
- <20100831184030.GB9305@gvim.org>
- <4C7D844C.5050403@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C7D844C.5050403@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=wn0jzR5jwwW2sHKfj//XwbjmzAnLTN8OfkC7UnvSd3YHd5NNYC6KFTY+VdABlYD9KN
+         r0QvBrsqxZGRcqbT8z/mi9gaYmyLweuhi4wu5BIv2nJxcx/RhiDtUuUHxBcs6n3oUCUC
+         LoDUfjToIZWALy1xMTAvkst3u9VNYKuXTlMOA=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH] x86: merge strncpy_from_user() between 32 and 64 bits
+Date: Wed,  1 Sep 2010 23:32:29 +0900
+Message-Id: <1283351549-17126-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.6.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 03:38:04PM -0700, Saravana Kannan wrote:
-> mark gross wrote:
-> >On Mon, Aug 30, 2010 at 11:56:54AM -0700, Kevin Hilman
-> >>>>Any specific reason PM QoS doesn't support a "summation" "comparitor"?
-> >>>PM_QoS could do a summation, but keep in mind it pm_qos not qos.  pm_qos
-> >>>is a best effort thing to constrain power management throttling, not
-> >>>provide a true quality of service or deadline scheduling support.
-> >>For me (and I think Saravana too), this is still all about power, but
-> >>it's closely tied to QoS.
-> 
-> Kevin, Thanks for explaining exactly what I had in mind. I was
-> caught up with other work and was glad to see this discussion moved
-> forward.
-> 
-> I pretty much agree with all of Kevin's statements, so here is a
-> preemptive "I agree" to all this paragraphs.
-> 
-> >Now I get it!  For throughput we need to do a sum.  Ok, we need sum
-> >comparator/performance aggregaters too!
-> 
-> Yay! Finally one of my pet peeves with PM QoS is being resolved(?).
+Merge __strncpy_from_user() and strncpy_from_user() in usercopy_32.c
+and usercopy_64.c
 
-yes, we need to add a summation aggregater to the pm_qos logic and
-likely apply it to all the throughput pm_qos parameters.  You where
-right about that point.  (but I'm not budging on the unit less
-parameters)
+The register operand constraint for the local variable res is changed
+from "=&d" to "=&r" on 32-bit.
 
-> >Do we also need to figure out the max throughput and warn if the pm_qos
-> >requests are going over?  I suppose the network stack could register
-> >each device with a max bus bandwidth and pm_qos could warn on exceeding
-> >the hardware throughput.
-> 
-> In my opinion, here is where the "best effort" part, if any, comes
-> in. PM QoS could do it's best to meet the QoS while keeping power
-> low, but if the h/w can't support it, we let it run at highest
-> performance and call it "best effort".
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+---
+ arch/x86/include/asm/asm.h |    1 +
+ arch/x86/lib/Makefile      |    2 +-
+ arch/x86/lib/usercopy.c    |   89 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/lib/usercopy_32.c |   87 -------------------------------------------
+ arch/x86/lib/usercopy_64.c |   49 ------------------------
+ 5 files changed, 91 insertions(+), 137 deletions(-)
+ create mode 100644 arch/x86/lib/usercopy.c
 
-so we don't need to warn if the aggregate qos request exceeds the
-capability of the hardware then.
-
-> >>This decision is both QoS and PM related.  Without summation, the 'max'
-> >>request is still 10Mb/s so you would keep the lower power state.  But
-> >>you also know that none of the clients will get their requested rate.
-> >>
-> >>There's some gray area here since there is a choice.  Was the point
-> >>of the request to keep the NIC at the *power-state* needed for 10Mb/s (a
-> >>PM request) or was the request saying the app wanted at least 10Mb/s (a
-> >>QoS request.)
-> >
-> >I need to think on this a bit.  You are correct, and it looks like we
-> >could use both types of interfaces.
-> 
-> I'm not sure having both interfaces would work. Should a single
-> client be allowed to keep the *power state* to what's needed for
-> 10Mb/s? What happens if another client votes with "I need at least
-> 20Mb/s"?
-
-I need to think some more on this buy its looking like for throughput
-we may only want one type of interface because, as you say,  it will be
-hard to reconcile one against the other.
-
-> I think the "limit max power-state to X" should be a specific to
-> each PM QoS parameter (not its clients) similar to how
-> scaling_max_freq works for CPU freq and is not set by each client
-> (process - it uses the CPU).
-
-yes.  However; it follows the units of the pm_qos parameter abstraction
-more than anything else.
-
-> So, will be be adding a system bus thruput parameter? Is it going to
-> have min comparator for now?
-
-a summation aggregater, with units of KBS.
-
-> Btw, Mark, I'm a he. Not a she :-)
-
-I made an effort to not use he/she in all my email's with you because I
-couldn't tell from your name.  I must have screwed up in one of my
-emails.
-
---mark
+diff --git a/arch/x86/include/asm/asm.h b/arch/x86/include/asm/asm.h
+index b3ed1e1..c07d510 100644
+--- a/arch/x86/include/asm/asm.h
++++ b/arch/x86/include/asm/asm.h
+@@ -27,6 +27,7 @@
+ #define _ASM_ADD	__ASM_SIZE(add)
+ #define _ASM_SUB	__ASM_SIZE(sub)
+ #define _ASM_XADD	__ASM_SIZE(xadd)
++#define _ASM_TEST	__ASM_SIZE(test)
+ 
+ #define _ASM_AX		__ASM_REG(ax)
+ #define _ASM_BX		__ASM_REG(bx)
+diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
+index e10cf07..b40b473 100644
+--- a/arch/x86/lib/Makefile
++++ b/arch/x86/lib/Makefile
+@@ -18,7 +18,7 @@ obj-$(CONFIG_SMP) += msr-smp.o cache-smp.o
+ 
+ lib-y := delay.o
+ lib-y += thunk_$(BITS).o
+-lib-y += usercopy_$(BITS).o getuser.o putuser.o
++lib-y += usercopy.o usercopy_$(BITS).o getuser.o putuser.o
+ lib-y += memcpy_$(BITS).o
+ lib-$(CONFIG_INSTRUCTION_DECODER) += insn.o inat.o
+ 
+diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
+new file mode 100644
+index 0000000..a8ae726
+--- /dev/null
++++ b/arch/x86/lib/usercopy.c
+@@ -0,0 +1,89 @@
++/*
++ * User address space access functions.
++ *
++ * Copyright 1997 Andi Kleen <ak@muc.de>
++ * Copyright 1997 Linus Torvalds
++ * Copyright 2002 Andi Kleen <ak@suse.de>
++ */
++#include <linux/module.h>
++#include <asm/uaccess.h>
++
++/**
++ * __strncpy_from_user: - Copy a NUL terminated string from userspace, with less checking.
++ * @dst:   Destination address, in kernel space.  This buffer must be at
++ *         least @count bytes long.
++ * @src:   Source address, in user space.
++ * @count: Maximum number of bytes to copy, including the trailing NUL.
++ *
++ * Copies a NUL-terminated string from userspace to kernel space.
++ * Caller must check the specified block with access_ok() before calling
++ * this function.
++ *
++ * On success, returns the length of the string (not including the trailing
++ * NUL).
++ *
++ * If access to userspace fails, returns -EFAULT (some data may have been
++ * copied).
++ *
++ * If @count is smaller than the length of the string, copies @count bytes
++ * and returns @count.
++ */
++long
++__strncpy_from_user(char *dst, const char __user *src, long count)
++{
++	long res;
++	long __d0, __d1, __d2;
++
++	might_fault();
++	__asm__ __volatile__(
++		"	" _ASM_TEST " %1,%1\n"
++		"	jz 2f\n"
++		"0:	lodsb\n"
++		"	stosb\n"
++		"	testb %%al,%%al\n"
++		"	jz 1f\n"
++		"	" _ASM_DEC " %1\n"
++		"	jnz 0b\n"
++		"1:	" _ASM_SUB " %1,%0\n"
++		"2:\n"
++		".section .fixup,\"ax\"\n"
++		"3:	" _ASM_MOV " %5,%0\n"
++		"	jmp 2b\n"
++		".previous\n"
++		_ASM_EXTABLE(0b, 3b)
++		: "=&r"(res), "=&c"(count), "=&a" (__d0), "=&S" (__d1),
++		  "=&D" (__d2)
++		: "i"(-EFAULT), "0"(count), "1"(count), "3"(src), "4"(dst)
++		: "memory");
++
++	return res;
++}
++EXPORT_SYMBOL(__strncpy_from_user);
++
++/**
++ * strncpy_from_user: - Copy a NUL terminated string from userspace.
++ * @dst:   Destination address, in kernel space.  This buffer must be at
++ *         least @count bytes long.
++ * @src:   Source address, in user space.
++ * @count: Maximum number of bytes to copy, including the trailing NUL.
++ *
++ * Copies a NUL-terminated string from userspace to kernel space.
++ *
++ * On success, returns the length of the string (not including the trailing
++ * NUL).
++ *
++ * If access to userspace fails, returns -EFAULT (some data may have been
++ * copied).
++ *
++ * If @count is smaller than the length of the string, copies @count bytes
++ * and returns @count.
++ */
++long
++strncpy_from_user(char *dst, const char __user *src, long count)
++{
++	long res = -EFAULT;
++	if (access_ok(VERIFY_READ, src, 1))
++		return __strncpy_from_user(dst, src, count);
++	return res;
++}
++EXPORT_SYMBOL(strncpy_from_user);
+diff --git a/arch/x86/lib/usercopy_32.c b/arch/x86/lib/usercopy_32.c
+index e218d5d..3c989c4 100644
+--- a/arch/x86/lib/usercopy_32.c
++++ b/arch/x86/lib/usercopy_32.c
+@@ -33,93 +33,6 @@ static inline int __movsl_is_ok(unsigned long a1, unsigned long a2, unsigned lon
+ 	__movsl_is_ok((unsigned long)(a1), (unsigned long)(a2), (n))
+ 
+ /*
+- * Copy a null terminated string from userspace.
+- */
+-
+-#define __do_strncpy_from_user(dst, src, count, res)			   \
+-do {									   \
+-	int __d0, __d1, __d2;						   \
+-	might_fault();							   \
+-	__asm__ __volatile__(						   \
+-		"	testl %1,%1\n"					   \
+-		"	jz 2f\n"					   \
+-		"0:	lodsb\n"					   \
+-		"	stosb\n"					   \
+-		"	testb %%al,%%al\n"				   \
+-		"	jz 1f\n"					   \
+-		"	decl %1\n"					   \
+-		"	jnz 0b\n"					   \
+-		"1:	subl %1,%0\n"					   \
+-		"2:\n"							   \
+-		".section .fixup,\"ax\"\n"				   \
+-		"3:	movl %5,%0\n"					   \
+-		"	jmp 2b\n"					   \
+-		".previous\n"						   \
+-		_ASM_EXTABLE(0b,3b)					   \
+-		: "=&d"(res), "=&c"(count), "=&a" (__d0), "=&S" (__d1),	   \
+-		  "=&D" (__d2)						   \
+-		: "i"(-EFAULT), "0"(count), "1"(count), "3"(src), "4"(dst) \
+-		: "memory");						   \
+-} while (0)
+-
+-/**
+- * __strncpy_from_user: - Copy a NUL terminated string from userspace, with less checking.
+- * @dst:   Destination address, in kernel space.  This buffer must be at
+- *         least @count bytes long.
+- * @src:   Source address, in user space.
+- * @count: Maximum number of bytes to copy, including the trailing NUL.
+- *
+- * Copies a NUL-terminated string from userspace to kernel space.
+- * Caller must check the specified block with access_ok() before calling
+- * this function.
+- *
+- * On success, returns the length of the string (not including the trailing
+- * NUL).
+- *
+- * If access to userspace fails, returns -EFAULT (some data may have been
+- * copied).
+- *
+- * If @count is smaller than the length of the string, copies @count bytes
+- * and returns @count.
+- */
+-long
+-__strncpy_from_user(char *dst, const char __user *src, long count)
+-{
+-	long res;
+-	__do_strncpy_from_user(dst, src, count, res);
+-	return res;
+-}
+-EXPORT_SYMBOL(__strncpy_from_user);
+-
+-/**
+- * strncpy_from_user: - Copy a NUL terminated string from userspace.
+- * @dst:   Destination address, in kernel space.  This buffer must be at
+- *         least @count bytes long.
+- * @src:   Source address, in user space.
+- * @count: Maximum number of bytes to copy, including the trailing NUL.
+- *
+- * Copies a NUL-terminated string from userspace to kernel space.
+- *
+- * On success, returns the length of the string (not including the trailing
+- * NUL).
+- *
+- * If access to userspace fails, returns -EFAULT (some data may have been
+- * copied).
+- *
+- * If @count is smaller than the length of the string, copies @count bytes
+- * and returns @count.
+- */
+-long
+-strncpy_from_user(char *dst, const char __user *src, long count)
+-{
+-	long res = -EFAULT;
+-	if (access_ok(VERIFY_READ, src, 1))
+-		__do_strncpy_from_user(dst, src, count, res);
+-	return res;
+-}
+-EXPORT_SYMBOL(strncpy_from_user);
+-
+-/*
+  * Zero Userspace
+  */
+ 
+diff --git a/arch/x86/lib/usercopy_64.c b/arch/x86/lib/usercopy_64.c
+index b7c2849..0d0326f 100644
+--- a/arch/x86/lib/usercopy_64.c
++++ b/arch/x86/lib/usercopy_64.c
+@@ -9,55 +9,6 @@
+ #include <asm/uaccess.h>
+ 
+ /*
+- * Copy a null terminated string from userspace.
+- */
+-
+-#define __do_strncpy_from_user(dst,src,count,res)			   \
+-do {									   \
+-	long __d0, __d1, __d2;						   \
+-	might_fault();							   \
+-	__asm__ __volatile__(						   \
+-		"	testq %1,%1\n"					   \
+-		"	jz 2f\n"					   \
+-		"0:	lodsb\n"					   \
+-		"	stosb\n"					   \
+-		"	testb %%al,%%al\n"				   \
+-		"	jz 1f\n"					   \
+-		"	decq %1\n"					   \
+-		"	jnz 0b\n"					   \
+-		"1:	subq %1,%0\n"					   \
+-		"2:\n"							   \
+-		".section .fixup,\"ax\"\n"				   \
+-		"3:	movq %5,%0\n"					   \
+-		"	jmp 2b\n"					   \
+-		".previous\n"						   \
+-		_ASM_EXTABLE(0b,3b)					   \
+-		: "=&r"(res), "=&c"(count), "=&a" (__d0), "=&S" (__d1),	   \
+-		  "=&D" (__d2)						   \
+-		: "i"(-EFAULT), "0"(count), "1"(count), "3"(src), "4"(dst) \
+-		: "memory");						   \
+-} while (0)
+-
+-long
+-__strncpy_from_user(char *dst, const char __user *src, long count)
+-{
+-	long res;
+-	__do_strncpy_from_user(dst, src, count, res);
+-	return res;
+-}
+-EXPORT_SYMBOL(__strncpy_from_user);
+-
+-long
+-strncpy_from_user(char *dst, const char __user *src, long count)
+-{
+-	long res = -EFAULT;
+-	if (access_ok(VERIFY_READ, src, 1))
+-		return __strncpy_from_user(dst, src, count);
+-	return res;
+-}
+-EXPORT_SYMBOL(strncpy_from_user);
+-
+-/*
+  * Zero Userspace
+  */
+ 
+-- 
+1.6.0.6
 
