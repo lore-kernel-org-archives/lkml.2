@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033Ab0IAAgc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 20:36:32 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:11890 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779Ab0IAAgb convert rfc822-to-8bit (ORCPT
+	id S1755334Ab0IAAgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 20:36:55 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42770 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496Ab0IAAgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 20:36:31 -0400
-Date: Wed, 01 Sep 2010 09:36:41 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 1/3] ARM: Samsung S5P: Move the common Samsung S5P series
- GPIO level type
-In-reply-to: <AANLkTinYiG2y=x48kkV=XMzpsc_a677Xsox6dNkuHMF3@mail.gmail.com>
-To: "'Kyungmin Park'" <kmpark@infradead.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        jy0922.shim@samsung.com, m.szyprowski@samsung.com, ben-linux@fluff.org
-Message-id: <011e01cb496d$c1e40440$45ac0cc0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-language: ko
-Content-transfer-encoding: 8BIT
-Thread-index: ActISDchUNFxjRXNSiKYMrVq5vT3AQBGkfjA
-References: <20100830114708.GA13140@july>
- <006201cb483b$0e1727e0$2a4577a0$%kim@samsung.com>
- <AANLkTinYiG2y=x48kkV=XMzpsc_a677Xsox6dNkuHMF3@mail.gmail.com>
+	Tue, 31 Aug 2010 20:36:53 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 1 Sep 2010 09:31:51 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: linux-mm@kvack.org,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "menage@google.com" <menage@google.com>,
+        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
+Subject: Re: [PATCH 5/5] memcg: generic file stat accounting interface
+Message-Id: <20100901093151.8d6cb0e8.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100831133329.3c54b214.nishimura@mxp.nes.nec.co.jp>
+References: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100825171140.69c1661a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100831133329.3c54b214.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kyungmin Park wrote:
-> 
-> On Mon, Aug 30, 2010 at 9:01 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> > Kyungmin Park wrote:
-> >>
-> >> From: Kyungmin Park <kyungmin.park@samsung.com>
-> >>
-> >> Samsung S5P series has common level type. It's different from S3C
-series.
-> >>
-> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >> ---
-> >>  arch/arm/plat-samsung/include/plat/gpio-core.h |    6 ++++++
-> >>  1 files changed, 6 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/arch/arm/plat-samsung/include/plat/gpio-core.h
-> > b/arch/arm/plat-
-> >> samsung/include/plat/gpio-core.h
-> >> index e358c7d..c8681e0 100644
-> >> --- a/arch/arm/plat-samsung/include/plat/gpio-core.h
-> >> +++ b/arch/arm/plat-samsung/include/plat/gpio-core.h
-> >> @@ -14,6 +14,12 @@
-> >>  #define GPIOCON_OFF  (0x00)
-> >>  #define GPIODAT_OFF  (0x04)
-> >>
-> >> +#define S5P_GPIO_LEVEL_LOW           (0x00)
-> >> +#define S5P_GPIO_LEVEL_HIGH          (0x01)
-> >> +#define S5P_GPIO_EDGE_FALLING                (0x02)
-> >> +#define S5P_GPIO_EDGE_RISING         (0x03)
-> >> +#define S5P_GPIO_EDGE_BOTH           (0x04)
-> >
-> > Why should we change the name of definition from S5P_EXTINT_XXX?
-> > If we use that, we don't need to change other files.
-> 
-> External interrupt is one of GPIOs. and it's used for GPIO interrupt.
-> Do you want to use the EXTINT at generic gpio function?
-> 
-Right, it is one of the GPIO pin's usage.
-But it doesn't mean that should be used like/with generic GPIO...
-Even though the value of their polarity is same.
+On Tue, 31 Aug 2010 13:33:29 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 
-Anyway,...let's think about that again.
-
-> Also change the name format as IRQ_TYPE_* style.
+> On Wed, 25 Aug 2010 17:11:40 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 > 
-(snip)
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > Preparing for adding new status arounf file caches.(dirty, writeback,etc..)
+> > Using a unified macro and more generic names.
+> > All counters will have the same rule for updating.
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> 
+> one nitpick.
+> 
+> > @@ -2042,17 +2031,20 @@ static void __mem_cgroup_commit_charge(s
+> >  static void __mem_cgroup_move_account(struct page_cgroup *pc,
+> >  	struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
+> >  {
+> > +	int i;
+> >  	VM_BUG_ON(from == to);
+> >  	VM_BUG_ON(PageLRU(pc->page));
+> >  	VM_BUG_ON(!PageCgroupLocked(pc));
+> >  	VM_BUG_ON(!PageCgroupUsed(pc));
+> >  	VM_BUG_ON(id_to_memcg(pc->mem_cgroup, true) != from);
+> >  
+> > -	if (PageCgroupFileMapped(pc)) {
+> > +	for (i = MEM_CGROUP_FSTAT_BASE; i < MEM_CGROUP_FSTAT_END; ++i) {
+> > +		if (!test_bit(fflag_idx(MEMCG_FSTAT_IDX(i)), &pc->flags))
+> > +			continue;
+> >  		/* Update mapped_file data for mem_cgroup */
+> It might be better to update this comment too.
+> 
+> 	/* Update file-stat data for mem_cgroup */
+> 
+> or something ?
+> 
+Nice catch. I'll fix this.
 
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+-Kame
 
