@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab0IAX53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 19:57:29 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:57890 "HELO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751714Ab0IAX52 (ORCPT
+	id S1755914Ab0IAX6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 19:58:34 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:15226 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752685Ab0IAX6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 19:57:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <4C7E94F6.9050806@gmail.com>
-References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>
-	<1283306184-28833-2-git-send-email-chase.douglas@canonical.com>
-	<4C7E94F6.9050806@gmail.com>
-Date: Wed, 1 Sep 2010 19:57:25 -0400
-Message-ID: <AANLkTi=z5s8mbjG54930Lxj-O9Of2fXHE6kDJhijyOb7@mail.gmail.com>
-Subject: Re: [PATCH 1/7 v3] HID: magicmouse: don't allow hidinput to
- initialize the device
-From: Michael Poole <mdpoole@troilus.org>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Chase Douglas <chase.douglas@canonical.com>, Jiri Kosina <jkosina@suse.cz>,
-        Henrik Rydberg <rydberg@euromail.se>, Tejun Heo <tj@kernel.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 1 Sep 2010 19:58:33 -0400
+Message-ID: <002401cb4a31$95116830$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Greg KH" <gregkh@suse.de>
+Cc: "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>, <margie.foster@intel.com>,
+        <alan@linux.intel.com>, <arjan@linux.intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
+        <yong.y.wang@intel.com>, "LKML" <linux-kernel@vger.kernel.org>,
+        <meego-dev@meego.com>
+References: <4C7E441E.4090006@dsn.okisemi.com> <20100901230901.GA21326@suse.de>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+Date: Thu, 2 Sep 2010 08:58:30 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Slaby wrote:
-> This looks weird. Is there any past discussion about why you cannot use
-> hidinput and you have to do all the input bits yourself while cheating
-> this very weird way?
+Hi Greg,
 
-(Resending because I didn't notice Gmail was in "rich text" mode, and
-that kept my earlier message from reaching the vger lists.  Apologies
-to the individuals who get a second copy of this message.)
+Thank you for your checking.
 
-The Magic Mouse and Magic Trackpad do not publish HID descriptors for
-the multitouch reports.  Given the variable-length report packets --
-and especially the Magic Trackpad's new, mutant DOUBLE_REPORT_ID
-packets -- it would be non-trivial to write accurate descriptors that
-the HID core can use.  (Someone wrote a patch to try that a few months
-ago.  It ended up adding significantly more lines to hid-magicmouse.c
-than it removed, and it was not obvious to me that it got the Report
-Count fields correct.)
+> Do you want me to queue it up for the .37 kernel merge
+> through my tree, or through someone elses?
 
-Michael Poole
+I want you to queue our phub patch through your tree.
+
+Thanks, Ohtake(OKISemi)
+----- Original Message ----- 
+From: "Greg KH" <gregkh@suse.de>
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Cc: <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; <yong.y.wang@intel.com>; <qi.wang@intel.com>;
+<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <alan@linux.intel.com>; <margie.foster@intel.com>; "Tomoya
+MORINAGA" <morinaga526@dsn.okisemi.com>
+Sent: Thursday, September 02, 2010 8:09 AM
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+
+
+> On Wed, Sep 01, 2010 at 09:16:30PM +0900, Masayuki Ohtak wrote:
+> > Hi Greg,
+> >
+> > Sorry, we have modified again, for a bug(illegal return code) and
+> > WARNING for building with the latest kernel.
+> >
+> > Please check below.
+>
+> Looks good.  Do you want me to queue it up for the .37 kernel merge
+> through my tree, or through someone elses?
+>
+> thanks,
+>
+> greg k-h
+>
+
+
