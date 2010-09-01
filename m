@@ -1,46 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab0IAHWC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 03:22:02 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:58418 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179Ab0IAHWB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 03:22:01 -0400
-Message-ID: <4C7DFF2C.8070709@steinhoff.de>
-Date: Wed, 01 Sep 2010 09:22:20 +0200
-From: Armin Steinhoff <armin@steinhoff.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2 ThunderBrowse/3.3.2
+	id S1753005Ab0IAHYR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 03:24:17 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53203 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751199Ab0IAHYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 03:24:16 -0400
+Date: Wed, 1 Sep 2010 08:24:02 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 2/3] mm: page allocator: Calculate a better estimate of
+	NR_FREE_PAGES when memory is low and kswapd is awake
+Message-ID: <20100901072402.GE13677@csn.ul.ie>
+References: <1283276257-1793-1-git-send-email-mel@csn.ul.ie> <1283276257-1793-3-git-send-email-mel@csn.ul.ie> <20100901083425.971F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: bn@niasdigital.com
-Subject: [UIO]  SMX UIO interface
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:AbE5j/OkmyH+TQzOeNyNvKkwA5hQypSAvJ2eymg1qW6
- XlVSGWozuuJhVnI0xCDFWvpGhMkyxNTpEwRgc/knNs5dC4SaAN
- kvjE/hb/TmbYZJQ1/mGl/rTMiRdjUOM3/GnZ3z2WFB9GAp5xmV
- 6UBAr/K8cZTqxNQMNP64GHkqTmwWagtbKlfHXdP7aD6sl7A92b
- 2JF2xtE/MfDHNYuECK1Bg==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100901083425.971F.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi Ben,
+On Wed, Sep 01, 2010 at 08:37:41AM +0900, KOSAKI Motohiro wrote:
+> > +#ifdef CONFIG_SMP
+> > +/* Called when a more accurate view of NR_FREE_PAGES is needed */
+> > +unsigned long zone_nr_free_pages(struct zone *zone)
+> > +{
+> > +	unsigned long nr_free_pages = zone_page_state(zone, NR_FREE_PAGES);
+> > +
+> > +	/*
+> > +	 * While kswapd is awake, it is considered the zone is under some
+> > +	 * memory pressure. Under pressure, there is a risk that
+> > +	 * per-cpu-counter-drift will allow the min watermark to be breached
+> > +	 * potentially causing a live-lock. While kswapd is awake and
+> > +	 * free pages are low, get a better estimate for free pages
+> > +	 */
+> > +	if (nr_free_pages < zone->percpu_drift_mark &&
+> > +			!waitqueue_active(&zone->zone_pgdat->kswapd_wait)) {
+> > +		int cpu;
+> > +
+> > +		for_each_online_cpu(cpu) {
+> > +			struct per_cpu_pageset *pset;
+> > +
+> > +			pset = per_cpu_ptr(zone->pageset, cpu);
+> > +			nr_free_pages += pset->vm_stat_diff[NR_FREE_PAGES];
+> 
+> If my understanding is correct, we have no lock when reading pset->vm_stat_diff.
+> It mean nr_free_pages can reach negative value at very rarely race. boundary
+> check is necessary?
+> 
 
-I have a question about the SMX UIO Interface.
+True, well spotted.
 
-In the SMX module you are reading the data of the platform resourses:
+How about the following? It records a delta and checks if delta is negative
+and would cause underflow.
 
-     regs = platform_get_resource(dev, IORESOURCE_MEM, 0);
-     if (!regs) {
-         dev_err(&dev->dev, "No memory resource specified\n");
-         goto out_free;
-     }
+unsigned long zone_nr_free_pages(struct zone *zone)
+{
+        unsigned long nr_free_pages = zone_page_state(zone, NR_FREE_PAGES);
+        long delta = 0;
 
-But who sets these data initially ?
+        /*
+         * While kswapd is awake, it is considered the zone is under some
+         * memory pressure. Under pressure, there is a risk that
+         * per-cpu-counter-drift will allow the min watermark to be breached
+         * potentially causing a live-lock. While kswapd is awake and
+         * free pages are low, get a better estimate for free pages
+         */
+        if (nr_free_pages < zone->percpu_drift_mark &&
+                        !waitqueue_active(&zone->zone_pgdat->kswapd_wait)) {
+                int cpu;
 
-Cheers
+                for_each_online_cpu(cpu) {
+                        struct per_cpu_pageset *pset;
 
---Armin
+                        pset = per_cpu_ptr(zone->pageset, cpu);
+                        delta += pset->vm_stat_diff[NR_FREE_PAGES];
+                }
+        }
 
+        /* Watch for underflow */
+        if (delta < 0 && abs(delta) > nr_free_pages)
+                delta = -nr_free_pages;
+
+        return nr_free_pages + delta;
+}
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
