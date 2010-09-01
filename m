@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab0IAC5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 22:57:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1441 "EHLO mx1.redhat.com"
+	id S1754390Ab0IAC6R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 22:58:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38468 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751912Ab0IAC5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 22:57:51 -0400
+	id S1753502Ab0IAC5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 22:57:52 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: mingo@elte.hu
 Cc: peterz@infradead.org, robert.richter@amd.com, gorcunov@gmail.com,
         fweisbec@gmail.com, linux-kernel@vger.kernel.org, ying.huang@intel.com,
         ming.m.lin@intel.com, yinghai@kernel.org, andi@firstfloor.org,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 0/4] nmi perf fixes
-Date: Tue, 31 Aug 2010 22:56:42 -0400
-Message-Id: <1283309806-21913-1-git-send-email-dzickus@redhat.com>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 2/4] perf, x86: Fix handle_irq return values
+Date: Tue, 31 Aug 2010 22:56:44 -0400
+Message-Id: <1283309806-21913-3-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1283309806-21913-1-git-send-email-dzickus@redhat.com>
+References: <1283309806-21913-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes to allow unknown nmis to pass through the perf nmi handler instead
-of being swallowed.  Contains patches that are already in Ingo's tree.  Added
-here for completeness.  Based on ingo/tip
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Tested on intel/amd
+Now that we rely on the number of handled overflows, ensure all handle_irq
+implementations actually return the right number.
 
-git pull git://fedorapeople.org/dzickus/
-
-Don Zickus (2):
-  [x86] perf: rename nmi variable to avoid clash with entry point
-  [x86] perf: fix accidentally ack'ing a second event on intel perf
-    counter
-
-Peter Zijlstra (1):
-  perf, x86: Fix handle_irq return values
-
-Robert Richter (1):
-  perf, x86: Try to handle unknown nmis with an enabled PMU
-
- arch/x86/kernel/cpu/perf_event.c       |   59 +++++++++++++++++++++++++-------
- arch/x86/kernel/cpu/perf_event_intel.c |   15 +++++---
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Tested-by: Don Zickus <dzickus@redhat.com>
+LKML-Reference: <1282228033.2605.204.camel@laptop>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |    9 +++++++--
  arch/x86/kernel/cpu/perf_event_p4.c    |    2 +-
- 3 files changed, 56 insertions(+), 20 deletions(-)
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index d8d86d0..4539b4b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -713,6 +713,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	struct cpu_hw_events *cpuc;
+ 	int bit, loops;
+ 	u64 ack, status;
++	int handled = 0;
+ 
+ 	perf_sample_data_init(&data, 0);
+ 
+@@ -743,12 +744,16 @@ again:
+ 	/*
+ 	 * PEBS overflow sets bit 62 in the global status register
+ 	 */
+-	if (__test_and_clear_bit(62, (unsigned long *)&status))
++	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
++		handled++;
+ 		x86_pmu.drain_pebs(regs);
++	}
+ 
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
+ 
++		handled++;
++
+ 		if (!test_bit(bit, cpuc->active_mask))
+ 			continue;
+ 
+@@ -772,7 +777,7 @@ again:
+ 
+ done:
+ 	intel_pmu_enable_all(0);
+-	return 1;
++	return handled;
+ }
+ 
+ static struct event_constraint *
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index febb12c..d470c91 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -690,7 +690,7 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 		inc_irq_stat(apic_perf_irqs);
+ 	}
+ 
+-	return handled > 0;
++	return handled;
+ }
+ 
+ /*
 -- 
 1.7.2.2
 
