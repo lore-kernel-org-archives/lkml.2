@@ -1,133 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab0IAWEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 18:04:31 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39076 "EHLO ogre.sisk.pl"
+	id S1755649Ab0IAWNJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 18:13:09 -0400
+Received: from kroah.org ([198.145.64.141]:49160 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753260Ab0IAWEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 18:04:30 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
-Date: Thu, 2 Sep 2010 00:02:24 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "M. Vefa Bicakci" <bicave@superonline.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org
-References: <20100830083704.5231.A69D9226@jp.fujitsu.com> <4C7BE25B.1020504@superonline.com> <20100901093219.9744.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100901093219.9744.A69D9226@jp.fujitsu.com>
+	id S1752517Ab0IAWNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 18:13:07 -0400
+Date: Wed, 1 Sep 2010 14:10:17 -0700
+From: Greg KH <greg@kroah.com>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv8 03/13] USB: gadget: composite: Better string override
+ handling
+Message-ID: <20100901211017.GA8173@kroah.com>
+References: <cover.1281625724.git.m.nazarewicz@samsung.com>
+ <76f0f5732bfbbb36d50baf05ecdd12bec3396275.1281625724.git.m.nazarewicz@samsung.com>
+ <313ee18ecf53fb8f1c040656b697de869f0c0856.1281625724.git.m.nazarewicz@samsung.com>
+ <48e2d6507f004252a012cf25bc0a06e5cb69808f.1281625724.git.m.nazarewicz@samsung.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009020002.25113.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <48e2d6507f004252a012cf25bc0a06e5cb69808f.1281625724.git.m.nazarewicz@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 01, 2010, KOSAKI Motohiro wrote:
-> > === 8< ===
-> > PM: Marking nosave pages: ...0009f000 - ...000100000
-> > PM: basic memory bitmaps created
-> > PM: Syncing filesystems ... done
-> > Freezing user space processes ... (elapsed 0.01 seconds) done.
-> > Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-> > PM: Preallocating image memory...
-> > shrink_all_memory start
-> > PM: shrink memory: pass=1, req:310171 reclaimed:15492 free:360936
-> > PM: shrink memory: pass=2, req:294679 reclaimed:28864 free:373981
-> > PM: shrink memory: pass=3, req:265815 reclaimed:60311 free:405374
-> > PM: shrink memory: pass=4, req:205504 reclaimed:97870 free:443024
-> > PM: shrink memory: pass=5, req:107634 reclaimed:146948 free:492141
-> > shrink_all_memory: req:107634 reclaimed:146948 free:492141
-> > PM: preallocate_image_highmem 556658 278329
-> > PM: preallocate_image_memory 103139 103139
-> > PM: preallocate_highmem_fraction 183908 556658 760831 -> 183908
-> > === >8 ===
+On Thu, Aug 12, 2010 at 05:43:46PM +0200, Michal Nazarewicz wrote:
+> The iManufatcurer, iProduct and iSerialNumber composite module
+> parameters were only used when the gadget driver registers
+> strings for manufacturer, product and serial number.  If the
+> gadget never bothered to set corresponding fields in USB device
+> descriptors those module parameters are ignored.
 > 
-> Rafael, this log mean hibernate_preallocate_memory() has a bug.
-
-Well, it works as designed ...
-
-> It allocate memory as following order.
->  1. preallocate_image_highmem()  (i.e. __GFP_HIGHMEM)
->  2. preallocate_image_memory()   (i.e. GFP_KERNEL)
->  3. preallocate_highmem_fraction (i.e. __GFP_HIGHMEM)
->  4. preallocate_image_memory()   (i.e. GFP_KERNEL)
+> This commit makes the parameters work even if the strings ID
+> have not been assigned.  It also changes the way IDs are
+> overridden -- what IDs are overridden is now saved in
+> usb_composite_dev structure -- which makes it unnecessary to
+> modify the string tables the way previous code did.
 > 
-> But, please imazine following scenario (as Vefa's scenario).
->  - system has 3GB memory. 1GB is normal. 2GB is highmem.
->  - all normal memory is free
->  - 1.5GB memory of highmem are used for tmpfs. rest 500MB is free.
-
-Indeed, that's a memory allocation pattern I didn't anticipate.
-
-> At that time, hibernate_preallocate_memory() works as following.
+> The commit also adds a iProduct and iManufatcurer fields to the
+> usb_composite_device structure.  If they are set, appropriate
+> strings are reserved and added to device descriptor.  This makes
+> it unnecessary for gadget drivers to maintain code for setting
+> those.  If iProduct is not set it defaults to
+> usb_composite_device::name; if iManufatcurer is not set
+> a default "<system> <release> with <gadget-name>" is used.
 > 
-> 1. call preallocate_image_highmem(1GB)
-> 2. call preallocate_image_memory(500M)		total 1.5GB allocated
-> 3. call preallocate_highmem_fraction(660M)	total 2.2GB allocated
+> The last thing is that if needs_serial field of
+> usb_composite_device is set and user failed to provided
+> iSerialNumber parameter a warning is issued.
 > 
-> then, all of normal zone memory was exhaust. next preallocate_image_memory()
-> makes OOM, and oom_killer_disabled makes infinite loop.
-> (oom_killer_disabled careless is vmscan bug. I'll fix it soon)
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-So, it looks like the problem will go away if we check if there are any normal
-pages to allocate from before calling the last preallocate_image_memory()?
+This patch doesn't apply on the latest tree, care to respin it, and the
+ones after it as well?
 
-Like in the patch below, perhaps?
+thanks,
 
-> The problem is, alloc_pages(__GFP_HIGHMEM) -> alloc_pages(GFP_KERNEL) is
-> wrong order. alloc_pages(__GFP_HIGHMEM) may allocate page from lower zone.
-> then, next alloc_pages(GFP_KERNEL) lead to OOM.
-> 
-> Please consider alloc_pages(GFP_KERNEL) -> alloc_pages(__GFP_HIGHMEM) order.
-> Even though vmscan fix can avoid infinite loop, OOM situation might makes
-> big slow down on highmem machine. It seems no good.
-
-There's a problem with the ordering change that it wouldn't be clear how many
-pages to request from the normal zone in step 1 and 3.
-
-Thanks,
-Rafael 
-
----
- kernel/power/snapshot.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/kernel/power/snapshot.c
-===================================================================
---- linux-2.6.orig/kernel/power/snapshot.c
-+++ linux-2.6/kernel/power/snapshot.c
-@@ -1259,7 +1259,7 @@ int hibernate_preallocate_memory(void)
- {
- 	struct zone *zone;
- 	unsigned long saveable, size, max_size, count, highmem, pages = 0;
--	unsigned long alloc, save_highmem, pages_highmem;
-+	unsigned long alloc, save_highmem, pages_highmem, size_normal;
- 	struct timeval start, stop;
- 	int error;
- 
-@@ -1296,6 +1296,7 @@ int hibernate_preallocate_memory(void)
- 		else
- 			count += zone_page_state(zone, NR_FREE_PAGES);
- 	}
-+	size_normal = count;
- 	count += highmem;
- 	count -= totalreserve_pages;
- 
-@@ -1344,7 +1345,13 @@ int hibernate_preallocate_memory(void)
- 	size = preallocate_highmem_fraction(size, highmem, count);
- 	pages_highmem += size;
- 	alloc -= size;
--	pages += preallocate_image_memory(alloc);
-+	/* Check if there are any non-highmem pages to allocate from. */
-+	if (alloc_normal < size_normal) {
-+		size_normal -= alloc_normal;
-+		if (alloc > size_normal)
-+			alloc = size_normal;
-+		pages += preallocate_image_memory(alloc);
-+	}
- 	pages += pages_highmem;
- 
- 	/*
+greg k-h
