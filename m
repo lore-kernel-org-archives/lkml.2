@@ -1,44 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab0IAUBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 16:01:00 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33724
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754149Ab0IAUA6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 16:00:58 -0400
-Date: Wed, 01 Sep 2010 13:01:15 -0700 (PDT)
-Message-Id: <20100901.130115.146355657.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2010-09-01
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100901181711.GG2486@tuxdriver.com>
-References: <20100901181711.GG2486@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755721Ab0IAUBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 16:01:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1277 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755566Ab0IAUBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 16:01:31 -0400
+Date: Wed, 1 Sep 2010 16:01:15 -0400
+From: Luke Macken <lmacken@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Jones <pjones@redhat.com>, Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Jaya Kumar <jayakumar.lkml@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] efifb: support the EFI framebuffer on more Apple hardware
+Message-ID: <20100901200115.GA21591@tomservo.cable.rcn.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Wed, 1 Sep 2010 14:17:11 -0400
+This patch enables the EFI framebuffer on a variety of Mac models,
+including the iMac10,1 iMac8,1 Macmini3,1 Macmini4,1 and MacBookPro2,2.
+Information gathered from personal hardware and various user
+submissions.
 
-> This batch of fixes is intended for 2.6.36.
-> 
-> Included is a libertas fix for an alignment error introduced by a change
-> introduced through another tree during the merge window, an ath5k fix to
-> avoid a NULL pointer dereference when the rate control fails to give it
-> a usable transmission rate (which is another bug), a p54 fix to avoid
-> false transmission failure reports (which prevent power saving), a
-> fix for a mac80211 timer leak, a MAINTAINERS fix for a broken URL, a
-> wireless extension fix to plug an information leak, a fix for a lockdep
-> warning when cfg80211 registers its rfkill device, and a couple of ath9k
-> fixes related to regulatory compliance.
-> 
-> Please let me know if there are problems!
+Signed-off-by: Luke Macken <lmacken@redhat.com>
 
-Pulled, thanks John.
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index 815f84b..0d27e1e 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -39,7 +39,11 @@ enum {
+ 	M_I20,		/* 20-Inch iMac */
+ 	M_I20_SR,	/* 20-Inch iMac (Santa Rosa) */
+ 	M_I24,		/* 24-Inch iMac */
++	M_I24_8_1,	/* 24-Inch iMac, 8,1th gen */
++	M_I24_10_1,	/* 24-Inch iMac, 10,1th gen */
+ 	M_MINI,		/* Mac Mini */
++	M_MINI_3_1,	/* Mac Mini, 3,1th gen */
++	M_MINI_4_1,	/* Mac Mini, 4,1th gen */
+ 	M_MB,		/* MacBook */
+ 	M_MB_2,		/* MacBook, 2nd rev. */
+ 	M_MB_3,		/* MacBook, 3rd rev. */
+@@ -47,6 +51,7 @@ enum {
+ 	M_MBA,		/* MacBook Air */
+ 	M_MBP,		/* MacBook Pro */
+ 	M_MBP_2,	/* MacBook Pro 2nd gen */
++	M_MBP_2_2,	/* MacBook Pro 2,2nd gen */
+ 	M_MBP_SR,	/* MacBook Pro (Santa Rosa) */
+ 	M_MBP_4,	/* MacBook Pro, 4th gen */
+ 	M_MBP_5_1,    /* MacBook Pro, 5,1th gen */
+@@ -64,11 +69,16 @@ static struct efifb_dmi_info {
+ 	[M_I20] = { "i20", 0x80010000, 1728 * 4, 1680, 1050 }, /* guess */
+ 	[M_I20_SR] = { "imac7", 0x40010000, 1728 * 4, 1680, 1050 },
+ 	[M_I24] = { "i24", 0x80010000, 2048 * 4, 1920, 1200 }, /* guess */
++	[M_I24_8_1] = { "imac8", 0xc0060000, 2048 * 4, 1920, 1200 },
++	[M_I24_10_1] = { "imac10", 0xc0010000, 2048 * 4, 1920, 1080 },
+ 	[M_MINI]= { "mini", 0x80000000, 2048 * 4, 1024, 768 },
++	[M_MINI_3_1]= { "mini31", 0x40010000, 1024 * 4, 1024, 768 },
++	[M_MINI_4_1]= { "mini41", 0xc0010000, 2048 * 4, 1920, 1200 },
+ 	[M_MB] = { "macbook", 0x80000000, 2048 * 4, 1280, 800 },
+ 	[M_MBA] = { "mba", 0x80000000, 2048 * 4, 1280, 800 },
+ 	[M_MBP] = { "mbp", 0x80010000, 1472 * 4, 1440, 900 },
+ 	[M_MBP_2] = { "mbp2", 0, 0, 0, 0 }, /* placeholder */
++	[M_MBP_2_2] = { "mbp22", 0x80010000, 1472 * 4, 1440, 900 },
+ 	[M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900 },
+ 	[M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200 },
+ 	[M_MBP_5_1] = { "mbp51", 0xc0010000, 2048 * 4, 1440, 900 },
+@@ -92,7 +102,11 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac6,1", M_I24),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac6,1", M_I24),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac7,1", M_I20_SR),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac8,1", M_I24_8_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac10,1", M_I24_10_1),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "Macmini1,1", M_MINI),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini3,1", M_MINI_3_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini4,1", M_MINI_4_1),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook1,1", M_MB),
+ 	/* At least one of these two will be right; maybe both? */
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook2,1", M_MB),
+@@ -104,6 +118,7 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir1,1", M_MBA),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro1,1", M_MBP),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,1", M_MBP_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,2", M_MBP_2_2),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro2,1", M_MBP_2),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
+-- 
+1.7.2.2
+
