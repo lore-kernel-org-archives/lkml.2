@@ -1,93 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab0IAS42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 14:56:28 -0400
-Received: from www.tglx.de ([62.245.132.106]:38290 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751383Ab0IAS41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 14:56:27 -0400
-Date: Wed, 1 Sep 2010 20:56:20 +0200
-From: "Hans J. Koch" <hjk@linutronix.de>
-To: Armin Steinhoff <armin@steinhoff.de>
-Cc: "Hans J. Koch" <hjk@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: UIO and Fedora 13  (kernel 33.6)
-Message-ID: <20100901185620.GA2514@local>
-References: <dda83e781002141023t2abe95b8w83f59d6f411f68a2@mail.gmail.com>
- <alpine.DEB.2.01.1002142229470.28195@bogon.housecafe.de>
- <dda83e781002142245l5c95d08bu214a796be289eb22@mail.gmail.com>
- <dda83e781002142246i61737ae2j4fe7efb660b53d07@mail.gmail.com>
- <4C7B8CA6.4010504@steinhoff.de>
- <20100830162435.GB2566@local>
- <4C7CA7E4.8010005@steinhoff.de>
- <20100831103523.GA2598@local>
- <4C7E015B.1010506@steinhoff.de>
+	id S1755268Ab0IATBH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 15:01:07 -0400
+Received: from p01c12o144.mxlogic.net ([208.65.145.67]:43545 "EHLO
+	p01c12o144.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754954Ab0IATBF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 15:01:05 -0400
+X-MXL-Hash: 4c7ea2f16c913a8f-6b64ec97d0aa56542e4c460e7e3617eb25a9ed81
+X-MXL-Hash: 4c7ea2ee01ca4b20-0c82d72a325879293457e6879341ee9f37744ccb
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Gregory Bean <gbean@codeaurora.org>,
+        "dwalker@codeaurora.org" <dwalker@codeaurora.org>
+CC: "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        =?utf-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 1 Sep 2010 13:59:54 -0500
+Subject: RE: [PATCH 1/2] msm: Install the Google-Android gpio driver.
+Thread-Topic: [PATCH 1/2] msm: Install the Google-Android gpio driver.
+Thread-Index: ActIor5ElgdfAmvOTfK9/sn/G6wbnQBYt2kg
+Message-ID: <0D753D10438DA54287A00B027084269764447830F3@AUSP01VMBX24.collaborationhost.net>
+References: <1283213906-17671-1-git-send-email-gbean@codeaurora.org>
+In-Reply-To: <1283213906-17671-1-git-send-email-gbean@codeaurora.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C7E015B.1010506@steinhoff.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010073001)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [216.166.12.72]
+X-AnalysisOut: [v=1.0 c=1 a=vPEevKMDgl8A:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
+X-AnalysisOut: [MA:10 a=jM3uHZP82BWpxjlUuN2t4A==:17 a=n8i27M1mAAAA:8 a=LpQ]
+X-AnalysisOut: [P-O61AAAA:8 a=hIjjri4SuRBbAIhgU70A:9 a=9dJlGpMuiajN4iixyFg]
+X-AnalysisOut: [AdWUKDqoA:4 a=QEXdDO2ut3YA:10 a=rXZLD9m7qZoA:10 a=YDjxKKMX]
+X-AnalysisOut: [svQA:10 a=ifqTDN6FDLLM6nLf:21 a=EIhsgOtVkIYneLhW:21]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o81J1CVV009793
 
-On Wed, Sep 01, 2010 at 09:31:39AM +0200, Armin Steinhoff wrote:
+On Monday, August 30, 2010 5:18 PM, Gregory Bean wrote:
+> Subject: [PATCH 1/2] msm: Install the Google-Android gpio driver.
 > 
-> Small correction ... I don't mean the "initial platform_data" but
-> the initial resource data of the platform driver.
+> From: Arve HjÃ¸nnevÃ¥g <arve@android.com>
 > 
-> --Armin
+> As part of the ongoing effort to converge on a common code base,
+> adopt the Google-Android msmgpio driver, as it has a stronger pedigree
+> than the previous submission from codeaurora.
 > 
-> 
->   Hans J. Koch wrote:
-> >After a successfull uio_register_device() there is both a /dev/uioX
-> >and a directory /sys/class/uio/uioX/.
-> 
-> In the attachment is an updated version of uio_jand.
-> 
-> The module uio_jand.ko can be inserted and removed,  no messages
-> visible by dmesg, no kernel oops, no dev/uio*  and no class entries
-> available.
-> 
-> There are only entries of uio_jand in /sys/module,
-> /sys/bus/platform/drivers and /sys/uio/holders ... I'm really
-> confused =:-/
-> 
-> It's completely unclear how to write the initial platform_data of
-> the platform device in the example uio_smx.c :
-> 
->      regs = platform_get_resource(dev, IORESOURCE_MEM, 0);
->      if (!regs) {
->          dev_err(&dev->dev, "No memory resource specified\n");
->          goto out_free;
-> 
-> Same issue in uio_platform_genirq ...
+> Cc: Arve HjÃ¸nnevÃ¥g <arve@android.com>
+> Signed-off-by: Gregory Bean <gbean@codeaurora.org>
 
-You only seem to be working on x86 ... ;-)
+Hello Greg,
 
-If you register a platform driver, you also need to register a platform
-device with the same name, otherwise your driver's probe() function will
-never be called. In struct platform_device you can also specify an array
-of resources (e.g. memory, interrupts) which can be queried by the driver
-in the way you quoted above.
+A couple comments on this.
 
-The ARM architecture (for example) uses a specific board support file for
-each board that sets up (among other things) these platform devices.
-(See arch/arm/mach-xxx/board-yyy.c for examples)
+> +struct msm_gpio_chip msm_gpio_chips[] = {
+> +	{
+> +		.regs = {
+> +			.out =         GPIO_OUT_0,
+> +			.in =          GPIO_IN_0,
+> +			.int_status =  GPIO_INT_STATUS_0,
+> +			.int_clear =   GPIO_INT_CLEAR_0,
+> +			.int_en =      GPIO_INT_EN_0,
+> +			.int_edge =    GPIO_INT_EDGE_0,
+> +			.int_pos =     GPIO_INT_POS_0,
+> +			.oe =          GPIO_OE_0,
+> +		},
+> +		.chip = {
+> +			.base = 0,
+> +			.ngpio = 16,
+> +			.get = msm_gpio_get,
+> +			.set = msm_gpio_set,
+> +			.direction_input = msm_gpio_direction_input,
+> +			.direction_output = msm_gpio_direction_output,
+> +			.to_irq = msm_gpio_to_irq,
+> +		}
+> +	},
 
-Other archs like PowerPC use the OpenFirmware/DeviceTree interface to set up
-such board specific things. On x86, there's no real solution yet since all
-such boards used to be more or less "PC compatible". Platform devices exist
-only in low level arch code, all special devices (or those added by the user)
-announce themselves as PCI devices, are controllable from userspace
-(e.g. I2C, SPI) or have another interface that allows auto probing (e.g. USB).
+This is a bit ugly... A 204 line struct definition is a bit hard to follow,
+especially the way it's broken up with all the #if defined stuff.
 
-The first version of your driver did the right thing by using
-platform_device_register_simple() and driver_register(). That avoids the
-need for a separate file which calls platform_device_register().
+Each gpio "bank" is code duplication other than the .base and .ngpio.  The
+whole thing can be reduced using a helper macro.  Something like this:
 
-So, go back to your first version, and fix the real bugs.
+#define MSM_GPIO_BANK(bank, base_gpio, num_gpio)			\
+	{										\
+		.regs = {								\
+			.out			= GPIO_OUT_##bank,		\
+			.in			= GPIO_IN_##bank,			\
+			.int_status		= GPIO_INT_STATUS_##bank,	\
+			.int_clear		= GPIO_INT_CLEAR_##bank,	\
+			.int_en		= GPIO_INT_EN_##bank,		\
+			.int_edge		= GPIO_INT_EDGE_##bank,		\
+			.int_pos		= GPIO_INT_POS_##bank,		\
+			.oe			= GPIO_OE_##bank,			\
+		},									\
+		.chip = {								\
+			.direction_input	= msm_gpio_direction_input,	\
+			.direction_output	= msm_gpio_direction_output,	\
+			.get			= msm_gpio_get,			\
+			.set			= msm_gpio_set,			\
+			.to_irq		= msm_gpio_to_irq,		\
+			.base			= base_gpio,			\
+			.ngpio		= num_gpio,				\
+		},									\
+	}
 
-Thanks,
-Hans
+Then the struct definition can be reduced to this:
 
+struct msm_gpio_chip msm_gpio_chips[] = {
+#if defined(CONFIG_ARCH_MSM7X30)
+	MSM_GPIO_BANK(0, 0, 16),	/* gpio 0-15 */
+	MSM_GPIO_BANK(1, 16, 28),	/* gpio 16-43 */
+	MSM_GPIO_BANK(2, 44, 24),	/* gpio 44-67 */
+	MSM_GPIO_BANK(3, 68, 27),	/* gpio 68-94 */
+	MSM_GPIO_BANK(4, 95, 12),	/* gpio 95-106 */
+	MSM_GPIO_BANK(5, 107, 27),	/* gpio 107-133 */
+	MSM_GPIO_BANK(6, 134, 17),	/* gpio 134-150 */
+	MSM_GPIO_BANK(7, 151, 31),	/* gpio 151-181 */
+#elif defined(CONFIG_ARCH_QSD8X50)
+	MSM_GPIO_BANK(0, 0, 16),	/* gpio 0-15 */
+	MSM_GPIO_BANK(1, 16, 27),	/* gpio 16-42 */
+	MSM_GPIO_BANK(2, 43, 25),	/* gpio 43-67 */
+	MSM_GPIO_BANK(3, 68, 27),	/* gpio 68-94 */
+	MSM_GPIO_BANK(4, 95, 9),	/* gpio 95-103 */
+	MSM_GPIO_BANK(5, 104, 18),	/* gpio 104-121 */
+	MSM_GPIO_BANK(6, 122, 31),	/* gpio 122-152 */
+	MSM_GPIO_BANK(7, 153, 12),	/* gpio 153-164 */
+#else
+	MSM_GPIO_BANK(0, 0, 16),	/* gpio 0-15 */
+	MSM_GPIO_BANK(1, 16, 27),	/* gpio 16-42 */
+	MSM_GPIO_BANK(2, 43, 25),	/* gpio 43-67 */
+	MSM_GPIO_BANK(3, 68, 27),	/* gpio 68-94 */
+	MSM_GPIO_BANK(4, 95, 12),	/* gpio 95-106 */
+	MSM_GPIO_BANK(5, 107, 15),	/* gpio 107-121 */
+#endif
+};
+
+I'm not sure if that macro will actually work correctly.  But you should
+get the idea.
+
+> +#if defined(CONFIG_ARCH_MSM7X30)
+> +#define GPIO1_REG(off) (MSM_GPIO1_BASE + (off))
+> +#define GPIO2_REG(off) (MSM_GPIO2_BASE + 0x400 + (off))
+> +#else
+> +#define GPIO1_REG(off) (MSM_GPIO1_BASE + 0x800 + (off))
+> +#define GPIO2_REG(off) (MSM_GPIO2_BASE + 0xC00 + (off))
+> +#endif
+> +
+> +#if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_MSM7X27)
+> +
+> +/* output value */
+> +#define GPIO_OUT_0         GPIO1_REG(0x00)  /* gpio  15-0  */
+> +#define GPIO_OUT_1         GPIO2_REG(0x00)  /* gpio  42-16 */
+> +#define GPIO_OUT_2         GPIO1_REG(0x04)  /* gpio  67-43 */
+> +#define GPIO_OUT_3         GPIO1_REG(0x08)  /* gpio  94-68 */
+> +#define GPIO_OUT_4         GPIO1_REG(0x0C)  /* gpio 106-95 */
+> +#define GPIO_OUT_5         GPIO1_REG(0x50)  /* gpio 107-121 */
+
+I realize this header is private (i.e. in the mach-msm directory) but
+you should probably prefix all of these GPIO_* defines with something
+to prevent any namespace clashes.
+
+Regards,
+Hartleyÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
