@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab0IAPDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 11:03:11 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:22520 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755437Ab0IAPDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 11:03:09 -0400
-Message-ID: <4C7E6B2A.6030907@bfs.de>
-Date: Wed, 01 Sep 2010 17:03:06 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
+	id S1755564Ab0IAPFO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 11:05:14 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:44479 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753731Ab0IAPFL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 11:05:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=sLmgniQ3pnUgY206FVAERrOsj+NJ61dfOGwDeT2TGqqjKDH2NIeh4Q+zSpetnumIkq
+         EsmvHo1h6a2hicDCyVuLgC5l8VY9i7A2KCcuFsV0OCRTvydrx1xbmuzT6nFdYoJGhotP
+         27qpYOZAVYonr1p4xa/9pfxnJYF8PoUsD3Rj8=
+Date: Wed, 1 Sep 2010 17:05:04 +0200
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: [Bug #16626] Machine hangs with EIP at skb_copy_and_csum_dev
+Message-ID: <20100901150504.GA3091@del.dom.local>
+References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera>
+ <4AUWBNzTkbD.A.ey.cGueMB@chimera>
+ <courier.4C7C99F2.00001F74@fs.ru.acad.bg>
+ <20100831192659.GA3093@del.dom.local>
+ <1283338251.2556.124.camel@edumazet-laptop>
+ <20100901112026.GA9468@ff.dom.local>
+ <1283349461.2556.333.camel@edumazet-laptop>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Vasiliy Kulikov <segooon@gmail.com>, Julia Lawall <julia@diku.dk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        kernel-janitors@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/7] drivers/macintosh/via-pmu-led.c: Add of_node_put
- to avoid memory leak
-References: <1283075566-27441-1-git-send-email-julia@diku.dk> <1283075566-27441-2-git-send-email-julia@diku.dk> <4C7D247F.4060500@bfs.de> <Pine.LNX.4.64.1008311807470.2668@ask.diku.dk> <20100831161644.GA14505@albatros> <AANLkTi=3b0NY5pFepv-TmjFDmPUBK9Ew16HyTn-+YguX@mail.gmail.com>
-In-Reply-To: <AANLkTi=3b0NY5pFepv-TmjFDmPUBK9Ew16HyTn-+YguX@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1283349461.2556.333.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Grant Likely schrieb:
-> On Tue, Aug 31, 2010 at 10:16 AM, Vasiliy Kulikov <segooon@gmail.com> wrote:
->> On Tue, Aug 31, 2010 at 18:08 +0200, Julia Lawall wrote:
->>> On Tue, 31 Aug 2010, walter harms wrote:
->>>>>   if (strncmp(model, "PowerBook", strlen("PowerBook")) != 0 &&
->>>>>       strncmp(model, "iBook", strlen("iBook")) != 0 &&
->>>>>       strcmp(model, "PowerMac7,2") != 0 &&
->>>>>
->>>> is there any rule that says when to use strncmp ? it seems perfecly valid to use strcpy here
->>>> (what is done in the last cmp).
->>> Perhaps there are some characters after eg PowerBook that one doesn't want
->>> to compare with?
->> It seems to me that model has no '\0' in the end. If model is got from
->> the hardware then we should double check it - maybe harware is buggy.
->> Otherwise we'll overflow model.
+On Wed, Sep 01, 2010 at 03:57:41PM +0200, Eric Dumazet wrote:
+> Le mercredi 01 septembre 2010 ?? 11:20 +0000, Jarek Poplawski a écrit :
+> > On Wed, Sep 01, 2010 at 12:50:51PM +0200, Eric Dumazet wrote:
+> > > Plamen, could you test following patch ?
+> > > 
+> > > I reproduced problem on a dev machine and following patch cured it.
+> > > 
+> > > Thanks
+> > > 
+> > > [PATCH] gro: fix different skb headrooms
+> > > 
+> > > packets entering GRO might have different headrooms, even for a given
+> > > flow (because of implementation details in drivers, like copybreak).
+> > > We cant force drivers to deliver packets with a fixed headroom.
+> > > 
+> > > 1) fix skb_segment()
+> > > 
+> > > skb_segment() makes the false assumption headrooms of fragments are same
+> > > than the head. When CHECKSUM_PARTIAL is used, this can give csum_start
+> > > errors, and crash later in skb_copy_and_csum_dev()
+> > 
+> > Eric, probably I missed something, but since the same test as in
+> > skb_copy_and_csum_dev() gave different result a bit earlier on exactly
+> > the same skb, I've suspected some sharing (or use after free)
+> > problems, so I'm not sure your current diagnose can explain this.
+> > (Unless this old test was dismissed later.)
 > 
-> Model does have \0 at the end.  This code is using strncmp to
-> purposefully ignore the model suffix.
+> Oh, this is because your patch had an error for the gso part that read :
 > 
->> But why strcmp(model, "PowerMac7,2")? IMO it should be replaced
->> with strncmp().
+> -               rc = ops->ndo_start_xmit(nskb, dev);
+> +               if (skb_csum_start_bug(skb, 50)) {
+> +                       kfree_skb(skb);
+> +                       rc = NETDEV_TX_OK;
+> +               } else
+> +                       rc = ops->ndo_start_xmit(nskb, dev);
+> +
+>                 if (unlikely(rc != NETDEV_TX_OK)) {
+>                         if (rc & ~NETDEV_TX_MASK)
+>                                 goto out_kfree_gso_skb;
 > 
-> We use strcmp when parsing the device tree because the the length of
-> the model property string is unknown and in most cases we *must* match
-> the exact entire string, such as with this PowerMac7,2 example.  Using
-> strncmp would also happen to match with something like
-> "PowerMac7,2345" which is not the desired behaviour.
+> You called skb_csum_start_bug(skb, 50) instead of
+> skb_csum_start_bug(nskb, 50)
 > 
+> Hope this clarify a bit ;)
 
-hi Grant,
-whould you mind to use you explanation as comment in the code ?
-Tthat the strncpy/strcpy difference is important should be noted. that would be clearly a
-bonos with further audits.
+All clear! Sorry for the false alarm!
 
-re,
- wh
+Thanks,
+Jarek P.
