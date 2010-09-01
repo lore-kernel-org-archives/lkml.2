@@ -1,43 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab0IAQ26 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 12:28:58 -0400
-Received: from mail.perches.com ([173.55.12.10]:1190 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754750Ab0IAQ25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 12:28:57 -0400
-Subject: Re: [PATCH 5/5] staging: hv: Gracefully handle SCSI resets - RESEND
-From: Joe Perches <joe@perches.com>
-To: Hank Janssen <hjanssen@sailtheuniverse.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org,
-        virtualization@lists.osdl.org, devel@driverdev.osuosl.org,
-        haiyangz@microsoft.com
-In-Reply-To: <4C7D4848.6090409@sailtheuniverse.com>
-References: <4C7D4848.6090409@sailtheuniverse.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Sep 2010 09:28:53 -0700
-Message-ID: <1283358535.1797.174.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1755951Ab0IAQeD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 12:34:03 -0400
+Received: from cblmdm72-240-119-60.buckeyecom.net ([72.240.119.60]:58842 "EHLO
+	holly2.adsllc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755821Ab0IAQeA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 12:34:00 -0400
+From: Dave Ludlow <dave.ludlow@bay.ws>
+To: gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Ludlow <dave.ludlow@bay.ws>
+Subject: [PATCH 2/2] usb: serial: mos7840: Add USB IDs to support more B&B USB/RS485 converters.
+Date: Wed,  1 Sep 2010 12:33:30 -0400
+Message-Id: <1283358810-9702-1-git-send-email-dave.ludlow@bay.ws>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-31 at 11:22 -0700, Hank Janssen wrote:
-> If we get a SCSI host bus reset we now gracefully handle it, and we 
-> take the device offline. This before sometimes caused hangs.
-> ---
->  drivers/staging/hv/storvsc.c |   36 +++++++++++++++++++++++++++++++++++-
-[]
-> +	/*
-> +	 * Wait for traffic in transit to complete
-> +	 */
-> +	while (atomic_read(&storDevice->NumOutstandingRequests))
-> +		udelay(1000);
-> +
+Add the USB IDs needed to support the B&B USOPTL4-4P, USO9ML2-2P, and
+USO9ML2-4P.  This patch expands and corrects a typo in the patch sent
+on 08-31-2010.
 
-Is it useful to have a maximum check or timeout?
-Maybe use usleep_range?
+Signed-off-by: Dave Ludlow <dave.ludlow@bay.ws>
+---
+ drivers/usb/serial/mos7840.c |   35 ++++++++++++++++++++++-------------
+ 1 files changed, 22 insertions(+), 13 deletions(-)
 
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index 9a5ea9d..1c9b6e9 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -119,17 +119,20 @@
+  * by making a change here, in moschip_port_id_table, and in
+  * moschip_id_table_combined
+  */
+-#define USB_VENDOR_ID_BANDB             0x0856
+-#define BANDB_DEVICE_ID_USO9ML2_2	0xAC22
+-#define BANDB_DEVICE_ID_USO9ML2_4	0xAC24
+-#define BANDB_DEVICE_ID_US9ML2_2	0xAC29
+-#define BANDB_DEVICE_ID_US9ML2_4	0xAC30
+-#define BANDB_DEVICE_ID_USPTL4_2	0xAC31
+-#define BANDB_DEVICE_ID_USPTL4_4	0xAC32
+-#define BANDB_DEVICE_ID_USOPTL4_2	0xAC42
+-#define BANDB_DEVICE_ID_USOPTL4_4	0xAC44
+-#define BANDB_DEVICE_ID_USOPTL2_4	0xAC24
+-#define BANDB_DEVICE_ID_USOPTL4_2P      0xBC02
++#define USB_VENDOR_ID_BANDB              0x0856
++#define BANDB_DEVICE_ID_USO9ML2_2        0xAC22
++#define BANDB_DEVICE_ID_USO9ML2_2P       0xBC00
++#define BANDB_DEVICE_ID_USO9ML2_4        0xAC24
++#define BANDB_DEVICE_ID_USO9ML2_4P       0xBC01
++#define BANDB_DEVICE_ID_US9ML2_2         0xAC29
++#define BANDB_DEVICE_ID_US9ML2_4         0xAC30
++#define BANDB_DEVICE_ID_USPTL4_2         0xAC31
++#define BANDB_DEVICE_ID_USPTL4_4         0xAC32
++#define BANDB_DEVICE_ID_USOPTL4_2        0xAC42
++#define BANDB_DEVICE_ID_USOPTL4_2P       0xBC02
++#define BANDB_DEVICE_ID_USOPTL4_4        0xAC44
++#define BANDB_DEVICE_ID_USOPTL4_4P       0xBC03
++#define BANDB_DEVICE_ID_USOPTL2_4        0xAC24
+ 
+ /* This driver also supports
+  * ATEN UC2324 device using Moschip MCS7840
+@@ -185,15 +188,18 @@ static const struct usb_device_id moschip_port_id_table[] = {
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_4)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_US9ML2_2)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_US9ML2_4)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USPTL4_2)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USPTL4_4)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4)},
+-	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2324)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2322)},
+ 	{}			/* terminating entry */
+@@ -203,15 +209,18 @@ static const struct usb_device_id moschip_id_table_combined[] __devinitconst = {
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_2P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_4)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USO9ML2_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_US9ML2_2)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_US9ML2_4)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USPTL4_2)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USPTL4_4)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_2P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4)},
++	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL4_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4)},
+-	{USB_DEVICE(USB_VENDOR_ID_BANDB, BANDB_DEVICE_ID_USOPTL2_4P)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2324)},
+ 	{USB_DEVICE(USB_VENDOR_ID_ATENINTL, ATENINTL_DEVICE_ID_UC2322)},
+ 	{}			/* terminating entry */
+-- 
+1.7.2.2
 
