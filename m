@@ -1,199 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab0IAN2D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 09:28:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19404 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753219Ab0IAN2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 09:28:00 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100831193924.317733624@chello.nl>
-References: <20100831193924.317733624@chello.nl> <20100831192617.441439071@chello.nl>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org
-Subject: Re: [RFC][PATCH 5/5] mm: highmem documentation
-Date: Wed, 01 Sep 2010 14:26:56 +0100
-Message-ID: <13769.1283347616@redhat.com>
+	id S1754733Ab0IAN3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 09:29:42 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:5480 "EHLO
+	VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753219Ab0IAN3k convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 09:29:40 -0400
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2cK1432N98dN148cM1b0bM7cf0izz1202hzz8275bhz32i2a8h5bep5bfs61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L82LED-02-9L4-02
+X-M-MSG: 
+Date: Wed, 1 Sep 2010 15:07:48 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] oprofile, x86: fix init_sysfs error handling
+Message-ID: <20100901130748.GK22783@erda.amd.com>
+References: <1283107921-21464-1-git-send-email-will.deacon@arm.com>
+ <1283107921-21464-2-git-send-email-will.deacon@arm.com>
+ <1283107921-21464-3-git-send-email-will.deacon@arm.com>
+ <1283107921-21464-4-git-send-email-will.deacon@arm.com>
+ <20100830090929.GU22783@erda.amd.com>
+ <1283244880.645.17.camel@e102144-lin.cambridge.arm.com>
+ <20100831090518.GZ22783@erda.amd.com>
+ <1283247089.4063.2.camel@e102144-lin.cambridge.arm.com>
+ <20100831103001.GC22783@erda.amd.com>
+ <20100901095117.GA4246@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20100901095117.GA4246@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01.09.10 05:51:17, Ingo Molnar wrote:
+> > @@ -774,7 +781,10 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+> >  
+> >  	mux_init(ops);
+> >  
+> > -	init_sysfs();
+> > +	ret = init_sysfs();
+> 
+> FYI, this causes a build error if CONFIG_PM is off:
+> 
+>    arch/x86/oprofile/nmi_int.c:784: error: expected expression before ‘do’
+> 
+> Due to this assymetric form of the wrapper:
+> 
+>   #define init_sysfs() do { } while (0)
+> 
+> The wrapper should be changed to return 0 i suspect, via something like 
+> this:
+> 
+>   static inline int init_sysfs(void) { return 0; }
+> 
+> (untested)
 
-Not bad.  How about the attached version?
+Ingo, thanks for catching this, fix below.
 
-David
+-Robert
+
+--
+
+>From 3f60c6b21399280c4ab079deefb794253becdaca Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Wed, 1 Sep 2010 14:50:50 +0200
+Subject: [PATCH] oprofile, x86: fix init_sysfs() function stub
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The use of the return value of init_sysfs() with commit
+
+ 10f0412 oprofile, x86: fix init_sysfs error handling
+
+discovered the following build error for !CONFIG_PM:
+
+ .../linux/arch/x86/oprofile/nmi_int.c: In function ‘op_nmi_init’:
+ .../linux/arch/x86/oprofile/nmi_int.c:784: error: expected expression before ‘do’
+ make[2]: *** [arch/x86/oprofile/nmi_int.o] Error 1
+ make[1]: *** [arch/x86/oprofile] Error 2
+
+This patch fixes this.
+
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
+ arch/x86/oprofile/nmi_int.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-			     ====================
-			     HIGH MEMORY HANDLING
-			     ====================
-
-By: Peter Zijlstra <a.p.zijlstra@chello.nl>
-
-Contents:
-
- (*) What is high memory?
-
- (*) Temporary virtual mappings.
-
- (*) Using kmap_atomic.
-
- (*) Cost of temporary mappings.
-
- (*) i386 PAE.
-
-
-====================
-WHAT IS HIGH MEMORY?
-====================
-
-High memory (highmem) is used when the size of physical memory approaches or
-exceeds the maximum size of virtual memory.  At that point it becomes
-impossible for the kernel to keep all of the available physical memory mapped
-at all times.  This means the kernel needs to start using temporary mappings of
-the pieces of physical memory that it wants to access.
-
-The part of (physical) memory not covered by a permanent mapping is what we
-refer to as 'highmem'.  There are various architecture dependent constraints on
-where exactly that border lies.
-
-In the i386 arch, for example, we choose to map the kernel into every process's
-VM space so that we don't have to pay the full TLB invalidation costs for
-kernel entry/exit.  This means the available virtual memory space (4GiB on
-i386) has to be divided between user and kernel space.
-
-The traditional split for architectures using this approach is 3:1, 3GiB for
-userspace and the top 1GiB for kernel space:
-
-		+--------+ 0xffffffff
-		| Kernel |
-		+--------+ 0xc0000000
-		|        |
-		| User   |
-		|        |
-		+--------+ 0x00000000
-
-This means that the kernel can at most map 1GiB of physical memory at any one
-time, but because we need virtual address space for other things - including
-temporary maps to access the rest of the physical memory - the actual direct
-map will typically be less (usually around ~896MiB).
-
-Other architectures that have mm context tagged TLBs can have separate kernel
-and user maps.  Some hardware (like some ARMs), however, have limited virtual
-space when they use mm context tags.
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 73a41d3..cfe4faa 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -585,8 +585,10 @@ static void exit_sysfs(void)
+ }
+ 
+ #else
+-#define init_sysfs() do { } while (0)
+-#define exit_sysfs() do { } while (0)
++
++static inline int  init_sysfs(void) { return 0; }
++static inline void exit_sysfs(void) { }
++
+ #endif /* CONFIG_PM */
+ 
+ static int __init p4_init(char **cpu_type)
+-- 
+1.7.1.1
 
 
-==========================
-TEMPORARY VIRTUAL MAPPINGS
-==========================
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-The kernel contains several ways of creating temporary mappings:
-
- (*) vmap().  This can be used to make a long duration mapping of multiple
-     physical pages into a contiguous virtual space.  It needs global
-     synchronization to unmap.
-
- (*) kmap().  This permits a short duration mapping of a single page.  It needs
-     global synchronization, but is amortized somewhat.  It is also prone to
-     deadlocks when using in a nested fashion, and so it is not recommended for
-     new code.
-
- (*) kmap_atomic().  This permits a very short duration mapping of a single
-     page.  Since the mapping is restricted to the CPU that issued it, it
-     performs well, but the issuing task is therefore required to stay on that
-     CPU until it has finished, lest some other task displace its mappings.
-
-     kmap_atomic() may also be used by interrupt contexts, since it is does not
-     sleep and the caller may not sleep until after kunmap_atomic() is called.
-
-     It may be assumed that k[un]map_atomic() won't fail.
-
-
-=================
-USING KMAP_ATOMIC
-=================
-
-When and where to use kmap_atomic() is straightforward.  It is used when code
-wants to access the contents of a page that might be allocated from high memory
-(see __GFP_HIGHMEM), for example a page in the pagecache.  The API has two
-functions, and they can be used in a manner similar to the following:
-
-	/* Find the page of interest. */
-	struct page *page = find_get_page(mapping, offset);
-
-	/* Gain access to the contents of that page. */
-	void *vaddr = kmap_atomic(page);
-
-	/* Do something to the contents of that page. */
-	memset(vaddr, 0, PAGE_SIZE);
-
-	/* Unmap that page. */
-	kunmap_atomic(vaddr);
-
-Note that the kunmap_atomic() call takes the result of the kmap_atomic() call
-not the argument.
-
-If you need to map two pages because you want to copy from one page to
-another you need to keep the kmap_atomic calls strictly nested, like:
-
-	vaddr1 = kmap_atomic(page1);
-	vaddr2 = kmap_atomic(page2);
-
-	memcpy(vaddr1, vaddr2, PAGE_SIZE);
-
-	kunmap_atomic(vaddr2);
-	kunmap_atomic(vaddr1);
-
-
-==========================
-COST OF TEMPORARY MAPPINGS
-==========================
-
-The cost of creating temporary mappings can be quite high.  The arch has to
-manipulate the kernel's page tables, the data TLB and/or the MMU's registers.
-
-If CONFIG_HIGHMEM is not set, then the kernel will try and create a mapping
-simply with a bit of arithmetic that will convert the page struct address into
-a pointer to the page contents rather than juggling mappings about.  In such a
-case, the unmap operation may be a null operation.
-
-If CONFIG_MMU is not set, then there can be no temporary mappings and no
-highmem.  In such a case, the arithmetic approach will also be used.
-
-
-========
-i386 PAE
-========
-
-The i386 arch, under some circumstances, will permit you to stick up to 64GiB
-of RAM into your 32-bit machine.  This has a number of consequences:
-
- (*) Linux needs a page-frame structure for each page in the system and the
-     pageframes need to live in the permanent mapping, which means:
-
- (*) you can have 896M/sizeof(struct page) page-frames at most; with struct
-     page being 32-bytes that would end up being something in the order of 112G
-     worth of pages; the kernel, however, needs to store more than just
-     page-frames in that memory...
-
- (*) PAE makes your page tables larger - which slows the system down as more
-     data has to be accessed to traverse in TLB fills and the like.  One
-     advantage is that PAE has more PTE bits and can provide advanced features
-     like NX and PAT.
-
-The general recommendation is that you don't use more than 8GiB on a 32-bit
-machine - although more might work for you and your workload, you're pretty
-much on your own - don't expect kernel developers to really care much if things
-come apart.
