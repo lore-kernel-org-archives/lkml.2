@@ -1,93 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab0IAFoR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 01:44:17 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:3681 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751963Ab0IAFoO (ORCPT
+	id S1751963Ab0IAF5P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 01:57:15 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37843 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937Ab0IAF5M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 01:44:14 -0400
-Message-ID: <005801cb4998$b526d9f0$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Joe Perches" <joe@perches.com>
-Cc: "Jean Delvare \(PC drivers, core\)" <khali@linux-fr.org>,
-        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
-        "Crane Cai" <crane.cai@amd.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Linus Walleij" <linus.walleij@stericsson.com>,
-        "Ralf Baechle" <ralf@linux-mips.org>,
-        "srinidhi kasagar" <srinidhi.kasagar@stericsson.com>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Wang Yong Y\"" <yong.y.wang@intel.com>,
-        "Wang Qi\"" <qi.wang@intel.com>,
-        "Andrew\"" <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
-        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
-        "Arnd Bergmann" <arnd@arndb.de>
-References: <4C7DB9CF.5000905@dsn.okisemi.com> <1283309032.1797.123.camel@Joe-Laptop> <001e01cb4993$bc0d75d0$66f8800a@maildom.okisemi.com> <1283318654.1797.140.camel@Joe-Laptop>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
-Date: Wed, 1 Sep 2010 14:44:09 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	Wed, 1 Sep 2010 01:57:12 -0400
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Daniel Walker <dwalker@codeaurora.org>
+CC: Jeff Ohlstein <johlstei@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 1 Sep 2010 11:26:43 +0530
+Subject: RE: [PATCH 03/24] arm: mm: add proc info for ScorpionMP
+Thread-Topic: [PATCH 03/24] arm: mm: add proc info for ScorpionMP
+Thread-Index: ActJBq9RBK4QoJIiQAOnwnIi0Hha8QAk2sTw
+Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB02CCED0EEC@dbde02.ent.ti.com>
+References: <1282926826.5075.21.camel@m0nster>
+	 <1282927746.26355.74.camel@e102109-lin.cambridge.arm.com>
+	 <1282938790.5075.25.camel@m0nster>
+ <1283257116.28248.20.camel@e102109-lin.cambridge.arm.com>
+In-Reply-To: <1283257116.28248.20.camel@e102109-lin.cambridge.arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+> -----Original Message-----
+> From: Catalin Marinas [mailto:catalin.marinas@arm.com]
+> Sent: Tuesday, August 31, 2010 5:49 PM
+> To: Daniel Walker
+> Cc: Jeff Ohlstein; Russell King; linux-arm-msm@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Tony Lindgren;
+> Kirill A. Shutemov; Shilimkar, Santosh
+> Subject: Re: [PATCH 03/24] arm: mm: add proc info for ScorpionMP
+> 
+> On Fri, 2010-08-27 at 20:53 +0100, Daniel Walker wrote:
+> > On Fri, 2010-08-27 at 17:49 +0100, Catalin Marinas wrote:
+> >
+> > > > So your saying it makes more sense to change the msm entry into the
+> > > > default entry, and make the current default into the
+> > > > ARM11MPCore/Cortex-A9 entry?
+> > >
+> > > So my opinion is to not add any specific msm code but make the
+> > > __v7_setup skip the ACTLR bit setting. Then add an entry for Cortex-A9
+> > > to set those bits.
+> > >
+> >
+> > how about this? Naming is of course flexible ..
+> 
+> I cc'ed Santosh as well. I'm not sure whether TI are using a Cortex-A9
+> but with different manufacturer field (I suspect it's still 0x41).
+> 
+Yep. OMAP4 CA-9 field is 0x41.
 
-Thank you for your comments.
-
-Best Regards,
-Ohtake(OKISemi)
-
------ Original Message ----- 
-From: "Joe Perches" <joe@perches.com>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>; "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>;
-"Crane Cai" <crane.cai@amd.com>; "Samuel Ortiz" <sameo@linux.intel.com>; "Linus Walleij" <linus.walleij@stericsson.com>;
-"Ralf Baechle" <ralf@linux-mips.org>; "srinidhi kasagar" <srinidhi.kasagar@stericsson.com>; <linux-i2c@vger.kernel.org>;
-<linux-kernel@vger.kernel.org>; "Wang Yong Y"" <yong.y.wang@intel.com>; "Wang Qi"" <qi.wang@intel.com>; "Andrew""
-<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>; "Arnd
-Bergmann" <arnd@arndb.de>
-Sent: Wednesday, September 01, 2010 2:24 PM
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
-
-
-> On Wed, 2010-09-01 at 14:08 +0900, Masayuki Ohtake wrote:
-> > I have a question.
-> > Current our I2C driver  has the following 2 patterns dev_err().
-> > (1) dev_err(adap->pch_adapter.dev.parent, "...");
-> > (2) dev_err(&pdev->dev, "...");
-> > > #define pch_err(adap, fmt, arg...) \
-> > > dev_err(adap->pch_adapter.dev.parent, fmt, ##arg)
-> > In case of using the above code, pattern (1) can apply, but (2) can't.
-> > As to (2),
-> > Should we use as dev_err or define another macro?
->
-> Hello Ohtake.
->
-> To me, it's a visual complexity vs std pattern trade-off.
->
-> A 2 level dereference like dev_info(&dev->dev, ...)
-> isn't overly difficult to read.
-> 3 or more dereferences can be harder and a bit error prone.
-> So I would only use pch_<level> for (1) and dev_err for (2).
->
-> There are also times when there are additional standard
-> arguments that you want to prefix to dev_<level> calls
-> and that can be simplified with a custom XXX_<level>
-> define for dev_<level>
->
-> Look at the current uses in the tree and see what you like.
->
-> $ grep -rP --include=*.[ch] "#define\s*.+\s+dev_[a-z]{3,7}\s*\(" *
->
-> These aren't requirements, do what you think best.
->
-> cheers, Joe
->
-
-
+Regards,
+Santosh
