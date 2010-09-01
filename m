@@ -1,113 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab0IASvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 14:51:20 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:43028 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563Ab0IASvS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 14:51:18 -0400
-X-Auth-Info: n8NluNjHG8ZdYGxbJ3Qk5Kqo9THYCA3F5pb43Ougtf8=
-Message-ID: <4C7EA0CC.2030609@grandegger.com>
-Date: Wed, 01 Sep 2010 20:51:56 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	id S1754521Ab0IAS42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 14:56:28 -0400
+Received: from www.tglx.de ([62.245.132.106]:38290 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751383Ab0IAS41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 14:56:27 -0400
+Date: Wed, 1 Sep 2010 20:56:20 +0200
+From: "Hans J. Koch" <hjk@linutronix.de>
+To: Armin Steinhoff <armin@steinhoff.de>
+Cc: "Hans J. Koch" <hjk@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: UIO and Fedora 13  (kernel 33.6)
+Message-ID: <20100901185620.GA2514@local>
+References: <dda83e781002141023t2abe95b8w83f59d6f411f68a2@mail.gmail.com>
+ <alpine.DEB.2.01.1002142229470.28195@bogon.housecafe.de>
+ <dda83e781002142245l5c95d08bu214a796be289eb22@mail.gmail.com>
+ <dda83e781002142246i61737ae2j4fe7efb660b53d07@mail.gmail.com>
+ <4C7B8CA6.4010504@steinhoff.de>
+ <20100830162435.GB2566@local>
+ <4C7CA7E4.8010005@steinhoff.de>
+ <20100831103523.GA2598@local>
+ <4C7E015B.1010506@steinhoff.de>
 MIME-Version: 1.0
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-CC: Andrew Chih Howe <andrew.chih.howe.khor@intel.com>, Qi <qi.wang@intel.com>,
-        ML netdev <netdev@vger.kernel.org>, gregkh@suse.de,
-        ML linux-kernel <linux-kernel@vger.kernel.org>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
-        socketcan-core@lists.berlios.de, arjan@linux.intel.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_CAN driver to 2.6.35
-References: <4C61EDE5.4030505@dsn.okisemi.com>	<4C62981B.8050402@grandegger.com>	<D5AB6E638E5A3E4B8F4406B113A5A19A28EA26CC@shsmsx501.ccr.corp.intel.com>	<4C63B6C9.5050804@grandegger.com>	<D5AB6E638E5A3E4B8F4406B113A5A19A28EA29DF@shsmsx501.ccr.corp.intel.com> <000501cb49a9$9cd4bf00$66f8800a@maildom.okisemi.com>
-In-Reply-To: <000501cb49a9$9cd4bf00$66f8800a@maildom.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C7E015B.1010506@steinhoff.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 09/01/2010 09:45 AM, Masayuki Ohtake wrote:
-> Sorry, for late response.
-> ----- Original Message ----- 
-> From: "Wang, Qi" <qi.wang@intel.com>
-> To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
-> Cc: "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>; <gregkh@suse.de>; <arjan@linux.intel.com>; "Wang, Yong
-> Y" <yong.y.wang@intel.com>; "Wolfgang Grandegger" <wg@grandegger.com>
-> Sent: Thursday, August 12, 2010 6:00 PM
-> Subject: RE: [MeeGo-Dev][PATCH] Topcliff: Update PCH_CAN driver to 2.6.35
-...
->>>>> - The values for the hw-specific bit-timing registers should be derived
->>>>>   from the calculated values in "priv->can.bittiming":
->>>>>
->>>>>   http://lxr.linux.no/#linux+v2.6.35/include/linux/can/netlink.h#L17
->>>>>
+On Wed, Sep 01, 2010 at 09:31:39AM +0200, Armin Steinhoff wrote:
 > 
-> I show current pch_can code below.
+> Small correction ... I don't mean the "initial platform_data" but
+> the initial resource data of the platform driver.
 > 
-> +static int pch_set_bittiming(struct net_device *ndev)
-> +{
-> + struct pch_can_priv *priv = netdev_priv(ndev);
-> + struct pch_can_os *dev_can_os = priv->pch_can_os_p;
-> + const struct can_bittiming *bt = &priv->can.bittiming;
+> --Armin
 > 
-> Is the above TRUE, isn't it ?
-
-The code fragment looks good. In that function you should then *derive*
-the values of the bit-timing registers from the data fields of "bt". For
-the SJA1000, you find the code here:
-
-http://lxr.linux.no/#linux+v2.6.35/drivers/net/can/sja1000/sja1000.c#L202
-
->>>>> - The driver should handle state changes and communicate them to the
->>>>>   user space via error messages, if possible.
->>>>>
-> What's "state chage" mean ?
-
-Googling for "can bis states" returned:
-
-http://www.softing.com/home/en/industrial-automation/products/can-bus/more-can-bus/error-handling/error-states.php?navanchor=3010510
-
-The CAN controller usually triggers an interrupt when the state changes,
-which allows the driver to track the CAN state and deliver that
-information to the user space.
-
->>>>> - The driver should report errors to the user space via error messages.
->>>>>
-> Is the above mean using alloc_can_err_skb and set error info and notify to kernel with netif_rx ?
-
-Yes. Please search "Documentation/networking/can.txt" for "error frames"
-for further information.
-
->>>>> - Bus errors seem not to be handled properly.I'm missing can_bus_off().
->>>>>   Does the controller recover from bus-off automatically?
-> No.
-> CAN driver recovers from Bus-off state.
-
-You mean: "It does *not" recover automatically"! Right?
-
 > 
->>>>>
->>>>> - I see that the driver uses many TX and RX objects. How do you avoid
->>>>>   out-of-order transmission and reception?
->>>> What do you mean out-of-order RX and TX?
->>>> Atom processor only supports in-order execution, and PCIe-based peripherals
->>> can solve it with consumer-producer model. Actually IC designer will take care
->>> of out-of-order PCIe CPLD transaction.
->>>
->>> I mean out-of-order transmission to or from the CAN bus. This is handled
->>> by the CAN controller hardware. It has nothing to to with the processor.
-> Cannot avoid occurring rx or tx our-of-order.
+>   Hans J. Koch wrote:
+> >After a successfull uio_register_device() there is both a /dev/uioX
+> >and a directory /sys/class/uio/uioX/.
+> 
+> In the attachment is an updated version of uio_jand.
+> 
+> The module uio_jand.ko can be inserted and removed,  no messages
+> visible by dmesg, no kernel oops, no dev/uio*  and no class entries
+> available.
+> 
+> There are only entries of uio_jand in /sys/module,
+> /sys/bus/platform/drivers and /sys/uio/holders ... I'm really
+> confused =:-/
+> 
+> It's completely unclear how to write the initial platform_data of
+> the platform device in the example uio_smx.c :
+> 
+>      regs = platform_get_resource(dev, IORESOURCE_MEM, 0);
+>      if (!regs) {
+>          dev_err(&dev->dev, "No memory resource specified\n");
+>          goto out_free;
+> 
+> Same issue in uio_platform_genirq ...
 
-It is a *requirement* as Oliver already pointed out. It's easy to
-achieve if just one TX object is used but it might be tricky with more
-than one.
+You only seem to be working on x86 ... ;-)
 
-Wolfgang.
+If you register a platform driver, you also need to register a platform
+device with the same name, otherwise your driver's probe() function will
+never be called. In struct platform_device you can also specify an array
+of resources (e.g. memory, interrupts) which can be queried by the driver
+in the way you quoted above.
+
+The ARM architecture (for example) uses a specific board support file for
+each board that sets up (among other things) these platform devices.
+(See arch/arm/mach-xxx/board-yyy.c for examples)
+
+Other archs like PowerPC use the OpenFirmware/DeviceTree interface to set up
+such board specific things. On x86, there's no real solution yet since all
+such boards used to be more or less "PC compatible". Platform devices exist
+only in low level arch code, all special devices (or those added by the user)
+announce themselves as PCI devices, are controllable from userspace
+(e.g. I2C, SPI) or have another interface that allows auto probing (e.g. USB).
+
+The first version of your driver did the right thing by using
+platform_device_register_simple() and driver_register(). That avoids the
+need for a separate file which calls platform_device_register().
+
+So, go back to your first version, and fix the real bugs.
+
+Thanks,
+Hans
+
