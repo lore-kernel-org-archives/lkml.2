@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab0IABzX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 21:55:23 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:40619 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab0IABzV (ORCPT
+	id S1753600Ab0IABzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 21:55:43 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49915 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab0IABzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 21:55:21 -0400
-Subject: Re: [PATCH 5/6 v2] HID: magicmouse: enable Magic Trackpad support
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Michael Poole <mdpoole@troilus.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
-        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1283299695.13785.16.camel@graviton>
-References: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
-	 <1283280068-12285-5-git-send-email-chase.douglas@canonical.com>
-	 <1283299695.13785.16.camel@graviton>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Aug 2010 21:55:10 -0400
-Message-ID: <1283306110.2255.349.camel@mini>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	Tue, 31 Aug 2010 21:55:41 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [BUGFIX][PATCH] vmscan: don't use return value trick when oom_killer_disabled
+Cc: kosaki.motohiro@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "M. Vefa Bicakci" <bicave@superonline.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <AANLkTikXfvEVXEyw_5_eJs2v-3J6Xhd=CT9X-0D+GMCA@mail.gmail.com>
+References: <20100901092430.9741.A69D9226@jp.fujitsu.com> <AANLkTikXfvEVXEyw_5_eJs2v-3J6Xhd=CT9X-0D+GMCA@mail.gmail.com>
+Message-Id: <20100901105232.974F.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed,  1 Sep 2010 10:55:38 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-31 at 20:08 -0400, Michael Poole wrote:
-> One behavior that slightly surprised me -- which I believe is a quirk
-> due to userspace not expecting touchpads to have button switches -- is
-> that touches on the trackpad that do not close the switch can still be
-> interpreted by X as clicks.
+Hi
 
-This is actually done by the X synaptics input module. It's the defacto
-X touchpad driver and enables niceties like two finger scrolling and
-whatnot. You can either use it as is, use xinput/xorg.conf to manipulate
-its configuration, or switch to the X evdev input module which is more
-"bare" support.
+Thank you for good commenting!
 
-FYI, our gesture support in Maverick is based on a modified version of
-the X evdev input module. However, because the whole stack of desktop
-libs and toolkits won't support gestures in Maverick, you lose things
-like two finger scroll. Thus, we're going to leave the default X input
-module for the magic trackpad to synaptics in Ubuntu.
 
-> Once the discussions about if/how to tweak this code settle down, I'll
-> put together a patch to change the "down" and "last_up" logic as I
-> suggested earlier.
+> I don't like use oom_killer_disabled directly.
+> That's because we have wrapper inline functions to handle the
+> variable(ex, oom_killer_[disable/enable]).
+> It means we are reluctant to use the global variable directly.
+> So should we make new function as is_oom_killer_disable?
+> 
+> I think NO.
+> 
+> As I read your description, this problem is related to only hibernation.
+> Since hibernation freezes all processes(include kswapd), this problem
+> happens. Of course, now oom_killer_disabled is used by only
+> hibernation. But it can be used others in future(Off-topic : I don't
+> want it). Others can use it without freezing processes. Then kswapd
+> can set zone->all_unreclaimable and the problem can't happen.
+> 
+> So I want to use sc->hibernation_mode which is already used
+> do_try_to_free_pages instead of oom_killer_disabled.
 
-I actually decided to tackle this to make the patches I'm writing
-easier. I'll be sending a new batch shortly.
+Unfortunatelly, It's impossible. shrink_all_memory() turn on
+sc->hibernation_mode. but other hibernation caller merely call
+alloc_pages(). so we don't have any hint.
 
-Thanks,
 
--- Chase
 
