@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab0IANuJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 09:50:09 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34108 "EHLO
+	id S1755391Ab0IANuM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 09:50:12 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34106 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755019Ab0IANs4 (ORCPT
+	with ESMTP id S1755014Ab0IANsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 09:48:56 -0400
+	Wed, 1 Sep 2010 09:48:55 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 07/15] trivial: fix typos concerning "initiali[zs]e"
-Date: Wed,  1 Sep 2010 15:48:30 +0200
-Message-Id: <1283348918-7204-7-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 02/15] trivial: fix typos concerning "address"
+Date: Wed,  1 Sep 2010 15:48:25 +0200
+Message-Id: <1283348918-7204-2-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283348918-7204-1-git-send-email-u.kleine-koenig@pengutronix.de>
 References: <1283348918-7204-1-git-send-email-u.kleine-koenig@pengutronix.de>
@@ -30,870 +30,786 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- Documentation/scsi/ChangeLog.lpfc         |    2 +-
- Documentation/timers/timer_stats.txt      |    2 +-
- arch/arm/mach-bcmring/csp/chipc/chipcHw.c |    2 +-
- arch/arm/mach-bcmring/csp/tmr/tmrHw.c     |    2 +-
- arch/arm/mach-bcmring/dma.c               |    2 +-
- arch/arm/mach-omap2/serial.c              |    2 +-
- arch/mips/jz4740/board-qi_lb60.c          |    4 ++--
- arch/mips/jz4740/gpio.c                   |    2 +-
- arch/powerpc/oprofile/op_model_cell.c     |    2 +-
- arch/x86/kernel/amd_iommu.c               |    4 ++--
- drivers/acpi/acpica/acobject.h            |    2 +-
- drivers/ata/sata_vsc.c                    |    2 +-
- drivers/atm/iphase.c                      |    4 ++--
- drivers/base/power/main.c                 |    2 +-
- drivers/dma/intel_mid_dma.c               |    6 +++---
- drivers/edac/ppc4xx_edac.c                |    6 +++---
- drivers/isdn/gigaset/bas-gigaset.c        |    4 ++--
- drivers/isdn/gigaset/ser-gigaset.c        |    4 ++--
- drivers/isdn/gigaset/usb-gigaset.c        |    4 ++--
- drivers/media/video/davinci/vpss.c        |    2 +-
- drivers/media/video/stradis.c             |    2 +-
- drivers/misc/arm-charlcd.c                |    2 +-
- drivers/net/bonding/bond_3ad.c            |    2 +-
- drivers/net/cxgb3/mc5.c                   |    2 +-
- drivers/net/ixgbe/ixgbe_82599.c           |    4 ++--
- drivers/net/wimax/i2400m/i2400m.h         |    2 +-
- drivers/net/wireless/b43/phy_g.c          |    2 +-
- drivers/net/wireless/b43legacy/phy.c      |    2 +-
- drivers/pcmcia/m8xx_pcmcia.c              |    2 +-
- drivers/platform/x86/thinkpad_acpi.c      |    2 +-
- drivers/scsi/aacraid/commsup.c            |    2 +-
- drivers/scsi/aic94xx/aic94xx_seq.c        |    6 +++---
- drivers/scsi/dc395x.c                     |    8 ++++----
- drivers/scsi/lpfc/lpfc_attr.c             |    2 +-
- drivers/scsi/pm8001/pm8001_init.c         |    2 +-
- drivers/scsi/scsi_netlink.c               |    2 +-
- drivers/scsi/sym53c8xx_2/sym_glue.c       |    2 +-
- drivers/usb/misc/adutux.c                 |    2 +-
- drivers/usb/misc/iowarrior.c              |    2 +-
- drivers/usb/misc/ldusb.c                  |    2 +-
- drivers/usb/musb/musb_gadget.c            |    2 +-
- fs/ext4/extents.c                         |    4 ++--
- fs/ext4/inode.c                           |    4 ++--
- fs/gfs2/glock.h                           |    2 +-
- fs/xfs/linux-2.6/xfs_super.c              |    2 +-
- include/linux/cgroup.h                    |    2 +-
- kernel/debug/kdb/kdb_main.c               |    2 +-
- kernel/time/clocksource.c                 |    2 +-
- net/ipv4/tcp_output.c                     |    2 +-
- scripts/mod/modpost.c                     |    2 +-
- sound/pci/au88x0/au88x0_mixer.c           |    2 +-
- 51 files changed, 69 insertions(+), 69 deletions(-)
+ Documentation/networking/caif/spi_porting.txt      |    2 +-
+ Documentation/powerpc/booting-without-of.txt       |    2 +-
+ arch/arm/common/it8152.c                           |    2 +-
+ .../mach-bcmring/include/mach/csp/dmacHw_priv.h    |    2 +-
+ .../arm/mach-bcmring/include/mach/csp/dmacHw_reg.h |    2 +-
+ arch/arm/mach-u300/include/mach/coh901318.h        |    2 +-
+ .../mach-bf518/include/mach/defBF51x_base.h        |    2 +-
+ .../mach-bf527/include/mach/defBF52x_base.h        |    2 +-
+ arch/blackfin/mach-bf537/include/mach/defBF534.h   |    2 +-
+ arch/blackfin/mach-bf538/include/mach/defBF539.h   |    2 +-
+ arch/cris/arch-v32/lib/nand_init.S                 |    2 +-
+ arch/mips/include/asm/mach-powertv/ioremap.h       |    2 +-
+ arch/mips/pci/pcie-octeon.c                        |    2 +-
+ arch/mips/txx9/generic/pci.c                       |    2 +-
+ arch/sh/mm/cache-sh5.c                             |    2 +-
+ arch/sparc/kernel/traps_64.c                       |    2 +-
+ arch/x86/include/asm/pgalloc.h                     |    2 +-
+ drivers/edac/cell_edac.c                           |    4 ++--
+ drivers/gpu/drm/radeon/atombios.h                  |    2 +-
+ drivers/media/video/davinci/vpif.h                 |    2 +-
+ drivers/net/bnx2x/bnx2x_reg.h                      |    2 +-
+ drivers/net/bonding/bond_3ad.c                     |    4 ++--
+ drivers/net/chelsio/subr.c                         |    2 +-
+ drivers/net/cxgb3/t3_hw.c                          |    2 +-
+ drivers/net/e1000/e1000_main.c                     |    2 +-
+ drivers/net/e1000e/phy.c                           |    2 +-
+ drivers/net/eepro.c                                |    2 +-
+ drivers/net/ll_temac_main.c                        |    2 +-
+ drivers/net/tehuti.c                               |    2 +-
+ drivers/net/tun.c                                  |    2 +-
+ drivers/net/vxge/vxge-traffic.h                    |    2 +-
+ drivers/net/wimax/i2400m/driver.c                  |    2 +-
+ drivers/net/wireless/ath/ath5k/reg.h               |    6 +++---
+ drivers/net/wireless/iwlwifi/iwl-sta.c             |    2 +-
+ drivers/net/wireless/rt2x00/rt2x00mac.c            |    2 +-
+ drivers/net/wireless/wl3501_cs.c                   |    2 +-
+ drivers/scsi/a100u2w.c                             |    2 +-
+ drivers/scsi/aic94xx/aic94xx_reg_def.h             |    4 ++--
+ drivers/spi/atmel_spi.c                            |    4 ++--
+ drivers/usb/wusbcore/wa-rpipe.c                    |    2 +-
+ fs/ext4/ext4.h                                     |    2 +-
+ include/acpi/actbl1.h                              |    2 +-
+ include/net/sctp/user.h                            |    4 ++--
+ kernel/kexec.c                                     |    2 +-
+ kernel/sysctl_binary.c                             |    2 +-
+ kernel/trace/trace_entries.h                       |    2 +-
+ net/decnet/dn_dev.c                                |    2 +-
+ sound/pci/ca0106/ca0106.h                          |    2 +-
+ sound/pci/emu10k1/emu10k1x.c                       |    2 +-
+ sound/pci/emu10k1/p16v.h                           |    2 +-
+ sound/pci/es1968.c                                 |    2 +-
+ sound/pci/rme9652/hdspm.c                          |    2 +-
+ 52 files changed, 59 insertions(+), 59 deletions(-)
 
-diff --git a/Documentation/scsi/ChangeLog.lpfc b/Documentation/scsi/ChangeLog.lpfc
-index 337c924..5e83769 100644
---- a/Documentation/scsi/ChangeLog.lpfc
-+++ b/Documentation/scsi/ChangeLog.lpfc
-@@ -573,7 +573,7 @@ Changes from 20041018 to 20041123
- 	* Backround nodev_timeout processing to DPC This enables us to
- 	  unblock (stop dev_loss_tmo) when appopriate.
- 	* Fix array discovery with multiple luns.  The max_luns was 0 at
--	  the time the host structure was intialized.  lpfc_cfg_params
-+	  the time the host structure was initialized.  lpfc_cfg_params
- 	  then set the max_luns to the correct value afterwards.
- 	* Remove unused define LPFC_MAX_LUN and set the default value of
- 	  lpfc_max_lun parameter to 512.
-diff --git a/Documentation/timers/timer_stats.txt b/Documentation/timers/timer_stats.txt
-index 9bd00fc..8abd40b 100644
---- a/Documentation/timers/timer_stats.txt
-+++ b/Documentation/timers/timer_stats.txt
-@@ -19,7 +19,7 @@ Linux system over a sample period:
+diff --git a/Documentation/networking/caif/spi_porting.txt b/Documentation/networking/caif/spi_porting.txt
+index 61d7c92..0cb8cb9 100644
+--- a/Documentation/networking/caif/spi_porting.txt
++++ b/Documentation/networking/caif/spi_porting.txt
+@@ -32,7 +32,7 @@ the physical hardware, both with regard to SPI and to GPIOs.
+ 	This function is called by the CAIF SPI interface to give
+ 	you a chance to set up your hardware to be ready to receive
+ 	a stream of data from the master. The xfer structure contains
+-	both physical and logical adresses, as well as the total length
++	both physical and logical addresses, as well as the total length
+ 	of the transfer in both directions.The dev parameter can be used
+ 	to map to different CAIF SPI slave devices.
  
- - the pid of the task(process) which initialized the timer
- - the name of the process which initialized the timer
--- the function where the timer was intialized
-+- the function where the timer was initialized
- - the callback function which is associated to the timer
- - the number of events (callbacks)
+diff --git a/Documentation/powerpc/booting-without-of.txt b/Documentation/powerpc/booting-without-of.txt
+index 302db5d..1c6660d 100644
+--- a/Documentation/powerpc/booting-without-of.txt
++++ b/Documentation/powerpc/booting-without-of.txt
+@@ -1098,7 +1098,7 @@ supported currently at the toplevel.
+                                  * an arbitrary array of bytes
+                                  */
  
-diff --git a/arch/arm/mach-bcmring/csp/chipc/chipcHw.c b/arch/arm/mach-bcmring/csp/chipc/chipcHw.c
-index b3a61d8..96273ff 100644
---- a/arch/arm/mach-bcmring/csp/chipc/chipcHw.c
-+++ b/arch/arm/mach-bcmring/csp/chipc/chipcHw.c
-@@ -757,7 +757,7 @@ static int chipcHw_divide(int num, int denom)
- 		t = t << 1;
- 	}
- 
--	/* Intialize the result */
-+	/* Initialize the result */
- 	r = 0;
- 
- 	do {
-diff --git a/arch/arm/mach-bcmring/csp/tmr/tmrHw.c b/arch/arm/mach-bcmring/csp/tmr/tmrHw.c
-index 5c1c9a0..16225e4 100644
---- a/arch/arm/mach-bcmring/csp/tmr/tmrHw.c
-+++ b/arch/arm/mach-bcmring/csp/tmr/tmrHw.c
-@@ -558,7 +558,7 @@ static int tmrHw_divide(int num, int denom)
- 		t = t << 1;
- 	}
- 
--	/* Intialize the result */
-+	/* Initialize the result */
- 	r = 0;
- 
- 	do {
-diff --git a/arch/arm/mach-bcmring/dma.c b/arch/arm/mach-bcmring/dma.c
-index 29c0a91..9105d16 100644
---- a/arch/arm/mach-bcmring/dma.c
-+++ b/arch/arm/mach-bcmring/dma.c
-@@ -671,7 +671,7 @@ static int ConfigChannel(DMA_Handle_t handle)
- 
- /****************************************************************************/
- /**
--*   Intializes all of the data structures associated with the DMA.
-+*   Initializes all of the data structures associated with the DMA.
- *   @return
- *       >= 0    - Initialization was successfull.
- *
-diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
-index 566e991..ff79b9d 100644
---- a/arch/arm/mach-omap2/serial.c
-+++ b/arch/arm/mach-omap2/serial.c
-@@ -818,7 +818,7 @@ void __init omap_serial_init_port(int port)
- }
- 
- /**
-- * omap_serial_init() - intialize all supported serial ports
-+ * omap_serial_init() - initialize all supported serial ports
-  *
-  * Initializes all available UARTs as serial ports. Platforms
-  * can call this function when they want to have default behaviour
-diff --git a/arch/mips/jz4740/board-qi_lb60.c b/arch/mips/jz4740/board-qi_lb60.c
-index 5742bb4..de4433c 100644
---- a/arch/mips/jz4740/board-qi_lb60.c
-+++ b/arch/mips/jz4740/board-qi_lb60.c
-@@ -65,7 +65,7 @@ static struct nand_ecclayout qi_lb60_ecclayout_1gb = {
- 
- /* Early prototypes of the QI LB60 had only 1GB of NAND.
-  * In order to support these devices aswell the partition and ecc layout is
-- * initalized depending on the NAND size */
-+ * initialized depending on the NAND size */
- static struct mtd_partition qi_lb60_partitions_1gb[] = {
- 	{
- 		.name = "NAND BOOT partition",
-@@ -464,7 +464,7 @@ static int __init qi_lb60_board_setup(void)
- 	board_gpio_setup();
- 
- 	if (qi_lb60_init_platform_devices())
--		panic("Failed to initalize platform devices\n");
-+		panic("Failed to initialize platform devices\n");
- 
- 	return 0;
- }
-diff --git a/arch/mips/jz4740/gpio.c b/arch/mips/jz4740/gpio.c
-index 38f60f3..88e6aed 100644
---- a/arch/mips/jz4740/gpio.c
-+++ b/arch/mips/jz4740/gpio.c
-@@ -546,7 +546,7 @@ static int __init jz4740_gpio_init(void)
- 	for (i = 0; i < ARRAY_SIZE(jz4740_gpio_chips); ++i)
- 		jz4740_gpio_chip_init(&jz4740_gpio_chips[i], i);
- 
--	printk(KERN_INFO "JZ4740 GPIO initalized\n");
-+	printk(KERN_INFO "JZ4740 GPIO initialized\n");
- 
- 	return 0;
- }
-diff --git a/arch/powerpc/oprofile/op_model_cell.c b/arch/powerpc/oprofile/op_model_cell.c
-index 7fd90d0..c4d2b71 100644
---- a/arch/powerpc/oprofile/op_model_cell.c
-+++ b/arch/powerpc/oprofile/op_model_cell.c
-@@ -1469,7 +1469,7 @@ static int cell_global_start(struct op_counter_config *ctr)
-  * The pm_interval register is setup to write the SPU PC value into the
-  * trace buffer at the maximum rate possible.  The trace buffer is configured
-  * to store the PCs, wrapping when it is full.  The performance counter is
-- * intialized to the max hardware count minus the number of events, N, between
-+ * initialized to the max hardware count minus the number of events, N, between
-  * samples.  Once the N events have occured, a HW counter overflow occurs
-  * causing the generation of a HW counter interrupt which also stops the
-  * writing of the SPU PC values to the trace buffer.  Hence the last PC
-diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-index fa044e1..826b127 100644
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -1086,7 +1086,7 @@ static int alloc_new_range(struct dma_ops_domain *dma_dom,
- 
- 	dma_dom->aperture_size += APERTURE_RANGE_SIZE;
- 
--	/* Intialize the exclusion range if necessary */
-+	/* Initialize the exclusion range if necessary */
- 	for_each_iommu(iommu) {
- 		if (iommu->exclusion_start &&
- 		    iommu->exclusion_start >= dma_dom->aperture[index]->offset
-@@ -1353,7 +1353,7 @@ static void dma_ops_domain_free(struct dma_ops_domain *dom)
+-  childnode@addresss {	/* define a child node named "childnode"
++  childnode@address {	/* define a child node named "childnode"
+                                  * whose unit name is "childnode at
+ 				 * address"
+                                  */
+diff --git a/arch/arm/common/it8152.c b/arch/arm/common/it8152.c
+index 6c09135..60f81d4 100644
+--- a/arch/arm/common/it8152.c
++++ b/arch/arm/common/it8152.c
+@@ -236,7 +236,7 @@ static struct resource it8152_mem = {
  
  /*
-  * Allocates a new protection domain usable for the dma_ops functions.
-- * It also intializes the page table and the address allocator data
-+ * It also initializes the page table and the address allocator data
-  * structures required for the dma_ops interface
+  * The following functions are needed for DMA bouncing.
+- * ITE8152 chip can addrees up to 64MByte, so all the devices
++ * ITE8152 chip can address up to 64MByte, so all the devices
+  * connected to ITE8152 (PCI and USB) should have limited DMA window
   */
- static struct dma_ops_domain *dma_ops_domain_alloc(void)
-diff --git a/drivers/acpi/acpica/acobject.h b/drivers/acpi/acpica/acobject.h
-index 54857fa..14a4378 100644
---- a/drivers/acpi/acpica/acobject.h
-+++ b/drivers/acpi/acpica/acobject.h
-@@ -93,7 +93,7 @@
  
- #define AOPOBJ_AML_CONSTANT         0x01	/* Integer is an AML constant */
- #define AOPOBJ_STATIC_POINTER       0x02	/* Data is part of an ACPI table, don't delete */
--#define AOPOBJ_DATA_VALID           0x04	/* Object is intialized and data is valid */
-+#define AOPOBJ_DATA_VALID           0x04	/* Object is initialized and data is valid */
- #define AOPOBJ_OBJECT_INITIALIZED   0x08	/* Region is initialized, _REG was run */
- #define AOPOBJ_SETUP_COMPLETE       0x10	/* Region setup is complete */
- #define AOPOBJ_INVALID              0x20	/* Host OS won't allow a Region address */
-diff --git a/drivers/ata/sata_vsc.c b/drivers/ata/sata_vsc.c
-index b777176..e079cf2 100644
---- a/drivers/ata/sata_vsc.c
-+++ b/drivers/ata/sata_vsc.c
-@@ -370,7 +370,7 @@ static int __devinit vsc_sata_init_one(struct pci_dev *pdev,
- 	if (pci_resource_len(pdev, 0) == 0)
- 		return -ENODEV;
+diff --git a/arch/arm/mach-bcmring/include/mach/csp/dmacHw_priv.h b/arch/arm/mach-bcmring/include/mach/csp/dmacHw_priv.h
+index cbf334d..d67e2f8 100644
+--- a/arch/arm/mach-bcmring/include/mach/csp/dmacHw_priv.h
++++ b/arch/arm/mach-bcmring/include/mach/csp/dmacHw_priv.h
+@@ -28,7 +28,7 @@
  
--	/* map IO regions and intialize host accordingly */
-+	/* map IO regions and initialize host accordingly */
- 	rc = pcim_iomap_regions(pdev, 1 << VSC_MMIO_BAR, DRV_NAME);
- 	if (rc == -EBUSY)
- 		pcim_pin_device(pdev);
-diff --git a/drivers/atm/iphase.c b/drivers/atm/iphase.c
-index ee9ddeb..8142720 100644
---- a/drivers/atm/iphase.c
-+++ b/drivers/atm/iphase.c
-@@ -2063,7 +2063,7 @@ static int tx_init(struct atm_dev *dev)
- 		- UBR Table size is 4K  
- 		- UBR wait queue is 4K  
- 	   since the table and wait queues are contiguous, all the bytes   
--	   can be initialized by one memeset.  
-+	   can be initialized by one memeset.
- 	*/  
-         
-         vcsize_sel = 0;
-@@ -2089,7 +2089,7 @@ static int tx_init(struct atm_dev *dev)
- 		- ABR Table size is 2K  
- 		- ABR wait queue is 2K  
- 	   since the table and wait queues are contiguous, all the bytes   
--	   can be intialized by one memeset.  
-+	   can be initialized by one memeset.  
- 	*/  
-         i = ABR_SCHED_TABLE * iadev->memSize;
-         writew((i >> 11) & 0xffff, iadev->seg_reg+ABR_SBPTR_BASE);
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index 5419a49..015dc06 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -8,7 +8,7 @@
-  *
-  *
-  * The driver model core calls device_pm_add() when a device is registered.
-- * This will intialize the embedded device_pm_info object in the device
-+ * This will initialize the embedded device_pm_info object in the device
-  * and add it to the list of power-controlled devices. sysfs entries for
-  * controlling device power management will also be added.
-  *
-diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
-index c2591e8..6f4f5f1 100644
---- a/drivers/dma/intel_mid_dma.c
-+++ b/drivers/dma/intel_mid_dma.c
-@@ -849,8 +849,8 @@ static irqreturn_t intel_mid_dma_interrupt2(int irq, void *data)
-  * mid_setup_dma -	Setup the DMA controller
-  * @pdev: Controller PCI device structure
-  *
-- * Initilize the DMA controller, channels, registers with DMA engine,
-- * ISR. Initilize DMA controller channels.
-+ * Initialize the DMA controller, channels, registers with DMA engine,
-+ * ISR. Initialize DMA controller channels.
+ /* Data type for DMA Link List Item */
+ typedef struct {
+-	uint32_t sar;		/* Source Adress Register.
++	uint32_t sar;		/* Source Address Register.
+ 				   Address must be aligned to CTLx.SRC_TR_WIDTH.             */
+ 	uint32_t dar;		/* Destination Address Register.
+ 				   Address must be aligned to CTLx.DST_TR_WIDTH.             */
+diff --git a/arch/arm/mach-bcmring/include/mach/csp/dmacHw_reg.h b/arch/arm/mach-bcmring/include/mach/csp/dmacHw_reg.h
+index 891cea8..f1ecf96 100644
+--- a/arch/arm/mach-bcmring/include/mach/csp/dmacHw_reg.h
++++ b/arch/arm/mach-bcmring/include/mach/csp/dmacHw_reg.h
+@@ -35,7 +35,7 @@ typedef struct {
+ 
+ /* Data type representing DMA channel registers */
+ typedef struct {
+-	dmacHw_REG64_t ChannelSar;	/*  Source Adress Register. 64 bits (upper 32 bits are reserved)
++	dmacHw_REG64_t ChannelSar;	/*  Source Address Register. 64 bits (upper 32 bits are reserved)
+ 					   Address must be aligned to CTLx.SRC_TR_WIDTH.
+ 					 */
+ 	dmacHw_REG64_t ChannelDar;	/*  Destination Address Register.64 bits (upper 32 bits are reserved)
+diff --git a/arch/arm/mach-u300/include/mach/coh901318.h b/arch/arm/mach-u300/include/mach/coh901318.h
+index 193da2d..2013d2b 100644
+--- a/arch/arm/mach-u300/include/mach/coh901318.h
++++ b/arch/arm/mach-u300/include/mach/coh901318.h
+@@ -24,7 +24,7 @@
+  * @src_addr: transfer source address
+  * @dst_addr: transfer destination address
+  * @link_addr:  physical address to next lli
+- * @virt_link_addr: virtual addres of next lli (only used by pool_free)
++ * @virt_link_addr: virtual address of next lli (only used by pool_free)
+  * @phy_this: physical address of current lli (only used by pool_free)
   */
- static int mid_setup_dma(struct pci_dev *pdev)
- {
-@@ -1010,7 +1010,7 @@ static void middma_shutdown(struct pci_dev *pdev)
-  * @pdev: Controller PCI device structure
-  * @id: pci device id structure
-  *
-- * Initilize the PCI device, map BARs, query driver data.
-+ * Initialize the PCI device, map BARs, query driver data.
-  * Call setup_dma to complete contoller and chan initilzation
-  */
- static int __devinit intel_mid_dma_probe(struct pci_dev *pdev,
-diff --git a/drivers/edac/ppc4xx_edac.c b/drivers/edac/ppc4xx_edac.c
-index 070cea4..b9f0c20 100644
---- a/drivers/edac/ppc4xx_edac.c
-+++ b/drivers/edac/ppc4xx_edac.c
-@@ -873,7 +873,7 @@ ppc4xx_edac_get_mtype(u32 mcopt1)
+ struct coh901318_lli {
+diff --git a/arch/blackfin/mach-bf518/include/mach/defBF51x_base.h b/arch/blackfin/mach-bf518/include/mach/defBF51x_base.h
+index 037a51f..7d956e5 100644
+--- a/arch/blackfin/mach-bf518/include/mach/defBF51x_base.h
++++ b/arch/blackfin/mach-bf518/include/mach/defBF51x_base.h
+@@ -1242,7 +1242,7 @@
+ #define	SADD_LEN	0x0002		/* Slave Address Length							*/
+ #define	STDVAL		0x0004		/* Slave Transmit Data Valid					*/
+ #define	NAK			0x0008		/* NAK/ACK* Generated At Conclusion Of Transfer */
+-#define	GEN			0x0010		/* General Call Adrress Matching Enabled		*/
++#define	GEN			0x0010		/* General Call Address Matching Enabled		*/
+ 
+ /* TWI_SLAVE_STAT Masks															*/
+ #define	SDIR		0x0001		/* Slave Transfer Direction (Transmit/Receive*)	*/
+diff --git a/arch/blackfin/mach-bf527/include/mach/defBF52x_base.h b/arch/blackfin/mach-bf527/include/mach/defBF52x_base.h
+index 3e00075..4b9a6fc 100644
+--- a/arch/blackfin/mach-bf527/include/mach/defBF52x_base.h
++++ b/arch/blackfin/mach-bf527/include/mach/defBF52x_base.h
+@@ -1251,7 +1251,7 @@
+ #define	SADD_LEN	0x0002		/* Slave Address Length							*/
+ #define	STDVAL		0x0004		/* Slave Transmit Data Valid					*/
+ #define	NAK			0x0008		/* NAK/ACK* Generated At Conclusion Of Transfer */
+-#define	GEN			0x0010		/* General Call Adrress Matching Enabled		*/
++#define	GEN			0x0010		/* General Call Address Matching Enabled		*/
+ 
+ /* TWI_SLAVE_STAT Masks															*/
+ #define	SDIR		0x0001		/* Slave Transfer Direction (Transmit/Receive*)	*/
+diff --git a/arch/blackfin/mach-bf537/include/mach/defBF534.h b/arch/blackfin/mach-bf537/include/mach/defBF534.h
+index 6f56907..42fa149 100644
+--- a/arch/blackfin/mach-bf537/include/mach/defBF534.h
++++ b/arch/blackfin/mach-bf537/include/mach/defBF534.h
+@@ -1567,7 +1567,7 @@
+ #define	SADD_LEN	0x0002	/* Slave Address Length                                                 */
+ #define	STDVAL		0x0004	/* Slave Transmit Data Valid                                    */
+ #define	NAK			0x0008	/* NAK/ACK* Generated At Conclusion Of Transfer */
+-#define	GEN			0x0010	/* General Call Adrress Matching Enabled                */
++#define	GEN			0x0010	/* General Call Address Matching Enabled                */
+ 
+ /* TWI_SLAVE_STAT Masks															*/
+ #define	SDIR		0x0001	/* Slave Transfer Direction (Transmit/Receive*) */
+diff --git a/arch/blackfin/mach-bf538/include/mach/defBF539.h b/arch/blackfin/mach-bf538/include/mach/defBF539.h
+index fe43062..24aad2f 100644
+--- a/arch/blackfin/mach-bf538/include/mach/defBF539.h
++++ b/arch/blackfin/mach-bf538/include/mach/defBF539.h
+@@ -2256,7 +2256,7 @@
+ #define	SADD_LEN	0x0002		/* Slave Address Length */
+ #define	STDVAL		0x0004		/* Slave Transmit Data Valid */
+ #define	NAK			0x0008		/* NAK/ACK* Generated At Conclusion Of Transfer */
+-#define	GEN			0x0010		/* General Call	Adrress	Matching Enabled */
++#define	GEN			0x0010		/* General Call	Address	Matching Enabled */
+ 
+ /* TWIx_SLAVE_STAT Masks								 */
+ #define	SDIR		0x0001		/* Slave Transfer Direction (Transmit/Receive*) */
+diff --git a/arch/cris/arch-v32/lib/nand_init.S b/arch/cris/arch-v32/lib/nand_init.S
+index e705f5c..d671fed 100644
+--- a/arch/cris/arch-v32/lib/nand_init.S
++++ b/arch/cris/arch-v32/lib/nand_init.S
+@@ -139,7 +139,7 @@ copy_nand_to_ram:
+ 	lsrq	8, $r4
+ 	move.b	$r4, [$r1]	; Row address
+ 	lsrq	8, $r4
+-	move.b	$r4, [$r1]	; Row adddress
++	move.b	$r4, [$r1]	; Row address
+ 	moveq	20, $r4
+ 2:	bne	2b
+ 	subq	1, $r4
+diff --git a/arch/mips/include/asm/mach-powertv/ioremap.h b/arch/mips/include/asm/mach-powertv/ioremap.h
+index 076f2ee..c86ef09 100644
+--- a/arch/mips/include/asm/mach-powertv/ioremap.h
++++ b/arch/mips/include/asm/mach-powertv/ioremap.h
+@@ -88,7 +88,7 @@ static inline dma_addr_t _dma_to_phys_offset_raw(dma_addr_t dma)
  }
  
- /**
-- * ppc4xx_edac_init_csrows - intialize driver instance rows
-+ * ppc4xx_edac_init_csrows - initialize driver instance rows
-  * @mci: A pointer to the EDAC memory controller instance
-  *       associated with the ibm,sdram-4xx-ddr2 controller for which
-  *       the csrows (i.e. banks/ranks) are being initialized.
-@@ -881,7 +881,7 @@ ppc4xx_edac_get_mtype(u32 mcopt1)
-  *          currently set for the controller, from which bank width
-  *          and memory typ information is derived.
-  *
-- * This routine intializes the virtual "chip select rows" associated
-+ * This routine initializes the virtual "chip select rows" associated
-  * with the EDAC memory controller instance. An ibm,sdram-4xx-ddr2
-  * controller bank/rank is mapped to a row.
-  *
-@@ -992,7 +992,7 @@ ppc4xx_edac_init_csrows(struct mem_ctl_info *mci, u32 mcopt1)
- }
+ /* These are not portable and should not be used in drivers. Drivers should
+- * be using ioremap() and friends to map physical addreses to virtual
++ * be using ioremap() and friends to map physical addresses to virtual
+  * addresses and dma_map*() and friends to map virtual addresses into DMA
+  * addresses and back.
+  */
+diff --git a/arch/mips/pci/pcie-octeon.c b/arch/mips/pci/pcie-octeon.c
+index 861361e..e9af394 100644
+--- a/arch/mips/pci/pcie-octeon.c
++++ b/arch/mips/pci/pcie-octeon.c
+@@ -898,7 +898,7 @@ static int cvmx_pcie_rc_initialize(int pcie_port)
+ 	mem_access_subid.s.ror = 0;
+ 	/* Disable Relaxed Ordering for Writes. */
+ 	mem_access_subid.s.row = 0;
+-	/* PCIe Adddress Bits <63:34>. */
++	/* PCIe Address Bits <63:34>. */
+ 	mem_access_subid.s.ba = 0;
  
- /**
-- * ppc4xx_edac_mc_init - intialize driver instance
-+ * ppc4xx_edac_mc_init - initialize driver instance
-  * @mci: A pointer to the EDAC memory controller instance being
-  *       initialized.
-  * @op: A pointer to the OpenFirmware device tree node associated
-diff --git a/drivers/isdn/gigaset/bas-gigaset.c b/drivers/isdn/gigaset/bas-gigaset.c
-index 707d9c9..52abe40 100644
---- a/drivers/isdn/gigaset/bas-gigaset.c
-+++ b/drivers/isdn/gigaset/bas-gigaset.c
-@@ -2230,7 +2230,7 @@ static int gigaset_probe(struct usb_interface *interface,
- 		 __func__, le16_to_cpu(udev->descriptor.idVendor),
- 		 le16_to_cpu(udev->descriptor.idProduct));
+ 	/*
+diff --git a/arch/mips/txx9/generic/pci.c b/arch/mips/txx9/generic/pci.c
+index 9a0be81..96e69a0 100644
+--- a/arch/mips/txx9/generic/pci.c
++++ b/arch/mips/txx9/generic/pci.c
+@@ -107,7 +107,7 @@ int txx9_pci_mem_high __initdata;
  
--	/* allocate memory for our device state and intialize it */
-+	/* allocate memory for our device state and initialize it */
- 	cs = gigaset_initcs(driver, BAS_CHANNELS, 0, 0, cidmode,
- 			    GIGASET_MODULENAME);
- 	if (!cs)
-@@ -2480,7 +2480,7 @@ static int __init bas_gigaset_init(void)
- {
- 	int result;
- 
--	/* allocate memory for our driver state and intialize it */
-+	/* allocate memory for our driver state and initialize it */
- 	driver = gigaset_initdriver(GIGASET_MINOR, GIGASET_MINORS,
- 				    GIGASET_MODULENAME, GIGASET_DEVNAME,
- 				    &gigops, THIS_MODULE);
-diff --git a/drivers/isdn/gigaset/ser-gigaset.c b/drivers/isdn/gigaset/ser-gigaset.c
-index d151dcb..0ef09d0 100644
---- a/drivers/isdn/gigaset/ser-gigaset.c
-+++ b/drivers/isdn/gigaset/ser-gigaset.c
-@@ -513,7 +513,7 @@ gigaset_tty_open(struct tty_struct *tty)
- 		return -ENODEV;
- 	}
- 
--	/* allocate memory for our device state and intialize it */
-+	/* allocate memory for our device state and initialize it */
- 	cs = gigaset_initcs(driver, 1, 1, 0, cidmode, GIGASET_MODULENAME);
- 	if (!cs)
- 		goto error;
-@@ -771,7 +771,7 @@ static int __init ser_gigaset_init(void)
- 		return rc;
- 	}
- 
--	/* allocate memory for our driver state and intialize it */
-+	/* allocate memory for our driver state and initialize it */
- 	driver = gigaset_initdriver(GIGASET_MINOR, GIGASET_MINORS,
- 					  GIGASET_MODULENAME, GIGASET_DEVNAME,
- 					  &ops, THIS_MODULE);
-diff --git a/drivers/isdn/gigaset/usb-gigaset.c b/drivers/isdn/gigaset/usb-gigaset.c
-index 4a66338..5e3300d 100644
---- a/drivers/isdn/gigaset/usb-gigaset.c
-+++ b/drivers/isdn/gigaset/usb-gigaset.c
-@@ -695,7 +695,7 @@ static int gigaset_probe(struct usb_interface *interface,
- 
- 	dev_info(&udev->dev, "%s: Device matched ... !\n", __func__);
- 
--	/* allocate memory for our device state and intialize it */
-+	/* allocate memory for our device state and initialize it */
- 	cs = gigaset_initcs(driver, 1, 1, 0, cidmode, GIGASET_MODULENAME);
- 	if (!cs)
- 		return -ENODEV;
-@@ -894,7 +894,7 @@ static int __init usb_gigaset_init(void)
- {
- 	int result;
- 
--	/* allocate memory for our driver state and intialize it */
-+	/* allocate memory for our driver state and initialize it */
- 	driver = gigaset_initdriver(GIGASET_MINOR, GIGASET_MINORS,
- 				    GIGASET_MODULENAME, GIGASET_DEVNAME,
- 				    &ops, THIS_MODULE);
-diff --git a/drivers/media/video/davinci/vpss.c b/drivers/media/video/davinci/vpss.c
-index 7918680..3e5cf27 100644
---- a/drivers/media/video/davinci/vpss.c
-+++ b/drivers/media/video/davinci/vpss.c
-@@ -85,7 +85,7 @@ enum vpss_platform_type {
  /*
-  * vpss operations. Depends on platform. Not all functions are available
-  * on all platforms. The api, first check if a functio is available before
-- * invoking it. In the probe, the function ptrs are intialized based on
-+ * invoking it. In the probe, the function ptrs are initialized based on
-  * vpss name. vpss name can be "dm355_vpss", "dm644x_vpss" etc.
+  * allocate pci_controller and resources.
+- * mem_base, io_base: physical addresss.  0 for auto assignment.
++ * mem_base, io_base: physical address.  0 for auto assignment.
+  * mem_size and io_size means max size on auto assignment.
+  * pcic must be &txx9_primary_pcic or NULL.
   */
- struct vpss_hw_ops {
-diff --git a/drivers/media/video/stradis.c b/drivers/media/video/stradis.c
-index a057824..dd3874b 100644
---- a/drivers/media/video/stradis.c
-+++ b/drivers/media/video/stradis.c
-@@ -745,7 +745,7 @@ static void set_out_format(struct saa7146 *saa, int mode)
- 	}
+diff --git a/arch/sh/mm/cache-sh5.c b/arch/sh/mm/cache-sh5.c
+index eb4cc4e..d1bffbc 100644
+--- a/arch/sh/mm/cache-sh5.c
++++ b/arch/sh/mm/cache-sh5.c
+@@ -568,7 +568,7 @@ static void sh5_flush_dcache_page(void *page)
  }
  
--/* Intialize bitmangler to map from a byte value to the mangled word that
-+/* Initialize bitmangler to map from a byte value to the mangled word that
-  * must be output to program the Xilinx part through the DEBI port.
-  * Xilinx Data Bit->DEBI Bit: 0->15 1->7 2->6 3->12 4->11 5->2 6->1 7->0
-  * transfer FPGA code, init IBM chip, transfer IBM microcode
-diff --git a/drivers/misc/arm-charlcd.c b/drivers/misc/arm-charlcd.c
-index 9e3879e..fe8616a 100644
---- a/drivers/misc/arm-charlcd.c
-+++ b/drivers/misc/arm-charlcd.c
-@@ -313,7 +313,7 @@ static int __init charlcd_probe(struct platform_device *pdev)
- 	INIT_DELAYED_WORK(&lcd->init_work, charlcd_init_work);
- 	schedule_delayed_work(&lcd->init_work, 0);
+ /*
+- * Flush the range [start,end] of kernel virtual adddress space from
++ * Flush the range [start,end] of kernel virtual address space from
+  * the I-cache.  The corresponding range must be purged from the
+  * D-cache also because the SH-5 doesn't have cache snooping between
+  * the caches.  The addresses will be visible through the superpage
+diff --git a/arch/sparc/kernel/traps_64.c b/arch/sparc/kernel/traps_64.c
+index 42ad2ba..1e97709 100644
+--- a/arch/sparc/kernel/traps_64.c
++++ b/arch/sparc/kernel/traps_64.c
+@@ -622,7 +622,7 @@ static const char CHAFSR_PERR_msg[] =
+ static const char CHAFSR_IERR_msg[] =
+ 	"Internal processor error";
+ static const char CHAFSR_ISAP_msg[] =
+-	"System request parity error on incoming addresss";
++	"System request parity error on incoming address";
+ static const char CHAFSR_UCU_msg[] =
+ 	"Uncorrectable E-cache ECC error for ifetch/data";
+ static const char CHAFSR_UCC_msg[] =
+diff --git a/arch/x86/include/asm/pgalloc.h b/arch/x86/include/asm/pgalloc.h
+index 271de94..b4389a4 100644
+--- a/arch/x86/include/asm/pgalloc.h
++++ b/arch/x86/include/asm/pgalloc.h
+@@ -92,7 +92,7 @@ static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
+ extern void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd);
  
--	dev_info(&pdev->dev, "initalized ARM character LCD at %08x\n",
-+	dev_info(&pdev->dev, "initialized ARM character LCD at %08x\n",
- 		lcd->phybase);
+ static inline void __pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd,
+-				  unsigned long adddress)
++				  unsigned long address)
+ {
+ 	___pmd_free_tlb(tlb, pmd);
+ }
+diff --git a/drivers/edac/cell_edac.c b/drivers/edac/cell_edac.c
+index c973004..db1df59 100644
+--- a/drivers/edac/cell_edac.c
++++ b/drivers/edac/cell_edac.c
+@@ -47,7 +47,7 @@ static void cell_edac_count_ce(struct mem_ctl_info *mci, int chan, u64 ar)
+ 	offset = address & ~PAGE_MASK;
+ 	syndrome = (ar & 0x000000001fe00000ul) >> 21;
  
- 	return 0;
+-	/* TODO: Decoding of the error addresss */
++	/* TODO: Decoding of the error address */
+ 	edac_mc_handle_ce(mci, csrow->first_page + pfn, offset,
+ 			  syndrome, 0, chan, "");
+ }
+@@ -68,7 +68,7 @@ static void cell_edac_count_ue(struct mem_ctl_info *mci, int chan, u64 ar)
+ 	pfn = address >> PAGE_SHIFT;
+ 	offset = address & ~PAGE_MASK;
+ 
+-	/* TODO: Decoding of the error addresss */
++	/* TODO: Decoding of the error address */
+ 	edac_mc_handle_ue(mci, csrow->first_page + pfn, offset, 0, "");
+ }
+ 
+diff --git a/drivers/gpu/drm/radeon/atombios.h b/drivers/gpu/drm/radeon/atombios.h
+index 1bc72c3..21a54d0 100644
+--- a/drivers/gpu/drm/radeon/atombios.h
++++ b/drivers/gpu/drm/radeon/atombios.h
+@@ -1314,7 +1314,7 @@ typedef struct _GET_ENGINE_CLOCK_PARAMETERS
+ typedef struct _READ_EDID_FROM_HW_I2C_DATA_PARAMETERS
+ {
+   USHORT    usPrescale;         //Ratio between Engine clock and I2C clock
+-  USHORT    usVRAMAddress;      //Adress in Frame Buffer where to pace raw EDID
++  USHORT    usVRAMAddress;      //Address in Frame Buffer where to pace raw EDID
+   USHORT    usStatus;           //When use output: lower byte EDID checksum, high byte hardware status
+                                 //WHen use input:  lower byte as 'byte to read':currently limited to 128byte or 1byte
+   UCHAR     ucSlaveAddr;        //Read from which slave
+diff --git a/drivers/media/video/davinci/vpif.h b/drivers/media/video/davinci/vpif.h
+index 188841b..ebd5c43 100644
+--- a/drivers/media/video/davinci/vpif.h
++++ b/drivers/media/video/davinci/vpif.h
+@@ -33,7 +33,7 @@ extern spinlock_t vpif_lock;
+ #define regr(reg)               readl((reg) + vpif_base)
+ #define regw(value, reg)        writel(value, (reg + vpif_base))
+ 
+-/* Register Addresss Offsets */
++/* Register Address Offsets */
+ #define VPIF_PID			(0x0000)
+ #define VPIF_CH0_CTRL			(0x0004)
+ #define VPIF_CH1_CTRL			(0x0008)
+diff --git a/drivers/net/bnx2x/bnx2x_reg.h b/drivers/net/bnx2x/bnx2x_reg.h
+index a1f3bf0..d0db947 100644
+--- a/drivers/net/bnx2x/bnx2x_reg.h
++++ b/drivers/net/bnx2x/bnx2x_reg.h
+@@ -1442,7 +1442,7 @@
+    (~misc_registers_sw_timer_cfg_4.sw_timer_cfg_4[1] ) is set */
+ #define MISC_REG_SW_TIMER_RELOAD_VAL_4				 0xa2fc
+ /* [RW 32] the value of the counter for sw timers1-8. there are 8 addresses
+-   in this register. addres 0 - timer 1; address 1 - timer 2, ...  address 7 -
++   in this register. address 0 - timer 1; address 1 - timer 2, ...  address 7 -
+    timer 8 */
+ #define MISC_REG_SW_TIMER_VAL					 0xa5c0
+ /* [RW 1] Set by the MCP to remember if one or more of the drivers is/are
 diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
-index 03145a7..563ca46 100644
+index 822f586..03145a7 100644
 --- a/drivers/net/bonding/bond_3ad.c
 +++ b/drivers/net/bonding/bond_3ad.c
-@@ -1912,7 +1912,7 @@ int bond_3ad_bind_slave(struct slave *slave)
- 		return -1;
- 	}
+@@ -848,7 +848,7 @@ static int ad_lacpdu_send(struct port *port)
+ 	lacpdu_header = (struct lacpdu_header *)skb_put(skb, length);
  
--	//check that the slave has not been intialized yet.
-+	//check that the slave has not been initialized yet.
- 	if (SLAVE_AD_INFO(slave).port.slave != slave) {
+ 	memcpy(lacpdu_header->hdr.h_dest, lacpdu_mcast_addr, ETH_ALEN);
+-	/* Note: source addres is set to be the member's PERMANENT address,
++	/* Note: source address is set to be the member's PERMANENT address,
+ 	   because we use it to identify loopback lacpdus in receive. */
+ 	memcpy(lacpdu_header->hdr.h_source, slave->perm_hwaddr, ETH_ALEN);
+ 	lacpdu_header->hdr.h_proto = PKT_TYPE_LACPDU;
+@@ -890,7 +890,7 @@ static int ad_marker_send(struct port *port, struct bond_marker *marker)
+ 	marker_header = (struct bond_marker_header *)skb_put(skb, length);
  
- 		// port initialization
-diff --git a/drivers/net/cxgb3/mc5.c b/drivers/net/cxgb3/mc5.c
-index 3b5517b..a14995c 100644
---- a/drivers/net/cxgb3/mc5.c
-+++ b/drivers/net/cxgb3/mc5.c
-@@ -318,7 +318,7 @@ static void mc5_dbgi_mode_disable(const struct mc5 *mc5)
+ 	memcpy(marker_header->hdr.h_dest, lacpdu_mcast_addr, ETH_ALEN);
+-	/* Note: source addres is set to be the member's PERMANENT address,
++	/* Note: source address is set to be the member's PERMANENT address,
+ 	   because we use it to identify loopback MARKERs in receive. */
+ 	memcpy(marker_header->hdr.h_source, slave->perm_hwaddr, ETH_ALEN);
+ 	marker_header->hdr.h_proto = PKT_TYPE_LACPDU;
+diff --git a/drivers/net/chelsio/subr.c b/drivers/net/chelsio/subr.c
+index 599d178..e3ed0be 100644
+--- a/drivers/net/chelsio/subr.c
++++ b/drivers/net/chelsio/subr.c
+@@ -558,7 +558,7 @@ struct chelsio_vpd_t {
+ #define EEPROM_MAX_POLL   4
  
  /*
-  * Initialization that requires the OS and protocol layers to already
-- * be intialized goes here.
-+ * be initialized goes here.
+- * Read SEEPROM. A zero is written to the flag register when the addres is
++ * Read SEEPROM. A zero is written to the flag register when the address is
+  * written to the Control register. The hardware device will set the flag to a
+  * one when 4B have been transferred to the Data register.
   */
- int t3_mc5_init(struct mc5 *mc5, unsigned int nservers, unsigned int nfilters,
- 		unsigned int nroutes)
-diff --git a/drivers/net/ixgbe/ixgbe_82599.c b/drivers/net/ixgbe/ixgbe_82599.c
-index 3e06a61..74a0a11 100644
---- a/drivers/net/ixgbe/ixgbe_82599.c
-+++ b/drivers/net/ixgbe/ixgbe_82599.c
-@@ -1078,7 +1078,7 @@ s32 ixgbe_init_fdir_signature_82599(struct ixgbe_hw *hw, u32 pballoc)
- 
- 	/*
- 	 * The defaults in the HW for RX PB 1-7 are not zero and so should be
--	 * intialized to zero for non DCB mode otherwise actual total RX PB
-+	 * initialized to zero for non DCB mode otherwise actual total RX PB
- 	 * would be bigger than programmed and filter space would run into
- 	 * the PB 0 region.
+diff --git a/drivers/net/cxgb3/t3_hw.c b/drivers/net/cxgb3/t3_hw.c
+index 427c451..d9e47df 100644
+--- a/drivers/net/cxgb3/t3_hw.c
++++ b/drivers/net/cxgb3/t3_hw.c
+@@ -605,7 +605,7 @@ struct t3_vpd {
+  *
+  *	Read a 32-bit word from a location in VPD EEPROM using the card's PCI
+  *	VPD ROM capability.  A zero is written to the flag bit when the
+- *	addres is written to the control register.  The hardware device will
++ *	address is written to the control register.  The hardware device will
+  *	set the flag to 1 when 4 bytes have been read into the data register.
+  */
+ int t3_seeprom_read(struct adapter *adapter, u32 addr, __le32 *data)
+diff --git a/drivers/net/e1000/e1000_main.c b/drivers/net/e1000/e1000_main.c
+index 5cc39ed..43c6a44 100644
+--- a/drivers/net/e1000/e1000_main.c
++++ b/drivers/net/e1000/e1000_main.c
+@@ -2153,7 +2153,7 @@ static void e1000_set_rx_mode(struct net_device *netdev)
+ 	 * addresses take precedence to avoid disabling unicast filtering
+ 	 * when possible.
+ 	 *
+-	 * RAR 0 is used for the station MAC adddress
++	 * RAR 0 is used for the station MAC address
+ 	 * if there are not 14 addresses, go ahead and clear the filters
  	 */
-@@ -1169,7 +1169,7 @@ s32 ixgbe_init_fdir_perfect_82599(struct ixgbe_hw *hw, u32 pballoc)
- 
- 	/*
- 	 * The defaults in the HW for RX PB 1-7 are not zero and so should be
--	 * intialized to zero for non DCB mode otherwise actual total RX PB
-+	 * initialized to zero for non DCB mode otherwise actual total RX PB
- 	 * would be bigger than programmed and filter space would run into
- 	 * the PB 0 region.
- 	 */
-diff --git a/drivers/net/wimax/i2400m/i2400m.h b/drivers/net/wimax/i2400m/i2400m.h
-index fa74777..db6459a 100644
---- a/drivers/net/wimax/i2400m/i2400m.h
-+++ b/drivers/net/wimax/i2400m/i2400m.h
-@@ -698,7 +698,7 @@ enum i2400m_bm_cmd_flags {
-  * @I2400M_BRI_MAC_REINIT: We need to reinitialize the boot
-  *     rom after reading the MAC address. This is quite a dirty hack,
-  *     if you ask me -- the device requires the bootrom to be
-- *     intialized after reading the MAC address.
-+ *     initialized after reading the MAC address.
-  */
- enum i2400m_bri {
- 	I2400M_BRI_SOFT       = 1 << 1,
-diff --git a/drivers/net/wireless/b43/phy_g.c b/drivers/net/wireless/b43/phy_g.c
-index 0dc33b6..be48281 100644
---- a/drivers/net/wireless/b43/phy_g.c
-+++ b/drivers/net/wireless/b43/phy_g.c
-@@ -1919,7 +1919,7 @@ static void b43_hardware_pctl_init_gphy(struct b43_wldev *dev)
- 	b43_hf_write(dev, b43_hf_read(dev) | B43_HF_HWPCTL);
- }
- 
--/* Intialize B/G PHY power control */
-+/* Initialize B/G PHY power control */
- static void b43_phy_init_pctl(struct b43_wldev *dev)
- {
- 	struct ssb_bus *bus = dev->dev->bus;
-diff --git a/drivers/net/wireless/b43legacy/phy.c b/drivers/net/wireless/b43legacy/phy.c
-index 35033dd..28e477d 100644
---- a/drivers/net/wireless/b43legacy/phy.c
-+++ b/drivers/net/wireless/b43legacy/phy.c
-@@ -153,7 +153,7 @@ void b43legacy_phy_calibrate(struct b43legacy_wldev *dev)
- 	phy->calibrated = 1;
- }
- 
--/* intialize B PHY power control
-+/* initialize B PHY power control
-  * as described in http://bcm-specs.sipsolutions.net/InitPowerControl
-  */
- static void b43legacy_phy_init_pctl(struct b43legacy_wldev *dev)
-diff --git a/drivers/pcmcia/m8xx_pcmcia.c b/drivers/pcmcia/m8xx_pcmcia.c
-index f0ecad9..055f2c4 100644
---- a/drivers/pcmcia/m8xx_pcmcia.c
-+++ b/drivers/pcmcia/m8xx_pcmcia.c
-@@ -1199,7 +1199,7 @@ static int __init m8xx_probe(struct platform_device *ofdev,
- 	out_be32(M8XX_PGCRX(1),
- 		 M8XX_PGCRX_CXOE | (mk_int_int_mask(hwirq) << 16));
- 
--	/* intialize the fixed memory windows */
-+	/* initialize the fixed memory windows */
- 
- 	for (i = 0; i < PCMCIA_SOCKETS_NO; i++) {
- 		for (m = 0; m < PCMCIA_MEM_WIN_NO; m++) {
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index e35ed12..f9ee5b3 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -7192,7 +7192,7 @@ static struct ibm_struct volume_driver_data = {
-  * 		TPACPI_FAN_WR_ACPI_FANS (X31/X40/X41)
-  *
-  *	FIRMWARE BUG: on some models, EC 0x2f might not be initialized at
-- *	boot. Apparently the EC does not intialize it, so unless ACPI DSDT
-+ *	boot. Apparently the EC does not initialize it, so unless ACPI DSDT
-  *	does so, its initial value is meaningless (0x07).
-  *
-  *	For firmware bugs, refer to:
-diff --git a/drivers/scsi/aacraid/commsup.c b/drivers/scsi/aacraid/commsup.c
-index 7007914..53c81a1 100644
---- a/drivers/scsi/aacraid/commsup.c
-+++ b/drivers/scsi/aacraid/commsup.c
-@@ -91,7 +91,7 @@ void aac_fib_map_free(struct aac_dev *dev)
-  *	aac_fib_setup	-	setup the fibs
-  *	@dev: Adapter to set up
-  *
-- *	Allocate the PCI space for the fibs, map it and then intialise the
-+ *	Allocate the PCI space for the fibs, map it and then initialise the
-  *	fib area, the unmapped fib data and also the free list
-  */
- 
-diff --git a/drivers/scsi/aic94xx/aic94xx_seq.c b/drivers/scsi/aic94xx/aic94xx_seq.c
-index 7437461..390168f 100644
---- a/drivers/scsi/aic94xx/aic94xx_seq.c
-+++ b/drivers/scsi/aic94xx/aic94xx_seq.c
-@@ -797,7 +797,7 @@ static void asd_init_lseq_mdp(struct asd_ha_struct *asd_ha,  int lseq)
- 		int j;
- 		/* Start from Page 1 of Mode 0 and 1. */
- 		moffs = LSEQ_PAGE_SIZE + i*LSEQ_MODE_SCRATCH_SIZE;
--		/* All the fields of page 1 can be intialized to 0. */
-+		/* All the fields of page 1 can be initialized to 0. */
- 		for (j = 0; j < LSEQ_PAGE_SIZE; j += 4)
- 			asd_write_reg_dword(asd_ha, LmSCRATCH(lseq)+moffs+j,0);
- 	}
-@@ -938,7 +938,7 @@ static void asd_init_cseq_cio(struct asd_ha_struct *asd_ha)
- 	asd_write_reg_dword(asd_ha, SCBPRO, 0);
- 	asd_write_reg_dword(asd_ha, CSEQCON, 0);
- 
--	/* Intialize CSEQ Mode 11 Interrupt Vectors.
-+	/* Initialize CSEQ Mode 11 Interrupt Vectors.
- 	 * The addresses are 16 bit wide and in dword units.
- 	 * The values of their macros are in byte units.
- 	 * Thus we have to divide by 4. */
-@@ -961,7 +961,7 @@ static void asd_init_cseq_cio(struct asd_ha_struct *asd_ha)
- 	asd_write_reg_word(asd_ha, CPRGMCNT, cseq_idle_loop);
- 
- 	for (i = 0; i < 8; i++) {
--		/* Intialize Mode n Link m Interrupt Enable. */
-+		/* Initialize Mode n Link m Interrupt Enable. */
- 		asd_write_reg_dword(asd_ha, CMnINTEN(i), EN_CMnRSPMBXF);
- 		/* Initialize Mode n Request Mailbox. */
- 		asd_write_reg_dword(asd_ha, CMnREQMBX(i), 0);
-diff --git a/drivers/scsi/dc395x.c b/drivers/scsi/dc395x.c
-index 54f50b0..31bbfb2 100644
---- a/drivers/scsi/dc395x.c
-+++ b/drivers/scsi/dc395x.c
-@@ -3795,7 +3795,7 @@ static struct DeviceCtlBlk *device_alloc(struct AdapterCtlBlk *acb,
-  * adapter_add_device - Adds the device instance to the adaptor instance.
-  *
-  * @acb: The adapter device to be updated
-- * @dcb: A newly created and intialised device instance to add.
-+ * @dcb: A newly created and initialised device instance to add.
-  **/
- static void adapter_add_device(struct AdapterCtlBlk *acb,
- 		struct DeviceCtlBlk *dcb)
-@@ -4497,7 +4497,7 @@ static void __devinit adapter_init_chip(struct AdapterCtlBlk *acb)
-  * init_adapter - Grab the resource for the card, setup the adapter
-  * information, set the card into a known state, create the various
-  * tables etc etc. This basically gets all adapter information all up
-- * to date, intialised and gets the chip in sync with it.
-+ * to date, initialised and gets the chip in sync with it.
-  *
-  * @host:	This hosts adapter structure
-  * @io_port:	The base I/O port
-@@ -4788,7 +4788,7 @@ static void banner_display(void)
-  * that it finds in the system. The pci_dev strcuture indicates which
-  * instance we are being called from.
-  * 
-- * @dev: The PCI device to intialize.
-+ * @dev: The PCI device to initialize.
-  * @id: Looks like a pointer to the entry in our pci device table
-  * that was actually matched by the PCI subsystem.
-  *
-@@ -4859,7 +4859,7 @@ fail:
-  * dc395x_remove_one - Called to remove a single instance of the
-  * adapter.
-  *
-- * @dev: The PCI device to intialize.
-+ * @dev: The PCI device to initialize.
-  **/
- static void __devexit dc395x_remove_one(struct pci_dev *dev)
- {
-diff --git a/drivers/scsi/lpfc/lpfc_attr.c b/drivers/scsi/lpfc/lpfc_attr.c
-index 23ce457..8e67b21 100644
---- a/drivers/scsi/lpfc/lpfc_attr.c
-+++ b/drivers/scsi/lpfc/lpfc_attr.c
-@@ -1334,7 +1334,7 @@ lpfc_##attr##_show(struct device *dev, struct device_attribute *attr, \
+ 	i = 1;
+diff --git a/drivers/net/e1000e/phy.c b/drivers/net/e1000e/phy.c
+index 3d3dc0c..b9bff5b 100644
+--- a/drivers/net/e1000e/phy.c
++++ b/drivers/net/e1000e/phy.c
+@@ -2976,7 +2976,7 @@ s32 e1000_write_phy_reg_hv_locked(struct e1000_hw *hw, u32 offset, u16 data)
  }
  
  /**
-- * lpfc_param_init - Intializes a cfg attribute
-+ * lpfc_param_init - Initializes a cfg attribute
+- *  e1000_get_phy_addr_for_hv_page - Get PHY adrress based on page
++ *  e1000_get_phy_addr_for_hv_page - Get PHY address based on page
+  *  @page: page to be accessed
+  **/
+ static u32 e1000_get_phy_addr_for_hv_page(u32 page)
+diff --git a/drivers/net/eepro.c b/drivers/net/eepro.c
+index 8d97f16..9be9df6 100644
+--- a/drivers/net/eepro.c
++++ b/drivers/net/eepro.c
+@@ -1760,7 +1760,7 @@ module_param_array(io, int, NULL, 0);
+ module_param_array(irq, int, NULL, 0);
+ module_param_array(mem, int, NULL, 0);
+ module_param(autodetect, int, 0);
+-MODULE_PARM_DESC(io, "EtherExpress Pro/10 I/O base addres(es)");
++MODULE_PARM_DESC(io, "EtherExpress Pro/10 I/O base address(es)");
+ MODULE_PARM_DESC(irq, "EtherExpress Pro/10 IRQ number(s)");
+ MODULE_PARM_DESC(mem, "EtherExpress Pro/10 Rx buffer size(es) in kB (3-29)");
+ MODULE_PARM_DESC(autodetect, "EtherExpress Pro/10 force board(s) detection (0-1)");
+diff --git a/drivers/net/ll_temac_main.c b/drivers/net/ll_temac_main.c
+index bdf2149..d31f954 100644
+--- a/drivers/net/ll_temac_main.c
++++ b/drivers/net/ll_temac_main.c
+@@ -237,7 +237,7 @@ static int temac_dma_bd_init(struct net_device *ndev)
+ 		goto out;
+ 	}
+ 	/* allocate the tx and rx ring buffer descriptors. */
+-	/* returns a virtual addres and a physical address. */
++	/* returns a virtual address and a physical address. */
+ 	lp->tx_bd_v = dma_alloc_coherent(ndev->dev.parent,
+ 					 sizeof(*lp->tx_bd_v) * TX_BD_NUM,
+ 					 &lp->tx_bd_p, GFP_KERNEL);
+diff --git a/drivers/net/tehuti.c b/drivers/net/tehuti.c
+index 737df60..90e5048 100644
+--- a/drivers/net/tehuti.c
++++ b/drivers/net/tehuti.c
+@@ -821,7 +821,7 @@ static void bdx_setmulti(struct net_device *ndev)
+ 		}
+ 
+ 		/* use PMF to accept first MAC_MCST_NUM (15) addresses */
+-		/* TBD: sort addreses and write them in ascending order
++		/* TBD: sort addresses and write them in ascending order
+ 		 * into RX_MAC_MCST regs. we skip this phase now and accept ALL
+ 		 * multicast frames throu IMF */
+ 		/* accept the rest of addresses throu IMF */
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 55f3a3e..e625f95 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1309,7 +1309,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 		break;
+ 
+ 	case SIOCGIFHWADDR:
+-		/* Get hw addres */
++		/* Get hw address */
+ 		memcpy(ifr.ifr_hwaddr.sa_data, tun->dev->dev_addr, ETH_ALEN);
+ 		ifr.ifr_hwaddr.sa_family = tun->dev->type;
+ 		if (copy_to_user(argp, &ifr, ifreq_len))
+diff --git a/drivers/net/vxge/vxge-traffic.h b/drivers/net/vxge/vxge-traffic.h
+index 6fa07d1..63bb81f 100644
+--- a/drivers/net/vxge/vxge-traffic.h
++++ b/drivers/net/vxge/vxge-traffic.h
+@@ -1695,7 +1695,7 @@ struct vxge_hw_device_stats_sw_err {
+  * struct vxge_hw_device_stats - Contains HW per-device statistics,
+  * including hw.
+  * @devh: HW device handle.
+- * @dma_addr: DMA addres of the %hw_info. Given to device to fill-in the stats.
++ * @dma_addr: DMA address of the %hw_info. Given to device to fill-in the stats.
+  * @hw_info_dmah: DMA handle used to map hw statistics onto the device memory
+  *                space.
+  * @hw_info_dma_acch: One more DMA handle used subsequently to free the
+diff --git a/drivers/net/wimax/i2400m/driver.c b/drivers/net/wimax/i2400m/driver.c
+index 9c8b78d..27c3200 100644
+--- a/drivers/net/wimax/i2400m/driver.c
++++ b/drivers/net/wimax/i2400m/driver.c
+@@ -280,7 +280,7 @@ int i2400m_check_mac_addr(struct i2400m *i2400m)
+ 			result);
+ 		goto error;
+ 	}
+-	/* Extract MAC addresss */
++	/* Extract MAC address */
+ 	ddi = (void *) skb->data;
+ 	BUILD_BUG_ON(ETH_ALEN != sizeof(ddi->mac_address));
+ 	d_printf(2, dev, "GET DEVICE INFO: mac addr %pM\n",
+diff --git a/drivers/net/wireless/ath/ath5k/reg.h b/drivers/net/wireless/ath/ath5k/reg.h
+index 55b4ac6..5246e56 100644
+--- a/drivers/net/wireless/ath/ath5k/reg.h
++++ b/drivers/net/wireless/ath/ath5k/reg.h
+@@ -1064,7 +1064,7 @@
+ /*
+  * EEPROM command register
+  */
+-#define AR5K_EEPROM_CMD		0x6008			/* Register Addres */
++#define AR5K_EEPROM_CMD		0x6008			/* Register Address */
+ #define AR5K_EEPROM_CMD_READ	0x00000001	/* EEPROM read */
+ #define AR5K_EEPROM_CMD_WRITE	0x00000002	/* EEPROM write */
+ #define AR5K_EEPROM_CMD_RESET	0x00000004	/* EEPROM reset */
+@@ -1084,7 +1084,7 @@
+ /*
+  * EEPROM config register
+  */
+-#define AR5K_EEPROM_CFG			0x6010			/* Register Addres */
++#define AR5K_EEPROM_CFG			0x6010			/* Register Address */
+ #define AR5K_EEPROM_CFG_SIZE		0x00000003		/* Size determination override */
+ #define AR5K_EEPROM_CFG_SIZE_AUTO	0
+ #define AR5K_EEPROM_CFG_SIZE_4KBIT	1
+@@ -1126,7 +1126,7 @@
+  * Second station id register (Upper 16 bits of MAC address + PCU settings)
+  */
+ #define AR5K_STA_ID1			0x8004			/* Register Address */
+-#define	AR5K_STA_ID1_ADDR_U16		0x0000ffff	/* Upper 16 bits of MAC addres */
++#define	AR5K_STA_ID1_ADDR_U16		0x0000ffff	/* Upper 16 bits of MAC address */
+ #define AR5K_STA_ID1_AP			0x00010000	/* Set AP mode */
+ #define AR5K_STA_ID1_ADHOC		0x00020000	/* Set Ad-Hoc mode */
+ #define AR5K_STA_ID1_PWR_SV		0x00040000	/* Power save reporting */
+diff --git a/drivers/net/wireless/iwlwifi/iwl-sta.c b/drivers/net/wireless/iwlwifi/iwl-sta.c
+index 7e0829b..06c70b0 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-sta.c
++++ b/drivers/net/wireless/iwlwifi/iwl-sta.c
+@@ -107,7 +107,7 @@ static int iwl_process_add_sta_resp(struct iwl_priv *priv,
+ 	/*
+ 	 * XXX: The MAC address in the command buffer is often changed from
+ 	 * the original sent to the device. That is, the MAC address
+-	 * written to the command buffer often is not the same MAC adress
++	 * written to the command buffer often is not the same MAC address
+ 	 * read from the command buffer when the command returns. This
+ 	 * issue has not yet been resolved and this debugging is left to
+ 	 * observe the problem.
+diff --git a/drivers/net/wireless/rt2x00/rt2x00mac.c b/drivers/net/wireless/rt2x00/rt2x00mac.c
+index 235e037..5405872 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00mac.c
++++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
+@@ -274,7 +274,7 @@ int rt2x00mac_add_interface(struct ieee80211_hw *hw,
+ 	intf->beacon = entry;
+ 
+ 	/*
+-	 * The MAC adddress must be configured after the device
++	 * The MAC address must be configured after the device
+ 	 * has been initialized. Otherwise the device can reset
+ 	 * the MAC registers.
+ 	 * The BSSID address must only be configured in AP mode,
+diff --git a/drivers/net/wireless/wl3501_cs.c b/drivers/net/wireless/wl3501_cs.c
+index a1cc2d4..64a8c25 100644
+--- a/drivers/net/wireless/wl3501_cs.c
++++ b/drivers/net/wireless/wl3501_cs.c
+@@ -201,7 +201,7 @@ static inline void wl3501_switch_page(struct wl3501_card *this, u8 page)
+ }
+ 
+ /*
+- * Get Ethernet MAC addresss.
++ * Get Ethernet MAC address.
   *
-  * Description:
-  * Macro that given an attr e.g. hba_queue_depth expands
-diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-index f8c86b2..b95285f 100644
---- a/drivers/scsi/pm8001/pm8001_init.c
-+++ b/drivers/scsi/pm8001/pm8001_init.c
-@@ -603,7 +603,7 @@ static u32 pm8001_request_irq(struct pm8001_hba_info *pm8001_ha)
+  * WARNING: We switch to FPAGE0 and switc back again.
+  *          Making sure there is no other WL function beening called by ISR.
+diff --git a/drivers/scsi/a100u2w.c b/drivers/scsi/a100u2w.c
+index dbbc601..7cb5756 100644
+--- a/drivers/scsi/a100u2w.c
++++ b/drivers/scsi/a100u2w.c
+@@ -416,7 +416,7 @@ static u8 orc_load_firmware(struct orc_host * host)
+ 	/* Go back and check they match */
+ 
+ 	outb(PRGMRST | DOWNLOAD, host->base + ORC_RISCCTL);	/* Reset program count 0 */
+-	bios_addr -= 0x1000;	/* Reset the BIOS adddress      */
++	bios_addr -= 0x1000;	/* Reset the BIOS address */
+ 	for (i = 0, data32_ptr = (u8 *) & data32;	/* Check the code       */
+ 	     i < 0x1000;	/* Firmware code size = 4K      */
+ 	     i++, bios_addr++) {
+diff --git a/drivers/scsi/aic94xx/aic94xx_reg_def.h b/drivers/scsi/aic94xx/aic94xx_reg_def.h
+index 28aaf34..40273a7 100644
+--- a/drivers/scsi/aic94xx/aic94xx_reg_def.h
++++ b/drivers/scsi/aic94xx/aic94xx_reg_def.h
+@@ -1689,7 +1689,7 @@
+ #define		PHY_START_CAL		0x01
+ 
+ /*
+- * HST_PCIX2 Registers, Addresss Range: (0x00-0xFC)
++ * HST_PCIX2 Registers, Address Range: (0x00-0xFC)
+  */
+ #define PCIX_REG_BASE_ADR		0xB8040000
+ 
+@@ -1802,7 +1802,7 @@
+ #define PCIC_TP_CTRL	0xFC
+ 
+ /*
+- * EXSI Registers, Addresss Range: (0x00-0xFC)
++ * EXSI Registers, Address Range: (0x00-0xFC)
+  */
+ #define EXSI_REG_BASE_ADR		REG_BASE_ADDR_EXSI
+ 
+diff --git a/drivers/spi/atmel_spi.c b/drivers/spi/atmel_spi.c
+index c4e0442..09ee7dd 100644
+--- a/drivers/spi/atmel_spi.c
++++ b/drivers/spi/atmel_spi.c
+@@ -341,9 +341,9 @@ static void atmel_spi_next_message(struct spi_master *master)
+ /*
+  * For DMA, tx_buf/tx_dma have the same relationship as rx_buf/rx_dma:
+  *  - The buffer is either valid for CPU access, else NULL
+- *  - If the buffer is valid, so is its DMA addresss
++ *  - If the buffer is valid, so is its DMA address
+  *
+- * This driver manages the dma addresss unless message->is_dma_mapped.
++ * This driver manages the dma address unless message->is_dma_mapped.
+  */
+ static int
+ atmel_spi_dma_map_xfer(struct atmel_spi *as, struct spi_transfer *xfer)
+diff --git a/drivers/usb/wusbcore/wa-rpipe.c b/drivers/usb/wusbcore/wa-rpipe.c
+index c7b1d81..8cb9d80 100644
+--- a/drivers/usb/wusbcore/wa-rpipe.c
++++ b/drivers/usb/wusbcore/wa-rpipe.c
+@@ -49,7 +49,7 @@
+  *
+  *  USB Stack port number    4 (1 based)
+  *  WUSB code port index     3 (0 based)
+- *  USB Addresss             5 (2 based -- 0 is for default, 1 for root hub)
++ *  USB Address             5 (2 based -- 0 is for default, 1 for root hub)
+  *
+  *  Now, because we don't use the concept as default address exactly
+  *  like the (wired) USB code does, we need to kind of skip it. So we
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 889ec9d..15e88c6 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -553,7 +553,7 @@ struct ext4_mount_options {
  #endif
+ };
  
- intx:
--	/* intialize the INT-X interrupt */
-+	/* initialize the INT-X interrupt */
- 	rc = request_irq(pdev->irq, irq_handler, IRQF_SHARED, DRV_NAME,
- 		SHOST_TO_SAS_HA(pm8001_ha->shost));
- 	return rc;
-diff --git a/drivers/scsi/scsi_netlink.c b/drivers/scsi/scsi_netlink.c
-index d53e650..a2ed201 100644
---- a/drivers/scsi/scsi_netlink.c
-+++ b/drivers/scsi/scsi_netlink.c
-@@ -477,7 +477,7 @@ EXPORT_SYMBOL_GPL(scsi_nl_remove_driver);
+-/* Max physical block we can addres w/o extents */
++/* Max physical block we can address w/o extents */
+ #define EXT4_MAX_BLOCK_FILE_PHYS	0xFFFFFFFF
  
- 
- /**
-- * scsi_netlink_init - Called by SCSI subsystem to intialize
-+ * scsi_netlink_init - Called by SCSI subsystem to initialize
-  * 	the SCSI transport netlink interface
-  *
-  **/
-diff --git a/drivers/scsi/sym53c8xx_2/sym_glue.c b/drivers/scsi/sym53c8xx_2/sym_glue.c
-index 8b955b5..4afa81a 100644
---- a/drivers/scsi/sym53c8xx_2/sym_glue.c
-+++ b/drivers/scsi/sym53c8xx_2/sym_glue.c
-@@ -1864,7 +1864,7 @@ static pci_ers_result_t sym2_io_slot_dump(struct pci_dev *pdev)
-  *
-  * This routine is similar to sym_set_workarounds(), except
-  * that, at this point, we already know that the device was
-- * successfully intialized at least once before, and so most
-+ * successfully initialized at least once before, and so most
-  * of the steps taken there are un-needed here.
-  */
- static void sym2_reset_workarounds(struct pci_dev *pdev)
-diff --git a/drivers/usb/misc/adutux.c b/drivers/usb/misc/adutux.c
-index 801324a..3ee6af9 100644
---- a/drivers/usb/misc/adutux.c
-+++ b/drivers/usb/misc/adutux.c
-@@ -716,7 +716,7 @@ static int adu_probe(struct usb_interface *interface,
- 		goto exit;
- 	}
- 
--	/* allocate memory for our device state and intialize it */
-+	/* allocate memory for our device state and initialize it */
- 	dev = kzalloc(sizeof(struct adu_device), GFP_KERNEL);
- 	if (dev == NULL) {
- 		dev_err(&interface->dev, "Out of memory\n");
-diff --git a/drivers/usb/misc/iowarrior.c b/drivers/usb/misc/iowarrior.c
-index bc88c79..937c408 100644
---- a/drivers/usb/misc/iowarrior.c
-+++ b/drivers/usb/misc/iowarrior.c
-@@ -767,7 +767,7 @@ static int iowarrior_probe(struct usb_interface *interface,
- 	int i;
- 	int retval = -ENOMEM;
- 
--	/* allocate memory for our device state and intialize it */
-+	/* allocate memory for our device state and initialize it */
- 	dev = kzalloc(sizeof(struct iowarrior), GFP_KERNEL);
- 	if (dev == NULL) {
- 		dev_err(&interface->dev, "Out of memory\n");
-diff --git a/drivers/usb/misc/ldusb.c b/drivers/usb/misc/ldusb.c
-index dd41d87..62d39fe 100644
---- a/drivers/usb/misc/ldusb.c
-+++ b/drivers/usb/misc/ldusb.c
-@@ -641,7 +641,7 @@ static int ld_usb_probe(struct usb_interface *intf, const struct usb_device_id *
- 	int i;
- 	int retval = -ENOMEM;
- 
--	/* allocate memory for our device state and intialize it */
-+	/* allocate memory for our device state and initialize it */
- 
- 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
- 	if (dev == NULL) {
-diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index 6fca870..cb21dc1 100644
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -1614,7 +1614,7 @@ static inline void __init musb_g_init_endpoints(struct musb *musb)
- 	struct musb_hw_ep	*hw_ep;
- 	unsigned		count = 0;
- 
--	/* intialize endpoint list just once */
-+	/* initialize endpoint list just once */
- 	INIT_LIST_HEAD(&(musb->g.ep_list));
- 
- 	for (epnum = 0, hw_ep = musb->endpoints;
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 06328d3..d1fd33d 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2927,14 +2927,14 @@ fix_extent_len:
-  * to an uninitialized extent.
-  *
-  * Writing to an uninitized extent may result in splitting the uninitialized
-- * extent into multiple /intialized unintialized extents (up to three)
-+ * extent into multiple /initialized uninitialized extents (up to three)
-  * There are three possibilities:
-  *   a> There is no split required: Entire extent should be uninitialized
-  *   b> Splits in two extents: Write is happening at either end of the extent
-  *   c> Splits in three extents: Somone is writing in middle of the extent
-  *
-  * One of more index blocks maybe needed if the extent tree grow after
-- * the unintialized extent split. To prevent ENOSPC occur at the IO
-+ * the uninitialized extent split. To prevent ENOSPC occur at the IO
-  * complete, we need to split the uninitialized extent before DIO submit
-  * the IO. The uninitialized extent called at this time will be split
-  * into three uninitialized extent(at most). After IO complete, the part
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 4b8debe..8ea5c3e 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3926,9 +3926,9 @@ retry:
-  * preallocated extents, and those write extend the file, no need to
-  * fall back to buffered IO.
-  *
-- * For holes, we fallocate those blocks, mark them as unintialized
-+ * For holes, we fallocate those blocks, mark them as uninitialized
-  * If those blocks were preallocated, we mark sure they are splited, but
-- * still keep the range to write as unintialized.
-+ * still keep the range to write as uninitialized.
-  *
-  * The unwrritten extents will be converted to written when DIO is completed.
-  * For async direct IO, since the IO may still pending when return, we
-diff --git a/fs/gfs2/glock.h b/fs/gfs2/glock.h
-index 2bda191..db1c26d 100644
---- a/fs/gfs2/glock.h
-+++ b/fs/gfs2/glock.h
-@@ -215,7 +215,7 @@ void gfs2_glock_dq_uninit_m(unsigned int num_gh, struct gfs2_holder *ghs);
- void gfs2_print_dbg(struct seq_file *seq, const char *fmt, ...);
- 
- /**
-- * gfs2_glock_nq_init - intialize a holder and enqueue it on a glock
-+ * gfs2_glock_nq_init - initialize a holder and enqueue it on a glock
-  * @gl: the glock
-  * @state: the state we're requesting
-  * @flags: the modifier flags
-diff --git a/fs/xfs/linux-2.6/xfs_super.c b/fs/xfs/linux-2.6/xfs_super.c
-index a4e0797..302cc12 100644
---- a/fs/xfs/linux-2.6/xfs_super.c
-+++ b/fs/xfs/linux-2.6/xfs_super.c
-@@ -938,7 +938,7 @@ out_reclaim:
-  * Slab object creation initialisation for the XFS inode.
-  * This covers only the idempotent fields in the XFS inode;
-  * all other fields need to be initialised on allocation
-- * from the slab. This avoids the need to repeatedly intialise
-+ * from the slab. This avoids the need to repeatedly initialise
-  * fields in the xfs inode that left in the initialise state
-  * when freeing the inode.
-  */
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index ed3e92e..421961d 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -560,7 +560,7 @@ struct cgroup_iter {
  /*
-  * To iterate across the tasks in a cgroup:
-  *
-- * 1) call cgroup_iter_start to intialize an iterator
-+ * 1) call cgroup_iter_start to initialize an iterator
-  *
-  * 2) call cgroup_iter_next() to retrieve member tasks until it
-  *    returns NULL or until you want to end the iteration
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index caf057a..8a5f9d3 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -2933,7 +2933,7 @@ static void __init kdb_cmd_init(void)
- 	}
- }
+diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
+index c637b75..cd77aa7 100644
+--- a/include/acpi/actbl1.h
++++ b/include/acpi/actbl1.h
+@@ -119,7 +119,7 @@ struct acpi_whea_header {
+ struct acpi_table_bert {
+ 	struct acpi_table_header header;	/* Common ACPI table header */
+ 	u32 region_length;	/* Length of the boot error region */
+-	u64 address;		/* Physical addresss of the error region */
++	u64 address;		/* Physical address of the error region */
+ };
  
--/* Intialize kdb_printf, breakpoint tables and kdb state */
-+/* Initialize kdb_printf, breakpoint tables and kdb state */
- void __init kdb_init(int lvl)
- {
- 	static int kdb_init_lvl = KDB_NOT_INITIALIZED;
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index c18d7ef..ddbbaf2 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -678,7 +678,7 @@ EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
- int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq)
- {
+ /* Boot Error Region (not a subtable, pointed to by Address field above) */
+diff --git a/include/net/sctp/user.h b/include/net/sctp/user.h
+index 2b2769c..2a128c8 100644
+--- a/include/net/sctp/user.h
++++ b/include/net/sctp/user.h
+@@ -99,8 +99,8 @@ typedef __s32 sctp_assoc_t;
+ #define SCTP_SOCKOPT_PEELOFF	102	/* peel off association. */
+ /* Options 104-106 are deprecated and removed. Do not use this space */
+ #define SCTP_SOCKOPT_CONNECTX_OLD	107	/* CONNECTX old requests. */
+-#define SCTP_GET_PEER_ADDRS	108		/* Get all peer addresss. */
+-#define SCTP_GET_LOCAL_ADDRS	109		/* Get all local addresss. */
++#define SCTP_GET_PEER_ADDRS	108		/* Get all peer address. */
++#define SCTP_GET_LOCAL_ADDRS	109		/* Get all local address. */
+ #define SCTP_SOCKOPT_CONNECTX	110		/* CONNECTX requests. */
+ #define SCTP_SOCKOPT_CONNECTX3	111	/* CONNECTX requests (updated) */
  
--	/* Intialize mult/shift and max_idle_ns */
-+	/* Initialize mult/shift and max_idle_ns */
- 	__clocksource_updatefreq_scale(cs, scale, freq);
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index c0613f7..f56db58 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -163,7 +163,7 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
+ 	 * just verifies it is an address we can use.
+ 	 *
+ 	 * Since the kernel does everything in page size chunks ensure
+-	 * the destination addreses are page aligned.  Too many
++	 * the destination addresses are page aligned.  Too many
+ 	 * special cases crop of when we don't do this.  The most
+ 	 * insidious is getting overlapping destination addresses
+ 	 * simply because addresses are changed to page size
+diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+index 1357c57..d9c5fe4 100644
+--- a/kernel/sysctl_binary.c
++++ b/kernel/sysctl_binary.c
+@@ -1193,7 +1193,7 @@ static ssize_t bin_dn_node_address(struct file *file,
  
- 	/* Add clocksource to the clcoksource list */
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index de3bd84..cf43a46 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1342,7 +1342,7 @@ static inline unsigned int tcp_cwnd_test(struct tcp_sock *tp,
- 	return 0;
- }
+ 		buf[result] = '\0';
  
--/* Intialize TSO state of a skb.
-+/* Initialize TSO state of a skb.
-  * This must be invoked the first time we consider transmitting
-  * SKB onto the wire.
+-		/* Convert the decnet addresss to binary */
++		/* Convert the decnet address to binary */
+ 		result = -EIO;
+ 		nodep = strchr(buf, '.') + 1;
+ 		if (!nodep)
+diff --git a/kernel/trace/trace_entries.h b/kernel/trace/trace_entries.h
+index e3dfeca..6cf2237 100644
+--- a/kernel/trace/trace_entries.h
++++ b/kernel/trace/trace_entries.h
+@@ -53,7 +53,7 @@
   */
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index 1ec7158..03d6b54 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -1611,7 +1611,7 @@ static void section_rel(const char *modname, struct elf_info *elf,
-  * A module includes a number of sections that are discarded
-  * either when loaded or when used as built-in.
-  * For loaded modules all functions marked __init and all data
-- * marked __initdata will be discarded when the module has been intialized.
-+ * marked __initdata will be discarded when the module has been initialized.
-  * Likewise for modules used built-in the sections marked __exit
-  * are discarded because __exit marked function are supposed to be called
-  * only when a module is unloaded which never happens for built-in modules.
-diff --git a/sound/pci/au88x0/au88x0_mixer.c b/sound/pci/au88x0/au88x0_mixer.c
-index c92f493..557c782 100644
---- a/sound/pci/au88x0/au88x0_mixer.c
-+++ b/sound/pci/au88x0/au88x0_mixer.c
-@@ -23,7 +23,7 @@ static int __devinit snd_vortex_mixer(vortex_t * vortex)
- 	if ((err = snd_ac97_bus(vortex->card, 0, &ops, NULL, &pbus)) < 0)
- 		return err;
- 	memset(&ac97, 0, sizeof(ac97));
--	// Intialize AC97 codec stuff.
-+	// Initialize AC97 codec stuff.
- 	ac97.private_data = vortex;
- 	ac97.scaps = AC97_SCAP_NO_SPDIF;
- 	err = snd_ac97_mixer(pbus, &ac97, &vortex->codec);
+ 
+ /*
+- * Function trace entry - function address and parent function addres:
++ * Function trace entry - function address and parent function address:
+  */
+ FTRACE_ENTRY(function, ftrace_entry,
+ 
+diff --git a/net/decnet/dn_dev.c b/net/decnet/dn_dev.c
+index 4c409b4..9b73e0b 100644
+--- a/net/decnet/dn_dev.c
++++ b/net/decnet/dn_dev.c
+@@ -1112,7 +1112,7 @@ static struct dn_dev *dn_dev_create(struct net_device *dev, int *err)
+ /*
+  * This processes a device up event. We only start up
+  * the loopback device & ethernet devices with correct
+- * MAC addreses automatically. Others must be started
++ * MAC addresses automatically. Others must be started
+  * specifically.
+  *
+  * FIXME: How should we configure the loopback address ? If we could dispense
+diff --git a/sound/pci/ca0106/ca0106.h b/sound/pci/ca0106/ca0106.h
+index 14b8d9a..afee506 100644
+--- a/sound/pci/ca0106/ca0106.h
++++ b/sound/pci/ca0106/ca0106.h
+@@ -188,7 +188,7 @@
+ #define PLAYBACK_LIST_PTR	0x02		/* Pointer to the current period being played */
+ 						/* PTR[5:0], Default: 0x0 */
+ #define PLAYBACK_UNKNOWN3	0x03		/* Not used ?? */
+-#define PLAYBACK_DMA_ADDR	0x04		/* Playback DMA addresss */
++#define PLAYBACK_DMA_ADDR	0x04		/* Playback DMA address */
+ 						/* DMA[31:0], Default: 0x0 */
+ #define PLAYBACK_PERIOD_SIZE	0x05		/* Playback period size. win2000 uses 0x04000000 */
+ 						/* SIZE[31:16], Default: 0x0 */
+diff --git a/sound/pci/emu10k1/emu10k1x.c b/sound/pci/emu10k1/emu10k1x.c
+index df47f73..0c701e4 100644
+--- a/sound/pci/emu10k1/emu10k1x.c
++++ b/sound/pci/emu10k1/emu10k1x.c
+@@ -114,7 +114,7 @@ MODULE_PARM_DESC(enable, "Enable the EMU10K1X soundcard.");
+ 						 */
+ #define PLAYBACK_LIST_SIZE	0x01		/* Size of list in bytes << 16. E.g. 8 periods -> 0x00380000  */
+ #define PLAYBACK_LIST_PTR	0x02		/* Pointer to the current period being played */
+-#define PLAYBACK_DMA_ADDR	0x04		/* Playback DMA addresss */
++#define PLAYBACK_DMA_ADDR	0x04		/* Playback DMA address */
+ #define PLAYBACK_PERIOD_SIZE	0x05		/* Playback period size */
+ #define PLAYBACK_POINTER	0x06		/* Playback period pointer. Sample currently in DAC */
+ #define PLAYBACK_UNKNOWN1       0x07
+diff --git a/sound/pci/emu10k1/p16v.h b/sound/pci/emu10k1/p16v.h
+index 1532149..00f4817 100644
+--- a/sound/pci/emu10k1/p16v.h
++++ b/sound/pci/emu10k1/p16v.h
+@@ -96,7 +96,7 @@
+ #define PLAYBACK_LIST_SIZE	0x01		/* Size of list in bytes << 16. E.g. 8 periods -> 0x00380000  */
+ #define PLAYBACK_LIST_PTR	0x02		/* Pointer to the current period being played */
+ #define PLAYBACK_UNKNOWN3	0x03		/* Not used */
+-#define PLAYBACK_DMA_ADDR	0x04		/* Playback DMA addresss */
++#define PLAYBACK_DMA_ADDR	0x04		/* Playback DMA address */
+ #define PLAYBACK_PERIOD_SIZE	0x05		/* Playback period size. win2000 uses 0x04000000 */
+ #define PLAYBACK_POINTER	0x06		/* Playback period pointer. Used with PLAYBACK_LIST_PTR to determine buffer position currently in DAC */
+ #define PLAYBACK_FIFO_END_ADDRESS	0x07		/* Playback FIFO end address */
+diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
+index 23a58f0..7c17f45 100644
+--- a/sound/pci/es1968.c
++++ b/sound/pci/es1968.c
+@@ -220,7 +220,7 @@ MODULE_PARM_DESC(joystick, "Enable joystick.");
+ #define	RINGB_EN_2CODEC		0x0020
+ #define RINGB_SING_BIT_DUAL	0x0040
+ 
+-/* ****Port Adresses**** */
++/* ****Port Addresses**** */
+ 
+ /*   Write & Read */
+ #define ESM_INDEX		0x02
+diff --git a/sound/pci/rme9652/hdspm.c b/sound/pci/rme9652/hdspm.c
+index a369f2a..84c5a5b 100644
+--- a/sound/pci/rme9652/hdspm.c
++++ b/sound/pci/rme9652/hdspm.c
+@@ -550,7 +550,7 @@ static inline int HDSPM_bit2freq(int n)
+ 	return bit2freq_tab[n];
+ }
+ 
+-/* Write/read to/from HDSPM with Adresses in Bytes
++/* Write/read to/from HDSPM with Addresses in Bytes
+    not words but only 32Bit writes are allowed */
+ 
+ static inline void hdspm_write(struct hdspm * hdspm, unsigned int reg,
 -- 
 1.7.1
 
