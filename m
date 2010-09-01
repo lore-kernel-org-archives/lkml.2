@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab0IALz6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 07:55:58 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:54066 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab0IALz4 (ORCPT
+	id S1753747Ab0IAL45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 07:56:57 -0400
+Received: from v002983.home.net.pl ([212.85.107.189]:51224 "HELO
+	v002983.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752743Ab0IAL4z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 07:55:56 -0400
-Message-ID: <4C7E3F40.70205@canonical.com>
-Date: Wed, 01 Sep 2010 19:55:44 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
+	Wed, 1 Sep 2010 07:56:55 -0400
+From: Hubert Kario <hka@qbs.com.pl>
+Organization: QBS Jan =?utf-8?q?Kuba=C5=84?=
+To: Ben Chociej <bchociej@gmail.com>
+Subject: Re: [PATCH 2/2] Btrfs-progs: Add hot data support in mkfs
+Date: Wed, 1 Sep 2010 13:56:49 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-ARCH; KDE/4.5.0; i686; ; )
+Cc: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cmm@us.ibm.com, bcchocie@us.ibm.com, mrlupfer@us.ibm.com,
+        crscott@us.ibm.com, mlupfer@gmail.com, conscott@vt.edu
+References: <1281652177-23562-1-git-send-email-bchociej@gmail.com> <20100813131422.GA615@centrinvest.ru> <AANLkTinQAa=DujQ2Tm1oi2kVqF9z1RX2_M3SCCO_MKZG@mail.gmail.com>
+In-Reply-To: <AANLkTinQAa=DujQ2Tm1oi2kVqF9z1RX2_M3SCCO_MKZG@mail.gmail.com>
 MIME-Version: 1.0
-To: Corentin Chary <corentin.chary@gmail.com>
-CC: Len Brown <lenb@kernel.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Len Brown <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH 8/8] ideapad: Change the driver name to ideapad_laptop
-References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com>	<1282120734-11635-1-git-send-email-ike.pan@canonical.com>	<alpine.LFD.2.00.1008251656090.3037@localhost.localdomain>	<AANLkTi=STq=_K2NPnK4GM+XwruaR09m6QJ7nkuCJVQvB@mail.gmail.com>	<4C7606A9.40103@canonical.com> <AANLkTik5jZ69_=yzQaheUrxPvnnFFdyysjxndVKfdh1d@mail.gmail.com>
-In-Reply-To: <AANLkTik5jZ69_=yzQaheUrxPvnnFFdyysjxndVKfdh1d@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201009011356.51609.hka@qbs.com.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2010 03:43 PM, Corentin Chary wrote:
-> On Thu, Aug 26, 2010 at 8:16 AM, Ike Panhc <ike.pan@canonical.com> wrote:
->> On 08/26/2010 01:43 PM, Corentin Chary wrote:
->>> On Wed, Aug 25, 2010 at 10:56 PM, Len Brown <lenb@kernel.org> wrote:
->>>>>  drivers/platform/x86/ideapad_acpi.c   |  381 ---------------------------------
->>>>>  drivers/platform/x86/ideapad_laptop.c |  381 +++++++++++++++++++++++++++++++++
->>>>
->>>> Acked-by: Len Brown <len.brown@intel.com>
->>>>
->>>> thanks,
->>>> Len Brown, Intel Open Source Technology Center
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>
->>>
->>> Probably not very important .. but .. other drivers are called *-laptop.c, not
->>> *_laptop.c ..
->>>
->>> asus-laptop.c classmate-laptop.c compal-laptop.c dell-laptop.c eeepc-laptop.c
->>> fujitsu-laptop.c msi-laptop.c panasonic-laptop.c sony-laptop.c topstar-laptop.c
->>>
->> I choose _laptop.c not -laptop.c because when modprobe. We are using
->> "modprobe asus-laptop", but when removing, using "modprobe asus_laptop".
->>
+On Friday 13 August 2010 16:10:24 Ben Chociej wrote:
+> It's a good point, of course. Ideally we would be able to prioritize
+> data and place them on 15k versus 7.2krpm disks, etc. However you get
+> to a point where's there's only incremental benefit. For that reason,
+> the scope of this project was simply to take advantage of SSD and HDD
+> in hybrid. Of course, you could register the same complaint about the
+> ZFS SSD caching: why not take advantage of faster vs. slower spinning
+> disks? Unfortunately it just wasn't in the scope of our 12-week
+> project here.
 > 
-> Hum, that's a "bug" in asus-laptop, because I used KBUILD_MODNAME
-> (asus_laptop) instead
-> of "asus-laptop" as the driver name. And I don't know if I can change
-> that now without breaking
-> backward compatibility.
-> 
-> But other drivers should work (I tested sony-laptop).
-> 
-Looks like I have some misunderstanding on this. Thank you for correcting it.
-When I resend patches, I will change the name to *-laptop. :)
+> That's not to say it *shouldn't* be done in the future, of course!
+> And, incidentally, you could hack it together at this point by setting
+> the /sys/block/<blockdev>/queue/rotational flag to 0 and using it like
+> an SSD. :)
+
+Then why not make the devices with rotational at 0 be the default "SSDs" but 
+allow the admin to set manually others, without hacking?
+
+You can have SSDs in a hardware RAID array, this way the kernel may not know 
+if the block device is on flash media or on rotational media...
+
+-- 
+Hubert Kario
+QBS - Quality Business Software
+ul. Ksawerów 30/85
+02-656 Warszawa
+POLAND
+tel. +48 (22) 646-61-51, 646-74-24
+fax +48 (22) 646-61-50
