@@ -1,353 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab0IAH3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 03:29:04 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40672 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab0IAH3D (ORCPT
+	id S1752253Ab0IAHbM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 03:31:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:62827 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199Ab0IAHbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 03:29:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=ucV5lJlCP1z8UOnsRmItSpcw6GiEk60NFvcXADgLaFFU2kdV1zYOXS8IPsMB5/nXzT
-         M7uD+6fx1YXdD90qLY15Kv52Uiphr6Ad0YjCxIawAaSQXkCz4B8HAX6SK81QhDpWkOLe
-         jHCdymXY9mRrmQFNXD5XTfMmImoEBINvRCG44=
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH v3] GPIO: add support for 74x164 serial-in/parallel-out 8-bit shift register
-Date: Wed, 1 Sep 2010 09:25:50 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-server; KDE/4.4.2; x86_64; ; )
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Miguel Gaio <miguel.gaio@efixo.com>, Juhos Gabor <juhosg@openwrt.org>,
-        dbrownell@users.sourceforge.net
-References: <887649.75421.qm@web180316.mail.gq1.yahoo.com> <201008311017.30445.florian@openwrt.org> <201008311244.07567.florian@openwrt.org>
-In-Reply-To: <201008311244.07567.florian@openwrt.org>
+	Wed, 1 Sep 2010 03:31:10 -0400
+Message-ID: <4C7E015B.1010506@steinhoff.de>
+Date: Wed, 01 Sep 2010 09:31:39 +0200
+From: Armin Steinhoff <armin@steinhoff.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2 ThunderBrowse/3.3.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009010925.50906.f.fainelli@gmail.com>
+To: "Hans J. Koch" <hjk@linutronix.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: UIO and Fedora 13  (kernel 33.6)
+References: <dda83e781002141023t2abe95b8w83f59d6f411f68a2@mail.gmail.com> <alpine.DEB.2.01.1002142229470.28195@bogon.housecafe.de> <dda83e781002142245l5c95d08bu214a796be289eb22@mail.gmail.com> <dda83e781002142246i61737ae2j4fe7efb660b53d07@mail.gmail.com> <4C7B8CA6.4010504@steinhoff.de> <20100830162435.GB2566@local> <4C7CA7E4.8010005@steinhoff.de> <20100831103523.GA2598@local>
+In-Reply-To: <20100831103523.GA2598@local>
+Content-Type: multipart/mixed;
+ boundary="------------040602060709020407070208"
+X-Provags-ID: V02:K0:jE1iBuyTum7Qh4aKzu+QRFGcDJlKm5a9m7WZ0nKF5Ih
+ 4xa+9MtHOWC9iHpqeukzqTVJUKOZTtKz6tqZ3Kki1BjUTNvtVb
+ S0qC12qmGSeNUbte/eW0f4jnch7o4rUrr+XLPj0JxY03xigDDR
+ VD3mVKjIXMrSbPc8b5+HqT/Pt+ViPtRzdIWqDnXIhuGrT6Vo4A
+ gS7ZYJ0u68+y9rok1sDKw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 31 August 2010 12:44:07 Florian Fainelli wrote:
-> From: Miguel Gaio <miguel.gaio@efixo.com>
-> 
-> This patch adds support for generic 74x164 serial-in/parallel-out 8-bits
-> shift register. This driver can be used as a GPIO output expander.
-> 
-> Signed-off-by: Miguel Gaio <miguel.gaio@efixo.com>
-> Signed-off-by: Juhos Gabor <juhosg@openwrt.org>
-> Signed-off-by: Florian Fainelli <florian@openwrt.org>
-> ---
-> Changes since v1:
-> - renamed nxp_ to gen_ since this driver is generic to all 74HC164 chips
-> - added comment on this driver not handling the 74HC164 daisy-chaining
-> - renamed misused GPIO expanders to Shift registers
-> 
-> Changes since v2:
-> - rename 74hc164 to 74x164
+This is a multi-part message in MIME format.
+--------------040602060709020407070208
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Miguel sent me a 4th version supporting daisy-chaining, I will resubmit it 
-right away.
 
-> 
-> diff --git a/drivers/gpio/74x164.c b/drivers/gpio/74x164.c
-> new file mode 100644
-> index 0000000..9adeed4
-> --- /dev/null
-> +++ b/drivers/gpio/74x164.c
-> @@ -0,0 +1,228 @@
-> +/*
-> + *  74Hx164 - Generic serial-in/parallel-out 8-bits shift register GPIO
-> driver + *
-> + *  Copyright (C) 2010 Gabor Juhos <juhosg@openwrt.org>
-> + *  Copyright (C) 2010 Miguel Gaio <miguel.gaio@efixo.com>
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2 as
-> + *  published by the Free Software Foundation.
-> + *
-> + *  Note: this driver does not support the way 74x164 chips can be
-> + *  daisy-chained.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/slab.h>
-> +#include <linux/gpio.h>
-> +#include <linux/bitops.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/74x164.h>
-> +
-> +#define GEN_74X164_NUM_GPIOS	8
-> +
-> +struct gen_74x164_chip {
-> +	struct device		*parent;
-> +	struct gpio_chip	gpio_chip;
-> +	struct mutex		lock;
-> +	long			mask;
-> +};
-> +
-> +static void gen_74x164_set_value(struct gpio_chip *, unsigned, int);
-> +
-> +static struct gen_74x164_chip *gpio_to_chip(struct gpio_chip *gc)
-> +{
-> +	return container_of(gc, struct gen_74x164_chip, gpio_chip);
-> +}
-> +
-> +static int gen_74x164_direction_input(struct gpio_chip *gc, unsigned
-> offset) +{
-> +	WARN_ON(1);
-> +	return -EINVAL;
-> +}
-> +
-> +static int gen_74x164_direction_output(struct gpio_chip *gc,
-> +					unsigned offset, int val)
-> +{
-> +	gen_74x164_set_value(gc, offset, val);
-> +	return 0;
-> +}
-> +
-> +static int gen_74x164_get_value(struct gpio_chip *gc, unsigned offset)
-> +{
-> +	struct gen_74x164_chip *chip = gpio_to_chip(gc);
-> +	int ret;
-> +
-> +	mutex_lock(&chip->lock);
-> +	ret = test_bit(offset, &chip->mask);
-> +	mutex_unlock(&chip->lock);
-> +
-> +	return ret;
-> +}
-> +
-> +static void gen_74x164_set_value(struct gpio_chip *gc,
-> +				  unsigned offset, int val)
-> +{
-> +	struct gen_74x164_chip *chip;
-> +	struct gen_74x164_platform_data *pdata;
-> +	long mask;
-> +	int refresh;
-> +	int i;
-> +
-> +	chip = gpio_to_chip(gc);
-> +	pdata = chip->parent->platform_data;
-> +
-> +	mutex_lock(&chip->lock);
-> +	if (val)
-> +		refresh = (test_and_set_bit(offset, &chip->mask) != val);
-> +	else
-> +		refresh = (test_and_clear_bit(offset, &chip->mask) != val);
-> +
-> +	if (refresh) {
-> +		mask = chip->mask;
-> +		for (i = 8; i > 0; --i, mask <<= 1) {
-> +			gpio_set_value(pdata->gpio_pin_data, mask & 0x80);
-> +			gpio_set_value(pdata->gpio_pin_clk, 1);
-> +			gpio_set_value(pdata->gpio_pin_clk, 0);
-> +		}
-> +	}
-> +	mutex_unlock(&chip->lock);
-> +}
-> +
-> +static int __devinit gen_74x164_probe(struct platform_device *pdev)
-> +{
-> +	struct gen_74x164_platform_data *pdata;
-> +	struct gen_74x164_chip *chip;
-> +	struct gpio_chip *gc;
-> +	int err;
-> +
-> +	pdata = pdev->dev.platform_data;
-> +	if (pdata == NULL) {
-> +		dev_dbg(&pdev->dev, "no platform data specified\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	chip = kzalloc(sizeof(struct gen_74x164_chip), GFP_KERNEL);
-> +	if (chip == NULL) {
-> +		dev_err(&pdev->dev, "no memory for private data\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	err = gpio_request(pdata->gpio_pin_clk, dev_name(&pdev->dev));
-> +	if (err) {
-> +		dev_err(&pdev->dev, "unable to claim gpio %u, err=%d\n",
-> +			pdata->gpio_pin_clk, err);
-> +		goto err_free_chip;
-> +	}
-> +
-> +	err = gpio_request(pdata->gpio_pin_data, dev_name(&pdev->dev));
-> +	if (err) {
-> +		dev_err(&pdev->dev, "unable to claim gpio %u, err=%d\n",
-> +			pdata->gpio_pin_data, err);
-> +		goto err_free_clk;
-> +	}
-> +
-> +	err = gpio_direction_output(pdata->gpio_pin_clk, 0);
-> +	if (err) {
-> +		dev_err(&pdev->dev,
-> +			"unable to set direction of gpio %u, err=%d\n",
-> +			pdata->gpio_pin_clk, err);
-> +		goto err_free_data;
-> +	}
-> +
-> +	err = gpio_direction_output(pdata->gpio_pin_data, 0);
-> +	if (err) {
-> +		dev_err(&pdev->dev,
-> +			"unable to set direction of gpio %u, err=%d\n",
-> +			pdata->gpio_pin_data, err);
-> +		goto err_free_data;
-> +	}
-> +
-> +	chip->parent = &pdev->dev;
-> +	mutex_init(&chip->lock);
-> +
-> +	gc = &chip->gpio_chip;
-> +
-> +	gc->direction_input  = gen_74x164_direction_input;
-> +	gc->direction_output = gen_74x164_direction_output;
-> +	gc->get = gen_74x164_get_value;
-> +	gc->set = gen_74x164_set_value;
-> +	gc->can_sleep = 1;
-> +
-> +	gc->base = pdata->gpio_base;
-> +	gc->ngpio = GEN_74X164_NUM_GPIOS;
-> +	gc->label = dev_name(chip->parent);
-> +	gc->dev = chip->parent;
-> +	gc->owner = THIS_MODULE;
-> +
-> +	err = gpiochip_add(&chip->gpio_chip);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "unable to add gpio chip, err=%d\n", err);
-> +		goto err_free_data;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, chip);
-> +	return 0;
-> +
-> +err_free_data:
-> +	gpio_free(pdata->gpio_pin_data);
-> +err_free_clk:
-> +	gpio_free(pdata->gpio_pin_clk);
-> +err_free_chip:
-> +	kfree(chip);
-> +	return err;
-> +}
-> +
-> +static int gen_74x164_remove(struct platform_device *pdev)
-> +{
-> +	struct gen_74x164_chip *chip = platform_get_drvdata(pdev);
-> +	struct gen_74x164_platform_data *pdata = pdev->dev.platform_data;
-> +
-> +	if (chip) {
-> +		int err;
-> +
-> +		err = gpiochip_remove(&chip->gpio_chip);
-> +		if (err) {
-> +			dev_err(&pdev->dev,
-> +				"unable to remove gpio chip, err=%d\n",
-> +				err);
-> +			return err;
-> +		}
-> +
-> +		gpio_free(pdata->gpio_pin_clk);
-> +		gpio_free(pdata->gpio_pin_data);
-> +
-> +		kfree(chip);
-> +		platform_set_drvdata(pdev, NULL);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver gen_74x164_driver = {
-> +	.probe		= gen_74x164_probe,
-> +	.remove		= __devexit_p(gen_74x164_remove),
-> +	.driver = {
-> +		.name	= GEN_74X164_DRIVER_NAME,
-> +		.owner	= THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init gen_74x164_init(void)
-> +{
-> +	return platform_driver_register(&gen_74x164_driver);
-> +}
-> +subsys_initcall(gen_74x164_init);
-> +
-> +static void __exit gen_74x164_exit(void)
-> +{
-> +	platform_driver_unregister(&gen_74x164_driver);
-> +}
-> +module_exit(gen_74x164_exit);
-> +
-> +MODULE_AUTHOR("Gabor Juhos <juhosg@openwrt.org>");
-> +MODULE_AUTHOR("Miguel Gaio <miguel.gaio@efixo.com>");
-> +MODULE_DESCRIPTION("GPIO expander driver for 74X164 8-bits shift
-> register"); +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:" GEN_74X164_DRIVER_NAME);
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 510aa20..fc82c23 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -361,4 +361,13 @@ config GPIO_JANZ_TTL
->  	  This driver provides support for driving the pins in output
->  	  mode only. Input mode is not supported.
-> 
-> +comment "Shift registers:"
-> +
-> +config GPIO_74X164
-> +       tristate "74x164 serial-in/parallel-out 8-bits shift register"
-> +       help
-> +         Platform driver for 74x164 compatible serial-in/parallel-out
-> +	 8-outputs shift registers. This driver can be used to provide access
-> +	 to more gpio outputs.
-> +
->  endif
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index fc6019d..60456a4 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -17,6 +17,7 @@ obj-$(CONFIG_GPIO_MAX7301)	+= max7301.o
->  obj-$(CONFIG_GPIO_MAX732X)	+= max732x.o
->  obj-$(CONFIG_GPIO_MC33880)	+= mc33880.o
->  obj-$(CONFIG_GPIO_MCP23S08)	+= mcp23s08.o
-> +obj-$(CONFIG_GPIO_74X164)	+= 74x164.o
->  obj-$(CONFIG_GPIO_PCA953X)	+= pca953x.o
->  obj-$(CONFIG_GPIO_PCF857X)	+= pcf857x.o
->  obj-$(CONFIG_GPIO_PL061)	+= pl061.o
-> diff --git a/include/linux/74x164.h b/include/linux/74x164.h
-> new file mode 100644
-> index 0000000..1705732
-> --- /dev/null
-> +++ b/include/linux/74x164.h
-> @@ -0,0 +1,22 @@
-> +/*
-> + *  74x164 - Serial-in/parallel-out 8-bits shift register
-> + *
-> + *  Copyright (C) 2010 Gabor Juhos <juhosg@openwrt.org>
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2 as
-> + *  published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef __74X164_H
-> +#define __74X164_H
-> +
-> +#define GEN_74X164_DRIVER_NAME "74x164"
-> +
-> +struct gen_74x164_platform_data {
-> +	unsigned	gpio_base;
-> +	unsigned	gpio_pin_data;
-> +	unsigned	gpio_pin_clk;
-> +};
-> +
-> +#endif /* __74x164_H */
+Small correction ... I don't mean the "initial platform_data" but the 
+initial resource data of the platform driver.
 
--- 
-Florian
+--Armin
+
+
+   Hans J. Koch wrote:
+> After a successfull uio_register_device() there is both a /dev/uioX
+> and a directory /sys/class/uio/uioX/.
+
+In the attachment is an updated version of uio_jand.
+
+The module uio_jand.ko can be inserted and removed,  no messages visible 
+by dmesg, no kernel oops, no dev/uio*  and no class entries available.
+
+There are only entries of uio_jand in /sys/module, 
+/sys/bus/platform/drivers and /sys/uio/holders ... I'm really confused =:-/
+
+It's completely unclear how to write the initial platform_data of the 
+platform device in the example uio_smx.c :
+
+      regs = platform_get_resource(dev, IORESOURCE_MEM, 0);
+      if (!regs) {
+          dev_err(&dev->dev, "No memory resource specified\n");
+          goto out_free;
+
+Same issue in uio_platform_genirq ...
+
+Cheers
+
+--Armin
+
+
+
+
+
+
+--------------040602060709020407070208
+Content-Type: text/x-csrc;
+ name="uio_jand.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="uio_jand.c"
+
+/*
+ * UIO CAN L2
+ *
+ * (C) Armin Steinhoff <as@steinhoff-automation.com>
+ * (C) 2007 Hans J. Koch <hjk@linutronix.de>
+ * Original code (C) 2005 Benedikt Spranger <b.spranger@linutronix.de>
+ *
+ * Licensed under GPL version 2 only.
+ *
+ */
+
+#include <linux/device.h>
+#include <linux/module.h>
+#include <linux/ioport.h>
+#include <linux/device.h>
+#include <linux/uio_driver.h>
+#include <linux/platform_device.h>
+#include <linux/moduleparam.h>
+#include <linux/io.h>
+
+
+#define INT_QUEUE_SIZE 64
+
+static unsigned char int_x[2], * int_q[2];
+static	void __iomem *isr[2]; 
+
+static unsigned int irq = 11;
+module_param (irq, uint, 0);
+MODULE_PARM_DESC (irq, "IRQ (default 11)");
+
+static unsigned long base_addr = 0xd00000;
+module_param (base_addr, ulong, 0);
+MODULE_PARM_DESC (base_addr, "Base address (default 0xD0000)");
+
+static unsigned long base_len;
+module_param (base_len, ulong, 0);
+MODULE_PARM_DESC (base_len, "Base length (default 0x1)");
+
+static irqreturn_t int_handler(int irq, struct uio_info *dev_info)
+{
+
+    int irq_flag = 0;
+	unsigned char ISRstat;
+	
+	ISRstat = readb(isr[0]);
+	if(ISRstat & 0x02)
+	{
+		int_q[0][int_x[0]] = ISRstat;
+		int_x[0] = (int_x[0] + 1) & 0xF ; // modulo 16
+		
+		irq_flag = 1;
+	}
+
+	ISRstat = readb(isr[1]);
+	if(ISRstat & 0x02)
+	{
+		int_q[1][int_x[1]] = ISRstat;
+		int_x[1] = (int_x[1] + 1) & 0xF ; // modulo 16
+		irq_flag = 1;
+	}
+	
+	if(irq_flag)
+		return(IRQ_HANDLED);
+	else
+		return(IRQ_NONE);
+}
+
+static int jand_probe(struct platform_device *dev)
+{	
+	struct uio_info *info;
+	
+	dev_info(&dev->dev, "start probe %d\n", 1);
+	info = kzalloc(sizeof(struct uio_info), GFP_KERNEL);
+	if (!info)
+	{
+		return -ENOMEM;
+	}
+	
+	info->mem[0].addr = base_addr;
+	info->mem[0].size = base_len;
+	info->mem[0].memtype = UIO_MEM_PHYS;
+	
+	if(request_mem_region( info->mem[0].addr, info->mem[0].size, "uio_jand"))
+	{
+		dev_err(&dev->dev, "request_mem_region failed %d\n", 2);
+		goto out_release;
+	}
+	
+	info->mem[0].internal_addr = ioremap(info->mem[0].addr,info->mem[0].size);
+	if (!info->mem[0].internal_addr)
+	{
+		dev_err(&dev->dev, "ioremap failed %d\n", 3);
+		goto out_release;
+	}
+		
+	/* interrupt queue */
+	info->mem[1].addr = (unsigned long)kmalloc(64, GFP_KERNEL);	
+	if (!info->mem[1].addr)
+		goto out_release1;
+	
+	int_q[0] = (unsigned char * )info->mem[1].addr;
+	int_q[1] = (unsigned char * )info->mem[1].addr +32;
+	
+	memset(&int_q[0], 0x00, 16);
+	int_x[0] = 0;
+	memset(&int_q[1], 0x00, 16);
+	int_x[1] = 0;
+
+	info->mem[1].memtype = UIO_MEM_LOGICAL;
+	info->mem[1].size = 64;
+	
+	isr[0] = info->mem[0].internal_addr + 3;	        /* interrupt reg channel 1 */
+	isr[1] = info->mem[0].internal_addr + 3 + 0x200;	/* interrupt reg channel 2 */
+	if( request_irq(irq, int_handler, IRQF_DISABLED,"uio_jand", NULL) ) 
+	{
+		goto out_release2;
+	}
+	
+	info->name = "uio_jand";	
+	info->version = "0.0.2";
+	info->irq = irq;
+	info->irq_flags = 0;
+	info->handler = int_handler; // different ptr types ?
+	
+	platform_set_drvdata(dev, info);
+	
+	if (uio_register_device(&dev->dev, info))
+	{
+		dev_err(&dev->dev, "uio_register_device failed %d\n", 4);
+		goto out_release2;
+	}
+
+	dev_info(&dev->dev, "uio_jand started! %d\n", 5);
+	return 0;
+	
+	
+out_release2:
+	kfree((void *)info->mem[1].addr);
+	dev_err(&dev->dev, "uio_register_device failed %d \n", 6);
+out_release1:	
+	free_irq( irq, "uio_jand" );	
+	iounmap(info->mem[0].internal_addr);		
+	release_mem_region( base_addr, base_len);
+out_release:	
+	kfree (info);
+    dev_err(&dev->dev, "Error exit ENODEV! %d\n", 7);
+	return -ENODEV;
+}
+
+static int jand_remove(struct platform_device *dev)
+{
+	struct uio_info *info = platform_get_drvdata(dev);
+	
+	uio_unregister_device(info);
+	iounmap(info->mem[0].internal_addr);
+	release_mem_region( base_addr, base_len);
+	free_irq( irq, "uio_jand" );		
+	kfree((void *)info->mem[1].addr);
+	kfree (info);
+	return 0;
+}
+
+static struct platform_driver uio_jand_driver = {
+	 .probe  = jand_probe,
+     .remove = jand_remove,
+     .driver = {
+	 .name	= "uio_jand",
+     .owner	= THIS_MODULE,
+      },
+};
+
+static int __init uio_jand_init(void)
+{
+	return platform_driver_register(&uio_jand_driver);
+}
+
+static void __exit uio_jand_exit(void)
+{
+	platform_driver_unregister(&uio_jand_driver);
+}
+
+module_init( uio_jand_init );
+module_exit( uio_jand_exit );
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("A. Steinhoff");
+MODULE_DESCRIPTION("UIO Janus-D CAN driver");
+
+
+--------------040602060709020407070208--
