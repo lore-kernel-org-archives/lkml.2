@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab0IANEu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 09:04:50 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:7526 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab0IANEt (ORCPT
+	id S1754663Ab0IANSI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 09:18:08 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:13963 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752572Ab0IANSE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 09:04:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=J1bxfB8MoW4eaNtFcGDGrgcO4VPkIV/av3xLDXs3qXAMfhCRs0bdeLBwLaP2qEetWC
-         VXSWK+p99qMAwnKEJq4w==
-MIME-Version: 1.0
-Date: Wed, 1 Sep 2010 15:04:45 +0200
-Message-ID: <AANLkTimA-AZWJugaLR3VPGVhBaJid=t=a1rPVNUE_8Dh@mail.gmail.com>
-Subject: Re: [PATCH 4/4] [x86] perf: fix accidentally ack'ing a second event
- on intel perf counter
-From: Stephane Eranian <eranian@google.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Wed, 1 Sep 2010 09:18:04 -0400
+X-IronPort-AV: E=Sophos;i="4.56,304,1280732400"; 
+   d="scan'208";a="440590564"
+Subject: Re: [REGRESSION PATCH v2] NFS: let NFS_V4 and NFSD_V4 enforce
+ CRYPTO
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Neil Brown <neilb@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <1283331170-11440-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <20100830121022.GA14459@pengutronix.de>
+	 <1283331170-11440-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Wed, 01 Sep 2010 09:17:04 -0400
+Message-ID: <1283347024.3184.8.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+X-OriginalArrivalTime: 01 Sep 2010 13:18:00.0817 (UTC) FILETIME=[1A001E10:01CB49D8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don,
+On Wed, 2010-09-01 at 10:52 +0200, Uwe Kleine-König wrote:
+> Hello,
+> 
+> here comes a v2 of the patch that improves the commit log with a more
+> detailed analysis of the breakage introduced by df486a2
+> (= v2.6.36-rc2~34^2~1 BTW) and additionally undoes the "default y" for
+> RPCSEC_GSS_KRB5.
+> 
+> So compared to the state before df486a2 the changes are:
+> 
+>         NFS_V4 selects CRYPTO
+>         NFSD_V4 selects CRYPTO
+> 	RPCSEC_GSS_KRB5 doesn't depend on EXPERIMENTAL anymore
+> 	RPCSEC_GSS_KRB5 now depends on CRYPTO instead of selecting it
+> 
+> Best regards
+> Uwe
+> 
+> ----------------------------->8----------------------------
+> 
+> This is a follow up to
+> 
+> 	df486a2 (NFS: Fix the selection of security flavours in Kconfig)
+> 
+> Before df486a2 NFS_V4 selected RPCSEC_GSS_KRB5 but didn't enforce the
+> latter's dependency EXPERIMENTAL.  df486a2 removed RPCSEC_GSS_KRB5's
+> dependency on EXPERIMENTAL but additionally let it depend on CRYPTO
+> (instead of select CRYPTO before).  So it was still possible to have a
+> config that has NFS_V4 but not RPCSEC_GSS_KRB5.  Moreover df486a2
+> changed the dependency of NFS_V4 and NFSD_V4 on RPCSEC_GSS_KRB5 from
 
-Found your patch on LKML (I am not on it).
+As I said, the fix is to remove that dependency. I have a fix for the
+NFS client, but the server has more insidious dependencies on RPCSEC_GSS
+due to a poorly designed SECINFO implementation.
 
-In your changelog you said:
-
-> During testing of a patch to stop having the perf subsytem swallow nmis,
-> it was uncovered that Nehalem boxes were randomly getting unknown nmis
-> when using the perf tool.
->
-> Moving the ack'ing of the PMI closer to when we get the status allows
-> the hardware to properly re-set the PMU bit signaling another PMI was
-> triggered during the processing of the first PMI.  This allows the new
-> logic for dealing with the shortcomings of multiple PMIs to handle the
-> extra NMI by 'eat'ing it later.
-
-> Now one can wonder why are we getting a second PMI when we disable all
-> the PMUs in the beginning of the NMI handler to prevent such a case, for
-> that I do not know.  But I know the fix below helps deal with this quirk.
->
-
-I am assuming you're talking about back-to-back NMIs here, not nested NMIs.
-I don't quite understand the scenario here. Is it the case that you handled 1
-overflow, and then right as you return from the interrupt, you get a second
-PMI with a ovfl_status=0 ?
-
-What events did you measure? Which counters did you use?
-Did you have HT turned on?
-
-> Tested on multiple Nehalems where the problem was occuring.  With the
-> patch, the code now loops a second time to handle the second PMI (whereas
-> before it was not).
+Trond
