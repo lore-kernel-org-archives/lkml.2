@@ -1,60 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab0IAA7h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 20:59:37 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:48187 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab0IAA7g (ORCPT
+	id S1752255Ab0IABYr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 21:24:47 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:48557 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496Ab0IABYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 20:59:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=TzbTKq/YsQ3X+V8CjMsklb/qoWsPqc+DstlhcSsZEmN87XShXXoY2OKQOaYaJC8m+V
-         JUn66wA1KXMdV7c2pdQ1iSgNUq65Ic1hTqQSSz4PWnedBwhOkoe0dP98o87rAr/8nkKM
-         KCbHSkzRLkYpiKGidkkqBH6t9fLqSypmbw0EU=
-Subject: Re: [Question] How to test (DRAM) memory location.
-From: Calvin Walton <calvin.walton@gmail.com>
-To: santosh <santosh.iitg@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTim03ofVGh-5ifAfook=nv35tY0RDKMjHsEW8U1N@mail.gmail.com>
-References: <AANLkTinYuck4yEGpFDKZp-R3N2dtoQ68cLHQY6EW6sr-@mail.gmail.com>
-	 <1283216269.3738.6.camel@ayu>
-	 <AANLkTim03ofVGh-5ifAfook=nv35tY0RDKMjHsEW8U1N@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Aug 2010 20:59:33 -0400
-Message-ID: <1283302773.3754.5.camel@nayuki>
+	Tue, 31 Aug 2010 21:24:45 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 1 Sep 2010 10:19:35 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Michal Hocko <mhocko@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        Haicheng Li <haicheng.li@linux.intel.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>
+Subject: Re: [PATCH] Make is_mem_section_removable more conformable with
+ offlining code
+Message-Id: <20100901101935.c2fedfe4.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100831143649.GA31730@localhost>
+References: <20100820141400.GD4636@tiehlicka.suse.cz>
+	<20100822004232.GA11007@localhost>
+	<20100823092246.GA25772@tiehlicka.suse.cz>
+	<20100831141942.GA30353@localhost>
+	<20100831143649.GA31730@localhost>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-31 at 18:07 +0530, santosh wrote:
-> hi Calvin,
-> 
-> > There's some work done on an in-kernel memory tester, but testing memory
-> > while Linux is running is somewhat limited as there are sections of
-> > memory that you can't overwrite during testing. Take a look at
-> > CONFIG_MEMTEST and arch/x86/mm/memtest.c (which is currently only
-> > capable of testing memory in early boot).
-> >
-> 
-> I was just looking at "linux-source-2.6.27.48" but could not find
-> "memtest.c" at the location you mentioned above:
-> 
-> [root@localhost linux-2.6.27.48]# cd arch/x86/mm/
+On Tue, 31 Aug 2010 22:36:49 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-This code was moved fairly recently, although I don't remember exactly
-when. In the kernel version you have, it should be present in
-arch/x86/mm/init_64.c
-(and is only available on the 64-bit x86 architecture).
+> On Tue, Aug 31, 2010 at 10:19:42PM +0800, Wu Fengguang wrote:
+> > On Mon, Aug 23, 2010 at 05:22:46PM +0800, Michal Hocko wrote:
+> > > On Sun 22-08-10 08:42:32, Wu Fengguang wrote:
+> > > > Hi Michal,
+> > > 
+> > > Hi,
+> > > 
+> > > > 
+> > > > It helps to explain in changelog/code
+> > > > 
+> > > > - in what situation a ZONE_MOVABLE will contain !MIGRATE_MOVABLE
+> > > >   pages? 
+> > > 
+> > > page can be MIGRATE_RESERVE IIUC.
+> > 
+> > Yup, it may also be set to MIGRATE_ISOLATE by soft_offline_page().
+> 
+> Ah a non-movable page allocation could fall back into the movable
+> zone. See __rmqueue_fallback() and the fallbacks[][] array. So the
+> 
+>         if (type != MIGRATE_MOVABLE && !pageblock_free(page))
+> 
+> check in is_mem_section_removable() is correct. It is
+> set_migratetype_isolate() that should be fixed to use the same check.
+> 
 
-Please check a newer kernel if you can, there's been some improvements
-since.
+Here is a patch for set_migratetype_isolate(). This is not a _fix_ but an
+improvement.
 
--- 
-Calvin Walton <calvin.walton@gmail.com>
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+At memory hotplug, we set pageblock's movable-type as ISOLATE. At failure,
+we make it back to be MOVABLE. So,
+	- pageblock's type shoule be movable before isolation.
+	- pageblock's contents should be really movable before isolation.
+
+Add document about it and add pageblock_free() call for fast-path.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/mmzone.h |    4 ++++
+ mm/memory_hotplug.c    |    2 +-
+ mm/page_alloc.c        |   17 +++++++++++++----
+ 3 files changed, 18 insertions(+), 5 deletions(-)
+
+Index: mmotm-0827/mm/page_alloc.c
+===================================================================
+--- mmotm-0827.orig/mm/page_alloc.c
++++ mmotm-0827/mm/page_alloc.c
+@@ -5282,19 +5282,28 @@ int set_migratetype_isolate(struct page 
+ 	unsigned long immobile = 0;
+ 	struct memory_isolate_notify arg;
+ 	int notifier_ret;
+-	int ret = -EBUSY;
++	int ret = 0;
+ 	int zone_idx;
+ 
+ 	zone = page_zone(page);
+ 	zone_idx = zone_idx(zone);
+ 
+ 	spin_lock_irqsave(&zone->lock, flags);
++	/*
++	 * At failure of hotplug, we turns this block to be MOVABLE if
++	 * isolation has been successfully done. So, if page-block is movable
++	 * or freed, we can try this without check contents..
++	 */
+ 	if (get_pageblock_migratetype(page) == MIGRATE_MOVABLE ||
+-	    zone_idx == ZONE_MOVABLE) {
+-		ret = 0;
++	    pageblock_free(page) ||
++	    zone_idx == ZONE_MOVABLE)
+ 		goto out;
+-	}
+ 
++	ret = -EBUSY;
++	/*
++	 * check contents, because we move this pageblocks type to be MOVABLE
++	 * at failure, the contents should be movable.
++	 */
+ 	pfn = page_to_pfn(page);
+ 	arg.start_pfn = pfn;
+ 	arg.nr_pages = pageblock_nr_pages;
+Index: mmotm-0827/include/linux/mmzone.h
+===================================================================
+--- mmotm-0827.orig/include/linux/mmzone.h
++++ mmotm-0827/include/linux/mmzone.h
+@@ -54,6 +54,10 @@ static inline int get_pageblock_migratet
+ 	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
+ }
+ 
++#ifdef CONFIG_MEMORY_HOTREMOVE
++extern int pageblock_free(struct page *page);
++#endif
++
+ struct free_area {
+ 	struct list_head	free_list[MIGRATE_TYPES];
+ 	unsigned long		nr_free;
+Index: mmotm-0827/mm/memory_hotplug.c
+===================================================================
+--- mmotm-0827.orig/mm/memory_hotplug.c
++++ mmotm-0827/mm/memory_hotplug.c
+@@ -576,7 +576,7 @@ EXPORT_SYMBOL_GPL(add_memory);
+  * Due to buddy contraints, a free page at least the size of a pageblock will
+  * be located at the start of the pageblock
+  */
+-static inline int pageblock_free(struct page *page)
++int pageblock_free(struct page *page)
+ {
+ 	return PageBuddy(page) && page_order(page) >= pageblock_order;
+ }
 
