@@ -1,145 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab0IAVNn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 17:13:43 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:16240 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab0IAVNm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 17:13:42 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6092"; a="52928528"
-Subject: RE: [PATCH 1/2] msm: Install the Google-Android gpio driver.
-From: Daniel Walker <dwalker@codeaurora.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Gregory Bean <gbean@codeaurora.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+	id S1755632Ab0IAVNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 17:13:52 -0400
+Received: from fieldses.org ([174.143.236.118]:42387 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752476Ab0IAVNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 17:13:51 -0400
+Date: Wed, 1 Sep 2010 17:13:21 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <0D753D10438DA54287A00B027084269764447830F3@AUSP01VMBX24.collaborationhost.net>
-References: <1283213906-17671-1-git-send-email-gbean@codeaurora.org>
-	 <0D753D10438DA54287A00B027084269764447830F3@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Sep 2010 14:13:26 -0700
-Message-ID: <1283375606.21049.20.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        Trond.Myklebust@netapp.com
+Subject: Re: nfsd deadlock, 2.6.36-rc3
+Message-ID: <20100901211321.GC10507@fieldses.org>
+References: <4C7E73CB.7030603@canonical.com>
+ <20100901165400.GB1201@fieldses.org>
+ <20100902065551.079e297c@notabene>
+ <4C7EC17B.6070509@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C7EC17B.6070509@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-01 at 13:59 -0500, H Hartley Sweeten wrote:
-> On Monday, August 30, 2010 5:18 PM, Gregory Bean wrote:
-> > Subject: [PATCH 1/2] msm: Install the Google-Android gpio driver.
-> > 
-> > From: Arve Hjønnevåg <arve@android.com>
-> > 
-> > As part of the ongoing effort to converge on a common code base,
-> > adopt the Google-Android msmgpio driver, as it has a stronger pedigree
-> > than the previous submission from codeaurora.
-> > 
-> > Cc: Arve Hjønnevåg <arve@android.com>
-> > Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+On Wed, Sep 01, 2010 at 03:11:23PM -0600, Tim Gardner wrote:
+> On 09/01/2010 02:55 PM, Neil Brown wrote:
+> >On Wed, 1 Sep 2010 12:54:01 -0400
+> >"J. Bruce Fields"<bfields@fieldses.org>  wrote:
+> >
+> >>On Wed, Sep 01, 2010 at 09:39:55AM -0600, Tim Gardner wrote:
+> >>>I've been pursuing a simple reproducer for an NFS lockup that shows
+> >>>up under stress. There is a bunch of info (some of it extraneous) in
+> >>>http://bugs.launchpad.net/bugs/561210. I can reproduce it by writing
+> >>>loop mounted NFS exports:
+> >>>
+> >>>/etc/fstab: 127.0.0.1:/srv /mnt/srv nfs rw 0 2
+> >>>/etc/exports: /srv 127.0.0.1(rw,insecure,no_subtree_check)
+> >>>
+> >>>See the attached scripts test_master.sh and test_client.sh. I simply
+> >>>repeat './test_master.sh wait' until nfsd locks up, typically within
+> >>>1-3 cycles, e.g.,
+> >>
+> >>Without looking at the dmesg and scripts carefully to confirm, one
+> >>possible explanation is a deadlock when the server can't allocate memory
+> >>required to service client requests, memory which the client itself
+> >>needs to free by writing back dirty pages, but can't because the server
+> >>isn't processing its writes.
+> >
+> >Having looked closely I'd say it is almost certainly this issue.
+> >nfsd thread 1266 is in zone_reclaim waiting on a page to be written out so
+> >the memory can be reused.
+> >The other nfsd threads are blocking on a mutex held by 1266.
+> >The dd processes are waiting for pages to be written to the server
+> >
+> >The particular page that 1266 is waiting on is almost certainly a page on an
+> >NFS file, so you have a cyclic deadlock.
+> >
+> >>
+> >>For that reason we just don't support loopback mounts--they're OK for
+> >>light testing, but it would be difficult to make them completely robust
+> >>under load.
+> >
+> >I wonder if we could use 'containers' to partition available memory between
+> >'nfsd threads' and 'everything else'??  Probably not worth the effort.
+> >
+> >NeilBrown
+> >
 > 
-> Hello Greg,
+> I'm currently working with my support folks to reproduce this using
+> the exact same configuration as the customer, e.g., an NFS server
+> (running as a guest on a VMWare ESX host) serving multiple gigabit
+> clients.
 > 
-> A couple comments on this.
-> 
-> > +struct msm_gpio_chip msm_gpio_chips[] = {
-> > +	{
-> > +		.regs = {
-> > +			.out =         GPIO_OUT_0,
-> > +			.in =          GPIO_IN_0,
-> > +			.int_status =  GPIO_INT_STATUS_0,
-> > +			.int_clear =   GPIO_INT_CLEAR_0,
-> > +			.int_en =      GPIO_INT_EN_0,
-> > +			.int_edge =    GPIO_INT_EDGE_0,
-> > +			.int_pos =     GPIO_INT_POS_0,
-> > +			.oe =          GPIO_OE_0,
-> > +		},
-> > +		.chip = {
-> > +			.base = 0,
-> > +			.ngpio = 16,
-> > +			.get = msm_gpio_get,
-> > +			.set = msm_gpio_set,
-> > +			.direction_input = msm_gpio_direction_input,
-> > +			.direction_output = msm_gpio_direction_output,
-> > +			.to_irq = msm_gpio_to_irq,
-> > +		}
-> > +	},
-> 
-> This is a bit ugly... A 204 line struct definition is a bit hard to follow,
-> especially the way it's broken up with all the #if defined stuff.
-> 
-> Each gpio "bank" is code duplication other than the .base and .ngpio.  The
-> whole thing can be reduced using a helper macro.  Something like this:
-> 
-> #define MSM_GPIO_BANK(bank, base_gpio, num_gpio)			\
-> 	{										\
-> 		.regs = {								\
-> 			.out			= GPIO_OUT_##bank,		\
-> 			.in			= GPIO_IN_##bank,			\
-> 			.int_status		= GPIO_INT_STATUS_##bank,	\
-> 			.int_clear		= GPIO_INT_CLEAR_##bank,	\
-> 			.int_en		= GPIO_INT_EN_##bank,		\
-> 			.int_edge		= GPIO_INT_EDGE_##bank,		\
-> 			.int_pos		= GPIO_INT_POS_##bank,		\
-> 			.oe			= GPIO_OE_##bank,			\
-> 		},									\
-> 		.chip = {								\
-> 			.direction_input	= msm_gpio_direction_input,	\
-> 			.direction_output	= msm_gpio_direction_output,	\
-> 			.get			= msm_gpio_get,			\
-> 			.set			= msm_gpio_set,			\
-> 			.to_irq		= msm_gpio_to_irq,		\
-> 			.base			= base_gpio,			\
-> 			.ngpio		= num_gpio,				\
-> 		},									\
-> 	}
-> 
-> Then the struct definition can be reduced to this:
-> 
-> struct msm_gpio_chip msm_gpio_chips[] = {
-> #if defined(CONFIG_ARCH_MSM7X30)
-> 	MSM_GPIO_BANK(0, 0, 16),	/* gpio 0-15 */
-> 	MSM_GPIO_BANK(1, 16, 28),	/* gpio 16-43 */
-> 	MSM_GPIO_BANK(2, 44, 24),	/* gpio 44-67 */
-> 	MSM_GPIO_BANK(3, 68, 27),	/* gpio 68-94 */
-> 	MSM_GPIO_BANK(4, 95, 12),	/* gpio 95-106 */
-> 	MSM_GPIO_BANK(5, 107, 27),	/* gpio 107-133 */
-> 	MSM_GPIO_BANK(6, 134, 17),	/* gpio 134-150 */
-> 	MSM_GPIO_BANK(7, 151, 31),	/* gpio 151-181 */
-> #elif defined(CONFIG_ARCH_QSD8X50)
-> 	MSM_GPIO_BANK(0, 0, 16),	/* gpio 0-15 */
-> 	MSM_GPIO_BANK(1, 16, 27),	/* gpio 16-42 */
-> 	MSM_GPIO_BANK(2, 43, 25),	/* gpio 43-67 */
-> 	MSM_GPIO_BANK(3, 68, 27),	/* gpio 68-94 */
-> 	MSM_GPIO_BANK(4, 95, 9),	/* gpio 95-103 */
-> 	MSM_GPIO_BANK(5, 104, 18),	/* gpio 104-121 */
-> 	MSM_GPIO_BANK(6, 122, 31),	/* gpio 122-152 */
-> 	MSM_GPIO_BANK(7, 153, 12),	/* gpio 153-164 */
-> #else
-> 	MSM_GPIO_BANK(0, 0, 16),	/* gpio 0-15 */
-> 	MSM_GPIO_BANK(1, 16, 27),	/* gpio 16-42 */
-> 	MSM_GPIO_BANK(2, 43, 25),	/* gpio 43-67 */
-> 	MSM_GPIO_BANK(3, 68, 27),	/* gpio 68-94 */
-> 	MSM_GPIO_BANK(4, 95, 12),	/* gpio 95-106 */
-> 	MSM_GPIO_BANK(5, 107, 15),	/* gpio 107-121 */
-> #endif
-> };
-> 
+> I assume that is a reasonable scenario?
 
-Yeah, this macro method is much nicer. It drops 204 lines down to less
-than half that.. Less duplication and less lines to maintain.
+Assuming no VMWare problem (which I know nothing about), sure.
 
-Thanks for the review Hartley.
-
-Daniel
-
--- 
-
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+--b.
