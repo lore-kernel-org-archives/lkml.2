@@ -1,270 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253Ab0IAHbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 03:31:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62827 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab0IAHbK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 03:31:10 -0400
-Message-ID: <4C7E015B.1010506@steinhoff.de>
-Date: Wed, 01 Sep 2010 09:31:39 +0200
-From: Armin Steinhoff <armin@steinhoff.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2 ThunderBrowse/3.3.2
+	id S1752647Ab0IAHcb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 03:32:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35007 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751296Ab0IAHc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 03:32:29 -0400
+Message-ID: <4C7E0184.9030502@suse.de>
+Date: Wed, 01 Sep 2010 09:32:20 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
 MIME-Version: 1.0
-To: "Hans J. Koch" <hjk@linutronix.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: UIO and Fedora 13  (kernel 33.6)
-References: <dda83e781002141023t2abe95b8w83f59d6f411f68a2@mail.gmail.com> <alpine.DEB.2.01.1002142229470.28195@bogon.housecafe.de> <dda83e781002142245l5c95d08bu214a796be289eb22@mail.gmail.com> <dda83e781002142246i61737ae2j4fe7efb660b53d07@mail.gmail.com> <4C7B8CA6.4010504@steinhoff.de> <20100830162435.GB2566@local> <4C7CA7E4.8010005@steinhoff.de> <20100831103523.GA2598@local>
-In-Reply-To: <20100831103523.GA2598@local>
-Content-Type: multipart/mixed;
- boundary="------------040602060709020407070208"
-X-Provags-ID: V02:K0:jE1iBuyTum7Qh4aKzu+QRFGcDJlKm5a9m7WZ0nKF5Ih
- 4xa+9MtHOWC9iHpqeukzqTVJUKOZTtKz6tqZ3Kki1BjUTNvtVb
- S0qC12qmGSeNUbte/eW0f4jnch7o4rUrr+XLPj0JxY03xigDDR
- VD3mVKjIXMrSbPc8b5+HqT/Pt+ViPtRzdIWqDnXIhuGrT6Vo4A
- gS7ZYJ0u68+y9rok1sDKw==
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, Tejun Heo <tj@kernel.org>,
+        tytso@mit.edu, linux-scsi@vger.kernel.org, jaxboe@fusionio.com,
+        jack@suse.cz, linux-kernel@vger.kernel.org, swhiteho@redhat.com,
+        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
+        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp,
+        linux-fsdevel@vger.kernel.org, vst@vlnb.net, rwheeler@redhat.com,
+        Christoph Hellwig <hch@lst.de>, chris.mason@oracle.com,
+        dm-devel@redhat.com, Frederick.Knight@netapp.com
+Subject: Re: safety of retrying SYNCHRONIZE CACHE [was: Re: [PATCHSET block#for-2.6.36-post]
+ block: replace barrier with sequenced flush]
+References: <4C6E3C1A.50205@ct.jp.nec.com> <4C72660A.7070009@kernel.org> <20100823141733.GA21158@redhat.com> <4C739DE9.5070803@ct.jp.nec.com> <4C73FA8F.5080800@kernel.org> <4C74CD95.1000208@ct.jp.nec.com> <20100825152831.GA8509@redhat.com> <4C7789BE.1060609@ct.jp.nec.com> <20100827134940.GA22504@redhat.com> <4C7B4C23.8020100@ct.jp.nec.com> <20100901005537.GA21466@redhat.com>
+In-Reply-To: <20100901005537.GA21466@redhat.com>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040602060709020407070208
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+Mike Snitzer wrote:
+> Hi Kiyoshi,
+> 
+> On Mon, Aug 30 2010 at  2:13am -0400,
+> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
+> 
+>>> That does seem like a valid concern.  But I'm not seeing why its unique
+>>> to SYNCHRONIZE CACHE.  Any IO that fails on the target side should be
+>>> passed up once the error gets to DM.
+>> See the Tejun's explanation again:
+>>     http://marc.info/?l=linux-kernel&m=128267361813859&w=2
+>> What I'm concerning is whether the same thing as Tejun explained
+>> for ATA can happen on other types of devices.
+>>
+>>
+>> Normal write command has data and no data loss happens on error.
+>> So it can be retried cleanly, and if the result of the retry is
+>> success, it's really success, no implicit data loss.
+>>
+>> Normal read command has a sector to read.  If the sector is broken,
+>> all retries will fail and the error will be reported upwards.
+>> So it can be retried cleanly as well.
+> 
+> I reached out to Fred Knight on this, to get a more insight from a pure
+> SCSI SBC perspective, and he shared the following:
+> 
+> ----- Forwarded message from "Knight, Frederick" <Frederick.Knight@netapp.com> -----
+> 
+>> Date: Tue, 31 Aug 2010 13:24:15 -0400
+>> From: "Knight, Frederick" <Frederick.Knight@netapp.com>
+>> To: Mike Snitzer <snitzer@redhat.com>
+>> Subject: RE: safety of retrying SYNCHRONIZE CACHE?
+>>
+>> There are requirements in SBC to maintain data integrity.  If you WRITE
+>> a block and READ that block, you must get the data you sent in the
+>> WRITE.  This will be synchronized around the completion of the WRITE.
+>> Before the WRITE completes, who knows what a READ will return.  Maybe
+>> all the old data, maybe all the new data, maybe some mix of old and new
+>> data.  Once the WRITE ends successful, all READs of those LBAs (from any
+>> port) will always get the same data.
+>>
+>> As for errors, SBC describes how the deferred errors are reported (like
+>> when a CACHE tries to flush but fails).  So if a write from cache to
+>> media does have problems, the device would tell you via a CHECK
+>> CONDITION (with the first byte of the sense data set to 71h or 73h.  SBC
+>> clause 4.12 and 4.13 cover a lot of this information.  It is these error
+>> codes that prevent silent loss of data.  And, in this case, when the
+>> CHECK CONDITION is delivered, it will have nothing to do with the
+>> command that was issued (the victim command).  If you look into the
+>> sense data, you will see the deferred error flag, and all the additional
+>> information fields will relate to the original I/O
+>>
+>> SYNCHRONIZE CACHE is not substantially different than a WRITE (it puts
+>> data on the media).  So issuing it multiple times wouldn't be any
+>> different than issuing multiple WRITES (it might put a temporary dent in
+>> performance as everything flushes out to media).  If it or any other
+>> commands fail with 71h/73h, then you have to dig down into the sense
+>> data buffer to find out what happened.  For example, if you issue a
+>> WRITE command, and it completes into write back cache but later (before
+>> being written to the media), some of the cache breaks and looses data,
+>> then the device must signal a deferred error to tell the host, and cause
+>> a forced error on the LBA in question.
+>>
+>> Does that help?
+>>
+>>       Fred
+> ----- End forwarded message -----
+> 
+> Seems like verifying/improving the handling of CHECK CONDITION is a more
+> pressing concern than silent data loss purely due to SYNCHRONIZE CACHE
+> retries.  Without proper handling we could completely miss these
+> deferred errors.
+> 
+Yes.
 
+> But how to effectively report such errors to upper layers is unclear to
+> me given that a particular SCSI command can carry error information for
+> IO that was already acknowledged successful (e.g. to the FS).
+> 
+> drivers/scsi/scsi_error.c's various calls to scsi_check_sense()
+> illustrate Linux's current CHECK CONDITION handling.  I need to look
+> closer at how deferred errors propagate to upper layers.  After an
+> initial look it seems scsi_error.c does handle retrying commands where
+> appropriate.
+> 
+> I believe Hannes has concerns/insight here.
+> 
 
-Small correction ... I don't mean the "initial platform_data" but the 
-initial resource data of the platform driver.
+Quite. We _should_ be handling deferred errors correctly;
+if you check drivers/scsi/scsi_lib.c:scsi_io_completion()
+you'll find this:
 
---Armin
+	if (host_byte(result) == DID_RESET) {
+		/* Third party bus reset or reset for error recovery
+		 * reasons.  Just retry the command and see what
+		 * happens.
+		 */
+		action = ACTION_RETRY;
+	} else if (sense_valid && !sense_deferred) {
+                ...
+	} else {
+		description = "Unhandled error code";
+		action = ACTION_FAIL;
+	}
 
+ie for deferred errors we're already aborting the command. Not sure
+if I agree with this bit in drivers/scsi/scsi_lib.c:
 
-   Hans J. Koch wrote:
-> After a successfull uio_register_device() there is both a /dev/uioX
-> and a directory /sys/class/uio/uioX/.
-
-In the attachment is an updated version of uio_jand.
-
-The module uio_jand.ko can be inserted and removed,  no messages visible 
-by dmesg, no kernel oops, no dev/uio*  and no class entries available.
-
-There are only entries of uio_jand in /sys/module, 
-/sys/bus/platform/drivers and /sys/uio/holders ... I'm really confused =:-/
-
-It's completely unclear how to write the initial platform_data of the 
-platform device in the example uio_smx.c :
-
-      regs = platform_get_resource(dev, IORESOURCE_MEM, 0);
-      if (!regs) {
-          dev_err(&dev->dev, "No memory resource specified\n");
-          goto out_free;
-
-Same issue in uio_platform_genirq ...
-
-Cheers
-
---Armin
-
-
-
-
-
-
---------------040602060709020407070208
-Content-Type: text/x-csrc;
- name="uio_jand.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="uio_jand.c"
-
-/*
- * UIO CAN L2
- *
- * (C) Armin Steinhoff <as@steinhoff-automation.com>
- * (C) 2007 Hans J. Koch <hjk@linutronix.de>
- * Original code (C) 2005 Benedikt Spranger <b.spranger@linutronix.de>
- *
- * Licensed under GPL version 2 only.
- *
- */
-
-#include <linux/device.h>
-#include <linux/module.h>
-#include <linux/ioport.h>
-#include <linux/device.h>
-#include <linux/uio_driver.h>
-#include <linux/platform_device.h>
-#include <linux/moduleparam.h>
-#include <linux/io.h>
-
-
-#define INT_QUEUE_SIZE 64
-
-static unsigned char int_x[2], * int_q[2];
-static	void __iomem *isr[2]; 
-
-static unsigned int irq = 11;
-module_param (irq, uint, 0);
-MODULE_PARM_DESC (irq, "IRQ (default 11)");
-
-static unsigned long base_addr = 0xd00000;
-module_param (base_addr, ulong, 0);
-MODULE_PARM_DESC (base_addr, "Base address (default 0xD0000)");
-
-static unsigned long base_len;
-module_param (base_len, ulong, 0);
-MODULE_PARM_DESC (base_len, "Base length (default 0x1)");
-
-static irqreturn_t int_handler(int irq, struct uio_info *dev_info)
+static int scsi_check_sense(struct scsi_cmnd *scmd)
 {
+	struct scsi_device *sdev = scmd->device;
+	struct scsi_sense_hdr sshdr;
 
-    int irq_flag = 0;
-	unsigned char ISRstat;
-	
-	ISRstat = readb(isr[0]);
-	if(ISRstat & 0x02)
-	{
-		int_q[0][int_x[0]] = ISRstat;
-		int_x[0] = (int_x[0] + 1) & 0xF ; // modulo 16
-		
-		irq_flag = 1;
-	}
+	if (! scsi_command_normalize_sense(scmd, &sshdr))
+		return FAILED;	/* no valid sense data */
 
-	ISRstat = readb(isr[1]);
-	if(ISRstat & 0x02)
-	{
-		int_q[1][int_x[1]] = ISRstat;
-		int_x[1] = (int_x[1] + 1) & 0xF ; // modulo 16
-		irq_flag = 1;
-	}
-	
-	if(irq_flag)
-		return(IRQ_HANDLED);
-	else
-		return(IRQ_NONE);
-}
+	if (scsi_sense_is_deferred(&sshdr))
+		return NEEDS_RETRY;
 
-static int jand_probe(struct platform_device *dev)
-{	
-	struct uio_info *info;
-	
-	dev_info(&dev->dev, "start probe %d\n", 1);
-	info = kzalloc(sizeof(struct uio_info), GFP_KERNEL);
-	if (!info)
-	{
-		return -ENOMEM;
-	}
-	
-	info->mem[0].addr = base_addr;
-	info->mem[0].size = base_len;
-	info->mem[0].memtype = UIO_MEM_PHYS;
-	
-	if(request_mem_region( info->mem[0].addr, info->mem[0].size, "uio_jand"))
-	{
-		dev_err(&dev->dev, "request_mem_region failed %d\n", 2);
-		goto out_release;
-	}
-	
-	info->mem[0].internal_addr = ioremap(info->mem[0].addr,info->mem[0].size);
-	if (!info->mem[0].internal_addr)
-	{
-		dev_err(&dev->dev, "ioremap failed %d\n", 3);
-		goto out_release;
-	}
-		
-	/* interrupt queue */
-	info->mem[1].addr = (unsigned long)kmalloc(64, GFP_KERNEL);	
-	if (!info->mem[1].addr)
-		goto out_release1;
-	
-	int_q[0] = (unsigned char * )info->mem[1].addr;
-	int_q[1] = (unsigned char * )info->mem[1].addr +32;
-	
-	memset(&int_q[0], 0x00, 16);
-	int_x[0] = 0;
-	memset(&int_q[1], 0x00, 16);
-	int_x[1] = 0;
+I doubt we can resolve the situation by retrying the command, which
+will be the wrong command to retry anyway. I would rather
+have those retry 'SUCCESS' and add another case in scsi_io_completion()
+to notify us about the deferred error.
 
-	info->mem[1].memtype = UIO_MEM_LOGICAL;
-	info->mem[1].size = 64;
-	
-	isr[0] = info->mem[0].internal_addr + 3;	        /* interrupt reg channel 1 */
-	isr[1] = info->mem[0].internal_addr + 3 + 0x200;	/* interrupt reg channel 2 */
-	if( request_irq(irq, int_handler, IRQF_DISABLED,"uio_jand", NULL) ) 
-	{
-		goto out_release2;
-	}
-	
-	info->name = "uio_jand";	
-	info->version = "0.0.2";
-	info->irq = irq;
-	info->irq_flags = 0;
-	info->handler = int_handler; // different ptr types ?
-	
-	platform_set_drvdata(dev, info);
-	
-	if (uio_register_device(&dev->dev, info))
-	{
-		dev_err(&dev->dev, "uio_register_device failed %d\n", 4);
-		goto out_release2;
-	}
+I'll be sending a patch.
 
-	dev_info(&dev->dev, "uio_jand started! %d\n", 5);
-	return 0;
-	
-	
-out_release2:
-	kfree((void *)info->mem[1].addr);
-	dev_err(&dev->dev, "uio_register_device failed %d \n", 6);
-out_release1:	
-	free_irq( irq, "uio_jand" );	
-	iounmap(info->mem[0].internal_addr);		
-	release_mem_region( base_addr, base_len);
-out_release:	
-	kfree (info);
-    dev_err(&dev->dev, "Error exit ENODEV! %d\n", 7);
-	return -ENODEV;
-}
+Cheers,
 
-static int jand_remove(struct platform_device *dev)
-{
-	struct uio_info *info = platform_get_drvdata(dev);
-	
-	uio_unregister_device(info);
-	iounmap(info->mem[0].internal_addr);
-	release_mem_region( base_addr, base_len);
-	free_irq( irq, "uio_jand" );		
-	kfree((void *)info->mem[1].addr);
-	kfree (info);
-	return 0;
-}
-
-static struct platform_driver uio_jand_driver = {
-	 .probe  = jand_probe,
-     .remove = jand_remove,
-     .driver = {
-	 .name	= "uio_jand",
-     .owner	= THIS_MODULE,
-      },
-};
-
-static int __init uio_jand_init(void)
-{
-	return platform_driver_register(&uio_jand_driver);
-}
-
-static void __exit uio_jand_exit(void)
-{
-	platform_driver_unregister(&uio_jand_driver);
-}
-
-module_init( uio_jand_init );
-module_exit( uio_jand_exit );
-
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("A. Steinhoff");
-MODULE_DESCRIPTION("UIO Janus-D CAN driver");
-
-
---------------040602060709020407070208--
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: Markus Rex, HRB 16746 (AG Nürnberg)
