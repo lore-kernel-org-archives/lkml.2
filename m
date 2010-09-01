@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab0IAJlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 05:41:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39381 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754607Ab0IAJls convert rfc822-to-8bit (ORCPT
+	id S1754693Ab0IAJmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 05:42:05 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36144 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753740Ab0IAJmA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 05:41:48 -0400
-Subject: Re: ftrace/perf_event leak
-From: Peter Zijlstra <peterz@infradead.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, kvm-devel <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C7E1F12.8030304@cn.fujitsu.com>
-References: <4C7E11E5.1040402@redhat.com> <1283331868.2059.808.camel@laptop>
-	 <4C7E1C36.6070400@redhat.com>  <4C7E1F12.8030304@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 1 Sep 2010 05:42:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=xtdsz3jRo7LJX4+ah+ynAf4sgPrbbUVGwav4jHh0kc+Y7UxZVG7B3mezVgRgJyA2xs
+         jfKjU/ENPQq2Fe1pos4n7thOBtBcGvcdm60muYd9+ryU3SJeAC5EX1VL/+OMdIbN7m8u
+         FPR3tg5kpb1Eu+7mHF+j5x+6rP34wSqo5Nq+4=
+MIME-Version: 1.0
+In-Reply-To: <20100901113525.04b356c5@tux.DEF.witbe.net>
+References: <20100901113525.04b356c5@tux.DEF.witbe.net>
+Date: Wed, 1 Sep 2010 12:41:59 +0300
+X-Google-Sender-Auth: NnSa8rWgVmZH_BCU7RkhNHoft3I
+Message-ID: <AANLkTimnBG1qcLwZoEkr_iDkwE4zygLdjFJHVk9S3+wZ@mail.gmail.com>
+Subject: Re: 2.6.36-rc2 : slabtop report 10170292 size-32 objects...
+From: Pekka Enberg <penberg@kernel.org>
+To: Paul Rolland <rol@as2917.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Dave Airlie <airlied@linux.ie>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 01 Sep 2010 11:41:35 +0200
-Message-ID: <1283334095.2059.849.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-01 at 17:38 +0800, Li Zefan wrote:
+On Wed, Sep 1, 2010 at 12:35 PM, Paul Rolland <rol@as2917.net> wrote:
+> I was surprised to see my machine using so much swap when I couldn't find
+> where all the memory was gone, and I checked quickly what slabtop had to
+> say, and found that one :
+>
+>  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+> 10172288 10171996  99%    0.03K  90824      112    363296K size-32
+>
+> That makes is 10M active "size-32" entries ? but what is that ? What is
+> using the "size-32" ? And it this normal to see that on a laptop with 4G
+> RAM which is only running X, KDE, Compiz+emerald, +/-10 xterms and a
+> firefox which is closed as soon as it is no more used.
+>
+> Before you ask :
+> [root@tux proc]# zgrep SLAB /proc/config.gz
+> CONFIG_SLAB=y
+> CONFIG_SLABINFO=y
+> # CONFIG_DEBUG_SLAB is not set
+> [root@tux proc]# uptime
+>  11:34:50 up 6 days, 20:30, 13 users,  load average: 1.42, 1.35, 1.23
+>
+> so that may limit the actions or informations I can collect, but any
+> details you want, please feel free to ask.
 
-> ---
-> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-> index 8a2b73f..9d1d1f2 100644
-> --- a/kernel/trace/trace_event_perf.c
-> +++ b/kernel/trace/trace_event_perf.c
-> @@ -161,6 +161,7 @@ void perf_trace_destroy(struct perf_event *p_event)
->  		}
->  	}
->  out:
-> +	module_put(tp_event->mod);
->  	mutex_unlock(&event_mutex);
->  }
+Might be related to this:
 
-Ah, indeed, we so that try_module_get() for each reference to the
-tracepoint, I guess we also should do the below, in case the
-registration fails.
-
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 000e6e8..31cc4cb 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -91,6 +91,8 @@ int perf_trace_init(struct perf_event *p_event)
- 		    tp_event->class && tp_event->class->reg &&
- 		    try_module_get(tp_event->mod)) {
- 			ret = perf_trace_event_init(tp_event, p_event);
-+			if (ret)
-+				module_put(tp_event->mod);
- 			break;
- 		}
- 	}
+http://kerneltrap.org/mailarchive/linux-kernel/2010/8/25/4611329
