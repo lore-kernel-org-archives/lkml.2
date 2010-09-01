@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab0IAR7u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 13:59:50 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58785
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755940Ab0IAR7k (ORCPT
+	id S1755928Ab0IASBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 14:01:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54528 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106Ab0IASBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 13:59:40 -0400
-Date: Wed, 01 Sep 2010 10:59:55 -0700 (PDT)
-Message-Id: <20100901.105955.176668287.davem@davemloft.net>
-To: wg@grandegger.com
-Cc: w.sang@pengutronix.de, julia@diku.dk, kernel-janitors@vger.kernel.org,
-        grant.likely@secretlab.ca, socketcan-core@lists.berlios.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 3/4] drivers/net/can/mscan/mpc5xxx_can.c: Add
- of_node_put to avoid memory leak
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4C7D565F.307@grandegger.com>
-References: <Pine.LNX.4.64.1008311943280.2668@ask.diku.dk>
-	<20100831191014.GA9603@pengutronix.de>
-	<4C7D565F.307@grandegger.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 1 Sep 2010 14:01:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=ICaP804lg9hCAKe4+UrfZAndpwThha0w7tx2+HORpssGvAbRkIeCvGkynQTi8hxAE0
+         CdOu25JLvjFIi+qhI5V2G0Lsh2IE7+Go4ScyjqZGTWHMtt2xkcmwd2eJXmTVJHAfs1nh
+         gOqrN9o9PSbAD6k64ZoNQMa5pHIj6dqATHPkM=
+Message-ID: <4C7E94F6.9050806@gmail.com>
+Date: Wed, 01 Sep 2010 20:01:26 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Chase Douglas <chase.douglas@canonical.com>
+CC: Jiri Kosina <jkosina@suse.cz>, Michael Poole <mdpoole@troilus.org>,
+        Henrik Rydberg <rydberg@euromail.se>, Tejun Heo <tj@kernel.org>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7 v3] HID: magicmouse: don't allow hidinput to initialize
+ the device
+References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com> <1283306184-28833-2-git-send-email-chase.douglas@canonical.com>
+In-Reply-To: <1283306184-28833-2-git-send-email-chase.douglas@canonical.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wolfgang Grandegger <wg@grandegger.com>
-Date: Tue, 31 Aug 2010 21:22:07 +0200
-
-> On 08/31/2010 09:10 PM, Wolfram Sang wrote:
->> On Tue, Aug 31, 2010 at 07:44:00PM +0200, Julia Lawall wrote:
->>> Add a call to of_node_put in the error handling code following a call to
->>> of_find_matching_node.
->>>
->>> This patch also moves the existing call to of_node_put after the call to
->>> iounmap in the error handling code, to make it possible to jump to
->>> of_node_put without doing iounmap.  These appear to be disjoint operations,
->>> so the ordering doesn't matter.
->>>
->>> This patch furthermore changes the -ENODEV result in the error handling
->>> code for of_find_matching_node to a return of 0, as found in the error
->>> handling code for of_iomap, because the return type of the function is
->>> unsigned.
->>>
->>> The semantic match that finds this problem is as follows:
->>> (http://coccinelle.lip6.fr/)
- ...
->>> Signed-off-by: Julia Lawall <julia@diku.dk>
->> 
->> Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+On 09/01/2010 03:56 AM, Chase Douglas wrote:
+> From: Chase Douglas <chase.douglas@ubuntu.com>
 > 
-> Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+> The driver listens only for raw events from the device. If we allow
+> the hidinput layer to initialize, we can hit NULL pointer dereferences
+> in the hidinput layer because disconnecting only removes the hidinput
+> devices from the hid device while leaving the hid fields configured.
+> 
+> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> Acked-by: Michael Poole <mdpoole@troilus.org>
+> ---
+>  drivers/hid/hid-magicmouse.c |   13 +++++++++----
+>  1 files changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+> index 319b0e5..d38b529 100644
+> --- a/drivers/hid/hid-magicmouse.c
+> +++ b/drivers/hid/hid-magicmouse.c
+> @@ -404,15 +404,20 @@ static int magicmouse_probe(struct hid_device *hdev,
+>  		goto err_free;
+>  	}
+>  
+> -	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+> +	/* When registering a hid device, one of hidinput, hidraw, or hiddev
+> +	 * subsystems must claim the device. We are bypassing hidinput due to
+> +	 * our raw event processing, and hidraw and hiddev may not claim the
+> +	 * device. We get around this by telling hid_hw_start that input has
+> +	 * claimed the device already, and then flipping the bit back.
+> +	 */
+> +	hdev->claimed = HID_CLAIMED_INPUT;
+> +	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT & ~HID_CONNECT_HIDINPUT);
+> +	hdev->claimed &= ~HID_CLAIMED_INPUT;
 
-Applied.
+This looks weird. Is there any past discussion about why you cannot use
+hidinput and you have to do all the input bits yourself while cheating
+this very weird way?
+
+thanks,
+-- 
+js
