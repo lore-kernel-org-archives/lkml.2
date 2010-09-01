@@ -1,311 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab0IAL3U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 07:29:20 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:37865 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751384Ab0IAL3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 07:29:19 -0400
-Date: Wed, 1 Sep 2010 07:29:15 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, ltt-dev@lists.casi.polymtl.ca
-Subject: [RFC] Common Trace Format Requirements (v1.3)
-Message-ID: <20100901112915.GA32715@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 07:25:17 up 221 days, 14:02,  4 users,  load average: 0.06, 0.20,
-	0.53
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752587Ab0IALal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 07:30:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37422 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751103Ab0IALak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 07:30:40 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4C7DF3B7.7010305@snapgear.com>
+References: <4C7DF3B7.7010305@snapgear.com> <4C7B59E1.6010904@snapgear.com> <20100827015905.27277.39167.stgit@warthog.procyon.org.uk> <20100827020038.27277.27239.stgit@warthog.procyon.org.uk> <26799.1283201411@redhat.com>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/22] Fix M68K irqflags
+Date: Wed, 01 Sep 2010 12:30:24 +0100
+Message-ID: <15143.1283340624@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I am re-sending this trace format requirements document to LKML, because it
-looks like the too long recipient list caught their spam filter.)
 
-Hi,
-
-  The goal of the present document is to propose a trace format that will suit
-the needs of the embedded, telecom, high-performance and kernel communities. It
-starts by doing an overview of the trace format, tracer and trace analyzer
-requirements to consider for a Common Trace Format proposal.
-
-This is a follow-up on what I presented at LinuxCon 2010:
-"Efficient Trace Format for System-Wide Tracing"
-
-http://www.efficios.com/linuxcon2010 (slides)
-
-Feedback is welcome!
-
-Thanks,
-
-     Mathieu
-
-
-This document includes requirements from:
-
-Steven Rostedt <rostedt@goodmis.org>
-Dominique Toupin <dominique.toupin@ericsson.com>
-Aaron Spear <aaron_spear@mentor.com>
-Philippe Maisonneuve <Philippe.Maisonneuve@windriver.com>
-Felix Burton <Felix.Burton@windriver.com>
-Andrew McDermott <Andrew.McDermott@windriver.com>
-Multi-Core Association Tool Infrastructure Workgroup
-   (http://www.multicore-association.org/workgroup/tiwg.php)
-
-
-* Trace Format Requirements
-
-  These are requirements on the trace format itself. This section discusses the
-layout of data in the trace, explaining the rationale behind the choices. The
-rationale for the trace format choices may refer to the tracer and trace
-analyzer requirements stated below. This section starts by presenting the common
-trace model, and then specifies the requirements of an instance of this model
-specifically tailored to efficient kernel- and user-space tracing requirements.
-
-
-1) Architecture
-
-This high-level model is meant to be an industry-wide, common model, fulfilling
-the tracing requirements. It is meant to be application-, architecture-, and
-language-agnostic.
-
-1.1) Core model
-
-- Event
-
-An event is an information record contained within the trace.
-
-  - Events must be in physical order within a section
-  - Event type (numeric identifier: maps to metadata)
-    - Unique ID assigned within a section.
-  - Event payload
-    - Variable event size
-    - Size limitations: maximum event size should be configurable.
-    - Size information available through metadata.
-    - Support various data alignment for architectures, standards, and
-      languages:
-      - Natural alignment of data for architectures with slow non-aligned
-        writes.
-      - Packed layout of headers for architecture with efficient non-aligned
-        writes.
-
-- Section
-
-A section within the trace can be thought of as the ELF sections in a ELF
-binary. They contain a sequence of physically contiguous event records.
-
-  - Multi-level section identifier
-    - e.g.: section name / CPU number
-  - Contains a subset of event types
-
-- Metadata
-
-Metadata is the description of the setting of the environment of the
-application. Defines the basic types of the domains. Will define the mapping
-between the event, and the type of the event fields. The metadata scope (what it
-describes) is a whole trace, which consists of one or many sections.
-
-The metadata can be either contained in the trace (better usability for telecom
-scenarios) or added alongside the trace data by a separate module (for DSP
-scenarios). Metadata checksumming and/or versioning can be used to ensure
-consistency between sections and metadata in the latter.
-
-  - Trace version
-    - Major number (increment breaks compabilility)
-    - Minor number (increment keeps compatibility)
-  - Describe the invariant properties of the environment where the trace was
-    generated.
-    - Contain unique domain identifier (kernel, process ID and timestamp,
-      hypervisor)
-    - Describes the runtime environment.
-    - Report target bitness
-    - Report target byte order
-    - Data types (see section 1.2 Extensions below)
-  - Architecture-agnostic (text-based)
-  - Ought to be parsed with a regular grammar
-  - Mapping to event types, e.g. (section, event) tuples, with:
-      ( section identifier, event numerical identifier )
-  - Description of event context fields (per section)
-  - Can be streamed along with the trace as a trace section
-  - Support dynamic addition of events while trace is active (module loading)
-  - Metadata section should be efficient and reliable. Additional information
-    could be kept in separate sections, outside of metadata.
-  - Metadata description language not imposed by standard
-
-
-1.2) Extensions (optional capabilities)
-
-- Event
-  - Optional context (thread id, virtual cpu id, execution mode (irq/bh/thread),
-                      CPU/board/node id, event ordering identifier, timestamp,
-                      current hardware performance counter information, event
-                      size)
-    - Optional ordering capability across sections:
-      - Ordering identifier required for trace containing many event streams
-      - Either timestamp-based or based on unique sequence numbers
-    - Optional time-flow capability: per-event timestamps
-
-- Section
-  - Optional context applying to all events contained in that section
-    (thread id, virtual cpu id, execution mode (irq/bh/thread), CPU/board/node
-     id)
-  - Support piece-wise compression
-  - Support checksumming
-
-- Metadata
-  - Execution environment information
-    - Data types available: integer, strings, arrays, sequence, floats,
-      structures, maps (aka enumerations), bitfields, ...
-      - Describe type alignment.
-      - Describe type size.
-      - Describe type signedness.
-      - Other type examples:
-        - gcc "vector" type. (packed data)
-          http://gcc.gnu.org/onlinedocs/gcc/Vector-Extensions.html
-        - gcc complex type (e.g. complex short, float, double...)
-        - gcc _Fract and _Accum http://gcc.gnu.org/wiki/FixedPointArithmetic
-          http://gcc.gnu.org/onlinedocs/gcc/Fixed_002dPoint.html
-  - Describes trace capabilities, for instance:
-    - Event ordering across sections
-    - Time flow information
-      - In event header
-      - Or possibly payload of pre-specified sections and/or events
-    - Ability to perform event ordering across traces
-
-
-2) Linux-specific Model
-
-   (Linux instance, specific to the reference implementation)
-
-Instance of the model specifically tailored to the Linux kernel and C
-programs/libraries requirements. Allows for either packed events, or events
-aligned following the ISO/C standard.
-
-- Event
-  - Payload
-    - Initially support ISO C naturally aligned and packed type layouts.
-
-- Each section represented as a trace stream (typically 1 trace stream per cpu
-  per section) to allow the tracer to easily append to these sections.
-  Identifier: section name / CPU ID
-  Each section has a CPU ID identifier in its context information.
-
-- Trace stream
-  - Should have no hard-coded limit on size of a file generated by saving the
-    trace stream (64 bit file position is fine)
-  - Event lost count should be localized. It should apply to a limited time
-    interval and to a tracefile, hence to a specific section, so the trace
-    analyzer can provide basic information about what kind of events were lost
-    and where they were lost in the trace.
-  - Should be optionally compressible piece-wise.
-  - Optional checksum on the sub-buffer content (except sub-buffer header), with
-    a selection of checksum algorithms.
-  - Sub-buffer headers should contain a sequence number to help UDP streaming
-    reassembly.
-
-- Compact representation
-  - Minimize the overhead in terms of disk/network/serial port/memory bandwidth.
-  - A compact representation can keep more information in smaller buffers,
-    thus needs less memory to keep the same amount of information around.
-    Also useful to improve cache locality in flight recorder mode.
-
-- Natural alignment of headers for architectures with slow non-aligned writes.
-
-- Packed layout of headers for architecture with efficient non-aligned writes.
-
-- Should have a 1 to 1 mapping between the memory buffers and the generated
-  trace files: allows zero-copy with splice().
-
-- Use target endianness
-
-- Portable across different host target (tracer)/host (analyzer) architectures
-
-- It should be possible to generate metadata from descriptions written in header
-  files (extraction with C preprocessor macros is one solution).
-
-
-* Requirements on the Tracers
-
-Higher-level tracer requirements that seem appropriate to support some of the
-trace format requirements stated above.
-
-
-*Fast*
-- Low-overhead
-- Handle large trace throughput (multi-GB per minutes)
-- Scalable to high number of cores
-  - Per-cpu memory buffers
-  - Scalability and performance-aware synchronization
-
-*Compact*
-- Environments without filesystem
-  - Need to buffer events in target RAM to send them in group a host for
-    analysis
-- Ability to tune the size of buffers and transmission medium to minimize the
-  impact on the traced system.
-- Streaming (live monitoring)
-  - Through sockets (USB, network)
-  - Through serial ports
-  - There must be a related protocol for streaming this event data.
-
-- Availability of flight recorder (synonym: overwrite) mode
-  - Exclusive ownership of reader data.
-  - Buffer size should be per group of events.
-
-- Output trace to disk
-- Trace buffers available in crash dump to allow post-mortem analysis
-- Fine-grained timestamps
-
-- Lockless (lock-free, ideally wait-free; aka starvation-free)
-
-- Buffer introspection: event written, read and lost counts.
-
-- Ability to iteratively narrow the level of details and traced time window
-  following an initial high level "state" overview provided by an initial trace
-  collecting everything.
-
-- Support kernel module instrumentation
-
-- Standard way(s) for a host to upload/access trace log data from a
-  target/JTAG device/simulator/etc.
-
-- Conditional tracing in kernel space.
-
-- Compatibility with power management subsystem (trace collection shall not be a
-  reason for waking up a device)
-
-- Well defined and stable trace configuration and control API across kernel
-  versions.
-
-- Create and run more than one trace session in parallel at the same time
-  - monitoring from system administrators
-  - field engineered to troubleshoot a specific problem
-
-
-* Trace Analyzer Requirements
-
-- Ability to cope with huge traces (> 10 GB)
-- Should be possible to do a binary search on the file to find events by time
-  at least. (combined with smart indexing/ summary data perhaps)
-- File format should be as dense as possible, but not at the expense of
-  analysis performance (faster is more important than bigger since disks are
-  getting cheaper)
-- Must not be required to scan through all events in order to start
-  analyzing (by time anyway)
-- Support live viewing of trace streams
-- Standard description of a trace event context.
-  (PERI-XML calls it "Dimensions")
-- Manage system-wide event scoping with the following hierarchy:
-  (address space identifier, section name, event name)
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+> Here is a spin of the same patch, only with a single irqflags.h.
+> It is closely modeled on the mm version, merging (and cleaning)
+> the non-mmu bits as needed. There is a fair bit of common code
+> in here.
+>
+> It does refactor arch_local_irq_save() but I am pretty sure that
+> makes no impact (performance or code size). I have left
+> arch_irq_enable as-is for all, it is not clear to me why it is
+> the way it is for the mm case (Geert?)
+
+Here's my take on your patch.  By removing a couple of apparently unnecessary
+refs to asm/system.h I can turn the #define of arch_local_irq_enable() into an
+inline function.
+
+Should I take it that Coldfire chips lack the AND/OR directly to SR
+instructions?
+
+David
+---
+ arch/m68k/include/asm/irqflags.h  |   76 ++++++++++++++++++++++++++++++++++++++
+ arch/m68k/include/asm/system_mm.h |   25 ------------
+ arch/m68k/include/asm/system_no.h |   49 ------------------------
+ include/linux/hardirq.h           |    1 
+ include/linux/list.h              |    1 
+ 5 files changed, 78 insertions(+), 74 deletions(-)
+
+diff --git a/arch/m68k/include/asm/irqflags.h b/arch/m68k/include/asm/irqflags.h
+new file mode 100644
+index 0000000..b186de8
+--- /dev/null
++++ b/arch/m68k/include/asm/irqflags.h
+@@ -0,0 +1,76 @@
++#ifndef _M68K_IRQFLAGS_MM_H
++#define _M68K_IRQFLAGS_MM_H
++
++#include <linux/types.h>
++#include <linux/hardirq.h>
++#include <linux/preempt.h>
++#include <asm/thread_info.h>
++#include <asm/entry.h>
++
++static inline unsigned long arch_local_save_flags(void)
++{
++	unsigned long flags;
++	asm volatile ("movew %%sr,%0": "=d" (flags) : : "memory");
++	return flags;
++}
++
++static inline void arch_local_irq_disable(void)
++{
++#ifdef CONFIG_COLDFIRE
++	asm volatile (
++		"move	%/sr,%%d0	\n\t"
++		"ori.l	#0x0700,%%d0	\n\t"
++		"move	%%d0,%/sr	\n"
++		: /* no outputs */
++		:
++		: "cc", "%d0", "memory");
++#else
++	asm volatile ("oriw  #0x0700,%%sr" : : : "memory");
++#endif
++}
++
++static inline void arch_local_irq_enable(void)
++{
++#if defined(CONFIG_COLDFIRE)
++	asm volatile (
++		"move	%/sr,%%d0	\n\t"
++		"andi.l	#0xf8ff,%%d0	\n\t"
++		"move	%%d0,%/sr	\n"
++		: /* no outputs */
++		:
++		: "cc", "%d0", "memory");
++#else
++# if defined(CONFIG_MMU)
++	if (MACH_IS_Q40 || !hardirq_count())
++# endif
++		asm volatile (
++			"andiw %0,%%sr"
++			:
++			: "i" (ALLOWINT)
++			: "memory")
++#endif
++}
++
++static inline unsigned long arch_local_irq_save(void)
++{
++	unsigned long flags = arch_local_save_flags();
++	arch_local_irq_disable();
++	return flags;
++}
++
++static inline void arch_local_irq_restore(unsigned long flags)
++{
++	asm volatile ("movew %0,%%sr": : "d" (flags) : "memory");
++}
++
++static inline bool arch_irqs_disabled_flags(unsigned long flags)
++{
++	return (flags & ~ALLOWINT) != 0;
++}
++
++static inline bool arch_irqs_disabled(void)
++{
++	return arch_irqs_disabled_flags(arch_local_save_flags());
++}
++
++#endif /* _M68K_IRQFLAGS_MM_H */
+diff --git a/arch/m68k/include/asm/system_mm.h b/arch/m68k/include/asm/system_mm.h
+index dbb6515..12053c4 100644
+--- a/arch/m68k/include/asm/system_mm.h
++++ b/arch/m68k/include/asm/system_mm.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/linkage.h>
+ #include <linux/kernel.h>
++#include <linux/irqflags.h>
+ #include <asm/segment.h>
+ #include <asm/entry.h>
+ 
+@@ -62,30 +63,6 @@ asmlinkage void resume(void);
+ #define smp_wmb()	barrier()
+ #define smp_read_barrier_depends()	((void)0)
+ 
+-/* interrupt control.. */
+-#if 0
+-#define local_irq_enable() asm volatile ("andiw %0,%%sr": : "i" (ALLOWINT) : "memory")
+-#else
+-#include <linux/hardirq.h>
+-#define local_irq_enable() ({							\
+-	if (MACH_IS_Q40 || !hardirq_count())					\
+-		asm volatile ("andiw %0,%%sr": : "i" (ALLOWINT) : "memory");	\
+-})
+-#endif
+-#define local_irq_disable() asm volatile ("oriw  #0x0700,%%sr": : : "memory")
+-#define local_save_flags(x) asm volatile ("movew %%sr,%0":"=d" (x) : : "memory")
+-#define local_irq_restore(x) asm volatile ("movew %0,%%sr": :"d" (x) : "memory")
+-
+-static inline int irqs_disabled(void)
+-{
+-	unsigned long flags;
+-	local_save_flags(flags);
+-	return flags & ~ALLOWINT;
+-}
+-
+-/* For spinlocks etc */
+-#define local_irq_save(x)	({ local_save_flags(x); local_irq_disable(); })
+-
+ #define xchg(ptr,x) ((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
+ 
+ struct __xchg_dummy { unsigned long a[100]; };
+diff --git a/arch/m68k/include/asm/system_no.h b/arch/m68k/include/asm/system_no.h
+index 3c0718d..52ca8da 100644
+--- a/arch/m68k/include/asm/system_no.h
++++ b/arch/m68k/include/asm/system_no.h
+@@ -2,6 +2,7 @@
+ #define _M68KNOMMU_SYSTEM_H
+ 
+ #include <linux/linkage.h>
++#include <linux/irqflags.h>
+ #include <asm/segment.h>
+ #include <asm/entry.h>
+ 
+@@ -46,54 +47,6 @@ asmlinkage void resume(void);
+   (last) = _last;						\
+ }
+ 
+-#ifdef CONFIG_COLDFIRE
+-#define local_irq_enable() __asm__ __volatile__ (		\
+-	"move %/sr,%%d0\n\t"					\
+-	"andi.l #0xf8ff,%%d0\n\t"				\
+-	"move %%d0,%/sr\n"					\
+-	: /* no outputs */					\
+-	:							\
+-        : "cc", "%d0", "memory")
+-#define local_irq_disable() __asm__ __volatile__ (		\
+-	"move %/sr,%%d0\n\t"					\
+-	"ori.l #0x0700,%%d0\n\t"				\
+-	"move %%d0,%/sr\n"					\
+-	: /* no outputs */					\
+-	:							\
+-	: "cc", "%d0", "memory")
+-/* For spinlocks etc */
+-#define local_irq_save(x) __asm__ __volatile__ (		\
+-	"movew %%sr,%0\n\t"					\
+-	"movew #0x0700,%%d0\n\t"				\
+-	"or.l  %0,%%d0\n\t"					\
+-	"movew %%d0,%/sr"					\
+-	: "=d" (x)						\
+-	:							\
+-	: "cc", "%d0", "memory")
+-#else
+-
+-/* portable version */ /* FIXME - see entry.h*/
+-#define ALLOWINT 0xf8ff
+-
+-#define local_irq_enable() asm volatile ("andiw %0,%%sr": : "i" (ALLOWINT) : "memory")
+-#define local_irq_disable() asm volatile ("oriw  #0x0700,%%sr": : : "memory")
+-#endif
+-
+-#define local_save_flags(x) asm volatile ("movew %%sr,%0":"=d" (x) : : "memory")
+-#define local_irq_restore(x) asm volatile ("movew %0,%%sr": :"d" (x) : "memory")
+-
+-/* For spinlocks etc */
+-#ifndef local_irq_save
+-#define local_irq_save(x) do { local_save_flags(x); local_irq_disable(); } while (0)
+-#endif
+-
+-#define	irqs_disabled()			\
+-({					\
+-	unsigned long flags;		\
+-	local_save_flags(flags);	\
+-	((flags & 0x0700) == 0x0700);	\
+-})
+-
+ #define iret() __asm__ __volatile__ ("rte": : :"memory", "sp", "cc")
+ 
+ /*
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index d5b3876..7dfdc06 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -8,7 +8,6 @@
+ #include <linux/lockdep.h>
+ #include <linux/ftrace_irq.h>
+ #include <asm/hardirq.h>
+-#include <asm/system.h>
+ 
+ /*
+  * We put the hardirq and softirq counter into the preemption
+diff --git a/include/linux/list.h b/include/linux/list.h
+index d167b5d..88a0006 100644
+--- a/include/linux/list.h
++++ b/include/linux/list.h
+@@ -5,7 +5,6 @@
+ #include <linux/stddef.h>
+ #include <linux/poison.h>
+ #include <linux/prefetch.h>
+-#include <asm/system.h>
+ 
+ /*
+  * Simple doubly linked list implementation.
