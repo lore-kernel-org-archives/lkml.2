@@ -1,40 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab0IAJQN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 05:16:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59163 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754465Ab0IAJQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 05:16:10 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100831193924.102875973@chello.nl>
-References: <20100831193924.102875973@chello.nl> <20100831192617.441439071@chello.nl>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org
-Subject: Re: [RFC][PATCH 1/5] mm: strictly nested kmap_atomic
-Date: Wed, 01 Sep 2010 10:15:08 +0100
-Message-ID: <32752.1283332508@redhat.com>
+	id S1754343Ab0IAJQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 05:16:56 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:32072
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751870Ab0IAJQz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 05:16:55 -0400
+X-SpamScore: 13
+X-BigFish: VPS13(zz936eK4015Lzz1202hzz8275dhz32i2a8h5bep5bfs43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L829QN-01-B0B-02
+X-M-MSG: 
+Date: Wed, 1 Sep 2010 10:46:32 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>
+Subject: [GIT PULL] oprofile fixes
+Message-ID: <20100901084632.GI22783@erda.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+Ingo,
 
-> Ensure kmap_atomic usage is strictly nested
-> 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
+please pull oprofile fixes from:
 
-Acked-by: David Howells <dhowells@redhat.com>
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+
+Thanks,
+
+-Robert
+
+The following changes since commit da5cabf80e2433131bf0ed8993abc0f7ea618c73:
+
+  Linux 2.6.36-rc1 (2010-08-15 17:41:37 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+
+Robert Richter (2):
+      oprofile: fix crash when accessing freed task structs
+      oprofile, x86: fix init_sysfs error handling
+
+ arch/x86/oprofile/nmi_int.c    |   16 +++++++++++++---
+ drivers/oprofile/buffer_sync.c |   27 ++++++++++++++-------------
+ drivers/oprofile/cpu_buffer.c  |    2 --
+ 3 files changed, 27 insertions(+), 18 deletions(-)
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
+
+
