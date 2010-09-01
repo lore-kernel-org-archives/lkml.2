@@ -1,81 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab0IAWta (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 18:49:30 -0400
-Received: from sati.usurf.usu.edu ([129.123.194.129]:38884 "EHLO
-	echo.usurf.usu.edu" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260Ab0IAWt2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 18:49:28 -0400
-From: Jonathan Haws <Jonathan.Haws@sdl.usu.edu>
-To: Jonathan Haws <Jonathan.Haws@sdl.usu.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-net@vger.kernel.org" <linux-net@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: RE: Memory allocation modifications in ibm_newemac driver
-Thread-Topic: Memory allocation modifications in ibm_newemac driver
-Thread-Index: ActKFh1163SqUHTiROCjSFgwjSee2wABD/h2AAHTCpEAAXilaQ==
-Date: Wed, 1 Sep 2010 22:46:42 +0000
-Message-ID: <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A305B@Mercury.usurf.usu.edu>
-References: <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A2F09@Mercury.usurf.usu.edu>,<5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A2FBE@Mercury.usurf.usu.edu>,<5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A301B@Mercury.usurf.usu.edu>
-In-Reply-To: <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A301B@Mercury.usurf.usu.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754878Ab0IAWvE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 18:51:04 -0400
+Received: from kroah.org ([198.145.64.141]:35367 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753320Ab0IAWvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 18:51:01 -0400
+Subject: patch "add ttyprintk driver" added to gregkh-2.6 tree
+To: samo_pogacnik@t-2.net, alan@lxorguk.ukuu.org.uk, gregkh@suse.de,
+        kay.sievers@vrfy.org, linux-embedded@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+From: <gregkh@suse.de>
+Date: Wed, 01 Sep 2010 15:50:53 -0700
+In-Reply-To: <1282761847.5857.9.camel@itpsd6lap>
+Message-ID: <12833814531068@site>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=ANSI_X3.4-1968
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apparently I spoke too soon - sorry about that.  I am still getting the error when I try to write to disk and receive on the network at the same time.  Here is the output:
 
-blastee: page allocation failure. order:1, mode:0x4020
-Call Trace:
-[ccea9a40] [c0006ef0] show_stack+0x44/0x16c (unreliable)
-[ccea9a80] [c006f9f0] __alloc_pages_nodemask+0x38c/0x4f8
-[ccea9b00] [c0095008] __slab_alloc+0x594/0x5e0
-[ccea9b40] [c0095a08] __kmalloc_track_caller+0xe8/0xf0
-[ccea9b60] [c01c848c] __alloc_skb+0x60/0x140
-[ccea9b80] [c01a7df8] emac_poll_rx+0x568/0x768
-[ccea9bc0] [c01a28e4] mal_poll+0xa8/0x1ec
-[ccea9bf0] [c01d3eec] net_rx_action+0x9c/0x1b4
-[ccea9c20] [c003b3c0] __do_softirq+0xc4/0x148
-[ccea9c60] [c0004d18] do_softirq+0x78/0x80
-[ccea9c70] [c003b67c] local_bh_enable+0xc0/0xd8
-[ccea9c80] [c01c29bc] lock_sock_nested+0xc0/0xdc
-[ccea9cc0] [c0212cb4] udp_recvmsg+0x318/0x3a4
-[ccea9d10] [c01c2334] sock_common_recvmsg+0x3c/0x60
-[ccea9d30] [c01c06c4] sock_recvmsg+0xb8/0xf0
-[ccea9e20] [c01c09b0] sys_recvfrom+0x8c/0xfc
-[ccea9f00] [c01c18d4] sys_socketcall+0x128/0x1f8
-[ccea9f40] [c000f434] ret_from_syscall+0x0/0x3c
-Mem-Info:
-DMA per-cpu:
-CPU    0: hi:   90, btch:  15 usd:  48
-Active_anon:28 active_file:807 inactive_anon:85
- inactive_file:171 unevictable:0 dirty:0 writeback:0 unstable:0
- free:506 slab:53530 mapped:362 pagetables:19 bounce:0
-DMA free:2024kB min:2036kB low:2544kB high:3052kB active_anon:112kB inactive_anon:340kB active_file:3228kB inactive_file:684kB unevictable:0kB present:260096kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0
-DMA: 410*4kB 28*8kB 4*16kB 1*32kB 1*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 2024kB
-978 total pagecache pages
-0 pages in swap cache
-Swap cache stats: add 0, delete 0, find 0/0
-Free swap  = 0kB
-Total swap = 0kB
-65536 pages RAM
-1400 pages reserved
-1001 pages shared
-62828 pages non-shared
-SLUB: Unable to allocate memory on node -1 (gfp=0x20)
-  cache: kmalloc-8192, object size: 8192, buffer size: 8192, default order: 3, min order: 1
-  node 0: slabs: 7140, objs: 25809, free: 0
+This is a note to let you know that I've just added the patch titled
 
-Can anyone explain to me why I would be getting this error in the first place?  Why is it failing to allocate a page when there are pages available?  That does not make any sense to me.
+    add ttyprintk driver
 
-Thanks,
+to my gregkh-2.6 tree which can be found in directory form at:
+    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
+ and in git form at:
+    git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/patches.git
 
-Jonathan
+The filename of this patch is:
+    add-ttyprintk-driver.patch
+
+The patch will show up in the next release of the linux-next tree
+(usually sometime within the next 24 hours during the week.)
+
+If this patch meets the merge guidelines for a bugfix, it should be
+merged into Linus's tree before the next major kernel release.
+If not, it will be merged into Linus's tree during the next merge window.
+
+Either way, you will probably be copied on the patch when it gets sent
+to Linus for merging so that others can see what is happening in kernel
+development.
+
+If you have any questions about this process, please let me know.
+
+
+>From samo_pogacnik@t-2.net  Wed Sep  1 15:35:26 2010
+Subject: add ttyprintk driver
+From: Samo Pogacnik <samo_pogacnik@t-2.net>
+To: linux kernel <linux-kernel@vger.kernel.org>
+Cc: linux-embedded <linux-embedded@vger.kernel.org>,
+	Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 25 Aug 2010 20:44:07 +0200
+Message-Id: <1282761847.5857.9.camel@itpsd6lap>
+
+
+Ttyprintk is a pseudo TTY driver, which allows users to make printk
+messages, via output to ttyprintk device. It is possible to store
+"console" messages inline with kernel messages for better analyses of
+the boot process, for example.
+
+Signed-off-by: Samo Pogacnik <samo_pogacnik@t-2.net>
+Acked-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ Documentation/devices.txt |    1 
+ drivers/char/Kconfig      |   15 +++
+ drivers/char/Makefile     |    1 
+ drivers/char/ttyprintk.c  |  225 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 242 insertions(+)
+
+--- a/Documentation/devices.txt
++++ b/Documentation/devices.txt
+@@ -239,6 +239,7 @@ Your cooperation is appreciated.
+ 		  0 = /dev/tty		Current TTY device
+ 		  1 = /dev/console	System console
+ 		  2 = /dev/ptmx		PTY master multiplex
++		  3 = /dev/ttyprintk	User messages via printk TTY device
+ 		 64 = /dev/cua0		Callout device for ttyS0
+ 		    ...
+ 		255 = /dev/cua191	Callout device for ttyS191
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -493,6 +493,21 @@ config LEGACY_PTY_COUNT
+ 	  When not in use, each legacy PTY occupies 12 bytes on 32-bit
+ 	  architectures and 24 bytes on 64-bit architectures.
+ 
++config TTY_PRINTK
++	bool "TTY driver to output user messages via printk"
++	depends on EMBEDDED
++	default n
++	---help---
++	  If you say Y here, the support for writing user messages (i.e.
++	  console messages) via printk is available.
++
++	  The feature is useful to inline user messages with kernel
++	  messages.
++	  In order to use this feature, you should output user messages
++	  to /dev/ttyprintk or redirect console to this TTY.
++
++	  If unsure, say N.
++
+ config BRIQ_PANEL
+ 	tristate 'Total Impact briQ front panel driver'
+ 	depends on PPC_CHRP
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -12,6 +12,7 @@ obj-y	 += mem.o random.o tty_io.o n_tty.
+ obj-y				+= tty_mutex.o
+ obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
+ obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
++obj-$(CONFIG_TTY_PRINTK)	+= ttyprintk.o
+ obj-y				+= misc.o
+ obj-$(CONFIG_VT)		+= vt_ioctl.o vc_screen.o selection.o keyboard.o
+ obj-$(CONFIG_BFIN_JTAG_COMM)	+= bfin_jtag_comm.o
+--- /dev/null
++++ b/drivers/char/ttyprintk.c
+@@ -0,0 +1,225 @@
++/*
++ *  linux/drivers/char/ttyprintk.c
++ *
++ *  Copyright (C) 2010  Samo Pogacnik
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the smems of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ */
++
++/*
++ * This pseudo device allows user to make printk messages. It is possible
++ * to store "console" messages inline with kernel messages for better analyses
++ * of the boot process, for example.
++ */
++
++#include <linux/device.h>
++#include <linux/serial.h>
++#include <linux/tty.h>
++
++struct ttyprintk_port {
++	struct tty_port port;
++	struct mutex port_write_mutex;
++};
++
++static struct ttyprintk_port tpk_port;
++
++/*
++ * Our simple preformatting supports transparent output of (time-stamped)
++ * printk messages (also suitable for logging service):
++ * - any cr is replaced by nl
++ * - adds a ttyprintk source tag in front of each line
++ * - too long message is fragmeted, with '\'nl between fragments
++ * - TPK_STR_SIZE isn't really the write_room limiting factor, bcause
++ *   it is emptied on the fly during preformatting.
++ */
++#define TPK_STR_SIZE 508 /* should be bigger then max expected line length */
++#define TPK_MAX_ROOM 4096 /* we could assume 4K for instance */
++static const char *tpk_tag = "[U] "; /* U for User */
++static int tpk_curr;
++
++static int tpk_printk(const unsigned char *buf, int count)
++{
++	static char tmp[TPK_STR_SIZE + 4];
++	int i = tpk_curr;
++
++	if (buf == NULL) {
++		/* flush tmp[] */
++		if (tpk_curr > 0) {
++			/* non nl or cr terminated message - add nl */
++			tmp[tpk_curr + 0] = '\n';
++			tmp[tpk_curr + 1] = '\0';
++			printk(KERN_INFO "%s%s", tpk_tag, tmp);
++			tpk_curr = 0;
++		}
++		return i;
++	}
++
++	for (i = 0; i < count; i++) {
++		tmp[tpk_curr] = buf[i];
++		if (tpk_curr < TPK_STR_SIZE) {
++			switch (buf[i]) {
++			case '\r':
++				/* replace cr with nl */
++				tmp[tpk_curr + 0] = '\n';
++				tmp[tpk_curr + 1] = '\0';
++				printk(KERN_INFO "%s%s", tpk_tag, tmp);
++				tpk_curr = 0;
++				if (buf[i + 1] == '\n')
++					i++;
++				break;
++			case '\n':
++				tmp[tpk_curr + 1] = '\0';
++				printk(KERN_INFO "%s%s", tpk_tag, tmp);
++				tpk_curr = 0;
++				break;
++			default:
++				tpk_curr++;
++			}
++		} else {
++			/* end of tmp buffer reached: cut the message in two */
++			tmp[tpk_curr + 1] = '\\';
++			tmp[tpk_curr + 2] = '\n';
++			tmp[tpk_curr + 3] = '\0';
++			printk(KERN_INFO "%s%s", tpk_tag, tmp);
++			tpk_curr = 0;
++		}
++	}
++
++	return count;
++}
++
++/*
++ * TTY operations open function.
++ */
++static int tpk_open(struct tty_struct *tty, struct file *filp)
++{
++	tty->driver_data = &tpk_port;
++
++	return tty_port_open(&tpk_port.port, tty, filp);
++}
++
++/*
++ * TTY operations close function.
++ */
++static void tpk_close(struct tty_struct *tty, struct file *filp)
++{
++	struct ttyprintk_port *tpkp = tty->driver_data;
++
++	mutex_lock(&tpkp->port_write_mutex);
++	/* flush tpk_printk buffer */
++	tpk_printk(NULL, 0);
++	mutex_unlock(&tpkp->port_write_mutex);
++
++	tty_port_close(&tpkp->port, tty, filp);
++}
++
++/*
++ * TTY operations write function.
++ */
++static int tpk_write(struct tty_struct *tty,
++		const unsigned char *buf, int count)
++{
++	struct ttyprintk_port *tpkp = tty->driver_data;
++	int ret;
++
++
++	/* exclusive use of tpk_printk within this tty */
++	mutex_lock(&tpkp->port_write_mutex);
++	ret = tpk_printk(buf, count);
++	mutex_unlock(&tpkp->port_write_mutex);
++
++	return ret;
++}
++
++/*
++ * TTY operations write_room function.
++ */
++static int tpk_write_room(struct tty_struct *tty)
++{
++	return TPK_MAX_ROOM;
++}
++
++/*
++ * TTY operations ioctl function.
++ */
++static int tpk_ioctl(struct tty_struct *tty, struct file *file,
++			unsigned int cmd, unsigned long arg)
++{
++	struct ttyprintk_port *tpkp = tty->driver_data;
++
++	if (!tpkp)
++		return -EINVAL;
++
++	switch (cmd) {
++	/* Stop TIOCCONS */
++	case TIOCCONS:
++		return -EOPNOTSUPP;
++	default:
++		return -ENOIOCTLCMD;
++	}
++	return 0;
++}
++
++static const struct tty_operations ttyprintk_ops = {
++	.open = tpk_open,
++	.close = tpk_close,
++	.write = tpk_write,
++	.write_room = tpk_write_room,
++	.ioctl = tpk_ioctl,
++};
++
++struct tty_port_operations null_ops = { };
++
++static struct tty_driver *ttyprintk_driver;
++
++static int __init ttyprintk_init(void)
++{
++	int ret = -ENOMEM;
++	void *rp;
++
++	ttyprintk_driver = alloc_tty_driver(1);
++	if (!ttyprintk_driver)
++		return ret;
++
++	ttyprintk_driver->owner = THIS_MODULE;
++	ttyprintk_driver->driver_name = "ttyprintk";
++	ttyprintk_driver->name = "ttyprintk";
++	ttyprintk_driver->major = TTYAUX_MAJOR;
++	ttyprintk_driver->minor_start = 3;
++	ttyprintk_driver->num = 1;
++	ttyprintk_driver->type = TTY_DRIVER_TYPE_CONSOLE;
++	ttyprintk_driver->init_termios = tty_std_termios;
++	ttyprintk_driver->init_termios.c_oflag = OPOST | OCRNL | ONOCR | ONLRET;
++	ttyprintk_driver->flags = TTY_DRIVER_RESET_TERMIOS |
++		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
++	tty_set_operations(ttyprintk_driver, &ttyprintk_ops);
++
++	ret = tty_register_driver(ttyprintk_driver);
++	if (ret < 0) {
++		printk(KERN_ERR "Couldn't register ttyprintk driver\n");
++		goto error;
++	}
++
++	/* create our unnumbered device */
++	rp = device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
++				ttyprintk_driver->name);
++	if (IS_ERR(rp)) {
++		printk(KERN_ERR "Couldn't create ttyprintk device\n");
++		ret = PTR_ERR(rp);
++		goto error;
++	}
++
++	tty_port_init(&tpk_port.port);
++	tpk_port.port.ops = &null_ops;
++	mutex_init(&tpk_port.port_write_mutex);
++
++	return 0;
++
++error:
++	put_tty_driver(ttyprintk_driver);
++	ttyprintk_driver = NULL;
++	return ret;
++}
++module_init(ttyprintk_init);
+
