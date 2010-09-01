@@ -1,79 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab0IAPvb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 11:51:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62443 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194Ab0IAPva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 11:51:30 -0400
-Date: Wed, 01 Sep 2010 11:51:12 -0400
-Subject: Re: [PATCH 1/3] [lockup detector] sync touch_*_watchdog back to old
- semantics
-Message-ID: <wjkv24h3mpbpnoxk45o0ts96.1283355915765@email.android.com>
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=utf-8
+	id S1755798Ab0IAP4y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 11:56:54 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:33823 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934Ab0IAP4x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 11:56:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=l730dcRWqciORyzi5LlvYlhWxMYf7HrjnF7Grg8G1e5YFEIsZr3QNp6SaqYF/L0DIp
+         e1RqFcwydbG8HmaR1Sjo7kLvCfACDDmaIEWEqND/mZGWKmyLfzovIK1XhpD4y9RVIcIf
+         /pGnj5c6DHTZWTt38zFUzHPLKPq43xBoSoE+E=
+Date: Thu, 2 Sep 2010 00:56:44 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "M. Vefa Bicakci" <bicave@superonline.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [BUGFIX][PATCH] vmscan: don't use return value trick when
+ oom_killer_disabled
+Message-ID: <20100901155644.GA10246@barrios-desktop>
+References: <20100901092430.9741.A69D9226@jp.fujitsu.com>
+ <AANLkTikXfvEVXEyw_5_eJs2v-3J6Xhd=CT9X-0D+GMCA@mail.gmail.com>
+ <20100901105232.974F.A69D9226@jp.fujitsu.com>
+ <AANLkTinxHbeCUh80i515FPMpF-GY4S0kh9PHqUNtYP-m@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinxHbeCUh80i515FPMpF-GY4S0kh9PHqUNtYP-m@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o81Fpgei008911
 
-Top posting because droid won't let me bottom post
+On Wed, Sep 01, 2010 at 11:01:43AM +0900, Minchan Kim wrote:
+> On Wed, Sep 1, 2010 at 10:55 AM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > Hi
+> >
+> > Thank you for good commenting!
+> >
+> >
+> >> I don't like use oom_killer_disabled directly.
+> >> That's because we have wrapper inline functions to handle the
+> >> variable(ex, oom_killer_[disable/enable]).
+> >> It means we are reluctant to use the global variable directly.
+> >> So should we make new function as is_oom_killer_disable?
+> >>
+> >> I think NO.
+> >>
+> >> As I read your description, this problem is related to only hibernation.
+> >> Since hibernation freezes all processes(include kswapd), this problem
+> >> happens. Of course, now oom_killer_disabled is used by only
+> >> hibernation. But it can be used others in future(Off-topic : I don't
+> >> want it). Others can use it without freezing processes. Then kswapd
+> >> can set zone->all_unreclaimable and the problem can't happen.
+> >>
+> >> So I want to use sc->hibernation_mode which is already used
+> >> do_try_to_free_pages instead of oom_killer_disabled.
+> >
+> > Unfortunatelly, It's impossible. shrink_all_memory() turn on
+> > sc->hibernation_mode. but other hibernation caller merely call
+> > alloc_pages(). so we don't have any hint.
+> >
+> Ahh.. True. Sorry for that.
+> I will think some better method.
+> if I can't find it, I don't mind this patch. :)
 
-This patch was the result of a regression with acpi and preempt.  Akpm asked that I not change the semantics of the old touch_nmi_watchdog.  So I tried to revert to the old behaviour.
+It seems that the poblem happens following as. 
+(I might miss something since I just read theyour description)
 
-Sorry for not properly explaining that.
+hibernation
+oom_disable
+alloc_pages
+do_try_to_free_pages
+        if (scanning_global_lru(sc) && !all_unreclaimable)
+                return 1;
+If kswapd is not freezed, it would set zone->all_unreclaimable to 1 and then
+shrink_zones maybe return true. so alloc_pages could go to _nopage_.
+If it is, it's no problem. 
+Right?
 
-Cheers,
-Don
+I think the problem would come from shrink_zones. 
+It set false to all_unreclaimable blindly even though shrink_zone can't reclaim
+any page. It doesn't make sense. 
+How about this?
+I think we need this regardless of the problem.
+What do you think about?
 
-Ingo Molnar <mingo@elte.hu> wrote:
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index d8fd87d..22017b3 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1901,7 +1901,8 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
+                }
+ 
+                shrink_zone(priority, zone, sc);
+-               all_unreclaimable = false;
++               if (sc->nr_reclaimed)
++                       all_unreclaimable = false;
+        }
+        return all_unreclaimable;
+ }
 
->
->* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->
->> On 9/1/10, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->> > On 9/1/10, Ingo Molnar <mingo@elte.hu> wrote:
->> >>
->> >> * Don Zickus <dzickus@redhat.com> wrote:
->> >>
->> >>>  void touch_nmi_watchdog(void)
->> >>>  {
->> >>> -	__get_cpu_var(watchdog_nmi_touch) = true;
->> >>> +	if (watchdog_enabled) {
->> >>> +		unsigned cpu;
->> >>> +
->> >>> +		for_each_present_cpu(cpu) {
->> >>> +			if (per_cpu(watchdog_nmi_touch, cpu) != true)
->> >>> +				per_cpu(watchdog_nmi_touch, cpu) = true;
->> >>> +		}
->> >>
->> >> Hm, this is going to be a scalability nightmare with lots of CPUs. Not
->> >> only do we have a nr_cpus loop, but we touch per-cpu areas of _other_
->> >> CPUs - a big scalability nono.
->> >>
->> >> Why do we need to do this? We never needed to touch other CPU's NMI
->> >> lockup accounting data areas - why has this changed? The changelog does
->> >> not explain this.
->> >>
->> >> Thanks,
->> >>
->> >> 	Ingo
->> >>
->> > I believe this came from old nmi watchdog code where it might be
->> > useful when nmi watchdog activated via io-apic. I'm trying to figure
->> > out if we really need it still.
->>
->> Well, we can't drop it or make per-cpu specific, for example we need 
->> it in case of panic with watchdog enabled and panic timeout set, or 
->> boot delay set and etc. Seems same applies to printk_delay. Hmm...
->
->Ok - can you cite the old watchdog code, did it really do a nr_cpus 
->loop?
->
->Thanks,
->
->	Ingo
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Kind regards,
+Minchan Kim
