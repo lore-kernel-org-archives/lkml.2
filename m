@@ -1,354 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab0IAJkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 05:40:46 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59219 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab0IAJkp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 05:40:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:subject:date:user-agent:cc:references:in-reply-to
-         :organization:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=YzRGLXrwVW07VcBZhYFKdpapzH7iHQqfi3FRGGTgFtgmQqv4zw2yqu5xBcOnBofyEM
-         PTtThOfQ3DF1OimJTqQOStHQGZmy5wBMZdQEc52pZo2BHZQ5e5oaX5hOl4gEKNL5kCff
-         cCsrc3SCKLD6mQffS9a0x1ifa+LZBQNNS9PZY=
-From: Florian Fainelli <florian@openwrt.org>
-To: David Brownell <david-b@pacbell.net>
-Subject: [PATCH v4] GPIO: add support for 74x164 serial-in/parallel-out 8-bit shift register
-Date: Wed, 1 Sep 2010 11:37:31 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-server; KDE/4.4.2; x86_64; ; )
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Miguel Gaio <miguel.gaio@efixo.com>, Juhos Gabor <juhosg@openwrt.org>,
-        dbrownell@users.sourceforge.net
-References: <887649.75421.qm@web180316.mail.gq1.yahoo.com> <201008311017.30445.florian@openwrt.org> <201008311244.07567.florian@openwrt.org>
-In-Reply-To: <201008311244.07567.florian@openwrt.org>
-Organization: OpenWrt
+	id S1754638Ab0IAJlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 05:41:00 -0400
+Received: from lucidpixels.com ([75.144.35.66]:32789 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754481Ab0IAJk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 05:40:56 -0400
+Date: Wed, 1 Sep 2010 05:40:52 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: adam radford <aradford@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
+ timed out, resetting card.
+In-Reply-To: <alpine.DEB.2.00.1008310820350.19249@p34.internal.lan>
+Message-ID: <alpine.DEB.2.00.1009010536070.14332@p34.internal.lan>
+References: <alpine.DEB.2.00.1008270907110.5274@p34.internal.lan> <AANLkTik0BSJC5DJtVNw-MA9cuoAEUrw-M1Dn4XaF99u4@mail.gmail.com> <alpine.DEB.2.00.1008271306100.24692@p34.internal.lan> <alpine.DEB.2.00.1008291137560.5384@p34.internal.lan>
+ <alpine.DEB.2.00.1008310717260.4858@p34.internal.lan> <alpine.DEB.2.00.1008310732120.5156@p34.internal.lan> <alpine.DEB.2.00.1008310820350.19249@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009011137.31938.florian@openwrt.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miguel Gaio <miguel.gaio@efixo.com>
 
-This patch adds support for generic 74x164 serial-in/parallel-out 8-bits
-shift register. This driver can be used as a GPIO output expander.
 
-Signed-off-by: Miguel Gaio <miguel.gaio@efixo.com>
-Signed-off-by: Juhos Gabor <juhosg@openwrt.org>
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
----
-Changes since v1:
-- renamed nxp_ to gen_ since this driver is generic to all 74HC164 chips
-- added comment on this driver not handling the 74HC164 daisy-chaining
-- renamed misused GPIO expanders to Shift registers
+On Tue, 31 Aug 2010, Justin Piszcz wrote:
 
-Changes since v2:
-- rename 74hc164 to 74x164
+>>
 
-Changes since v3:
-- support daisy-chaining of 74x164 up to 32 gpios
+Hi Adam and LSI,
 
-diff --git a/drivers/gpio/74x164.c b/drivers/gpio/74x164.c
-new file mode 100644
-index 0000000..62e44b7
---- /dev/null
-+++ b/drivers/gpio/74x164.c
-@@ -0,0 +1,231 @@
-+/*
-+ *  74Hx164 - Generic serial-in/parallel-out 8-bits shift register GPIO driver
-+ *
-+ *  Copyright (C) 2010 Gabor Juhos <juhosg@openwrt.org>
-+ *  Copyright (C) 2010 Miguel Gaio <miguel.gaio@efixo.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
+LSI got back to me, they said to try their latest firwmare and that the high
+I/O wait was solved in that release.
+
+# tw_cli  /c0 show all | grep -i firmware
+/c0 Firmware Version = FE9X 4.10.00.016
+# tw_cli  /c1 show all | grep -i firmware
+/c1 Firmware Version = FE9X 4.10.00.016
+
+I upgraded to the newest firmware, 2.6.34 remains solid.
+However, when I moved to 2.6.35, the high I/O weight and system freezes recur.
+Has anyone not noticed this?  I have two different controllers, a 4 and 16
+port 9650SE, both with BBUs, one with a RAID-1 the other with a RAID-6 and
+I've never had any problems like this before (this high I/O wait/ctrl reset)
+until I moved to 2.6.35.
+
+There is something wrong/happening here in 2.6.35 that causes the system
+to become unresponsive and reset the controllers under high load.  Prior to
+2.6.35, the problem does not exist, I have confirmed this on both firmwares
+now.
+
+
+Could the lock/unlock be causing the issue?
+Again, in 2.6.34, there are no latency problems or controller resets.
+
+3ware diff:
+
+--- linux-2.6.34.6/drivers/scsi/3w-9xxx.c       2010-08-26 19:44:38.000000000 -0400
++++ linux-2.6.35.4/drivers/scsi/3w-9xxx.c       2010-08-26 19:47:12.000000000 -0400
+-   Written By: Adam Radford <linuxraid@amcc.com>
+-   Modifications By: Tom Couch <linuxraid@amcc.com>
++   Written By: Adam Radford <linuxraid@lsi.com>
++   Modifications By: Tom Couch <linuxraid@lsi.com>
++   Copyright (C) 2010 LSI Corporation.
+-   linuxraid@amcc.com
++   linuxraid@lsi.com
+-   http://www.amcc.com
++   http://www.lsi.com
++   2.26.02.014 - Force 60 second timeout default.
+-#define TW_DRIVER_VERSION "2.26.02.013"
++#define TW_DRIVER_VERSION "2.26.02.014"
+-MODULE_AUTHOR ("AMCC");
++MODULE_AUTHOR ("LSI");
+-static int twa_chrdev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg);
++static long twa_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+-       .ioctl          = twa_chrdev_ioctl,
++       .unlocked_ioctl = twa_chrdev_ioctl,
+-static int twa_chrdev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
++static long twa_chrdev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++       struct inode *inode = file->f_path.dentry->d_inode;
++       lock_kernel();
 +
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/gpio.h>
-+#include <linux/bitops.h>
-+#include <linux/platform_device.h>
-+#include <linux/74x164.h>
-+
-+#define GEN_74X164_NUM_GPIOS	32
-+
-+struct gen_74x164_chip {
-+	struct device		*parent;
-+	struct gpio_chip	gpio_chip;
-+	struct mutex		lock;
-+	long			mask;
-+};
-+
-+static void gen_74x164_set_value(struct gpio_chip *, unsigned, int);
-+
-+static struct gen_74x164_chip *gpio_to_chip(struct gpio_chip *gc)
++       unlock_kernel();
++/* This function gets called when a disk is coming on-line */
++static int twa_slave_configure(struct scsi_device *sdev)
 +{
-+	return container_of(gc, struct gen_74x164_chip, gpio_chip);
-+}
++       /* Force 60 second timeout */
++       blk_queue_rq_timeout(sdev->request_queue, 60 * HZ);
 +
-+static int gen_74x164_direction_input(struct gpio_chip *gc, unsigned offset)
-+{
-+	WARN_ON(1);
-+	return -EINVAL;
-+}
++       return 0;
++} /* End twa_slave_configure() */
 +
-+static int gen_74x164_direction_output(struct gpio_chip *gc,
-+					unsigned offset, int val)
-+{
-+	gen_74x164_set_value(gc, offset, val);
-+	return 0;
-+}
-+
-+static int gen_74x164_get_value(struct gpio_chip *gc, unsigned offset)
-+{
-+	struct gen_74x164_chip *chip = gpio_to_chip(gc);
-+	int ret;
-+
-+	mutex_lock(&chip->lock);
-+	ret = test_bit(offset, &chip->mask);
-+	mutex_unlock(&chip->lock);
-+
-+	return ret;
-+}
-+
-+static void gen_74x164_set_value(struct gpio_chip *gc,
-+				  unsigned offset, int val)
-+{
-+	struct gen_74x164_chip *chip;
-+	struct gen_74x164_platform_data *pdata;
-+	long mask;
-+	int refresh;
-+	int i;
-+
-+	chip = gpio_to_chip(gc);
-+	pdata = chip->parent->platform_data;
-+
-+	mutex_lock(&chip->lock);
-+	if (val)
-+		refresh = (test_and_set_bit(offset, &chip->mask) != val);
-+	else
-+		refresh = (test_and_clear_bit(offset, &chip->mask) != val);
-+
-+	if (refresh) {
-+		mask = chip->mask;
-+		for (i = pdata->ngpio - 1; i >= 0; --i) {
-+			gpio_set_value(pdata->gpio_pin_data,
-+							test_bit(i, &mask));
-+			gpio_set_value(pdata->gpio_pin_clk, 1);
-+			gpio_set_value(pdata->gpio_pin_clk, 0);
-+		}
-+	}
-+	mutex_unlock(&chip->lock);
-+}
-+
-+static int __devinit gen_74x164_probe(struct platform_device *pdev)
-+{
-+	struct gen_74x164_platform_data *pdata;
-+	struct gen_74x164_chip *chip;
-+	struct gpio_chip *gc;
-+	int err;
-+
-+	pdata = pdev->dev.platform_data;
-+	if (pdata == NULL) {
-+		dev_dbg(&pdev->dev, "no platform data specified\n");
-+		return -EINVAL;
-+	}
-+
-+	if (pdata->ngpio > GEN_74X164_NUM_GPIOS) {
-+		dev_err(&pdev->dev, "invalid gpio count %u\n", pdata->ngpio);
-+		return -EINVAL;
-+	}
-+
-+	chip = kzalloc(sizeof(struct gen_74x164_chip), GFP_KERNEL);
-+	if (chip == NULL) {
-+		dev_err(&pdev->dev, "no memory for private data\n");
-+		return -ENOMEM;
-+	}
-+
-+	err = gpio_request(pdata->gpio_pin_clk, dev_name(&pdev->dev));
-+	if (err) {
-+		dev_err(&pdev->dev, "unable to claim gpio %u, err=%d\n",
-+			pdata->gpio_pin_clk, err);
-+		goto err_free_chip;
-+	}
-+
-+	err = gpio_request(pdata->gpio_pin_data, dev_name(&pdev->dev));
-+	if (err) {
-+		dev_err(&pdev->dev, "unable to claim gpio %u, err=%d\n",
-+			pdata->gpio_pin_data, err);
-+		goto err_free_clk;
-+	}
-+
-+	err = gpio_direction_output(pdata->gpio_pin_clk, 0);
-+	if (err) {
-+		dev_err(&pdev->dev,
-+			"unable to set direction of gpio %u, err=%d\n",
-+			pdata->gpio_pin_clk, err);
-+		goto err_free_data;
-+	}
-+
-+	err = gpio_direction_output(pdata->gpio_pin_data, 0);
-+	if (err) {
-+		dev_err(&pdev->dev,
-+			"unable to set direction of gpio %u, err=%d\n",
-+			pdata->gpio_pin_data, err);
-+		goto err_free_data;
-+	}
-+
-+	chip->parent = &pdev->dev;
-+	mutex_init(&chip->lock);
-+
-+	gc = &chip->gpio_chip;
-+
-+	gc->direction_input  = gen_74x164_direction_input;
-+	gc->direction_output = gen_74x164_direction_output;
-+	gc->get = gen_74x164_get_value;
-+	gc->set = gen_74x164_set_value;
-+	gc->can_sleep = 1;
-+
-+	gc->base = pdata->gpio_base;
-+	gc->ngpio = pdata->ngpio;
-+	gc->label = dev_name(chip->parent);
-+	gc->dev = chip->parent;
-+	gc->owner = THIS_MODULE;
-+
-+	err = gpiochip_add(&chip->gpio_chip);
-+	if (err) {
-+		dev_err(&pdev->dev, "unable to add gpio chip, err=%d\n", err);
-+		goto err_free_data;
-+	}
-+
-+	platform_set_drvdata(pdev, chip);
-+	return 0;
-+
-+err_free_data:
-+	gpio_free(pdata->gpio_pin_data);
-+err_free_clk:
-+	gpio_free(pdata->gpio_pin_clk);
-+err_free_chip:
-+	kfree(chip);
-+	return err;
-+}
-+
-+static int gen_74x164_remove(struct platform_device *pdev)
-+{
-+	struct gen_74x164_chip *chip = platform_get_drvdata(pdev);
-+	struct gen_74x164_platform_data *pdata = pdev->dev.platform_data;
-+
-+	if (chip) {
-+		int err;
-+
-+		err = gpiochip_remove(&chip->gpio_chip);
-+		if (err) {
-+			dev_err(&pdev->dev,
-+				"unable to remove gpio chip, err=%d\n",
-+				err);
-+			return err;
-+		}
-+
-+		gpio_free(pdata->gpio_pin_clk);
-+		gpio_free(pdata->gpio_pin_data);
-+
-+		kfree(chip);
-+		platform_set_drvdata(pdev, NULL);
-+	}
-+
-+	return 0;
-+}
-+
-+static struct platform_driver gen_74x164_driver = {
-+	.probe		= gen_74x164_probe,
-+	.remove		= __devexit_p(gen_74x164_remove),
-+	.driver = {
-+		.name	= GEN_74X164_DRIVER_NAME,
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+static int __init gen_74x164_init(void)
-+{
-+	return platform_driver_register(&gen_74x164_driver);
-+}
-+subsys_initcall(gen_74x164_init);
-+
-+static void __exit gen_74x164_exit(void)
-+{
-+	platform_driver_unregister(&gen_74x164_driver);
-+}
-+module_exit(gen_74x164_exit);
-+
-+MODULE_AUTHOR("Gabor Juhos <juhosg@openwrt.org>");
-+MODULE_AUTHOR("Miguel Gaio <miguel.gaio@efixo.com>");
-+MODULE_DESCRIPTION("GPIO expander driver for 74X164 8-bits shift register");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:" GEN_74X164_DRIVER_NAME);
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 510aa20..fc82c23 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -361,4 +361,13 @@ config GPIO_JANZ_TTL
- 	  This driver provides support for driving the pins in output
- 	  mode only. Input mode is not supported.
- 
-+comment "Shift registers:"
-+
-+config GPIO_74X164
-+       tristate "74x164 serial-in/parallel-out 8-bits shift register"
-+       help
-+         Platform driver for 74x164 compatible serial-in/parallel-out
-+	 8-outputs shift registers. This driver can be used to provide access
-+	 to more gpio outputs.
-+
- endif
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index fc6019d..60456a4 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -17,6 +17,7 @@ obj-$(CONFIG_GPIO_MAX7301)	+= max7301.o
- obj-$(CONFIG_GPIO_MAX732X)	+= max732x.o
- obj-$(CONFIG_GPIO_MC33880)	+= mc33880.o
- obj-$(CONFIG_GPIO_MCP23S08)	+= mcp23s08.o
-+obj-$(CONFIG_GPIO_74X164)	+= 74x164.o
- obj-$(CONFIG_GPIO_PCA953X)	+= pca953x.o
- obj-$(CONFIG_GPIO_PCF857X)	+= pcf857x.o
- obj-$(CONFIG_GPIO_PL061)	+= pl061.o
-diff --git a/include/linux/74x164.h b/include/linux/74x164.h
-new file mode 100644
-index 0000000..b58b159
---- /dev/null
-+++ b/include/linux/74x164.h
-@@ -0,0 +1,23 @@
-+/*
-+ *  74x164 - Serial-in/parallel-out 8-bits shift register
-+ *
-+ *  Copyright (C) 2010 Gabor Juhos <juhosg@openwrt.org>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+
-+#ifndef __74X164_H
-+#define __74X164_H
-+
-+#define GEN_74X164_DRIVER_NAME "74x164"
-+
-+struct gen_74x164_platform_data {
-+	unsigned	gpio_base;
-+	unsigned	ngpio;
-+	unsigned	gpio_pin_data;
-+	unsigned	gpio_pin_clk;
-+};
-+
-+#endif /* __74x164_H */
++       .slave_configure        = twa_slave_configure,
+
+
