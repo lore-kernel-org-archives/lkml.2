@@ -1,82 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab0IAXjs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 19:39:48 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:10742 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754142Ab0IAXjp (ORCPT
+	id S1755065Ab0IAXrB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 19:47:01 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36805 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515Ab0IAXrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 19:39:45 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6092"; a="53074579"
-From: Gregory Bean <gbean@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH 2/2 v2] msm: gpio: Add gpiomux calls to request and free.
-Date: Wed,  1 Sep 2010 16:39:40 -0700
-Message-Id: <1283384380-24997-2-git-send-email-gbean@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1283384380-24997-1-git-send-email-gbean@codeaurora.org>
-References: <1283384380-24997-1-git-send-email-gbean@codeaurora.org>
+	Wed, 1 Sep 2010 19:47:00 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 2 Sep 2010 08:42:00 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mark Hills <mark@pogo.org.uk>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com
+Subject: Re: cgroup: rmdir() does not complete
+Message-Id: <20100902084200.e9b773cf.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.NEB.2.01.1009011200050.6596@jrf.vwaro.pbz>
+References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
+	<20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
+	<20100827113506.2bbbb7b9.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100827123948.b4427a15.nishimura@mxp.nes.nec.co.jp>
+	<20100827144225.3190167a.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.NEB.2.01.1009011200050.6596@jrf.vwaro.pbz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add gpiomux get and put calls to msmgpio request and free,
-in order to allow gpio lines to be properly reference-counted
-and power-managed.
+On Wed, 1 Sep 2010 12:10:23 +0100 (BST)
+Mark Hills <mark@pogo.org.uk> wrote:
 
-Signed-off-by: Gregory Bean <gbean@codeaurora.org>
----
- arch/arm/mach-msm/gpio.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+> On Fri, 27 Aug 2010, KAMEZAWA Hiroyuki wrote:
+> 
+> > On Fri, 27 Aug 2010 12:39:48 +0900
+> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> > 
+> > > On Fri, 27 Aug 2010 11:35:06 +0900
+> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > 
+> > > > On Fri, 27 Aug 2010 09:56:39 +0900
+> > > > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> > > > 
+> > > > > > Or is it likely to be some other cause, and how best to find it?
+> > > > > > 
+> > > > > What cgroup subsystem did you mount where the directory existed you tried
+> > > > > to rmdir() first ?
+> > > > > If you mounted several subsystems on the same hierarchy, can you mount them
+> > > > > separately to narrow down the cause ?
+> > > > > 
+> > > > 
+> > > > It seems I can reproduce the issue on mmotm-0811, too.
+> > > > 
+> > > > try this.
+> > > > 
+> > > > Here, memory cgroup is mounted at /cgroups.
+> > > > ==
+> > > > #!/bin/bash -x
+> > > > 
+> > > > while sleep 1; do
+> > > >         date
+> > > >         mkdir /cgroups/test
+> > > >         echo 0 > /cgroups/test/tasks
+> > > >         echo 300M > /cgroups/test/memory.limit_in_bytes
+> > > >         cat /proc/self/cgroup
+> > > >         dd if=/dev/zero of=./tmpfile bs=4096 count=100000
+> > > >         echo 0 > /cgroups/tasks
+> > > >         cat /proc/self/cgroup
+> > > >         rmdir /cgroups/test
+> > > >         rm ./tmpfile
+> > > > done
+> > > > ==
+> > > > 
+> > > > hangs at rmdir. I'm no investigating force_empty.
+> > > > 
+> > > Thank you very much for your information.
+> > > 
+> > > Some questions.
+> > > 
+> > > Is "tmpfile" created on a normal filesystem(e.g. ext3) or tmpfs ?
+> > on ext4.
+> > 
+> > > And, how long does it likely to take to cause this problem ?
+> > 
+> > very soon. 10-20 loop.
+> 
+> I repeated the test above, but did not see a problem after many hundreds 
+> of loops.
+> 
+> My test was with the same kernel from my original bug report (Fedora 
+> 2.6.33.6-147), using memory cgroup only and ext4 filesystem.
+> 
+> So it is possible we are experiencing different bugs with similar 
+> symptoms.
+> 
 
-diff --git a/arch/arm/mach-msm/gpio.c b/arch/arm/mach-msm/gpio.c
-index 89c857b..3c2443f 100644
---- a/arch/arm/mach-msm/gpio.c
-+++ b/arch/arm/mach-msm/gpio.c
-@@ -21,6 +21,7 @@
- #include <linux/irq.h>
- #include <linux/module.h>
- #include "gpio_hw.h"
-+#include "gpiomux.h"
- #include "proc_comm.h"
- #include "smd_private.h"
- 
-@@ -46,6 +47,8 @@
- 			.direction_input = msm_gpio_direction_input,	\
- 			.direction_output = msm_gpio_direction_output,	\
- 			.to_irq = msm_gpio_to_irq,			\
-+			.request = msm_gpio_request,			\
-+			.free = msm_gpio_free,				\
- 		}							\
- 	}
- 
-@@ -180,6 +183,21 @@ static int msm_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
- 	return MSM_GPIO_TO_INT(chip->base + offset);
- }
- 
-+#ifdef CONFIG_MSM_GPIOMUX
-+static int msm_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+        return msm_gpiomux_get(chip->base + offset);
-+}
-+
-+static void msm_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+        msm_gpiomux_put(chip->base + offset);
-+}
-+#else
-+#define msm_gpio_request NULL
-+#define msm_gpio_free NULL
-+#endif
-+
- struct msm_gpio_chip msm_gpio_chips[] = {
- #if defined(CONFIG_ARCH_MSM7X00A)
- 	MSM_GPIO_BANK(0,   0,  15),
--- 
-1.7.0.4
+Thank you for confirming.
+But hmm...it's curious who holds mutex and what happens.
 
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-Kame
+
