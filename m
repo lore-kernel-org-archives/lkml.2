@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab0IANlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 09:41:07 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38937 "EHLO
+	id S1754872Ab0IANlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 09:41:15 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38942 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab0IANlE (ORCPT
+	with ESMTP id S1754002Ab0IANlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 09:41:04 -0400
+	Wed, 1 Sep 2010 09:41:12 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] staging/trivial: fix typos concerning "through"
-Date: Wed,  1 Sep 2010 15:40:27 +0200
-Message-Id: <1283348427-6183-6-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 5/6] staging/trivial: fix typos concerning "management"
+Date: Wed,  1 Sep 2010 15:40:26 +0200
+Message-Id: <1283348427-6183-5-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283348427-6183-1-git-send-email-u.kleine-koenig@pengutronix.de>
 References: <1283348427-6183-1-git-send-email-u.kleine-koenig@pengutronix.de>
@@ -30,22 +30,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- drivers/staging/wlags49_h2/mdd.h |    2 +-
+ drivers/staging/spectra/flash.h |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/wlags49_h2/mdd.h b/drivers/staging/wlags49_h2/mdd.h
-index b50b7b0..5aa9eb8 100644
---- a/drivers/staging/wlags49_h2/mdd.h
-+++ b/drivers/staging/wlags49_h2/mdd.h
-@@ -1002,7 +1002,7 @@ XX1( CFG_SCAN,					SCAN_RS_STRCT, scan_result[32]		 ) /*Scan results											*
- #define CFG_CONNECTION_MODE				0x0908		//controls the mode of the FW (ESS/AP/IBSS/ADHOC)
- #define CFG_IFB							0x0909		//byte wise copy of IFB
- #define CFG_MSF_TALLIES					0x090A		//MSF tallies (int's, rx and tx)
--#define CFG_CURRENT_LINK_STATUS			0x090B		//Latest link status got trough 0xF200 LinkEvent
-+#define CFG_CURRENT_LINK_STATUS			0x090B		//Latest link status got through 0xF200 LinkEvent
+diff --git a/drivers/staging/spectra/flash.h b/drivers/staging/spectra/flash.h
+index 5ed0580..e59cf4e 100644
+--- a/drivers/staging/spectra/flash.h
++++ b/drivers/staging/spectra/flash.h
+@@ -104,7 +104,7 @@ struct flash_cache_tag {
+ };
  
- /*============================================================ INFORMATION FRAMES =========================*/
- #define CFG_INFO_FRAME_MIN				0xF000		//lowest value representing an Informatio Frame
+ /*
+- *Data structure for each list node of the managment table
++ *Data structure for each list node of the management table
+  * used for the Level 2 Cache. Each node maps one logical NAND block.
+  */
+ struct spectra_l2_cache_list {
 -- 
 1.7.1
 
