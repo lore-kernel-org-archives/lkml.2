@@ -1,40 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab0IAVZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 17:25:12 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44427
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751905Ab0IAVZL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 17:25:11 -0400
-Date: Wed, 01 Sep 2010 14:25:28 -0700 (PDT)
-Message-Id: <20100901.142528.180418526.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: mingo@elte.hu, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, tj@kernel.org
-Subject: Re: vhost_dev_cleanup() crash: BUG: unable to handle kernel NULL
- pointer dereference
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1283256357.2550.61.camel@edumazet-laptop>
-References: <1283251801.2550.53.camel@edumazet-laptop>
-	<20100831111413.GB12853@elte.hu>
-	<1283256357.2550.61.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755941Ab0IAV0h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 17:26:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46628 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752752Ab0IAV0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 17:26:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,305,1280732400"; 
+   d="scan'208";a="602778730"
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, andi@firstfloor.org, netdev@vger.kernel.org,
+        peter.p.waskiewicz.jr@intel.com
+Date: Wed, 01 Sep 2010 14:33:18 -0700
+Message-ID: <20100901213318.19353.54619.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Tue, 31 Aug 2010 14:05:57 +0200
+On certain BIOSes, SRAT enumeration isn't exported correctly.
+This leads to NUMA node enumeration failure, and causes the kernel
+to fall back onto a single node treated as flat memory.  This
+can happen on large, multi-socket systems (4 or more sockets), and
+becomes problematic for performance.
 
-> [PATCH v2] vhost: stop worker only if created
-> 
-> Its currently illegal to call kthread_stop(NULL)
-> 
-> Reported-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+This patch adds a boot parameter to allow a kernel to be booted
+with the option to skip the SRAT check.  There are BIOSes in
+production that have these failures, so this will allow people
+in the field to work around these BIOS issues.
 
-I'll apply this thanks Eric.
+Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+---
+
+ Documentation/x86/x86_64/boot-options.txt |    4 ++++
+ arch/x86/mm/srat_64.c                     |   20 +++++++++++++++++---
+ 2 files changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
+index 7fbbaf8..7863d9c 100644
+--- a/Documentation/x86/x86_64/boot-options.txt
++++ b/Documentation/x86/x86_64/boot-options.txt
+@@ -316,3 +316,7 @@ Miscellaneous
+ 		Do not use GB pages for kernel direct mappings.
+ 	gbpages
+ 		Use GB pages for kernel direct mappings.
++ 	sratbypassbios
++		If specified, will skip an SRAT check for PXM coverage
++		from BIOS enumeration.  Only to be used on systems with
++		buggy BIOSes that munge the SRAT enumeration.
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index f9897f7..8719472 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -351,6 +351,15 @@ int __init acpi_get_nodes(struct bootnode *physnodes)
+ 	return ret;
+ }
+ 
++int srat_bypass_bios = 0;
++
++static int __init srat_bypass_bios_setup(char *str)
++{
++        srat_bypass_bios = 1;
++        return 0;
++}
++early_param("sratbypassbios", srat_bypass_bios_setup);
++
+ /* Use the information discovered above to actually set up the nodes. */
+ int __init acpi_scan_nodes(unsigned long start, unsigned long end)
+ {
+@@ -425,9 +434,14 @@ int __init acpi_scan_nodes(unsigned long start, unsigned long end)
+ 						nodes[i].end >> PAGE_SHIFT);
+ 	/* for out of order entries in SRAT */
+ 	sort_node_map();
+-	if (!nodes_cover_memory(nodes)) {
+-		bad_srat();
+-		return -1;
++	if (!srat_bypass_bios) {
++		if (!nodes_cover_memory(nodes)) {
++			bad_srat();
++			return -1;
++		}
++	} else {
++		printk(KERN_INFO
++		           "SRAT: Bypassing NUMA sanity check...bad BIOS...\n");
+ 	}
+ 
+ 	/* Account for nodes with cpus and no memory */
+
