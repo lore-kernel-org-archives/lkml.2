@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab0IANwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 09:52:15 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34097 "EHLO
+	id S1755456Ab0IANvb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 09:51:31 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34092 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359Ab0IANsr (ORCPT
+	with ESMTP id S1754673Ab0IANss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 09:48:47 -0400
+	Wed, 1 Sep 2010 09:48:48 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 10/15] trivial: fix typos concerning "memory"
-Date: Wed,  1 Sep 2010 15:48:33 +0200
-Message-Id: <1283348918-7204-10-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 04/15] trivial: fix typos concerning "between"
+Date: Wed,  1 Sep 2010 15:48:27 +0200
+Message-Id: <1283348918-7204-4-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283348918-7204-1-git-send-email-u.kleine-koenig@pengutronix.de>
 References: <1283348918-7204-1-git-send-email-u.kleine-koenig@pengutronix.de>
@@ -30,162 +30,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- arch/arm/mach-u300/Kconfig                  |    2 +-
- arch/arm/mach-u300/include/mach/coh901318.h |    2 +-
- arch/mips/mti-malta/malta-memory.c          |    2 +-
- arch/mips/powertv/memory.c                  |    2 +-
- drivers/edac/edac_core.h                    |    2 +-
- drivers/media/video/omap/omap_vout.c        |    2 +-
- drivers/scsi/lpfc/lpfc_hbadisc.c            |    2 +-
- drivers/scsi/lpfc/lpfc_sli.c                |    2 +-
- drivers/usb/musb/musb_gadget.c              |    2 +-
- kernel/power/swap.c                         |    2 +-
- mm/sparse-vmemmap.c                         |    2 +-
- 11 files changed, 11 insertions(+), 11 deletions(-)
+ Documentation/kprobes.txt             |    2 +-
+ arch/arm/plat-mxc/include/mach/irqs.h |    2 +-
+ drivers/media/video/zoran/zoran.h     |    2 +-
+ drivers/net/tehuti.c                  |    4 ++--
+ lib/swiotlb.c                         |    2 +-
+ mm/percpu.c                           |    2 +-
+ sound/core/pcm_native.c               |    2 +-
+ 7 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-u300/Kconfig b/arch/arm/mach-u300/Kconfig
-index 801b21e..32a7b0f 100644
---- a/arch/arm/mach-u300/Kconfig
-+++ b/arch/arm/mach-u300/Kconfig
-@@ -64,7 +64,7 @@ config MACH_U300_DUAL_RAM
- 	bool "Dual RAM"
- 	help
- 		Select this if you want support for Dual RAM phones.
--		This is two RAM memorys on different EMIFs.
-+		This is two RAM memories on different EMIFs.
- endchoice
+diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
+index 1762b81..3051793 100644
+--- a/Documentation/kprobes.txt
++++ b/Documentation/kprobes.txt
+@@ -596,7 +596,7 @@ a 5-byte jump instruction. So there are several limitations.
+ a) The instructions in DCR must be relocatable.
+ b) The instructions in DCR must not include a call instruction.
+ c) JTPR must not be targeted by any jump or call instruction.
+-d) DCR must not straddle the border betweeen functions.
++d) DCR must not straddle the border between functions.
  
- config U300_DEBUG
-diff --git a/arch/arm/mach-u300/include/mach/coh901318.h b/arch/arm/mach-u300/include/mach/coh901318.h
-index 2013d2b..6193aaa 100644
---- a/arch/arm/mach-u300/include/mach/coh901318.h
-+++ b/arch/arm/mach-u300/include/mach/coh901318.h
-@@ -90,7 +90,7 @@ struct powersave {
-  * struct coh901318_platform - platform arch structure
-  * @chans_slave: specifying dma slave channels
-  * @chans_memcpy: specifying dma memcpy channels
-- * @access_memory_state: requesting DMA memeory access (on / off)
-+ * @access_memory_state: requesting DMA memory access (on / off)
-  * @chan_conf: dma channel configurations
-  * @max_channels: max number of dma chanenls
-  */
-diff --git a/arch/mips/mti-malta/malta-memory.c b/arch/mips/mti-malta/malta-memory.c
-index b27419c..a96d281 100644
---- a/arch/mips/mti-malta/malta-memory.c
-+++ b/arch/mips/mti-malta/malta-memory.c
-@@ -43,7 +43,7 @@ static struct prom_pmemblock mdesc[PROM_MAX_PMEMBLOCKS];
- static char *mtypes[3] = {
- 	"Dont use memory",
- 	"YAMON PROM memory",
--	"Free memmory",
-+	"Free memory",
- };
- #endif
+ Anyway, these limitations are checked by the in-kernel instruction
+ decoder, so you don't need to worry about that.
+diff --git a/arch/arm/plat-mxc/include/mach/irqs.h b/arch/arm/plat-mxc/include/mach/irqs.h
+index 86781f7..664c453 100644
+--- a/arch/arm/plat-mxc/include/mach/irqs.h
++++ b/arch/arm/plat-mxc/include/mach/irqs.h
+@@ -66,7 +66,7 @@ extern int imx_irq_set_priority(unsigned char irq, unsigned char prio);
  
-diff --git a/arch/mips/powertv/memory.c b/arch/mips/powertv/memory.c
-index 73880ad..fb3d296 100644
---- a/arch/mips/powertv/memory.c
-+++ b/arch/mips/powertv/memory.c
-@@ -57,7 +57,7 @@
- unsigned long ptv_memsize;
+ /* all normal IRQs can be FIQs */
+ #define FIQ_START	0
+-/* switch betwean IRQ and FIQ */
++/* switch between IRQ and FIQ */
+ extern int mxc_set_irq_fiq(unsigned int irq, unsigned int type);
+ 
+ #endif /* __ASM_ARCH_MXC_IRQS_H__ */
+diff --git a/drivers/media/video/zoran/zoran.h b/drivers/media/video/zoran/zoran.h
+index 307e847..13a5323 100644
+--- a/drivers/media/video/zoran/zoran.h
++++ b/drivers/media/video/zoran/zoran.h
+@@ -95,7 +95,7 @@ struct zoran_params {
+ 
+ 	int quality;		/* Measure for quality of compressed images.
+ 				 * Scales linearly with the size of the compressed images.
+-				 * Must be beetween 0 and 100, 100 is a compression
++				 * Must be between 0 and 100, 100 is a compression
+ 				 * ratio of 1:4 */
+ 
+ 	int odd_even;		/* Which field should come first ??? */
+diff --git a/drivers/net/tehuti.c b/drivers/net/tehuti.c
+index 90e5048..05593d7 100644
+--- a/drivers/net/tehuti.c
++++ b/drivers/net/tehuti.c
+@@ -12,7 +12,7 @@
+ /*
+  * RX HW/SW interaction overview
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- * There are 2 types of RX communication channels betwean driver and NIC.
++ * There are 2 types of RX communication channels between driver and NIC.
+  * 1) RX Free Fifo - RXF - holds descriptors of empty buffers to accept incoming
+  * traffic. This Fifo is filled by SW and is readen by HW. Each descriptor holds
+  * info about buffer's location, size and ID. An ID field is used to identify a
+@@ -1351,7 +1351,7 @@ static void print_rxfd(struct rxf_desc *rxfd)
+ /*
+  * TX HW/SW interaction overview
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- * There are 2 types of TX communication channels betwean driver and NIC.
++ * There are 2 types of TX communication channels between driver and NIC.
+  * 1) TX Free Fifo - TXF - holds ack descriptors for sent packets
+  * 2) TX Data Fifo - TXD - holds descriptors of full buffers.
+  *
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 34e3082..cf2e2dd 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -60,7 +60,7 @@ int swiotlb_force;
+ static char *io_tlb_start, *io_tlb_end;
  
  /*
-- * struct low_mem_reserved - Items in low memmory that are reserved
-+ * struct low_mem_reserved - Items in low memory that are reserved
-  * @start:	Physical address of item
-  * @size:	Size, in bytes, of this item
-  * @is_aliased:	True if this is RAM aliased from another location. If false,
-diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-index ce71466..89e2cf9 100644
---- a/drivers/edac/edac_core.h
-+++ b/drivers/edac/edac_core.h
-@@ -256,7 +256,7 @@ enum scrub_type {
-  *			for single channel are 64 bits, for dual channel 128
-  *			bits.
-  *
-- * Single-Ranked stick:	A Single-ranked stick has 1 chip-select row of memmory.
-+ * Single-Ranked stick:	A Single-ranked stick has 1 chip-select row of memory.
-  *			Motherboards commonly drive two chip-select pins to
-  *			a memory stick. A single-ranked stick, will occupy
-  *			only one of those rows. The other will be unused.
-diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
-index 4ed51b1..98268d6 100644
---- a/drivers/media/video/omap/omap_vout.c
-+++ b/drivers/media/video/omap/omap_vout.c
-@@ -1286,7 +1286,7 @@ static int omap_vout_release(struct file *file)
- 	videobuf_mmap_free(q);
- 
- 	/* Even if apply changes fails we should continue
--	   freeing allocated memeory */
-+	   freeing allocated memory */
- 	if (vout->streaming) {
- 		u32 mask = 0;
- 
-diff --git a/drivers/scsi/lpfc/lpfc_hbadisc.c b/drivers/scsi/lpfc/lpfc_hbadisc.c
-index 1f62ea8..6907f98 100644
---- a/drivers/scsi/lpfc/lpfc_hbadisc.c
-+++ b/drivers/scsi/lpfc/lpfc_hbadisc.c
-@@ -2616,7 +2616,7 @@ lpfc_mbx_process_link_up(struct lpfc_hba *phba, READ_LA_VAR *la)
- 			if (unlikely(!fcf_record)) {
- 				lpfc_printf_log(phba, KERN_ERR,
- 					LOG_MBOX | LOG_SLI,
--					"2554 Could not allocate memmory for "
-+					"2554 Could not allocate memory for "
- 					"fcf record\n");
- 				rc = -ENODEV;
- 				goto out;
-diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
-index fb8905f..7096fd2 100644
---- a/drivers/scsi/lpfc/lpfc_sli.c
-+++ b/drivers/scsi/lpfc/lpfc_sli.c
-@@ -9620,7 +9620,7 @@ lpfc_sli4_intr_handler(int irq, void *dev_id)
-  * lpfc_sli4_queue_free - free a queue structure and associated memory
-  * @queue: The queue structure to free.
-  *
-- * This function frees a queue structure and the DMAable memeory used for
-+ * This function frees a queue structure and the DMAable memory used for
-  * the host resident queue. This function must be called after destroying the
-  * queue on the HBA.
-  **/
-diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index cb21dc1..cb7635e 100644
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -1693,7 +1693,7 @@ void musb_gadget_cleanup(struct musb *musb)
-  *
-  * -EINVAL something went wrong (not driver)
-  * -EBUSY another gadget is already using the controller
-- * -ENOMEM no memeory to perform the operation
-+ * -ENOMEM no memory to perform the operation
-  *
-  * @param driver the gadget driver
-  * @return <0 if error, 0 if everything is fine
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 5d0059e..7a8dc5b 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -592,7 +592,7 @@ static int load_image(struct swap_map_handle *handle,
- /**
-  *	swsusp_read - read the hibernation image.
-  *	@flags_p: flags passed by the "frozen" kernel in the image header should
-- *		  be written into this memeory location
-+ *		  be written into this memory location
+- * The number of IO TLB blocks (in groups of 64) betweeen io_tlb_start and
++ * The number of IO TLB blocks (in groups of 64) between io_tlb_start and
+  * io_tlb_end.  This is command line adjustable via setup_io_tlb_npages.
   */
+ static unsigned long io_tlb_nslabs;
+diff --git a/mm/percpu.c b/mm/percpu.c
+index e61dc2c..ecfb834 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -252,7 +252,7 @@ static void __maybe_unused pcpu_next_pop(struct pcpu_chunk *chunk,
  
- int swsusp_read(unsigned int *flags_p)
-diff --git a/mm/sparse-vmemmap.c b/mm/sparse-vmemmap.c
-index aa33fd6..27f2cf2 100644
---- a/mm/sparse-vmemmap.c
-+++ b/mm/sparse-vmemmap.c
-@@ -9,7 +9,7 @@
-  *
-  * However, virtual mappings need a page table and TLBs. Many Linux
-  * architectures already map their physical space using 1-1 mappings
-- * via TLBs. For those arches the virtual memmory map is essentially
-+ * via TLBs. For those arches the virtual memory map is essentially
-  * for free if we use the same page size as the 1-1 mappings. In that
-  * case the overhead consists of a few additional pages that are
-  * allocated to create a view of memory for vmemmap.
+ /*
+  * (Un)populated page region iterators.  Iterate over (un)populated
+- * page regions betwen @start and @end in @chunk.  @rs and @re should
++ * page regions between @start and @end in @chunk.  @rs and @re should
+  * be integer variables and will be set to start and end page index of
+  * the current region.
+  */
+diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
+index 134fc6c..73d5cee 100644
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -983,7 +983,7 @@ static int snd_pcm_do_pause(struct snd_pcm_substream *substream, int push)
+ 	if (push)
+ 		snd_pcm_update_hw_ptr(substream);
+ 	/* The jiffies check in snd_pcm_update_hw_ptr*() is done by
+-	 * a delta betwen the current jiffies, this gives a large enough
++	 * a delta between the current jiffies, this gives a large enough
+ 	 * delta, effectively to skip the check once.
+ 	 */
+ 	substream->runtime->hw_ptr_jiffies = jiffies - HZ * 1000;
 -- 
 1.7.1
 
