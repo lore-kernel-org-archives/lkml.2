@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab0IAMrb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 08:47:31 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55502 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab0IAMra (ORCPT
+	id S1754355Ab0IANEu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 09:04:50 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:7526 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571Ab0IANEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 08:47:30 -0400
+	Wed, 1 Sep 2010 09:04:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=EuK+cbqrseeH5s/TATAR642pVAJMSOhJRBh5abtH+76Tw5kVyFYuPTA999ZOVnrpf5
-         TinfptPxkLwD3an3i89QXCrah3zFG+Lgz4s+N2Ox5Y51rz+s2EEcmV1J1IwLfffnf4+o
-         yTECILKuTDVZQd4g23Mg9OjEUAsTndr+XqCCw=
+        d=google.com; s=beta;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=J1bxfB8MoW4eaNtFcGDGrgcO4VPkIV/av3xLDXs3qXAMfhCRs0bdeLBwLaP2qEetWC
+         VXSWK+p99qMAwnKEJq4w==
 MIME-Version: 1.0
-Date: Wed, 1 Sep 2010 18:17:23 +0530
-Message-ID: <AANLkTi=CvnJ7oKoaj1_NjegdvbEoiBtmnVn-xEL8e2D3@mail.gmail.com>
-Subject: Issues in Linux HPET example
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Wed, 1 Sep 2010 15:04:45 +0200
+Message-ID: <AANLkTimA-AZWJugaLR3VPGVhBaJid=t=a1rPVNUE_8Dh@mail.gmail.com>
+Subject: Re: [PATCH 4/4] [x86] perf: fix accidentally ack'ing a second event
+ on intel perf counter
+From: Stephane Eranian <eranian@google.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Don,
 
-By executing Documentation/timers/hpet_example.c
+Found your patch on LKML (I am not on it).
 
-for polling, I requested for 3 iterations but it seems iteration work
-for only 2 as first expired time is always very small.
+In your changelog you said:
 
-[root@netbook timers]# ./hpet_example poll /dev/hpet 10 3
--hpet: executing poll
-hpet_poll: info.hi_flags 0x0
-hpet_poll: expired time = 0x13
-hpet_poll: revents = 0x1
-hpet_poll: data 0x1
-hpet_poll: expired time = 0x1868c
-hpet_poll: revents = 0x1
-hpet_poll: data 0x1
-hpet_poll: expired time = 0x18645
-hpet_poll: revents = 0x1
-hpet_poll: data 0x1
-[root@netbook timers]#
+> During testing of a patch to stop having the perf subsytem swallow nmis,
+> it was uncovered that Nehalem boxes were randomly getting unknown nmis
+> when using the perf tool.
+>
+> Moving the ack'ing of the PMI closer to when we get the status allows
+> the hardware to properly re-set the PMU bit signaling another PMI was
+> triggered during the processing of the first PMI.  This allows the new
+> logic for dealing with the shortcomings of multiple PMIs to handle the
+> extra NMI by 'eat'ing it later.
 
-for fasync, I requested for 3 iterations but it shows 4 counts.
+> Now one can wonder why are we getting a second PMI when we disable all
+> the PMUs in the beginning of the NMI handler to prevent such a case, for
+> that I do not know.  But I know the fix below helps deal with this quirk.
+>
 
-[root@netbook timers]# ./hpet_example fasync /dev/hpet 10 3
--hpet: executing fasync
-hpet_fasync: info.hi_flags 0x0
-hpet_sigio: called
-hpet_sigio: called
-hpet_fasync: count = 2
-hpet_sigio: called
-hpet_fasync: count = 3
-hpet_sigio: called
-hpet_fasync: count = 4
-[root@netbook timers]#
+I am assuming you're talking about back-to-back NMIs here, not nested NMIs.
+I don't quite understand the scenario here. Is it the case that you handled 1
+overflow, and then right as you return from the interrupt, you get a second
+PMI with a ovfl_status=0 ?
 
-How can I fix these issues.
+What events did you measure? Which counters did you use?
+Did you have HT turned on?
 
-Thanks,
---
-Jaswinder Singh.
+> Tested on multiple Nehalems where the problem was occuring.  With the
+> patch, the code now loops a second time to handle the second PMI (whereas
+> before it was not).
