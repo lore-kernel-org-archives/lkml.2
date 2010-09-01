@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab0IAFYS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 01:24:18 -0400
-Received: from mail.perches.com ([173.55.12.10]:1171 "EHLO mail.perches.com"
+	id S1752166Ab0IAFbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 01:31:08 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48331 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751635Ab0IAFYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 01:24:17 -0400
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
-From: Joe Perches <joe@perches.com>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Crane Cai <crane.cai@amd.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Wang Yong Y\"" <yong.y.wang@intel.com>,
-        "Wang Qi\"" <qi.wang@intel.com>,
-        "Andrew\"" <andrew.chih.howe.khor@intel.com>, arjan@linux.intel.com,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
-        Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <001e01cb4993$bc0d75d0$66f8800a@maildom.okisemi.com>
-References: <4C7DB9CF.5000905@dsn.okisemi.com>
-	 <1283309032.1797.123.camel@Joe-Laptop>
-	 <001e01cb4993$bc0d75d0$66f8800a@maildom.okisemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Aug 2010 22:24:14 -0700
-Message-ID: <1283318654.1797.140.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1751132Ab0IAFbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 01:31:06 -0400
+Date: Wed, 1 Sep 2010 07:30:55 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Don Zickus <dzickus@redhat.com>
+Cc: peterz@infradead.org, gorcunov@gmail.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] [lockup detector] sync touch_*_watchdog back to old
+ semantics
+Message-ID: <20100901053055.GA14316@elte.hu>
+References: <1283310009-22168-1-git-send-email-dzickus@redhat.com>
+ <1283310009-22168-2-git-send-email-dzickus@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283310009-22168-2-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-01 at 14:08 +0900, Masayuki Ohtake wrote:
-> I have a question.
-> Current our I2C driver  has the following 2 patterns dev_err().
-> (1) dev_err(adap->pch_adapter.dev.parent, "...");
-> (2) dev_err(&pdev->dev, "...");
-> > #define pch_err(adap, fmt, arg...) \
-> > dev_err(adap->pch_adapter.dev.parent, fmt, ##arg)
-> In case of using the above code, pattern (1) can apply, but (2) can't.
-> As to (2),
-> Should we use as dev_err or define another macro?
 
-Hello Ohtake.
+* Don Zickus <dzickus@redhat.com> wrote:
 
-To me, it's a visual complexity vs std pattern trade-off.
+>  void touch_nmi_watchdog(void)
+>  {
+> -	__get_cpu_var(watchdog_nmi_touch) = true;
+> +	if (watchdog_enabled) {
+> +		unsigned cpu;
+> +
+> +		for_each_present_cpu(cpu) {
+> +			if (per_cpu(watchdog_nmi_touch, cpu) != true)
+> +				per_cpu(watchdog_nmi_touch, cpu) = true;
+> +		}
 
-A 2 level dereference like dev_info(&dev->dev, ...)
-isn't overly difficult to read.
-3 or more dereferences can be harder and a bit error prone.
-So I would only use pch_<level> for (1) and dev_err for (2).
+Hm, this is going to be a scalability nightmare with lots of CPUs. Not 
+only do we have a nr_cpus loop, but we touch per-cpu areas of _other_ 
+CPUs - a big scalability nono.
 
-There are also times when there are additional standard
-arguments that you want to prefix to dev_<level> calls
-and that can be simplified with a custom XXX_<level>
-define for dev_<level>
+Why do we need to do this? We never needed to touch other CPU's NMI 
+lockup accounting data areas - why has this changed? The changelog does 
+not explain this.
 
-Look at the current uses in the tree and see what you like.
+Thanks,
 
-$ grep -rP --include=*.[ch] "#define\s*.+\s+dev_[a-z]{3,7}\s*\(" *
-
-These aren't requirements, do what you think best.
-
-cheers, Joe
-
+	Ingo
