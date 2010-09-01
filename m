@@ -1,144 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab0IANTh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 09:19:37 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44084 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab0IANTf (ORCPT
+	id S1754822Ab0IANTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 09:19:45 -0400
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:40472 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752572Ab0IANTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 09:19:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=RzdN+rzLQGX87jG1c7Q9DdVrdKW0WUXvb2VOaqXrDCOtrd+gf+vZyqFot0d35uQS5L
-         KaN+w62uMZYbauBk5TI6R/wHiZgPmCY9I8c8ZOrHlBIOnhcGPY76wBdxEV5VvwsuKRR0
-         a6pOpnHacgsNsLMo3/2pWF15AId8shUj52r/Q=
-Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
- to reset
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Habets <thomas@habets.pp.se>
-Cc: Matt Carlson <mcarlson@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Michael Chan <mchan@broadcom.com>
-In-Reply-To: <alpine.DEB.1.10.1009011034560.31938@red.crap.retrofitta.se>
-References: <1282024802.2487.687.camel@edumazet-laptop>
-	 <alpine.DEB.1.10.1008171053230.21857@red.crap.retrofitta.se>
-	 <1282050920.2448.47.camel@edumazet-laptop>
-	 <alpine.DEB.1.10.1008171547090.21857@red.crap.retrofitta.se>
-	 <1282055659.2448.58.camel@edumazet-laptop>
-	 <alpine.DEB.1.10.1008171737260.21857@red.crap.retrofitta.se>
-	 <20100817171115.GA4134@mcarlson.broadcom.com>
-	 <alpine.DEB.1.10.1008171928160.21857@red.crap.retrofitta.se>
-	 <20100817183112.GA4351@mcarlson.broadcom.com>
-	 <alpine.DEB.1.10.1008172035520.21857@red.crap.retrofitta.se>
-	 <20100818012318.GA4630@mcarlson.broadcom.com>
-	 <alpine.DEB.1.10.1008180900350.21857@red.crap.retrofitta.se>
-	 <alpine.DEB.1.10.1009011034560.31938@red.crap.retrofitta.se>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 01 Sep 2010 15:19:28 +0200
-Message-ID: <1283347168.2556.319.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Wed, 1 Sep 2010 09:19:42 -0400
+Message-ID: <4C7E51AA.2050004@euromail.se>
+Date: Wed, 01 Sep 2010 15:14:18 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Chase Douglas <chase.douglas@canonical.com>
+CC: Jiri Kosina <jkosina@suse.cz>, Michael Poole <mdpoole@troilus.org>,
+        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7 v3] HID: magicmouse: simplify multitouch feature request
+References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>	 <1283306184-28833-3-git-send-email-chase.douglas@canonical.com>	 <4C7E0433.8010008@euromail.se> <1283344475.2255.368.camel@mini>
+In-Reply-To: <1283344475.2255.368.camel@mini>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1Oqn8w-0002pX-4h.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1Oqn8w-0002pX-4h baa55dbed0de0565ba0de5e2b0967f81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 01 septembre 2010 à 11:21 +0200, Thomas Habets a écrit :
-> I've continued this a bit off-list but thought I would summarize for the 
-> archives.
+On 09/01/2010 02:34 PM, Chase Douglas wrote:
+
+> On Wed, 2010-09-01 at 09:43 +0200, Henrik Rydberg wrote:
+>> On 09/01/2010 03:56 AM, Chase Douglas wrote:
+>>
+>>> From: Chase Douglas <chase.douglas@ubuntu.com>
+>>>
+>>> Only the first feature request is required to put the Magic Mouse into
+>>> multitouch mode. This is also the case for the Magic Trackpad, for which
+>>> support will be added in a later commit.
+>>>
+>>> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+>>> Acked-by: Michael Poole <mdpoole@troilus.org>
+>>> ---
+>>
+>>
+>> Since this is starting to look awfully similar to the mode switch found in
+>> appletouch and bcm5974, I wonder what happens to the stream from the device when
+>> the connection to hid is closed. It could be that the mode switch should be
+>> moved to open/close instead.
 > 
-> 
-> Summary
-> -------
-> It looks like a firmware issue on the network card. When ILO is enabled it 
-> shares the first network card with the OS. When it does this multicast 
-> is broken. When multicast (on a L2 level) is broken IPv6 neighbor 
-> discovery breaks. Only eth0 breaks, eth1 is unaffected.
-> 
-> 
-> System
-> ------
-> HP Proliant DL320 G5p
-> Xeon 3GHz
-> 1GB RAM
-> Arch: amd64
-> NIC: Broadcom Corporation NetXtreme BCM5715 Gigabit Ethernet (rev a3)
-> Debian Lenny (5.0.5)
-> Kernels: 2.6.35 mainline, 2.6.33.6
-> Config: http://pastebin.com/raw.php?i=Y6S8iKW7
-> 
-> 
-> Problem
-> -------
-> Buggy box will not answer IPv6 ND or ping to ff02::1. May work at some 
-> point in the boot process, but once box is fully booted it does not.
-> 
-> If I on the neighboring Cisco router run "clear ipv6 neighbors" (or it 
-> times out) that router cannot re-acquire the neigborship with the buggy 
-> box. Instant IPv6 breakage until I do one of:
-> * Turn on promisc mode long enough for IPv6 ND to do its thing
-> * ip ne del <address of neighbor> on the buggy host.
-> 
-> 
-> Workarounds
-> -----------
-> Either one of these will hide the problem:
-> * Set promisc mode on interface (ip link set promisc on eth0) forever
-> * Disable ILO
-> * Use eth1 instead of eth0.
-> 
-> 
-> Troubleshooting
-> ---------------
-> Got patch for kernel from Eric Dumazet (eric.dumazet@gmail.com) to output 
-> what MAC addresses are being subscribed to, and some registers from the 
-> card. Output is earlier in this thread, along with "ethtool -i eth0" and 
-> some other data.
-> 
-> Managed to get diagnostic tool[1] booting from stick (no CD drive in 
-> server), but did not set up memory (himem.sys etc..). Running b57udiag 
-> it therefore failed due to insufficient memory at test "Group D. Driver 
-> Associated tests". Card is assumed to be OK anyway.
-> 
-> Matt Carlson (mcarlson@broadcom.com) suspected firmware bug and asked me 
-> to try disabling ASF and/or IPMI using the diagnostic tool, but running 
-> "setasf -d" and "setipmi -d" inside "b57udiag -cmd" did not seem to stick 
-> across reboot. It stuck properly before reboot (confirmed with setasf -q). 
-> Also tried "b57udiag -u 0". Tried both C-A-D reboot and powercycling (by 
-> power cord).
-> 
-> At boot Linux still said ASF[1] for eth0 and ASF[0] for eth1:
-> tg3 0000:03:04.0: eth0: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[1] TSOcap[1]
-> tg3 0000:03:04.1: eth1: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[0] TSOcap[1]
-> (this output never changed throughout the process)
-> ethtool -d eth1 | grep 0x047 did not change either.
-> 
-> Then I disabled ILO and PXE in ILO bios and BIOS respectively. That fixed 
-> it. eth0 now works with multicast.
-> 
-> I don't use ILO on this server so in this case that fixes it for me, but 
-> the bug is still there.
-> 
-> At this point Matt thinks I should file a bug report with HP. I will 
-> attempt to do that.
-> 
-> I have more detailed logs of what I did and when, and what the effect was.
-> 
-> 
-> Related
-> -------
-> May be the same issue as this:
->    https://bugs.launchpad.net/ubuntu/+source/linux/+bug/263260
-> Which means it's the same with Ubuntu kernels 2.6.26.3, 2.6.26-5-generic 
-> and 2.6.27-2-generic, and mainline kernels 2.6.25, 2.6.26 and 2.6.27.
-> 
-> 
-> [1] http://www.broadcom.com/support/ethernet_nic/netxtreme_server.php
-> 
+> I don't really understand what you are proposing. It sounds like maybe
+> you want the device to continue to function in a non-multitouch way
+> after hid disconnection, but the device needs hid to function at all.
 
 
-Thanks a lot Thomas for this very detailed report !
+Suspend/resume, broken bt connections, etc. There was an issue with the bcm5974
+macbook trackpads not functioning properly after a close unless returned to
+normal mode. The mode switch code was moved to the open/close functions for that
+reason.
 
 
+> The closest thing I can think to what you are saying is to do whatever
+> it takes on module removal so that it goes back to functioning in the
+> non-multitouch mode. That may be possible.
+
+
+Sounds like a good start. Doing a suspend test just now I could not get the
+device up again, for whatever reason.
+
+Henrik
