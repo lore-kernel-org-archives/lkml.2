@@ -1,76 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab0IAAZD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 20:25:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35767 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752248Ab0IAAZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 20:25:01 -0400
-Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
- todo list, add RCU todo list
-From: Eric Paris <eparis@redhat.com>
-To: Joe Perches <joe@perches.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
+	id S1754581Ab0IAA0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 20:26:41 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45677 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752842Ab0IAA0j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 20:26:39 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 1 Sep 2010 09:21:36 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: balbir@linux.vnet.ibm.com
+Cc: linux-mm@kvack.org,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ksummit-2010-discuss@lists.linux-foundation.org" 
-	<ksummit-2010-discuss@lists.linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>
-In-Reply-To: <1283298391.1797.100.camel@Joe-Laptop>
-References: <20100826154537.GA4874@linux.vnet.ibm.com>
-	 <1282837904.1875.64.camel@Joe-Laptop>
-	 <20100826161451.GB2367@linux.vnet.ibm.com>
-	 <1282839933.8133.11.camel@mulgrave.site>
-	 <20100826092923.4bdbea69.rdunlap@xenotime.net>
-	 <20100826093838.74ab9958@infradead.org>
-	 <1283275388.1377.216.camel@gandalf.stny.rr.com>
-	 <20100831230213.GG2421@linux.vnet.ibm.com>
-	 <1283296622.1377.765.camel@gandalf.stny.rr.com>
-	 <987664A83D2D224EAE907B061CE93D53015D9B2445@orsmsx505.amr.corp.intel.com>
-	 <1283298391.1797.100.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Aug 2010 20:23:35 -0400
-Message-ID: <1283300616.3284.213.camel@dhcp231-106.rdu.redhat.com>
+        "menage@google.com" <menage@google.com>,
+        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
+Subject: Re: [PATCH 2/5] memcg: quick memcg lookup array
+Message-Id: <20100901092136.6c801ac4.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100831071414.GN32680@balbir.in.ibm.com>
+References: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100825170741.f1f0a220.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100831071414.GN32680@balbir.in.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-31 at 16:46 -0700, Joe Perches wrote:
-> On Tue, 2010-08-31 at 16:25 -0700, Luck, Tony wrote:
-> > >Then, the list is maintained outside of mainline (in the subsystem git
-> > >tree) and will automatically update mainline in the next merge window
-> > >when the tree is pulled.
+On Tue, 31 Aug 2010 12:44:14 +0530
+Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+
+> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-08-25 17:07:41]:
+> 
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > > 
-> > But this would mean that the version of the todo list in Linus' tree
-> > is usually a release (3 months) out of date.  It would be a good idea
-> > for a list maintained this way to include instructions on how to find
-> > the current version, lest some unsuspecting person waste time working
-> > on items that are already fixed and waiting for the next merge.
+> > Now, memory cgroup has an ID per cgroup and make use of it at
+> >  - hierarchy walk,
+> >  - swap recording.
+> > 
+> > This patch is for making more use of it. The final purpose is
+> > to replace page_cgroup->mem_cgroup's pointer to an unsigned short.
+> > 
+> > This patch caches a pointer of memcg in an array. By this, we
+> > don't have to call css_lookup() which requires radix-hash walk.
+> > This saves some amount of memory footprint at lookup memcg via id.
+> > 
+> > Changelog: 20100825
+> >  - applied comments.
+> > 
+> > Changelog: 20100811
+> >  - adjusted onto mmotm-2010-08-11
+> >  - fixed RCU related parts.
+> >  - use attach_id() callback.
+> > 
+> > Changelog: 20100804
+> >  - fixed description in init/Kconfig
+> > 
+> > Changelog: 20100730
+> >  - fixed rcu_read_unlock() placement.
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> >  init/Kconfig    |   10 +++++++
+> >  mm/memcontrol.c |   75 +++++++++++++++++++++++++++++++++++++++++---------------
+> >  2 files changed, 65 insertions(+), 20 deletions(-)
+> > 
+> > Index: mmotm-0811/mm/memcontrol.c
+> > ===================================================================
+> > --- mmotm-0811.orig/mm/memcontrol.c
+> > +++ mmotm-0811/mm/memcontrol.c
+> > @@ -195,6 +195,7 @@ static void mem_cgroup_oom_notify(struct
+> >   */
+> >  struct mem_cgroup {
+> >  	struct cgroup_subsys_state css;
+> > +	int	valid; /* for checking validness under RCU access.*/
+> >  	/*
+> >  	 * the counter to account for memory usage
+> >  	 */
+> > @@ -294,6 +295,29 @@ static bool move_file(void)
+> >  					&mc.to->move_charge_at_immigrate);
+> >  }
+> > 
+> > +/* 0 is unused */
+> > +static atomic_t mem_cgroup_num;
+> > +#define NR_MEMCG_GROUPS (CONFIG_MEM_CGROUP_MAX_GROUPS + 1)
+> > +static struct mem_cgroup *mem_cgroups[NR_MEMCG_GROUPS] __read_mostly;
+> > +
+> > +/* Must be called under rcu_read_lock */
+> > +static struct mem_cgroup *id_to_memcg(unsigned short id)
+> > +{
+> > +	struct mem_cgroup *mem;
+> > +	/* see mem_cgroup_free() */
+> > +	mem = rcu_dereference_check(mem_cgroups[id], rcu_read_lock_held());
+> > +	if (likely(mem && mem->valid))
+> > +		return mem;
+> > +	return NULL;
+> > +}
+> > +
+> > +static void register_memcg_id(struct mem_cgroup *mem)
+> > +{
+> > +	int id = css_id(&mem->css);
+> > +	rcu_assign_pointer(mem_cgroups[id], mem);
+> > +	VM_BUG_ON(!mem->valid);
+> > +}
+> > +
+> >  /*
+> >   * Maximum loops in mem_cgroup_hierarchical_reclaim(), used for soft
+> >   * limit reclaim to prevent infinite loops, if they ever occur.
+> > @@ -1847,18 +1871,7 @@ static void mem_cgroup_cancel_charge(str
+> >   * it's concern. (dropping refcnt from swap can be called against removed
+> >   * memcg.)
+> >   */
+> > -static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
+> > -{
+> > -	struct cgroup_subsys_state *css;
+> > 
+> > -	/* ID 0 is unused ID */
+> > -	if (!id)
+> > -		return NULL;
+> > -	css = css_lookup(&mem_cgroup_subsys, id);
+> > -	if (!css)
+> > -		return NULL;
+> > -	return container_of(css, struct mem_cgroup, css);
+> > -}
+> > 
+> >  struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+> >  {
+> > @@ -1879,7 +1892,7 @@ struct mem_cgroup *try_get_mem_cgroup_fr
+> >  		ent.val = page_private(page);
+> >  		id = lookup_swap_cgroup(ent);
+> >  		rcu_read_lock();
+> > -		mem = mem_cgroup_lookup(id);
+> > +		mem = id_to_memcg(id);
+> >  		if (mem && !css_tryget(&mem->css))
+> >  			mem = NULL;
+> >  		rcu_read_unlock();
+> > @@ -2231,7 +2244,7 @@ __mem_cgroup_commit_charge_swapin(struct
+> > 
+> >  		id = swap_cgroup_record(ent, 0);
+> >  		rcu_read_lock();
+> > -		memcg = mem_cgroup_lookup(id);
+> > +		memcg = id_to_memcg(id);
+> >  		if (memcg) {
+> >  			/*
+> >  			 * This recorded memcg can be obsolete one. So, avoid
+> > @@ -2240,9 +2253,10 @@ __mem_cgroup_commit_charge_swapin(struct
+> >  			if (!mem_cgroup_is_root(memcg))
+> >  				res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
+> >  			mem_cgroup_swap_statistics(memcg, false);
+> > +			rcu_read_unlock();
+> >  			mem_cgroup_put(memcg);
+> > -		}
+> > -		rcu_read_unlock();
+> > +		} else
+> > +			rcu_read_unlock();
+> >  	}
+> >  	/*
+> >  	 * At swapin, we may charge account against cgroup which has no tasks.
+> > @@ -2495,7 +2509,7 @@ void mem_cgroup_uncharge_swap(swp_entry_
+> > 
+> >  	id = swap_cgroup_record(ent, 0);
+> >  	rcu_read_lock();
+> > -	memcg = mem_cgroup_lookup(id);
+> > +	memcg = id_to_memcg(id);
+> >  	if (memcg) {
+> >  		/*
+> >  		 * We uncharge this because swap is freed.
+> > @@ -2504,9 +2518,10 @@ void mem_cgroup_uncharge_swap(swp_entry_
+> >  		if (!mem_cgroup_is_root(memcg))
+> >  			res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
+> >  		mem_cgroup_swap_statistics(memcg, false);
+> > +		rcu_read_unlock();
+> >  		mem_cgroup_put(memcg);
+> > -	}
+> > -	rcu_read_unlock();
+> > +	} else
+> > +		rcu_read_unlock();
+> >  }
+> > 
+> >  /**
+> > @@ -4010,6 +4025,9 @@ static struct mem_cgroup *mem_cgroup_all
+> >  	struct mem_cgroup *mem;
+> >  	int size = sizeof(struct mem_cgroup);
+> > 
+> > +	if (atomic_read(&mem_cgroup_num) == NR_MEMCG_GROUPS)
+> > +		return NULL;
+> > +
+> >  	/* Can be very big if MAX_NUMNODES is very big */
+> >  	if (size < PAGE_SIZE)
+> >  		mem = kmalloc(size, GFP_KERNEL);
+> > @@ -4020,6 +4038,7 @@ static struct mem_cgroup *mem_cgroup_all
+> >  		return NULL;
+> > 
+> >  	memset(mem, 0, size);
+> > +	mem->valid = 1;
+> >  	mem->stat = alloc_percpu(struct mem_cgroup_stat_cpu);
+> >  	if (!mem->stat) {
+> >  		if (size < PAGE_SIZE)
+> > @@ -4049,6 +4068,7 @@ static void __mem_cgroup_free(struct mem
+> >  	mem_cgroup_remove_from_trees(mem);
+> >  	free_css_id(&mem_cgroup_subsys, &mem->css);
+> > 
+> > +	atomic_dec(&mem_cgroup_num);
+> >  	for_each_node_state(node, N_POSSIBLE)
+> >  		free_mem_cgroup_per_zone_info(mem, node);
+> > 
+> > @@ -4059,6 +4079,19 @@ static void __mem_cgroup_free(struct mem
+> >  		vfree(mem);
+> >  }
+> > 
+> > +static void mem_cgroup_free(struct mem_cgroup *mem)
+> > +{
+> > +	/* No more lookup */
+> > +	mem->valid = 0;
+> > +	rcu_assign_pointer(mem_cgroups[css_id(&mem->css)], NULL);
+> > +	/*
+> > +	 * Because we call vfree() etc...use synchronize_rcu() rather than
+> > + 	 * call_rcu();
+> > + 	 */
+> > +	synchronize_rcu();
+> > +	__mem_cgroup_free(mem);
+> > +}
+> > +
+> >  static void mem_cgroup_get(struct mem_cgroup *mem)
+> >  {
+> >  	atomic_inc(&mem->refcnt);
+> > @@ -4068,7 +4101,7 @@ static void __mem_cgroup_put(struct mem_
+> >  {
+> >  	if (atomic_sub_and_test(count, &mem->refcnt)) {
+> >  		struct mem_cgroup *parent = parent_mem_cgroup(mem);
+> > -		__mem_cgroup_free(mem);
+> > +		mem_cgroup_free(mem);
+> >  		if (parent)
+> >  			mem_cgroup_put(parent);
+> >  	}
+> > @@ -4189,9 +4222,11 @@ mem_cgroup_create(struct cgroup_subsys *
+> >  	atomic_set(&mem->refcnt, 1);
+> >  	mem->move_charge_at_immigrate = 0;
+> >  	mutex_init(&mem->thresholds_lock);
+> > +	atomic_inc(&mem_cgroup_num);
+> > +	register_memcg_id(mem);
+> >  	return &mem->css;
+> >  free_out:
+> > -	__mem_cgroup_free(mem);
+> > +	mem_cgroup_free(mem);
+> >  	root_mem_cgroup = NULL;
+> >  	return ERR_PTR(error);
+> >  }
+> > Index: mmotm-0811/init/Kconfig
+> > ===================================================================
+> > --- mmotm-0811.orig/init/Kconfig
+> > +++ mmotm-0811/init/Kconfig
+> > @@ -594,6 +594,16 @@ config CGROUP_MEM_RES_CTLR_SWAP
+> >  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
+> >  	  size is 4096bytes, 512k per 1Gbytes of swap.
+> > 
+> > +config MEM_CGROUP_MAX_GROUPS
+> > +	int "Maximum number of memory cgroups on a system"
+> > +	range 1 65535
+> > +	default 8192 if 64BIT
+> > +	default 2048 if 32BIT
+> > +	help
+> > +	  Memory cgroup has limitation of the number of groups created.
+> > +	  Please select your favorite value. The more you allow, the more
+> > +	  memory(a pointer per group) will be consumed.
+> > +
 > 
-> There are already reasonable mechanisms for this.
+> Looks good, quick thought - should we expost memcg->id to user space
+> through a config file? I don't see any reason at this point, unless we
+> do it for all controllers.
 > 
-> It's perfectly fine to have multiple T: entries,
-> one for a current tree, another for a -next tree.
 
-If I just downloaded a big tar ball and started trolling randomly
-through the source how am I going to know what the MAINTAINERS file is?
-How am I going to know that todo entries should be located by opening
-the magic file called MAINTAINERS, looking for T: entries, and then
-checking out the listed web page?
+I wonder....showing whether 2 interfaces as "path name" and "id" to users is a
+good thing or not. Yes, it's convenient to developpers as me and you, others,
+but I don't think it's useful to users, novice people.
 
-random todo files scattered around the kernel, all with references that
-might duplicate MAINTAINERS info, but which make it clear to a complete
-newbie how development for that subsys works, seems simple and easy.
+I'd like to avoid showing show memcg->id to users as much as possible. I don't
+want to say but memcg is enough complicated.
 
-subsys maintainers might want to put all kinds of info in there, what
-tree to develop against (rarely a tar ball of Linus' tree), pointers to
-particularly relevant Documentation/ files, how they like to get
-patches, where those patches usually end getting applied, what lists and
-cc's to use, things like that.
 
-I just think that hoping a newbie is going to naturally know MAINTAINERS
-isn't the best.
+Thanks,
+-Kame
 
--Eric
 
