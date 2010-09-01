@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab0IAXnq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 19:43:46 -0400
-Received: from outbound.icp-qv1-irony-out3.iinet.net.au ([203.59.1.148]:64713
-	"EHLO outbound.icp-qv1-irony-out3.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754639Ab0IAXnp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 19:43:45 -0400
-X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Sep 2010 19:43:45 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApEBAMZ/fkzL2T1e/2dsb2JhbAAH4wuFOQSNIg
-X-IronPort-AV: E=Sophos;i="4.56,306,1280678400"; 
-   d="scan'208";a="635655638"
-Subject: Re: [UIO]  SMX UIO interface
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Ben Nizette <bn@niasdigital.com>
-In-Reply-To: <4C7DFF2C.8070709@steinhoff.de>
-Date: Thu, 2 Sep 2010 09:33:47 +1000
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <ABD0E28F-0839-4C6F-A0BD-999A28A6803A@niasdigital.com>
-References: <4C7DFF2C.8070709@steinhoff.de>
-To: Armin Steinhoff <armin@steinhoff.de>
-X-Mailer: Apple Mail (2.1081)
+	id S1755609Ab0IAXjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 19:39:48 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:10742 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142Ab0IAXjp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 19:39:45 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6092"; a="53074579"
+From: Gregory Bean <gbean@codeaurora.org>
+To: dwalker@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
+Subject: [PATCH 2/2 v2] msm: gpio: Add gpiomux calls to request and free.
+Date: Wed,  1 Sep 2010 16:39:40 -0700
+Message-Id: <1283384380-24997-2-git-send-email-gbean@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1283384380-24997-1-git-send-email-gbean@codeaurora.org>
+References: <1283384380-24997-1-git-send-email-gbean@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add gpiomux get and put calls to msmgpio request and free,
+in order to allow gpio lines to be properly reference-counted
+and power-managed.
 
-On 01/09/2010, at 5:22 PM, Armin Steinhoff wrote:
+Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+---
+ arch/arm/mach-msm/gpio.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-> Hi Ben,
-> 
-> I have a question about the SMX UIO Interface.
-> 
-> In the SMX module you are reading the data of the platform resourses:
-> 
->    regs = platform_get_resource(dev, IORESOURCE_MEM, 0);
->    if (!regs) {
->        dev_err(&dev->dev, "No memory resource specified\n");
->        goto out_free;
->    }
-> 
-> But who sets these data initially ?
+diff --git a/arch/arm/mach-msm/gpio.c b/arch/arm/mach-msm/gpio.c
+index 89c857b..3c2443f 100644
+--- a/arch/arm/mach-msm/gpio.c
++++ b/arch/arm/mach-msm/gpio.c
+@@ -21,6 +21,7 @@
+ #include <linux/irq.h>
+ #include <linux/module.h>
+ #include "gpio_hw.h"
++#include "gpiomux.h"
+ #include "proc_comm.h"
+ #include "smd_private.h"
+ 
+@@ -46,6 +47,8 @@
+ 			.direction_input = msm_gpio_direction_input,	\
+ 			.direction_output = msm_gpio_direction_output,	\
+ 			.to_irq = msm_gpio_to_irq,			\
++			.request = msm_gpio_request,			\
++			.free = msm_gpio_free,				\
+ 		}							\
+ 	}
+ 
+@@ -180,6 +183,21 @@ static int msm_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ 	return MSM_GPIO_TO_INT(chip->base + offset);
+ }
+ 
++#ifdef CONFIG_MSM_GPIOMUX
++static int msm_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++        return msm_gpiomux_get(chip->base + offset);
++}
++
++static void msm_gpio_free(struct gpio_chip *chip, unsigned offset)
++{
++        msm_gpiomux_put(chip->base + offset);
++}
++#else
++#define msm_gpio_request NULL
++#define msm_gpio_free NULL
++#endif
++
+ struct msm_gpio_chip msm_gpio_chips[] = {
+ #if defined(CONFIG_ARCH_MSM7X00A)
+ 	MSM_GPIO_BANK(0,   0,  15),
+-- 
+1.7.0.4
 
-Who ever sets up the platform device that will bind to this driver, usually the board code (eg on avr32 arch/avr32/boards/*/setup.c, ARM is somewhere under arch/arm/mach-*/ I think).
-
-The board code would create an array of struct resource with the appropriate memory regions and an IRQ entry, create a struct platform_device with the right content to bind to that driver, set the platform_device .resource field to the previously created array then call platform_device_register() to kick things off.
-
-	--Ben.
-
-> 
-> Cheers
-> 
-> --Armin
-> 
-
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
