@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab0IAVqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 17:46:43 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48096
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752080Ab0IAVql (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 17:46:41 -0400
-Date: Wed, 01 Sep 2010 14:46:58 -0700 (PDT)
-Message-Id: <20100901.144658.135972233.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: bandan.das@stratus.com, herbert@gondor.hengli.com.au,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kaber@trash.net
-Subject: Re: [PATCH net-next-2.6] net/ipv4: push IP options to CB in
- ip_fragment
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1283232031.2405.38.camel@edumazet-laptop>
-References: <1283204118.2405.32.camel@edumazet-laptop>
-	<20100830232147.GB10754@stratus.com>
-	<1283232031.2405.38.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755509Ab0IAVqt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 17:46:49 -0400
+Received: from void.printf.net ([89.145.121.20]:50195 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754285Ab0IAVqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 17:46:47 -0400
+Date: Wed, 1 Sep 2010 22:46:44 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Adrian Hunter <adrian.hunter@nokia.com>
+Subject: Re: [PATCH 0/3] mmc_test: show test results via sysfs
+Message-ID: <20100901214644.GA4436@void.printf.net>
+References: <cover.1283276161.git.ext-andriy.shevchenko@nokia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1283276161.git.ext-andriy.shevchenko@nokia.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Tue, 31 Aug 2010 07:20:31 +0200
+Hi Andy,
 
-> We could have a padding in front of struct br_input_skb_cb to make sure
-> we dont overwrite IP (4|6) CB in bridge ?
-> 
-> Something like this untested patch :
+On Wed, Sep 01, 2010 at 09:26:44AM +0300, Andy Shevchenko wrote:
+> There is a patchset which brings possibility to get test results via sysfs. It
+> helps to do tests non-interactively.
 
-This will not help Brandan's case.
+Thanks for the patchset.  It doesn't apply to 2.6.36-rc3 without some
+(trivial) merge conflicts -- could you rebase with your next version?
 
-His packets are coming straight from TUN/TAP.  They did not live in
-the IP stack at all before hitting the bridge and then heading to
-ip_fragment().
+Tested-by: Chris Ball <cjb@laptop.org>
 
-Therefore I'm inclined to agree with Herbert that we need to parse the
-options explicitly before invoke ip_fragment().  We must call it with
-an SKB in the state it expects, and that means with options parsing
-already performed.
+Unrelated to this patch, I'm hitting:
 
+  drivers/mmc/core/core.c:174:
+    BUG_ON(mrq->data->blocks * mrq->data->blksz > host->max_req_size);
 
+when running the transfer tests under 2.6.36-rc3.  The request that
+fires the BUG() has blocks=8192 * blksz=512 > max_req_size=524288,
+on a Ricoh Co Ltd R5C822/1180:0822 in a Dell M6300 laptop.  Anyone
+have any experience with that bug, before I dig deeper?
+
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
