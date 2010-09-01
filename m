@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab0IAWxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 18:53:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3480 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753260Ab0IAWxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 18:53:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,306,1280732400"; 
-   d="scan'208";a="834034312"
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: [PATCH v2] [arch-x86] Allow SRAT integrity check to be skipped
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, andi@firstfloor.org, netdev@vger.kernel.org,
-        peter.p.waskiewicz.jr@intel.com
-Date: Wed, 01 Sep 2010 15:59:37 -0700
-Message-ID: <20100901225937.18457.16372.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1755186Ab0IAXJe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 19:09:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37603 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059Ab0IAXJT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 19:09:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=rK8MeZ9ZJBCK/VtsvotKULdYrE21ftTqJYMR2EaasRgtkWOd8EfT44JevPJf+9kR5q
+         3J4mdveNDvDWNYDRU7GN5V2H+yKlPLVCaqUI0M74dEuTm09hBIwL/o0kG6yFsAuv72hf
+         0Flfrn1nSeiL3DDcZ6pGyWnac3/1MeAGRnmlI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTinHOpcdAJd0_4G=OFAnMZaXKeOsqnbjJMAxCume@mail.gmail.com>
+References: <201008271537.35709.ptesarik@suse.cz>
+	<987664A83D2D224EAE907B061CE93D53015D91D6F5@orsmsx505.amr.corp.intel.com>
+	<987664A83D2D224EAE907B061CE93D53015D9B14DC@orsmsx505.amr.corp.intel.com>
+	<201008302341.14312.ptesarik@suse.cz>
+	<AANLkTin4cn84xu3go-Tj-CYSLp0W6uO1HRtA6_CQu8nJ@mail.gmail.com>
+	<AANLkTinHOpcdAJd0_4G=OFAnMZaXKeOsqnbjJMAxCume@mail.gmail.com>
+Date: Wed, 1 Sep 2010 16:09:18 -0700
+X-Google-Sender-Auth: WmdGb1KH5YpFgfZQpEAhf2iw73w
+Message-ID: <AANLkTikUrNcuZB_CFn5cGFovN8U4eyPGL=nEdSP3JS9Z@mail.gmail.com>
+Subject: Re: Serious problem with ticket spinlocks on ia64
+From: Tony Luck <tony.luck@intel.com>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: Hedi Berriche <hedi@sgi.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On certain BIOSes, SRAT enumeration isn't exported correctly.
-This leads to NUMA node enumeration failure, and causes the kernel
-to fall back onto a single node treated as flat memory.  This
-can happen on large, multi-socket systems (4 or more sockets), and
-becomes problematic for performance.
+More results from other experiments ...
 
-This patch adds a boot parameter to allow a kernel to be booted
-with the option to skip the SRAT check.  There are BIOSes in
-production that have these failures, so this will allow people
-in the field to work around these BIOS issues.
+1) It occurred to me that I should check that these test cases weren't
+hitting some other problem in 2.6.36-rc3. So I ported the 64-bit
+version of ticket locks to the current kernel and ran the stress test.
+It was still going strong at 16 hours (where all my other experiments
+tend to fail at 90 minutes or less).
 
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
----
+2) Next I investigated whether wrap-around was related by reducing
+TICKET_BITS from 15 to 8 (I only have 32 cpus, so this should be
+plenty). I also moved the bit offset of the "now serving" value to
+different spots in the high half of the lock to check whether we were
+hitting some issues with overflow from the fetchadd on the low half
+into the high half, or some sign problem when bit 31 was set.  These
+tests all failed in 20 minutes to an hour (not significantly different
+from TICKET_BITS=15) ... so wraparound appears not to be an issue.
 
- Documentation/x86/x86_64/boot-options.txt |    4 ++++
- arch/x86/mm/srat_64.c                     |   20 +++++++++++++++++---
- 2 files changed, 21 insertions(+), 3 deletions(-)
+3) Then I wondered whether it was a problem that we used fetchadd4
+which modifies all 32 bits in an atomic instruction when acquiring the
+lock, but a simple st2 to write just the upper 16 bits when doing the
+unlock. So I recoded __ticket_spin_unlock() to spin on a cmpxchg call
+to update all 32-bits with an atomic instruction. This one failed in
+34 minutes.
 
-diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
-index 7fbbaf8..7863d9c 100644
---- a/Documentation/x86/x86_64/boot-options.txt
-+++ b/Documentation/x86/x86_64/boot-options.txt
-@@ -316,3 +316,7 @@ Miscellaneous
- 		Do not use GB pages for kernel direct mappings.
- 	gbpages
- 		Use GB pages for kernel direct mappings.
-+ 	sratbypassbios
-+		If specified, will skip an SRAT check for PXM coverage
-+		from BIOS enumeration.  Only to be used on systems with
-+		buggy BIOSes that munge the SRAT enumeration.
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index f9897f7..9fa2e32 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -351,6 +351,15 @@ int __init acpi_get_nodes(struct bootnode *physnodes)
- 	return ret;
- }
- 
-+static int srat_bypass_bios;
-+
-+static int __init srat_bypass_bios_setup(char *str)
-+{
-+        srat_bypass_bios = 1;
-+        return 0;
-+}
-+early_param("sratbypassbios", srat_bypass_bios_setup);
-+
- /* Use the information discovered above to actually set up the nodes. */
- int __init acpi_scan_nodes(unsigned long start, unsigned long end)
- {
-@@ -425,9 +434,14 @@ int __init acpi_scan_nodes(unsigned long start, unsigned long end)
- 						nodes[i].end >> PAGE_SHIFT);
- 	/* for out of order entries in SRAT */
- 	sort_node_map();
--	if (!nodes_cover_memory(nodes)) {
--		bad_srat();
--		return -1;
-+	if (!srat_bypass_bios) {
-+		if (!nodes_cover_memory(nodes)) {
-+			bad_srat();
-+			return -1;
-+		}
-+	} else {
-+		printk(KERN_INFO
-+		           "SRAT: Bypassing NUMA sanity check...bad BIOS...\n");
- 	}
- 
- 	/* Account for nodes with cpus and no memory */
+4) Memory ordering? I added ia64_mf() calls liberally throughout all
+the __ticket_* routines. Kernel failed in 32 minutes.
 
+Summary: the only change that helps is the 64-bit ticket locks.
+
+-Tony
