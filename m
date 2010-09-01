@@ -1,111 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab0IAJTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 05:19:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42706 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754427Ab0IAJTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 05:19:35 -0400
-Date: Wed, 1 Sep 2010 09:19:10 GMT
-From: tip-bot for Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        gorcunov@openvz.org, tglx@linutronix.de, mingo@elte.hu,
-        dzickus@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        gorcunov@openvz.org, tglx@linutronix.de, dzickus@redhat.com,
-        mingo@elte.hu
-In-Reply-To: <1283310009-22168-2-git-send-email-dzickus@redhat.com>
-References: <1283310009-22168-2-git-send-email-dzickus@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] lockup_detector: Sync touch_*_watchdog back to old semantics
-Message-ID: <tip-68d3f1d810500e8b975bdf0b20dd83d060076b4b@git.kernel.org>
-Git-Commit-ID: 68d3f1d810500e8b975bdf0b20dd83d060076b4b
-X-Mailer: tip-git-log-daemon
+	id S1754409Ab0IAJV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 05:21:56 -0400
+Received: from reptilian.habets.pp.se ([193.151.93.131]:1629 "EHLO
+	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab0IAJVz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 05:21:55 -0400
+Date: Wed, 1 Sep 2010 11:21:43 +0200 (CEST)
+From: Thomas Habets <thomas@habets.pp.se>
+X-X-Sender: thompa@red.crap.retrofitta.se
+To: Thomas Habets <thomas@habets.pp.se>
+cc: Matt Carlson <mcarlson@broadcom.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Michael Chan <mchan@broadcom.com>
+Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
+ to reset
+In-Reply-To: <alpine.DEB.1.10.1008180900350.21857@red.crap.retrofitta.se>
+Message-ID: <alpine.DEB.1.10.1009011034560.31938@red.crap.retrofitta.se>
+References: <1282024802.2487.687.camel@edumazet-laptop> <alpine.DEB.1.10.1008171053230.21857@red.crap.retrofitta.se> <1282050920.2448.47.camel@edumazet-laptop> <alpine.DEB.1.10.1008171547090.21857@red.crap.retrofitta.se> <1282055659.2448.58.camel@edumazet-laptop>
+ <alpine.DEB.1.10.1008171737260.21857@red.crap.retrofitta.se> <20100817171115.GA4134@mcarlson.broadcom.com> <alpine.DEB.1.10.1008171928160.21857@red.crap.retrofitta.se> <20100817183112.GA4351@mcarlson.broadcom.com> <alpine.DEB.1.10.1008172035520.21857@red.crap.retrofitta.se>
+ <20100818012318.GA4630@mcarlson.broadcom.com> <alpine.DEB.1.10.1008180900350.21857@red.crap.retrofitta.se>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 01 Sep 2010 09:19:10 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  68d3f1d810500e8b975bdf0b20dd83d060076b4b
-Gitweb:     http://git.kernel.org/tip/68d3f1d810500e8b975bdf0b20dd83d060076b4b
-Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Tue, 31 Aug 2010 23:00:07 -0400
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 1 Sep 2010 10:02:28 +0200
 
-lockup_detector: Sync touch_*_watchdog back to old semantics
+I've continued this a bit off-list but thought I would summarize for the 
+archives.
 
-During my rewrite, the semantics of touch_nmi_watchdog and
-touch_softlockup_watchdog changed enough to break some drivers
-(mostly over preemptable regions).
 
-These are cases where long delays on one CPU (due to
-print_delay for example) can cause long delays on other
-CPUs - so we must 'touch' the nmi_watchdog flag of those
-other CPUs as well.
+Summary
+-------
+It looks like a firmware issue on the network card. When ILO is enabled it 
+shares the first network card with the OS. When it does this multicast 
+is broken. When multicast (on a L2 level) is broken IPv6 neighbor 
+discovery breaks. Only eth0 breaks, eth1 is unaffected.
 
-This change brings those touch_*_watchdog() functions back in line
-with to how they used to work.
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: peterz@infradead.org
-Cc: fweisbec@gmail.com
-LKML-Reference: <1283310009-22168-2-git-send-email-dzickus@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/watchdog.c |   17 ++++++++++++-----
- 1 files changed, 12 insertions(+), 5 deletions(-)
+System
+------
+HP Proliant DL320 G5p
+Xeon 3GHz
+1GB RAM
+Arch: amd64
+NIC: Broadcom Corporation NetXtreme BCM5715 Gigabit Ethernet (rev a3)
+Debian Lenny (5.0.5)
+Kernels: 2.6.35 mainline, 2.6.33.6
+Config: http://pastebin.com/raw.php?i=Y6S8iKW7
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 0d53c8e..7f9c3c5 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -122,7 +122,7 @@ static void __touch_watchdog(void)
- 
- void touch_softlockup_watchdog(void)
- {
--	__get_cpu_var(watchdog_touch_ts) = 0;
-+	__raw_get_cpu_var(watchdog_touch_ts) = 0;
- }
- EXPORT_SYMBOL(touch_softlockup_watchdog);
- 
-@@ -142,7 +142,14 @@ void touch_all_softlockup_watchdogs(void)
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
- void touch_nmi_watchdog(void)
- {
--	__get_cpu_var(watchdog_nmi_touch) = true;
-+	if (watchdog_enabled) {
-+		unsigned cpu;
-+
-+		for_each_present_cpu(cpu) {
-+			if (per_cpu(watchdog_nmi_touch, cpu) != true)
-+				per_cpu(watchdog_nmi_touch, cpu) = true;
-+		}
-+	}
- 	touch_softlockup_watchdog();
- }
- EXPORT_SYMBOL(touch_nmi_watchdog);
-@@ -433,6 +440,9 @@ static int watchdog_enable(int cpu)
- 		wake_up_process(p);
- 	}
- 
-+	/* if any cpu succeeds, watchdog is considered enabled for the system */
-+	watchdog_enabled = 1;
-+
- 	return 0;
- }
- 
-@@ -455,9 +465,6 @@ static void watchdog_disable(int cpu)
- 		per_cpu(softlockup_watchdog, cpu) = NULL;
- 		kthread_stop(p);
- 	}
--
--	/* if any cpu succeeds, watchdog is considered enabled for the system */
--	watchdog_enabled = 1;
- }
- 
- static void watchdog_enable_all_cpus(void)
+
+Problem
+-------
+Buggy box will not answer IPv6 ND or ping to ff02::1. May work at some 
+point in the boot process, but once box is fully booted it does not.
+
+If I on the neighboring Cisco router run "clear ipv6 neighbors" (or it 
+times out) that router cannot re-acquire the neigborship with the buggy 
+box. Instant IPv6 breakage until I do one of:
+* Turn on promisc mode long enough for IPv6 ND to do its thing
+* ip ne del <address of neighbor> on the buggy host.
+
+
+Workarounds
+-----------
+Either one of these will hide the problem:
+* Set promisc mode on interface (ip link set promisc on eth0) forever
+* Disable ILO
+* Use eth1 instead of eth0.
+
+
+Troubleshooting
+---------------
+Got patch for kernel from Eric Dumazet (eric.dumazet@gmail.com) to output 
+what MAC addresses are being subscribed to, and some registers from the 
+card. Output is earlier in this thread, along with "ethtool -i eth0" and 
+some other data.
+
+Managed to get diagnostic tool[1] booting from stick (no CD drive in 
+server), but did not set up memory (himem.sys etc..). Running b57udiag 
+it therefore failed due to insufficient memory at test "Group D. Driver 
+Associated tests". Card is assumed to be OK anyway.
+
+Matt Carlson (mcarlson@broadcom.com) suspected firmware bug and asked me 
+to try disabling ASF and/or IPMI using the diagnostic tool, but running 
+"setasf -d" and "setipmi -d" inside "b57udiag -cmd" did not seem to stick 
+across reboot. It stuck properly before reboot (confirmed with setasf -q). 
+Also tried "b57udiag -u 0". Tried both C-A-D reboot and powercycling (by 
+power cord).
+
+At boot Linux still said ASF[1] for eth0 and ASF[0] for eth1:
+tg3 0000:03:04.0: eth0: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[1] TSOcap[1]
+tg3 0000:03:04.1: eth1: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[0] TSOcap[1]
+(this output never changed throughout the process)
+ethtool -d eth1 | grep 0x047 did not change either.
+
+Then I disabled ILO and PXE in ILO bios and BIOS respectively. That fixed 
+it. eth0 now works with multicast.
+
+I don't use ILO on this server so in this case that fixes it for me, but 
+the bug is still there.
+
+At this point Matt thinks I should file a bug report with HP. I will 
+attempt to do that.
+
+I have more detailed logs of what I did and when, and what the effect was.
+
+
+Related
+-------
+May be the same issue as this:
+   https://bugs.launchpad.net/ubuntu/+source/linux/+bug/263260
+Which means it's the same with Ubuntu kernels 2.6.26.3, 2.6.26-5-generic 
+and 2.6.27-2-generic, and mainline kernels 2.6.25, 2.6.26 and 2.6.27.
+
+
+[1] http://www.broadcom.com/support/ethernet_nic/netxtreme_server.php
+
+---------
+typedef struct me_s {
+   char name[]      = { "Thomas Habets" };
+   char email[]     = { "thomas@habets.pp.se" };
+   char kernel[]    = { "Linux" };
+   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
+   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
+   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
+} me_t;
