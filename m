@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab0IABdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 21:33:36 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:48684 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751790Ab0IABde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 21:33:34 -0400
-Date: Tue, 31 Aug 2010 18:33:31 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Joe Perches <joe@perches.com>
-Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
-        Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>,
-        ML netdev <netdev@vger.kernel.org>,
-        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Toshiharu Okada <okada533@dsn.okisemi.com>,
-        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
-        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
-Subject: Re: [PATCH] drivers/net/pch_gbe: Cleanup stats use
-Message-ID: <20100831183331.5a6aa508@nehalam>
-In-Reply-To: <1283279915.1797.66.camel@Joe-Laptop>
-References: <4C763A67.5040107@dsn.okisemi.com>
-	<4C7D0E7A.5060309@dsn.okisemi.com>
-	<1283271009.1797.28.camel@Joe-Laptop>
-	<1283275514.1797.36.camel@Joe-Laptop>
-	<1283279915.1797.66.camel@Joe-Laptop>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754164Ab0IABhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 21:37:53 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45779 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab0IABhw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 21:37:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] vmscan,tmpfs: treat used once pages on tmpfs as used once
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100901103653.974C.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed,  1 Sep 2010 10:37:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Aug 2010 11:38:35 -0700
-Joe Perches <joe@perches.com> wrote:
+When a page has PG_referenced, shrink_page_list() discard it only
+if it is no dirty. This rule works completely fine if the backend
+filesystem is regular one. PG_dirty is good signal that it was used
+recently because flusher thread clean pages periodically. In addition,
+page writeback is costly rather than simple page discard.
 
->  struct pch_gbe_stats {
-> -	signed char stat_string[ETH_GSTRING_LEN];
-> -	int sizeof_stat;
-> -	int stat_offset;
-> +	signed char string[ETH_GSTRING_LEN];
-> +	size_t size;
-> +	size_t offset;
->  };
+However, When a page is on tmpfs, this heuristic don't works because
+flusher thread don't writeback tmpfs pages. then, tmpfs pages always
+rotate lru twice at least and it makes unnecessary lru churn. Merely
+tmpfs streaming io shouldn't cause large anonymous page swap-out.
 
-Is this driver really using 'signed char' here?
-Should just be 'char' for a simple string.
+This patch remove this unncessary reclaim bonus of tmpfs pages.
+
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/vmscan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 1919d8a..aba3402 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -617,7 +617,7 @@ static enum page_references page_check_references(struct page *page,
+ 	}
+ 
+ 	/* Reclaim if clean, defer dirty pages to writeback */
+-	if (referenced_page)
++	if (referenced_page && !PageSwapBacked(page))
+ 		return PAGEREF_RECLAIM_CLEAN;
+ 
+ 	return PAGEREF_RECLAIM;
+-- 
+1.6.5.2
+
+
+
