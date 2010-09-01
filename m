@@ -1,50 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab0IAAeW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 20:34:22 -0400
-Received: from mail.perches.com ([173.55.12.10]:1141 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496Ab0IAAeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 20:34:20 -0400
-Subject: Re: [Ksummit-2010-discuss] [PATCH] MAINTAINERS: add U: for URL of
- todo list, add RCU todo list
-From: Joe Perches <joe@perches.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
+	id S1754759Ab0IAAex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 20:34:53 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42644 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab0IAAew (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 20:34:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 1 Sep 2010 09:29:48 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: linux-mm@kvack.org,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ksummit-2010-discuss@lists.linux-foundation.org" 
-	<ksummit-2010-discuss@lists.linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>
-In-Reply-To: <1283300616.3284.213.camel@dhcp231-106.rdu.redhat.com>
-References: <20100826154537.GA4874@linux.vnet.ibm.com>
-	 <1282837904.1875.64.camel@Joe-Laptop>
-	 <20100826161451.GB2367@linux.vnet.ibm.com>
-	 <1282839933.8133.11.camel@mulgrave.site>
-	 <20100826092923.4bdbea69.rdunlap@xenotime.net>
-	 <20100826093838.74ab9958@infradead.org>
-	 <1283275388.1377.216.camel@gandalf.stny.rr.com>
-	 <20100831230213.GG2421@linux.vnet.ibm.com>
-	 <1283296622.1377.765.camel@gandalf.stny.rr.com>
-	 <987664A83D2D224EAE907B061CE93D53015D9B2445@orsmsx505.amr.corp.intel.com>
-	 <1283298391.1797.100.camel@Joe-Laptop>
-	 <1283300616.3284.213.camel@dhcp231-106.rdu.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 31 Aug 2010 17:34:17 -0700
-Message-ID: <1283301257.1797.105.camel@Joe-Laptop>
+        "menage@google.com" <menage@google.com>,
+        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
+Subject: Re: [PATCH 2/5] memcg: quick memcg lookup array
+Message-Id: <20100901092948.a99c6a57.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100830170324.16933949.nishimura@mxp.nes.nec.co.jp>
+References: <20100825170435.15f8eb73.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100825170741.f1f0a220.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100830170324.16933949.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-31 at 20:23 -0400, Eric Paris wrote:
-> If I just downloaded a big tar ball and started trolling randomly
-> through the source how am I going to know what the MAINTAINERS file is?
+On Mon, 30 Aug 2010 17:03:24 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 
-I think that tarball trolling is pretty rare these days.
+> > Index: mmotm-0811/mm/memcontrol.c
+> > ===================================================================
+> > --- mmotm-0811.orig/mm/memcontrol.c
+> > +++ mmotm-0811/mm/memcontrol.c
+> > @@ -195,6 +195,7 @@ static void mem_cgroup_oom_notify(struct
+> >   */
+> >  struct mem_cgroup {
+> >  	struct cgroup_subsys_state css;
+> > +	int	valid; /* for checking validness under RCU access.*/
+> >  	/*
+> >  	 * the counter to account for memory usage
+> >  	 */
+> Do we really need to add this new member ?
+> Can't we safely access "mem(=rcu_dereference(mem_cgroup[id]))" under rcu_read_lock() ?
+> (iow, "mem" is not freed ?)
+> 
 
-Any one know the statistics for kernel git traffic vs tarballs?
+Maybe this can be removed. I'll check again.
 
 
+
+
+> 
+> > @@ -4049,6 +4068,7 @@ static void __mem_cgroup_free(struct mem
+> >  	mem_cgroup_remove_from_trees(mem);
+> >  	free_css_id(&mem_cgroup_subsys, &mem->css);
+> >  
+> > +	atomic_dec(&mem_cgroup_num);
+> >  	for_each_node_state(node, N_POSSIBLE)
+> >  		free_mem_cgroup_per_zone_info(mem, node);
+> >  
+> > @@ -4059,6 +4079,19 @@ static void __mem_cgroup_free(struct mem
+> >  		vfree(mem);
+> >  }
+> >  
+> > +static void mem_cgroup_free(struct mem_cgroup *mem)
+> > +{
+> > +	/* No more lookup */
+> > +	mem->valid = 0;
+> > +	rcu_assign_pointer(mem_cgroups[css_id(&mem->css)], NULL);
+> > +	/*
+> > +	 * Because we call vfree() etc...use synchronize_rcu() rather than
+> > + 	 * call_rcu();
+> > + 	 */
+> > +	synchronize_rcu();
+> > +	__mem_cgroup_free(mem);
+> > +}
+> > +
+> >  static void mem_cgroup_get(struct mem_cgroup *mem)
+> >  {
+> >  	atomic_inc(&mem->refcnt);
+> > @@ -4068,7 +4101,7 @@ static void __mem_cgroup_put(struct mem_
+> >  {
+> >  	if (atomic_sub_and_test(count, &mem->refcnt)) {
+> >  		struct mem_cgroup *parent = parent_mem_cgroup(mem);
+> > -		__mem_cgroup_free(mem);
+> > +		mem_cgroup_free(mem);
+> >  		if (parent)
+> >  			mem_cgroup_put(parent);
+> >  	}
+> > @@ -4189,9 +4222,11 @@ mem_cgroup_create(struct cgroup_subsys *
+> >  	atomic_set(&mem->refcnt, 1);
+> >  	mem->move_charge_at_immigrate = 0;
+> >  	mutex_init(&mem->thresholds_lock);
+> > +	atomic_inc(&mem_cgroup_num);
+> > +	register_memcg_id(mem);
+> >  	return &mem->css;
+> >  free_out:
+> > -	__mem_cgroup_free(mem);
+> > +	mem_cgroup_free(mem);
+> >  	root_mem_cgroup = NULL;
+> >  	return ERR_PTR(error);
+> >  }
+> I think mem_cgroup_num should be increased at mem_cgroup_alloc(), because it
+> is decreased at __mem_cgroup_free(). Otherwise, it can be decreased while it
+> has not been increased, if mem_cgroup_create() fails after mem_cgroup_alloc().
+> 
+
+Hmm. thank you for checking, I'll fix.
+
+Thanks,
+-Kame
 
