@@ -1,131 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab0IAJvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 05:51:32 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34109 "EHLO mx3.mail.elte.hu"
+	id S1754702Ab0IAJ40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 05:56:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39356 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752077Ab0IAJvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 05:51:31 -0400
-Date: Wed, 1 Sep 2010 11:51:17 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Matt Fleming <matt@console-pimps.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] oprofile, x86: fix init_sysfs error handling
-Message-ID: <20100901095117.GA4246@elte.hu>
-References: <1283107921-21464-1-git-send-email-will.deacon@arm.com>
- <1283107921-21464-2-git-send-email-will.deacon@arm.com>
- <1283107921-21464-3-git-send-email-will.deacon@arm.com>
- <1283107921-21464-4-git-send-email-will.deacon@arm.com>
- <20100830090929.GU22783@erda.amd.com>
- <1283244880.645.17.camel@e102144-lin.cambridge.arm.com>
- <20100831090518.GZ22783@erda.amd.com>
- <1283247089.4063.2.camel@e102144-lin.cambridge.arm.com>
- <20100831103001.GC22783@erda.amd.com>
+	id S1754124Ab0IAJ4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 05:56:24 -0400
+Message-ID: <4C7E233D.3030002@redhat.com>
+Date: Wed, 01 Sep 2010 06:56:13 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100831103001.GC22783@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: linux-media@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 7 (IR)
+References: <20100807160710.b7c8d838.sfr@canb.auug.org.au>	<20100807203920.83134a60.randy.dunlap@oracle.com>	<20100808135511.269f670c.randy.dunlap@oracle.com>	<4C5F9C2E.50001@redhat.com>	<20100809075255.97d18a66.randy.dunlap@oracle.com>	<4C603DB1.9030706@redhat.com>	<4C604196.6060100@redhat.com> <20100827094553.f1c9a95d.randy.dunlap@oracle.com>
+In-Reply-To: <20100827094553.f1c9a95d.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Robert Richter <robert.richter@amd.com> wrote:
-
-> On 31.08.10 05:31:29, Will Deacon wrote:
-> > > For x86 wont change the code (actually I found a bug in the init_sysfs
-> > > error handler for which I will send a fix). Just wanted to get your
-> > > confirmation in case I was missing something that x86 is not affected.
-> > > I will apply the first 2 patches, no need to resubmit.
+Em 27-08-2010 13:45, Randy Dunlap escreveu:
+> On Mon, 09 Aug 2010 14:57:42 -0300 Mauro Carvalho Chehab wrote:
 > 
-> This is the patch, applied to:
+>> Em 09-08-2010 14:41, Mauro Carvalho Chehab escreveu:
+>>> Em 09-08-2010 11:52, Randy Dunlap escreveu:
+>>>>> Hmm... clearly, there are some bad dependencies at the Kconfig. Maybe ir-core were compiled
+>>>>> as module, while some drivers as built-in.
+>>>>>
+>>>>> Could you please pass the .config file for this build?
+>>>>
+>>>>
+>>>> Sorry, config-r5101 is now attached.
+>>>
+>>> Hmm... when building it, I'm getting an interesting warning:
+>>>
+>>> warning: (VIDEO_BT848 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT || VIDEO_SAA7134 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT || VIDEO_CX88 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT || VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT || VIDEO_CX18 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C && EXPERIMENTAL && INPUT || VIDEO_EM28XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT || VIDEO_TLG2300 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT && SND && DVB_CORE || VIDEO_CX231XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT || DVB_BUDGET_CI && MEDIA_SUPPORT && DVB!
+
+>  _CA
+>> PT
+>>> URE_DRIVERS && DVB_CORE && DVB_BUDGET_CORE && I2C && INPUT || DVB_DM1105 && MEDIA_SUPPORT && DVB_CAPTURE_DRIVERS && DVB_CORE && PCI && I2C && INPUT || VIDEO_GO7007 && STAGING && !STAGING_EXCLUDE_BUILD && VIDEO_DEV && PCI && I2C && INPUT && SND || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
+>>>
+>>> This warning seems to explain what's going wrong.
+>>>
+>>> I'll make patch(es) to address this issue.
+>>
+>>
+>> Ok, This patch (together with the previous one) seemed to solve the issue.
+>>
 > 
->  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+> Hi Mauro,
 > 
-> -Robert
+> Have you merged these 2 patches?
+> I'm seeing very similar build errors in linux-next 20100827:
 > 
-> --
 > 
-> >From 10f0412f57f2a76a90eff4376f59cbb0a39e4e18 Mon Sep 17 00:00:00 2001
-> From: Robert Richter <robert.richter@amd.com>
-> Date: Mon, 30 Aug 2010 10:56:18 +0200
-> Subject: [PATCH] oprofile, x86: fix init_sysfs error handling
+> ERROR: "get_rc_map" [drivers/media/video/saa7134/saa7134.ko] undefined!
+> ERROR: "ir_input_unregister" [drivers/media/video/saa7134/saa7134.ko] undefined!
+> ERROR: "ir_raw_event_store_edge" [drivers/media/video/saa7134/saa7134.ko] undefined!
+> ERROR: "__ir_input_register" [drivers/media/video/saa7134/saa7134.ko] undefined!
+> ERROR: "ir_raw_event_handle" [drivers/media/video/saa7134/saa7134.ko] undefined!
+> ERROR: "get_rc_map" [drivers/media/video/cx88/cx88xx.ko] undefined!
+> ERROR: "ir_repeat" [drivers/media/video/cx88/cx88xx.ko] undefined!
+> ERROR: "ir_input_unregister" [drivers/media/video/cx88/cx88xx.ko] undefined!
+> ERROR: "ir_keydown" [drivers/media/video/cx88/cx88xx.ko] undefined!
+> ERROR: "__ir_input_register" [drivers/media/video/cx88/cx88xx.ko] undefined!
+> ERROR: "get_rc_map" [drivers/media/video/bt8xx/bttv.ko] undefined!
+> ERROR: "ir_input_unregister" [drivers/media/video/bt8xx/bttv.ko] undefined!
+> ERROR: "__ir_input_register" [drivers/media/video/bt8xx/bttv.ko] undefined!
+> ERROR: "ir_g_keycode_from_table" [drivers/media/IR/ir-common.ko] undefined!
 > 
-> On failure init_sysfs() might not properly free resources. The error
-> code of the function is not checked. And, when reinitializing the exit
-> function might be called twice. This patch fixes all this.
-> 
-> Cc: stable@kernel.org
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> ---
->  arch/x86/oprofile/nmi_int.c |   16 +++++++++++++---
->  1 files changed, 13 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-> index f6b48f6..73a41d3 100644
-> --- a/arch/x86/oprofile/nmi_int.c
-> +++ b/arch/x86/oprofile/nmi_int.c
-> @@ -568,8 +568,13 @@ static int __init init_sysfs(void)
->  	int error;
->  
->  	error = sysdev_class_register(&oprofile_sysclass);
-> -	if (!error)
-> -		error = sysdev_register(&device_oprofile);
-> +	if (error)
-> +		return error;
-> +
-> +	error = sysdev_register(&device_oprofile);
-> +	if (error)
-> +		sysdev_class_unregister(&oprofile_sysclass);
-> +
->  	return error;
->  }
->  
-> @@ -695,6 +700,8 @@ int __init op_nmi_init(struct oprofile_operations *ops)
->  	char *cpu_type = NULL;
->  	int ret = 0;
->  
-> +	using_nmi = 0;
-> +
->  	if (!cpu_has_apic)
->  		return -ENODEV;
->  
-> @@ -774,7 +781,10 @@ int __init op_nmi_init(struct oprofile_operations *ops)
->  
->  	mux_init(ops);
->  
-> -	init_sysfs();
-> +	ret = init_sysfs();
+Randy,
 
-FYI, this causes a build error if CONFIG_PM is off:
+I'm out of the town for a few days due to Linuxcon Brazil. I'll double check it
+likely at the weekend.
 
-   arch/x86/oprofile/nmi_int.c:784: error: expected expression before ‘do’
-
-Due to this assymetric form of the wrapper:
-
-  #define init_sysfs() do { } while (0)
-
-The wrapper should be changed to return 0 i suspect, via something like 
-this:
-
-  static inline int init_sysfs(void) { return 0; }
-
-(untested)
-
-Thanks,
-
-	Ingo
+Cheers,
+Mauro
