@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab0HaXtC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 19:49:02 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:47890 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab0HaXtB convert rfc822-to-8bit (ORCPT
+	id S1754094Ab0IAAIX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 20:08:23 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:53781 "HELO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751125Ab0IAAIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 19:49:01 -0400
-Date: Wed, 01 Sep 2010 08:49:10 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 3/3] ARM: Samsung S3C: Move/use the S3C common GPIO IRQ type
-In-reply-to: <AANLkTimxhFtfB8G-z=04zj7ZRq+f7GDaVX5mzgCENuvx@mail.gmail.com>
-To: "'Kyungmin Park'" <kmpark@infradead.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        jy0922.shim@samsung.com, m.szyprowski@samsung.com, ben-linux@fluff.org
-Message-id: <011701cb4967$1ee563c0$5cb02b40$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-language: ko
-Content-transfer-encoding: 8BIT
-Thread-index: ActISO2Ft2QM/MpLSDCp+CgHw+Bu7wBGaLbw
-References: <20100830114729.GA13150@july>
- <006301cb483c$434f76f0$c9ee64d0$%kim@samsung.com>
- <AANLkTimxhFtfB8G-z=04zj7ZRq+f7GDaVX5mzgCENuvx@mail.gmail.com>
+	Tue, 31 Aug 2010 20:08:21 -0400
+X-Greylist: delayed 1342 seconds by postgrey-1.27 at vger.kernel.org; Tue, 31 Aug 2010 20:08:21 EDT
+Subject: Re: [PATCH 5/6 v2] HID: magicmouse: enable Magic Trackpad support
+From: Michael Poole <mdpoole@troilus.org>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
+        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1283280068-12285-5-git-send-email-chase.douglas@canonical.com>
+References: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
+	 <1283280068-12285-5-git-send-email-chase.douglas@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Aug 2010 20:08:15 -0400
+Message-ID: <1283299695.13785.16.camel@graviton>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kyungmin Park wrote:
+On Tue, 2010-08-31 at 14:41 -0400, Chase Douglas wrote:
+> The trackpad speaks a similar, but different, protocol from the magic
+> mouse. However, only small code tweaks here and there are needed to make
+> basic multitouch work.
 > 
-> On Mon, Aug 30, 2010 at 9:09 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> > Kyungmin Park wrote:
-> >>
-> >> From: Kyungmin Park <kyungmin.park@samsung.com>
-> >>
-> >> Samsung S3C series have the common GPIO IRQ type for all S3C series.
-> >>
-> > I can't agree with your changing name. Why do you want to change the
-name?
-> > If you want to move S3C2410_EXTINT_XXX from regs-irqtype.h, just move
-> > without any changes.
-> As S5P series change the name conversion. I will also modify the s3c
-series.
+> Extra logic is required for single-touch emulation of the touchpad. The
+> changes made here take the approach that only one finger may emulate the
+> single pointer when multiple fingers have touched the screen. Once that
+> finger is raised, all touches must be raised before any further single
+> touch events can be sent.
 > 
-I think that we don’t need to change for it.
-And as you see, there is no difference between S3C2410_XXX and S3C_XXX.
-> >
-> > But I'm still thinking why should we move the external interrupt
-definitions
-> > to plat/gpio-core.h...
+> Sometimes the magic trackpad sends two distinct touch reports as one big
+> report. Simply splitting the packet in two and resending them through
+> magicmouse_raw_event ensures they are handled properly.
 > 
-> To use the GPIO interrupt. these definitions are used both external
-> interrupt and GPIO interrupt.
-
-
-> >
-> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >> ---
-
-(snip)
-
-> >>
-> >> +#define S3C_GPIO_LEVEL_LOW           (0x00)
-> >> +#define S3C_GPIO_LEVEL_HIGH          (0x01)
-> >> +#define S3C_GPIO_EDGE_FALLING                (0x02)
-> >> +#define S3C_GPIO_EDGE_RISING         (0x04)
-> >> +#define S3C_GPIO_EDGE_BOTH           (0x06)
-> >> +
-> > GPIO_LELVEL? GPIO_EDGE?...
-> >
-> > I think EXTINT_LEVEL_XXX and EXTINT_EDGE_XXX are more clear.
+> I also added myself to the copyright statement.
 > 
->        case IRQ_TYPE_EDGE_BOTH:
->              newvalue = S3C_GPIO_EDGE_BOTH;
-> 
-> Don't you it's more clear?
-> 
-I don't think so, I meant that it is used for external interrupt not gpio.
-And it used currently for external interrupt.
+> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> ---
+>  drivers/hid/hid-core.c       |    1 +
+>  drivers/hid/hid-ids.h        |    1 +
+>  drivers/hid/hid-magicmouse.c |  229 ++++++++++++++++++++++++++++++++----------
+>  3 files changed, 176 insertions(+), 55 deletions(-)
 
-So, I said that no need to change it now.
+Acked-by: Michael Poole <mdpoole@troilus.org>
 
-Thanks.
+One behavior that slightly surprised me -- which I believe is a quirk
+due to userspace not expecting touchpads to have button switches -- is
+that touches on the trackpad that do not close the switch can still be
+interpreted by X as clicks.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+Once the discussions about if/how to tweak this code settle down, I'll
+put together a patch to change the "down" and "last_up" logic as I
+suggested earlier.
+
+Michael Poole
 
