@@ -1,37 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab0IAKio (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 06:38:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50499 "EHLO mx1.redhat.com"
+	id S1754758Ab0IAKmv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 06:42:51 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59668 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753832Ab0IAKin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 06:38:43 -0400
-Message-ID: <4C7E2D1D.3080603@redhat.com>
-Date: Wed, 01 Sep 2010 13:38:21 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	id S1754177Ab0IAKmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 06:42:50 -0400
+Date: Wed, 1 Sep 2010 12:42:47 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Stephane Chatty <chatty@enac.fr>,
+        Don Prince <dhprince-devel@yahoo.co.uk>,
+        Dmitry Torokhov <dtor@mail.ru>, Kees Bakker <kees.bakker@xs4all.nl>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH] HID: roccat: add driver for Roccat Pyra mouse
+In-Reply-To: <1283077818.2086.1.camel@neuromancer>
+Message-ID: <alpine.LNX.2.00.1009011242320.26813@pobox.suse.cz>
+References: <1283077818.2086.1.camel@neuromancer>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Li Zefan <lizf@cn.fujitsu.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, kvm-devel <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: ftrace/perf_event leak
-References: <4C7E11E5.1040402@redhat.com> <1283331868.2059.808.camel@laptop> <4C7E1C36.6070400@redhat.com> <4C7E1F12.8030304@cn.fujitsu.com>
-In-Reply-To: <4C7E1F12.8030304@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/01/2010 12:38 PM, Li Zefan wrote:
->
-> Then try this:
+On Sun, 29 Aug 2010, Stefan Achatz wrote:
 
-Tested-by: Avi Kivity <avi@redhat.com>
+> This patch add support for Pyra mobile gaming mouse from Roccat.
+> It provides access to profiles, settings, actual settings etc.
+> through sysfs attributes.
+> This driver is conceptual similar to the existing Kone driver.
+
+Applied, thank you Stefan.
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
