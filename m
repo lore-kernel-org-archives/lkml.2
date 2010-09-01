@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab0IAVdw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 17:33:52 -0400
-Received: from wine.ocn.ne.jp ([122.1.235.145]:55757 "EHLO smtp.wine.ocn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754421Ab0IAVdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 17:33:51 -0400
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, spender@grsecurity.net,
-        eric.dumazet@gmail.com
-Subject: How can OOM killer detect process consuming much kernel memory?
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201008212101.IJG87048.QMOHFtSOVOLFFJ@I-love.SAKURA.ne.jp>
-	<AANLkTi=oWoHUmm_3xkRY7UzoXTuptKvUHzn0gK2WDiSa@mail.gmail.com>
-	<201008302227.DJH30258.OQFMFtFJOOVSHL@I-love.SAKURA.ne.jp>
-In-Reply-To: <201008302227.DJH30258.OQFMFtFJOOVSHL@I-love.SAKURA.ne.jp>
-Message-Id: <201009020633.DHJ01355.OQFMLtHSVOOJFF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 2 Sep 2010 06:33:46 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753123Ab0IAVj2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 17:39:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:53746 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab0IAVj1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 17:39:27 -0400
+Message-ID: <4C7EC835.7080707@steinhoff.de>
+Date: Wed, 01 Sep 2010 23:40:05 +0200
+From: Armin Steinhoff <armin@steinhoff.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2 ThunderBrowse/3.3.2
+MIME-Version: 1.0
+To: "Hans J. Koch" <hjk@linutronix.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: UIO and Fedora 13  (kernel 33.6)
+References: <dda83e781002141023t2abe95b8w83f59d6f411f68a2@mail.gmail.com> <alpine.DEB.2.01.1002142229470.28195@bogon.housecafe.de> <dda83e781002142245l5c95d08bu214a796be289eb22@mail.gmail.com> <dda83e781002142246i61737ae2j4fe7efb660b53d07@mail.gmail.com> <4C7B8CA6.4010504@steinhoff.de> <20100830162435.GB2566@local> <4C7CA7E4.8010005@steinhoff.de> <20100831103523.GA2598@local> <4C7E015B.1010506@steinhoff.de> <20100901185620.GA2514@local>
+In-Reply-To: <20100901185620.GA2514@local>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:yYCNEp4mcShCh+YED0WyzmLwWcqiZgIh3uOvppcnSz3
+ KzSFXzO9vBtbuu749Xakgz/qSmmcCW0fhWF6+B2t7+ItFRlJ1t
+ VcOEC5haqDejmO8pb6xTFW0x8MF6PAEkE2Wp0AH9WDImSuVY5p
+ /HEDvCusaypwMdRooZxQo059lqA3uHZq7dyy4wvoIm7SVluXU4
+ S9GZiYBmWRKu7sIRKTLTw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I contacted Brad Spengler regarding below topic
 
-  http://kerneltrap.org/mailarchive/linux-netdev/2010/8/21/6283491
+Hi,
 
-and received some comments.
+many thanks for your support ... I have in the meantime a working version.
+Would you please implement your advices into the misleading examples of 
+UIO ?
 
-Brad Spengler wrote:
-> Tetsuo Handa wrote:
-> > Brad Spengler wrote:
-> > > Nice find, seems like the problem isn't just the exhaustion of the space 
-> > > itself, but that a single non-root user can completely exhaust it with 
-> > > no limitation (given enough RAM).  There should be some per-user 
-> > > resource limit for this (similar to RLIMIT_NPROC) or the space should be 
-> > > made less rigid.
-> > > 
-> > I posted a patch in the third message of that thread, but no response so far.
-> > I don't know whether we should allow 4294967296 names or not
-> > because more RAM will be consumed by attacker if more names are allowed.
-> 
-> The max size for sun_path is considerably large; why couldn't we encode 
-> the uid/namespace into it somehow and reduce the amount each user can 
-> allocate?  (conceptually it'd be something like, <namespace 
-> uuid><uid><hex to operate on as previously>)  The OOM killer needs to 
-> make sure creators of large numbers of these get killed, but 
-> implementing a per-user limit on this keeps it from turning into a DoS.
+Cheers
 
-Is it possible to make OOM killer to kill processes consuming kernel memory
-rather than userspace memory?
+--Armin
 
-I'm happy if OOM killer can select victim process based on both kernel memory
-usage and userspace memory usage. For example, opening a file requires kernel
-memory allocation (e.g. /sys/kernel/security/tomoyo/self_domain allocates 8KB
-of kernel memory). Therefore, I refuse allowing everybody to open that file
-even if the content is public (because an attacker would open
-/sys/kernel/security/tomoyo/self_domain as many as possible using
-fork() and open() in order to exhaust kernel memory).
+
+
+Hans J. Koch wrote:
+> On Wed, Sep 01, 2010 at 09:31:39AM +0200, Armin Steinhoff wrote:
+>> Small correction ... I don't mean the "initial platform_data" but
+>> the initial resource data of the platform driver.
+>>
+>> --Armin
+>>
+>>
+>>    Hans J. Koch wrote:
+>>> After a successfull uio_register_device() there is both a /dev/uioX
+>>> and a directory /sys/class/uio/uioX/.
+>> In the attachment is an updated version of uio_jand.
+>>
+>> The module uio_jand.ko can be inserted and removed,  no messages
+>> visible by dmesg, no kernel oops, no dev/uio*  and no class entries
+>> available.
+>>
+>> There are only entries of uio_jand in /sys/module,
+>> /sys/bus/platform/drivers and /sys/uio/holders ... I'm really
+>> confused =:-/
+>>
+>> It's completely unclear how to write the initial platform_data of
+>> the platform device in the example uio_smx.c :
+>>
+>>       regs = platform_get_resource(dev, IORESOURCE_MEM, 0);
+>>       if (!regs) {
+>>           dev_err(&dev->dev, "No memory resource specified\n");
+>>           goto out_free;
+>>
+>> Same issue in uio_platform_genirq ...
+> You only seem to be working on x86 ... ;-)
+>
+> If you register a platform driver, you also need to register a platform
+> device with the same name, otherwise your driver's probe() function will
+> never be called. In struct platform_device you can also specify an array
+> of resources (e.g. memory, interrupts) which can be queried by the driver
+> in the way you quoted above.
+>
+> The ARM architecture (for example) uses a specific board support file for
+> each board that sets up (among other things) these platform devices.
+> (See arch/arm/mach-xxx/board-yyy.c for examples)
+>
+> Other archs like PowerPC use the OpenFirmware/DeviceTree interface to set up
+> such board specific things. On x86, there's no real solution yet since all
+> such boards used to be more or less "PC compatible". Platform devices exist
+> only in low level arch code, all special devices (or those added by the user)
+> announce themselves as PCI devices, are controllable from userspace
+> (e.g. I2C, SPI) or have another interface that allows auto probing (e.g. USB).
+>
+> The first version of your driver did the right thing by using
+> platform_device_register_simple() and driver_register(). That avoids the
+> need for a separate file which calls platform_device_register().
+>
+> So, go back to your first version, and fix the real bugs.
+>
+> Thanks,
+> Hans
+>
+>
+
