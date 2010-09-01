@@ -1,121 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab0IAJt2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 05:49:28 -0400
-Received: from fox.seas.upenn.edu ([158.130.68.12]:59477 "EHLO
-	fox.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab0IAJt1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 05:49:27 -0400
-From: Rafi Rubin <rafi@seas.upenn.edu>
-To: dmitry.torokhov@gmail.com, jkosina@suse.cz, linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, micki@n-trig.com, rydberg@euromail.se,
-        chatty@enac.fr, Rafi Rubin <rafi@seas.upenn.edu>
-Subject: [PATCH] identify firmware version
-Date: Wed,  1 Sep 2010 05:48:37 -0400
-Message-Id: <1283334517-15121-1-git-send-email-rafi@seas.upenn.edu>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100901020634.GD23585@core.coreip.homeip.net>
-References: <20100901020634.GD23585@core.coreip.homeip.net>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
- definitions=2010-09-01_05:2010-09-01,2010-09-01,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1005130000 definitions=main-1009010021
+	id S1754643Ab0IAJvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 05:51:32 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:34109 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752077Ab0IAJvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 05:51:31 -0400
+Date: Wed, 1 Sep 2010 11:51:17 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] oprofile, x86: fix init_sysfs error handling
+Message-ID: <20100901095117.GA4246@elte.hu>
+References: <1283107921-21464-1-git-send-email-will.deacon@arm.com>
+ <1283107921-21464-2-git-send-email-will.deacon@arm.com>
+ <1283107921-21464-3-git-send-email-will.deacon@arm.com>
+ <1283107921-21464-4-git-send-email-will.deacon@arm.com>
+ <20100830090929.GU22783@erda.amd.com>
+ <1283244880.645.17.camel@e102144-lin.cambridge.arm.com>
+ <20100831090518.GZ22783@erda.amd.com>
+ <1283247089.4063.2.camel@e102144-lin.cambridge.arm.com>
+ <20100831103001.GC22783@erda.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100831103001.GC22783@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds firmware version polling to the end of probe and reports the
-version both in the raw form and proccessed to match the formatting used
-by ntrig in windows.
 
-Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
----
- drivers/hid/hid-ntrig.c |   52 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 52 insertions(+), 0 deletions(-)
+* Robert Richter <robert.richter@amd.com> wrote:
 
-diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
-index 43e95de..c91ad4a 100644
---- a/drivers/hid/hid-ntrig.c
-+++ b/drivers/hid/hid-ntrig.c
-@@ -90,6 +90,26 @@ struct ntrig_data {
- };
- 
- 
-+/*
-+ * This function converts the 4 byte raw firmware code into
-+ * a string containing 5 comma separated numbers.
-+ */
-+static int ntrig_version_string(unsigned char *raw, char *buf)
-+{
-+	__u8 a =  (raw[1] & 0b00001110) >> 1;
-+	__u8 b =  (raw[0] & 0b00111100) >> 2;
-+	__u8 c = ((raw[0] & 0b00000011) << 3) | ((raw[3] & 0b11100000) >> 5);
-+	__u8 d = ((raw[3] & 0b00000111) << 3) | ((raw[2] & 0b11100000) >> 5);
-+	__u8 e =   raw[2] & 0b00000111;
-+
-+	/*
-+	 * As yet unmapped bits:
-+	 * 0b11000000 0b11110001 0b00011000 0b00011000
-+	 */
-+
-+	return sprintf(buf, "%u.%u.%u.%u.%u", a, b, c, d, e);
-+}
-+
- static ssize_t show_phys_width(struct device *dev,
- 			       struct device_attribute *attr,
- 			       char *buf)
-@@ -776,6 +796,9 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	struct hid_input *hidinput;
- 	struct input_dev *input;
- 	struct hid_report *report;
-+	unsigned char *data;
-+	struct usb_device *usb_dev = hid_to_usb_dev(hdev);
-+	char *buf;
- 
- 	if (id->driver_data)
- 		hdev->quirks |= HID_QUIRK_MULTI_INPUT;
-@@ -848,10 +871,39 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	if (report)
- 		usbhid_submit_report(hdev, report, USB_DIR_OUT);
- 
-+	data = kmalloc(8, GFP_KERNEL);
-+	if (!data) {
-+		ret = -ENOMEM;
-+		goto err_free;
-+	}
-+
-+	ret = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
-+			      USB_REQ_CLEAR_FEATURE,
-+			      USB_TYPE_CLASS | USB_RECIP_INTERFACE |
-+			      USB_DIR_IN,
-+			      0x30c, 1, data, 8,
-+			      USB_CTRL_SET_TIMEOUT);
-+
-+	if (ret == 8) {
-+		buf = kmalloc(20, GFP_KERNEL);
-+		if (!buf) {
-+			ret = -ENOMEM;
-+			goto err_free_data;
-+		}
-+
-+		ret = ntrig_version_string(&data[2], buf);
-+
-+		dev_info(&hdev->dev,
-+			 "Firmware version: %s (%02x%02x %02x%02x)\n",
-+			 buf, data[2], data[3], data[4], data[5]);
-+	}
-+
- 	ret = sysfs_create_group(&hdev->dev.kobj,
- 			&ntrig_attribute_group);
- 
- 	return 0;
-+err_free_data:
-+	kfree(data);
- err_free:
- 	kfree(nd);
- 	return ret;
--- 
-1.7.1
+> On 31.08.10 05:31:29, Will Deacon wrote:
+> > > For x86 wont change the code (actually I found a bug in the init_sysfs
+> > > error handler for which I will send a fix). Just wanted to get your
+> > > confirmation in case I was missing something that x86 is not affected.
+> > > I will apply the first 2 patches, no need to resubmit.
+> 
+> This is the patch, applied to:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+> 
+> -Robert
+> 
+> --
+> 
+> >From 10f0412f57f2a76a90eff4376f59cbb0a39e4e18 Mon Sep 17 00:00:00 2001
+> From: Robert Richter <robert.richter@amd.com>
+> Date: Mon, 30 Aug 2010 10:56:18 +0200
+> Subject: [PATCH] oprofile, x86: fix init_sysfs error handling
+> 
+> On failure init_sysfs() might not properly free resources. The error
+> code of the function is not checked. And, when reinitializing the exit
+> function might be called twice. This patch fixes all this.
+> 
+> Cc: stable@kernel.org
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> ---
+>  arch/x86/oprofile/nmi_int.c |   16 +++++++++++++---
+>  1 files changed, 13 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+> index f6b48f6..73a41d3 100644
+> --- a/arch/x86/oprofile/nmi_int.c
+> +++ b/arch/x86/oprofile/nmi_int.c
+> @@ -568,8 +568,13 @@ static int __init init_sysfs(void)
+>  	int error;
+>  
+>  	error = sysdev_class_register(&oprofile_sysclass);
+> -	if (!error)
+> -		error = sysdev_register(&device_oprofile);
+> +	if (error)
+> +		return error;
+> +
+> +	error = sysdev_register(&device_oprofile);
+> +	if (error)
+> +		sysdev_class_unregister(&oprofile_sysclass);
+> +
+>  	return error;
+>  }
+>  
+> @@ -695,6 +700,8 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+>  	char *cpu_type = NULL;
+>  	int ret = 0;
+>  
+> +	using_nmi = 0;
+> +
+>  	if (!cpu_has_apic)
+>  		return -ENODEV;
+>  
+> @@ -774,7 +781,10 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+>  
+>  	mux_init(ops);
+>  
+> -	init_sysfs();
+> +	ret = init_sysfs();
 
+FYI, this causes a build error if CONFIG_PM is off:
+
+   arch/x86/oprofile/nmi_int.c:784: error: expected expression before ‘do’
+
+Due to this assymetric form of the wrapper:
+
+  #define init_sysfs() do { } while (0)
+
+The wrapper should be changed to return 0 i suspect, via something like 
+this:
+
+  static inline int init_sysfs(void) { return 0; }
+
+(untested)
+
+Thanks,
+
+	Ingo
