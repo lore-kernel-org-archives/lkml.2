@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab0IAImg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 04:42:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751274Ab0IAIme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 04:42:34 -0400
-Message-ID: <4C7E11E5.1040402@redhat.com>
-Date: Wed, 01 Sep 2010 11:42:13 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-CC: kvm-devel <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: ftrace/perf_event leak
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753848Ab0IAIno (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 04:43:44 -0400
+Received: from mgw-sa02.nokia.com ([147.243.1.48]:55927 "EHLO
+	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706Ab0IAInm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 04:43:42 -0400
+Subject: Re: [PATCH 2/3] mmc_test: change simple_strtol() to strict_strtol()
+From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+To: "Quadros Roger (Nokia-MS/Helsinki)" <roger.quadros@nokia.com>
+Cc: ext Andy Shevchenko <andy.shevchenko@gmail.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Hunter Adrian (Nokia-MS/Helsinki)" <adrian.hunter@nokia.com>
+In-Reply-To: <4C7E0DFA.2090403@nokia.com>
+References: <cover.1283276161.git.ext-andriy.shevchenko@nokia.com>
+	 <e144c2087fbdfd718b5caeac4eb7d0a7ce4896e0.1283276161.git.ext-andriy.shevchenko@nokia.com>
+	 <4C7E0DFA.2090403@nokia.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Teleca Finland
+Date: Wed, 01 Sep 2010 11:43:25 +0300
+Message-ID: <1283330605.3117.12.camel@fs-test.research.nokia.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  I recently added perf_event support to kvm_stat, to display kvm 
-tracepoints as statistics (I'd like to fold this to tools/perf 
-eventually, but that's another story).  However I'm seeing a resource 
-leak - after I quit the tool, there are quite a few references into the 
-kvm module:
+On Wed, 2010-09-01 at 10:25 +0200, Quadros Roger (Nokia-MS/Helsinki)
+wrote:
 
-   kvm_intel              43655  0
-   kvm                   272984  269 kvm_intel
+> No patch summary?
+Will be in next version.
 
-The tool is just a python script that reads 
-/sys/kernel/debug/tracing/events/kvm to find out which events are 
-available, uses perf_event_open() to create one group per cpu to which a 
-lot of events are attached.  The only special thing I can think of is 
-that we use an ioctl to attach a filter to many perf_event descriptors.
+> > -static void mmc_test_run(struct mmc_test_card *test, int testcase)
+> > +static void mmc_test_run(struct mmc_test_card *test, long testcase)
+> >   {
+> > -	int i, ret;
+> > +	long i;
+> 
+> Why this change? isn't unsigned int sufficient for the mmc test cases?
+You are right. This certain change is redundant. I'll skip it.
 
-You can find the source at 
-http://git.kernel.org/?p=virt/kvm/qemu-kvm.git;a=blob_plain;f=kvm/kvm_stat;hb=5bd5f131b50cb373ff4e2a3632c6dad00a1f0b55.  
-All it needs are the kvm modules loaded; no need to actually run a 
-guest.  Run as root.
+> > -	testcase = simple_strtol(buf, NULL, 10);
+> > +	if (strict_strtol(buf, 10,&testcase))
+> space required                    ^ here
+It's odd. I have space in my patch.
+
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+With Best Regards,
+Andy Shevchenko
+
+
+
 
