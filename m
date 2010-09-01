@@ -1,112 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab0IACGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 22:06:46 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47454 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab0IACGm (ORCPT
+	id S1753012Ab0IACKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 22:10:52 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:55489 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab0IACKv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 22:06:42 -0400
+	Tue, 31 Aug 2010 22:10:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=awqx1tWiQqBnNNCkiFybeas3vkftsSnROfm3Tl7i0WhRnrXZFhNlGoWTstWEvQt2fw
-         rKSAIJSbbeqfgLpcjqbnuvuta1kzDZMpOreORaUR9uNTANQofks6r39PNZ9O1emg2yXL
-         awsJZImUlRQF8DRLF+OTY5VhWC0KdjTuJPXFk=
-Date: Tue, 31 Aug 2010 19:06:35 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Rafi Rubin <rafi@seas.upenn.edu>
-Cc: jkosina@suse.cz, Henrik Rydberg <rydberg@euromail.se>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        chatty@enac.fr, micki@n-trig.com
-Subject: Re: [PATCH 4/4] firmware sysfs node
-Message-ID: <20100901020634.GD23585@core.coreip.homeip.net>
-References: <1282798497-19791-1-git-send-email-rafi@seas.upenn.edu>
- <1282798497-19791-5-git-send-email-rafi@seas.upenn.edu>
- <4C77AAE1.6050001@euromail.se>
- <20100827163436.GB13030@core.coreip.homeip.net>
- <4C7C639F.3040407@seas.upenn.edu>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=aLHv6jJ81EsxaLo0/AJuvBjzJlqZ6Eso3pAQ2E8E9ephmNB3CtmGRA3uFiNnpHW5cF
+         XCS2ZF6Aq/UYC4ZPeToHYTK2t8laiDTaA4gN0QInxDydsd17b2lp2o09k6U5ceC/G0+l
+         BAwYQlnn8IZ9+/5Sroa94vR8uj3ny9Z46e+rE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C7C639F.3040407@seas.upenn.edu>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <011701cb4967$1ee563c0$5cb02b40$%kim@samsung.com>
+References: <20100830114729.GA13150@july>
+	<006301cb483c$434f76f0$c9ee64d0$%kim@samsung.com>
+	<AANLkTimxhFtfB8G-z=04zj7ZRq+f7GDaVX5mzgCENuvx@mail.gmail.com>
+	<011701cb4967$1ee563c0$5cb02b40$%kim@samsung.com>
+Date: Wed, 1 Sep 2010 11:10:46 +0900
+X-Google-Sender-Auth: DD3IdaoZPWpltr435rV2-akIEFs
+Message-ID: <AANLkTinQeBDU=0D1WgBJHHsgtWH3V0w1bdgBWPSVgBb+@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: Samsung S3C: Move/use the S3C common GPIO IRQ type
+From: Kyungmin Park <kmpark@infradead.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        jy0922.shim@samsung.com, m.szyprowski@samsung.com, ben-linux@fluff.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 10:06:23PM -0400, Rafi Rubin wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
-> 
-> On 08/27/10 12:34, Dmitry Torokhov wrote:
-> > On Fri, Aug 27, 2010 at 02:09:05PM +0200, Henrik Rydberg wrote:
-> >> On 08/26/2010 06:54 AM, Rafi Rubin wrote:
-> >>
-> >>> Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
-> >>> ---
-> >>>  drivers/hid/hid-ntrig.c |   21 +++++++++++++++++++++
-> >>>  1 files changed, 21 insertions(+), 0 deletions(-)
-> >>>
-> >>> diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
-> >>> index ab0ca7f..e341e88 100644
-> >>> --- a/drivers/hid/hid-ntrig.c
-> >>> +++ b/drivers/hid/hid-ntrig.c
-> >>> @@ -375,6 +375,26 @@ static ssize_t set_deactivate_slack(struct device *dev,
-> >>>  static DEVICE_ATTR(deactivate_slack, S_IWUSR | S_IRUGO, show_deactivate_slack,
-> >>>  		   set_deactivate_slack);
-> >>>  
-> >>> +static ssize_t show_firmware(struct device *dev,
-> >>> +			       struct device_attribute *attr,
-> >>> +			       char *buf)
-> >>> +{
-> >>> +	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-> >>> +	struct ntrig_data *nd = hid_get_drvdata(hdev);
-> >>> +
-> >>> +	if (!(nd->firmware_version[0] || nd->firmware_version[1] ||
-> >>> +	      nd->firmware_version[2] || nd->firmware_version[3]))
-> >>> +		return sprintf(buf, "Firmware version unavailable");
-> >>
-> >>
-> >> If this sysfs node should really be added (see EVIO), it is probably better if
-> >> it returns the same format for all devices. If all numbers are zero, that is
-> >> understandable also by someone reading the node.
-> >>
-> > 
-> > Yes, I think we should stick it into input_id and be done with it. Note
-> > that input_id is not only available via EVIOCGID ioctl but also already
-> > exported in sysfs.
-> 
-> The version in input_id is only 16 bits, whereas the ntrig version codes seem to
-> be 32 bits.  Actually I've only mapped 21 bits out of 64, but I figure the first
-> and last 8 are not actually part of the version, but that's still more than 16.
-> 
-> So, would you prefer that I increase the size of that field, or keep the
-> firmware version code separate?
-> 
+On Wed, Sep 1, 2010 at 8:49 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> Kyungmin Park wrote:
+>>
+>> On Mon, Aug 30, 2010 at 9:09 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+>> > Kyungmin Park wrote:
+>> >>
+>> >> From: Kyungmin Park <kyungmin.park@samsung.com>
+>> >>
+>> >> Samsung S3C series have the common GPIO IRQ type for all S3C series.
+>> >>
+>> > I can't agree with your changing name. Why do you want to change the
+> name?
+>> > If you want to move S3C2410_EXTINT_XXX from regs-irqtype.h, just move
+>> > without any changes.
+>> As S5P series change the name conversion. I will also modify the s3c
+> series.
+>>
+> I think that we don’t need to change for it.
+> And as you see, there is no difference between S3C2410_XXX and S3C_XXX.
+>> >
+>> > But I'm still thinking why should we move the external interrupt
+> definitions
+>> > to plat/gpio-core.h...
+>>
+>> To use the GPIO interrupt. these definitions are used both external
+>> interrupt and GPIO interrupt.
+>
+>
+>> >
+>> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> >> ---
+>
+> (snip)
+>
+>> >>
+>> >> +#define S3C_GPIO_LEVEL_LOW           (0x00)
+>> >> +#define S3C_GPIO_LEVEL_HIGH          (0x01)
+>> >> +#define S3C_GPIO_EDGE_FALLING                (0x02)
+>> >> +#define S3C_GPIO_EDGE_RISING         (0x04)
+>> >> +#define S3C_GPIO_EDGE_BOTH           (0x06)
+>> >> +
+>> > GPIO_LELVEL? GPIO_EDGE?...
+>> >
+>> > I think EXTINT_LEVEL_XXX and EXTINT_EDGE_XXX are more clear.
+>>
+>>        case IRQ_TYPE_EDGE_BOTH:
+>>              newvalue = S3C_GPIO_EDGE_BOTH;
+>>
+>> Don't you it's more clear?
+>>
+> I don't think so, I meant that it is used for external interrupt not gpio.
+> And it used currently for external interrupt.
+I also don't think so. GPIO interrupt has the same function and no
+need to bind these name to external interrupt.
 
-Hmm, changing size would require ABI change which I am hesitant to do
-without _very_ good reason.
+At the spec. no difference between external interrupt and gpios. As
+you don't use the GPIO interrupts. don't say it's for external
+interrupt.
 
-If debugging aid is the only purpose maybe we should just dump the data
-into dmesg and be done with it.
-
-> 
-> Also does it make sense to have a provide a pretty printer in the kernel, or
-> should that be left to userspace?  The hardware returns a raw version code in
-> the form:
-> 	1a08 a521
-> 
-> In the ntrig utilities and documentation the where firmware version is mentioned
-> it looks more like this:
-> 	4.6.17.13.5
-> 
-> My intent was to make that second form more accessible to keep things simple for
-> users, who if they are checking that probably already have enough troubling them :)
-> 
-
-Yeah, splitting into segments is pretty cheap.
-
--- 
-Dmitry
+>
+> So, I said that no need to change it now.
+>
+> Thanks.
+>
+> Best regards,
+> Kgene.
+> --
+> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+> SW Solution Development Team, Samsung Electronics Co., Ltd.
+>
+>
