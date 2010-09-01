@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab0IAB6F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 21:58:05 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:41733 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753690Ab0IAB4g (ORCPT
+	id S1753157Ab0IAB7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 21:59:13 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57675 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab0IAB7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 21:56:36 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Michael Poole <mdpoole@troilus.org>, Henrik Rydberg <rydberg@euromail.se>,
-        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7 v3] HID: magicmouse: simplify touch data bit manipulation
-Date: Tue, 31 Aug 2010 21:56:20 -0400
-Message-Id: <1283306184-28833-4-git-send-email-chase.douglas@canonical.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>
-References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>
+	Tue, 31 Aug 2010 21:59:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:content-transfer-encoding:user-agent;
+        b=ud2nFlB0bcbAyPXXiSGZiwhY8bFjb0R7TpHAfceRCAHqlHLiyUQ8WTPaXEdz3bv7o7
+         Q6vNvvLzOWhGzcHqHd1NwkvKxoVu4OXWwguWpCcUi8kBy6VTEOYOZSVNIP/4fU5bkD1x
+         wXH6/u8jWIXMRZn86wQlxxdIQyp2jtKQLSWM8=
+Date: Tue, 31 Aug 2010 18:59:03 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: tpmdd-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        David Safford <safford@watson.ibm.com>,
+        James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RESEND] [PATCH] TPM: change 'tpm_suspend_pcr' to be module parameter
+Message-ID: <20100901015903.GA23585@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new format should be easier to read to determine which bits
-correspond to which data. It also brings all the manipulation logic to
-the top of the function. This makes size and orientation reading more
-clear.
+This gets rid of the following warning:
 
-Note that the impetus for this change is the forthcoming support for the
-Magic Trackpad, which has a different touch data protocol.
+drivers/char/tpm/tpm.c:1085: warning: ‘tpm_suspend_setup’ defined but not used
 
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-Acked-by: Michael Poole <mdpoole@troilus.org>
+and makes the workaround operable in case when TPM is compiled as a module.
+As a side-effect the option will be called tpm.suspend_pcr
+
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 ---
- drivers/hid/hid-magicmouse.c |   25 +++++++++++++------------
- 1 files changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-index 8a2fe78..2ee59a8 100644
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
-@@ -166,18 +166,21 @@ static void magicmouse_emit_buttons(struct magicmouse_sc *msc, int state)
- static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tdata)
- {
- 	struct input_dev *input = msc->input;
--	__s32 x_y = tdata[0] << 8 | tdata[1] << 16 | tdata[2] << 24;
--	int misc = tdata[5] | tdata[6] << 8;
--	int id = (misc >> 6) & 15;
--	int x = x_y << 12 >> 20;
--	int y = -(x_y >> 20);
--	int down = (tdata[7] & TOUCH_STATE_MASK) != TOUCH_STATE_NONE;
-+	int id = (tdata[6] << 2 | tdata[5] >> 6) & 0xf;
-+	int x = (tdata[1] << 28 | tdata[0] << 20) >> 20;
-+	int y = -((tdata[2] << 24 | tdata[1] << 16) >> 20);
-+	int size = tdata[5] & 0x3f;
-+	int orientation = (tdata[6] >> 2) - 32;
-+	int touch_major = tdata[3];
-+	int touch_minor = tdata[4];
-+	int state = tdata[7] & TOUCH_STATE_MASK;
-+	int down = state != TOUCH_STATE_NONE;
+ drivers/char/tpm/tpm.c |   22 ++++++++++------------
+ 1 files changed, 10 insertions(+), 12 deletions(-)
+
+
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index 05ad4a1..7c41335 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -47,6 +47,16 @@ enum tpm_duration {
+ #define TPM_MAX_PROTECTED_ORDINAL 12
+ #define TPM_PROTECTED_ORDINAL_MASK 0xFF
  
- 	/* Store tracking ID and other fields. */
- 	msc->tracking_ids[raw_id] = id;
- 	msc->touches[id].x = x;
- 	msc->touches[id].y = y;
--	msc->touches[id].size = misc & 63;
-+	msc->touches[id].size = size;
++/*
++ * Bug workaround - some TPM's don't flush the most
++ * recently changed pcr on suspend, so force the flush
++ * with an extend to the selected _unused_ non-volatile pcr.
++ */
++static int tpm_suspend_pcr;
++module_param_named(suspend_pcr, tpm_suspend_pcr, uint, 0644);
++MODULE_PARM_DESC(suspend_pcr,
++		 "PCR to use for dummy writes to faciltate flush on suspend.");
++
+ static LIST_HEAD(tpm_chip_list);
+ static DEFINE_SPINLOCK(driver_lock);
+ static DECLARE_BITMAP(dev_mask, TPM_NUM_DEVICES);
+@@ -1077,18 +1087,6 @@ static struct tpm_input_header savestate_header = {
+ 	.ordinal = TPM_ORD_SAVESTATE
+ };
  
- 	/* If requested, emulate a scroll wheel by detecting small
- 	 * vertical touch motions.
-@@ -188,7 +191,7 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
- 		int step_y = msc->touches[id].scroll_y - y;
- 
- 		/* Calculate and apply the scroll motion. */
--		switch (tdata[7] & TOUCH_STATE_MASK) {
-+		switch (state) {
- 		case TOUCH_STATE_START:
- 			msc->touches[id].scroll_x = x;
- 			msc->touches[id].scroll_y = y;
-@@ -224,13 +227,11 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
- 
- 	/* Generate the input events for this touch. */
- 	if (report_touches && down) {
--		int orientation = (misc >> 10) - 32;
+-/* Bug workaround - some TPM's don't flush the most
+- * recently changed pcr on suspend, so force the flush
+- * with an extend to the selected _unused_ non-volatile pcr.
+- */
+-static int tpm_suspend_pcr;
+-static int __init tpm_suspend_setup(char *str)
+-{
+-	get_option(&str, &tpm_suspend_pcr);
+-	return 1;
+-}
+-__setup("tpm_suspend_pcr=", tpm_suspend_setup);
 -
- 		msc->touches[id].down = 1;
- 
- 		input_report_abs(input, ABS_MT_TRACKING_ID, id);
--		input_report_abs(input, ABS_MT_TOUCH_MAJOR, tdata[3]);
--		input_report_abs(input, ABS_MT_TOUCH_MINOR, tdata[4]);
-+		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major);
-+		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor);
- 		input_report_abs(input, ABS_MT_ORIENTATION, orientation);
- 		input_report_abs(input, ABS_MT_POSITION_X, x);
- 		input_report_abs(input, ABS_MT_POSITION_Y, y);
+ /*
+  * We are about to suspend. Save the TPM state
+  * so that it can be restored.
 -- 
-1.7.1
-
+Dmitry
