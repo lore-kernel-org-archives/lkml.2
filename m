@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab0IAN50 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 09:57:26 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55868 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754967Ab0IAN5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 09:57:23 -0400
-Message-ID: <4C7E5BA9.7020509@kernel.org>
-Date: Wed, 01 Sep 2010 15:56:57 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: jaxboe@fusionio.com, k-ueda@ct.jp.nec.com, j-nomura@ce.jp.nec.com,
-        jamie@shareable.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        dm-devel@redhat.com
-Subject: Re: [PATCH 3/5] dm: relax ordering of bio-based flush implementation
-References: <1283162296-13650-1-git-send-email-tj@kernel.org> <1283162296-13650-4-git-send-email-tj@kernel.org> <20100901135120.GA25251@redhat.com>
-In-Reply-To: <20100901135120.GA25251@redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 01 Sep 2010 13:56:59 +0000 (UTC)
+	id S1755361Ab0IAN5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 09:57:51 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33817 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab0IAN5s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 09:57:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=gkgfaKQCuZbTEYdE1w2rvcBBZ/Aah2NvuGz+XGjYiW44Wd22O3IHx8cqWbBN9awhPD
+         cs4R3wkTjsXoLVDZTX9cI5XkXU48az/ecLK1gVgOkAM6iMKHAkBiOlVeFn85lR+PnU7T
+         oxZZ+cdlHEGUY+gdANh1JDB44zfNRPVwUQX2I=
+Subject: Re: [Bug #16626] Machine hangs with EIP at skb_copy_and_csum_dev
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jarek Poplawski <jarkao2@gmail.com>
+Cc: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+In-Reply-To: <20100901112026.GA9468@ff.dom.local>
+References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera>
+	 <4AUWBNzTkbD.A.ey.cGueMB@chimera> <courier.4C7C99F2.00001F74@fs.ru.acad.bg>
+	 <20100831192659.GA3093@del.dom.local>
+	 <1283338251.2556.124.camel@edumazet-laptop>
+	 <20100901112026.GA9468@ff.dom.local>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 01 Sep 2010 15:57:41 +0200
+Message-ID: <1283349461.2556.333.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2010 03:51 PM, Mike Snitzer wrote:
-> Could you please document why it is OK to remove 'flush_error' in the
-> patch header?  The -EOPNOTSUPP handling removal (done in patch 2)
-> obviously helps enable this but it is not clear how the
-> 'num_flush_requests' flushes that __clone_and_map_flush() generates do
-> not need explicit DM error handling.
+Le mercredi 01 septembre 2010 à 11:20 +0000, Jarek Poplawski a écrit :
+> On Wed, Sep 01, 2010 at 12:50:51PM +0200, Eric Dumazet wrote:
+> > Plamen, could you test following patch ?
+> > 
+> > I reproduced problem on a dev machine and following patch cured it.
+> > 
+> > Thanks
+> > 
+> > [PATCH] gro: fix different skb headrooms
+> > 
+> > packets entering GRO might have different headrooms, even for a given
+> > flow (because of implementation details in drivers, like copybreak).
+> > We cant force drivers to deliver packets with a fixed headroom.
+> > 
+> > 1) fix skb_segment()
+> > 
+> > skb_segment() makes the false assumption headrooms of fragments are same
+> > than the head. When CHECKSUM_PARTIAL is used, this can give csum_start
+> > errors, and crash later in skb_copy_and_csum_dev()
+> 
+> Eric, probably I missed something, but since the same test as in
+> skb_copy_and_csum_dev() gave different result a bit earlier on exactly
+> the same skb, I've suspected some sharing (or use after free)
+> problems, so I'm not sure your current diagnose can explain this.
+> (Unless this old test was dismissed later.)
 
-Sure, I'll.  It's because it now uses the same error handling path in
-dec_pending() all other bio's use.  The flush_error thing was there
-because flushes got executed/completed in a separate code path to
-begin with.  With the special path gone, there's no need for
-flush_error path either.
+Oh, this is because your patch had an error for the gso part that read :
 
-Thanks.
+-               rc = ops->ndo_start_xmit(nskb, dev);
++               if (skb_csum_start_bug(skb, 50)) {
++                       kfree_skb(skb);
++                       rc = NETDEV_TX_OK;
++               } else
++                       rc = ops->ndo_start_xmit(nskb, dev);
++
+                if (unlikely(rc != NETDEV_TX_OK)) {
+                        if (rc & ~NETDEV_TX_MASK)
+                                goto out_kfree_gso_skb;
 
--- 
-tejun
+You called skb_csum_start_bug(skb, 50) instead of
+skb_csum_start_bug(nskb, 50)
+
+Hope this clarify a bit ;)
+
+Thanks
+
+
