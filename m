@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab0IAJln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 05:41:43 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:48058 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751870Ab0IAJlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 05:41:40 -0400
-Date: Wed, 1 Sep 2010 11:41:21 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [GIT PULL] oprofile fixes
-Message-ID: <20100901094121.GA3606@elte.hu>
-References: <20100901084632.GI22783@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100901084632.GI22783@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0185]
+	id S1754687Ab0IAJlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 05:41:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39381 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754607Ab0IAJls convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 05:41:48 -0400
+Subject: Re: ftrace/perf_event leak
+From: Peter Zijlstra <peterz@infradead.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, kvm-devel <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C7E1F12.8030304@cn.fujitsu.com>
+References: <4C7E11E5.1040402@redhat.com> <1283331868.2059.808.camel@laptop>
+	 <4C7E1C36.6070400@redhat.com>  <4C7E1F12.8030304@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 01 Sep 2010 11:41:35 +0200
+Message-ID: <1283334095.2059.849.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-09-01 at 17:38 +0800, Li Zefan wrote:
 
-* Robert Richter <robert.richter@amd.com> wrote:
+> ---
+> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+> index 8a2b73f..9d1d1f2 100644
+> --- a/kernel/trace/trace_event_perf.c
+> +++ b/kernel/trace/trace_event_perf.c
+> @@ -161,6 +161,7 @@ void perf_trace_destroy(struct perf_event *p_event)
+>  		}
+>  	}
+>  out:
+> +	module_put(tp_event->mod);
+>  	mutex_unlock(&event_mutex);
+>  }
 
-> Ingo,
-> 
-> please pull oprofile fixes from:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
-> 
-> Thanks,
-> 
-> -Robert
-> 
-> The following changes since commit da5cabf80e2433131bf0ed8993abc0f7ea618c73:
-> 
->   Linux 2.6.36-rc1 (2010-08-15 17:41:37 -0700)
-> 
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
-> 
-> Robert Richter (2):
->       oprofile: fix crash when accessing freed task structs
->       oprofile, x86: fix init_sysfs error handling
-> 
->  arch/x86/oprofile/nmi_int.c    |   16 +++++++++++++---
->  drivers/oprofile/buffer_sync.c |   27 ++++++++++++++-------------
->  drivers/oprofile/cpu_buffer.c  |    2 --
->  3 files changed, 27 insertions(+), 18 deletions(-)
+Ah, indeed, we so that try_module_get() for each reference to the
+tracepoint, I guess we also should do the below, in case the
+registration fails.
 
-Pulled, thanks a lot Robert!
-
-	Ingo
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 000e6e8..31cc4cb 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -91,6 +91,8 @@ int perf_trace_init(struct perf_event *p_event)
+ 		    tp_event->class && tp_event->class->reg &&
+ 		    try_module_get(tp_event->mod)) {
+ 			ret = perf_trace_event_init(tp_event, p_event);
++			if (ret)
++				module_put(tp_event->mod);
+ 			break;
+ 		}
+ 	}
