@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab0IASgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 14:36:13 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55959 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab0IASgH (ORCPT
+	id S1754653Ab0IASjg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 14:39:36 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35413 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab0IASjf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 14:36:07 -0400
+	Wed, 1 Sep 2010 14:39:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CAu45HX3rb/BZmNGqYI3OwhfOJUk3gb4rJfwSN1krtzv4Jk7OJzA2mPZZ1Wyb2BAQR
-         ZR+9V+p6zHHroRTSrsWhPMRSkN5amTljHJ/7clXy9fGM5wdRjI6nfhJVlDqQnHTdfsWn
-         I7lzG7o4ovqgxZd18pg0u0Kwa9faFDZYlylLI=
-Date: Wed, 1 Sep 2010 22:36:02 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Ian Lartey <ian@opensource.wolfsonmicro.com>, Julia Lawall <julia@diku.dk>,
-        Wolfson Patches <patches@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] wm831x_power: Removed duplicate mask from wm831x power
- driver
-Message-ID: <20100901183602.GA30667@oksana.dev.rtsoft.ru>
-References: <1283360967.1831.239.camel@Tapajos>
- <20100901172552.GD22444@rakim.wolfsonmicro.main>
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=VSjSem4N3VWSuBcHK2sIRw3PKnPv8r/QFgzdGgbhzVhyhu+DTwg6lwO1A/Sm4ZYGQy
+         gT09MMSXn+OfiPAtT8vOfAlXR9FsS1n9lwfyWInn6C8DXUpdPL1isyzgazNk1xqGRkRw
+         7y5H0M4uElcEVuVqpCbEaF73htHjCHc/X9GUI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100901172552.GD22444@rakim.wolfsonmicro.main>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1283269738-14612-3-git-send-email-julia@diku.dk>
+References: <1283269738-14612-1-git-send-email-julia@diku.dk> <1283269738-14612-3-git-send-email-julia@diku.dk>
+From: Timur Tabi <timur@freescale.com>
+Date: Wed, 1 Sep 2010 13:39:04 -0500
+X-Google-Sender-Auth: mep7_LujqdEE6x4rBZJ_2PjK4M4
+Message-ID: <AANLkTinpRVStYfHHaGTyLusMCjMQDH=MvcGVVKaxvHtN@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH 2/4] sound/soc/fsl/p1022_ds.c: Add
+ of_node_put to avoid memory leak
+To: Julia Lawall <julia@diku.dk>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
+        Takashi Iwai <tiwai@suse.de>, devicetree-discuss@lists.ozlabs.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 01, 2010 at 06:25:52PM +0100, Mark Brown wrote:
-> On Wed, Sep 01, 2010 at 06:09:27PM +0100, Ian Lartey wrote:
-> > Reported-by: Julia Lawall <julia@diku.dk>
-> > Signed-off-by: Ian Lartey <ian@opensource.wolfsonmicro.com>
-> 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Tue, Aug 31, 2010 at 10:48 AM, Julia Lawall <julia@diku.dk> wrote:
+> Add a call to of_node_put in the error handling code following a call to
+> of_parse_phandle.
+>
+> This patch also moves the existing call to of_node_put tothe end of the
+> error handling code, to make it possible to jump to of_node_put without
+> doing the other cleanup operations.  These appear to be disjoint
+> operations, so the ordering doesn't matter.
 
-Applied, thanks.
+Acked-by: Timur Tabi <timur@freescale.com>
+
+Thanks, Julia.
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
