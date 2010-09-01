@@ -1,90 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab0IAHo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 03:44:28 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:56646 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751199Ab0IAHoY (ORCPT
+	id S1753890Ab0IAHpS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 03:45:18 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:49027 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751199Ab0IAHpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 03:44:24 -0400
-Message-ID: <4C7E0433.8010008@euromail.se>
-Date: Wed, 01 Sep 2010 09:43:47 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Chase Douglas <chase.douglas@canonical.com>
-CC: Jiri Kosina <jkosina@suse.cz>, Michael Poole <mdpoole@troilus.org>,
-        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7 v3] HID: magicmouse: simplify multitouch feature request
-References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com> <1283306184-28833-3-git-send-email-chase.douglas@canonical.com>
-In-Reply-To: <1283306184-28833-3-git-send-email-chase.douglas@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1Oqhz6-0004NT-3G.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1Oqhz6-0004NT-3G 0569da35b17ab313b2b9e5ede60a11e3
+	Wed, 1 Sep 2010 03:45:15 -0400
+Message-ID: <000501cb49a9$9cd4bf00$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Wolfgang Grandegger" <wg@grandegger.com>
+Cc: "Wang, Yong Y" <yong.y.wang@intel.com>, <arjan@linux.intel.com>,
+        <gregkh@suse.de>, "Qi" <qi.wang@intel.com>,
+        "Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
+        "ML linux-kernel" <linux-kernel@vger.kernel.org>,
+        "ML netdev" <netdev@vger.kernel.org>,
+        <socketcan-core@lists.berlios.de>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Barry Song" <21cnbao@gmail.com>,
+        "Christian Pellegrin" <chripell@fsfe.org>,
+        "Wolfram Sang" <w.sang@pengutronix.de>,
+        "\"David S. Miller\"" <davem@davemloft.net>
+References: <4C61EDE5.4030505@dsn.okisemi.com> <4C62981B.8050402@grandegger.com> <D5AB6E638E5A3E4B8F4406B113A5A19A28EA26CC@shsmsx501.ccr.corp.intel.com> <4C63B6C9.5050804@grandegger.com> <D5AB6E638E5A3E4B8F4406B113A5A19A28EA29DF@shsmsx501.ccr.corp.intel.com>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_CAN driver to 2.6.35
+Date: Wed, 1 Sep 2010 16:45:06 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2010 03:56 AM, Chase Douglas wrote:
-
-> From: Chase Douglas <chase.douglas@ubuntu.com>
-> 
-> Only the first feature request is required to put the Magic Mouse into
-> multitouch mode. This is also the case for the Magic Trackpad, for which
-> support will be added in a later commit.
-> 
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> Acked-by: Michael Poole <mdpoole@troilus.org>
-> ---
+Sorry, for late response.
+----- Original Message ----- 
+From: "Wang, Qi" <qi.wang@intel.com>
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Cc: "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>; <gregkh@suse.de>; <arjan@linux.intel.com>; "Wang, Yong
+Y" <yong.y.wang@intel.com>; "Wolfgang Grandegger" <wg@grandegger.com>
+Sent: Thursday, August 12, 2010 6:00 PM
+Subject: RE: [MeeGo-Dev][PATCH] Topcliff: Update PCH_CAN driver to 2.6.35
 
 
-Since this is starting to look awfully similar to the mode switch found in
-appletouch and bcm5974, I wonder what happens to the stream from the device when
-the connection to hid is closed. It could be that the mode switch should be
-moved to open/close instead.
+> Hi Ohtak-san,
+>
+> Would you please answer the question from Wolfgang?
+>
+> Best Regards,
+> Qi.
+>
+> > -----Original Message-----
+> > From: Wolfgang Grandegger [mailto:wg@grandegger.com]
+> > Sent: Thursday, August 12, 2010 4:55 PM
+> > To: Wang, Qi
+> > Cc: Masayuki Ohtak; Khor, Andrew Chih Howe; gregkh@suse.de;
+> > arjan@linux.intel.com; Wang, Yong Y
+> > Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_CAN driver to 2.6.35
+> >
+> > On 08/12/2010 03:29 AM, Wang, Qi wrote:
+> > >> -----Original Message-----
+> > >> From: Wolfgang Grandegger [mailto:wg@grandegger.com]
+> > >> Sent: Wednesday, August 11, 2010 8:31 PM
+> > >> To: Masayuki Ohtak
+> > >> Cc: meego-dev@meego.com; socketcan-core@lists.berlios.de;
+> > >> netdev@vger.kernel.org; Khor, Andrew Chih Howe; gregkh@suse.de;
+> > >> arjan@linux.intel.com; Wang, Qi; Wang, Yong Y
+> > >> Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_CAN driver to 2.6.35
+> > >>
+> > >> Hello,
+> > >>
+> > >> On 08/11/2010 02:25 AM, Masayuki Ohtak wrote:
+> > >>> CAN driver of Topcliff PCH
+> > >>>
+> > >>> Topcliff PCH is the platform controller hub that is going to be used in
+> > >>> Intel's upcoming general embedded platform. All IO peripherals in
+> > >>> Topcliff PCH are actually devices sitting on AMBA bus.
+> > >>
+> > >> That's interesting. Where can I/we find more information about this CAN
+> > >> controller, e.g. data-sheets. It seems to have a few interesting
+> > >> features (message scheduler, etc.).
+> > >
+> > > I remove all the maillist, and show you something about this platform.
+> >
+> > Like Greg, I also prefer the public discussion.
+> >
+> > >
+> > > Topcliff PCH is connected with Tunnelcreak (A kind of ATOM-based processor,
+> > which integrate Memory controller, GFX and RC). And Topcliff is a kind of
+> > stand-alone ARM-based processor, so it has AMBA-based peripherals, such as
+> > CAN, GBE, I2C.
+> > >
+> > > Topcliff connected with Tunnelcreak via PCIe x1 lane. And PCH_PHUB works
+> > as a gateway, which transform PCIe transaction to AMBA transaction, and vice
+> > versa.
+> > >
+> > > The datasheet of those two chips aren't open now.
+> >
+> > Thanks for the info.
+> >
+> > >>> Topcliff PCH has CAN I/F. This driver enables CAN function.
+> > >>>
+> > >>> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+> > >>
+> > >> Thanks for your contribution. Unfortunately, there are many issues,
+> > >> especially the driver is not yet conform with the Socket-CAN driver API:
+> > >>
+> > >> - My first observation was:
+> > >>
+> > >>   $ wc -l pch_can.c
+> > >>   4076 pch_can.c
+> > >>   $ grep dev_dbg pch_can.c | wc -l
+> > >>   143
+> > >>
+> > >>   That's a lot of code, mainly debugging code, I think. This needs to
+> > >>   be cleaned up sooner than later. dev_dbg's should be restricted to a
+> > >>   few useful for the real users.
 
-Henrik
+We will reduce dev_dbg code.
 
->  drivers/hid/hid-magicmouse.c |   16 ++++------------
->  1 files changed, 4 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-> index d38b529..8a2fe78 100644
-> --- a/drivers/hid/hid-magicmouse.c
-> +++ b/drivers/hid/hid-magicmouse.c
-> @@ -380,8 +380,7 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
->  static int magicmouse_probe(struct hid_device *hdev,
->  	const struct hid_device_id *id)
->  {
-> -	__u8 feature_1[] = { 0xd7, 0x01 };
-> -	__u8 feature_2[] = { 0xf8, 0x01, 0x32 };
-> +	__u8 feature[] = { 0xd7, 0x01 };
->  	struct input_dev *input;
->  	struct magicmouse_sc *msc;
->  	struct hid_report *report;
-> @@ -426,17 +425,10 @@ static int magicmouse_probe(struct hid_device *hdev,
->  	}
->  	report->size = 6;
->  
-> -	ret = hdev->hid_output_raw_report(hdev, feature_1, sizeof(feature_1),
-> +	ret = hdev->hid_output_raw_report(hdev, feature, sizeof(feature),
->  			HID_FEATURE_REPORT);
+> > >>
+> > >> - The values for the hw-specific bit-timing registers should be derived
+> > >>   from the calculated values in "priv->can.bittiming":
+> > >>
+> > >>   http://lxr.linux.no/#linux+v2.6.35/include/linux/can/netlink.h#L17
+> > >>
 
-> -	if (ret != sizeof(feature_1)) {
-> -		dev_err(&hdev->dev, "unable to request touch data (1:%d)\n",
-> -				ret);
-> -		goto err_stop_hw;
-> -	}
-> -	ret = hdev->hid_output_raw_report(hdev, feature_2,
-> -			sizeof(feature_2), HID_FEATURE_REPORT);
-> -	if (ret != sizeof(feature_2)) {
-> -		dev_err(&hdev->dev, "unable to request touch data (2:%d)\n",
-> +	if (ret != sizeof(feature)) {
-> +		dev_err(&hdev->dev, "unable to request touch data (%d)\n",
->  				ret);
->  		goto err_stop_hw;
->  	}
+I show current pch_can code below.
+
++static int pch_set_bittiming(struct net_device *ndev)
++{
++ struct pch_can_priv *priv = netdev_priv(ndev);
++ struct pch_can_os *dev_can_os = priv->pch_can_os_p;
++ const struct can_bittiming *bt = &priv->can.bittiming;
+
+Is the above TRUE, isn't it ?
+
+> > >> - The driver should handle state changes and communicate them to the
+> > >>   user space via error messages, if possible.
+> > >>
+What's "state chage" mean ?
+
+> > >> - The driver should report errors to the user space via error messages.
+> > >>
+Is the above mean using alloc_can_err_skb and set error info and notify to kernel with netif_rx ?
+
+
+> > >> - Bus errors seem not to be handled properly.I'm missing can_bus_off().
+> > >>   Does the controller recover from bus-off automatically?
+No.
+CAN driver recovers from Bus-off state.
+
+> > >>
+> > >> - I see that the driver uses many TX and RX objects. How do you avoid
+> > >>   out-of-order transmission and reception?
+> > > What do you mean out-of-order RX and TX?
+> > > Atom processor only supports in-order execution, and PCIe-based peripherals
+> > can solve it with consumer-producer model. Actually IC designer will take care
+> > of out-of-order PCIe CPLD transaction.
+> >
+> > I mean out-of-order transmission to or from the CAN bus. This is handled
+> > by the CAN controller hardware. It has nothing to to with the processor.
+Cannot avoid occurring rx or tx our-of-order.
+
+Thanks, Ohtake(OKISemi)
+
+
 
