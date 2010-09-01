@@ -1,173 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab0IATBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 15:01:07 -0400
-Received: from p01c12o144.mxlogic.net ([208.65.145.67]:43545 "EHLO
-	p01c12o144.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754954Ab0IATBF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 15:01:05 -0400
-X-MXL-Hash: 4c7ea2f16c913a8f-6b64ec97d0aa56542e4c460e7e3617eb25a9ed81
-X-MXL-Hash: 4c7ea2ee01ca4b20-0c82d72a325879293457e6879341ee9f37744ccb
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Gregory Bean <gbean@codeaurora.org>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>
-CC: "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        =?utf-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 1 Sep 2010 13:59:54 -0500
-Subject: RE: [PATCH 1/2] msm: Install the Google-Android gpio driver.
-Thread-Topic: [PATCH 1/2] msm: Install the Google-Android gpio driver.
-Thread-Index: ActIor5ElgdfAmvOTfK9/sn/G6wbnQBYt2kg
-Message-ID: <0D753D10438DA54287A00B027084269764447830F3@AUSP01VMBX24.collaborationhost.net>
-References: <1283213906-17671-1-git-send-email-gbean@codeaurora.org>
-In-Reply-To: <1283213906-17671-1-git-send-email-gbean@codeaurora.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1754800Ab0IATLL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 15:11:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61931 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753772Ab0IATLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 15:11:09 -0400
+Date: Wed, 1 Sep 2010 21:08:59 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Adam Litke <agl@us.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Izik Eidus <ieidus@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Transparent Hugepage Support #30
+Message-ID: <20100901190859.GA20316@random.random>
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010073001)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.72]
-X-AnalysisOut: [v=1.0 c=1 a=vPEevKMDgl8A:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
-X-AnalysisOut: [MA:10 a=jM3uHZP82BWpxjlUuN2t4A==:17 a=n8i27M1mAAAA:8 a=LpQ]
-X-AnalysisOut: [P-O61AAAA:8 a=hIjjri4SuRBbAIhgU70A:9 a=9dJlGpMuiajN4iixyFg]
-X-AnalysisOut: [AdWUKDqoA:4 a=QEXdDO2ut3YA:10 a=rXZLD9m7qZoA:10 a=YDjxKKMX]
-X-AnalysisOut: [svQA:10 a=ifqTDN6FDLLM6nLf:21 a=EIhsgOtVkIYneLhW:21]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o81J1CVV009793
 
-On Monday, August 30, 2010 5:18 PM, Gregory Bean wrote:
-> Subject: [PATCH 1/2] msm: Install the Google-Android gpio driver.
-> 
-> From: Arve Hj√∏nnev√•g <arve@android.com>
-> 
-> As part of the ongoing effort to converge on a common code base,
-> adopt the Google-Android msmgpio driver, as it has a stronger pedigree
-> than the previous submission from codeaurora.
-> 
-> Cc: Arve Hj√∏nnev√•g <arve@android.com>
-> Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+http://www.linux-kvm.org/wiki/images/9/9e/2010-forum-thp.pdf
 
-Hello Greg,
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
 
-A couple comments on this.
+first: git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+or first: git clone --reference linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+later: git fetch; git checkout -f origin/master
 
-> +struct msm_gpio_chip msm_gpio_chips[] = {
-> +	{
-> +		.regs = {
-> +			.out =         GPIO_OUT_0,
-> +			.in =          GPIO_IN_0,
-> +			.int_status =  GPIO_INT_STATUS_0,
-> +			.int_clear =   GPIO_INT_CLEAR_0,
-> +			.int_en =      GPIO_INT_EN_0,
-> +			.int_edge =    GPIO_INT_EDGE_0,
-> +			.int_pos =     GPIO_INT_POS_0,
-> +			.oe =          GPIO_OE_0,
-> +		},
-> +		.chip = {
-> +			.base = 0,
-> +			.ngpio = 16,
-> +			.get = msm_gpio_get,
-> +			.set = msm_gpio_set,
-> +			.direction_input = msm_gpio_direction_input,
-> +			.direction_output = msm_gpio_direction_output,
-> +			.to_irq = msm_gpio_to_irq,
-> +		}
-> +	},
+The tree is rebased and git pull won't work.
 
-This is a bit ugly... A 204 line struct definition is a bit hard to follow,
-especially the way it's broken up with all the #if defined stuff.
+http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.36-rc3/transparent_hugepage-30/
+http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.36-rc3/transparent_hugepage-30.gz
 
-Each gpio "bank" is code duplication other than the .base and .ngpio.  The
-whole thing can be reduced using a helper macro.  Something like this:
+Diff #29 -> #30:
 
-#define MSM_GPIO_BANK(bank, base_gpio, num_gpio)			\
-	{										\
-		.regs = {								\
-			.out			= GPIO_OUT_##bank,		\
-			.in			= GPIO_IN_##bank,			\
-			.int_status		= GPIO_INT_STATUS_##bank,	\
-			.int_clear		= GPIO_INT_CLEAR_##bank,	\
-			.int_en		= GPIO_INT_EN_##bank,		\
-			.int_edge		= GPIO_INT_EDGE_##bank,		\
-			.int_pos		= GPIO_INT_POS_##bank,		\
-			.oe			= GPIO_OE_##bank,			\
-		},									\
-		.chip = {								\
-			.direction_input	= msm_gpio_direction_input,	\
-			.direction_output	= msm_gpio_direction_output,	\
-			.get			= msm_gpio_get,			\
-			.set			= msm_gpio_set,			\
-			.to_irq		= msm_gpio_to_irq,		\
-			.base			= base_gpio,			\
-			.ngpio		= num_gpio,				\
-		},									\
-	}
+ b/compaction-migration-warning               |   25 +++
 
-Then the struct definition can be reduced to this:
+Avoid MIGRATION config warning when COMPACTION is selected but numa
+and memhotplug aren't.
 
-struct msm_gpio_chip msm_gpio_chips[] = {
-#if defined(CONFIG_ARCH_MSM7X30)
-	MSM_GPIO_BANK(0, 0, 16),	/* gpio 0-15 */
-	MSM_GPIO_BANK(1, 16, 28),	/* gpio 16-43 */
-	MSM_GPIO_BANK(2, 44, 24),	/* gpio 44-67 */
-	MSM_GPIO_BANK(3, 68, 27),	/* gpio 68-94 */
-	MSM_GPIO_BANK(4, 95, 12),	/* gpio 95-106 */
-	MSM_GPIO_BANK(5, 107, 27),	/* gpio 107-133 */
-	MSM_GPIO_BANK(6, 134, 17),	/* gpio 134-150 */
-	MSM_GPIO_BANK(7, 151, 31),	/* gpio 151-181 */
-#elif defined(CONFIG_ARCH_QSD8X50)
-	MSM_GPIO_BANK(0, 0, 16),	/* gpio 0-15 */
-	MSM_GPIO_BANK(1, 16, 27),	/* gpio 16-42 */
-	MSM_GPIO_BANK(2, 43, 25),	/* gpio 43-67 */
-	MSM_GPIO_BANK(3, 68, 27),	/* gpio 68-94 */
-	MSM_GPIO_BANK(4, 95, 9),	/* gpio 95-103 */
-	MSM_GPIO_BANK(5, 104, 18),	/* gpio 104-121 */
-	MSM_GPIO_BANK(6, 122, 31),	/* gpio 122-152 */
-	MSM_GPIO_BANK(7, 153, 12),	/* gpio 153-164 */
-#else
-	MSM_GPIO_BANK(0, 0, 16),	/* gpio 0-15 */
-	MSM_GPIO_BANK(1, 16, 27),	/* gpio 16-42 */
-	MSM_GPIO_BANK(2, 43, 25),	/* gpio 43-67 */
-	MSM_GPIO_BANK(3, 68, 27),	/* gpio 68-94 */
-	MSM_GPIO_BANK(4, 95, 12),	/* gpio 95-106 */
-	MSM_GPIO_BANK(5, 107, 15),	/* gpio 107-121 */
-#endif
-};
+ do_swap_page-VM_FAULT_WRITE                  |   21 --
+ kvm-huge-spte-wrprotect                      |   48 ------
+ kvm-mmu-notifier-huge-spte                   |   29 ---
+ root_anon_vma-anon_vma_lock                  |  208 ---------------------------
+ root_anon_vma-avoid-ksm-hang                 |   30 ---
+ root_anon_vma-bugchecks                      |   37 ----
+ root_anon_vma-in_vma                         |   27 ---
+ root_anon_vma-ksm_refcount                   |  169 ---------------------
+ root_anon_vma-lock_root                      |  127 ----------------
+ root_anon_vma-memory-compaction              |   36 ----
+ root_anon_vma-mm_take_all_locks              |   81 ----------
+ root_anon_vma-oldest_root                    |   81 ----------
+ root_anon_vma-refcount                       |   29 ---
+ root_anon_vma-swapin                         |   91 -----------
+ root_anon_vma-use-root                       |   66 --------
+ root_anon_vma-vma_lock_anon_vma              |   94 ------------
 
-I'm not sure if that macro will actually work correctly.  But you should
-get the idea.
+merged upstream.
 
-> +#if defined(CONFIG_ARCH_MSM7X30)
-> +#define GPIO1_REG(off) (MSM_GPIO1_BASE + (off))
-> +#define GPIO2_REG(off) (MSM_GPIO2_BASE + 0x400 + (off))
-> +#else
-> +#define GPIO1_REG(off) (MSM_GPIO1_BASE + 0x800 + (off))
-> +#define GPIO2_REG(off) (MSM_GPIO2_BASE + 0xC00 + (off))
-> +#endif
-> +
-> +#if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_MSM7X27)
-> +
-> +/* output value */
-> +#define GPIO_OUT_0         GPIO1_REG(0x00)  /* gpio  15-0  */
-> +#define GPIO_OUT_1         GPIO2_REG(0x00)  /* gpio  42-16 */
-> +#define GPIO_OUT_2         GPIO1_REG(0x04)  /* gpio  67-43 */
-> +#define GPIO_OUT_3         GPIO1_REG(0x08)  /* gpio  94-68 */
-> +#define GPIO_OUT_4         GPIO1_REG(0x0C)  /* gpio 106-95 */
-> +#define GPIO_OUT_5         GPIO1_REG(0x50)  /* gpio 107-121 */
+ b/memcg_compound                             |  166 ++++++++++-----------
+ b/memcg_compound_tail                        |   31 +---
+ b/memcg_consume_stock                        |   31 ++--
+ memcg_check_room                             |   88 -----------
+ memcg_oom                                    |   34 ----
 
-I realize this header is private (i.e. in the mach-msm directory) but
-you should probably prefix all of these GPIO_* defines with something
-to prevent any namespace clashes.
+These had heavy rejects, the last two patches and other bits got
+removed. memcg code is rewritten so fast it's hard to justify to keep
+up with it. It's simpler and less time consuming to fix it just once
+than over and over again. Likely memcg in this release isn't too
+stable with THP on (it'll definitely work fine if you disable THP at
+compile time or at boot time with the kernel parameter). Especially
+all get_css/put_css will have to be re-audited after these new
+changes. For now it builds just fine and the basics to support THP and
+to show the direction are in. Nevertheless I welcome patches to fix
+this up.
 
-Regards,
-HartleyˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+btw, memcg developers could already support THP inside memcg even if
+THP is not included yet without any sort of problem, so it's also
+partly up to them to want to support THP in memcg, but it's also
+perfectly ok to catch up with memcg externally, but it'd be also nice
+to know when memcg reaches a milestone and so when it's time to
+re-audit it all for THP.
+
+Full diffstat:
+
+ Documentation/vm/transhuge.txt        |  283 ++++
+ arch/alpha/include/asm/mman.h         |    2 
+ arch/mips/include/asm/mman.h          |    2 
+ arch/parisc/include/asm/mman.h        |    2 
+ arch/powerpc/mm/gup.c                 |   12 
+ arch/x86/include/asm/kvm_host.h       |    1 
+ arch/x86/include/asm/paravirt.h       |   23 
+ arch/x86/include/asm/paravirt_types.h |    6 
+ arch/x86/include/asm/pgtable-2level.h |    9 
+ arch/x86/include/asm/pgtable-3level.h |   23 
+ arch/x86/include/asm/pgtable.h        |  149 ++
+ arch/x86/include/asm/pgtable_64.h     |   28 
+ arch/x86/include/asm/pgtable_types.h  |    3 
+ arch/x86/kernel/paravirt.c            |    3 
+ arch/x86/kernel/vm86_32.c             |    1 
+ arch/x86/kvm/mmu.c                    |   60 
+ arch/x86/kvm/paging_tmpl.h            |    4 
+ arch/x86/mm/gup.c                     |   28 
+ arch/x86/mm/pgtable.c                 |   66 +
+ arch/xtensa/include/asm/mman.h        |    2 
+ fs/Kconfig                            |    2 
+ fs/exec.c                             |   44 
+ fs/proc/meminfo.c                     |   14 
+ fs/proc/page.c                        |   14 
+ include/asm-generic/mman-common.h     |    2 
+ include/asm-generic/pgtable.h         |  130 +
+ include/linux/compaction.h            |   13 
+ include/linux/gfp.h                   |   14 
+ include/linux/huge_mm.h               |  151 ++
+ include/linux/khugepaged.h            |   66 +
+ include/linux/ksm.h                   |   20 
+ include/linux/kvm_host.h              |    4 
+ include/linux/memory_hotplug.h        |   14 
+ include/linux/mm.h                    |  114 +
+ include/linux/mm_inline.h             |   19 
+ include/linux/mm_types.h              |    3 
+ include/linux/mmu_notifier.h          |   66 +
+ include/linux/mmzone.h                |    1 
+ include/linux/page-flags.h            |   36 
+ include/linux/sched.h                 |    1 
+ include/linux/swap.h                  |    2 
+ include/linux/vmstat.h                |    4 
+ kernel/fork.c                         |   12 
+ kernel/futex.c                        |   55 
+ mm/Kconfig                            |   40 
+ mm/Makefile                           |    1 
+ mm/compaction.c                       |   48 
+ mm/huge_memory.c                      | 2212 ++++++++++++++++++++++++++++++++++
+ mm/hugetlb.c                          |   69 -
+ mm/ksm.c                              |   53 
+ mm/madvise.c                          |    8 
+ mm/memcontrol.c                       |  138 +-
+ mm/memory-failure.c                   |    2 
+ mm/memory.c                           |  235 +++
+ mm/memory_hotplug.c                   |   14 
+ mm/mempolicy.c                        |   14 
+ mm/migrate.c                          |   12 
+ mm/mincore.c                          |    7 
+ mm/mmap.c                             |    5 
+ mm/mmu_notifier.c                     |   20 
+ mm/mprotect.c                         |   20 
+ mm/mremap.c                           |    8 
+ mm/oom_kill.c                         |    1 
+ mm/page_alloc.c                       |   58 
+ mm/pagewalk.c                         |    1 
+ mm/rmap.c                             |  115 -
+ mm/sparse.c                           |    4 
+ mm/swap.c                             |  117 +
+ mm/swap_state.c                       |    6 
+ mm/swapfile.c                         |    2 
+ mm/vmscan.c                           |   98 -
+ mm/vmstat.c                           |   31 
+ virt/kvm/iommu.c                      |    2 
+ virt/kvm/kvm_main.c                   |   56 
+ 74 files changed, 4468 insertions(+), 437 deletions(-)
