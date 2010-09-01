@@ -1,106 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab0IAUMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 16:12:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36855 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194Ab0IAUMX (ORCPT
+	id S1755966Ab0IAUNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 16:13:52 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58499 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab0IAUNv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 16:12:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=e9W35JsO7gFZkCFpkHg5WIGqvVkBt7vxkBDNFq90zcIrADQHsbw0exHtyAYffbt/dx
-         gYRvHHXk7WSSsUhLJfb9l1vk3Mg/qQhT+r2Vn0R8lKo/47ZUdQhYMuP+fDLoE3TTER0f
-         0ZuAG1/q+ES+LCFvpeYilZ15iCPZYHADSC7yA=
-Message-ID: <4C7EB3A3.7050402@gmail.com>
-Date: Wed, 01 Sep 2010 22:12:19 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Rafi Rubin <rafi@seas.upenn.edu>
-CC: dmitry.torokhov@gmail.com, jkosina@suse.cz, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, micki@n-trig.com, rydberg@euromail.se,
-        chatty@enac.fr
-Subject: Re: [PATCH] identify firmware version
-References: <20100901020634.GD23585@core.coreip.homeip.net> <1283334517-15121-1-git-send-email-rafi@seas.upenn.edu>
-In-Reply-To: <1283334517-15121-1-git-send-email-rafi@seas.upenn.edu>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Sep 2010 16:13:51 -0400
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 3/15]  3: uprobes: Slot allocation
+ for Execution out of line(XOL)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20100825134156.5447.43216.sendpatchset@localhost6.localdomain6>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+	 <20100825134156.5447.43216.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 01 Sep 2010 22:13:29 +0200
+Message-ID: <1283372009.2059.1557.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2010 11:48 AM, Rafi Rubin wrote:
-> --- a/drivers/hid/hid-ntrig.c
-> +++ b/drivers/hid/hid-ntrig.c
-> @@ -90,6 +90,26 @@ struct ntrig_data {
->  };
+On Wed, 2010-08-25 at 19:11 +0530, Srikar Dronamraju wrote:
 >  
->  
+> +/* Slot allocation for XOL */
+> +
 > +/*
-> + * This function converts the 4 byte raw firmware code into
-> + * a string containing 5 comma separated numbers.
+> + * Every probepoint gets its own slot.  Once it's assigned a slot, it
+> + * keeps that slot until the probepoint goes away. Only definite number
+> + * of slots are allocated.
 > + */
-> +static int ntrig_version_string(unsigned char *raw, char *buf)
+> +
+> +struct uprobes_xol_area {
+> +	spinlock_t lock;	/* protects bitmap and slot (de)allocation*/
+> +	unsigned long *bitmap;	/* 0 = free slot */
+
+Since you have a static sized bitmap, why not simply declare it here?
+
+	DECLARE_BITMAP(bitmap, MAX_UPROBES_XOL_SLOTS;
+
+> +	/*
+> +	 * We keep the vma's vm_start rather than a pointer to the vma
+> +	 * itself.  The probed process or a naughty kernel module could make
+> +	 * the vma go away, and we must handle that reasonably gracefully.
+> +	 */
+
+Naughty kernel modules we don't care about, but yeah, it appears vma's
+installed using install_special_mapping() can be unmapped by the process
+itself,.. curious. 
+
+Anyway, you could install your own vm_ops and provide a close method to
+track this.
+
+> +	unsigned long vaddr;		/* Page(s) of instruction slots */
+> +};
+> +
+> +static int xol_add_vma(struct uprobes_xol_area *area)
 > +{
-> +	__u8 a =  (raw[1] & 0b00001110) >> 1;
-> +	__u8 b =  (raw[0] & 0b00111100) >> 2;
-> +	__u8 c = ((raw[0] & 0b00000011) << 3) | ((raw[3] & 0b11100000) >> 5);
-> +	__u8 d = ((raw[3] & 0b00000111) << 3) | ((raw[2] & 0b11100000) >> 5);
-> +	__u8 e =   raw[2] & 0b00000111;
+> +	struct vm_area_struct *vma;
+> +	struct mm_struct *mm;
+> +	struct file *file;
+> +	unsigned long addr;
+> +
+> +	mm = get_task_mm(current);
+> +	if (!mm)
+> +		return -ESRCH;
+> +
+> +	down_write(&mm->mmap_sem);
+> +	/*
+> +	 * Find the end of the top mapping and skip a page.
+> +	 * If there is no space for PAGE_SIZE above
+> +	 * that, mmap will ignore our address hint.
+> +	 *
+> +	 * We allocate a "fake" unlinked shmem file because
+> +	 * anonymous memory might not be granted execute
+> +	 * permission when the selinux security hooks have
+> +	 * their way.
+> +	 */
+> +	vma = rb_entry(rb_last(&mm->mm_rb), struct vm_area_struct, vm_rb);
+> +	addr = vma->vm_end + PAGE_SIZE;
+> +	file = shmem_file_setup("uprobes/xol", PAGE_SIZE, VM_NORESERVE);
+> +	if (!file) {
+> +		printk(KERN_ERR "uprobes_xol failed to setup shmem_file "
+> +			"while allocating vma for pid/tgid %d/%d for "
+> +			"single-stepping out of line.\n",
+> +			current->pid, current->tgid);
+> +		goto fail;
+> +	}
+> +	addr = do_mmap_pgoff(file, addr, PAGE_SIZE, PROT_EXEC, MAP_PRIVATE, 0);
+> +	fput(file);
+> +
+> +	if (addr & ~PAGE_MASK) {
+> +		printk(KERN_ERR "uprobes_xol failed to allocate a vma for "
+> +				"pid/tgid %d/%d for single-stepping out of "
+> +				"line.\n", current->pid, current->tgid);
+> +		goto fail;
+> +	}
+> +	vma = find_vma(mm, addr);
+> +
+> +	/* Don't expand vma on mremap(). */
+> +	vma->vm_flags |= VM_DONTEXPAND | VM_DONTCOPY;
+> +	area->vaddr = vma->vm_start;
 
-This won't compile with gcc 3.4 which we still support. Maybe time to
-kill the support?
+Seems interesting,.. why not use install_special_mapping(), that's what
+the VDSO uses.
 
-...
-> @@ -848,10 +871,39 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  	if (report)
->  		usbhid_submit_report(hdev, report, USB_DIR_OUT);
->  
-> +	data = kmalloc(8, GFP_KERNEL);
-> +	if (!data) {
-> +		ret = -ENOMEM;
-> +		goto err_free;
+> +	up_write(&mm->mmap_sem);
+> +	mmput(mm);
+> +	return 0;
+> +
+> +fail:
+> +	up_write(&mm->mmap_sem);
+> +	mmput(mm);
+> +	return -ENOMEM;
+> +}
+> +
+> +/*
+> + * xol_alloc_area - Allocate process's uprobes_xol_area.
+> + * This area will be used for storing instructions for execution out of
+> + * line.
+
+It doesn't actually do that, xol_add_vma() does that, this allocates the
+storage management bits.
+
+> + * Called with mm->uproc->mutex locked.
+
+There's a nice way to not have to write that:
+
+  lockdep_assert_held(&mm->uproc->mutex);
+
+> + * Returns the allocated area or NULL.
+> + */
+
+
+> +/*
+> + * xol_free_area - Free the area allocated for slots.
+
+Again, it doesn't actually free the slots itself.
+
+> + * @xol_area refers the unique per process uprobes_xol_area for
+> + * this process.
+> + *
+> + */
+
+
+> +/*
+> + * Find a slot
+> + *  - searching in existing vmas for a free slot.
+> + *  - If no free slot in existing vmas, return 0;
+
+I would call that allocate, find would imply a constant operation, but
+you actually change the state.
+
+> + * Called when holding xol_area->lock
+
+  lockdep_assert_held(&area->lock);
+
+> + */
+> +static unsigned long xol_take_insn_slot(struct uprobes_xol_area *area)
+> +{
+> +	unsigned long slot_addr;
+> +	int slot_nr;
+> +
+> +	slot_nr = find_first_zero_bit(area->bitmap, UINSNS_PER_PAGE);
+> +	if (slot_nr < UINSNS_PER_PAGE) {
+> +		set_bit(slot_nr, area->bitmap);
+
+Since its all serialized by xol_area->lock, why use an atomic bitop?
+
+> +		slot_addr = area->vaddr +
+> +				(slot_nr * UPROBES_XOL_SLOT_BYTES);
+> +		return slot_addr;
 > +	}
 > +
-> +	ret = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
-> +			      USB_REQ_CLEAR_FEATURE,
-> +			      USB_TYPE_CLASS | USB_RECIP_INTERFACE |
-> +			      USB_DIR_IN,
-> +			      0x30c, 1, data, 8,
-> +			      USB_CTRL_SET_TIMEOUT);
+> +	return 0;
+> +}
 > +
-> +	if (ret == 8) {
-> +		buf = kmalloc(20, GFP_KERNEL);
-> +		if (!buf) {
-> +			ret = -ENOMEM;
-> +			goto err_free_data;
-> +		}
+> +/*
+> + * xol_get_insn_slot - If user_bkpt  was not allocated a slot, then
+> + * allocate a slot. If uprobes_insert_bkpt is already called, (i.e
+> + * user_bkpt.vaddr != 0) then copy the instruction into the slot.
+> + * @user_bkpt: probepoint information
+> + * @xol_area refers the unique per process uprobes_xol_area for
+> + * this process.
+> + *
+> + * Called with mm->uproc->mutex locked.
+> + * Returns the allocated slot address or 0.
+> + */
+> +static unsigned long xol_get_insn_slot(struct user_bkpt *user_bkpt,
+> +				struct uprobes_xol_area *xol_area)
+> +{
+> +	unsigned long flags, xol_vaddr = 0;
+> +	int len;
 > +
-> +		ret = ntrig_version_string(&data[2], buf);
+> +	if (unlikely(!xol_area))
+> +		return 0;
 > +
-> +		dev_info(&hdev->dev,
-> +			 "Firmware version: %s (%02x%02x %02x%02x)\n",
-> +			 buf, data[2], data[3], data[4], data[5]);
+> +	if (user_bkpt->xol_vaddr)
+> +		return user_bkpt->xol_vaddr;
+> +
+> +	spin_lock_irqsave(&xol_area->lock, flags);
+> +	xol_vaddr = xol_take_insn_slot(xol_area);
+> +	spin_unlock_irqrestore(&xol_area->lock, flags);
+> +
+> +	/*
+> +	 * Initialize the slot if user_bkpt->vaddr points to valid
+> +	 * instruction slot.
+> +	 */
+> +	if (likely(xol_vaddr) && user_bkpt->vaddr) {
+
+if (!xol_vaddr)
+  goto bail;
+
+gives nices code, and saves an indent level.
+
+Also, why would we ever get here with !user_bkpt->vaddr.
+
+(fwiw, my fingers hate bkpt, they either want to type bp, or brkpt)
+
+> +		len = access_process_vm(current, xol_vaddr, user_bkpt->insn,
+> +						UPROBES_XOL_SLOT_BYTES, 1);
+> +		if (unlikely(len < UPROBES_XOL_SLOT_BYTES))
+> +			printk(KERN_ERR "Failed to copy instruction at %#lx "
+> +					"len = %d\n", user_bkpt->vaddr, len);
 > +	}
 > +
->  	ret = sysfs_create_group(&hdev->dev.kobj,
->  			&ntrig_attribute_group);
->  
->  	return 0;
+> +	/*
+> +	 * Update user_bkpt->xol_vaddr after giving a chance for the slot to
+> +	 * be initialized.
+> +	 */
+> +	mb();
 
-Two leaks here.
+Where is the matching barrier?
 
-> +err_free_data:
-> +	kfree(data);
->  err_free:
->  	kfree(nd);
->  	return ret;
+> +	user_bkpt->xol_vaddr = xol_vaddr;
+> +	return user_bkpt->xol_vaddr;
+> +}
+> +
+> +/*
+> + * xol_free_insn_slot - If slot was earlier allocated by
+> + * @xol_get_insn_slot(), make the slot available for
+> + * subsequent requests.
+> + * @slot_addr: slot address as returned by
+> + * @xol_get_insn_area().
+> + * @xol_area refers the unique per process uprobes_xol_area for
+> + * this process.
+> + */
+> +static void xol_free_insn_slot(unsigned long slot_addr,
+> +				struct uprobes_xol_area *xol_area)
+> +{
+> +	unsigned long vma_end;
+> +	int found = 0;
+> +
+> +	if (unlikely(!slot_addr || IS_ERR_VALUE(slot_addr)))
+> +		return;
+> +
+> +	if (unlikely(!xol_area))
+> +		return;
+> +
+> +	vma_end = xol_area->vaddr + PAGE_SIZE;
+> +	if (xol_area->vaddr <= slot_addr && slot_addr < vma_end) {
+> +		int slot_nr;
+> +		unsigned long offset = slot_addr - xol_area->vaddr;
+> +		unsigned long flags;
+> +
+> +		BUG_ON(offset % UPROBES_XOL_SLOT_BYTES);
+> +
+> +		slot_nr = offset / UPROBES_XOL_SLOT_BYTES;
+> +		BUG_ON(slot_nr >= UINSNS_PER_PAGE);
+> +
+> +		spin_lock_irqsave(&xol_area->lock, flags);
+> +		clear_bit(slot_nr, xol_area->bitmap);
 
+Again, using atomic bitops while already holding a lock... pick one.
 
--- 
-js
+> +		spin_unlock_irqrestore(&xol_area->lock, flags);
+> +		found = 1;
+> +	}
+> +
+> +	if (!found)
+> +		printk(KERN_ERR "%s: no XOL vma for slot address %#lx\n",
+> +						__func__, slot_addr);
+
+funny code flow,.. s/found = 1/return/ and loose the conditional and
+indent?
+
+> +}
+> +
+> +/*
+> + * xol_validate_vaddr - Verify if the specified address is in an
+> + * executable vma, but not in an XOL vma.
+> + *	- Return 0 if the specified virtual address is in an
+> + *	  executable vma, but not in an XOL vma.
+> + *	- Return 1 if the specified virtual address is in an
+> + *	  XOL vma.
+> + *	- Return -EINTR otherwise.(i.e non executable vma, or
+> + *	  not a valid address
+> + * @pid: the probed process
+> + * @vaddr: virtual address of the instruction to be validated.
+> + * @xol_area refers the unique per process uprobes_xol_area for
+> + * this process.
+> + */
+> +static int xol_validate_vaddr(struct pid *pid, unsigned long vaddr,
+> +				struct uprobes_xol_area *xol_area)
+> +{
+> +	struct task_struct *tsk;
+> +	unsigned long vma_end;
+> +	int result;
+> +
+> +	if (unlikely(!xol_area))
+> +		return 0;
+> +
+> +	tsk = get_pid_task(pid, PIDTYPE_PID);
+> +	if (unlikely(!tsk))
+> +		return -EINVAL;
+> +
+> +	result = validate_address(tsk, vaddr);
+> +	if (result != 0)
+> +		goto validate_end;
+> +
+> +	vma_end = xol_area->vaddr + PAGE_SIZE;
+> +	if (xol_area->vaddr <= vaddr && vaddr < vma_end)
+> +		result = 1;
+> +
+> +validate_end:
+> +	put_task_struct(tsk);
+> +	return result;
+> +}
+
+This doesn't actually appear used in this patch,.. does it want to live
+elsewhere?
