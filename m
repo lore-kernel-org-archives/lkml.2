@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab0IAB2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 21:28:19 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:48760 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749Ab0IAB2Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 21:28:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Bug #16771] [Bisected Regression in 2.6.35] A full tmpfs filesystemcauses hibernationto hang
-Cc: kosaki.motohiro@jp.fujitsu.com, "M. Vefa Bicakci" <bicave@superonline.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-In-Reply-To: <201008312219.39694.rjw@sisk.pl>
-References: <4C7D146E.8020601@superonline.com> <201008312219.39694.rjw@sisk.pl>
-Message-Id: <20100901102757.974A.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  1 Sep 2010 10:28:13 +0900 (JST)
+	id S1754123Ab0IABdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 21:33:36 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:48684 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751790Ab0IABde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 31 Aug 2010 21:33:34 -0400
+Date: Tue, 31 Aug 2010 18:33:31 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Joe Perches <joe@perches.com>
+Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
+        Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>,
+        ML netdev <netdev@vger.kernel.org>,
+        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Toshiharu Okada <okada533@dsn.okisemi.com>,
+        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
+        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
+Subject: Re: [PATCH] drivers/net/pch_gbe: Cleanup stats use
+Message-ID: <20100831183331.5a6aa508@nehalam>
+In-Reply-To: <1283279915.1797.66.camel@Joe-Laptop>
+References: <4C763A67.5040107@dsn.okisemi.com>
+	<4C7D0E7A.5060309@dsn.okisemi.com>
+	<1283271009.1797.28.camel@Joe-Laptop>
+	<1283275514.1797.36.camel@Joe-Laptop>
+	<1283279915.1797.66.camel@Joe-Laptop>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tuesday, August 31, 2010, M. Vefa Bicakci wrote:
-> > On 30/08/10 02:13 AM, Rafael J. Wysocki wrote:
-> > > This message has been generated automatically as a part of a report
-> > > of regressions introduced between 2.6.34 and 2.6.35.
-> > > 
-> > > The following bug entry is on the current list of known regressions
-> > > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> > > be listed and let the tracking team know (either way).
-> > > 
-> > > 
-> > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16771
-> > > Subject		: [Bisected Regression in 2.6.35] A full tmpfs filesystem causes hibernationto hang
-> > > Submitter	: M. Vefa Bicakci <bicave@superonline.com>
-> > > Date		: 2010-08-15 5:25 (15 days old)
-> > > First-Bad-Commit: http://git.kernel.org/linus/bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
-> > > Message-ID	: <4C677A49.4030904@superonline.com>
-> > > References	: http://marc.info/?l=linux-kernel&m=128184995401968&w=2
-> > > 
-> > 
-> > Dear Rafael Wysocki,
-> > 
-> > This regression still exists in 2.6.35.4. (I haven't tested 2.6.36-rcX
-> > series.) Kosaki Motohiro has kindly helped me with this issue and found
-> > a fix for the regression. Today I have successfully tested his patch,
-> > but I don't know whether the patch needs to be further refined and tested.
-> 
-> Thanks for the information.  Do you have a pointer to the patch?
+On Tue, 31 Aug 2010 11:38:35 -0700
+Joe Perches <joe@perches.com> wrote:
 
-http://lkml.org/lkml/2010/8/31/429
+>  struct pch_gbe_stats {
+> -	signed char stat_string[ETH_GSTRING_LEN];
+> -	int sizeof_stat;
+> -	int stat_offset;
+> +	signed char string[ETH_GSTRING_LEN];
+> +	size_t size;
+> +	size_t offset;
+>  };
 
-Thanks.
-
-
-
-
+Is this driver really using 'signed char' here?
+Should just be 'char' for a simple string.
