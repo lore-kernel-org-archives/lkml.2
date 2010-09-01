@@ -1,113 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751220Ab0IAEFx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 00:05:53 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:24566 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750704Ab0IAEFw convert rfc822-to-8bit (ORCPT
+	id S1751378Ab0IAERF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 00:17:05 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:18610 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750779Ab0IAERC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 00:05:52 -0400
-X-IronPort-AV: E=Sophos;i="4.56,301,1280732400"; 
-   d="scan'208";a="440324046"
-Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
-In-Reply-To: <20100901015616.GD5759@shell>
-References: <20100827170551.19616048@notabene>
-	 <E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu> <20100827213502.31af4a4c@notabene>
-	 <E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu> <20100829144207.4fbf2713@notabene>
-	 <E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu> <20100830214027.77e197f5@notabene>
-	 <E1Oq3Lz-0004D8-MP@pomaz-ex.szeredi.hu> <20100831191846.GA5759@shell>
-	 <1283285987.7914.9.camel@heimdal.trondhjem.org>
-	 <20100901015616.GD5759@shell>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Wed, 01 Sep 2010 00:04:49 -0400
-Message-ID: <1283313889.5220.16.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-X-OriginalArrivalTime: 01 Sep 2010 04:05:22.0454 (UTC) FILETIME=[E6137360:01CB498A]
+	Wed, 1 Sep 2010 00:17:02 -0400
+Message-ID: <000b01cb498c$86736670$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Joe Perches" <joe@perches.com>
+Cc: "Jean Delvare \(PC drivers, core\)" <khali@linux-fr.org>,
+        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
+        "Crane Cai" <crane.cai@amd.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Linus Walleij" <linus.walleij@stericsson.com>,
+        "Ralf Baechle" <ralf@linux-mips.org>,
+        "srinidhi kasagar" <srinidhi.kasagar@stericsson.com>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Wang Yong Y\"" <yong.y.wang@intel.com>,
+        "Wang Qi\"" <qi.wang@intel.com>,
+        "Andrew\"" <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
+        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
+        "Arnd Bergmann" <arnd@arndb.de>
+References: <4C7DB9CF.5000905@dsn.okisemi.com> <1283309032.1797.123.camel@Joe-Laptop>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
+Date: Wed, 1 Sep 2010 13:16:54 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-31 at 21:56 -0400, Valerie Aurora wrote:
-> On Tue, Aug 31, 2010 at 04:19:47PM -0400, Trond Myklebust wrote:
-> > On Tue, 2010-08-31 at 15:18 -0400, Valerie Aurora wrote:
-> > > On Mon, Aug 30, 2010 at 02:20:47PM +0200, Miklos Szeredi wrote:
-> > > > On Mon, 30 Aug 2010, Neil Brown wrote:
-> > > > 
-> > > > > Val has been following that approach and asking if it is possible to make an
-> > > > > NFS filesystem really-truly read-only. i.e. no changes.
-> > > > > I don't believe it is.
-> > > > 
-> > > > Perhaps it doesn't matter.  The nasty cases can be prevented by just
-> > > > disallowing local modification.  For the rest NFS will return ESTALE:
-> > > > "though luck, why didn't you follow the rules?"
-> > > 
-> > > I agree: Ask the server to keep it read-only, but also detect if it
-> > > lied to prevent kernel bugs on the client.
-> > > 
-> > > Is detecting ESTALE and failing the mount sufficient to detect all
-> > > cases of a cached directory being altered?
-> > 
-> > No. Files can be altered without being unlinked.
-> 
-> Argh.  Do generation numbers and/or mtime help us here?
+Hi Joe,
 
-Up to a point. ext2/3 still has 1 second mtime resolution. There is no
-way that can detect all modifications. The i_version can work for ext4,
-if people remember to turn it on, and if they use NFSv4.
+Thank you for your comments.
+We will update.
 
-> > >   I keep trying to trap an
-> > > NFS developer and beat the answer out of him but they usually get hung
-> > > up on the impossibility of 100% enforcement of the read-only server
-> > > option. (Agreed, impossible, just give the sysadmin a mount option so
-> > > that it doesn't happen accidentally.)
-> > 
-> > Remind me again why mounting the filesystem '-oro' on the server (and
-> > possibly exporting it 'ro') isn't an option?
-> 
-> The "hard read only" export option is to, at minimum, make it
-> difficult to *accidentally* remount the file system on the server as
-> read-write while it is exported as a union lower layer.
-> 
-> True, the NFS server can mount the file system "-o ro" - and then any
-> random other mount(8) on the server can come along and "-o
-> remount,rw".  So if we have an NFS server option that uses the new
-> hard read-only feature, this at least makes the admin go change the
-> NFS mount options or unexport it before writing to the exported union
-> lower layer and hosing all the union mount clients.
-> 
-> It's the difference between:
-> 
-> # mount -o remount,rw /exports/union_mount_root
->  [thousands of union mounted clients hang]
-> 
-> And:
-> 
-> # mount -o remount,rw /exports/union_mount_root
-> mount: /exports/union_mount_root is hard read-only
-> # emacs /etc/exports
->   [edit out union/hard readonly option]
-> # exportfs -r
->  [thousands of union mounted clients hang]
-> 
-> But heck, system administration is hard, what's a little more rope?
-> Here, hold this gun while I position your foot...
+Thanks, Ohtake(OKISemi)
 
-...quite.
+----- Original Message ----- 
+From: "Joe Perches" <joe@perches.com>
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>; "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>;
+"Crane Cai" <crane.cai@amd.com>; "Samuel Ortiz" <sameo@linux.intel.com>; "Linus Walleij" <linus.walleij@stericsson.com>;
+"Ralf Baechle" <ralf@linux-mips.org>; "srinidhi kasagar" <srinidhi.kasagar@stericsson.com>; <linux-i2c@vger.kernel.org>;
+<linux-kernel@vger.kernel.org>; "Wang Yong Y"" <yong.y.wang@intel.com>; "Wang Qi"" <qi.wang@intel.com>; "Andrew""
+<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>; "Arnd
+Bergmann" <arnd@arndb.de>
+Sent: Wednesday, September 01, 2010 11:43 AM
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
 
-The point we keep making is that this can work if administrators do the
-right thing. If they don't, then there is pretty much nothing we can do
-to stop them from podiatric self-mutilation...
 
-Just tell them what they are supposed to do, and if they don't then
-they're on their own.
+> On Wed, 2010-09-01 at 11:26 +0900, Masayuki Ohtak wrote:
+> > I2C driver of Topcliff PCH
+> > +++ b/drivers/i2c/busses/i2c-pch.c
+> []
+> > +static void pch_init(struct i2c_algo_pch_data *adap)
+> []
+> > + if (pch_i2c_speed == FAST_MODE_CLK) {
+> > + reg_value |= FAST_MODE_EN;
+> > + dev_dbg(adap->pch_adapter.dev.parent, "Fast mode enabled\n");
+> > + }
+>
+> Just a suggestion below, ignore it at your pleasure...
+>
+> These dev_<level> calls might be easier to read if you had
+> some #defines like:
+>
+> #define pch_dbg(adap, fmt, arg...) \
+> dev_dbg(adap->pch_adapter.dev.parent, fmt, ##arg)
+> #define pch_err(adap, fmt, arg...) \
+> dev_err(adap->pch_adapter.dev.parent, fmt, ##arg)
+> #define pch_info(adap, fmt, arg...) \
+> dev_info(adap->pch_adapter.dev.parent, fmt, ##arg)
+>
+> then the last dev_dbg becomes:
+>
+> pch_dbg(adap, "Fast mode enabled\n");
+>
+> Many modules use similar wrapper #defines.
+>
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "%s: I2CCTL=%x pch_i2cbc=%x pch_i2ctmr=%x Enable interrupts\n",
+> > + __func__, ioread32(p + PCH_I2CCTL),
+> > + pch_i2cbc, pch_i2ctmr);
+>
+> pch_dbg(adap, etc...)
+>
+> etc.
+>
+> cheers, Joe
+>
 
-   Trond
+
