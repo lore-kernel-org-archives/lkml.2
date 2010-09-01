@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab0IABuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 31 Aug 2010 21:50:14 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:9594 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751749Ab0IABuL (ORCPT
+	id S1753243Ab0IABzX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 31 Aug 2010 21:55:23 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:40619 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab0IABzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 31 Aug 2010 21:50:11 -0400
-Message-ID: <003f01cb4978$02e8b760$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Arjan van de Ven" <arjan@linux.intel.com>
-Cc: "ML linux-kernel" <linux-kernel@vger.kernel.org>,
-        <margie.foster@intel.com>, <alan@linux.intel.com>, <gregkh@suse.de>,
-        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
-        <yong.y.wang@intel.com>, <meego-dev@meego.com>
-References: <4C5B9094.5090205@dsn.okisemi.com> <4C5B9229.1040403@linux.intel.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
-Date: Wed, 1 Sep 2010 10:50:04 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 2
+	Tue, 31 Aug 2010 21:55:21 -0400
+Subject: Re: [PATCH 5/6 v2] HID: magicmouse: enable Magic Trackpad support
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Michael Poole <mdpoole@troilus.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
+        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1283299695.13785.16.camel@graviton>
+References: <1283280068-12285-1-git-send-email-chase.douglas@canonical.com>
+	 <1283280068-12285-5-git-send-email-chase.douglas@canonical.com>
+	 <1283299695.13785.16.camel@graviton>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 31 Aug 2010 21:55:10 -0400
+Message-ID: <1283306110.2255.349.camel@mini>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arjan,
+On Tue, 2010-08-31 at 20:08 -0400, Michael Poole wrote:
+> One behavior that slightly surprised me -- which I believe is a quirk
+> due to userspace not expecting touchpads to have button switches -- is
+> that touches on the trackpad that do not close the switch can still be
+> interpreted by X as clicks.
 
-Sorry, for late response.
------ Original Message ----- 
-From: "Arjan van de Ven" <arjan@linux.intel.com>
-To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
-Cc: <meego-dev@meego.com>; <yong.y.wang@intel.com>; <qi.wang@intel.com>; <andrew.chih.howe.khor@intel.com>;
-<gregkh@suse.de>; <alan@linux.intel.com>; <margie.foster@intel.com>
-Sent: Friday, August 06, 2010 1:40 PM
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
+This is actually done by the X synaptics input module. It's the defacto
+X touchpad driver and enables niceties like two finger scrolling and
+whatnot. You can either use it as is, use xinput/xorg.conf to manipulate
+its configuration, or switch to the X evdev input module which is more
+"bare" support.
 
+FYI, our gesture support in Maverick is based on a modified version of
+the X evdev input module. However, because the whole stack of desktop
+libs and toolkits won't support gestures in Maverick, you lose things
+like two finger scroll. Thus, we're going to leave the default X input
+module for the magic trackpad to synaptics in Ubuntu.
 
-> On 8/5/2010 9:33 PM, Masayuki Ohtak wrote:
-> >
-> > +config PCH_I2C
-> > + tristate "PCH I2C"
-> >
->
-> this is really not very descriptive. Can you make it "OKI Semi PCH I2C
-> controller" or something
+> Once the discussions about if/how to tweak this code settle down, I'll
+> put together a patch to change the "down" and "last_up" logic as I
+> suggested earlier.
 
-We will modify.
+I actually decided to tackle this to make the patches I'm writing
+easier. I'll be sending a new batch shortly.
 
->
-> if you has human get asked "PCH I2C"... almost nobody will know what
-> that means.+static irqreturn_t pch_handler_ch0(int irq, void *pData);
->
->
-> > +static irqreturn_t(*pch_handler_list[PCH_MAX_CHN]) (int irq, void *pData) = {
-> > + pch_handler_ch0,
-> > +};
-> >
->
-> hummmmmm what is this for??
+Thanks,
 
-This is callback function list for mulit-cahnnel I2C device.
-
->
->
-> > +
-> > +static inline void pch_setbit(void __iomem *addr, u32 offset, u32 bitmask)
-> > +{
-> > + iowrite32(((ioread32(addr + offset)) | (bitmask)), (addr + offset));
-> > +}
-> >
->
-> this might be more readble if it's made 3 lines with a local variable...
-> + "Cleared the registers PCH_I2CCTL,PCH_I2CMOD,PCH_I2CBUFFOR\n,"
->
->
-> > + "PCH_I2CBUFSLV,PCH_I2CBUFSUB,PCH_I2CBUFMSK,\n"
-> >
-
-I will divide to 3 lines.
-
->
-> what's that weird character ?diff --git a/drivers/i2c/i2c-dev.c
-> b/drivers/i2c/i2c-dev.c
-> + case I2C_MODE_SEL:
->
->
-> > + pch_mode = arg;
-> > +
-> > + if (pch_mode <= 4) {
-> > + msgbuf[0] = pch_mode;
-> > + msg.buf = msgbuf;
-> > + msg.len = 1;
-> > + msg.flags = 0;
-> > + ret = i2c_transfer(client->adapter, &msg, 1);
-> >
->
-> in generic code??
->
->
-
-I will revert i2c-dev.c.
-
-
-I will submit modified patch soon.
-
-Thanks, Ohtake(OKISemi)
-
+-- Chase
 
