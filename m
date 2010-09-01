@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab0IAXaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 19:30:30 -0400
-Received: from void.printf.net ([89.145.121.20]:41501 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751714Ab0IAXa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 19:30:29 -0400
-Date: Thu, 2 Sep 2010 00:30:27 +0100
-From: Chris Ball <cjb@laptop.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Adrian Hunter <adrian.hunter@nokia.com>
-Subject: Re: [PATCH 0/3] mmc_test: show test results via sysfs
-Message-ID: <20100901233027.GA5430@void.printf.net>
-References: <cover.1283276161.git.ext-andriy.shevchenko@nokia.com> <20100901214644.GA4436@void.printf.net>
+	id S1755254Ab0IAXbG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 19:31:06 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:58192 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab0IAXbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 19:31:05 -0400
+Date: Thu, 2 Sep 2010 07:30:56 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, bandan.das@stratus.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kaber@trash.net
+Subject: Re: [PATCH net-next-2.6] net/ipv4: push IP options to CB in
+	ip_fragment
+Message-ID: <20100901233056.GA15177@gondor.apana.org.au>
+References: <1283204118.2405.32.camel@edumazet-laptop> <20100830232147.GB10754@stratus.com> <1283232031.2405.38.camel@edumazet-laptop> <20100901.144658.135972233.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100901214644.GA4436@void.printf.net>
+In-Reply-To: <20100901.144658.135972233.davem@davemloft.net>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 01, 2010 at 10:46:44PM +0100, Chris Ball wrote:
-> Unrelated to this patch, I'm hitting:
-> 
->   drivers/mmc/core/core.c:174:
->     BUG_ON(mrq->data->blocks * mrq->data->blksz > host->max_req_size);
+On Wed, Sep 01, 2010 at 02:46:58PM -0700, David Miller wrote:
+.
+> Therefore I'm inclined to agree with Herbert that we need to parse the
+> options explicitly before invoke ip_fragment().  We must call it with
+> an SKB in the state it expects, and that means with options parsing
+> already performed.
 
-Ah, I see this was discussed on linux-mmc@, and Adrian's going to come
-up with a patch for it.
+FWIW the packet probably doesn't even have IP options.  What is
+happening here is that we've found yet another entry point from
+the bridge driver into the IP stack so we need to duplicate my
+original patch here.
 
 Thanks,
-
-- Chris.
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
