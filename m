@@ -1,70 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732Ab0IBGvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 02:51:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56456 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751108Ab0IBGvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 02:51:05 -0400
-Message-ID: <4C7F4938.6090202@cn.fujitsu.com>
-Date: Thu, 02 Sep 2010 14:50:32 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1752321Ab0IBGv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 02:51:56 -0400
+Received: from smtpbg55.qq.com ([64.71.138.44]:58719 "HELO smtpbg55.qq.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751484Ab0IBGvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 02:51:55 -0400
+X-QQ-mid: esmtp4t1283410311t157t9016
+X-QQ-SSF: 0000000000000010F16200000000000
+Message-ID: <4C7F4984.1060703@qq.com>
+Date: Thu, 02 Sep 2010 14:51:48 +0800
+From: gaoqiang <834555262@qq.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Chris Samuel <chris@csamuel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 1/3] lib: introduce some memory copy macros and functions
-References: <4C7E2CA9.9060702@cn.fujitsu.com> <1283354736.2059.1206.camel@laptop> <4C7F39B3.4000901@cn.fujitsu.com> <4C7F3C60.7000205@csamuel.org>
-In-Reply-To: <4C7F3C60.7000205@csamuel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: linux-kernel@vger.kernel.org
+Subject: dear list
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 02 Sep 2010 15:55:44 +1000, Chris Samuel wrote:
-> Hiya,
->
-> On 02/09/10 15:44, Miao Xie wrote:
->
->> Ok, I will change it.
->
-> Did you just change the "2.1" to "2" in your patch, or did you find
-> a specifically version 2 licensed version of that code ?
->
-> If so, where was that ?
+I'm a newbie and got some question when learning the linux kernel
 
-I just change the "2.1" to "2" in your patch, because the orignal code
-is LGPL v2.1, LGPL v2.1 permits us to apply the terms of the ordinary
-GNU General Public License instead of it.
+about a macro:
 
-This is the clause of LGPL v2.1:
-3. You may opt to apply the terms of the ordinary GNU General Public
-License instead of this License to a given copy of the Library. To do
-this, you must alter all the notices that refer to this License, so
-that they refer to the ordinary GNU General Public License, version 2,
-instead of to this License. (If a newer version than version 2 of the
-ordinary GNU General Public License has appeared, then you can specify
-that version instead if you wish.) Do not make any other change in these
-notices.
+page_to_pfn(pg)
 
-Once this change is made in a given copy, it is irreversible for that copy,
-so the ordinary GNU General Public License applies to all subsequent copies
-and derivative works made from that copy.
+I traced its definition,and finally got that:
 
-This option is useful when you wish to copy part of the code of the Library
-into a program that is not a library.
+#define __page_to_pfn(page) ((unsigned long)((page) - mem_map) + 
+ARCH_PFN_OFFSET)
 
-The following is the URL of LGPL v2.1:
-   http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
 
-Thanks
-Miao
+why hot ((unsigned long)((page)-mem_map + ARCH_PFN_OFFSET)/sizeof 
+(struct page)
+
 
