@@ -1,170 +1,597 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab0IBVfU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:35:20 -0400
-Received: from smtp103.sbc.mail.re3.yahoo.com ([66.196.96.86]:32788 "HELO
-	smtp103.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757266Ab0IBVfS (ORCPT
+	id S1757378Ab0IBVgW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:36:22 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15710 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab0IBVgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:35:18 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: zoFpJscVM1lqrgaiSnieeD6eEO21LXlFHgi0OFCFo7DK8oO
- tOu9n.Cyso2nSJWAvee2fGUT.1I3.lQvgoS2Fnz1NmvMmK3ed81QWseSyl0P
- tFDEOcjS88iq6ua5zYkkxw7dQFb38dpxjT188rU8UDHjAFwLyVYucu4Tl.ea
- Q4biG4z2bM_TbzBlmpBs7QH8QuG9cv7ZZfVIUAV1mWbUfPy3D4ucnM_UMaIj
- 7geSHfSFICc3Lkl5cGQvlLtQqwJTbjVnAhRYF472Q0Lt03BxX5ESbQoyEC7z
- UZI5usQEiuL6wdhUTF.3DMPVCe90Gl2hns6RGG7dR280F34aSD7ohbnMLGH.
- ZXwBWumYyAx1LuEc8tNRdbXCNmWUqTsX9JlmbGdZZ1VblEaePUTMLk_u6H1t
- _a0V55OLbOu4iQrx1AQOCNhZeVboMKgGyroF8tse5gSWggGNlmQ_p_0sQY5R
- u_7OCDzpUeV4JBDWn3JQB1Xs-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [Scst-devel] [ANNOUNCE]: Comparison of features between
-	different SCSI targets (SCST, STGT, IET, LIO) updated
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Chris Weiss <cweiss@gmail.com>
-Cc: Vladislav Bolkhovitin <vst@vlnb.net>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        iscsitarget-devel@lists.sourceforge.net, stgt@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Ross Walker <rswwalker@gmail.com>
-In-Reply-To: <AANLkTinf7OgOodts3dvpg99+PFwKtxM631MsLzrJx4mv@mail.gmail.com>
-References: <4C7FFB85.7000006@vlnb.net>
-	 <AANLkTikYgSrW-fSRNBMU2DWYk2x1xQSAqKhoW1Lijj4N@mail.gmail.com>
-	 <1283458331.5598.129.camel@haakon2.linux-iscsi.org>
-	 <AANLkTinf7OgOodts3dvpg99+PFwKtxM631MsLzrJx4mv@mail.gmail.com>
-Content-Type: text/plain
-Date: Thu, 02 Sep 2010 14:31:18 -0700
-Message-Id: <1283463078.5598.169.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Sep 2010 17:36:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Thu, 02 Sep 2010 14:36:20 -0700
+From: achew@nvidia.com
+To: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Cc: akpm@linux-foundation.org, khali@linux-fr.org, ldewangan@nvidia.com,
+        Andrew Chew <achew@nvidia.com>
+Subject: [PATCH 1/1] iio: ak8975: Add Ak8975 magnetometer sensor
+Date: Thu,  2 Sep 2010 14:35:51 -0700
+Message-Id: <1283463351-15816-1-git-send-email-achew@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 02 Sep 2010 21:36:20.0020 (UTC) FILETIME=[E1BA2F40:01CB4AE6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-02 at 15:50 -0500, Chris Weiss wrote:
-> On Thu, Sep 2, 2010 at 3:12 PM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> >> as a user following the potential inclusion of a kernel-space target,
-> >> iscsi specifically, I would be very interested in seeing what other
-> >> pluses the other frameworks have over scst, because if this chart is
-> >> accurate, all the other targets have quite a ways to go to catch up.
-> >>
-> >
-> > Actually sorry, anyone who has spent more than 30 minutes looking at the
-> > TCM v4 code that has already been posted to linux-scsi on monday knows
-> > this list just more handwaving.  I suggest you start doing the same
-> > (actually discussion specific source file + line refrences) unless you
-> > actually want to trust this hopelessly out-of-date list on blind
-> > princaple.
-> 
-> I'm just an end user, I have no interesting in line-by-line
-> comparisons or specs details.  I do, however, have interest in bullet
-> points, and the lack of bullet points, that throw up red flags to 3rd
-> party support contracts.  So, did the kernel team, or some other
-> impartial source, compile a similar but not out of date list, and is
-> it available for viewing?
+From: Andrew Chew <achew@nvidia.com>
 
-Ok, but please understand that this is a technical list where we discuss
-specifics of kernel code, and produce and review patches to reach a
-desired goal.
+This is for the Asahi Kasei AK8975 3-axis magnetometer.  It resides within
+the magnetometer section of the IIO subsystem, and implements the raw
+magn_x,y,z attributes, as well as x,y,z factory calibration attributes.
 
-One of the reason that TCM/LIO has been selected over SCST is because
-our patch workflow over the recent yeras demonstrates exactly this point
-the mainline folks who are following along.  For the new persistent
-reservations and ALUA multipath features that have been developed in
-recent times, the code was added feature bit by feature bit in a
-reviewablle manner, with each patch series going to linux-scsi for
-comments.  This allowed the code to benefit in a number of cases where
-different people (including Tomo-san, mnc, and others) noticed something
-strange in their own testing, and in each case we where able to get the
-item resolved. The scoreboard for these features is on the wiki here:
+Signed-off-by: Andrew Chew <achew@nvidia.com>
+---
+ drivers/staging/iio/magnetometer/Kconfig  |   11 +
+ drivers/staging/iio/magnetometer/Makefile |    1 +
+ drivers/staging/iio/magnetometer/ak8975.c |  517 +++++++++++++++++++++++++++++
+ 3 files changed, 529 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/iio/magnetometer/ak8975.c
 
-http://linux-iscsi.org/index.php/Persistent_Reservations
-http://linux-iscsi.org/index.php/ALUA
-
-In terms of some feature list about who supports what for the mainline
-discussion, this is quite pointless at this point.  The best way for
-mainline people to know what your stack supports is to actually add
-support for said feature in reviewable and digestable pieces that are
-presented in much a manner that they are accessable to a larger
-audicence.  Just developing code some-where else and posting the entire
-thing means the code in question does not benefit by public review
-during the development phase.
-
-> 
-> > First, understand that Vlad has been asked to produce a problem use case
-> > for his CRH=1 (Compatibility Reservation Handling) concerns using the
-> > SPC-3 RESERVE/RELEASE methods with the TCM v4 code.  He has been never
-> > been able to produce a use case, ever.  Also, just for reference, does
-> > SCST's SPC-3 persisent reservation handling actually properly support
-> > CRH=1 emulation from spc4r17..?  Last time I checked, it most certainly
-> > did *not*.
-> 
-> I haven't tested this specifically, and I'm not even sure that the use
-> case is right, but ESX (the only initiator i actually use) uses
-> reservations when expanding vmdk files for size, thin provisioning,
-> and snapshots.  If I'm running big expands on 2 separate ESX nodes on
-> the same iscsi or FC LUN, can you be sure that I won't have a
-> collision without reservations?  And I mean 100% absolute sure.
-> 
-
-We have some people happly using ESX with LUN_RESET emulation with CDB
-level emulation with TCM/FILEIO , TCM/IBLOCK and with TCM/pSCSI in
-passthrough mode.
-
-> > Second, in terms of TM emulation / passthrough support in the TCM v4
-> > code, we follow what is implemented in drivers/scsi ML and LLDs,
-> > primarly to properly for Linux SCSI Initiators.  I honestly don't have
-> > alot of interesting currently in implementing all of the ancient TM
-> > emulation that none of the mainline SCSI LLDs in Linux implement today,
-> > or plan to do the future.  As for specific TM concerns, I am happy to
-> > address then on a case by case basis with the appropiate use case.
-> 
-> Vmware's ESX uses ABORT extensively with network errors and when the
-> targets backend goes belly up, and just plain goes nuts if it doens't
-> get the kind of response that completely makes sense to it, typically
-> requiring the ESX node to be rebooted to get out of a confused state.
-> Maybe this is a failure in ESX's initiator, but ESX is following the
-> specs, or at least they claim to be.
-
-Yes, it needs to fall back to LUN_RESET, or reset the iSCSI I_T nexus.
-I am happy to add proper TASK_ABORT support into TCM v4 at some point
-down the line.  However if you can demonstrate that this is a real issue
-to me for your particular setup/version of ESX with LUNs reporting SPC-2
-or SPC-3 support, I would be happy to consider bumping this up the
-priority list.
-
-> 
-> And a question that never got answered in another thread:  how many
-> OSS and commercial products are using LIO?  and how many of those are
-> certified and supported by other commercial products?  This is
-> directly related to impartial testing as well as standards
-> implementation, stability, and "plays nice with others".  Or in other
-> words, where I can look at an example implementation of LIO that's
-> considered by someone who is not you to be production ready?
-
-TCM/LIO v3 has been validated for the highest level of Vsphere 4
-compliance (eg: above ESX which only uses SPC-2) with >= SPC-3
-compatiable Persistent Reservations and ALUA multipath.
-
-http://linux-iscsi.org/index.php/Ecosystem
-
-The vendors on this list including, but not limited to QNAP, Data
-Robotics, and Netgear have all received independent SPC-3 SCSI LUN
-verification with VMware using TCM/LIO v3.x directly over the last 12
-months.  Which means that here in North America, you can walk into just
-about any major electronic store that carries these products, and
-purchase TCM/LIO v3.x in shrinkwrap form from multiple vendors on
-multiple hardware platforms. In some cases, these products using a
-custom set of userspace /sys/kernel/config/target/ scripts code (of
-varing degrees of quality) with a propritary web-interface (also of
-varing degrees of quality) on top.
-
-Best,
-
---nab
+diff --git a/drivers/staging/iio/magnetometer/Kconfig b/drivers/staging/iio/magnetometer/Kconfig
+index d014450..00e1204 100644
+--- a/drivers/staging/iio/magnetometer/Kconfig
++++ b/drivers/staging/iio/magnetometer/Kconfig
+@@ -3,6 +3,17 @@
+ #
+ comment "Magnetometer sensors"
+ 
++config SENSORS_AK8975
++	tristate "Asahi Kasei AK8975 3-Axis Magnetometer"
++	default n
++	depends on I2C
++	help
++	  Say yes here to build support for Asahi Kasei AK8975 3-Axis
++	  Magnetometer.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called ak8975.
++
+ config SENSORS_HMC5843
+ 	tristate "Honeywell HMC5843 3-Axis Magnetometer"
+ 	depends on I2C
+diff --git a/drivers/staging/iio/magnetometer/Makefile b/drivers/staging/iio/magnetometer/Makefile
+index f9bfb2e..e3dbaa4 100644
+--- a/drivers/staging/iio/magnetometer/Makefile
++++ b/drivers/staging/iio/magnetometer/Makefile
+@@ -2,4 +2,5 @@
+ # Makefile for industrial I/O Magnetometer sensors
+ #
+ 
++obj-$(CONFIG_SENSORS_AK8975)	:= ak8975.o
+ obj-$(CONFIG_SENSORS_HMC5843)	+= hmc5843.o
+diff --git a/drivers/staging/iio/magnetometer/ak8975.c b/drivers/staging/iio/magnetometer/ak8975.c
+new file mode 100644
+index 0000000..421a4ff
+--- /dev/null
++++ b/drivers/staging/iio/magnetometer/ak8975.c
+@@ -0,0 +1,517 @@
++/*
++ * A sensor driver for the magnetometer AK8975.
++ *
++ * Magnetic compass sensor driver for monitoring magnetic flux information.
++ *
++ * Copyright (c) 2010, NVIDIA Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA	02110-1301, USA.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/err.h>
++#include <linux/mutex.h>
++#include <linux/delay.h>
++
++#include <linux/gpio.h>
++
++#include "../iio.h"
++#include "magnet.h"
++
++/*
++ * Register definitions, as well as various shifts and masks to get at the
++ * individual fields of the registers.
++ */
++#define AK8975_REG_WIA			0x00
++#define AK8975_DEVICE_ID		0x48
++
++#define AK8975_REG_INFO			0x01
++
++#define AK8975_REG_ST1			0x02
++#define AK8975_REG_ST1_DRDY_SHIFT	0
++#define AK8975_REG_ST1_DRDY_MASK	(1 << AK8975_REG_ST1_DRDY_SHIFT)
++
++#define AK8975_REG_HXL			0x03
++#define AK8975_REG_HXH			0x04
++#define AK8975_REG_HYL			0x05
++#define AK8975_REG_HYH			0x06
++#define AK8975_REG_HZL			0x07
++#define AK8975_REG_HZH			0x08
++#define AK8975_REG_ST2			0x09
++#define AK8975_REG_ST2_DERR_SHIFT	2
++#define AK8975_REG_ST2_DERR_MASK	(1 << AK8975_REG_ST2_DERR_SHIFT)
++
++#define AK8975_REG_ST2_HOFL_SHIFT	3
++#define AK8975_REG_ST2_HOFL_MASK	(1 << AK8975_REG_ST2_HOFL_SHIFT)
++
++#define AK8975_REG_CNTL			0x0A
++#define AK8975_REG_CNTL_MODE_SHIFT	0
++#define AK8975_REG_CNTL_MODE_MASK	(0xF << AK8975_REG_CNTL_MODE_SHIFT)
++#define AK8975_REG_CNTL_MODE_POWER_DOWN	0
++#define AK8975_REG_CNTL_MODE_ONCE	1
++#define AK8975_REG_CNTL_MODE_SELF_TEST	8
++#define AK8975_REG_CNTL_MODE_FUSE_ROM	0xF
++
++#define AK8975_REG_RSVC			0x0B
++#define AK8975_REG_ASTC			0x0C
++#define AK8975_REG_TS1			0x0D
++#define AK8975_REG_TS2			0x0E
++#define AK8975_REG_I2CDIS		0x0F
++#define AK8975_REG_ASAX			0x10
++#define AK8975_REG_ASAY			0x11
++#define AK8975_REG_ASAZ			0x12
++
++#define AK8975_MAX_REGS			AK8975_REG_ASAZ
++
++/*
++ * Miscellaneous values.
++ */
++#define AK8975_MAX_CONVERSION_TRIAL	5
++#define AK8975_MAX_CONVERSION_TIMEOUT	500
++#define AK8975_CONVERSION_DONE_POLL_TIME 10
++
++/*
++ * Per-instance context data for the device.
++ */
++struct ak8975_data {
++	struct i2c_client	*client;
++	struct iio_dev		*indio_dev;
++	struct attribute_group  attrs;
++	struct mutex            lock;
++	u8                      asa[3];
++	unsigned long           mode;
++	u8                      reg_cache[AK8975_MAX_REGS];
++	int                     eoc_gpio;
++	int                     eoc_irq;
++};
++
++/*
++ * Helper function to write to the I2C device's registers.
++ */
++static bool ak8975_write_data(struct i2c_client *client,
++			      u8 reg, u8 val, u8 mask, u8 shift)
++{
++	u8 regval;
++	struct i2c_msg msg;
++	u8 w_data[2];
++	int ret = 0;
++
++	struct ak8975_data *data = i2c_get_clientdata(client);
++
++	regval = data->reg_cache[reg];
++	regval &= ~mask;
++	regval |= val << shift;
++
++	w_data[0] = reg;
++	w_data[1] = regval;
++
++	msg.addr = client->addr;
++	msg.flags = 0;
++	msg.len = 2;
++	msg.buf = w_data;
++
++	ret = i2c_transfer(client->adapter, &msg, 1);
++	if (ret < 0) {
++		dev_err(&client->dev, "Write to device fails status %x\n", ret);
++		return false;
++	}
++	data->reg_cache[reg] = regval;
++
++	return true;
++}
++
++/*
++ * Helper function to read a contiguous set of the I2C device's registers.
++ */
++static bool ak8975_read_data(struct i2c_client *client,
++			     u8 reg, u8 length, u8 *buffer)
++{
++	struct i2c_msg msg[2];
++	u8 w_data[2];
++	int ret = 0;
++
++	w_data[0] = reg;
++
++	msg[0].addr = client->addr;
++	msg[0].flags = I2C_M_NOSTART;	/* set repeated start and write */
++	msg[0].len = 1;
++	msg[0].buf = w_data;
++
++	msg[1].addr = client->addr;
++	msg[1].flags = I2C_M_RD;
++	msg[1].len = length;
++	msg[1].buf = buffer;
++
++	ret = i2c_transfer(client->adapter, msg, 2);
++	if (ret < 0) {
++		dev_err(&client->dev, "Read from device fails\n");
++		return false;
++	}
++
++	return true;
++}
++
++/*
++ * Perform some start-of-day setup, including reading the asa calibration
++ * values and caching them.
++ */
++static int ak8975_setup(struct i2c_client *client)
++{
++	struct ak8975_data *data = i2c_get_clientdata(client);
++	u8 device_id;
++	u8 buffer[3];
++	bool status;
++
++	/* Confirm that the device we're talking to is really an AK8975. */
++	status = ak8975_read_data(client, AK8975_REG_WIA, 1, &device_id);
++	if ((!status) || (device_id != AK8975_DEVICE_ID)) {
++		dev_err(&client->dev, "Device ak8975 not found\n");
++		return -ENODEV;
++	}
++
++	/* Write the fused rom access mode. */
++	status = ak8975_write_data(client,
++				   AK8975_REG_CNTL,
++				   AK8975_REG_CNTL_MODE_FUSE_ROM,
++				   AK8975_REG_CNTL_MODE_MASK,
++				   AK8975_REG_CNTL_MODE_SHIFT);
++	if (!status) {
++		dev_err(&client->dev, "Error in setting fuse access mode\n");
++		return false;
++	}
++
++	/* Get asa data and store in the device data. */
++	status = ak8975_read_data(client, AK8975_REG_ASAX, 3, buffer);
++	if (!status) {
++		dev_err(&client->dev, "Not able to read asa data\n");
++		return -ENODEV;
++	}
++
++	data->asa[0] = buffer[0] & 0xFF;
++	data->asa[1] = buffer[1] & 0xFF;
++	data->asa[2] = buffer[2] & 0xFF;
++
++	return 0;
++}
++
++/*
++ * Shows the device's mode.  0 = off, 1 = on.
++ */
++static ssize_t show_mode(struct device *dev, struct device_attribute *devattr,
++			 char *buf)
++{
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct ak8975_data *data = indio_dev->dev_data;
++
++	return sprintf(buf, "%lu\n", data->mode);
++}
++
++/*
++ * Sets the device's mode.  0 = off, 1 = on.  The device's mode must be on
++ * for the magn raw attributes to be available.
++ */
++static ssize_t store_mode(struct device *dev, struct device_attribute *devattr,
++			  const char *buf, size_t count)
++{
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct ak8975_data *data = indio_dev->dev_data;
++	struct i2c_client *client = data->client;
++	unsigned long oval;
++	bool status;
++
++	/* Convert mode string and do some basic sanity checking on it.
++	   only 0 or 1 are valid. */
++	if (strict_strtol(buf, 10, &oval))
++		return -EINVAL;
++
++	if ((oval < 0) || (oval > 1)) {
++		dev_err(dev, "mode value is not supported\n");
++		return -EINVAL;
++	}
++
++	mutex_lock(&data->lock);
++
++	/* Write the mode to the device. */
++	if (data->mode != oval) {
++		status = ak8975_write_data(client,
++					   AK8975_REG_CNTL,
++					   (u8)oval,
++					   AK8975_REG_CNTL_MODE_MASK,
++					   AK8975_REG_CNTL_MODE_SHIFT);
++
++		if (!status) {
++			dev_err(&client->dev, "Error in setting mode\n");
++			mutex_unlock(&data->lock);
++			return -EINVAL;
++		}
++		data->mode = oval;
++	}
++
++	mutex_unlock(&data->lock);
++
++	return count;
++}
++
++/*
++ * Emits the ASA sensitivity adjustment value for the x, y, or z axis.
++ * These ASA values are read from the sensor device at start of day, and
++ * cached in the device context struct.
++ */
++static ssize_t show_calibscale(struct device *dev,
++			       struct device_attribute *devattr, char *buf)
++{
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct ak8975_data *data = indio_dev->dev_data;
++	struct iio_dev_attr *this_attr = to_iio_dev_attr(devattr);
++
++	if (!data) {
++		dev_err(dev, "No device found\n");
++		return -ENODEV;
++	}
++
++	return sprintf(buf, "%d\n", data->asa[this_attr->address]);
++}
++
++/*
++ * Emits the raw flux value for the x, y, or z axis.
++ *
++ * Adjusting the flux value with the sensitivity adjustment value should be
++ * done via the following formula:
++ *
++ * Hadj = H * ( ( ( (ASA-128)*0.5 ) / 128 ) + 1 )
++ *
++ * where H is the raw value, ASA is the sensitivity adjustment, and Hadj
++ * is the resultant adjusted value.
++ */
++static ssize_t show_raw(struct device *dev, struct device_attribute *devattr,
++			char *buf)
++{
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct ak8975_data *data = indio_dev->dev_data;
++	struct i2c_client *client = data->client;
++	struct iio_dev_attr *this_attr = to_iio_dev_attr(devattr);
++	u32 timeout_ms = AK8975_MAX_CONVERSION_TIMEOUT;
++	u16 meas_reg;
++	s16 raw;
++	u8 read_status;
++	bool status;
++	int state;
++
++	/* Set up the device for taking a sample. */
++	status = ak8975_write_data(client,
++				   AK8975_REG_CNTL,
++				   AK8975_REG_CNTL_MODE_ONCE,
++				   AK8975_REG_CNTL_MODE_MASK,
++				   AK8975_REG_CNTL_MODE_SHIFT);
++	if (!status) {
++		dev_err(&client->dev, "Error in setting operating mode\n");
++		return false;
++	}
++
++	/* Wait for the conversion to complete. */
++	while (timeout_ms) {
++		msleep(AK8975_CONVERSION_DONE_POLL_TIME);
++		state = (gpio_get_value(data->eoc_gpio) ? 1 : 0);
++		if (state)
++			break;
++		timeout_ms -= AK8975_CONVERSION_DONE_POLL_TIME;
++	}
++	if (!timeout_ms) {
++		dev_err(&client->dev, "Conversion timeout happend\n");
++		return false;
++	}
++
++	status = ak8975_read_data(client, AK8975_REG_ST1, 1, &read_status);
++	if (!status) {
++		dev_err(&client->dev, "Error in reading ST1\n");
++		return false;
++	}
++
++	if (read_status & AK8975_REG_ST1_DRDY_MASK) {
++		status = ak8975_read_data(client, AK8975_REG_ST2,
++					  1, &read_status);
++		if (!status) {
++			dev_err(&client->dev, "Error in reading ST2\n");
++			return false;
++		}
++		if (read_status & (AK8975_REG_ST2_DERR_MASK |
++				   AK8975_REG_ST2_HOFL_MASK)) {
++			dev_err(&client->dev, "ST2 status error 0x%x\n",
++				read_status);
++			return false;
++		}
++	}
++
++	/* Read the flux value from the appropriate register
++	   (the register is specified in the iio device attributes). */
++	status = ak8975_read_data(client, this_attr->address, 2,
++				  (u8 *)&meas_reg);
++	if (!status) {
++		dev_err(&client->dev, "Read axis data fails\n");
++		return false;
++	}
++
++	/* Endian conversion of the measured values */
++	raw = (s16) (le16_to_cpu(meas_reg));
++
++	return sprintf(buf, "%d\n", raw);
++}
++
++static IIO_DEVICE_ATTR(mode, S_IRUGO | S_IWUSR, show_mode, store_mode, 0);
++static IIO_DEVICE_ATTR(magn_x_calibscale, S_IRUGO, show_calibscale, NULL, 0);
++static IIO_DEVICE_ATTR(magn_y_calibscale, S_IRUGO, show_calibscale, NULL, 1);
++static IIO_DEVICE_ATTR(magn_z_calibscale, S_IRUGO, show_calibscale, NULL, 2);
++static IIO_DEV_ATTR_MAGN_X(show_raw, AK8975_REG_HXL);
++static IIO_DEV_ATTR_MAGN_Y(show_raw, AK8975_REG_HYL);
++static IIO_DEV_ATTR_MAGN_Z(show_raw, AK8975_REG_HZL);
++
++static struct attribute *ak8975_attr[] = {
++	&iio_dev_attr_mode.dev_attr.attr,
++	&iio_dev_attr_magn_x_calibscale.dev_attr.attr,
++	&iio_dev_attr_magn_y_calibscale.dev_attr.attr,
++	&iio_dev_attr_magn_z_calibscale.dev_attr.attr,
++	&iio_dev_attr_magn_x_raw.dev_attr.attr,
++	&iio_dev_attr_magn_y_raw.dev_attr.attr,
++	&iio_dev_attr_magn_z_raw.dev_attr.attr,
++	NULL
++};
++
++static struct attribute_group ak8975_attr_group = {
++	.attrs = ak8975_attr,
++};
++
++static int ak8975_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)
++{
++	struct ak8975_data *data;
++	int err;
++
++	/* Allocate our device context. */
++	data = kzalloc(sizeof(struct ak8975_data), GFP_KERNEL);
++	if (!data) {
++		dev_err(&client->dev, "Memory allocation fails\n");
++		err = -ENOMEM;
++		goto exit;
++	}
++
++	i2c_set_clientdata(client, data);
++	data->client = client;
++
++	mutex_init(&data->lock);
++
++	/* Grab and set up the supplied GPIO. */
++	data->eoc_irq = client->irq;
++	data->eoc_gpio = irq_to_gpio(client->irq);
++
++	err = gpio_request(data->eoc_gpio, "ak_8975");
++	if (err < 0) {
++		dev_err(&client->dev, "failed to request GPIO %d, error %d\n",
++			data->eoc_gpio, err);
++		goto exit_free;
++	}
++
++	err = gpio_direction_input(data->eoc_gpio);
++	if (err < 0) {
++		dev_err(&client->dev, "Failed to configure input direction for"
++			" GPIO %d, error %d\n", data->eoc_gpio, err);
++		gpio_free(data->eoc_gpio);
++		goto exit_gpio;
++	}
++
++	/* Perform some basic start-of-day setup of the device. */
++	err = ak8975_setup(client);
++	if (err < 0) {
++		dev_err(&client->dev, "AK8975 initialization fails\n");
++		goto exit_gpio;
++	}
++
++	/* Register with IIO */
++	data->indio_dev = iio_allocate_device();
++	if (data->indio_dev == NULL) {
++		err = -ENOMEM;
++		goto exit_gpio;
++	}
++
++	data->indio_dev->dev.parent = &client->dev;
++	data->indio_dev->attrs = &ak8975_attr_group;
++	data->indio_dev->dev_data = (void *)(data);
++	data->indio_dev->driver_module = THIS_MODULE;
++	data->indio_dev->modes = INDIO_DIRECT_MODE;
++
++	err = iio_device_register(data->indio_dev);
++	if (err < 0)
++		goto exit_free_iio;
++
++	return 0;
++
++exit_free_iio:
++	iio_free_device(data->indio_dev);
++exit_gpio:
++	gpio_free(data->eoc_gpio);
++exit_free:
++	kfree(data);
++exit:
++	return err;
++}
++
++static int ak8975_remove(struct i2c_client *client)
++{
++	struct ak8975_data *data = i2c_get_clientdata(client);
++
++	iio_device_unregister(data->indio_dev);
++	iio_free_device(data->indio_dev);
++
++	gpio_free(data->eoc_gpio);
++
++	kfree(data);
++
++	return 0;
++}
++
++static const struct i2c_device_id ak8975_id[] = {
++	{"ak8975", 0},
++	{}
++};
++
++MODULE_DEVICE_TABLE(i2c, ak8975_id);
++
++static struct i2c_driver ak8975_driver = {
++	.driver = {
++		.name	= "ak8975",
++	},
++	.probe		= ak8975_probe,
++	.remove		= __devexit_p(ak8975_remove),
++	.id_table	= ak8975_id,
++};
++
++static int __init ak8975_init(void)
++{
++	return i2c_add_driver(&ak8975_driver);
++}
++
++static void __exit ak8975_exit(void)
++{
++	i2c_del_driver(&ak8975_driver);
++}
++
++module_init(ak8975_init);
++module_exit(ak8975_exit);
++
++MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
++MODULE_DESCRIPTION("AK8975 magnetometer driver");
++MODULE_LICENSE("GPL");
+-- 
+1.7.0.4
 
