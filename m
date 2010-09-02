@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab0IBSQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 14:16:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:56705 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab0IBSQj (ORCPT
+	id S1756201Ab0IBSQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 14:16:53 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:23555 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152Ab0IBSQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 14:16:39 -0400
-X-Authority-Analysis: v=1.1 cv=8rLOhk8wZGSvnaCM3aW+9DxbPzg0bBAKX0Qt8NUyFX0= c=1 sm=0 a=h6dlIqBDnR0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=mVL3gQTcX71xQAafrcUA:9 a=1ac4UyvpxOgSNeYKGv8A:7 a=v1BBsSDJI7cdxenNKxJWIRcsusYA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: kernelshark plugins and ftrace array fields
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-In-Reply-To: <4C7FB603.60609@redhat.com>
-References: <4C7F9639.7000804@redhat.com>
-	 <1283437521.2356.136.camel@gandalf.stny.rr.com> <4C7FB603.60609@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 02 Sep 2010 14:16:38 -0400
-Message-ID: <1283451398.2356.360.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Sep 2010 14:16:51 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6093"; a="53045029"
+Date: Thu, 2 Sep 2010 11:16:50 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Greg KH <greg@kroah.com>
+Cc: Patrick Pannuto <ppannuto@codeaurora.org>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        magnus.damm@gmail.com, grant.likely@secretlab.ca,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH 1/4] platform: Use drv->driver.bus instead of assuming
+ platform_bus_type
+Message-ID: <20100902181650.GA2589@huya.qualcomm.com>
+References: <1282158943-11902-1-git-send-email-ppannuto@codeaurora.org>
+ <1282158943-11902-2-git-send-email-ppannuto@codeaurora.org>
+ <20100818194410.GA17421@suse.de>
+ <4C6C3A28.8070108@codeaurora.org>
+ <20100901223442.GA11761@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100901223442.GA11761@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-02 at 17:34 +0300, Avi Kivity wrote:
-> On 09/02/2010 05:25 PM, Steven Rostedt wrote:
-> > On Thu, 2010-09-02 at 15:19 +0300, Avi Kivity wrote:
-> >> I'd like to add enhance kvm_emulate_insn display in kernelshark to
-> >> show the disassembly of the instruction being emulated.  However,
-> >> pevent_get_field_val() doesn't support arrays (the instruction is
-> >> provided in a 15-byte array).
-> >>
-> >> Can you add support for arrays in the kernelshark API?  With that, it
-> >> looks like adding disassembly output to the kvm plugin should be quite
-> >> simple.
-> >>
-> > Sure, I could add a pevent_get_field_array() or something. Could you
-> > tell me the event and give me an example of what you want to do.
+On Wed, Sep 01, 2010 at 03:34:43PM -0700, Greg KH wrote:
+> On Wed, Aug 18, 2010 at 12:53:12PM -0700, Patrick Pannuto wrote:
+> > On 08/18/2010 12:44 PM, Greg KH wrote:
+> > > On Wed, Aug 18, 2010 at 12:15:40PM -0700, Patrick Pannuto wrote:
+> > >> In theory (although not *yet* in practice), a driver being passed
+> > >> to platform_driver_probe might have driver.bus set to something
+> > >> other than platform_bus_type. Locking drv->driver.bus is always
+> > >> correct.
+> > >>
+> > >> Change-Id: Ib015c35237eb5493d17a812576a3a9906e1344d4
+> > > 
+> > > What is that field?  Why did you add it?
+> > > 
+> > > confused,
+> > > 
+> > > greg k-h
+> > 
+> > Ugh... It's from gerrit; forgot to remove them, sorry.
+> > 
+> > Do you want a fresh set, or can you just ignore them for now?
 > 
-> plugin_kvm.c:
-> 
-> kvm_emulate_insn_handler()
-> {
->     fetch insn array and len field
->     feed into disassembler
->     trace_seq_printf() the disassembled instruction
-> }
-> 
+> Actually, can I get a fresh set now, as others have commented already.
 
-OK, with no modification of what I have already, I just created this
-handler:
+I'm going to need to take over these patches for Pat.  Give me a
+little while to track down the correct versions and I can send them
+out.
 
-static int
-kvm_emulate_insn_handler(struct trace_seq *s, struct record *record,
-                         struct event_format *event, void *context)
-{
-        struct format_field *field;
-        unsigned char *data = record->data;
-        int i;
+Thanks,
+David
 
-        field = pevent_find_field(event, "insn");
-        if (!field) {
-                trace_seq_puts(s, "Can't find inst field");
-                return 0;
-        }
-
-        trace_seq_puts(s, "insn: ");
-        for (i = 0; i < field->size; i++) {
-                trace_seq_printf(s, "%s%02x",
-                                 i ? "," : "",
-                                 data[field->offset + i]);
-        }
-
-        return 0;
-}
-
-
-I think this is what you would want, right?
-
--- Steve
-
-
-
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
