@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588Ab0IBE3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 00:29:52 -0400
-Received: from hanwang.com.cn ([221.122.51.51]:33802 "EHLO mail.hanwang.com.cn"
+	id S1751632Ab0IBEcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 00:32:11 -0400
+Received: from kroah.org ([198.145.64.141]:35214 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993Ab0IBE3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 00:29:50 -0400
-Date: Thu, 2 Sep 2010 12:29:50 +0800
-From: "Xing Wei" <weixing@hanwang.com.cn>
-To: "dmitry.torokhov" <dmitry.torokhov@gmail.com>
-Cc: "linux-input" <linux-input@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "jkosina" <jkosina@suse.cz>
-Subject: Re: [PATCH v3] input: Add support for Hanwang tablet
-Message-ID: <201009021229501252232@hanwang.com.cn>
-X-mailer: Foxmail 6, 15, 201, 23 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+	id S1750806Ab0IBEcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 00:32:09 -0400
+Date: Wed, 1 Sep 2010 21:32:54 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>,
+        Micha?? Nazarewicz <m.nazarewicz@samsung.com>
+Subject: Re: linux-next: build failure after merge of the usb tree
+Message-ID: <20100902043254.GB30689@kroah.com>
+References: <20100902135450.59d6b96a.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100902135450.59d6b96a.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 01, 2010 mitry Torokhov wrote:
-> Hi Xing,
+On Thu, Sep 02, 2010 at 01:54:50PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> On Wed, Sep 01, 2010 at 02:55:44PM +0800, Xing Wei wrote:
-> > Hi Dmitry, it works well and I really appreciate your work. 
-> > BTN_3 - BTN_8 & ABS_DISTANCE events are not handled & used in our X system driver by now,
-> > sorry for my mistake.
-> >
+> After merging the usb tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 > 
-> Just to avoid confusion - are BTN_3 - BTN_8 not used by your X driver or
-> the hardware does not really report them? Because if it the former then
-> we should continue reporting them - some other user (as in
-> program/driver) might be interested in these.
+> drivers/usb/gadget/nokia.c:244: error: unknown field 'bind' specified in initializer
+> drivers/usb/gadget/nokia.c:244: warning: initialization makes integer from pointer without a cast
+> drivers/usb/gadget/nokia.c:244: error: initializer element is not computable at load time
+> drivers/usb/gadget/nokia.c:244: error: (near initialization for 'nokia_driver.needs_serial')
+> drivers/usb/gadget/nokia.c: In function 'nokia_init':
+> drivers/usb/gadget/nokia.c:250: error: implicit declaration of function 'usb_composite_register'
 > 
-> Also, why do you develop your own X driver? Does not X's evdev driver
-> work properly for you?
+> Caused by commit cc604fa9db859b7d6899de807d6bd8df80fc0a1a ("usb gadget:
+> don't save bind callback in struct usb_configuration").  The 'bind' and
+> 'usb_composite_register' references above were added before 2.6.34-rc1
+> but missed in this patch.
 > 
-> Thanks.
->  
+> Please make every attempt to (at least) build every file that gets
+> modified when testing a patch.  (and grep is your friend)
 > 
+> I have used the usb tree from next-20100901 for today.
 
-Hi Dmitry, the hardware does really report BTN_3 - BTN_8.
-And I try to let the evdev driver(remove my X driver & .conf file ) take over the device,
-but seem like it has no reflection to the pressure and roll wheel pad,just run like a generic mouse.
+Sorry about that, my build didn't catch this.  I'll fix it up tomorrow.
 
-Our products are just used under Windows and Mac before,
-really new to kernel-input and X system,correct me if something wrong.
+thanks,
 
-Thanks.
-
+greg k-h
