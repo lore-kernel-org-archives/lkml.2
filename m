@@ -1,465 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab0IBRaN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 13:30:13 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2022 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab0IBRaK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 13:30:10 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp02.nvidia.com on Thu, 02 Sep 2010 10:29:39 -0700
-From: rklein@nvidia.com
-To: cbouatmailru@gmail.com
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, olof@lixom.net,
-        achew@nvidia.com, khali@linux-fr.org,
-        broonie@opensource.wolfsonmicro.com, Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH v2] power supply: add driver for TI BQ20Z75 gas gauge IC
-Date: Thu,  2 Sep 2010 10:29:46 -0700
-Message-Id: <1283448586-14613-1-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 02 Sep 2010 17:30:10.0356 (UTC) FILETIME=[7E524F40:01CB4AC4]
+	id S1753835Ab0IBRcv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 13:32:51 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:43399 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752728Ab0IBRcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 13:32:50 -0400
+Date: Thu, 2 Sep 2010 23:02:45 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Nauman Rafique <nauman@google.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Divyesh Shah <dpshah@google.com>,
+        Heinz Mauelshagen <heinzm@redhat.com>, arighi@develer.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC PATCH] Bio Throttling support for block IO controller
+Message-ID: <20100902173245.GC18218@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100901175830.GC22149@redhat.com>
+ <20100901200756.GE22149@redhat.com>
+ <20100902151824.GA2702@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100902151824.GA2702@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rhyland Klein <rklein@nvidia.com>
+* Vivek Goyal <vgoyal@redhat.com> [2010-09-02 11:18:24]:
 
-this driver depends on I2C and uses SMBUS for communication with the host.
+> On Wed, Sep 01, 2010 at 04:07:56PM -0400, Vivek Goyal wrote:
+> > On Wed, Sep 01, 2010 at 01:58:30PM -0400, Vivek Goyal wrote:
+> > > Hi,
+> > > 
+> > > Currently CFQ provides the weight based proportional division of bandwidth.
+> > > People also have been looking at extending block IO controller to provide
+> > > throttling/max bandwidth control.
+> > > 
+> > > I have started to write the support for throttling in block layer on 
+> > > request queue so that it can be used both for higher level logical
+> > > devices as well as leaf nodes. This patch is still work in progress but
+> > > I wanted to post it for early feedback.
+> > > 
+> > > Basically currently I have hooked into __make_request() function to 
+> > > check which cgroup bio belongs to and if it is exceeding the specified
+> > > BW rate. If no, thread can continue to dispatch bio as it is otherwise
+> > > bio is queued internally and dispatched later with the help of a worker
+> > > thread.
+> > > 
+> > > HOWTO
+> > > =====
+> > > - Mount blkio controller
+> > > 	mount -t cgroup -o blkio none /cgroup/blkio
+> > > 
+> > > - Specify a bandwidth rate on particular device for root group. The format
+> > >   for policy is "<major>:<minor>  <byes_per_second>".
+> > > 
+> > > 	echo "8:16  1048576" > /cgroup/blkio/blkio.read_bps_device
+> > > 
+> > >   Above will put a limit of 1MB/second on reads happening for root group
+> > >   on device having major/minor number 8:16.
+> > > 
+> > > - Run dd to read a file and see if rate is throttled to 1MB/s or not.
+> > > 
+> > > 	# dd if=/mnt/common/zerofile of=/dev/null bs=4K count=1024 iflag=direct
+> > > 	1024+0 records in
+> > > 	1024+0 records out
+> > > 	4194304 bytes (4.2 MB) copied, 4.0001 s, 1.0 MB/s
+> > >  
+> > >  Limits for writes can be put using blkio.write_bps_device file.
+> > > 
+> > > Open Issues
+> > > ===========
+> > > - Do we need to provide additional queue congestion semantics as we are
+> > >   throttling and queuing bios at request queue and probably we don't want
+> > >   a user space application to consume all the memory allocating bios
+> > >   and bombarding request queue with those bios.
+> > > 
+> > > - How to handle the current blkio cgroup stats file and two policies
+> > >   in the background. If for some reason both throttling and proportional
+> > >   BW policies are operating on request queue, then stats will be very
+> > >   confusing.
+> > > 
+> > >   May be we can allow activating either throttling or proportional BW
+> > >   policy per request queue and we can create a /sys tunable to list and
+> > >   chose between policies (something like choosing IO scheduler). The
+> > >   only downside of this apporach is that user also need to be aware of
+> > >   the storage hierachy and activate right policy at each node/request
+> > >   queue.
+> > 
+> > Thinking more about it. The issue of stats from proportional bandwidth
+> > controller and max bandwidth controller clobbering each other can 
+> > probably be solved by also specifying policy name with the stat. For 
+> > example, currently blkio.io_serviced, looks as follows.
+> > 
+> > # cat blkio.io_serviced
+> > 253:2 Read 61
+> > 253:2 Write 0
+> > 253:2 Sync 61
+> > 253:2 Async 0
+> > 253:2 Total 61
+> > 
+> > We can introduce one more field to specify policy for which this stats are as 
+> > follows.
+> > 
+> > # cat blkio.io_serviced
+> > 253:2 Read 61	throttle
+> > 253:2 Write 0	throttle
+> > 253:2 Sync 61	throttle
+> > 253:2 Async 0	throttle
+> > 253:2 Total 61	throttle
+> > 
+> > 253:2 Read 61	proportional	
+> > 253:2 Write 0	proportional
+> > 253:2 Sync 61   proportional
+> > 253:2 Async 0   proportional
+> > 253:2 Total 61  proportional
+> > 
+> 
+> Option 1
+> ========
+> I was looking at the blkio stat code more. It seems to be key value pair
+> thing. So looks like I shall have to change the format of the file and
+> use second field for policy name and that will break any existing tools
+> parsing these blkio cgroup files.
 
-Addressed comments from reviews by Mark Brown and Jean Delvare.
-  * Cleaned up whitespace and alignment issues
-  * changed return codes to more appropriate values
-  * change Kconfig option name to be consistent with existing devices
-  * removed global struct and moved to device specific data
-  * changed printk to dev_dbg
+We could go this way and marking the current stats as
+deprecated and to be removed say in 2.6.39 or so
 
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
- drivers/power/Kconfig   |    7 +
- drivers/power/Makefile  |    1 +
- drivers/power/bq20z75.c |  387 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 395 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/bq20z75.c
+> 
+> # cat blkio.io_serviced
+> 253:2 throttle Read 61
+> 253:2 throttle Write 0
+> 253:2 throttle Sync 61
+> 253:2 throttle Async 0
+> 253:2 throttle Total 61
+> 
+> 253:2 proportional Read 61
+> 253:2 proportional Write 0
+> 253:2 proportional Sync 61
+> 253:2 proportional Async 0
+> 253:2 proportional Total 61
+> 
+> Option 2
+> ========
+> Introduce policy column only for new policy. 
+> 
+> 253:2 Read 61
+> 253:2 Write 0
+> 253:2 Sync 61
+> 253:2 Async 0
+> 253:2 Total 61
+> 
+> 253:2 throttle Read 61
+> 253:2 throttle Write 0
+> 253:2 throttle Sync 61
+> 253:2 throttle Async 0
+> 253:2 throttle Total 61
+> 
+> Here old lines continue to represent proportional weight policy stats and
+> new lines with "throttle" key word represent throttling stats.
+> 
+> This is just like adding new fields to "stat" file. I guess it might still
+> might break some script which might get stumped by new lines. But if scripts
+> are not parsing all the lines and just selectively picking data then these
+> should be fine.
+> 
+> Option 3
+> ========
+> The other option is that I introduce new cgroup files for the new
+> policy. Something like what memory cgroup has done for swap accounting
+> files.
+> 
+> blkio.throttle.io_serviced
+> blkio.throttle.io_service_bytes
+> 
+> That will make sure ABI is not broken but number of files per cgroup
+> increase and there are already significant number of files in the group.
+> 
+> Actually I think I should atleast rename the read and write bw files so that
+> they explicitly tell these belong to throtlling poilcy.
+> 
+> blkio.throttle.read_bps_device
+> blkio.throttle.write_bps_device
+> 
+> Any thoughts on what is the best way forward.
+>
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 8e9ba17..53d9cbf 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -142,4 +142,11 @@ config CHARGER_PCF50633
- 	help
- 	 Say Y to include support for NXP PCF50633 Main Battery Charger.
+I'd prefer option 3, if not fallback to option 1. The problem is that
+with ABI changes, tools always have to figure out what version they
+are dealing with.
  
-+config BATTERY_BQ20Z75
-+        tristate "TI BQ20z75 gas gauge"
-+        depends on I2C
-+        help
-+         Say Y to include support for TI bq20z75 SBS-compliant
-+         gas gauge and protection IC.
-+
- endif # POWER_SUPPLY
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index 0005080..cdc403d 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -34,3 +34,4 @@ obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
- obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
- obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
- obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
-+obj-$(CONFIG_BATTERY_BQ20Z75)	+= bq20z75.o
-diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
-new file mode 100644
-index 0000000..a7eeedf
---- /dev/null
-+++ b/drivers/power/bq20z75.c
-@@ -0,0 +1,387 @@
-+/*
-+ * Gas Gauge driver for TI's BQ20Z75
-+ *
-+ * Copyright (c) 2010, NVIDIA Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/err.h>
-+#include <linux/power_supply.h>
-+#include <linux/i2c.h>
-+#include <linux/slab.h>
-+
-+enum {
-+	REG_MANUFACTURER_DATA,
-+	REG_TEMPERATURE,
-+	REG_VOLTAGE,
-+	REG_CURRENT,
-+	REG_CAPACITY,
-+	REG_TIME_TO_EMPTY,
-+	REG_TIME_TO_FULL,
-+	REG_STATUS,
-+	REG_CYCLE_COUNT,
-+	REG_SERIAL_NUMBER
-+};
-+
-+/* manufacturer access defines */
-+#define MANUFACTURER_ACCESS_STATUS	0x0006
-+#define MANUFACTURER_ACCESS_SLEEP	0x0011
-+
-+/* battery status value bits */
-+#define BATTERY_CHARGING		0x40
-+#define BATTERY_FULL_CHARGED		0x20
-+#define BATTERY_FULL_DISCHARGED		0x10
-+
-+#define BQ20Z75_DATA(_psp, _addr, _min_value, _max_value) { \
-+	.psp = _psp, \
-+	.addr = _addr, \
-+	.min_value = _min_value, \
-+	.max_value = _max_value, \
-+}
-+
-+static const struct bq20z75_device_data {
-+	enum power_supply_property psp;
-+	u8 addr;
-+	int min_value;
-+	int max_value;
-+} bq20z75_data[] = {
-+	[REG_MANUFACTURER_DATA] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_PRESENT, 0x00, 0, 65535),
-+	[REG_TEMPERATURE] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_TEMP, 0x08, 0, 65535),
-+	[REG_VOLTAGE] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_VOLTAGE_NOW, 0x09, 0, 20000),
-+	[REG_CURRENT] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_CURRENT_NOW, 0x0A, -32768,
-+			32767),
-+	[REG_CAPACITY] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_CAPACITY, 0x0E, 0, 100),
-+	[REG_TIME_TO_EMPTY] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG, 0x12, 0,
-+			65535),
-+	[REG_TIME_TO_FULL] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_TIME_TO_FULL_AVG, 0x13, 0,
-+			65535),
-+	[REG_STATUS] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_STATUS, 0x16, 0, 65535),
-+	[REG_CYCLE_COUNT] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_CYCLE_COUNT, 0x17, 0, 65535),
-+	[REG_SERIAL_NUMBER] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_SERIAL_NUMBER, 0x1C, 0, 65535),
-+};
-+
-+static enum power_supply_property bq20z75_properties[] = {
-+	POWER_SUPPLY_PROP_STATUS,
-+	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_TECHNOLOGY,
-+	POWER_SUPPLY_PROP_CYCLE_COUNT,
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+	POWER_SUPPLY_PROP_CURRENT_NOW,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_TEMP,
-+	POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG,
-+	POWER_SUPPLY_PROP_TIME_TO_FULL_AVG,
-+	POWER_SUPPLY_PROP_SERIAL_NUMBER,
-+};
-+
-+static int bq20z75_get_property(struct power_supply *psy,
-+	enum power_supply_property psp, union power_supply_propval *val);
-+
-+struct bq20z75_info {
-+	struct i2c_client	*client;
-+	struct power_supply	power_supply;
-+};
-+
-+static int bq20z75_get_battery_presence_and_health(
-+	struct i2c_client *client, enum power_supply_property psp,
-+	union power_supply_propval *val)
-+{
-+	s32 ret;
-+
-+	/* Write to ManufacturerAccess with
-+	 * ManufacturerAccess command and then
-+	 * read the status */
-+	ret = i2c_smbus_write_word_data(client,
-+		bq20z75_data[REG_MANUFACTURER_DATA].addr,
-+		MANUFACTURER_ACCESS_STATUS);
-+	if (ret < 0) {
-+		dev_err(&client->dev,
-+			"%s: i2c write for battery presence failed\n",
-+			__func__);
-+		return -ENODEV;
-+	}
-+
-+	ret = i2c_smbus_read_word_data(client,
-+		bq20z75_data[REG_MANUFACTURER_DATA].addr);
-+	if (ret < 0) {
-+		dev_err(&client->dev,
-+			"%s: i2c read for battery presence failed\n",
-+			__func__);
-+		return -EIO;
-+	}
-+
-+	if (ret < bq20z75_data[REG_MANUFACTURER_DATA].min_value ||
-+	    ret > bq20z75_data[REG_MANUFACTURER_DATA].max_value) {
-+		val->intval = 0;
-+		return 0;
-+	}
-+
-+	/* Mask the upper nibble of 2nd byte and
-+	 * lower byte of response then
-+	 * shift the result by 8 to get status*/
-+	ret &= 0x0F00;
-+	ret >>= 8;
-+	if (psp == POWER_SUPPLY_PROP_PRESENT) {
-+		if (ret == 0x0F)
-+			/* battery removed */
-+			val->intval = 0;
-+		else
-+			val->intval = 1;
-+	} else if (psp == POWER_SUPPLY_PROP_HEALTH) {
-+		if (ret == 0x09)
-+			val->intval = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
-+		else if (ret == 0x0B)
-+			val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
-+		else if (ret == 0x0C)
-+			val->intval = POWER_SUPPLY_HEALTH_DEAD;
-+		else
-+			val->intval = POWER_SUPPLY_HEALTH_GOOD;
-+	}
-+
-+	return 0;
-+}
-+
-+static int bq20z75_get_battery_property(struct i2c_client *client, 
-+	int reg_offset, enum power_supply_property psp, 
-+	union power_supply_propval *val)
-+{
-+	s32 ret;
-+
-+	ret = i2c_smbus_read_word_data(client,
-+		bq20z75_data[reg_offset].addr);
-+	if (ret < 0) {
-+		dev_err(&client->dev,
-+			"%s: i2c read for %d failed\n", __func__, reg_offset);
-+		return -EIO;
-+	}
-+
-+	if (ret >= bq20z75_data[reg_offset].min_value &&
-+	    ret <= bq20z75_data[reg_offset].max_value) {
-+		val->intval = ret;
-+		if (psp == POWER_SUPPLY_PROP_STATUS) {
-+			if (ret & BATTERY_CHARGING)
-+				val->intval = POWER_SUPPLY_STATUS_CHARGING;
-+			else if (ret & BATTERY_FULL_CHARGED)
-+				val->intval = POWER_SUPPLY_STATUS_FULL;
-+			else if (ret & BATTERY_FULL_DISCHARGED)
-+				val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
-+			else
-+				val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
-+		}
-+		/* bq20z75 provides battery tempreture in 0.1°K
-+		 * so convert it to °C */
-+		else if (psp == POWER_SUPPLY_PROP_TEMP)
-+			val->intval = ret - 2731;
-+	} else {
-+		if (psp == POWER_SUPPLY_PROP_STATUS)
-+			val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
-+		else
-+			val->intval = 0;
-+	}
-+
-+	return 0;
-+}
-+
-+static int bq20z75_get_battery_capacity(struct i2c_client *client,
-+	union power_supply_propval *val)
-+{
-+	s32 ret;
-+
-+	ret = i2c_smbus_read_byte_data(client, bq20z75_data[REG_CAPACITY].addr);
-+	if (ret < 0) {
-+		dev_err(&client->dev,
-+			"%s: i2c read for %d failed\n", __func__, REG_CAPACITY);
-+		return -EIO;
-+	}
-+
-+	/* bq20z75 spec says that this can be >100 %
-+	 * even if max value is 100 % */
-+	val->intval = min(ret, 100);
-+
-+	return 0;
-+}
-+
-+static int bq20z75_get_property(struct power_supply *psy,
-+	enum power_supply_property psp,
-+	union power_supply_propval *val)
-+{
-+	int count;
-+	int ret;
-+	struct bq20z75_info *bq20z75_device = container_of(psy,
-+				struct bq20z75_info, power_supply);
-+	struct i2c_client *client = bq20z75_device->client;
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_PRESENT:
-+	case POWER_SUPPLY_PROP_HEALTH:
-+		ret = bq20z75_get_battery_presence_and_health(client, psp, val);
-+		if (ret)
-+			return ret;
-+		break;
-+
-+	case POWER_SUPPLY_PROP_TECHNOLOGY:
-+		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
-+		break;
-+
-+	case POWER_SUPPLY_PROP_CAPACITY:
-+		ret = bq20z75_get_battery_capacity(client, val);
-+		if (ret)
-+			return ret;
-+		break;
-+
-+	case POWER_SUPPLY_PROP_STATUS:
-+	case POWER_SUPPLY_PROP_CYCLE_COUNT:
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+	case POWER_SUPPLY_PROP_CURRENT_NOW:
-+	case POWER_SUPPLY_PROP_TEMP:
-+	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG:
-+	case POWER_SUPPLY_PROP_TIME_TO_FULL_AVG:
-+	case POWER_SUPPLY_PROP_SERIAL_NUMBER:
-+		for (count = 0; count < ARRAY_SIZE(bq20z75_data); count++) {
-+			if (psp == bq20z75_data[count].psp)
-+				break;
-+		}
-+
-+		ret = bq20z75_get_battery_property(client, count, psp, val);
-+		if (ret)
-+			return ret;
-+		break;
-+
-+	default:
-+		dev_err(&client->dev,
-+			"%s: INVALID property\n", __func__);
-+		return -EINVAL;
-+	}
-+
-+	dev_dbg(&client->dev,
-+		"%s: property = %d, value = %d\n", __func__, psp, val->intval);
-+
-+	return 0;
-+}
-+
-+static int bq20z75_probe(struct i2c_client *client,
-+	const struct i2c_device_id *id)
-+{
-+	struct bq20z75_info *bq20z75_device;
-+	int rc;
-+
-+	bq20z75_device = kzalloc(sizeof(struct bq20z75_info), GFP_KERNEL);
-+	if (!bq20z75_device)
-+		return -ENOMEM;
-+
-+	bq20z75_device->client = client;
-+	bq20z75_device->power_supply.name = "battery";
-+	bq20z75_device->power_supply.type = POWER_SUPPLY_TYPE_BATTERY;
-+	bq20z75_device->power_supply.properties = bq20z75_properties;
-+	bq20z75_device->power_supply.num_properties = ARRAY_SIZE(bq20z75_properties);
-+	bq20z75_device->power_supply.get_property = bq20z75_get_property;
-+
-+	i2c_set_clientdata(client, bq20z75_device);
-+
-+	rc = power_supply_register(&client->dev, &bq20z75_device->power_supply);
-+	if (rc) {
-+		dev_err(&client->dev,
-+			"%s: Failed to register power supply\n", __func__);
-+		kfree(bq20z75_device);
-+		return rc;
-+	}
-+
-+	dev_info(&client->dev,
-+		"%s: battery gas gauge device registered\n", client->name);
-+
-+	return 0;
-+}
-+
-+static int bq20z75_remove(struct i2c_client *client)
-+{
-+	struct bq20z75_info *bq20z75_device = i2c_get_clientdata(client);
-+
-+	power_supply_unregister(&bq20z75_device->power_supply);
-+	kfree(bq20z75_device);
-+	bq20z75_device = NULL;
-+
-+	return 0;
-+}
-+
-+#if defined CONFIG_PM
-+static int bq20z75_suspend(struct i2c_client *client,
-+	pm_message_t state)
-+{
-+	s32 ret;
-+
-+	/* write to manufacturer access with sleep command */
-+	ret = i2c_smbus_write_word_data(client,
-+		bq20z75_data[REG_MANUFACTURER_DATA].addr,
-+		MANUFACTURER_ACCESS_SLEEP);
-+	if (ret < 0) {
-+		dev_err(&client->dev,
-+			"%s: i2c write for %d failed\n",
-+			__func__, MANUFACTURER_ACCESS_SLEEP);
-+		return -EIO;
-+	}
-+
-+	return 0;
-+}
-+#else
-+#define bq20z75_suspend		NULL
-+#endif
-+/* any smbus transaction will wake up bq20z75 */
-+#define bq20z75_resume		NULL
-+
-+static const struct i2c_device_id bq20z75_id[] = {
-+	{ "bq20z75", 0 },
-+	{}
-+};
-+
-+static struct i2c_driver bq20z75_battery_driver = {
-+	.probe		= bq20z75_probe,
-+	.remove		= bq20z75_remove,
-+	.suspend	= bq20z75_suspend,
-+	.resume		= bq20z75_resume,
-+	.id_table	= bq20z75_id,
-+	.driver = {
-+		.name	= "bq20z75-battery",
-+	},
-+};
-+
-+static int __init bq20z75_battery_init(void)
-+{
-+	return i2c_add_driver(&bq20z75_battery_driver);
-+}
-+module_init(bq20z75_battery_init);
-+
-+static void __exit bq20z75_battery_exit(void)
-+{
-+	i2c_del_driver(&bq20z75_battery_driver);
-+}
-+module_exit(bq20z75_battery_exit);
-+
-+MODULE_DESCRIPTION("BQ20z75 battery monitor driver");
-+MODULE_LICENSE("GPL");
 -- 
-1.7.0.4
-
+	Three Cheers,
+	Balbir
