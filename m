@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab0IBBDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 21:03:18 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:62775 "EHLO
+	id S1756158Ab0IBBDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 21:03:32 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:17241 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab0IBBDQ (ORCPT
+	with ESMTP id S1752357Ab0IBBDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 21:03:16 -0400
+	Wed, 1 Sep 2010 21:03:30 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
 	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=RIW2OriY805Aa6ouXnIPCl9QvaAxfvsyQtgMR9Q0BtkWDZ5AUGQecmrsWXPvemtur
-	RNQE9MR2VtUAqgC1S86OQ==
-Date: Wed, 1 Sep 2010 18:03:10 -0700 (PDT)
+	b=oMwkNRizq/T2/KuoLTEihWk3FoQoKjBZVMCtMKj4JruKcQxb7LjK0e3f8LQl0di8S
+	HZtM2N9JCbX3wU2/4pcPQ==
+Date: Wed, 1 Sep 2010 18:03:20 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Steven Whitehouse <swhiteho@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Subject: [patch v2 2/5] mm: add nofail variant of kmem_cache_zalloc
+cc: Anton Altaparmakov <aia21@cantab.net>,
+        linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [patch v2 5/5] ntfs: remove dependency on __GFP_NOFAIL
 In-Reply-To: <alpine.DEB.2.00.1009011757360.24694@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1009011758120.24694@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1009011801050.24694@chino.kir.corp.google.com>
 References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <alpine.DEB.2.00.1009011757360.24694@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
@@ -30,11 +30,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add kmem_cache_zalloc_nofail().  This function is equivalent to
-kmem_cache_zalloc(), except that it will never return NULL and instead
-loop forever trying to allocate memory.
+Reimplement ntfs_malloc_nofs_nofail() to loop forever calling
+ntfs_malloc_nofs() until the allocation succeeds.
 
-If the first allocation attempt fails because the page allocator doesn't 
+If the first allocation attempt fails because the page allocator doesn't
 implicitly loop, a warning will be emitted, including a call trace.
 Subsequent failures will suppress this warning.
 
@@ -43,46 +42,31 @@ No future callers should be added.
 
 Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- fs/gfs2/meta_io.c    |    2 +-
- include/linux/slab.h |   17 +++++++++++++++++
- 2 files changed, 18 insertions(+), 1 deletions(-)
+ fs/ntfs/malloc.h |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/fs/gfs2/meta_io.c b/fs/gfs2/meta_io.c
---- a/fs/gfs2/meta_io.c
-+++ b/fs/gfs2/meta_io.c
-@@ -289,7 +289,7 @@ void gfs2_attach_bufdata(struct gfs2_glock *gl, struct buffer_head *bh,
- 		return;
- 	}
- 
--	bd = kmem_cache_zalloc(gfs2_bufdata_cachep, GFP_NOFS | __GFP_NOFAIL);
-+	bd = kmem_cache_zalloc_nofail(gfs2_bufdata_cachep, GFP_NOFS);
- 	bd->bd_bh = bh;
- 	bd->bd_gl = gl;
- 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -313,6 +313,23 @@ static inline void *kmem_cache_zalloc(struct kmem_cache *k, gfp_t flags)
- 	return kmem_cache_alloc(k, flags | __GFP_ZERO);
- }
- 
-+/*
+diff --git a/fs/ntfs/malloc.h b/fs/ntfs/malloc.h
+--- a/fs/ntfs/malloc.h
++++ b/fs/ntfs/malloc.h
+@@ -76,11 +76,19 @@ static inline void *ntfs_malloc_nofs(unsigned long size)
+  * This function guarantees that the allocation will succeed.  It will sleep
+  * for as long as it takes to complete the allocation.
+  *
+- * If there was insufficient memory to complete the request, return NULL.
 + * NOTE: no new callers of this function should be implemented!
 + * All memory allocations should be failable whenever possible.
-+ */
-+static inline void *kmem_cache_zalloc_nofail(struct kmem_cache *k, gfp_t flags)
-+{
+  */
+ static inline void *ntfs_malloc_nofs_nofail(unsigned long size)
+ {
+-	return __ntfs_malloc(size, GFP_NOFS | __GFP_HIGHMEM | __GFP_NOFAIL);
 +	void *ret;
 +
 +	for (;;) {
-+		ret = kmem_cache_zalloc(k, flags);
++		ret = ntfs_malloc_nofs(size);
 +		if (ret)
 +			return ret;
-+		WARN_ON_ONCE(get_order(kmem_cache_size(k)) >
-+						PAGE_ALLOC_COSTLY_ORDER);
++		WARN_ON_ONCE(get_order(size) > PAGE_ALLOC_COSTLY_ORDER);
 +	}
-+}
-+
- /**
-  * kzalloc - allocate memory. The memory is set to zero.
-  * @size: how many bytes of memory are required.
+ }
+ 
+ static inline void ntfs_free(void *addr)
