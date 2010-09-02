@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab0IBUWt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:22:49 -0400
-Received: from smtp101.sbc.mail.re3.yahoo.com ([66.196.96.84]:39307 "HELO
-	smtp101.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756801Ab0IBUWs (ORCPT
+	id S1756907Ab0IBUYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 16:24:09 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42556 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab0IBUYH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:22:48 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: xFpAbooVM1kmAosJB5Uy6s5v9Ba1vUg7agmbOhAlUs.QjM7
- HHzMWUDVmuN3IYH_NxGDVBJHUKb7t9RQZVVMXQcece7rtMFjPajxG3FT1f1T
- muyTtEOpkdL0FG4hJhgh1kHO2RIOhKqjywynL9LE0EmBE4mAw5kVQ5RXcrpQ
- 7iHT0W_yaRWkFARW6cnEXKIuYZdc0hrdu1IEbzpg.TJL20jQlUOTCkgWjxNJ
- s2MN4yNiccRz9Av7iDGdkbB56XBafXfF1jTP.BWJtOB2OsDwZMtGKzKSEN6x
- v3NBFeXv0bPwSMcfi8yklepDridBs1oUHUJW8fyFaQBC.b3olQ40qBArViwu
- 0YExmu_MA75h8K86vWnHWEyi479zqHwb1Uuop21.KU.kTCLWriRT97CKHYGt
- wOyCxu0dNH6mJ_Dttutk7Ls6aob2q.Y8kC9rbhAbwfIqdigDeMmugPZHm8CO
- ACMM5TKah
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [Scst-devel] [ANNOUNCE]: Comparison of features between
-	different SCSI targets (SCST, STGT, IET, LIO) updated
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Chris Weiss <cweiss@gmail.com>
-Cc: Vladislav Bolkhovitin <vst@vlnb.net>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        iscsitarget-devel@lists.sourceforge.net, stgt@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Ross Walker <rswwalker@gmail.com>
-In-Reply-To: <AANLkTikYgSrW-fSRNBMU2DWYk2x1xQSAqKhoW1Lijj4N@mail.gmail.com>
-References: <4C7FFB85.7000006@vlnb.net>
-	 <AANLkTikYgSrW-fSRNBMU2DWYk2x1xQSAqKhoW1Lijj4N@mail.gmail.com>
-Content-Type: text/plain
-Date: Thu, 02 Sep 2010 13:12:11 -0700
-Message-Id: <1283458331.5598.129.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Sep 2010 16:24:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=eaSCyxfrx6vg7cYFDANsJMRtsw08XKvwqsdhwPudn6r7nt2D4iIY9H5SkGvLA4/gZe
+         4NcHldZ5710gCoAgkjoGRa8+zCVszvsdWisbFD0dX/8gd25wgCskb9DDMjAkYuV0XgSm
+         Z9/jrNJzYMS3t7WuWr5lzkzWhbyInswCe/LyI=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinz2TEgJD5XVXSgcN0Zq0cL43a9xh004etmA2=V@mail.gmail.com>
+References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com>
+ <20100902121853.e90f6c53.randy.dunlap@oracle.com> <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
+ <4C800266.1000005@oracle.com> <AANLkTineHC5C=Sv5uZezx7-RF3_rQOJFBePhfzD6jfMF@mail.gmail.com>
+ <AANLkTinz2TEgJD5XVXSgcN0Zq0cL43a9xh004etmA2=V@mail.gmail.com>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Thu, 2 Sep 2010 17:23:16 -0300
+Message-ID: <AANLkTinnc3rd6EQNAJB_37QAP0qSuxoqvZQVXS0ifUm7@mail.gmail.com>
+Subject: Re: [RFC] Fix typos
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-02 at 15:00 -0500, Chris Weiss wrote:
-> On Thu, Sep 2, 2010 at 2:31 PM, Vladislav Bolkhovitin <vst@vlnb.net> wrote:
-> > Hello,
-> >
-> > I updated the Linux SCSI targets comparison page
-> > http://scst.sourceforge.net/comparison.html, which compares features of
-> > the existing Linux SCSI target subsystems. The comparison includes SCST,
-> > STGT, IET and LIO. I added IET there, because it is the most used Linux
-> > iSCSI target at the moment.
-> .
-> .
-> >
-> > If you see I'm wrong somewhere or forgot something, you are welcome to
-> > correct me and I will fix that.
-> >
-> > Vlad
-> >
-> 
-> as a user following the potential inclusion of a kernel-space target,
-> iscsi specifically, I would be very interested in seeing what other
-> pluses the other frameworks have over scst, because if this chart is
-> accurate, all the other targets have quite a ways to go to catch up.
-> 
+On Thu, Sep 2, 2010 at 17:16, Mike Frysinger <vapier.adi@gmail.com> wrote:
+> On Thu, Sep 2, 2010 at 16:08, Lucas De Marchi wrote:
+>> On Thu, Sep 2, 2010 at 17:00, Randy Dunlap wrote:
+>>> It looks good for Documentation/.
+>>>
+>>> And fixing typos is certainly something that we want to do in
+>>> user-visible messages, like printk strings.
+>>
+>> What about comments and code?
+>
+> i think it's useful to fix typos in those things, but this would def
+> require a human to review things.  it might also be saner to start
 
-Actually sorry, anyone who has spent more than 30 minutes looking at the
-TCM v4 code that has already been posted to linux-scsi on monday knows
-this list just more handwaving.  I suggest you start doing the same
-(actually discussion specific source file + line refrences) unless you
-actually want to trust this hopelessly out-of-date list on blind
-princaple.
+I agree. This is me :-)
 
-> To me, lacking correct reserve and task management means "not ready
-> for public consumption".  Making any kernel change that does not have
-> RESERVE/RELEASE and full TM command support is only going to make
-> Linux look buggy and amateur-ish in the storage world.
+> with a whitelist of common typos (doesnt checkpatch have this ?)
+> rather than doing it against a dictionary.
 
-First, understand that Vlad has been asked to produce a problem use case
-for his CRH=1 (Compatibility Reservation Handling) concerns using the
-SPC-3 RESERVE/RELEASE methods with the TCM v4 code.  He has been never
-been able to produce a use case, ever.  Also, just for reference, does
-SCST's SPC-3 persisent reservation handling actually properly support
-CRH=1 emulation from spc4r17..?  Last time I checked, it most certainly
-did *not*.
+I'm running a script with a dictionary of common typos, not a "normal
+dictionary".
 
-Second, in terms of TM emulation / passthrough support in the TCM v4
-code, we follow what is implemented in drivers/scsi ML and LLDs,
-primarly to properly for Linux SCSI Initiators.  I honestly don't have
-alot of interesting currently in implementing all of the ancient TM
-emulation that none of the mainline SCSI LLDs in Linux implement today,
-or plan to do the future.  As for specific TM concerns, I am happy to
-address then on a case by case basis with the appropiate use case.
+> for example, we've committed a few drivers that used "platfrom" in
+> their structure names when it should have been "platform".
 
-Best,
+I didn't have this typo, but I can add it as well.
 
---nab
 
+-- 
+
+Lucas De Marchi
