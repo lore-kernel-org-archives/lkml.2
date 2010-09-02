@@ -1,120 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab0IBQSy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 12:18:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:3749 "EHLO
+	id S1755836Ab0IBQXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 12:23:17 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:23806 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755673Ab0IBQSx convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752692Ab0IBQXQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 12:18:53 -0400
+	Thu, 2 Sep 2010 12:23:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=S8UevClqtl3HSZUasH5dm503NPR8Tx41ckaW6+WQVyBoydo1fCfDtWz91dsoUW4syz
-         +kE9BwrrzTalqYg64YMw==
+        b=J7z5nu63iC5lD0HlvFhyRSvbGXmv/GNLoVp8kVryDItxN4G31DTLuZuebyZluj6/Ix
+         X3jowCuPibv/+W78JdkQ==
 MIME-Version: 1.0
-In-Reply-To: <20100902154743.GI4879@redhat.com>
-References: <AANLkTimA-AZWJugaLR3VPGVhBaJid=t=a1rPVNUE_8Dh@mail.gmail.com>
-	<20100901145728.GM22783@erda.amd.com>
-	<AANLkTikOaCL8FqQuUQsYPxm19WZOdarp8AMAugN0mnqQ@mail.gmail.com>
-	<20100902141900.GG4879@redhat.com>
-	<AANLkTin2KVPpkQWUa_GQ66q+wvZpfYHOKAfWbG-+K5FD@mail.gmail.com>
-	<20100902154743.GI4879@redhat.com>
-Date: Thu, 2 Sep 2010 18:18:49 +0200
-Message-ID: <AANLkTinfcekCCcKVZOUd7wfWHQGJ4sf5Cd6GO2Qzfo+9@mail.gmail.com>
-Subject: Re: [PATCH 4/4] [x86] perf: fix accidentally ack'ing a second event
- on intel perf counter
-From: Stephane Eranian <eranian@google.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20100902151824.GA2702@redhat.com>
+References: <20100901175830.GC22149@redhat.com> <20100901200756.GE22149@redhat.com>
+ <20100902151824.GA2702@redhat.com>
+From: Nauman Rafique <nauman@google.com>
+Date: Thu, 2 Sep 2010 09:22:50 -0700
+Message-ID: <AANLkTikTskke8UnDNj7LFX7EopX8t-0jqb-_Ogt359ik@mail.gmail.com>
+Subject: Re: [RFC PATCH] Bio Throttling support for block IO controller
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Divyesh Shah <dpshah@google.com>,
+        Heinz Mauelshagen <heinzm@redhat.com>, arighi@develer.com,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 5:47 PM, Don Zickus <dzickus@redhat.com> wrote:
-> On Thu, Sep 02, 2010 at 04:39:02PM +0200, Stephane Eranian wrote:
->> Don,
+On Thu, Sep 2, 2010 at 8:18 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Wed, Sep 01, 2010 at 04:07:56PM -0400, Vivek Goyal wrote:
+>> On Wed, Sep 01, 2010 at 01:58:30PM -0400, Vivek Goyal wrote:
+>> > Hi,
+>> >
+>> > Currently CFQ provides the weight based proportional division of bandwidth.
+>> > People also have been looking at extending block IO controller to provide
+>> > throttling/max bandwidth control.
+>> >
+>> > I have started to write the support for throttling in block layer on
+>> > request queue so that it can be used both for higher level logical
+>> > devices as well as leaf nodes. This patch is still work in progress but
+>> > I wanted to post it for early feedback.
+>> >
+>> > Basically currently I have hooked into __make_request() function to
+>> > check which cgroup bio belongs to and if it is exceeding the specified
+>> > BW rate. If no, thread can continue to dispatch bio as it is otherwise
+>> > bio is queued internally and dispatched later with the help of a worker
+>> > thread.
+>> >
+>> > HOWTO
+>> > =====
+>> > - Mount blkio controller
+>> >     mount -t cgroup -o blkio none /cgroup/blkio
+>> >
+>> > - Specify a bandwidth rate on particular device for root group. The format
+>> >   for policy is "<major>:<minor>  <byes_per_second>".
+>> >
+>> >     echo "8:16  1048576" > /cgroup/blkio/blkio.read_bps_device
+>> >
+>> >   Above will put a limit of 1MB/second on reads happening for root group
+>> >   on device having major/minor number 8:16.
+>> >
+>> > - Run dd to read a file and see if rate is throttled to 1MB/s or not.
+>> >
+>> >     # dd if=/mnt/common/zerofile of=/dev/null bs=4K count=1024 iflag=direct
+>> >     1024+0 records in
+>> >     1024+0 records out
+>> >     4194304 bytes (4.2 MB) copied, 4.0001 s, 1.0 MB/s
+>> >
+>> >  Limits for writes can be put using blkio.write_bps_device file.
+>> >
+>> > Open Issues
+>> > ===========
+>> > - Do we need to provide additional queue congestion semantics as we are
+>> >   throttling and queuing bios at request queue and probably we don't want
+>> >   a user space application to consume all the memory allocating bios
+>> >   and bombarding request queue with those bios.
+>> >
+>> > - How to handle the current blkio cgroup stats file and two policies
+>> >   in the background. If for some reason both throttling and proportional
+>> >   BW policies are operating on request queue, then stats will be very
+>> >   confusing.
+>> >
+>> >   May be we can allow activating either throttling or proportional BW
+>> >   policy per request queue and we can create a /sys tunable to list and
+>> >   chose between policies (something like choosing IO scheduler). The
+>> >   only downside of this apporach is that user also need to be aware of
+>> >   the storage hierachy and activate right policy at each node/request
+>> >   queue.
 >>
->> On Thu, Sep 2, 2010 at 4:19 PM, Don Zickus <dzickus@redhat.com> wrote:
->> > On Thu, Sep 02, 2010 at 10:13:19AM +0200, Stephane Eranian wrote:
->> >> Robert,
->> >>
->> >> Do you have the test program you used to test this?
->> >> I believe the NHM hack does not solve the problem, it
->> >> just makes it harder to appear.
->> >
->> > Could be.
->> >
->> >>
->> >> I suspect the real issue is that the GLOBAL_STATUS
->> >> bitmask cannot be trusted. I'd like to verify this.
->> >>
->> >> Has the problem appear only on Nehalem or also on
->> >> Westmere?
->> >
->> > I was able to duplicate on
->> >
->> > Intel(R) Core(TM) i5 CPU Â  Â  Â  Â  650 Â @ 3.20GHz
->> > Intel(R) Xeon(R) CPU Â  Â  Â  Â  Â  X5560 Â @ 2.80GHz
->> >
->> I managed to reproduce on core i7 860 (without patch4).
->> Looking at the code again, I am dubious you ever execute
->> the retry goto. If the PMU is disabled and you've just
->> cleared the OVF_STAT, then I don't see where the new
->> overflows would come from. But that's a separate problem.
+>> Thinking more about it. The issue of stats from proportional bandwidth
+>> controller and max bandwidth controller clobbering each other can
+>> probably be solved by also specifying policy name with the stat. For
+>> example, currently blkio.io_serviced, looks as follows.
+>>
+>> # cat blkio.io_serviced
+>> 253:2 Read 61
+>> 253:2 Write 0
+>> 253:2 Sync 61
+>> 253:2 Async 0
+>> 253:2 Total 61
+>>
+>> We can introduce one more field to specify policy for which this stats are as
+>> follows.
+>>
+>> # cat blkio.io_serviced
+>> 253:2 Read 61 throttle
+>> 253:2 Write 0 throttle
+>> 253:2 Sync 61 throttle
+>> 253:2 Async 0 throttle
+>> 253:2 Total 61        throttle
+>>
+>> 253:2 Read 61 proportional
+>> 253:2 Write 0 proportional
+>> 253:2 Sync 61   proportional
+>> 253:2 Async 0   proportional
+>> 253:2 Total 61  proportional
+>>
 >
-> I agree with you, but a printk before the goto proved otherwise! :-)
+> Option 1
+> ========
+> I was looking at the blkio stat code more. It seems to be key value pair
+> thing. So looks like I shall have to change the format of the file and
+> use second field for policy name and that will break any existing tools
+> parsing these blkio cgroup files.
 >
+> # cat blkio.io_serviced
+> 253:2 throttle Read 61
+> 253:2 throttle Write 0
+> 253:2 throttle Sync 61
+> 253:2 throttle Async 0
+> 253:2 throttle Total 61
+>
+> 253:2 proportional Read 61
+> 253:2 proportional Write 0
+> 253:2 proportional Sync 61
+> 253:2 proportional Async 0
+> 253:2 proportional Total 61
+>
+> Option 2
+> ========
+> Introduce policy column only for new policy.
+>
+> 253:2 Read 61
+> 253:2 Write 0
+> 253:2 Sync 61
+> 253:2 Async 0
+> 253:2 Total 61
+>
+> 253:2 throttle Read 61
+> 253:2 throttle Write 0
+> 253:2 throttle Sync 61
+> 253:2 throttle Async 0
+> 253:2 throttle Total 61
+>
+> Here old lines continue to represent proportional weight policy stats and
+> new lines with "throttle" key word represent throttling stats.
+>
+> This is just like adding new fields to "stat" file. I guess it might still
+> might break some script which might get stumped by new lines. But if scripts
+> are not parsing all the lines and just selectively picking data then these
+> should be fine.
+>
+> Option 3
+> ========
+> The other option is that I introduce new cgroup files for the new
+> policy. Something like what memory cgroup has done for swap accounting
+> files.
+>
+> blkio.throttle.io_serviced
+> blkio.throttle.io_service_bytes
 
-Well, I was wrong about my status validation. I had my test wrong.
-I am seeing discrepancies between OVF_STATUS (status)
-and manual inspection of each counter (status2) compared to
-active_mask (act):
-
-[  489.338564] CPU2 status=0x6 status2=0x4 act=0x7
-[  501.484235] CPU2 status=0x6 status2=0x4 act=0x7
-[  541.686414] CPU2 status=0x6 status2=0x4 act=0x7
-[  561.819575] CPU2 status=0x6 status2=0x4 act=0x7
-
-Note that I have the NMI watchdog on, and running perf record
-with 2 events only.
-
-OVF_STATUS reports more than what has actually occurred.
-I think that is fine because in the loop there is a check for against
-active_mask. Nevertheless, I think there is a problem right there.
-
-I am trying to narrow down when it happens. It seems to occur
-only when I start a new perf record session. And possibly when
-perf runs on a CPU that is not monitored:
-
-taskset -c 4   perf record -e cycles -e instructions -F 2000 -a  -C 2
--o /dev/null -- sleep 600
-
-> And a printk of the status bit that triggered the goto happened to be the
-> same one that we initially cleared. Â Like I said when I initially posted
-> the patch, I am not sure why it works but it does do something to stem the
-> NMI.
-
-Yes, I suspect the clearing does not work well. Let's try to do it
-multiple times
-in a loop.
+Vivek,
+I have not looked at the rest of the patch yet. But I do not get why
+stats like io_serviced and io_servived_bytes would be policy specific.
+They should represent the total IO from a group serviced by the disk.
+If we want to count IOs which are in a new state, we should add new
+stats for that. What am I missing?
 
 >
-> There is probably a deeper problem here, I was just trying to get the
-> external/unknown nmis working again.
+> That will make sure ABI is not broken but number of files per cgroup
+> increase and there are already significant number of files in the group.
 >
-I suspect that if we were not to use OVF_STATUS, then we would not need
-the back-to-back nmi logic. NMi cannot be nested. So just looking at
-the counters
-should be reliable (excl. PEBS for now).
-
-
-> Cheers,
-> Don
+> Actually I think I should atleast rename the read and write bw files so that
+> they explicitly tell these belong to throtlling poilcy.
+>
+> blkio.throttle.read_bps_device
+> blkio.throttle.write_bps_device
+>
+> Any thoughts on what is the best way forward.
+>
+> Vivek
+>
+>> It will allow us following.
+>>
+>> - Avoid two control policies overwritting each other's stats.
+>> - Allow both policies (throttle, proportional) to be operational on
+>>   same request queue at the same time instead of forcing user to choose
+>>   one.
+>> - We don't have to introduce another /sys variable per request queue and
+>>   that will make life easier in terms of configuration.
+>>
+>> Thoughts?
+>>
+>> Vivek
 >
