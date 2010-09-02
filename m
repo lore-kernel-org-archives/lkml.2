@@ -1,119 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab0IBRLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 13:11:45 -0400
-Received: from bounce-2.online.net ([88.191.253.47]:51568 "EHLO
-	bounce-2.online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab0IBRLn (ORCPT
+	id S1756015Ab0IBRNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 13:13:18 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44277 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab0IBRNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 13:11:43 -0400
-X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Sep 2010 13:11:43 EDT
-Message-ID: <4C7FD8DB.6080009@free.fr>
-Date: Thu, 02 Sep 2010 19:03:23 +0200
-From: Albert ARIBAUD <albert.aribaud@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	Thu, 2 Sep 2010 13:13:17 -0400
+Date: Thu, 2 Sep 2010 18:12:53 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: Jeff Ohlstein <johlstei@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Gregory Bean <gbean@codeaurora.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Subject: Re: [PATCH 14/24] msm: add hotplug stub functions
+Message-ID: <20100902171253.GX26319@n2100.arm.linux.org.uk>
+References: <1282712273-344-1-git-send-email-johlstei@codeaurora.org> <1282712273-344-15-git-send-email-johlstei@codeaurora.org> <20100902111157.GX26319@n2100.arm.linux.org.uk> <1283446177.3674.0.camel@c-dwalke-linux.qualcomm.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH] add an option to control maximum line length
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-auth-smtp-user: albert@aribaud.net 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283446177.3674.0.camel@c-dwalke-linux.qualcomm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some projects or people use checkpatch.pl but want a maximum
-line length different from 80: provide option --max-line-length
-which expects an integer (defaults to 80) as the length limit.
-
-Signed-off-by: Albert Aribaud <albert.aribaud@free.fr>
----
-  scripts/checkpatch.pl |   45 ++++++++++++++++++++++++---------------------
-  1 files changed, 24 insertions(+), 21 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 2039acd..4cd54ff 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -16,6 +16,7 @@ use Getopt::Long qw(:config no_auto_abbrev);
-   my $quiet = 0;
-  my $tree = 1;
-+my $maxlinelength = 80;
-  my $chk_signoff = 1;
-  my $chk_patch = 1;
-  my $tst_only;
-@@ -41,6 +42,7 @@ Options:
-    -q, --quiet                quiet
-    --no-tree                  run without a kernel tree
-    --no-signoff               do not check for 'Signed-off-by' line
-+  --max-line-length=LEN      warn for lines longer than LEN 
-characters(default 80)
-    --patch                    treat FILE as patchfile (default)
-    --emacs                    emacs compile window format
-    --terse                    one line per report
-@@ -64,24 +66,25 @@ EOM
-  }
-   GetOptions(
--	'q|quiet+'	=> \$quiet,
--	'tree!'		=> \$tree,
--	'signoff!'	=> \$chk_signoff,
--	'patch!'	=> \$chk_patch,
--	'emacs!'	=> \$emacs,
--	'terse!'	=> \$terse,
--	'f|file!'	=> \$file,
--	'subjective!'	=> \$check,
--	'strict!'	=> \$check,
--	'root=s'	=> \$root,
--	'summary!'	=> \$summary,
--	'mailback!'	=> \$mailback,
--	'summary-file!'	=> \$summary_file,
--
--	'debug=s'	=> \%debug,
--	'test-only=s'	=> \$tst_only,
--	'h|help'	=> \$help,
--	'version'	=> \$help
-+	'q|quiet+'		=> \$quiet,
-+	'tree!'			=> \$tree,
-+	'max-line-length=i'	=> \$maxlinelength,
-+	'signoff!'		=> \$chk_signoff,
-+	'patch!'		=> \$chk_patch,
-+	'emacs!'		=> \$emacs,
-+	'terse!'		=> \$terse,
-+	'f|file!'		=> \$file,
-+	'subjective!'		=> \$check,
-+	'strict!'		=> \$check,
-+	'root=s'		=> \$root,
-+	'summary!'		=> \$summary,
-+	'mailback!'		=> \$mailback,
-+	'summary-file!'		=> \$summary_file,
-+
-+	'debug=s'		=> \%debug,
-+	'test-only=s'		=> \$tst_only,
-+	'h|help'		=> \$help,
-+	'version'		=> \$help
-  ) or help(1);
-   help(0) if ($help);
-@@ -1409,14 +1412,14 @@ sub process {
-  # check we are in a valid source file if not then ignore this hunk
-  		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
-  -#80 column limit
-+#80 (or maxlinelength) column limit
-  		if ($line =~ /^\+/ && $prevrawline !~ /\/\*\*/ &&
-  		    $rawline !~ /^.\s*\*\s*\@$Ident\s/ &&
-  		    !($line =~ 
-/^\+\s*$logFunctions\s*\(\s*(?:(KERN_\S+\s*|[^"]*))?"[X\t]*"\s*(?:,|\)\s*;)\s*$/ 
-||
-  		    $line =~ /^\+\s*"[^"]*"\s*(?:\s*|,|\)\s*;)\s*$/) &&
--		    $length > 80)
-+		    $length > $maxlinelength)
-  		{
--			WARN("line over 80 characters\n" . $herecurr);
-+			WARN("line over $maxlinelength characters\n" . $herecurr);
-  		}
-   # check for spaces before a quoted newline
--- 
-1.7.1
+On Thu, Sep 02, 2010 at 09:49:37AM -0700, Daniel Walker wrote:
+> On Thu, 2010-09-02 at 12:11 +0100, Russell King - ARM Linux wrote:
+> > On Tue, Aug 24, 2010 at 09:57:43PM -0700, Jeff Ohlstein wrote:
+> > > From: Daniel Walker <dwalker@codeaurora.org>
+> > > 
+> > > We don't actually do anything for hotplug yet. This just lets
+> > > everything compile, even when hotplug is enabled.
+> > 
+> > And the point of that is?  If you're not supporting hotplug CPU yet, then
+> > don't allow it to be enabled.
+> 
+> How do we do that? I didn't see a easy way to prevent it.
 
 
-
+config HOTPLUG_CPU
+        bool "Support for hot-pluggable CPUs (EXPERIMENTAL)"
+        depends on SMP && HOTPLUG && EXPERIMENTAL
++	depends on !ARCH_MSM
