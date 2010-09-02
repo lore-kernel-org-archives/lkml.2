@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab0IBPzF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 11:55:05 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44149 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756040Ab0IBPzA (ORCPT
+	id S1756231Ab0IBPzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 11:55:39 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56724 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756049Ab0IBPzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 11:55:00 -0400
+	Thu, 2 Sep 2010 11:55:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=hy3VcWuRvnLswgs9xAYxBTlmjYP33LwBA2oF8D6onJluMFHMuQ1N6+wzZ3WMiIIGI0
-         QkU3oSA7YXi8zyHeOuG16HC8PNi+JWL0ZBUOmLNURLm9z1Kh5TulKlWnA9msnlHJgVFc
-         b1Clhh0/qDYi1nyigY55rvLonBtbgoFc4gMn4=
-Date: Thu, 2 Sep 2010 08:54:53 -0700
+        b=t6sXOHRpa7NNgnLDvg5tptmI4MIYuGm8zE5Vd4IkiCJ0k6G0WhMku0+HIA6SkVW3Zn
+         6dFy3djT1dge29Gq8kDszAvR/eA5m+RAhpP+8JWVbl9ROxwGUdGJPsx/s53QW9f0k8fY
+         8rNI85uWjIzDiRYM+01skW6THELHB+mJRwa4o=
+Date: Thu, 2 Sep 2010 08:55:26 -0700
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: Axel Lin <axel.lin@gmail.com>
 Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Simtec Electronics <linux@simtec.co.uk>, linux-input@vger.kernel.org
-Subject: Re: [PATCH] Input: s3c2410_ts - fix s3c2410ts_probe error path
-Message-ID: <20100902155453.GA16914@core.coreip.homeip.net>
-References: <1283415916.19272.1.camel@mola>
+        Todd Fischer <todd.fischer@ridgerun.com>, linux-input@vger.kernel.org
+Subject: Re: Input: tps6507x-ts - add missing platform_set_drvdata() in
+ tps6507x_ts_probe()
+Message-ID: <20100902155525.GB16914@core.coreip.homeip.net>
+References: <1283419241.19272.9.camel@mola>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283415916.19272.1.camel@mola>
+In-Reply-To: <1283419241.19272.9.camel@mola>
 User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 02, 2010 at 04:25:16PM +0800, Axel Lin wrote:
-> Use input_free_device() to free devices that have not been registered.
+On Thu, Sep 02, 2010 at 05:20:41PM +0800, Axel Lin wrote:
+> We call platform_get_drvdata() in tps6507x_ts_remove(),
+> thus we should call platform_set_drvdata() in tps6507x_ts_probe().
 > 
 > Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
 Applied, thanks Axel.
 
 > ---
->  drivers/input/touchscreen/s3c2410_ts.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  drivers/input/touchscreen/tps6507x-ts.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/input/touchscreen/s3c2410_ts.c b/drivers/input/touchscreen/s3c2410_ts.c
-> index 6085d12..8feb7f3 100644
-> --- a/drivers/input/touchscreen/s3c2410_ts.c
-> +++ b/drivers/input/touchscreen/s3c2410_ts.c
-> @@ -350,7 +350,7 @@ static int __devinit s3c2410ts_probe(struct platform_device *pdev)
->   err_tcirq:
->  	free_irq(ts.irq_tc, ts.input);
->   err_inputdev:
-> -	input_unregister_device(ts.input);
-> +	input_free_device(ts.input);
->   err_iomap:
->  	iounmap(ts.io);
->   err_clk:
+> diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
+> index a644d18..7286209 100644
+> --- a/drivers/input/touchscreen/tps6507x-ts.c
+> +++ b/drivers/input/touchscreen/tps6507x-ts.c
+> @@ -335,6 +335,7 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
+>  		dev_err(tsc->dev, "schedule failed");
+>  		goto err2;
+>  	 }
+> +	platform_set_drvdata(pdev, tps6507x_dev);
+>  
+>  	return 0;
+>  
 > -- 
 > 1.7.2
 > 
