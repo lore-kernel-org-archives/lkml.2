@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab0IBBJH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 21:09:07 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39558
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752182Ab0IBBJF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 21:09:05 -0400
-Date: Wed, 01 Sep 2010 18:09:22 -0700 (PDT)
-Message-Id: <20100901.180922.163252387.davem@davemloft.net>
-To: herbert@gondor.hengli.com.au
-Cc: eric.dumazet@gmail.com, bandan.das@stratus.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kaber@trash.net
-Subject: Re: [PATCH net-next-2.6] net/ipv4: push IP options to CB in
- ip_fragment
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100901233056.GA15177@gondor.apana.org.au>
-References: <1283232031.2405.38.camel@edumazet-laptop>
-	<20100901.144658.135972233.davem@davemloft.net>
-	<20100901233056.GA15177@gondor.apana.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1754979Ab0IBBPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 21:15:40 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56573 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754042Ab0IBBPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 21:15:39 -0400
+Message-ID: <4C7EFBE6.3040408@cn.fujitsu.com>
+Date: Thu, 02 Sep 2010 09:20:38 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        kvm-devel <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: ftrace/perf_event leak
+References: <4C7E11E5.1040402@redhat.com> <1283331868.2059.808.camel@laptop> <4C7E1C36.6070400@redhat.com> <4C7E1F12.8030304@cn.fujitsu.com> <4C7E2D1D.3080603@redhat.com> <1283338977.2059.938.camel@laptop> <20100901121518.GA5378@nowhere>
+In-Reply-To: <20100901121518.GA5378@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Thu, 2 Sep 2010 07:30:56 +0800
-
-> On Wed, Sep 01, 2010 at 02:46:58PM -0700, David Miller wrote:
-> .
->> Therefore I'm inclined to agree with Herbert that we need to parse the
->> options explicitly before invoke ip_fragment().  We must call it with
->> an SKB in the state it expects, and that means with options parsing
->> already performed.
+>> Subject: perf, trace: Fix module leak
+>> From: Li Zefan <lizf@cn.fujitsu.com>
+>> Date: Wed Sep 01 12:58:43 CEST 2010
+>>
+>> Commit 1c024eca (perf, trace: Optimize tracepoints by using
+>> per-tracepoint-per-cpu hlist to track events) caused a module refcount
+>> leak.
+>>
+>> Tested-by: Avi Kivity <avi@redhat.com>
+>> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> LKML-Reference: <4C7E1F12.8030304@cn.fujitsu.com>
+>> ---
+>>  kernel/trace/trace_event_perf.c |    3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> Index: linux-2.6/kernel/trace/trace_event_perf.c
+>> ===================================================================
+>> --- linux-2.6.orig/kernel/trace/trace_event_perf.c
+>> +++ linux-2.6/kernel/trace/trace_event_perf.c
+>> @@ -91,6 +91,8 @@ int perf_trace_init(struct perf_event *p
+>>  		    tp_event->class && tp_event->class->reg &&
+>>  		    try_module_get(tp_event->mod)) {
+>>  			ret = perf_trace_event_init(tp_event, p_event);
+>> +			if (ret)
+>> +				module_put(tp_event->mod);
+>>  			break;
+>>  		}
+>>  	}
+>> @@ -147,6 +149,7 @@ void perf_trace_destroy(struct perf_even
+>>  		}
+>>  	}
+>>  out:
+>> +	module_put(tp_event->mod);
+>>  	mutex_unlock(&event_mutex);
+>>  }
+>>  
+>>
 > 
-> FWIW the packet probably doesn't even have IP options.  What is
-> happening here is that we've found yet another entry point from
-> the bridge driver into the IP stack so we need to duplicate my
-> original patch here.
+> Thanks for fixing this.
+> 
+> However, can we split this in two patches to ease the backport?
+> 
+> The lack of a module_put() after perf_trace_init() failure is there for a while
+> (the backport needs to start in 2.6.32).
 
-With that in mind I'm going to commit the following and
-queue it up to -stable too.
+The failure should be a rare case, I don't think this has to be backported?
 
-Thanks.
-
---------------------
-bridge: Clear INET control block of SKBs passed into ip_fragment().
-
-In a similar vain to commit 17762060c25590bfddd68cc1131f28ec720f405f
-("bridge: Clear IPCB before possible entry into IP stack")
-
-Any time we call into the IP stack we have to make sure the state
-there is as expected by the ipv4 code.
-
-With help from Eric Dumazet and Herbert Xu.
-
-Reported-by: Brandan Das <brandan.das@stratus.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/bridge/br_netfilter.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-index 5ed00bd..137f232 100644
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -761,9 +761,11 @@ static int br_nf_dev_queue_xmit(struct sk_buff *skb)
- {
- 	if (skb->nfct != NULL && skb->protocol == htons(ETH_P_IP) &&
- 	    skb->len + nf_bridge_mtu_reduction(skb) > skb->dev->mtu &&
--	    !skb_is_gso(skb))
-+	    !skb_is_gso(skb)) {
-+		/* BUG: Should really parse the IP options here. */
-+		memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
- 		return ip_fragment(skb, br_dev_queue_push_xmit);
--	else
-+	} else
- 		return br_dev_queue_push_xmit(skb);
- }
- #else
--- 
-1.7.2.2
+> 
+> But the lack of a module_put in the destroy path needs a .35 backport only.
+> 
 
