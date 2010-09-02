@@ -1,45 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455Ab0IBO0q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:26:46 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:35512 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751169Ab0IBO0p (ORCPT
+	id S1753958Ab0IBO2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:28:31 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:44221 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab0IBO2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:26:45 -0400
-Date: Thu, 2 Sep 2010 10:26:44 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Prabhu Chawandi <prabhu.chavandi@gmail.com>
-cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>,
-        <listar@nl.linux.org>
-Subject: Re: Resetting USB HC .. During kernel boot
-In-Reply-To: <AANLkTi=ZzbTb+uQchDDYfNibDv=LafQYuvRe2TVFpFGO@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1009021022270.1513-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 2 Sep 2010 10:28:30 -0400
+To: Jan Engelhardt <jengelh@medozas.de>
+CC: neilb@suse.de, miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vaurora@redhat.com,
+        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
+In-reply-to: <alpine.LNX.2.01.1009021625050.14798@obet.zrqbmnf.qr> (message
+	from Jan Engelhardt on Thu, 2 Sep 2010 16:25:47 +0200 (CEST))
+Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
+References: <20100826183340.027591901@szeredi.hu> <20100827170551.19616048@notabene> <E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu> <20100827213502.31af4a4c@notabene> <E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu> <20100829144207.4fbf2713@notabene> <E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu>
+ <alpine.LNX.2.01.1009021513040.10859@obet.zrqbmnf.qr> <20100902233200.586fcb31@notabene> <alpine.LNX.2.01.1009021625050.14798@obet.zrqbmnf.qr>
+Message-Id: <E1OrAm5-0002eF-Hw@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 02 Sep 2010 16:28:21 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010, Prabhu Chawandi wrote:
+On Thu, 2 Sep 2010, Jan Engelhardt wrote:
+> There ought to be a reason that other implementations offer
+> doing multiple branches with a single vfsmount.
 
-> Hi All,
-> 
->    I want to reset the USB HC  while the booting is happening. I have
-> the register details and functionality with me, but not sure which
-> part of the code to insert this segment.
-> 
-> please advice me ...
+Overdesign.
 
-Why do you want to do this?
-
-Anyway, it depends on what type of host controller you're talking 
-about.  UHCI controllers are already reset during boot.  The same is 
-true for PCI-based EHCI and OHCI controllers (except on certain PA-RISC 
-systems).
-
-I haven't checked the various non-PCI controllers.
-
-Alan Stern
-
+Thanks,
+Miklos
