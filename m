@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab0IBVXA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:23:00 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51682 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757468Ab0IBVIE (ORCPT
+	id S1757376Ab0IBVHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:07:55 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:63611 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757415Ab0IBVHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:08:04 -0400
+	Thu, 2 Sep 2010 17:07:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=iV5lKuvnodUxnaA2E/+BgzWQMwBv2i9xUAN41dZAlAW1AEwjGvT6ThSghnoYym0c2T
-         Xq7lKeNVbCmUOxvDIrcwP8EH1SFknVh5WCWCWRk+oOQT+cwe/yaziJDN7v1CRs4fA9wo
-         oyPUD8JN7wFQM2ls7njESn4/NyjH7dqKLhe4E=
+        b=kcfIhqs8kyVWoNbyyR2jpcemGdlto+Ds6ml4zk7agZvrJHV5k0XLkriwvy2E8x0oJI
+         EN7GwTKjKCbwQSkH20XTLu7KdJsEk9V3iUh9kJWmekxT1/JVAPGgBxCY3AzcuuSIgKMf
+         DZ8inA2wDHCo6rsf2XeSzJdVFxqlkcA3H7KFI=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org, jkosina@suse.cz,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 22/91] arch/arm/mm/proc-xscale.S Update broken web addresses in the arch directory.
-Date: Thu,  2 Sep 2010 14:07:51 -0700
-Message-Id: <1283461679-7851-7-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 18/91] arch/arm/mach-pxa/am300epd.c Update broken web addresses in the arch directory.
+Date: Thu,  2 Sep 2010 14:07:47 -0700
+Message-Id: <1283461679-7851-3-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1283461679-7851-1-git-send-email-justinmattock@gmail.com>
 References: <1283461679-7851-1-git-send-email-justinmattock@gmail.com>
@@ -35,22 +35,22 @@ need to be changed, and I'll resend an updated patch).
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- arch/arm/mm/proc-xscale.S |    2 +-
+ arch/arm/mach-pxa/am300epd.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mm/proc-xscale.S b/arch/arm/mm/proc-xscale.S
-index 1407597..887975f 100644
---- a/arch/arm/mm/proc-xscale.S
-+++ b/arch/arm/mm/proc-xscale.S
-@@ -418,7 +418,7 @@ ENTRY(xscale_cache_fns)
+diff --git a/arch/arm/mach-pxa/am300epd.c b/arch/arm/mach-pxa/am300epd.c
+index 993d75e..01aa021 100644
+--- a/arch/arm/mach-pxa/am300epd.c
++++ b/arch/arm/mach-pxa/am300epd.c
+@@ -8,7 +8,7 @@
+  * more details.
   *
-  * See erratum #25 of "Intel 80200 Processor Specification Update",
-  * revision January 22, 2003, available at:
-- *     http://www.intel.com/design/iio/specupdt/273415.htm
-+ *     http://www.intel.com/design/
-  */
- ENTRY(xscale_80200_A0_A1_cache_fns)
- 	.long	xscale_flush_kern_cache_all
+  * This work was made possible by help and equipment support from E-Ink
+- * Corporation. http://support.eink.com/community
++ * Corporation. http://www.support.eink.com/
+  *
+  * This driver is written to be used with the Broadsheet display controller.
+  * on the AM300 EPD prototype kit/development kit with an E-Ink 800x600
 -- 
 1.7.2.1
 
