@@ -1,111 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab0IBCaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 22:30:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56151 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752323Ab0IBC3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 22:29:55 -0400
-Date: Wed, 1 Sep 2010 22:29:36 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Moyer <jmoyer@redhat.com>, Divyesh Shah <dpshah@google.com>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Nauman Rafique <nauman@google.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH] cfq-iosched: add cfq group hierarchical scheduling
- support
-Message-ID: <20100902022936.GB7901@redhat.com>
-References: <4C7B54C0.7080008@cn.fujitsu.com>
- <20100830203644.GA15903@redhat.com>
- <4C7C4CE0.5080402@cn.fujitsu.com>
- <20100831125737.GA2527@redhat.com>
- <4C7E1359.9050105@cn.fujitsu.com>
- <20100901180243.fe82cb61.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753161Ab0IBCap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 22:30:45 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47247 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab0IBCan (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 22:30:43 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4C7F0C79.3060506@np.css.fujitsu.com>
+Date: Thu, 02 Sep 2010 11:31:21 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100901180243.fe82cb61.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: APEI-lenb <lenb@kernel.org>
+CC: Huang Ying <ying.huang@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: [PATCH 1/2] [Patch-next -v2] ACPI, APEI Fix the return value(==NULL)
+ of acpi_pre_map().
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 01, 2010 at 06:02:43PM +0900, KAMEZAWA Hiroyuki wrote:
+acpi_pre_map() is used for remapping the physical address of I/O, so
+it should be return NULL or remapped virtual address. The problem is
+that when (paddr - pg_off) equals 0, no matter whether I/O remapping is
+successful or not, the function returns NULL.
 
-[..]
-> > > One of the possible way forward could be this.
-> > > 
-> > > - Treat queue and group at same level (like CFS)
-> > > 
-> > > - Get rid of cfq_slice_offset() logic. That means without idling on, there
-> > >   will be no ioprio difference between cfq queues. I think anyway as of 
-> > >   today that logic helps in so little situations that I would not mind
-> > >   getting rid of it. Just that Jens should agree to it.
-> > > 
-> > > - With this new scheme, it will break the existing semantics of root group
-> > >   being at same level as child groups. To avoid that, we can probably
-> > >   implement two modes (flat and hierarchical), something similar to what
-> > >   memory cgroup controller has done. May be one tunable in root cgroup of
-> > >   blkio "use_hierarchy".  By default everything will be in flat mode and
-> > >   if user wants hiearchical control, he needs to set user_hierarchy in
-> > >   root group.
-> > > 
-> > >   I think memory controller provides "use_hierarchy" tunable in each
-> > >   cgroup. I am not sure why do we need it in each cgroup and not just
-> > >   in root cgroup.
-> > 
-> > I think Kamezawa-san should be able to answer this question. :)
-> > 
-> 
-> At first, please be sure that "hierarchical accounting is _very_ slow".
-> Please measure how hierarchical accounting (of 4-6 levels) are slow ;)
-> 
-> Then, there are 2 use cases.
-> 
->  1)  root/to/some/directory/A
->                            /B
->                            /C
->                             ....
->      All A, B, C ....are flat cgroup and has no relationship, not sharing limit.
->      In this case, hierarchy should not be enabled.
-> 
->  2)  root/to/some/directory/Gold/A,B,C...
->                             Silver/D,E,F
-> 
->      All A, B, C ....are limited by "Gold" or "Silver".
->      But Gold and Silver has no relationthip, they has their own limitations.
->      But A, B, C, D, E, F shares limit under Gold or Silver.
->      In this case, hierarchy
->      "root/to/some/directory" should be disabled.
->       Gold/ and Silver should have use_hierarchy=1.
-> 
-> (Assume these Gold and Silver as Container and the user of container
->  divides memory into A and B, C...)
-> 
-> For example,  libvirt makes very long "root/to/some/directory" ...
-> I never want to count-up all counters in the hierarchy even if
-> we'd like to use some fantasic hierarchical accounting under a container.
-> 
-> I don't like "all or nothing" option (as making use_hierarchy as mount
-> option or has parameter on root cgroup etc..) Then, allowed mixture.
+In acpi_pre_map(), after the physical address is remapped sucessfully,
+it will check whether the physical address has been added into acpi_iomaps
+list again.
+   - If the physical address has beed added into acpi_iomaps, the virtual
+     address will be saved in vaddr.
+   - Otherwise, NULL be saved in vaddr.
 
-Hi Kame San,
+So if the physical address is the first time to be remapped, vaddr will be
+NULL always.
 
-If you don't want any relationship between Gold and Silver then one can
-make root as unlimited group (limit_in_bytes = -1) and practically Gold
-and Silver have no dependency. There is no need of setting use_hierarchy
-different at root level and inside Gold/ and Silver/ groups?
+In many cases, (paddr - pg_off) may not equal 0. So the function could work
+well. In our machine, (paddr - pg_off) equals 0, so the return value of
+acpi_pre_map() is NULL.
 
-It sounds like you did it for two reasons.
+This patch fixed it and I confirmed it on x86_64 next-tree.
 
-- It can potentially provide more flexibility. 
-- performance reason so that you can stop do hierarchical accounting
-  all the way to root and stop before that (libvirt example).
+Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+---
+ drivers/acpi/atomicio.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-I think for blkio controller we can probably begin with either a mount
-time option or a use_hierachy file in root group and then later make
-it per group if there are use cases.
+diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
+index 8f8bd73..1bc2614 100644
+--- a/drivers/acpi/atomicio.c
++++ b/drivers/acpi/atomicio.c
+@@ -133,7 +133,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
+ 
+ 	spin_lock_irqsave(&acpi_iomaps_lock, flags);
+ 	vaddr = __acpi_try_ioremap(paddr, size);
+-	if (vaddr) {
++	if (unlikely(vaddr)) {
+ 		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+ 		iounmap(map->vaddr);
+ 		kfree(map);
+@@ -142,7 +142,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
+ 	list_add_tail_rcu(&map->list, &acpi_iomaps);
+ 	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+ 
+-	return vaddr + (paddr - pg_off);
++	return map->vaddr + (paddr - pg_off);
+ err_unmap:
+ 	iounmap(vaddr);
+ 	return NULL;
+-- 1.7.1.1 
 
-Vivek
