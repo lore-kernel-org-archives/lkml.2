@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab0IBJ4c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 05:56:32 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48464 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab0IBJ4b (ORCPT
+	id S1751857Ab0IBKCz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 06:02:55 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39057 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab0IBKCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 05:56:31 -0400
+	Thu, 2 Sep 2010 06:02:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=w8/bb5KNLS1BhQHFQLpsvoVjilndbKr/yheP73vSdcEZBAvO0EBud5Iq2EvKAmOjAz
-         rWXW+76zC5KC+3moZJQ6dDzbM+MMn4fJ1kyjBHIyZ8VEMaZurSg0hBnjpDeMJUMdYkMh
-         9n1VSYCdeqo1zVXCqZNNbhsxQ9OMbGLaCs6S0=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=lvDCp1QJoxAOxZR/ZSBjImRiZHP9P7NgWXatDZlRzjfA9qdnlyVMQ4kwjxJHRn2kFp
+         GzYOrnSV0dENriyCsUHbTUDiKLWxwV1Yj49ntEkSgA6ffXAtECjxmkHmtK0R+vZ6ErNl
+         cmheIpqcxvu2BH/Q+UmmObyZfMoE8fug11COo=
+Message-ID: <4C7F7649.3010409@gmail.com>
+Date: Thu, 02 Sep 2010 12:02:49 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <20100901103653.974C.A69D9226@jp.fujitsu.com>
-References: <20100901103653.974C.A69D9226@jp.fujitsu.com>
-Date: Thu, 2 Sep 2010 18:56:30 +0900
-Message-ID: <AANLkTikKYFkvtAktnwzrmGPf7RNVdakWn0UbcJnc5w_a@mail.gmail.com>
-Subject: Re: [PATCH] vmscan,tmpfs: treat used once pages on tmpfs as used once
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
+Subject: [PATCH] libata: skip EH autopsy and recovery during suspend
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C7376BE.5040006@gmail.com> <201008242239.43249.rjw@sisk.pl> <201008270109.36687.rjw@sisk.pl> <4C7F6931.4050707@gmail.com>
+In-Reply-To: <4C7F6931.4050707@gmail.com>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi KOSAKI,
+For some mysterious reason, certain hardware reacts badly to usual EH
+actions while the system is going for suspend.  As the devices won't
+be needed until the system is resumed, ask EH to skip usual autopsy
+and recovery and proceed directly to suspend.
 
-On Wed, Sep 1, 2010 at 10:37 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
-> When a page has PG_referenced, shrink_page_list() discard it only
-> if it is no dirty. This rule works completely fine if the backend
-> filesystem is regular one. PG_dirty is good signal that it was used
-> recently because flusher thread clean pages periodically. In addition,
-> page writeback is costly rather than simple page discard.
->
-> However, When a page is on tmpfs, this heuristic don't works because
-> flusher thread don't writeback tmpfs pages. then, tmpfs pages always
-> rotate lru twice at least and it makes unnecessary lru churn. Merely
-> tmpfs streaming io shouldn't cause large anonymous page swap-out.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Can you please verify this one?
 
-It seem to make sense.
-But the why admin use tmps is to keep the contents in memory as far as
-possible than other's file system.
-But this patch has a possibility for tmpfs pages to reclaim early than
-old behavior.
+Thanks.
 
-I admit this routine's goal is not to protect tmpfs page from too early reclaim.
-But at least, it would have affected until now.
-If it is, we might need other demotion prevent mechanism to protect tmpfs pages.
-Is split LRU enough? (I mean we consider tmpfs pages as anonymous
-which is hard to reclaim than file backed pages).
+ drivers/ata/libata-core.c |   14 +++++++++++++-
+ drivers/ata/libata-eh.c   |    4 ++++
+ include/linux/libata.h    |    1 +
+ 3 files changed, 18 insertions(+), 1 deletion(-)
 
-I don't mean to oppose this patch and I don't have a any number to
-insist on my opinion.
-Just what I want is that let's think about it more carefully and
-listen other's opinions. :)
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 9ceb493..92cd5f3 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -5427,6 +5427,7 @@ static int ata_host_request_pm(struct ata_host *host, pm_message_t mesg,
+  */
+ int ata_host_suspend(struct ata_host *host, pm_message_t mesg)
+ {
++	unsigned int ehi_flags = ATA_EHI_QUIET;
+ 	int rc;
 
-Thanks for good suggestion.
+ 	/*
+@@ -5435,7 +5436,18 @@ int ata_host_suspend(struct ata_host *host, pm_message_t mesg)
+ 	 */
+ 	ata_lpm_enable(host);
 
--- 
-Kind regards,
-Minchan Kim
+-	rc = ata_host_request_pm(host, mesg, 0, ATA_EHI_QUIET, 1);
++	/*
++	 * On some hardware, device fails to respond after spun down
++	 * for suspend.  As the device won't be used before being
++	 * resumed, we don't need to touch the device.  Ask EH to skip
++	 * the usual stuff and proceed directly to suspend.
++	 *
++	 * http://thread.gmane.org/gmane.linux.ide/46764
++	 */
++	if (mesg.event == PM_EVENT_SUSPEND)
++		ehi_flags |= ATA_EHI_NO_AUTOPSY | ATA_EHI_NO_RECOVERY;
++
++	rc = ata_host_request_pm(host, mesg, 0, ehi_flags, 1);
+ 	if (rc == 0)
+ 		host->dev->power.power_state = mesg;
+ 	return rc;
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index 0108731..95838b3 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -3242,6 +3242,10 @@ static int ata_eh_skip_recovery(struct ata_link *link)
+ 	if (link->flags & ATA_LFLAG_DISABLED)
+ 		return 1;
+
++	/* skip if explicitly requested */
++	if (ehc->i.flags & ATA_EHI_NO_RECOVERY)
++		return 1;
++
+ 	/* thaw frozen port and recover failed devices */
+ 	if ((ap->pflags & ATA_PFLAG_FROZEN) || ata_link_nr_enabled(link))
+ 		return 0;
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index 89115f8..d1ef41b 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -335,6 +335,7 @@ enum {
+ 	ATA_EHI_HOTPLUGGED	= (1 << 0),  /* could have been hotplugged */
+ 	ATA_EHI_NO_AUTOPSY	= (1 << 2),  /* no autopsy */
+ 	ATA_EHI_QUIET		= (1 << 3),  /* be quiet */
++	ATA_EHI_NO_RECOVERY	= (1 << 4),  /* no recovery */
+
+ 	ATA_EHI_DID_SOFTRESET	= (1 << 16), /* already soft-reset this port */
+ 	ATA_EHI_DID_HARDRESET	= (1 << 17), /* already soft-reset this port */
