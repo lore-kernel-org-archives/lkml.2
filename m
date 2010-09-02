@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab0IBVPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:15:06 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59003 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758024Ab0IBVO6 (ORCPT
+	id S1757827Ab0IBVNt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:13:49 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:51459 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757765Ab0IBVNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:14:58 -0400
+	Thu, 2 Sep 2010 17:13:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=EVfnlFcuJnm9lqqj3vRUWGYC/E4VNxVI46R4KDyY5mX2e0CNbjbJQE5+eWXzw4w+99
-         kjoE5GfaZ4mpeQn1jcf6oDlJOT4qG2sW/OgUumYdgl3R09LUfjBDkW8IZ0AghIICFpRC
-         R7rPQn35cXNO9/0TRDJ++LhqNQS1RZQ6+RFXY=
+        b=I7eGfWn1w9wgAPX/7gdQGE8jZFsvJ7BL42w6NqtMs0DsBTZFBte54FPczNszmf3ks4
+         Cbhk/ar6tLou5fGHnd/a+MqTtoihiwZRzsp5UoumWhKtSPtSr9Qsk4qaipVdEgLi+OrB
+         hsgDsMf9/4kPXFfMyYPnZxvTH3KnMkOQALpWw=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org, jkosina@suse.cz,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 89/91] arch/x86/kernel/apm_32.c Update broken web addresses in the arch directory.
-Date: Thu,  2 Sep 2010 14:13:40 -0700
-Message-Id: <1283462022-8024-14-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 81/91] arch/mips/math-emu/sp_fdp.c Update broken web addresses in the arch directory.
+Date: Thu,  2 Sep 2010 14:13:32 -0700
+Message-Id: <1283462022-8024-6-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1283462022-8024-1-git-send-email-justinmattock@gmail.com>
 References: <1283462022-8024-1-git-send-email-justinmattock@gmail.com>
@@ -35,22 +35,22 @@ need to be changed, and I'll resend an updated patch).
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- arch/x86/kernel/apm_32.c |    2 +-
+ arch/mips/math-emu/sp_fdp.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
-index 4c9c67b..ef07a46 100644
---- a/arch/x86/kernel/apm_32.c
-+++ b/arch/x86/kernel/apm_32.c
-@@ -190,7 +190,7 @@
+diff --git a/arch/mips/math-emu/sp_fdp.c b/arch/mips/math-emu/sp_fdp.c
+index 4093723..9d44208 100644
+--- a/arch/mips/math-emu/sp_fdp.c
++++ b/arch/mips/math-emu/sp_fdp.c
+@@ -4,7 +4,7 @@
+ /*
+  * MIPS floating point support
+  * Copyright (C) 1994-2000 Algorithmics Ltd.
+- * http://www.algor.co.uk
++ * http://www.mips.com/ 
   *
-  * [This document is available free from Intel by calling 800.628.8686 (fax
-  * 916.356.6100) or 800.548.4725; or via anonymous ftp from
-- * ftp://ftp.intel.com/pub/IAL/software_specs/apmv11.doc.  It is also
-+ * ftp://ftp.intel.com/pub/.  It is also
-  * available from Microsoft by calling 206.882.8080.]
+  * ########################################################################
   *
-  * APM 1.2 Reference:
 -- 
 1.7.2.1
 
