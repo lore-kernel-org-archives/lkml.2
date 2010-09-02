@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab0IBUBZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:01:25 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52983 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab0IBUBX (ORCPT
+	id S1756827Ab0IBUBq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 16:01:46 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32321 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab0IBUBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:01:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=PZVLuUqc4irCpR3/OIZ3GioFs4BLbzH5lhWdTqXNAg3Kaoo2+yRr8e71+3j40uhUav
-         qIhz2pmCk8N3LVYLwYafe/s6Z08ksHx9iS59GiZ4vDBIu4wYp5pWDPPHdjbWMxKvIP1M
-         d5zgEglyOSQFz3+ATXrfIrUknsE5GSIz+UClY=
+	Thu, 2 Sep 2010 16:01:45 -0400
+Message-ID: <4C800266.1000005@oracle.com>
+Date: Thu, 02 Sep 2010 13:00:38 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <4C7FFB85.7000006@vlnb.net>
-References: <4C7FFB85.7000006@vlnb.net>
-From: Chris Weiss <cweiss@gmail.com>
-Date: Thu, 2 Sep 2010 15:00:58 -0500
-Message-ID: <AANLkTikYgSrW-fSRNBMU2DWYk2x1xQSAqKhoW1Lijj4N@mail.gmail.com>
-Subject: Re: [Scst-devel] [ANNOUNCE]: Comparison of features between different
- SCSI targets (SCST, STGT, IET, LIO) updated
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        iscsitarget-devel@lists.sourceforge.net, stgt@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Ross Walker <rswwalker@gmail.com>
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Fix typos
+References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com> <20100902121853.e90f6c53.randy.dunlap@oracle.com> <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
+In-Reply-To: <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 2:31 PM, Vladislav Bolkhovitin <vst@vlnb.net> wrote:
-> Hello,
->
-> I updated the Linux SCSI targets comparison page
-> http://scst.sourceforge.net/comparison.html, which compares features of
-> the existing Linux SCSI target subsystems. The comparison includes SCST,
-> STGT, IET and LIO. I added IET there, because it is the most used Linux
-> iSCSI target at the moment.
-.
-.
->
-> If you see I'm wrong somewhere or forgot something, you are welcome to
-> correct me and I will fix that.
->
-> Vlad
->
+On 09/02/10 12:31, Lucas De Marchi wrote:
+> On Thu, Sep 2, 2010 at 16:18, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>> Hi,
+>>
+>> I'd take most of the corrections in Documentation/, but in general,
+>> I don't think that it's a good idea without some careful review.
+> 
+> I plan to review it if it's indeed worth fixing those typos. I already
+> fixed several false positives like  "rela" being changed to "real",
+> but since it's a 1.8 MB patch I think it's better to ask first before
+> making any other review.
+> 
+>>
+>> E.g.:
+>>
+>> 1.  changing thru to through isn't needed IMO.
+>> Can you add "thru" to your dictionary?
+> Yes, no problem
+> 
+>>
+>> 2.
+>> -(Warning, pulses on ACK ar inverted by transistor, irq is rised up on sync
+>> +(Warning, pulses on ACK ar inverted by transistor, irq is rose up on sync
+>>
+> Humn.. indeed this seems to be a bad typo in my dictionary.
+> 
+>> I'm not so sure about "is rose up" being better.  and what about "ar"?
+> 
+> I'm only changing words with 3 chars or more, because otherwise I
+> would have a lot of false positives, but I think I can add this word
+> without much trouble.
+> 
 
-as a user following the potential inclusion of a kernel-space target,
-iscsi specifically, I would be very interested in seeing what other
-pluses the other frameworks have over scst, because if this chart is
-accurate, all the other targets have quite a ways to go to catch up.
+Mike's suggested change is good here.
 
-To me, lacking correct reserve and task management means "not ready
-for public consumption".  Making any kernel change that does not have
-RESERVE/RELEASE and full TM command support is only going to make
-Linux look buggy and amateur-ish in the storage world.  Best to not
-change anything than to implement something without them.  These 2
-features alone are what helped me choose SCST in the first place.
+>>
+>> I saw a few others that I could comment on, but I lost them in the 1.8 MB patch file.
+> 
+> If you say it's good, I can review it more carefully.
+
+It looks good for Documentation/.
+
+And fixing typos is certainly something that we want to do in
+user-visible messages, like printk strings.
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
