@@ -1,193 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab0IBVe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:34:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57273 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752792Ab0IBVey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:34:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,310,1280732400"; 
-   d="scan'208";a="603208673"
-Date: Thu, 2 Sep 2010 14:25:05 -0700
-From: Fenghua Yu <fenghua.yu@intel.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: "mingo@elte.hu" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "r.marek@assembler.cz" <r.marek@assembler.cz>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86/hwmon: fix configuration and initialization of
-	coretemp and pkgtemp
-Message-ID: <20100902212505.GA31811@fenghua-desk.sc.intel.com>
-References: <4C7FB8370200007800013F40@vpn.id2.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C7FB8370200007800013F40@vpn.id2.novell.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757359Ab0IBVfU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:35:20 -0400
+Received: from smtp103.sbc.mail.re3.yahoo.com ([66.196.96.86]:32788 "HELO
+	smtp103.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757266Ab0IBVfS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 17:35:18 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: zoFpJscVM1lqrgaiSnieeD6eEO21LXlFHgi0OFCFo7DK8oO
+ tOu9n.Cyso2nSJWAvee2fGUT.1I3.lQvgoS2Fnz1NmvMmK3ed81QWseSyl0P
+ tFDEOcjS88iq6ua5zYkkxw7dQFb38dpxjT188rU8UDHjAFwLyVYucu4Tl.ea
+ Q4biG4z2bM_TbzBlmpBs7QH8QuG9cv7ZZfVIUAV1mWbUfPy3D4ucnM_UMaIj
+ 7geSHfSFICc3Lkl5cGQvlLtQqwJTbjVnAhRYF472Q0Lt03BxX5ESbQoyEC7z
+ UZI5usQEiuL6wdhUTF.3DMPVCe90Gl2hns6RGG7dR280F34aSD7ohbnMLGH.
+ ZXwBWumYyAx1LuEc8tNRdbXCNmWUqTsX9JlmbGdZZ1VblEaePUTMLk_u6H1t
+ _a0V55OLbOu4iQrx1AQOCNhZeVboMKgGyroF8tse5gSWggGNlmQ_p_0sQY5R
+ u_7OCDzpUeV4JBDWn3JQB1Xs-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [Scst-devel] [ANNOUNCE]: Comparison of features between
+	different SCSI targets (SCST, STGT, IET, LIO) updated
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Chris Weiss <cweiss@gmail.com>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        iscsitarget-devel@lists.sourceforge.net, stgt@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Ross Walker <rswwalker@gmail.com>
+In-Reply-To: <AANLkTinf7OgOodts3dvpg99+PFwKtxM631MsLzrJx4mv@mail.gmail.com>
+References: <4C7FFB85.7000006@vlnb.net>
+	 <AANLkTikYgSrW-fSRNBMU2DWYk2x1xQSAqKhoW1Lijj4N@mail.gmail.com>
+	 <1283458331.5598.129.camel@haakon2.linux-iscsi.org>
+	 <AANLkTinf7OgOodts3dvpg99+PFwKtxM631MsLzrJx4mv@mail.gmail.com>
+Content-Type: text/plain
+Date: Thu, 02 Sep 2010 14:31:18 -0700
+Message-Id: <1283463078.5598.169.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 02, 2010 at 05:44:07AM -0700, Jan Beulich wrote:
-> - using cpuid_eax() to determine feature availability on other than
->   the current CPU is invalid
-> - feature availability shopuld also be check in the hotplug code path
-> - pkgtemp doesn't depend on PCI altogether (apparently just inherited
->   from coretemp)
-> - coretemp really only needs PCI for Atom support
+On Thu, 2010-09-02 at 15:50 -0500, Chris Weiss wrote:
+> On Thu, Sep 2, 2010 at 3:12 PM, Nicholas A. Bellinger
+> <nab@linux-iscsi.org> wrote:
+> >> as a user following the potential inclusion of a kernel-space target,
+> >> iscsi specifically, I would be very interested in seeing what other
+> >> pluses the other frameworks have over scst, because if this chart is
+> >> accurate, all the other targets have quite a ways to go to catch up.
+> >>
+> >
+> > Actually sorry, anyone who has spent more than 30 minutes looking at the
+> > TCM v4 code that has already been posted to linux-scsi on monday knows
+> > this list just more handwaving.  I suggest you start doing the same
+> > (actually discussion specific source file + line refrences) unless you
+> > actually want to trust this hopelessly out-of-date list on blind
+> > princaple.
+> 
+> I'm just an end user, I have no interesting in line-by-line
+> comparisons or specs details.  I do, however, have interest in bullet
+> points, and the lack of bullet points, that throw up red flags to 3rd
+> party support contracts.  So, did the kernel team, or some other
+> impartial source, compile a similar but not out of date list, and is
+> it available for viewing?
+
+Ok, but please understand that this is a technical list where we discuss
+specifics of kernel code, and produce and review patches to reach a
+desired goal.
+
+One of the reason that TCM/LIO has been selected over SCST is because
+our patch workflow over the recent yeras demonstrates exactly this point
+the mainline folks who are following along.  For the new persistent
+reservations and ALUA multipath features that have been developed in
+recent times, the code was added feature bit by feature bit in a
+reviewablle manner, with each patch series going to linux-scsi for
+comments.  This allowed the code to benefit in a number of cases where
+different people (including Tomo-san, mnc, and others) noticed something
+strange in their own testing, and in each case we where able to get the
+item resolved. The scoreboard for these features is on the wiki here:
+
+http://linux-iscsi.org/index.php/Persistent_Reservations
+http://linux-iscsi.org/index.php/ALUA
+
+In terms of some feature list about who supports what for the mainline
+discussion, this is quite pointless at this point.  The best way for
+mainline people to know what your stack supports is to actually add
+support for said feature in reviewable and digestable pieces that are
+presented in much a manner that they are accessable to a larger
+audicence.  Just developing code some-where else and posting the entire
+thing means the code in question does not benefit by public review
+during the development phase.
+
+> 
+> > First, understand that Vlad has been asked to produce a problem use case
+> > for his CRH=1 (Compatibility Reservation Handling) concerns using the
+> > SPC-3 RESERVE/RELEASE methods with the TCM v4 code.  He has been never
+> > been able to produce a use case, ever.  Also, just for reference, does
+> > SCST's SPC-3 persisent reservation handling actually properly support
+> > CRH=1 emulation from spc4r17..?  Last time I checked, it most certainly
+> > did *not*.
+> 
+> I haven't tested this specifically, and I'm not even sure that the use
+> case is right, but ESX (the only initiator i actually use) uses
+> reservations when expanding vmdk files for size, thin provisioning,
+> and snapshots.  If I'm running big expands on 2 separate ESX nodes on
+> the same iscsi or FC LUN, can you be sure that I won't have a
+> collision without reservations?  And I mean 100% absolute sure.
 > 
 
-Could you split the patch into small patches since it handles a few different
-things?
+We have some people happly using ESX with LUN_RESET emulation with CDB
+level emulation with TCM/FILEIO , TCM/IBLOCK and with TCM/pSCSI in
+passthrough mode.
 
-> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> Cc: Rudolf Marek <r.marek@assembler.cz>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> > Second, in terms of TM emulation / passthrough support in the TCM v4
+> > code, we follow what is implemented in drivers/scsi ML and LLDs,
+> > primarly to properly for Linux SCSI Initiators.  I honestly don't have
+> > alot of interesting currently in implementing all of the ancient TM
+> > emulation that none of the mainline SCSI LLDs in Linux implement today,
+> > or plan to do the future.  As for specific TM concerns, I am happy to
+> > address then on a case by case basis with the appropiate use case.
 > 
-> ---
->  arch/x86/include/asm/cpufeature.h |    1 +
->  arch/x86/kernel/cpu/scattered.c   |    1 +
->  drivers/hwmon/Kconfig             |    5 +++--
->  drivers/hwmon/coretemp.c          |   30 ++++++++++++++----------------
->  drivers/hwmon/pkgtemp.c           |   11 +++--------
->  5 files changed, 22 insertions(+), 26 deletions(-)
+> Vmware's ESX uses ABORT extensively with network errors and when the
+> targets backend goes belly up, and just plain goes nuts if it doens't
+> get the kind of response that completely makes sense to it, typically
+> requiring the ESX node to be rebooted to get out of a confused state.
+> Maybe this is a failure in ESX's initiator, but ESX is following the
+> specs, or at least they claim to be.
+
+Yes, it needs to fall back to LUN_RESET, or reset the iSCSI I_T nexus.
+I am happy to add proper TASK_ABORT support into TCM v4 at some point
+down the line.  However if you can demonstrate that this is a real issue
+to me for your particular setup/version of ESX with LUNs reporting SPC-2
+or SPC-3 support, I would be happy to consider bumping this up the
+priority list.
+
 > 
-> --- linux-2.6.36-rc3/arch/x86/include/asm/cpufeature.h
-> +++ 2.6.36-rc3-x86-hwmon/arch/x86/include/asm/cpufeature.h
-> @@ -168,6 +168,7 @@
->  #define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
->  #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
->  #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
-> +#define X86_FEATURE_DTS		(7*32+31) /* Digital Thermal Sensor */
+> And a question that never got answered in another thread:  how many
+> OSS and commercial products are using LIO?  and how many of those are
+> certified and supported by other commercial products?  This is
+> directly related to impartial testing as well as standards
+> implementation, stability, and "plays nice with others".  Or in other
+> words, where I can look at an example implementation of LIO that's
+> considered by someone who is not you to be production ready?
 
-Is there any paticular reason to chose 7*32+31 instead of 7*32+7?
+TCM/LIO v3 has been validated for the highest level of Vsphere 4
+compliance (eg: above ESX which only uses SPC-2) with >= SPC-3
+compatiable Persistent Reservations and ALUA multipath.
 
->  
->  /* Virtualization flags: Linux defined, word 8 */
->  #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
-> --- linux-2.6.36-rc3/arch/x86/kernel/cpu/scattered.c
-> +++ 2.6.36-rc3-x86-hwmon/arch/x86/kernel/cpu/scattered.c
-> @@ -31,6 +31,7 @@ void __cpuinit init_scattered_cpuid_feat
->  	const struct cpuid_bit *cb;
->  
->  	static const struct cpuid_bit __cpuinitconst cpuid_bits[] = {
-> +		{ X86_FEATURE_DTS,		CR_EAX, 0, 0x00000006, 0 },
->  		{ X86_FEATURE_IDA,		CR_EAX, 1, 0x00000006, 0 },
->  		{ X86_FEATURE_ARAT,		CR_EAX, 2, 0x00000006, 0 },
->  		{ X86_FEATURE_PLN,		CR_EAX, 4, 0x00000006, 0 },
-> --- linux-2.6.36-rc3/drivers/hwmon/Kconfig
-> +++ 2.6.36-rc3-x86-hwmon/drivers/hwmon/Kconfig
-> @@ -401,7 +401,8 @@ config SENSORS_GL520SM
->  
->  config SENSORS_CORETEMP
->  	tristate "Intel Core/Core2/Atom temperature sensor"
-> -	depends on X86 && PCI && EXPERIMENTAL
-> +	depends on X86 && EXPERIMENTAL
-> +	depends on PCI || (!MATOM && !GENERIC_CPU && !X86_GENERIC)
->  	help
->  	  If you say yes here you get support for the temperature
->  	  sensor inside your CPU. Most of the family 6 CPUs
-> @@ -409,7 +410,7 @@ config SENSORS_CORETEMP
->  
->  config SENSORS_PKGTEMP
->  	tristate "Intel processor package temperature sensor"
-> -	depends on X86 && PCI && EXPERIMENTAL
-> +	depends on X86 && EXPERIMENTAL
->  	help
->  	  If you say yes here you get support for the package level temperature
->  	  sensor inside your CPU. Check documentation/driver for details.
-> --- linux-2.6.36-rc3/drivers/hwmon/coretemp.c
-> +++ 2.6.36-rc3-x86-hwmon/drivers/hwmon/coretemp.c
-> @@ -423,9 +423,18 @@ static int __cpuinit coretemp_device_add
->  	int err;
->  	struct platform_device *pdev;
->  	struct pdev_entry *pdev_entry;
-> -#ifdef CONFIG_SMP
->  	struct cpuinfo_x86 *c = &cpu_data(cpu);
-> -#endif
-> +
-> +	/*
-> +	 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
-> +	 * sensors. We check this bit only, all the early CPUs
-> +	 * without thermal sensors will be filtered out.
-> +	 */
-> +	if (!cpu_has(c, X86_FEATURE_DTS)) {
-> +		printk(KERN_INFO DRVNAME ": CPU (model=0x%x)"
-> +		       " has no thermal sensor.\n", c->x86_model);
-> +		return 0;
+http://linux-iscsi.org/index.php/Ecosystem
 
-Return an error (e.g. -ENODEV) could be better because there is no device for
-this driver. Then caller may handle this error accordingly (no caller handles
-the error currently, though).
+The vendors on this list including, but not limited to QNAP, Data
+Robotics, and Netgear have all received independent SPC-3 SCSI LUN
+verification with VMware using TCM/LIO v3.x directly over the last 12
+months.  Which means that here in North America, you can walk into just
+about any major electronic store that carries these products, and
+purchase TCM/LIO v3.x in shrinkwrap form from multiple vendors on
+multiple hardware platforms. In some cases, these products using a
+custom set of userspace /sys/kernel/config/target/ scripts code (of
+varing degrees of quality) with a propritary web-interface (also of
+varing degrees of quality) on top.
 
-> +	}
->  
->  	mutex_lock(&pdev_list_mutex);
->  
-> @@ -527,20 +536,9 @@ static int __init coretemp_init(void)
->  	if (err)
->  		goto exit;
->  
-> -	for_each_online_cpu(i) {
-> -		struct cpuinfo_x86 *c = &cpu_data(i);
-> -		/*
-> -		 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
-> -		 * sensors. We check this bit only, all the early CPUs
-> -		 * without thermal sensors will be filtered out.
-> -		 */
-> -		if (c->cpuid_level >= 6 && (cpuid_eax(0x06) & 0x01))
-> -			coretemp_device_add(i);
-> -		else {
-> -			printk(KERN_INFO DRVNAME ": CPU (model=0x%x)"
-> -				" has no thermal sensor.\n", c->x86_model);
-> -		}
-> -	}
-> +	for_each_online_cpu(i)
-> +		coretemp_device_add(i);
-> +
->  	if (list_empty(&pdev_list)) {
->  		err = -ENODEV;
->  		goto exit_driver_unreg;
-> --- linux-2.6.36-rc3/drivers/hwmon/pkgtemp.c
-> +++ 2.6.36-rc3-x86-hwmon/drivers/hwmon/pkgtemp.c
-> @@ -33,7 +33,6 @@
->  #include <linux/list.h>
->  #include <linux/platform_device.h>
->  #include <linux/cpu.h>
-> -#include <linux/pci.h>
->  #include <asm/msr.h>
->  #include <asm/processor.h>
->  
-> @@ -281,9 +280,10 @@ static int __cpuinit pkgtemp_device_add(
->  	int err;
->  	struct platform_device *pdev;
->  	struct pdev_entry *pdev_entry;
-> -#ifdef CONFIG_SMP
->  	struct cpuinfo_x86 *c = &cpu_data(cpu);
-> -#endif
-> +
-> +	if (!cpu_has(c, X86_FEATURE_PTS))
-> +		return 0;
+Best,
 
-Return -ENODEV could be better.
+--nab
 
->  
->  	mutex_lock(&pdev_list_mutex);
->  
-> @@ -399,11 +399,6 @@ static int __init pkgtemp_init(void)
->  		goto exit;
->  
->  	for_each_online_cpu(i) {
-> -		struct cpuinfo_x86 *c = &cpu_data(i);
-> -
-> -		if (!cpu_has(c, X86_FEATURE_PTS))
-> -			continue;
-> -
->  		err = pkgtemp_device_add(i);
->  		if (err)
->  			goto exit_devices_unreg;
-> 
-> 
