@@ -1,148 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab0IBPsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 11:48:14 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42208 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756182Ab0IBPsL (ORCPT
+	id S1756255Ab0IBPsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 11:48:22 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64003 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752774Ab0IBPsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 11:48:11 -0400
+	Thu, 2 Sep 2010 11:48:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=d0W9096QnaVzofnJG5GFTIAGKJXi1CjGaMPc292U0J02R4aqVpaLCUmAsL+z4oSufZ
-         +WrL4IAB8TTn4HUVOR9MBGIqZ++3MZ/IX/tzc6p/9n7hQrjVyR4v8v9g6z3NF6UkdIfz
-         2rYafW/+2AHa0PRM8b9fHwYk/+Q1TdCWHHSw8=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "M. Vefa Bicakci" <bicave@superonline.com>, stable@kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH] vmscan: don't use return value trick when oom_killer_disabled
-Date: Fri,  3 Sep 2010 00:47:41 +0900
-Message-Id: <1283442461-16290-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.5
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=s0w/PomI1npZNThlYxY4exkRhkqkatSZ3+z9XVUhED4dpDeA7p1FIUM/K8Pxf+JITP
+         PDW34/4cPYn+CibHD2BX84Cmpy4Q7QbNV2MUiXF1A2kaIbjrbRRO8slpML7I30Jhmh3r
+         U8sqdffEVDzXy2b6GPk9b7pK/S1ektbMjMWWc=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Subject: [PATCH v2 16/24] ptrace: cleanup arch_ptrace() on mn10300
+Date: Fri,  3 Sep 2010 00:46:23 +0900
+Message-Id: <1283442391-23612-17-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
+References: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-M. Vefa Bicakci reported 2.6.35 kernel hang up when hibernation on his
-32bit 3GB mem machine. (https://bugzilla.kernel.org/show_bug.cgi?id=16771)
-Also he was bisected first bad commit is below
+Use new 'datap' variable in order to remove unnecessary castings.
+Also remove checking @addr less than 0 because @addr is now unsigned.
 
-  commit bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
-  Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-  Date:   Fri Jun 4 14:15:05 2010 -0700
-
-     vmscan: fix do_try_to_free_pages() return value when priority==0 reclaim failure
-
-At first impression, this seemed very strange because the above commit only
-chenged function return value and hibernate_preallocate_memory() ignore
-return value of shrink_all_memory(). But it's related.
-
-Now, page allocation from hibernation code may enter infinite loop if
-the system has highmem.
-
-The reasons are two. 1) hibernate_preallocate_memory() call
-alloc_pages() wrong order 2) vmscan don't care enough OOM case when
-oom_killer_disabled.
-
-This patch only fix (2). Why is oom_killer_disabled so special?
-because when hibernation case, zone->all_unreclaimable never be turned on.
-hibernation freeze all tasks at first, then kswapd can't works in this
-case, and zone->all_unreclaimable is only turned from kswapd.
-
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: M. Vefa Bicakci <bicave@superonline.com>
-Cc: stable@kernel.org
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
 ---
- mm/vmscan.c |   33 +++++++++++++++++++++++++++------
- 1 files changed, 27 insertions(+), 6 deletions(-)
+ arch/mn10300/kernel/ptrace.c |   17 ++++++++---------
+ 1 files changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f620ab3..53b23a7 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1893,12 +1893,11 @@ static void shrink_zone(int priority, struct zone *zone,
-  * If a zone is deemed to be full of pinned pages then just give it a light
-  * scan then give up on it.
-  */
--static bool shrink_zones(int priority, struct zonelist *zonelist,
-+static void shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
+diff --git a/arch/mn10300/kernel/ptrace.c b/arch/mn10300/kernel/ptrace.c
+index ec4b414..5c0b07e 100644
+--- a/arch/mn10300/kernel/ptrace.c
++++ b/arch/mn10300/kernel/ptrace.c
+@@ -300,27 +300,26 @@ long arch_ptrace(struct task_struct *child, long request,
  {
- 	struct zoneref *z;
- 	struct zone *zone;
--	bool all_unreclaimable = true;
+ 	unsigned long tmp;
+ 	int ret;
++	unsigned long __user *datap = (unsigned long __user *) data;
  
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask), sc->nodemask) {
-@@ -1916,8 +1915,31 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 		}
+ 	switch (request) {
+ 	/* read the word at location addr in the USER area. */
+ 	case PTRACE_PEEKUSR:
+ 		ret = -EIO;
+-		if ((addr & 3) || addr < 0 ||
+-		    addr > sizeof(struct user) - 3)
++		if ((addr & 3) || addr > sizeof(struct user) - 3)
+ 			break;
  
- 		shrink_zone(priority, zone, sc);
--		all_unreclaimable = false;
- 	}
-+}
-+
-+static inline bool all_unreclaimable(struct zonelist *zonelist,
-+		struct scan_control *sc)
-+{
-+	struct zoneref *z;
-+	struct zone *zone;
-+	bool all_unreclaimable = true;
-+
-+	if (!scanning_global_lru(sc))
-+		return false;
-+
-+	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-+			gfp_zone(sc->gfp_mask), sc->nodemask) {
-+		if (!populated_zone(zone))
-+			continue;
-+		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-+			continue;
-+		if (zone->pages_scanned < (zone_reclaimable_pages(zone) * 6)) {
-+			all_unreclaimable = false;
-+			break;
-+		}
-+	}
-+
- 	return all_unreclaimable;
- }
+ 		tmp = 0;  /* Default return condition */
+ 		if (addr < NR_PTREGS << 2)
+ 			tmp = get_stack_long(child,
+ 					     ptrace_regid_to_frame[addr]);
+-		ret = put_user(tmp, (unsigned long *) data);
++		ret = put_user(tmp, datap);
+ 		break;
  
-@@ -1941,7 +1963,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 					struct scan_control *sc)
- {
- 	int priority;
--	bool all_unreclaimable;
- 	unsigned long total_scanned = 0;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	struct zoneref *z;
-@@ -1958,7 +1979,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		sc->nr_scanned = 0;
- 		if (!priority)
- 			disable_swap_token();
--		all_unreclaimable = shrink_zones(priority, zonelist, sc);
-+		shrink_zones(priority, zonelist, sc);
- 		/*
- 		 * Don't shrink slabs when reclaiming memory from
- 		 * over limit cgroups
-@@ -2020,7 +2041,7 @@ out:
- 		return sc->nr_reclaimed;
+ 		/* write the word at location addr in the USER area */
+ 	case PTRACE_POKEUSR:
+ 		ret = -EIO;
+-		if ((addr & 3) || addr < 0 ||
+-		    addr > sizeof(struct user) - 3)
++		if ((addr & 3) || addr > sizeof(struct user) - 3)
+ 			break;
  
- 	/* top priority shrink_zones still had more to do? don't OOM, then */
--	if (scanning_global_lru(sc) && !all_unreclaimable)
-+	if (!all_unreclaimable(zonelist, sc))
- 		return 1;
+ 		ret = 0;
+@@ -333,25 +332,25 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		return copy_regset_to_user(child, &user_mn10300_native_view,
+ 					   REGSET_GENERAL,
+ 					   0, NR_PTREGS * sizeof(long),
+-					   (void __user *)data);
++					   datap);
  
- 	return 0;
+ 	case PTRACE_SETREGS:	/* Set all integer regs in the child. */
+ 		return copy_regset_from_user(child, &user_mn10300_native_view,
+ 					     REGSET_GENERAL,
+ 					     0, NR_PTREGS * sizeof(long),
+-					     (const void __user *)data);
++					     datap);
+ 
+ 	case PTRACE_GETFPREGS:	/* Get the child FPU state. */
+ 		return copy_regset_to_user(child, &user_mn10300_native_view,
+ 					   REGSET_FPU,
+ 					   0, sizeof(struct fpu_state_struct),
+-					   (void __user *)data);
++					   datap);
+ 
+ 	case PTRACE_SETFPREGS:	/* Set the child FPU state. */
+ 		return copy_regset_from_user(child, &user_mn10300_native_view,
+ 					     REGSET_FPU,
+ 					     0, sizeof(struct fpu_state_struct),
+-					     (const void __user *)data);
++					     datap);
+ 
+ 	default:
+ 		ret = ptrace_request(child, request, addr, data);
 -- 
-1.7.0.5
+1.7.2.2
 
