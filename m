@@ -1,47 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab0IBIQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 04:16:33 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61098 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab0IBIQb (ORCPT
+	id S1752292Ab0IBIRR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 04:17:17 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:49416 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab0IBIRO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 04:16:31 -0400
+	Thu, 2 Sep 2010 04:17:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=eDQdiNHpo5Mz/juJqmWGQHuQ4bHD8H0uVbCejfIT34LWaywe6du76jwUb+L9MfOs5d
-         zCLMYXn8rXC36EnAXWHhneZeB/OSvNx5ESVmTlPImUUGGTYFr1sKz/hELsK7wlXF8fVW
-         sJjOxScbgGeY3a6NAHBRqZv3Ap6q89OoOKb6k=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=i47mQ/xvmamK8NWkLNNP9SaRtklQpPvdIWyMX1QR57+EZtSYc99hxJayeNVfKWtRD3
+         PJB1gQM2fp0RmBZdBS0w==
 MIME-Version: 1.0
-In-Reply-To: <1283414220.2059.1789.camel@laptop>
-References: <4C7E2CA9.9060702@cn.fujitsu.com> <1283354736.2059.1206.camel@laptop>
- <4C7F39B3.4000901@cn.fujitsu.com> <1283414119.2059.1785.camel@laptop> <1283414220.2059.1789.camel@laptop>
-From: "chxanders@gmail.com" <chxanders@gmail.com>
-Date: Thu, 2 Sep 2010 15:16:09 +0700
-Message-ID: <AANLkTinT3X+7hA9UvS8nKqpVzz1u1e-7UZNbfL_1UeX8@mail.gmail.com>
-Subject: Re: [PATCH 1/3] lib: introduce some memory copy macros and functions
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: miaox@cn.fujitsu.com, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <AANLkTinoED59y9Nad1fNdPp0u-mJ3z_fGt=p6GBaVDt+@mail.gmail.com>
+References: <4c7d2072.8eecd80a.6e3a.2dd0@mx.google.com>
+	<AANLkTinoED59y9Nad1fNdPp0u-mJ3z_fGt=p6GBaVDt+@mail.gmail.com>
+Date: Thu, 2 Sep 2010 10:17:10 +0200
+Message-ID: <AANLkTikKqahkda-BEgbqmy-Pk96pcT+GPBfybUdmYS8=@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu per-cgroup monitoring
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <lin@ming.vg>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 September 2010 14:07, Chris Samuel <chris@csamuel.org> wrote:
-> On 02/09/10 16:50, Miao Xie wrote:
+On Thu, Sep 2, 2010 at 5:53 AM, Lin Ming <lin@ming.vg> wrote:
+> On Tue, Aug 31, 2010 at 11:25 PM, Stephane Eranian <eranian@google.com> wrote:
+>> This series of patches adds per-container (cgroup) filtering capability
+>> to per-cpu monitoring. In other words, we can monitor all threads belonging
+>> to a specific cgroup and running on a specific CPU.
+>>
+>> This is useful to measure what is going on inside a cgroup. Something that
+>> cannot easily and cheaply be achieved with either per-thread or per-cpu mode.
+>> Cgroups can span multiple CPUs. CPUs can be shared between cgroups. Cgroups
+>> can have lots of threads. Threads can come and go during a measurement.
+>>
+>> To measure per-cgroup today requires using per-thread mode and attaching to
+>> all the current threads inside a cgroup and tracking new threads. That would
+>> require scanning of /proc/PID, which is subject to race conditions, and
+>> creating an event for each thread, each event requiring kernel memory.
+>>
+>> The approach taken by this patch is to leverage the per-cpu mode by simply
+>> adding a filtering capability on context switch only when necessary. That
+>> way the amount of kernel memory used remains bound by the number of CPUs.
+>> We also do not have to scan /proc. We are only interested in cgroup level
+>> counts, not per-thread.
+>>
+>> The cgroup to monitor is designated by passing a file descriptor opened
+>> on a new per-cgroup file in the cgroup filesystem (perf_event.perf). The
+>> option must be activated by setting perf_event_attr.cgroup=1 and passing
+>> a valid file descriptor in perf_event_attr.cgroup_fd. Those are the only
+>> two ABI extensions.
+>>
+>> The patch also includes changes to the perf tool to make use of cgroup
+>> filtering. Both perf stat and perf record have been extended to support
+>> cgroup via a new -G option. The cgroup is specified per event:
+>>
+>> $ perf stat -a -e cycles:u,cycles:u -G test1,test2 -- sleep 1
+>>  Performance counter stats for 'sleep 1':
+>>         2368881622  cycles                   test1
+>>                  0  cycles                   test2
+>>        1.001938136  seconds time elapsed
 >
->> I just change the "2.1" to "2" in your patch, because the
->> orignal code is LGPL v2.1, LGPL v2.1 permits us to apply
->> the terms of the ordinary GNU General Public License instead
->> of it.
-> Ahhh excellent, I hadn't realised that was possible; well spotted!
-Umm, isn't the only one that can do that the copyright holder?
-Disclaimer: I am not a laywer
+> I have tried this new feature. Cool!
+>
+> perf stat [<options>] [<command>]
+>
+> Is the command ("sleep 1" in above example) also counted?
+>
+If it runs in the cgroup that is measured then yes. Not that it will
+do much.
+
+I am working on a second version of the patch that will correct
+the issue with timing, and in particular time_enabled. In cgroup
+mode, it need to count the time the cgroup was active, and not
+wall-clock. That will make the scaling more meaningful.
+
+> Thanks,
+> Lin Ming
+>
