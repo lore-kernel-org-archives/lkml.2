@@ -1,118 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757232Ab0IBVcI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:32:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:57821 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754305Ab0IBVcF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:32:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=e9gC5YURQ+dp5aon66jOEw1v/qyvLe6WNQre79JN/I7+6g1xzP9VizZY5j3BeZCoCS
-         We0zrezzpZIK0W6EZtPA==
-MIME-Version: 1.0
-In-Reply-To: <201009022305.09187.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1009020946580.1513-100000@iolanthe.rowland.org>
-	<201009022146.03359.rjw@sisk.pl>
-	<AANLkTi=s3_kFvRY9Afzku82gUgW7YKYXDBZvTkxQsMP8@mail.gmail.com>
-	<201009022305.09187.rjw@sisk.pl>
-Date: Thu, 2 Sep 2010 14:31:55 -0700
-X-Google-Sender-Auth: hcGbpE4j2h1eQbWzyIDT8c_Z6e8
-Message-ID: <AANLkTimfyELxqsHW8zvgrxySrVSyuBWZJ0XXVSSPCXrj@mail.gmail.com>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
-From: Colin Cross <ccross@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1757249Ab0IBVdk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:33:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58747 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752244Ab0IBVdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 17:33:38 -0400
+Date: Thu, 2 Sep 2010 17:33:15 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, neilb@suse.de,
+        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
+Subject: Re: [PATCH 5/5] union: hybrid union filesystem prototype
+Message-ID: <20100902213315.GA16004@shell>
+References: <20100826183340.027591901@szeredi.hu> <20100826183507.402136609@szeredi.hu> <20100901214238.GC15849@shell> <E1Or5xN-0001uq-Ob@pomaz-ex.szeredi.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1Or5xN-0001uq-Ob@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 2:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, September 02, 2010, Colin Cross wrote:
->> On Thu, Sep 2, 2010 at 12:46 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Thursday, September 02, 2010, Alan Stern wrote:
->> >> On Wed, 1 Sep 2010, Colin Cross wrote:
->> >>
->> >> > Only wait on a parent device during resume if the parent device is
->> >> > suspended.
->> >> >
->> >> > Consider three drivers, A, B, and C.  The parent of A is C, and C
->> >> > has async_suspend set.  On boot, C->power.completion is initialized
->> >> > to 0.
->> >> >
->> >> > During the first suspend:
->> >> > suspend_devices_and_enter(...)
->> >> >  dpm_resume(...)
->> >> >   device_suspend(A)
->> >> >   device_suspend(B) returns error, aborts suspend
->> >> >  dpm_resume_end(...)
->> >> >    dpm_resume(...)
->> >> >     device_resume(A)
->> >> >      dpm_wait(A->parent == C)
->> >> >       wait_for_completion(C->power.completion)
->> >> >
->> >> > The wait_for_completion will never complete, because
->> >> > complete_all(C->power.completion) will only be called from
->> >> > device_suspend(C) or device_resume(C), neither of which is called
->> >> > if suspend is aborted before C.
->> >>
->> >> This would work okay if C->power.completion had been initialized to the
->> >> completed state during boot, right?
->> >>
->> >> > After a successful suspend->resume cycle, where B doesn't abort
->> >> > suspend, C->power.completion is left in the completed state by the
->> >> > call to device_resume(C), and the same call path will work if B
->> >> > aborts suspend.
->> >> >
->> >> > Signed-off-by: Colin Cross <ccross@android.com>
->> >> > ---
->> >> >  drivers/base/power/main.c |    3 ++-
->> >> >  1 files changed, 2 insertions(+), 1 deletions(-)
->> >> >
->> >> > diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
->> >> > index cb784a0..e159910 100644
->> >> > --- a/drivers/base/power/main.c
->> >> > +++ b/drivers/base/power/main.c
->> >> > @@ -526,7 +526,8 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
->> >> >     TRACE_DEVICE(dev);
->> >> >     TRACE_RESUME(0);
->> >> >
->> >> > -   dpm_wait(dev->parent, async);
->> >> > +   if (dev->parent && dev->parent->power.status >= DPM_OFF)
->> >> > +           dpm_wait(dev->parent, async);
->> >> >     device_lock(dev);
->> >> >
->> >> >     dev->power.status = DPM_RESUMING;
->> >>
->> >> I think it would be better to change device_pm_init() and add a
->> >> complete_all().
->> >
->> > I agree.
->> That would work, and was my first solution, but it increases the
->> reliance on the completion variable being left completed between state
->> transitions, which is undocumented and unnecessary.
->
-> In fact it is necessary, because dpm_wait() may be called by external code
-> through device_pm_wait_for_dev() which is exported for a reason.  That may
-> lead to problems analogous to the one you described if the completion
-> variables are not completed initially.
->
->> It seems more straightforward to me to only wait on the parent if the parent is
->> suspended.
->>
->> > Who's writing the patch?
->> I'll write it if you still don't like this one.
->
-> Yes, please.
-OK - do you prefer it in dpm_prepare or device_pm_init?
+On Thu, Sep 02, 2010 at 11:19:41AM +0200, Miklos Szeredi wrote:
+> On Wed, 1 Sep 2010, Valerie Aurora wrote:
+> > > +
+> > > +		err = vfs_create(upperdir, newdentry, attr->ia_mode, NULL);
+> > 
+> > Passing a NULL namiedata pointer to vfs_create() is a convenient
+> > temporary hack, but unfortunately NFS, ceph, etc. still use the
+> > nameidata passed to vfs_create() and other ops.
+> > 
+> > The way union mounts gets a valid nameidata is by doing the create in
+> > the VFS before calling file system ops that may trigger a copyup,
+> > while we still have the original nameidata.  This is one of the major
+> > reasons union mounts lives in the VFS.
+> 
+> Not a big deal, just set up nd as if this was a single component
+> lookup.  The previous version did it like this:
+> 
+> +       struct nameidata nd = {
+> +               .last_type = LAST_NORM,
+> +               .last = *name,
+> +       };
+> +
+> +       nd.path = pue->upperpath;
+> +       path_get(&nd.path);
+> +
+> +       newdentry = lookup_create(&nd, S_ISDIR(attr->ia_mode));
+> 
+> But that's not a solution to the NFS suckage, it's just a workaround.
+
+Hm, I suspect it's more complicated than this.  I looked at how
+unionfs does it in init_lower_nd() and it requires poking around in
+VFS internal details in the file system implementation.  So unioning
+code is not in the VFS, but VFS code is in the union fs.  Progress?  I
+dunno.
+
+> "Fortunately" NFS isn't good for a writable layer of a union for other
+> reasons, so this isn't a big concern at the moment.
+
+It's the long-term effect on the code structure that concerns me more.
+
+-VAL
