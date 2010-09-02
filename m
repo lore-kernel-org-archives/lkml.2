@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393Ab0IBVPa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:15:30 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35050 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757979Ab0IBVPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:15:22 -0400
-Date: Fri, 3 Sep 2010 07:15:06 +1000
-From: Neil Brown <neilb@suse.de>
-To: Jan Kara <jack@suse.cz>
-Cc: Jiri Slaby <jirislaby@gmail.com>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-raid@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, cluster-devel@redhat.com,
-        linux-ext4@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v2 1/5] mm: add nofail variants of kmalloc kcalloc and
- kzalloc
-Message-ID: <20100903071506.6e6b4d63@notabene>
-In-Reply-To: <20100902145141.GA3273@quack.suse.cz>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1009011757360.24694@chino.kir.corp.google.com>
-	<4C7F5951.6040809@gmail.com>
-	<20100902145141.GA3273@quack.suse.cz>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757847Ab0IBVOe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:14:34 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:51459 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757836Ab0IBVNl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 17:13:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=qwBOJ9ae0DZ8jbCPYSYUoi22HJyZf2RXRLoi/X9UhLtv3Lxg3Irtz2soHnXBhus5RM
+         au/jjXZhxiTK8KSc6B+Oo8PRNly6lGsVfEV9FnmjDyeGyPQC4P5eUUmpy9SGj17DeTw5
+         N4dvoow18726oi/pIWdm23Q9Ua/YRlwqO5HXc=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org, jkosina@suse.cz,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 80/91] arch/mips/math-emu/ieee754dp.h Update broken web addresses in the arch directory.
+Date: Thu,  2 Sep 2010 14:13:31 -0700
+Message-Id: <1283462022-8024-5-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.2.1
+In-Reply-To: <1283462022-8024-1-git-send-email-justinmattock@gmail.com>
+References: <1283462022-8024-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010 16:51:41 +0200
-Jan Kara <jack@suse.cz> wrote:
+The below patch updates a broken web address that is no longer
+working due to company buyout, and/or change of location.
+(Please have a look through, and let me know if any of them
+need to be changed, and I'll resend an updated patch).
 
-> On Thu 02-09-10 09:59:13, Jiri Slaby wrote:
-> > On 09/02/2010 03:02 AM, David Rientjes wrote:
-> > > --- a/include/linux/slab.h +++ b/include/linux/slab.h @@ -334,6 +334,57
-> > > @@ static inline void *kzalloc_node(size_t size, gfp_t flags, int node)
-> > > return kmalloc_node(size, flags | __GFP_ZERO, node); }
-> > >  
-> > > +/** + * kmalloc_nofail - infinitely loop until kmalloc() succeeds.  +
-> > > * @size: how many bytes of memory are required.  + * @flags: the type
-> > > of memory to allocate (see kmalloc).  + * + * NOTE: no new callers of
-> > > this function should be implemented!  + * All memory allocations should
-> > > be failable whenever possible.  + */ +static inline void
-> > > *kmalloc_nofail(size_t size, gfp_t flags) +{ +	void *ret; + +	for
-> > > (;;) { +		ret = kmalloc(size, flags); +		if (ret) +
-> > > return ret; +		WARN_ON_ONCE(get_order(size) >
-> > > PAGE_ALLOC_COSTLY_ORDER);
-> > 
-> > This doesn't work as you expect. kmalloc will warn every time it fails.
-> > __GFP_NOFAIL used to disable the warning. Actually what's wrong with
-> > __GFP_NOFAIL? I cannot find a reason in the changelogs why the patches
-> > are needed.
->   David should probably add the reasoning to the changelogs so that he
-> doesn't have to explain again and again ;). But if I understood it
-> correctly, the concern is that the looping checks slightly impact fast path
-> of the callers which do not need it. Generally, also looping for a long
-> time inside allocator isn't a nice thing but some callers aren't able to do
-> better for now to the patch is imperfect in this sence...
->
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-I'm actually a bit confused about this too.
-I thought David said he was removing a branch on the *slow* path - which make
-sense as you wouldn't even test NOFAIL until you had a failure.
-Why are branches on the slow-path an issue??
-This is an important question to me because I still hope to see the
-swap-over-nfs patches merged eventually and they add a branch on the slow
-path (if I remember correctly).
+---
+ arch/mips/math-emu/ieee754dp.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-NeilBrown
+diff --git a/arch/mips/math-emu/ieee754dp.h b/arch/mips/math-emu/ieee754dp.h
+index 7627865..b90bd7a 100644
+--- a/arch/mips/math-emu/ieee754dp.h
++++ b/arch/mips/math-emu/ieee754dp.h
+@@ -5,7 +5,7 @@
+ /*
+  * MIPS floating point support
+  * Copyright (C) 1994-2000 Algorithmics Ltd.
+- * http://www.algor.co.uk
++ * http://www.mips.com/ 
+  *
+  * ########################################################################
+  *
+-- 
+1.7.2.1
+
