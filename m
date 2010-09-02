@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab0IBSQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 14:16:53 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:23555 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab0IBSQv (ORCPT
+	id S1756207Ab0IBSTR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 14:19:17 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:22174 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab0IBSTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 14:16:51 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6093"; a="53045029"
-Date: Thu, 2 Sep 2010 11:16:50 -0700
+	Thu, 2 Sep 2010 14:19:16 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6093"; a="53178304"
+Date: Thu, 2 Sep 2010 11:19:14 -0700
 From: David Brown <davidb@codeaurora.org>
-To: Greg KH <greg@kroah.com>
-Cc: Patrick Pannuto <ppannuto@codeaurora.org>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        magnus.damm@gmail.com, grant.likely@secretlab.ca,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 1/4] platform: Use drv->driver.bus instead of assuming
- platform_bus_type
-Message-ID: <20100902181650.GA2589@huya.qualcomm.com>
-References: <1282158943-11902-1-git-send-email-ppannuto@codeaurora.org>
- <1282158943-11902-2-git-send-email-ppannuto@codeaurora.org>
- <20100818194410.GA17421@suse.de>
- <4C6C3A28.8070108@codeaurora.org>
- <20100901223442.GA11761@kroah.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jeff Ohlstein <johlstei@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Steve Muckle <smuckle@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Gregory Bean <gbean@codeaurora.org>,
+        Brian Swetland <swetland@google.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Subject: Re: [PATCH 20/24] msm: MSM8X60 simulator board support
+Message-ID: <20100902181914.GB2589@huya.qualcomm.com>
+References: <1282712273-344-1-git-send-email-johlstei@codeaurora.org>
+ <1282712273-344-21-git-send-email-johlstei@codeaurora.org>
+ <20100902111310.GY26319@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100901223442.GA11761@kroah.com>
+In-Reply-To: <20100902111310.GY26319@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 01, 2010 at 03:34:43PM -0700, Greg KH wrote:
-> On Wed, Aug 18, 2010 at 12:53:12PM -0700, Patrick Pannuto wrote:
-> > On 08/18/2010 12:44 PM, Greg KH wrote:
-> > > On Wed, Aug 18, 2010 at 12:15:40PM -0700, Patrick Pannuto wrote:
-> > >> In theory (although not *yet* in practice), a driver being passed
-> > >> to platform_driver_probe might have driver.bus set to something
-> > >> other than platform_bus_type. Locking drv->driver.bus is always
-> > >> correct.
-> > >>
-> > >> Change-Id: Ib015c35237eb5493d17a812576a3a9906e1344d4
-> > > 
-> > > What is that field?  Why did you add it?
-> > > 
-> > > confused,
-> > > 
-> > > greg k-h
-> > 
-> > Ugh... It's from gerrit; forgot to remove them, sorry.
-> > 
-> > Do you want a fresh set, or can you just ignore them for now?
+On Thu, Sep 02, 2010 at 12:13:10PM +0100, Russell King - ARM Linux wrote:
+
+> > +config MACH_MSM8X60_SIM
+> > +	depends on ARCH_MSM8X60
+> > +	default n
 > 
-> Actually, can I get a fresh set now, as others have commented already.
+> All these 'default n' statements can be removed - n is the default anyway.
 
-I'm going to need to take over these patches for Pat.  Give me a
-little while to track down the correct versions and I can send them
-out.
+Isn't the behavior different, though?  If I do a 'make oldconfig'
+after a kernel upgrade, new options that don't have defaults will stop
+and prompt me, whereas ones with a listed default will just select the
+default without asking.
 
-Thanks,
+I though the desire was to not have it stop and ask unless it really
+was something that the user needed to make a decision about.
+
 David
 
---
+-- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
