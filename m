@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab0IBU0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:26:51 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58545 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab0IBU0u (ORCPT
+	id S1756928Ab0IBU1d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 16:27:33 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37265 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751091Ab0IBU1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:26:50 -0400
-Date: Thu, 2 Sep 2010 13:25:58 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Subject: Re: [RFC] Fix typos
-Message-Id: <20100902132558.63a90e0d.randy.dunlap@oracle.com>
-In-Reply-To: <4C800266.1000005@oracle.com>
-References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com>
-	<20100902121853.e90f6c53.randy.dunlap@oracle.com>
-	<AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
-	<4C800266.1000005@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Sep 2010 16:27:32 -0400
+Date: Thu, 2 Sep 2010 16:27:31 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Colin Cross <ccross@android.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@lists.linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after
+ abort
+In-Reply-To: <201009022146.03359.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1009021626110.1311-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 02 Sep 2010 13:00:38 -0700 Randy Dunlap wrote:
+On Thu, 2 Sep 2010, Rafael J. Wysocki wrote:
 
-> On 09/02/10 12:31, Lucas De Marchi wrote:
-> > On Thu, Sep 2, 2010 at 16:18, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> >> Hi,
-> >>
-> >> I'd take most of the corrections in Documentation/, but in general,
-> >> I don't think that it's a good idea without some careful review.
+> On Thursday, September 02, 2010, Alan Stern wrote:
+> > On Wed, 1 Sep 2010, Colin Cross wrote:
 > > 
-> > I plan to review it if it's indeed worth fixing those typos. I already
-> > fixed several false positives like  "rela" being changed to "real",
-> > but since it's a 1.8 MB patch I think it's better to ask first before
-> > making any other review.
-> > 
-> >>
-> >> E.g.:
-> >>
-> >> 1.  changing thru to through isn't needed IMO.
-> >> Can you add "thru" to your dictionary?
-> > Yes, no problem
-> > 
-> >>
-> >> 2.
-> >> -(Warning, pulses on ACK ar inverted by transistor, irq is rised up on sync
-> >> +(Warning, pulses on ACK ar inverted by transistor, irq is rose up on sync
-> >>
-> > Humn.. indeed this seems to be a bad typo in my dictionary.
-> > 
-> >> I'm not so sure about "is rose up" being better.  and what about "ar"?
-> > 
-> > I'm only changing words with 3 chars or more, because otherwise I
-> > would have a lot of false positives, but I think I can add this word
-> > without much trouble.
-> > 
+> > > Only wait on a parent device during resume if the parent device is
+> > > suspended.
+
+> > I think it would be better to change device_pm_init() and add a 
+> > complete_all().
 > 
-> Mike's suggested change is good here.
+> I agree.
 > 
-> >>
-> >> I saw a few others that I could comment on, but I lost them in the 1.8 MB patch file.
-> > 
-> > If you say it's good, I can review it more carefully.
-> 
-> It looks good for Documentation/.
-> 
-> And fixing typos is certainly something that we want to do in
-> user-visible messages, like printk strings.
+> Who's writing the patch?
 
-Kconfig prompts and help text are also user-visible strings.
+I was hoping that Colin would.  But I can do it if he doesn't want to.
 
-I just saw this one:
+Alan Stern
 
-bool "ET&T USB series TC4UM/TC5UH touchscreen controler support" if EMBEDDED
-
-in drivers/input/touchscreen/Kconfig.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
