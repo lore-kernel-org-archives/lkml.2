@@ -1,36 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab0IBPbA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 11:31:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60984 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752285Ab0IBPa7 (ORCPT
+	id S1755742Ab0IBPbU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 11:31:20 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:44229
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755295Ab0IBPbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 11:30:59 -0400
-Date: Thu, 2 Sep 2010 16:30:56 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, kernel-janitors@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 2/4] sound/soc/fsl/p1022_ds.c: Add of_node_put to avoid
- memory leak
-Message-ID: <20100902153056.GE5809@rakim.wolfsonmicro.main>
-References: <1283269738-14612-1-git-send-email-julia@diku.dk>
- <1283269738-14612-3-git-send-email-julia@diku.dk>
+	Thu, 2 Sep 2010 11:31:17 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L84LPJ-02-7M2-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 3/3] KVM: SVM: Clean up rip handling in vmrun emulation
+Date: Thu, 2 Sep 2010 17:29:47 +0200
+Message-ID: <1283441387-7378-4-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1283441387-7378-1-git-send-email-joerg.roedel@amd.com>
+References: <1283441387-7378-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283269738-14612-3-git-send-email-julia@diku.dk>
-X-Cookie: Marriage is the sole cause of divorce.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 05:48:56PM +0200, Julia Lawall wrote:
-> Add a call to of_node_put in the error handling code following a call to
-> of_parse_phandle.
+This patch changes the rip handling in the vmrun emulation
+path from using next_rip to the generic kvm register access
+functions.
 
-Applied, thanks.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/kvm/svm.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index ecd4e58..1643f30 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -2069,7 +2069,7 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
+ 		return false;
+ 	}
+ 
+-	trace_kvm_nested_vmrun(svm->vmcb->save.rip - 3, vmcb_gpa,
++	trace_kvm_nested_vmrun(svm->vmcb->save.rip, vmcb_gpa,
+ 			       nested_vmcb->save.rip,
+ 			       nested_vmcb->control.int_ctl,
+ 			       nested_vmcb->control.event_inj,
+@@ -2270,8 +2270,8 @@ static int vmrun_interception(struct vcpu_svm *svm)
+ 	if (nested_svm_check_permissions(svm))
+ 		return 1;
+ 
+-	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
+-	skip_emulated_instruction(&svm->vcpu);
++	/* Save rip after vmrun instruction */
++	kvm_rip_write(&svm->vcpu, kvm_rip_read(&svm->vcpu) + 3);
+ 
+ 	if (!nested_svm_vmrun(svm))
+ 		return 1;
+-- 
+1.7.0.4
+
+
