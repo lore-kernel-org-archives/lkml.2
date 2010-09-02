@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab0IBVJW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:09:22 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51384 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932219Ab0IBVJQ (ORCPT
+	id S1758053Ab0IBVUj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:20:39 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:53504 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757633Ab0IBVKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:09:16 -0400
+	Thu, 2 Sep 2010 17:10:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Yad5vZeenh0MveLRnMeZ4NTjrhVqWq3/imiVmGM4vWkaKabLYAYvSNmNCVNKJ4vMmM
-         FRulkKN37kBg9z+1nFGKagbsHOex73+fw+Im1foV+BFK/rg/WyWX90ShYhwSyREAgSsH
-         Bf8Q7hexP/AdF7KwDZMYY1jy4H7bOoS/btEmo=
+        b=WAozb46sMbIlislK8+J9ySpMvIXQLV6i1/+igKImW6CxXGiGOFJkY4pIHtjddfwrFD
+         vn2fD9MgwIHIscQQ55mtpaNFlOV4Q+by/miR04dMppA6dvbn5oO4I0ge3TjkD8EDFVK8
+         kUiCZ5zVw+gSHpGNNpxlWdF4FTyTV1RbThIrY=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org, jkosina@suse.cz,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 37/91] arch/m68k/mac/via.c Update broken web addresses in the arch directory.
-Date: Thu,  2 Sep 2010 14:08:58 -0700
-Message-Id: <1283461746-7905-7-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 47/91] arch/mips/math-emu/sp_add.c Update broken web addresses in the arch directory.
+Date: Thu,  2 Sep 2010 14:10:11 -0700
+Message-Id: <1283461824-7943-2-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1283461746-7905-1-git-send-email-justinmattock@gmail.com>
-References: <1283461746-7905-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1283461824-7943-1-git-send-email-justinmattock@gmail.com>
+References: <1283461824-7943-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,27 +35,22 @@ need to be changed, and I'll resend an updated patch).
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- arch/m68k/mac/via.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ arch/mips/math-emu/sp_add.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/m68k/mac/via.c b/arch/m68k/mac/via.c
-index e71166d..0cfa2cf 100644
---- a/arch/m68k/mac/via.c
-+++ b/arch/m68k/mac/via.c
-@@ -6,11 +6,8 @@
+diff --git a/arch/mips/math-emu/sp_add.c b/arch/mips/math-emu/sp_add.c
+index d8c4211..dba0126 100644
+--- a/arch/mips/math-emu/sp_add.c
++++ b/arch/mips/math-emu/sp_add.c
+@@ -4,7 +4,7 @@
+ /*
+  * MIPS floating point support
+  * Copyright (C) 1994-2000 Algorithmics Ltd.
+- * http://www.algor.co.uk
++ * http://www.mips.com/ 
   *
-  * CSA: Motorola seems to have removed documentation on the 6522 from
-  * their web site; try
-- *     http://nerini.drf.com/vectrex/other/text/chips/6522/
-- *     http://www.zymurgy.net/classic/vic20/vicdet1.htm
-- * and
-- *     http://193.23.168.87/mikro_laborversuche/via_iobaustein/via6522_1.html
-- * for info.  A full-text web search on 6522 AND VIA will probably also
-+ *     http://web.archive.org/web/*/http://www.zymurgy.net/classic/vic20/vicdet1.htm
-+ * A full-text web search on 6522 AND VIA will probably also
-  * net some usefulness. <cananian@alumni.princeton.edu> 20apr1999
+  * ########################################################################
   *
-  * Additional data is here (the SY6522 was used in the Mac II etc):
 -- 
 1.7.2.1
 
