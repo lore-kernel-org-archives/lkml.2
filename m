@@ -1,108 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab0IBVGt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:06:49 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43929 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757240Ab0IBVGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:06:47 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Colin Cross <ccross@android.com>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
-Date: Thu, 2 Sep 2010 23:05:08 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <Pine.LNX.4.44L0.1009020946580.1513-100000@iolanthe.rowland.org> <201009022146.03359.rjw@sisk.pl> <AANLkTi=s3_kFvRY9Afzku82gUgW7YKYXDBZvTkxQsMP8@mail.gmail.com>
-In-Reply-To: <AANLkTi=s3_kFvRY9Afzku82gUgW7YKYXDBZvTkxQsMP8@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009022305.09187.rjw@sisk.pl>
+	id S1757304Ab0IBVG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:06:58 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57119 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757243Ab0IBVGy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 17:06:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=Fx+g/JeN1uZLW4SLlOf519HMGfs02QF0Qm6Nt+wJg48JMQlU/dZkEkjV6TnSaQblrZ
+         MmKrWjRfhE7hUend95LVDMCorb7bQki71mmKQp4+Ln3jY6G6cjG637Xc+rQcuFQ22U0o
+         8C34tDyONJARKTnsruI3jKl585Masfwh9Mex0=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org, jkosina@suse.cz,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 05/91] arch/arm/mach-sa1100/Kconfig Update broken web addresses in the arch directory.
+Date: Thu,  2 Sep 2010 14:06:36 -0700
+Message-Id: <1283461606-7803-6-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.2.1
+In-Reply-To: <1283461606-7803-1-git-send-email-justinmattock@gmail.com>
+References: <1283461606-7803-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 02, 2010, Colin Cross wrote:
-> On Thu, Sep 2, 2010 at 12:46 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, September 02, 2010, Alan Stern wrote:
-> >> On Wed, 1 Sep 2010, Colin Cross wrote:
-> >>
-> >> > Only wait on a parent device during resume if the parent device is
-> >> > suspended.
-> >> >
-> >> > Consider three drivers, A, B, and C.  The parent of A is C, and C
-> >> > has async_suspend set.  On boot, C->power.completion is initialized
-> >> > to 0.
-> >> >
-> >> > During the first suspend:
-> >> > suspend_devices_and_enter(...)
-> >> >  dpm_resume(...)
-> >> >   device_suspend(A)
-> >> >   device_suspend(B) returns error, aborts suspend
-> >> >  dpm_resume_end(...)
-> >> >    dpm_resume(...)
-> >> >     device_resume(A)
-> >> >      dpm_wait(A->parent == C)
-> >> >       wait_for_completion(C->power.completion)
-> >> >
-> >> > The wait_for_completion will never complete, because
-> >> > complete_all(C->power.completion) will only be called from
-> >> > device_suspend(C) or device_resume(C), neither of which is called
-> >> > if suspend is aborted before C.
-> >>
-> >> This would work okay if C->power.completion had been initialized to the
-> >> completed state during boot, right?
-> >>
-> >> > After a successful suspend->resume cycle, where B doesn't abort
-> >> > suspend, C->power.completion is left in the completed state by the
-> >> > call to device_resume(C), and the same call path will work if B
-> >> > aborts suspend.
-> >> >
-> >> > Signed-off-by: Colin Cross <ccross@android.com>
-> >> > ---
-> >> >  drivers/base/power/main.c |    3 ++-
-> >> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> >> >
-> >> > diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> >> > index cb784a0..e159910 100644
-> >> > --- a/drivers/base/power/main.c
-> >> > +++ b/drivers/base/power/main.c
-> >> > @@ -526,7 +526,8 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
-> >> >     TRACE_DEVICE(dev);
-> >> >     TRACE_RESUME(0);
-> >> >
-> >> > -   dpm_wait(dev->parent, async);
-> >> > +   if (dev->parent && dev->parent->power.status >= DPM_OFF)
-> >> > +           dpm_wait(dev->parent, async);
-> >> >     device_lock(dev);
-> >> >
-> >> >     dev->power.status = DPM_RESUMING;
-> >>
-> >> I think it would be better to change device_pm_init() and add a
-> >> complete_all().
-> >
-> > I agree.
-> That would work, and was my first solution, but it increases the
-> reliance on the completion variable being left completed between state
-> transitions, which is undocumented and unnecessary.
+The below patch updates a broken web address that is no longer
+working due to company buyout, and/or change of location.
+(Please have a look through, and let me know if any of them
+need to be changed, and I'll resend an updated patch).
 
-In fact it is necessary, because dpm_wait() may be called by external code
-through device_pm_wait_for_dev() which is exported for a reason.  That may
-lead to problems analogous to the one you described if the completion
-variables are not completed initially.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-> It seems more straightforward to me to only wait on the parent if the parent is
-> suspended.
-> 
-> > Who's writing the patch?
-> I'll write it if you still don't like this one.
+---
+ arch/arm/mach-sa1100/Kconfig |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-Yes, please.
+diff --git a/arch/arm/mach-sa1100/Kconfig b/arch/arm/mach-sa1100/Kconfig
+index fd4c52b..264ee98 100644
+--- a/arch/arm/mach-sa1100/Kconfig
++++ b/arch/arm/mach-sa1100/Kconfig
+@@ -90,7 +90,8 @@ config SA1100_JORNADA720
+ 	# FIXME: select CPU_FREQ_SA11x0
+ 	help
+ 	  Say Y here if you want to build a kernel for the HP Jornada 720
+-	  handheld computer.  See <http://www.hp.com/jornada/products/720>
++	  handheld computer.  See <http://h10025.www1.hp.com/ewfrf/wc/
++	  product?product=61677&cc=us&lc=en&dlc=en&product=61677#>
+ 	  for details.
+ 
+ config SA1100_JORNADA720_SSP
+@@ -108,7 +109,7 @@ config SA1100_HACKKIT
+ 	select CPU_FREQ_SA1100
+ 	help
+ 	  Say Y here to support the HackKit Core CPU Board
+-	  <http://hackkit.eletztrick.de>;
++	  <http://web.archive.org/web/*/http://hackkit.eletztrick.de>;
+ 
+ config SA1100_LART
+ 	bool "LART"
+@@ -145,7 +146,7 @@ config SA1100_SIMPAD
+ 	  FLASH. The SL4 version got 64 MB RAM and 32 MB FLASH and a
+ 	  PCMCIA-Slot. The version for the Germany Telecom (DTAG) is the same
+ 	  like CL4 in additional it has a PCMCIA-Slot. For more information
+-	  visit <http://www.my-siemens.com/> or <http://www.siemens.ch/>.
++	  visit <http://www.siemens.ch/>.
+ 
+ config SA1100_SSP
+ 	tristate "Generic PIO SSP"
+-- 
+1.7.2.1
 
-Thanks,
-Rafael
