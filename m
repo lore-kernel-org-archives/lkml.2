@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757160Ab0IBUw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:52:59 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:38886 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab0IBUw6 convert rfc822-to-8bit (ORCPT
+	id S1757196Ab0IBVBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:01:25 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:36039 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753478Ab0IBVBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:52:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dK+349vRM7s143UgGrdtEfzwa9QBu6ytuE89LGLcSUgWuFQvrP6+2ozt5CM0UP9Tbk
-         cbpSkV+ueoovA8RetXnX67nLgqeTBCUUYimuii7b+1+XJNS5Ocd8aiYvhceYNJUh8Pi7
-         RGzC+UEKzGEY4RJestPuo6PdxR2GLfgRyaIZY=
-MIME-Version: 1.0
-In-Reply-To: <201009021633.22869.stephan.diestelhorst@amd.com>
-References: <201007091750.05020.stephan.diestelhorst@amd.com>
-	<4C7F6931.4050707@gmail.com>
-	<4C7F7649.3010409@gmail.com>
-	<201009021633.22869.stephan.diestelhorst@amd.com>
-Date: Thu, 2 Sep 2010 22:52:56 +0200
-Message-ID: <AANLkTi==kpbcJQ9E_MMfs9Ohu_O4vNsf8T7NK1z+iAwn@mail.gmail.com>
-Subject: Re: [PATCH] libata: skip EH autopsy and recovery during suspend
-From: Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
-To: Tejun Heo <htejun@gmail.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Thu, 2 Sep 2010 17:01:22 -0400
+Date: Thu, 2 Sep 2010 17:01:20 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tejun Heo <htejun@gmail.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
         "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Subject: Re: [linux-pm] [PATCH] libata: skip EH autopsy and recovery during
+ suspend
+In-Reply-To: <4C800A31.3050401@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1009021646510.1311-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 4:33 PM, Stephan Diestelhorst
-<stephan.diestelhorst@amd.com> wrote:
-> On Thursday 02 September 2010, 12:02:49 Tejun Heo wrote:
->> For some mysterious reason, certain hardware reacts badly to usual EH
->> actions while the system is going for suspend.  As the devices won't
->> be needed until the system is resumed, ask EH to skip usual autopsy
->> and recovery and proceed directly to suspend.
->
-> Thanks Tejun for this patch. Will test in a second!
+On Thu, 2 Sep 2010, Tejun Heo wrote:
 
-Applied, compiled and worked for the 5 iterations I managed to test it.
-Much better than your previous patch, thanks a lot! I'd give it some more spins
-tomorrow, though.
+> Hello,
+> 
+> On 09/02/2010 10:28 PM, Rafael J. Wysocki wrote:
+> > That would be very nice.  In particular, I'd like to get rid of the
+> > pm_message_t thing if possible.  And I'd like to avoid putting the
+> > controller into D3 before creating hibernation image. :-)
 
+Ultimately I don't think it will be possible to get rid of pm_message_t
+throughout the entire kernel.  Not just because it's a legacy thing
+spread all over the place, but because it sometimes is genuinely
+useful.  In situations where there are only minimal differences between
+the various suspend/resume paths, it makes a lot of sense to call a
+single function and tell it which type of operation to perform.
 
-Thanks,
-  Stephan
+> Oh, yeah, things like that can definitely be changed, but I think it
+> would still need to be piped through EH.  That's how the queue gets
+> quiesced for those special operations and resume is basically probing,
+> so it doesn't make much sense to split them.  Please let me know how
+> it should work from power management POV and I'll be happy to convert
+> libata to fit the new behavior.
+
+Tejun, I'm planning to make a few changes to the block layer and the
+SCSI core in order to implement delayed autosuspend.  These changes
+will affect system sleep too, so you may need to know about them.
+
+Each request_queue structure will have an rpm_status variable that gets
+updated as the corresponding device is suspended or resumed.  When the
+status is SUSPENDING or RESUMING, requests will not be sent from the
+request_queue to the driver unless they have cmd_type set to
+REQ_TYPE_PM_SUSPEND or REQ_TYPE_PM_RESUME (actually I may combine those
+two into a single REQ_TYPE_PM type).  If other types of request are
+added to the queue when the status isn't ACTIVE, they will cause a
+runtime resume to be started.
+
+Initially this will affect only drivers using the SCSI layer.  
+Commands sent during error handling won't be affected though, because
+the SCSI error handler doesn't use requests or queues -- it sends
+commands directly to the lower-level driver.
+
+Does that all sound okay to you?
+
+Alan Stern
+
