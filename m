@@ -1,150 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab0IBJY6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 05:24:58 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39627 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751677Ab0IBJY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 05:24:57 -0400
-Date: Thu, 2 Sep 2010 11:24:54 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kleen, Andi" <andi.kleen@intel.com>,
-        Haicheng Li <haicheng.li@linux.intel.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>
-Subject: Re: [PATCH] Make is_mem_section_removable more conformable with
- offlining code
-Message-ID: <20100902092454.GA17971@tiehlicka.suse.cz>
-References: <20100820141400.GD4636@tiehlicka.suse.cz>
- <20100822004232.GA11007@localhost>
- <20100823092246.GA25772@tiehlicka.suse.cz>
- <20100831141942.GA30353@localhost>
- <20100901121951.GC6663@tiehlicka.suse.cz>
- <20100901124138.GD6663@tiehlicka.suse.cz>
- <20100902144500.a0d05b08.kamezawa.hiroyu@jp.fujitsu.com>
- <20100902082829.GA10265@tiehlicka.suse.cz>
- <20100902180343.f4232c6e.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753199Ab0IBJ2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 05:28:12 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34683 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab0IBJ2K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 05:28:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=J7nkTMFHqvENN5AKfQ3ZSABZNDz4j9+rlCVv30GIKOD80MlGA6SjF9OXJy86/rPBpW
+         kXVCFh0FCz2tFAJi1vqsF84kvyGQAHh791V7DUloEUnJvg2nQkYmM8TY7Unh6qhomjjD
+         wKuZM5PQSgIj+oAFKpB3NqzXx0mWX6jGpwt3o=
+Message-ID: <4C7F6E26.2030301@gmail.com>
+Date: Thu, 02 Sep 2010 11:28:06 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100902180343.f4232c6e.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Michael Poole <mdpoole@troilus.org>
+CC: Chase Douglas <chase.douglas@canonical.com>, Jiri Kosina <jkosina@suse.cz>,
+        Henrik Rydberg <rydberg@euromail.se>, Tejun Heo <tj@kernel.org>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7 v3] HID: magicmouse: don't allow hidinput to initialize
+ the device
+References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>	<1283306184-28833-2-git-send-email-chase.douglas@canonical.com>	<4C7E94F6.9050806@gmail.com> <AANLkTi=z5s8mbjG54930Lxj-O9Of2fXHE6kDJhijyOb7@mail.gmail.com>
+In-Reply-To: <AANLkTi=z5s8mbjG54930Lxj-O9Of2fXHE6kDJhijyOb7@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 02-09-10 18:03:43, KAMEZAWA Hiroyuki wrote:
-> On Thu, 2 Sep 2010 10:28:29 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
+On 09/02/2010 01:57 AM, Michael Poole wrote:
+> Jiri Slaby wrote:
+>> This looks weird. Is there any past discussion about why you cannot use
+>> hidinput and you have to do all the input bits yourself while cheating
+>> this very weird way?
 > 
-> > On Thu 02-09-10 14:45:00, KAMEZAWA Hiroyuki wrote:
-> > > On Wed, 1 Sep 2010 14:41:38 +0200
-> > [...]
-> > > > From de85f1aa42115678d3340f0448cd798577036496 Mon Sep 17 00:00:00 2001
-> > > > From: Michal Hocko <mhocko@suse.cz>
-> > > > Date: Fri, 20 Aug 2010 15:39:16 +0200
-> > > > Subject: [PATCH] Make is_mem_section_removable more conformable with offlining code
-> > > > 
-> > > > Currently is_mem_section_removable checks whether each pageblock from
-> > > > the given pfn range is of MIGRATE_MOVABLE type or if it is free. If both
-> > > > are false then the range is considered non removable.
-> > > > 
-> > > > On the other hand, offlining code (more specifically
-> > > > set_migratetype_isolate) doesn't care whether a page is free and instead
-> > > > it just checks the migrate type of the page and whether the page's zone
-> > > > is movable.
-> > > > 
-> > > > This can lead into a situation when we can mark a node as not removable
-> > > > just because a pageblock is MIGRATE_RESERVE and it is not free.
-> > > > 
-> > > > Let's make a common helper is_page_removable which unifies both tests
-> > > > at one place. Also let's check for MIGRATE_UNMOVABLE rather than all
-> > > > possible MIGRATEable types.
-> > > > 
-> > > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > > 
-> > > Hmm..Why MIGRATE_RECLAIMABLE is included ?
-> > 
-> > AFAIU the code, MIGRATE_RECLAIMABLE are movable as well (at least that
-> > is how I interpret #define GFP_MOVABLE_MASK (__GFP_RECLAIMABLE|__GFP_MOVABLE)).
-> > Why should we prevent from memory offlining if we have some reclaimable
-> > pages? Or am I totally misinterpreting the meaning of this flag?
-> > 
-> 
-> RECLAIMABLE cannot be 100% reclaimable. 
+> The Magic Mouse and Magic Trackpad do not publish HID descriptors for
+> the multitouch reports.  Given the variable-length report packets --
+> and especially the Magic Trackpad's new, mutant DOUBLE_REPORT_ID
+> packets -- it would be non-trivial to write accurate descriptors that
+> the HID core can use.  (Someone wrote a patch to try that a few months
+> ago.  It ended up adding significantly more lines to hid-magicmouse.c
+> than it removed, and it was not obvious to me that it got the Report
+> Count fields correct.)
 
-OK, I see. The name is little bit misleading then. Should we comment
-that?
+Ok, makes sense. The proper solution is to call a driver hook in
+hidinput_connect to do the mapping instead of report parsing done there,
+right? (And not setting [gs]etkeycode in that case.)
 
-> Then, for memory hotlug,
-> I intentionally skips it and check free_area[] and LRU.
-> 
-> 
-> > > 
-> > > If MIGRATE_RCLAIMABLE is included, set_migrate_type() should check the
-> > > range of pages. Because it makes the pageblock as MIGRAGE_MOVABLE after
-> > > failure of memory hotplug.
-> > > 
-> > > Original code checks.
-> > > 
-> > >  - the range is MIGRAGE_MOVABLE or
-> > >  - the range includes only free pages and LRU pages.
-> > > 
-> > > Then, moving them back to MIGRAGE_MOVABLE after failure was correct.
-> > > Doesn't this makes changes MIGRATE_RECALIMABLE to be MIGRATE_MOVABLE and
-> > > leads us to more fragmentated situation ?
-> > 
-> > Just to be sure that I understand you concern. We are talking about hot
-> > remove failure which can lead to higher fragmentation, right? 
-> > 
-> right. 
-> 
-> > By the higher fragmentation you mean that all movable pageblocks (even
-> > reclaimable) gets to MIGRATE_MOVABLE until we get first failure. In the
-> > worst case, if we fail near the end of the zone then there is imbalance
-> > in MIGRATE_MOVABLE vs. MIGRATE_RECALIMABLE. Is that what you are
-> > thinking of? Doesn't this just gets the zone to the state after
-> > onlining? Or is the problem if we fail somewhere in the middle?
-> > 
-> 
-> No. My concern is pageblock type changes before/after memory hotplug failure.
-> 	before isolation: MIGRATE_RECLAIMABLE
-> 	after isolation failure : MIGRATE_MOVABLE
+Then the part of magicmouse_setup_input starting at the first __set_bit
+will be exactly the hook.
 
-Ahh, OK I can see your point now. unset_migratetype_isolate called on
-the failure path sets migrate type unconditionally as it cannot know
-what was the original migration type.
+Otherwise this hack looks like a hard cross-layer breakage.
 
-What about MIGRATE_RESERVE? Is there anything that can make those
-allocations fail offlining?
+/me wonders how HID issuers are creative in breaking standards.
 
-Thanks!
-
-> 
-> Then, the section which was RECALAIMABLE (but caused memory hotplug failure)
-> turns to be MIGRATE_MOVABLE and will continue to cause memory hotplug failure.
-> (Because it contains unreclaimable(still-in-use) slab.)
-> 
-> That means memory-hotplug success-rate goes down because of not-important check,
-> and (your) customer believe "memory hotplug never works well hahaha."
-> 
-> The old code checks RECLAIMABLE pageblock only contains free pages or LRU pages,
-> In that meaning, MIGRATE_MOVABLE check itself should be removed. It's my fault.
-> 
-> 
-> Thanks,
-> -Kame
-> 
-
+regards,
 -- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+js
