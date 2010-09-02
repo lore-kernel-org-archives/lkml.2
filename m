@@ -1,158 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab0IBIMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 04:12:44 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37563 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab0IBIMl convert rfc822-to-8bit (ORCPT
+	id S1752031Ab0IBINX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 04:13:23 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:13938 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205Ab0IBINV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 04:12:41 -0400
-Subject: Re: [PATCHv11 2.6.36-rc2-tip 5/15]  5: uprobes: Uprobes
- (un)registration and exception handling.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1283377414.2059.1729.camel@laptop>
-References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
-	 <20100825134224.5447.89998.sendpatchset@localhost6.localdomain6>
-	 <1283377414.2059.1729.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 2 Sep 2010 04:13:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rkJ1b4vZahdBVsEKXLugq6D0eI+hHqRDc0hkdo71wKylgjG1fE+EcDqhWSzUBHL4FT
+         0pp+pkoy3ZcxBb3oW1sg==
+MIME-Version: 1.0
+In-Reply-To: <20100901145728.GM22783@erda.amd.com>
+References: <AANLkTimA-AZWJugaLR3VPGVhBaJid=t=a1rPVNUE_8Dh@mail.gmail.com>
+	<20100901145728.GM22783@erda.amd.com>
+Date: Thu, 2 Sep 2010 10:13:19 +0200
+Message-ID: <AANLkTikOaCL8FqQuUQsYPxm19WZOdarp8AMAugN0mnqQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] [x86] perf: fix accidentally ack'ing a second event
+ on intel perf counter
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Don Zickus <dzickus@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 02 Sep 2010 10:12:26 +0200
-Message-ID: <1283415146.2059.1810.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-01 at 23:43 +0200, Peter Zijlstra wrote:
-> > +void uprobe_notify_resume(struct pt_regs *regs)
-> > +{
-> > +     struct uprobe_process *uproc;
-> > +     struct uprobe_probept *ppt;
-> > +     struct uprobe_task *utask;
-> > +     struct uprobe *u;
-> > +     unsigned long probept;
-> > +
-> > +     utask = current->utask;
-> > +     uproc = current->mm->uproc;
-> > +     if (unlikely(!utask)) {
-> > +             utask = add_utask(uproc);
-> > +
-> > +             /* Failed to allocate utask for the current task. */
-> > +             BUG_ON(!utask);
-> > +             probept = uprobes_get_bkpt_addr(regs);
-> > +             ppt = find_probept(uproc, probept);
-> > +
-> > +             /*
-> > +              * The probept was refcounted in uprobe_bkpt_notifier;
-> > +              * Hence it would be mysterious to miss ppt now
-> > +              */
-> > +             WARN_ON(!ppt);
-> > +             utask->active_ppt = ppt;
-> > +             utask->state = UTASK_BP_HIT;
-> > +     } else
-> > +             ppt = utask->active_ppt;
-> 
-> You can replace this with:
-> 
->  addr = instruction_pointer(task_pt_regs(current)) -
-> ip_advancement_by_brkpt_insn;
-> 
-> and then proceed from there like described below to obtain the struct
-> uprobe.
-> 
-> You can infer the SS/HIT state by checking if the user-addr is in the
-> XOL area or not.
+Robert,
 
-Right, so one problem I overlooked is that you need to have the actual
-probe to compute the jump address, but that could be fixed by
-implementing boosted probes.
+Do you have the test program you used to test this?
+I believe the NHM hack does not solve the problem, it
+just makes it harder to appear.
 
-> > +     if (utask->state == UTASK_BP_HIT) {
-> > +             utask->state = UTASK_SSTEP;
-> > +             u = ppt->uprobe;
-> > +             if (u && u->handler)
-> > +                     u->handler(u, regs);
-> > +
-> > +             if (!pre_ssout(ppt, regs))
-> > +                     arch_uprobe_enable_sstep(regs);
-> > +     } else if (utask->state == UTASK_SSTEP) {
-> > +             if (sstep_complete(regs, ppt)) {
-> > +                     put_probept(ppt);
-> > +                     utask->active_ppt = NULL;
-> > +                     utask->state = UTASK_RUNNING;
-> > +                     arch_uprobe_disable_sstep(regs);
-> > +             }
-> > +     }
-> > +}
-> > +
-> > +/*
-> > + * uprobe_bkpt_notifier gets called from interrupt context
-> > + * it gets a reference to the ppt and sets TIF_UPROBE flag,
-> > + */
-> > +int uprobe_bkpt_notifier(struct pt_regs *regs)
-> > +{
-> > +     struct uprobe_process *uproc;
-> > +     struct uprobe_probept *ppt;
-> > +     struct uprobe_task *utask;
-> > +     unsigned long probept;
-> > +
-> > +     if (!current->mm || !current->mm->uproc)
-> > +             /* task is currently not uprobed */
-> > +             return 0;
-> > +
-> > +     uproc = current->mm->uproc;
-> > +     utask = current->utask;
-> > +     probept = uprobes_get_bkpt_addr(regs);
-> 
-> Its an address, not a struct uprobe_probept * so call it addr if
-> anything.
-> 
-> > +     ppt = find_probept(uproc, probept);
-> > +     if (!ppt)
-> > +             return 0;
-> > +     get_probept(ppt);
-> > +     if (utask) {
-> > +             utask->active_ppt = ppt;
-> > +             utask->state = UTASK_BP_HIT;
-> > +     }
-> 
-> Right, so all this should die..
-> 
-> Obtain the address, lookup the vma, get the file, compute the offset
-> inside that file -> {inode,offset}
+I suspect the real issue is that the GLOBAL_STATUS
+bitmask cannot be trusted. I'd like to verify this.
 
-Except we need to stabilize the vma tree to do the lookup and that
-currently requires mmap_sem, I guess until we get Nick's per-pte
-vma-tree we could fudge that by adding a spinlock around the rb_tree
-modifications -- I've got a patch for that somewhere I think.
+Has the problem appear only on Nehalem or also on
+Westmere?
 
-> Do the lookup in the global tree to obtain the uprobe, and possibly
-> execute the probe handler right here in interrupt context, if it fails
-> with -EFAULT, continue with the below:
-> 
-> > +#ifdef CONFIG_ARCH_SUPPORTS_UPROBES
-> > +     set_thread_flag(TIF_UPROBE);
-> > +#endif
-> 
-> How can we ever get here if the architecture doesn't support uprobes?
-> 
-> > +     return 1;
-> > +} 
+
+On Wed, Sep 1, 2010 at 4:57 PM, Robert Richter <robert.richter@amd.com> wrote:
+> On 01.09.10 09:04:45, Stephane Eranian wrote:
+>> Don,
+>>
+>> Found your patch on LKML (I am not on it).
+>>
+>> In your changelog you said:
+>>
+>> > During testing of a patch to stop having the perf subsytem swallow nmis,
+>> > it was uncovered that Nehalem boxes were randomly getting unknown nmis
+>> > when using the perf tool.
+>> >
+>> > Moving the ack'ing of the PMI closer to when we get the status allows
+>> > the hardware to properly re-set the PMU bit signaling another PMI was
+>> > triggered during the processing of the first PMI.  This allows the new
+>> > logic for dealing with the shortcomings of multiple PMIs to handle the
+>> > extra NMI by 'eat'ing it later.
+>>
+>> > Now one can wonder why are we getting a second PMI when we disable all
+>> > the PMUs in the beginning of the NMI handler to prevent such a case, for
+>> > that I do not know.  But I know the fix below helps deal with this quirk.
+>> >
+>>
+>> I am assuming you're talking about back-to-back NMIs here, not nested NMIs.
+>> I don't quite understand the scenario here. Is it the case that you handled 1
+>> overflow, and then right as you return from the interrupt, you get a second
+>> PMI with a ovfl_status=0 ?
+>>
+>> What events did you measure? Which counters did you use?
+>> Did you have HT turned on?
+>
+> It is related to this thread:
+>
+>  http://lkml.org/lkml/2010/8/25/124
+>
+> Not acking the status immediately triggered an nmi, but the status was
+> 0. Acking after reading and before processing the counters results in
+> a non-zero status and thus, no empty nmi.
+>
+> -Robert
+>
+>>
+>> > Tested on multiple Nehalems where the problem was occuring.  With the
+>> > patch, the code now loops a second time to handle the second PMI (whereas
+>> > before it was not).
+>>
+>
+> --
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+>
+>
