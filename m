@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab0IBES7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 00:18:59 -0400
-Received: from gate.crashing.org ([63.228.1.57]:58794 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750696Ab0IBES6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 00:18:58 -0400
-Subject: RE: Memory allocation modifications in ibm_newemac driver
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jonathan Haws <Jonathan.Haws@sdl.usu.edu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-net@vger.kernel.org" <linux-net@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-In-Reply-To: <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A305B@Mercury.usurf.usu.edu>
-References: <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A2F09@Mercury.usurf.usu.edu>
-	 , <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A2FBE@Mercury.usurf.usu.edu>
-	 , <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A301B@Mercury.usurf.usu.edu>
-	 <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A305B@Mercury.usurf.usu.edu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Sep 2010 14:18:50 +1000
-Message-ID: <1283401130.16240.9.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751350Ab0IBEYz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 00:24:55 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:33914 "HELO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750842Ab0IBEYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 00:24:53 -0400
+Date: Thu, 2 Sep 2010 14:24:26 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+Message-ID: <201009020424.o824OQ16022641@goober.internal.moreton.com.au>
+CC: <gerg@uclinux.org>, <linux-m68k@vger.kernel.org>
+Subject: [PATCH] m68knommu: fix missing linker segments
+To: <linux-kernel@vger.kernel.org>
+X-Mailer: mail (GNU Mailutils 2.0)
+X-OriginalArrivalTime: 02 Sep 2010 04:24:48.0837 (UTC) FILETIME=[C7B51F50:01CB4A56]
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-01 at 22:46 +0000, Jonathan Haws wrote:
-> 
-> Can anyone explain to me why I would be getting this error in the
-> first place?  Why is it failing to allocate a page when there are
-> pages available?  That does not make any sense to me.
+Recent changes to linker segments that hold per-cpu data broke linking
+for m68knommu targets:
 
-order:1
+  LD      vmlinux
+/usr/local/bin/m68k-uclinux-ld.real: error: no memory region specified for loadable section `.data..shared_aligned'
 
-It's failing to allocate -two- pages.
+Add missing segments into the m68knommu linker script.
 
-Cheers,
-Ben.
+Signed-off-by: Greg Ungerer <gerg@uclinux.org>
 
 
+diff --git a/arch/m68knommu/kernel/vmlinux.lds.S b/arch/m68knommu/kernel/vmlinux.lds.S
+index a91b271..ef33213 100644
+--- a/arch/m68knommu/kernel/vmlinux.lds.S
++++ b/arch/m68knommu/kernel/vmlinux.lds.S
+@@ -150,6 +150,8 @@ SECTIONS {
+ 		_sdata = . ;
+ 		DATA_DATA
+ 		CACHELINE_ALIGNED_DATA(32)
++		PAGE_ALIGNED_DATA(PAGE_SIZE)
++		*(.data..shared_aligned)
+ 		INIT_TASK_DATA(THREAD_SIZE)
+ 		_edata = . ;
+ 	} > DATA
