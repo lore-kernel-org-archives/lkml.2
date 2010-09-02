@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab0IBUYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:24:09 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42556 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab0IBUYH convert rfc822-to-8bit (ORCPT
+	id S1756935Ab0IBUYd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 16:24:33 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:29694 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab0IBUYc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:24:07 -0400
+	Thu, 2 Sep 2010 16:24:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=eaSCyxfrx6vg7cYFDANsJMRtsw08XKvwqsdhwPudn6r7nt2D4iIY9H5SkGvLA4/gZe
-         4NcHldZ5710gCoAgkjoGRa8+zCVszvsdWisbFD0dX/8gd25wgCskb9DDMjAkYuV0XgSm
-         Z9/jrNJzYMS3t7WuWr5lzkzWhbyInswCe/LyI=
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=uJKtCcTHKqmtT1KQGV8LzWPXC1qy4vFU6sV8ECX3elP95K96FQbBXHms2bZ7vuRqfk
+         Kg8W4EmGIaqXicmRKdFA==
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinz2TEgJD5XVXSgcN0Zq0cL43a9xh004etmA2=V@mail.gmail.com>
-References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com>
- <20100902121853.e90f6c53.randy.dunlap@oracle.com> <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
- <4C800266.1000005@oracle.com> <AANLkTineHC5C=Sv5uZezx7-RF3_rQOJFBePhfzD6jfMF@mail.gmail.com>
- <AANLkTinz2TEgJD5XVXSgcN0Zq0cL43a9xh004etmA2=V@mail.gmail.com>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Thu, 2 Sep 2010 17:23:16 -0300
-Message-ID: <AANLkTinnc3rd6EQNAJB_37QAP0qSuxoqvZQVXS0ifUm7@mail.gmail.com>
-Subject: Re: [RFC] Fix typos
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <201009022146.03359.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1009020946580.1513-100000@iolanthe.rowland.org>
+	<201009022146.03359.rjw@sisk.pl>
+Date: Thu, 2 Sep 2010 13:24:28 -0700
+X-Google-Sender-Auth: Jb9xrF4OUK21pEbTKyEwZ4d0Zb4
+Message-ID: <AANLkTi=s3_kFvRY9Afzku82gUgW7YKYXDBZvTkxQsMP8@mail.gmail.com>
+Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
+From: Colin Cross <ccross@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 17:16, Mike Frysinger <vapier.adi@gmail.com> wrote:
-> On Thu, Sep 2, 2010 at 16:08, Lucas De Marchi wrote:
->> On Thu, Sep 2, 2010 at 17:00, Randy Dunlap wrote:
->>> It looks good for Documentation/.
->>>
->>> And fixing typos is certainly something that we want to do in
->>> user-visible messages, like printk strings.
+On Thu, Sep 2, 2010 at 12:46 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, September 02, 2010, Alan Stern wrote:
+>> On Wed, 1 Sep 2010, Colin Cross wrote:
 >>
->> What about comments and code?
+>> > Only wait on a parent device during resume if the parent device is
+>> > suspended.
+>> >
+>> > Consider three drivers, A, B, and C.  The parent of A is C, and C
+>> > has async_suspend set.  On boot, C->power.completion is initialized
+>> > to 0.
+>> >
+>> > During the first suspend:
+>> > suspend_devices_and_enter(...)
+>> >  dpm_resume(...)
+>> >   device_suspend(A)
+>> >   device_suspend(B) returns error, aborts suspend
+>> >  dpm_resume_end(...)
+>> >    dpm_resume(...)
+>> >     device_resume(A)
+>> >      dpm_wait(A->parent == C)
+>> >       wait_for_completion(C->power.completion)
+>> >
+>> > The wait_for_completion will never complete, because
+>> > complete_all(C->power.completion) will only be called from
+>> > device_suspend(C) or device_resume(C), neither of which is called
+>> > if suspend is aborted before C.
+>>
+>> This would work okay if C->power.completion had been initialized to the
+>> completed state during boot, right?
+>>
+>> > After a successful suspend->resume cycle, where B doesn't abort
+>> > suspend, C->power.completion is left in the completed state by the
+>> > call to device_resume(C), and the same call path will work if B
+>> > aborts suspend.
+>> >
+>> > Signed-off-by: Colin Cross <ccross@android.com>
+>> > ---
+>> >  drivers/base/power/main.c |    3 ++-
+>> >  1 files changed, 2 insertions(+), 1 deletions(-)
+>> >
+>> > diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+>> > index cb784a0..e159910 100644
+>> > --- a/drivers/base/power/main.c
+>> > +++ b/drivers/base/power/main.c
+>> > @@ -526,7 +526,8 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+>> >     TRACE_DEVICE(dev);
+>> >     TRACE_RESUME(0);
+>> >
+>> > -   dpm_wait(dev->parent, async);
+>> > +   if (dev->parent && dev->parent->power.status >= DPM_OFF)
+>> > +           dpm_wait(dev->parent, async);
+>> >     device_lock(dev);
+>> >
+>> >     dev->power.status = DPM_RESUMING;
+>>
+>> I think it would be better to change device_pm_init() and add a
+>> complete_all().
 >
-> i think it's useful to fix typos in those things, but this would def
-> require a human to review things.  it might also be saner to start
+> I agree.
+That would work, and was my first solution, but it increases the
+reliance on the completion variable being left completed between state
+transitions, which is undocumented and unnecessary.  It seems more
+straightforward to me to only wait on the parent if the parent is
+suspended.
 
-I agree. This is me :-)
-
-> with a whitelist of common typos (doesnt checkpatch have this ?)
-> rather than doing it against a dictionary.
-
-I'm running a script with a dictionary of common typos, not a "normal
-dictionary".
-
-> for example, we've committed a few drivers that used "platfrom" in
-> their structure names when it should have been "platform".
-
-I didn't have this typo, but I can add it as well.
+> Who's writing the patch?
+I'll write it if you still don't like this one.
 
 
--- 
-
-Lucas De Marchi
+> Rafael
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
