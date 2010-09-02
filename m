@@ -1,377 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab0IBI6Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 04:58:16 -0400
-Received: from compulab.co.il ([67.18.134.219]:53342 "EHLO compulab.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752670Ab0IBI6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 04:58:13 -0400
-Message-ID: <4C7F66E6.7050905@compulab.co.il>
-Date: Thu, 02 Sep 2010 11:57:10 +0300
-From: Mike Rapoport <mike@compulab.co.il>
-User-Agent: Thunderbird 2.0.0.23 (X11/20100106)
-MIME-Version: 1.0
-To: Gary King <gking@nvidia.com>
-CC: linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-        Mike Rapoport <mike@compulab.co.il>
-Subject: Re: [PATCH] mfd: tps6586x: add basic interrupt support
-References: <1283381435-28664-1-git-send-email-gking@nvidia.com>
-In-Reply-To: <1283381435-28664-1-git-send-email-gking@nvidia.com>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1753957Ab0IBI7o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 04:59:44 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37917 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752431Ab0IBI7m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 04:59:42 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 2 Sep 2010 17:54:24 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        =?UTF-8?B?TWljaGHFgg==?= Nazarewicz <m.nazarewicz@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mel Gorman <mel@csn.ul.ie>, linux-media@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+Message-Id: <20100902175424.5849c197.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100827171639.83c8642c.kamezawa.hiroyu@jp.fujitsu.com>
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+	<1282310110.2605.976.camel@laptop>
+	<20100825155814.25c783c7.akpm@linux-foundation.org>
+	<20100826095857.5b821d7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<op.vh0wektv7p4s8u@localhost>
+	<20100826115017.04f6f707.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100826124434.6089630d.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTi=T1y+sQuqVTYgOkYvqrxdYB1bZmCpKafN5jPqi@mail.gmail.com>
+	<20100826133028.39d731da.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTimB+s0tO=wrODAU4qCaZnCBoLZ2A9pGjR_jheOj@mail.gmail.com>
+	<20100827171639.83c8642c.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gary King wrote:
-> This patch adds interrupt framework support to the tps6586x driver.
+On Fri, 27 Aug 2010 17:16:39 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
+> On Thu, 26 Aug 2010 18:36:24 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
 > 
-> --
-> From 9820b7412a2f209c3249da16a000ef2555978213 Mon Sep 17 00:00:00 2001
-> From: Gary King <gking@nvidia.com>
-> Date: Mon, 30 Aug 2010 16:16:55 -0700
-> Subject: [PATCH] mfd: tps6586x: add basic interrupt support
+> > On Thu, Aug 26, 2010 at 1:30 PM, KAMEZAWA Hiroyuki
+> > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > On Thu, 26 Aug 2010 13:06:28 +0900
+> > > Minchan Kim <minchan.kim@gmail.com> wrote:
+> > >
+> > >> On Thu, Aug 26, 2010 at 12:44 PM, KAMEZAWA Hiroyuki
+> > >> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > >> > On Thu, 26 Aug 2010 11:50:17 +0900
+> > >> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > >> >
+> > >> >> 128MB...too big ? But it's depend on config.
+> > >> >>
+> > >> >> IBM's ppc guys used 16MB section, and recently, a new interface to shrink
+> > >> >> the number of /sys files are added, maybe usable.
+> > >> >>
+> > >> >> Something good with this approach will be you can create "cma" memory
+> > >> >> before installing driver.
+> > >> >>
+> > >> >> But yes, complicated and need some works.
+> > >> >>
+> > >> > Ah, I need to clarify what I want to say.
+> > >> >
+> > >> > With compaction, it's helpful, but you can't get contiguous memory larger
+> > >> > than MAX_ORDER, I think. To get memory larger than MAX_ORDER on demand,
+> > >> > memory hot-plug code has almost all necessary things.
+> > >>
+> > >> True. Doesn't patch's idea of Christoph helps this ?
+> > >> http://lwn.net/Articles/200699/
+> > >>
+> > >
+> > > yes, I think so. But, IIRC,  it's own purpose of Chirstoph's work is
+> > > for removing zones. please be careful what's really necessary.
+> > 
+> > Ahh. Sorry for missing point.
+> > You're right. The patch can't help our problem.
+> > 
+> > How about changing following this?
+> > The thing is MAX_ORDER is static. But we want to avoid too big
+> > MAX_ORDER of whole zones to support devices which requires big
+> > allocation chunk.
+> > So let's add MAX_ORDER into each zone and then, each zone can have
+> > different max order.
+> > For example, while DMA[32], NORMAL, HIGHMEM can have normal size 11,
+> > MOVABLE zone could have a 15.
+> > 
+> > This approach has a big side effect?
+> > 
 > 
-> add support for enabling and disabling tps6586x subdevice interrupts,
-> and add support for the RTC interrupts
+> Hm...need to check hard coded MAX_ORDER usages...I don't think
+> side-effect is big. Hmm. But I think enlarging MAX_ORDER isn't an
+> important thing. A code which strips contiguous chunks of pages from
+> buddy allocator is a necessaty thing, as..
 > 
-> Signed-off-by: Gary King <gking@nvidia.com>
-> ---
->  drivers/mfd/tps6586x.c       |  184 ++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/tps6586x.h |    7 ++
->  2 files changed, 191 insertions(+), 0 deletions(-)
+> What I can think of at 1st is...
+> ==
+> 	int steal_pages(unsigned long start_pfn, unsigned long end_pfn)
+> 	{
+> 		/* Be careful mutal execution with memory hotplug, because reusing code */
 > 
-> diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-> index 4cde31e..b98f41b 100644
-> --- a/drivers/mfd/tps6586x.c
-> +++ b/drivers/mfd/tps6586x.c
-> @@ -15,6 +15,8 @@
->   * published by the Free Software Foundation.
->   */
->  
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
->  #include <linux/kernel.h>
->  #include <linux/module.h>
->  #include <linux/mutex.h>
-> @@ -29,16 +31,58 @@
->  #define TPS6586X_GPIOSET1	0x5d
->  #define TPS6586X_GPIOSET2	0x5e
->  
-> +/* interrupt control registers */
-> +#define TPS6586X_INT_ACK1	0xb5
-> +#define TPS6586X_INT_ACK2	0xb6
-> +#define TPS6586X_INT_ACK3	0xb7
-> +#define TPS6586X_INT_ACK4	0xb8
-> +
-> +/* interrupt mask registers */
-> +#define TPS6586X_INT_MASK1	0xb0
-> +#define TPS6586X_INT_MASK2	0xb1
-> +#define TPS6586X_INT_MASK3	0xb2
-> +#define TPS6586X_INT_MASK4	0xb3
-> +#define TPS6586X_INT_MASK5	0xb4
-> +
->  /* device id */
->  #define TPS6586X_VERSIONCRC	0xcd
->  #define TPS658621A_VERSIONCRC	0x15
->  
-> +struct tps6586x_irq_data {
-> +	u8	ack_reg;
-> +	u8	ack_mask;
+> 		split [start_pfn, end_pfn) to pageblock_order
+> 		
+> 		for each pageblock in the range {
+> 			Mark this block as MIGRATE_ISOLATE
+> 			try-to-free pages in the range or
+> 			migrate pages in the range to somewhere.
+> 			/* Here all pages in the range are on buddy allocator
+> 			and free and never be allocated by anyone else. */
+> 		}
+> 
+> 		please see __rmqueue_fallback(). it selects migration-type at 1st.
+> 		Then, if you can pass start_migratetype of MIGLATE_ISOLATE,
+> 		you can automatically strip all MIGRATE_ISOLATE pages from free_area[].
+> 
+> 		return chunk of pages.
+> 	}
+> ==
+> 
+
+Here is a rough code for this.
+I'm sorry I can't have time to show enough good code. Maybe this cannot be
+compiled. But you may be able to see what can be done with memory hotplug
+or compaction code. I'll brush this up if someone has interest.
+==
 
 
-If you treat the INT_ACK registers like single 32-bit int, you can enumerate the
-  interrupts using their indexes into the 32-bit mask, i.e
+This is a code for creating isolated memory block of contiguous pages.
 
-enum {
-	TPS6586X_INT_PLDO0 = (1 << 0),
-	TPS6586X_INT_PLDO1 = (1 << 1),
-...
-	TPS6586X_INT_RTC_ALM1 = (1 << 16),
-	TPS6586X_INT_RTC_ALM2 = (1 << 27),
-...
-}
+find_isolate_contig_block(unsigned long hint, unsigned long size)
 
-and then get rig of ack_reg and ack_mask bits and simplify the ISR (see comments
-below).
+will retrun [start, start+size] of isolated pages 
+ - start > hint,
+ - no memory holes within it.
+ - page allocator will never touch pages within the range.
 
+Of course, this can fail. This code makes use of memory-hotunplug's code.
+But yes, you can think of reusing compaction codes. This is an example.
+Not compiled at all...please don't see details.
 
-> +	u8	mask_reg;
-> +	u8	mask_mask;
-> +};
-> +
-> +static const struct tps6586x_irq_data tps6586x_irqs[] = {
-> +	[TPS6586X_INT_RTC_ALM1] = {
-> +		.ack_reg	= TPS6586X_INT_ACK3 - TPS6586X_INT_ACK1,
-> +		.ack_mask	= (1 << 0),
-> +		.mask_reg	= TPS6586X_INT_MASK5 - TPS6586X_INT_MASK1,
-> +		.mask_mask	= (1 << 4),
-> +	},
-> +	[TPS6586X_INT_RTC_ALM2] = {
-> +		.ack_reg	= TPS6586X_INT_ACK4 - TPS6586X_INT_ACK1,
-> +		.ack_mask	= (1 << 2),
-> +		.mask_reg	= TPS6586X_INT_MASK4 - TPS6586X_INT_MASK1,
-> +		.mask_mask	= (1 << 1),
-> +	},
-> +};
-> +
->  struct tps6586x {
->  	struct mutex		lock;
->  	struct device		*dev;
->  	struct i2c_client	*client;
->  
->  	struct gpio_chip	gpio;
-> +	struct irq_chip		irq_chip;
-> +	struct mutex		irq_lock;
-> +	int			irq_base;
-> +	int			core_irq;
-> +	bool			irq_en[ARRAY_SIZE(tps6586x_irqs)];
+---
+ mm/isolation.c |  236 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 236 insertions(+)
 
-This as well can be u32 irq_en
-
-> +	u8			mask_cache[5];
-> +	u8			mask_reg[5];
->  };
->  
->  static inline int __tps6586x_read(struct i2c_client *client,
-> @@ -262,6 +306,134 @@ static int tps6586x_remove_subdevs(struct tps6586x *tps6586x)
->  	return device_for_each_child(tps6586x->dev, NULL, __remove_subdev);
->  }
->  
-> +static void tps6586x_irq_lock(unsigned int irq)
-> +{
-> +	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-> +
-> +	mutex_lock(&tps6586x->irq_lock);
-> +}
-> +
-> +static void tps6586x_irq_enable(unsigned int irq)
-> +{
-> +	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-> +	unsigned int __irq = irq - tps6586x->irq_base;
-> +	const struct tps6586x_irq_data *data = &tps6586x_irqs[__irq];
-> +
-> +	tps6586x->mask_reg[data->mask_reg] &= ~data->mask_mask;
-> +	tps6586x->irq_en[__irq] = true;
-
-	tps6586x->irq_en |= (1 << __irq);
-
-> +}
-> +
-> +static void tps6586x_irq_disable(unsigned int irq)
-> +{
-> +	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-> +
-> +	unsigned int __irq = irq - tps6586x->irq_base;
-> +	const struct tps6586x_irq_data *data = &tps6586x_irqs[__irq];
-> +
-> +	tps6586x->mask_reg[data->mask_reg] |= data->mask_mask;
-> +	tps6586x->irq_en[__irq] = false;
-
-	tps6586x->irq_en &= (1 << __irq);
-
-> +}
-> +
-> +static void tps6586x_irq_sync_unlock(unsigned int irq)
-> +{
-> +	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(tps6586x->mask_reg); i++) {
-> +		if (tps6586x->mask_reg[i] != tps6586x->mask_cache[i]) {
-> +			if (!WARN_ON(tps6586x_write(tps6586x->dev,
-> +						    TPS6586X_INT_MASK1 + i,
-> +						    tps6586x->mask_reg[i])))
-> +				tps6586x->mask_cache[i] = tps6586x->mask_reg[i];
-> +		}
-> +	}
-> +
-> +	mutex_unlock(&tps6586x->irq_lock);
-> +}
-> +
-> +static irqreturn_t tps6586x_irq(int irq, void *data)
-> +{
-> +	struct tps6586x *tps6586x = data;
-> +	u8 acks[4];
-> +	int ret = 0, i;
-> +
-> +	for (i = 0; i < 4 && !ret; i++) {
-> +		ret = tps6586x_read(tps6586x->dev, TPS6586X_INT_ACK1 + i,
-> +				    &acks[i]);
-> +	}
-> +
-> +	if (WARN_ON(ret)) {
-> +		disable_irq_nosync(irq);
-> +		return IRQ_HANDLED;
-> +	}
-> +
-> +	for (i = 0; i < ARRAY_SIZE(tps6586x_irqs); i++) {
-> +		u8 ack;
-> +
-> +		ack = acks[tps6586x_irqs[i].ack_reg];
-> +		ack &= tps6586x_irqs[i].ack_mask;
-> +		if (tps6586x->irq_en[i] && ack)
-> +			handle_nested_irq(tps6586x->irq_base + i);
-> +	}
-> +
-> +	return IRQ_HANDLED;
-> +}
-
-With the interrupts enumeration proposed above the ISR could be:
-
-static irqreturn_t tps6586x_irq(int irq, void *data)
-{
-	struct tps6586x *tps6586x = data;
-	u32 acks;
-	int ret = 0, i;
-
-	ret = tps6586x_reads(tps6586x->dev, TPS6586X_INT_ACK1, &acks);
-	if (WARN_ON(ret)) {
-		disable_irq_nosync(irq);
-		return IRQ_HANDLED;
-	}
-
-	while (acks) {
-		i = __ffs(acks);
-		if (tps6586x->irq_en & (1 << i))
-			handle_nested_irq(tps6586x->irq_base + i);
-		acks &= ~(1 << i);
-	}
-
-	return IRQ_HANDLED;
-}
-
-> +static int __devinit tps6586x_irq_init(struct tps6586x *tps6586x, int irq,
-> +				       int irq_base)
-> +{
-> +	int i, ret;
-> +	u8 tmp;
-> +
-> +	if (!irq_base) {
-> +		dev_warn(tps6586x->dev, "No interrupt support on IRQ base\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	mutex_init(&tps6586x->irq_lock);
-> +	for (i = 0; i < 5; i++) {
-> +		tps6586x->mask_cache[i] = 0xff;
-> +		tps6586x->mask_reg[i] = 0xff;
-> +		tps6586x_write(tps6586x->dev, TPS6586X_INT_MASK1 + i, 0xff);
-> +	}
-> +	tps6586x_read(tps6586x->dev, TPS6586X_INT_ACK1, &tmp);
-> +	tps6586x_read(tps6586x->dev, TPS6586X_INT_ACK2, &tmp);
-> +	tps6586x_read(tps6586x->dev, TPS6586X_INT_ACK3, &tmp);
-> +	tps6586x_read(tps6586x->dev, TPS6586X_INT_ACK4, &tmp);
-
-tps6586x_reads would be better here
-
-> +	tps6586x->irq_base = irq_base;
-> +
-> +	tps6586x->irq_chip.name = "tps6586x";
-> +	tps6586x->irq_chip.enable = tps6586x_irq_enable;
-> +	tps6586x->irq_chip.disable = tps6586x_irq_disable;
-> +	tps6586x->irq_chip.bus_lock = tps6586x_irq_lock;
-> +	tps6586x->irq_chip.bus_sync_unlock = tps6586x_irq_sync_unlock;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(tps6586x_irqs); i++) {
-> +		int __irq = i + tps6586x->irq_base;
-> +		set_irq_chip_data(__irq, tps6586x);
-> +		set_irq_chip_and_handler(__irq, &tps6586x->irq_chip,
-> +					 handle_simple_irq);
-> +		set_irq_nested_thread(__irq, 1);
-> +#ifdef CONFIG_ARM
-> +		set_irq_flags(__irq, IRQF_VALID);
-> +#endif
-> +	}
-> +
-> +	tps6586x->core_irq = irq;
-> +	ret = request_threaded_irq(irq, NULL, tps6586x_irq, IRQF_ONESHOT,
-> +				   "tps6586x", tps6586x);
-> +	if (ret) {
-> +		dev_err(tps6586x->dev, "Failed to request IRQ: %d\n", ret);
-> +		tps6586x->core_irq = -1;
-> +	} else {
-> +		device_init_wakeup(tps6586x->dev, 1);
-> +		enable_irq_wake(tps6586x->core_irq);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
->  static int __devinit tps6586x_add_subdevs(struct tps6586x *tps6586x,
->  					  struct tps6586x_platform_data *pdata)
->  {
-> @@ -315,12 +487,19 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
->  	if (tps6586x == NULL)
->  		return -ENOMEM;
->  
-> +	tps6586x->core_irq = -1;
->  	tps6586x->client = client;
->  	tps6586x->dev = &client->dev;
->  	i2c_set_clientdata(client, tps6586x);
->  
->  	mutex_init(&tps6586x->lock);
->  
-> +	if (pdata->irq) {
-> +		ret = tps6586x_irq_init(tps6586x, pdata->irq, pdata->irq_base);
-> +		if (ret)
-> +			dev_warn(&client->dev, "IRQ init failed: %d\n", ret);
-> +	}
-> +
->  	ret = tps6586x_add_subdevs(tps6586x, pdata);
->  	if (ret) {
->  		dev_err(&client->dev, "add devices failed: %d\n", ret);
-> @@ -338,6 +517,11 @@ err_add_devs:
->  
->  static int __devexit tps6586x_i2c_remove(struct i2c_client *client)
->  {
-> +	struct tps6586x *tps6586x = i2c_get_clientdata(client);
-> +
-> +	if (tps6586x->core_irq != -1)
-> +		free_irq(tps6586x->core_irq, tps6586x);
-> +
->  	return 0;
->  }
->  
-> diff --git a/include/linux/mfd/tps6586x.h b/include/linux/mfd/tps6586x.h
-> index 772b3ae..e395219 100644
-> --- a/include/linux/mfd/tps6586x.h
-> +++ b/include/linux/mfd/tps6586x.h
-> @@ -18,6 +18,11 @@ enum {
->  	TPS6586X_ID_LDO_RTC,
->  };
->  
-> +enum {
-> +	TPS6586X_INT_RTC_ALM1,
-> +	TPS6586X_INT_RTC_ALM2,
-> +};
-> +
->  struct tps6586x_subdev_info {
->  	int		id;
->  	const char	*name;
-> @@ -29,6 +34,8 @@ struct tps6586x_platform_data {
->  	struct tps6586x_subdev_info *subdevs;
->  
->  	int gpio_base;
-> +	int irq_base;
-> +	int irq;
->  };
->  
->  /*
-
-
--- 
-Sincerely yours,
-Mike.
-
+Index: kametest/mm/isolation.c
+===================================================================
+--- /dev/null
++++ kametest/mm/isolation.c
+@@ -0,0 +1,233 @@
++struct page_range {
++	unsigned long base, end, pages;
++};
++
++int __get_contig_block(unsigned long pfn, unsigned long nr_pages, void *arg)
++{
++	struct page_range *blockinfo = arg;
++
++	if (nr_pages > blockinfo->pages) {
++		blockinfo->base = pfn;
++		blockinfo->end = pfn + nr_pages;
++		return 1;
++	}
++	return 0;
++}
++
++
++unsigned long __find_contig_block(unsigned long base,
++		unsigned long end, unsigned long pages)
++{
++	unsigned long pfn, tmp, index;
++	struct page_range blockinfo;
++	int ret;
++
++	/* Skip memory holes */
++retry:
++	blockinfo.base = base;
++	blockinfo.end = end;
++	blockinfo.pages = pages;
++	ret = walk_system_ram_range(base, end - base, &blockinfo,
++		__get_contig_block);	
++	if (!ret)
++		return 0;
++	/* Ok, we gound contiguous memory chunk of size. Isolate it.*/
++	for (pfn = blockinfo->base; pfn + pages < blockinfo->end;) {
++
++		for (index = 0; index < nr_pages; index += pageblock_nr_pages)
++			struct page *page;
++
++			page = pfn_to_page(pfn+index);
++			if (set_migratetype_isoalte(page))
++				break;
++		}
++		if (index == nr_pages)
++			return pfn; /* [pfn...pfn+nr_pages) are isolated */
++		/* rollback */
++		for (tmp = 0; tmp < index; tmp += pageblock_nr_pages) {
++			page = pfn_to_page(pfn+tmp);
++			unset_migratetype_isolate(page);
++		} 
++		pfn += index;
++	}
++	/* failed ? */
++	if (blockinfo.end + pages < end) {
++		/* Move base address and find the next block */
++		base = blockinfo.end;
++		goto retry;
++	}
++	return 0;
++}
++
++unsigned long
++find_isolate_conting_block(unsigned long hint, unsigned long size)
++{
++	unsigned long base, found, end, blocks, pages;
++	unsigned long *map;
++	int nid, retry;
++	physaddr_t addr = 0;
++
++	pages = PAGE_ALIGN(size) >> PAGE_SHIFT;
++	pages = ALIGN(pages, pageblock_nr_pages);
++	blocks = pages/pageblock_nr_pages;
++	base = hint;
++
++retry:
++	for_each_node_state(nid, N_HIGH_MEMORY) {
++		unsigned long start;
++		pg_data_t *node = NODE_DATA(nid);
++
++		if (node->node_start_pfn + node->node_end_pfn  - base < pages)
++			continue;
++		if (base < node->node_start_pfn)
++			base = node->node_start_pfn;
++		end = node->node_end_pfn;
++		/* Maybe we can use this Node */
++		found = __find_contig_block(base, end, blocks);
++		if (found) /* Found ? */
++			break;
++		base = end; /* try next node*/
++	}
++	if (!found)
++		goto out;
++	/*
++	 * Ok, here, we have contiguous pageblock marked as "isolated"
++	 * try migration.
++ 	 */
++	retry = 5;
++	while (retry--) {
++		if (!do_migrate_range(found, found + pages))
++			break;
++		lru_add_drain_all();
++		flush_scheduled_work();
++		cond_resched();
++		drain_all_pages();
++	}
++	lru_add_drain_all();
++	flush_scheduled_work();
++	drain_all_pages();
++	offlined_pages = check_pages_isolated(found, found+pages);
++	/* Ok, here, [found...found+pages) memory are isolated */
++out:
++	return found;
++}
 
