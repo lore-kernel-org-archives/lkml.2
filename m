@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab0IBNkz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 09:40:55 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42940 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab0IBNky (ORCPT
+	id S1754979Ab0IBNpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 09:45:08 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:38653 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927Ab0IBNpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 09:40:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=q4OG8fU/bjRGtmMUvCX4yq0EdWj7fByKzpAmYaAUB8EqJ1ou2/1i87dhWQ5gyLWzYE
-         FWYbNCyif9vMfBP3GzOs+gqpnk1onOkcxPVQuZx/P9nKKq4S1tWyoMkv7aRBpVf/IIF2
-         Jdp6q6cmki9CLzzWU56+L7HGievLydQ48P5fU=
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        ML netdev <netdev@vger.kernel.org>,
-        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Toshiharu Okada <okada533@dsn.okisemi.com>,
-        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
-        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
-In-Reply-To: <000a01cb4a9b$e8d6ab00$66f8800a@maildom.okisemi.com>
-References: <4C763A67.5040107@dsn.okisemi.com>
-	 <4C7D0E7A.5060309@dsn.okisemi.com>
-	 <1283266263.2550.106.camel@edumazet-laptop>
-	 <000a01cb4a9b$e8d6ab00$66f8800a@maildom.okisemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Sep 2010 15:40:47 +0200
-Message-ID: <1283434847.2454.726.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 2 Sep 2010 09:45:07 -0400
+Date: Thu, 2 Sep 2010 14:44:57 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
+Cc: akpm@linux-foundation.org, dwalker@fifo99.com, joe@perches.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: Checkpatch.pl false positive? "ERROR: return is not a
+ function, parentheses are not required"
+Message-ID: <20100902134457.GS2406@shadowen.org>
+References: <1269804493.7079.14.camel@tuxtm-linux>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269804493.7079.14.camel@tuxtm-linux>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 02 septembre 2010 à 21:39 +0900, Masayuki Ohtake a écrit :
-> Hi Eric
+On Sun, Mar 28, 2010 at 10:28:13PM +0300, Olimpiu Pascariu wrote:
+> Hi,
 > 
-> Thank you for your comments.
+> I've used checkpatch.pl to verify drivers/staging/dt3155/dt3155_isr.c,
+> in order to provide a patch which fixes the errors and warnings found by
+> checkpatch.
+> The script returns the following error:
+> ERROR: return is not a function, parentheses are not required
+> #155: FILE: staging/dt3155/dt3155_isr.c:155:
+> +  return (dt3155_fbuffer[m]->ready_head -
 > 
-> > I find hard to believe this driver needs to copy all outgoing frames on
-> > pre-allocated skbs.
-> >
-> > +       /* [Header:14][payload] ---> [Header:14][paddong:2][payload]    */
-> > +       memcpy(tmp_skb->data, skb->data, ETH_HLEN);
-> > +       tmp_skb->data[ETH_HLEN] = 0x00;
-> > +       tmp_skb->data[ETH_HLEN + 1] = 0x00;
-> > +       tmp_skb->len = skb->len;
-> > +       memcpy(&tmp_skb->data[ETH_HLEN + 2], &skb->data[ETH_HLEN],
-> > +              (skb->len - ETH_HLEN));
-> > +       buffer_info->kernel_skb = skb;
-> > +       skb = tmp_skb;
-> >
-> > Whats the deal here please ?
+> The original code is:
 > 
-> This processing depends on hardware specification.
+>   return (dt3155_fbuffer[m]->ready_head -
+>            dt3155_fbuffer[m]->ready_len +
+>            dt3155_fbuffer[m]->nbuffers)%
+>           (dt3155_fbuffer[m]->nbuffers);
 > 
-> At the time of transmission.
-> Hardware accepts a packet in the following format.
->   [Header: 14octet] + [padding: 2octet] + [payload]
->   Also, it is necessary to align the head of a [Header: 14octet] at 64byte.
+> I've deleted the the first open parenthesis and the last close
+> parenthesis, and now the code looks like this:
 > 
-> In my knowledge, SKB received by kernel are the following format.
->   [padding: 2octet] + [Header:14octet] + [payload]
->   Also, The head of [payload] has aligned at 16 byte.
+>   return (dt3155_fbuffer[m]->ready_head -
+>            dt3155_fbuffer[m]->ready_len +
+>            dt3155_fbuffer[m]->nbuffers)%
+>           (dt3155_fbuffer[m]->nbuffers);
 > 
-> So, it has adjusted with the format of hardware by a copy.
+> IMHO the code is correct, though an auxiliary variable could be used to
+> avoid this error returned by checkpatch.pl. 
 
-The two bytes padding can be handled by network stack, if you
-force in your setup phase :
-	dev->hard_header_len = ETH_HLEN + 2;
+This code is indeed correct.  This is a bug in checkpatch, I think I
+have sorted out the bug in the version below (which should be mirrored
+out shortly).  If you could test the version below and let me know that
+would be helpful:
 
-then, you can do a single memcpy:
+  http://www.kernel.org/pub/linux/kernel/people/apw/checkpatch/checkpatch.pl-testing
 
-memcpy(tmp_skb->data, skb->data, skb->len);
-
-About the 64 byte alignement, it might be a bit more complex :)
-
-
-
-
+-apw
