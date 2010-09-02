@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535Ab0IBTIe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 15:08:34 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:34318 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756512Ab0IBTIc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 15:08:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=B5SxHeD/XzAu5HWP9/omRYSi/YMEQcpTTjf+sAZgHzugmd7Rxu9EZ/Ac0bwlSKeTXD
-         RDIZTqRCCIuOpvMcbbQ4/HH25Sc3sHA84zag6DAFOmbISWJs3zZhiBYaHwEkq5mEK9eD
-         o/wsQ4imHt8AaGxWjOlGjILLRUaU1y2A59crY=
-MIME-Version: 1.0
-In-Reply-To: <tip-9fbaf49c7f717740002d49eee1bbd03d89d8766a@git.kernel.org>
-References: <1283010066-20935-5-git-send-email-julia@diku.dk>
-	<tip-9fbaf49c7f717740002d49eee1bbd03d89d8766a@git.kernel.org>
-Date: Thu, 2 Sep 2010 21:08:30 +0200
-Message-ID: <AANLkTi=-7Dq09Svwo9nwYA4xzZx4NJapPigW6SodF6g4@mail.gmail.com>
-Subject: Re: [tip:x86/mm] x86, kmemcheck: Remove double test
-From: Vegard Nossum <vegard.nossum@gmail.com>
-To: mingo@redhat.com, hpa@zytor.com, julia@diku.dk,
-        linux-kernel@vger.kernel.org, penberg@cs.helsinki.fi,
-        tglx@linutronix.de, mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756561Ab0IBTIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 15:08:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2264 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756407Ab0IBTIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 15:08:23 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: mingo@elte.hu
+Cc: peterz@infradead.org, robert.richter@amd.com, gorcunov@gmail.com,
+        fweisbec@gmail.com, linux-kernel@vger.kernel.org, ying.huang@intel.com,
+        ming.m.lin@intel.com, yinghai@kernel.org, andi@firstfloor.org,
+        eranian@google.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 3/3] perf, x86: Fix handle_irq return values
+Date: Thu,  2 Sep 2010 15:07:49 -0400
+Message-Id: <1283454469-1909-4-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1283454469-1909-1-git-send-email-dzickus@redhat.com>
+References: <1283454469-1909-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 August 2010 10:36, tip-bot for Julia Lawall <julia@diku.dk> wrote:
-> Commit-ID:  9fbaf49c7f717740002d49eee1bbd03d89d8766a
-> Gitweb:     http://git.kernel.org/tip/9fbaf49c7f717740002d49eee1bbd03d89d8766a
-> Author:     Julia Lawall <julia@diku.dk>
-> AuthorDate: Sat, 28 Aug 2010 17:41:03 +0200
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Mon, 30 Aug 2010 09:19:28 +0200
->
-> x86, kmemcheck: Remove double test
->
-> The opcodes 0x2e and 0x3e are tested for in the first Group 2
-> line as well.
->
-> The sematic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @expression@
-> expression E;
-> @@
->
-> (
-> * E
->  || ... || E
-> |
-> * E
->  && ... && E
-> )
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> Reviewed-by: Pekka Enberg <penberg@cs.helsinki.fi>
-> Cc: Vegard Nossum <vegardno@ifi.uio.no>
-> LKML-Reference: <1283010066-20935-5-git-send-email-julia@diku.dk>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  arch/x86/mm/kmemcheck/opcode.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Sorry, was a bit late.
+Now that we rely on the number of handled overflows, ensure all handle_irq
+implementations actually return the right number.
 
-Thanks for the patch, review, and picking up :-)
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1282228033.2605.204.camel@laptop>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |    9 +++++++--
+ arch/x86/kernel/cpu/perf_event_p4.c    |    2 +-
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 1297bf1..ee05c90 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -713,6 +713,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	struct cpu_hw_events *cpuc;
+ 	int bit, loops;
+ 	u64 status;
++	int handled = 0;
+ 
+ 	perf_sample_data_init(&data, 0);
+ 
+@@ -743,12 +744,16 @@ again:
+ 	/*
+ 	 * PEBS overflow sets bit 62 in the global status register
+ 	 */
+-	if (__test_and_clear_bit(62, (unsigned long *)&status))
++	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
++		handled++;
+ 		x86_pmu.drain_pebs(regs);
++	}
+ 
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
+ 
++		handled++;
++
+ 		if (!test_bit(bit, cpuc->active_mask))
+ 			continue;
+ 
+@@ -770,7 +775,7 @@ again:
+ 
+ done:
+ 	intel_pmu_enable_all(0);
+-	return 1;
++	return handled;
+ }
+ 
+ static struct event_constraint *
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index febb12c..d470c91 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -690,7 +690,7 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 		inc_irq_stat(apic_perf_irqs);
+ 	}
+ 
+-	return handled > 0;
++	return handled;
+ }
+ 
+ /*
+-- 
+1.7.2.2
 
-Vegard
