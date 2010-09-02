@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab0IBIXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 04:23:12 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55367 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091Ab0IBIXL (ORCPT
+	id S1752933Ab0IBIXv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 04:23:51 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34774 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab0IBIXt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 04:23:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=rD3F8pK+ErUxrzf1U4OidAj3HCRiWapWpRl8Z1KsmagNZw41l8AKn1AhDaoGdib6j4
-         xugLH/G+Zg1YCxonjZA5qBJ2KcwjkiyrcwRkgerRqAMwMuV+8DmbwUbpg7APyqxv5r+m
-         Hw+0y9Tgg3qDfLTQZ85mXIGBgiwyisWIRQRD4=
-Subject: [PATCH] Input: wm97xx-core - use platform_device_del instead of
-	platform_device_unregister for error handling
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Content-Type: text/plain
-Date: Thu, 02 Sep 2010 16:27:09 +0800
-Message-Id: <1283416029.19272.3.camel@mola>
+	Thu, 2 Sep 2010 04:23:49 -0400
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 3/15]  3: uprobes: Slot allocation
+ for Execution out of line(XOL)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20100825134156.5447.43216.sendpatchset@localhost6.localdomain6>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+	 <20100825134156.5447.43216.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 02 Sep 2010 10:23:32 +0200
+Message-ID: <1283415812.2059.1825.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/input/touchscreen/wm97xx-core.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+On Wed, 2010-08-25 at 19:11 +0530, Srikar Dronamraju wrote:
+> Current slot allocation mechanism:
+> 1. Allocate one dedicated slot per user breakpoint. Each slot is big
+> enuf to accomodate the biggest instruction for that architecture. (16
+> bytes for x86).
+> 2. We currently allocate only one page for slots. Hence the number of
+> slots is limited to active breakpoint hits on that process.
+> 3. Bitmap to track used slots. 
 
-diff --git a/drivers/input/touchscreen/wm97xx-core.c b/drivers/input/touchscreen/wm97xx-core.c
-index cbfef1e..770537c 100644
---- a/drivers/input/touchscreen/wm97xx-core.c
-+++ b/drivers/input/touchscreen/wm97xx-core.c
-@@ -684,8 +684,7 @@ static int wm97xx_probe(struct device *dev)
-  touch_reg_err:
- 	platform_device_put(wm->touch_dev);
-  touch_err:
--	platform_device_unregister(wm->battery_dev);
--	wm->battery_dev = NULL;
-+	platform_device_del(wm->battery_dev);
-  batt_reg_err:
- 	platform_device_put(wm->battery_dev);
-  batt_err:
--- 
-1.7.2
+An alternative method would be to have 1 slot per cpu, and manage the
+slot content using preemption notifiers. That gives you a fixed number
+of slots and an unlimited number of probe points.
 
+If the preemption happens to be a migration you need to rewrite the
+userspace IP to point to the new slot -- if indeed the task was inside
+one when it got preempted -- but that all should be doable.
 
 
