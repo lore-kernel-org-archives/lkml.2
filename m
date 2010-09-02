@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab0IBObO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:31:14 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58118 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab0IBObN convert rfc822-to-8bit (ORCPT
+	id S1753930Ab0IBOcb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:32:31 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:33709 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152Ab0IBOca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:31:13 -0400
-Subject: Re: [RFD][checkpatch] warnings on space in front of labels
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1283437098.2356.135.camel@gandalf.stny.rr.com>
-References: <1283437098.2356.135.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 02 Sep 2010 16:31:07 +0200
-Message-ID: <1283437867.2012.213.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 2 Sep 2010 10:32:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=nD8ESD9EsHB55E1rqH+xE+DNeM/JqtAi0+4uVZ+s+yXV0SbIy7WdLUrnvirOq9srRl
+         NL4Qb+ME+reHWlr0KuQMDtdyvy3Y9n2LFq4YJ4YTWaNf9Jx8u5/xJfg4DtOFsEK344aQ
+         mVOQqgvTKSyuZfFPvCBNO1xEsMfos3SYXnicg=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Iram Shahzad <iram.shahzad@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [RESEND PATCH v2] compaction: handle active and inactive fairly in too_many_isolated
+Date: Thu,  2 Sep 2010 23:32:11 +0900
+Message-Id: <1283437931-11754-1-git-send-email-minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-02 at 10:18 -0400, Steven Rostedt wrote:
-> 
-> There's a new warning that I've seen lately. It is about complaining
-> about spaces starting on a new line.
-> 
-> WARNING: please, no space for starting a line, 
->                                 excluding comments
-> #90: FILE: trace-read.c:612:
-> + again:$
-> 
-> 
-> Comments are currently the exception, but I would also like to add
-> labels too. 
+Iram reported compaction's too_many_isolated loops forever.
+(http://www.spinics.net/lists/linux-mm/msg08123.html)
 
-I really hate that /^ label/ stuff and I'm removing them everywhere I
-can.
+The meminfo of situation happened was inactive anon is zero.
+That's because the system has no memory pressure until then.
+While all anon pages was in active lru, compaction could select
+active lru as well as inactive lru. That's a different thing
+with vmscan's isolated. So we has been two too_many_isolated.
 
+While compaction can isolated pages in both active and inactive,
+current implementation of too_many_isolated only considers inactive.
+It made Iram's problem.
 
-> I really prefer the space in front of the label. In fact, I think it
-> should be the default.
-> 
-> But could we at least remove the warning for spaces in front of labels?
+This patch handles active and inactive with fair.
+That's because we can't expect where from and how many compaction would
+isolated pages.
 
-No, kill those spaces with prejudice.
+This patch changes (nr_isolated > nr_inactive) with
+nr_isolated > (nr_active + nr_inactive) / 2.
 
-> What do others think?
+P.S : Mel said "it should be merged and arguably is a stable candidate for 2.6.35"
 
-I'd prefer to run a script over the kernel and remove all those silly spaces.
+Cc: Iram Shahzad <iram.shahzad@jp.fujitsu.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ mm/compaction.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 94cce51..4d709ee 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -214,15 +214,16 @@ static void acct_isolated(struct zone *zone, struct compact_control *cc)
+ /* Similar to reclaim, but different enough that they don't share logic */
+ static bool too_many_isolated(struct zone *zone)
+ {
+-
+-	unsigned long inactive, isolated;
++	unsigned long active, inactive, isolated;
+ 
+ 	inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
+ 					zone_page_state(zone, NR_INACTIVE_ANON);
++	active = zone_page_state(zone, NR_ACTIVE_FILE) +
++					zone_page_state(zone, NR_ACTIVE_ANON);
+ 	isolated = zone_page_state(zone, NR_ISOLATED_FILE) +
+ 					zone_page_state(zone, NR_ISOLATED_ANON);
+ 
+-	return isolated > inactive;
++	return isolated > (inactive + active) / 2;
+ }
+ 
+ /*
+-- 
+1.7.0.5
+
