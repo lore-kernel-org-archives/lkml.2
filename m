@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060Ab0IBCgv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 22:36:51 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11726 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752297Ab0IBCgu (ORCPT
+	id S1753417Ab0IBCmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 22:42:17 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:50499 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752297Ab0IBCmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 22:36:50 -0400
-Message-ID: <000601cb4a47$b1a7d1d0$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Greg KH" <greg@kroah.com>
-Cc: <meego-dev@meego.com>, "LKML" <linux-kernel@vger.kernel.org>,
-        <gregkh@suse.de>, <yong.y.wang@intel.com>, <qi.wang@intel.com>,
-        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
-        <alan@linux.intel.com>, <margie.foster@intel.com>,
-        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>
-References: <4C7E441E.4090006@dsn.okisemi.com> <20100902010236.GA21782@kroah.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
-Date: Thu, 2 Sep 2010 11:36:45 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	Wed, 1 Sep 2010 22:42:15 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4C7F0F2D.3060204@np.css.fujitsu.com>
+Date: Thu, 02 Sep 2010 11:42:53 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: APEI-lenb <lenb@kernel.org>
+CC: Huang Ying <ying.huang@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 1/2] [Patch-next -v2] ACPI, APEI Fix the return value(==NULL)
+ of acpi_pre_map().
+References: <4C7F0C79.3060506@np.css.fujitsu.com>
+In-Reply-To: <4C7F0C79.3060506@np.css.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi, All,
 
-> Nope, I still get a warning with this patch, but I'll go fix it up:
-Sorry for our warning.
-We tested with kernel-2.6.35.3.
-We will modify so that warning becomes to disappear soon.
+I am very sorry for my miss. Please cancel these two patches. I will send the
+new patches.
 
-Thanks, Ohtake(OKISemi)
------ Original Message ----- 
-From: "Greg KH" <greg@kroah.com>
-To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
-Cc: <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; <gregkh@suse.de>; <yong.y.wang@intel.com>;
-<qi.wang@intel.com>; <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <alan@linux.intel.com>;
-<margie.foster@intel.com>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>
-Sent: Thursday, September 02, 2010 10:02 AM
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+Best Regards,
+Jin Dongming.
 
-
-> On Wed, Sep 01, 2010 at 09:16:30PM +0900, Masayuki Ohtak wrote:
-> > Hi Greg,
-> >
-> > Sorry, we have modified again, for a bug(illegal return code) and
-> > WARNING for building with the latest kernel.
->
-> Nope, I still get a warning with this patch, but I'll go fix it up:
->   CC [M]  drivers/misc/pch_phub.o
-> drivers/misc/pch_phub.c: In function ‘pch_phub_probe’:
-> drivers/misc/pch_phub.c:582:334: warning: cast from pointer to integer of different size
-> drivers/misc/pch_phub.c:585:2: warning: passing argument 2 of ‘pci_map_rom’ from incompatible pointer type
-> include/linux/pci.h:803:43: note: expected ‘size_t *’ but argument is of type ‘unsigned int *’
-> drivers/misc/pch_phub.c:592:346: warning: cast from pointer to integer of different size
->
-> thanks,
->
-> greg k-h
->
+(2010/09/02 11:31), Jin Dongming wrote:
+> acpi_pre_map() is used for remapping the physical address of I/O, so
+> it should be return NULL or remapped virtual address. The problem is
+> that when (paddr - pg_off) equals 0, no matter whether I/O remapping is
+> successful or not, the function returns NULL.
+> 
+> In acpi_pre_map(), after the physical address is remapped sucessfully,
+> it will check whether the physical address has been added into acpi_iomaps
+> list again.
+>    - If the physical address has beed added into acpi_iomaps, the virtual
+>      address will be saved in vaddr.
+>    - Otherwise, NULL be saved in vaddr.
+> 
+> So if the physical address is the first time to be remapped, vaddr will be
+> NULL always.
+> 
+> In many cases, (paddr - pg_off) may not equal 0. So the function could work
+> well. In our machine, (paddr - pg_off) equals 0, so the return value of
+> acpi_pre_map() is NULL.
+> 
+> This patch fixed it and I confirmed it on x86_64 next-tree.
+> 
+> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+> ---
+>  drivers/acpi/atomicio.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
+> index 8f8bd73..1bc2614 100644
+> --- a/drivers/acpi/atomicio.c
+> +++ b/drivers/acpi/atomicio.c
+> @@ -133,7 +133,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
+>  
+>  	spin_lock_irqsave(&acpi_iomaps_lock, flags);
+>  	vaddr = __acpi_try_ioremap(paddr, size);
+> -	if (vaddr) {
+> +	if (unlikely(vaddr)) {
+>  		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+>  		iounmap(map->vaddr);
+>  		kfree(map);
+> @@ -142,7 +142,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
+>  	list_add_tail_rcu(&map->list, &acpi_iomaps);
+>  	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+>  
+> -	return vaddr + (paddr - pg_off);
+> +	return map->vaddr + (paddr - pg_off);
+>  err_unmap:
+>  	iounmap(vaddr);
+>  	return NULL;
+> -- 1.7.1.1 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
 
