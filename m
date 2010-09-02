@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab0IBPen (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 11:34:43 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:58369
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752518Ab0IBPel (ORCPT
+	id S1755387Ab0IBPgj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 11:36:39 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40144 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab0IBPgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 11:34:41 -0400
-X-SpamScore: -6
-X-BigFish: VS-6(zz1454K4015Lzz1202hzzz32i87h2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L84LPI-01-728-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] KVM fixes and cleanups
-Date: Thu, 2 Sep 2010 17:29:44 +0200
-Message-ID: <1283441387-7378-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 2 Sep 2010 11:36:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Jmfx/gG7xs57eSe2lLrGgHIqp39ylYu3AvP3u1qCevsfbawpTneRvq1pzovGulVyri
+         Cc5aXGebRtrqX0Hexh9FZa9MTs/Wef8nPWe45cYIB/ZodgrYEDD4A6AM2qz/Sg441bxZ
+         Y2OLvlmNLqPTlZxrt4jH0BWjNH8vitjbpbvkg=
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Date: Thu, 2 Sep 2010 17:36:35 +0200
+Message-ID: <AANLkTinFc+1wimmN3CQQzO-s3=uah8YDFzdy+Da=vsCx@mail.gmail.com>
+Subject: Re: [PATCH 00/20] mm: Preemptibility -v4
+From: Mat <jackdachef@gmail.com>
+To: peterz@infradead.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, piotr@hosowicz.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Avi, Marcelo,
+Hi Peter,
 
-here are 3 patches which came up during the final testing of the
-nested-npt patch set. This patch set fixes two issues I found and the
-last patch contains a minor cleanup which does not fix any real bug.
-Please have a look at them and feel free to apply them (only if no
-objections, of course ;-) )
-For the bug that patch 2 fixes I will write a unit-test and submit it
-separatly.
+I'm currently also testing your preemptibility patchset and have to
+say that on top of 2.6.36-rc3 it really seems to make a positive
+difference for me :)
 
-Thanks,
-	Joerg
+since I'm only a regular (power)user utilizing linux-distributions for
+my everyday work I can report only about that:
 
-Shortlog:
-
-Joerg Roedel (3):
-      KVM: MMU: Fix 32 bit legacy paging with NPT
-      KVM: SVM: Restore correct registers after sel_cr0 intercept emulation
-      KVM: SVM: Clean up rip handling in vmrun emulation
-
-Diffstat:
-
- arch/x86/kvm/mmu.c |    8 ++++++--
- arch/x86/kvm/svm.c |   39 ++++++++++++++++++++++++++++++++++-----
- 2 files changed, 40 insertions(+), 7 deletions(-)
+- the desktop stays very responsive even during copying, backing up
+and transferring of large amounts of data (e.g. backing up 1 TB of
+data via rsync between different filesystems); this includes the GUI
+staying responsive, the mouse not lagging and apps opening up almost
+instantaneously
+- there is very little to no noticable lags or repetitions when
+hearing webradio or audios during longer periods of time
+- and much more
 
 
+considering that 2.6.36 received several other improvements in this area
+- http://lkml.org/lkml/2010/8/1/40, the patches from Wu Fengguang and
+KOSAKI Motohiro
+- concurrency managed workqueues
+- and other performance improvements, especially VFS
+may also add up to this
+
+anyways: please consider adding this to next/mainline during the next
+merge cycle
+
+my linux-desktop didn't feel that reponsive for a long time ! ^^
+if I recall correctly if felt comparably responsive when I used Con's
+RSDL or SD scheduler - CFS and CFQ have made great progress in terms
+of desktop usage, interactivity and delays
+
+Regards and thanks to everyone involved in the continued improvements
+in this area
+
+Mat
