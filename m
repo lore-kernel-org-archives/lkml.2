@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab0IBNQa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 09:16:30 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:31623 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab0IBNQ3 (ORCPT
+	id S1754928Ab0IBNRr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 09:17:47 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33807 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab0IBNRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 09:16:29 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L84FAN-02-S76-02
-X-M-MSG: 
-Date: Thu, 2 Sep 2010 15:11:12 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 4/4] [x86] perf: fix accidentally ack'ing a second
- event on intel perf counter
-Message-ID: <20100902131112.GR22783@erda.amd.com>
-References: <AANLkTimA-AZWJugaLR3VPGVhBaJid=t=a1rPVNUE_8Dh@mail.gmail.com>
- <20100901145728.GM22783@erda.amd.com>
- <AANLkTikOaCL8FqQuUQsYPxm19WZOdarp8AMAugN0mnqQ@mail.gmail.com>
+	Thu, 2 Sep 2010 09:17:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=mxwUpmD0Stkgvs7VISZkutb3EMm76SSbThb1yrpR9ge3MJ5NdpfU2XJtJ0L5jYreGK
+         0TtQbV6u9Fo3Hn+GaZamQqpDCoxMrRNDD2ePV+llbknihSzgXyTiMFjr14dJQyL6rdXu
+         iyrJpKuYyqvm91afSzcWwdN4xrcjNsjWtkTVE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <AANLkTikOaCL8FqQuUQsYPxm19WZOdarp8AMAugN0mnqQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+In-Reply-To: <20100902105229.GI2406@shadowen.org>
+References: <20100818204016.GA29640@redhat.com>
+	<1282167133.6724.165.camel@Joe-Laptop>
+	<20100818214818.GA31094@redhat.com>
+	<1282168679.6724.174.camel@Joe-Laptop>
+	<20100818221721.GA2667@redhat.com>
+	<1282174721.6724.202.camel@Joe-Laptop>
+	<20100902105229.GI2406@shadowen.org>
+Date: Thu, 2 Sep 2010 13:17:45 +0000
+Message-ID: <AANLkTimU81+SaHMF7LQf-baDor3nOQgaNjDGhfrJCwqS@mail.gmail.com>
+Subject: Re: add memset checks to checkpatch.pl
+From: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avarab@gmail.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Joe Perches <joe@perches.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.09.10 04:13:19, Stephane Eranian wrote:
-> Robert,
-> 
-> Do you have the test program you used to test this?
-> I believe the NHM hack does not solve the problem, it
-> just makes it harder to appear.
+On Thu, Sep 2, 2010 at 10:52, Andy Whitcroft <apw@canonical.com> wrote:
 
-For testing back-to-back nmis I have used:
+> [...] /^(0x|)0$/i
 
- perf record -e cycles -e instructions -e cache-references
-       -e cache-misses -e branch-misses -a -- sleep 10
+The canonical way to write this is using curlies:
 
-with load on all cpus. But I couldn't reproduce this particular
-problem as I do not have such a system available. I think it might
-trigger also with only one counter running. What the observed from the
-status bits, only one counter was involved.
-
-> 
-> I suspect the real issue is that the GLOBAL_STATUS
-> bitmask cannot be trusted. I'd like to verify this.
-
-So yes, it looks like it is a cpu bug with a race then clearing the
-status. I didn't check the errata list, maybe it is already known.
-
-> 
-> Has the problem appear only on Nehalem or also on
-> Westmere?
-
-I don't know.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+/^(0x)?0$/i
