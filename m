@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab0IBOcb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:32:31 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:33709 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab0IBOca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:32:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=nD8ESD9EsHB55E1rqH+xE+DNeM/JqtAi0+4uVZ+s+yXV0SbIy7WdLUrnvirOq9srRl
-         NL4Qb+ME+reHWlr0KuQMDtdyvy3Y9n2LFq4YJ4YTWaNf9Jx8u5/xJfg4DtOFsEK344aQ
-         mVOQqgvTKSyuZfFPvCBNO1xEsMfos3SYXnicg=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Iram Shahzad <iram.shahzad@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [RESEND PATCH v2] compaction: handle active and inactive fairly in too_many_isolated
-Date: Thu,  2 Sep 2010 23:32:11 +0900
-Message-Id: <1283437931-11754-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.5
+	id S1754121Ab0IBOek (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:34:40 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50097 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753793Ab0IBOej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 10:34:39 -0400
+Date: Thu, 2 Sep 2010 16:34:36 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, JiebingLi <jiebing.li@intel.com>,
+        Joe Perches <joe@perches.com>
+Subject: Re: linux-next: manual merge of the usb tree with the trivial tree
+In-Reply-To: <20100902032604.GB27598@kroah.com>
+Message-ID: <alpine.LNX.2.00.1009021633020.26813@pobox.suse.cz>
+References: <20100902130118.add62d4a.sfr@canb.auug.org.au> <20100902032604.GB27598@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Iram reported compaction's too_many_isolated loops forever.
-(http://www.spinics.net/lists/linux-mm/msg08123.html)
+On Wed, 1 Sep 2010, Greg KH wrote:
 
-The meminfo of situation happened was inactive anon is zero.
-That's because the system has no memory pressure until then.
-While all anon pages was in active lru, compaction could select
-active lru as well as inactive lru. That's a different thing
-with vmscan's isolated. So we has been two too_many_isolated.
+> > Today's linux-next merge of the usb tree got a conflict in
+> > drivers/usb/gadget/langwell_udc.c between commit
+> > 7f26b3a7533bbc1ddd88b297c935ee4da8f74cea ("drivers/usb: Remove
+> > unnecessary return's from void functions") from the trivial tree and
+> > commit 0f92bbacd2d1a26e8bf863d2cc05572df43bf7fb ("USB: langwell: USB
+> > Client driver code cleanup") from the usb tree.
+> > 
+> > Just context changes.  I fixed it up (see below) and can carry the fix
+> > while necessary.  Though, if that trivial tree commit was in the usb tree,
+> > the conflict could be resolved there ...
+> 
+> Joe, care to break this one change out and have me take it through the
+> usb tree?
 
-While compaction can isolated pages in both active and inactive,
-current implementation of too_many_isolated only considers inactive.
-It made Iram's problem.
+Here it goes. I will revert this chunk in trivial tree for now.
 
-This patch handles active and inactive with fair.
-That's because we can't expect where from and how many compaction would
-isolated pages.
 
-This patch changes (nr_isolated > nr_inactive) with
-nr_isolated > (nr_active + nr_inactive) / 2.
+From: Joe Perches <joe@perches.com>
+Subject: drivers/usb: langwell: Remove unnecessary return's from void functions
 
-P.S : Mel said "it should be merged and arguably is a stable candidate for 2.6.35"
+There are about 2500 void functions in drivers/usb
+Only a few used return; at end of function.
 
-Cc: Iram Shahzad <iram.shahzad@jp.fujitsu.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/compaction.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Standardize them a bit.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 94cce51..4d709ee 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -214,15 +214,16 @@ static void acct_isolated(struct zone *zone, struct compact_control *cc)
- /* Similar to reclaim, but different enough that they don't share logic */
- static bool too_many_isolated(struct zone *zone)
- {
--
--	unsigned long inactive, isolated;
-+	unsigned long active, inactive, isolated;
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+
+diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
+index a391351..f1a0702 100644
+--- a/drivers/usb/gadget/langwell_udc.c
++++ b/drivers/usb/gadget/langwell_udc.c
+@@ -284,7 +284,6 @@ static void ep0_reset(struct langwell_udc *dev)
+ 	}
  
- 	inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
- 					zone_page_state(zone, NR_INACTIVE_ANON);
-+	active = zone_page_state(zone, NR_ACTIVE_FILE) +
-+					zone_page_state(zone, NR_ACTIVE_ANON);
- 	isolated = zone_page_state(zone, NR_ISOLATED_FILE) +
- 					zone_page_state(zone, NR_ISOLATED_ANON);
- 
--	return isolated > inactive;
-+	return isolated > (inactive + active) / 2;
+ 	VDBG(dev, "<--- %s()\n", __func__);
+-	return;
  }
  
- /*
--- 
-1.7.0.5
+ 
+@@ -1486,7 +1485,6 @@ static void langwell_udc_start(struct langwell_udc *dev)
+ 	writel(usbcmd, &dev->op_regs->usbcmd);
+ 
+ 	DBG(dev, "<--- %s()\n", __func__);
+-	return;
+ }
+ 
+ 
+@@ -1509,7 +1507,6 @@ static void langwell_udc_stop(struct langwell_udc *dev)
+ 	writel(usbcmd, &dev->op_regs->usbcmd);
+ 
+ 	DBG(dev, "<--- %s()\n", __func__);
+-	return;
+ }
+ 
+ 
 
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
