@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757793Ab0IBWZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 18:25:47 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:8279 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab0IBWZq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 18:25:46 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6093"; a="53071134"
-Subject: Re: [PATCH 14/24] msm: add hotplug stub functions
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jeff Ohlstein <johlstei@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Gregory Bean <gbean@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-In-Reply-To: <20100902171253.GX26319@n2100.arm.linux.org.uk>
-References: <1282712273-344-1-git-send-email-johlstei@codeaurora.org>
-	 <1282712273-344-15-git-send-email-johlstei@codeaurora.org>
-	 <20100902111157.GX26319@n2100.arm.linux.org.uk>
-	 <1283446177.3674.0.camel@c-dwalke-linux.qualcomm.com>
-	 <20100902171253.GX26319@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Sep 2010 15:25:30 -0700
-Message-ID: <1283466330.3674.368.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757832Ab0IBW2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 18:28:16 -0400
+Received: from MAILER.EUN.EG ([193.227.1.3]:50544 "EHLO mailer.eun.eg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754163Ab0IBW2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 18:28:15 -0400
+Message-ID: <53559.89.128.151.18.1283466604.squirrel@127.0.0.1>
+Date: Fri, 3 Sep 2010 00:30:04 +0200 (CEST)
+Subject: =?iso-8859-1?Q?Gr=FC=DFe=2C?=
+From: "Frau Valentina Lopez" <valentina.lopez.vl@gmail.com>
+Reply-To: valentina.lopez@1email.eu
+User-Agent: SquirrelMail/1.4.4-rc1
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-02 at 18:12 +0100, Russell King - ARM Linux wrote:
-> On Thu, Sep 02, 2010 at 09:49:37AM -0700, Daniel Walker wrote:
-> > On Thu, 2010-09-02 at 12:11 +0100, Russell King - ARM Linux wrote:
-> > > On Tue, Aug 24, 2010 at 09:57:43PM -0700, Jeff Ohlstein wrote:
-> > > > From: Daniel Walker <dwalker@codeaurora.org>
-> > > > 
-> > > > We don't actually do anything for hotplug yet. This just lets
-> > > > everything compile, even when hotplug is enabled.
-> > > 
-> > > And the point of that is?  If you're not supporting hotplug CPU yet, then
-> > > don't allow it to be enabled.
-> > 
-> > How do we do that? I didn't see a easy way to prevent it.
-> 
-> 
-> config HOTPLUG_CPU
->         bool "Support for hot-pluggable CPUs (EXPERIMENTAL)"
->         depends on SMP && HOTPLUG && EXPERIMENTAL
-> +	depends on !ARCH_MSM
+Grüße,
 
-So every other SMP does this? I didn't see any other's besides RealView
-implementing these. I just assumed they all had compile failures.
+Guten Tag, ich bin Frau Valentina Lopez, Persönlicher Referent von Mr.Mikhail
+Khodorkowski. Ich habe einen geschäftlichen Vorschlag von  € 46Mio für Sie
+aus meinem Unternehmen (Yukos Oil Russland). Wenn Sie intresse daran
+haben, kann ich Ihnen mehr Einzelheiten aufzeigen.Sie koennen details
+unter dem link
+http://letthemgonow.org/ finden
 
-Daniel
+Email: valentina.lopez@1email.eu
+Hochachtungsvoll
+Frau Valentina Lopez
 
--- 
 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
 
