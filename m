@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab0IBQze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 12:55:34 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:50836 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab0IBQzc convert rfc822-to-8bit (ORCPT
+	id S1756022Ab0IBRAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 13:00:41 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52602 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613Ab0IBRAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 12:55:32 -0400
+	Thu, 2 Sep 2010 13:00:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=DJ1RRYIShcijXOMlQtdz0mtwEDDBOO2oJ7T+Jc/SjgjyLGcXL/gxrVyRM/KsIeQ+mV
-         Fp/moqPFffclySDXNQm2NquqtkUiPqF+FLo8Nzgd8RlYmS16MjEIlH/WYjlgArqUWRkL
-         9L9vard6muOKPiIRc3ZridJK+htVm3HjkL8P4=
-MIME-Version: 1.0
-In-Reply-To: <4C7FD244.8050502@tilera.com>
-References: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
- <1283442391-23612-23-git-send-email-namhyung@gmail.com> <4C7FD244.8050502@tilera.com>
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=YbUT9Sy02ZnBpmolPOU1VKaUPiwpEZuFGXA4cFkawYITOhKApU5MIfSKl3IIAa2Dlr
+         clVg7G9RrMIE6gGwSDp1MKCzkcGVtAx5NbgY2Dv2zRKPDrIypxM3ppWtzQVbSLNqOfMk
+         df4L+lrMZF2oZMV0HQtcmqWHV3JTWw6KIVBdc=
 From: Namhyung Kim <namhyung@gmail.com>
-Date: Fri, 3 Sep 2010 01:55:10 +0900
-Message-ID: <AANLkTi=kvktxn_03LOAre0ZiRkswwf-O1hg07ZsShEeN@mail.gmail.com>
-Subject: Re: [PATCH v2 22/24] ptrace: cleanup arch_ptrace() on tile
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] ida: fix up bitmap size calculation
+Date: Fri,  3 Sep 2010 02:00:29 +0900
+Message-Id: <1283446829-24050-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+ida chunk should consist of 128 bytes (= 1024 bits) by definition
+but because of wrong calculation of IDA_BITMAP_LONGS it only contained
+992 on 32-bit machines, 960 on 64-bit machines. Fix it.
 
-On Fri, Sep 3, 2010 at 01:35, Chris Metcalf <cmetcalf@tilera.com> wrote:
->  On 9/2/2010 11:46 AM, Namhyung Kim wrote:
->> Remove checking @addr less than 0 because @addr is now unsigned.
->>
->> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
->> Cc: Chris Metcalf <cmetcalf@tilera.com>
->> ---
->>  arch/tile/kernel/ptrace.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/tile/kernel/ptrace.c b/arch/tile/kernel/ptrace.c
->> index aed9256..704bf11 100644
->> --- a/arch/tile/kernel/ptrace.c
->> +++ b/arch/tile/kernel/ptrace.c
->> @@ -85,7 +85,7 @@ long arch_ptrace(struct task_struct *child, long request,
->>       case PTRACE_PEEKUSR:  /* Read register from pt_regs. */
->>               if (addr & (sizeof(data)-1))
->>                       break;
->> -             if (addr < 0 || addr >= PTREGS_SIZE)
->> +             if (addr >= PTREGS_SIZE)
->>                       break;
->>               tmp = getreg(child, addr);   /* Read register */
->>               ret = put_user(tmp, datap);
->> @@ -94,7 +94,7 @@ long arch_ptrace(struct task_struct *child, long request,
->>       case PTRACE_POKEUSR:  /* Write register in pt_regs. */
->>               if (addr & (sizeof(data)-1))
->>                       break;
->> -             if (addr < 0 || addr >= PTREGS_SIZE)
->> +             if (addr >= PTREGS_SIZE)
->>                       break;
->>               putreg(child, addr, data);   /* Write register */
->>               ret = 0;
->
-> This omits the change to the actual function definition, which was present
-> in the previous version of this patch.
->
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ include/linux/idr.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-That change was moved/combined into previous patch in this series.
-Please check out 03/24 in this patchset also.
-
-
-> On the up side, it also removes the change to the sizeof() values in
-> GETREGS/SETREGS, which seemed unnecessary in the previous version.
->
-
-Yes, it is unnecessary but little bit more accurate although there will be no
-machine that has diferent size of long and unsigned long. Anyway if you
-really hate it, I'll discard it. :-)
-
-
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index e968db7..13c7296 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -119,8 +119,8 @@ void idr_init(struct idr *idp);
+  * pointer isn't necessary.
+  */
+ #define IDA_CHUNK_SIZE		128	/* 128 bytes per chunk */
+-#define IDA_BITMAP_LONGS	(128 / sizeof(long) - 1)
+-#define IDA_BITMAP_BITS		(IDA_BITMAP_LONGS * sizeof(long) * 8)
++#define IDA_BITMAP_LONGS	(IDA_CHUNK_SIZE / sizeof(long))
++#define IDA_BITMAP_BITS 	(IDA_CHUNK_SIZE * 8)
+ 
+ struct ida_bitmap {
+ 	long			nr_busy;
 -- 
-Regards,
-Namhyung Kim
+1.7.2.2
+
