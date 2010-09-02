@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab0IBMwr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 08:52:47 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:50590 "EHLO
+	id S1754645Ab0IBMxs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 08:53:48 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:39238 "EHLO
 	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520Ab0IBMwr convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753110Ab0IBMxr convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Thu, 2 Sep 2010 08:52:47 -0400
-Message-Id: <4C7FBA3D0200007800013F61@vpn.id2.novell.com>
+	Thu, 2 Sep 2010 08:53:47 -0400
+Message-Id: <4C7FBA790200007800013F64@vpn.id2.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 02 Sep 2010 13:52:45 +0100
+Date: Thu, 02 Sep 2010 13:53:45 +0100
 From: "Jan Beulich" <JBeulich@novell.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
 Cc: <linux-kernel@vger.kernel.org>
@@ -23,38 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the return address removed from the stack, these should really
-refer to their caller's register state.
+The scope should really extend to the end of the function, not the
+return location.
 
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
 ---
- arch/x86/kernel/entry_64.S |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ arch/x86/kernel/entry_64.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- linux-2.6.36-rc3/arch/x86/kernel/entry_64.S
-+++ 2.6.36-rc3-x86_64-stub-unwind-annotations/arch/x86/kernel/entry_64.S
-@@ -714,9 +714,8 @@ END(ptregscall_common)
++++ 2.6.36-rc3-x86_64-error_entry-unwind-scope/arch/x86/kernel/entry_64.S
+@@ -1445,7 +1445,6 @@ error_swapgs:
+ error_sti:
+ 	TRACE_IRQS_OFF
+ 	ret
+-	CFI_ENDPROC
  
- ENTRY(stub_execve)
- 	CFI_STARTPROC
--	popq %r11
--	CFI_ADJUST_CFA_OFFSET -8
--	CFI_REGISTER rip, r11
-+	addq $8, %rsp
-+	PARTIAL_FRAME 0
- 	SAVE_REST
- 	FIXUP_TOP_OF_STACK %r11
- 	movq %rsp, %rcx
-@@ -735,7 +734,7 @@ END(stub_execve)
- ENTRY(stub_rt_sigreturn)
- 	CFI_STARTPROC
- 	addq $8, %rsp
--	CFI_ADJUST_CFA_OFFSET	-8
-+	PARTIAL_FRAME 0
- 	SAVE_REST
- 	movq %rsp,%rdi
- 	FIXUP_TOP_OF_STACK %r11
+ /*
+  * There are two places in the kernel that can potentially fault with
+@@ -1470,6 +1469,7 @@ bstep_iret:
+ 	/* Fix truncated RIP */
+ 	movq %rcx,RIP+8(%rsp)
+ 	jmp error_swapgs
++	CFI_ENDPROC
+ END(error_entry)
+ 
+ 
 
 
 
