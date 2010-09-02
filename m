@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab0IBJcS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 05:32:18 -0400
-Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:45995 "EHLO
-	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab0IBJcR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 05:32:17 -0400
-X-Greylist: delayed 1413 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Sep 2010 05:32:17 EDT
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: [patch v2 5/5] ntfs: remove dependency on __GFP_NOFAIL
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-In-Reply-To: <alpine.DEB.2.00.1009011801050.24694@chino.kir.corp.google.com>
-Date: Thu, 2 Sep 2010 10:08:28 +0100
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Anton Altaparmakov <aia21@cantab.net>,
-        linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A326B3E1-DB22-4C25-9ED5-C6A5F25BF15E@cam.ac.uk>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <alpine.DEB.2.00.1009011757360.24694@chino.kir.corp.google.com> <alpine.DEB.2.00.1009011801050.24694@chino.kir.corp.google.com>
-To: David Rientjes <rientjes@google.com>
-X-Mailer: Apple Mail (2.1081)
+	id S1752243Ab0IBJpO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 05:45:14 -0400
+Received: from mx.ij.cx ([212.13.201.15]:52499 "EHLO wes.ijneb.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750868Ab0IBJpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 05:45:12 -0400
+Date: Thu, 2 Sep 2010 10:45:01 +0100 (BST)
+From: Mark Hills <mark@pogo.org.uk>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com
+Subject: Re: cgroup: rmdir() does not complete
+In-Reply-To: <20100902084200.e9b773cf.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.NEB.2.01.1009021012360.22833@jrf.vwaro.pbz>
+References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz> <20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp> <20100827113506.2bbbb7b9.kamezawa.hiroyu@jp.fujitsu.com> <20100827123948.b4427a15.nishimura@mxp.nes.nec.co.jp> <20100827144225.3190167a.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.NEB.2.01.1009011200050.6596@jrf.vwaro.pbz> <20100902084200.e9b773cf.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mark@pogo.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Thu, 2 Sep 2010, KAMEZAWA Hiroyuki wrote:
 
-On 2 Sep 2010, at 02:03, David Rientjes wrote:
-> Reimplement ntfs_malloc_nofs_nofail() to loop forever calling
-> ntfs_malloc_nofs() until the allocation succeeds.
+> On Wed, 1 Sep 2010 12:10:23 +0100 (BST)
+> Mark Hills <mark@pogo.org.uk> wrote:
+[...]
+> > I repeated the test above, but did not see a problem after many hundreds 
+> > of loops.
+> > 
+> > My test was with the same kernel from my original bug report (Fedora 
+> > 2.6.33.6-147), using memory cgroup only and ext4 filesystem.
+> > 
+> > So it is possible we are experiencing different bugs with similar 
+> > symptoms.
+> > 
 > 
-> If the first allocation attempt fails because the page allocator doesn't
-> implicitly loop, a warning will be emitted, including a call trace.
-> Subsequent failures will suppress this warning.
-> 
-> This was added as a helper function for documentation and auditability.
-> No future callers should be added.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
-> fs/ntfs/malloc.h |   12 ++++++++++--
-> 1 files changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ntfs/malloc.h b/fs/ntfs/malloc.h
-> --- a/fs/ntfs/malloc.h
-> +++ b/fs/ntfs/malloc.h
-> @@ -76,11 +76,19 @@ static inline void *ntfs_malloc_nofs(unsigned long size)
->  * This function guarantees that the allocation will succeed.  It will sleep
->  * for as long as it takes to complete the allocation.
->  *
-> - * If there was insufficient memory to complete the request, return NULL.
-> + * NOTE: no new callers of this function should be implemented!
-> + * All memory allocations should be failable whenever possible.
->  */
-> static inline void *ntfs_malloc_nofs_nofail(unsigned long size)
-> {
-> -	return __ntfs_malloc(size, GFP_NOFS | __GFP_HIGHMEM | __GFP_NOFAIL);
-> +	void *ret;
-> +
-> +	for (;;) {
-> +		ret = ntfs_malloc_nofs(size);
-> +		if (ret)
-> +			return ret;
-> +		WARN_ON_ONCE(get_order(size) > PAGE_ALLOC_COSTLY_ORDER);
+> Thank you for confirming.
+> But hmm...it's curious who holds mutex and what happens.
 
-What is the relevance of the above get_order check?  ntfs_malloc_nofs() does a vmalloc() if size >= PAGE_SIZE so I cannot see how that has anything to do with get_order()?
+Refer to my original email, where I was running multiple tests at once. 
+This backtrace is from the tests which queue up:
 
-Other than that patch looks fine.
+  Call Trace:
+  [<ffffffff81115edb>] ? mntput_no_expire+0x24/0xe7
+  [<ffffffff81427acd>] __mutex_lock_common+0x14d/0x1b4
+  [<ffffffff81108a7c>] ? path_put+0x1d/0x22
+  [<ffffffff81427b48>] __mutex_lock_slowpath+0x14/0x16
+  [<ffffffff81427c4f>] mutex_lock+0x31/0x4b
+  [<ffffffff8110bdf8>] do_rmdir+0x74/0x102
+  [<ffffffff8110bebd>] sys_rmdir+0x11/0x13
+  [<ffffffff81009b02>] system_call_fastpath+0x16/0x1b
 
-Note the _nofail function is only called from one place and there will be no more call sites for it.  One day we ought to work something out so it is not needed at all but given it only gets called in very obscure circumstances (definitely not in the general code paths) it shouldn't matter too much...
+The one which spins has already managed to claim the mutex lock on the 
+/cgroup directory, and no call trace is shown for this. Is there a usable 
+way to force a similar call trace for the spinning process?
 
-Best regards,
+Unfortunately I have not been able to reproduce the problem for some days 
+now, so I think some network factor is able to influence this.
 
-	Anton
-
-
-> +	}
-> }
-> 
-> static inline void ntfs_free(void *addr)
-
-Best regards,
-
-	Anton
 -- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
-Linux NTFS maintainer, http://www.linux-ntfs.org/
-
+Mark
