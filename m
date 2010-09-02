@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab0IBIvf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 04:51:35 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:48864 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752793Ab0IBIvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 04:51:33 -0400
-Date: Thu, 2 Sep 2010 09:51:18 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 2/3] mm: page allocator: Calculate a better estimate of
-	NR_FREE_PAGES when memory is low and kswapd is awake
-Message-ID: <20100902085118.GA7670@csn.ul.ie>
-References: <1283276257-1793-1-git-send-email-mel@csn.ul.ie> <1283276257-1793-3-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1009011942150.21189@router.home>
+	id S1752947Ab0IBI4G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 04:56:06 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:51246 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab0IBI4E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 04:56:04 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: miaox@cn.fujitsu.com
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Ext4 <linux-ext4@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>
+Subject: Re: [PATCH V2 1/3] lib: introduce some memory copy macros and functions
+References: <4C7F3A2A.2000007@cn.fujitsu.com>
+Date: Thu, 02 Sep 2010 10:55:58 +0200
+In-Reply-To: <4C7F3A2A.2000007@cn.fujitsu.com> (Miao Xie's message of "Thu, 02
+	Sep 2010 13:46:18 +0800")
+Message-ID: <877hj4o76p.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1009011942150.21189@router.home>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 01, 2010 at 07:43:41PM -0500, Christoph Lameter wrote:
-> On Tue, 31 Aug 2010, Mel Gorman wrote:
-> 
-> > +#ifdef CONFIG_SMP
-> > +/* Called when a more accurate view of NR_FREE_PAGES is needed */
-> > +unsigned long zone_nr_free_pages(struct zone *zone)
-> > +{
-> > +	unsigned long nr_free_pages = zone_page_state(zone, NR_FREE_PAGES);
-> 
-> You cannot call zone_page_state here because zone_page_state clips the
-> counter at zero. The nr_free_pages needs to reflect the unclipped state
-> and then the deltas need to be added. Then the clipping at zero can be
-> done.
-> 
+Miao Xie <miaox@cn.fujitsu.com> writes:
 
-Good point. This justifies the use of a generic helper that is co-located
-with vmstat.h. I've taken your zone_page_state_snapshot() patch, am using
-the helper to take a more accurate reading of NR_FREE_PAGES and preparing
-for a test.  Thanks Christoph.
+> Changes from V1 to V2:
+> - change the version of GPL from version 2.1 to version 2
+>
+> the kernel's memcpy and memmove is very inefficient. But the glibc version is
+> quite fast, in some cases it is 10 times faster than the kernel version. So I
 
+
+Can you elaborate on which CPUs and with what workloads you measured that?
+
+The kernel memcpy is optimized for copies smaller than a page size 
+for example (kernel very rarely does anything on larger than 4k), 
+the glibc isn't. etc. There are various other differences.
+
+memcpy and memmove are very different. AFAIK noone has tried
+to optimize memmove() before because traditionally it wasn't
+used for anything performance critical in the kernel. Has that
+that changed? memcpy on the other hand while not perfect
+is actually quite optimized for typical workloads.
+
+One big difference between the kernel and glibc is that kernel 
+is often cache cold, so you e.g. the cost of a very large code footprint
+memcpy/memset is harder to amortize.
+
+Microbenchmarks often leave out that crucial variable.
+
+I have some systemtap scripts to measure size/alignment distributions of
+copies on a kernel, if you have a particular workload you're interested
+in those could be tried.
+
+Just copying the glibc bloat uncritical is very likely
+the wrong move at least.
+
+-Andi
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+ak@linux.intel.com -- Speaking for myself only.
