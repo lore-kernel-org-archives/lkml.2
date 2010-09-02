@@ -1,72 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab0IBTcH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 15:32:07 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33940 "EHLO
+	id S1756575Ab0IBTdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 15:33:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42728 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756574Ab0IBTcG convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752490Ab0IBTdM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 15:32:06 -0400
+	Thu, 2 Sep 2010 15:33:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=bZDY0R9Q3vuKr1p0DRmbPsrgH+dn4+HltdmynXO42MJfDeX55msDvb+nzunEaWL7Jo
-         Ygvbwcuw1KW7tILuSt5+37LWHpETcrRnsSfwkpUaSBHS2TaM0fIkfw+mBSy/mw4Uomil
-         7Bo8Dy0+8deG3DM8/op/E53W+m8B5HSik3df0=
+        b=Pxtvi4oVrWyBwaXksQHPMmhnKv7fy3wUXYR9Poz/grC+YuhbqW307KyEk6JIl9h3iV
+         +F8TOXCQ8u+f/d8Lkh0SXtNmR+7G2+Nf1kaGDUlJzcpnM/IYzdRvxiy/bZpYEoMajEaC
+         0pX8ZyDrVaKzXjFLrUsleQDSOVDVi2KL+MAg0=
 MIME-Version: 1.0
 In-Reply-To: <20100902121853.e90f6c53.randy.dunlap@oracle.com>
 References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com> <20100902121853.e90f6c53.randy.dunlap@oracle.com>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Thu, 2 Sep 2010 16:31:44 -0300
-Message-ID: <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 2 Sep 2010 15:32:50 -0400
+Message-ID: <AANLkTimViCmq7hWDgss2GuUv7c0aSLFpF4uOhyJEPNvg@mail.gmail.com>
 Subject: Re: [RFC] Fix typos
 To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Lucas De Marchi <lucas.de.marchi@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 16:18, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> Hi,
->
-> I'd take most of the corrections in Documentation/, but in general,
-> I don't think that it's a good idea without some careful review.
-
-I plan to review it if it's indeed worth fixing those typos. I already
-fixed several false positives like  "rela" being changed to "real",
-but since it's a 1.8 MB patch I think it's better to ask first before
-making any other review.
-
->
-> E.g.:
->
-> 1.  changing thru to through isn't needed IMO.
-> Can you add "thru" to your dictionary?
-Yes, no problem
-
->
+On Thu, Sep 2, 2010 at 15:18, Randy Dunlap wrote:
 > 2.
 > -(Warning, pulses on ACK ar inverted by transistor, irq is rised up on sync
 > +(Warning, pulses on ACK ar inverted by transistor, irq is rose up on sync
 >
-Humn.. indeed this seems to be a bad typo in my dictionary.
+> I'm not so sure about "is rose up" being better. Â and what about "ar"?
 
-> I'm not so sure about "is rose up" being better.  and what about "ar"?
-
-I'm only changing words with 3 chars or more, because otherwise I
-would have a lot of false positives, but I think I can add this word
-without much trouble.
-
->
-> I saw a few others that I could comment on, but I lost them in the 1.8 MB patch file.
-
-If you say it's good, I can review it more carefully.
-
-
-
--- 
-
-Lucas De Marchi
+"irq is raised on sync"
+-mike
