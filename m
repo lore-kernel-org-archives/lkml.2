@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab0IBTbv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 15:31:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64448 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756520Ab0IBTbu (ORCPT
+	id S1756640Ab0IBTcH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 15:32:07 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33940 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756574Ab0IBTcG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 15:31:50 -0400
-Message-ID: <4C7FFB85.7000006@vlnb.net>
-Date: Thu, 02 Sep 2010 23:31:17 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Thu, 2 Sep 2010 15:32:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=bZDY0R9Q3vuKr1p0DRmbPsrgH+dn4+HltdmynXO42MJfDeX55msDvb+nzunEaWL7Jo
+         Ygvbwcuw1KW7tILuSt5+37LWHpETcrRnsSfwkpUaSBHS2TaM0fIkfw+mBSy/mw4Uomil
+         7Bo8Dy0+8deG3DM8/op/E53W+m8B5HSik3df0=
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        iscsitarget-devel@lists.sourceforge.net, stgt@vger.kernel.org
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Ross Walker <rswwalker@gmail.com>
-Subject: [ANNOUNCE]: Comparison of features between different SCSI targets
- (SCST, STGT, IET, LIO) updated
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:uk5b/dknlW5hHb4Nn21nyQk1KGTDCDdSLxzJntwqvzh
- srF8pATlwRkx+L9VeLihB0/CIGOmALsPGss3jb+0vvNAXZEEKB
- TvYdTzfRGifjqH7CoCbQ17U/qc8wzmTBpREq2xughPIC2/voTW
- YY+thDal06axOd2G/bnUhFOU/7KegflG+5NTZdbvxiSCEt5Vv5
- SpqUMwgPelWgIgDhX9VQw==
+In-Reply-To: <20100902121853.e90f6c53.randy.dunlap@oracle.com>
+References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com> <20100902121853.e90f6c53.randy.dunlap@oracle.com>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Thu, 2 Sep 2010 16:31:44 -0300
+Message-ID: <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
+Subject: Re: [RFC] Fix typos
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Sep 2, 2010 at 16:18, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> Hi,
+>
+> I'd take most of the corrections in Documentation/, but in general,
+> I don't think that it's a good idea without some careful review.
 
-I updated the Linux SCSI targets comparison page 
-http://scst.sourceforge.net/comparison.html, which compares features of 
-the existing Linux SCSI target subsystems. The comparison includes SCST, 
-STGT, IET and LIO. I added IET there, because it is the most used Linux 
-iSCSI target at the moment.
+I plan to review it if it's indeed worth fixing those typos. I already
+fixed several false positives like  "rela" being changed to "real",
+but since it's a 1.8 MB patch I think it's better to ask first before
+making any other review.
 
-This page is intended to be a complete and fair feature-by-feature 
-comparison between the targets. The only thing I have not added there is 
-quality of various corner cases recovery, because I don't know how to 
-measure that. SCST is really good in this area, while some other targets 
-are often not too much, but I have no idea how to summarize it in an 
-objective view.
+>
+> E.g.:
+>
+> 1.  changing thru to through isn't needed IMO.
+> Can you add "thru" to your dictionary?
+Yes, no problem
 
-If you see I'm wrong somewhere or forgot something, you are welcome to 
-correct me and I will fix that.
+>
+> 2.
+> -(Warning, pulses on ACK ar inverted by transistor, irq is rised up on sync
+> +(Warning, pulses on ACK ar inverted by transistor, irq is rose up on sync
+>
+Humn.. indeed this seems to be a bad typo in my dictionary.
 
-Vlad
+> I'm not so sure about "is rose up" being better.  and what about "ar"?
+
+I'm only changing words with 3 chars or more, because otherwise I
+would have a lot of false positives, but I think I can add this word
+without much trouble.
+
+>
+> I saw a few others that I could comment on, but I lost them in the 1.8 MB patch file.
+
+If you say it's good, I can review it more carefully.
 
 
+
+-- 
+
+Lucas De Marchi
