@@ -1,36 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab0IBCRb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 22:17:31 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59347
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752187Ab0IBCRa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 22:17:30 -0400
-Date: Wed, 01 Sep 2010 19:17:46 -0700 (PDT)
-Message-Id: <20100901.191746.256848727.davem@davemloft.net>
-To: bandan.das@stratus.com
-Cc: herbert@gondor.hengli.com.au, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kaber@trash.net
-Subject: Re: [PATCH net-next-2.6] net/ipv4: push IP options to CB in
- ip_fragment
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100902020545.GC17843@stratus.com>
-References: <20100901233056.GA15177@gondor.apana.org.au>
-	<20100901.180922.163252387.davem@davemloft.net>
-	<20100902020545.GC17843@stratus.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752779Ab0IBCU1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 22:20:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30725 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751905Ab0IBCU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 22:20:26 -0400
+Date: Wed, 1 Sep 2010 22:20:08 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Nauman Rafique <nauman@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Moyer <jmoyer@redhat.com>, Divyesh Shah <dpshah@google.com>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC] [PATCH] cfq-iosched: add cfq group hierarchical scheduling
+ support
+Message-ID: <20100902022008.GA7901@redhat.com>
+References: <4C7B54C0.7080008@cn.fujitsu.com>
+ <20100830203644.GA15903@redhat.com>
+ <4C7C4CE0.5080402@cn.fujitsu.com>
+ <20100831125737.GA2527@redhat.com>
+ <AANLkTi=daFyrx+ts4DoAHwR8EHUfF0nYyv45zJkBFm--@mail.gmail.com>
+ <20100831192524.GD2527@redhat.com>
+ <4C7E13CE.7070603@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C7E13CE.7070603@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bandan Das <bandan.das@stratus.com>
-Date: Wed, 1 Sep 2010 22:05:45 -0400
+On Wed, Sep 01, 2010 at 04:50:22PM +0800, Gui Jianfeng wrote:
 
-> Sounds good, except for one thing :)
-> It should be:  Reported-by: Bandan Das <bandan.das@stratus.com> (without the "r")
+[..]
 
-Fixed, thanks!
+> Hi Vivek，
+> 
+> Even if we mount cpu and blkio together, to me, it's ok for cpu and blkio
+> having their own logic, since they are totally different cgroup subsystems.
+> 
+> > 
+> > - To me, both group and cfq queue are children of root group and it
+> >   makes sense to treat them independent childrens instead of putting
+> >   all the queues in one logical group which inherits the weight of
+> >   parent.
+> > 
+> > - With this new scheme, I am finding it hard to visualize the hierachy.
+> >   How do you assign the weights to queue entities of a group. It is more
+> >   like a invisible group with-in group. We shall have to create new
+> >   tunable which can speicy the weight for this hidden group.
+> 
+> For the time being, the root "qse" weight is 1000 and others is 500, they don't
+> inherit the weight of parent. I was thinking that maybe we can determine the qse
+> weight in term of the queue number and weight in this group and subgroups. 
+
+If you decide queue weight in terms of queue number, then you are back to
+the same problem Nauman was mentioning that share of a group is not fixed
+and depends on number of queues in the group.
+
+Vivek
