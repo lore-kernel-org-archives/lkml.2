@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab0IBRr7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 13:47:59 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62795 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab0IBRr5 (ORCPT
+	id S1756053Ab0IBRtS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 13:49:18 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60962 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab0IBRtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 13:47:57 -0400
+	Thu, 2 Sep 2010 13:49:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UfNLGwnPicXSFTcvCBJWZg36diGdB9R4yHgxUoe5cUlCXID+GrdfvOjkm8nwx/UNAG
-         JbJqS0XCfAKtA3Th37r32saeP9nSQ7yrMZykdh+9hIBTFros7PP4vU8AQ2SSuokPKDJf
-         C8BJbJ6Q+ZoZ4pYycYWVgRUSAAoH93zKYTHxI=
-Date: Thu, 2 Sep 2010 21:47:36 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: rklein@nvidia.com
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, olof@lixom.net,
-        achew@nvidia.com, khali@linux-fr.org,
-        broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH v2] power supply: add driver for TI BQ20Z75 gas gauge IC
-Message-ID: <20100902174736.GA28649@oksana.dev.rtsoft.ru>
-References: <1283448586-14613-1-git-send-email-rklein@nvidia.com>
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=RGjBPo5QdeYXDn5kh20lN1n6c1lt0gnB1pgcxxbyWS0qTKt+/V1om8u89dhO5h4xOQ
+         jsN9QiQOXYyjBk7B3yi7LIG9dpm7s2yH+Q6jwghzzjLMXNV1hEZtcGPsYcJVxx2FYvWq
+         KPkM9eidwh25GPaK5u7TZD23Mvk9kcBNJV1Bo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1283448586-14613-1-git-send-email-rklein@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1283442391-23612-8-git-send-email-namhyung@gmail.com>
+References: <1283442391-23612-1-git-send-email-namhyung@gmail.com> <1283442391-23612-8-git-send-email-namhyung@gmail.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Thu, 2 Sep 2010 13:48:49 -0400
+X-Google-Sender-Auth: Vozg6Ahf2TJljnQZH3Tg46w1-T0
+Message-ID: <AANLkTimqZ_wzGuudhgf7LsMgZou_xSDg=Qo4BsnXnBPp@mail.gmail.com>
+Subject: Re: [PATCH v2 07/24] ptrace: cleanup arch_ptrace() and friends on Blackfin
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 02, 2010 at 10:29:46AM -0700, rklein@nvidia.com wrote:
-> From: Rhyland Klein <rklein@nvidia.com>
-> 
-> this driver depends on I2C and uses SMBUS for communication with the host.
-> 
-> Addressed comments from reviews by Mark Brown and Jean Delvare.
->   * Cleaned up whitespace and alignment issues
->   * changed return codes to more appropriate values
->   * change Kconfig option name to be consistent with existing devices
->   * removed global struct and moved to device specific data
->   * changed printk to dev_dbg
+On Thu, Sep 2, 2010 at 11:46, Namhyung Kim wrote:
+> Change signature of get/put_reg() according to the change of arch_ptrace()
+> and remove unnecessary castings.
 
-The driver looks good to me. But I'll wait a day or two for Jean's
-and Mark's Acked-by or Reviewed-by tags before applying, just to
-give them some credit for reviwing this driver.
-
-Thanks!
-
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+thanks; Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
