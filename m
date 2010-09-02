@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab0IBIXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 04:23:51 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34774 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab0IBIXt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 04:23:49 -0400
-Subject: Re: [PATCHv11 2.6.36-rc2-tip 3/15]  3: uprobes: Slot allocation
- for Execution out of line(XOL)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	id S1753194Ab0IBIYq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 04:24:46 -0400
+Received: from csamuel.org ([74.50.50.137]:43581 "EHLO csamuel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752659Ab0IBIYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 04:24:45 -0400
+Message-ID: <4C7F5F38.3050104@csamuel.org>
+Date: Thu, 02 Sep 2010 18:24:24 +1000
+From: Chris Samuel <chris@csamuel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Lightning/1.0b2 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: "chxanders@gmail.com" <chxanders@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, miaox@cn.fujitsu.com,
+        Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20100825134156.5447.43216.sendpatchset@localhost6.localdomain6>
-References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
-	 <20100825134156.5447.43216.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 02 Sep 2010 10:23:32 +0200
-Message-ID: <1283415812.2059.1825.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 1/3] lib: introduce some memory copy macros and functions
+References: <4C7E2CA9.9060702@cn.fujitsu.com> <1283354736.2059.1206.camel@laptop> <4C7F39B3.4000901@cn.fujitsu.com> <1283414119.2059.1785.camel@laptop> <1283414220.2059.1789.camel@laptop> <AANLkTinT3X+7hA9UvS8nKqpVzz1u1e-7UZNbfL_1UeX8@mail.gmail.com>
+In-Reply-To: <AANLkTinT3X+7hA9UvS8nKqpVzz1u1e-7UZNbfL_1UeX8@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 19:11 +0530, Srikar Dronamraju wrote:
-> Current slot allocation mechanism:
-> 1. Allocate one dedicated slot per user breakpoint. Each slot is big
-> enuf to accomodate the biggest instruction for that architecture. (16
-> bytes for x86).
-> 2. We currently allocate only one page for slots. Hence the number of
-> slots is limited to active breakpoint hits on that process.
-> 3. Bitmap to track used slots. 
+On 02/09/10 18:16, chxanders@gmail.com wrote:
 
-An alternative method would be to have 1 slot per cpu, and manage the
-slot content using preemption notifiers. That gives you a fixed number
-of slots and an unlimited number of probe points.
+> Umm, isn't the only one that can do that the copyright holder?
 
-If the preemption happens to be a migration you need to rewrite the
-userspace IP to point to the new slot -- if indeed the task was inside
-one when it got preempted -- but that all should be doable.
+The copyright holder can use whatever license they wish; the LGPL
+tells the licensee what rights *they* have, which includes distributing
+the software under the (more strict) GPLv2.
 
-
+cheers,
+Chris (not a lawyer either, thankfully!)
+-- 
+ Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
