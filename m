@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab0IBTdN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 15:33:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42728 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab0IBTdM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 15:33:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Pxtvi4oVrWyBwaXksQHPMmhnKv7fy3wUXYR9Poz/grC+YuhbqW307KyEk6JIl9h3iV
-         +F8TOXCQ8u+f/d8Lkh0SXtNmR+7G2+Nf1kaGDUlJzcpnM/IYzdRvxiy/bZpYEoMajEaC
-         0pX8ZyDrVaKzXjFLrUsleQDSOVDVi2KL+MAg0=
-MIME-Version: 1.0
-In-Reply-To: <20100902121853.e90f6c53.randy.dunlap@oracle.com>
-References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com> <20100902121853.e90f6c53.randy.dunlap@oracle.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 2 Sep 2010 15:32:50 -0400
-Message-ID: <AANLkTimViCmq7hWDgss2GuUv7c0aSLFpF4uOhyJEPNvg@mail.gmail.com>
-Subject: Re: [RFC] Fix typos
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Lucas De Marchi <lucas.de.marchi@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752758Ab0IBTeE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 15:34:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16111 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750778Ab0IBTeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 15:34:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,309,1280732400"; 
+   d="scan'208";a="551147393"
+Subject: Re: [PATCH v2] [arch-x86] Allow SRAT integrity check to be skipped
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+In-Reply-To: <1283427192.3793.100.camel@jlt3.sipsolutions.net>
+References: <20100901225937.18457.16372.stgit@localhost.localdomain>
+	 <1283427192.3793.100.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 02 Sep 2010 12:39:00 -0700
+Message-ID: <1283456340.28591.23.camel@pjaxe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 15:18, Randy Dunlap wrote:
-> 2.
-> -(Warning, pulses on ACK ar inverted by transistor, irq is rised up on sync
-> +(Warning, pulses on ACK ar inverted by transistor, irq is rose up on sync
->
-> I'm not so sure about "is rose up" being better.  and what about "ar"?
+On Thu, 2010-09-02 at 04:33 -0700, Johannes Berg wrote:
+> On Wed, 2010-09-01 at 15:59 -0700, Peter P Waskiewicz Jr wrote:
+> 
+> > +static int srat_bypass_bios;
+> > +
+> > +static int __init srat_bypass_bios_setup(char *str)
+> > +{
+> > +        srat_bypass_bios = 1;
+> > +        return 0;
+> > +}
+> > +early_param("sratbypassbios", srat_bypass_bios_setup);
+> > +
+> >  /* Use the information discovered above to actually set up the nodes. */
+> >  int __init acpi_scan_nodes(unsigned long start, unsigned long end)
+> >  {
+> 
+> I wonder, since all the things using the variable are __init, could it
+> be as well? Just curious really.
 
-"irq is raised on sync"
--mike
+That is a good question.  It makes sense to me, but I just followed what
+other boot-time options did, which are not marked __init.  I'll defer to
+anyone else on the list who is better-equipped to answer that.
+
+-PJ
+
