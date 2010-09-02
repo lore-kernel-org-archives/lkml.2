@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab0IBGoG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 02:44:06 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:4590 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752080Ab0IBGoE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 02:44:04 -0400
-Message-ID: <002b01cb4a6a$3ae499c0$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Wang, Qi" <qi.wang@intel.com>, "Greg KH" <greg@kroah.com>
-Cc: <meego-dev@meego.com>, "LKML" <linux-kernel@vger.kernel.org>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
-        <arjan@linux.intel.com>, <alan@linux.intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
-        "Greg KH" <gregkh@suse.de>
-References: <4C7E441E.4090006@dsn.okisemi.com> <20100902010236.GA21782@kroah.com> <000601cb4a47$b1a7d1d0$66f8800a@maildom.okisemi.com> <20100902032227.GA27463@suse.de> <D5AB6E638E5A3E4B8F4406B113A5A19A2A56E53B@shsmsx501.ccr.corp.intel.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
-Date: Thu, 2 Sep 2010 15:44:00 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	id S1751732Ab0IBGvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 02:51:06 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56456 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108Ab0IBGvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 02:51:05 -0400
+Message-ID: <4C7F4938.6090202@cn.fujitsu.com>
+Date: Thu, 02 Sep 2010 14:50:32 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Chris Samuel <chris@csamuel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 1/3] lib: introduce some memory copy macros and functions
+References: <4C7E2CA9.9060702@cn.fujitsu.com> <1283354736.2059.1206.camel@laptop> <4C7F39B3.4000901@cn.fujitsu.com> <4C7F3C60.7000205@csamuel.org>
+In-Reply-To: <4C7F3C60.7000205@csamuel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Qi-san
+On Thu, 02 Sep 2010 15:55:44 +1000, Chris Samuel wrote:
+> Hiya,
+>
+> On 02/09/10 15:44, Miao Xie wrote:
+>
+>> Ok, I will change it.
+>
+> Did you just change the "2.1" to "2" in your patch, or did you find
+> a specifically version 2 licensed version of that code ?
+>
+> If so, where was that ?
 
-I will sync this phub patch to source-forge by today.
+I just change the "2.1" to "2" in your patch, because the orignal code
+is LGPL v2.1, LGPL v2.1 permits us to apply the terms of the ordinary
+GNU General Public License instead of it.
 
-Thanks, Ohtake(OKISemi)
------ Original Message ----- 
-From: "Wang, Qi" <qi.wang@intel.com>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>; "Greg KH" <greg@kroah.com>
-Cc: <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "Wang, Yong Y" <yong.y.wang@intel.com>; "Khor, Andrew
-Chih Howe" <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <alan@linux.intel.com>; "Foster, Margie"
-<margie.foster@intel.com>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>; "Greg KH" <gregkh@suse.de>
-Sent: Thursday, September 02, 2010 12:29 PM
-Subject: RE: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+This is the clause of LGPL v2.1:
+3. You may opt to apply the terms of the ordinary GNU General Public
+License instead of this License to a given copy of the Library. To do
+this, you must alter all the notices that refer to this License, so
+that they refer to the ordinary GNU General Public License, version 2,
+instead of to this License. (If a newer version than version 2 of the
+ordinary GNU General Public License has appeared, then you can specify
+that version instead if you wish.) Do not make any other change in these
+notices.
 
+Once this change is made in a given copy, it is irreversible for that copy,
+so the ordinary GNU General Public License applies to all subsequent copies
+and derivative works made from that copy.
 
-> Hi Ohtake-san,
->
-> Would you please sync this patch with our source-forge also?
->
-> Hi Greg,
->
-> Thank you for your help.
->
-> Best Regards,
-> Qi.
->
-> > -----Original Message-----
-> > From: Greg KH [mailto:gregkh@suse.de]
-> > Sent: Thursday, September 02, 2010 11:22 AM
-> > To: Masayuki Ohtake
-> > Cc: Greg KH; meego-dev@meego.com; LKML; Wang, Yong Y; Wang, Qi; Khor,
-> > Andrew Chih Howe; arjan@linux.intel.com; alan@linux.intel.com; Foster,
-> > Margie; Tomoya MORINAGA
-> > Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
-> >
-> > On Thu, Sep 02, 2010 at 11:36:45AM +0900, Masayuki Ohtake wrote:
-> > > Hi Greg,
-> > >
-> > > > Nope, I still get a warning with this patch, but I'll go fix it up:
-> > > Sorry for our warning.
-> > > We tested with kernel-2.6.35.3.
-> > > We will modify so that warning becomes to disappear soon.
-> >
-> > I already fixed this up now.  The issue was that you were not using %p
-> > to print out a pointer and you were trying to use an int instead of a
-> > ssize_t for the pci rom stuff.  All of that shows up when building on
-> > x86-64.
-> >
-> > I've commited the fix to my tree, you should have been copied on it
-> > already.
-> >
-> > thanks,
-> >
-> > greg k-h
->
+This option is useful when you wish to copy part of the code of the Library
+into a program that is not a library.
 
+The following is the URL of LGPL v2.1:
+   http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+Thanks
+Miao
 
