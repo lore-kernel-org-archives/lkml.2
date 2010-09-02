@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab0IBMqi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 08:46:38 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:51974 "EHLO
+	id S1754210Ab0IBMvR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 08:51:17 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:50516 "EHLO
 	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab0IBMqh convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Thu, 2 Sep 2010 08:46:37 -0400
-Message-Id: <4C7FB8CA0200007800013F51@vpn.id2.novell.com>
+	with ESMTP id S1752655Ab0IBMvQ convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Thu, 2 Sep 2010 08:51:16 -0400
+Message-Id: <4C7FB9E30200007800013F5E@vpn.id2.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 02 Sep 2010 13:46:34 +0100
+Date: Thu, 02 Sep 2010 13:51:15 +0100
 From: "Jan Beulich" <JBeulich@novell.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: use clear_page()/copy_page() in favor of
-	 memset()/memcpy() on whole pages
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: adjust setting of tsc_unstable
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -23,87 +22,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After all that's what they are intended for.
+Directly setting tsc_unstable (as done by unsynchronized_tsc() and
+dmi_mark_tsc_unstable()) isn't correct, as it doesn't enforce the
+(side) effect of altering clocksource_tsc, thus still allowing this
+clock source to be monitored by the watchdog, eventually leading to a
+"clocksource unstable" message.
+
+unsynchronized_tsc(), according to all its other return paths, really
+should leave calling of mark_tsc_unstable() to its caller.
+
+dmi_mark_tsc_unstable() should call mark_tsc_unstable() itself.
 
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 
 ---
- arch/x86/kernel/machine_kexec_64.c |    4 ++--
- arch/x86/kvm/lapic.c               |    3 +--
- arch/x86/mm/init_32.c              |    4 ++--
- arch/x86/mm/init_64.c              |    2 +-
- 4 files changed, 6 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/tsc.h |    2 +-
+ arch/x86/kernel/tsc.c      |    8 +++-----
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
---- linux-2.6.36-rc3/arch/x86/kernel/machine_kexec_64.c
-+++ 2.6.36-rc3-x86-use-clear_page/arch/x86/kernel/machine_kexec_64.c
-@@ -36,7 +36,7 @@ static int init_one_level2_page(struct k
- 		if (!page)
- 			goto out;
- 		pud = (pud_t *)page_address(page);
--		memset(pud, 0, PAGE_SIZE);
-+		clear_page(pud);
- 		set_pgd(pgd, __pgd(__pa(pud) | _KERNPG_TABLE));
- 	}
- 	pud = pud_offset(pgd, addr);
-@@ -45,7 +45,7 @@ static int init_one_level2_page(struct k
- 		if (!page)
- 			goto out;
- 		pmd = (pmd_t *)page_address(page);
--		memset(pmd, 0, PAGE_SIZE);
-+		clear_page(pmd);
- 		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
- 	}
- 	pmd = pmd_offset(pud, addr);
---- linux-2.6.36-rc3/arch/x86/kvm/lapic.c
-+++ 2.6.36-rc3-x86-use-clear_page/arch/x86/kvm/lapic.c
-@@ -1056,14 +1056,13 @@ int kvm_create_lapic(struct kvm_vcpu *vc
- 
- 	vcpu->arch.apic = apic;
- 
--	apic->regs_page = alloc_page(GFP_KERNEL);
-+	apic->regs_page = alloc_page(GFP_KERNEL|__GFP_ZERO);
- 	if (apic->regs_page == NULL) {
- 		printk(KERN_ERR "malloc apic regs error for vcpu %x\n",
- 		       vcpu->vcpu_id);
- 		goto nomem_free_apic;
- 	}
- 	apic->regs = page_address(apic->regs_page);
--	memset(apic->regs, 0, PAGE_SIZE);
- 	apic->vcpu = vcpu;
- 
- 	hrtimer_init(&apic->lapic_timer.timer, CLOCK_MONOTONIC,
---- linux-2.6.36-rc3/arch/x86/mm/init_32.c
-+++ 2.6.36-rc3-x86-use-clear_page/arch/x86/mm/init_32.c
-@@ -67,7 +67,7 @@ static __init void *alloc_low_page(void)
- 		panic("alloc_low_page: ran out of memory");
- 
- 	adr = __va(pfn * PAGE_SIZE);
--	memset(adr, 0, PAGE_SIZE);
-+	clear_page(adr);
- 	return adr;
+--- linux-2.6.36-rc3/arch/x86/include/asm/tsc.h
++++ 2.6.36-rc3-x86-mark-tsc-unstable/arch/x86/include/asm/tsc.h
+@@ -46,7 +46,7 @@ static __always_inline cycles_t vget_cyc
  }
  
-@@ -558,7 +558,7 @@ char swsusp_pg_dir[PAGE_SIZE]
+ extern void tsc_init(void);
+-extern void mark_tsc_unstable(char *reason);
++extern void mark_tsc_unstable(const char *reason);
+ extern int unsynchronized_tsc(void);
+ extern int check_tsc_unstable(void);
+ extern unsigned long native_calibrate_tsc(void);
+--- linux-2.6.36-rc3/arch/x86/kernel/tsc.c
++++ 2.6.36-rc3-x86-mark-tsc-unstable/arch/x86/kernel/tsc.c
+@@ -796,7 +796,7 @@ static struct clocksource clocksource_ts
+ #endif
+ };
  
- static inline void save_pg_dir(void)
+-void mark_tsc_unstable(char *reason)
++void mark_tsc_unstable(const char *reason)
  {
--	memcpy(swsusp_pg_dir, swapper_pg_dir, PAGE_SIZE);
-+	copy_page(swsusp_pg_dir, swapper_pg_dir);
- }
- #else /* !CONFIG_ACPI_SLEEP */
- static inline void save_pg_dir(void)
---- linux-2.6.36-rc3/arch/x86/mm/init_64.c
-+++ 2.6.36-rc3-x86-use-clear_page/arch/x86/mm/init_64.c
-@@ -293,7 +293,7 @@ static __ref void *alloc_low_page(unsign
- 		panic("alloc_low_page: ran out of memory");
+ 	if (!tsc_unstable) {
+ 		tsc_unstable = 1;
+@@ -816,9 +816,7 @@ EXPORT_SYMBOL_GPL(mark_tsc_unstable);
  
- 	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
--	memset(adr, 0, PAGE_SIZE);
-+	clear_page(adr);
- 	*phys  = pfn * PAGE_SIZE;
- 	return adr;
+ static int __init dmi_mark_tsc_unstable(const struct dmi_system_id *d)
+ {
+-	printk(KERN_NOTICE "%s detected: marking TSC unstable.\n",
+-			d->ident);
+-	tsc_unstable = 1;
++	mark_tsc_unstable(d->ident);
+ 	return 0;
  }
+ 
+@@ -874,7 +872,7 @@ __cpuinit int unsynchronized_tsc(void)
+ 	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL) {
+ 		/* assume multi socket systems are not synchronized: */
+ 		if (num_possible_cpus() > 1)
+-			tsc_unstable = 1;
++			return 1;
+ 	}
+ 
+ 	return tsc_unstable;
 
 
 
