@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab0IBNCD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 09:02:03 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:59656 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753110Ab0IBNCB convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Thu, 2 Sep 2010 09:02:01 -0400
-Message-Id: <4C7FBC660200007800013F95@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 02 Sep 2010 14:01:58 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <arnd@arndb.de>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] i386: make kernel_execve() suitable for stack
-	 unwinding
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754721Ab0IBNDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 09:03:49 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52771 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab0IBNDr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 09:03:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=NacQc1SaYffHQbvdwtbvWqLQInulM46Qhq96/mTyHNjeNVfSjf7Wldap5tof/W7mED
+         kAqnlbCtObcg2xwBo0TcLFqK0opjCrBoPVh7ABcNk4K9RZOlEhs7hWBo7vOoSt5q8Skm
+         DhgvfhXNrklMWVEOFNhUC0yiM9y3FOzsbbWaE=
+Date: Thu, 2 Sep 2010 15:37:10 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH] x86, amd: Remove needless CPU family check (for L3 cache
+ info)
+Message-ID: <20100902133710.GA5449@loge.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The explicit saving and restoring of %ebx was confusing stack unwind
-data consumers, and it is plain unnecessary to do this within the
-asm(), since that was only introduced for PIC user mode consumers of
-the original _syscall3() macro this was derived from.
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Old 32-bit AMD CPUs (all w/o L3 cache) should always return 0 for
+cpuid_edx(0x80000006).
 
+For unknown reason the 32-bit implementation differed from the 64-bit
+implementation. See commit 67cddd947992b02f01ad093ec814738c5827d17c
+(i386: Add L3 cache support to AMD CPUID4 emulation).
+The current check is the result of the x86 merge.
+
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
 ---
- arch/x86/kernel/sys_i386_32.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/amd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
---- linux-2.6.36-rc3/arch/x86/kernel/sys_i386_32.c
-+++ 2.6.36-rc3-i386-unwind-annotations/arch/x86/kernel/sys_i386_32.c
-@@ -33,8 +33,8 @@ int kernel_execve(const char *filename,
- 		  const char *const envp[])
- {
- 	long __res;
--	asm volatile ("push %%ebx ; movl %2,%%ebx ; int $0x80 ; pop %%ebx"
-+	asm volatile ("int $0x80"
- 	: "=a" (__res)
--	: "0" (__NR_execve), "ri" (filename), "c" (argv), "d" (envp) : "memory");
-+	: "0" (__NR_execve), "b" (filename), "c" (argv), "d" (envp) : "memory");
- 	return __res;
- }
-
-
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index fcf9895..a965b53 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -539,7 +539,7 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ #endif
+ 
+ 	if (c->extended_cpuid_level >= 0x80000006) {
+-		if ((c->x86 >= 0x0f) && (cpuid_edx(0x80000006) & 0xf000))
++		if (cpuid_edx(0x80000006) & 0xf000)
+ 			num_cache_leaves = 4;
+ 		else
+ 			num_cache_leaves = 3;
+-- 
+1.6.4.4
 
