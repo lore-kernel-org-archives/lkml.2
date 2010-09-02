@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378Ab0IBTFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 15:05:40 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54181 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab0IBTFj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 15:05:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=R/wEcuVbnx7syXUE8cEZo0aOR7Pi9HPXo23yTg61A1dzbXZwA2IsW6QijT2VaciDqc
-         DuIJCuzwlUsBgkzARpehw/Tfu0VCNa4oxDHZRpA2IotNNlEUWFF1t43v6SzX9RvcpQS0
-         3yJPbqT49gXH5UGJ5r0ei9lj6QVLOPQmrZZHo=
-MIME-Version: 1.0
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Thu, 2 Sep 2010 16:05:14 -0300
-Message-ID: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com>
-Subject: [RFC] Fix typos
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756465Ab0IBTIZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 15:08:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45912 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756418Ab0IBTIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 15:08:23 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: mingo@elte.hu
+Cc: peterz@infradead.org, robert.richter@amd.com, gorcunov@gmail.com,
+        fweisbec@gmail.com, linux-kernel@vger.kernel.org, ying.huang@intel.com,
+        ming.m.lin@intel.com, yinghai@kernel.org, andi@firstfloor.org,
+        eranian@google.com, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 0/3 v2] nmi perf fixes
+Date: Thu,  2 Sep 2010 15:07:46 -0400
+Message-Id: <1283454469-1909-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Fixes to allow unknown nmis to pass through the perf nmi handler instead
+of being swallowed.  Contains patches that are already in Ingo's tree.  Added
+here for completeness.  Based on ingo/tip
 
-I'd like to know if it's worth fixing all typos found in comments,
-documentation and sometimes code. A first attempt to do that you can
-find at http://people.profusion.mobi/~lucas/kernel-typos-fix.patch
+Tested on intel/amd
 
-This was done by using the list of common typos available at
-http://en.wikipedia.org/wiki/Wikipedia:Lists_of_common_misspellings
+v2: patch cleanups and consolidation, no code changes
 
-I already removed some false positives, but there are more. Before
-going ahead and verifying all of them, I'd like to know whether this
-would be a good patch.
+Don Zickus (1):
+  perf, x86: Fix accidentally ack'ing a second event on intel perf
+    counter
 
+Peter Zijlstra (1):
+  perf, x86: Fix handle_irq return values
 
+Robert Richter (1):
+  perf, x86: Try to handle unknown nmis with an enabled PMU
+
+ arch/x86/kernel/cpu/perf_event.c       |   59 +++++++++++++++++++++++++-------
+ arch/x86/kernel/cpu/perf_event_intel.c |   15 +++++---
+ arch/x86/kernel/cpu/perf_event_p4.c    |    2 +-
+ 3 files changed, 56 insertions(+), 20 deletions(-)
 
 -- 
+1.7.2.2
 
-Lucas De Marchi
