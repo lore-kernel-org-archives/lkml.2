@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab0IBA0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 20:26:53 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:44274 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752535Ab0IBA0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 20:26:52 -0400
-Date: Thu, 2 Sep 2010 01:26:41 +0100
-From: Hedi Berriche <hedi@sgi.com>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Petr Tesarik <ptesarik@suse.cz>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Serious problem with ticket spinlocks on ia64
-Message-ID: <20100902002641.GI18967@zorg.emea.sgi.com>
-Mail-Followup-To: Tony Luck <tony.luck@intel.com>,
-	Petr Tesarik <ptesarik@suse.cz>,
-	"linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <201008271537.35709.ptesarik@suse.cz> <987664A83D2D224EAE907B061CE93D53015D91D6F5@orsmsx505.amr.corp.intel.com> <987664A83D2D224EAE907B061CE93D53015D9B14DC@orsmsx505.amr.corp.intel.com> <201008302341.14312.ptesarik@suse.cz> <AANLkTin4cn84xu3go-Tj-CYSLp0W6uO1HRtA6_CQu8nJ@mail.gmail.com> <AANLkTinHOpcdAJd0_4G=OFAnMZaXKeOsqnbjJMAxCume@mail.gmail.com> <AANLkTikUrNcuZB_CFn5cGFovN8U4eyPGL=nEdSP3JS9Z@mail.gmail.com>
+	id S1756016Ab0IBA1D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 20:27:03 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41666 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755860Ab0IBA1A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 20:27:00 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 2/3] mm: page allocator: Calculate a better estimate of NR_FREE_PAGES when memory is low and kswapd is awake
+Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.DEB.2.00.1009011919110.20518@router.home>
+References: <20100901203422.GA19519@csn.ul.ie> <alpine.DEB.2.00.1009011919110.20518@router.home>
+Message-Id: <20100902092628.D065.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikUrNcuZB_CFn5cGFovN8U4eyPGL=nEdSP3JS9Z@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  2 Sep 2010 09:26:57 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 02, 2010 at 00:10 Tony Luck wrote:
-| More results from other experiments ...
-| 
-| 1) It occurred to me that I should check that these test cases weren't
-| hitting some other problem in 2.6.36-rc3. So I ported the 64-bit
-| version of ticket locks to the current kernel and ran the stress test.
-| It was still going strong at 16 hours (where all my other experiments
-| tend to fail at 90 minutes or less).
+> On Wed, 1 Sep 2010, Mel Gorman wrote:
+> 
+> > > > >         if (delta < 0 && abs(delta) > nr_free_pages)
+> > > > >                 delta = -nr_free_pages;
+> > >
+> > > Not sure what the point here is. If the delta is going below zero then
+> > > there was a concurrent operation updating the counters negatively while
+> > > we summed up the counters.
+> >
+> > The point is if the negative delta is greater than the current value of
+> > nr_free_pages then nr_free_pages would underflow when delta is applied to it.
+> 
+> Ok. then
+> 
+> 	nr_free_pages += delta;
+> 	if (nr_free_pages < 0)
+> 		nr_free_pages = 0;
 
-This is consistent with the bisection that led me to the 4 bytes ticket
-locks commit.
+nr_free_pages is unsined. this wouldn't works ;)
 
-| Summary: the only change that helps is the 64-bit ticket locks.
 
-Ditto.
 
-Cheers,
-Hedi.
--- 
-Hedi Berriche
-Global Product Support
-http://www.sgi.com/support
+
