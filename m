@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab0IBQwr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 12:52:47 -0400
-Received: from jack.hrz.tu-chemnitz.de ([134.109.132.46]:54043 "EHLO
-	jack.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab0IBQwp (ORCPT
+	id S1756078Ab0IBQze (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 12:55:34 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:50836 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab0IBQzc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 12:52:45 -0400
-From: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-To: Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH] xconfig: Change the titlebar if using Qt3
-Date: Thu, 2 Sep 2010 18:52:39 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-gentoo-r6; KDE/4.5.1; x86_64; ; )
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1283355997-6900-1-git-send-email-mmarek@suse.cz>
-In-Reply-To: <1283355997-6900-1-git-send-email-mmarek@suse.cz>
+	Thu, 2 Sep 2010 12:55:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=DJ1RRYIShcijXOMlQtdz0mtwEDDBOO2oJ7T+Jc/SjgjyLGcXL/gxrVyRM/KsIeQ+mV
+         Fp/moqPFffclySDXNQm2NquqtkUiPqF+FLo8Nzgd8RlYmS16MjEIlH/WYjlgArqUWRkL
+         9L9vard6muOKPiIRc3ZridJK+htVm3HjkL8P4=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009021852.40023.alexander.stein@informatik.tu-chemnitz.de>
-X-Spam-Score: -0.9 (/)
-X-Spam-Report: --- Start der SpamAssassin 3.3.1 Textanalyse (-0.9 Punkte)
- Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
- * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
- *  0.1 TVD_RCVD_IP TVD_RCVD_IP
- --- Ende der SpamAssassin Textanalyse
-X-Scan-Signature: aa86db5e7f3e85aa9355d5c307b12c26
+In-Reply-To: <4C7FD244.8050502@tilera.com>
+References: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
+ <1283442391-23612-23-git-send-email-namhyung@gmail.com> <4C7FD244.8050502@tilera.com>
+From: Namhyung Kim <namhyung@gmail.com>
+Date: Fri, 3 Sep 2010 01:55:10 +0900
+Message-ID: <AANLkTi=kvktxn_03LOAre0ZiRkswwf-O1hg07ZsShEeN@mail.gmail.com>
+Subject: Re: [PATCH v2 22/24] ptrace: cleanup arch_ptrace() on tile
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Marek,
+Hello,
 
-On Wednesday 01 September 2010 17:46:37 Michal Marek wrote:
-> Qt4 is now used by default and will get more testing. In case someone
-> still uses Qt3 and reports a bug, make it easy to recognize that this is
-> Qt3.
-> 
-> Cc: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
->  scripts/kconfig/qconf.cc |   10 ++++++++--
->  1 files changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
-> index 88d3874..a04e451 100644
-> --- a/scripts/kconfig/qconf.cc
-> +++ b/scripts/kconfig/qconf.cc
-> @@ -1274,8 +1274,14 @@ ConfigMainWindow::ConfigMainWindow(void)
->  	char title[256];
-> 
->  	QDesktopWidget *d = configApp->desktop();
-> -	snprintf(title, sizeof(title), _("Linux Kernel v%s Configuration"),
-> -		getenv("KERNELVERSION"));
-> +	snprintf(title, sizeof(title), _("Linux Kernel v%s Configuration%s"),
-> +		getenv("KERNELVERSION"),
-> +#if QT_VERSION < 0x040000
-> +		" (Qt3)"
-> +#else
-> +		""
-> +#endif
-> +		);
->  	setCaption(title);
-> 
->  	width = configSettings->readNumEntry("/window width", d->width() - 64);
+On Fri, Sep 3, 2010 at 01:35, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>  On 9/2/2010 11:46 AM, Namhyung Kim wrote:
+>> Remove checking @addr less than 0 because @addr is now unsigned.
+>>
+>> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+>> Cc: Chris Metcalf <cmetcalf@tilera.com>
+>> ---
+>>  arch/tile/kernel/ptrace.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/tile/kernel/ptrace.c b/arch/tile/kernel/ptrace.c
+>> index aed9256..704bf11 100644
+>> --- a/arch/tile/kernel/ptrace.c
+>> +++ b/arch/tile/kernel/ptrace.c
+>> @@ -85,7 +85,7 @@ long arch_ptrace(struct task_struct *child, long request,
+>>       case PTRACE_PEEKUSR:  /* Read register from pt_regs. */
+>>               if (addr & (sizeof(data)-1))
+>>                       break;
+>> -             if (addr < 0 || addr >= PTREGS_SIZE)
+>> +             if (addr >= PTREGS_SIZE)
+>>                       break;
+>>               tmp = getreg(child, addr);   /* Read register */
+>>               ret = put_user(tmp, datap);
+>> @@ -94,7 +94,7 @@ long arch_ptrace(struct task_struct *child, long request,
+>>       case PTRACE_POKEUSR:  /* Write register in pt_regs. */
+>>               if (addr & (sizeof(data)-1))
+>>                       break;
+>> -             if (addr < 0 || addr >= PTREGS_SIZE)
+>> +             if (addr >= PTREGS_SIZE)
+>>                       break;
+>>               putreg(child, addr, data);   /* Write register */
+>>               ret = 0;
+>
+> This omits the change to the actual function definition, which was present
+> in the previous version of this patch.
+>
 
-Looks fine to me.
+That change was moved/combined into previous patch in this series.
+Please check out 03/24 in this patchset also.
 
-Best regards,
-Alexander
+
+> On the up side, it also removes the change to the sizeof() values in
+> GETREGS/SETREGS, which seemed unnecessary in the previous version.
+>
+
+Yes, it is unnecessary but little bit more accurate although there will be no
+machine that has diferent size of long and unsigned long. Anyway if you
+really hate it, I'll discard it. :-)
+
+
+-- 
+Regards,
+Namhyung Kim
