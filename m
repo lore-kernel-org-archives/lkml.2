@@ -1,76 +1,50 @@
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab0JADyR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 23:54:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34386 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab0JADyP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 23:54:15 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>
-CC: "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Thu, 30 Sep 2010 22:50:30 -0500
-Subject: RE: [PATCH] scatterlist: define SG chain for arm architecture
-Thread-Topic: [PATCH] scatterlist: define SG chain for arm architecture
-Thread-Index: ActhFgZx7kpphIxCQ+S3J8G8W+ju9QABcTPB
-Message-ID: <496565EC904933469F292DDA3F1663E602F3E074E0@dlee06.ent.ti.com>
-References: <1285903354-7378-1-git-send-email-x0095840@ti.com>
-In-Reply-To: <1285903354-7378-1-git-send-email-x0095840@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754457Ab0IBNAh (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 2 Sep 2010 09:00:37 -0400
+Received: from out1.mdmis.com ([210.5.42.208]:47449 "EHLO out1.mdmis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752810Ab0IBNAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 09:00:34 -0400
+Message-ID: <20100902195734.1226255t2f0shrgk@mail.asli.com.my>
+Date: Thu, 02 Sep 2010 19:57:34 +0800
+From: Ms Dai Ying <hkdaiming59@yahoo.com.hk>
+To: undisclosed-recipients:;
+Subject: Hello
 MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+X-Originating-IP: 41.217.66.5
+X-Remote-Browser: Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1;
+ Trident/4.0; GTB6.5; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET
+ CLR 3.0.30729; Media Center PC 6.0; VER#X9#80836582516745485070484856)
+X-mdmis_com-MailScanner-Information: Please contact the ISP for more information
+X-mdmis_com-MailScanner-ID: 2764050076.D2764
+X-mdmis_com-MailScanner: Found to be clean
+X-mdmis_com-MailScanner-SpamScore: s
+X-mdmis_com-MailScanner-From: srs0=awrh=qg=yahoo.com.hk=hkdaiming59@srs.mdmis.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Please discard this patch, it should have sent to linux-arm list.
 
-Regards,
-Fernando.
+Ms Dai Ying
+General Manager
+Global Markets Department
+Bank of China (Hong Kong) Limited
 
-> 
-> ________________________________________
-> From: Guzman Lugo, Fernando
-> Sent: Thursday, September 30, 2010 10:22 PM
-> To: tony@atomide.com
-> Cc: Hiroshi.DOYU@nokia.com; linux-kernel@vger.kernel.org; linux-omap@vger.ke
-> rnel.org; Guzman Lugo, Fernando
-> Subject: [PATCH] scatterlist: define SG chain for arm architecture
-> 
-> Define SG chain for ARM architecture in order to work
-> with big buffers. This patch is needed in order to
-> iovmm users can pass a big buffer to map it and ARM
-> architecture has not issues using SG chain.
-> 
-> This change was suggested by FUJITA Tomonori.
-> 
-> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
-> ---
->  arch/arm/include/asm/scatterlist.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/scatterlist.h b/arch/arm/include/asm/scatt
-> erlist.h
-> index 2f87870..3de0a0b 100644
-> --- a/arch/arm/include/asm/scatterlist.h
-> +++ b/arch/arm/include/asm/scatterlist.h
-> @@ -5,4 +5,6 @@
->  #include <asm/types.h>
->  #include <asm-generic/scatterlist.h>
-> 
-> +#define ARCH_HAS_SG_CHAIN
-> +
->  #endif /* _ASMARM_SCATTERLIST_H */
-> --
-> 1.6.3.3
-> 
+I am the general manager, Global markets department of Bank of China. I
+have a business proposition for you concerning one of our clients.
+
+If you are interested get back to me for more details.
+
+I await your response.
+
+Sincerely,
+
+Dai Ying
