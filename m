@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab0IBPsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 11:48:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33413 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756297Ab0IBPse (ORCPT
+	id S1756434Ab0IBPsv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 11:48:51 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33315 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756411Ab0IBPst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 11:48:34 -0400
+	Thu, 2 Sep 2010 11:48:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=bGqjnwYAAyhqPYinDEjaYvTX1A6u19D1hPuE+60pnpc6r4aQNiHCrLr1x1eNXHk05d
-         0DDaOyBLO0O0E9LN9UCsqTylS1omJlMJXGgOLCVliOa7zBjTu2CBR2wASFzrQ4EBNdZ+
-         tHKosRuD/Ube4+e8VFlToaZ5wEg4UAgqJM1Qk=
+        b=uO38Imi5ZOULDzZgGzA4oNyMTAquC6b6UGkAZ0fiOJeA6kz5WyrvQu7PgEAsYJMHFr
+         uubLkAbrofdw6JtCA3I9QfPwDV/F4E6PrBnGJBXnssD9hZIX2ndsAKw86I7iT2GRT4zm
+         U3tvQ3hUZB7QZn83lWvmi8gMZ80UUAB83lBro=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
-Subject: [PATCH v2 19/24] ptrace: cleanup arch_ptrace() on score
-Date: Fri,  3 Sep 2010 00:46:26 +0900
-Message-Id: <1283442391-23612-20-git-send-email-namhyung@gmail.com>
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [PATCH v2 22/24] ptrace: cleanup arch_ptrace() on tile
+Date: Fri,  3 Sep 2010 00:46:29 +0900
+Message-Id: <1283442391-23612-23-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
 References: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
@@ -27,36 +27,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unnecessary castings.
+Remove checking @addr less than 0 because @addr is now unsigned.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/score/kernel/ptrace.c |    4 ++--
+ arch/tile/kernel/ptrace.c |    4 ++--
  1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/score/kernel/ptrace.c b/arch/score/kernel/ptrace.c
-index 894dcbf..5583618 100644
---- a/arch/score/kernel/ptrace.c
-+++ b/arch/score/kernel/ptrace.c
-@@ -336,14 +336,14 @@ arch_ptrace(struct task_struct *child, long request,
- 		ret = copy_regset_to_user(child, &user_score_native_view,
- 						REGSET_GENERAL,
- 						0, sizeof(struct pt_regs),
--						(void __user *)datap);
-+						datap);
- 		break;
- 
- 	case PTRACE_SETREGS:
- 		ret = copy_regset_from_user(child, &user_score_native_view,
- 						REGSET_GENERAL,
- 						0, sizeof(struct pt_regs),
--						(const void __user *)datap);
-+						datap);
- 		break;
- 
- 	default:
+diff --git a/arch/tile/kernel/ptrace.c b/arch/tile/kernel/ptrace.c
+index aed9256..704bf11 100644
+--- a/arch/tile/kernel/ptrace.c
++++ b/arch/tile/kernel/ptrace.c
+@@ -85,7 +85,7 @@ long arch_ptrace(struct task_struct *child, long request,
+ 	case PTRACE_PEEKUSR:  /* Read register from pt_regs. */
+ 		if (addr & (sizeof(data)-1))
+ 			break;
+-		if (addr < 0 || addr >= PTREGS_SIZE)
++		if (addr >= PTREGS_SIZE)
+ 			break;
+ 		tmp = getreg(child, addr);   /* Read register */
+ 		ret = put_user(tmp, datap);
+@@ -94,7 +94,7 @@ long arch_ptrace(struct task_struct *child, long request,
+ 	case PTRACE_POKEUSR:  /* Write register in pt_regs. */
+ 		if (addr & (sizeof(data)-1))
+ 			break;
+-		if (addr < 0 || addr >= PTREGS_SIZE)
++		if (addr >= PTREGS_SIZE)
+ 			break;
+ 		putreg(child, addr, data);   /* Write register */
+ 		ret = 0;
 -- 
 1.7.2.2
 
