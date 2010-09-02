@@ -1,102 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab0IBOQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:16:40 -0400
-Received: from drzdedi.ed3l.fr ([88.191.71.8]:44395 "EHLO drzdedi.nathael.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754295Ab0IBOQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:16:39 -0400
-X-Greylist: delayed 611 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Sep 2010 10:16:38 EDT
-Message-ID: <4C7FAF58.9030700@ed3l.fr>
-Date: Thu, 02 Sep 2010 16:06:16 +0200
-From: Nathael Pajani <nathael.pajani@ed3l.fr>
-Reply-To: nathael.pajani@ed3l.fr
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100619 Icedove/3.0.5
-MIME-Version: 1.0
-To: gregkh@suse.de, linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org
-Subject: [PATCH 1/1] tty : fix tty_line must not be equal to number of allocated
- tty pointers in tty driver
-Content-Type: multipart/mixed;
- boundary="------------000606080304050805010505"
+	id S1755374Ab0IBOSX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:18:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:41960 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755204Ab0IBOSW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 10:18:22 -0400
+X-Authority-Analysis: v=1.1 cv=F68j8apdn+AYvba2s2WjKYIAmW276Pjvg9wPu/ZwFig= c=1 sm=0 a=bNcLrQAqZ4kA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ds3YjM0wM7eqGDWzylgA:9 a=tYyCDeUA8rL8wIPnenkA:7 a=tHZS5p4dJpNNp7vDerA0qkPi4nQA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [RFD][checkpatch] warnings on space in front of labels
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 02 Sep 2010 10:18:18 -0400
+Message-ID: <1283437098.2356.135.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000606080304050805010505
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Hi Andy,
 
-Hi,
+There's a new warning that I've seen lately. It is about complaining
+about spaces starting on a new line.
 
-I found a bug "by chance" in drivers/char/tty_io.c
-
-I mean "by chance" because I was just reading the code of the tty_find_polling_driver() to 
-make a new tty_find_by_name() function.
-
----
-In tty_find_polling_driver() the driver actually test "tty_line <= p->num" while num 
-refers to the number of struct tty_struct pointers allocated for the p->ttys (p is a 
-tty_driver), and tty_line is scanned in a tty name, which can be for example ttyS2. Then 
-tty_line equals 2. And if p->num is 2, we have only p->ttys[0] and p->ttys[1], but no 
-p->ttys[2].
-
-This is actually unharmful, for tty_find_polling_driver() is used only in 
-drivers/serial/kgdboc.c, and there's a test over there to find a console with a matching 
-index, which will never happen.
-
-This is still a bug anyway.
-
-Signed-off-by: Nathael Pajani <nathael.pajani@ed3l.fr>
----
-
-patch against 2bfc96a127bc1cc94d26bfaa40159966064f9c8c (Linux 2.6.36-rc3) :
+WARNING: please, no space for starting a line, 
+				excluding comments
+#90: FILE: trace-read.c:612:
++ again:$
 
 
-diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
-index 949067a..613c852 100644
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -355,7 +355,7 @@ struct tty_driver *tty_find_polling_driver(char *name, int *line)
-         if (*stp == '\0')
-             stp = NULL;
+Comments are currently the exception, but I would also like to add
+labels too.
 
--       if (tty_line >= 0 && tty_line <= p->num && p->ops &&
-+       if (tty_line >= 0 && tty_line < p->num && p->ops &&
-             p->ops->poll_init && !p->ops->poll_init(p, tty_line, stp)) {
-             res = tty_driver_kref_get(p);
-             *line = tty_line;
+I always do labels as:
+
+	[...]
+	goto out;
+	[...]
+ out:
+^
+space
 
 
+I do this because of patches. The patches that we use show the function
+that the change is in. This is extremely helpful. But it fails when
+there's a label in the function that starts on the first column, because
+the patch will reference the label instead of the function.  If that
+label is used in several functions, it makes it difficult to figure out
+exactly what the patch is changing, and thus, it makes it harder to
+review.
 
-Have fun.
-+++
+Doing a: git grep '^again:' to find such examples I found an example in
+kernel/sched_clock.c
 
--- 
-Nathaël PAJANI
-ED3L - Etude et Développement - Linux et Logiciels Libres
-Internet : http://www.ed3l.fr
+static u64 sched_clock_remote(struct sched_clock_data *scd)
+{
+	struct sched_clock_data *my_scd = this_scd();
+	u64 this_clock, remote_clock;
+	u64 *ptr, old_val, val;
 
---------------000606080304050805010505
-Content-Type: text/x-diff;
- name="patch_tty_io_tty_line_cannot_equal_allocated_tty_num.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="patch_tty_io_tty_line_cannot_equal_allocated_tty_num.patch"
+	sched_clock_local(my_scd);
+again:
+	this_clock = my_scd->clock;
+	remote_clock = scd->clock;
 
-diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
-index 949067a..613c852 100644
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -355,7 +355,7 @@ struct tty_driver *tty_find_polling_driver(char *name, int *line)
- 		if (*stp == '\0')
- 			stp = NULL;
+Doing a git blame, I see there was a change after this label. Doing a
+git show on that commit I have:
+
+git show 152f9d0710a62708710161bce1b29fa8292c8c11
+
+which has:
+
+--- a/kernel/sched_clock.c
++++ b/kernel/sched_clock.c
+@@ -127,7 +127,7 @@ again:
+        clock = wrap_max(clock, min_clock);
+        clock = wrap_min(clock, max_clock);
  
--		if (tty_line >= 0 && tty_line <= p->num && p->ops &&
-+		if (tty_line >= 0 && tty_line < p->num && p->ops &&
- 		    p->ops->poll_init && !p->ops->poll_init(p, tty_line, stp)) {
- 			res = tty_driver_kref_get(p);
- 			*line = tty_line;
+-       if (cmpxchg(&scd->clock, old_clock, clock) != old_clock)
++       if (cmpxchg64(&scd->clock, old_clock, clock) != old_clock)
+                goto again;
+ 
+        return clock;
+@@ -163,7 +163,7 @@ again:
+                val = remote_clock;
+        }
+ 
+-       if (cmpxchg(ptr, old_val, val) != old_val)
++       if (cmpxchg64(ptr, old_val, val) != old_val)
+                goto again;
+ 
+        return val;
 
---------------000606080304050805010505--
+
+
+Notice the @@ again: in the header of the sections. This bothers me
+because it makes it harder to review. If the 'again:' labels had a space
+in front, the patch would have looked like this:
+
+--- a/kernel/sched_clock.c
++++ b/kernel/sched_clock.c
+@@ -127,7 +127,7 @@ static u64 sched_clock_local(struct sched_clock_data *scd)
+        clock = wrap_max(clock, min_clock);
+        clock = wrap_min(clock, max_clock);
+ 
+-       if (cmpxchg(&scd->clock, old_clock, clock) != old_clock)
++       if (cmpxchg64(&scd->clock, old_clock, clock) != old_clock)
+                goto again;
+ 
+        return clock;
+@@ -163,7 +163,7 @@ static u64 sched_clock_remote(struct sched_clock_data *scd)
+                val = remote_clock;
+        }
+ 
+-       if (cmpxchg(ptr, old_val, val) != old_val)
++       if (cmpxchg64(ptr, old_val, val) != old_val)
+                goto again;
+ 
+        return val;
+
+
+In fact, the first version looked like it changed only one function.
+With the added space, it shows that it changed two functions.
+
+I really prefer the space in front of the label. In fact, I think it
+should be the default.
+
+But could we at least remove the warning for spaces in front of labels?
+
+What do others think?
+
+Thanks,
+
+-- Steve
+
+
