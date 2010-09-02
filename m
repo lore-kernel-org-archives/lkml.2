@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679Ab0IBXAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 19:00:48 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:47726 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755413Ab0IBXAr (ORCPT
+	id S1756877Ab0IBXJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 19:09:08 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:49668 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751891Ab0IBXJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 19:00:47 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: Colin Cross <ccross@android.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-Subject: [PATCH v2] PM: Prevent waiting forever on asynchronous resume after abort
-Date: Thu,  2 Sep 2010 15:59:19 -0700
-Message-Id: <1283468359-6642-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <201009022340.41584.rjw@sisk.pl>
-References: <201009022340.41584.rjw@sisk.pl>
-X-System-Of-Record: true
+	Thu, 2 Sep 2010 19:09:07 -0400
+Message-Id: <1283468946.15328.1393106295@webmail.messagingengine.com>
+X-Sasl-Enc: NSOB4UkBXelIbN3KSkY23yOmQcYspshel54LbDkM5iir 1283468946
+From: "Alexander van Heukelum" <heukelum@fastmail.fm>
+To: "Jan Beulich" <JBeulich@novell.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: MessagingEngine.com Webmail Interface
+References: <4C7FBCF00200007800013F99@vpn.id2.novell.com>
+Subject: Re: [PATCH] i386: add unwind directives to syscall ptregs stubs
+In-Reply-To: <4C7FBCF00200007800013F99@vpn.id2.novell.com>
+Date: Fri, 03 Sep 2010 01:09:06 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During suspend, the power.completion is expected to be set when a
-device has not yet started suspending.  Set it on init to fix a
-corner case where a device is resumed when its parent has never
-suspended.
+On Thu, 02 Sep 2010 14:04 +0100, "Jan Beulich" <JBeulich@novell.com> wrote:
+> When these stubs are actual functions (i.e. having a return
+> instruction) and have stack manipulation instructions in them, they
+> should also be annotated to allow unwinding through them.
+> 
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-Consider three drivers, A, B, and C.  The parent of A is C, and C
-has async_suspend set.  On boot, C->power.completion is initialized
-to 0.
+Compiles to exactly the same machine code.
 
-During the first suspend:
-suspend_devices_and_enter(...)
- dpm_resume(...)
-  device_suspend(A)
-  device_suspend(B) returns error, aborts suspend
- dpm_resume_end(...)
-   dpm_resume(...)
-    device_resume(A)
-     dpm_wait(A->parent == C)
-      wait_for_completion(C->power.completion)
+Acked-by: Alexander van Heukelum <heukelum@fastmail.fm>
 
-The wait_for_completion will never complete, because
-complete_all(C->power.completion) will only be called from
-device_suspend(C) or device_resume(C), neither of which is called
-if suspend is aborted before C.
-
-After a successful suspend->resume cycle, where B doesn't abort
-suspend, C->power.completion is left in the completed state by the
-call to device_resume(C), and the same call path will work if B
-aborts suspend.
-
-Signed-off-by: Colin Cross <ccross@android.com>
----
- drivers/base/power/main.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index cb784a0..b1b4029 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -63,6 +63,7 @@ void device_pm_init(struct device *dev)
- {
- 	dev->power.status = DPM_ON;
- 	init_completion(&dev->power.completion);
-+	complete_all(&dev->power.completion);
- 	pm_runtime_init(dev);
- }
- 
--- 
-1.7.1
-
+> ---
+>  arch/x86/kernel/entry_32.S    |  16 ++++++++++++----
+>  1 file changed, 12 insertions(+), 4 deletions(-)
+> 
+> --- linux-2.6.36-rc3/arch/x86/kernel/entry_32.S
+> +++ 2.6.36-rc3-x86-push-pop-cfi/arch/x86/kernel/entry_32.S
+> @@ -750,14 +710,18 @@ ptregs_##name: \
+>  #define PTREGSCALL3(name) \
+>  	ALIGN; \
+>  ptregs_##name: \
+> +       CFI_STARTPROC; \
+>  	leal 4(%esp),%eax; \
+> -       pushl %eax; \
+> +       pushl_cfi %eax; \
+>  	movl PT_EDX(%eax),%ecx; \
+>  	movl PT_ECX(%eax),%edx; \
+>  	movl PT_EBX(%eax),%eax; \
+>  	call sys_##name; \
+>  	addl $4,%esp; \
+> -       ret
+> +       CFI_ADJUST_CFA_OFFSET -4; \
+> +       ret; \
+> +       CFI_ENDPROC; \
+> +ENDPROC(ptregs_##name)
+>  
+>  PTREGSCALL1(iopl)
+>  PTREGSCALL0(fork)
+> @@ -772,15 +736,19 @@ PTREGSCALL1(vm86old)
+>  /* Clone is an oddball.  The 4th arg is in %edi */
+>  	ALIGN;
+>  ptregs_clone:
+> +       CFI_STARTPROC
+>  	leal 4(%esp),%eax
+> -       pushl %eax
+> -       pushl PT_EDI(%eax)
+> +       pushl_cfi %eax
+> +       pushl_cfi PT_EDI(%eax)
+>  	movl PT_EDX(%eax),%ecx
+>  	movl PT_ECX(%eax),%edx
+>  	movl PT_EBX(%eax),%eax
+>  	call sys_clone
+>  	addl $8,%esp
+> +       CFI_ADJUST_CFA_OFFSET -8
+>  	ret
+> +       CFI_ENDPROC
+> +ENDPROC(ptregs_clone)
+>  
+>  .macro FIXUP_ESPFIX_STACK
+>  /*
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> 
