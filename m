@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab0IBVBZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:01:25 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36039 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753478Ab0IBVBW (ORCPT
+	id S932161Ab0IBVCH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:02:07 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:41382 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478Ab0IBVCF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:01:22 -0400
-Date: Thu, 2 Sep 2010 17:01:20 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tejun Heo <htejun@gmail.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Subject: Re: [linux-pm] [PATCH] libata: skip EH autopsy and recovery during
- suspend
-In-Reply-To: <4C800A31.3050401@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1009021646510.1311-100000@iolanthe.rowland.org>
+	Thu, 2 Sep 2010 17:02:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=A0KPqxak2SZr5CDaGdeVHKjGRf/Z0U53aEnVWWb2dCiQlBE20DrbVSFnsteGVMgPwO
+         RgogEpqrdAeZM6Fkqt7A==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <Pine.LNX.4.44L0.1009021642320.1311-100000@iolanthe.rowland.org>
+References: <AANLkTi=s3_kFvRY9Afzku82gUgW7YKYXDBZvTkxQsMP8@mail.gmail.com>
+	<Pine.LNX.4.44L0.1009021642320.1311-100000@iolanthe.rowland.org>
+Date: Thu, 2 Sep 2010 14:01:32 -0700
+X-Google-Sender-Auth: WTzTCUb1jZn-NKrHa4Pfo-cb3Jg
+Message-ID: <AANLkTim7UM80MrwKoAz3hUFrqL2Fbyw6XS=X89PXRc2Q@mail.gmail.com>
+Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
+From: Colin Cross <ccross@android.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010, Tejun Heo wrote:
-
-> Hello,
-> 
-> On 09/02/2010 10:28 PM, Rafael J. Wysocki wrote:
-> > That would be very nice.  In particular, I'd like to get rid of the
-> > pm_message_t thing if possible.  And I'd like to avoid putting the
-> > controller into D3 before creating hibernation image. :-)
-
-Ultimately I don't think it will be possible to get rid of pm_message_t
-throughout the entire kernel.  Not just because it's a legacy thing
-spread all over the place, but because it sometimes is genuinely
-useful.  In situations where there are only minimal differences between
-the various suspend/resume paths, it makes a lot of sense to call a
-single function and tell it which type of operation to perform.
-
-> Oh, yeah, things like that can definitely be changed, but I think it
-> would still need to be piped through EH.  That's how the queue gets
-> quiesced for those special operations and resume is basically probing,
-> so it doesn't make much sense to split them.  Please let me know how
-> it should work from power management POV and I'll be happy to convert
-> libata to fit the new behavior.
-
-Tejun, I'm planning to make a few changes to the block layer and the
-SCSI core in order to implement delayed autosuspend.  These changes
-will affect system sleep too, so you may need to know about them.
-
-Each request_queue structure will have an rpm_status variable that gets
-updated as the corresponding device is suspended or resumed.  When the
-status is SUSPENDING or RESUMING, requests will not be sent from the
-request_queue to the driver unless they have cmd_type set to
-REQ_TYPE_PM_SUSPEND or REQ_TYPE_PM_RESUME (actually I may combine those
-two into a single REQ_TYPE_PM type).  If other types of request are
-added to the queue when the status isn't ACTIVE, they will cause a
-runtime resume to be started.
-
-Initially this will affect only drivers using the SCSI layer.  
-Commands sent during error handling won't be affected though, because
-the SCSI error handler doesn't use requests or queues -- it sends
-commands directly to the lower-level driver.
-
-Does that all sound okay to you?
-
-Alan Stern
-
+On Thu, Sep 2, 2010 at 1:45 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Thu, 2 Sep 2010, Colin Cross wrote:
+>
+>> >> I think it would be better to change device_pm_init() and add a
+>> >> complete_all().
+>> >
+>> > I agree.
+>> That would work, and was my first solution, but it increases the
+>> reliance on the completion variable being left completed between state
+>> transitions, which is undocumented and unnecessary.  It seems more
+>> straightforward to me to only wait on the parent if the parent is
+>> suspended.
+>
+> How about calling complete_all() from within dpm_prepare() as well?
+> Then it will get initialized properly at the beginning of every sleep
+> transition.
+That would work, but I still don't see why it's better.  With either
+of your changes, the power.completion variable is storing state, and
+not just used for notification.  However, the exact meaning of that
+state is unclear, especially during the transition from an aborted
+suspend to resume, and the state is duplicating power.status.  Setting
+it to complete in dpm_prepare is especially confusing, because at that
+point nothing is completed, it hasn't even been started.
