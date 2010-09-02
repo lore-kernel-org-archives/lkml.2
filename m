@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab0IBNcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 09:32:12 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47781 "EHLO mx1.suse.de"
+	id S1755148Ab0IBNcz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 09:32:55 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60815 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752345Ab0IBNcK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 09:32:10 -0400
-Date: Thu, 2 Sep 2010 23:32:00 +1000
-From: Neil Brown <neilb@suse.de>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vaurora@redhat.com,
-        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
-Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
-Message-ID: <20100902233200.586fcb31@notabene>
-In-Reply-To: <alpine.LNX.2.01.1009021513040.10859@obet.zrqbmnf.qr>
-References: <20100826183340.027591901@szeredi.hu>
-	<20100827170551.19616048@notabene>
-	<E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu>
-	<20100827213502.31af4a4c@notabene>
-	<E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu>
-	<20100829144207.4fbf2713@notabene>
-	<E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu>
-	<alpine.LNX.2.01.1009021513040.10859@obet.zrqbmnf.qr>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1750773Ab0IBNcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 09:32:54 -0400
+Message-ID: <4C7FA770.7070004@kernel.org>
+Date: Thu, 02 Sep 2010 15:32:32 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+CC: Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com,
+        j-nomura@ce.jp.nec.com, jamie@shareable.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-raid@vger.kernel.org, hch@lst.de
+Subject: Re: [PATCH UPDATED 4/5] dm: implement REQ_FLUSH/FUA support for request-based
+ dm
+References: <1283162296-13650-1-git-send-email-tj@kernel.org> <1283162296-13650-5-git-send-email-tj@kernel.org> <20100830132836.GB5283@redhat.com> <4C7BB932.1070405@kernel.org> <4C7BD202.4040700@kernel.org> <4C7DFD8F.6070200@ct.jp.nec.com> <4C7FA531.7060300@kernel.org>
+In-Reply-To: <4C7FA531.7060300@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 02 Sep 2010 13:32:34 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010 15:15:37 +0200 (CEST)
-Jan Engelhardt <jengelh@medozas.de> wrote:
-
+On 09/02/2010 03:22 PM, Tejun Heo wrote:
+> Hello,
 > 
-> On Monday 2010-08-30 12:18, Miklos Szeredi wrote:
-> >
-> >> My comment about set-theory unions being commutative set me thinking.  I
-> >> really don't think "union" is the right name for this thing.  There is
-> >> nothing about it which really fits that proper definition of a union.
-> >
-> >We could call it overlayfs.  People learn new names quickly :)
+> On 09/01/2010 09:15 AM, Kiyoshi Ueda wrote:
+>> I don't see any obvious problem on this patch.
+>> However, I hit a NULL pointer dereference below when I use a mpath
+>> device with barrier option of ext3.  I'm investigating the cause now.
+>> (Also I'm not sure the cause of the hang which Mike is hitting yet.)
+>>
+>> I tried on the commit 28dd53b26d362c16234249bad61db8cbd9222d0b of
+>> git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git flush-fua.
+>>
+>>     # mke2fs -j /dev/mapper/mpatha
+>>     # mount -o barrier=1 /dev/mapper/mpatha /mnt/0
+>>     # dd if=/dev/zero of=/mnt/0/a bs=512 count=1
+>>     # sync
 > 
-> There is a much larger issue that you should be very well aware about —
+> Hmm... I'm trying to reproduce this problem but hasn't been successful
+> yet.
 > 
-> "The name wanted to be a clever acronym for "Filesystem in
-> USErspace", but it turned out to be an unfortunate choice. The author
-> has since vowed never to name a project after a common term, not even
-> anything found more than a handful of times on Google."
+>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
+>> IP: [<ffffffffa0070ec3>] scsi_finish_command+0xa3/0x120 [scsi_mod]
 > 
-> overlayfs already exists. Right next to fuse on sourceforge...
+> Can you please ask gdb which source line this is?
 
-lol
+Ooh, never mind.  Reproduced it.
 
+Thanks.
 
-No, I mean it.  "Linux Over-Lays".  :-)
-
-> 
-> 
-> Oh and I what I like to see is support for multiple readonly branches :)
-
-I think we very nearly have that, assuming I understand your requirement
-correctly.
-The lower filesystem can itself be an overlay, providing it is mounted
-read-only.
-
-So if /mnt/ro1 /mnt/ro2 /mnt/ro3 are all read-only branches then
-
- mount -o ro,lowerdir=/mnt/ro1,upperdir=/mnt/ro2 meaninglessstring /mnt/ov1
- mount -o ro,lowerdir=/mnt/ov1,upperdir=/mnt/ro3 meaninglessstring /mnt/ov2
- mount -o lowerdir=/mnt/ov2,upperdir=/mnt/rw ignoreme /mnt/overlay
-
-and /mnt/overlay will be the combination of 3 read-only filesystems and one
-writable one.
-(this doesn't work with the code as-is, but it is really just a few bug-fixes
-away).
-
-NeilBrown
+-- 
+tejun
