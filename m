@@ -1,101 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757065Ab0IBUby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:31:54 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43815 "EHLO ogre.sisk.pl"
+	id S1757117Ab0IBUcn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 16:32:43 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:41355 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619Ab0IBUbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:31:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Colin Cross <ccross@android.com>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
-Date: Thu, 2 Sep 2010 22:30:59 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <Pine.LNX.4.44L0.1009020946580.1513-100000@iolanthe.rowland.org> <201009022146.03359.rjw@sisk.pl> <AANLkTi=s3_kFvRY9Afzku82gUgW7YKYXDBZvTkxQsMP8@mail.gmail.com>
-In-Reply-To: <AANLkTi=s3_kFvRY9Afzku82gUgW7YKYXDBZvTkxQsMP8@mail.gmail.com>
+	id S1752832Ab0IBUcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 16:32:42 -0400
+Message-ID: <4C800BAF.2090003@fnac.net>
+Date: Thu, 02 Sep 2010 22:40:15 +0200
+From: Paul Chavent <paul.chavent@fnac.net>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009022230.59384.rjw@sisk.pl>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com, jkosina@suse.cz, richard.cochran@omicron.at,
+        jpirko@redhat.com, davem@davemloft.net, nicolas.ferre@atmel.com
+Subject: [PATCH] arm driver net macb
+Content-Type: multipart/mixed;
+ boundary="------------030408010308020702050500"
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 02, 2010, Colin Cross wrote:
-> On Thu, Sep 2, 2010 at 12:46 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, September 02, 2010, Alan Stern wrote:
-> >> On Wed, 1 Sep 2010, Colin Cross wrote:
-> >>
-> >> > Only wait on a parent device during resume if the parent device is
-> >> > suspended.
-> >> >
-> >> > Consider three drivers, A, B, and C.  The parent of A is C, and C
-> >> > has async_suspend set.  On boot, C->power.completion is initialized
-> >> > to 0.
-> >> >
-> >> > During the first suspend:
-> >> > suspend_devices_and_enter(...)
-> >> >  dpm_resume(...)
-> >> >   device_suspend(A)
-> >> >   device_suspend(B) returns error, aborts suspend
-> >> >  dpm_resume_end(...)
-> >> >    dpm_resume(...)
-> >> >     device_resume(A)
-> >> >      dpm_wait(A->parent == C)
-> >> >       wait_for_completion(C->power.completion)
-> >> >
-> >> > The wait_for_completion will never complete, because
-> >> > complete_all(C->power.completion) will only be called from
-> >> > device_suspend(C) or device_resume(C), neither of which is called
-> >> > if suspend is aborted before C.
-> >>
-> >> This would work okay if C->power.completion had been initialized to the
-> >> completed state during boot, right?
-> >>
-> >> > After a successful suspend->resume cycle, where B doesn't abort
-> >> > suspend, C->power.completion is left in the completed state by the
-> >> > call to device_resume(C), and the same call path will work if B
-> >> > aborts suspend.
-> >> >
-> >> > Signed-off-by: Colin Cross <ccross@android.com>
-> >> > ---
-> >> >  drivers/base/power/main.c |    3 ++-
-> >> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> >> >
-> >> > diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> >> > index cb784a0..e159910 100644
-> >> > --- a/drivers/base/power/main.c
-> >> > +++ b/drivers/base/power/main.c
-> >> > @@ -526,7 +526,8 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
-> >> >     TRACE_DEVICE(dev);
-> >> >     TRACE_RESUME(0);
-> >> >
-> >> > -   dpm_wait(dev->parent, async);
-> >> > +   if (dev->parent && dev->parent->power.status >= DPM_OFF)
-> >> > +           dpm_wait(dev->parent, async);
-> >> >     device_lock(dev);
-> >> >
-> >> >     dev->power.status = DPM_RESUMING;
-> >>
-> >> I think it would be better to change device_pm_init() and add a
-> >> complete_all().
-> >
-> > I agree.
-> That would work, and was my first solution, but it increases the
-> reliance on the completion variable being left completed between state
-> transitions, which is undocumented and unnecessary.  It seems more
-> straightforward to me to only wait on the parent if the parent is
-> suspended.
-> 
-> > Who's writing the patch?
-> I'll write it if you still don't like this one.
+This is a multi-part message in MIME format.
+--------------030408010308020702050500
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Well, I need to think about that a little bit more.
+When listing processes on a system with SOFT/HARD_IRQ enabled, the name of the ethernet device is [irq/eth%d] (instead of [irq/eth0] for example).
 
-Rafael
+This patch call the request_irq function after having initialized the name of the device.
+
+Signed-off-by: Paul Chavent <paul.chavent@fnac.net>
+
+
+--------------030408010308020702050500
+Content-Type: text/plain;
+ name="linux-2.6.35.4-arm_at91_ethname.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="linux-2.6.35.4-arm_at91_ethname.patch"
+
+diff -abBruN linux-2.6.35.4.orig/drivers/net/macb.c linux-2.6.35.4.mod/drivers/net/macb.c
+--- linux-2.6.35.4.orig/drivers/net/macb.c	2010-09-02 17:35:18.422000143 +0200
++++ linux-2.6.35.4.mod/drivers/net/macb.c	2010-09-02 18:02:37.078000147 +0200
+@@ -1165,16 +1242,6 @@
+ 		goto err_out_disable_clocks;
+ 	}
+ 
+-	dev->irq = platform_get_irq(pdev, 0);
+-	err = request_irq(dev->irq, macb_interrupt, IRQF_SAMPLE_RANDOM,
+-			  dev->name, dev);
+-	if (err) {
+-		printk(KERN_ERR
+-		       "%s: Unable to request IRQ %d (error %d)\n",
+-		       dev->name, dev->irq, err);
+-		goto err_out_iounmap;
+-	}
+-
+ 	dev->netdev_ops = &macb_netdev_ops;
+ 	netif_napi_add(dev, &bp->napi, macb_poll, 64);
+ 	dev->ethtool_ops = &macb_ethtool_ops;
+@@ -1214,13 +1281,23 @@
+ 	err = register_netdev(dev);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "Cannot register net device, aborting.\n");
+-		goto err_out_free_irq;
++		goto err_out_iounmap;
+ 	}
+ 
+ 	if (macb_mii_init(bp) != 0) {
+ 		goto err_out_unregister_netdev;
+ 	}
+ 
++	dev->irq = platform_get_irq(pdev, 0);
++	err = request_irq(dev->irq, macb_interrupt, IRQF_SAMPLE_RANDOM,
++			  dev->name, dev);
++	if (err) {
++		printk(KERN_ERR
++		       "%s: Unable to request IRQ %d (error %d)\n",
++		       dev->name, dev->irq, err);
++		goto err_out_unregister_netdev;
++	}
++
+ 	platform_set_drvdata(pdev, dev);
+ 
+ 	printk(KERN_INFO "%s: Atmel MACB at 0x%08lx irq %d (%pM)\n",
+@@ -1233,10 +1310,10 @@
+ 
+ 	return 0;
+ 
+-err_out_unregister_netdev:
+-	unregister_netdev(dev);
+ err_out_free_irq:
+ 	free_irq(dev->irq, dev);
++err_out_unregister_netdev:
++	unregister_netdev(dev);
+ err_out_iounmap:
+ 	iounmap(bp->regs);
+ err_out_disable_clocks:
+@@ -1270,8 +1347,8 @@
+ 		mdiobus_unregister(bp->mii_bus);
+ 		kfree(bp->mii_bus->irq);
+ 		mdiobus_free(bp->mii_bus);
+-		unregister_netdev(dev);
+ 		free_irq(dev->irq, dev);
++		unregister_netdev(dev);
+ 		iounmap(bp->regs);
+ #ifndef CONFIG_ARCH_AT91
+ 		clk_disable(bp->hclk);
+
+--------------030408010308020702050500--
