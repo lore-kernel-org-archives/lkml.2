@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab0IBUYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:24:33 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:29694 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab0IBUYc convert rfc822-to-8bit (ORCPT
+	id S1756968Ab0IBUYp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 16:24:45 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36355 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756952Ab0IBUYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:24:32 -0400
+	Thu, 2 Sep 2010 16:24:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
          :content-transfer-encoding;
-        b=uJKtCcTHKqmtT1KQGV8LzWPXC1qy4vFU6sV8ECX3elP95K96FQbBXHms2bZ7vuRqfk
-         Kg8W4EmGIaqXicmRKdFA==
+        b=m+I9UEmGqDTfBE6MAsGbUlSI3Gn7hTW8ew+Htn3E/72ZJRG1Dof/dVBsx1tPPk2N5N
+         rHOYiFs0m7D4YapN+rBCt4dxuMVNJB1DSkUmY7huuvOewmEmG2LhzB31Mv2LM7Cop+11
+         lZ7+li2ZslN1nRyaFIBDiBKmEJucYeakauj9I=
+Message-ID: <4C800829.9040802@gmail.com>
+Date: Thu, 02 Sep 2010 22:25:13 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <201009022146.03359.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1009020946580.1513-100000@iolanthe.rowland.org>
-	<201009022146.03359.rjw@sisk.pl>
-Date: Thu, 2 Sep 2010 13:24:28 -0700
-X-Google-Sender-Auth: Jb9xrF4OUK21pEbTKyEwZ4d0Zb4
-Message-ID: <AANLkTi=s3_kFvRY9Afzku82gUgW7YKYXDBZvTkxQsMP8@mail.gmail.com>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
-From: Colin Cross <ccross@android.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
+CC: Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
+Subject: Re: [PATCH] libata: skip EH autopsy and recovery during suspend
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C7F6931.4050707@gmail.com> <4C7F7649.3010409@gmail.com> <201009022216.45303.rjw@sisk.pl>
+In-Reply-To: <201009022216.45303.rjw@sisk.pl>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 12:46 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, September 02, 2010, Alan Stern wrote:
->> On Wed, 1 Sep 2010, Colin Cross wrote:
->>
->> > Only wait on a parent device during resume if the parent device is
->> > suspended.
->> >
->> > Consider three drivers, A, B, and C.  The parent of A is C, and C
->> > has async_suspend set.  On boot, C->power.completion is initialized
->> > to 0.
->> >
->> > During the first suspend:
->> > suspend_devices_and_enter(...)
->> >  dpm_resume(...)
->> >   device_suspend(A)
->> >   device_suspend(B) returns error, aborts suspend
->> >  dpm_resume_end(...)
->> >    dpm_resume(...)
->> >     device_resume(A)
->> >      dpm_wait(A->parent == C)
->> >       wait_for_completion(C->power.completion)
->> >
->> > The wait_for_completion will never complete, because
->> > complete_all(C->power.completion) will only be called from
->> > device_suspend(C) or device_resume(C), neither of which is called
->> > if suspend is aborted before C.
->>
->> This would work okay if C->power.completion had been initialized to the
->> completed state during boot, right?
->>
->> > After a successful suspend->resume cycle, where B doesn't abort
->> > suspend, C->power.completion is left in the completed state by the
->> > call to device_resume(C), and the same call path will work if B
->> > aborts suspend.
->> >
->> > Signed-off-by: Colin Cross <ccross@android.com>
->> > ---
->> >  drivers/base/power/main.c |    3 ++-
->> >  1 files changed, 2 insertions(+), 1 deletions(-)
->> >
->> > diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
->> > index cb784a0..e159910 100644
->> > --- a/drivers/base/power/main.c
->> > +++ b/drivers/base/power/main.c
->> > @@ -526,7 +526,8 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
->> >     TRACE_DEVICE(dev);
->> >     TRACE_RESUME(0);
->> >
->> > -   dpm_wait(dev->parent, async);
->> > +   if (dev->parent && dev->parent->power.status >= DPM_OFF)
->> > +           dpm_wait(dev->parent, async);
->> >     device_lock(dev);
->> >
->> >     dev->power.status = DPM_RESUMING;
->>
->> I think it would be better to change device_pm_init() and add a
->> complete_all().
->
-> I agree.
-That would work, and was my first solution, but it increases the
-reliance on the completion variable being left completed between state
-transitions, which is undocumented and unnecessary.  It seems more
-straightforward to me to only wait on the parent if the parent is
-suspended.
+Hello,
 
-> Who's writing the patch?
-I'll write it if you still don't like this one.
+On 09/02/2010 10:16 PM, Rafael J. Wysocki wrote:
+> Putting the issue at hand aside, I'm not really sure if using SCSI EH for
+> suspending the controller is a good idea.  It seems overly complicated and
+> it doesn't match the new PCI suspend model with separate ->suspend(),
+> ->freeze() and ->poweroff() callbacks.  Moreover, the passing of pm_message_t
+> back and forth doesn't make things clear either.
+> 
+> Would it be possible to rework this thing entirely at one point?
 
+Well, I think I would need more than that to rework the whole thing.
+There are a lot of benefits in sharing the same path between probing /
+error handling and suspend/resuming.  ATA has a lot of quirks which
+have to be dealt with and it will be very fragile to scatter handling
+logics over multiple separate paths.  We definitely can try to make
+the plumbing from power management easier to follow.
 
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Thanks.
+
+-- 
+tejun
