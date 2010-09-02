@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab0IBPNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 11:13:51 -0400
-Received: from mail.tpi.com ([70.99.223.143]:4281 "EHLO mail.tpi.com"
+	id S1754412Ab0IBPRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 11:17:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47648 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751279Ab0IBPNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 11:13:49 -0400
-Message-ID: <4C7FBF26.3090203@canonical.com>
-Date: Thu, 02 Sep 2010 09:13:42 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1751649Ab0IBPRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 11:17:17 -0400
+Message-ID: <4C7FBFE6.7060600@redhat.com>
+Date: Thu, 02 Sep 2010 11:16:54 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Trond.Myklebust@netapp.com
-Subject: Re: nfsd deadlock, 2.6.36-rc3
-References: <4C7E73CB.7030603@canonical.com> <20100901165400.GB1201@fieldses.org> <20100902065551.079e297c@notabene> <4C7EC17B.6070509@canonical.com> <20100901211321.GC10507@fieldses.org>
-In-Reply-To: <20100901211321.GC10507@fieldses.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v2] vmscan: prevent background aging of anon page in no
+ swap system
+References: <1283440333-14451-1-git-send-email-minchan.kim@gmail.com>
+In-Reply-To: <1283440333-14451-1-git-send-email-minchan.kim@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2010 03:13 PM, J. Bruce Fields wrote:
-> On Wed, Sep 01, 2010 at 03:11:23PM -0600, Tim Gardner wrote:
->> On 09/01/2010 02:55 PM, Neil Brown wrote:
->>> On Wed, 1 Sep 2010 12:54:01 -0400
->>> "J. Bruce Fields"<bfields@fieldses.org>   wrote:
->>>
->>>> On Wed, Sep 01, 2010 at 09:39:55AM -0600, Tim Gardner wrote:
->>>>> I've been pursuing a simple reproducer for an NFS lockup that shows
->>>>> up under stress. There is a bunch of info (some of it extraneous) in
->>>>> http://bugs.launchpad.net/bugs/561210. I can reproduce it by writing
->>>>> loop mounted NFS exports:
->>>>>
->>>>> /etc/fstab: 127.0.0.1:/srv /mnt/srv nfs rw 0 2
->>>>> /etc/exports: /srv 127.0.0.1(rw,insecure,no_subtree_check)
->>>>>
->>>>> See the attached scripts test_master.sh and test_client.sh. I simply
->>>>> repeat './test_master.sh wait' until nfsd locks up, typically within
->>>>> 1-3 cycles, e.g.,
->>>>
->>>> Without looking at the dmesg and scripts carefully to confirm, one
->>>> possible explanation is a deadlock when the server can't allocate memory
->>>> required to service client requests, memory which the client itself
->>>> needs to free by writing back dirty pages, but can't because the server
->>>> isn't processing its writes.
->>>
->>> Having looked closely I'd say it is almost certainly this issue.
->>> nfsd thread 1266 is in zone_reclaim waiting on a page to be written out so
->>> the memory can be reused.
->>> The other nfsd threads are blocking on a mutex held by 1266.
->>> The dd processes are waiting for pages to be written to the server
->>>
->>> The particular page that 1266 is waiting on is almost certainly a page on an
->>> NFS file, so you have a cyclic deadlock.
->>>
->>>>
->>>> For that reason we just don't support loopback mounts--they're OK for
->>>> light testing, but it would be difficult to make them completely robust
->>>> under load.
->>>
->>> I wonder if we could use 'containers' to partition available memory between
->>> 'nfsd threads' and 'everything else'??  Probably not worth the effort.
->>>
->>> NeilBrown
->>>
->>
->> I'm currently working with my support folks to reproduce this using
->> the exact same configuration as the customer, e.g., an NFS server
->> (running as a guest on a VMWare ESX host) serving multiple gigabit
->> clients.
->>
->> I assume that is a reasonable scenario?
->
-> Assuming no VMWare problem (which I know nothing about), sure.
->
-> --b.
->
+On 09/02/2010 11:12 AM, Minchan Kim wrote:
 
-The support folks were able to reproduce the failure using external 
-clients after about 6 hours. We're thinking that its the same symptom as 
-seen in https://bugzilla.kernel.org/show_bug.cgi?id=16056. That 
-backported patch b608b283a962caaa280756bc8563016a71712acf from Trond was 
-just incorporated into the Ubuntu 10.04 kernel, so they'll retest to see 
-if its a bona-fide fix.
+> +	/*
+> +	 * If we don't have enough swap space, anonymous page deactivation
+> +	 * is pointless.
+> +	 */
+> +	if (!nr_swap_pages)
+> +		return 0;
 
-rtg
+It may be better to test !total_swap_pages and change the
+comment to:
+
+	/*
+	 * If we don't have swap space, anonymous page deactivation
+	 * is pointless.
+	 */
+
 -- 
-Tim Gardner tim.gardner@canonical.com
+All rights reversed
