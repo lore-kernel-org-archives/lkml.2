@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab0IBAZV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 20:25:21 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59847 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755231Ab0IBAZH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 20:25:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QNlrmX3yOSepKzjm0UxKmrtYkQcgDi1l3Giv0ByAefu+OHmS+s2j3gbi1n+ZSbKPVM
-         uCR3DGfbPNklKRN9ZwitTKZDfO/6xUjVP9GacmxbpuifbiIOPto4UlZZfdH852KKlSSk
-         +juJg7ExU21/FgEiyPdedXf8JKRbAy2feej3Y=
+	id S1755048Ab0IBA0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 20:26:53 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:44274 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752535Ab0IBA0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 20:26:52 -0400
+Date: Thu, 2 Sep 2010 01:26:41 +0100
+From: Hedi Berriche <hedi@sgi.com>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Petr Tesarik <ptesarik@suse.cz>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Serious problem with ticket spinlocks on ia64
+Message-ID: <20100902002641.GI18967@zorg.emea.sgi.com>
+Mail-Followup-To: Tony Luck <tony.luck@intel.com>,
+	Petr Tesarik <ptesarik@suse.cz>,
+	"linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <201008271537.35709.ptesarik@suse.cz> <987664A83D2D224EAE907B061CE93D53015D91D6F5@orsmsx505.amr.corp.intel.com> <987664A83D2D224EAE907B061CE93D53015D9B14DC@orsmsx505.amr.corp.intel.com> <201008302341.14312.ptesarik@suse.cz> <AANLkTin4cn84xu3go-Tj-CYSLp0W6uO1HRtA6_CQu8nJ@mail.gmail.com> <AANLkTinHOpcdAJd0_4G=OFAnMZaXKeOsqnbjJMAxCume@mail.gmail.com> <AANLkTikUrNcuZB_CFn5cGFovN8U4eyPGL=nEdSP3JS9Z@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1009010536070.14332@p34.internal.lan>
-References: <alpine.DEB.2.00.1008270907110.5274@p34.internal.lan>
-	<AANLkTik0BSJC5DJtVNw-MA9cuoAEUrw-M1Dn4XaF99u4@mail.gmail.com>
-	<alpine.DEB.2.00.1008271306100.24692@p34.internal.lan>
-	<alpine.DEB.2.00.1008291137560.5384@p34.internal.lan>
-	<alpine.DEB.2.00.1008310717260.4858@p34.internal.lan>
-	<alpine.DEB.2.00.1008310732120.5156@p34.internal.lan>
-	<alpine.DEB.2.00.1008310820350.19249@p34.internal.lan>
-	<alpine.DEB.2.00.1009010536070.14332@p34.internal.lan>
-Date: Wed, 1 Sep 2010 17:25:06 -0700
-Message-ID: <AANLkTi=SO1nZbFySAs8_+TmCZcKBPihN6xrZfJihBnXG@mail.gmail.com>
-Subject: Re: 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
- timed out, resetting card.
-From: adam radford <aradford@gmail.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikUrNcuZB_CFn5cGFovN8U4eyPGL=nEdSP3JS9Z@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 1, 2010 at 2:40 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+On Thu, Sep 02, 2010 at 00:10 Tony Luck wrote:
+| More results from other experiments ...
+| 
+| 1) It occurred to me that I should check that these test cases weren't
+| hitting some other problem in 2.6.36-rc3. So I ported the 64-bit
+| version of ticket locks to the current kernel and ran the stress test.
+| It was still going strong at 16 hours (where all my other experiments
+| tend to fail at 90 minutes or less).
 
-> Could the lock/unlock be causing the issue?
-> Again, in 2.6.34, there are no latency problems or controller resets.
+This is consistent with the bisection that led me to the 4 bytes ticket
+locks commit.
 
-Justin,
+| Summary: the only change that helps is the 64-bit ticket locks.
 
-We are looking into this issue and should get back to you soon.
+Ditto.
 
-The lock/unlock() kernel calls were not added by me but were part of a
-series of 'BKL pushdown' patches added by someone to all drivers with
-an ioctl interface.  If you think those might be related to your
-issue, you could try
-removing those 2 lines of code and recompiling.
-
-If you haven't already, please email you kernel .config files for both
-the working kernel and non working kernel to the 3ware/LSI support
-people you are in contact with.
-
-Thanks.
-
--Adam
+Cheers,
+Hedi.
+-- 
+Hedi Berriche
+Global Product Support
+http://www.sgi.com/support
