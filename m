@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab0IBVH5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:07:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43954 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757412Ab0IBVHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:07:51 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Colin Cross <ccross@android.com>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
-Date: Thu, 2 Sep 2010 23:06:43 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <AANLkTi=s3_kFvRY9Afzku82gUgW7YKYXDBZvTkxQsMP8@mail.gmail.com> <Pine.LNX.4.44L0.1009021642320.1311-100000@iolanthe.rowland.org> <AANLkTim7UM80MrwKoAz3hUFrqL2Fbyw6XS=X89PXRc2Q@mail.gmail.com>
-In-Reply-To: <AANLkTim7UM80MrwKoAz3hUFrqL2Fbyw6XS=X89PXRc2Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009022306.43470.rjw@sisk.pl>
+	id S1757591Ab0IBVYR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:24:17 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57119 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757368Ab0IBVHS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 17:07:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=mmqhGns2sgWaPv+BB0AB+zy/nRinFaPof4Gqm8Ab4c6uRsjX4SpX20yjw8xX9masWP
+         GKvfyEFlORcsE0j4dl9k5PVJdYkexWHaIOEviv7+krJ0WITEYBD9Zor3fbujTdjb7kpG
+         5aFRYZXKxpabPYe6YI5qEZ663ZuJh5FVIKDMo=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org, jkosina@suse.cz,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 14/91] arch/arm/mach-s3c2440/mach-at2440evb.c Update broken web addresses in the arch directory.
+Date: Thu,  2 Sep 2010 14:06:45 -0700
+Message-Id: <1283461606-7803-15-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.2.1
+In-Reply-To: <1283461606-7803-1-git-send-email-justinmattock@gmail.com>
+References: <1283461606-7803-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 02, 2010, Colin Cross wrote:
-> On Thu, Sep 2, 2010 at 1:45 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Thu, 2 Sep 2010, Colin Cross wrote:
-> >
-> >> >> I think it would be better to change device_pm_init() and add a
-> >> >> complete_all().
-> >> >
-> >> > I agree.
-> >> That would work, and was my first solution, but it increases the
-> >> reliance on the completion variable being left completed between state
-> >> transitions, which is undocumented and unnecessary.  It seems more
-> >> straightforward to me to only wait on the parent if the parent is
-> >> suspended.
-> >
-> > How about calling complete_all() from within dpm_prepare() as well?
-> > Then it will get initialized properly at the beginning of every sleep
-> > transition.
-> That would work, but I still don't see why it's better.  With either
-> of your changes, the power.completion variable is storing state, and
-> not just used for notification.  However, the exact meaning of that
-> state is unclear, especially during the transition from an aborted
-> suspend to resume, and the state is duplicating power.status.  Setting
-> it to complete in dpm_prepare is especially confusing, because at that
-> point nothing is completed, it hasn't even been started.
+The below patch updates a broken web address that is no longer
+working due to company buyout, and/or change of location.
+(Please have a look through, and let me know if any of them
+need to be changed, and I'll resend an updated patch).
 
-It just sets the initial value.  But I agree it would be cleaner to do that
-during the initialization.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Thanks,
-Rafael
+---
+ arch/arm/mach-s3c2440/mach-at2440evb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-s3c2440/mach-at2440evb.c b/arch/arm/mach-s3c2440/mach-at2440evb.c
+index 8472579..67b6ba0 100644
+--- a/arch/arm/mach-s3c2440/mach-at2440evb.c
++++ b/arch/arm/mach-s3c2440/mach-at2440evb.c
+@@ -5,7 +5,7 @@
+  *      and modifications by SBZ <sbz@spgui.org> and
+  *      Weibing <http://weibing.blogbus.com>
+  *
+- * For product information, visit http://www.arm9e.com/
++ * For product information, visit http://www.arm.com/
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+-- 
+1.7.2.1
+
