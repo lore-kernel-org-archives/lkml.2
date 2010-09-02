@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab0IBUp1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:45:27 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39162 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750778Ab0IBUp0 (ORCPT
+	id S1757106Ab0IBUpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 16:45:45 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:46899 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757035Ab0IBUpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:45:26 -0400
-Date: Thu, 2 Sep 2010 16:45:25 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Colin Cross <ccross@android.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@lists.linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after
- abort
-In-Reply-To: <AANLkTi=s3_kFvRY9Afzku82gUgW7YKYXDBZvTkxQsMP8@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1009021642320.1311-100000@iolanthe.rowland.org>
+	Thu, 2 Sep 2010 16:45:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=gtP/+XpLZ4N+8/NhVgVK88rSc8U1BhiHgIZUWs4j3BAgfodZi/E5IXoNo0m0E1Uc/G
+         Iomwpy9s7I8MyEU2q1ooxBg3cR7CNAmIhn4N+wIgovbw9E2GhEGkYHhF7y1Y/c+DFfSU
+         F9k3DxDqj+g/DgzePJTVvVMIbkPeDPnZs0j+Q=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100902132558.63a90e0d.randy.dunlap@oracle.com>
+References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com>
+ <20100902121853.e90f6c53.randy.dunlap@oracle.com> <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
+ <4C800266.1000005@oracle.com> <20100902132558.63a90e0d.randy.dunlap@oracle.com>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Thu, 2 Sep 2010 17:45:23 -0300
+Message-ID: <AANLkTimDKGDy9JGuC1nL1pZa4q07X5q4sr7q7GW5KGup@mail.gmail.com>
+Subject: Re: [RFC] Fix typos
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010, Colin Cross wrote:
+On Thu, Sep 2, 2010 at 17:25, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> Kconfig prompts and help text are also user-visible strings.
+>
+> I just saw this one:
+>
+> bool "ET&T USB series TC4UM/TC5UH touchscreen controler support" if EMBEDDED
 
-> >> I think it would be better to change device_pm_init() and add a
-> >> complete_all().
-> >
-> > I agree.
-> That would work, and was my first solution, but it increases the
-> reliance on the completion variable being left completed between state
-> transitions, which is undocumented and unnecessary.  It seems more
-> straightforward to me to only wait on the parent if the parent is
-> suspended.
+I've just added the controler->controller fix to my dictionary.
 
-How about calling complete_all() from within dpm_prepare() as well?  
-Then it will get initialized properly at the beginning of every sleep 
-transition.
+-- 
 
-Alan Stern
-
+Lucas De Marchi
