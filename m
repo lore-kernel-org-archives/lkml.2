@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab0IBGwG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 02:52:06 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20429 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab0IBGwC (ORCPT
+	id S1753460Ab0IBGxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 02:53:09 -0400
+Received: from www84.your-server.de ([213.133.104.84]:54207 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab0IBGxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 02:52:02 -0400
-Date: Wed, 1 Sep 2010 23:48:15 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
-Subject: Re: [RFC 02/22] configfs: Add struct
- configfs_item_operations->check_link() in configfs_unlink()
-Message-ID: <20100902064814.GB27904@mail.oracle.com>
-Mail-Followup-To: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-	linux-scsi <linux-scsi@vger.kernel.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-	Mike Christie <michaelc@cs.wisc.edu>,
-	Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-	James Bottomley <James.Bottomley@suse.de>,
-	Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
-References: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
- <201009020031.08750.konrad@darnok.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009020031.08750.konrad@darnok.org>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 2 Sep 2010 02:53:08 -0400
+Subject: Re: [PATCH] Add quick erase format option
+From: Stefani Seibold <stefani@seibold.net>
+To: dedekind1@gmail.com
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Enzinger, Robert (EXT-Other - DE/Munich)" 
+	<robert.enzinger.ext@nsn.com>
+In-Reply-To: <1283302043.2018.92.camel@brekeke>
+References: <1281342353-18180-1-git-send-email-stefani@seibold.net>
+	 <1281343038.12908.25.camel@localhost>
+	 <1281343974.18398.13.camel@wall-e.seibold.net>
+	 <1281353344.2332.8.camel@brekeke>
+	 <1281362069.20181.16.camel@wall-e.seibold.net>
+	 <1283081435.2131.24.camel@brekeke>
+	 <1283236978.6083.28.camel@wall-e.seibold.net>
+	 <1283302043.2018.92.camel@brekeke>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 02 Sep 2010 08:53:12 +0200
+Message-ID: <1283410392.6920.36.camel@wall-e.seibold.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 02, 2010 at 12:31:07AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Monday 30 August 2010 05:20:25 Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> >
-> > This patch adds a optional struct configfs_item_operations->check_link()
-> > check called in fs/configfs/symlink.c:configfs_unlink() that can be used by
-> > configfs consumers to check for an explict struct config_group dependence
-> > with active symlink and fail with -EPERM before the unlink(2) syscall is
-> > allowed to occur.
-> >
-> > Currently without this patch, there is not a method that a consumer can
-> > tell configfs_unlink() that it needs to fail for this particular case. 
-> > Allowing ->check_link() to propigate up the errno to VFS is also another
-> > option for the call, but currently for TCM using the existing -EPERM in
-> > configfs_unlink() is fine here.
-> >
-> > Note this patch is used by TCM v4 generic configfs fabric module
-> > infrastructure to allow  explict Initiator Port MappedLUNs symlinks to
-> > create a dependency for the fabric TPG Port LUNs living in a configfs group
-> > that is not a direct struct config_group parent.
-> >
-> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+Am Mittwoch, den 01.09.2010, 03:47 +0300 schrieb Artem Bityutskiy:
+> Stefani,
+> 
+> you have strong points, but I'm still not entirely convinced.
+> 
+> On Tue, 2010-08-31 at 08:42 +0200, Stefani Seibold wrote:
+> > > I would like to change the option name so that it would reflect the
+> > > exact use-case we are creating it for: wiped out flash. So I'd be
+> > > happier with something like --pristine-flash.
+> > 
+> > "Pristine" is not a word which non native speaker have in its
+> > vocabulary.
+> 
+> Agree, not very simple word, when I met it in JFFS2 sources, I looked it
+> up in the dictionary :-)
+> 
 
-	I NAK'd this a while back.  I'm willing to be convinced, but so
-far it remains that way.
+> Also, your use-case is new/virgin/pristine/whatever NOR chips, which are
+> guaranteed to be erased, and I wanted to use option name which reflects
+> your use-case.
+> 
+> How about:
+> 
+> --virgin
+> --factory
+> --brand-new
+> --all-erased
+> 
+> Or  :-)
 
-Joel
+--do-not-use-me is the best. But more seriously i think we should it
+split it into two options. --all-erased and --check-erased. The first
+assumes that all PEB are erased, while the second do the check if the
+PEB is erased and if not it will be erased.
 
--- 
+So we can handle NAND's, which have a fast erase, and NOR's  which are
+very slow. With this we are able to pick the best option for the
+manufacturing.
 
-Life's Little Instruction Book #109
+- Stefani
 
-	"Know how to drive a stick shift."
 
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
