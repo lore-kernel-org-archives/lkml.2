@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab0IBJ2M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 05:28:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34683 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab0IBJ2K (ORCPT
+	id S1753411Ab0IBJcS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 05:32:18 -0400
+Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:45995 "EHLO
+	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab0IBJcR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 05:28:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=J7nkTMFHqvENN5AKfQ3ZSABZNDz4j9+rlCVv30GIKOD80MlGA6SjF9OXJy86/rPBpW
-         kXVCFh0FCz2tFAJi1vqsF84kvyGQAHh791V7DUloEUnJvg2nQkYmM8TY7Unh6qhomjjD
-         wKuZM5PQSgIj+oAFKpB3NqzXx0mWX6jGpwt3o=
-Message-ID: <4C7F6E26.2030301@gmail.com>
-Date: Thu, 02 Sep 2010 11:28:06 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Michael Poole <mdpoole@troilus.org>
-CC: Chase Douglas <chase.douglas@canonical.com>, Jiri Kosina <jkosina@suse.cz>,
-        Henrik Rydberg <rydberg@euromail.se>, Tejun Heo <tj@kernel.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7 v3] HID: magicmouse: don't allow hidinput to initialize
- the device
-References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>	<1283306184-28833-2-git-send-email-chase.douglas@canonical.com>	<4C7E94F6.9050806@gmail.com> <AANLkTi=z5s8mbjG54930Lxj-O9Of2fXHE6kDJhijyOb7@mail.gmail.com>
-In-Reply-To: <AANLkTi=z5s8mbjG54930Lxj-O9Of2fXHE6kDJhijyOb7@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Sep 2010 05:32:17 -0400
+X-Greylist: delayed 1413 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Sep 2010 05:32:17 EDT
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [patch v2 5/5] ntfs: remove dependency on __GFP_NOFAIL
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <alpine.DEB.2.00.1009011801050.24694@chino.kir.corp.google.com>
+Date: Thu, 2 Sep 2010 10:08:28 +0100
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Anton Altaparmakov <aia21@cantab.net>,
+        linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A326B3E1-DB22-4C25-9ED5-C6A5F25BF15E@cam.ac.uk>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <alpine.DEB.2.00.1009011757360.24694@chino.kir.corp.google.com> <alpine.DEB.2.00.1009011801050.24694@chino.kir.corp.google.com>
+To: David Rientjes <rientjes@google.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2010 01:57 AM, Michael Poole wrote:
-> Jiri Slaby wrote:
->> This looks weird. Is there any past discussion about why you cannot use
->> hidinput and you have to do all the input bits yourself while cheating
->> this very weird way?
+Hi David,
+
+On 2 Sep 2010, at 02:03, David Rientjes wrote:
+> Reimplement ntfs_malloc_nofs_nofail() to loop forever calling
+> ntfs_malloc_nofs() until the allocation succeeds.
 > 
-> The Magic Mouse and Magic Trackpad do not publish HID descriptors for
-> the multitouch reports.  Given the variable-length report packets --
-> and especially the Magic Trackpad's new, mutant DOUBLE_REPORT_ID
-> packets -- it would be non-trivial to write accurate descriptors that
-> the HID core can use.  (Someone wrote a patch to try that a few months
-> ago.  It ended up adding significantly more lines to hid-magicmouse.c
-> than it removed, and it was not obvious to me that it got the Report
-> Count fields correct.)
+> If the first allocation attempt fails because the page allocator doesn't
+> implicitly loop, a warning will be emitted, including a call trace.
+> Subsequent failures will suppress this warning.
+> 
+> This was added as a helper function for documentation and auditability.
+> No future callers should be added.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+> fs/ntfs/malloc.h |   12 ++++++++++--
+> 1 files changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/ntfs/malloc.h b/fs/ntfs/malloc.h
+> --- a/fs/ntfs/malloc.h
+> +++ b/fs/ntfs/malloc.h
+> @@ -76,11 +76,19 @@ static inline void *ntfs_malloc_nofs(unsigned long size)
+>  * This function guarantees that the allocation will succeed.  It will sleep
+>  * for as long as it takes to complete the allocation.
+>  *
+> - * If there was insufficient memory to complete the request, return NULL.
+> + * NOTE: no new callers of this function should be implemented!
+> + * All memory allocations should be failable whenever possible.
+>  */
+> static inline void *ntfs_malloc_nofs_nofail(unsigned long size)
+> {
+> -	return __ntfs_malloc(size, GFP_NOFS | __GFP_HIGHMEM | __GFP_NOFAIL);
+> +	void *ret;
+> +
+> +	for (;;) {
+> +		ret = ntfs_malloc_nofs(size);
+> +		if (ret)
+> +			return ret;
+> +		WARN_ON_ONCE(get_order(size) > PAGE_ALLOC_COSTLY_ORDER);
 
-Ok, makes sense. The proper solution is to call a driver hook in
-hidinput_connect to do the mapping instead of report parsing done there,
-right? (And not setting [gs]etkeycode in that case.)
+What is the relevance of the above get_order check?  ntfs_malloc_nofs() does a vmalloc() if size >= PAGE_SIZE so I cannot see how that has anything to do with get_order()?
 
-Then the part of magicmouse_setup_input starting at the first __set_bit
-will be exactly the hook.
+Other than that patch looks fine.
 
-Otherwise this hack looks like a hard cross-layer breakage.
+Note the _nofail function is only called from one place and there will be no more call sites for it.  One day we ought to work something out so it is not needed at all but given it only gets called in very obscure circumstances (definitely not in the general code paths) it shouldn't matter too much...
 
-/me wonders how HID issuers are creative in breaking standards.
+Best regards,
 
-regards,
+	Anton
+
+
+> +	}
+> }
+> 
+> static inline void ntfs_free(void *addr)
+
+Best regards,
+
+	Anton
 -- 
-js
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
+
