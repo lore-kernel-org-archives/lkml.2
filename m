@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab0IBM2y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 08:28:54 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:51455 "EHLO
+	id S1753864Ab0IBMal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 08:30:41 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:51551 "EHLO
 	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab0IBM2x convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Thu, 2 Sep 2010 08:28:53 -0400
-Message-Id: <4C7FB4A40200007800013F30@vpn.id2.novell.com>
+	with ESMTP id S1752356Ab0IBMak convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:2:1>);
+	Thu, 2 Sep 2010 08:30:40 -0400
+Message-Id: <4C7FB50D0200007800013F36@vpn.id2.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 02 Sep 2010 13:28:52 +0100
+Date: Thu, 02 Sep 2010 13:30:37 +0100
 From: "Jan Beulich" <JBeulich@novell.com>
-To: <linux-mm@kvack.org>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] use total_highpages when calculating lowmem-only
-	 allocation sizes
+To: <linux-kernel@vger.kernel.org>
+Cc: <akpm@linux-foundation.org>
+Subject: [PATCH] use clear_page()/copy_page() in favor of
+	 memset()/memcpy() on whole pages
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -23,152 +23,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For those (large) table allocations that come only from lowmem, the
-total amount of memory shouldn't really matter.
-
-vfs_caches_init() should really also be called with a lowmem-only
-value, but since it does arithmetic involving nr_free_pages() and there
-is no nr_free_high_pages(), it's not clear how to make this work.
+After all that's what they are intended for.
 
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
 ---
- init/main.c                       |    3 ++-
- net/dccp/proto.c                  |    8 +++++---
- net/decnet/dn_route.c             |    3 ++-
- net/netfilter/nf_conntrack_core.c |    7 +++++--
- net/netlink/af_netlink.c          |    8 +++++---
- net/sctp/protocol.c               |    6 +++---
- 6 files changed, 22 insertions(+), 13 deletions(-)
+ fs/fuse/dev.c           |    2 +-
+ kernel/kexec.c          |    2 +-
+ kernel/power/snapshot.c |   14 +++++++-------
+ kernel/power/swap.c     |    6 +++---
+ mm/memory.c             |    2 +-
+ 5 files changed, 13 insertions(+), 13 deletions(-)
 
---- linux-2.6.36-rc3/init/main.c
-+++ 2.6.36-rc3-use-totalhigh_pages/init/main.c
-@@ -23,6 +23,7 @@
- #include <linux/smp_lock.h>
- #include <linux/initrd.h>
- #include <linux/bootmem.h>
-+#include <linux/highmem.h>
- #include <linux/acpi.h>
- #include <linux/tty.h>
- #include <linux/percpu.h>
-@@ -676,7 +677,7 @@ asmlinkage void __init start_kernel(void
- #endif
- 	thread_info_cache_init();
- 	cred_init();
--	fork_init(totalram_pages);
-+	fork_init(totalram_pages - totalhigh_pages);
- 	proc_caches_init();
- 	buffer_init();
- 	key_init();
---- linux-2.6.36-rc3/net/dccp/proto.c
-+++ 2.6.36-rc3-use-totalhigh_pages/net/dccp/proto.c
-@@ -14,6 +14,7 @@
- #include <linux/types.h>
- #include <linux/sched.h>
- #include <linux/kernel.h>
-+#include <linux/highmem.h>
- #include <linux/skbuff.h>
- #include <linux/netdevice.h>
- #include <linux/in.h>
-@@ -1049,10 +1050,11 @@ static int __init dccp_init(void)
- 	 *
- 	 * The methodology is similar to that of the buffer cache.
- 	 */
--	if (totalram_pages >= (128 * 1024))
--		goal = totalram_pages >> (21 - PAGE_SHIFT);
-+	goal = totalram_pages - totalhigh_pages;
-+	if (goal >= (128 * 1024))
-+		goal >>= 21 - PAGE_SHIFT;
- 	else
--		goal = totalram_pages >> (23 - PAGE_SHIFT);
-+		goal >>= 23 - PAGE_SHIFT;
+--- linux-2.6.36-rc3/fs/fuse/dev.c
++++ 2.6.36-rc3-use-clear_page/fs/fuse/dev.c
+@@ -811,7 +811,7 @@ static int fuse_copy_page(struct fuse_co
  
- 	if (thash_entries)
- 		goal = (thash_entries *
---- linux-2.6.36-rc3/net/decnet/dn_route.c
-+++ 2.6.36-rc3-use-totalhigh_pages/net/decnet/dn_route.c
-@@ -69,6 +69,7 @@
- #include <linux/slab.h>
- #include <net/sock.h>
- #include <linux/mm.h>
-+#include <linux/highmem.h>
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
- #include <linux/init.h>
-@@ -1762,7 +1763,7 @@ void __init dn_route_init(void)
- 	dn_route_timer.expires = jiffies + decnet_dst_gc_interval * HZ;
- 	add_timer(&dn_route_timer);
+ 	if (page && zeroing && count < PAGE_SIZE) {
+ 		void *mapaddr = kmap_atomic(page, KM_USER1);
+-		memset(mapaddr, 0, PAGE_SIZE);
++		clear_page(mapaddr);
+ 		kunmap_atomic(mapaddr, KM_USER1);
+ 	}
+ 	while (count) {
+--- linux-2.6.36-rc3/kernel/kexec.c
++++ 2.6.36-rc3-use-clear_page/kernel/kexec.c
+@@ -816,7 +816,7 @@ static int kimage_load_normal_segment(st
  
--	goal = totalram_pages >> (26 - PAGE_SHIFT);
-+	goal = (totalram_pages - totalhigh_pages) >> (26 - PAGE_SHIFT);
+ 		ptr = kmap(page);
+ 		/* Start with a clear page */
+-		memset(ptr, 0, PAGE_SIZE);
++		clear_page(ptr);
+ 		ptr += maddr & ~PAGE_MASK;
+ 		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
+ 		if (mchunk > mbytes)
+--- linux-2.6.36-rc3/kernel/power/snapshot.c
++++ 2.6.36-rc3-use-clear_page/kernel/power/snapshot.c
+@@ -988,7 +988,7 @@ static void copy_data_page(unsigned long
+ 			 */
+ 			safe_copy_page(buffer, s_page);
+ 			dst = kmap_atomic(d_page, KM_USER0);
+-			memcpy(dst, buffer, PAGE_SIZE);
++			copy_page(dst, buffer);
+ 			kunmap_atomic(dst, KM_USER0);
+ 		} else {
+ 			safe_copy_page(page_address(d_page), s_page);
+@@ -1636,7 +1636,7 @@ int snapshot_read_next(struct snapshot_h
+ 		memory_bm_position_reset(&orig_bm);
+ 		memory_bm_position_reset(&copy_bm);
+ 	} else if (handle->cur <= nr_meta_pages) {
+-		memset(buffer, 0, PAGE_SIZE);
++		clear_page(buffer);
+ 		pack_pfns(buffer, &orig_bm);
+ 	} else {
+ 		struct page *page;
+@@ -1650,7 +1650,7 @@ int snapshot_read_next(struct snapshot_h
+ 			void *kaddr;
  
- 	for(order = 0; (1UL << order) < goal; order++)
- 		/* NOTHING */;
---- linux-2.6.36-rc3/net/netfilter/nf_conntrack_core.c
-+++ 2.6.36-rc3-use-totalhigh_pages/net/netfilter/nf_conntrack_core.c
-@@ -17,6 +17,7 @@
- #include <linux/sched.h>
- #include <linux/skbuff.h>
- #include <linux/proc_fs.h>
-+#include <linux/highmem.h>
- #include <linux/vmalloc.h>
- #include <linux/stddef.h>
- #include <linux/slab.h>
-@@ -1346,10 +1347,12 @@ static int nf_conntrack_init_init_net(vo
- 	/* Idea from tcp.c: use 1/16384 of memory.  On i386: 32MB
- 	 * machine has 512 buckets. >= 1GB machines have 16384 buckets. */
- 	if (!nf_conntrack_htable_size) {
-+		unsigned long nr_pages = totalram_pages - totalhigh_pages;
-+
- 		nf_conntrack_htable_size
--			= (((totalram_pages << PAGE_SHIFT) / 16384)
-+			= (((nr_pages << PAGE_SHIFT) / 16384)
- 			   / sizeof(struct hlist_head));
--		if (totalram_pages > (1024 * 1024 * 1024 / PAGE_SIZE))
-+		if (nr_pages > (1024 * 1024 * 1024 / PAGE_SIZE))
- 			nf_conntrack_htable_size = 16384;
- 		if (nf_conntrack_htable_size < 32)
- 			nf_conntrack_htable_size = 32;
---- linux-2.6.36-rc3/net/netlink/af_netlink.c
-+++ 2.6.36-rc3-use-totalhigh_pages/net/netlink/af_netlink.c
-@@ -30,6 +30,7 @@
- #include <linux/sched.h>
- #include <linux/errno.h>
- #include <linux/string.h>
-+#include <linux/highmem.h>
- #include <linux/stat.h>
- #include <linux/socket.h>
- #include <linux/un.h>
-@@ -2124,10 +2125,11 @@ static int __init netlink_proto_init(voi
- 	if (!nl_table)
- 		goto panic;
+ 			kaddr = kmap_atomic(page, KM_USER0);
+-			memcpy(buffer, kaddr, PAGE_SIZE);
++			copy_page(buffer, kaddr);
+ 			kunmap_atomic(kaddr, KM_USER0);
+ 			handle->buffer = buffer;
+ 		} else {
+@@ -1933,7 +1933,7 @@ static void copy_last_highmem_page(void)
+ 		void *dst;
  
--	if (totalram_pages >= (128 * 1024))
--		limit = totalram_pages >> (21 - PAGE_SHIFT);
-+	limit = totalram_pages - totalhigh_pages;
-+	if (limit >= (128 * 1024))
-+		limit >>= 21 - PAGE_SHIFT;
- 	else
--		limit = totalram_pages >> (23 - PAGE_SHIFT);
-+		limit >>= 23 - PAGE_SHIFT;
+ 		dst = kmap_atomic(last_highmem_page, KM_USER0);
+-		memcpy(dst, buffer, PAGE_SIZE);
++		copy_page(dst, buffer);
+ 		kunmap_atomic(dst, KM_USER0);
+ 		last_highmem_page = NULL;
+ 	}
+@@ -2219,9 +2219,9 @@ swap_two_pages_data(struct page *p1, str
  
- 	order = get_bitmask_order(limit) - 1 + PAGE_SHIFT;
- 	limit = (1UL << order) / sizeof(struct hlist_head);
---- linux-2.6.36-rc3/net/sctp/protocol.c
-+++ 2.6.36-rc3-use-totalhigh_pages/net/sctp/protocol.c
-@@ -1189,10 +1189,10 @@ SCTP_STATIC __init int sctp_init(void)
- 	/* Size and allocate the association hash table.
- 	 * The methodology is similar to that of the tcp hash tables.
- 	 */
--	if (totalram_pages >= (128 * 1024))
--		goal = totalram_pages >> (22 - PAGE_SHIFT);
-+	if (nr_pages >= (128 * 1024))
-+		goal = nr_pages >> (22 - PAGE_SHIFT);
- 	else
--		goal = totalram_pages >> (24 - PAGE_SHIFT);
-+		goal = nr_pages >> (24 - PAGE_SHIFT);
- 
- 	for (order = 0; (1UL << order) < goal; order++)
- 		;
+ 	kaddr1 = kmap_atomic(p1, KM_USER0);
+ 	kaddr2 = kmap_atomic(p2, KM_USER1);
+-	memcpy(buf, kaddr1, PAGE_SIZE);
+-	memcpy(kaddr1, kaddr2, PAGE_SIZE);
+-	memcpy(kaddr2, buf, PAGE_SIZE);
++	copy_page(buf, kaddr1);
++	copy_page(kaddr1, kaddr2);
++	copy_page(kaddr2, buf);
+ 	kunmap_atomic(kaddr1, KM_USER0);
+ 	kunmap_atomic(kaddr2, KM_USER1);
+ }
+--- linux-2.6.36-rc3/kernel/power/swap.c
++++ 2.6.36-rc3-use-clear_page/kernel/power/swap.c
+@@ -249,7 +249,7 @@ static int write_page(void *buf, sector_
+ 	if (bio_chain) {
+ 		src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
+ 		if (src) {
+-			memcpy(src, buf, PAGE_SIZE);
++			copy_page(src, buf);
+ 		} else {
+ 			WARN_ON_ONCE(1);
+ 			bio_chain = NULL;	/* Go synchronous */
+@@ -323,7 +323,7 @@ static int swap_write_page(struct swap_m
+ 		error = write_page(handle->cur, handle->cur_swap, NULL);
+ 		if (error)
+ 			goto out;
+-		memset(handle->cur, 0, PAGE_SIZE);
++		clear_page(handle->cur);
+ 		handle->cur_swap = offset;
+ 		handle->k = 0;
+ 	}
+@@ -634,7 +634,7 @@ int swsusp_check(void)
+ 	hib_resume_bdev = open_by_devnum(swsusp_resume_device, FMODE_READ);
+ 	if (!IS_ERR(hib_resume_bdev)) {
+ 		set_blocksize(hib_resume_bdev, PAGE_SIZE);
+-		memset(swsusp_header, 0, PAGE_SIZE);
++		clear_page(swsusp_header);
+ 		error = hib_bio_read_page(swsusp_resume_block,
+ 					swsusp_header, NULL);
+ 		if (error)
+--- linux-2.6.36-rc3/mm/memory.c
++++ 2.6.36-rc3-use-clear_page/mm/memory.c
+@@ -2079,7 +2079,7 @@ static inline void cow_user_page(struct 
+ 		 * zeroes.
+ 		 */
+ 		if (__copy_from_user_inatomic(kaddr, uaddr, PAGE_SIZE))
+-			memset(kaddr, 0, PAGE_SIZE);
++			clear_page(kaddr);
+ 		kunmap_atomic(kaddr, KM_USER0);
+ 		flush_dcache_page(dst);
+ 	} else
 
 
