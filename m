@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab0IBAbV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 20:31:21 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41939 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397Ab0IBAbU (ORCPT
+	id S1755103Ab0IBAe7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 20:34:59 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:21962 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752793Ab0IBAe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 20:31:20 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
-Cc: kosaki.motohiro@jp.fujitsu.com, "M. Vefa Bicakci" <bicave@superonline.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org
-In-Reply-To: <201009020002.25113.rjw@sisk.pl>
-References: <20100901093219.9744.A69D9226@jp.fujitsu.com> <201009020002.25113.rjw@sisk.pl>
-Message-Id: <20100902091010.D050.A69D9226@jp.fujitsu.com>
+	Wed, 1 Sep 2010 20:34:58 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: C78GaD4VM1nCsm0uUC10drrcEOLibnh_XaXPYyBv0ReYpdC
+ PtgzYsGFftD2DoXTvMf8LeBr1Df37WJ5ghyefLBJfDi2vzib8AdWWv1UaQ6O
+ xUo7.hetaXp96QBUVCbgGUjyp7pb3ECaq3rpHFJIpWPoltHIQS8YvWH32oHF
+ D5ny4J2eaec7HnmJK5ToyPqQICsEPQYcb6IQrBU3y_FLu58g1n_frJJuqB_U
+ z
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 1 Sep 2010 19:34:54 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Linux Driver Project <devel@driverdev.osuosl.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/10] Use percpu stats
+In-Reply-To: <1283373495.2484.41.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1009011925080.20518@router.home>
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org>  <1281374816-904-4-git-send-email-ngupta@vflare.org>  <alpine.DEB.2.00.1008301114460.10316@router.home>  <AANLkTikdhnr12uU8Wp60BygZwH770RBfxyfLNMzUsQje@mail.gmail.com>  <1283290106.2198.26.camel@edumazet-laptop>
+  <alpine.DEB.2.00.1008311635100.867@router.home>  <1283290878.2198.28.camel@edumazet-laptop>  <alpine.DEB.2.00.1009011501230.16013@router.home> <1283373495.2484.41.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  2 Sep 2010 09:31:14 +0900 (JST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wednesday, September 01, 2010, KOSAKI Motohiro wrote:
-> > > === 8< ===
-> > > PM: Marking nosave pages: ...0009f000 - ...000100000
-> > > PM: basic memory bitmaps created
-> > > PM: Syncing filesystems ... done
-> > > Freezing user space processes ... (elapsed 0.01 seconds) done.
-> > > Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-> > > PM: Preallocating image memory...
-> > > shrink_all_memory start
-> > > PM: shrink memory: pass=1, req:310171 reclaimed:15492 free:360936
-> > > PM: shrink memory: pass=2, req:294679 reclaimed:28864 free:373981
-> > > PM: shrink memory: pass=3, req:265815 reclaimed:60311 free:405374
-> > > PM: shrink memory: pass=4, req:205504 reclaimed:97870 free:443024
-> > > PM: shrink memory: pass=5, req:107634 reclaimed:146948 free:492141
-> > > shrink_all_memory: req:107634 reclaimed:146948 free:492141
-> > > PM: preallocate_image_highmem 556658 278329
-> > > PM: preallocate_image_memory 103139 103139
-> > > PM: preallocate_highmem_fraction 183908 556658 760831 -> 183908
-> > > === >8 ===
-> > 
-> > Rafael, this log mean hibernate_preallocate_memory() has a bug.
-> 
-> Well, it works as designed ...
-> 
-> > It allocate memory as following order.
-> >  1. preallocate_image_highmem()  (i.e. __GFP_HIGHMEM)
-> >  2. preallocate_image_memory()   (i.e. GFP_KERNEL)
-> >  3. preallocate_highmem_fraction (i.e. __GFP_HIGHMEM)
-> >  4. preallocate_image_memory()   (i.e. GFP_KERNEL)
-> > 
-> > But, please imazine following scenario (as Vefa's scenario).
-> >  - system has 3GB memory. 1GB is normal. 2GB is highmem.
-> >  - all normal memory is free
-> >  - 1.5GB memory of highmem are used for tmpfs. rest 500MB is free.
-> 
-> Indeed, that's a memory allocation pattern I didn't anticipate.
-> 
-> > At that time, hibernate_preallocate_memory() works as following.
-> > 
-> > 1. call preallocate_image_highmem(1GB)
-> > 2. call preallocate_image_memory(500M)		total 1.5GB allocated
-> > 3. call preallocate_highmem_fraction(660M)	total 2.2GB allocated
-> > 
-> > then, all of normal zone memory was exhaust. next preallocate_image_memory()
-> > makes OOM, and oom_killer_disabled makes infinite loop.
-> > (oom_killer_disabled careless is vmscan bug. I'll fix it soon)
-> 
-> So, it looks like the problem will go away if we check if there are any normal
-> pages to allocate from before calling the last preallocate_image_memory()?
-> 
-> Like in the patch below, perhaps?
+On Wed, 1 Sep 2010, Eric Dumazet wrote:
 
-Looks like fine. but I have one question. hibernate_preallocate_memory() call
-preallocate_image_memory() two times. Why do you only care latter one?
-former one seems similar risk.
+> > The additional advantage would be that for the 64bit case you would have
+> > much faster and more compact code.
+>
+> My implementation is portable and use existing infrastructure, at the
+> time it was coded. BTW, its fast on 64bit too. As fast as previous
+> implementation. No extra code added. Please double check.
 
+Well if you use the this_cpu_add() on 64 bit you have a single instruction
+without the preempt off/on dance.
 
-> > The problem is, alloc_pages(__GFP_HIGHMEM) -> alloc_pages(GFP_KERNEL) is
-> > wrong order. alloc_pages(__GFP_HIGHMEM) may allocate page from lower zone.
-> > then, next alloc_pages(GFP_KERNEL) lead to OOM.
-> > 
-> > Please consider alloc_pages(GFP_KERNEL) -> alloc_pages(__GFP_HIGHMEM) order.
-> > Even though vmscan fix can avoid infinite loop, OOM situation might makes
-> > big slow down on highmem machine. It seems no good.
-> 
-> There's a problem with the ordering change that it wouldn't be clear how many
-> pages to request from the normal zone in step 1 and 3.
+> If you believe you can do better, please do so.
 
-ok, I see. thanks for good correction my mistake.
+Its right there in the x86_64 implementation of the this_cpu_ ops.
 
+> Of course, we added 64bit network stats to all 32bit arches only because
+> cost was acceptable. (I say all 32bit arches, because you seem to think
+> only x86 was the target)
+
+Ok then add your 64 bit on 32 bit implementation as a default for all 32
+bit configurations. The point is to not have special implementations for
+particular counters. It would be great if the logic you developed for the
+network counters could be used in general for all who have issues with 64
+bit counter increments.
+
+> Using this_cpu_{add|res}() fallback using atomic ops or spinlocks would
+> be slower than actual implemenation (smp_wmb() (nops on x86) and
+> increments).
+
+That would be bad. But then I do not see anyone around that wants
+to implement such fallback behavior.
+
+The current generic fallback for 64 ops (if the arch does not provide it
+which 32 bit arches generally do not) is to switch off preempt and then
+perform the 64 bit op. There is also a irqsafe version as well. Have a
+look at inclue/linux/percpu.h.
 
 
 
