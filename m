@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab0IBUBq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:01:46 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32321 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab0IBUBp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:01:45 -0400
-Message-ID: <4C800266.1000005@oracle.com>
-Date: Thu, 02 Sep 2010 13:00:38 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1756705Ab0IBUFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 16:05:51 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43660 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751113Ab0IBUFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 16:05:50 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH] vmscan: don't use return value trick when oom_killer_disabled
+Date: Thu, 2 Sep 2010 22:04:14 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, "linux-mm" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        "M. Vefa Bicakci" <bicave@superonline.com>, stable@kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+References: <1283442461-16290-1-git-send-email-minchan.kim@gmail.com>
+In-Reply-To: <1283442461-16290-1-git-send-email-minchan.kim@gmail.com>
 MIME-Version: 1.0
-To: Lucas De Marchi <lucas.de.marchi@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Fix typos
-References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com> <20100902121853.e90f6c53.randy.dunlap@oracle.com> <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
-In-Reply-To: <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009022204.14661.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/10 12:31, Lucas De Marchi wrote:
-> On Thu, Sep 2, 2010 at 16:18, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->> Hi,
->>
->> I'd take most of the corrections in Documentation/, but in general,
->> I don't think that it's a good idea without some careful review.
+On Thursday, September 02, 2010, Minchan Kim wrote:
+> M. Vefa Bicakci reported 2.6.35 kernel hang up when hibernation on his
+> 32bit 3GB mem machine. (https://bugzilla.kernel.org/show_bug.cgi?id=16771)
+> Also he was bisected first bad commit is below
 > 
-> I plan to review it if it's indeed worth fixing those typos. I already
-> fixed several false positives like  "rela" being changed to "real",
-> but since it's a 1.8 MB patch I think it's better to ask first before
-> making any other review.
+>   commit bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
+>   Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>   Date:   Fri Jun 4 14:15:05 2010 -0700
 > 
->>
->> E.g.:
->>
->> 1.  changing thru to through isn't needed IMO.
->> Can you add "thru" to your dictionary?
-> Yes, no problem
+>      vmscan: fix do_try_to_free_pages() return value when priority==0 reclaim failure
 > 
->>
->> 2.
->> -(Warning, pulses on ACK ar inverted by transistor, irq is rised up on sync
->> +(Warning, pulses on ACK ar inverted by transistor, irq is rose up on sync
->>
-> Humn.. indeed this seems to be a bad typo in my dictionary.
+> At first impression, this seemed very strange because the above commit only
+> chenged function return value and hibernate_preallocate_memory() ignore
+> return value of shrink_all_memory(). But it's related.
 > 
->> I'm not so sure about "is rose up" being better.  and what about "ar"?
+> Now, page allocation from hibernation code may enter infinite loop if
+> the system has highmem.
 > 
-> I'm only changing words with 3 chars or more, because otherwise I
-> would have a lot of false positives, but I think I can add this word
-> without much trouble.
-> 
+> The reasons are two. 1) hibernate_preallocate_memory() call
+> alloc_pages() wrong order
 
-Mike's suggested change is good here.
+This isn't the case, as explained here: http://lkml.org/lkml/2010/9/1/316 .
 
->>
->> I saw a few others that I could comment on, but I lost them in the 1.8 MB patch file.
-> 
-> If you say it's good, I can review it more carefully.
+The ordering of calls is correct, but it's better to check if there are any
+non-highmem pages to allocate from before the last call (for performance
+reasons, but that also would eliminate the failure in question).
 
-It looks good for Documentation/.
-
-And fixing typos is certainly something that we want to do in
-user-visible messages, like printk strings.
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks,
+Rafael
