@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab0IBQGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 12:06:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10388 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752088Ab0IBQGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 12:06:07 -0400
-Message-ID: <4C7FCB6C.9020304@redhat.com>
-Date: Thu, 02 Sep 2010 19:06:04 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: kernelshark plugins and ftrace array fields
-References: <4C7F9639.7000804@redhat.com>	 <1283437521.2356.136.camel@gandalf.stny.rr.com> <4C7FB603.60609@redhat.com> <1283442737.2356.212.camel@gandalf.stny.rr.com>
-In-Reply-To: <1283442737.2356.212.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	id S1753416Ab0IBQPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 12:15:17 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41567 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab0IBQPP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 12:15:15 -0400
+Date: Thu, 2 Sep 2010 09:14:48 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for September 2 (printk question)
+Message-Id: <20100902091448.9cf048a9.randy.dunlap@oracle.com>
+In-Reply-To: <20100902161345.b634857f.sfr@canb.auug.org.au>
+References: <20100902161345.b634857f.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/02/2010 06:52 PM, Steven Rostedt wrote:
->
->> plugin_kvm.c:
->>
->> kvm_emulate_insn_handler()
->> {
->>      fetch insn array and len field
->>      feed into disassembler
->>      trace_seq_printf() the disassembled instruction
->> }
-> I don't have that tracepoint in any of my kernels. Is this new? I guess
-> if I see the TRACE_EVENT() I could emulate something and work with it.
->
+On Thu, 2 Sep 2010 16:13:45 +1000 Stephen Rothwell wrote:
 
-e46479f852ada, in 2.6.35-rc1.
+> Hi all,
+> 
+> Changes since 20100901:
 
--- 
-error compiling committee.c: too many arguments to function
 
+printk format warning question:
+
+on X86_32, I see this warning:
+
+/drivers/staging/xgifb/XGI_main_26.c:3421: warning: format '%lx' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
+
+I changed the format spec to "%x", so no problem on X86_32, but X86_64 build now says:
+
+drivers/staging/xgifb/XGI_main_26.c:3421: warning: format '%x' expects type 'unsigned int', but argument 2 has type 'long unsigned int'
+
+
+What is the correct way to fix this?  a cast?  or is it a gcc problem?
+
+> gcc --version
+gcc (GCC) 4.4.1 20090725 (Red Hat 4.4.1-2)
+
+# from fc11
+
+I've seen this in a few other cases/places as well.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
