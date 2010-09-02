@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757774Ab0IBVLE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:11:04 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:54509 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757627Ab0IBVLB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:11:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=wc3t+rtkHJINU7Wzt3RpJoIcJ2UBlwLTWD380oAD08KgD+Z7VU11xdK7PEk9k8rVIi
-         oJKqRDcK0+Wrw2QTo4EYIuQ6Fhq/yK3ZhOVMOnN4ZDb6Lh6X+mC79+5ZWz645PndlVb9
-         Bi/VvsY67A9yIXUMpxRd5ZlbPGcSJDlAQReww=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org, jkosina@suse.cz,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 55/91] arch/mips/math-emu/sp_div.c Update broken web addresses in the arch directory.
-Date: Thu,  2 Sep 2010 14:10:19 -0700
-Message-Id: <1283461824-7943-10-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1283461824-7943-1-git-send-email-justinmattock@gmail.com>
-References: <1283461824-7943-1-git-send-email-justinmattock@gmail.com>
+	id S1757817Ab0IBVLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:11:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44009 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757730Ab0IBVKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 17:10:53 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [linux-pm] [PATCH] libata: skip EH autopsy and recovery during suspend
+Date: Thu, 2 Sep 2010 23:09:56 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Tejun Heo <htejun@gmail.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+References: <Pine.LNX.4.44L0.1009021646510.1311-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1009021646510.1311-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009022309.56824.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below patch updates a broken web address that is no longer
-working due to company buyout, and/or change of location.
-(Please have a look through, and let me know if any of them
-need to be changed, and I'll resend an updated patch).
+On Thursday, September 02, 2010, Alan Stern wrote:
+> On Thu, 2 Sep 2010, Tejun Heo wrote:
+> 
+> > Hello,
+> > 
+> > On 09/02/2010 10:28 PM, Rafael J. Wysocki wrote:
+> > > That would be very nice.  In particular, I'd like to get rid of the
+> > > pm_message_t thing if possible.  And I'd like to avoid putting the
+> > > controller into D3 before creating hibernation image. :-)
+> 
+> Ultimately I don't think it will be possible to get rid of pm_message_t
+> throughout the entire kernel.  Not just because it's a legacy thing
+> spread all over the place, but because it sometimes is genuinely
+> useful.  In situations where there are only minimal differences between
+> the various suspend/resume paths, it makes a lot of sense to call a
+> single function and tell it which type of operation to perform.
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Well, that's why I said "if possible" above. :-)
 
----
- arch/mips/math-emu/sp_div.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/mips/math-emu/sp_div.c b/arch/mips/math-emu/sp_div.c
-index 2b437fc..94a835c 100644
---- a/arch/mips/math-emu/sp_div.c
-+++ b/arch/mips/math-emu/sp_div.c
-@@ -4,7 +4,7 @@
- /*
-  * MIPS floating point support
-  * Copyright (C) 1994-2000 Algorithmics Ltd.
-- * http://www.algor.co.uk
-+ * http://www.mips.com/ 
-  *
-  * ########################################################################
-  *
--- 
-1.7.2.1
-
+Thanks,
+Rafael
