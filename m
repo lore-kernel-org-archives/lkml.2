@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab0IBWGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 18:06:35 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:55510 "EHLO
+	id S1757417Ab0IBWJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 18:09:46 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56354 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896Ab0IBWGc (ORCPT
+	with ESMTP id S1751091Ab0IBWJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 18:06:32 -0400
+	Thu, 2 Sep 2010 18:09:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=message-id:date:from:user-agent:mime-version:to:cc:subject
          :references:in-reply-to:content-type:content-transfer-encoding;
-        b=i16beLhxIPBum7hLtsAW6hNMYlvgmKfNY8WBK7ffvyDRNeMBgIvILNK2mQIyFD/Ks8
-         gTdf4Y9RLGQ7Er6lOwR3AEaMfLHmeXV0YJJvly2S5Ehi7Ehbpc+LHIpbFXzltP8StaBg
-         WXqfZDws8q/mMAEMicVJnZ2VtUdGpI3lCOQ70=
-Message-ID: <4C802003.3050800@gmail.com>
-Date: Thu, 02 Sep 2010 15:06:59 -0700
+        b=Do7LN4AOmjMXBqM+2XpZ0+TMY7m/uhMPX9e0es6YtQrfoX8H6KPjoTuxbu5ilGW/fq
+         ywmnhI4FYy2Kx6f17dYGN22VbfXQa0b9SxHPHoVF1cJC5749HgqcTunVKhiGGaN0TegB
+         cB/ZwdcpWKH8XWy1VtuHmeTb0SXpT43l9ULpk=
+Message-ID: <4C8020C2.2080204@gmail.com>
+Date: Thu, 02 Sep 2010 15:10:10 -0700
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
 MIME-Version: 1.0
-To: Matt Turner <mattst88@gmail.com>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
 CC: trivial@kernel.org, linux-alpha@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/91] arch/alpha/Kconfig Update broken web addresses
- in the arch directory.
-References: <1283461606-7803-1-git-send-email-justinmattock@gmail.com> <1283461606-7803-3-git-send-email-justinmattock@gmail.com> <AANLkTikDUUoWSWZhtgGyi3QH6uHJz1Op-inH6_V+e21K@mail.gmail.com>
-In-Reply-To: <AANLkTikDUUoWSWZhtgGyi3QH6uHJz1Op-inH6_V+e21K@mail.gmail.com>
+        linux-kernel@vger.kernel.org, jkosina@suse.cz
+Subject: Re: [PATCH 82/91] arch/mips/Kconfig Update broken web addresses in
+ the arch directory.
+References: <1283462022-8024-1-git-send-email-justinmattock@gmail.com> <1283462022-8024-7-git-send-email-justinmattock@gmail.com> <alpine.LFD.2.00.1009022247190.410@eddie.linux-mips.org>
+In-Reply-To: <alpine.LFD.2.00.1009022247190.410@eddie.linux-mips.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2010 02:49 PM, Matt Turner wrote:
-> On Thu, Sep 2, 2010 at 5:06 PM, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
+On 09/02/2010 02:53 PM, Maciej W. Rozycki wrote:
+> On Thu, 2 Sep 2010, Justin P. Mattock wrote:
+>
 >> The below patch updates a broken web address that is no longer
 >> working due to company buyout, and/or change of location.
 >> (Please have a look through, and let me know if any of them
@@ -43,43 +43,42 @@ On 09/02/2010 02:49 PM, Matt Turner wrote:
 >> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
 >>
 >> ---
->>   arch/alpha/Kconfig |    6 ++++--
->>   1 files changed, 4 insertions(+), 2 deletions(-)
+>>   arch/mips/Kconfig |    3 ++-
+>>   1 files changed, 2 insertions(+), 1 deletions(-)
 >>
->> diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
->> index b9647bb..16ae162 100644
->> --- a/arch/alpha/Kconfig
->> +++ b/arch/alpha/Kconfig
->> @@ -219,7 +219,8 @@ config ALPHA_LX164
->>         bool "LX164"
->>         help
->>           A technical overview of this board is available at
->> -<http://www.unix-ag.org/Linux-Alpha/Architectures/LX164.html>.
->> +<http://web.archive.org/web/*/http://www.unix-ag.org/
->> +         Linux-Alpha/Architectures/LX164.html>.
+>> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+>> index 3ad59dd..984b14e 100644
+>> --- a/arch/mips/Kconfig
+>> +++ b/arch/mips/Kconfig
+>> @@ -2178,7 +2178,8 @@ config TC
+>>   	  TurboChannel is a DEC (now Compaq (now HP)) bus for Alpha and MIPS
+>>   	  processors.  Documentation on writing device drivers for TurboChannel
+>>   	  is available at:
+>> -	<http://www.cs.arizona.edu/computer.help/policy/DIGITAL_unix/AA-PS3HD-TET1_html/TITLE.html>.
+>> +	<http://web.archive.org/web/*/http://www.cs.arizona.edu/computer.help/
+>> +	  policy/DIGITAL_unix/AA-PS3HD-TET1_html/TITLE.html>.
 >>
->>   config ALPHA_LYNX
->>         bool "Lynx"
->> @@ -483,7 +484,8 @@ config ALPHA_AVANTI
->>         help
->>           Avanti AS 200, AS 205, AS 250, AS 255, AS 300, and AS 400-based
->>           Alphas. Info at
->> -<http://www.unix-ag.org/Linux-Alpha/Architectures/Avanti.html>.
->> +<http://web.archive.org/web/*/http://www.unix-ag.org/Linux-Alpha/
->> +         Architectures/Avanti.html>.
->>
->>   config ALPHA_BROKEN_IRQ_MASK
->>         bool
->> --
->> 1.7.2.1
+>>   #config ACCESSBUS
+>>   #	bool "Access.Bus support"
 >
-> Hi Justin,
-> These two links are pretty useless. I think we'd do better to remove
-> them until we write proper articles for the AlphaLinux.Org Wiki.
+>   This is more<linux-mips@linux-mips.org>; we don't have TURBOchannel
+> support for the Alpha (yet?).
 >
-> Matt
+>   Anyway, a better source should be available; let me see.  Also the
+> original document could not have been the most appropriate one -- it looks
+> more like a Digital Unix reference, while a set of hardware- and
+> firmware-level documents used to be available for TURBOchannel devices
+> (and HP probably still publishes them by inertia ;) ).
+>
+>   Either way, thanks for tracking down these broken links.
+>
+>    Maciej
 >
 
-alright..
+
+I'm not sure about the turbo'ness :-)
+the webarchive had it there so I just used it.(some sites actually are 
+not even archived to my amazement) in any case I'll use what you posted
+and resend and the proper time.
 
 Justin P. Mattock
