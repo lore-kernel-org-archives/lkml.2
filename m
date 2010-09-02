@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750948Ab0IBENv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 00:13:51 -0400
-Received: from sh.osrg.net ([192.16.179.4]:33471 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750729Ab0IBENt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 00:13:49 -0400
-Date: Thu, 2 Sep 2010 13:13:16 +0900
-To: naota@elisp.net, JBottomley@Novell.com
-Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-        axboe@kernel.dk, jkosina@suse.cz, gregkh@suse.de, daniel@caiaq.de,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] bsg: call idr_pre_get() outside the lock.
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <m2eidda6bq.fsf@elisp.net>
-References: <m2eidda6bq.fsf@elisp.net>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751060Ab0IBEQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 00:16:27 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:46956 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab0IBEQ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 00:16:27 -0400
+X-AuditID: b753bd60-a8cc1ba000005a63-27-4c7f2518feea
+Message-ID: <4C7F2514.6090507@hitachi.com>
+Date: Thu, 02 Sep 2010 13:16:20 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: Where are my patches going? :-)
+References: <AANLkTinoOf8FKUx2=YaywByk-whGoRJd6fOhbLA9jnzk@mail.gmail.com>
+In-Reply-To: <AANLkTinoOf8FKUx2=YaywByk-whGoRJd6fOhbLA9jnzk@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100902123544M.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 02 Sep 2010 13:13:19 +0900 (JST)
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Sep 2010 23:26:01 +0900
-Naohiro Aota <naota@elisp.net> wrote:
+Hi,
 
-> The idr_pre_get() kernel-doc says "This function should be called
-> prior to locking and calling the idr_get_new* functions.", but the
-> idr_pre_get() calling in bsg_register_queue() is put inside
-> mutex_lock(). Let's fix it.
+Ah, your patches seems to be sent to kernel-janitors.
+Please send it again to linux-kernel@vger.kernel.org with my Ack. :)
+
+Thank you,
+
+(2010/09/02 12:02), Namhyung Kim wrote:
+> Hi,
 > 
-> Signed-off-by: Naohiro Aota <naota@elisp.net>
-> ---
->  block/bsg.c |   10 ++++------
->  1 files changed, 4 insertions(+), 6 deletions(-)
+> I hope you can remember my previous small patches on kprobes
+> sent about a month ago. I got acked by Masami Hiramatsu but
+> there were no more feedback and it seems they are not in any
+> (public) tree. What can I do to put them into mainline?
+> 
+> FYI, I listed my patches:
+>   http://marc.info/?l=kernel-janitors&m=128082033101931
+>   http://marc.info/?l=kernel-janitors&m=128092890229837
+>   http://marc.info/?l=kernel-janitors&m=128102220806347
+>   http://marc.info/?l=kernel-janitors&m=128102220906350
+>   http://marc.info/?l=kernel-janitors&m=128108267323346
+> 
 
-Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-
-Thanks,
-
-James, can you merge this via your tree?
