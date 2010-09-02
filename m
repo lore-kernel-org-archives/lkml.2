@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab0IBOek (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:34:40 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50097 "EHLO mx1.suse.de"
+	id S1755344Ab0IBOer (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:34:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58993 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753793Ab0IBOej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:34:39 -0400
-Date: Thu, 2 Sep 2010 16:34:36 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, JiebingLi <jiebing.li@intel.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: linux-next: manual merge of the usb tree with the trivial tree
-In-Reply-To: <20100902032604.GB27598@kroah.com>
-Message-ID: <alpine.LNX.2.00.1009021633020.26813@pobox.suse.cz>
-References: <20100902130118.add62d4a.sfr@canb.auug.org.au> <20100902032604.GB27598@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754163Ab0IBOeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 10:34:46 -0400
+Message-ID: <4C7FB603.60609@redhat.com>
+Date: Thu, 02 Sep 2010 17:34:43 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: kernelshark plugins and ftrace array fields
+References: <4C7F9639.7000804@redhat.com> <1283437521.2356.136.camel@gandalf.stny.rr.com>
+In-Reply-To: <1283437521.2356.136.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Sep 2010, Greg KH wrote:
+  On 09/02/2010 05:25 PM, Steven Rostedt wrote:
+> On Thu, 2010-09-02 at 15:19 +0300, Avi Kivity wrote:
+>> I'd like to add enhance kvm_emulate_insn display in kernelshark to
+>> show the disassembly of the instruction being emulated.  However,
+>> pevent_get_field_val() doesn't support arrays (the instruction is
+>> provided in a 15-byte array).
+>>
+>> Can you add support for arrays in the kernelshark API?  With that, it
+>> looks like adding disassembly output to the kvm plugin should be quite
+>> simple.
+>>
+> Sure, I could add a pevent_get_field_array() or something. Could you
+> tell me the event and give me an example of what you want to do.
 
-> > Today's linux-next merge of the usb tree got a conflict in
-> > drivers/usb/gadget/langwell_udc.c between commit
-> > 7f26b3a7533bbc1ddd88b297c935ee4da8f74cea ("drivers/usb: Remove
-> > unnecessary return's from void functions") from the trivial tree and
-> > commit 0f92bbacd2d1a26e8bf863d2cc05572df43bf7fb ("USB: langwell: USB
-> > Client driver code cleanup") from the usb tree.
-> > 
-> > Just context changes.  I fixed it up (see below) and can carry the fix
-> > while necessary.  Though, if that trivial tree commit was in the usb tree,
-> > the conflict could be resolved there ...
-> 
-> Joe, care to break this one change out and have me take it through the
-> usb tree?
+plugin_kvm.c:
 
-Here it goes. I will revert this chunk in trivial tree for now.
-
-
-From: Joe Perches <joe@perches.com>
-Subject: drivers/usb: langwell: Remove unnecessary return's from void functions
-
-There are about 2500 void functions in drivers/usb
-Only a few used return; at end of function.
-
-Standardize them a bit.
-
-Signed-off-by: Joe Perches <joe@perches.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-
-diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
-index a391351..f1a0702 100644
---- a/drivers/usb/gadget/langwell_udc.c
-+++ b/drivers/usb/gadget/langwell_udc.c
-@@ -284,7 +284,6 @@ static void ep0_reset(struct langwell_udc *dev)
- 	}
- 
- 	VDBG(dev, "<--- %s()\n", __func__);
--	return;
- }
- 
- 
-@@ -1486,7 +1485,6 @@ static void langwell_udc_start(struct langwell_udc *dev)
- 	writel(usbcmd, &dev->op_regs->usbcmd);
- 
- 	DBG(dev, "<--- %s()\n", __func__);
--	return;
- }
- 
- 
-@@ -1509,7 +1507,6 @@ static void langwell_udc_stop(struct langwell_udc *dev)
- 	writel(usbcmd, &dev->op_regs->usbcmd);
- 
- 	DBG(dev, "<--- %s()\n", __func__);
--	return;
- }
- 
- 
+kvm_emulate_insn_handler()
+{
+    fetch insn array and len field
+    feed into disassembler
+    trace_seq_printf() the disassembled instruction
+}
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+error compiling committee.c: too many arguments to function
+
