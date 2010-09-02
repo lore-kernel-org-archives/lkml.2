@@ -1,43 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab0IBIYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 04:24:46 -0400
-Received: from csamuel.org ([74.50.50.137]:43581 "EHLO csamuel.org"
+	id S1753136Ab0IBI2m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 04:28:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47829 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab0IBIYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 04:24:45 -0400
-Message-ID: <4C7F5F38.3050104@csamuel.org>
-Date: Thu, 02 Sep 2010 18:24:24 +1000
-From: Chris Samuel <chris@csamuel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Lightning/1.0b2 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: "chxanders@gmail.com" <chxanders@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, miaox@cn.fujitsu.com,
-        Ingo Molnar <mingo@redhat.com>,
+	id S1751205Ab0IBI2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 04:28:40 -0400
+Date: Thu, 2 Sep 2010 10:28:29 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 1/3] lib: introduce some memory copy macros and functions
-References: <4C7E2CA9.9060702@cn.fujitsu.com> <1283354736.2059.1206.camel@laptop> <4C7F39B3.4000901@cn.fujitsu.com> <1283414119.2059.1785.camel@laptop> <1283414220.2059.1789.camel@laptop> <AANLkTinT3X+7hA9UvS8nKqpVzz1u1e-7UZNbfL_1UeX8@mail.gmail.com>
-In-Reply-To: <AANLkTinT3X+7hA9UvS8nKqpVzz1u1e-7UZNbfL_1UeX8@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        Haicheng Li <haicheng.li@linux.intel.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mel@linux.vnet.ibm.com>
+Subject: Re: [PATCH] Make is_mem_section_removable more conformable with
+ offlining code
+Message-ID: <20100902082829.GA10265@tiehlicka.suse.cz>
+References: <20100820141400.GD4636@tiehlicka.suse.cz>
+ <20100822004232.GA11007@localhost>
+ <20100823092246.GA25772@tiehlicka.suse.cz>
+ <20100831141942.GA30353@localhost>
+ <20100901121951.GC6663@tiehlicka.suse.cz>
+ <20100901124138.GD6663@tiehlicka.suse.cz>
+ <20100902144500.a0d05b08.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100902144500.a0d05b08.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/10 18:16, chxanders@gmail.com wrote:
+On Thu 02-09-10 14:45:00, KAMEZAWA Hiroyuki wrote:
+> On Wed, 1 Sep 2010 14:41:38 +0200
+[...]
+> > From de85f1aa42115678d3340f0448cd798577036496 Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Fri, 20 Aug 2010 15:39:16 +0200
+> > Subject: [PATCH] Make is_mem_section_removable more conformable with offlining code
+> > 
+> > Currently is_mem_section_removable checks whether each pageblock from
+> > the given pfn range is of MIGRATE_MOVABLE type or if it is free. If both
+> > are false then the range is considered non removable.
+> > 
+> > On the other hand, offlining code (more specifically
+> > set_migratetype_isolate) doesn't care whether a page is free and instead
+> > it just checks the migrate type of the page and whether the page's zone
+> > is movable.
+> > 
+> > This can lead into a situation when we can mark a node as not removable
+> > just because a pageblock is MIGRATE_RESERVE and it is not free.
+> > 
+> > Let's make a common helper is_page_removable which unifies both tests
+> > at one place. Also let's check for MIGRATE_UNMOVABLE rather than all
+> > possible MIGRATEable types.
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> 
+> Hmm..Why MIGRATE_RECLAIMABLE is included ?
 
-> Umm, isn't the only one that can do that the copyright holder?
+AFAIU the code, MIGRATE_RECLAIMABLE are movable as well (at least that
+is how I interpret #define GFP_MOVABLE_MASK (__GFP_RECLAIMABLE|__GFP_MOVABLE)).
+Why should we prevent from memory offlining if we have some reclaimable
+pages? Or am I totally misinterpreting the meaning of this flag?
 
-The copyright holder can use whatever license they wish; the LGPL
-tells the licensee what rights *they* have, which includes distributing
-the software under the (more strict) GPLv2.
+> 
+> If MIGRATE_RCLAIMABLE is included, set_migrate_type() should check the
+> range of pages. Because it makes the pageblock as MIGRAGE_MOVABLE after
+> failure of memory hotplug.
+> 
+> Original code checks.
+> 
+>  - the range is MIGRAGE_MOVABLE or
+>  - the range includes only free pages and LRU pages.
+> 
+> Then, moving them back to MIGRAGE_MOVABLE after failure was correct.
+> Doesn't this makes changes MIGRATE_RECALIMABLE to be MIGRATE_MOVABLE and
+> leads us to more fragmentated situation ?
 
-cheers,
-Chris (not a lawyer either, thankfully!)
+Just to be sure that I understand you concern. We are talking about hot
+remove failure which can lead to higher fragmentation, right? 
+
+By the higher fragmentation you mean that all movable pageblocks (even
+reclaimable) gets to MIGRATE_MOVABLE until we get first failure. In the
+worst case, if we fail near the end of the zone then there is imbalance
+in MIGRATE_MOVABLE vs. MIGRATE_RECALIMABLE. Is that what you are
+thinking of? Doesn't this just gets the zone to the state after
+onlining? Or is the problem if we fail somewhere in the middle?
+
+> 
+> Thanks,
+> -Kame
+> 
+> 
+
 -- 
- Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
