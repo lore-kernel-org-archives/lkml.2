@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab0IBU0g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:26:36 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43765 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356Ab0IBU0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:26:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
-Date: Thu, 2 Sep 2010 22:24:59 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "M. Vefa Bicakci" <bicave@superonline.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org,
-        Minchan Kim <minchan.kim@gmail.com>
-References: <20100901093219.9744.A69D9226@jp.fujitsu.com> <20100902091010.D050.A69D9226@jp.fujitsu.com> <201009022157.18561.rjw@sisk.pl>
-In-Reply-To: <201009022157.18561.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S932106Ab0IBU0v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 16:26:51 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58545 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932087Ab0IBU0u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 16:26:50 -0400
+Date: Thu, 2 Sep 2010 13:25:58 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Subject: Re: [RFC] Fix typos
+Message-Id: <20100902132558.63a90e0d.randy.dunlap@oracle.com>
+In-Reply-To: <4C800266.1000005@oracle.com>
+References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com>
+	<20100902121853.e90f6c53.randy.dunlap@oracle.com>
+	<AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
+	<4C800266.1000005@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009022224.59313.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 02, 2010, Rafael J. Wysocki wrote:
-> On Thursday, September 02, 2010, KOSAKI Motohiro wrote:
-> > > On Wednesday, September 01, 2010, KOSAKI Motohiro wrote:
-> > > > > === 8< ===
-> > > > > PM: Marking nosave pages: ...0009f000 - ...000100000
-> > > > > PM: basic memory bitmaps created
-> > > > > PM: Syncing filesystems ... done
-> > > > > Freezing user space processes ... (elapsed 0.01 seconds) done.
-> > > > > Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-> > > > > PM: Preallocating image memory...
-> > > > > shrink_all_memory start
-> > > > > PM: shrink memory: pass=1, req:310171 reclaimed:15492 free:360936
-> > > > > PM: shrink memory: pass=2, req:294679 reclaimed:28864 free:373981
-> > > > > PM: shrink memory: pass=3, req:265815 reclaimed:60311 free:405374
-> > > > > PM: shrink memory: pass=4, req:205504 reclaimed:97870 free:443024
-> > > > > PM: shrink memory: pass=5, req:107634 reclaimed:146948 free:492141
-> > > > > shrink_all_memory: req:107634 reclaimed:146948 free:492141
-> > > > > PM: preallocate_image_highmem 556658 278329
-> > > > > PM: preallocate_image_memory 103139 103139
-> > > > > PM: preallocate_highmem_fraction 183908 556658 760831 -> 183908
-> > > > > === >8 ===
-> > > > 
-> > > > Rafael, this log mean hibernate_preallocate_memory() has a bug.
-> > > 
-> > > Well, it works as designed ...
-> > > 
-> > > > It allocate memory as following order.
-> > > >  1. preallocate_image_highmem()  (i.e. __GFP_HIGHMEM)
-> > > >  2. preallocate_image_memory()   (i.e. GFP_KERNEL)
-> > > >  3. preallocate_highmem_fraction (i.e. __GFP_HIGHMEM)
-> > > >  4. preallocate_image_memory()   (i.e. GFP_KERNEL)
-> > > > 
-> > > > But, please imazine following scenario (as Vefa's scenario).
-> > > >  - system has 3GB memory. 1GB is normal. 2GB is highmem.
-> > > >  - all normal memory is free
-> > > >  - 1.5GB memory of highmem are used for tmpfs. rest 500MB is free.
-> > > 
-> > > Indeed, that's a memory allocation pattern I didn't anticipate.
-> > > 
-> > > > At that time, hibernate_preallocate_memory() works as following.
-> > > > 
-> > > > 1. call preallocate_image_highmem(1GB)
-> > > > 2. call preallocate_image_memory(500M)		total 1.5GB allocated
-> > > > 3. call preallocate_highmem_fraction(660M)	total 2.2GB allocated
-> > > > 
-> > > > then, all of normal zone memory was exhaust. next preallocate_image_memory()
-> > > > makes OOM, and oom_killer_disabled makes infinite loop.
-> > > > (oom_killer_disabled careless is vmscan bug. I'll fix it soon)
-> > > 
-> > > So, it looks like the problem will go away if we check if there are any normal
-> > > pages to allocate from before calling the last preallocate_image_memory()?
-> > > 
-> > > Like in the patch below, perhaps?
+On Thu, 02 Sep 2010 13:00:38 -0700 Randy Dunlap wrote:
+
+> On 09/02/10 12:31, Lucas De Marchi wrote:
+> > On Thu, Sep 2, 2010 at 16:18, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> >> Hi,
+> >>
+> >> I'd take most of the corrections in Documentation/, but in general,
+> >> I don't think that it's a good idea without some careful review.
 > > 
-> > Looks like fine. but I have one question. hibernate_preallocate_memory() call
-> > preallocate_image_memory() two times. Why do you only care latter one?
-> > former one seems similar risk.
+> > I plan to review it if it's indeed worth fixing those typos. I already
+> > fixed several false positives like  "rela" being changed to "real",
+> > but since it's a 1.8 MB patch I think it's better to ask first before
+> > making any other review.
+> > 
+> >>
+> >> E.g.:
+> >>
+> >> 1.  changing thru to through isn't needed IMO.
+> >> Can you add "thru" to your dictionary?
+> > Yes, no problem
+> > 
+> >>
+> >> 2.
+> >> -(Warning, pulses on ACK ar inverted by transistor, irq is rised up on sync
+> >> +(Warning, pulses on ACK ar inverted by transistor, irq is rose up on sync
+> >>
+> > Humn.. indeed this seems to be a bad typo in my dictionary.
+> > 
+> >> I'm not so sure about "is rose up" being better.  and what about "ar"?
+> > 
+> > I'm only changing words with 3 chars or more, because otherwise I
+> > would have a lot of false positives, but I think I can add this word
+> > without much trouble.
+> > 
 > 
-> The first one is mandatory, ie. if we can't allocate the requested number of
-> pages at this point, we fail the entire hibernation.  In that case the
-> performance hit doesn't matter.
+> Mike's suggested change is good here.
+> 
+> >>
+> >> I saw a few others that I could comment on, but I lost them in the 1.8 MB patch file.
+> > 
+> > If you say it's good, I can review it more carefully.
+> 
+> It looks good for Documentation/.
+> 
+> And fixing typos is certainly something that we want to do in
+> user-visible messages, like printk strings.
 
-IOW, your patch at http://lkml.org/lkml/2010/9/2/262 is still necessary to
-protect against the infinite loop in that case.
+Kconfig prompts and help text are also user-visible strings.
 
-Thanks,
-Rafael
+I just saw this one:
+
+bool "ET&T USB series TC4UM/TC5UH touchscreen controler support" if EMBEDDED
+
+in drivers/input/touchscreen/Kconfig.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
