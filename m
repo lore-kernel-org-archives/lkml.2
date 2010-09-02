@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab0IBCQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 22:16:32 -0400
-Received: from 207-172-69-77.c3-0.smr-ubr3.sbo-smr.ma.static.cable.rcn.com ([207.172.69.77]:38094
-	"EHLO thaum.luto.us" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab0IBCQb (ORCPT
+	id S1752924Ab0IBCRb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 22:17:31 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59347
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752187Ab0IBCRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 22:16:31 -0400
-Message-ID: <4C7F08ED.9010901@mit.edu>
-Date: Wed, 01 Sep 2010 22:16:13 -0400
-From: Andy Lutomirski <luto@mit.edu>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: David Nicol <davidnicol@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Is there a primitive to atomically release a spinlock and go
- to sleep?
-References: <AANLkTimZnUEM6FFbgw==K3w6hURAgsAO8uRh5W1v6f_j@mail.gmail.com>
-In-Reply-To: <AANLkTimZnUEM6FFbgw==K3w6hURAgsAO8uRh5W1v6f_j@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 1 Sep 2010 22:17:30 -0400
+Date: Wed, 01 Sep 2010 19:17:46 -0700 (PDT)
+Message-Id: <20100901.191746.256848727.davem@davemloft.net>
+To: bandan.das@stratus.com
+Cc: herbert@gondor.hengli.com.au, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kaber@trash.net
+Subject: Re: [PATCH net-next-2.6] net/ipv4: push IP options to CB in
+ ip_fragment
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100902020545.GC17843@stratus.com>
+References: <20100901233056.GA15177@gondor.apana.org.au>
+	<20100901.180922.163252387.davem@davemloft.net>
+	<20100902020545.GC17843@stratus.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Nicol wrote:
-> I'm trying to do something involving multiple kthreads in an ioctl
-> handler, and I want to avoid the
-> race condition between the third and fourth steps of
-> 
->     acquire mutex
->     add &self to a list of threads which will get awakened by
-> something else that is also aware of this list
->     release mutex
->     go to sleep
-> 
-> Is there a standard atomic go-to-sleep function that takes as a
-> parameter a pointer to  spinlock to release after its state is set to
-> TASK_INTERRUPTIBLE?
+From: Bandan Das <bandan.das@stratus.com>
+Date: Wed, 1 Sep 2010 22:05:45 -0400
 
-That wouldn't be enough -- the other thread could try to wake you up before you're even in the list of threads.
+> Sounds good, except for one thing :)
+> It should be:  Reported-by: Bandan Das <bandan.das@stratus.com> (without the "r")
 
-Look at wait_event_*() or read this:
-
-http://book.chinaunix.net/special/ebook/PrenticeHall/PrenticeHallPTRTheLinuxKernelPrimer/0131181637/ch03lev1sec7.html
-
---Andy
+Fixed, thanks!
