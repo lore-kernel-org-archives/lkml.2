@@ -1,141 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab0IBBtF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 21:49:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:4853 "EHLO mga09.intel.com"
+	id S1752947Ab0IBBzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 21:55:47 -0400
+Received: from gate.crashing.org ([63.228.1.57]:49319 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752834Ab0IBBtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 21:49:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,307,1280732400"; 
-   d="scan'208";a="550906722"
-Subject: [BUGFIX for 2.6.36] ACPI, APEI, Fix error path for memory
- allocation
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
+	id S1752352Ab0IBBzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 21:55:46 -0400
+Subject: Re: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+In-Reply-To: <1283234198.2151.15.camel@pasglop>
+References: <1283234198.2151.15.camel@pasglop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Sep 2010 09:49:01 +0800
-Message-ID: <1283392141.13175.45.camel@yhuang-dev>
+Date: Thu, 02 Sep 2010 11:55:33 +1000
+Message-ID: <1283392533.16240.4.camel@pasglop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In ERST debug/test support patch, a dynamic allocated buffer is
-used. The may-failed memory allocation should be tried firstly before
-free the previous buffer.
+On Tue, 2010-08-31 at 15:56 +1000, Benjamin Herrenschmidt wrote:
+> Hi Linus !
+> 
+> Here's a few small fixes, one is an important fix for a nasty regression
+> breaking pseries machine running under hypervisor... oops !
 
-APEI resource management memory allocation related error path is fixed
-too.
+I updated this with some embedded fixed from Kumar and a fix for a new
+deadlock in the pseries dlpar code.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- drivers/acpi/apei/apei-base.c |   25 ++++++++++++++++++++-----
- drivers/acpi/apei/erst-dbg.c  |   16 ++++++++++------
- 2 files changed, 30 insertions(+), 11 deletions(-)
+New log below.
 
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -445,11 +445,15 @@ EXPORT_SYMBOL_GPL(apei_resources_sub);
- int apei_resources_request(struct apei_resources *resources,
- 			   const char *desc)
- {
--	struct apei_res *res, *res_bak;
-+	struct apei_res *res, *res_bak = NULL;
- 	struct resource *r;
-+	int rc;
- 
--	apei_resources_sub(resources, &apei_resources_all);
-+	rc = apei_resources_sub(resources, &apei_resources_all);
-+	if (rc)
-+		return rc;
- 
-+	rc = -EINVAL;
- 	list_for_each_entry(res, &resources->iomem, list) {
- 		r = request_mem_region(res->start, res->end - res->start,
- 				       desc);
-@@ -475,7 +479,13 @@ int apei_resources_request(struct apei_r
- 		}
- 	}
- 
--	apei_resources_merge(&apei_resources_all, resources);
-+	rc = apei_resources_merge(&apei_resources_all, resources);
-+	if (rc) {
-+		pr_err(APEI_PFX
-+"Error in APEI internal resource management, there may be inconsistent "
-+"between APEI internal and system resource management.");
-+		goto err_unmap_ioport;
-+	}
- 
- 	return 0;
- err_unmap_ioport:
-@@ -491,12 +501,13 @@ err_unmap_iomem:
- 			break;
- 		release_mem_region(res->start, res->end - res->start);
- 	}
--	return -EINVAL;
-+	return rc;
- }
- EXPORT_SYMBOL_GPL(apei_resources_request);
- 
- void apei_resources_release(struct apei_resources *resources)
- {
-+	int rc;
- 	struct apei_res *res;
- 
- 	list_for_each_entry(res, &resources->iomem, list)
-@@ -504,7 +515,11 @@ void apei_resources_release(struct apei_
- 	list_for_each_entry(res, &resources->ioport, list)
- 		release_region(res->start, res->end - res->start);
- 
--	apei_resources_sub(&apei_resources_all, resources);
-+	rc = apei_resources_sub(&apei_resources_all, resources);
-+	if (rc)
-+		pr_err(APEI_PFX
-+"Error in APEI internal resource management, there may be inconsistent "
-+"between APEI internal and system resource management.");
- }
- EXPORT_SYMBOL_GPL(apei_resources_release);
- 
---- a/drivers/acpi/apei/erst-dbg.c
-+++ b/drivers/acpi/apei/erst-dbg.c
-@@ -111,11 +111,13 @@ retry:
- 		goto out;
- 	}
- 	if (len > erst_dbg_buf_len) {
--		kfree(erst_dbg_buf);
-+		void *p;
- 		rc = -ENOMEM;
--		erst_dbg_buf = kmalloc(len, GFP_KERNEL);
--		if (!erst_dbg_buf)
-+		p = kmalloc(len, GFP_KERNEL);
-+		if (!p)
- 			goto out;
-+		kfree(erst_dbg_buf);
-+		erst_dbg_buf = p;
- 		erst_dbg_buf_len = len;
- 		goto retry;
- 	}
-@@ -150,11 +152,13 @@ static ssize_t erst_dbg_write(struct fil
- 	if (mutex_lock_interruptible(&erst_dbg_mutex))
- 		return -EINTR;
- 	if (usize > erst_dbg_buf_len) {
--		kfree(erst_dbg_buf);
-+		void *p;
- 		rc = -ENOMEM;
--		erst_dbg_buf = kmalloc(usize, GFP_KERNEL);
--		if (!erst_dbg_buf)
-+		p = kmalloc(usize, GFP_KERNEL);
-+		if (!p)
- 			goto out;
-+		kfree(erst_dbg_buf);
-+		erst_dbg_buf = p;
- 		erst_dbg_buf_len = usize;
- 	}
- 	rc = copy_from_user(erst_dbg_buf, ubuf, usize);
+Cheers,
+Ben.
+
+The following changes since commit 2bfc96a127bc1cc94d26bfaa40159966064f9c8c:
+  Linus Torvalds (1):
+        Linux 2.6.36-rc3
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+Alexander Graf (1):
+      powerpc/85xx: Fix compilation of mpc85xx_mds.c
+
+Anton Vorontsov (1):
+      powerpc/85xx: Add P1021 PCI IDs and quirks
+
+Julia Lawall (2):
+      arch/powerpc/platforms/83xx/mpc837x_mds.c: Add missing iounmap
+      arch/powerpc/sysdev/qe_lib/qe.c: Add of_node_put to avoid memory leak
+
+Kumar Gala (1):
+      powerpc/85xx: Fix compile issue with p1022_ds due to lmb rename to memblock
+
+Li Yang (1):
+      fsl_rio: fix compile errors
+
+Matthew McClintock (1):
+      powerpc/kexec: Adds correct calling convention for kexec purgatory
+
+Michael Neuling (1):
+      powerpc: Don't use kernel stack with translation off
+
+Nathan Fontenot (1):
+      powerpc/pseries: Correct rtas_data_buf locking in dlpar code
+
+Paul Mackerras (1):
+      powerpc/perf_event: Reduce latency of calling perf_event_do_pending
+
+ arch/powerpc/kernel/head_64.S             |   12 ++++++--
+ arch/powerpc/kernel/misc_32.S             |    3 ++
+ arch/powerpc/kernel/time.c                |   23 +++++++--------
+ arch/powerpc/platforms/83xx/mpc837x_mds.c |    9 ++++--
+ arch/powerpc/platforms/85xx/mpc85xx_mds.c |    1 +
+ arch/powerpc/platforms/85xx/p1022_ds.c    |    4 +-
+ arch/powerpc/platforms/pseries/dlpar.c    |   42 ++++++++++++++++++++---------
+ arch/powerpc/sysdev/fsl_pci.c             |    2 +
+ arch/powerpc/sysdev/fsl_rio.c             |    6 +++-
+ arch/powerpc/sysdev/qe_lib/qe.c           |    1 +
+ include/linux/pci_ids.h                   |    2 +
+ 11 files changed, 71 insertions(+), 34 deletions(-)
 
 
