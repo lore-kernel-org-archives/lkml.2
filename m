@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab0IBOwW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:52:22 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50733 "EHLO mx1.suse.de"
+	id S1755658Ab0IBOwe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:52:34 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50738 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750761Ab0IBOwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:52:21 -0400
-Date: Thu, 2 Sep 2010 16:52:20 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Michael Poole <mdpoole@troilus.org>
-Cc: Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Tejun Heo <tj@kernel.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7 v3] HID: magicmouse: remove timestamp logic
-In-Reply-To: <1283307893.16204.5.camel@graviton>
-Message-ID: <alpine.LNX.2.00.1009021652080.26813@pobox.suse.cz>
-References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>  <1283306184-28833-6-git-send-email-chase.douglas@canonical.com> <1283307893.16204.5.camel@graviton>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755035Ab0IBOwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 10:52:32 -0400
+Date: Thu, 2 Sep 2010 16:51:41 +0200
+From: Jan Kara <jack@suse.cz>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Alasdair G Kergon <agk@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Jens Axboe <jaxboe@fusionio.com>, Jan Kara <jack@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-raid@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, cluster-devel@redhat.com,
+        linux-ext4@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v2 1/5] mm: add nofail variants of kmalloc kcalloc and
+ kzalloc
+Message-ID: <20100902145141.GA3273@quack.suse.cz>
+References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1009011757360.24694@chino.kir.corp.google.com>
+ <4C7F5951.6040809@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C7F5951.6040809@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Aug 2010, Michael Poole wrote:
-
-> On Tue, 2010-08-31 at 21:56 -0400, Chase Douglas wrote:
-> > From: Chase Douglas <chase.douglas@ubuntu.com>
-> > 
-> > The timestamps from the device are currently stored in the private data
-> > structure. These aren't used, so remove them. I've left a comment
-> > detailing the protocol for future reference.
-> > 
-> > Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+On Thu 02-09-10 09:59:13, Jiri Slaby wrote:
+> On 09/02/2010 03:02 AM, David Rientjes wrote:
+> > --- a/include/linux/slab.h +++ b/include/linux/slab.h @@ -334,6 +334,57
+> > @@ static inline void *kzalloc_node(size_t size, gfp_t flags, int node)
+> > return kmalloc_node(size, flags | __GFP_ZERO, node); }
+> >  
+> > +/** + * kmalloc_nofail - infinitely loop until kmalloc() succeeds.  +
+> > * @size: how many bytes of memory are required.  + * @flags: the type
+> > of memory to allocate (see kmalloc).  + * + * NOTE: no new callers of
+> > this function should be implemented!  + * All memory allocations should
+> > be failable whenever possible.  + */ +static inline void
+> > *kmalloc_nofail(size_t size, gfp_t flags) +{ +	void *ret; + +	for
+> > (;;) { +		ret = kmalloc(size, flags); +		if (ret) +
+> > return ret; +		WARN_ON_ONCE(get_order(size) >
+> > PAGE_ALLOC_COSTLY_ORDER);
 > 
-> Acked-by: Michael Poole <mdpoole@troilus.org>
+> This doesn't work as you expect. kmalloc will warn every time it fails.
+> __GFP_NOFAIL used to disable the warning. Actually what's wrong with
+> __GFP_NOFAIL? I cannot find a reason in the changelogs why the patches
+> are needed.
+  David should probably add the reasoning to the changelogs so that he
+doesn't have to explain again and again ;). But if I understood it
+correctly, the concern is that the looping checks slightly impact fast path
+of the callers which do not need it. Generally, also looping for a long
+time inside allocator isn't a nice thing but some callers aren't able to do
+better for now to the patch is imperfect in this sence...
 
-Applied, thanks.
-
+								Honza
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
