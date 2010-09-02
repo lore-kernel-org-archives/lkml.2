@@ -1,116 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab0IBBDn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 21:03:43 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:17177 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756116Ab0IBBDV (ORCPT
+	id S1755891Ab0IBBEq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 21:04:46 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51957 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851Ab0IBBEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 21:03:21 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=Vt23EFWuj4glT2i5Q93XYT+/A6KFzFTOtR4RBzPabuvxJF1f8Zkw9bUp8CYFi5FAG
-	LL00bGGGCfAfaSKxl2Xcg==
-Date: Wed, 1 Sep 2010 18:03:17 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch v2 4/5] btrfs: add nofail variant of set_extent_dirty
-In-Reply-To: <alpine.DEB.2.00.1009011757360.24694@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1009011800110.24694@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <alpine.DEB.2.00.1009011757360.24694@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 1 Sep 2010 21:04:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=R3kkXS5FioM3u6hn4gxQPYq96Yih6USULGtB6ZUWJgCkrdX62i44uS3scT5uRxusA4
+         dEtJ8IfExohMEfZN4Wxkph0Bww5aeeR6fpu7hMCtSYjD53qS2EgtpSWI1z9DWe+9nXvx
+         cxE4WPZyUP0bSZ1aWYtEqvGJ7ojJ5iOETsCqI=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+From: David Nicol <davidnicol@gmail.com>
+Date: Wed, 1 Sep 2010 20:04:24 -0500
+Message-ID: <AANLkTimZnUEM6FFbgw==K3w6hURAgsAO8uRh5W1v6f_j@mail.gmail.com>
+Subject: Is there a primitive to atomically release a spinlock and go to sleep?
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add set_extent_dirty_nofail().  This function is equivalent to
-set_extent_dirty(), except that it will never fail because of allocation
-failure and instead loop forever trying to allocate memory.
+I'm trying to do something involving multiple kthreads in an ioctl
+handler, and I want to avoid the
+race condition between the third and fourth steps of
 
-If the first allocation attempt fails because the page allocator doesn't
-implicitly loop, a warning will be emitted, including a call trace.
-Subsequent failures will suppress this warning.
+    acquire mutex
+    add &self to a list of threads which will get awakened by
+something else that is also aware of this list
+    release mutex
+    go to sleep
 
-This was added as a helper function for documentation and auditability.
-No future callers should be added.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- fs/btrfs/extent-tree.c |    8 ++++----
- fs/btrfs/extent_io.c   |   18 ++++++++++++++++++
- fs/btrfs/extent_io.h   |    2 ++
- 3 files changed, 24 insertions(+), 4 deletions(-)
-
-diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -3831,9 +3831,9 @@ static int update_block_group(struct btrfs_trans_handle *trans,
- 			spin_unlock(&cache->lock);
- 			spin_unlock(&cache->space_info->lock);
- 
--			set_extent_dirty(info->pinned_extents,
-+			set_extent_dirty_nofail(info->pinned_extents,
- 					 bytenr, bytenr + num_bytes - 1,
--					 GFP_NOFS | __GFP_NOFAIL);
-+					 GFP_NOFS);
- 		}
- 		btrfs_put_block_group(cache);
- 		total -= num_bytes;
-@@ -3872,8 +3872,8 @@ static int pin_down_extent(struct btrfs_root *root,
- 	spin_unlock(&cache->lock);
- 	spin_unlock(&cache->space_info->lock);
- 
--	set_extent_dirty(root->fs_info->pinned_extents, bytenr,
--			 bytenr + num_bytes - 1, GFP_NOFS | __GFP_NOFAIL);
-+	set_extent_dirty_nofail(root->fs_info->pinned_extents, bytenr,
-+			 bytenr + num_bytes - 1, GFP_NOFS);
- 	return 0;
- }
- 
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -940,6 +940,24 @@ int set_extent_dirty(struct extent_io_tree *tree, u64 start, u64 end,
- 			      NULL, mask);
- }
- 
-+/*
-+ * NOTE: no new callers of this function should be implemented!
-+ * All memory allocations should be failable whenever possible.
-+ */
-+int set_extent_dirty_nofail(struct extent_io_tree *tree, u64 start, u64 end,
-+		     gfp_t mask)
-+{
-+	int ret;
-+
-+	for (;;) {
-+		ret = set_extent_dirty(tree, start, end, mask);
-+		if (ret != -ENOMEM)
-+			return ret;
-+		WARN_ON_ONCE(get_order(sizeof(struct extent_state)) >
-+						PAGE_ALLOC_COSTLY_ORDER);
-+	}
-+}
-+
- int set_extent_bits(struct extent_io_tree *tree, u64 start, u64 end,
- 		    int bits, gfp_t mask)
- {
-diff --git a/fs/btrfs/extent_io.h b/fs/btrfs/extent_io.h
---- a/fs/btrfs/extent_io.h
-+++ b/fs/btrfs/extent_io.h
-@@ -197,6 +197,8 @@ int set_extent_new(struct extent_io_tree *tree, u64 start, u64 end,
- 		   gfp_t mask);
- int set_extent_dirty(struct extent_io_tree *tree, u64 start, u64 end,
- 		     gfp_t mask);
-+int set_extent_dirty_nofail(struct extent_io_tree *tree, u64 start, u64 end,
-+		     gfp_t mask);
- int clear_extent_dirty(struct extent_io_tree *tree, u64 start, u64 end,
- 		       gfp_t mask);
- int clear_extent_ordered(struct extent_io_tree *tree, u64 start, u64 end,
+Is there a standard atomic go-to-sleep function that takes as a
+parameter a pointer to  spinlock to release after its state is set to
+TASK_INTERRUPTIBLE?
