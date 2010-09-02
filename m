@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab0IBCAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 22:00:06 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35620 "EHLO smtps.tip.net.au"
+	id S1754422Ab0IBCB1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 22:01:27 -0400
+Received: from kroah.org ([198.145.64.141]:37019 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752145Ab0IBCAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 22:00:04 -0400
-Date: Thu, 2 Sep 2010 11:59:58 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kevin Wells <wellsk40@gmail.com>
-Subject: linux-next: manual merge of the input tree with the input-current
- tree
-Message-Id: <20100902115958.982d7618.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752359Ab0IBCB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 22:01:26 -0400
+Date: Wed, 1 Sep 2010 19:00:55 -0700
+From: Greg KH <greg@kroah.com>
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org, gregkh@suse.de,
+        Peter Korsgaard <jacmet@sunsite.dk>
+Subject: Re: [PATCH] serial: uartlite: Remove obscure loop from
+ ulite_get_poll_char
+Message-ID: <20100902020055.GE5117@kroah.com>
+References: <1282740904-1244-1-git-send-email-monstr@monstr.eu>
+ <1282740904-1244-2-git-send-email-monstr@monstr.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282740904-1244-2-git-send-email-monstr@monstr.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Wed, Aug 25, 2010 at 02:55:04PM +0200, Michal Simek wrote:
+> The previous patch
+> "serial: Add CONSOLE_POLL support for uartlite"
+> (sha1 id 52ea4a7ef12f286bd68d13a93daaa688f56a1e14)
+> contained obcure loop in ulite_get_poll_char function.
 
-Today's linux-next merge of the input tree got a conflict in
-drivers/input/touchscreen/Makefile between commit
-948e90e22f01287302d84b5b8d4ba330a41dbf8a ("Input: mrst-touchscreen - move
-out of staging") from the input-current tree and commit
-3045a5f5202a1e0ab6ba2bf90a786cf4cae6932a ("Input: add LPC32xx touchscreen
-controller driver") from the input tree.
+I've merged this with the original patch so as to not have a problem.
 
-Just overlapping additions.  I fixed it up (see below) and can carry the
-fix for a while.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+thanks,
 
-diff --cc drivers/input/touchscreen/Makefile
-index 9061042,22e2d59..0000000
---- a/drivers/input/touchscreen/Makefile
-+++ b/drivers/input/touchscreen/Makefile
-@@@ -23,7 -23,7 +23,8 @@@ obj-$(CONFIG_TOUCHSCREEN_EETI)		+= eeti
-  obj-$(CONFIG_TOUCHSCREEN_ELO)		+= elo.o
-  obj-$(CONFIG_TOUCHSCREEN_FUJITSU)	+= fujitsu_ts.o
-  obj-$(CONFIG_TOUCHSCREEN_INEXIO)	+= inexio.o
- +obj-$(CONFIG_TOUCHSCREEN_INTEL_MID)	+= intel-mid-touch.o
-+ obj-$(CONFIG_TOUCHSCREEN_LPC32XX)	+= lpc32xx_ts.o
-  obj-$(CONFIG_TOUCHSCREEN_MC13783)	+= mc13783_ts.o
-  obj-$(CONFIG_TOUCHSCREEN_MCS5000)	+= mcs5000_ts.o
-  obj-$(CONFIG_TOUCHSCREEN_MIGOR)		+= migor_ts.o
+greg k-h
