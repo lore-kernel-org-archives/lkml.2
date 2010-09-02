@@ -1,166 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231Ab0IBMjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 08:39:43 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:8274 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750799Ab0IBMjl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 08:39:41 -0400
-Message-ID: <000a01cb4a9b$e8d6ab00$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Eric Dumazet" <eric.dumazet@gmail.com>
-Cc: "Stephen Hemminger" <shemminger@vyatta.com>,
-        "Sam Ravnborg" <sam@ravnborg.org>, "Joe Perches" <joe@perches.com>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "ML netdev" <netdev@vger.kernel.org>,
-        "Greg Rose" <gregory.v.rose@intel.com>,
-        "Maxime Bizon" <mbizon@freebox.fr>,
-        "Kristoffer Glembo" <kristoffer@gaisler.com>,
-        "Ralf Baechle" <ralf@linux-mips.org>,
-        "John Linn" <john.linn@xilinx.com>,
-        "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, "MeeGo" <meego-dev@meego.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Andrew" <andrew.chih.howe.khor@intel.com>,
-        "Intel OTC" <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        "Toshiharu Okada" <okada533@dsn.okisemi.com>,
-        "Tomoya Morinaga" <morinaga526@dsn.okisemi.com>,
-        "Takahiro Shimizu" <shimizu394@dsn.okisemi.com>
-References: <4C763A67.5040107@dsn.okisemi.com> <4C7D0E7A.5060309@dsn.okisemi.com> <1283266263.2550.106.camel@edumazet-laptop>
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-Date: Thu, 2 Sep 2010 21:39:12 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 3
+	id S1753306Ab0IBMoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 08:44:12 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:51846 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab0IBMoL convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Thu, 2 Sep 2010 08:44:11 -0400
+Message-Id: <4C7FB8370200007800013F40@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 02 Sep 2010 13:44:07 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <r.marek@assembler.cz>, <fenghua.yu@intel.com>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86/hwmon: fix configuration and initialization of
+	 coretemp and pkgtemp
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric
+- using cpuid_eax() to determine feature availability on other than
+  the current CPU is invalid
+- feature availability shopuld also be check in the hotplug code path
+- pkgtemp doesn't depend on PCI altogether (apparently just inherited
+  from coretemp)
+- coretemp really only needs PCI for Atom support
 
-Thank you for your comments.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Rudolf Marek <r.marek@assembler.cz>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 
-> I find hard to believe this driver needs to copy all outgoing frames on
-> pre-allocated skbs.
->
-> +       /* [Header:14][payload] ---> [Header:14][paddong:2][payload]    */
-> +       memcpy(tmp_skb->data, skb->data, ETH_HLEN);
-> +       tmp_skb->data[ETH_HLEN] = 0x00;
-> +       tmp_skb->data[ETH_HLEN + 1] = 0x00;
-> +       tmp_skb->len = skb->len;
-> +       memcpy(&tmp_skb->data[ETH_HLEN + 2], &skb->data[ETH_HLEN],
-> +              (skb->len - ETH_HLEN));
-> +       buffer_info->kernel_skb = skb;
-> +       skb = tmp_skb;
->
-> Whats the deal here please ?
+---
+ arch/x86/include/asm/cpufeature.h |    1 +
+ arch/x86/kernel/cpu/scattered.c   |    1 +
+ drivers/hwmon/Kconfig             |    5 +++--
+ drivers/hwmon/coretemp.c          |   30 ++++++++++++++----------------
+ drivers/hwmon/pkgtemp.c           |   11 +++--------
+ 5 files changed, 22 insertions(+), 26 deletions(-)
 
-This processing depends on hardware specification.
-
-At the time of transmission.
-Hardware accepts a packet in the following format.
-  [Header: 14octet] + [padding: 2octet] + [payload]
-  Also, it is necessary to align the head of a [Header: 14octet] at 64byte.
-
-In my knowledge, SKB received by kernel are the following format.
-  [padding: 2octet] + [Header:14octet] + [payload]
-  Also, The head of [payload] has aligned at 16 byte.
-
-So, it has adjusted with the format of hardware by a copy.
-
-Thanks, Ohtake(OKISemi)
------ Original Message ----- 
-From: "Eric Dumazet" <eric.dumazet@gmail.com>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Cc: "Stephen Hemminger" <shemminger@vyatta.com>; "Sam Ravnborg" <sam@ravnborg.org>; "Joe Perches" <joe@perches.com>;
-"LKML" <linux-kernel@vger.kernel.org>; "ML netdev" <netdev@vger.kernel.org>; "Greg Rose" <gregory.v.rose@intel.com>;
-"Maxime Bizon" <mbizon@freebox.fr>; "Kristoffer Glembo" <kristoffer@gaisler.com>; "Ralf Baechle" <ralf@linux-mips.org>;
-"John Linn" <john.linn@xilinx.com>; "Randy Dunlap" <randy.dunlap@oracle.com>; "David S. Miller" <davem@davemloft.net>;
-"MeeGo" <meego-dev@meego.com>; "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y" <yong.y.wang@intel.com>; "Andrew"
-<andrew.chih.howe.khor@intel.com>; "Intel OTC" <joel.clark@intel.com>; "Foster, Margie" <margie.foster@intel.com>;
-"Toshiharu Okada" <okada533@dsn.okisemi.com>; "Tomoya Morinaga" <morinaga526@dsn.okisemi.com>; "Takahiro Shimizu"
-<shimizu394@dsn.okisemi.com>
-Sent: Tuesday, August 31, 2010 11:51 PM
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-
-
-> Le mardi 31 aout 2010 a 23:15 +0900, Masayuki Ohtake a ecrit :
-> > Hi Sam, Joe and Stephen
-> >
-> > Thank you for your comments.
-> > We have modified this driver for your comment.
-> >
-> > ---
-> > Gigabit Ethernet driver of Topcliff PCH
->
-> > + skb->protocol = eth_type_trans(skb, netdev);
-> > + if ((tcp_ip_status & PCH_GBE_RXD_ACC_STAT_TCPIPOK) ==
-> > +     PCH_GBE_RXD_ACC_STAT_TCPIPOK) {
-> > + skb->ip_summed = CHECKSUM_UNNECESSARY;
-> > + } else {
-> > + skb->ip_summed = CHECKSUM_NONE;
-> > + }
-> > +
-> > + if (netif_receive_skb(skb) == NET_RX_DROP) {
-> > + adapter->stats.rx_dropped++;
->
-> dont use pr_err() here, dropping a frame is a normal condition.
->
-> > + pr_err("Receive Netif Receive Dropped Error\n");
-> > + }
-> > + (*work_done)++;
-> > + netdev->last_rx = jiffies;
->
-> really ? last_rx is a thing of the past.
->
-> > + pr_debug
-> > +     ("Receive skb->ip_summed: %d length: %d\n",
-> > +      skb->ip_summed, length);
-> > + }
-> > +dorrop:
-> > + /* return some buffers to hardware, one at a time is too slow */
-> > + if (unlikely(cleaned_count >= PCH_GBE_RX_BUFFER_WRITE)) {
-> > + pch_gbe_alloc_rx_buffers(adapter, rx_ring,
-> > + cleaned_count);
-> > + cleaned_count = 0;
-> > + }
-> > + if (++i == rx_ring->count)
-> > + i = 0;
-> > + }
-> > + rx_ring->next_to_clean = i;
-> > + if (cleaned_count)
-> > + pch_gbe_alloc_rx_buffers(adapter, rx_ring, cleaned_count);
-> > + return cleaned;
-> > +}
-> > +
->
->
->
-> I find hard to believe this driver needs to copy all outgoing frames on
-> pre-allocated skbs.
->
-> +       /* [Header:14][payload] ---> [Header:14][paddong:2][payload]    */
-> +       memcpy(tmp_skb->data, skb->data, ETH_HLEN);
-> +       tmp_skb->data[ETH_HLEN] = 0x00;
-> +       tmp_skb->data[ETH_HLEN + 1] = 0x00;
-> +       tmp_skb->len = skb->len;
-> +       memcpy(&tmp_skb->data[ETH_HLEN + 2], &skb->data[ETH_HLEN],
-> +              (skb->len - ETH_HLEN));
-> +       buffer_info->kernel_skb = skb;
-> +       skb = tmp_skb;
->
-> Whats the deal here please ?
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+--- linux-2.6.36-rc3/arch/x86/include/asm/cpufeature.h
++++ 2.6.36-rc3-x86-hwmon/arch/x86/include/asm/cpufeature.h
+@@ -168,6 +168,7 @@
+ #define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
+ #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
+ #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
++#define X86_FEATURE_DTS		(7*32+31) /* Digital Thermal Sensor */
+ 
+ /* Virtualization flags: Linux defined, word 8 */
+ #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
+--- linux-2.6.36-rc3/arch/x86/kernel/cpu/scattered.c
++++ 2.6.36-rc3-x86-hwmon/arch/x86/kernel/cpu/scattered.c
+@@ -31,6 +31,7 @@ void __cpuinit init_scattered_cpuid_feat
+ 	const struct cpuid_bit *cb;
+ 
+ 	static const struct cpuid_bit __cpuinitconst cpuid_bits[] = {
++		{ X86_FEATURE_DTS,		CR_EAX, 0, 0x00000006, 0 },
+ 		{ X86_FEATURE_IDA,		CR_EAX, 1, 0x00000006, 0 },
+ 		{ X86_FEATURE_ARAT,		CR_EAX, 2, 0x00000006, 0 },
+ 		{ X86_FEATURE_PLN,		CR_EAX, 4, 0x00000006, 0 },
+--- linux-2.6.36-rc3/drivers/hwmon/Kconfig
++++ 2.6.36-rc3-x86-hwmon/drivers/hwmon/Kconfig
+@@ -401,7 +401,8 @@ config SENSORS_GL520SM
+ 
+ config SENSORS_CORETEMP
+ 	tristate "Intel Core/Core2/Atom temperature sensor"
+-	depends on X86 && PCI && EXPERIMENTAL
++	depends on X86 && EXPERIMENTAL
++	depends on PCI || (!MATOM && !GENERIC_CPU && !X86_GENERIC)
+ 	help
+ 	  If you say yes here you get support for the temperature
+ 	  sensor inside your CPU. Most of the family 6 CPUs
+@@ -409,7 +410,7 @@ config SENSORS_CORETEMP
+ 
+ config SENSORS_PKGTEMP
+ 	tristate "Intel processor package temperature sensor"
+-	depends on X86 && PCI && EXPERIMENTAL
++	depends on X86 && EXPERIMENTAL
+ 	help
+ 	  If you say yes here you get support for the package level temperature
+ 	  sensor inside your CPU. Check documentation/driver for details.
+--- linux-2.6.36-rc3/drivers/hwmon/coretemp.c
++++ 2.6.36-rc3-x86-hwmon/drivers/hwmon/coretemp.c
+@@ -423,9 +423,18 @@ static int __cpuinit coretemp_device_add
+ 	int err;
+ 	struct platform_device *pdev;
+ 	struct pdev_entry *pdev_entry;
+-#ifdef CONFIG_SMP
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+-#endif
++
++	/*
++	 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
++	 * sensors. We check this bit only, all the early CPUs
++	 * without thermal sensors will be filtered out.
++	 */
++	if (!cpu_has(c, X86_FEATURE_DTS)) {
++		printk(KERN_INFO DRVNAME ": CPU (model=0x%x)"
++		       " has no thermal sensor.\n", c->x86_model);
++		return 0;
++	}
+ 
+ 	mutex_lock(&pdev_list_mutex);
+ 
+@@ -527,20 +536,9 @@ static int __init coretemp_init(void)
+ 	if (err)
+ 		goto exit;
+ 
+-	for_each_online_cpu(i) {
+-		struct cpuinfo_x86 *c = &cpu_data(i);
+-		/*
+-		 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
+-		 * sensors. We check this bit only, all the early CPUs
+-		 * without thermal sensors will be filtered out.
+-		 */
+-		if (c->cpuid_level >= 6 && (cpuid_eax(0x06) & 0x01))
+-			coretemp_device_add(i);
+-		else {
+-			printk(KERN_INFO DRVNAME ": CPU (model=0x%x)"
+-				" has no thermal sensor.\n", c->x86_model);
+-		}
+-	}
++	for_each_online_cpu(i)
++		coretemp_device_add(i);
++
+ 	if (list_empty(&pdev_list)) {
+ 		err = -ENODEV;
+ 		goto exit_driver_unreg;
+--- linux-2.6.36-rc3/drivers/hwmon/pkgtemp.c
++++ 2.6.36-rc3-x86-hwmon/drivers/hwmon/pkgtemp.c
+@@ -33,7 +33,6 @@
+ #include <linux/list.h>
+ #include <linux/platform_device.h>
+ #include <linux/cpu.h>
+-#include <linux/pci.h>
+ #include <asm/msr.h>
+ #include <asm/processor.h>
+ 
+@@ -281,9 +280,10 @@ static int __cpuinit pkgtemp_device_add(
+ 	int err;
+ 	struct platform_device *pdev;
+ 	struct pdev_entry *pdev_entry;
+-#ifdef CONFIG_SMP
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+-#endif
++
++	if (!cpu_has(c, X86_FEATURE_PTS))
++		return 0;
+ 
+ 	mutex_lock(&pdev_list_mutex);
+ 
+@@ -399,11 +399,6 @@ static int __init pkgtemp_init(void)
+ 		goto exit;
+ 
+ 	for_each_online_cpu(i) {
+-		struct cpuinfo_x86 *c = &cpu_data(i);
+-
+-		if (!cpu_has(c, X86_FEATURE_PTS))
+-			continue;
+-
+ 		err = pkgtemp_device_add(i);
+ 		if (err)
+ 			goto exit_devices_unreg;
 
 
