@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab0IBVMk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:12:40 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52058 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757850Ab0IBVMe (ORCPT
+	id S1757879Ab0IBVMv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:12:51 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:64134 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757862Ab0IBVMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:12:34 -0400
+	Thu, 2 Sep 2010 17:12:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=AJD5qK2nUg+m/C+ReTfU/SPtgSkyIDCJuWXPb3MojklcfUrT/CpLrF2DWOAj38vWOz
-         S8eLRCuPSrQzPMdgPHEzajOOSzx0o6HAh9HhZNN1RoUyk/3cQCiIK7mhexbZYGGEBcIw
-         m2iEiQmt3XzVqZoNYtE51JwJiG3suycj/xGDE=
+        b=YtSOu5dFXYcgGzEYz2wgnKOTGgReLwRPiSUbJwlAZ88PeAF2duEEtpouxYxs+bNC4m
+         0x9C3oCaFgucuH2YNxorDyMLP9itzla6rFLreo0b6URdEZSSCg5VOlP4ZpsvEAjh8Luc
+         xRyZAAsJK7Wxmk1gQSTgUV3CZzlxqrPmlACtw=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org, jkosina@suse.cz,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 66/91] arch/mips/math-emu/ieee754sp.h Update broken web addresses in the arch directory.
-Date: Thu,  2 Sep 2010 14:12:22 -0700
-Message-Id: <1283461951-7988-6-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 69/91] arch/mips/math-emu/ieee754sp.c Update broken web addresses in the arch directory.
+Date: Thu,  2 Sep 2010 14:12:25 -0700
+Message-Id: <1283461951-7988-9-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1283461951-7988-1-git-send-email-justinmattock@gmail.com>
 References: <1283461951-7988-1-git-send-email-justinmattock@gmail.com>
@@ -35,14 +35,14 @@ need to be changed, and I'll resend an updated patch).
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- arch/mips/math-emu/ieee754sp.h |    2 +-
+ arch/mips/math-emu/ieee754sp.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/mips/math-emu/ieee754sp.h b/arch/mips/math-emu/ieee754sp.h
-index d9e3586..36585e5 100644
---- a/arch/mips/math-emu/ieee754sp.h
-+++ b/arch/mips/math-emu/ieee754sp.h
-@@ -5,7 +5,7 @@
+diff --git a/arch/mips/math-emu/ieee754sp.c b/arch/mips/math-emu/ieee754sp.c
+index a19b721..60b8aea 100644
+--- a/arch/mips/math-emu/ieee754sp.c
++++ b/arch/mips/math-emu/ieee754sp.c
+@@ -4,7 +4,7 @@
  /*
   * MIPS floating point support
   * Copyright (C) 1994-2000 Algorithmics Ltd.
