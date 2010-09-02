@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab0IBOhN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:37:13 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:57229 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab0IBOhL (ORCPT
+	id S1755534Ab0IBOjJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:39:09 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:11115 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754373Ab0IBOjH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:37:11 -0400
-X-SpamScore: -31
-X-BigFish: VPS-31(zz146fK1432N1a09M9370J98dNzz1202hzz15d4Rz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L84J1C-02-33G-02
-X-M-MSG: 
-From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Organization: AMD OSRC
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
-Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM
-Date: Thu, 2 Sep 2010 16:31:59 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35pmfix-rafael-v2+; KDE/4.5.0; x86_64; ; )
-CC: Tejun Heo <htejun@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <201008262024.35551.rjw@sisk.pl> <201008280135.39005.rjw@sisk.pl>
-In-Reply-To: <201008280135.39005.rjw@sisk.pl>
+	Thu, 2 Sep 2010 10:39:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CcmGtHLRqcOc8/dj9GuHtpHdhAEJPPvCLEPztpcYE+Cuy05U/74cpybibRcCr63OgN
+         Nycxk4y25GEVHc0Gdv9Q==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-ID: <201009021632.00699.stephan.diestelhorst@amd.com>
-X-Reverse-DNS: unknown
+In-Reply-To: <20100902141900.GG4879@redhat.com>
+References: <AANLkTimA-AZWJugaLR3VPGVhBaJid=t=a1rPVNUE_8Dh@mail.gmail.com>
+	<20100901145728.GM22783@erda.amd.com>
+	<AANLkTikOaCL8FqQuUQsYPxm19WZOdarp8AMAugN0mnqQ@mail.gmail.com>
+	<20100902141900.GG4879@redhat.com>
+Date: Thu, 2 Sep 2010 16:39:02 +0200
+Message-ID: <AANLkTin2KVPpkQWUa_GQ66q+wvZpfYHOKAfWbG-+K5FD@mail.gmail.com>
+Subject: Re: [PATCH 4/4] [x86] perf: fix accidentally ack'ing a second event
+ on intel perf counter
+From: Stephane Eranian <eranian@google.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 28 August 2010, 01:35:38 Rafael J. Wysocki wrote:
-> I reproduced the problem with the Tejun's patch applied, so I'm now quite
-> sure the problem is related to the suspend of controller ports (which is done
-> by scheduling SCSI error handling on the controller).
-> 
-> Anyway, below is a new version of my patch that plays a bit nicer with
-> the resume code.  Can you please check if it still fixes the problem for you?
+Don,
 
-Applied to 2.6.35.3 and tested. Works perfectly fine (> 10 s2ram
-cycles under heavy I/O load).
+On Thu, Sep 2, 2010 at 4:19 PM, Don Zickus <dzickus@redhat.com> wrote:
+> On Thu, Sep 02, 2010 at 10:13:19AM +0200, Stephane Eranian wrote:
+>> Robert,
+>>
+>> Do you have the test program you used to test this?
+>> I believe the NHM hack does not solve the problem, it
+>> just makes it harder to appear.
+>
+> Could be.
+>
+>>
+>> I suspect the real issue is that the GLOBAL_STATUS
+>> bitmask cannot be trusted. I'd like to verify this.
+>>
+>> Has the problem appear only on Nehalem or also on
+>> Westmere?
+>
+> I was able to duplicate on
+>
+> Intel(R) Core(TM) i5 CPU         650  @ 3.20GHz
+> Intel(R) Xeon(R) CPU           X5560  @ 2.80GHz
+>
+I managed to reproduce on core i7 860 (without patch4).
+Looking at the code again, I am dubious you ever execute
+the retry goto. If the PMU is disabled and you've just
+cleared the OVF_STAT, then I don't see where the new
+overflows would come from. But that's a separate problem.
 
-Many thanks,
-  Stephan
+One thing I did is to compare status obtained via OVFL_STATUS
+with one that I build manually by inspecting each individual
+counter. The two returned bitmasks should always be identical
+(with PEBS disabled).  When I got the spurious NMI, it did not
+trip my status validation. So the OVFL_STATUS is valid.
 
--- 
-Stephan Diestelhorst, AMD Operating System Research Center
-stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
+I found something else that looked fishy. I am experimenting
+with it. I will report back.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
+> with just running 'perf top' for about 60 seconds.
+>
+> You would need the first three patches to expose the problem.
+>
+> Reading the code, it seemed like the perf counters should be disabled and
+> this patch should be unecessary, but after playing around with the code
+> for a few hours, I came up with this patch to trap the issue.
+>
+> I read through the cpu errata and could not find anything related but I
+> might have missed something.
+>
+> I am willing to help test if you have a more targeted patch.
+>
+Thanks.
