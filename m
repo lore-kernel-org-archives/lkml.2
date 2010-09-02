@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab0IBBiZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 21:38:25 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39737
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752359Ab0IBBiS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 21:38:18 -0400
-Date: Wed, 01 Sep 2010 18:38:35 -0700 (PDT)
-Message-Id: <20100901.183835.219746796.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for September 1
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100901133614.2580f238.sfr@canb.auug.org.au>
-References: <20100901133614.2580f238.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755306Ab0IBBil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 21:38:41 -0400
+Received: from kroah.org ([198.145.64.141]:45934 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755025Ab0IBBik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 21:38:40 -0400
+Date: Wed, 1 Sep 2010 18:37:19 -0700
+From: Greg KH <greg@kroah.com>
+To: David Cross <david.cross@cypress.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] West Bridge Astoria Driver 2.6.35, Kconfig fixes
+Message-ID: <20100902013719.GC4744@kroah.com>
+References: <5BFACB1451C1459BA8562A5561D0A4E6@stanford.edu>
+ <1283386101.17399.10.camel@odc-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283386101.17399.10.camel@odc-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 1 Sep 2010 13:36:14 +1000
+On Wed, Sep 01, 2010 at 05:08:21PM -0700, David Cross wrote:
+> 
+> > From: Greg KH [mailto:greg@kroah.com] 
+> > Sent: Tuesday, August 31, 2010 9:32 AM
+> > To: David Cross
+> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH] West Bridge Astoria Driver 2.6.35
+> > 
+> > On Tue, Aug 31, 2010 at 09:17:18AM -0700, David Cross wrote:
+> > > 
+> > > > I get a build error when I try to build this driver:
+> > > >
+> > > drivers/staging/westbridge/astoria/block/../include/linux/westbridge/c>
+> > > yasmisc.h:521:2: error: expected declaration specifiers or '...' before  >
+> > > 'cy_as_hal_device_tag'
+> > > 
+> > > > It looks like the #include mess isn't working quite properly.
+> > > 
+> > > > Also note that this driver is building on an x86-64 platform, which is
+> > > > something that you probably don't want :)
+> > > 
+> > > > So, for now, I'll just mark the driver as CONFIG_BROKEN and can you send
+> > > > me some Kconfig patches against the next linux-next release which should
+> > > > have this driver in it, so that it will build properly?
+> > > 
+> > > Sure, I can do that. I have since changed the Kconfig structure a bit. It
+> > > actually will build properly with the correct .config as it is though. I
+> > can
+> > > send you the .config if you would like.
+> > 
+> > It's up to the Kconfig rules to ensure that there can never be a
+> > "non-correct" .config file, so that needs to be fixed so that the build
+> > will never be broken no matter what type of options are selected.
+> > 
+> > Care to send a patch for that?
+> 
+> This patch actually contains quite a few fixes, but it addresses the
+> Kconfig issue as well. The linux-next tree does not seem to have a
+> config for the zoom2, and trying to build it for that board seems to
+> make the compilation break. As such, the only thing that I tested was
+> compilation using the two different HALs (one of which is added in this
+> patch). Please let me know if there are problems or questions with this.
+> Thanks,
+> David
 
-> The net tree still has its build failure for which I have reverted a
-> commit.
+Hm, I need a single-patch-per-change, as described in the
+Documentation/SubmittingPatches file.  So, could you break this up into
+the logical changes, so that I can apply them all?  That makes it easier
+for everyone involved (reviewing, bisecting, etc.) and it's what is
+needed for the rest of the kernel as well.
 
-Stephen I'm about to commit the following to net-next-2.6 in the meantime
-to deal with that so you don't have to revert whilst Fujita works on
-the more cleaner solution.
+thanks,
 
---------------------
-starfire: Temporary kludge to fix powerpc build.
-
-Add a dma_addr_t 64-bit case for powerpc with 64-bit phys addresses.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/net/starfire.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/starfire.c b/drivers/net/starfire.c
-index c3bf288..4adf124 100644
---- a/drivers/net/starfire.c
-+++ b/drivers/net/starfire.c
-@@ -148,7 +148,7 @@ static int full_duplex[MAX_UNITS] = {0, };
-  * This SUCKS.
-  * We need a much better method to determine if dma_addr_t is 64-bit.
-  */
--#if (defined(__i386__) && defined(CONFIG_HIGHMEM64G)) || defined(__x86_64__) || defined (__ia64__) || defined(__alpha__) || defined(__mips64__) || (defined(__mips__) && defined(CONFIG_HIGHMEM) && defined(CONFIG_64BIT_PHYS_ADDR))
-+#if (defined(__i386__) && defined(CONFIG_HIGHMEM64G)) || defined(__x86_64__) || defined (__ia64__) || defined(__alpha__) || defined(__mips64__) || (defined(__mips__) && defined(CONFIG_HIGHMEM) && defined(CONFIG_64BIT_PHYS_ADDR)) || (defined(__powerpc64__) || defined(CONFIG_PHYS_64BIT))
- /* 64-bit dma_addr_t */
- #define ADDR_64BITS	/* This chip uses 64 bit addresses. */
- #define netdrv_addr_t __le64
--- 
-1.7.2.2
-
+greg k-h
