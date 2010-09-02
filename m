@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab0IBOZY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:25:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:48213 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab0IBOZW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:25:22 -0400
-X-Authority-Analysis: v=1.1 cv=F68j8apdn+AYvba2s2WjKYIAmW276Pjvg9wPu/ZwFig= c=1 sm=0 a=h6dlIqBDnR0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=JTc0kuPUaKgL5iNhwmUA:9 a=GXRP4dHX9Da4qdmMYgUNNuscQ28A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: kernelshark plugins and ftrace array fields
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-In-Reply-To: <4C7F9639.7000804@redhat.com>
-References: <4C7F9639.7000804@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 02 Sep 2010 10:25:21 -0400
-Message-ID: <1283437521.2356.136.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1754089Ab0IBOZu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:25:50 -0400
+Received: from borg.medozas.de ([188.40.89.202]:50786 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752348Ab0IBOZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 10:25:48 -0400
+Date: Thu, 2 Sep 2010 16:25:47 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Neil Brown <neilb@suse.de>
+cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vaurora@redhat.com,
+        viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org
+Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
+In-Reply-To: <20100902233200.586fcb31@notabene>
+Message-ID: <alpine.LNX.2.01.1009021625050.14798@obet.zrqbmnf.qr>
+References: <20100826183340.027591901@szeredi.hu> <20100827170551.19616048@notabene> <E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu> <20100827213502.31af4a4c@notabene> <E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu> <20100829144207.4fbf2713@notabene> <E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu>
+ <alpine.LNX.2.01.1009021513040.10859@obet.zrqbmnf.qr> <20100902233200.586fcb31@notabene>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-02 at 15:19 +0300, Avi Kivity wrote:
-> I'd like to add enhance kvm_emulate_insn display in kernelshark to 
-> show the disassembly of the instruction being emulated.  However, 
-> pevent_get_field_val() doesn't support arrays (the instruction is 
-> provided in a 15-byte array).
-> 
-> Can you add support for arrays in the kernelshark API?  With that, it 
-> looks like adding disassembly output to the kvm plugin should be quite 
-> simple.
-> 
 
-Sure, I could add a pevent_get_field_array() or something. Could you
-tell me the event and give me an example of what you want to do.
+On Thursday 2010-09-02 15:32, Neil Brown wrote:
+>> 
+>> Oh and I what I like to see is support for multiple readonly branches :)
+>
+>I think we very nearly have that, assuming I understand your requirement
+>correctly.
+>The lower filesystem can itself be an overlay, providing it is mounted
+>read-only.
+>
+>So if /mnt/ro1 /mnt/ro2 /mnt/ro3 are all read-only branches then
+>
+> mount -o ro,lowerdir=/mnt/ro1,upperdir=/mnt/ro2 meaninglessstring /mnt/ov1
+> mount -o ro,lowerdir=/mnt/ov1,upperdir=/mnt/ro3 meaninglessstring /mnt/ov2
+> mount -o lowerdir=/mnt/ov2,upperdir=/mnt/rw ignoreme /mnt/overlay
+>
+>and /mnt/overlay will be the combination of 3 read-only filesystems and one
+>writable one.
+>(this doesn't work with the code as-is, but it is really just a few bug-fixes
+>away).
 
-Thanks,
-
--- Steve
-
-
-
+There ought to be a reason that other implementations offer
+doing multiple branches with a single vfsmount.
