@@ -1,215 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab0IBQXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 12:23:17 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:23806 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab0IBQXQ convert rfc822-to-8bit (ORCPT
+	id S1755977Ab0IBQdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 12:33:42 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:57993 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755917Ab0IBQdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 12:23:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=J7z5nu63iC5lD0HlvFhyRSvbGXmv/GNLoVp8kVryDItxN4G31DTLuZuebyZluj6/Ix
-         X3jowCuPibv/+W78JdkQ==
+	Thu, 2 Sep 2010 12:33:40 -0400
+X-SpamScore: -36
+X-BigFish: VS-36(zzbb2dK1432N98dN4015L9371Pzz1202hzz15d4Rz32i87h2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L84OLN-02-CN7-02
+X-M-MSG: 
+Date: Thu, 2 Sep 2010 18:32:20 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] KVM: MMU: Fix 32 bit legacy paging with NPT
+Message-ID: <20100902163220.GE1964@amd.com>
+References: <1283441387-7378-1-git-send-email-joerg.roedel@amd.com>
+ <1283441387-7378-2-git-send-email-joerg.roedel@amd.com>
+ <4C7FC91A.5030305@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20100902151824.GA2702@redhat.com>
-References: <20100901175830.GC22149@redhat.com> <20100901200756.GE22149@redhat.com>
- <20100902151824.GA2702@redhat.com>
-From: Nauman Rafique <nauman@google.com>
-Date: Thu, 2 Sep 2010 09:22:50 -0700
-Message-ID: <AANLkTikTskke8UnDNj7LFX7EopX8t-0jqb-_Ogt359ik@mail.gmail.com>
-Subject: Re: [RFC PATCH] Bio Throttling support for block IO controller
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Divyesh Shah <dpshah@google.com>,
-        Heinz Mauelshagen <heinzm@redhat.com>, arighi@develer.com,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4C7FC91A.5030305@redhat.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 8:18 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Wed, Sep 01, 2010 at 04:07:56PM -0400, Vivek Goyal wrote:
->> On Wed, Sep 01, 2010 at 01:58:30PM -0400, Vivek Goyal wrote:
->> > Hi,
->> >
->> > Currently CFQ provides the weight based proportional division of bandwidth.
->> > People also have been looking at extending block IO controller to provide
->> > throttling/max bandwidth control.
->> >
->> > I have started to write the support for throttling in block layer on
->> > request queue so that it can be used both for higher level logical
->> > devices as well as leaf nodes. This patch is still work in progress but
->> > I wanted to post it for early feedback.
->> >
->> > Basically currently I have hooked into __make_request() function to
->> > check which cgroup bio belongs to and if it is exceeding the specified
->> > BW rate. If no, thread can continue to dispatch bio as it is otherwise
->> > bio is queued internally and dispatched later with the help of a worker
->> > thread.
->> >
->> > HOWTO
->> > =====
->> > - Mount blkio controller
->> >     mount -t cgroup -o blkio none /cgroup/blkio
->> >
->> > - Specify a bandwidth rate on particular device for root group. The format
->> >   for policy is "<major>:<minor>  <byes_per_second>".
->> >
->> >     echo "8:16  1048576" > /cgroup/blkio/blkio.read_bps_device
->> >
->> >   Above will put a limit of 1MB/second on reads happening for root group
->> >   on device having major/minor number 8:16.
->> >
->> > - Run dd to read a file and see if rate is throttled to 1MB/s or not.
->> >
->> >     # dd if=/mnt/common/zerofile of=/dev/null bs=4K count=1024 iflag=direct
->> >     1024+0 records in
->> >     1024+0 records out
->> >     4194304 bytes (4.2 MB) copied, 4.0001 s, 1.0 MB/s
->> >
->> >  Limits for writes can be put using blkio.write_bps_device file.
->> >
->> > Open Issues
->> > ===========
->> > - Do we need to provide additional queue congestion semantics as we are
->> >   throttling and queuing bios at request queue and probably we don't want
->> >   a user space application to consume all the memory allocating bios
->> >   and bombarding request queue with those bios.
->> >
->> > - How to handle the current blkio cgroup stats file and two policies
->> >   in the background. If for some reason both throttling and proportional
->> >   BW policies are operating on request queue, then stats will be very
->> >   confusing.
->> >
->> >   May be we can allow activating either throttling or proportional BW
->> >   policy per request queue and we can create a /sys tunable to list and
->> >   chose between policies (something like choosing IO scheduler). The
->> >   only downside of this apporach is that user also need to be aware of
->> >   the storage hierachy and activate right policy at each node/request
->> >   queue.
->>
->> Thinking more about it. The issue of stats from proportional bandwidth
->> controller and max bandwidth controller clobbering each other can
->> probably be solved by also specifying policy name with the stat. For
->> example, currently blkio.io_serviced, looks as follows.
->>
->> # cat blkio.io_serviced
->> 253:2 Read 61
->> 253:2 Write 0
->> 253:2 Sync 61
->> 253:2 Async 0
->> 253:2 Total 61
->>
->> We can introduce one more field to specify policy for which this stats are as
->> follows.
->>
->> # cat blkio.io_serviced
->> 253:2 Read 61 throttle
->> 253:2 Write 0 throttle
->> 253:2 Sync 61 throttle
->> 253:2 Async 0 throttle
->> 253:2 Total 61        throttle
->>
->> 253:2 Read 61 proportional
->> 253:2 Write 0 proportional
->> 253:2 Sync 61   proportional
->> 253:2 Async 0   proportional
->> 253:2 Total 61  proportional
->>
->
-> Option 1
-> ========
-> I was looking at the blkio stat code more. It seems to be key value pair
-> thing. So looks like I shall have to change the format of the file and
-> use second field for policy name and that will break any existing tools
-> parsing these blkio cgroup files.
->
-> # cat blkio.io_serviced
-> 253:2 throttle Read 61
-> 253:2 throttle Write 0
-> 253:2 throttle Sync 61
-> 253:2 throttle Async 0
-> 253:2 throttle Total 61
->
-> 253:2 proportional Read 61
-> 253:2 proportional Write 0
-> 253:2 proportional Sync 61
-> 253:2 proportional Async 0
-> 253:2 proportional Total 61
->
-> Option 2
-> ========
-> Introduce policy column only for new policy.
->
-> 253:2 Read 61
-> 253:2 Write 0
-> 253:2 Sync 61
-> 253:2 Async 0
-> 253:2 Total 61
->
-> 253:2 throttle Read 61
-> 253:2 throttle Write 0
-> 253:2 throttle Sync 61
-> 253:2 throttle Async 0
-> 253:2 throttle Total 61
->
-> Here old lines continue to represent proportional weight policy stats and
-> new lines with "throttle" key word represent throttling stats.
->
-> This is just like adding new fields to "stat" file. I guess it might still
-> might break some script which might get stumped by new lines. But if scripts
-> are not parsing all the lines and just selectively picking data then these
-> should be fine.
->
-> Option 3
-> ========
-> The other option is that I introduce new cgroup files for the new
-> policy. Something like what memory cgroup has done for swap accounting
-> files.
->
-> blkio.throttle.io_serviced
-> blkio.throttle.io_service_bytes
+On Thu, Sep 02, 2010 at 11:56:10AM -0400, Avi Kivity wrote:
+>   On 09/02/2010 06:29 PM, Joerg Roedel wrote:
+> > This patch fixes 32 bit legacy paging with NPT enabled. The
+> > mmu_check_root call on the top-level of the loop causes
+> > root_gfn to take values (in the tdp_enabled path) which are
+> > outside of guest memory. So the mmu_check_root call fails at
+> > some point in the loop interation causing the guest to
+> > tiple-fault.
+> > This patch changes the mmu_check_root calls to the places
+> > where they are really necessary. As a side-effect it
+> > introduces a check for the root of a pae page table too.
+> >
+> >
+> > @@ -2387,6 +2387,10 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
+> >   		return 0;
+> >   	}
+> >   	direct = !is_paging(vcpu);
+> > +
+> > +	if (mmu_check_root(vcpu, root_gfn))
+> > +		return 1;
+> > +
+> >   	for (i = 0; i<  4; ++i) {
+> >   		hpa_t root = vcpu->arch.mmu.pae_root[i];
+> >
+> > @@ -2398,10 +2402,10 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
+> >   				continue;
+> >   			}
+> >   			root_gfn = pdptr>>  PAGE_SHIFT;
+> > +			if (mmu_check_root(vcpu, root_gfn))
+> > +				return 1;
+> >   		} else if (vcpu->arch.mmu.root_level == 0)
+> >   			root_gfn = 0;
+> > -		if (mmu_check_root(vcpu, root_gfn))
+> > -			return 1;
+> >   		if (tdp_enabled) {
+> >   			direct = 1;
+> >   			root_gfn = i<<  30;
+> 
+> The overloading of root_gfn is pretty bad.  Also, we don't really need 
+> to check root_gfn for the direct case (the guest can easily switch cr3 
+> later to one that would fail the check).
+> 
+> However, I'll apply the patch since it fixes the direct problem.  More 
+> involved fixes can come later (esp. after the nnpt patches land).
 
-Vivek,
-I have not looked at the rest of the patch yet. But I do not get why
-stats like io_serviced and io_servived_bytes would be policy specific.
-They should represent the total IO from a group serviced by the disk.
-If we want to count IOs which are in a new state, we should add new
-stats for that. What am I missing?
+Ok, great. I will rebase my nnpt patches on-top of this and do some more
+final testing before I post them.
 
->
-> That will make sure ABI is not broken but number of files per cgroup
-> increase and there are already significant number of files in the group.
->
-> Actually I think I should atleast rename the read and write bw files so that
-> they explicitly tell these belong to throtlling poilcy.
->
-> blkio.throttle.read_bps_device
-> blkio.throttle.write_bps_device
->
-> Any thoughts on what is the best way forward.
->
-> Vivek
->
->> It will allow us following.
->>
->> - Avoid two control policies overwritting each other's stats.
->> - Allow both policies (throttle, proportional) to be operational on
->>   same request queue at the same time instead of forcing user to choose
->>   one.
->> - We don't have to introduce another /sys variable per request queue and
->>   that will make life easier in terms of configuration.
->>
->> Thoughts?
->>
->> Vivek
->
+Thanks,
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
