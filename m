@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab0IBB10 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 21:27:26 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45494
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752582Ab0IBB1Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 21:27:25 -0400
-Date: Wed, 01 Sep 2010 18:27:41 -0700 (PDT)
-Message-Id: <20100901.182741.73368486.davem@davemloft.net>
-To: mst@redhat.com
-Cc: eric.dumazet@gmail.com, mingo@elte.hu, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org
-Subject: Re: vhost_dev_cleanup() crash: BUG: unable to handle kernel NULL
- pointer dereference
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100901214221.GA15182@redhat.com>
-References: <1283256357.2550.61.camel@edumazet-laptop>
-	<20100901.142528.180418526.davem@davemloft.net>
-	<20100901214221.GA15182@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754042Ab0IBBiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 21:38:13 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:59290 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752582Ab0IBBiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 21:38:12 -0400
+Date: Thu, 2 Sep 2010 02:37:58 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm-fixes
+Message-ID: <alpine.DEB.2.00.1009020237001.4265@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Thu, 2 Sep 2010 00:42:21 +0300
 
-> On Wed, Sep 01, 2010 at 02:25:28PM -0700, David Miller wrote:
->> From: Eric Dumazet <eric.dumazet@gmail.com>
->> Date: Tue, 31 Aug 2010 14:05:57 +0200
->> 
->> > [PATCH v2] vhost: stop worker only if created
->> > 
->> > Its currently illegal to call kthread_stop(NULL)
->> > 
->> > Reported-by: Ingo Molnar <mingo@elte.hu>
->> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
->> 
->> I'll apply this thanks Eric.
-> 
-> Yes, it looks good thanks!
-> Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> Or you can wait for my pull request (will have a couple other regression
-> fixes).
+Just a bunch of radeon fixes from Alex, one for AGP r700s.
 
-I'll keep it in my tree and whether it's in your's or not git merge
-will work it out.
+Dave.
+
+The following changes since commit 2bfc96a127bc1cc94d26bfaa40159966064f9c8c:
+
+  Linux 2.6.36-rc3 (2010-08-29 08:36:04 -0700)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Alex Deucher (6):
+      drm/radeon/kms: use tracked values for sclk and mclk
+      drm/radeon/kms: fix a regression on r7xx AGP due to the HDP flush fix
+      drm/radeon/kms: remove useless clock code
+      drm/radeon/kms: force legacy pll algo for RV515 LVDS
+      drm/radeon/kms: fix tv module parameter
+      drm/radeon/kms: properly set crtc high base on r7xx
+
+ drivers/gpu/drm/radeon/atombios_crtc.c     |   22 ++++++--
+ drivers/gpu/drm/radeon/evergreen.c         |    9 ---
+ drivers/gpu/drm/radeon/r600.c              |   11 +----
+ drivers/gpu/drm/radeon/radeon.h            |    8 ++-
+ drivers/gpu/drm/radeon/radeon_asic.c       |   18 ------
+ drivers/gpu/drm/radeon/radeon_clocks.c     |   58 +++------------------
+ drivers/gpu/drm/radeon/radeon_connectors.c |   78 +++++++++++++++------------
+ drivers/gpu/drm/radeon/radeon_device.c     |   28 +++-------
+ drivers/gpu/drm/radeon/radeon_i2c.c        |    2 +-
+ drivers/gpu/drm/radeon/radeon_mode.h       |    1 -
+ drivers/gpu/drm/radeon/rv770.c             |   61 ++++++++++++++++++---
+ 11 files changed, 138 insertions(+), 158 deletions(-)
