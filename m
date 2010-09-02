@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab0IBOW1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:22:27 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39846 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755482Ab0IBOWZ (ORCPT
+	id S1752109Ab0IBOZH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:25:07 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36608 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab0IBOZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:22:25 -0400
-Date: Thu, 2 Sep 2010 10:22:25 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Simon Arlott <simon@fire.lp0.eu>
-cc: Greg KH <greg@kroah.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] USB: output an error message when the pipe type  doesn't
- match the endpoint type
-In-Reply-To: <e875e8d2d6b6000fcb31da07f393618f3466233c@8b5064a13e22126c1b9329f0dc35b8915774b7c3.invalid>
-Message-ID: <Pine.LNX.4.44L0.1009021019090.1513-100000@iolanthe.rowland.org>
+	Thu, 2 Sep 2010 10:25:05 -0400
+Date: Thu, 2 Sep 2010 10:25:01 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Andrew Morton <akpm@linuxfoundation.org>, Josef Bacik <josef@redhat.com>,
+        linux-kernel@vger.kernel.org, btrfs-devel <btrfs-devel@oss.oracle.com>
+Subject: Re: [patch] O_DIRECT: fix the splitting up of contiguous I/O
+Message-ID: <20100902142501.GA14932@infradead.org>
+References: <x49vd7f368c.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49vd7f368c.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010, Simon Arlott wrote:
+Andrew, can you please send this on to Linus and -stable ASAP?  It's
+causing massive problems for our users.
 
-> On Wed, September 1, 2010 18:49, Alan Stern wrote:
-> > On Wed, 1 Sep 2010, Simon Arlott wrote:
-> >> > This is okay with me.  If you're serious about not changing the
-> >> > behavior merely because debugging is enabled, you could move this test
-> >> > out of the debug-only region and possibly change the dev_err to
-> >> > dev_dbg.  However doing so might break some devices that are currently
-> >> > working.
-> >>
-> >> I'd expect that to break potentially many devices, although only cxacru
-> >> stopped working for me. The USB API isn't really suitable for adding
-> >> this type of check because it allows the drivers to get away with too
-> >> much already.
-> >
-> > Unlike device hardware, drivers can always be changed.  If adding a
-> > check will help spot errors, it's probably worthwhile.
+On Thu, Aug 12, 2010 at 04:50:59PM -0400, Jeff Moyer wrote:
+> Hi,
 > 
-> Yes, however the information about the device endpoint types hasn't been
-> required in the past for the driver to work. The only way to check is to
-> have the hardware available so the error may only show up after a full
-> release of the kernel and break drivers that used to work. It could be
-> enabled for all -rc kernels...
-
-Which suggests that the best approach is to print the error message 
-always, but allow the submission unless CONFIG_USB_DEBUG is set.
-
-> >> usb_clear_halt() takes a pipe when it really wants the endpoint, the
-> >> pipe type is ignored.
-> >
-> > What's wrong with that?  Besides, in the end we shouldn't be using
-> > pipes at all; we should always use pointers to struct
-> > usb_host_endpoint.
+> commit c2c6ca4 (direct-io: do not merge logically non-contiguous
+> requests) introduced a bug whereby all O_DIRECT I/Os were submitted a
+> page at a time to the block layer.  The problem is that the code
+> expected dio->block_in_file to correspond to the current page in the
+> dio.  In fact, it corresponds to the previous page submitted via
+> submit_page_section.  This was purely an oversight, as the
+> dio->cur_page_fs_offset field was introduced for just this purpose.
+> This patch simply uses the correct variable when calculating whether
+> there is a mismatch between contiguous logical blocks and contiguous
+> physical blocks (as described in the comments).
 > 
-> If a driver was trying to conform to the "don't use the wrong pipe type
-> with an endpoint" rule then it may have to check it was using the
-> correct pipe when calling usb_clear_halt(), although this is only a
-> problem with drivers where the devices sometimes have interrupt instead
-> of bulk endpoints.
+> I also switched the if conditional following this check to an else if,
+> to ensure that we never call dio_bio_submit twice for the same dio (in
+> theory, this should not happen, anyway).
 > 
-> Looking at usb_clear_halt(), it doesn't use the direction either... but
-> drivers can call it in both directions. Several drivers already do this.
-
-What do you mean?  Look at the first lines of code in usb_clear_halt():
-
-	if (usb_pipein(pipe))
-		endp |= USB_DIR_IN;
-
-Alan Stern
-
+> I've tested this by running blktrace and verifying that a 64KB I/O was
+> submitted as a single I/O.  I also ran the patched kernel through
+> xfstests' aio tests using xfs, ext4 (with 1k and 4k block sizes) and
+> btrfs and verified that there were no regressions as compared to an
+> unpatched kernel.
+> 
+> Comments, as always, are welcome.
+> 
+> Cheers,
+> Jeff
+> 
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> Acked-by: Josef Bacik <jbacik@redhat.com>
+> 
+> diff --git a/fs/direct-io.c b/fs/direct-io.c
+> index 7600aac..445901c 100644
+> --- a/fs/direct-io.c
+> +++ b/fs/direct-io.c
+> @@ -632,7 +632,7 @@ static int dio_send_cur_page(struct dio *dio)
+>  	int ret = 0;
+>  
+>  	if (dio->bio) {
+> -		loff_t cur_offset = dio->block_in_file << dio->blkbits;
+> +		loff_t cur_offset = dio->cur_page_fs_offset;
+>  		loff_t bio_next_offset = dio->logical_offset_in_bio +
+>  			dio->bio->bi_size;
+>  
+> @@ -657,7 +657,7 @@ static int dio_send_cur_page(struct dio *dio)
+>  		 * Submit now if the underlying fs is about to perform a
+>  		 * metadata read
+>  		 */
+> -		if (dio->boundary)
+> +		else if (dio->boundary)
+>  			dio_bio_submit(dio);
+>  	}
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+---end quoted text---
