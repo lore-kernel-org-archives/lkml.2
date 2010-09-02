@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab0IBRni (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 13:43:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56891 "EHLO hera.kernel.org"
+	id S1755682Ab0IBRpO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 13:45:14 -0400
+Received: from n1.taur.dk ([217.198.219.102]:33875 "EHLO n1.taur.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750868Ab0IBRnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 13:43:37 -0400
-Message-ID: <4C7FE251.2020003@kernel.org>
-Date: Thu, 02 Sep 2010 19:43:45 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1750761Ab0IBRpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 13:45:12 -0400
+X-Greylist: delayed 3051 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Sep 2010 13:45:10 EDT
+Message-ID: <4C7FD6B8.7080401@kasperkp.dk>
+Date: Thu, 02 Sep 2010 18:54:16 +0200
+From: Kasper Pedersen <kkp2010@kasperkp.dk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-CC: Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com,
-        j-nomura@ce.jp.nec.com, jamie@shareable.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-raid@vger.kernel.org, hch@lst.de
-Subject: [PATCH] block: make sure FSEQ_DATA request has the same rq_disk as
- the original
-References: <1283162296-13650-1-git-send-email-tj@kernel.org> <1283162296-13650-5-git-send-email-tj@kernel.org> <20100830132836.GB5283@redhat.com> <4C7BB932.1070405@kernel.org> <4C7BD202.4040700@kernel.org> <4C7DFD8F.6070200@ct.jp.nec.com>
-In-Reply-To: <4C7DFD8F.6070200@ct.jp.nec.com>
-X-Enigmail-Version: 1.1.1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] time: compensate for rounding on odd-frequency clocksources
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 02 Sep 2010 17:43:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rq->rq_disk and bio->bi_bdev->bd_disk may differ if a request has
-passed through remapping drivers.  FSEQ_DATA request incorrectly
-followed bio->bi_bdev->bd_disk ending up being issued w/ mismatching
-rq_disk.  Make it follow orig_rq->rq_disk.
+When the clocksource is not a multiple of HZ, the clock will be off. 
+For acpi_pm, HZ=1000 the error is 127.111 ppm:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+The rounding of cycle_interval ends up generating a false error term 
+in ntp_error accumulation since xtime_interval is not exactly 1/HZ. 
+So, we subtract out the error caused by the rounding.
+
+This has been visible since 2.6.32-rc2
+	commit a092ff0f90cae22b2ac8028ecd2c6f6c1a9e4601
+	time: Implement logarithmic time accumulation
+That commit raised NTP_INTERVAL_FREQ and exposed the rounding error.
+
+testing tool: http://n1.taur.dk/permanent/testpmt.c
+Also tested with ntpd and a frequency counter.
+
+patch against 2.6.36-rc3-next. 
+
+
+Signed-off-by: Kasper Pedersen <kkp2010@kasperkp.dk>
 ---
-Kiyoshi, can you please apply this patch on top and verify that the
-problem goes away?  The reason I and Mike didn't see the problem was
-because we were using REQ_FUA capable underlying device, which makes
-block layer bypass sequencing for FSEQ_DATA request.
+ kernel/time/timekeeping.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-Thanks.
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 77e930d..5ee5dea 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -32,6 +32,8 @@ struct timekeeper {
+ 	cycle_t cycle_interval;
+ 	/* Number of clock shifted nano seconds in one NTP interval. */
+ 	u64	xtime_interval;
++	/* shifted nano seconds left over when rounding cycle_interval */
++	s64	xtime_remainder;
+ 	/* Raw nano seconds accumulated per NTP interval. */
+ 	u32	raw_interval;
+ 
+@@ -62,7 +64,7 @@ struct timekeeper timekeeper;
+ static void timekeeper_setup_internals(struct clocksource *clock)
+ {
+ 	cycle_t interval;
+-	u64 tmp;
++	u64 tmp, ntpinterval;
+ 
+ 	timekeeper.clock = clock;
+ 	clock->cycle_last = clock->read(clock);
+@@ -70,6 +72,7 @@ static void timekeeper_setup_internals(struct clocksource *clock)
+ 	/* Do the ns -> cycle conversion first, using original mult */
+ 	tmp = NTP_INTERVAL_LENGTH;
+ 	tmp <<= clock->shift;
++	ntpinterval = tmp;
+ 	tmp += clock->mult/2;
+ 	do_div(tmp, clock->mult);
+ 	if (tmp == 0)
+@@ -80,6 +83,7 @@ static void timekeeper_setup_internals(struct clocksource *clock)
+ 
+ 	/* Go back from cycles -> shifted ns */
+ 	timekeeper.xtime_interval = (u64) interval * clock->mult;
++	timekeeper.xtime_remainder = ntpinterval - timekeeper.xtime_interval;
+ 	timekeeper.raw_interval =
+ 		((u64) interval * clock->mult) >> clock->shift;
+ 
+@@ -746,7 +750,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 
+ 	/* Accumulate error between NTP and clock interval */
+ 	timekeeper.ntp_error += tick_length << shift;
+-	timekeeper.ntp_error -= timekeeper.xtime_interval <<
++	timekeeper.ntp_error -=
++	    (timekeeper.xtime_interval + timekeeper.xtime_remainder) <<
+ 				(timekeeper.ntp_error_shift + shift);
+ 
+ 	return offset;
 
- block/blk-flush.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-Index: block/block/blk-flush.c
-===================================================================
---- block.orig/block/blk-flush.c
-+++ block/block/blk-flush.c
-@@ -111,6 +111,13 @@ static struct request *queue_next_fseq(s
- 		break;
- 	case QUEUE_FSEQ_DATA:
- 		init_request_from_bio(rq, orig_rq->bio);
-+		/*
-+		 * orig_rq->rq_disk may be different from
-+		 * bio->bi_bdev->bd_disk if orig_rq got here through
-+		 * remapping drivers.  Make sure rq->rq_disk points
-+		 * to the same one as orig_rq.
-+		 */
-+		rq->rq_disk = orig_rq->rq_disk;
- 		rq->cmd_flags &= ~(REQ_FLUSH | REQ_FUA);
- 		rq->cmd_flags |= orig_rq->cmd_flags & (REQ_FLUSH | REQ_FUA);
- 		rq->end_io = flush_data_end_io;
