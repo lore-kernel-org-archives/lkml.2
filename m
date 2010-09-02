@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab0IBPsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 11:48:32 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58030 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756099Ab0IBPsa (ORCPT
+	id S1756396Ab0IBPsq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 11:48:46 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33315 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756371Ab0IBPso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 11:48:30 -0400
+	Thu, 2 Sep 2010 11:48:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=BmQZvZt9iAaRCWmOt9ROyBtOoBiLjfOGPvR7C/ynwDNB6ZgUlnS9Fkmm6wNVs6+u1P
-         cxMdDrfXmNZW+A3EH3dM40YWdVnSqPc2zWketgeBfWA5J3jTbj4bTLV0wacguB0/vXCr
-         gV9hx4a/5Dw7OkIfZqHpmeW2crCpgc4R9NfxE=
+        b=DfrRCfE16/GxAPY/S4asfdOP/4wc4k7f7dWrxQJRpH4O8SWsNQgiYwI9wZDiSAVFUb
+         imMmYsArWo2iU3skb4BGvn2tLgm3UiGJAC80myzNyXS2NGM7wjT3U7jM4789vQew34hw
+         ARuUmX3iUm4dXLYrqFm80/nV48+ywF9AD/XYQ=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [PATCH v2 18/24] ptrace: cleanup arch_ptrace() on powerpc
-Date: Fri,  3 Sep 2010 00:46:25 +0900
-Message-Id: <1283442391-23612-19-git-send-email-namhyung@gmail.com>
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH v2 21/24] ptrace: cleanup arch_ptrace() on sparc
+Date: Fri,  3 Sep 2010 00:46:28 +0900
+Message-Id: <1283442391-23612-22-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
 References: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
@@ -28,193 +27,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use new 'datavp' and 'datalp' variables in order to remove unnecessary
-castings.
+Factor out struct fps and remove redundant castings.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
- arch/powerpc/kernel/ptrace.c |   51 +++++++++++++++++++++--------------------
- 1 files changed, 26 insertions(+), 25 deletions(-)
+ arch/sparc/kernel/ptrace_32.c |   54 +++++++++++++++-------------------------
+ arch/sparc/kernel/ptrace_64.c |    8 +++---
+ 2 files changed, 24 insertions(+), 38 deletions(-)
 
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index e4b6d75..8d5301c 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -1409,26 +1409,28 @@ static long ppc_del_hwdebug(struct task_struct *child, long addr, long data)
- static long arch_ptrace_old(struct task_struct *child, long request,
- 			    unsigned long addr, unsigned long data)
- {
-+	void __user *datavp = (void __user *) data;
+diff --git a/arch/sparc/kernel/ptrace_32.c b/arch/sparc/kernel/ptrace_32.c
+index e08ba4a..27b9e93 100644
+--- a/arch/sparc/kernel/ptrace_32.c
++++ b/arch/sparc/kernel/ptrace_32.c
+@@ -323,19 +323,35 @@ const struct user_regset_view *task_user_regset_view(struct task_struct *task)
+ 	return &user_sparc32_view;
+ }
+ 
++struct fps {
++	unsigned long regs[32];
++	unsigned long fsr;
++	unsigned long flags;
++	unsigned long extra;
++	unsigned long fpqd;
++	struct fq {
++		unsigned long *insnaddr;
++		unsigned long insn;
++	} fpq[16];
++};
 +
- 	switch (request) {
- 	case PPC_PTRACE_GETREGS:	/* Get GPRs 0 - 31. */
- 		return copy_regset_to_user(child, &user_ppc_native_view,
- 					   REGSET_GPR, 0, 32 * sizeof(long),
--					   (void __user *) data);
-+					   datavp);
- 
- 	case PPC_PTRACE_SETREGS:	/* Set GPRs 0 - 31. */
- 		return copy_regset_from_user(child, &user_ppc_native_view,
- 					     REGSET_GPR, 0, 32 * sizeof(long),
--					     (const void __user *) data);
-+					     datavp);
- 
- 	case PPC_PTRACE_GETFPREGS:	/* Get FPRs 0 - 31. */
- 		return copy_regset_to_user(child, &user_ppc_native_view,
- 					   REGSET_FPR, 0, 32 * sizeof(double),
--					   (void __user *) data);
-+					   datavp);
- 
- 	case PPC_PTRACE_SETFPREGS:	/* Set FPRs 0 - 31. */
- 		return copy_regset_from_user(child, &user_ppc_native_view,
- 					     REGSET_FPR, 0, 32 * sizeof(double),
--					     (const void __user *) data);
-+					     datavp);
- 	}
- 
- 	return -EPERM;
-@@ -1438,6 +1440,8 @@ long arch_ptrace(struct task_struct *child, long request,
+ long arch_ptrace(struct task_struct *child, long request,
  		 unsigned long addr, unsigned long data)
  {
- 	int ret = -EPERM;
-+	void __user *datavp = (void __user *) data;
-+	unsigned long __user *datalp = datavp;
+ 	unsigned long addr2 = current->thread.kregs->u_regs[UREG_I4];
++	void __user *addr2p;
+ 	const struct user_regset_view *view;
++	struct pt_regs __user *pregs;
++	struct fps __user *fps;
+ 	int ret;
+ 
+ 	view = task_user_regset_view(current);
++	addr2p = (void __user *) addr2;
++	pregs = (struct pt_regs __user *) addr;
++	fps = (struct fps __user *) addr;
+ 
+ 	switch(request) {
+ 	case PTRACE_GETREGS: {
+-		struct pt_regs __user *pregs = (struct pt_regs __user *) addr;
+-
+ 		ret = copy_regset_to_user(child, view, REGSET_GENERAL,
+ 					  32 * sizeof(u32),
+ 					  4 * sizeof(u32),
+@@ -349,8 +365,6 @@ long arch_ptrace(struct task_struct *child, long request,
+ 	}
+ 
+ 	case PTRACE_SETREGS: {
+-		struct pt_regs __user *pregs = (struct pt_regs __user *) addr;
+-
+ 		ret = copy_regset_from_user(child, view, REGSET_GENERAL,
+ 					    32 * sizeof(u32),
+ 					    4 * sizeof(u32),
+@@ -364,19 +378,6 @@ long arch_ptrace(struct task_struct *child, long request,
+ 	}
+ 
+ 	case PTRACE_GETFPREGS: {
+-		struct fps {
+-			unsigned long regs[32];
+-			unsigned long fsr;
+-			unsigned long flags;
+-			unsigned long extra;
+-			unsigned long fpqd;
+-			struct fq {
+-				unsigned long *insnaddr;
+-				unsigned long insn;
+-			} fpq[16];
+-		};
+-		struct fps __user *fps = (struct fps __user *) addr;
+-
+ 		ret = copy_regset_to_user(child, view, REGSET_FP,
+ 					  0 * sizeof(u32),
+ 					  32 * sizeof(u32),
+@@ -398,19 +399,6 @@ long arch_ptrace(struct task_struct *child, long request,
+ 	}
+ 
+ 	case PTRACE_SETFPREGS: {
+-		struct fps {
+-			unsigned long regs[32];
+-			unsigned long fsr;
+-			unsigned long flags;
+-			unsigned long extra;
+-			unsigned long fpqd;
+-			struct fq {
+-				unsigned long *insnaddr;
+-				unsigned long insn;
+-			} fpq[16];
+-		};
+-		struct fps __user *fps = (struct fps __user *) addr;
+-
+ 		ret = copy_regset_from_user(child, view, REGSET_FP,
+ 					    0 * sizeof(u32),
+ 					    32 * sizeof(u32),
+@@ -425,8 +413,7 @@ long arch_ptrace(struct task_struct *child, long request,
+ 
+ 	case PTRACE_READTEXT:
+ 	case PTRACE_READDATA:
+-		ret = ptrace_readdata(child, addr,
+-				      (void __user *) addr2, data);
++		ret = ptrace_readdata(child, addr, addr2p, data);
+ 
+ 		if (ret == data)
+ 			ret = 0;
+@@ -436,8 +423,7 @@ long arch_ptrace(struct task_struct *child, long request,
+ 
+ 	case PTRACE_WRITETEXT:
+ 	case PTRACE_WRITEDATA:
+-		ret = ptrace_writedata(child, (void __user *) addr2,
+-				       addr, data);
++		ret = ptrace_writedata(child, addr2p, addr, data);
+ 
+ 		if (ret == data)
+ 			ret = 0;
+diff --git a/arch/sparc/kernel/ptrace_64.c b/arch/sparc/kernel/ptrace_64.c
+index d9db5a4..9ccc812 100644
+--- a/arch/sparc/kernel/ptrace_64.c
++++ b/arch/sparc/kernel/ptrace_64.c
+@@ -976,10 +976,12 @@ long arch_ptrace(struct task_struct *child, long request,
+ 	unsigned long addr2 = task_pt_regs(current)->u_regs[UREG_I4];
+ 	struct pt_regs __user *pregs;
+ 	struct fps __user *fps;
++	void __user *addr2p;
+ 	int ret;
+ 
+ 	pregs = (struct pt_regs __user *) addr;
+ 	fps = (struct fps __user *) addr;
++	addr2p = (void __user *) addr2;
  
  	switch (request) {
- 	/* read the word at location addr in the USER area. */
-@@ -1464,7 +1468,7 @@ long arch_ptrace(struct task_struct *child, long request,
- 			tmp = ((unsigned long *)child->thread.fpr)
- 				[TS_FPRWIDTH * (index - PT_FPR0)];
- 		}
--		ret = put_user(tmp,(unsigned long __user *) data);
-+		ret = put_user(tmp, datalp);
- 		break;
- 	}
+ 	case PTRACE_PEEKUSR:
+@@ -1030,8 +1032,7 @@ long arch_ptrace(struct task_struct *child, long request,
  
-@@ -1526,11 +1530,11 @@ long arch_ptrace(struct task_struct *child, long request,
- 		dbginfo.features = 0;
- #endif /* CONFIG_PPC_ADV_DEBUG_REGS */
+ 	case PTRACE_READTEXT:
+ 	case PTRACE_READDATA:
+-		ret = ptrace_readdata(child, addr,
+-				      (char __user *)addr2, data);
++		ret = ptrace_readdata(child, addr, addr2p, data);
+ 		if (ret == data)
+ 			ret = 0;
+ 		else if (ret >= 0)
+@@ -1040,8 +1041,7 @@ long arch_ptrace(struct task_struct *child, long request,
  
--		if (!access_ok(VERIFY_WRITE, data,
-+		if (!access_ok(VERIFY_WRITE, datavp,
- 			       sizeof(struct ppc_debug_info)))
- 			return -EFAULT;
--		ret = __copy_to_user((struct ppc_debug_info __user *)data,
--				     &dbginfo, sizeof(struct ppc_debug_info)) ?
-+		ret = __copy_to_user(datavp, &dbginfo,
-+				     sizeof(struct ppc_debug_info)) ?
- 		      -EFAULT : 0;
- 		break;
- 	}
-@@ -1538,11 +1542,10 @@ long arch_ptrace(struct task_struct *child, long request,
- 	case PPC_PTRACE_SETHWDEBUG: {
- 		struct ppc_hw_breakpoint bp_info;
- 
--		if (!access_ok(VERIFY_READ, data,
-+		if (!access_ok(VERIFY_READ, datavp,
- 			       sizeof(struct ppc_hw_breakpoint)))
- 			return -EFAULT;
--		ret = __copy_from_user(&bp_info,
--				       (struct ppc_hw_breakpoint __user *)data,
-+		ret = __copy_from_user(&bp_info, datavp,
- 				       sizeof(struct ppc_hw_breakpoint)) ?
- 		      -EFAULT : 0;
- 		if (!ret)
-@@ -1561,11 +1564,9 @@ long arch_ptrace(struct task_struct *child, long request,
- 		if (addr > 0)
- 			break;
- #ifdef CONFIG_PPC_ADV_DEBUG_REGS
--		ret = put_user(child->thread.dac1,
--			       (unsigned long __user *)data);
-+		ret = put_user(child->thread.dac1, datalp);
- #else
--		ret = put_user(child->thread.dabr,
--			       (unsigned long __user *)data);
-+		ret = put_user(child->thread.dabr, datalp);
- #endif
- 		break;
- 	}
-@@ -1581,7 +1582,7 @@ long arch_ptrace(struct task_struct *child, long request,
- 		return copy_regset_to_user(child, &user_ppc_native_view,
- 					   REGSET_GPR,
- 					   0, sizeof(struct pt_regs),
--					   (void __user *) data);
-+					   datavp);
- 
- #ifdef CONFIG_PPC64
- 	case PTRACE_SETREGS64:
-@@ -1590,19 +1591,19 @@ long arch_ptrace(struct task_struct *child, long request,
- 		return copy_regset_from_user(child, &user_ppc_native_view,
- 					     REGSET_GPR,
- 					     0, sizeof(struct pt_regs),
--					     (const void __user *) data);
-+					     datavp);
- 
- 	case PTRACE_GETFPREGS: /* Get the child FPU state (FPR0...31 + FPSCR) */
- 		return copy_regset_to_user(child, &user_ppc_native_view,
- 					   REGSET_FPR,
- 					   0, sizeof(elf_fpregset_t),
--					   (void __user *) data);
-+					   datavp);
- 
- 	case PTRACE_SETFPREGS: /* Set the child FPU state (FPR0...31 + FPSCR) */
- 		return copy_regset_from_user(child, &user_ppc_native_view,
- 					     REGSET_FPR,
- 					     0, sizeof(elf_fpregset_t),
--					     (const void __user *) data);
-+					     datavp);
- 
- #ifdef CONFIG_ALTIVEC
- 	case PTRACE_GETVRREGS:
-@@ -1610,40 +1611,40 @@ long arch_ptrace(struct task_struct *child, long request,
- 					   REGSET_VMX,
- 					   0, (33 * sizeof(vector128) +
- 					       sizeof(u32)),
--					   (void __user *) data);
-+					   datavp);
- 
- 	case PTRACE_SETVRREGS:
- 		return copy_regset_from_user(child, &user_ppc_native_view,
- 					     REGSET_VMX,
- 					     0, (33 * sizeof(vector128) +
- 						 sizeof(u32)),
--					     (const void __user *) data);
-+					     datavp);
- #endif
- #ifdef CONFIG_VSX
- 	case PTRACE_GETVSRREGS:
- 		return copy_regset_to_user(child, &user_ppc_native_view,
- 					   REGSET_VSX,
- 					   0, 32 * sizeof(double),
--					   (void __user *) data);
-+					   datavp);
- 
- 	case PTRACE_SETVSRREGS:
- 		return copy_regset_from_user(child, &user_ppc_native_view,
- 					     REGSET_VSX,
- 					     0, 32 * sizeof(double),
--					     (const void __user *) data);
-+					     datavp);
- #endif
- #ifdef CONFIG_SPE
- 	case PTRACE_GETEVRREGS:
- 		/* Get the child spe register state. */
- 		return copy_regset_to_user(child, &user_ppc_native_view,
- 					   REGSET_SPE, 0, 35 * sizeof(u32),
--					   (void __user *) data);
-+					   datavp);
- 
- 	case PTRACE_SETEVRREGS:
- 		/* Set the child spe register state. */
- 		return copy_regset_from_user(child, &user_ppc_native_view,
- 					     REGSET_SPE, 0, 35 * sizeof(u32),
--					     (const void __user *) data);
-+					     datavp);
- #endif
- 
- 	/* Old reverse args ptrace callss */
+ 	case PTRACE_WRITETEXT:
+ 	case PTRACE_WRITEDATA:
+-		ret = ptrace_writedata(child, (char __user *) addr2,
+-				       addr, data);
++		ret = ptrace_writedata(child, addr2p, addr, data);
+ 		if (ret == data)
+ 			ret = 0;
+ 		else if (ret >= 0)
 -- 
 1.7.2.2
 
