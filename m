@@ -1,102 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab0IBF7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 01:59:22 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:52954 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab0IBF7U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 01:59:20 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: [RFC 02/22] configfs: Add struct configfs_item_operations->check_link() in configfs_unlink()
-Date: Thu, 2 Sep 2010 00:31:07 -0400
-User-Agent: KMail/1.9.10
-Cc: "linux-scsi" <linux-scsi@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
-References: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
-In-Reply-To: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
+	id S1753687Ab0IBGD5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 02:03:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28881 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751204Ab0IBGD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 02:03:56 -0400
+Date: Thu, 2 Sep 2010 02:03:40 -0400
+From: Luke Macken <lmacken@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Jones <pjones@redhat.com>, Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Jaya Kumar <jayakumar.lkml@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCHv3] efifb: support the EFI framebuffer on more Apple hardware
+Message-ID: <20100902060340.GA21893@tomservo.cable.rcn.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201009020031.08750.konrad@darnok.org>
+In-Reply-To: <20100901234644.GA16172@tomservo.cable.rcn.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 August 2010 05:20:25 Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
->
-> This patch adds a optional struct configfs_item_operations->check_link()
-> check called in fs/configfs/symlink.c:configfs_unlink() that can be used by
-> configfs consumers to check for an explict struct config_group dependence
-> with active symlink and fail with -EPERM before the unlink(2) syscall is
-> allowed to occur.
->
-> Currently without this patch, there is not a method that a consumer can
-> tell configfs_unlink() that it needs to fail for this particular case. 
-> Allowing ->check_link() to propigate up the errno to VFS is also another
-> option for the call, but currently for TCM using the existing -EPERM in
-> configfs_unlink() is fine here.
->
-> Note this patch is used by TCM v4 generic configfs fabric module
-> infrastructure to allow  explict Initiator Port MappedLUNs symlinks to
-> create a dependency for the fabric TPG Port LUNs living in a configfs group
-> that is not a direct struct config_group parent.
->
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> ---
->  fs/configfs/symlink.c    |   13 +++++++++++++
->  include/linux/configfs.h |    1 +
->  2 files changed, 14 insertions(+), 0 deletions(-)
->
-> diff --git a/fs/configfs/symlink.c b/fs/configfs/symlink.c
-> index 0f3eb41..b8010de 100644
-> --- a/fs/configfs/symlink.c
-> +++ b/fs/configfs/symlink.c
-> @@ -205,6 +205,19 @@ int configfs_unlink(struct inode *dir, struct dentry
-> *dentry) parent_item = configfs_get_config_item(dentry->d_parent);
->  	type = parent_item->ci_type;
->
-> +	/*
-> +	 * See if the underlying struct config_item has dependent
-> +	 * symlinks, and should return -EPERM here.
-> +	 */
-> +	if (type && type->ct_item_ops &&
-> +	    type->ct_item_ops->check_link) {
-> +		if (type->ct_item_ops->check_link(parent_item,
-> +					sl->sl_target) != 0) {
-> +			config_item_put(parent_item);
-> +			goto out;
-> +		}
-> +	}
-> +
->  	spin_lock(&configfs_dirent_lock);
->  	list_del_init(&sd->s_sibling);
->  	spin_unlock(&configfs_dirent_lock);
-> diff --git a/include/linux/configfs.h b/include/linux/configfs.h
-> index ddb7a97..7c01d86 100644
-> --- a/include/linux/configfs.h
-> +++ b/include/linux/configfs.h
-> @@ -226,6 +226,7 @@ struct configfs_item_operations {
->  	ssize_t	(*show_attribute)(struct config_item *, struct configfs_attribute
-> *,char *); ssize_t	(*store_attribute)(struct config_item *,struct
-> configfs_attribute *,const char *, size_t); int (*allow_link)(struct
-> config_item *src, struct config_item *target); +	int (*check_link)(struct
-> config_item *src, struct config_item *target); int (*drop_link)(struct
-> config_item *src, struct config_item *target); };
+This patch enables the EFI framebuffer on 14 more Macs, including the
+iMac11,1 iMac10,1 iMac8,1 Macmini3,1 Macmini4,1 MacBook5,1 MacBook6,1
+MacBook7,1 MacBookPro2,2 MacBookPro5,2 MacBookPro5,3 MacBookPro6,1
+MacBookPro6,2 and MacBookPro7,1
 
-You might want to copy these folks:
+Information gathered from various user submissions.
 
-git/linux$ scripts/get_maintainer.pl -f fs/configfs/symlink.c
-Joel Becker <joel.becker@oracle.com>
-Tejun Heo <tj@kernel.org>
-Al Viro <viro@zeniv.linux.org.uk>
+    https://bugzilla.redhat.com/show_bug.cgi?id=528232
+    http://ubuntuforums.org/showthread.php?t=1557326
+
+Signed-off-by: Luke Macken <lmacken@redhat.com>
+
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index 815f84b..11de9ed 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -39,17 +39,31 @@ enum {
+ 	M_I20,		/* 20-Inch iMac */
+ 	M_I20_SR,	/* 20-Inch iMac (Santa Rosa) */
+ 	M_I24,		/* 24-Inch iMac */
++	M_I24_8_1,	/* 24-Inch iMac, 8,1th gen */
++	M_I24_10_1,	/* 24-Inch iMac, 10,1th gen */
++	M_I27_11_1,	/* 27-Inch iMac, 11,1th gen */
+ 	M_MINI,		/* Mac Mini */
++	M_MINI_3_1,	/* Mac Mini, 3,1th gen */
++	M_MINI_4_1,	/* Mac Mini, 4,1th gen */
+ 	M_MB,		/* MacBook */
+ 	M_MB_2,		/* MacBook, 2nd rev. */
+ 	M_MB_3,		/* MacBook, 3rd rev. */
++	M_MB_5_1,	/* MacBook, 5th rev. */
++	M_MB_6_1,	/* MacBook, 6th rev. */
++	M_MB_7_1,	/* MacBook, 7th rev. */
+ 	M_MB_SR,	/* MacBook, 2nd gen, (Santa Rosa) */
+ 	M_MBA,		/* MacBook Air */
+ 	M_MBP,		/* MacBook Pro */
+ 	M_MBP_2,	/* MacBook Pro 2nd gen */
++	M_MBP_2_2,	/* MacBook Pro 2,2nd gen */
+ 	M_MBP_SR,	/* MacBook Pro (Santa Rosa) */
+ 	M_MBP_4,	/* MacBook Pro, 4th gen */
+ 	M_MBP_5_1,    /* MacBook Pro, 5,1th gen */
++	M_MBP_5_2,	/* MacBook Pro, 5,2th gen */
++	M_MBP_5_3,	/* MacBook Pro, 5,3rd gen */
++	M_MBP_6_1,	/* MacBook Pro, 6,1th gen */
++	M_MBP_6_2,	/* MacBook Pro, 6,2th gen */
++	M_MBP_7_1,	/* MacBook Pro, 7,1th gen */
+ 	M_UNKNOWN	/* placeholder */
+ };
+ 
+@@ -64,14 +78,28 @@ static struct efifb_dmi_info {
+ 	[M_I20] = { "i20", 0x80010000, 1728 * 4, 1680, 1050 }, /* guess */
+ 	[M_I20_SR] = { "imac7", 0x40010000, 1728 * 4, 1680, 1050 },
+ 	[M_I24] = { "i24", 0x80010000, 2048 * 4, 1920, 1200 }, /* guess */
++	[M_I24_8_1] = { "imac8", 0xc0060000, 2048 * 4, 1920, 1200 },
++	[M_I24_10_1] = { "imac10", 0xc0010000, 2048 * 4, 1920, 1080 },
++	[M_I27_11_1] = { "imac11", 0xc0010000, 2560 * 4, 2560, 1440 },
+ 	[M_MINI]= { "mini", 0x80000000, 2048 * 4, 1024, 768 },
++	[M_MINI_3_1]= { "mini31", 0x40010000, 1024 * 4, 1024, 768 },
++	[M_MINI_4_1]= { "mini41", 0xc0010000, 2048 * 4, 1920, 1200 },
+ 	[M_MB] = { "macbook", 0x80000000, 2048 * 4, 1280, 800 },
++	[M_MB_5_1] = { "macbook51", 0x80010000, 2048 * 4, 1280, 800 },
++	[M_MB_6_1] = { "macbook61", 0x80010000, 2048 * 4, 1280, 800 },
++	[M_MB_7_1] = { "macbook71", 0x80010000, 2048 * 4, 1280, 800 },
+ 	[M_MBA] = { "mba", 0x80000000, 2048 * 4, 1280, 800 },
+ 	[M_MBP] = { "mbp", 0x80010000, 1472 * 4, 1440, 900 },
+ 	[M_MBP_2] = { "mbp2", 0, 0, 0, 0 }, /* placeholder */
++	[M_MBP_2_2] = { "mbp22", 0x80010000, 1472 * 4, 1440, 900 },
+ 	[M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900 },
+ 	[M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200 },
+ 	[M_MBP_5_1] = { "mbp51", 0xc0010000, 2048 * 4, 1440, 900 },
++	[M_MBP_5_2] = { "mbp52", 0xc0010000, 2048 * 4, 1920, 1200 },
++	[M_MBP_5_3] = { "mbp53", 0xd0010000, 2048 * 4, 1440, 900 },
++	[M_MBP_6_1] = { "mbp61", 0x90030000, 2048 * 4, 1920, 1200 },
++	[M_MBP_6_2] = { "mbp62", 0x90030000, 2048 * 4, 1680, 1050 },
++	[M_MBP_7_1] = { "mbp71", 0xc0010000, 2048 * 4, 1280, 800 },
+ 	[M_UNKNOWN] = { NULL, 0, 0, 0, 0 }
+ };
+ 
+@@ -92,7 +120,12 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac6,1", M_I24),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac6,1", M_I24),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac7,1", M_I20_SR),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac8,1", M_I24_8_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac10,1", M_I24_10_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac11,1", M_I27_11_1),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "Macmini1,1", M_MINI),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini3,1", M_MINI_3_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini4,1", M_MINI_4_1),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook1,1", M_MB),
+ 	/* At least one of these two will be right; maybe both? */
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook2,1", M_MB),
+@@ -101,14 +134,23 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook3,1", M_MB),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook3,1", M_MB),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook4,1", M_MB),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook5,1", M_MB_5_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook6,1", M_MB_6_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook7,1", M_MB_7_1),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir1,1", M_MBA),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro1,1", M_MBP),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,1", M_MBP_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,2", M_MBP_2_2),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro2,1", M_MBP_2),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro4,1", M_MBP_4),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,1", M_MBP_5_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,2", M_MBP_5_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,3", M_MBP_5_3),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,1", M_MBP_6_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,2", M_MBP_6_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro7,1", M_MBP_7_1),
+ 	{},
+ };
+ 
+-- 
+1.7.2.2
 
