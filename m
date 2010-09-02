@@ -1,84 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab0IBSBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 14:01:04 -0400
-Received: from fox.seas.upenn.edu ([158.130.68.12]:42772 "EHLO
-	fox.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab0IBSBB (ORCPT
+	id S1753495Ab0IBSEz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 14:04:55 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45169 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752356Ab0IBSEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 14:01:01 -0400
-Message-ID: <4C7FE63F.5010709@seas.upenn.edu>
-Date: Thu, 02 Sep 2010 14:00:31 -0400
-From: Rafi Rubin <rafi@seas.upenn.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
-MIME-Version: 1.0
-To: Jiri Slaby <jirislaby@gmail.com>
-CC: dmitry.torokhov@gmail.com, jkosina@suse.cz, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, micki@n-trig.com, rydberg@euromail.se,
-        chatty@enac.fr
-Subject: Re: [PATCH] identify firmware version
-References: <20100901020634.GD23585@core.coreip.homeip.net> <1283334517-15121-1-git-send-email-rafi@seas.upenn.edu> <4C7EB3A3.7050402@gmail.com> <4C7EEBEE.5030203@seas.upenn.edu> <4C7F5A4C.5040700@gmail.com>
-In-Reply-To: <4C7F5A4C.5040700@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 2 Sep 2010 14:04:53 -0400
+Date: Thu, 2 Sep 2010 11:09:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Martin Pirker <lkml.collector@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: Re: ACPI stuck for 45s at boot
+Message-Id: <20100902110919.a247d287.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTimSKenWEDkMZ-MAHGWMyGvq9+MGXtNqHAZHM_oE@mail.gmail.com>
+References: <AANLkTimSKenWEDkMZ-MAHGWMyGvq9+MGXtNqHAZHM_oE@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
- definitions=2010-09-02_10:2010-09-02,2010-09-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1005130000 definitions=main-1009020120
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+(cc linux-acpi)
 
-On 09/02/10 04:03, Jiri Slaby wrote:
-> On 09/02/2010 02:12 AM, Rafi Rubin wrote:
->>
->>
->> On 09/01/2010 04:12 PM, Jiri Slaby wrote:
->>> On 09/01/2010 11:48 AM, Rafi Rubin wrote:
->>>> --- a/drivers/hid/hid-ntrig.c
->>>> +++ b/drivers/hid/hid-ntrig.c
->>>> @@ -90,6 +90,26 @@ struct ntrig_data {
->>>>   };
->>>>
->>>>
->>>> +/*
->>>> + * This function converts the 4 byte raw firmware code into
->>>> + * a string containing 5 comma separated numbers.
->>>> + */
->>>> +static int ntrig_version_string(unsigned char *raw, char *buf)
->>>> +{
->>>> +    __u8 a =  (raw[1]&  0b00001110)>>  1;
->>>> +    __u8 b =  (raw[0]&  0b00111100)>>  2;
->>>> +    __u8 c = ((raw[0]&  0b00000011)<<  3) | ((raw[3]& 
->>>> 0b11100000)>>  5);
->>>> +    __u8 d = ((raw[3]&  0b00000111)<<  3) | ((raw[2]& 
->>>> 0b11100000)>>  5);
->>>> +    __u8 e =   raw[2]&  0b00000111;
->>>
->>> This won't compile with gcc 3.4 which we still support. Maybe time to
->>> kill the support?
->>>
->>> ...
->>
->> Why not?
+Probably raising a report against acpi at bugzilla.kernel.org would be
+the best way to handle this, please.  The ACPI guys use bugzilla very
+well.
+
+
+On Mon, 23 Aug 2010 15:42:25 +0200 Martin Pirker <lkml.collector@gmail.com> wrote:
+
+> Hi..
+> My kernel (2.6.35) gets stuck at boot, as dmesg documents:
+> ....
+> [    0.006590] ACPI: Core revision 20100121
+> [   45.278951] DMAR: Host address width 36
+> ...
 > 
-> Beacuse it's a gnu extension added in gcc 4.3. (I though it's in gcc 4.0
-> initially, but it's not. So you cannot use it in the kernel code at all.)
-
-Sorry, would you please clarify "it".  Which bit of syntax in that code is
-unsupported by the older versions of gcc?
-
-Rafi
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkx/5j8ACgkQwuRiAT9o60/uiACfTJkcLG/0m/4WQpBi82ugunc3
-WY4AoIpJglKNJRm4ST1VP5nE+AiMAMJ0
-=k6/0
------END PGP SIGNATURE-----
+> 
+> Setting acpi debugging to give-me-all-you-can produces ~120Mb dump.
+> The interesting part appears to be:
+> 
+> .....
+> [   36.016976] Table [SSDT](id 0006) - 28 Objects with 0 Devices 21
+> Methods 0 Regions
+> [   36.017120]   dsinit-0214 [ffffffff81a32020] [00]
+> ds_initialize_objects : 21 Methods, 0 Regions
+> [   36.017292]   nsload-0136 [ffffffff81a32020] [00] ns_load_table
+>     : **** Completed Table Method Parsing and Object Initialization
+> [   36.017477]  utmutex-0247 [ffffffff81a32020] [00] ut_acquire_mutex
+>     : Thread ffffffff81a32020 attempting to acquire Mutex
+> [ACPI_MTX_Tables]
+> [   36.017666]      osl-0879 [ffffffff81a32020] [00] os_wait_semaphore
+>     : Waiting for semaphore[ffff88013341e120|1|65535]
+> [   36.017848]      osl-0898 [ffffffff81a32020] [00] os_wait_semaphore
+>     : Acquired semaphore[ffff88013341e120|1|65535] utmutex-0255
+> [ffffffff81a32020] [00] ut_acquire_mutex      : Thread
+> ffffffff81a32020 acquired Mutex [ACPI_MTX_Tables]
+> [   36.018189]  tbxface-0610 [ffffffff81a32020] [00] tb_load_namespace
+>     : ACPI Tables successfully acquired
+> [   36.018366]  utmutex-0289 [ffffffff81a32020] [00] ut_release_mutex
+>     : Thread ffffffff81a32020 releasing Mutex [ACPI_MTX_Tables]
+> [   36.018552]      osl-0918 [ffffffff81a32020] [00]
+> os_signal_semaphore   : Signaling semaphore[ffff88013341e120|1]
+> [   36.018733]  utxface-0141 [ffffffff81a32020] [00] enable_subsystem
+>     : [Init] Going into ACPI mode
+> [   36.018912]  hwvalid-0147 [ffffffff81a32020] [00]
+> hw_validate_io_request: Address 0000000000001004 LastAddress
+> 0000000000001005 Length 2  hwregs-0188 [ffffffff81a32020] [00] hw_read
+>               : Read:  00001C00 width 16 from 0000000000001004
+> (SystemIO)
+> [   36.019290]  hwxface-0344 [ffffffff81a32020] [00] read_bit_register
+>     : BitReg E, ParentReg 3, Actual 00001C00, ReturnValue 00000000
+> [   36.019477]  hwvalid-0147 [ffffffff81a32020] [00]
+> hw_validate_io_request: Address 0000000000001004 LastAddress
+> 0000000000001005 Length 2  hwregs-0188 [ffffffff81a32020] [00] hw_read
+>               : Read:  00001C00 width 16 from 0000000000001004
+> (SystemIO)
+> [   36.019849]  hwxface-0344 [ffffffff81a32020] [00] read_bit_register
+>     : BitReg E, ParentReg 3, Actual 00001C00, ReturnValue 00000000
+> [   36.020036]  hwvalid-0147 [ffffffff81a32020] [00]
+> hw_validate_io_request: Address 00000000000000b2 LastAddress
+> 00000000000000b2 Length 1  hwacpi-0101 [ffffffff81a32020] [00]
+> hw_set_mode           : Attempting to enable ACPI mode
+> [   81.259054]  hwvalid-0147 [ffffffff81a32020] [00]
+> hw_validate_io_request: Address 0000000000001004 LastAddress
+> 0000000000001005 Length 2  hwregs-0188 [ffffffff81a32020] [00] hw_read
+>               : Read:  00001C01 width 16 from 0000000000001004
+> (SystemIO)
+> [   81.259418]  hwxface-0344 [ffffffff81a32020] [00] read_bit_register
+>     : BitReg E, ParentReg 3, Actual 00001C01, ReturnValue 00000001
+> [   81.259604]  utmutex-0247 [ffffffff81a32020] [00] ut_acquire_mutex
+>     : Thread ffffffff81a32020 attempting to acquire Mutex
+> [ACPI_MTX_Tables]
+> [   81.259794]      osl-0879 [ffffffff81a32020] [00] os_wait_semaphore
+>     : Waiting for semaphore[ffff88013341e120|1|65535]
+> [   81.259976]      osl-0898 [ffffffff81a32020] [00] os_wait_semaphore
+>     : Acquired semaphore[ffff88013341e120|1|65535] utmutex-0255
+> [ffffffff81a32020] [00] ut_acquire_mutex      : Thread
+> ffffffff81a32020 acquired Mutex [ACPI_MTX_Tables]
+> [   81.260336]  utmutex-0289 [ffffffff81a32020] [00] ut_release_mutex
+>     : Thread ffffffff81a32020 releasing Mutex [ACPI_MTX_Tables]
+> [   81.260523]      osl-0918 [ffffffff81a32020] [00]
+> os_signal_semaphore   : Signaling semaphore[ffff88013341e120|1]
+> [   81.260704] ftrace: converting mcount calls to 0f 1f 44 00 00
+> [   81.260771] ftrace: allocating 21295 entries in 84 pages
+> [   81.268939] DMAR: Host address width 36
+> .....
+> 
+> 
+> So....
+> What is happening here and whose fault is it?
+> Is it a Linux kernel or ACPI firmware problem?
+> 
+> Thanks for any pointers,
+> Martin
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
