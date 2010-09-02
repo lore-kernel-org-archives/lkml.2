@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab0IBNX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 09:23:27 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51432 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752012Ab0IBNX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 09:23:26 -0400
-Message-ID: <4C7FA531.7060300@kernel.org>
-Date: Thu, 02 Sep 2010 15:22:57 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1755025Ab0IBNYj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 09:24:39 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48296 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab0IBNYi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 09:24:38 -0400
+Date: Thu, 2 Sep 2010 14:24:20 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] Enabling Ethernet support for LogicPD's OMAP
+	3530LV SOM and OMAP 35x Torpedo dev board
+Message-ID: <20100902132420.GG26319@n2100.arm.linux.org.uk>
+References: <1282708420-26418-1-git-send-email-Jacob.Tanenbaum@logicpd.com> <1282708420-26418-2-git-send-email-Jacob.Tanenbaum@logicpd.com> <1282708420-26418-3-git-send-email-Jacob.Tanenbaum@logicpd.com> <1282708420-26418-4-git-send-email-Jacob.Tanenbaum@logicpd.com>
 MIME-Version: 1.0
-To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-CC: Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com,
-        j-nomura@ce.jp.nec.com, jamie@shareable.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-raid@vger.kernel.org, hch@lst.de
-Subject: Re: [PATCH UPDATED 4/5] dm: implement REQ_FLUSH/FUA support for request-based
- dm
-References: <1283162296-13650-1-git-send-email-tj@kernel.org> <1283162296-13650-5-git-send-email-tj@kernel.org> <20100830132836.GB5283@redhat.com> <4C7BB932.1070405@kernel.org> <4C7BD202.4040700@kernel.org> <4C7DFD8F.6070200@ct.jp.nec.com>
-In-Reply-To: <4C7DFD8F.6070200@ct.jp.nec.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 02 Sep 2010 13:23:01 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282708420-26418-4-git-send-email-Jacob.Tanenbaum@logicpd.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Aug 24, 2010 at 11:53:40PM -0400, Jacob Tanenbaum wrote:
+> +static inline void __init board_smsc911x_init(void)
+> +{
+> +	/* OMAP3530 LV SOM board */
+> +	if (machine_is_omap3530_lv_som()) {
+> +		board_smsc911x_data.gpio_irq =
+> +					OMAP3530_LV_SOM_SMSC911X_GPIO_IRQ;
+> +		/* board_smsc911x_data.gpio_reset
+> +			driven by SYS_nRESWARM, no GPIO */
+> +		/* omap_cfg_reg(AE1_34XX_GPIO152_UP); */
+> +		omap_mux_init_signal("gpio_152", OMAP_PIN_INPUT);
+> +
+> +/* omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);*/
+> +
+> +	/* OMAP3 Torpedo board */
 
-On 09/01/2010 09:15 AM, Kiyoshi Ueda wrote:
-> I don't see any obvious problem on this patch.
-> However, I hit a NULL pointer dereference below when I use a mpath
-> device with barrier option of ext3.  I'm investigating the cause now.
-> (Also I'm not sure the cause of the hang which Mike is hitting yet.)
-> 
-> I tried on the commit 28dd53b26d362c16234249bad61db8cbd9222d0b of
-> git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git flush-fua.
-> 
->     # mke2fs -j /dev/mapper/mpatha
->     # mount -o barrier=1 /dev/mapper/mpatha /mnt/0
->     # dd if=/dev/zero of=/mnt/0/a bs=512 count=1
->     # sync
+missing tab?  Maybe it would make sense to put this after the line below?
 
-Hmm... I'm trying to reproduce this problem but hasn't been successful
-yet.
+> +	} else if (machine_is_omap3_torpedo()) {
+> +		board_smsc911x_data.gpio_irq = OMAP3_TORPEDO_SMSC911X_GPIO_IRQ;
+> +		/* board_smsc911x_data.gpio_reset driven
+> +			by SYS_nRESWARM, no GPIO */
+> +		/*omap_cfg_reg(AE1_34XX_GPIO152_UP);*/
+> +		omap_mux_init_signal("gpio_129", OMAP_PIN_INPUT);
+> +		/* TODO/FIXME (comment by Peter Barada, LogicPD):
+> +		* On Torpedo, LAN9221 IRQ is an MMC1_DATA7 pin
+> +		* and IRQ1760 IRQ is MMC1_DATA4 pin - need
+> +		* to update PBIAS to get voltage to the device
+> +		* so the IRQs works correctly rather than float
+> +		* and cause an IRQ storm...
+> +								*/
+> +		omap3torpedo_fix_pbias_voltage();
+> +	/* unsupported board */
 
-> BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
-> IP: [<ffffffffa0070ec3>] scsi_finish_command+0xa3/0x120 [scsi_mod]
+missing tab?  or maybe it should be moved after the line below.
 
-Can you please ask gdb which source line this is?
-
-> Also, I have one comment below on this patch.
-> 
->> @@ -2619,9 +2458,8 @@ int dm_suspend(struct mapped_device *md,
->>  	up_write(&md->io_lock);
->>
->>  	/*
->> -	 * Request-based dm uses md->wq for barrier (dm_rq_barrier_work) which
->> -	 * can be kicked until md->queue is stopped.  So stop md->queue before
->> -	 * flushing md->wq.
->> +	 * Stop md->queue before flushing md->wq in case request-based
->> +	 * dm defers requests to md->wq from md->queue.
->>  	 */
->>  	if (dm_request_based(md))
->>  		stop_queue(md->queue);
-> 
-> Request-based dm doesn't use md->wq now, so you can just remove
-> the comment above.
-
-I sure can remove it but md->wq already has most stuff necessary to
-process deferred requests and when someone starts using it, having the
-comment there about the rather delicate ordering would definitely be
-helpful, so I suggest keeping the comment.
-
-Thanks.
-
--- 
-tejun
-
+> +	} else {
+> +		printk(KERN_ERR "%s(): unknown machine type\n", __func__);
+> +		return;
+> +	}
+> +	gpmc_smsc911x_init(&board_smsc911x_data);
+> +}
