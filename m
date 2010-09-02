@@ -1,58 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192Ab0IBRL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 13:11:28 -0400
-Received: from proxima.lp0.eu ([81.2.80.65]:40511 "EHLO proxima.lp0.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751964Ab0IBRL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 13:11:27 -0400
-Message-ID: <4C7FDABA.7080307@simon.arlott.org.uk>
-Date: Thu, 02 Sep 2010 18:11:22 +0100
-From: Simon Arlott <simon@fire.lp0.eu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100605 Thunderbird/3.0.4
+	id S1756060Ab0IBRLp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 13:11:45 -0400
+Received: from bounce-2.online.net ([88.191.253.47]:51568 "EHLO
+	bounce-2.online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab0IBRLn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 13:11:43 -0400
+X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Sep 2010 13:11:43 EDT
+Message-ID: <4C7FD8DB.6080009@free.fr>
+Date: Thu, 02 Sep 2010 19:03:23 +0200
+From: Albert ARIBAUD <albert.aribaud@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Greg KH <greg@kroah.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] USB: output an error message when the pipe type  doesn't
- match the endpoint type
-References: <Pine.LNX.4.44L0.1009021019090.1513-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1009021019090.1513-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org
+CC: Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH] add an option to control maximum line length
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
+X-auth-smtp-user: albert@aribaud.net 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/10 15:22, Alan Stern wrote:
-> On Thu, 2 Sep 2010, Simon Arlott wrote:
-> 
->> On Wed, September 1, 2010 18:49, Alan Stern wrote:
->> > On Wed, 1 Sep 2010, Simon Arlott wrote:
->> >> > This is okay with me.  If you're serious about not changing the
->> >> > behavior merely because debugging is enabled, you could move this test
->> >> > out of the debug-only region and possibly change the dev_err to
->> >> > dev_dbg.  However doing so might break some devices that are currently
->> >> > working.
-> 
-> Which suggests that the best approach is to print the error message 
-> always, but allow the submission unless CONFIG_USB_DEBUG is set.
+Some projects or people use checkpatch.pl but want a maximum
+line length different from 80: provide option --max-line-length
+which expects an integer (defaults to 80) as the length limit.
 
-That could result in a lot of error messages, and it doesn't give any
-information on which driver caused it, but a single WARN_ON() would
-only be triggered once globally. Each USB device (or endpoint) could
-have a "warned" flag.
+Signed-off-by: Albert Aribaud <albert.aribaud@free.fr>
+---
+  scripts/checkpatch.pl |   45 ++++++++++++++++++++++++---------------------
+  1 files changed, 24 insertions(+), 21 deletions(-)
 
->> Looking at usb_clear_halt(), it doesn't use the direction either... but
->> drivers can call it in both directions. Several drivers already do this.
-> 
-> What do you mean?  Look at the first lines of code in usb_clear_halt():
-> 
-> 	if (usb_pipein(pipe))
-> 		endp |= USB_DIR_IN;
-
-Sorry, I misread it as always selecting the same direction.
-
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 2039acd..4cd54ff 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -16,6 +16,7 @@ use Getopt::Long qw(:config no_auto_abbrev);
+   my $quiet = 0;
+  my $tree = 1;
++my $maxlinelength = 80;
+  my $chk_signoff = 1;
+  my $chk_patch = 1;
+  my $tst_only;
+@@ -41,6 +42,7 @@ Options:
+    -q, --quiet                quiet
+    --no-tree                  run without a kernel tree
+    --no-signoff               do not check for 'Signed-off-by' line
++  --max-line-length=LEN      warn for lines longer than LEN 
+characters(default 80)
+    --patch                    treat FILE as patchfile (default)
+    --emacs                    emacs compile window format
+    --terse                    one line per report
+@@ -64,24 +66,25 @@ EOM
+  }
+   GetOptions(
+-	'q|quiet+'	=> \$quiet,
+-	'tree!'		=> \$tree,
+-	'signoff!'	=> \$chk_signoff,
+-	'patch!'	=> \$chk_patch,
+-	'emacs!'	=> \$emacs,
+-	'terse!'	=> \$terse,
+-	'f|file!'	=> \$file,
+-	'subjective!'	=> \$check,
+-	'strict!'	=> \$check,
+-	'root=s'	=> \$root,
+-	'summary!'	=> \$summary,
+-	'mailback!'	=> \$mailback,
+-	'summary-file!'	=> \$summary_file,
+-
+-	'debug=s'	=> \%debug,
+-	'test-only=s'	=> \$tst_only,
+-	'h|help'	=> \$help,
+-	'version'	=> \$help
++	'q|quiet+'		=> \$quiet,
++	'tree!'			=> \$tree,
++	'max-line-length=i'	=> \$maxlinelength,
++	'signoff!'		=> \$chk_signoff,
++	'patch!'		=> \$chk_patch,
++	'emacs!'		=> \$emacs,
++	'terse!'		=> \$terse,
++	'f|file!'		=> \$file,
++	'subjective!'		=> \$check,
++	'strict!'		=> \$check,
++	'root=s'		=> \$root,
++	'summary!'		=> \$summary,
++	'mailback!'		=> \$mailback,
++	'summary-file!'		=> \$summary_file,
++
++	'debug=s'		=> \%debug,
++	'test-only=s'		=> \$tst_only,
++	'h|help'		=> \$help,
++	'version'		=> \$help
+  ) or help(1);
+   help(0) if ($help);
+@@ -1409,14 +1412,14 @@ sub process {
+  # check we are in a valid source file if not then ignore this hunk
+  		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
+  -#80 column limit
++#80 (or maxlinelength) column limit
+  		if ($line =~ /^\+/ && $prevrawline !~ /\/\*\*/ &&
+  		    $rawline !~ /^.\s*\*\s*\@$Ident\s/ &&
+  		    !($line =~ 
+/^\+\s*$logFunctions\s*\(\s*(?:(KERN_\S+\s*|[^"]*))?"[X\t]*"\s*(?:,|\)\s*;)\s*$/ 
+||
+  		    $line =~ /^\+\s*"[^"]*"\s*(?:\s*|,|\)\s*;)\s*$/) &&
+-		    $length > 80)
++		    $length > $maxlinelength)
+  		{
+-			WARN("line over 80 characters\n" . $herecurr);
++			WARN("line over $maxlinelength characters\n" . $herecurr);
+  		}
+   # check for spaces before a quoted newline
 -- 
-Simon Arlott
+1.7.1
+
+
+
