@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab0IBNVP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 09:21:15 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41379 "EHLO
+	id S1754990Ab0IBNW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 09:22:27 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41383 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192Ab0IBNVO (ORCPT
+	with ESMTP id S1752319Ab0IBNW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 09:21:14 -0400
-Date: Thu, 2 Sep 2010 14:20:58 +0100
+	Thu, 2 Sep 2010 09:22:26 -0400
+Date: Thu, 2 Sep 2010 14:22:11 +0100
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
 Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] initial support for LogicPD's OMAP3530LV SOM and
-	OMAP35x Torpedo dev boards
-Message-ID: <20100902132058.GE26319@n2100.arm.linux.org.uk>
-References: <1282708420-26418-1-git-send-email-Jacob.Tanenbaum@logicpd.com>
+Subject: Re: [PATCH 2/4]  Low-level init of hsmmc controller for LogicPD's
+	OMAP3530LV SOM and OMAP 35x Torpedo dev boards
+Message-ID: <20100902132211.GF26319@n2100.arm.linux.org.uk>
+References: <1282708420-26418-1-git-send-email-Jacob.Tanenbaum@logicpd.com> <1282708420-26418-2-git-send-email-Jacob.Tanenbaum@logicpd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1282708420-26418-1-git-send-email-Jacob.Tanenbaum@logicpd.com>
+In-Reply-To: <1282708420-26418-2-git-send-email-Jacob.Tanenbaum@logicpd.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 11:53:37PM -0400, Jacob Tanenbaum wrote:
-> +/* Micron MT46H32M32LF-6 */
-> +/* FIXME: borrowed from sdram-micron-mt46h32m32lf-6.h because on LogicPD
-> + * boards we can't use the default values -- why? I suspect the reason
-> + * lies in the boot strap code. We correct this part if we have ported
-> + * U-Boot and X-Load. */
-> +void init_sdram(struct omap_sdrc_params *sdrc_cs0){
+On Tue, Aug 24, 2010 at 11:53:38PM -0400, Jacob Tanenbaum wrote:
+> From: jake <jake@Glados.(none)>
 
-static?  { on the following line?
+Not a valid address... please fix.
 
-> +	sdrc_cs0[0].actim_ctrla = 0xaa9db4c6;
-> +	sdrc_cs0[0].actim_ctrlb = 0x00011517;
-> +	sdrc_cs0[0].rfr_ctrl    = 0x0004e201;
-> +	sdrc_cs0[1].rate        = 165941176;
-> +	sdrc_cs0[1].actim_ctrla = 0xaa9db4c6;
-> +	sdrc_cs0[1].actim_ctrlb = 0x00011217;
-> +	sdrc_cs0[1].rfr_ctrl    = 0x0004dc01;
-> +	sdrc_cs0[2].actim_ctrla = 0x8a99b481;
-> +	sdrc_cs0[2].actim_ctrlb = 0x00011312;
-> +	sdrc_cs0[2].rfr_ctrl    = 0x0003de017;
+> 
+>     	ARM: OMAP3LOGIC: Adding SDMMC support
+>              Add low-level initialization for hsmmc controller for
+>              LogicPD's OMAP 3530 LV SOM and OMAP 35x Torpedo board.
+> 
+> 	Tested against: 81e09f50c93edff607259cbe374a3006c9c5fa74
+> 	Signed-off-by: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
 
-36-bit hex numbers?
+I'm confused why these comments are indented.
 
-> +	sdrc_cs0[3].actim_ctrla = 0x8a99b481;
-> +	sdrc_cs0[3].actim_ctrlb = 0x00011312;
-> +	sdrc_cs0[3].rfr_ctrl    = 0x0003de01;
-> +}
+> +static void __init board_mmc_init(void)
+> +{
+> +	/* OMAP3530 LV SOM board */
+> +	if (machine_is_omap3530_lv_som()) {
+> +		board_mmc_info[0].gpio_cd = OMAP3530_LV_SOM_MMC_GPIO_CD;
+> +		board_mmc_info[0].gpio_wp = OMAP3530_LV_SOM_MMC_GPIO_WP;
+> +		omap_mux_init_signal("gpio_110", OMAP_PIN_OUTPUT);
+> +		omap_mux_init_signal("gpio_126", OMAP_PIN_OUTPUT);
 > +
-> +static struct regulator_consumer_supply omap3logic_vmmc1_supply = {
-> +		.supply			= "vmmc",
+> +
+> +	/* OMAP3 Torpedo board */
 
-Any reason for the additional tabs?
+missing tab?
 
+> +	} else if (machine_is_omap3_torpedo()) {
+> +		board_mmc_info[0].gpio_cd = OMAP3_TORPEDO_MMC_GPIO_CD;
+> +		omap_mux_init_signal("gpio_127", OMAP_PIN_OUTPUT);
+> +	/* unsupported board */
+
+missing tab?
+
+> +	} else {
+> +		printk(KERN_ERR "%s(): unknown machine type\n", __func__);
+> +	return;
+
+missing tab?
