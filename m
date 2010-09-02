@@ -1,35 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab0IBMTM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 08:19:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13136 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781Ab0IBMTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 08:19:11 -0400
-Message-ID: <4C7F9639.7000804@redhat.com>
-Date: Thu, 02 Sep 2010 15:19:05 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: kernelshark plugins and ftrace array fields
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753517Ab0IBMVh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 08:21:37 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:40807 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab0IBMVg convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Thu, 2 Sep 2010 08:21:36 -0400
+Message-Id: <4C7FB2EC0200007800013F1F@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 02 Sep 2010 13:21:32 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Resend: [PATCH] x86: eliminate pointless adjustment attempts
+	 in fixup_irqs()
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  I'd like to add enhance kvm_emulate_insn display in kernelshark to 
-show the disassembly of the instruction being emulated.  However, 
-pevent_get_field_val() doesn't support arrays (the instruction is 
-provided in a 15-byte array).
+Not only when an IRQ's affinity equals cpu_online_mask is there no
+need to actually try to adjust the affinity, but also when it's a
+subset thereof. This particularly avoids adjustment attempts during
+system shutdown to any IRQs bound to CPU#0.
 
-Can you add support for arrays in the kernelshark API?  With that, it 
-looks like adding disassembly output to the kvm plugin should be quite 
-simple.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
--- 
-error compiling committee.c: too many arguments to function
+---
+ arch/x86/kernel/irq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-2.6.36-rc3/arch/x86/kernel/irq.c
++++ 2.6.36-rc3-x86-reduce-irq-fixup/arch/x86/kernel/irq.c
+@@ -298,7 +298,7 @@ void fixup_irqs(void)
+ 
+ 		affinity = desc->affinity;
+ 		if (!irq_has_action(irq) ||
+-		    cpumask_equal(affinity, cpu_online_mask)) {
++		    cpumask_subset(affinity, cpu_online_mask)) {
+ 			raw_spin_unlock(&desc->lock);
+ 			continue;
+ 		}
+
+
 
