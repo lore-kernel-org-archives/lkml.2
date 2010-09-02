@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab0IBHRn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 03:17:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50822 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751131Ab0IBHRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 03:17:42 -0400
-Message-ID: <4C7F4F76.1040208@cn.fujitsu.com>
-Date: Thu, 02 Sep 2010 15:17:10 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1753806Ab0IBHTn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 03:19:43 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58774 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab0IBHTl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 03:19:41 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4C7F5032.70108@np.css.fujitsu.com>
+Date: Thu, 02 Sep 2010 16:20:18 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Chris Mason <chris.mason@oracle.com>, Yan Zheng <zheng.yan@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH V2 0/3] improve the performance of some memory copy functions
-References: <4C7F3A26.6020607@cn.fujitsu.com> <20100902065347.GA29972@elte.hu>
-In-Reply-To: <20100902065347.GA29972@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: APEI-lenb <lenb@kernel.org>
+CC: Huang Ying <ying.huang@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] [Patch-next] ACPI, APEI Fix the return value(==NULL)
+ of acpi_pre_map().
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010 08:53:47 +0200, Ingo Molnar wrote:
->
-> * Miao Xie<miaox@cn.fujitsu.com>  wrote:
->
->> - change the version of GPL from version 2.1 to version 2
->
-> How were you able to do this? If the code derives from glibc (as your
-> comments in the patches suggest), and if glibc is under the GPL v2.1,
-> then you probably cannot simply change the license to v2.
+acpi_pre_map() is used for remapping the physical address of I/O, so
+it should be return NULL or remapped virtual address. The problem is
+that when (paddr - pg_off) equals 0, no matter whether I/O remapping is
+successful or not, the function returns NULL.
 
-I think we can do it, because the orignal code is under LGPL v2.1,
-LGPL v2.1 permits us to apply the terms of the ordinary GNU General Public
-License instead of it.
+In acpi_pre_map(), after the physical address is remapped successfully,
+it will check whether the physical address has been added into acpi_iomaps
+list again.
+   - If the physical address has been added into acpi_iomaps, the virtual
+     address will be saved in vaddr.
+   - Otherwise, NULL be saved in vaddr.
 
-This is the clause of LGPL v2.1:
-3. You may opt to apply the terms of the ordinary GNU General Public
-License instead of this License to a given copy of the Library. To do
-this, you must alter all the notices that refer to this License, so
-that they refer to the ordinary GNU General Public License, version 2,
-instead of to this License. (If a newer version than version 2 of the
-ordinary GNU General Public License has appeared, then you can specify
-that version instead if you wish.) Do not make any other change in these
-notices.
+So if the physical address is the first time to be remapped, vaddr will be
+NULL always.
 
-Once this change is made in a given copy, it is irreversible for that copy,
-so the ordinary GNU General Public License applies to all subsequent copies
-and derivative works made from that copy.
+In many cases, (paddr - pg_off) may not equal 0. So the function could work
+well. In our machine, (paddr - pg_off) equals 0, so the return value of
+acpi_pre_map() is NULL.
 
-This option is useful when you wish to copy part of the code of the Library
-into a program that is not a library.
+This patch fixed it and I confirmed it on x86_64 next-tree.
 
-The following is the URL of LGPL v2.1:
-   http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+v2:
+    Modified the unsuitable description of patch.
 
-Thanks
-Miao
+v3:
+    Modified the wrong words in the description of patch.   
+
+Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Acked-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/acpi/atomicio.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
+index 8f8bd73..1bc2614 100644
+--- a/drivers/acpi/atomicio.c
++++ b/drivers/acpi/atomicio.c
+@@ -133,7 +133,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
+ 
+ 	spin_lock_irqsave(&acpi_iomaps_lock, flags);
+ 	vaddr = __acpi_try_ioremap(paddr, size);
+-	if (vaddr) {
++	if (unlikely(vaddr)) {
+ 		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+ 		iounmap(map->vaddr);
+ 		kfree(map);
+@@ -142,7 +142,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
+ 	list_add_tail_rcu(&map->list, &acpi_iomaps);
+ 	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+ 
+-	return vaddr + (paddr - pg_off);
++	return map->vaddr + (paddr - pg_off);
+ err_unmap:
+ 	iounmap(vaddr);
+ 	return NULL;
+-- 1.7.1.
+
