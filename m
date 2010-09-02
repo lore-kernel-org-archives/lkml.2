@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab0IBMoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 08:44:12 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:51846 "EHLO
+	id S1753471Ab0IBMqi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 08:46:38 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:51974 "EHLO
 	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab0IBMoL convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Thu, 2 Sep 2010 08:44:11 -0400
-Message-Id: <4C7FB8370200007800013F40@vpn.id2.novell.com>
+	with ESMTP id S1751781Ab0IBMqh convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:1>);
+	Thu, 2 Sep 2010 08:46:37 -0400
+Message-Id: <4C7FB8CA0200007800013F51@vpn.id2.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 02 Sep 2010 13:44:07 +0100
+Date: Thu, 02 Sep 2010 13:46:34 +0100
 From: "Jan Beulich" <JBeulich@novell.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <r.marek@assembler.cz>, <fenghua.yu@intel.com>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86/hwmon: fix configuration and initialization of
-	 coretemp and pkgtemp
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: use clear_page()/copy_page() in favor of
+	 memset()/memcpy() on whole pages
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -24,147 +23,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- using cpuid_eax() to determine feature availability on other than
-  the current CPU is invalid
-- feature availability shopuld also be check in the hotplug code path
-- pkgtemp doesn't depend on PCI altogether (apparently just inherited
-  from coretemp)
-- coretemp really only needs PCI for Atom support
+After all that's what they are intended for.
 
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Rudolf Marek <r.marek@assembler.cz>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 
 ---
- arch/x86/include/asm/cpufeature.h |    1 +
- arch/x86/kernel/cpu/scattered.c   |    1 +
- drivers/hwmon/Kconfig             |    5 +++--
- drivers/hwmon/coretemp.c          |   30 ++++++++++++++----------------
- drivers/hwmon/pkgtemp.c           |   11 +++--------
- 5 files changed, 22 insertions(+), 26 deletions(-)
+ arch/x86/kernel/machine_kexec_64.c |    4 ++--
+ arch/x86/kvm/lapic.c               |    3 +--
+ arch/x86/mm/init_32.c              |    4 ++--
+ arch/x86/mm/init_64.c              |    2 +-
+ 4 files changed, 6 insertions(+), 7 deletions(-)
 
---- linux-2.6.36-rc3/arch/x86/include/asm/cpufeature.h
-+++ 2.6.36-rc3-x86-hwmon/arch/x86/include/asm/cpufeature.h
-@@ -168,6 +168,7 @@
- #define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
- #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
- #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
-+#define X86_FEATURE_DTS		(7*32+31) /* Digital Thermal Sensor */
+--- linux-2.6.36-rc3/arch/x86/kernel/machine_kexec_64.c
++++ 2.6.36-rc3-x86-use-clear_page/arch/x86/kernel/machine_kexec_64.c
+@@ -36,7 +36,7 @@ static int init_one_level2_page(struct k
+ 		if (!page)
+ 			goto out;
+ 		pud = (pud_t *)page_address(page);
+-		memset(pud, 0, PAGE_SIZE);
++		clear_page(pud);
+ 		set_pgd(pgd, __pgd(__pa(pud) | _KERNPG_TABLE));
+ 	}
+ 	pud = pud_offset(pgd, addr);
+@@ -45,7 +45,7 @@ static int init_one_level2_page(struct k
+ 		if (!page)
+ 			goto out;
+ 		pmd = (pmd_t *)page_address(page);
+-		memset(pmd, 0, PAGE_SIZE);
++		clear_page(pmd);
+ 		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
+ 	}
+ 	pmd = pmd_offset(pud, addr);
+--- linux-2.6.36-rc3/arch/x86/kvm/lapic.c
++++ 2.6.36-rc3-x86-use-clear_page/arch/x86/kvm/lapic.c
+@@ -1056,14 +1056,13 @@ int kvm_create_lapic(struct kvm_vcpu *vc
  
- /* Virtualization flags: Linux defined, word 8 */
- #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
---- linux-2.6.36-rc3/arch/x86/kernel/cpu/scattered.c
-+++ 2.6.36-rc3-x86-hwmon/arch/x86/kernel/cpu/scattered.c
-@@ -31,6 +31,7 @@ void __cpuinit init_scattered_cpuid_feat
- 	const struct cpuid_bit *cb;
+ 	vcpu->arch.apic = apic;
  
- 	static const struct cpuid_bit __cpuinitconst cpuid_bits[] = {
-+		{ X86_FEATURE_DTS,		CR_EAX, 0, 0x00000006, 0 },
- 		{ X86_FEATURE_IDA,		CR_EAX, 1, 0x00000006, 0 },
- 		{ X86_FEATURE_ARAT,		CR_EAX, 2, 0x00000006, 0 },
- 		{ X86_FEATURE_PLN,		CR_EAX, 4, 0x00000006, 0 },
---- linux-2.6.36-rc3/drivers/hwmon/Kconfig
-+++ 2.6.36-rc3-x86-hwmon/drivers/hwmon/Kconfig
-@@ -401,7 +401,8 @@ config SENSORS_GL520SM
+-	apic->regs_page = alloc_page(GFP_KERNEL);
++	apic->regs_page = alloc_page(GFP_KERNEL|__GFP_ZERO);
+ 	if (apic->regs_page == NULL) {
+ 		printk(KERN_ERR "malloc apic regs error for vcpu %x\n",
+ 		       vcpu->vcpu_id);
+ 		goto nomem_free_apic;
+ 	}
+ 	apic->regs = page_address(apic->regs_page);
+-	memset(apic->regs, 0, PAGE_SIZE);
+ 	apic->vcpu = vcpu;
  
- config SENSORS_CORETEMP
- 	tristate "Intel Core/Core2/Atom temperature sensor"
--	depends on X86 && PCI && EXPERIMENTAL
-+	depends on X86 && EXPERIMENTAL
-+	depends on PCI || (!MATOM && !GENERIC_CPU && !X86_GENERIC)
- 	help
- 	  If you say yes here you get support for the temperature
- 	  sensor inside your CPU. Most of the family 6 CPUs
-@@ -409,7 +410,7 @@ config SENSORS_CORETEMP
+ 	hrtimer_init(&apic->lapic_timer.timer, CLOCK_MONOTONIC,
+--- linux-2.6.36-rc3/arch/x86/mm/init_32.c
++++ 2.6.36-rc3-x86-use-clear_page/arch/x86/mm/init_32.c
+@@ -67,7 +67,7 @@ static __init void *alloc_low_page(void)
+ 		panic("alloc_low_page: ran out of memory");
  
- config SENSORS_PKGTEMP
- 	tristate "Intel processor package temperature sensor"
--	depends on X86 && PCI && EXPERIMENTAL
-+	depends on X86 && EXPERIMENTAL
- 	help
- 	  If you say yes here you get support for the package level temperature
- 	  sensor inside your CPU. Check documentation/driver for details.
---- linux-2.6.36-rc3/drivers/hwmon/coretemp.c
-+++ 2.6.36-rc3-x86-hwmon/drivers/hwmon/coretemp.c
-@@ -423,9 +423,18 @@ static int __cpuinit coretemp_device_add
- 	int err;
- 	struct platform_device *pdev;
- 	struct pdev_entry *pdev_entry;
--#ifdef CONFIG_SMP
- 	struct cpuinfo_x86 *c = &cpu_data(cpu);
--#endif
-+
-+	/*
-+	 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
-+	 * sensors. We check this bit only, all the early CPUs
-+	 * without thermal sensors will be filtered out.
-+	 */
-+	if (!cpu_has(c, X86_FEATURE_DTS)) {
-+		printk(KERN_INFO DRVNAME ": CPU (model=0x%x)"
-+		       " has no thermal sensor.\n", c->x86_model);
-+		return 0;
-+	}
+ 	adr = __va(pfn * PAGE_SIZE);
+-	memset(adr, 0, PAGE_SIZE);
++	clear_page(adr);
+ 	return adr;
+ }
  
- 	mutex_lock(&pdev_list_mutex);
+@@ -558,7 +558,7 @@ char swsusp_pg_dir[PAGE_SIZE]
  
-@@ -527,20 +536,9 @@ static int __init coretemp_init(void)
- 	if (err)
- 		goto exit;
+ static inline void save_pg_dir(void)
+ {
+-	memcpy(swsusp_pg_dir, swapper_pg_dir, PAGE_SIZE);
++	copy_page(swsusp_pg_dir, swapper_pg_dir);
+ }
+ #else /* !CONFIG_ACPI_SLEEP */
+ static inline void save_pg_dir(void)
+--- linux-2.6.36-rc3/arch/x86/mm/init_64.c
++++ 2.6.36-rc3-x86-use-clear_page/arch/x86/mm/init_64.c
+@@ -293,7 +293,7 @@ static __ref void *alloc_low_page(unsign
+ 		panic("alloc_low_page: ran out of memory");
  
--	for_each_online_cpu(i) {
--		struct cpuinfo_x86 *c = &cpu_data(i);
--		/*
--		 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
--		 * sensors. We check this bit only, all the early CPUs
--		 * without thermal sensors will be filtered out.
--		 */
--		if (c->cpuid_level >= 6 && (cpuid_eax(0x06) & 0x01))
--			coretemp_device_add(i);
--		else {
--			printk(KERN_INFO DRVNAME ": CPU (model=0x%x)"
--				" has no thermal sensor.\n", c->x86_model);
--		}
--	}
-+	for_each_online_cpu(i)
-+		coretemp_device_add(i);
-+
- 	if (list_empty(&pdev_list)) {
- 		err = -ENODEV;
- 		goto exit_driver_unreg;
---- linux-2.6.36-rc3/drivers/hwmon/pkgtemp.c
-+++ 2.6.36-rc3-x86-hwmon/drivers/hwmon/pkgtemp.c
-@@ -33,7 +33,6 @@
- #include <linux/list.h>
- #include <linux/platform_device.h>
- #include <linux/cpu.h>
--#include <linux/pci.h>
- #include <asm/msr.h>
- #include <asm/processor.h>
- 
-@@ -281,9 +280,10 @@ static int __cpuinit pkgtemp_device_add(
- 	int err;
- 	struct platform_device *pdev;
- 	struct pdev_entry *pdev_entry;
--#ifdef CONFIG_SMP
- 	struct cpuinfo_x86 *c = &cpu_data(cpu);
--#endif
-+
-+	if (!cpu_has(c, X86_FEATURE_PTS))
-+		return 0;
- 
- 	mutex_lock(&pdev_list_mutex);
- 
-@@ -399,11 +399,6 @@ static int __init pkgtemp_init(void)
- 		goto exit;
- 
- 	for_each_online_cpu(i) {
--		struct cpuinfo_x86 *c = &cpu_data(i);
--
--		if (!cpu_has(c, X86_FEATURE_PTS))
--			continue;
--
- 		err = pkgtemp_device_add(i);
- 		if (err)
- 			goto exit_devices_unreg;
+ 	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
+-	memset(adr, 0, PAGE_SIZE);
++	clear_page(adr);
+ 	*phys  = pfn * PAGE_SIZE;
+ 	return adr;
+ }
+
 
 
