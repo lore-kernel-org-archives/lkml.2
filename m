@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750806Ab0IBEAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 00:00:46 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52820 "EHLO smtps.tip.net.au"
+	id S1750948Ab0IBENv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 00:13:51 -0400
+Received: from sh.osrg.net ([192.16.179.4]:33471 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750696Ab0IBEAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 00:00:45 -0400
-Date: Thu, 2 Sep 2010 14:00:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kevin Wells <wellsk40@gmail.com>
-Subject: Re: linux-next: manual merge of the input tree with the
- input-current tree
-Message-Id: <20100902140034.a72bce6c.sfr@canb.auug.org.au>
-In-Reply-To: <20100902024617.GA9303@core.coreip.homeip.net>
-References: <20100902115958.982d7618.sfr@canb.auug.org.au>
-	<20100902024617.GA9303@core.coreip.homeip.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1750729Ab0IBENt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 00:13:49 -0400
+Date: Thu, 2 Sep 2010 13:13:16 +0900
+To: naota@elisp.net, JBottomley@Novell.com
+Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, jkosina@suse.cz, gregkh@suse.de, daniel@caiaq.de,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] bsg: call idr_pre_get() outside the lock.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <m2eidda6bq.fsf@elisp.net>
+References: <m2eidda6bq.fsf@elisp.net>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__2_Sep_2010_14_00_34_+1000_eQLVIBlVNSoQKTqj"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100902123544M.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 02 Sep 2010 13:13:19 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__2_Sep_2010_14_00_34_+1000_eQLVIBlVNSoQKTqj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 01 Sep 2010 23:26:01 +0900
+Naohiro Aota <naota@elisp.net> wrote:
 
-Hi Dmitry,
+> The idr_pre_get() kernel-doc says "This function should be called
+> prior to locking and calling the idr_get_new* functions.", but the
+> idr_pre_get() calling in bsg_register_queue() is put inside
+> mutex_lock(). Let's fix it.
+> 
+> Signed-off-by: Naohiro Aota <naota@elisp.net>
+> ---
+>  block/bsg.c |   10 ++++------
+>  1 files changed, 4 insertions(+), 6 deletions(-)
 
-On Wed, 1 Sep 2010 19:46:17 -0700 Dmitry Torokhov <dmitry.torokhov@gmail.co=
-m> wrote:
->
-> Doh! I did not mean to put mrst changes into 'for-linus'. It is too late
-> to re-fetch, isn't it?
+Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
-It is too late for next-20100902, but if you haven't asked Linus to pull
-your tree, just remove it again (I will just fetch and merge whatever you
-have in your tree tomorrow).  (In any case, he is not pulling stuff this
-week.)
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Thanks,
 
---Signature=_Thu__2_Sep_2010_14_00_34_+1000_eQLVIBlVNSoQKTqj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMfyFiAAoJEDMEi1NhKgbsDEsIAJ6VTucodKfoNV5IPJ1dFb1C
-6AG92BmFKw3nv0dtZBmYMijabPtS+i1UvLniQhKCspQF9vTOHwmqmgTGP+IZWHDT
-oEb6zdMB9OpPpWzOgsTQxKmiIwyw3ulp14BTBR6a+d8pV5twz9ROP6LH3/Qkm1/U
-u/DHAPfVbbewULQMT4xW6YGx1RA5LZ5a+qTJ0H/VxXQyutkhcLWAMUM6mFZsMcwq
-cmE9z7IubEHX3qq+9XhOzPVUzDWLUVYNiWITvhfyVF6sv4ZJJ71ZNRpJN6oJqBrb
-8fIoSGGJA91RE84SbQWpYkmEzhAbmvfNgFrM5LXQelclRDMslBpV/dk3AapUzjo=
-=ktIp
------END PGP SIGNATURE-----
-
---Signature=_Thu__2_Sep_2010_14_00_34_+1000_eQLVIBlVNSoQKTqj--
+James, can you merge this via your tree?
