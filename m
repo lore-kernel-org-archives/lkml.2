@@ -1,231 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab0IBAaY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 20:30:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54112 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752182Ab0IBAaX convert rfc822-to-8bit (ORCPT
+	id S1755739Ab0IBAbV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 20:31:21 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41939 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397Ab0IBAbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 20:30:23 -0400
-Message-ID: <4C7EF02D.9040202@cn.fujitsu.com>
-Date: Thu, 02 Sep 2010 08:30:37 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Wed, 1 Sep 2010 20:31:20 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
+Cc: kosaki.motohiro@jp.fujitsu.com, "M. Vefa Bicakci" <bicave@superonline.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org
+In-Reply-To: <201009020002.25113.rjw@sisk.pl>
+References: <20100901093219.9744.A69D9226@jp.fujitsu.com> <201009020002.25113.rjw@sisk.pl>
+Message-Id: <20100902091010.D050.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Nauman Rafique <nauman@google.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Moyer <jmoyer@redhat.com>, Divyesh Shah <dpshah@google.com>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC] [PATCH] cfq-iosched: add cfq group hierarchical scheduling
- support
-References: <4C7B54C0.7080008@cn.fujitsu.com> <20100830203644.GA15903@redhat.com> <4C7C4CE0.5080402@cn.fujitsu.com> <20100831125737.GA2527@redhat.com> <AANLkTi=daFyrx+ts4DoAHwR8EHUfF0nYyv45zJkBFm--@mail.gmail.com> <20100831192524.GD2527@redhat.com> <4C7E13CE.7070603@cn.fujitsu.com> <AANLkTinKcx4hTPX3CSVor-6GwhEYrsW25jenf67ksSHp@mail.gmail.com> <20100901171027.GA22149@redhat.com> <AANLkTin8zv9GdBnSsU-a2XjeqXrvr0fTNY2ZMTbGxiVd@mail.gmail.com>
-In-Reply-To: <AANLkTin8zv9GdBnSsU-a2XjeqXrvr0fTNY2ZMTbGxiVd@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  2 Sep 2010 09:31:14 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nauman Rafique wrote:
-> On Wed, Sep 1, 2010 at 10:10 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> On Wed, Sep 01, 2010 at 08:49:26AM -0700, Nauman Rafique wrote:
->>> On Wed, Sep 1, 2010 at 1:50 AM, Gui Jianfeng <guijianfeng@cn.fujitsu.com> wrote:
->>>> Vivek Goyal wrote:
->>>>> On Tue, Aug 31, 2010 at 08:40:19AM -0700, Nauman Rafique wrote:
->>>>>> On Tue, Aug 31, 2010 at 5:57 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->>>>>>> On Tue, Aug 31, 2010 at 08:29:20AM +0800, Gui Jianfeng wrote:
->>>>>>>> Vivek Goyal wrote:
->>>>>>>>> On Mon, Aug 30, 2010 at 02:50:40PM +0800, Gui Jianfeng wrote:
->>>>>>>>>> Hi All,
->>>>>>>>>>
->>>>>>>>>> This patch enables cfq group hierarchical scheduling.
->>>>>>>>>>
->>>>>>>>>> With this patch, you can create a cgroup directory deeper than level 1.
->>>>>>>>>> Now, I/O Bandwidth is distributed in a hierarchy way. For example:
->>>>>>>>>> We create cgroup directories as following(the number represents weight):
->>>>>>>>>>
->>>>>>>>>>             Root grp
->>>>>>>>>>            /       \
->>>>>>>>>>        grp_1(100) grp_2(400)
->>>>>>>>>>        /    \
->>>>>>>>>>   grp_3(200) grp_4(300)
->>>>>>>>>>
->>>>>>>>>> If grp_2 grp_3 and grp_4 are contending for I/O Bandwidth,
->>>>>>>>>> grp_2 will share 80% of total bandwidth.
->>>>>>>>>> For sub_groups, grp_3 shares 8%(20% * 40%), grp_4 shares 12%(20% * 60%)
->>>>>>>>>>
->>>>>>>>>> Design:
->>>>>>>>>>   o Each cfq group has its own group service tree.
->>>>>>>>>>   o Each cfq group contains a "group schedule entity" (gse) that
->>>>>>>>>>     schedules on parent cfq group's service tree.
->>>>>>>>>>   o Each cfq group contains a "queue schedule entity"(qse), it
->>>>>>>>>>     represents all cfqqs located on this cfq group. It schedules
->>>>>>>>>>     on this group's service tree. For the time being, root group
->>>>>>>>>>     qse's weight is 1000, and subgroup qse's weight is 500.
->>>>>>>>>>   o All gses and qse which belones to a same cfq group schedules
->>>>>>>>>>     on the same group service tree.
->>>>>>>>> Hi Gui,
->>>>>>>>>
->>>>>>>>> Thanks for the patch. I have few questions.
->>>>>>>>>
->>>>>>>>> - So how does the hierarchy look like, w.r.t root group. Something as
->>>>>>>>>   follows?
->>>>>>>>>
->>>>>>>>>
->>>>>>>>>                     root
->>>>>>>>>                    / | \
->>>>>>>>>                  q1  q2 G1
->>>>>>>>>
->>>>>>>>> Assume there are two processes doin IO in root group and q1 and q2 are
->>>>>>>>> cfqq queues for those processes and G1 is the cgroup created by user.
->>>>>>>>>
->>>>>>>>> If yes, then what algorithm do you use to do scheduling between q1, q2
->>>>>>>>> and G1? IOW, currently we have two algorithms operating in CFQ. One for
->>>>>>>>> cfqq and other for groups. Group algorithm does not use the logic of
->>>>>>>>> cfq_slice_offset().
->>>>>>>> Hi Vivek,
->>>>>>>>
->>>>>>>> This patch doesn't break the original sheduling logic. That is cfqg => st => cfqq.
->>>>>>>> If q1 and q2 in root group, I treat q1 and q2 bundle as a queue sched entity, and
->>>>>>>> it will schedule on root group service with G1, as following:
->>>>>>>>
->>>>>>>>                          root group
->>>>>>>>                         /         \
->>>>>>>>                     qse(q1,q2)    gse(G1)
->>>>>>>>
->>>>>>> Ok. That's interesting. That raises another question that how hierarchy
->>>>>>> should look like. IOW, how queue and groups should be treated in
->>>>>>> hierarchy.
->>>>>>>
->>>>>>> CFS cpu scheduler treats queues and group at the same level. That is as
->>>>>>> follows.
->>>>>>>
->>>>>>>                        root
->>>>>>>                        / | \
->>>>>>>                       q1 q2 G1
->>>>>>>
->>>>>>> In the past I had raised this question and Jens and corrado liked treating
->>>>>>> queues and group at same level.
->>>>>>>
->>>>>>> Logically, q1, q2 and G1 are all children of root, so it makes sense to
->>>>>>> treat them at same level and not group q1 and q2 in to a single entity and
->>>>>>> group.
->>>>>>>
->>>>>>> One of the possible way forward could be this.
->>>>>>>
->>>>>>> - Treat queue and group at same level (like CFS)
->>>>>>>
->>>>>>> - Get rid of cfq_slice_offset() logic. That means without idling on, there
->>>>>>>  will be no ioprio difference between cfq queues. I think anyway as of
->>>>>>>  today that logic helps in so little situations that I would not mind
->>>>>>>  getting rid of it. Just that Jens should agree to it.
->>>>>>>
->>>>>>> - With this new scheme, it will break the existing semantics of root group
->>>>>>>  being at same level as child groups. To avoid that, we can probably
->>>>>>>  implement two modes (flat and hierarchical), something similar to what
->>>>>>>  memory cgroup controller has done. May be one tunable in root cgroup of
->>>>>>>  blkio "use_hierarchy".  By default everything will be in flat mode and
->>>>>>>  if user wants hiearchical control, he needs to set user_hierarchy in
->>>>>>>  root group.
->>>>>> Vivek, may be I am reading you wrong here. But you are first
->>>>>> suggesting to add more complexity to treat queues and group at the
->>>>>> same level. Then you are suggesting add even more complexity to fix
->>>>>> the problems caused by that approach.
->>>>>>
->>>>>> Why do we need to treat queues and group at the same level? "CFS does
->>>>>> it" is not a good argument.
->>>>> Sure it is not a very good argument but at the same time one would need
->>>>> a very good argument that why we should do things differently.
->>>>>
->>>>> - If a user has mounted cpu and blkio controller together and both the
->>>>>   controllers are viewing the same hierarchy differently, then it is
->>>>>   odd. We need a good reason that why different arrangement makes sense.
->>>> Hi Vivek，
->>>>
->>>> Even if we mount cpu and blkio together, to me, it's ok for cpu and blkio
->>>> having their own logic, since they are totally different cgroup subsystems.
->>>>
->>>>> - To me, both group and cfq queue are children of root group and it
->>>>>   makes sense to treat them independent childrens instead of putting
->>>>>   all the queues in one logical group which inherits the weight of
->>>>>   parent.
->>>>>
->>>>> - With this new scheme, I am finding it hard to visualize the hierachy.
->>>>>   How do you assign the weights to queue entities of a group. It is more
->>>>>   like a invisible group with-in group. We shall have to create new
->>>>>   tunable which can speicy the weight for this hidden group.
->>>> For the time being, the root "qse" weight is 1000 and others is 500, they don't
->>>> inherit the weight of parent. I was thinking that maybe we can determine the qse
->>>> weight in term of the queue number and weight in this group and subgroups.
->>>>
->>>> Thanks,
->>>> Gui
->>>>
->>>>>
->>>>> So in summary I am liking the "queue at same level as group" scheme for
->>>>> two reasons.
->>>>>
->>>>> - It is more intutive to visualize and implement. It follows the true
->>>>>   hierarchy as seen by cgroup file system.
->>>>>
->>>>> - CFS has already implemented this scheme. So we need a strong arguemnt
->>>>>   to justify why we should not follow the same thing. Especially for
->>>>>   the case where user has co-mounted cpu and blkio controller.
->>>>>
->>>>> - It can achieve the same goal as "hidden group" proposal just by
->>>>>   creating a cgroup explicitly and moving all threads in that group.
->>>>>
->>>>> Why do you think that "hidden group" proposal is better than "treating
->>>>> queue at same level as group" ?
->>> There are multiple reasons for "hidden group" proposal being a better approach.
->>>
->>> - "Hidden group" would allow us to keep scheduling queues using the
->>> CFQ queue scheduling logic. And does not require any major changes in
->>> CFQ. Aren't we already using that approach to deal with queues at the
->>> root group?
->> Currently we are operating in flat mode where all the groups are at
->> same level (irrespective their position in cgroup hiearchy).
->>
->>> - If queues and groups are treated at the same level, queues can end
->>> up in root cgroup. And we cannot put an upper bound on the number of
->>> those queues. Those queues can consume system resources in proportion
->>> to their number, causing the performance of groups to suffer. If we
->>> have "hidden group", we can configure it to a small weight, and that
->>> would limit the impact these queues in root group can have.
->> To limit the impact of other queues in cgroup, one can use libcgroup to
->> automatically place new threads or tasks into a subgroup.
->>
->> I understand that kernel doing it by default should help though. It is
->> less work in terms of configuration. But I am not sure that's a good
->> argument to design kernel functionality. Kernel functionality should be
->> pretty generic.
->>
->> Anyway, how would you assign the weight to the hidden group. What's the
->> interface for that? A new cgroup file inside each cgroup? Personally
->> I think that's little odd interface. Every group has one hidden group
->> where all the queues in that group go and weight of that group can be
->> specified by a cgroup file.
+> On Wednesday, September 01, 2010, KOSAKI Motohiro wrote:
+> > > === 8< ===
+> > > PM: Marking nosave pages: ...0009f000 - ...000100000
+> > > PM: basic memory bitmaps created
+> > > PM: Syncing filesystems ... done
+> > > Freezing user space processes ... (elapsed 0.01 seconds) done.
+> > > Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+> > > PM: Preallocating image memory...
+> > > shrink_all_memory start
+> > > PM: shrink memory: pass=1, req:310171 reclaimed:15492 free:360936
+> > > PM: shrink memory: pass=2, req:294679 reclaimed:28864 free:373981
+> > > PM: shrink memory: pass=3, req:265815 reclaimed:60311 free:405374
+> > > PM: shrink memory: pass=4, req:205504 reclaimed:97870 free:443024
+> > > PM: shrink memory: pass=5, req:107634 reclaimed:146948 free:492141
+> > > shrink_all_memory: req:107634 reclaimed:146948 free:492141
+> > > PM: preallocate_image_highmem 556658 278329
+> > > PM: preallocate_image_memory 103139 103139
+> > > PM: preallocate_highmem_fraction 183908 556658 760831 -> 183908
+> > > === >8 ===
+> > 
+> > Rafael, this log mean hibernate_preallocate_memory() has a bug.
 > 
-> I think picking a reasonable default weight at compile time is not
-> that bad an option, given that threads showing up in the "hidden
-> group" is an uncommon case.
-
-Hi Nauman,
-
-Later, I think we might adjust the weight of "hidden group" automatically
-according to the queue number and subgroup number and their weight.
-But for the time being, i'd choose a fixed value for the sake of simplicity.
-
-Gui
-
+> Well, it works as designed ...
 > 
->> But anyway, I am not tied to any of the approach. I am just trying to
->> make sure that we have put enough thought into it as changing it later
->> will be hard.
->>
->> Vivek
->>
+> > It allocate memory as following order.
+> >  1. preallocate_image_highmem()  (i.e. __GFP_HIGHMEM)
+> >  2. preallocate_image_memory()   (i.e. GFP_KERNEL)
+> >  3. preallocate_highmem_fraction (i.e. __GFP_HIGHMEM)
+> >  4. preallocate_image_memory()   (i.e. GFP_KERNEL)
+> > 
+> > But, please imazine following scenario (as Vefa's scenario).
+> >  - system has 3GB memory. 1GB is normal. 2GB is highmem.
+> >  - all normal memory is free
+> >  - 1.5GB memory of highmem are used for tmpfs. rest 500MB is free.
 > 
+> Indeed, that's a memory allocation pattern I didn't anticipate.
 > 
+> > At that time, hibernate_preallocate_memory() works as following.
+> > 
+> > 1. call preallocate_image_highmem(1GB)
+> > 2. call preallocate_image_memory(500M)		total 1.5GB allocated
+> > 3. call preallocate_highmem_fraction(660M)	total 2.2GB allocated
+> > 
+> > then, all of normal zone memory was exhaust. next preallocate_image_memory()
+> > makes OOM, and oom_killer_disabled makes infinite loop.
+> > (oom_killer_disabled careless is vmscan bug. I'll fix it soon)
+> 
+> So, it looks like the problem will go away if we check if there are any normal
+> pages to allocate from before calling the last preallocate_image_memory()?
+> 
+> Like in the patch below, perhaps?
+
+Looks like fine. but I have one question. hibernate_preallocate_memory() call
+preallocate_image_memory() two times. Why do you only care latter one?
+former one seems similar risk.
+
+
+> > The problem is, alloc_pages(__GFP_HIGHMEM) -> alloc_pages(GFP_KERNEL) is
+> > wrong order. alloc_pages(__GFP_HIGHMEM) may allocate page from lower zone.
+> > then, next alloc_pages(GFP_KERNEL) lead to OOM.
+> > 
+> > Please consider alloc_pages(GFP_KERNEL) -> alloc_pages(__GFP_HIGHMEM) order.
+> > Even though vmscan fix can avoid infinite loop, OOM situation might makes
+> > big slow down on highmem machine. It seems no good.
+> 
+> There's a problem with the ordering change that it wouldn't be clear how many
+> pages to request from the normal zone in step 1 and 3.
+
+ok, I see. thanks for good correction my mistake.
+
+
+
+
