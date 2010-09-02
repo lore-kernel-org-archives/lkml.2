@@ -1,142 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab0IBGD5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 02:03:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28881 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204Ab0IBGD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 02:03:56 -0400
-Date: Thu, 2 Sep 2010 02:03:40 -0400
-From: Luke Macken <lmacken@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Jones <pjones@redhat.com>, Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Jaya Kumar <jayakumar.lkml@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCHv3] efifb: support the EFI framebuffer on more Apple hardware
-Message-ID: <20100902060340.GA21893@tomservo.cable.rcn.com>
+	id S1754238Ab0IBGLZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 02:11:25 -0400
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:58607 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752504Ab0IBGLX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 02:11:23 -0400
+Date: Thu, 2 Sep 2010 16:11:16 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.36-rc3: inconsistent lock state (iprune_sem,
+ shrink_icache_memory)
+Message-ID: <20100902061116.GW705@dastard>
+References: <tkrat.ed8eda6bc8ffe64e@s5r6.in-berlin.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100901234644.GA16172@tomservo.cable.rcn.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <tkrat.ed8eda6bc8ffe64e@s5r6.in-berlin.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables the EFI framebuffer on 14 more Macs, including the
-iMac11,1 iMac10,1 iMac8,1 Macmini3,1 Macmini4,1 MacBook5,1 MacBook6,1
-MacBook7,1 MacBookPro2,2 MacBookPro5,2 MacBookPro5,3 MacBookPro6,1
-MacBookPro6,2 and MacBookPro7,1
+On Wed, Sep 01, 2010 at 08:37:43AM +0200, Stefan Richter wrote:
+> I switched from 2.6.35 to 2.6.36-rc3 a few days ago and while doing so
+> enabled lockdep.  Just got the following report during normal desktop
+> usage:
+> 
+> =================================
+> [ INFO: inconsistent lock state ]
+> 2.6.36-rc3 #3
+> ---------------------------------
+> inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
+> kswapd0/436 [HC0[0]:SC0[0]:HE1:SE1] takes:
+>  (iprune_sem){+++++-}, at: [<ffffffff810bde0b>] shrink_icache_memory+0x48/0x217
+> {RECLAIM_FS-ON-W} state was registered at:
+>   [<ffffffff810598b3>] mark_held_locks+0x4d/0x6b
+>   [<ffffffff8105995f>] lockdep_trace_alloc+0x8e/0xa7
+>   [<ffffffff810a5a7f>] kmem_cache_alloc+0x2a/0xc8
+>   [<ffffffff810d4f8a>] fsnotify_create_event+0x39/0x160
+>   [<ffffffff810d49e8>] send_to_group+0x108/0x13f
+>   [<ffffffff810d4b86>] fsnotify+0x167/0x266
+>   [<ffffffff810d57d0>] fsnotify_unmount_inodes+0xb8/0xf9
+>   [<ffffffff810bda9b>] invalidate_inodes+0x4b/0x13a
+>   [<ffffffff810ad3e5>] generic_shutdown_super+0x42/0xd2
+>   [<ffffffff810ad497>] kill_block_super+0x22/0x3a
+>   [<ffffffff810aca61>] deactivate_locked_super+0x21/0x41
+>   [<ffffffff810acc39>] deactivate_super+0x40/0x44
+>   [<ffffffff810c1c29>] mntput_no_expire+0xdc/0x10a
+>   [<ffffffff810c2e5d>] sys_umount+0x2a4/0x2d1
+>   [<ffffffff81001feb>] system_call_fastpath+0x16/0x1b
+> irq event stamp: 281663
+> hardirqs last  enabled at (281663): [<ffffffff81072d32>] __call_rcu+0x119/0x125
+> hardirqs last disabled at (281662): [<ffffffff81072c41>] __call_rcu+0x28/0x125
+> softirqs last  enabled at (278242): [<ffffffff81038cff>] __do_softirq+0x14a/0x15b
+> softirqs last disabled at (278217): [<ffffffff81002e8c>] call_softirq+0x1c/0x28
+> 
+> other info that might help us debug this:
+> 1 lock held by kswapd0/436:
+>  #0:  (shrinker_rwsem){++++..}, at: [<ffffffff810891d7>] shrink_slab+0x38/0x164
+> 
+> stack backtrace:
+> Pid: 436, comm: kswapd0 Not tainted 2.6.36-rc3 #3
+> Call Trace:
+>  [<ffffffff8105933b>] print_usage_bug+0x1af/0x1c0
+>  [<ffffffff81059e81>] ? check_usage_forwards+0x0/0xcd
+>  [<ffffffff81059637>] mark_lock+0x2eb/0x51a
+>  [<ffffffff8105af8c>] __lock_acquire+0x862/0x182c
+>  [<ffffffff810ba6ea>] ? shrink_dcache_memory+0x114/0x1a9
+>  [<ffffffff810ba6f3>] ? shrink_dcache_memory+0x11d/0x1a9
+>  [<ffffffff810ba6ea>] ? shrink_dcache_memory+0x114/0x1a9
+>  [<ffffffff8105bfb0>] lock_acquire+0x5a/0x71
+>  [<ffffffff810bde0b>] ? shrink_icache_memory+0x48/0x217
+>  [<ffffffff8133cb68>] down_read+0x42/0x55
+>  [<ffffffff810bde0b>] ? shrink_icache_memory+0x48/0x217
+>  [<ffffffff810bde0b>] shrink_icache_memory+0x48/0x217
+>  [<ffffffff81089280>] shrink_slab+0xe1/0x164
+>  [<ffffffff81089893>] kswapd+0x590/0x7e2
+>  [<ffffffff8104b1d6>] ? autoremove_wake_function+0x0/0x38
+>  [<ffffffff8133deff>] ? _raw_spin_unlock_irqrestore+0x4c/0x68
+>  [<ffffffff81089303>] ? kswapd+0x0/0x7e2
+>  [<ffffffff8104ade2>] kthread+0x81/0x89
+>  [<ffffffff81002d94>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff8102d5ba>] ? finish_task_switch+0x69/0xa9
+>  [<ffffffff8133e3c0>] ? restore_args+0x0/0x30
+>  [<ffffffff8104ad61>] ? kthread+0x0/0x89
+>  [<ffffffff81002d90>] ? kernel_thread_helper+0x0/0x10
+> 
+> A web search finds reports of this kind from months ago.  I haven't read
+> up on them yet whether there were any conclusions from them.
 
-Information gathered from various user submissions.
+Any memory allocation that enters reclaim in the unmount path will
+generate this warning. The problem is that the normal memory reclaim
+path is:
 
-    https://bugzilla.redhat.com/show_bug.cgi?id=528232
-    http://ubuntuforums.org/showthread.php?t=1557326
+	alloc -> reclaim -> shrink_slab -> shrink_icache_memory -> iprune_sem -> s_umount
 
-Signed-off-by: Luke Macken <lmacken@redhat.com>
+while unmmount does:
 
-diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-index 815f84b..11de9ed 100644
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -39,17 +39,31 @@ enum {
- 	M_I20,		/* 20-Inch iMac */
- 	M_I20_SR,	/* 20-Inch iMac (Santa Rosa) */
- 	M_I24,		/* 24-Inch iMac */
-+	M_I24_8_1,	/* 24-Inch iMac, 8,1th gen */
-+	M_I24_10_1,	/* 24-Inch iMac, 10,1th gen */
-+	M_I27_11_1,	/* 27-Inch iMac, 11,1th gen */
- 	M_MINI,		/* Mac Mini */
-+	M_MINI_3_1,	/* Mac Mini, 3,1th gen */
-+	M_MINI_4_1,	/* Mac Mini, 4,1th gen */
- 	M_MB,		/* MacBook */
- 	M_MB_2,		/* MacBook, 2nd rev. */
- 	M_MB_3,		/* MacBook, 3rd rev. */
-+	M_MB_5_1,	/* MacBook, 5th rev. */
-+	M_MB_6_1,	/* MacBook, 6th rev. */
-+	M_MB_7_1,	/* MacBook, 7th rev. */
- 	M_MB_SR,	/* MacBook, 2nd gen, (Santa Rosa) */
- 	M_MBA,		/* MacBook Air */
- 	M_MBP,		/* MacBook Pro */
- 	M_MBP_2,	/* MacBook Pro 2nd gen */
-+	M_MBP_2_2,	/* MacBook Pro 2,2nd gen */
- 	M_MBP_SR,	/* MacBook Pro (Santa Rosa) */
- 	M_MBP_4,	/* MacBook Pro, 4th gen */
- 	M_MBP_5_1,    /* MacBook Pro, 5,1th gen */
-+	M_MBP_5_2,	/* MacBook Pro, 5,2th gen */
-+	M_MBP_5_3,	/* MacBook Pro, 5,3rd gen */
-+	M_MBP_6_1,	/* MacBook Pro, 6,1th gen */
-+	M_MBP_6_2,	/* MacBook Pro, 6,2th gen */
-+	M_MBP_7_1,	/* MacBook Pro, 7,1th gen */
- 	M_UNKNOWN	/* placeholder */
- };
- 
-@@ -64,14 +78,28 @@ static struct efifb_dmi_info {
- 	[M_I20] = { "i20", 0x80010000, 1728 * 4, 1680, 1050 }, /* guess */
- 	[M_I20_SR] = { "imac7", 0x40010000, 1728 * 4, 1680, 1050 },
- 	[M_I24] = { "i24", 0x80010000, 2048 * 4, 1920, 1200 }, /* guess */
-+	[M_I24_8_1] = { "imac8", 0xc0060000, 2048 * 4, 1920, 1200 },
-+	[M_I24_10_1] = { "imac10", 0xc0010000, 2048 * 4, 1920, 1080 },
-+	[M_I27_11_1] = { "imac11", 0xc0010000, 2560 * 4, 2560, 1440 },
- 	[M_MINI]= { "mini", 0x80000000, 2048 * 4, 1024, 768 },
-+	[M_MINI_3_1]= { "mini31", 0x40010000, 1024 * 4, 1024, 768 },
-+	[M_MINI_4_1]= { "mini41", 0xc0010000, 2048 * 4, 1920, 1200 },
- 	[M_MB] = { "macbook", 0x80000000, 2048 * 4, 1280, 800 },
-+	[M_MB_5_1] = { "macbook51", 0x80010000, 2048 * 4, 1280, 800 },
-+	[M_MB_6_1] = { "macbook61", 0x80010000, 2048 * 4, 1280, 800 },
-+	[M_MB_7_1] = { "macbook71", 0x80010000, 2048 * 4, 1280, 800 },
- 	[M_MBA] = { "mba", 0x80000000, 2048 * 4, 1280, 800 },
- 	[M_MBP] = { "mbp", 0x80010000, 1472 * 4, 1440, 900 },
- 	[M_MBP_2] = { "mbp2", 0, 0, 0, 0 }, /* placeholder */
-+	[M_MBP_2_2] = { "mbp22", 0x80010000, 1472 * 4, 1440, 900 },
- 	[M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900 },
- 	[M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200 },
- 	[M_MBP_5_1] = { "mbp51", 0xc0010000, 2048 * 4, 1440, 900 },
-+	[M_MBP_5_2] = { "mbp52", 0xc0010000, 2048 * 4, 1920, 1200 },
-+	[M_MBP_5_3] = { "mbp53", 0xd0010000, 2048 * 4, 1440, 900 },
-+	[M_MBP_6_1] = { "mbp61", 0x90030000, 2048 * 4, 1920, 1200 },
-+	[M_MBP_6_2] = { "mbp62", 0x90030000, 2048 * 4, 1680, 1050 },
-+	[M_MBP_7_1] = { "mbp71", 0xc0010000, 2048 * 4, 1280, 800 },
- 	[M_UNKNOWN] = { NULL, 0, 0, 0, 0 }
- };
- 
-@@ -92,7 +120,12 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac6,1", M_I24),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac6,1", M_I24),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac7,1", M_I20_SR),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac8,1", M_I24_8_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac10,1", M_I24_10_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac11,1", M_I27_11_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "Macmini1,1", M_MINI),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini3,1", M_MINI_3_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini4,1", M_MINI_4_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook1,1", M_MB),
- 	/* At least one of these two will be right; maybe both? */
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook2,1", M_MB),
-@@ -101,14 +134,23 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook3,1", M_MB),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook3,1", M_MB),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook4,1", M_MB),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook5,1", M_MB_5_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook6,1", M_MB_6_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook7,1", M_MB_7_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir1,1", M_MBA),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro1,1", M_MBP),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,1", M_MBP_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,2", M_MBP_2_2),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro2,1", M_MBP_2),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro4,1", M_MBP_4),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,1", M_MBP_5_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,2", M_MBP_5_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,3", M_MBP_5_3),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,1", M_MBP_6_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,2", M_MBP_6_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro7,1", M_MBP_7_1),
- 	{},
- };
- 
+	unmount -> s_umount -> alloc -> lockdep goes boom!
+or
+	unmount -> iprune_sem -> alloc -> lockdep goes boom!
+
+I never got a straight answer on this, but it the warnings are
+indicating that you must use GFP_NOFS allocations for every
+allocation in the unmount path, which is kind of hard to know
+about given the code is not unomunt path specific....
+
+Cheers,
+
+Dave.
 -- 
-1.7.2.2
-
+Dave Chinner
+david@fromorbit.com
