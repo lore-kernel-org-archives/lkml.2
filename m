@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab0IBCdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 22:33:44 -0400
-Received: from mga11.intel.com ([192.55.52.93]:7506 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752420Ab0IBCdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 22:33:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,307,1280732400"; 
-   d="scan'208";a="834094079"
-Subject: Re: [PATCH 2/2][Patch-next -v2] ACPI, APEI, HEST Fix the
- unsuitable usage of platform_data.
-From: Huang Ying <ying.huang@intel.com>
-To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: APEI-lenb <lenb@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-In-Reply-To: <4C7F0C94.8090802@np.css.fujitsu.com>
-References: <4C7F0C94.8090802@np.css.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Sep 2010 10:33:40 +0800
-Message-ID: <1283394820.13175.48.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1753060Ab0IBCgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 22:36:51 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11726 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752297Ab0IBCgu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 22:36:50 -0400
+Message-ID: <000601cb4a47$b1a7d1d0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Greg KH" <greg@kroah.com>
+Cc: <meego-dev@meego.com>, "LKML" <linux-kernel@vger.kernel.org>,
+        <gregkh@suse.de>, <yong.y.wang@intel.com>, <qi.wang@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
+        <alan@linux.intel.com>, <margie.foster@intel.com>,
+        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>
+References: <4C7E441E.4090006@dsn.okisemi.com> <20100902010236.GA21782@kroah.com>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+Date: Thu, 2 Sep 2010 11:36:45 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-02 at 10:31 +0800, Jin Dongming wrote:
-> platform_data in hest_parse_ghes() is used for saving the address of entry
-> information of erst_tab. When the device is failed to be added, platform_data
-> will be freed by platform_device_put(). But the value saved in platform_data
-> should not be freed here. If it is done, it will make system panic.
-> 
-> So I think platform_data should save the address of allocated memory
-> which saves entry information of erst_tab.
-> 
-> This patch fixed it and I confirmed it on x86_64 next-tree.
-> 
-> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Acked-by: Huang Ying <ying.huang@intel.com>
+Hi Greg,
 
-Best Regards,
-Huang Ying
+> Nope, I still get a warning with this patch, but I'll go fix it up:
+Sorry for our warning.
+We tested with kernel-2.6.35.3.
+We will modify so that warning becomes to disappear soon.
+
+Thanks, Ohtake(OKISemi)
+----- Original Message ----- 
+From: "Greg KH" <greg@kroah.com>
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Cc: <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; <gregkh@suse.de>; <yong.y.wang@intel.com>;
+<qi.wang@intel.com>; <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <alan@linux.intel.com>;
+<margie.foster@intel.com>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>
+Sent: Thursday, September 02, 2010 10:02 AM
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+
+
+> On Wed, Sep 01, 2010 at 09:16:30PM +0900, Masayuki Ohtak wrote:
+> > Hi Greg,
+> >
+> > Sorry, we have modified again, for a bug(illegal return code) and
+> > WARNING for building with the latest kernel.
+>
+> Nope, I still get a warning with this patch, but I'll go fix it up:
+>   CC [M]  drivers/misc/pch_phub.o
+> drivers/misc/pch_phub.c: In function ‘pch_phub_probe’:
+> drivers/misc/pch_phub.c:582:334: warning: cast from pointer to integer of different size
+> drivers/misc/pch_phub.c:585:2: warning: passing argument 2 of ‘pci_map_rom’ from incompatible pointer type
+> include/linux/pci.h:803:43: note: expected ‘size_t *’ but argument is of type ‘unsigned int *’
+> drivers/misc/pch_phub.c:592:346: warning: cast from pointer to integer of different size
+>
+> thanks,
+>
+> greg k-h
+>
 
 
