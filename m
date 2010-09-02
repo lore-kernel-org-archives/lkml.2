@@ -1,80 +1,465 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab0IBR03 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 13:26:29 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:54648 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752853Ab0IBR01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 13:26:27 -0400
-Date: Thu, 2 Sep 2010 10:26:25 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: herbert@gondor.hengli.com.au, linville@tuxdriver.com,
-        netdev@vger.kernel.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-        peterz@infradead.org
-Subject: Re: [PATCH] netpoll: use non-BH variant of RCU
-Message-ID: <20100902172625.GD2349@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100813143904.GA27261@gondor.apana.org.au>
- <20100813162912.GJ2511@linux.vnet.ibm.com>
- <20100813175157.GA29586@gondor.apana.org.au>
- <20100814.235033.02286546.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100814.235033.02286546.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752934Ab0IBRaN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 13:30:13 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2022 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab0IBRaK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 13:30:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp02.nvidia.com on Thu, 02 Sep 2010 10:29:39 -0700
+From: rklein@nvidia.com
+To: cbouatmailru@gmail.com
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, olof@lixom.net,
+        achew@nvidia.com, khali@linux-fr.org,
+        broonie@opensource.wolfsonmicro.com, Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH v2] power supply: add driver for TI BQ20Z75 gas gauge IC
+Date: Thu,  2 Sep 2010 10:29:46 -0700
+Message-Id: <1283448586-14613-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 02 Sep 2010 17:30:10.0356 (UTC) FILETIME=[7E524F40:01CB4AC4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 11:50:33PM -0700, David Miller wrote:
-> From: Herbert Xu <herbert@gondor.apana.org.au>
-> Date: Fri, 13 Aug 2010 13:51:57 -0400
-> 
-> > On Fri, Aug 13, 2010 at 09:29:12AM -0700, Paul E. McKenney wrote:
-> >> But all in all, mightn't it be easier to remove the checks from
-> >> _local_bh_enable(), and then just use rcu_read_lock_bh()?  Have those
-> >> checks really been that helpful in finding bugs?  ;-)
-> > 
-> > You are right.  It would be much simpler to simply have it not
-> > warn.
-> 
-> For now I'm going to assume that this is how the issue will be
-> addressed.
+From: Rhyland Klein <rklein@nvidia.com>
 
-And here is the patch, at long last.  Adding Ingo and Peter Z to CC
-in case there is some problem with this approach that I cannot see.
+this driver depends on I2C and uses SMBUS for communication with the host.
 
-							Thanx, Paul
+Addressed comments from reviews by Mark Brown and Jean Delvare.
+  * Cleaned up whitespace and alignment issues
+  * changed return codes to more appropriate values
+  * change Kconfig option name to be consistent with existing devices
+  * removed global struct and moved to device specific data
+  * changed printk to dev_dbg
 
-commit 095d050d5d04344d3cdd4ff8558ea8709e3c4beb
-Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Date:   Thu Sep 2 10:07:21 2010 -0700
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+---
+ drivers/power/Kconfig   |    7 +
+ drivers/power/Makefile  |    1 +
+ drivers/power/bq20z75.c |  387 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 395 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/bq20z75.c
 
-    softirq: adjust error check
-    
-    The error check for _local_bh_enable_ip() warns on both in_irq() and
-    irqs_disabled().  The check for in_irq() is necessary, because a hardirq
-    might well have interrupted bh execution, in which case it is simply
-    not possible for the hardirq to exclude the bh that got interrupted.
-    
-    However, it is perfectly reasonable to disable bh while hardirqs are
-    disabled, and this in fact promotes common code.  This commit therefore
-    removes the irqs_disabled() check.
-    
-    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 07b4f1b..3cff1bb 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -140,7 +140,7 @@ EXPORT_SYMBOL(_local_bh_enable);
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 8e9ba17..53d9cbf 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -142,4 +142,11 @@ config CHARGER_PCF50633
+ 	help
+ 	 Say Y to include support for NXP PCF50633 Main Battery Charger.
  
- static inline void _local_bh_enable_ip(unsigned long ip)
- {
--	WARN_ON_ONCE(in_irq() || irqs_disabled());
-+	WARN_ON_ONCE(in_irq());
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	local_irq_disable();
- #endif
++config BATTERY_BQ20Z75
++        tristate "TI BQ20z75 gas gauge"
++        depends on I2C
++        help
++         Say Y to include support for TI bq20z75 SBS-compliant
++         gas gauge and protection IC.
++
+ endif # POWER_SUPPLY
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index 0005080..cdc403d 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -34,3 +34,4 @@ obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
+ obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
+ obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
+ obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
++obj-$(CONFIG_BATTERY_BQ20Z75)	+= bq20z75.o
+diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
+new file mode 100644
+index 0000000..a7eeedf
+--- /dev/null
++++ b/drivers/power/bq20z75.c
+@@ -0,0 +1,387 @@
++/*
++ * Gas Gauge driver for TI's BQ20Z75
++ *
++ * Copyright (c) 2010, NVIDIA Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/err.h>
++#include <linux/power_supply.h>
++#include <linux/i2c.h>
++#include <linux/slab.h>
++
++enum {
++	REG_MANUFACTURER_DATA,
++	REG_TEMPERATURE,
++	REG_VOLTAGE,
++	REG_CURRENT,
++	REG_CAPACITY,
++	REG_TIME_TO_EMPTY,
++	REG_TIME_TO_FULL,
++	REG_STATUS,
++	REG_CYCLE_COUNT,
++	REG_SERIAL_NUMBER
++};
++
++/* manufacturer access defines */
++#define MANUFACTURER_ACCESS_STATUS	0x0006
++#define MANUFACTURER_ACCESS_SLEEP	0x0011
++
++/* battery status value bits */
++#define BATTERY_CHARGING		0x40
++#define BATTERY_FULL_CHARGED		0x20
++#define BATTERY_FULL_DISCHARGED		0x10
++
++#define BQ20Z75_DATA(_psp, _addr, _min_value, _max_value) { \
++	.psp = _psp, \
++	.addr = _addr, \
++	.min_value = _min_value, \
++	.max_value = _max_value, \
++}
++
++static const struct bq20z75_device_data {
++	enum power_supply_property psp;
++	u8 addr;
++	int min_value;
++	int max_value;
++} bq20z75_data[] = {
++	[REG_MANUFACTURER_DATA] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_PRESENT, 0x00, 0, 65535),
++	[REG_TEMPERATURE] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_TEMP, 0x08, 0, 65535),
++	[REG_VOLTAGE] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_VOLTAGE_NOW, 0x09, 0, 20000),
++	[REG_CURRENT] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_CURRENT_NOW, 0x0A, -32768,
++			32767),
++	[REG_CAPACITY] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_CAPACITY, 0x0E, 0, 100),
++	[REG_TIME_TO_EMPTY] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG, 0x12, 0,
++			65535),
++	[REG_TIME_TO_FULL] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_TIME_TO_FULL_AVG, 0x13, 0,
++			65535),
++	[REG_STATUS] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_STATUS, 0x16, 0, 65535),
++	[REG_CYCLE_COUNT] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_CYCLE_COUNT, 0x17, 0, 65535),
++	[REG_SERIAL_NUMBER] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_SERIAL_NUMBER, 0x1C, 0, 65535),
++};
++
++static enum power_supply_property bq20z75_properties[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++	POWER_SUPPLY_PROP_CYCLE_COUNT,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_TEMP,
++	POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG,
++	POWER_SUPPLY_PROP_TIME_TO_FULL_AVG,
++	POWER_SUPPLY_PROP_SERIAL_NUMBER,
++};
++
++static int bq20z75_get_property(struct power_supply *psy,
++	enum power_supply_property psp, union power_supply_propval *val);
++
++struct bq20z75_info {
++	struct i2c_client	*client;
++	struct power_supply	power_supply;
++};
++
++static int bq20z75_get_battery_presence_and_health(
++	struct i2c_client *client, enum power_supply_property psp,
++	union power_supply_propval *val)
++{
++	s32 ret;
++
++	/* Write to ManufacturerAccess with
++	 * ManufacturerAccess command and then
++	 * read the status */
++	ret = i2c_smbus_write_word_data(client,
++		bq20z75_data[REG_MANUFACTURER_DATA].addr,
++		MANUFACTURER_ACCESS_STATUS);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"%s: i2c write for battery presence failed\n",
++			__func__);
++		return -ENODEV;
++	}
++
++	ret = i2c_smbus_read_word_data(client,
++		bq20z75_data[REG_MANUFACTURER_DATA].addr);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"%s: i2c read for battery presence failed\n",
++			__func__);
++		return -EIO;
++	}
++
++	if (ret < bq20z75_data[REG_MANUFACTURER_DATA].min_value ||
++	    ret > bq20z75_data[REG_MANUFACTURER_DATA].max_value) {
++		val->intval = 0;
++		return 0;
++	}
++
++	/* Mask the upper nibble of 2nd byte and
++	 * lower byte of response then
++	 * shift the result by 8 to get status*/
++	ret &= 0x0F00;
++	ret >>= 8;
++	if (psp == POWER_SUPPLY_PROP_PRESENT) {
++		if (ret == 0x0F)
++			/* battery removed */
++			val->intval = 0;
++		else
++			val->intval = 1;
++	} else if (psp == POWER_SUPPLY_PROP_HEALTH) {
++		if (ret == 0x09)
++			val->intval = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
++		else if (ret == 0x0B)
++			val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
++		else if (ret == 0x0C)
++			val->intval = POWER_SUPPLY_HEALTH_DEAD;
++		else
++			val->intval = POWER_SUPPLY_HEALTH_GOOD;
++	}
++
++	return 0;
++}
++
++static int bq20z75_get_battery_property(struct i2c_client *client, 
++	int reg_offset, enum power_supply_property psp, 
++	union power_supply_propval *val)
++{
++	s32 ret;
++
++	ret = i2c_smbus_read_word_data(client,
++		bq20z75_data[reg_offset].addr);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"%s: i2c read for %d failed\n", __func__, reg_offset);
++		return -EIO;
++	}
++
++	if (ret >= bq20z75_data[reg_offset].min_value &&
++	    ret <= bq20z75_data[reg_offset].max_value) {
++		val->intval = ret;
++		if (psp == POWER_SUPPLY_PROP_STATUS) {
++			if (ret & BATTERY_CHARGING)
++				val->intval = POWER_SUPPLY_STATUS_CHARGING;
++			else if (ret & BATTERY_FULL_CHARGED)
++				val->intval = POWER_SUPPLY_STATUS_FULL;
++			else if (ret & BATTERY_FULL_DISCHARGED)
++				val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
++			else
++				val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
++		}
++		/* bq20z75 provides battery tempreture in 0.1°K
++		 * so convert it to °C */
++		else if (psp == POWER_SUPPLY_PROP_TEMP)
++			val->intval = ret - 2731;
++	} else {
++		if (psp == POWER_SUPPLY_PROP_STATUS)
++			val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
++		else
++			val->intval = 0;
++	}
++
++	return 0;
++}
++
++static int bq20z75_get_battery_capacity(struct i2c_client *client,
++	union power_supply_propval *val)
++{
++	s32 ret;
++
++	ret = i2c_smbus_read_byte_data(client, bq20z75_data[REG_CAPACITY].addr);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"%s: i2c read for %d failed\n", __func__, REG_CAPACITY);
++		return -EIO;
++	}
++
++	/* bq20z75 spec says that this can be >100 %
++	 * even if max value is 100 % */
++	val->intval = min(ret, 100);
++
++	return 0;
++}
++
++static int bq20z75_get_property(struct power_supply *psy,
++	enum power_supply_property psp,
++	union power_supply_propval *val)
++{
++	int count;
++	int ret;
++	struct bq20z75_info *bq20z75_device = container_of(psy,
++				struct bq20z75_info, power_supply);
++	struct i2c_client *client = bq20z75_device->client;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_PRESENT:
++	case POWER_SUPPLY_PROP_HEALTH:
++		ret = bq20z75_get_battery_presence_and_health(client, psp, val);
++		if (ret)
++			return ret;
++		break;
++
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
++		break;
++
++	case POWER_SUPPLY_PROP_CAPACITY:
++		ret = bq20z75_get_battery_capacity(client, val);
++		if (ret)
++			return ret;
++		break;
++
++	case POWER_SUPPLY_PROP_STATUS:
++	case POWER_SUPPLY_PROP_CYCLE_COUNT:
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++	case POWER_SUPPLY_PROP_TEMP:
++	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG:
++	case POWER_SUPPLY_PROP_TIME_TO_FULL_AVG:
++	case POWER_SUPPLY_PROP_SERIAL_NUMBER:
++		for (count = 0; count < ARRAY_SIZE(bq20z75_data); count++) {
++			if (psp == bq20z75_data[count].psp)
++				break;
++		}
++
++		ret = bq20z75_get_battery_property(client, count, psp, val);
++		if (ret)
++			return ret;
++		break;
++
++	default:
++		dev_err(&client->dev,
++			"%s: INVALID property\n", __func__);
++		return -EINVAL;
++	}
++
++	dev_dbg(&client->dev,
++		"%s: property = %d, value = %d\n", __func__, psp, val->intval);
++
++	return 0;
++}
++
++static int bq20z75_probe(struct i2c_client *client,
++	const struct i2c_device_id *id)
++{
++	struct bq20z75_info *bq20z75_device;
++	int rc;
++
++	bq20z75_device = kzalloc(sizeof(struct bq20z75_info), GFP_KERNEL);
++	if (!bq20z75_device)
++		return -ENOMEM;
++
++	bq20z75_device->client = client;
++	bq20z75_device->power_supply.name = "battery";
++	bq20z75_device->power_supply.type = POWER_SUPPLY_TYPE_BATTERY;
++	bq20z75_device->power_supply.properties = bq20z75_properties;
++	bq20z75_device->power_supply.num_properties = ARRAY_SIZE(bq20z75_properties);
++	bq20z75_device->power_supply.get_property = bq20z75_get_property;
++
++	i2c_set_clientdata(client, bq20z75_device);
++
++	rc = power_supply_register(&client->dev, &bq20z75_device->power_supply);
++	if (rc) {
++		dev_err(&client->dev,
++			"%s: Failed to register power supply\n", __func__);
++		kfree(bq20z75_device);
++		return rc;
++	}
++
++	dev_info(&client->dev,
++		"%s: battery gas gauge device registered\n", client->name);
++
++	return 0;
++}
++
++static int bq20z75_remove(struct i2c_client *client)
++{
++	struct bq20z75_info *bq20z75_device = i2c_get_clientdata(client);
++
++	power_supply_unregister(&bq20z75_device->power_supply);
++	kfree(bq20z75_device);
++	bq20z75_device = NULL;
++
++	return 0;
++}
++
++#if defined CONFIG_PM
++static int bq20z75_suspend(struct i2c_client *client,
++	pm_message_t state)
++{
++	s32 ret;
++
++	/* write to manufacturer access with sleep command */
++	ret = i2c_smbus_write_word_data(client,
++		bq20z75_data[REG_MANUFACTURER_DATA].addr,
++		MANUFACTURER_ACCESS_SLEEP);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"%s: i2c write for %d failed\n",
++			__func__, MANUFACTURER_ACCESS_SLEEP);
++		return -EIO;
++	}
++
++	return 0;
++}
++#else
++#define bq20z75_suspend		NULL
++#endif
++/* any smbus transaction will wake up bq20z75 */
++#define bq20z75_resume		NULL
++
++static const struct i2c_device_id bq20z75_id[] = {
++	{ "bq20z75", 0 },
++	{}
++};
++
++static struct i2c_driver bq20z75_battery_driver = {
++	.probe		= bq20z75_probe,
++	.remove		= bq20z75_remove,
++	.suspend	= bq20z75_suspend,
++	.resume		= bq20z75_resume,
++	.id_table	= bq20z75_id,
++	.driver = {
++		.name	= "bq20z75-battery",
++	},
++};
++
++static int __init bq20z75_battery_init(void)
++{
++	return i2c_add_driver(&bq20z75_battery_driver);
++}
++module_init(bq20z75_battery_init);
++
++static void __exit bq20z75_battery_exit(void)
++{
++	i2c_del_driver(&bq20z75_battery_driver);
++}
++module_exit(bq20z75_battery_exit);
++
++MODULE_DESCRIPTION("BQ20z75 battery monitor driver");
++MODULE_LICENSE("GPL");
+-- 
+1.7.0.4
+
