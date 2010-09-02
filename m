@@ -1,39 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab0IBBEq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 21:04:46 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51957 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab0IBBEo (ORCPT
+	id S1755587Ab0IBBJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 21:09:07 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39558
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752182Ab0IBBJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 21:04:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=R3kkXS5FioM3u6hn4gxQPYq96Yih6USULGtB6ZUWJgCkrdX62i44uS3scT5uRxusA4
-         dEtJ8IfExohMEfZN4Wxkph0Bww5aeeR6fpu7hMCtSYjD53qS2EgtpSWI1z9DWe+9nXvx
-         cxE4WPZyUP0bSZ1aWYtEqvGJ7ojJ5iOETsCqI=
-MIME-Version: 1.0
-From: David Nicol <davidnicol@gmail.com>
-Date: Wed, 1 Sep 2010 20:04:24 -0500
-Message-ID: <AANLkTimZnUEM6FFbgw==K3w6hURAgsAO8uRh5W1v6f_j@mail.gmail.com>
-Subject: Is there a primitive to atomically release a spinlock and go to sleep?
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 1 Sep 2010 21:09:05 -0400
+Date: Wed, 01 Sep 2010 18:09:22 -0700 (PDT)
+Message-Id: <20100901.180922.163252387.davem@davemloft.net>
+To: herbert@gondor.hengli.com.au
+Cc: eric.dumazet@gmail.com, bandan.das@stratus.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kaber@trash.net
+Subject: Re: [PATCH net-next-2.6] net/ipv4: push IP options to CB in
+ ip_fragment
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100901233056.GA15177@gondor.apana.org.au>
+References: <1283232031.2405.38.camel@edumazet-laptop>
+	<20100901.144658.135972233.davem@davemloft.net>
+	<20100901233056.GA15177@gondor.apana.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm trying to do something involving multiple kthreads in an ioctl
-handler, and I want to avoid the
-race condition between the third and fourth steps of
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Thu, 2 Sep 2010 07:30:56 +0800
 
-    acquire mutex
-    add &self to a list of threads which will get awakened by
-something else that is also aware of this list
-    release mutex
-    go to sleep
+> On Wed, Sep 01, 2010 at 02:46:58PM -0700, David Miller wrote:
+> .
+>> Therefore I'm inclined to agree with Herbert that we need to parse the
+>> options explicitly before invoke ip_fragment().  We must call it with
+>> an SKB in the state it expects, and that means with options parsing
+>> already performed.
+> 
+> FWIW the packet probably doesn't even have IP options.  What is
+> happening here is that we've found yet another entry point from
+> the bridge driver into the IP stack so we need to duplicate my
+> original patch here.
 
-Is there a standard atomic go-to-sleep function that takes as a
-parameter a pointer to  spinlock to release after its state is set to
-TASK_INTERRUPTIBLE?
+With that in mind I'm going to commit the following and
+queue it up to -stable too.
+
+Thanks.
+
+--------------------
+bridge: Clear INET control block of SKBs passed into ip_fragment().
+
+In a similar vain to commit 17762060c25590bfddd68cc1131f28ec720f405f
+("bridge: Clear IPCB before possible entry into IP stack")
+
+Any time we call into the IP stack we have to make sure the state
+there is as expected by the ipv4 code.
+
+With help from Eric Dumazet and Herbert Xu.
+
+Reported-by: Brandan Das <brandan.das@stratus.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ net/bridge/br_netfilter.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index 5ed00bd..137f232 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -761,9 +761,11 @@ static int br_nf_dev_queue_xmit(struct sk_buff *skb)
+ {
+ 	if (skb->nfct != NULL && skb->protocol == htons(ETH_P_IP) &&
+ 	    skb->len + nf_bridge_mtu_reduction(skb) > skb->dev->mtu &&
+-	    !skb_is_gso(skb))
++	    !skb_is_gso(skb)) {
++		/* BUG: Should really parse the IP options here. */
++		memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
+ 		return ip_fragment(skb, br_dev_queue_push_xmit);
+-	else
++	} else
+ 		return br_dev_queue_push_xmit(skb);
+ }
+ #else
+-- 
+1.7.2.2
+
