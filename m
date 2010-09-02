@@ -1,66 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab0IBJHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 05:07:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46655 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab0IBJHE (ORCPT
+	id S1752837Ab0IBJIq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 05:08:46 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38452 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab0IBJIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 05:07:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=qCWDQZhbBT/AjqwsN7G0mEaeQRJPKZOxqHIRJ1UHzQSMkCgKHVgvNbPu0+08dQeqhl
-         kjpdivmOBjT/l7+cBll0PXoPlkCUBw7IUFu+ZLY6O/slevMxMgp2FwfTLSx0wd89lFtE
-         A83XSA8fNaCSzdWHl18jMKZY66qOsl3BW6kfU=
-Message-ID: <4C7F6931.4050707@gmail.com>
-Date: Thu, 02 Sep 2010 11:06:57 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+	Thu, 2 Sep 2010 05:08:44 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 2 Sep 2010 18:03:43 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        Haicheng Li <haicheng.li@linux.intel.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
-        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
-Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend
- to RAM
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C7376BE.5040006@gmail.com> <201008242239.43249.rjw@sisk.pl> <201008270109.36687.rjw@sisk.pl>
-In-Reply-To: <201008270109.36687.rjw@sisk.pl>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+        Mel Gorman <mel@linux.vnet.ibm.com>
+Subject: Re: [PATCH] Make is_mem_section_removable more conformable with
+ offlining code
+Message-Id: <20100902180343.f4232c6e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100902082829.GA10265@tiehlicka.suse.cz>
+References: <20100820141400.GD4636@tiehlicka.suse.cz>
+	<20100822004232.GA11007@localhost>
+	<20100823092246.GA25772@tiehlicka.suse.cz>
+	<20100831141942.GA30353@localhost>
+	<20100901121951.GC6663@tiehlicka.suse.cz>
+	<20100901124138.GD6663@tiehlicka.suse.cz>
+	<20100902144500.a0d05b08.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100902082829.GA10265@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rafael.
+On Thu, 2 Sep 2010 10:28:29 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-On 08/27/2010 01:09 AM, Rafael J. Wysocki wrote:
-> Well, no luck.  I was able to reproduce the issue on my box with this patch
-> applied on top of 2.6.32-rc2.
+> On Thu 02-09-10 14:45:00, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 1 Sep 2010 14:41:38 +0200
+> [...]
+> > > From de85f1aa42115678d3340f0448cd798577036496 Mon Sep 17 00:00:00 2001
+> > > From: Michal Hocko <mhocko@suse.cz>
+> > > Date: Fri, 20 Aug 2010 15:39:16 +0200
+> > > Subject: [PATCH] Make is_mem_section_removable more conformable with offlining code
+> > > 
+> > > Currently is_mem_section_removable checks whether each pageblock from
+> > > the given pfn range is of MIGRATE_MOVABLE type or if it is free. If both
+> > > are false then the range is considered non removable.
+> > > 
+> > > On the other hand, offlining code (more specifically
+> > > set_migratetype_isolate) doesn't care whether a page is free and instead
+> > > it just checks the migrate type of the page and whether the page's zone
+> > > is movable.
+> > > 
+> > > This can lead into a situation when we can mark a node as not removable
+> > > just because a pageblock is MIGRATE_RESERVE and it is not free.
+> > > 
+> > > Let's make a common helper is_page_removable which unifies both tests
+> > > at one place. Also let's check for MIGRATE_UNMOVABLE rather than all
+> > > possible MIGRATEable types.
+> > > 
+> > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > 
+> > Hmm..Why MIGRATE_RECLAIMABLE is included ?
 > 
-> Which probably means that the link power management is not really involved
-> here and seems to turn up this statement:
+> AFAIU the code, MIGRATE_RECLAIMABLE are movable as well (at least that
+> is how I interpret #define GFP_MOVABLE_MASK (__GFP_RECLAIMABLE|__GFP_MOVABLE)).
+> Why should we prevent from memory offlining if we have some reclaimable
+> pages? Or am I totally misinterpreting the meaning of this flag?
 > 
-> rc = ata_host_request_pm(host, mesg, 0, ATA_EHI_QUIET, 1);
-> 
-> in ata_host_suspend() as the culprit.
-> 
-> Does it make sense?
 
-So, LPM doesn't have anything to do with the problem.  The fact that
-this only happens on specific machines is strange.  Maybe the BIOS is
-doing something fishy to the controller on disk spindown during
-suspend.  Can the BIOS tell that the system is going for suspend by
-the time sd suspend is called?  I'll prep another patch which will
-make EH skip certain steps and ignore failures during suspend, which
-basically mimics what your patch does but in safer way.
+RECLAIMABLE cannot be 100% reclaimable. Then, for memory hotlug,
+I intentionally skips it and check free_area[] and LRU.
 
-Thanks.
 
--- 
-tejun
+> > 
+> > If MIGRATE_RCLAIMABLE is included, set_migrate_type() should check the
+> > range of pages. Because it makes the pageblock as MIGRAGE_MOVABLE after
+> > failure of memory hotplug.
+> > 
+> > Original code checks.
+> > 
+> >  - the range is MIGRAGE_MOVABLE or
+> >  - the range includes only free pages and LRU pages.
+> > 
+> > Then, moving them back to MIGRAGE_MOVABLE after failure was correct.
+> > Doesn't this makes changes MIGRATE_RECALIMABLE to be MIGRATE_MOVABLE and
+> > leads us to more fragmentated situation ?
+> 
+> Just to be sure that I understand you concern. We are talking about hot
+> remove failure which can lead to higher fragmentation, right? 
+> 
+right. 
+
+> By the higher fragmentation you mean that all movable pageblocks (even
+> reclaimable) gets to MIGRATE_MOVABLE until we get first failure. In the
+> worst case, if we fail near the end of the zone then there is imbalance
+> in MIGRATE_MOVABLE vs. MIGRATE_RECALIMABLE. Is that what you are
+> thinking of? Doesn't this just gets the zone to the state after
+> onlining? Or is the problem if we fail somewhere in the middle?
+> 
+
+No. My concern is pageblock type changes before/after memory hotplug failure.
+	before isolation: MIGRATE_RECLAIMABLE
+	after isolation failure : MIGRATE_MOVABLE
+
+Then, the section which was RECALAIMABLE (but caused memory hotplug failure)
+turns to be MIGRATE_MOVABLE and will continue to cause memory hotplug failure.
+(Because it contains unreclaimable(still-in-use) slab.)
+
+That means memory-hotplug success-rate goes down because of not-important check,
+and (your) customer believe "memory hotplug never works well hahaha."
+
+The old code checks RECLAIMABLE pageblock only contains free pages or LRU pages,
+In that meaning, MIGRATE_MOVABLE check itself should be removed. It's my fault.
+
+
+Thanks,
+-Kame
+
