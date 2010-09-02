@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab0IBGxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 02:53:09 -0400
-Received: from www84.your-server.de ([213.133.104.84]:54207 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab0IBGxI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 02:53:08 -0400
-Subject: Re: [PATCH] Add quick erase format option
-From: Stefani Seibold <stefani@seibold.net>
-To: dedekind1@gmail.com
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Enzinger, Robert (EXT-Other - DE/Munich)" 
-	<robert.enzinger.ext@nsn.com>
-In-Reply-To: <1283302043.2018.92.camel@brekeke>
-References: <1281342353-18180-1-git-send-email-stefani@seibold.net>
-	 <1281343038.12908.25.camel@localhost>
-	 <1281343974.18398.13.camel@wall-e.seibold.net>
-	 <1281353344.2332.8.camel@brekeke>
-	 <1281362069.20181.16.camel@wall-e.seibold.net>
-	 <1283081435.2131.24.camel@brekeke>
-	 <1283236978.6083.28.camel@wall-e.seibold.net>
-	 <1283302043.2018.92.camel@brekeke>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 02 Sep 2010 08:53:12 +0200
-Message-ID: <1283410392.6920.36.camel@wall-e.seibold.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	id S1753708Ab0IBGyK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 02:54:10 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38963 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751593Ab0IBGyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 02:54:08 -0400
+Date: Thu, 2 Sep 2010 08:53:47 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Miao Xie <miaox@cn.fujitsu.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Chris Mason <chris.mason@oracle.com>, Yan Zheng <zheng.yan@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Ext4 <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH V2 0/3] improve the performance of some memory copy
+ functions
+Message-ID: <20100902065347.GA29972@elte.hu>
+References: <4C7F3A26.6020607@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C7F3A26.6020607@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 01.09.2010, 03:47 +0300 schrieb Artem Bityutskiy:
-> Stefani,
-> 
-> you have strong points, but I'm still not entirely convinced.
-> 
-> On Tue, 2010-08-31 at 08:42 +0200, Stefani Seibold wrote:
-> > > I would like to change the option name so that it would reflect the
-> > > exact use-case we are creating it for: wiped out flash. So I'd be
-> > > happier with something like --pristine-flash.
-> > 
-> > "Pristine" is not a word which non native speaker have in its
-> > vocabulary.
-> 
-> Agree, not very simple word, when I met it in JFFS2 sources, I looked it
-> up in the dictionary :-)
-> 
 
-> Also, your use-case is new/virgin/pristine/whatever NOR chips, which are
-> guaranteed to be erased, and I wanted to use option name which reflects
-> your use-case.
-> 
-> How about:
-> 
-> --virgin
-> --factory
-> --brand-new
-> --all-erased
-> 
-> Or  :-)
+* Miao Xie <miaox@cn.fujitsu.com> wrote:
 
---do-not-use-me is the best. But more seriously i think we should it
-split it into two options. --all-erased and --check-erased. The first
-assumes that all PEB are erased, while the second do the check if the
-PEB is erased and if not it will be erased.
+> - change the version of GPL from version 2.1 to version 2
 
-So we can handle NAND's, which have a fast erase, and NOR's  which are
-very slow. With this we are able to pick the best option for the
-manufacturing.
+How were you able to do this? If the code derives from glibc (as your 
+comments in the patches suggest), and if glibc is under the GPL v2.1, 
+then you probably cannot simply change the license to v2.
 
-- Stefani
-
-
+	Ingo
