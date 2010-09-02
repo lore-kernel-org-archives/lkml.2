@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab0IBPwW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 11:52:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37942 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab0IBPwU (ORCPT
+	id S1756000Ab0IBPyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 11:54:53 -0400
+Received: from sati.usurf.usu.edu ([129.123.194.129]:44087 "EHLO
+	echo.usurf.usu.edu" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab0IBPyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 11:52:20 -0400
-X-Authority-Analysis: v=1.1 cv=+ajm3tfMPLNCEbkepGq+oOGV0QVCaQQ0JBMd0bjnRvg= c=1 sm=0 a=h6dlIqBDnR0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=mVL3gQTcX71xQAafrcUA:9 a=m0kxkkNuAYoiJgQLvLLuKbT-gt4A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: kernelshark plugins and ftrace array fields
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-In-Reply-To: <4C7FB603.60609@redhat.com>
-References: <4C7F9639.7000804@redhat.com>
-	 <1283437521.2356.136.camel@gandalf.stny.rr.com> <4C7FB603.60609@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 02 Sep 2010 11:52:17 -0400
-Message-ID: <1283442737.2356.212.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Sep 2010 11:54:52 -0400
+From: Jonathan Haws <Jonathan.Haws@sdl.usu.edu>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-net@vger.kernel.org" <linux-net@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: RE: Memory allocation modifications in ibm_newemac driver AND sil24
+ driver
+Thread-Topic: Memory allocation modifications in ibm_newemac driver AND
+ sil24 driver
+Thread-Index: AQHLSrcshfsM6eFwGUOA3D27zMVHJw==
+Date: Thu, 2 Sep 2010 15:54:50 +0000
+Message-ID: <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC12822018@Mercury.usurf.usu.edu>
+References: <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A2F09@Mercury.usurf.usu.edu>
+	 , <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A2FBE@Mercury.usurf.usu.edu>	 ,
+ <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A301B@Mercury.usurf.usu.edu>
+	 <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC127A305B@Mercury.usurf.usu.edu>
+ <1283401130.16240.9.camel@pasglop>
+In-Reply-To: <1283401130.16240.9.camel@pasglop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.31.40.11]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o82Ft86o015153
 
-On Thu, 2010-09-02 at 17:34 +0300, Avi Kivity wrote:
-> On 09/02/2010 05:25 PM, Steven Rostedt wrote:
-> > On Thu, 2010-09-02 at 15:19 +0300, Avi Kivity wrote:
-> >> I'd like to add enhance kvm_emulate_insn display in kernelshark to
-> >> show the disassembly of the instruction being emulated.  However,
-> >> pevent_get_field_val() doesn't support arrays (the instruction is
-> >> provided in a 15-byte array).
-> >>
-> >> Can you add support for arrays in the kernelshark API?  With that, it
-> >> looks like adding disassembly output to the kvm plugin should be quite
-> >> simple.
-> >>
-> > Sure, I could add a pevent_get_field_array() or something. Could you
-> > tell me the event and give me an example of what you want to do.
-> 
-> plugin_kvm.c:
-> 
-> kvm_emulate_insn_handler()
-> {
->     fetch insn array and len field
->     feed into disassembler
->     trace_seq_printf() the disassembled instruction
-> }
+>> Can anyone explain to me why I would be getting this error in the
+>> first place?  Why is it failing to allocate a page when there are
+>> pages available?  That does not make any sense to me.
 
-I don't have that tracepoint in any of my kernels. Is this new? I guess
-if I see the TRACE_EVENT() I could emulate something and work with it.
+> order:1
 
--- Steve
+> It's failing to allocate -two- pages.
+
+Good point.  However, why is it failing?  According to the dump, there are 28 8k pages available.
+
+>From doing more testing yesterday, I found that this error is also coming up from the SATA driver as well (sil24).  Again with those errors, it fails allocating a page of order 0, when there are a few hundred of those available.  What is up with the VMM?  Why are pages failing to allocate when they are available?
+
+Thanks,
+
+Jonathan
 
 
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
