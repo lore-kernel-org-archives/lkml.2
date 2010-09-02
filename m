@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab0IBNuR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 09:50:17 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36883 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751966Ab0IBNuP (ORCPT
+	id S1754878Ab0IBNym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 09:54:42 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:42381 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab0IBNyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 09:50:15 -0400
-Date: Thu, 2 Sep 2010 09:50:14 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Colin Cross <ccross@android.com>
-cc: linux-kernel@vger.kernel.org, <linux-pm@lists.linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after
- abort
-In-Reply-To: <1283396052-3620-1-git-send-email-ccross@android.com>
-Message-ID: <Pine.LNX.4.44L0.1009020946580.1513-100000@iolanthe.rowland.org>
+	Thu, 2 Sep 2010 09:54:40 -0400
+Date: Thu, 2 Sep 2010 15:54:38 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: David Howells <dhowells@redhat.com>
+Cc: gerg@snapgear.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] M68K: Use CONFIG_MMU not __uClinux__ to select
+	m68knommu contributions
+Message-ID: <20100902135438.GA23729@merkur.ravnborg.org>
+References: <19747.1283422807@redhat.com> <20100902102158.19806.14133.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100902102158.19806.14133.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Sep 2010, Colin Cross wrote:
-
-> Only wait on a parent device during resume if the parent device is
-> suspended.
+On Thu, Sep 02, 2010 at 11:21:58AM +0100, David Howells wrote:
+> Use CONFIG_MMU not __uClinux__ to select m68knommu contributions as nothing in
+> the arch defines __uClinux__ for the build.
 > 
-> Consider three drivers, A, B, and C.  The parent of A is C, and C
-> has async_suspend set.  On boot, C->power.completion is initialized
-> to 0.
+> This patch was achieved by running the following three commands:
 > 
-> During the first suspend:
-> suspend_devices_and_enter(...)
->  dpm_resume(...)
->   device_suspend(A)
->   device_suspend(B) returns error, aborts suspend
->  dpm_resume_end(...)
->    dpm_resume(...)
->     device_resume(A)
->      dpm_wait(A->parent == C)
->       wait_for_completion(C->power.completion)
-> 
-> The wait_for_completion will never complete, because
-> complete_all(C->power.completion) will only be called from
-> device_suspend(C) or device_resume(C), neither of which is called
-> if suspend is aborted before C.
+> perl -pi -e 's/ifdef __uClinux__/ifndef CONFIG_MMU/' `find arch/m68k -name "*.[ch]"`
+> perl -pi -e 's/ifndef __uClinux__/ifdef CONFIG_MMU/' `find arch/m68k -name "*.[ch]"`
+> perl -pi -e 's!endif /[*] __uClinux__ [*]/!endif /* CONFIG_MMU */!' `find arch/m68k -name "*.[ch]"
 
-This would work okay if C->power.completion had been initialized to the 
-completed state during boot, right?
+Have you verified that this does not leak out
+to the userspace headers?
+We cannot use the CONFIG_ symbol to distingush between
+the two variants in userspace.
 
-> After a successful suspend->resume cycle, where B doesn't abort
-> suspend, C->power.completion is left in the completed state by the
-> call to device_resume(C), and the same call path will work if B
-> aborts suspend.
-> 
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  drivers/base/power/main.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> index cb784a0..e159910 100644
-> --- a/drivers/base/power/main.c
-> +++ b/drivers/base/power/main.c
-> @@ -526,7 +526,8 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
->  	TRACE_DEVICE(dev);
->  	TRACE_RESUME(0);
->  
-> -	dpm_wait(dev->parent, async);
-> +	if (dev->parent && dev->parent->power.status >= DPM_OFF)
-> +		dpm_wait(dev->parent, async);
->  	device_lock(dev);
->  
->  	dev->power.status = DPM_RESUMING;
+This was exactly the reason why __uClinux__ was used
+in the first place. But I hope Geert/Greg has fixed
+it up so all exported headers are the same so that
+this patch is OK.
 
-I think it would be better to change device_pm_init() and add a 
-complete_all().
+At first look I think it is OK - but your changelog
+does not address this so wanted you to confirm this.
 
-Alan Stern
-
+	Sam
