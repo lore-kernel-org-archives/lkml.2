@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab0IBCvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 22:51:54 -0400
-Received: from smtp102.sbc.mail.ac4.yahoo.com ([76.13.13.241]:30140 "HELO
-	smtp102.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752323Ab0IBCvw (ORCPT
+	id S1754112Ab0IBCz0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 22:55:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:8542 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab0IBCzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 22:51:52 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: imLWDXEVM1mZkErWe0N9prP1dFXo5rYK7tC7oaGyTxl1udc
- rbreR3YE0fZ9epnIHftDqL6f_3H687Uv2gqp0B3oh4YgMTqQ.EUEqFpO_hgZ
- 0tOIfQEXTHclJQLuvJ2pYlyE.Q1slUG3ey.nRsc6dni9CYxzDB3awWEm7JcY
- dj2r4XdqRkEz4j697TvSL7iG.U_9wmCqZO42sV7eZ0CuTThA5zjdIJcAMI9P
- WwwHVQ3ftgde9UL8sBqkLchklbobbJ08s5YWlxGguPFsd.3yDbb9tFCSR94b
- cNg0R_AMJydxczzAd6EKPMKpfuonUwsDYs2cD2WqRessu7bYrGA--
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH] tcm: Add support for Extended INQUIRY Data VPD Page
-Date: Wed,  1 Sep 2010 19:51:47 -0700
-Message-Id: <1283395907-15547-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	Wed, 1 Sep 2010 22:55:25 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Cc: Colin Cross <ccross@android.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
+Date: Wed,  1 Sep 2010 19:54:12 -0700
+Message-Id: <1283396052-3620-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+Only wait on a parent device during resume if the parent device is
+suspended.
 
-Greetings all,
+Consider three drivers, A, B, and C.  The parent of A is C, and C
+has async_suspend set.  On boot, C->power.completion is initialized
+to 0.
 
-This small patch updates transport_generic_emulate_inquiry() to add support for
-the Extended INQUIRY Data VPD Page in spc4r23 section 7.7.5.
+During the first suspend:
+suspend_devices_and_enter(...)
+ dpm_resume(...)
+  device_suspend(A)
+  device_suspend(B) returns error, aborts suspend
+ dpm_resume_end(...)
+   dpm_resume(...)
+    device_resume(A)
+     dpm_wait(A->parent == C)
+      wait_for_completion(C->power.completion)
 
-By default, this page returns HEADSUP, ORDSUP, SIMPSUP bits enabled for
-SCSI Tasks Attr emulation.  It also will set V_SUP (volatile cache supported)
-when DEV_ATTRIB(dev)->emulate_write_cache is enabled for FILEIO or IBLOCK
-backstores.
+The wait_for_completion will never complete, because
+complete_all(C->power.completion) will only be called from
+device_suspend(C) or device_resume(C), neither of which is called
+if suspend is aborted before C.
 
-There is how it looks using 'sg_inq -ve $DEV' with emulate_write_cache=1:
+After a successful suspend->resume cycle, where B doesn't abort
+suspend, C->power.completion is left in the completed state by the
+call to device_resume(C), and the same call path will work if B
+aborts suspend.
 
-target:/mnt/sdb/lio-core-2.6.git# sg_inq -ve /dev/sdg
-VPD INQUIRY: extended INQUIRY data page
-    inquiry cdb: 12 01 86 00 fc 00
-    inquiry cdb: 12 01 86 3c 04 00
-  SPT=0 GRD_CHK=0 APP_CHK=0 REF_CHK=0
-  GRP_SUP=0 PRIOR_SUP=0 HEADSUP=1 ORDSUP=1 SIMPSUP=1
-  CORR_D_SUP=0 NV_SUP=0 V_SUP=1 LUICLR=0
-
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Colin Cross <ccross@android.com>
 ---
- drivers/target/target_core_transport.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+ drivers/base/power/main.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index ec67cb6..fbbe9fc 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -4499,6 +4499,7 @@ after_tpgs:
- 		buf[4] = 0x0;
- 		buf[5] = 0x80;
- 		buf[6] = 0x83;
-+		buf[7] = 0x86;
- 		len = 3;
- 		break;
- 	case 0x80: /* unit serial number */
-@@ -4816,6 +4817,22 @@ set_len:
- 		buf[2] = ((len >> 8) & 0xff);
- 		buf[3] = (len & 0xff); /* Page Length for VPD 0x83 */
- 		break;
-+	case 0x86: /* Extended INQUIRY Data VPD Page */
-+		/*
-+		 * This page uses a hardcoded value of 60
-+		 */
-+		if (cmd->data_length < 60)
-+			return 0;
-+
-+		buf[1] = 0x86;
-+		buf[2] = 0x3c;
-+		/* Set HEADSUP, ORDSUP, SIMPSUP */
-+		buf[5] = 0x07;
-+		/* If WriteCache emulation is enabled, set V_SUP */
-+		if (DEV_ATTRIB(dev)->emulate_write_cache > 0)
-+			buf[6] = 0x01;
-+
-+		break;
- 	default:
- 		printk(KERN_ERR "Unknown VPD Code: 0x%02x\n", cdb[2]);
- 		return -1;
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index cb784a0..e159910 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -526,7 +526,8 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+ 	TRACE_DEVICE(dev);
+ 	TRACE_RESUME(0);
+ 
+-	dpm_wait(dev->parent, async);
++	if (dev->parent && dev->parent->power.status >= DPM_OFF)
++		dpm_wait(dev->parent, async);
+ 	device_lock(dev);
+ 
+ 	dev->power.status = DPM_RESUMING;
 -- 
-1.5.6.5
+1.7.1
 
