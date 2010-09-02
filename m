@@ -1,137 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab0IBOJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:09:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57311 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab0IBOJ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:09:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=SmPaWylwr61sFv8rmt/DMXqxMeBsz5tzLo6+l6IgtzI8NvAYoSqpLz5Yy7he07WLSo
-         HEcDpbShSh4TxJb6Fwrqxt9ejD+WxV4NfPgZ1+hwBS9xi8DjJCYbNio8kfrfQs2CL8uG
-         BbLIY/u/U626HI6AfHfo9j5XQ2teJYZLbnO/4=
-Date: Thu, 2 Sep 2010 07:09:22 -0700
-From: mark gross <markgross@thegnar.org>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: markgross@thegnar.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <james.bottomley@suse.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
-Message-ID: <20100902140922.GB2818@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <20100827064153.GB3414@gvim.org>
- <b3ebe52382d37d37e93021c33cb4d6d9.squirrel@codeaurora.org>
- <20100828020540.GB8341@gvim.org>
- <4C787AA9.4090906@codeaurora.org>
- <20100828225255.GA12402@gvim.org>
- <878w3o3p55.fsf@deeprootsystems.com>
- <20100831184030.GB9305@gvim.org>
- <4C7D844C.5050403@codeaurora.org>
- <20100901142804.GA13985@gvim.org>
- <4C7F1BF2.4050200@codeaurora.org>
+	id S1755283Ab0IBOOM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:14:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752969Ab0IBOOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 10:14:11 -0400
+Message-ID: <4C7FB121.2070101@redhat.com>
+Date: Thu, 02 Sep 2010 10:13:53 -0400
+From: Peter Jones <pjones@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc14 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C7F1BF2.4050200@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Luke Macken <lmacken@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Jaya Kumar <jayakumar.lkml@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3] efifb: support the EFI framebuffer on more Apple hardware
+References: <20100902060340.GA21893@tomservo.cable.rcn.com>
+In-Reply-To: <20100902060340.GA21893@tomservo.cable.rcn.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 01, 2010 at 08:37:22PM -0700, Saravana Kannan wrote:
-> mark gross wrote:
-> >On Tue, Aug 31, 2010 at 03:38:04PM -0700, Saravana Kannan wrote:
-> >>mark gross wrote:
-> >>>On Mon, Aug 30, 2010 at 11:56:54AM -0700, Kevin Hilman
-> >>>>>>Any specific reason PM QoS doesn't support a "summation" "comparitor"?
-> >>>>>PM_QoS could do a summation, but keep in mind it pm_qos not qos.  pm_qos
-> >>>>>is a best effort thing to constrain power management throttling, not
-> >>>>>provide a true quality of service or deadline scheduling support.
-> >>>>For me (and I think Saravana too), this is still all about power, but
-> >>>>it's closely tied to QoS.
-> >>Kevin, Thanks for explaining exactly what I had in mind. I was
-> >>caught up with other work and was glad to see this discussion moved
-> >>forward.
-> >>
-> >>I pretty much agree with all of Kevin's statements, so here is a
-> >>preemptive "I agree" to all this paragraphs.
-> >>
-> >>>Now I get it!  For throughput we need to do a sum.  Ok, we need sum
-> >>>comparator/performance aggregaters too!
-> >>Yay! Finally one of my pet peeves with PM QoS is being resolved(?).
-> >
-> >yes, we need to add a summation aggregater to the pm_qos logic and
-> >likely apply it to all the throughput pm_qos parameters.  You where
-> >right about that point.  (but I'm not budging on the unit less
-> >parameters)
-> 
-> Yeah, I gave up on the unit less parameter.
-> 
-> >>>Do we also need to figure out the max throughput and warn if the pm_qos
-> >>>requests are going over?  I suppose the network stack could register
-> >>>each device with a max bus bandwidth and pm_qos could warn on exceeding
-> >>>the hardware throughput.
-> >>In my opinion, here is where the "best effort" part, if any, comes
-> >>in. PM QoS could do it's best to meet the QoS while keeping power
-> >>low, but if the h/w can't support it, we let it run at highest
-> >>performance and call it "best effort".
-> >
-> >so we don't need to warn if the aggregate qos request exceeds the
-> >capability of the hardware then.
-> 
-> That should work for now. If we see a strong reason for notifying
-> QoS failures we could add it in the future.
-> 
-> >>>>This decision is both QoS and PM related.  Without summation, the 'max'
-> >>>>request is still 10Mb/s so you would keep the lower power state.  But
-> >>>>you also know that none of the clients will get their requested rate.
-> >>>>
-> >>>>There's some gray area here since there is a choice.  Was the point
-> >>>>of the request to keep the NIC at the *power-state* needed for 10Mb/s (a
-> >>>>PM request) or was the request saying the app wanted at least 10Mb/s (a
-> >>>>QoS request.)
-> >>>I need to think on this a bit.  You are correct, and it looks like we
-> >>>could use both types of interfaces.
-> >>I'm not sure having both interfaces would work. Should a single
-> >>client be allowed to keep the *power state* to what's needed for
-> >>10Mb/s? What happens if another client votes with "I need at least
-> >>20Mb/s"?
-> >
-> >I need to think some more on this buy its looking like for throughput
-> >we may only want one type of interface because, as you say,  it will be
-> >hard to reconcile one against the other.
-> >
-> >>I think the "limit max power-state to X" should be a specific to
-> >>each PM QoS parameter (not its clients) similar to how
-> >>scaling_max_freq works for CPU freq and is not set by each client
-> >>(process - it uses the CPU).
-> >
-> >yes.  However; it follows the units of the pm_qos parameter abstraction
-> >more than anything else.
-> 
-> Not sure I understand this line.
+On 09/02/2010 02:03 AM, Luke Macken wrote:
+> This patch enables the EFI framebuffer on 14 more Macs, including the
+> iMac11,1 iMac10,1 iMac8,1 Macmini3,1 Macmini4,1 MacBook5,1 MacBook6,1
+> MacBook7,1 MacBookPro2,2 MacBookPro5,2 MacBookPro5,3 MacBookPro6,1
+> MacBookPro6,2 and MacBookPro7,1
+>
+> Information gathered from various user submissions.
+>
+>      https://bugzilla.redhat.com/show_bug.cgi?id=528232
+>      http://ubuntuforums.org/showthread.php?t=1557326
+>
+> Signed-off-by: Luke Macken<lmacken@redhat.com>
 
-I think the choice of units in the abstraction mostly defines what type
-of aggregation should be use, {min, max, sum}.
-> >>So, will be be adding a system bus thruput parameter? Is it going to
-> >>have min comparator for now?
-> >
-> >a summation aggregater, with units of KBS.
-> 
-> Ok. Who is going to add the summation "comparator"? I can write a
-> patch for the system bus thruput parameter.
+Thanks for digging up all this data, Luke.
 
-I'll do a patch by monday as an RFC but, I'm wondering if we want it in
-the main line vrs an implementation that scales by bus integrated into
-the driver model per what Kevin has been talking about....
+Signed-off-by: Peter Jones <pjones@redhat.com>
 
---mgross
+>
+> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+> index 815f84b..11de9ed 100644
+> --- a/drivers/video/efifb.c
+> +++ b/drivers/video/efifb.c
+> @@ -39,17 +39,31 @@ enum {
+>   	M_I20,		/* 20-Inch iMac */
+>   	M_I20_SR,	/* 20-Inch iMac (Santa Rosa) */
+>   	M_I24,		/* 24-Inch iMac */
+> +	M_I24_8_1,	/* 24-Inch iMac, 8,1th gen */
+> +	M_I24_10_1,	/* 24-Inch iMac, 10,1th gen */
+> +	M_I27_11_1,	/* 27-Inch iMac, 11,1th gen */
+>   	M_MINI,		/* Mac Mini */
+> +	M_MINI_3_1,	/* Mac Mini, 3,1th gen */
+> +	M_MINI_4_1,	/* Mac Mini, 4,1th gen */
+>   	M_MB,		/* MacBook */
+>   	M_MB_2,		/* MacBook, 2nd rev. */
+>   	M_MB_3,		/* MacBook, 3rd rev. */
+> +	M_MB_5_1,	/* MacBook, 5th rev. */
+> +	M_MB_6_1,	/* MacBook, 6th rev. */
+> +	M_MB_7_1,	/* MacBook, 7th rev. */
+>   	M_MB_SR,	/* MacBook, 2nd gen, (Santa Rosa) */
+>   	M_MBA,		/* MacBook Air */
+>   	M_MBP,		/* MacBook Pro */
+>   	M_MBP_2,	/* MacBook Pro 2nd gen */
+> +	M_MBP_2_2,	/* MacBook Pro 2,2nd gen */
+>   	M_MBP_SR,	/* MacBook Pro (Santa Rosa) */
+>   	M_MBP_4,	/* MacBook Pro, 4th gen */
+>   	M_MBP_5_1,    /* MacBook Pro, 5,1th gen */
+> +	M_MBP_5_2,	/* MacBook Pro, 5,2th gen */
+> +	M_MBP_5_3,	/* MacBook Pro, 5,3rd gen */
+> +	M_MBP_6_1,	/* MacBook Pro, 6,1th gen */
+> +	M_MBP_6_2,	/* MacBook Pro, 6,2th gen */
+> +	M_MBP_7_1,	/* MacBook Pro, 7,1th gen */
+>   	M_UNKNOWN	/* placeholder */
+>   };
+>
+> @@ -64,14 +78,28 @@ static struct efifb_dmi_info {
+>   	[M_I20] = { "i20", 0x80010000, 1728 * 4, 1680, 1050 }, /* guess */
+>   	[M_I20_SR] = { "imac7", 0x40010000, 1728 * 4, 1680, 1050 },
+>   	[M_I24] = { "i24", 0x80010000, 2048 * 4, 1920, 1200 }, /* guess */
+> +	[M_I24_8_1] = { "imac8", 0xc0060000, 2048 * 4, 1920, 1200 },
+> +	[M_I24_10_1] = { "imac10", 0xc0010000, 2048 * 4, 1920, 1080 },
+> +	[M_I27_11_1] = { "imac11", 0xc0010000, 2560 * 4, 2560, 1440 },
+>   	[M_MINI]= { "mini", 0x80000000, 2048 * 4, 1024, 768 },
+> +	[M_MINI_3_1]= { "mini31", 0x40010000, 1024 * 4, 1024, 768 },
+> +	[M_MINI_4_1]= { "mini41", 0xc0010000, 2048 * 4, 1920, 1200 },
+>   	[M_MB] = { "macbook", 0x80000000, 2048 * 4, 1280, 800 },
+> +	[M_MB_5_1] = { "macbook51", 0x80010000, 2048 * 4, 1280, 800 },
+> +	[M_MB_6_1] = { "macbook61", 0x80010000, 2048 * 4, 1280, 800 },
+> +	[M_MB_7_1] = { "macbook71", 0x80010000, 2048 * 4, 1280, 800 },
+>   	[M_MBA] = { "mba", 0x80000000, 2048 * 4, 1280, 800 },
+>   	[M_MBP] = { "mbp", 0x80010000, 1472 * 4, 1440, 900 },
+>   	[M_MBP_2] = { "mbp2", 0, 0, 0, 0 }, /* placeholder */
+> +	[M_MBP_2_2] = { "mbp22", 0x80010000, 1472 * 4, 1440, 900 },
+>   	[M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900 },
+>   	[M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200 },
+>   	[M_MBP_5_1] = { "mbp51", 0xc0010000, 2048 * 4, 1440, 900 },
+> +	[M_MBP_5_2] = { "mbp52", 0xc0010000, 2048 * 4, 1920, 1200 },
+> +	[M_MBP_5_3] = { "mbp53", 0xd0010000, 2048 * 4, 1440, 900 },
+> +	[M_MBP_6_1] = { "mbp61", 0x90030000, 2048 * 4, 1920, 1200 },
+> +	[M_MBP_6_2] = { "mbp62", 0x90030000, 2048 * 4, 1680, 1050 },
+> +	[M_MBP_7_1] = { "mbp71", 0xc0010000, 2048 * 4, 1280, 800 },
+>   	[M_UNKNOWN] = { NULL, 0, 0, 0, 0 }
+>   };
+>
+> @@ -92,7 +120,12 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
+>   	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac6,1", M_I24),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac6,1", M_I24),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac7,1", M_I20_SR),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac8,1", M_I24_8_1),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac10,1", M_I24_10_1),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac11,1", M_I27_11_1),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "Macmini1,1", M_MINI),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini3,1", M_MINI_3_1),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini4,1", M_MINI_4_1),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook1,1", M_MB),
+>   	/* At least one of these two will be right; maybe both? */
+>   	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook2,1", M_MB),
+> @@ -101,14 +134,23 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
+>   	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook3,1", M_MB),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook3,1", M_MB),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook4,1", M_MB),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook5,1", M_MB_5_1),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook6,1", M_MB_6_1),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook7,1", M_MB_7_1),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir1,1", M_MBA),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro1,1", M_MBP),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,1", M_MBP_2),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,2", M_MBP_2_2),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro2,1", M_MBP_2),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro4,1", M_MBP_4),
+>   	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,1", M_MBP_5_1),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,2", M_MBP_5_2),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,3", M_MBP_5_3),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,1", M_MBP_6_1),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,2", M_MBP_6_2),
+> +	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro7,1", M_MBP_7_1),
+>   	{},
+>   };
+>
 
+
+-- 
+         Peter
+
+Computer games don't affect kids; I mean if Pac-Man affected us as
+kids, we'd all be running around in darkened rooms, munching magic
+pills and listening to repetitive electronic music.
+		-- Not actually Kristian Wilson, Nintendo, Inc, 1989
+
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
