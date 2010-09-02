@@ -1,148 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab0IBO31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:29:27 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:36510 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab0IBO30 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:29:26 -0400
-Date: Thu, 2 Sep 2010 15:29:23 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFD][checkpatch] warnings on space in front of labels
-Message-ID: <20100902142923.GV2406@shadowen.org>
-References: <1283437098.2356.135.camel@gandalf.stny.rr.com>
+	id S1755300Ab0IBO3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:29:34 -0400
+Received: from lucidpixels.com ([75.144.35.66]:40626 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755086Ab0IBO3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 10:29:32 -0400
+Date: Thu, 2 Sep 2010 10:29:31 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: adam radford <aradford@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
+ timed out, resetting card.
+In-Reply-To: <alpine.DEB.2.00.1009020540500.22317@p34.internal.lan>
+Message-ID: <alpine.DEB.2.00.1009021025190.16817@p34.internal.lan>
+References: <alpine.DEB.2.00.1008270907110.5274@p34.internal.lan> <AANLkTik0BSJC5DJtVNw-MA9cuoAEUrw-M1Dn4XaF99u4@mail.gmail.com> <alpine.DEB.2.00.1008271306100.24692@p34.internal.lan> <alpine.DEB.2.00.1008291137560.5384@p34.internal.lan>
+ <alpine.DEB.2.00.1008310717260.4858@p34.internal.lan> <alpine.DEB.2.00.1008310732120.5156@p34.internal.lan> <alpine.DEB.2.00.1008310820350.19249@p34.internal.lan> <alpine.DEB.2.00.1009010536070.14332@p34.internal.lan> <AANLkTi=SO1nZbFySAs8_+TmCZcKBPihN6xrZfJihBnXG@mail.gmail.com>
+ <alpine.DEB.2.00.1009020540500.22317@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283437098.2356.135.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 02, 2010 at 10:18:18AM -0400, Steven Rostedt wrote:
-> Hi Andy,
-> 
-> There's a new warning that I've seen lately. It is about complaining
-> about spaces starting on a new line.
-> 
-> WARNING: please, no space for starting a line, 
-> 				excluding comments
-> #90: FILE: trace-read.c:612:
-> + again:$
-> 
-> 
-> Comments are currently the exception, but I would also like to add
-> labels too.
-> 
-> I always do labels as:
-> 
-> 	[...]
-> 	goto out;
-> 	[...]
->  out:
-> ^
-> space
-> 
-> 
-> I do this because of patches. The patches that we use show the function
-> that the change is in. This is extremely helpful. But it fails when
-> there's a label in the function that starts on the first column, because
-> the patch will reference the label instead of the function.  If that
-> label is used in several functions, it makes it difficult to figure out
-> exactly what the patch is changing, and thus, it makes it harder to
-> review.
-> 
-> Doing a: git grep '^again:' to find such examples I found an example in
-> kernel/sched_clock.c
-> 
-> static u64 sched_clock_remote(struct sched_clock_data *scd)
-> {
-> 	struct sched_clock_data *my_scd = this_scd();
-> 	u64 this_clock, remote_clock;
-> 	u64 *ptr, old_val, val;
-> 
-> 	sched_clock_local(my_scd);
-> again:
-> 	this_clock = my_scd->clock;
-> 	remote_clock = scd->clock;
-> 
-> Doing a git blame, I see there was a change after this label. Doing a
-> git show on that commit I have:
-> 
-> git show 152f9d0710a62708710161bce1b29fa8292c8c11
-> 
-> which has:
-> 
-> --- a/kernel/sched_clock.c
-> +++ b/kernel/sched_clock.c
-> @@ -127,7 +127,7 @@ again:
->         clock = wrap_max(clock, min_clock);
->         clock = wrap_min(clock, max_clock);
->  
-> -       if (cmpxchg(&scd->clock, old_clock, clock) != old_clock)
-> +       if (cmpxchg64(&scd->clock, old_clock, clock) != old_clock)
->                 goto again;
->  
->         return clock;
-> @@ -163,7 +163,7 @@ again:
->                 val = remote_clock;
->         }
->  
-> -       if (cmpxchg(ptr, old_val, val) != old_val)
-> +       if (cmpxchg64(ptr, old_val, val) != old_val)
->                 goto again;
->  
->         return val;
-> 
-> 
-> 
-> Notice the @@ again: in the header of the sections. This bothers me
-> because it makes it harder to review. If the 'again:' labels had a space
-> in front, the patch would have looked like this:
-> 
-> --- a/kernel/sched_clock.c
-> +++ b/kernel/sched_clock.c
-> @@ -127,7 +127,7 @@ static u64 sched_clock_local(struct sched_clock_data *scd)
->         clock = wrap_max(clock, min_clock);
->         clock = wrap_min(clock, max_clock);
->  
-> -       if (cmpxchg(&scd->clock, old_clock, clock) != old_clock)
-> +       if (cmpxchg64(&scd->clock, old_clock, clock) != old_clock)
->                 goto again;
->  
->         return clock;
-> @@ -163,7 +163,7 @@ static u64 sched_clock_remote(struct sched_clock_data *scd)
->                 val = remote_clock;
->         }
->  
-> -       if (cmpxchg(ptr, old_val, val) != old_val)
-> +       if (cmpxchg64(ptr, old_val, val) != old_val)
->                 goto again;
->  
->         return val;
-> 
-> 
-> In fact, the first version looked like it changed only one function.
-> With the added space, it shows that it changed two functions.
-> 
-> I really prefer the space in front of the label. In fact, I think it
-> should be the default.
-> 
-> But could we at least remove the warning for spaces in front of labels?
-> 
-> What do others think?
 
-As I recall they are specified to have at least one space for exactly
-this reason.  That change Andrew pulled in did have a few bugs and that
-was one of them.  I believe that it should be fixed by the version in
--mm and the one I posted a link to earlier.  It does seem to accept a
-naive test.  If its not working for you could you zap me the file with
-the example.
 
--apw
+On Thu, 2 Sep 2010, Justin Piszcz wrote:
+
+>
+>
+> On Wed, 1 Sep 2010, adam radford wrote:
+>
+>> On Wed, Sep 1, 2010 at 2:40 AM, Justin Piszcz <jpiszcz@lucidpixels.com> 
+>> wrote:
+>> 
+>>> Could the lock/unlock be causing the issue?
+>>> Again, in 2.6.34, there are no latency problems or controller resets.
+>> 
+>> Justin,
+>> 
+>> We are looking into this issue and should get back to you soon.
+>> 
+>> The lock/unlock() kernel calls were not added by me but were part of a
+>> series of 'BKL pushdown' patches added by someone to all drivers with
+>> an ioctl interface.  If you think those might be related to your
+>> issue, you could try
+>> removing those 2 lines of code and recompiling.
+>> 
+>> If you haven't already, please email you kernel .config files for both
+>> the working kernel and non working kernel to the 3ware/LSI support
+>> people you are in contact with.
+>> 
+>> Thanks.
+>> 
+>> -Adam
+>> 
+>
+
+I spoke too fast, it also happens with the 2.6.34 driver under 2.6.35.
+I will have to research this more, until then I'll stick with 2.6.34.
+
+Justin.
+
