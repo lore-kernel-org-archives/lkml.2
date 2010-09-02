@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab0IBRNf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 13:13:35 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:57472 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab0IBRNe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 13:13:34 -0400
-Message-ID: <4C7FDB3B.9030806@tilera.com>
-Date: Thu, 2 Sep 2010 13:13:31 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1755030Ab0IBRQu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 13:16:50 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:52526 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751964Ab0IBRQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 13:16:49 -0400
+Date: Thu, 2 Sep 2010 10:16:46 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: peterz@infradead.org, lizf@cn.fujitsu.com, herbert@gondor.hengli.com.au,
+        davej@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cls_cgroup: Fix rcu lockdep warning
+Message-ID: <20100902171646.GC2349@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4C7F446F.8040303@cn.fujitsu.com>
+ <1283423916.2059.1847.camel@laptop>
+ <20100902.100551.115929058.davem@davemloft.net>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 22/24] ptrace: cleanup arch_ptrace() on tile
-References: <1283442391-23612-1-git-send-email-namhyung@gmail.com> <1283442391-23612-23-git-send-email-namhyung@gmail.com> <4C7FD244.8050502@tilera.com> <AANLkTi=kvktxn_03LOAre0ZiRkswwf-O1hg07ZsShEeN@mail.gmail.com>
-In-Reply-To: <AANLkTi=kvktxn_03LOAre0ZiRkswwf-O1hg07ZsShEeN@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100902.100551.115929058.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 9/2/2010 12:55 PM, Namhyung Kim wrote:
-> On Fri, Sep 3, 2010 at 01:35, Chris Metcalf <cmetcalf@tilera.com> wrote:
->> This omits the change to the actual function definition, which was present
->> in the previous version of this patch.
-> That change was moved/combined into previous patch in this series.
-> Please check out 03/24 in this patchset also.
+On Thu, Sep 02, 2010 at 10:05:51AM -0700, David Miller wrote:
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Thu, 02 Sep 2010 12:38:36 +0200
+> 
+> > On Thu, 2010-09-02 at 14:30 +0800, Li Zefan wrote:
+> >> Calling task_subsys_state() without holding rcu_read_lock or
+> >> cgroup_mutex can cause lockdep warning.
+> >> 
+> > 
+> > That is not a suitable changelog.
+> > 
+> > Was the warning correct? Is your patch correct? What does RCU protect
+> > here and why can we use classid after dropping it.
+> > 
+> > Simply frobbing code to make the warning go away is not good.
+> 
+> In fact shouldn't this be a rcu_dereference() or similar?
 
-Sure, that looks fine.  And sizeof(unsigned long) is OK; I don't have a
-real axe to grind there.
+The rcu_dereference() is there, just buried in task_subsys_state_check()
+which is called from task_subsys_state().  The code extracts the classid,
+which is an integer, so the RCU-protected pointer does not leak out of
+the RCU read-side critical section.
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+So this is OK, but the changelog should indeed say why it is OK.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+							Thanx, Paul
