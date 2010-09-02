@@ -1,199 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab0IBRcv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 13:32:51 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:43399 "EHLO e4.ny.us.ibm.com"
+	id S1753432Ab0IBRjv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 13:39:51 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33537 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752728Ab0IBRcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 13:32:50 -0400
-Date: Thu, 2 Sep 2010 23:02:45 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Nauman Rafique <nauman@google.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Divyesh Shah <dpshah@google.com>,
-        Heinz Mauelshagen <heinzm@redhat.com>, arighi@develer.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC PATCH] Bio Throttling support for block IO controller
-Message-ID: <20100902173245.GC18218@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100901175830.GC22149@redhat.com>
- <20100901200756.GE22149@redhat.com>
- <20100902151824.GA2702@redhat.com>
+	id S1752887Ab0IBRju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 13:39:50 -0400
+Message-ID: <4C7FE163.4000906@austin.ibm.com>
+Date: Thu, 02 Sep 2010 12:39:47 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100902151824.GA2702@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Anton Blanchard <anton@samba.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 0/8] v5 De-couple sysfs memory directories from memory
+ sections
+References: <4C60407C.2080608@austin.ibm.com> <20100831215745.GA7641@kryten>
+In-Reply-To: <20100831215745.GA7641@kryten>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Vivek Goyal <vgoyal@redhat.com> [2010-09-02 11:18:24]:
+On 08/31/2010 04:57 PM, Anton Blanchard wrote:
+> 
+> Hi Nathan,
+> 
+>> This set of patches de-couples the idea that there is a single
+>> directory in sysfs for each memory section.  The intent of the
+>> patches is to reduce the number of sysfs directories created to
+>> resolve a boot-time performance issue.  On very large systems
+>> boot time are getting very long (as seen on powerpc hardware)
+>> due to the enormous number of sysfs directories being created.
+>> On a system with 1 TB of memory we create ~63,000 directories.
+>> For even larger systems boot times are being measured in hours.
+>>
+>> This set of patches allows for each directory created in sysfs
+>> to cover more than one memory section.  The default behavior for
+>> sysfs directory creation is the same, in that each directory
+>> represents a single memory section.  A new file 'end_phys_index'
+>> in each directory contains the physical_id of the last memory
+>> section covered by the directory so that users can easily
+>> determine the memory section range of a directory.
+> 
+> I tested this on a POWER7 with 2TB memory and the boot time improved from
+> greater than 6 hours (I gave up), to under 5 minutes. Nice!
 
-> On Wed, Sep 01, 2010 at 04:07:56PM -0400, Vivek Goyal wrote:
-> > On Wed, Sep 01, 2010 at 01:58:30PM -0400, Vivek Goyal wrote:
-> > > Hi,
-> > > 
-> > > Currently CFQ provides the weight based proportional division of bandwidth.
-> > > People also have been looking at extending block IO controller to provide
-> > > throttling/max bandwidth control.
-> > > 
-> > > I have started to write the support for throttling in block layer on 
-> > > request queue so that it can be used both for higher level logical
-> > > devices as well as leaf nodes. This patch is still work in progress but
-> > > I wanted to post it for early feedback.
-> > > 
-> > > Basically currently I have hooked into __make_request() function to 
-> > > check which cgroup bio belongs to and if it is exceeding the specified
-> > > BW rate. If no, thread can continue to dispatch bio as it is otherwise
-> > > bio is queued internally and dispatched later with the help of a worker
-> > > thread.
-> > > 
-> > > HOWTO
-> > > =====
-> > > - Mount blkio controller
-> > > 	mount -t cgroup -o blkio none /cgroup/blkio
-> > > 
-> > > - Specify a bandwidth rate on particular device for root group. The format
-> > >   for policy is "<major>:<minor>  <byes_per_second>".
-> > > 
-> > > 	echo "8:16  1048576" > /cgroup/blkio/blkio.read_bps_device
-> > > 
-> > >   Above will put a limit of 1MB/second on reads happening for root group
-> > >   on device having major/minor number 8:16.
-> > > 
-> > > - Run dd to read a file and see if rate is throttled to 1MB/s or not.
-> > > 
-> > > 	# dd if=/mnt/common/zerofile of=/dev/null bs=4K count=1024 iflag=direct
-> > > 	1024+0 records in
-> > > 	1024+0 records out
-> > > 	4194304 bytes (4.2 MB) copied, 4.0001 s, 1.0 MB/s
-> > >  
-> > >  Limits for writes can be put using blkio.write_bps_device file.
-> > > 
-> > > Open Issues
-> > > ===========
-> > > - Do we need to provide additional queue congestion semantics as we are
-> > >   throttling and queuing bios at request queue and probably we don't want
-> > >   a user space application to consume all the memory allocating bios
-> > >   and bombarding request queue with those bios.
-> > > 
-> > > - How to handle the current blkio cgroup stats file and two policies
-> > >   in the background. If for some reason both throttling and proportional
-> > >   BW policies are operating on request queue, then stats will be very
-> > >   confusing.
-> > > 
-> > >   May be we can allow activating either throttling or proportional BW
-> > >   policy per request queue and we can create a /sys tunable to list and
-> > >   chose between policies (something like choosing IO scheduler). The
-> > >   only downside of this apporach is that user also need to be aware of
-> > >   the storage hierachy and activate right policy at each node/request
-> > >   queue.
-> > 
-> > Thinking more about it. The issue of stats from proportional bandwidth
-> > controller and max bandwidth controller clobbering each other can 
-> > probably be solved by also specifying policy name with the stat. For 
-> > example, currently blkio.io_serviced, looks as follows.
-> > 
-> > # cat blkio.io_serviced
-> > 253:2 Read 61
-> > 253:2 Write 0
-> > 253:2 Sync 61
-> > 253:2 Async 0
-> > 253:2 Total 61
-> > 
-> > We can introduce one more field to specify policy for which this stats are as 
-> > follows.
-> > 
-> > # cat blkio.io_serviced
-> > 253:2 Read 61	throttle
-> > 253:2 Write 0	throttle
-> > 253:2 Sync 61	throttle
-> > 253:2 Async 0	throttle
-> > 253:2 Total 61	throttle
-> > 
-> > 253:2 Read 61	proportional	
-> > 253:2 Write 0	proportional
-> > 253:2 Sync 61   proportional
-> > 253:2 Async 0   proportional
-> > 253:2 Total 61  proportional
-> > 
-> 
-> Option 1
-> ========
-> I was looking at the blkio stat code more. It seems to be key value pair
-> thing. So looks like I shall have to change the format of the file and
-> use second field for policy name and that will break any existing tools
-> parsing these blkio cgroup files.
+Thanks for testing this out.  I was able to test this on a 1 TB system
+and saw memory sysfs creation times go from 10 minutes to a few seconds.
+It's good to see the difference for a 2 TB system.
 
-We could go this way and marking the current stats as
-deprecated and to be removed say in 2.6.39 or so
+-Nathan
 
-> 
-> # cat blkio.io_serviced
-> 253:2 throttle Read 61
-> 253:2 throttle Write 0
-> 253:2 throttle Sync 61
-> 253:2 throttle Async 0
-> 253:2 throttle Total 61
-> 
-> 253:2 proportional Read 61
-> 253:2 proportional Write 0
-> 253:2 proportional Sync 61
-> 253:2 proportional Async 0
-> 253:2 proportional Total 61
-> 
-> Option 2
-> ========
-> Introduce policy column only for new policy. 
-> 
-> 253:2 Read 61
-> 253:2 Write 0
-> 253:2 Sync 61
-> 253:2 Async 0
-> 253:2 Total 61
-> 
-> 253:2 throttle Read 61
-> 253:2 throttle Write 0
-> 253:2 throttle Sync 61
-> 253:2 throttle Async 0
-> 253:2 throttle Total 61
-> 
-> Here old lines continue to represent proportional weight policy stats and
-> new lines with "throttle" key word represent throttling stats.
-> 
-> This is just like adding new fields to "stat" file. I guess it might still
-> might break some script which might get stumped by new lines. But if scripts
-> are not parsing all the lines and just selectively picking data then these
-> should be fine.
-> 
-> Option 3
-> ========
-> The other option is that I introduce new cgroup files for the new
-> policy. Something like what memory cgroup has done for swap accounting
-> files.
-> 
-> blkio.throttle.io_serviced
-> blkio.throttle.io_service_bytes
-> 
-> That will make sure ABI is not broken but number of files per cgroup
-> increase and there are already significant number of files in the group.
-> 
-> Actually I think I should atleast rename the read and write bw files so that
-> they explicitly tell these belong to throtlling poilcy.
-> 
-> blkio.throttle.read_bps_device
-> blkio.throttle.write_bps_device
-> 
-> Any thoughts on what is the best way forward.
->
-
-I'd prefer option 3, if not fallback to option 1. The problem is that
-with ABI changes, tools always have to figure out what version they
-are dealing with.
- 
--- 
-	Three Cheers,
-	Balbir
