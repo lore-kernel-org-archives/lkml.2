@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab0IBU2R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:28:17 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33793 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756975Ab0IBU2O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:28:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=dZsbqA2ZA54UG/g2GvVGnytFw6Xv2SEpzpoBTwC2BhEUiQwTNfGUg0CVZ0Qs/30Czz
-         1T1StGB5iq/HxnGdR61t+PypVDcaofZJQCk2+66Jgm5juWSgpJH2QhZw3mejkEz+JKyc
-         3r+vfoZh0Ciuiyh0N/qx2VsqDduXunjnlAPxo=
-From: Ralf Thielow <ralf.thielow@googlemail.com>
-To: rientjes@google.com
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ralf Thielow <ralf.thielow@googlemail.com>
-Subject: [PATCH] acpi: numa: fixed white space and line length issue
-Date: Thu,  2 Sep 2010 22:27:47 +0200
-Message-Id: <1283459267-6171-1-git-send-email-ralf.thielow@googlemail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1757023Ab0IBU3E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 16:29:04 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43784 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756888Ab0IBU3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 16:29:01 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <htejun@gmail.com>
+Subject: Re: [PATCH] libata: skip EH autopsy and recovery during suspend
+Date: Thu, 2 Sep 2010 22:28:07 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <201009022216.45303.rjw@sisk.pl> <4C800829.9040802@gmail.com>
+In-Reply-To: <4C800829.9040802@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009022228.07626.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding style issue.
+On Thursday, September 02, 2010, Tejun Heo wrote:
+> Hello,
+> 
+> On 09/02/2010 10:16 PM, Rafael J. Wysocki wrote:
+> > Putting the issue at hand aside, I'm not really sure if using SCSI EH for
+> > suspending the controller is a good idea.  It seems overly complicated and
+> > it doesn't match the new PCI suspend model with separate ->suspend(),
+> > ->freeze() and ->poweroff() callbacks.  Moreover, the passing of pm_message_t
+> > back and forth doesn't make things clear either.
+> > 
+> > Would it be possible to rework this thing entirely at one point?
+> 
+> Well, I think I would need more than that to rework the whole thing.
+> There are a lot of benefits in sharing the same path between probing /
+> error handling and suspend/resuming.  ATA has a lot of quirks which
+> have to be dealt with and it will be very fragile to scatter handling
+> logics over multiple separate paths.  We definitely can try to make
+> the plumbing from power management easier to follow.
 
-Signed-off-by: Ralf Thielow <ralf.thielow@googlemail.com>
----
- drivers/acpi/numa.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+That would be very nice.  In particular, I'd like to get rid of the
+pm_message_t thing if possible.  And I'd like to avoid putting the
+controller into D3 before creating hibernation image. :-)
 
-diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
-index 5718566..9864c5b 100644
---- a/drivers/acpi/numa.c
-+++ b/drivers/acpi/numa.c
-@@ -102,7 +102,7 @@ acpi_table_print_srat_entry(struct acpi_subtable_header *header)
- 					  "SRAT Processor (id[0x%02x] eid[0x%02x]) in proximity domain %d %s\n",
- 					  p->apic_id, p->local_sapic_eid,
- 					  p->proximity_domain_lo,
--					  (p->flags & ACPI_SRAT_CPU_ENABLED)?
-+					  (p->flags & ACPI_SRAT_CPU_ENABLED) ?
- 					  "enabled" : "disabled"));
- 		}
- #endif				/* ACPI_DEBUG_OUTPUT */
-@@ -118,9 +118,10 @@ acpi_table_print_srat_entry(struct acpi_subtable_header *header)
- 					  (unsigned long)p->base_address,
- 					  (unsigned long)p->length,
- 					  p->proximity_domain,
--					  (p->flags & ACPI_SRAT_MEM_ENABLED)?
-+					  (p->flags & ACPI_SRAT_MEM_ENABLED) ?
- 					  "enabled" : "disabled",
--					  (p->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE)?
-+					  (p->flags &
-+						ACPI_SRAT_MEM_HOT_PLUGGABLE) ?
- 					  " hot-pluggable" : ""));
- 		}
- #endif				/* ACPI_DEBUG_OUTPUT */
-@@ -236,7 +237,7 @@ acpi_parse_processor_affinity(struct acpi_subtable_header *header,
- }
- 
- static int __init
--acpi_parse_memory_affinity(struct acpi_subtable_header * header,
-+acpi_parse_memory_affinity(struct acpi_subtable_header *header,
- 			   const unsigned long end)
- {
- 	struct acpi_srat_mem_affinity *memory_affinity;
-@@ -265,7 +266,8 @@ static int __init acpi_parse_srat(struct acpi_table_header *table)
- 
- static int __init
- acpi_table_parse_srat(enum acpi_srat_type id,
--		      acpi_table_entry_handler handler, unsigned int max_entries)
-+		      acpi_table_entry_handler handler,
-+		      unsigned int max_entries)
- {
- 	return acpi_table_parse_entries(ACPI_SIG_SRAT,
- 					    sizeof(struct acpi_table_srat), id,
--- 
-1.7.0.4
-
+Thanks,
+Rafael
