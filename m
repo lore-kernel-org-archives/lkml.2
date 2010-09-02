@@ -1,115 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab0IBDhZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 23:37:25 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:31432 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088Ab0IBDhX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 23:37:23 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6092"; a="53097840"
-Message-ID: <4C7F1BF2.4050200@codeaurora.org>
-Date: Wed, 01 Sep 2010 20:37:22 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1752962Ab0IBDjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 23:39:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58830 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752314Ab0IBDjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Sep 2010 23:39:08 -0400
+Date: Wed, 1 Sep 2010 20:39:00 -0700
+From: Tony Jones <tonyj@suse.de>
+To: jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
+        bruce.w.allan@intel.com, alexander.h.duyck@intel.com,
+        peter.p.waskiewicz.jr@intel.com, john.ronciak@intel.com
+Cc: e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        bphilips@suse.de
+Subject: high latency on 82573L
+Message-ID: <20100902033900.GA5283@suse.de>
 MIME-Version: 1.0
-To: markgross@thegnar.org
-CC: Kevin Hilman <khilman@deeprootsystems.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <james.bottomley@suse.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
-References: <1282882403-29824-1-git-send-email-skannan@codeaurora.org> <1282882403-29824-2-git-send-email-skannan@codeaurora.org> <20100827064153.GB3414@gvim.org> <b3ebe52382d37d37e93021c33cb4d6d9.squirrel@codeaurora.org> <20100828020540.GB8341@gvim.org> <4C787AA9.4090906@codeaurora.org> <20100828225255.GA12402@gvim.org> <878w3o3p55.fsf@deeprootsystems.com> <20100831184030.GB9305@gvim.org> <4C7D844C.5050403@codeaurora.org> <20100901142804.GA13985@gvim.org>
-In-Reply-To: <20100901142804.GA13985@gvim.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mark gross wrote:
-> On Tue, Aug 31, 2010 at 03:38:04PM -0700, Saravana Kannan wrote:
->> mark gross wrote:
->>> On Mon, Aug 30, 2010 at 11:56:54AM -0700, Kevin Hilman
->>>>>> Any specific reason PM QoS doesn't support a "summation" "comparitor"?
->>>>> PM_QoS could do a summation, but keep in mind it pm_qos not qos.  pm_qos
->>>>> is a best effort thing to constrain power management throttling, not
->>>>> provide a true quality of service or deadline scheduling support.
->>>> For me (and I think Saravana too), this is still all about power, but
->>>> it's closely tied to QoS.
->> Kevin, Thanks for explaining exactly what I had in mind. I was
->> caught up with other work and was glad to see this discussion moved
->> forward.
->>
->> I pretty much agree with all of Kevin's statements, so here is a
->> preemptive "I agree" to all this paragraphs.
->>
->>> Now I get it!  For throughput we need to do a sum.  Ok, we need sum
->>> comparator/performance aggregaters too!
->> Yay! Finally one of my pet peeves with PM QoS is being resolved(?).
-> 
-> yes, we need to add a summation aggregater to the pm_qos logic and
-> likely apply it to all the throughput pm_qos parameters.  You where
-> right about that point.  (but I'm not budging on the unit less
-> parameters)
+Hi.
 
-Yeah, I gave up on the unit less parameter.
+Since commit 6f461f6c7c (e1000e: enable/disable ASPM L0s and L1 and ERT 
+according to hardware errata) I'm seeing high latencies on my Thinkpad T60p.
 
->>> Do we also need to figure out the max throughput and warn if the pm_qos
->>> requests are going over?  I suppose the network stack could register
->>> each device with a max bus bandwidth and pm_qos could warn on exceeding
->>> the hardware throughput.
->> In my opinion, here is where the "best effort" part, if any, comes
->> in. PM QoS could do it's best to meet the QoS while keeping power
->> low, but if the h/w can't support it, we let it run at highest
->> performance and call it "best effort".
-> 
-> so we don't need to warn if the aggregate qos request exceeds the
-> capability of the hardware then.
+02:00.0 Ethernet controller: Intel Corporation 82573L Gigabit Ethernet Controller
+	Subsystem: Lenovo ThinkPad T60
+	Flags: bus master, fast devsel, latency 0, IRQ 30
+	Memory at ee000000 (32-bit, non-prefetchable) [size=128K]
+	I/O ports at 3000 [size=32]
+	Capabilities: [c8] Power Management version 2
+	Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
+	Capabilities: [e0] Express Endpoint, MSI 00
+	Capabilities: [100] Advanced Error Reporting
+	Capabilities: [140] Device Serial Number 00-1a-6b-ff-ff-6c-7e-a4
+	Kernel driver in use: e1000e
 
-That should work for now. If we see a strong reason for notifying QoS 
-failures we could add it in the future.
+# uname -r
+2.6.36-rc3-0-default
+# ping -c 20 192.168.1.1
+PING 192.168.1.1 (192.168.1.1) 56(84) bytes of data.
+64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=1.06 ms
+64 bytes from 192.168.1.1: icmp_seq=2 ttl=64 time=1007 ms
+64 bytes from 192.168.1.1: icmp_seq=3 ttl=64 time=698 ms
+64 bytes from 192.168.1.1: icmp_seq=4 ttl=64 time=198 ms
+64 bytes from 192.168.1.1: icmp_seq=5 ttl=64 time=697 ms
+64 bytes from 192.168.1.1: icmp_seq=6 ttl=64 time=1007 ms
+64 bytes from 192.168.1.1: icmp_seq=7 ttl=64 time=690 ms
+64 bytes from 192.168.1.1: icmp_seq=8 ttl=64 time=1007 ms
+64 bytes from 192.168.1.1: icmp_seq=9 ttl=64 time=682 ms
+64 bytes from 192.168.1.1: icmp_seq=10 ttl=64 time=1008 ms
+64 bytes from 192.168.1.1: icmp_seq=11 ttl=64 time=1.03 ms
+64 bytes from 192.168.1.1: icmp_seq=12 ttl=64 time=1007 ms
+64 bytes from 192.168.1.1: icmp_seq=13 ttl=64 time=0.874 ms
+64 bytes from 192.168.1.1: icmp_seq=14 ttl=64 time=1009 ms
+64 bytes from 192.168.1.1: icmp_seq=15 ttl=64 time=1.72 ms
+64 bytes from 192.168.1.1: icmp_seq=16 ttl=64 time=1006 ms
+64 bytes from 192.168.1.1: icmp_seq=17 ttl=64 time=650 ms
+64 bytes from 192.168.1.1: icmp_seq=18 ttl=64 time=1008 ms
+64 bytes from 192.168.1.1: icmp_seq=19 ttl=64 time=642 ms
+64 bytes from 192.168.1.1: icmp_seq=20 ttl=64 time=1643 ms
 
->>>> This decision is both QoS and PM related.  Without summation, the 'max'
->>>> request is still 10Mb/s so you would keep the lower power state.  But
->>>> you also know that none of the clients will get their requested rate.
->>>>
->>>> There's some gray area here since there is a choice.  Was the point
->>>> of the request to keep the NIC at the *power-state* needed for 10Mb/s (a
->>>> PM request) or was the request saying the app wanted at least 10Mb/s (a
->>>> QoS request.)
->>> I need to think on this a bit.  You are correct, and it looks like we
->>> could use both types of interfaces.
->> I'm not sure having both interfaces would work. Should a single
->> client be allowed to keep the *power state* to what's needed for
->> 10Mb/s? What happens if another client votes with "I need at least
->> 20Mb/s"?
-> 
-> I need to think some more on this buy its looking like for throughput
-> we may only want one type of interface because, as you say,  it will be
-> hard to reconcile one against the other.
-> 
->> I think the "limit max power-state to X" should be a specific to
->> each PM QoS parameter (not its clients) similar to how
->> scaling_max_freq works for CPU freq and is not set by each client
->> (process - it uses the CPU).
-> 
-> yes.  However; it follows the units of the pm_qos parameter abstraction
-> more than anything else.
+--- 192.168.1.1 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 19063ms
+rtt min/avg/max/mdev = 0.874/698.661/1643.392/439.376 ms, pipe 2
 
-Not sure I understand this line.
+This is 2.6.36-rc3 yet commit 19833b5dff (e1000e: disable ASPM L1 on 82573)
+isn't having any effect for me.
 
->> So, will be be adding a system bus thruput parameter? Is it going to
->> have min comparator for now?
-> 
-> a summation aggregater, with units of KBS.
+For our OpenSUSE 11.3 kernels (2.6.34 based), reverting just 6f461f6c7c
+solves the issue. For .36-rc3 reverting 6f461f6c7c plus of course 19833b5dff 
+does the trick.
 
-Ok. Who is going to add the summation "comparator"? I can write a patch 
-for the system bus thruput parameter.
+I'm happy to perform any testing to help narrow this down. LMK.
 
--Saravana
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Tony
