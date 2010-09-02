@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab0IBQuE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 12:50:04 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:38832 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756018Ab0IBQuA (ORCPT
+	id S1756116Ab0IBQui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 12:50:38 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:33518 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755856Ab0IBQuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 12:50:00 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6093"; a="53034963"
-Subject: Re: [PATCH 14/24] msm: add hotplug stub functions
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jeff Ohlstein <johlstei@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Gregory Bean <gbean@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-In-Reply-To: <20100902111157.GX26319@n2100.arm.linux.org.uk>
-References: <1282712273-344-1-git-send-email-johlstei@codeaurora.org>
-	 <1282712273-344-15-git-send-email-johlstei@codeaurora.org>
-	 <20100902111157.GX26319@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 02 Sep 2010 09:49:37 -0700
-Message-ID: <1283446177.3674.0.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Sep 2010 12:50:37 -0400
+Date: Thu, 2 Sep 2010 18:50:35 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: David Howells <dhowells@redhat.com>
+Cc: gerg@snapgear.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] M68K: Use CONFIG_MMU not __uClinux__ to select
+	m68knommu contributions
+Message-ID: <20100902165035.GB24011@merkur.ravnborg.org>
+References: <20100902135438.GA23729@merkur.ravnborg.org> <19747.1283422807@redhat.com> <20100902102158.19806.14133.stgit@warthog.procyon.org.uk> <24082.1283440358@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <24082.1283440358@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-02 at 12:11 +0100, Russell King - ARM Linux wrote:
-> On Tue, Aug 24, 2010 at 09:57:43PM -0700, Jeff Ohlstein wrote:
-> > From: Daniel Walker <dwalker@codeaurora.org>
-> > 
-> > We don't actually do anything for hotplug yet. This just lets
-> > everything compile, even when hotplug is enabled.
+On Thu, Sep 02, 2010 at 04:12:38PM +0100, David Howells wrote:
+> Sam Ravnborg <sam@ravnborg.org> wrote:
 > 
-> And the point of that is?  If you're not supporting hotplug CPU yet, then
-> don't allow it to be enabled.
+> > This was exactly the reason why __uClinux__ was used in the first place.
+> 
+> That shouldn't be used in kernel headers.  It should be !CONFIG_MMU.
 
-How do we do that? I didn't see a easy way to prevent it.
+Thats preferable - yes.
+But in headers that are exported we cannot rely on CONFIG_MMU,
+and Andreas could point out two headers that are exported
+where your patch replaced __uClinux__ with CONFIG_MMU.
 
-Daniel
+Thats wrong.
+I assume you aggree on this?
 
-
--- 
-
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+	Sam
