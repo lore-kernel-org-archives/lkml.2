@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab0IBBDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Sep 2010 21:03:32 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:17241 "EHLO
+	id S1756174Ab0IBBDn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Sep 2010 21:03:43 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:17177 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab0IBBDa (ORCPT
+	with ESMTP id S1756116Ab0IBBDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Sep 2010 21:03:30 -0400
+	Wed, 1 Sep 2010 21:03:21 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
 	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=oMwkNRizq/T2/KuoLTEihWk3FoQoKjBZVMCtMKj4JruKcQxb7LjK0e3f8LQl0di8S
-	HZtM2N9JCbX3wU2/4pcPQ==
-Date: Wed, 1 Sep 2010 18:03:20 -0700 (PDT)
+	b=Vt23EFWuj4glT2i5Q93XYT+/A6KFzFTOtR4RBzPabuvxJF1f8Zkw9bUp8CYFi5FAG
+	LL00bGGGCfAfaSKxl2Xcg==
+Date: Wed, 1 Sep 2010 18:03:17 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Anton Altaparmakov <aia21@cantab.net>,
-        linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [patch v2 5/5] ntfs: remove dependency on __GFP_NOFAIL
+cc: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch v2 4/5] btrfs: add nofail variant of set_extent_dirty
 In-Reply-To: <alpine.DEB.2.00.1009011757360.24694@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1009011801050.24694@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1009011800110.24694@chino.kir.corp.google.com>
 References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <alpine.DEB.2.00.1009011757360.24694@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
@@ -30,8 +30,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reimplement ntfs_malloc_nofs_nofail() to loop forever calling
-ntfs_malloc_nofs() until the allocation succeeds.
+Add set_extent_dirty_nofail().  This function is equivalent to
+set_extent_dirty(), except that it will never fail because of allocation
+failure and instead loop forever trying to allocate memory.
 
 If the first allocation attempt fails because the page allocator doesn't
 implicitly loop, a warning will be emitted, including a call trace.
@@ -42,31 +43,74 @@ No future callers should be added.
 
 Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- fs/ntfs/malloc.h |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+ fs/btrfs/extent-tree.c |    8 ++++----
+ fs/btrfs/extent_io.c   |   18 ++++++++++++++++++
+ fs/btrfs/extent_io.h   |    2 ++
+ 3 files changed, 24 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ntfs/malloc.h b/fs/ntfs/malloc.h
---- a/fs/ntfs/malloc.h
-+++ b/fs/ntfs/malloc.h
-@@ -76,11 +76,19 @@ static inline void *ntfs_malloc_nofs(unsigned long size)
-  * This function guarantees that the allocation will succeed.  It will sleep
-  * for as long as it takes to complete the allocation.
-  *
-- * If there was insufficient memory to complete the request, return NULL.
-+ * NOTE: no new callers of this function should be implemented!
-+ * All memory allocations should be failable whenever possible.
-  */
- static inline void *ntfs_malloc_nofs_nofail(unsigned long size)
- {
--	return __ntfs_malloc(size, GFP_NOFS | __GFP_HIGHMEM | __GFP_NOFAIL);
-+	void *ret;
-+
-+	for (;;) {
-+		ret = ntfs_malloc_nofs(size);
-+		if (ret)
-+			return ret;
-+		WARN_ON_ONCE(get_order(size) > PAGE_ALLOC_COSTLY_ORDER);
-+	}
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -3831,9 +3831,9 @@ static int update_block_group(struct btrfs_trans_handle *trans,
+ 			spin_unlock(&cache->lock);
+ 			spin_unlock(&cache->space_info->lock);
+ 
+-			set_extent_dirty(info->pinned_extents,
++			set_extent_dirty_nofail(info->pinned_extents,
+ 					 bytenr, bytenr + num_bytes - 1,
+-					 GFP_NOFS | __GFP_NOFAIL);
++					 GFP_NOFS);
+ 		}
+ 		btrfs_put_block_group(cache);
+ 		total -= num_bytes;
+@@ -3872,8 +3872,8 @@ static int pin_down_extent(struct btrfs_root *root,
+ 	spin_unlock(&cache->lock);
+ 	spin_unlock(&cache->space_info->lock);
+ 
+-	set_extent_dirty(root->fs_info->pinned_extents, bytenr,
+-			 bytenr + num_bytes - 1, GFP_NOFS | __GFP_NOFAIL);
++	set_extent_dirty_nofail(root->fs_info->pinned_extents, bytenr,
++			 bytenr + num_bytes - 1, GFP_NOFS);
+ 	return 0;
  }
  
- static inline void ntfs_free(void *addr)
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -940,6 +940,24 @@ int set_extent_dirty(struct extent_io_tree *tree, u64 start, u64 end,
+ 			      NULL, mask);
+ }
+ 
++/*
++ * NOTE: no new callers of this function should be implemented!
++ * All memory allocations should be failable whenever possible.
++ */
++int set_extent_dirty_nofail(struct extent_io_tree *tree, u64 start, u64 end,
++		     gfp_t mask)
++{
++	int ret;
++
++	for (;;) {
++		ret = set_extent_dirty(tree, start, end, mask);
++		if (ret != -ENOMEM)
++			return ret;
++		WARN_ON_ONCE(get_order(sizeof(struct extent_state)) >
++						PAGE_ALLOC_COSTLY_ORDER);
++	}
++}
++
+ int set_extent_bits(struct extent_io_tree *tree, u64 start, u64 end,
+ 		    int bits, gfp_t mask)
+ {
+diff --git a/fs/btrfs/extent_io.h b/fs/btrfs/extent_io.h
+--- a/fs/btrfs/extent_io.h
++++ b/fs/btrfs/extent_io.h
+@@ -197,6 +197,8 @@ int set_extent_new(struct extent_io_tree *tree, u64 start, u64 end,
+ 		   gfp_t mask);
+ int set_extent_dirty(struct extent_io_tree *tree, u64 start, u64 end,
+ 		     gfp_t mask);
++int set_extent_dirty_nofail(struct extent_io_tree *tree, u64 start, u64 end,
++		     gfp_t mask);
+ int clear_extent_dirty(struct extent_io_tree *tree, u64 start, u64 end,
+ 		       gfp_t mask);
+ int clear_extent_ordered(struct extent_io_tree *tree, u64 start, u64 end,
