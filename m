@@ -1,47 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab0IBU1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 16:27:33 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37265 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751091Ab0IBU1c (ORCPT
+	id S1756998Ab0IBU2R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 16:28:17 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33793 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756975Ab0IBU2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 16:27:32 -0400
-Date: Thu, 2 Sep 2010 16:27:31 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Colin Cross <ccross@android.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@lists.linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after
- abort
-In-Reply-To: <201009022146.03359.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1009021626110.1311-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 2 Sep 2010 16:28:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=dZsbqA2ZA54UG/g2GvVGnytFw6Xv2SEpzpoBTwC2BhEUiQwTNfGUg0CVZ0Qs/30Czz
+         1T1StGB5iq/HxnGdR61t+PypVDcaofZJQCk2+66Jgm5juWSgpJH2QhZw3mejkEz+JKyc
+         3r+vfoZh0Ciuiyh0N/qx2VsqDduXunjnlAPxo=
+From: Ralf Thielow <ralf.thielow@googlemail.com>
+To: rientjes@google.com
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ralf Thielow <ralf.thielow@googlemail.com>
+Subject: [PATCH] acpi: numa: fixed white space and line length issue
+Date: Thu,  2 Sep 2010 22:27:47 +0200
+Message-Id: <1283459267-6171-1-git-send-email-ralf.thielow@googlemail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010, Rafael J. Wysocki wrote:
+Fixed a coding style issue.
 
-> On Thursday, September 02, 2010, Alan Stern wrote:
-> > On Wed, 1 Sep 2010, Colin Cross wrote:
-> > 
-> > > Only wait on a parent device during resume if the parent device is
-> > > suspended.
+Signed-off-by: Ralf Thielow <ralf.thielow@googlemail.com>
+---
+ drivers/acpi/numa.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-> > I think it would be better to change device_pm_init() and add a 
-> > complete_all().
-> 
-> I agree.
-> 
-> Who's writing the patch?
-
-I was hoping that Colin would.  But I can do it if he doesn't want to.
-
-Alan Stern
+diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+index 5718566..9864c5b 100644
+--- a/drivers/acpi/numa.c
++++ b/drivers/acpi/numa.c
+@@ -102,7 +102,7 @@ acpi_table_print_srat_entry(struct acpi_subtable_header *header)
+ 					  "SRAT Processor (id[0x%02x] eid[0x%02x]) in proximity domain %d %s\n",
+ 					  p->apic_id, p->local_sapic_eid,
+ 					  p->proximity_domain_lo,
+-					  (p->flags & ACPI_SRAT_CPU_ENABLED)?
++					  (p->flags & ACPI_SRAT_CPU_ENABLED) ?
+ 					  "enabled" : "disabled"));
+ 		}
+ #endif				/* ACPI_DEBUG_OUTPUT */
+@@ -118,9 +118,10 @@ acpi_table_print_srat_entry(struct acpi_subtable_header *header)
+ 					  (unsigned long)p->base_address,
+ 					  (unsigned long)p->length,
+ 					  p->proximity_domain,
+-					  (p->flags & ACPI_SRAT_MEM_ENABLED)?
++					  (p->flags & ACPI_SRAT_MEM_ENABLED) ?
+ 					  "enabled" : "disabled",
+-					  (p->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE)?
++					  (p->flags &
++						ACPI_SRAT_MEM_HOT_PLUGGABLE) ?
+ 					  " hot-pluggable" : ""));
+ 		}
+ #endif				/* ACPI_DEBUG_OUTPUT */
+@@ -236,7 +237,7 @@ acpi_parse_processor_affinity(struct acpi_subtable_header *header,
+ }
+ 
+ static int __init
+-acpi_parse_memory_affinity(struct acpi_subtable_header * header,
++acpi_parse_memory_affinity(struct acpi_subtable_header *header,
+ 			   const unsigned long end)
+ {
+ 	struct acpi_srat_mem_affinity *memory_affinity;
+@@ -265,7 +266,8 @@ static int __init acpi_parse_srat(struct acpi_table_header *table)
+ 
+ static int __init
+ acpi_table_parse_srat(enum acpi_srat_type id,
+-		      acpi_table_entry_handler handler, unsigned int max_entries)
++		      acpi_table_entry_handler handler,
++		      unsigned int max_entries)
+ {
+ 	return acpi_table_parse_entries(ACPI_SIG_SRAT,
+ 					    sizeof(struct acpi_table_srat), id,
+-- 
+1.7.0.4
 
