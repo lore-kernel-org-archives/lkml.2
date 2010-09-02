@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab0IBV0E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 17:26:04 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39302 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757224Ab0IBVGp (ORCPT
+	id S1757232Ab0IBVcI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 17:32:08 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:57821 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754305Ab0IBVcF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 17:06:45 -0400
+	Thu, 2 Sep 2010 17:32:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=vvOcHngJrWZt8ZpIU7nBCLwPIEdYZZF+DNXLWSsf8xORL4U63W6rD5dqk8pFqaRoxu
-         RTL8TLkcB4mkk1VT86y04B5HolEx2iG6XsmcFaj/cPO2beJ17dxrH3PtSEkitcjvWnTE
-         0ZujJsPk5ydm5tstBZZfF5YBlXfkWu70GKIy8=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org, jkosina@suse.cz,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 04/91] arch/arm/mach-omap1/Kconfig Update broken web addresses in the arch directory.
-Date: Thu,  2 Sep 2010 14:06:35 -0700
-Message-Id: <1283461606-7803-5-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1283461606-7803-1-git-send-email-justinmattock@gmail.com>
-References: <1283461606-7803-1-git-send-email-justinmattock@gmail.com>
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=e9gC5YURQ+dp5aon66jOEw1v/qyvLe6WNQre79JN/I7+6g1xzP9VizZY5j3BeZCoCS
+         We0zrezzpZIK0W6EZtPA==
+MIME-Version: 1.0
+In-Reply-To: <201009022305.09187.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1009020946580.1513-100000@iolanthe.rowland.org>
+	<201009022146.03359.rjw@sisk.pl>
+	<AANLkTi=s3_kFvRY9Afzku82gUgW7YKYXDBZvTkxQsMP8@mail.gmail.com>
+	<201009022305.09187.rjw@sisk.pl>
+Date: Thu, 2 Sep 2010 14:31:55 -0700
+X-Google-Sender-Auth: hcGbpE4j2h1eQbWzyIDT8c_Z6e8
+Message-ID: <AANLkTimfyELxqsHW8zvgrxySrVSyuBWZJ0XXVSSPCXrj@mail.gmail.com>
+Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
+From: Colin Cross <ccross@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below patch updates a broken web address that is no longer
-working due to company buyout, and/or change of location.
-(Please have a look through, and let me know if any of them
-need to be changed, and I'll resend an updated patch).
-
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-
----
- arch/arm/mach-omap1/Kconfig |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/mach-omap1/Kconfig b/arch/arm/mach-omap1/Kconfig
-index 3b02d3b..4ec4c2e 100644
---- a/arch/arm/mach-omap1/Kconfig
-+++ b/arch/arm/mach-omap1/Kconfig
-@@ -119,8 +119,8 @@ config MACH_OMAP_PALMZ71
- 	help
- 	 Support for the Palm Zire71 PDA. To boot the kernel,
- 	 you'll need a PalmOS compatible bootloader; check out
--	 http://hackndev.com/palm/z71 for more information.
--	 Say Y here if you have such a PDA, say N otherwise.
-+	 http://web.archive.org/web/*/http://old.hackndev.com/palm/z71
-+	 for more information. Say Y here if you have such a PDA, say N otherwise.
- 
- config MACH_OMAP_PALMTT
- 	bool "Palm Tungsten|T"
-@@ -128,7 +128,7 @@ config MACH_OMAP_PALMTT
- 	help
- 	  Support for the Palm Tungsten|T PDA. To boot the kernel, you'll
- 	  need a PalmOS compatible bootloader (Garux); check out
--	  http://www.hackndev.com/palm/tt/ for more information.
-+	  http://garux.sourceforge.net/ for more information.
- 	  Say Y here if you have this PDA model, say N otherwise.
- 
- config MACH_SX1
--- 
-1.7.2.1
-
+On Thu, Sep 2, 2010 at 2:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, September 02, 2010, Colin Cross wrote:
+>> On Thu, Sep 2, 2010 at 12:46 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Thursday, September 02, 2010, Alan Stern wrote:
+>> >> On Wed, 1 Sep 2010, Colin Cross wrote:
+>> >>
+>> >> > Only wait on a parent device during resume if the parent device is
+>> >> > suspended.
+>> >> >
+>> >> > Consider three drivers, A, B, and C.  The parent of A is C, and C
+>> >> > has async_suspend set.  On boot, C->power.completion is initialized
+>> >> > to 0.
+>> >> >
+>> >> > During the first suspend:
+>> >> > suspend_devices_and_enter(...)
+>> >> >  dpm_resume(...)
+>> >> >   device_suspend(A)
+>> >> >   device_suspend(B) returns error, aborts suspend
+>> >> >  dpm_resume_end(...)
+>> >> >    dpm_resume(...)
+>> >> >     device_resume(A)
+>> >> >      dpm_wait(A->parent == C)
+>> >> >       wait_for_completion(C->power.completion)
+>> >> >
+>> >> > The wait_for_completion will never complete, because
+>> >> > complete_all(C->power.completion) will only be called from
+>> >> > device_suspend(C) or device_resume(C), neither of which is called
+>> >> > if suspend is aborted before C.
+>> >>
+>> >> This would work okay if C->power.completion had been initialized to the
+>> >> completed state during boot, right?
+>> >>
+>> >> > After a successful suspend->resume cycle, where B doesn't abort
+>> >> > suspend, C->power.completion is left in the completed state by the
+>> >> > call to device_resume(C), and the same call path will work if B
+>> >> > aborts suspend.
+>> >> >
+>> >> > Signed-off-by: Colin Cross <ccross@android.com>
+>> >> > ---
+>> >> >  drivers/base/power/main.c |    3 ++-
+>> >> >  1 files changed, 2 insertions(+), 1 deletions(-)
+>> >> >
+>> >> > diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+>> >> > index cb784a0..e159910 100644
+>> >> > --- a/drivers/base/power/main.c
+>> >> > +++ b/drivers/base/power/main.c
+>> >> > @@ -526,7 +526,8 @@ static int device_resume(struct device *dev, pm_message_t state, bool async)
+>> >> >     TRACE_DEVICE(dev);
+>> >> >     TRACE_RESUME(0);
+>> >> >
+>> >> > -   dpm_wait(dev->parent, async);
+>> >> > +   if (dev->parent && dev->parent->power.status >= DPM_OFF)
+>> >> > +           dpm_wait(dev->parent, async);
+>> >> >     device_lock(dev);
+>> >> >
+>> >> >     dev->power.status = DPM_RESUMING;
+>> >>
+>> >> I think it would be better to change device_pm_init() and add a
+>> >> complete_all().
+>> >
+>> > I agree.
+>> That would work, and was my first solution, but it increases the
+>> reliance on the completion variable being left completed between state
+>> transitions, which is undocumented and unnecessary.
+>
+> In fact it is necessary, because dpm_wait() may be called by external code
+> through device_pm_wait_for_dev() which is exported for a reason.  That may
+> lead to problems analogous to the one you described if the completion
+> variables are not completed initially.
+>
+>> It seems more straightforward to me to only wait on the parent if the parent is
+>> suspended.
+>>
+>> > Who's writing the patch?
+>> I'll write it if you still don't like this one.
+>
+> Yes, please.
+OK - do you prefer it in dpm_prepare or device_pm_init?
