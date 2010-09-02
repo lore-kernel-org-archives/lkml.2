@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab0IBO3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 10:29:34 -0400
-Received: from lucidpixels.com ([75.144.35.66]:40626 "EHLO lucidpixels.com"
+	id S1754740Ab0IBOaw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 10:30:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60666 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755086Ab0IBO3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 10:29:32 -0400
-Date: Thu, 2 Sep 2010 10:29:31 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: adam radford <aradford@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: 3w-9xxx: scsi0: WARNING: (0x06:0x0037): Character ioctl (0x108)
- timed out, resetting card.
-In-Reply-To: <alpine.DEB.2.00.1009020540500.22317@p34.internal.lan>
-Message-ID: <alpine.DEB.2.00.1009021025190.16817@p34.internal.lan>
-References: <alpine.DEB.2.00.1008270907110.5274@p34.internal.lan> <AANLkTik0BSJC5DJtVNw-MA9cuoAEUrw-M1Dn4XaF99u4@mail.gmail.com> <alpine.DEB.2.00.1008271306100.24692@p34.internal.lan> <alpine.DEB.2.00.1008291137560.5384@p34.internal.lan>
- <alpine.DEB.2.00.1008310717260.4858@p34.internal.lan> <alpine.DEB.2.00.1008310732120.5156@p34.internal.lan> <alpine.DEB.2.00.1008310820350.19249@p34.internal.lan> <alpine.DEB.2.00.1009010536070.14332@p34.internal.lan> <AANLkTi=SO1nZbFySAs8_+TmCZcKBPihN6xrZfJihBnXG@mail.gmail.com>
- <alpine.DEB.2.00.1009020540500.22317@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1750761Ab0IBOau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 10:30:50 -0400
+Date: Thu, 2 Sep 2010 16:30:48 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephane Chatty <chatty@enac.fr>
+Subject: Re: [PATCH] hid: Add a hid quirk for input sync override
+In-Reply-To: <4C7E39CC.80402@euromail.se>
+Message-ID: <alpine.LNX.2.00.1009021630000.26813@pobox.suse.cz>
+References: <1282640084-19217-1-git-send-email-rydberg@euromail.se> <alpine.LNX.2.00.1009011252450.26813@pobox.suse.cz> <4C7E39CC.80402@euromail.se>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 1 Sep 2010, Henrik Rydberg wrote:
 
+> >> As of lately, HID devices which send per-frame data split over several
+> >> HID reports have started to emerge. This patch adds a quirk which
+> >> allows the HID driver to take over the input layer synchronization,
+> >> and hence the control of the frame boundary.
+> >>
+> >> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> >> ---
+> >> Jiri, Dmitry, Stephane,
+> >>
+> >> No doubt, this is not a final solution, but it serves the purpose of
+> >> being able to make existing drivers functional while a satisfactory
+> >> solution is being worked out.
+> > 
+> > Hi Henrik,
+> > 
+> > I obviously don't have any major objections to the patch, as it was my 
+> > initial idea :)
+> 
+> 
+> Ah! Then all is fine. :-)
+> 
+> > 
+> > I'd like to merge it together with driver which actually uses it though.
+> 
+> 
+> Sounds good. I suppose Stephane wants to have a say regarding the 3m driver
+> first, but no rush. What version are you targeting?
 
-On Thu, 2 Sep 2010, Justin Piszcz wrote:
+2.6.37 looks reasonable if everything it agreed upon in the following 
+week(s).
 
->
->
-> On Wed, 1 Sep 2010, adam radford wrote:
->
->> On Wed, Sep 1, 2010 at 2:40 AM, Justin Piszcz <jpiszcz@lucidpixels.com> 
->> wrote:
->> 
->>> Could the lock/unlock be causing the issue?
->>> Again, in 2.6.34, there are no latency problems or controller resets.
->> 
->> Justin,
->> 
->> We are looking into this issue and should get back to you soon.
->> 
->> The lock/unlock() kernel calls were not added by me but were part of a
->> series of 'BKL pushdown' patches added by someone to all drivers with
->> an ioctl interface.  If you think those might be related to your
->> issue, you could try
->> removing those 2 lines of code and recompiling.
->> 
->> If you haven't already, please email you kernel .config files for both
->> the working kernel and non working kernel to the 3ware/LSI support
->> people you are in contact with.
->> 
->> Thanks.
->> 
->> -Adam
->> 
->
-
-I spoke too fast, it also happens with the 2.6.34 driver under 2.6.35.
-I will have to research this more, until then I'll stick with 2.6.34.
-
-Justin.
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
