@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab0IBIRR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 04:17:17 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:49416 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab0IBIRO convert rfc822-to-8bit (ORCPT
+	id S1752714Ab0IBIVX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 04:21:23 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50837 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab0IBIVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 04:17:14 -0400
+	Thu, 2 Sep 2010 04:21:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=i47mQ/xvmamK8NWkLNNP9SaRtklQpPvdIWyMX1QR57+EZtSYc99hxJayeNVfKWtRD3
-         PJB1gQM2fp0RmBZdBS0w==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinoED59y9Nad1fNdPp0u-mJ3z_fGt=p6GBaVDt+@mail.gmail.com>
-References: <4c7d2072.8eecd80a.6e3a.2dd0@mx.google.com>
-	<AANLkTinoED59y9Nad1fNdPp0u-mJ3z_fGt=p6GBaVDt+@mail.gmail.com>
-Date: Thu, 2 Sep 2010 10:17:10 +0200
-Message-ID: <AANLkTikKqahkda-BEgbqmy-Pk96pcT+GPBfybUdmYS8=@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/2] perf_events: add support for per-cpu per-cgroup monitoring
-From: Stephane Eranian <eranian@google.com>
-To: Lin Ming <lin@ming.vg>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=LapDwCRCjmiNlfANWt1MNQALaZ5XgZURwllz02OyTXaxn1kkDGLax6aLKMgsYbtjGN
+         nv4Hd2Gbs1QeVDzJKI71e6tFa9tGUbtZSMBQUj+6O1TWkSjMPly3jrR1Asa6x/R6gpj1
+         2Yo5nEJf2JnQofVOIupz9IaU8ZUi/FKKeZtPQ=
+Subject: [PATCH] Input: s3c2410_ts - fix s3c2410ts_probe error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Simtec Electronics <linux@simtec.co.uk>, linux-input@vger.kernel.org
+Content-Type: text/plain
+Date: Thu, 02 Sep 2010 16:25:16 +0800
+Message-Id: <1283415916.19272.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 5:53 AM, Lin Ming <lin@ming.vg> wrote:
-> On Tue, Aug 31, 2010 at 11:25 PM, Stephane Eranian <eranian@google.com> wrote:
->> This series of patches adds per-container (cgroup) filtering capability
->> to per-cpu monitoring. In other words, we can monitor all threads belonging
->> to a specific cgroup and running on a specific CPU.
->>
->> This is useful to measure what is going on inside a cgroup. Something that
->> cannot easily and cheaply be achieved with either per-thread or per-cpu mode.
->> Cgroups can span multiple CPUs. CPUs can be shared between cgroups. Cgroups
->> can have lots of threads. Threads can come and go during a measurement.
->>
->> To measure per-cgroup today requires using per-thread mode and attaching to
->> all the current threads inside a cgroup and tracking new threads. That would
->> require scanning of /proc/PID, which is subject to race conditions, and
->> creating an event for each thread, each event requiring kernel memory.
->>
->> The approach taken by this patch is to leverage the per-cpu mode by simply
->> adding a filtering capability on context switch only when necessary. That
->> way the amount of kernel memory used remains bound by the number of CPUs.
->> We also do not have to scan /proc. We are only interested in cgroup level
->> counts, not per-thread.
->>
->> The cgroup to monitor is designated by passing a file descriptor opened
->> on a new per-cgroup file in the cgroup filesystem (perf_event.perf). The
->> option must be activated by setting perf_event_attr.cgroup=1 and passing
->> a valid file descriptor in perf_event_attr.cgroup_fd. Those are the only
->> two ABI extensions.
->>
->> The patch also includes changes to the perf tool to make use of cgroup
->> filtering. Both perf stat and perf record have been extended to support
->> cgroup via a new -G option. The cgroup is specified per event:
->>
->> $ perf stat -a -e cycles:u,cycles:u -G test1,test2 -- sleep 1
->>  Performance counter stats for 'sleep 1':
->>         2368881622  cycles                   test1
->>                  0  cycles                   test2
->>        1.001938136  seconds time elapsed
->
-> I have tried this new feature. Cool!
->
-> perf stat [<options>] [<command>]
->
-> Is the command ("sleep 1" in above example) also counted?
->
-If it runs in the cgroup that is measured then yes. Not that it will
-do much.
+Use input_free_device() to free devices that have not been registered.
 
-I am working on a second version of the patch that will correct
-the issue with timing, and in particular time_enabled. In cgroup
-mode, it need to count the time the cgroup was active, and not
-wall-clock. That will make the scaling more meaningful.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/input/touchscreen/s3c2410_ts.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Thanks,
-> Lin Ming
->
+diff --git a/drivers/input/touchscreen/s3c2410_ts.c b/drivers/input/touchscreen/s3c2410_ts.c
+index 6085d12..8feb7f3 100644
+--- a/drivers/input/touchscreen/s3c2410_ts.c
++++ b/drivers/input/touchscreen/s3c2410_ts.c
+@@ -350,7 +350,7 @@ static int __devinit s3c2410ts_probe(struct platform_device *pdev)
+  err_tcirq:
+ 	free_irq(ts.irq_tc, ts.input);
+  err_inputdev:
+-	input_unregister_device(ts.input);
++	input_free_device(ts.input);
+  err_iomap:
+ 	iounmap(ts.io);
+  err_clk:
+-- 
+1.7.2
+
+
+
