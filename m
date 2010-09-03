@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab0ICT4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 15:56:11 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56942 "EHLO mx3.mail.elte.hu"
+	id S1756776Ab0ICUAN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 16:00:13 -0400
+Received: from mail.perches.com ([173.55.12.10]:1277 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754005Ab0ICT4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 15:56:09 -0400
-Date: Fri, 3 Sep 2010 21:55:55 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Jean Pihet <jean.pihet@newoldbits.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        Arjan Van De Ven <arjan@linux.intel.com>, arjan@infradead.org,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tracing, perf: add more power related events
-Message-ID: <20100903195555.GA1663@elte.hu>
-References: <AANLkTikvbn3+JPc7pnGZk-H4B71MHTu+-vjuzfJw_7PC@mail.gmail.com>
- <AANLkTinaBJqY0UaMnwJa0nfeNYDm2Dw2t_pBsoGsraHL@mail.gmail.com>
- <AANLkTikg70zAHyA9pcWybz7SsQSPOuzUeuBdwX1cs+MP@mail.gmail.com>
- <201009032005.08268.trenn@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009032005.08268.trenn@suse.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753348Ab0ICUAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 16:00:11 -0400
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+From: Joe Perches <joe@perches.com>
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Ralf Baechle <ralf@linux-mips.org>,
+        ML netdev <netdev@vger.kernel.org>, MeeGo <meego-dev@meego.com>,
+        Maxime Bizon <mbizon@freebox.fr>, LKML <linux-kernel@vger.kernel.org>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        John Linn <john.linn@xilinx.com>, Greg Rose <gregory.v.rose@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+        Toshiharu Okada <okada533@dsn.okisemi.com>,
+        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
+        Takahiro Shimizu <shimizu394@dsn.okisemi.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>
+In-Reply-To: <4C81019E.1010808@dsn.okisemi.com>
+References: <4C81019E.1010808@dsn.okisemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 03 Sep 2010 13:00:08 -0700
+Message-ID: <1283544008.5387.3.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-09-03 at 23:09 +0900, Masayuki Ohtake wrote:
+> Thank you for your comments and patch.
+> I have modified.
+> Gigabit Ethernet driver of Topcliff PCH
+> Patch created against 2.6.35
 
-* Thomas Renninger <trenn@suse.de> wrote:
+Hello Ohtake.
 
-> Hi Jean,
-> 
-> Summary at the beginning if people stop reading on the details
-> below...:
-> Nice work!
-> You have my vote to get this merged.
-> I think it's up to Ingo to push it.
+It's a bit tedious to track changes in this code when you
+post the entire patch.
 
-Well, the patch that got posted:
+Do you have a git tree for these Topcliff changes?
 
-  [PATCH] tracing, perf: add more power related events
 
-Only adds tracepoints to power.h, but doesnt actually use them anywhere 
-...
-
-Is there a companion patch i missed?
-
-Also, it would be nice to add it to x86 and to OMAP at once, and 
-synchronize up all the power events - and check how existing tools like 
-powertop make use of such events - and sync it all up. We dont want to 
-have inconsistent, architecture-dependent events in the end, for obvious 
-reasons.
-
-Thanks,
-
-	Ingo
