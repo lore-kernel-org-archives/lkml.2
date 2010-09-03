@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab0ICKnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 06:43:50 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35598 "EHLO hera.kernel.org"
+	id S932473Ab0ICKoR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 06:44:17 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35580 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756795Ab0ICKbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 06:31:04 -0400
+	id S1756763Ab0ICKbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 06:31:02 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
@@ -16,71 +16,39 @@ To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
         snitzer@redhat.com, k-ueda@ct.jp.nec.com, mpatocka@redhat.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 19/41] virtio_blk: drop REQ_HARDBARRIER support
-Date: Fri,  3 Sep 2010 12:29:34 +0200
-Message-Id: <1283509796-1510-20-git-send-email-tj@kernel.org>
+Subject: [PATCH 13/41] block: initialize flush request with WRITE_FLUSH instead of REQ_FLUSH
+Date: Fri,  3 Sep 2010 12:29:28 +0200
+Message-Id: <1283509796-1510-14-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283509796-1510-1-git-send-email-tj@kernel.org>
 References: <1283509796-1510-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 10:30:38 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 10:30:35 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove now unused REQ_HARDBARRIER support.  virtio_blk already
-supports REQ_FLUSH and the usefulness of REQ_FUA for virtio_blk is
-questionable at this point, so there's nothing else to do to support
-new REQ_FLUSH/FUA interface.
+init_flush_request() only set REQ_FLUSH when initializing flush
+requests making them READ requests.  Use WRITE_FLUSH instead.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Christoph Hellwig <hch@lst.de>
+Reported-by: Mike Snitzer <snitzer@redhat.com>
 ---
- drivers/block/virtio_blk.c |   17 ++++-------------
- 1 files changed, 4 insertions(+), 13 deletions(-)
+ block/blk-flush.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index d10b635..1260628 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -128,9 +128,6 @@ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
- 		}
- 	}
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 72905f8..f357f1f 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -77,7 +77,7 @@ static void post_flush_end_io(struct request *rq, int error)
+ static void init_flush_request(struct request *rq, struct gendisk *disk)
+ {
+ 	rq->cmd_type = REQ_TYPE_FS;
+-	rq->cmd_flags = REQ_FLUSH;
++	rq->cmd_flags = WRITE_FLUSH;
+ 	rq->rq_disk = disk;
+ }
  
--	if (vbr->req->cmd_flags & REQ_HARDBARRIER)
--		vbr->out_hdr.type |= VIRTIO_BLK_T_BARRIER;
--
- 	sg_set_buf(&vblk->sg[out++], &vbr->out_hdr, sizeof(vbr->out_hdr));
- 
- 	/*
-@@ -388,13 +385,7 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
- 	vblk->disk->driverfs_dev = &vdev->dev;
- 	index++;
- 
--	/*
--	 * If the FLUSH feature is supported we do have support for
--	 * flushing a volatile write cache on the host.  Use that to
--	 * implement write barrier support; otherwise, we must assume
--	 * that the host does not perform any kind of volatile write
--	 * caching.
--	 */
-+	/* configure queue flush support */
- 	if (virtio_has_feature(vdev, VIRTIO_BLK_F_FLUSH))
- 		blk_queue_flush(q, REQ_FLUSH);
- 
-@@ -515,9 +506,9 @@ static const struct virtio_device_id id_table[] = {
- };
- 
- static unsigned int features[] = {
--	VIRTIO_BLK_F_BARRIER, VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX,
--	VIRTIO_BLK_F_GEOMETRY, VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE,
--	VIRTIO_BLK_F_SCSI, VIRTIO_BLK_F_FLUSH, VIRTIO_BLK_F_TOPOLOGY
-+	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
-+	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE, VIRTIO_BLK_F_SCSI,
-+	VIRTIO_BLK_F_FLUSH, VIRTIO_BLK_F_TOPOLOGY
- };
- 
- /*
 -- 
 1.7.1
 
