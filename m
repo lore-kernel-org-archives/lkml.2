@@ -1,78 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab0ICWbc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 18:31:32 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:42432 "EHLO
+	id S1753990Ab0ICWbl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 18:31:41 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:42436 "EHLO
 	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab0ICWba (ORCPT
+	with ESMTP id S1753612Ab0ICWbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 18:31:30 -0400
+	Fri, 3 Sep 2010 18:31:38 -0400
 From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org, "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH RFCv1 0/3] CARMA Board Support
-Date: Fri,  3 Sep 2010 15:30:49 -0700
-Message-Id: <1283553052-23576-1-git-send-email-iws@ovro.caltech.edu>
+Subject: [PATCH RFCv1 1/3] fpga: add basic CARMA board support
+Date: Fri,  3 Sep 2010 15:30:50 -0700
+Message-Id: <1283553052-23576-2-git-send-email-iws@ovro.caltech.edu>
 X-Mailer: git-send-email 1.7.1
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Fri, 03 Sep 2010 15:31:29 -0700 (PDT)
+In-Reply-To: <1283553052-23576-1-git-send-email-iws@ovro.caltech.edu>
+References: <1283553052-23576-1-git-send-email-iws@ovro.caltech.edu>
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Fri, 03 Sep 2010 15:31:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+This adds basic support for the system controller FPGA on the OVRO CARMA
+board. This patch only adds infrastructure that will be used by later
+drivers.
 
-Yesterday I asked where board specific drivers should be located in the
-source tree. Several people suggested I just post the drivers for review
-right away, and let the reviewers comment on where to put the drivers.
-
-Here they are. I've created a new drivers/fpga/carma/ directory for the
-drivers. I expect that this will not be their final resting place.
-
-The CARMA board is essentially an MPC8349EA MDS reference design with a
-1GHz ADC and 4 high powered data processing FPGAs connected to the local
-bus. It is all packed into a compact PCI form factor. It is used at the
-Owens Valley Radio Observatory as the main component in the correlator
-system.
-
-For more information, see this webpage, maintained by the board's hardware
-engineer: http://www.mmarray.org/~dwh/carma_board/index.html
-
-These drivers are the necessary pieces to get the data processing FPGAs
-working and producing data. Despite the fact that the hardware is custom
-and we are the only users, I'd still like to get the drivers upstream.
-Several people have suggested that this is possible.
-
-Some further patches will be forthcoming. I have a driver for the LED
-subsystem and the PPS subsystem. The LED register layout is expected to
-change soon, so I won't post the driver until that is finished. The PPS
-driver will be posted seperately from this patch series; it is very
-generic.
-
-Thanks for any review and comments you can offer!
-Ira
-
-Ira W. Snyder (3):
-  fpga: add basic CARMA board support
-  fpga: add CARMA DATA-FPGA Access Driver
-  fpga: add CARMA DATA-FPGA Programmer support
-
- drivers/Kconfig                         |    2 +
- drivers/Makefile                        |    1 +
- drivers/fpga/Kconfig                    |    1 +
- drivers/fpga/Makefile                   |    1 +
- drivers/fpga/carma/Kconfig              |   38 +
- drivers/fpga/carma/Makefile             |    3 +
- drivers/fpga/carma/carma-fpga-program.c | 1136 ++++++++++++++++++++++++
- drivers/fpga/carma/carma-fpga.c         | 1447 +++++++++++++++++++++++++++++++
- drivers/fpga/carma/carma.c              |   73 ++
- drivers/fpga/carma/carma.h              |   22 +
- 10 files changed, 2724 insertions(+), 0 deletions(-)
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+---
+ drivers/Kconfig             |    2 +
+ drivers/Makefile            |    1 +
+ drivers/fpga/Kconfig        |    1 +
+ drivers/fpga/Makefile       |    1 +
+ drivers/fpga/carma/Kconfig  |   21 ++++++++++++
+ drivers/fpga/carma/Makefile |    1 +
+ drivers/fpga/carma/carma.c  |   73 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/fpga/carma/carma.h  |   22 +++++++++++++
+ 8 files changed, 122 insertions(+), 0 deletions(-)
  create mode 100644 drivers/fpga/Kconfig
  create mode 100644 drivers/fpga/Makefile
  create mode 100644 drivers/fpga/carma/Kconfig
  create mode 100644 drivers/fpga/carma/Makefile
- create mode 100644 drivers/fpga/carma/carma-fpga-program.c
- create mode 100644 drivers/fpga/carma/carma-fpga.c
  create mode 100644 drivers/fpga/carma/carma.c
  create mode 100644 drivers/fpga/carma/carma.h
+
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index a2b902f..8945ae6 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -111,4 +111,6 @@ source "drivers/xen/Kconfig"
+ source "drivers/staging/Kconfig"
+ 
+ source "drivers/platform/Kconfig"
++
++source "drivers/fpga/Kconfig"
+ endmenu
+diff --git a/drivers/Makefile b/drivers/Makefile
+index ae47344..c0b05de 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -115,3 +115,4 @@ obj-$(CONFIG_VLYNQ)		+= vlynq/
+ obj-$(CONFIG_STAGING)		+= staging/
+ obj-y				+= platform/
+ obj-y				+= ieee802154/
++obj-$(CONFIG_FPGA_DRIVERS)	+= fpga/
+diff --git a/drivers/fpga/Kconfig b/drivers/fpga/Kconfig
+new file mode 100644
+index 0000000..c85c2cc
+--- /dev/null
++++ b/drivers/fpga/Kconfig
+@@ -0,0 +1 @@
++source "drivers/fpga/carma/Kconfig"
+diff --git a/drivers/fpga/Makefile b/drivers/fpga/Makefile
+new file mode 100644
+index 0000000..409a5f9
+--- /dev/null
++++ b/drivers/fpga/Makefile
+@@ -0,0 +1 @@
++obj-y		+= carma/
+diff --git a/drivers/fpga/carma/Kconfig b/drivers/fpga/carma/Kconfig
+new file mode 100644
+index 0000000..448885e
+--- /dev/null
++++ b/drivers/fpga/carma/Kconfig
+@@ -0,0 +1,21 @@
++
++menuconfig FPGA_DRIVERS
++	bool "FPGA Drivers"
++	default n
++	help
++	  Say Y here to see options for devices used with custom FPGAs.
++	  This option alone does not add any kernel code.
++
++	  If you say N, all options in this submenu will be skipped and disabled.
++
++if FPGA_DRIVERS
++
++config CARMA
++	tristate "CARMA System Controller FPGA support"
++	depends on FSL_SOC && PPC_83xx
++	default n
++	help
++	  Say Y here to include basic support for the CARMA System Controller
++	  FPGA. This option allows the other more advanced drivers to be built.
++
++endif # FPGA_DRIVERS
+diff --git a/drivers/fpga/carma/Makefile b/drivers/fpga/carma/Makefile
+new file mode 100644
+index 0000000..90d0594
+--- /dev/null
++++ b/drivers/fpga/carma/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_CARMA)			+= carma.o
+diff --git a/drivers/fpga/carma/carma.c b/drivers/fpga/carma/carma.c
+new file mode 100644
+index 0000000..97549d2
+--- /dev/null
++++ b/drivers/fpga/carma/carma.c
+@@ -0,0 +1,73 @@
++/*
++ * CARMA Board Utility Driver
++ *
++ * Copyright (c) 2009-2010 Ira W. Snyder <iws@ovro.caltech.edu>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/err.h>
++
++#include "carma.h"
++
++static struct class *carma_class;
++static const char drv_name[] = "carma";
++
++/*
++ * CARMA Device Class Functions
++ */
++
++struct device *carma_device_create(struct device *parent, dev_t devno,
++				   const char *fmt, ...)
++{
++	struct device *dev;
++	va_list vargs;
++
++	va_start(vargs, fmt);
++	dev = device_create_vargs(carma_class, parent, devno, NULL, fmt, vargs);
++	va_end(vargs);
++
++	return dev;
++}
++EXPORT_SYMBOL_GPL(carma_device_create);
++
++void carma_device_destroy(dev_t devno)
++{
++	device_destroy(carma_class, devno);
++}
++EXPORT_SYMBOL_GPL(carma_device_destroy);
++
++/*
++ * Module Init / Exit
++ */
++
++static int __init carma_init(void)
++{
++	/* Register the CARMA device class */
++	carma_class = class_create(THIS_MODULE, "carma");
++	if (IS_ERR(carma_class)) {
++		pr_err("%s: unable to create CARMA class\n", drv_name);
++		return PTR_ERR(carma_class);
++	}
++
++	return 0;
++}
++
++static void __exit carma_exit(void)
++{
++	class_destroy(carma_class);
++}
++
++MODULE_AUTHOR("Ira W. Snyder <iws@ovro.caltech.edu>");
++MODULE_DESCRIPTION("CARMA Device Class Driver");
++MODULE_LICENSE("GPL");
++
++module_init(carma_init);
++module_exit(carma_exit);
+diff --git a/drivers/fpga/carma/carma.h b/drivers/fpga/carma/carma.h
+new file mode 100644
+index 0000000..f556dc8
+--- /dev/null
++++ b/drivers/fpga/carma/carma.h
+@@ -0,0 +1,22 @@
++/*
++ * CARMA Board Utilities
++ *
++ * Copyright (c) 2009-2010 Ira W. Snyder <iws@ovro.caltech.edu>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ */
++
++#ifndef CARMA_DEVICE_H
++#define CARMA_DEVICE_H
++
++#include <linux/device.h>
++
++struct device *carma_device_create(struct device *parent, dev_t devno,
++				   const char *fmt, ...)
++				   __attribute__((format(printf, 3, 4)));
++void carma_device_destroy(dev_t devno);
++
++#endif /* CARMA_DEVICE_H */
+-- 
+1.7.1
 
