@@ -1,78 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab0ICXaD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 19:30:03 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41290 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752104Ab0ICXaB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 19:30:01 -0400
-Date: Fri, 3 Sep 2010 16:28:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Mel Gorman <mel@csn.ul.ie>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 2/3] mm: page allocator: Calculate a better estimate of
- NR_FREE_PAGES when memory is low and kswapd is awake
-Message-Id: <20100903162821.48ec57cc.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1009031811090.16264@router.home>
-References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie>
-	<1283504926-2120-3-git-send-email-mel@csn.ul.ie>
-	<20100903155537.41f1a3a7.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1009031811090.16264@router.home>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753642Ab0ICXg0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 19:36:26 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:59392 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753078Ab0ICXgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 19:36:24 -0400
+Date: Fri, 3 Sep 2010 16:36:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Nauman Rafique <nauman@google.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Divyesh Shah <dpshah@google.com>,
+        Heinz Mauelshagen <heinzm@redhat.com>, arighi@develer.com
+Subject: Re: [RFC PATCH] Bio Throttling support for block IO controller
+Message-ID: <20100903233621.GE2413@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100901175830.GC22149@redhat.com>
+ <20100902183932.GF2349@linux.vnet.ibm.com>
+ <20100903015739.GB9450@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100903015739.GB9450@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010 18:17:46 -0500 (CDT)
-Christoph Lameter <cl@linux.com> wrote:
-
-> On Fri, 3 Sep 2010, Andrew Morton wrote:
+On Thu, Sep 02, 2010 at 09:57:39PM -0400, Vivek Goyal wrote:
+> On Thu, Sep 02, 2010 at 11:39:32AM -0700, Paul E. McKenney wrote:
+> > On Wed, Sep 01, 2010 at 01:58:30PM -0400, Vivek Goyal wrote:
+> > > Hi,
+> > > 
+> > > Currently CFQ provides the weight based proportional division of bandwidth.
+> > > People also have been looking at extending block IO controller to provide
+> > > throttling/max bandwidth control.
+> > > 
+> > > I have started to write the support for throttling in block layer on 
+> > > request queue so that it can be used both for higher level logical
+> > > devices as well as leaf nodes. This patch is still work in progress but
+> > > I wanted to post it for early feedback.
+> > > 
+> > > Basically currently I have hooked into __make_request() function to 
+> > > check which cgroup bio belongs to and if it is exceeding the specified
+> > > BW rate. If no, thread can continue to dispatch bio as it is otherwise
+> > > bio is queued internally and dispatched later with the help of a worker
+> > > thread.
+> > > 
+> > > HOWTO
+> > > =====
+> > > - Mount blkio controller
+> > > 	mount -t cgroup -o blkio none /cgroup/blkio
+> > > 
+> > > - Specify a bandwidth rate on particular device for root group. The format
+> > >   for policy is "<major>:<minor>  <byes_per_second>".
+> > > 
+> > > 	echo "8:16  1048576" > /cgroup/blkio/blkio.read_bps_device
+> > > 
+> > >   Above will put a limit of 1MB/second on reads happening for root group
+> > >   on device having major/minor number 8:16.
+> > > 
+> > > - Run dd to read a file and see if rate is throttled to 1MB/s or not.
+> > > 
+> > > 	# dd if=/mnt/common/zerofile of=/dev/null bs=4K count=1024 iflag=direct
+> > > 	1024+0 records in
+> > > 	1024+0 records out
+> > > 	4194304 bytes (4.2 MB) copied, 4.0001 s, 1.0 MB/s
+> > > 
+> > >  Limits for writes can be put using blkio.write_bps_device file.
+> > > 
+> > > Open Issues
+> > > ===========
+> > > - Do we need to provide additional queue congestion semantics as we are
+> > >   throttling and queuing bios at request queue and probably we don't want
+> > >   a user space application to consume all the memory allocating bios
+> > >   and bombarding request queue with those bios.
+> > > 
+> > > - How to handle the current blkio cgroup stats file and two policies
+> > >   in the background. If for some reason both throttling and proportional
+> > >   BW policies are operating on request queue, then stats will be very
+> > >   confusing.
+> > > 
+> > >   May be we can allow activating either throttling or proportional BW
+> > >   policy per request queue and we can create a /sys tunable to list and
+> > >   chose between policies (something like choosing IO scheduler). The
+> > >   only downside of this apporach is that user also need to be aware of
+> > >   the storage hierachy and activate right policy at each node/request
+> > >   queue.
+> > > 
+> > > TODO
+> > > ====
+> > > - Lots of testing, bug fixes.
+> > > - Provide support for enforcing limits in IOPS.
+> > > - Extend the throttling support for dm devices also.
+> > > 
+> > > Any feedback is welcome.
+> > > 
+> > > Thanks
+> > > Vivek
+> > > 
+> > > o IO throttling support in block layer.
+> > > 
+> > > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> > > ---
+> > >  block/Makefile            |    2 
+> > >  block/blk-cgroup.c        |  282 +++++++++++--
+> > >  block/blk-cgroup.h        |   44 ++
+> > >  block/blk-core.c          |   28 +
+> > >  block/blk-throttle.c      |  928 ++++++++++++++++++++++++++++++++++++++++++++++
+> > >  block/blk.h               |    4 
+> > >  block/cfq-iosched.c       |    4 
+> > >  include/linux/blk_types.h |    3 
+> > >  include/linux/blkdev.h    |   22 +
+> > >  9 files changed, 1261 insertions(+), 56 deletions(-)
+> > > 
+> > 
+> > [ . . . ]
+> > 
+> > > +void blk_throtl_exit(struct request_queue *q)
+> > > +{
+> > > +	struct throtl_data *td = q->td;
+> > > +	bool wait = false;
+> > > +
+> > > +	BUG_ON(!td);
+> > > +
+> > > +	throtl_shutdown_timer_wq(q);
+> > > +
+> > > +	spin_lock_irq(q->queue_lock);
+> > > +	throtl_release_tgs(td);
+> > > +	blkiocg_del_blkio_group(&td->root_tg.blkg);
+> > > +
+> > > +	/* If there are other groups */
+> > > +	if (td->nr_undestroyed_grps >= 1)
+> > > +		wait = true;
+> > > +
+> > > +	spin_unlock_irq(q->queue_lock);
+> > > +
+> > > +	/*
+> > > +	 * Wait for tg->blkg->key accessors to exit their grace periods.
+> > > +	 * Do this wait only if there are other undestroyed groups out
+> > > +	 * there (other than root group). This can happen if cgroup deletion
+> > > +	 * path claimed the responsibility of cleaning up a group before
+> > > +	 * queue cleanup code get to the group.
+> > > +	 *
+> > > +	 * Do not call synchronize_rcu() unconditionally as there are drivers
+> > > +	 * which create/delete request queue hundreds of times during scan/boot
+> > > +	 * and synchronize_rcu() can take significant time and slow down boot.
+> > > +	 */
+> > > +	if (wait)
+> > > +		synchronize_rcu();
+> > 
+> > The RCU readers are presumably not accessing the structure referenced
+> > by td?  If they can access it, then they will be accessing freed memory
+> > after the following function call!!!
 > 
-> > Can someone remind me why per_cpu_pageset went and reimplemented
-> > percpu_counters rather than just using them?
+> Hi Paul,
 > 
-> The vm counters are per zone and per cpu and have a flow from per cpu /
-> zone deltas to zone counters and then also into global counters.
+> Thanks for the review.
+> 
+> As per my understanding if wait = false, then there should not be any
+> RCU readers of tg->blkg->key (key is basically struct throtl_data *td) out
+> there hence it should be safe to to free "td" without calling
+> synchronize_rcu() or call_rcu().
+> 
+> Following are some details.
+> 
+> - We instanciate some throtl_grp structures as IO happens in a cgropu and
+>   these objects are put in a hash list (td->tg_list). These objects are
+>   put into another cgroup list (blkcg->blkg_list, blk-cgroup.c).
+> 
+>   Root group is only exception which is not allocated dynamically instead it
+>   is statically allocated as part of throtl_data structure.
+>   (struct throtl_grp root_tg);
+> 
+> - There are two group deletion paths. One is if cgroup is being deleted
+>   then we need to cleanup associated group and other is if device is
+>   going away then we need to cleanup all groups and td and request queue
+>   etc.
+> 
+> - The only user of RCU protected tg->blkg->key is cgroup deletion path
+>   and that path will be accessing this key only if it got the ownership
+>   of a group it wants to delete. Basically group deletion path can race
+>   between cgroup deletion event and device going away at the same time.
+> 
+>   In this case, both path will want to clean up a group and some kind of
+>   arbitration is needed. The path which is first able to take blkcg->lock
+>   and is able to delete group from blkcg->blkg_list, takes the
+>   responsibility of cleaning up the group.
+> 
+>   Now if there are no undestroyed groups (except root group which cgroup
+>   path will never try to destroy as root cgroup is not deleted), that
+>   means cgroup path will not try to free up any groups, that also means
+>   that there will be no other RCU readers of tg->blkg->key and hence
+>   it should be safe to free up "td" without synchronize_rcu()
+>   or call_rcu(). Am I missing something?
 
-hm.  percpu counters would require overflow-time hooks to do that. 
-Might be worth looking at.
+If I understand you correctly, RCU is used only for part of the data
+structure, and if you are not freeing up an RCU-traversed portion of
+the data structure, then there is no need to wait for a grace period.
 
-> > Is this really the best way of doing it?  The way we usually solve
-> > this problem (and boy, was this bug a newbie mistake!) is:
-> >
-> > 	foo = percpu_counter_read(x);
-> >
-> > 	if (foo says something bad) {
-> > 		/* Bad stuff: let's get a more accurate foo */
-> > 		foo = percpu_counter_sum(x);
+							Thanx, Paul
+
+> > If they can access it, I suggest using call_rcu() instead of
+> > synchronize_rcu().  One way of doing this would be:
+> > 
+> > 	if (!wait) {
+> > 		call_rcu(&td->rcu, throtl_td_deferred_free);
+> 
+> if !wait, then as per my current understanding there are no RCU readers
+> out there and above step should not be required. The reason I don't want
+> to use call_rcu() is that though it will keep "td" around but request
+> queue will be gone (td->queue) and RCU reader path take request queue
+> spin lock and they will be trying to take lock which has been freed.
+> 
+> throtl_unlink_blkio_group() {
+> 	spin_lock_irqsave(td->queue->queue_lock, flags);
+> }
+> 
+> 
+> > 	} else {
+> > 		synchronize_rcu();
+> > 		throtl_td_free(td);
 > > 	}
-> >
-> > 	if (foo still says something bad)
-> > 		do_bad_thing();
-> >
-> > In other words, don't do all this stuff with percpu_drift_mark and the
-> > kswapd heuristic.  Just change zone_watermark_ok() to use the more
-> > accurate read if it's about to return "no".
 > 
-> percpu counters must always be added up when their value is determined.
-
-Nope.  That's the difference between percpu_counter_read() and
-percpu_counter_sum().
-
-> This seems to be a special case here where Mel does not want to have to
-> cost to bring the counters up to date nor reduce the delta/time limits to
-> get some more accuracy but wants take some sort of snapshot of the whole
-> situation for this particular case.
-
-My suggestion didn't actually have anything to do with percpu_counters.
-
-
+> This is the step my code is already doing. If wait=true, then there are
+> RCU readers out there and wait for them to finish before freeing up
+> td.
+> 
+> Thanks
+> Vivek
