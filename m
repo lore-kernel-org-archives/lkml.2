@@ -1,103 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab0ICXZv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 19:25:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53566 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754245Ab0ICXZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 19:25:49 -0400
-Date: Fri, 3 Sep 2010 16:25:04 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Hein_Tibosch <hein_tibosch@yahoo.es>, Pierre Ossman <pierre@ossman.eu>,
-        Ben Nizette <bn@niasdigital.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Adrian Hunter <adrian.hunter@nokia.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt@console-pimps.org>
-Subject: Re: [PATCH v4] mmc: Make ID freq configurable
-Message-Id: <20100903162504.e72f91c6.akpm@linux-foundation.org>
-In-Reply-To: <20100903014757.GA23012@void.printf.net>
-References: <4C80187D.9000304@yahoo.es>
-	<20100903014757.GA23012@void.printf.net>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754231Ab0ICX3H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 19:29:07 -0400
+Received: from mail.perches.com ([173.55.12.10]:1298 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753074Ab0ICX3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 19:29:04 -0400
+From: Joe Perches <joe@perches.com>
+To: Christophe Henri RICARD <christophe-h.ricard@st.com>
+Cc: Marcel Selhorst <m.selhorst@sirrix.com>,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>, tpmdd-devel@lists.sourceforge.net,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] drivers/char/tpm/tpm_stm_st19_i2c.c: Add missing break and neatening
+Date: Fri,  3 Sep 2010 16:29:01 -0700
+Message-Id: <9637426b310cdf113712a7a1dfd22843839dfc08.1283556028.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.2.19.g9a302
+In-Reply-To: <cover.1283556028.git.joe@perches.com>
+References: <0B9F1C5B86169C4EA9D042C251022E49105CD81DE1@SAFEX1MAIL3.st.com> <cover.1283556028.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010 02:47:57 +0100
-Chris Ball <cjb@laptop.org> wrote:
+Add missing break in wait_until_good_shape
+Use init; while (test) loops not for(init;test;)
+Calculate bytes to transfer using if and min_t not multiple ?:
+Miscellaneous function whitespace aliging
 
-> > -	mmc_send_if_cond(host, host->ocr_avail);
-> > +		printk ("mmc_rescan: trying %u Hz\n", host->f_init);
-> 
-> Need a loglevel here, and an mmc_hostname.  Something like:
-> 
->                 pr_info("%s: %s: trying to init card at %u Hz\n",
->                         mmc_hostname(host), __func__, host->f_init);
-> 
-> > +		mmc_power_up(host);
-> > +		sdio_reset(host);
-> > +		mmc_go_idle(host);
-> > 
-> > -	/*
-> > -	 * First we search for SDIO...
-> > -	 */
-> > -	err = mmc_send_io_op_cond(host, 0, &ocr);
-> > -	if (!err) {
-> > -		if (mmc_attach_sdio(host, ocr)) {
-> > -			mmc_claim_host(host);
-> > -			/* try SDMEM (but not MMC) even if SDIO is broken */
-> > -			if (mmc_send_app_op_cond(host, 0, &ocr))
-> > -				goto out_fail;
-> > +		mmc_send_if_cond(host, host->ocr_avail);
-> > +
-> > +		/*
-> > +		 * First we search for SDIO...
-> > +		 */
-> > +		err = mmc_send_io_op_cond(host, 0, &ocr);
-> > +		if (!err) {
-> > +			if (mmc_attach_sdio(host, ocr)) {
-> > +				mmc_claim_host(host);
-> > +				/* try SDMEM (but not MMC) even if SDIO is broken */
-> 
-> This breaks 80-chars, so:
-> 
->                                 /*
->                                  * Try SDMEM (but not MMC) even if SDIO
->                                  * is broken.
->                                  */
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/char/tpm/tpm_stm_st19_i2c.c |  158 +++++++++++++++++++----------------
+ 1 files changed, 85 insertions(+), 73 deletions(-)
 
-yup.
-
---- a/drivers/mmc/core/core.c~mmc-make-id-freq-configurable-checkpatch-fixes
-+++ a/drivers/mmc/core/core.c
-@@ -1450,7 +1450,9 @@ void mmc_rescan(struct work_struct *work
- 		else
- 			host->f_init = host->f_min;
+diff --git a/drivers/char/tpm/tpm_stm_st19_i2c.c b/drivers/char/tpm/tpm_stm_st19_i2c.c
+index cdf2eb3..4b1ed05 100644
+--- a/drivers/char/tpm/tpm_stm_st19_i2c.c
++++ b/drivers/char/tpm/tpm_stm_st19_i2c.c
+@@ -158,8 +158,10 @@ static int wait_until_good_shape(void)
+ 		else if (!signal_pending(current)) {
+ 			ret = schedule_timeout(time);
+ 			wait_time += time;
+-		} else
++		} else {
+ 			ret = -ERESTARTSYS;
++			break;
++		}
+ 	} while (1);
+ 	finish_wait(&queue, &__wait);
  
--		printk ("mmc_rescan: trying %u Hz\n", host->f_init);
-+		pr_info("%s: %s: trying to init card at %u Hz\n",
-+			mmc_hostname(host), __func__, host->f_init);
+@@ -204,10 +206,10 @@ static int wait_event_interruptible_on_gpio(wait_queue_head_t queue,
+ 		else if (wait_time >= timeout)
+ 			break;
+ 		else if (!signal_pending(current)) {
+-			ret =
+-			    schedule_timeout(msecs_to_jiffies
+-					     (TICK_GPIO_SPOOLING));
+-			wait_time += msecs_to_jiffies(TICK_GPIO_SPOOLING);
++			int time = msecs_to_jiffies(TICK_GPIO_SPOOLING);
 +
- 		mmc_power_up(host);
- 		sdio_reset(host);
- 		mmc_go_idle(host);
-@@ -1464,7 +1466,10 @@ void mmc_rescan(struct work_struct *work
- 		if (!err) {
- 			if (mmc_attach_sdio(host, ocr)) {
- 				mmc_claim_host(host);
--				/* try SDMEM (but not MMC) even if SDIO is broken */
-+				/*
-+				 * Try SDMEM (but not MMC) even if SDIO is
-+				 * broken.
-+				 */
- 				if (mmc_send_app_op_cond(host, 0, &ocr))
- 					goto out_fail;
++			ret = schedule_timeout(time);
++			wait_time += time;
+ 		} else {
+ 			ret = -ERESTARTSYS;
+ 			break;
+@@ -286,9 +288,9 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
+ 	/* sending data (data_avail_pin hight) */
+ 	/* If data are available, we read the data */
+ 	init_waitqueue_head(&pin_infos->write_queue);
+-	pin = wait_event_interruptible_on_gpio(pin_infos->write_queue,
+-					       tpm_calc_ordinal_duration
+-					       (chip, ordinal));
++	pin = wait_event_interruptible_on_gpio(
++			pin_infos->write_queue,
++			tpm_calc_ordinal_duration(chip, ordinal));
+ 	if (pin < 0) {
+ 		ret = pin;
+ 		goto end;
+@@ -297,25 +299,30 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
+ 	client->flags = I2C_M_RD;
  
-diff -puN include/linux/mmc/host.h~mmc-make-id-freq-configurable-checkpatch-fixes include/linux/mmc/host.h
-_
+ 	size = TPM_HEADER_SIZE;
+-	for (i = 0; pin == DATA_ON && i < size;) {
+-		ret = i2c_master_recv(client,
+-				      pin_infos->tpm_i2c_buffer[1],
+-				      (i == 0) ? TPM_HEADER_SIZE :
+-				      count - i > TPM_I2C_BLOCK_SIZE ?
+-				      TPM_I2C_BLOCK_SIZE : count - i);
++	i = 0;
++	while (i < size && pin == DATA_ON) {
++		int bytes;
++
++		if (i == 0)
++			bytes = TPM_HEADER_SIZE;
++		else
++			bytes = min_t(int, count - i, TPM_I2C_BLOCK_SIZE);
++
++		ret = i2c_master_recv(client, pin_infos->tpm_i2c_buffer[1],
++				      bytes);
+ 		if (ret < 0)
+ 			goto end;
+-		if (i == 0)
+-			size =
+-			    responseSize(pin_infos->tpm_i2c_buffer[1], count);
+-		(i == 0) ? (i += TPM_HEADER_SIZE) : (i += TPM_I2C_BLOCK_SIZE);
++		if (i == 0) {
++			size = responseSize(pin_infos->tpm_i2c_buffer[1],
++					    count);
++			i += TPM_HEADER_SIZE;
++		} else
++			i += TPM_I2C_BLOCK_SIZE;
+ 
+ 		if (i < size)
+-			pin =
+-			    wait_event_interruptible_on_gpio(pin_infos->
+-							     write_queue,
+-							     msecs_to_jiffies
+-							     (TPM_I2C_SHORT));
++			pin = wait_event_interruptible_on_gpio(
++					pin_infos->write_queue,
++					msecs_to_jiffies(TPM_I2C_SHORT));
+ 	}
+ 
+ 	pin = wait_event_interruptible_on_gpio(pin_infos->write_queue,
+@@ -325,36 +332,41 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
+ 	client->flags = 0;
+ 
+ 	size = TPM_HEADER_SIZE;
+-	for (i = 0; i < size && pin == COMMAND_ON;) {
+-		memcpy(pin_infos->tpm_i2c_buffer[0], buf + i,
+-		       (i == 0) ? TPM_HEADER_SIZE : count - i >
+-		       TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE : count - i);
++	i = 0;
++	while (i < size && pin == COMMAND_ON) {
++		int bytes;
++
++		if (i == 0)
++			bytes = TPM_HEADER_SIZE;
++		else
++			bytes = min_t(int, count - i, TPM_I2C_BLOCK_SIZE);
++
++		memcpy(pin_infos->tpm_i2c_buffer[0], buf + i, bytes);
+ 
+ 		if (i == 0) {
+ 			size = responseSize(buf, count);
+-			size = (size < count ? size : count);
++			size = size < count ? size : count;
+ 		}
+-		ret =
+-		    i2c_master_send(client,
+-				    pin_infos->tpm_i2c_buffer[0],
+-				    count >= TPM_HEADER_SIZE ? (i ==
+-								0) ?
+-				    TPM_HEADER_SIZE : count - i >
+-				    TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE :
+-				    count - i : count);
++
++		if (count < TPM_HEADER_SIZE)
++			bytes = count;
++
++		ret = i2c_master_send(client, pin_infos->tpm_i2c_buffer[0],
++				      bytes);
+ 		if (ret < 0) {
+ 			pr_info("Failed to send data\n");
+ 			goto end;
+ 		}
+ 
+-		(i == 0) ? (i += TPM_HEADER_SIZE) : (i += TPM_I2C_BLOCK_SIZE);
++		if (i == 0)
++			i += TPM_HEADER_SIZE;
++		else
++			i += TPM_I2C_BLOCK_SIZE;
+ 		/* Wait for AcceptCmd signal hight */
+ 		if (i < size)
+-			pin =
+-			    wait_event_interruptible_on_gpio(pin_infos->
+-							     write_queue,
+-							     msecs_to_jiffies
+-							     (TPM_I2C_SHORT));
++			pin = wait_event_interruptible_on_gpio(
++					pin_infos->write_queue,
++					msecs_to_jiffies(TPM_I2C_SHORT));
+ 
+ 		if (pin != COMMAND_ON) {
+ 			pr_info("Failed to read gpio pin (AcceptCmd)\n");
+@@ -362,6 +374,7 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
+ 			goto end;
+ 		}
+ 	}
++
+ 	if (i == 0) {
+ 		pr_info("Failed to read gpio pin (AcceptCmd)\n");
+ 		ret = -EIO;
+@@ -412,49 +425,48 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
+ 
+ 	/* Spool on the good gpio as long as pin GPIO 3 not HIGHT */
+ 	init_waitqueue_head(&chip->vendor.read_queue);
+-	pin = wait_event_interruptible_on_gpio(chip->vendor.read_queue,
+-					       tpm_calc_ordinal_duration
+-					       (chip, TPM_I2C_ORDINAL_LONG));
++	pin = wait_event_interruptible_on_gpio(
++			chip->vendor.read_queue,
++			tpm_calc_ordinal_duration(chip, TPM_I2C_ORDINAL_LONG));
+ 
+ 	size = TPM_HEADER_SIZE;
+-	for (i = 0; i < size && pin == DATA_ON;) {
+-		ret =
+-		    i2c_master_recv(client,
+-				    pin_infos->tpm_i2c_buffer[1],
+-				    (count >= TPM_HEADER_SIZE ? i ==
+-				     0 ? TPM_HEADER_SIZE : (size - i) >
+-				     TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE :
+-				     size - i : count));
++	i = 0;
++	while (i < size && pin == DATA_ON) {
++		int bytes;
++
++		if (count < TPM_HEADER_SIZE)
++			bytes = count;
++		else if (i == 0)
++			bytes = TPM_HEADER_SIZE;
++		else
++			bytes = min_t(int, size - i, TPM_I2C_BLOCK_SIZE);
++
++		ret = i2c_master_recv(client, pin_infos->tpm_i2c_buffer[1],
++				      bytes);
+ 		if (ret < 0) {
+ 			pr_info("Failed to read gpio pin (DataAvailable)\n");
+ 			goto end;
+ 		}
+ 
+-		if (buf != NULL) {
+-			memcpy(buf + i, pin_infos->tpm_i2c_buffer[1],
+-			       (count >= TPM_HEADER_SIZE ? i == 0 ?
+-				TPM_HEADER_SIZE : (size - i) >
+-				TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE : size -
+-				i : count));
+-
+-			if (i == 0) {
+-				size = responseSize(buf, size);
+-				if (size > count)
+-					size = count;
+-			}
+-		} else {
++		if (!buf) {
+ 			pr_info("read buffer is NULL\n");
+ 			goto end;
+ 		}
+ 
+-		(i == 0) ? (i += TPM_HEADER_SIZE) : (i += TPM_I2C_BLOCK_SIZE);
++		memcpy(buf + i, pin_infos->tpm_i2c_buffer[1], size);
++
++		if (i == 0) {
++			size = responseSize(buf, size);
++			if (size > count)
++				size = count;
++			i += TPM_HEADER_SIZE;
++		} else
++			i += TPM_I2C_BLOCK_SIZE;
+ 
+ 		if (i < size)
+-			pin =
+-			    wait_event_interruptible_on_gpio(chip->vendor.
+-							     read_queue,
+-							     msecs_to_jiffies
+-							     (TPM_I2C_SHORT));
++			pin = wait_event_interruptible_on_gpio(
++					chip->vendor.read_queue,
++					msecs_to_jiffies(TPM_I2C_SHORT));
+ 	}
+ 
+ 	if (i == 0) {
+@@ -532,7 +544,7 @@ static ssize_t tpm_st19_i2c_ioctl(struct inode *inode, struct file *file,
+ 		return -ENOSYS;
+ 	case TPMIOC_TRANSMIT:
+ 		if (copy_from_user(pin_infos->tpm_i2c_buffer[0],
+-		    (const char *)arg, TPM_HEADER_SIZE))
++				   (const char *)arg, TPM_HEADER_SIZE))
+ 			return -EFAULT;
+ 		in_size = responseSize(pin_infos->tpm_i2c_buffer[0],
+ 				      TPM_HEADER_SIZE);
+-- 
+1.7.2.19.g9a302
 
