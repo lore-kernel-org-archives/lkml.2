@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab0ICCm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 22:42:27 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:33453 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753764Ab0ICCmZ (ORCPT
+	id S1755509Ab0ICCpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 22:45:33 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54768 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003Ab0ICCpc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 22:42:25 -0400
-Date: Thu, 2 Sep 2010 22:42:23 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Colin Cross <ccross@android.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@lists.linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after
- abort
-In-Reply-To: <AANLkTikug=+ztLCJbxYiyx1U_whLkQ9zsYvEMbV9JyJi@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1009022233030.19022-100000@netrider.rowland.org>
+	Thu, 2 Sep 2010 22:45:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=uwiJ6y9LD3Wa9O9QgvWeUR1Ac/udfykqZ+8kTNI1lwoXPd+0dvkCTV6jLvTrA4AQNR
+         JY+o/uQTzbr5YCFSJyHyQRbqjHjMhMTpjsv5tRslRj8tgDCTnUGz9xvpolPzIDZoHFbu
+         pKzkgbmGcxA7HSwf+ydoI0FCv3cVaR4L8qB+8=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+In-Reply-To: <AANLkTikBOUSGYkopdUcV+5KsayRi-_88kktMLv=KXRU0@mail.gmail.com>
+References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com>
+ <20100902121853.e90f6c53.randy.dunlap@oracle.com> <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
+ <AANLkTikBOUSGYkopdUcV+5KsayRi-_88kktMLv=KXRU0@mail.gmail.com>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Thu, 2 Sep 2010 23:45:12 -0300
+Message-ID: <AANLkTin9cX5S1ToK=2yFN5TsqH25aN2fFoCdvSizqOH9@mail.gmail.com>
+Subject: Re: [RFC] Fix typos
+To: Phillip Lougher <phil.lougher@gmail.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010, Colin Cross wrote:
+On Thu, Sep 2, 2010 at 23:29, Phillip Lougher <phil.lougher@gmail.com> wrote:
+> On Thu, Sep 2, 2010 at 8:31 PM, Lucas De Marchi
+> <lucas.de.marchi@gmail.com> wrote:
+>> On Thu, Sep 2, 2010 at 16:18, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>
+>>> I'm not so sure about "is rose up" being better.  and what about "ar"?
+>>
+>> I'm only changing words with 3 chars or more, because otherwise I
+>> would have a lot of false positives, but I think I can add this word
+>> without much trouble.
+>>
+>
+> The problem with "ar" is it is too short to know for certain what it
+> should be...  "ar" though likely a typo for "are" could also be a typo
+> for e.g. "arm", "arc", "arg", "ark", and "arp".
+>
+> Perhaps in this and similar cases the script should flag these errors
+> for human attention rather than automatically fixing them.
 
-> > Well, in fact that was used in one version of the patchset that introduced
-> > asynchronous suspend-resume, but it was rejected by Linus, because it was
-> > based on non-standard synchronization.  The Linus' argument, that I agreed
-> > with, was that standard snychronization constructs, such as locks or
-> > completions, were guaranteed to work accross different architectures and thus
-> > were simply _safer_ to use than open-coded synchronization that you seem to be
-> > preferring.
-> If I'm reading the right thread, that was using rwlocks, not
-> conditions.
+Yes, after enabling it I've saw a lot of false positives and wrong
+fixes. Even cases where "ar" was the correct one, referring to the ar
+tool.
 
-No, the thread talked about rwsems, not rwlocks.  And that's not what 
-Linus didn't like -- indeed, using rwsems was his idea.  He didn't like 
-non-standard open-coded synchronization.
+Now, I put this together with other warnings.
 
->  wait_on_condition looks just as cross-architecture as
-> completions, and is almost as simple.
 
-Do you mean wait_event?  It doesn't include the synchronization that 
-completions have.
 
-> I look at it like this:  Are you waiting for something to complete, or
-> are you waiting for something to be in a specific state?  Completion
-> works great if you know that you will only want to wait after it
-> starts.  That's not true for an aborted suspend - you may call
-> dpm_wait on a device that has never started resuming, because it never
-> suspended.  You can use a completion, and make sure it's state is
-> right for all the corner cases, but at the end of the day that's not
-> what you mean.  What you mean is "wait on the device to be resumed",
-> and that's a condition, not a simple completion event.
-> 
-> > Completions simply allowed us to get the desired behavior with the least
-> > effort and that's why we used them.
-> I'm happy with the end result, but I may submit a patch that converts
-> the completions to conditions for discussion.
+-- 
 
-Be sure to add memory barriers at the appropriate places.  That's what 
-Linus was complaining about in the earlier approach.
-
-Alan Stern
-
+Lucas De Marchi
