@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab0ICNsb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 09:48:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57463 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755403Ab0ICNsa (ORCPT
+	id S1753512Ab0ICNwH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 09:52:07 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:3969 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab0ICNwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 09:48:30 -0400
-Date: Fri, 3 Sep 2010 14:48:27 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Cc: meego-dev@meego.com, Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Alek Du <alek.du@intel.com>,
-        Richard =?iso-8859-1?Q?R=F6jfors?= 
-	<richard.rojfors@mocean-labs.com>,
-        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        arjan@linux.intel.com, gregkh@suse.de, yong.y.wang@intel.com,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_GPIO driver to 2.6.35
-Message-ID: <20100903134827.GA7614@rakim.wolfsonmicro.main>
-References: <4C80D3C8.9020204@dsn.okisemi.com>
+	Fri, 3 Sep 2010 09:52:05 -0400
+X-IronPort-AV: E=Sophos;i="4.56,313,1280707200"; 
+   d="scan'208";a="1683396"
+Date: Fri, 3 Sep 2010 14:51:50 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 0/7] PV on HVM: receive interrupts as xen events
+In-Reply-To: <4C7FF538.7020704@goop.org>
+Message-ID: <alpine.DEB.2.00.1009031240510.2714@kaball-desktop>
+References: <alpine.DEB.2.00.1008301134160.2545@kaball-desktop> <4C7FF538.7020704@goop.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C80D3C8.9020204@dsn.okisemi.com>
-X-Cookie: Life is not for everyone.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 07:54:00PM +0900, Masayuki Ohtak wrote:
+On Thu, 2 Sep 2010, Jeremy Fitzhardinge wrote:
+>  On 08/30/2010 04:20 AM, Stefano Stabellini wrote:
+> > Hi all,
+> > this patch series introduces some performance improvements for xen PV on
+> > HVM guests: interacting with the emulated APIC is slow because it causes
+> > traps in the hypervisor while receiving xen events using the vector callback
+> > mechanism allow us to skip all that. For this reason we remap interrupts
+> > and MSIs into xen pirqs so that from that point on we can receive them
+> > as xen events instead.
+> > This series is based on Konrad's pcifront series (not upstream yet):
+> >
+> > http://lkml.org/lkml/2010/8/4/374
+> >
+> > and requires a patch to xen and a patch to qemu-xen (just sent to
+> > xen-devel).
+> 
+> My only concern with this series is the pirq remapping stuff.  Why do
+> pirq and irq need to be non-identical?  Is it because pirq is a global
+> namespace, and dom0 has already assigned it?
+>
+> Why do guests need to know about max pirq?  Would it be better to make
+> Xen use a more dynamic structure for pirqs so that any arbitrary value
+> can be used?
+> 
+ 
+No, pirq is a per-domain namespace, but pirq and irq are conceptually
+different: pirqs are used by xen as a reference for interrupts of
+devices assigned to the guest, while linux uses irqs for its
+internal purposes.
+The pirq namespace is chosen by xen while the linux irq namespace is
+chosen by linux.
+Linux is allowed to choose the pirq number it wants when mapping an
+interrupt, this is why linux needs to know the max pirq, so that it can
+safely chose a pirq that is in the allowed range.
+The difference between pirqs and linux irqs increases when we talk about
+PV on HVM guests: in this case qemu also maps interrupts in the guests
+getting pirqs in return, so the linux kernel has to be able to cope with
+already assigned pirq numbers.
+The current PHYSDEVOP_map_pirq interface is already flexible enough for
+that because it provides the possibility for the caller to let xen
+choose the pirq, something that linux never does in the pure PV case,
+but it is still possible. Obviously if you let xen choose the pirq
+number you are safe from conflicts but you must be able to cope with
+pirq numbers different from linux irq numbers.
 
-> Topcliff PCH is the platform controller hub that is going to be used in
-> Intel's upcoming general embedded platform. All IO peripherals in
-> Topcliff PCH are actually devices sitting on AMBA bus.
-> Topcliff PCH has GPIO I/F. Using this I/F, it is able to access system
-> devices connected to GPIO.
-
-This has a similar issue to the CAN driver - it isn't a standard kernel
-GPIO driver, it implements a custom ioctl based userspace ABI.  This
-means it's not usable from within the kernel and isn't suitable for
-mainline.  You should be implementing support for the device using the
-standard interfaces used by the other GPIO drivers in kernel.
-
-> +/**
-> + * pch_gpio_handler - Implements the interrupt handler functionality of
-> + *		      the gpio module.
-> + * @irq:	Contains the irq value
-> + * @pData:	Contains the reference to the base gpio address.
-
-Please use the standard kernel coding style conventions for naming
-variables.
-
-> +static irqreturn_t pch_gpio_handler(s32 irq, void *pData)
-> +{
-> +	irqreturn_t ret = IRQ_NONE;
-> +	u32 pch_idisp_regval;
-> +	struct pch_gpio_chip *chip =  (struct pch_gpio_chip *)pData;
-
-No need to cast away from void.
-
-> +
-> +	pch_idisp_regval =
-> +			chip->pch_gpio_bit_mask & ioread32(&chip->reg->idisp);
-> +	if (pch_idisp_regval != 0) {
-> +		/*invoke the callback */
-> +		(*pch_gpio_cbr) (pch_idisp_regval, chip);
-
-The interrupts from the controller should be hooked up to genirq, not
-using this custom callback mechanism.
