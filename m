@@ -1,43 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab0ICJnN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:43:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53046 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751250Ab0ICJnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:43:12 -0400
-Message-ID: <4C80C31D.5020906@kernel.org>
-Date: Fri, 03 Sep 2010 11:42:53 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1756525Ab0ICJng (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:43:36 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49126 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752365Ab0ICJne (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 05:43:34 -0400
+Date: Fri, 3 Sep 2010 10:43:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: rklein@nvidia.com
+Cc: cbouatmailru@gmail.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, olof@lixom.net, achew@nvidia.com,
+        khali@linux-fr.org
+Subject: Re: [PATCH v2] power supply: add driver for TI BQ20Z75 gas gauge IC
+Message-ID: <20100903094332.GB16587@rakim.wolfsonmicro.main>
+References: <1283448586-14613-1-git-send-email-rklein@nvidia.com>
 MIME-Version: 1.0
-To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-CC: jaxboe@fusionio.com, snitzer@redhat.com, j-nomura@ce.jp.nec.com,
-        jamie@shareable.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de
-Subject: Re: [PATCH 3/5] dm: relax ordering of bio-based flush implementation
-References: <1283162296-13650-1-git-send-email-tj@kernel.org> <1283162296-13650-4-git-send-email-tj@kernel.org> <4C808FF4.4010901@ct.jp.nec.com>
-In-Reply-To: <4C808FF4.4010901@ct.jp.nec.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 09:42:55 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283448586-14613-1-git-send-email-rklein@nvidia.com>
+X-Cookie: The early worm gets the bird.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 09/03/2010 08:04 AM, Kiyoshi Ueda wrote:
-> Now queue_io() is called from dec_pending(), which may be called with
-> interrupts disabled.
-> So queue_io() must not enable interrupts unconditionally and must
-> save/restore the current interrupts status.
+On Thu, Sep 02, 2010 at 10:29:46AM -0700, rklein@nvidia.com wrote:
+> From: Rhyland Klein <rklein@nvidia.com>
 > 
-> Signed-off-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-> Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+> this driver depends on I2C and uses SMBUS for communication with the host.
 
-Patch included into the series.  Thanks a lot!
-
--- 
-tejun
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
