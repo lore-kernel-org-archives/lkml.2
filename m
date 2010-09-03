@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab0ICNGg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 09:06:36 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:32934 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752325Ab0ICNGe (ORCPT
+	id S1754200Ab0ICNOU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 09:14:20 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50525 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab0ICNOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 09:06:34 -0400
-Message-ID: <4C80F2CD.2040708@euromail.se>
-Date: Fri, 03 Sep 2010 15:06:21 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
+	Fri, 3 Sep 2010 09:14:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=kvk51ykQdKzhzXWc3uuvCe9ZGCBl6hAkR29i7yz/JKafcRmOvPpC/r8qYYjqN7lovX
+         38KdO3WrjEamOLc8P5vmkgY3b1yu29BxP2x9+Zdj//mNarosIsPUgWIac5AEkogtFrpr
+         lNk+1PAr92SpOHfvp3CXRmbA5aXkBXy2EfxmU=
+Date: Fri, 3 Sep 2010 14:41:06 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: mark gross <markgross@thegnar.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] pm_qos_params: cleanup: terminate a string
+Message-ID: <20100903124105.GJ5437@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	mark gross <markgross@thegnar.org>,
+	James Bottomley <James.Bottomley@suse.de>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-To: Ping Cheng <pingc@wacom.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Chris Bagwell <chris@cnpbagwell.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] input: wacom: Add support for the Bamboo Touch trackpad
- (rev3)
-References: <1283516247-11624-1-git-send-email-rydberg@euromail.se> <1283516247-11624-4-git-send-email-rydberg@euromail.se> <6753EB6004AFF34FAA275742C104F952022BB10E@wacom-nt10.wacom.com>
-In-Reply-To: <6753EB6004AFF34FAA275742C104F952022BB10E@wacom-nt10.wacom.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OrVyI-0002yh-8v.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OrVyI-0002yh-8v fedd72f7d21faf4c2602554ca8716f73
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2010 03:01 PM, Ping Cheng wrote:
-[...]
+This is just a picky thing, but we pass an possibly unterminated string
+to printk if debugging is turned on.  Also printk level is set to
+"debug" by pr_debug() so the "KERN_ERR" isn't used.
 
-> +	input_report_key(input, BTN_LEFT, (data[1] & 0x08) != 0);
-> +	input_report_key(input, BTN_MIDDLE, (data[1] & 0x04) != 0);
-> +	input_report_key(input, BTN_4, (data[1] & 0x02) != 0);
-> +	input_report_key(input, BTN_RIGHT, (data[1] & 0x01) != 0);
-> 
-> Since you are assigning meaningful defaults to three of the tablet
-> buttons instead of using BTN_#, can we move one more step to make the
-> fourth button useful out-of-box too? I am thinking of something like
-> BTN_FORWARD and BTN_BACK while getting rid of the BTN_MIDDLE. So, it
-> would be:
-> 
-> 	input_report_key(input, BTN_LEFT, (data[1] & 0x08) != 0);
-> 	input_report_key(input, BTN_FORWARD, (data[1] & 0x04) != 0);
-> 	input_report_key(input, BTN_BACK, (data[1] & 0x02) != 0);
-> 	input_report_key(input, BTN_RIGHT, (data[1] & 0x01) != 0);
-> 
-> Does this make sense to you?
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-
-Well, this is all a matter of taste, isn't it. If middle-button emulation works
-out of the box, for the benefit of us old X users who seem unwilling to ever let
-go of the click-to-paste functionality, then I would not mind terribly.
-
-Henrik
+diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+index b7e4c36..310a51e 100644
+--- a/kernel/pm_qos_params.c
++++ b/kernel/pm_qos_params.c
+@@ -389,10 +389,11 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+ 	} else if (count == 11) { /* len('0x12345678/0') */
+ 		if (copy_from_user(ascii_value, buf, 11))
+ 			return -EFAULT;
++		ascii_value[10] = '\0';
+ 		x = sscanf(ascii_value, "%x", &value);
+ 		if (x != 1)
+ 			return -EINVAL;
+-		pr_debug(KERN_ERR "%s, %d, 0x%x\n", ascii_value, x, value);
++		pr_debug("%s, %d, 0x%x\n", ascii_value, x, value);
+ 	} else
+ 		return -EINVAL;
+ 
