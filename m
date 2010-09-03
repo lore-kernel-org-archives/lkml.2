@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab0ICJI7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:08:59 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:57979 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755482Ab0ICJIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:08:49 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after direct reclaim allocation fails
-Date: Fri,  3 Sep 2010 10:08:46 +0100
-Message-Id: <1283504926-2120-4-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1283504926-2120-1-git-send-email-mel@csn.ul.ie>
-References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie>
+	id S1756223Ab0ICJNz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:13:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59288 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab0ICJNy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 05:13:54 -0400
+Message-ID: <4C80BC3A.7010406@corscience.de>
+Date: Fri, 03 Sep 2010 11:13:30 +0200
+From: Bernhard Walle <walle@corscience.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Arnaud Patard <apatard@mandriva.com>
+CC: Christoph Hellwig <hch@lst.de>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, ddaney@caviumnetworks.com,
+        akpm@linux-foundation.org, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MIPS: N32: Fix getdents64 syscall for n32
+References: <1283501734-6532-1-git-send-email-walle@corscience.de>	<20100903084213.GA32339@lst.de> <m3pqwvb438.fsf@anduin.mandriva.com>
+In-Reply-To: <m3pqwvb438.fsf@anduin.mandriva.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:R8n2dqZbSo1xc86ONWX6R7PJJuLEVGlBZwPViS+/OGh
+ 523htMkIdbHbIkOqda0TIPPN4JyDI7383qOLwUNK342kBNRpba
+ RlUPBnCwU53qneUJtvpdL95qE1sZPDzHzHOzY1T/UQOsCqb0VX
+ 2oVyEQidoZ1JfsIgMa1TUkVIy3E89nZKOwwcxBggcZMXo/cqiz
+ LXrzoU8SA2i88F6SXPI1A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When under significant memory pressure, a process enters direct reclaim
-and immediately afterwards tries to allocate a page. If it fails and no
-further progress is made, it's possible the system will go OOM. However,
-on systems with large amounts of memory, it's possible that a significant
-number of pages are on per-cpu lists and inaccessible to the calling
-process. This leads to a process entering direct reclaim more often than
-it should increasing the pressure on the system and compounding the problem.
+Am 03.09.2010 10:53, schrieb Arnaud Patard:
+>
+> I guess the explanation is the one below :
+>
+> $ ./scripts/get_maintainer.pl -f arch/mips/kernel/scall64-n32.S
+> Ralf Baechle<ralf@linux-mips.org>
+> David Daney<ddaney@caviumnetworks.com>
+> Andrew Morton<akpm@linux-foundation.org>
+> "Eric W. Biederman"<ebiederm@xmission.com>
+> Christoph Hellwig<hch@lst.de>
+> linux-mips@linux-mips.org
+> linux-kernel@vger.kernel.org
 
-This patch notes that if direct reclaim is making progress but
-allocations are still failing that the system is already under heavy
-pressure. In this case, it drains the per-cpu lists and tries the
-allocation a second time before continuing.
+Yes, I just used that script and trusted the results. Sorry for that.
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
----
- mm/page_alloc.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index bbaa959..750e1dc 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1847,6 +1847,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 	struct page *page = NULL;
- 	struct reclaim_state reclaim_state;
- 	struct task_struct *p = current;
-+	bool drained = false;
- 
- 	cond_resched();
- 
-@@ -1865,14 +1866,25 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 
- 	cond_resched();
- 
--	if (order != 0)
--		drain_all_pages();
-+	if (unlikely(!(*did_some_progress)))
-+		return NULL;
- 
--	if (likely(*did_some_progress))
--		page = get_page_from_freelist(gfp_mask, nodemask, order,
-+retry:
-+	page = get_page_from_freelist(gfp_mask, nodemask, order,
- 					zonelist, high_zoneidx,
- 					alloc_flags, preferred_zone,
- 					migratetype);
-+
-+	/*
-+	 * If an allocation failed after direct reclaim, it could be because
-+	 * pages are pinned on the per-cpu lists. Drain them and try again
-+	 */
-+	if (!page && !drained) {
-+		drain_all_pages();
-+		drained = true;
-+		goto retry;
-+	}
-+
- 	return page;
- }
- 
--- 
-1.7.1
-
+Regards,
+Bernhard
