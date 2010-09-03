@@ -1,176 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757712Ab0ICWH6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 18:07:58 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:48471 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256Ab0ICWH4 convert rfc822-to-8bit (ORCPT
+	id S1757594Ab0ICWKX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 18:10:23 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37041 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751420Ab0ICWKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 18:07:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
-	:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=D/IkfNpMQXS9M81xFZF
-	i6br01Gn/aKqIoDTMPIHy6vidxACvJjbVUjbEdumtCfH6Gm9ReClEdvlNwVn+723
-	BYMpjrU+E6cluYjvqSMrG8k/2o9qxSqjQ/TXEHP3kVX242NXRnu+3c+Rp6TafN9H
-	7Nk9K8R8FzBkvxzYqgQiPTJ4=
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.2.3
-From: Junio C Hamano <gitster@pobox.com>
-Date: Fri, 03 Sep 2010 15:07:45 -0700
-Message-ID: <7vwrr2xyz2.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: B1C1CFAE-B7A7-11DF-8600-030CEE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+	Fri, 3 Sep 2010 18:10:21 -0400
+Date: Fri, 3 Sep 2010 15:09:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: davem@davemloft.net, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH -mm 0/8] unify dma_addr_t typedef
+ (CONFIG_ARCH_DMA_ADDR_T_64BIT)
+Message-Id: <20100903150948.4b612498.akpm@linux-foundation.org>
+In-Reply-To: <20100903094753S.fujita.tomonori@lab.ntt.co.jp>
+References: <20100903094753S.fujita.tomonori@lab.ntt.co.jp>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.2.3 is available at the
-usual places:
+On Fri, 3 Sep 2010 09:51:31 +0900
+FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
 
-  http://www.kernel.org/pub/software/scm/git/
+> There are about twenty architectures have the own dma_addr_t typedef
+> because include/asm-generic/types.h can't be perfect (some of them can
+> use it though):
+> 
+> #ifndef dma_addr_t
+> #ifdef CONFIG_PHYS_ADDR_T_64BIT
+> typedef u64 dma_addr_t;
+> #else
+> typedef u32 dma_addr_t;
+> #endif /* CONFIG_PHYS_ADDR_T_64BIT */
+> #endif /* dma_addr_t */
+> 
+> Another problem is that there is a way to determine if dma_addr_t is
+> 64-bit. We see hopeless tricks like the following:
+> 
+> #if (defined(__i386__) && defined(CONFIG_HIGHMEM64G)) || defined(__x86_64__) || defined (__ia64__) || defined(__alpha__) || defined(__mips64__) || (defined(__mips__) && defined(CONFIG_HIGHMEM) && defined(CONFIG_64BIT_PHYS_ADDR))
+> 
+> This clean up the mess with introducing CONFIG_ARCH_DMA_ADDR_T_64BIT
+> define (like CONFIG_ARCH_PHYS_ADDR_T_64BIT).
+> 
+> If architecture needs 64bit dma_addr_t, it must enable
+> CONFIG_ARCH_DMA_ADDR_T_64BIT.
+> 
+> The summary are:
+> 
+> - always 64bit
+> -- alpha
+> -- ia64
+> -- tile
+> 
+> - conditionally 64bit
+> -- x86
+> -- mips
+> -- powerpc
+> -- s390
+> 
+> - always 32bit
+> -- arm
+> -- avr32
+> -- cris
+> -- frv
+> -- h8300
+> -- m32r
+> -- m68k
+> -- mn10300
+> -- parisc
+> -- xtensa
+> -- sparc
+> -- blackfin
+> -- microblaze
+> -- score
+> -- sh
 
-  git-1.7.2.3.tar.{gz,bz2}			(source tarball)
-  git-htmldocs-1.7.2.3.tar.{gz,bz2}		(preformatted docs)
-  git-manpages-1.7.2.3.tar.{gz,bz2}		(preformatted docs)
-
-The RPM binary packages for a few architectures are found in:
-
-  RPMS/$arch/git-*-1.7.2.3-1.fc11.$arch.rpm	(RPM)
-
-We will soon be preparing for 1.7.3 feature release but during the
-pre-release freeze period for it, I expect one more maintenance updates
-to the 1.7.2.X series.
-
-Thanks everybody who contributed to this release to help making git less
-suck ;-)
-
-
-Git v1.7.2.3 Release Notes
-==========================
-
-Fixes since v1.7.2.2
---------------------
-
- * When people try insane things such as delta-compressing 4GiB files, we
-   threw an assertion failure.
-
- * "git archive" gave the full commit ID for "$Format:%h$".
-
- * "git fetch --tags" did not fetch tags when remote.<nick>.tagopt was set
-   to --no-tags.  The command line option now overrides the configuration
-   setting.
-
- * "git for-each-ref --format='%(objectname:short)'" has been completely
-   broken for a long time.
-
- * "git gc" incorrectly pruned a rerere record that was created long
-   time ago but still is actively and repeatedly used.
-
- * "git log --follow -M -p" was seriously broken in 1.7.2, reporting
-   assertion failure.
-
- * Running "git log" with an incorrect option started pager nevertheless,
-   forcing the user to dismiss it.
-
- * "git rebase" did not work well when the user has diff.renames
-   configuration variable set.
-
- * An earlier (and rather old) fix to "git rebase" against a rebased
-   upstream broke a more normal, non rebased upstream case rather badly,
-   attempting to re-apply patches that are already accepted upstream.
-
- * "git submodule sync" forgot to update the superproject's config file
-   when submodule URL changed.
-
- * "git pack-refs --all --prune" did not remove a directory that has
-   become empty.
-
-----------------------------------------------------------------
-
-Changes since v1.7.2.2 are as follows:
-
-Brandon Casey (2):
-      Makefile: link builtins residing in bin directory to main git binary too
-      Makefile: make hard/symbolic links for non-builtins too
-
-Daniel Johnson (1):
-      fetch: allow command line --tags to override config
-
-David Aguilar (1):
-      submodule sync: Update "submodule.<name>.url"
-
-Elijah Newren (3):
-      t5520-pull: Add testcases showing spurious conflicts from git pull --rebase
-      pull --rebase: Avoid spurious conflicts and reapplying unnecessary patches
-      tree-walk: Correct bitrotted comment about tree_entry()
-
-Greg Price (1):
-      pack-refs: remove newly empty directories
-
-Jay Soffian (1):
-      for-each-ref: fix objectname:short bug
-
-Jens Lehmann (1):
-      t7403: add missing &&'s
-
-Jonathan Nieder (12):
-      t4150 (am): style fix
-      t4150 (am): futureproof against failing tests
-      t3400 (rebase): whitespace cleanup
-      archive: abbreviate substituted commit ids again
-      checkout, commit: remove confusing assignments to rev.abbrev
-      examples/commit: use --abbrev for commit summary
-      Documentation: flesh out “git pull” description
-      core: Stop leaking ondisk_cache_entrys
-      read-tree: stop leaking tree objects
-      write-tree: Avoid leak when index refers to an invalid object
-      t3302 (notes): Port to Solaris
-      parse-options: clarify PARSE_OPT_NOARG description
-
-Junio C Hamano (6):
-      Teach "apply --index-info" to handle rename patches
-      rebase: protect against diff.renames configuration
-      diff --follow: do not waste cycles while recursing
-      diff --follow: do call diffcore_std() as necessary
-      Prepare for 1.7.2.3
-      Git 1.7.2.3
-
-Linus Torvalds (1):
-      Fix 'git log' early pager startup error case
-
-Mark Rada (1):
-      Tell ignore file about generate files in /gitweb/static
-
-Matthieu Moy (2):
-      xmalloc: include size in the failure message
-      t0003: add missing && at end of lines
-
-Nicolas Pitre (1):
-      fix >4GiB source delta assertion failure
-
-Ralf Wildenhues (1):
-      Typos in code comments, an error message, documentation
-
-SZEDER Gábor (2):
-      mingw_utime(): handle NULL times parameter
-      rerere: fix overeager gc
-
-Thiago Farina (1):
-      builtin/merge_recursive.c: Add an usage string and make use of it.
-
-Thomas Rast (5):
-      Documentation/git-reset: reorder modes for soft-mixed-hard progression
-      Documentation/reset: separate options by mode
-      Documentation/reset: promote 'examples' one section up
-      Documentation/reset: reorder examples to match description
-      Documentation/reset: move "undo permanently" example behind "make topic"
-
-Ville Skyttä (1):
-      Documentation: spelling fixes
-
-Ævar Arnfjörð Bjarmason (1):
-      log: test for regression introduced in v1.7.2-rc0~103^2~2
+Am I correct in believing that we can merge the first seven patches
+into arch trees at any time and, once they are all merged, patch 8/8
+can then go into mainline?
 
