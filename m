@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab0ICVYH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 17:24:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753962Ab0ICVYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 17:24:05 -0400
-Message-ID: <4C816760.4010807@redhat.com>
-Date: Fri, 03 Sep 2010 17:23:44 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S932066Ab0ICVZr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 17:25:47 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:59821 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754079Ab0ICVZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 17:25:46 -0400
+Date: Fri, 3 Sep 2010 14:25:45 -0700
+From: Arthur Kepner <akepner@sgi.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
+Subject: Re: [RFC/PATCH] notify user-level IRQ balancer when kernel assigns
+	IRQ affinity
+Message-ID: <20100903212545.GQ2464@sgi.com>
+References: <20100903210554.GO2464@sgi.com> <4C81643F.5070801@caviumnetworks.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Venkatesh Pallipadi <venki@google.com>, Ying Han <yinghan@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap
- system
-References: <1283096628-4450-1-git-send-email-minchan.kim@gmail.com> <20100903140649.09dee316.akpm@linux-foundation.org>
-In-Reply-To: <20100903140649.09dee316.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C81643F.5070801@caviumnetworks.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2010 05:06 PM, Andrew Morton wrote:
-
-> We don't have any quantitative data on the effect of these excess tlb
-> flushes, which makes it difficult to decide which kernel versions
-> should receive this patch.
+On Fri, Sep 03, 2010 at 02:10:23PM -0700, David Daney wrote:
+>> ---
+>>
+>> diff --git a/arch/Kconfig b/arch/Kconfig
+>> index 4877a8c..65c79c7 100644
+>> --- a/arch/Kconfig
+>> +++ b/arch/Kconfig
+>> @@ -158,4 +158,15 @@ config HAVE_PERF_EVENTS_NMI
+>>   	  subsystem.  Also has support for calculating CPU cycle events
+>>   	  to determine how many clock cycles in a given period.
+>>
+>> +config NOTIFY_USER_IRQ_BALANCER
+>> +	bool "Notify user-level IRQ balancer (EXPERIMENTAL)"
+>> +	default n
+>> +	depends on NET&&  X86
 >
-> Help?
+> Missing a space before that '&&', but more importantly, what part of the  
+> patch is x86 specific?
+>
+>
 
-I assume it is a relatively small performance optimization,
-as well as a nice code cleanup ... so probably no real hurry
-to get it upstream (next time you send Linus mm patches?),
-and no real reason to have it backported to a -stable kernel
-either.
+Hmmm. I see the space in my copy of the message.
+
+Anyway, the X86 dependency is bogus. For a while there was such 
+a dependency, but that's gone now. Just forgot to fix that up. 
+Will do that now.
 
 -- 
-All rights reversed
+Arthur
