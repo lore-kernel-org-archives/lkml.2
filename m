@@ -1,215 +1,7199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab0ICPB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 11:01:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41886 "EHLO mx1.redhat.com"
+	id S1757067Ab0ICPBY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 11:01:24 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58926 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab0ICPBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 11:01:18 -0400
-Date: Fri, 3 Sep 2010 11:00:55 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf, x86: Fix accidentally ack'ing a second
- event on intel perf counter
-Message-ID: <20100903150055.GY4879@redhat.com>
-References: <1283454469-1909-2-git-send-email-dzickus@redhat.com>
- <tip-2e556b5b320838fde98480a1f6cf220a5af200fc@git.kernel.org>
- <4C80A62D.6050901@kernel.org>
+	id S1755317Ab0ICPBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 11:01:17 -0400
+Date: Fri, 3 Sep 2010 17:00:41 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org, hch@lst.de,
+        tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/irq] x86: Always use irq stacks
+Message-ID: <20100903150041.GA30573@elte.hu>
+References: <20100628121554.GA6605@lst.de>
+ <tip-7974891db234467eaf1fec613ec0129cb4ac2332@git.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="MGYHOYXEY6WxJCY8"
 Content-Disposition: inline
-In-Reply-To: <4C80A62D.6050901@kernel.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <tip-7974891db234467eaf1fec613ec0129cb4ac2332@git.kernel.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0003]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 12:39:25AM -0700, Yinghai Lu wrote:
-> Can you put this into perf branch ?
-> 
-> Thanks
-> 
-> Yinghai
-> 
-> [PATCH] x86,nmi: move unknown_nmi_panic to traps.c
 
-This patch duplicates a bunch of stuff we already have in
-unknown_nmi_error.  The only thing I think you are interested in is using
-the 'unknown_nmi_panic' flag.  I am putting together a smaller patch that
-uses that flag in traps.c (though it would be nice to combine that flag
-with panic_on_unrecovered_nmi).
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Cheers,
-Don
 
+* tip-bot for Christoph Hellwig <hch@lst.de> wrote:
+
+> Commit-ID:  7974891db234467eaf1fec613ec0129cb4ac2332
+> Gitweb:     http://git.kernel.org/tip/7974891db234467eaf1fec613ec0129cb4ac2332
+> Author:     Christoph Hellwig <hch@lst.de>
+> AuthorDate: Mon, 28 Jun 2010 14:15:54 +0200
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Tue, 29 Jun 2010 12:12:59 +0200
 > 
-> So we use it even LOCKUP_DETECTOR is defined.
-> need Robert/Peter/Don's patch...
-> 
-> that will keep unknown_nmi_panic to have same behavoir before hw nmi watchdog
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  arch/x86/include/asm/nmi.h    |    8 --------
->  arch/x86/kernel/apic/hw_nmi.c |    1 -
->  arch/x86/kernel/apic/nmi.c    |   27 ---------------------------
->  arch/x86/kernel/traps.c       |   29 ++++++++++++++++++++++++++++-
->  kernel/sysctl.c               |    4 +++-
->  5 files changed, 31 insertions(+), 38 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/apic/nmi.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/apic/nmi.c
-> +++ linux-2.6/arch/x86/kernel/apic/nmi.c
-> @@ -37,7 +37,6 @@
->  
->  #include <asm/mach_traps.h>
->  
-> -int unknown_nmi_panic;
->  int nmi_watchdog_enabled;
->  
->  /* For reliability, we're prepared to waste bits here. */
-> @@ -483,23 +482,6 @@ static void disable_ioapic_nmi_watchdog(
->  	on_each_cpu(stop_apic_nmi_watchdog, NULL, 1);
->  }
->  
-> -static int __init setup_unknown_nmi_panic(char *str)
-> -{
-> -	unknown_nmi_panic = 1;
-> -	return 1;
-> -}
-> -__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
-> -
-> -static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
-> -{
-> -	unsigned char reason = get_nmi_reason();
-> -	char buf[64];
-> -
-> -	sprintf(buf, "NMI received for unknown reason %02x\n", reason);
-> -	die_nmi(buf, regs, 1); /* Always panic here */
-> -	return 0;
-> -}
-> -
->  /*
->   * proc handler for /proc/sys/kernel/nmi
->   */
-> @@ -540,15 +522,6 @@ int proc_nmi_enabled(struct ctl_table *t
->  
->  #endif /* CONFIG_SYSCTL */
->  
-> -int do_nmi_callback(struct pt_regs *regs, int cpu)
-> -{
-> -#ifdef CONFIG_SYSCTL
-> -	if (unknown_nmi_panic)
-> -		return unknown_nmi_panic_callback(regs, cpu);
-> -#endif
-> -	return 0;
-> -}
-> -
->  void arch_trigger_all_cpu_backtrace(void)
->  {
->  	int i;
-> Index: linux-2.6/arch/x86/kernel/apic/hw_nmi.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/apic/hw_nmi.c
-> +++ linux-2.6/arch/x86/kernel/apic/hw_nmi.c
-> @@ -100,7 +100,6 @@ void acpi_nmi_disable(void) { return; }
->  #endif
->  atomic_t nmi_active = ATOMIC_INIT(0);           /* oprofile uses this */
->  EXPORT_SYMBOL(nmi_active);
-> -int unknown_nmi_panic;
->  void cpu_nmi_set_wd_enabled(void) { return; }
->  void stop_apic_nmi_watchdog(void *unused) { return; }
->  void setup_apic_nmi_watchdog(void *unused) { return; }
-> Index: linux-2.6/arch/x86/kernel/traps.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/traps.c
-> +++ linux-2.6/arch/x86/kernel/traps.c
-> @@ -377,6 +377,33 @@ unknown_nmi_error(unsigned char reason,
->  	printk(KERN_EMERG "Dazed and confused, but trying to continue\n");
->  }
->  
-> +#if defined(CONFIG_SYSCTL) && defined(CONFIG_X86_LOCAL_APIC)
-> +int unknown_nmi_panic;
-> +static int __init setup_unknown_nmi_panic(char *str)
-> +{
-> +	unknown_nmi_panic = 1;
-> +	return 1;
-> +}
-> +__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
-> +
-> +static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
-> +{
-> +	unsigned char reason = get_nmi_reason();
-> +	char buf[64];
-> +
-> +	sprintf(buf, "NMI received for unknown reason %02x\n", reason);
-> +	die_nmi(buf, regs, 1); /* Always panic here */
-> +	return 0;
-> +}
-> +
-> +static int do_nmi_callback(struct pt_regs *regs, int cpu)
-> +{
-> +	if (unknown_nmi_panic)
-> +		return unknown_nmi_panic_callback(regs, cpu);
-> +	return 0;
-> +}
-> +#endif
-> +
->  static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
->  {
->  	unsigned char reason = 0;
-> @@ -405,8 +432,8 @@ static notrace __kprobes void default_do
->  		 */
->  		if (nmi_watchdog_tick(regs, reason))
->  			return;
-> -		if (!do_nmi_callback(regs, cpu))
->  #endif /* !CONFIG_LOCKUP_DETECTOR */
-> +		if (!do_nmi_callback(regs, cpu))
->  			unknown_nmi_error(reason, regs);
->  #else
->  		unknown_nmi_error(reason, regs);
-> Index: linux-2.6/kernel/sysctl.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sysctl.c
-> +++ linux-2.6/kernel/sysctl.c
-> @@ -739,7 +739,7 @@ static struct ctl_table kern_table[] = {
->  		.extra2		= &one,
->  	},
->  #endif
-> -#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86) && !defined(CONFIG_LOCKUP_DETECTOR)
-> +#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86)
->  	{
->  		.procname       = "unknown_nmi_panic",
->  		.data           = &unknown_nmi_panic,
-> @@ -747,6 +747,8 @@ static struct ctl_table kern_table[] = {
->  		.mode           = 0644,
->  		.proc_handler   = proc_dointvec,
->  	},
-> +#endif
-> +#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86) && !defined(CONFIG_LOCKUP_DETECTOR)
->  	{
->  		.procname       = "nmi_watchdog",
->  		.data           = &nmi_watchdog_enabled,
-> Index: linux-2.6/arch/x86/include/asm/nmi.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/nmi.h
-> +++ linux-2.6/arch/x86/include/asm/nmi.h
-> @@ -7,14 +7,6 @@
->  
->  #ifdef ARCH_HAS_NMI_WATCHDOG
->  
-> -/**
-> - * do_nmi_callback
-> - *
-> - * Check to see if a callback exists and execute it.  Return 1
-> - * if the handler exists and was handled successfully.
-> - */
-> -int do_nmi_callback(struct pt_regs *regs, int cpu);
-> -
->  extern void die_nmi(char *str, struct pt_regs *regs, int do_panic);
->  extern int check_nmi_watchdog(void);
->  #if !defined(CONFIG_LOCKUP_DETECTOR)
+> x86: Always use irq stacks
+
+There is another (and different) kind of boot failure on 32-bit x86:
+
+EXT3-fs (sda1): recovery required on readonly filesystem
+EXT3-fs (sda1): write access will be enabled during recovery
+EXT3-fs: barriers not enabled
+BUG: unable to handle kernel NULL pointer dereference at 00000340
+IP: [<4102dde1>] print_context_stack+0x81/0x110
+*pde = 00000000 
+Oops: 0000 [#1] PREEMPT 
+last sysfs file: 
+
+Pid: 0, comm: swapper Not tainted 2.6.35-rc3+ #33238 A8N-E/System Product Name
+EIP: 0060:[<4102dde1>] EFLAGS: 00010016 CPU: 0
+EIP is at print_context_stack+0x81/0x110
+EAX: 00000000 EBX: 41f62d70 ECX: 00000000 EDX: 41f62000
+ESI: 00000000 EDI: 41c5bc3c EBP: 41f62d54 ESP: 41f62d30
+ DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+Process swapper (pid: 0, ti=41f62000 task=41f64a80 task.ti=41f5c000)
+Stack:
+ 41047a83 41f63ffc 41f62d84 ffffe000 41f62000 41f62d84 41f62d70 41c5bc3c
+<0> 41f62000 41f62d84 4102ca48 41c5bc3c 7f9731b0 00000000 41f62d74 41f62d84
+<0> 41047a83 00000000 7f9731b0 00000046 7f9731d4 41f62d9c 41033e50 00000000
+Call Trace:
+ [<41047a83>] ? enqueue_task+0x43/0x60
+BUG: unable to handle kernel NULL pointer dereference at 00000340
+IP: [<4102dde1>] print_context_stack+0x81/0x110
+*pde = 00000000 
+Oops: 0000 [#2] PREEMPT 
+last sysfs file: 
+
+Which crash i managed to bisect back to this commit:
+
+ | 7974891db234467eaf1fec613ec0129cb4ac2332 is the first bad commit
+ | commit 7974891db234467eaf1fec613ec0129cb4ac2332
+ | Author: Christoph Hellwig <hch@lst.de>
+ | Date:   Mon Jun 28 14:15:54 2010 +0200
+ |
+ |    x86: Always use irq stacks
+
+I've attached the config and the full crashlog.
+
+Checking out 7974891db2 and building+booting a kernel with this config 
+causes shows the crash.
+
+Checking out 7974891db2~1 and building+booting a kernel with this config 
+gives a working system.
+
+Note that tip:x86/irq has these commits currently:
+
+ 1813a68: x86: Move alloc_desk_mask variables inside ifdef
+ 2589737: x86-32: Align IRQ stacks properly
+ dcfa726: x86: Remove CONFIG_4KSTACKS
+ 7974891: x86: Always use irq stacks
+
+Although i didnt expect it to be relevant to the regression, i double 
+checked that 1813a68 (i.e. all fixes applied) regresses too - it does.
+
+Thanks,
+
+	Ingo
+
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=config
+
+#
+# Automatically generated make config: don't edit
+# Linux kernel version: 2.6.35-rc3
+# Fri Sep  3 18:35:49 2010
+#
+# CONFIG_64BIT is not set
+CONFIG_X86_32=y
+# CONFIG_X86_64 is not set
+CONFIG_X86=y
+CONFIG_INSTRUCTION_DECODER=y
+CONFIG_OUTPUT_FORMAT="elf32-i386"
+CONFIG_ARCH_DEFCONFIG="arch/x86/configs/i386_defconfig"
+CONFIG_GENERIC_TIME=y
+CONFIG_GENERIC_CMOS_UPDATE=y
+CONFIG_CLOCKSOURCE_WATCHDOG=y
+CONFIG_GENERIC_CLOCKEVENTS=y
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_STACKTRACE_SUPPORT=y
+CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+CONFIG_MMU=y
+CONFIG_ZONE_DMA=y
+CONFIG_NEED_DMA_MAP_STATE=y
+CONFIG_NEED_SG_DMA_LENGTH=y
+CONFIG_GENERIC_ISA_DMA=y
+CONFIG_GENERIC_IOMAP=y
+CONFIG_GENERIC_BUG=y
+CONFIG_GENERIC_HWEIGHT=y
+CONFIG_GENERIC_GPIO=y
+CONFIG_ARCH_MAY_HAVE_PC_FDC=y
+# CONFIG_RWSEM_GENERIC_SPINLOCK is not set
+CONFIG_RWSEM_XCHGADD_ALGORITHM=y
+CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
+CONFIG_GENERIC_CALIBRATE_DELAY=y
+# CONFIG_GENERIC_TIME_VSYSCALL is not set
+CONFIG_ARCH_HAS_CPU_RELAX=y
+CONFIG_ARCH_HAS_DEFAULT_IDLE=y
+CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
+CONFIG_HAVE_SETUP_PER_CPU_AREA=y
+CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
+CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
+# CONFIG_HAVE_CPUMASK_OF_CPU_MAP is not set
+CONFIG_ARCH_HIBERNATION_POSSIBLE=y
+CONFIG_ARCH_SUSPEND_POSSIBLE=y
+# CONFIG_ZONE_DMA32 is not set
+CONFIG_ARCH_POPULATES_NODE_MAP=y
+# CONFIG_AUDIT_ARCH is not set
+CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
+CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
+CONFIG_HAVE_EARLY_RES=y
+CONFIG_GENERIC_HARDIRQS=y
+CONFIG_GENERIC_HARDIRQS_NO__DO_IRQ=y
+CONFIG_GENERIC_IRQ_PROBE=y
+CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-ecx -fcall-saved-edx"
+CONFIG_KTIME_SCALAR=y
+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
+CONFIG_CONSTRUCTORS=y
+
+#
+# General setup
+#
+CONFIG_EXPERIMENTAL=y
+CONFIG_BROKEN_ON_SMP=y
+CONFIG_LOCK_KERNEL=y
+CONFIG_INIT_ENV_ARG_LIMIT=32
+CONFIG_CROSS_COMPILE=""
+CONFIG_LOCALVERSION=""
+# CONFIG_LOCALVERSION_AUTO is not set
+CONFIG_HAVE_KERNEL_GZIP=y
+CONFIG_HAVE_KERNEL_BZIP2=y
+CONFIG_HAVE_KERNEL_LZMA=y
+CONFIG_HAVE_KERNEL_LZO=y
+# CONFIG_KERNEL_GZIP is not set
+# CONFIG_KERNEL_BZIP2 is not set
+CONFIG_KERNEL_LZMA=y
+# CONFIG_KERNEL_LZO is not set
+# CONFIG_SWAP is not set
+CONFIG_SYSVIPC=y
+CONFIG_SYSVIPC_SYSCTL=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_POSIX_MQUEUE_SYSCTL=y
+CONFIG_BSD_PROCESS_ACCT=y
+# CONFIG_BSD_PROCESS_ACCT_V3 is not set
+# CONFIG_TASKSTATS is not set
+# CONFIG_AUDIT is not set
+
+#
+# RCU Subsystem
+#
+# CONFIG_TREE_RCU is not set
+# CONFIG_TREE_PREEMPT_RCU is not set
+CONFIG_TINY_RCU=y
+# CONFIG_TREE_RCU_TRACE is not set
+CONFIG_IKCONFIG=y
+# CONFIG_IKCONFIG_PROC is not set
+CONFIG_LOG_BUF_SHIFT=20
+CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+# CONFIG_CGROUPS is not set
+CONFIG_SYSFS_DEPRECATED=y
+CONFIG_SYSFS_DEPRECATED_V2=y
+CONFIG_RELAY=y
+CONFIG_NAMESPACES=y
+CONFIG_UTS_NS=y
+# CONFIG_IPC_NS is not set
+# CONFIG_USER_NS is not set
+# CONFIG_PID_NS is not set
+CONFIG_NET_NS=y
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_INITRAMFS_SOURCE=""
+CONFIG_RD_GZIP=y
+# CONFIG_RD_BZIP2 is not set
+# CONFIG_RD_LZMA is not set
+CONFIG_RD_LZO=y
+# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
+CONFIG_SYSCTL=y
+CONFIG_ANON_INODES=y
+CONFIG_EMBEDDED=y
+CONFIG_UID16=y
+# CONFIG_SYSCTL_SYSCALL is not set
+CONFIG_KALLSYMS=y
+CONFIG_KALLSYMS_EXTRA_PASS=y
+CONFIG_HOTPLUG=y
+CONFIG_PRINTK=y
+CONFIG_BUG=y
+CONFIG_ELF_CORE=y
+CONFIG_PCSPKR_PLATFORM=y
+CONFIG_BASE_FULL=y
+CONFIG_FUTEX=y
+CONFIG_EPOLL=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+CONFIG_SHMEM=y
+CONFIG_AIO=y
+CONFIG_HAVE_PERF_EVENTS=y
+
+#
+# Kernel Performance Events And Counters
+#
+CONFIG_PERF_EVENTS=y
+CONFIG_PERF_COUNTERS=y
+# CONFIG_VM_EVENT_COUNTERS is not set
+CONFIG_PCI_QUIRKS=y
+# CONFIG_SLUB_DEBUG is not set
+CONFIG_COMPAT_BRK=y
+# CONFIG_SLAB is not set
+CONFIG_SLUB=y
+# CONFIG_SLOB is not set
+# CONFIG_PROFILING is not set
+CONFIG_TRACEPOINTS=y
+CONFIG_HAVE_OPROFILE=y
+CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
+CONFIG_USER_RETURN_NOTIFIER=y
+CONFIG_HAVE_IOREMAP_PROT=y
+CONFIG_HAVE_KPROBES=y
+CONFIG_HAVE_KRETPROBES=y
+CONFIG_HAVE_OPTPROBES=y
+CONFIG_HAVE_ARCH_TRACEHOOK=y
+CONFIG_HAVE_DMA_ATTRS=y
+CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
+CONFIG_HAVE_DMA_API_DEBUG=y
+CONFIG_HAVE_HW_BREAKPOINT=y
+CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
+CONFIG_HAVE_USER_RETURN_NOTIFIER=y
+
+#
+# GCOV-based kernel profiling
+#
+# CONFIG_GCOV_KERNEL is not set
+CONFIG_SLOW_WORK=y
+# CONFIG_SLOW_WORK_DEBUG is not set
+CONFIG_HAVE_GENERIC_DMA_COHERENT=y
+CONFIG_RT_MUTEXES=y
+CONFIG_BASE_SMALL=0
+# CONFIG_MODULES is not set
+CONFIG_BLOCK=y
+# CONFIG_LBDAF is not set
+CONFIG_BLK_DEV_BSG=y
+CONFIG_BLK_DEV_INTEGRITY=y
+
+#
+# IO Schedulers
+#
+CONFIG_IOSCHED_NOOP=y
+# CONFIG_IOSCHED_DEADLINE is not set
+CONFIG_IOSCHED_CFQ=y
+# CONFIG_DEFAULT_DEADLINE is not set
+CONFIG_DEFAULT_CFQ=y
+# CONFIG_DEFAULT_NOOP is not set
+CONFIG_DEFAULT_IOSCHED="cfq"
+CONFIG_PREEMPT_NOTIFIERS=y
+# CONFIG_INLINE_SPIN_TRYLOCK is not set
+# CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
+# CONFIG_INLINE_SPIN_LOCK is not set
+# CONFIG_INLINE_SPIN_LOCK_BH is not set
+# CONFIG_INLINE_SPIN_LOCK_IRQ is not set
+# CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_SPIN_UNLOCK is not set
+# CONFIG_INLINE_SPIN_UNLOCK_BH is not set
+# CONFIG_INLINE_SPIN_UNLOCK_IRQ is not set
+# CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
+# CONFIG_INLINE_READ_TRYLOCK is not set
+# CONFIG_INLINE_READ_LOCK is not set
+# CONFIG_INLINE_READ_LOCK_BH is not set
+# CONFIG_INLINE_READ_LOCK_IRQ is not set
+# CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_READ_UNLOCK is not set
+# CONFIG_INLINE_READ_UNLOCK_BH is not set
+# CONFIG_INLINE_READ_UNLOCK_IRQ is not set
+# CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
+# CONFIG_INLINE_WRITE_TRYLOCK is not set
+# CONFIG_INLINE_WRITE_LOCK is not set
+# CONFIG_INLINE_WRITE_LOCK_BH is not set
+# CONFIG_INLINE_WRITE_LOCK_IRQ is not set
+# CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_WRITE_UNLOCK is not set
+# CONFIG_INLINE_WRITE_UNLOCK_BH is not set
+# CONFIG_INLINE_WRITE_UNLOCK_IRQ is not set
+# CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
+# CONFIG_MUTEX_SPIN_ON_OWNER is not set
+# CONFIG_FREEZER is not set
+
+#
+# Processor type and features
+#
+CONFIG_TICK_ONESHOT=y
+CONFIG_NO_HZ=y
+CONFIG_HIGH_RES_TIMERS=y
+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+# CONFIG_SMP is not set
+CONFIG_X86_EXTENDED_PLATFORM=y
+# CONFIG_X86_ELAN is not set
+# CONFIG_X86_RDC321X is not set
+CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
+# CONFIG_SCHED_OMIT_FRAME_POINTER is not set
+CONFIG_PARAVIRT_GUEST=y
+# CONFIG_VMI is not set
+# CONFIG_KVM_CLOCK is not set
+CONFIG_KVM_GUEST=y
+# CONFIG_LGUEST_GUEST is not set
+CONFIG_PARAVIRT=y
+CONFIG_NO_BOOTMEM=y
+CONFIG_MEMTEST=y
+# CONFIG_M386 is not set
+# CONFIG_M486 is not set
+# CONFIG_M586 is not set
+# CONFIG_M586TSC is not set
+# CONFIG_M586MMX is not set
+# CONFIG_M686 is not set
+# CONFIG_MPENTIUMII is not set
+# CONFIG_MPENTIUMIII is not set
+# CONFIG_MPENTIUMM is not set
+# CONFIG_MPENTIUM4 is not set
+# CONFIG_MK6 is not set
+# CONFIG_MK7 is not set
+# CONFIG_MK8 is not set
+# CONFIG_MCRUSOE is not set
+# CONFIG_MEFFICEON is not set
+# CONFIG_MWINCHIPC6 is not set
+# CONFIG_MWINCHIP3D is not set
+# CONFIG_MGEODEGX1 is not set
+# CONFIG_MGEODE_LX is not set
+# CONFIG_MCYRIXIII is not set
+# CONFIG_MVIAC3_2 is not set
+# CONFIG_MVIAC7 is not set
+# CONFIG_MPSC is not set
+# CONFIG_MCORE2 is not set
+CONFIG_MATOM=y
+# CONFIG_GENERIC_CPU is not set
+# CONFIG_X86_GENERIC is not set
+CONFIG_X86_CPU=y
+CONFIG_X86_INTERNODE_CACHE_SHIFT=6
+CONFIG_X86_CMPXCHG=y
+CONFIG_X86_L1_CACHE_SHIFT=6
+CONFIG_X86_XADD=y
+CONFIG_X86_WP_WORKS_OK=y
+CONFIG_X86_INVLPG=y
+CONFIG_X86_BSWAP=y
+CONFIG_X86_POPAD_OK=y
+CONFIG_X86_USE_PPRO_CHECKSUM=y
+CONFIG_X86_TSC=y
+CONFIG_X86_CMPXCHG64=y
+CONFIG_X86_CMOV=y
+CONFIG_X86_MINIMUM_CPU_FAMILY=5
+CONFIG_X86_DEBUGCTLMSR=y
+CONFIG_PROCESSOR_SELECT=y
+CONFIG_CPU_SUP_INTEL=y
+CONFIG_CPU_SUP_CYRIX_32=y
+# CONFIG_CPU_SUP_AMD is not set
+CONFIG_CPU_SUP_CENTAUR=y
+# CONFIG_CPU_SUP_TRANSMETA_32 is not set
+CONFIG_CPU_SUP_UMC_32=y
+# CONFIG_HPET_TIMER is not set
+CONFIG_DMI=y
+# CONFIG_IOMMU_HELPER is not set
+# CONFIG_IOMMU_API is not set
+CONFIG_NR_CPUS=1
+# CONFIG_PREEMPT_NONE is not set
+# CONFIG_PREEMPT_VOLUNTARY is not set
+CONFIG_PREEMPT=y
+# CONFIG_X86_UP_APIC is not set
+CONFIG_X86_MCE=y
+# CONFIG_X86_ANCIENT_MCE is not set
+CONFIG_X86_MCE_INJECT=y
+# CONFIG_VM86 is not set
+# CONFIG_TOSHIBA is not set
+CONFIG_I8K=y
+CONFIG_X86_REBOOTFIXUPS=y
+# CONFIG_MICROCODE is not set
+# CONFIG_X86_MSR is not set
+CONFIG_X86_CPUID=y
+# CONFIG_NOHIGHMEM is not set
+CONFIG_HIGHMEM4G=y
+# CONFIG_HIGHMEM64G is not set
+# CONFIG_VMSPLIT_3G is not set
+# CONFIG_VMSPLIT_3G_OPT is not set
+# CONFIG_VMSPLIT_2G is not set
+# CONFIG_VMSPLIT_2G_OPT is not set
+CONFIG_VMSPLIT_1G=y
+CONFIG_PAGE_OFFSET=0x40000000
+CONFIG_HIGHMEM=y
+# CONFIG_ARCH_PHYS_ADDR_T_64BIT is not set
+CONFIG_ARCH_FLATMEM_ENABLE=y
+CONFIG_ARCH_SPARSEMEM_ENABLE=y
+CONFIG_ARCH_SELECT_MEMORY_MODEL=y
+CONFIG_ILLEGAL_POINTER_VALUE=0
+CONFIG_SELECT_MEMORY_MODEL=y
+CONFIG_FLATMEM_MANUAL=y
+# CONFIG_DISCONTIGMEM_MANUAL is not set
+# CONFIG_SPARSEMEM_MANUAL is not set
+CONFIG_FLATMEM=y
+CONFIG_FLAT_NODE_MEM_MAP=y
+CONFIG_SPARSEMEM_STATIC=y
+CONFIG_PAGEFLAGS_EXTENDED=y
+CONFIG_SPLIT_PTLOCK_CPUS=4
+# CONFIG_PHYS_ADDR_T_64BIT is not set
+CONFIG_ZONE_DMA_FLAG=1
+CONFIG_BOUNCE=y
+CONFIG_VIRT_TO_BUS=y
+CONFIG_MMU_NOTIFIER=y
+CONFIG_KSM=y
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
+CONFIG_ARCH_SUPPORTS_MEMORY_FAILURE=y
+# CONFIG_MEMORY_FAILURE is not set
+# CONFIG_HIGHPTE is not set
+CONFIG_X86_CHECK_BIOS_CORRUPTION=y
+CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y
+CONFIG_X86_RESERVE_LOW_64K=y
+CONFIG_MATH_EMULATION=y
+# CONFIG_MTRR is not set
+# CONFIG_SECCOMP is not set
+CONFIG_CC_STACKPROTECTOR=y
+CONFIG_HZ_100=y
+# CONFIG_HZ_250 is not set
+# CONFIG_HZ_300 is not set
+# CONFIG_HZ_1000 is not set
+CONFIG_HZ=100
+CONFIG_SCHED_HRTICK=y
+CONFIG_KEXEC=y
+# CONFIG_CRASH_DUMP is not set
+CONFIG_PHYSICAL_START=0x1000000
+CONFIG_RELOCATABLE=y
+CONFIG_X86_NEED_RELOCS=y
+CONFIG_PHYSICAL_ALIGN=0x1000000
+CONFIG_COMPAT_VDSO=y
+CONFIG_CMDLINE_BOOL=y
+CONFIG_CMDLINE=""
+# CONFIG_CMDLINE_OVERRIDE is not set
+CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
+
+#
+# Power management and ACPI options
+#
+CONFIG_PM=y
+# CONFIG_PM_DEBUG is not set
+# CONFIG_SUSPEND is not set
+# CONFIG_PM_RUNTIME is not set
+# CONFIG_ACPI is not set
+# CONFIG_SFI is not set
+
+#
+# CPU Frequency scaling
+#
+# CONFIG_CPU_FREQ is not set
+CONFIG_CPU_IDLE=y
+CONFIG_CPU_IDLE_GOV_LADDER=y
+CONFIG_CPU_IDLE_GOV_MENU=y
+# CONFIG_INTEL_IDLE is not set
+
+#
+# Bus options (PCI etc.)
+#
+CONFIG_PCI=y
+# CONFIG_PCI_GOBIOS is not set
+CONFIG_PCI_GOMMCONFIG=y
+# CONFIG_PCI_GODIRECT is not set
+# CONFIG_PCI_GOOLPC is not set
+# CONFIG_PCI_GOANY is not set
+CONFIG_PCI_DOMAINS=y
+# CONFIG_PCI_CNB20LE_QUIRK is not set
+CONFIG_PCIEPORTBUS=y
+CONFIG_PCIEAER=y
+CONFIG_PCIE_ECRC=y
+CONFIG_PCIEAER_INJECT=y
+CONFIG_PCIEASPM=y
+# CONFIG_PCIEASPM_DEBUG is not set
+# CONFIG_ARCH_SUPPORTS_MSI is not set
+# CONFIG_PCI_STUB is not set
+# CONFIG_PCI_IOV is not set
+CONFIG_ISA_DMA_API=y
+# CONFIG_ISA is not set
+# CONFIG_MCA is not set
+CONFIG_SCx200=y
+# CONFIG_SCx200HR_TIMER is not set
+CONFIG_OLPC=y
+CONFIG_PCCARD=y
+CONFIG_PCMCIA=y
+CONFIG_PCMCIA_LOAD_CIS=y
+CONFIG_CARDBUS=y
+
+#
+# PC-card bridges
+#
+# CONFIG_YENTA is not set
+CONFIG_PD6729=y
+# CONFIG_I82092 is not set
+CONFIG_PCCARD_NONSTATIC=y
+# CONFIG_HOTPLUG_PCI is not set
+
+#
+# Executable file formats / Emulations
+#
+CONFIG_BINFMT_ELF=y
+CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+CONFIG_HAVE_AOUT=y
+# CONFIG_BINFMT_AOUT is not set
+CONFIG_BINFMT_MISC=y
+CONFIG_HAVE_ATOMIC_IOMAP=y
+CONFIG_NET=y
+
+#
+# Networking options
+#
+CONFIG_PACKET=y
+CONFIG_UNIX=y
+CONFIG_XFRM=y
+# CONFIG_XFRM_USER is not set
+CONFIG_XFRM_SUB_POLICY=y
+# CONFIG_XFRM_MIGRATE is not set
+# CONFIG_XFRM_STATISTICS is not set
+CONFIG_NET_KEY=y
+# CONFIG_NET_KEY_MIGRATE is not set
+CONFIG_INET=y
+CONFIG_IP_MULTICAST=y
+# CONFIG_IP_ADVANCED_ROUTER is not set
+CONFIG_IP_FIB_HASH=y
+# CONFIG_IP_PNP is not set
+CONFIG_NET_IPIP=y
+CONFIG_NET_IPGRE=y
+# CONFIG_NET_IPGRE_BROADCAST is not set
+CONFIG_IP_MROUTE=y
+CONFIG_IP_PIMSM_V1=y
+CONFIG_IP_PIMSM_V2=y
+CONFIG_ARPD=y
+CONFIG_SYN_COOKIES=y
+CONFIG_INET_AH=y
+# CONFIG_INET_ESP is not set
+# CONFIG_INET_IPCOMP is not set
+# CONFIG_INET_XFRM_TUNNEL is not set
+CONFIG_INET_TUNNEL=y
+CONFIG_INET_XFRM_MODE_TRANSPORT=y
+CONFIG_INET_XFRM_MODE_TUNNEL=y
+# CONFIG_INET_XFRM_MODE_BEET is not set
+CONFIG_INET_LRO=y
+CONFIG_INET_DIAG=y
+CONFIG_INET_TCP_DIAG=y
+CONFIG_TCP_CONG_ADVANCED=y
+CONFIG_TCP_CONG_BIC=y
+# CONFIG_TCP_CONG_CUBIC is not set
+# CONFIG_TCP_CONG_WESTWOOD is not set
+CONFIG_TCP_CONG_HTCP=y
+CONFIG_TCP_CONG_HSTCP=y
+CONFIG_TCP_CONG_HYBLA=y
+CONFIG_TCP_CONG_VEGAS=y
+# CONFIG_TCP_CONG_SCALABLE is not set
+CONFIG_TCP_CONG_LP=y
+# CONFIG_TCP_CONG_VENO is not set
+CONFIG_TCP_CONG_YEAH=y
+# CONFIG_TCP_CONG_ILLINOIS is not set
+CONFIG_DEFAULT_BIC=y
+# CONFIG_DEFAULT_CUBIC is not set
+# CONFIG_DEFAULT_HTCP is not set
+# CONFIG_DEFAULT_HYBLA is not set
+# CONFIG_DEFAULT_VEGAS is not set
+# CONFIG_DEFAULT_VENO is not set
+# CONFIG_DEFAULT_WESTWOOD is not set
+# CONFIG_DEFAULT_RENO is not set
+CONFIG_DEFAULT_TCP_CONG="bic"
+CONFIG_TCP_MD5SIG=y
+# CONFIG_IPV6 is not set
+CONFIG_NETLABEL=y
+# CONFIG_NETWORK_SECMARK is not set
+CONFIG_NETFILTER=y
+CONFIG_NETFILTER_DEBUG=y
+CONFIG_NETFILTER_ADVANCED=y
+# CONFIG_BRIDGE_NETFILTER is not set
+
+#
+# Core Netfilter Configuration
+#
+CONFIG_NETFILTER_NETLINK=y
+# CONFIG_NETFILTER_NETLINK_QUEUE is not set
+CONFIG_NETFILTER_NETLINK_LOG=y
+# CONFIG_NF_CONNTRACK is not set
+CONFIG_NETFILTER_XTABLES=y
+
+#
+# Xtables combined modules
+#
+CONFIG_NETFILTER_XT_MARK=y
+
+#
+# Xtables targets
+#
+CONFIG_NETFILTER_XT_TARGET_CLASSIFY=y
+CONFIG_NETFILTER_XT_TARGET_HL=y
+# CONFIG_NETFILTER_XT_TARGET_LED is not set
+CONFIG_NETFILTER_XT_TARGET_MARK=y
+CONFIG_NETFILTER_XT_TARGET_NFLOG=y
+# CONFIG_NETFILTER_XT_TARGET_NFQUEUE is not set
+CONFIG_NETFILTER_XT_TARGET_RATEEST=y
+# CONFIG_NETFILTER_XT_TARGET_TEE is not set
+# CONFIG_NETFILTER_XT_TARGET_TCPMSS is not set
+
+#
+# Xtables matches
+#
+# CONFIG_NETFILTER_XT_MATCH_COMMENT is not set
+CONFIG_NETFILTER_XT_MATCH_DCCP=y
+# CONFIG_NETFILTER_XT_MATCH_DSCP is not set
+# CONFIG_NETFILTER_XT_MATCH_ESP is not set
+# CONFIG_NETFILTER_XT_MATCH_HASHLIMIT is not set
+CONFIG_NETFILTER_XT_MATCH_HL=y
+# CONFIG_NETFILTER_XT_MATCH_IPRANGE is not set
+# CONFIG_NETFILTER_XT_MATCH_LENGTH is not set
+CONFIG_NETFILTER_XT_MATCH_LIMIT=y
+CONFIG_NETFILTER_XT_MATCH_MAC=y
+CONFIG_NETFILTER_XT_MATCH_MARK=y
+CONFIG_NETFILTER_XT_MATCH_MULTIPORT=y
+CONFIG_NETFILTER_XT_MATCH_OSF=y
+CONFIG_NETFILTER_XT_MATCH_OWNER=y
+# CONFIG_NETFILTER_XT_MATCH_POLICY is not set
+# CONFIG_NETFILTER_XT_MATCH_PKTTYPE is not set
+CONFIG_NETFILTER_XT_MATCH_QUOTA=y
+CONFIG_NETFILTER_XT_MATCH_RATEEST=y
+CONFIG_NETFILTER_XT_MATCH_REALM=y
+# CONFIG_NETFILTER_XT_MATCH_RECENT is not set
+CONFIG_NETFILTER_XT_MATCH_SCTP=y
+CONFIG_NETFILTER_XT_MATCH_STATISTIC=y
+CONFIG_NETFILTER_XT_MATCH_STRING=y
+CONFIG_NETFILTER_XT_MATCH_TCPMSS=y
+CONFIG_NETFILTER_XT_MATCH_TIME=y
+CONFIG_NETFILTER_XT_MATCH_U32=y
+# CONFIG_IP_VS is not set
+
+#
+# IP: Netfilter Configuration
+#
+# CONFIG_NF_DEFRAG_IPV4 is not set
+CONFIG_IP_NF_QUEUE=y
+CONFIG_IP_NF_IPTABLES=y
+CONFIG_IP_NF_MATCH_ADDRTYPE=y
+CONFIG_IP_NF_MATCH_AH=y
+# CONFIG_IP_NF_MATCH_ECN is not set
+CONFIG_IP_NF_MATCH_TTL=y
+CONFIG_IP_NF_FILTER=y
+# CONFIG_IP_NF_TARGET_REJECT is not set
+# CONFIG_IP_NF_TARGET_LOG is not set
+CONFIG_IP_NF_TARGET_ULOG=y
+# CONFIG_IP_NF_MANGLE is not set
+CONFIG_IP_NF_TARGET_TTL=y
+# CONFIG_IP_NF_RAW is not set
+CONFIG_IP_NF_SECURITY=y
+CONFIG_IP_NF_ARPTABLES=y
+# CONFIG_IP_NF_ARPFILTER is not set
+# CONFIG_IP_NF_ARP_MANGLE is not set
+# CONFIG_IP_DCCP is not set
+CONFIG_IP_SCTP=y
+CONFIG_SCTP_DBG_MSG=y
+# CONFIG_SCTP_DBG_OBJCNT is not set
+# CONFIG_SCTP_HMAC_NONE is not set
+CONFIG_SCTP_HMAC_SHA1=y
+# CONFIG_SCTP_HMAC_MD5 is not set
+# CONFIG_RDS is not set
+CONFIG_TIPC=y
+CONFIG_TIPC_ADVANCED=y
+CONFIG_TIPC_ZONES=3
+CONFIG_TIPC_CLUSTERS=1
+CONFIG_TIPC_NODES=255
+CONFIG_TIPC_PORTS=8191
+CONFIG_TIPC_LOG=0
+CONFIG_TIPC_DEBUG=y
+CONFIG_ATM=y
+CONFIG_ATM_CLIP=y
+CONFIG_ATM_CLIP_NO_ICMP=y
+# CONFIG_ATM_LANE is not set
+CONFIG_ATM_BR2684=y
+# CONFIG_ATM_BR2684_IPFILTER is not set
+CONFIG_L2TP=y
+# CONFIG_L2TP_DEBUGFS is not set
+# CONFIG_L2TP_V3 is not set
+CONFIG_STP=y
+CONFIG_BRIDGE=y
+CONFIG_BRIDGE_IGMP_SNOOPING=y
+CONFIG_NET_DSA=y
+CONFIG_NET_DSA_TAG_DSA=y
+# CONFIG_NET_DSA_TAG_EDSA is not set
+# CONFIG_NET_DSA_TAG_TRAILER is not set
+CONFIG_NET_DSA_MV88E6XXX=y
+# CONFIG_NET_DSA_MV88E6060 is not set
+CONFIG_NET_DSA_MV88E6XXX_NEED_PPU=y
+CONFIG_NET_DSA_MV88E6131=y
+# CONFIG_NET_DSA_MV88E6123_61_65 is not set
+# CONFIG_VLAN_8021Q is not set
+# CONFIG_DECNET is not set
+CONFIG_LLC=y
+CONFIG_LLC2=y
+CONFIG_IPX=y
+# CONFIG_IPX_INTERN is not set
+CONFIG_ATALK=y
+# CONFIG_DEV_APPLETALK is not set
+# CONFIG_X25 is not set
+CONFIG_LAPB=y
+# CONFIG_ECONET is not set
+CONFIG_WAN_ROUTER=y
+CONFIG_PHONET=y
+CONFIG_IEEE802154=y
+CONFIG_NET_SCHED=y
+
+#
+# Queueing/Scheduling
+#
+CONFIG_NET_SCH_CBQ=y
+# CONFIG_NET_SCH_HTB is not set
+# CONFIG_NET_SCH_HFSC is not set
+# CONFIG_NET_SCH_ATM is not set
+CONFIG_NET_SCH_PRIO=y
+# CONFIG_NET_SCH_MULTIQ is not set
+# CONFIG_NET_SCH_RED is not set
+# CONFIG_NET_SCH_SFQ is not set
+CONFIG_NET_SCH_TEQL=y
+CONFIG_NET_SCH_TBF=y
+CONFIG_NET_SCH_GRED=y
+# CONFIG_NET_SCH_DSMARK is not set
+# CONFIG_NET_SCH_NETEM is not set
+CONFIG_NET_SCH_DRR=y
+# CONFIG_NET_SCH_INGRESS is not set
+
+#
+# Classification
+#
+CONFIG_NET_CLS=y
+CONFIG_NET_CLS_BASIC=y
+CONFIG_NET_CLS_TCINDEX=y
+CONFIG_NET_CLS_ROUTE4=y
+CONFIG_NET_CLS_ROUTE=y
+CONFIG_NET_CLS_FW=y
+# CONFIG_NET_CLS_U32 is not set
+# CONFIG_NET_CLS_RSVP is not set
+# CONFIG_NET_CLS_RSVP6 is not set
+# CONFIG_NET_CLS_FLOW is not set
+# CONFIG_NET_EMATCH is not set
+CONFIG_NET_CLS_ACT=y
+CONFIG_NET_ACT_POLICE=y
+# CONFIG_NET_ACT_GACT is not set
+CONFIG_NET_ACT_MIRRED=y
+CONFIG_NET_ACT_IPT=y
+CONFIG_NET_ACT_NAT=y
+# CONFIG_NET_ACT_PEDIT is not set
+CONFIG_NET_ACT_SIMP=y
+CONFIG_NET_ACT_SKBEDIT=y
+CONFIG_NET_CLS_IND=y
+CONFIG_NET_SCH_FIFO=y
+# CONFIG_DCB is not set
+
+#
+# Network testing
+#
+CONFIG_NET_PKTGEN=y
+CONFIG_NET_DROP_MONITOR=y
+CONFIG_HAMRADIO=y
+
+#
+# Packet Radio protocols
+#
+CONFIG_AX25=y
+# CONFIG_AX25_DAMA_SLAVE is not set
+# CONFIG_NETROM is not set
+# CONFIG_ROSE is not set
+
+#
+# AX.25 network device drivers
+#
+CONFIG_MKISS=y
+CONFIG_6PACK=y
+CONFIG_BPQETHER=y
+CONFIG_BAYCOM_SER_FDX=y
+# CONFIG_BAYCOM_SER_HDX is not set
+CONFIG_YAM=y
+CONFIG_CAN=y
+CONFIG_CAN_RAW=y
+# CONFIG_CAN_BCM is not set
+
+#
+# CAN Device Drivers
+#
+CONFIG_CAN_VCAN=y
+CONFIG_CAN_DEV=y
+CONFIG_CAN_CALC_BITTIMING=y
+CONFIG_CAN_MCP251X=y
+CONFIG_CAN_SJA1000=y
+# CONFIG_CAN_SJA1000_PLATFORM is not set
+CONFIG_CAN_EMS_PCI=y
+CONFIG_CAN_KVASER_PCI=y
+# CONFIG_CAN_PLX_PCI is not set
+
+#
+# CAN USB interfaces
+#
+CONFIG_CAN_EMS_USB=y
+CONFIG_CAN_DEBUG_DEVICES=y
+# CONFIG_IRDA is not set
+CONFIG_BT=y
+CONFIG_BT_L2CAP=y
+# CONFIG_BT_L2CAP_EXT_FEATURES is not set
+# CONFIG_BT_SCO is not set
+CONFIG_BT_RFCOMM=y
+CONFIG_BT_RFCOMM_TTY=y
+CONFIG_BT_BNEP=y
+CONFIG_BT_BNEP_MC_FILTER=y
+CONFIG_BT_BNEP_PROTO_FILTER=y
+# CONFIG_BT_HIDP is not set
+
+#
+# Bluetooth device drivers
+#
+# CONFIG_BT_HCIBTUSB is not set
+CONFIG_BT_HCIBTSDIO=y
+CONFIG_BT_HCIUART=y
+CONFIG_BT_HCIUART_H4=y
+CONFIG_BT_HCIUART_BCSP=y
+# CONFIG_BT_HCIUART_LL is not set
+# CONFIG_BT_HCIBCM203X is not set
+CONFIG_BT_HCIBPA10X=y
+# CONFIG_BT_HCIBFUSB is not set
+# CONFIG_BT_HCIDTL1 is not set
+# CONFIG_BT_HCIBT3C is not set
+# CONFIG_BT_HCIBLUECARD is not set
+CONFIG_BT_HCIBTUART=y
+# CONFIG_BT_HCIVHCI is not set
+# CONFIG_BT_MRVL is not set
+CONFIG_AF_RXRPC=y
+# CONFIG_AF_RXRPC_DEBUG is not set
+# CONFIG_RXKAD is not set
+CONFIG_WIRELESS=y
+CONFIG_WIRELESS_EXT=y
+CONFIG_WEXT_CORE=y
+CONFIG_WEXT_PROC=y
+CONFIG_WEXT_SPY=y
+CONFIG_WEXT_PRIV=y
+# CONFIG_CFG80211 is not set
+# CONFIG_WIRELESS_EXT_SYSFS is not set
+CONFIG_LIB80211=y
+CONFIG_LIB80211_CRYPT_WEP=y
+CONFIG_LIB80211_CRYPT_CCMP=y
+CONFIG_LIB80211_CRYPT_TKIP=y
+# CONFIG_LIB80211_DEBUG is not set
+
+#
+# CFG80211 needs to be enabled for MAC80211
+#
+
+#
+# Some wireless drivers require a rate control algorithm
+#
+# CONFIG_WIMAX is not set
+# CONFIG_RFKILL is not set
+# CONFIG_NET_9P is not set
+CONFIG_CAIF=y
+CONFIG_CAIF_DEBUG=y
+# CONFIG_CAIF_NETDEV is not set
+
+#
+# Device Drivers
+#
+
+#
+# Generic Driver Options
+#
+CONFIG_UEVENT_HELPER_PATH=""
+# CONFIG_DEVTMPFS is not set
+CONFIG_STANDALONE=y
+CONFIG_PREVENT_FIRMWARE_BUILD=y
+CONFIG_FW_LOADER=y
+# CONFIG_FIRMWARE_IN_KERNEL is not set
+CONFIG_EXTRA_FIRMWARE=""
+# CONFIG_SYS_HYPERVISOR is not set
+CONFIG_CONNECTOR=y
+CONFIG_PROC_EVENTS=y
+# CONFIG_MTD is not set
+# CONFIG_PARPORT is not set
+CONFIG_BLK_DEV=y
+# CONFIG_BLK_DEV_FD is not set
+CONFIG_BLK_CPQ_DA=y
+CONFIG_BLK_CPQ_CISS_DA=y
+# CONFIG_CISS_SCSI_TAPE is not set
+CONFIG_BLK_DEV_DAC960=y
+CONFIG_BLK_DEV_UMEM=y
+# CONFIG_BLK_DEV_COW_COMMON is not set
+# CONFIG_BLK_DEV_LOOP is not set
+# CONFIG_BLK_DEV_DRBD is not set
+CONFIG_BLK_DEV_NBD=y
+CONFIG_BLK_DEV_SX8=y
+# CONFIG_BLK_DEV_UB is not set
+CONFIG_BLK_DEV_RAM=y
+CONFIG_BLK_DEV_RAM_COUNT=16
+CONFIG_BLK_DEV_RAM_SIZE=4096
+CONFIG_BLK_DEV_XIP=y
+# CONFIG_CDROM_PKTCDVD is not set
+# CONFIG_ATA_OVER_ETH is not set
+# CONFIG_BLK_DEV_HD is not set
+# CONFIG_MISC_DEVICES is not set
+CONFIG_HAVE_IDE=y
+# CONFIG_IDE is not set
+
+#
+# SCSI device support
+#
+CONFIG_SCSI_MOD=y
+CONFIG_RAID_ATTRS=y
+CONFIG_SCSI=y
+CONFIG_SCSI_DMA=y
+CONFIG_SCSI_TGT=y
+CONFIG_SCSI_NETLINK=y
+CONFIG_SCSI_PROC_FS=y
+
+#
+# SCSI support type (disk, tape, CD-ROM)
+#
+CONFIG_BLK_DEV_SD=y
+# CONFIG_CHR_DEV_ST is not set
+# CONFIG_CHR_DEV_OSST is not set
+# CONFIG_BLK_DEV_SR is not set
+CONFIG_CHR_DEV_SG=y
+# CONFIG_CHR_DEV_SCH is not set
+# CONFIG_SCSI_MULTI_LUN is not set
+CONFIG_SCSI_CONSTANTS=y
+# CONFIG_SCSI_LOGGING is not set
+CONFIG_SCSI_SCAN_ASYNC=y
+
+#
+# SCSI Transports
+#
+CONFIG_SCSI_SPI_ATTRS=y
+CONFIG_SCSI_FC_ATTRS=y
+# CONFIG_SCSI_FC_TGT_ATTRS is not set
+CONFIG_SCSI_ISCSI_ATTRS=y
+CONFIG_SCSI_SAS_ATTRS=y
+CONFIG_SCSI_SAS_LIBSAS=y
+# CONFIG_SCSI_SAS_ATA is not set
+CONFIG_SCSI_SAS_HOST_SMP=y
+# CONFIG_SCSI_SAS_LIBSAS_DEBUG is not set
+CONFIG_SCSI_SRP_ATTRS=y
+CONFIG_SCSI_SRP_TGT_ATTRS=y
+CONFIG_SCSI_LOWLEVEL=y
+# CONFIG_ISCSI_TCP is not set
+# CONFIG_SCSI_CXGB3_ISCSI is not set
+CONFIG_SCSI_BNX2_ISCSI=y
+CONFIG_BE2ISCSI=y
+CONFIG_BLK_DEV_3W_XXXX_RAID=y
+CONFIG_SCSI_HPSA=y
+CONFIG_SCSI_3W_9XXX=y
+# CONFIG_SCSI_3W_SAS is not set
+CONFIG_SCSI_ACARD=y
+# CONFIG_SCSI_AACRAID is not set
+CONFIG_SCSI_AIC7XXX=y
+CONFIG_AIC7XXX_CMDS_PER_DEVICE=32
+CONFIG_AIC7XXX_RESET_DELAY_MS=5000
+CONFIG_AIC7XXX_DEBUG_ENABLE=y
+CONFIG_AIC7XXX_DEBUG_MASK=0
+CONFIG_AIC7XXX_REG_PRETTY_PRINT=y
+# CONFIG_SCSI_AIC7XXX_OLD is not set
+CONFIG_SCSI_AIC79XX=y
+CONFIG_AIC79XX_CMDS_PER_DEVICE=32
+CONFIG_AIC79XX_RESET_DELAY_MS=5000
+# CONFIG_AIC79XX_DEBUG_ENABLE is not set
+CONFIG_AIC79XX_DEBUG_MASK=0
+# CONFIG_AIC79XX_REG_PRETTY_PRINT is not set
+CONFIG_SCSI_AIC94XX=y
+CONFIG_AIC94XX_DEBUG=y
+CONFIG_SCSI_MVSAS=y
+# CONFIG_SCSI_MVSAS_DEBUG is not set
+CONFIG_SCSI_DPT_I2O=y
+CONFIG_SCSI_ADVANSYS=y
+# CONFIG_SCSI_ARCMSR is not set
+# CONFIG_MEGARAID_NEWGEN is not set
+# CONFIG_MEGARAID_LEGACY is not set
+# CONFIG_MEGARAID_SAS is not set
+# CONFIG_SCSI_MPT2SAS is not set
+CONFIG_SCSI_HPTIOP=y
+# CONFIG_SCSI_BUSLOGIC is not set
+CONFIG_VMWARE_PVSCSI=y
+CONFIG_LIBFC=y
+CONFIG_LIBFCOE=y
+# CONFIG_FCOE is not set
+CONFIG_FCOE_FNIC=y
+# CONFIG_SCSI_DMX3191D is not set
+# CONFIG_SCSI_EATA is not set
+# CONFIG_SCSI_FUTURE_DOMAIN is not set
+CONFIG_SCSI_GDTH=y
+CONFIG_SCSI_IPS=y
+CONFIG_SCSI_INITIO=y
+# CONFIG_SCSI_INIA100 is not set
+# CONFIG_SCSI_STEX is not set
+# CONFIG_SCSI_SYM53C8XX_2 is not set
+# CONFIG_SCSI_IPR is not set
+CONFIG_SCSI_QLOGIC_1280=y
+# CONFIG_SCSI_QLA_FC is not set
+CONFIG_SCSI_QLA_ISCSI=y
+CONFIG_SCSI_LPFC=y
+# CONFIG_SCSI_LPFC_DEBUG_FS is not set
+# CONFIG_SCSI_DC395x is not set
+# CONFIG_SCSI_DC390T is not set
+CONFIG_SCSI_NSP32=y
+# CONFIG_SCSI_DEBUG is not set
+CONFIG_SCSI_PMCRAID=y
+CONFIG_SCSI_PM8001=y
+# CONFIG_SCSI_SRP is not set
+# CONFIG_SCSI_BFA_FC is not set
+# CONFIG_SCSI_LOWLEVEL_PCMCIA is not set
+# CONFIG_SCSI_DH is not set
+# CONFIG_SCSI_OSD_INITIATOR is not set
+CONFIG_ATA=y
+# CONFIG_ATA_NONSTANDARD is not set
+CONFIG_ATA_VERBOSE_ERROR=y
+CONFIG_SATA_PMP=y
+
+#
+# Controllers with non-SFF native interface
+#
+CONFIG_SATA_AHCI=y
+# CONFIG_SATA_AHCI_PLATFORM is not set
+CONFIG_SATA_INIC162X=y
+# CONFIG_SATA_SIL24 is not set
+CONFIG_ATA_SFF=y
+
+#
+# SFF controllers with custom DMA interface
+#
+CONFIG_PDC_ADMA=y
+# CONFIG_SATA_QSTOR is not set
+# CONFIG_SATA_SX4 is not set
+CONFIG_ATA_BMDMA=y
+
+#
+# SATA SFF controllers with BMDMA
+#
+CONFIG_ATA_PIIX=y
+CONFIG_SATA_MV=y
+CONFIG_SATA_NV=y
+CONFIG_SATA_PROMISE=y
+# CONFIG_SATA_SIL is not set
+# CONFIG_SATA_SIS is not set
+# CONFIG_SATA_SVW is not set
+CONFIG_SATA_ULI=y
+# CONFIG_SATA_VIA is not set
+# CONFIG_SATA_VITESSE is not set
+
+#
+# PATA SFF controllers with BMDMA
+#
+CONFIG_PATA_ALI=y
+CONFIG_PATA_AMD=y
+# CONFIG_PATA_ARTOP is not set
+CONFIG_PATA_ATIIXP=y
+# CONFIG_PATA_ATP867X is not set
+# CONFIG_PATA_CMD64X is not set
+CONFIG_PATA_CS5520=y
+# CONFIG_PATA_CS5530 is not set
+# CONFIG_PATA_CS5535 is not set
+CONFIG_PATA_CS5536=y
+CONFIG_PATA_CYPRESS=y
+# CONFIG_PATA_EFAR is not set
+CONFIG_PATA_HPT366=y
+CONFIG_PATA_HPT37X=y
+CONFIG_PATA_HPT3X2N=y
+# CONFIG_PATA_HPT3X3 is not set
+CONFIG_PATA_IT8213=y
+# CONFIG_PATA_IT821X is not set
+# CONFIG_PATA_JMICRON is not set
+# CONFIG_PATA_MARVELL is not set
+CONFIG_PATA_NETCELL=y
+# CONFIG_PATA_NINJA32 is not set
+CONFIG_PATA_NS87415=y
+CONFIG_PATA_OLDPIIX=y
+# CONFIG_PATA_OPTIDMA is not set
+# CONFIG_PATA_PDC2027X is not set
+# CONFIG_PATA_PDC_OLD is not set
+CONFIG_PATA_RADISYS=y
+CONFIG_PATA_RDC=y
+CONFIG_PATA_SC1200=y
+# CONFIG_PATA_SCH is not set
+CONFIG_PATA_SERVERWORKS=y
+# CONFIG_PATA_SIL680 is not set
+# CONFIG_PATA_SIS is not set
+# CONFIG_PATA_TOSHIBA is not set
+# CONFIG_PATA_TRIFLEX is not set
+CONFIG_PATA_VIA=y
+CONFIG_PATA_WINBOND=y
+
+#
+# PIO-only SFF controllers
+#
+# CONFIG_PATA_CMD640_PCI is not set
+# CONFIG_PATA_MPIIX is not set
+CONFIG_PATA_NS87410=y
+# CONFIG_PATA_OPTI is not set
+# CONFIG_PATA_PCMCIA is not set
+CONFIG_PATA_PLATFORM=y
+CONFIG_PATA_RZ1000=y
+
+#
+# Generic fallback / legacy drivers
+#
+CONFIG_ATA_GENERIC=y
+# CONFIG_PATA_LEGACY is not set
+CONFIG_MD=y
+CONFIG_BLK_DEV_MD=y
+CONFIG_MD_AUTODETECT=y
+# CONFIG_MD_LINEAR is not set
+CONFIG_MD_RAID0=y
+CONFIG_MD_RAID1=y
+CONFIG_MD_RAID10=y
+# CONFIG_MD_RAID456 is not set
+# CONFIG_MD_MULTIPATH is not set
+# CONFIG_MD_FAULTY is not set
+# CONFIG_BLK_DEV_DM is not set
+CONFIG_FUSION=y
+# CONFIG_FUSION_SPI is not set
+CONFIG_FUSION_FC=y
+CONFIG_FUSION_SAS=y
+CONFIG_FUSION_MAX_SGE=128
+CONFIG_FUSION_CTL=y
+# CONFIG_FUSION_LAN is not set
+CONFIG_FUSION_LOGGING=y
+
+#
+# IEEE 1394 (FireWire) support
+#
+
+#
+# You can enable one or both FireWire driver stacks.
+#
+
+#
+# The newer stack is recommended.
+#
+# CONFIG_FIREWIRE is not set
+CONFIG_IEEE1394=y
+CONFIG_IEEE1394_OHCI1394=y
+CONFIG_IEEE1394_PCILYNX=y
+CONFIG_IEEE1394_SBP2=y
+# CONFIG_IEEE1394_SBP2_PHYS_DMA is not set
+# CONFIG_IEEE1394_ETH1394_ROM_ENTRY is not set
+# CONFIG_IEEE1394_ETH1394 is not set
+# CONFIG_IEEE1394_RAWIO is not set
+CONFIG_IEEE1394_VIDEO1394=y
+CONFIG_IEEE1394_DV1394=y
+CONFIG_IEEE1394_VERBOSEDEBUG=y
+CONFIG_I2O=y
+# CONFIG_I2O_LCT_NOTIFY_ON_CHANGES is not set
+# CONFIG_I2O_EXT_ADAPTEC is not set
+# CONFIG_I2O_CONFIG is not set
+# CONFIG_I2O_BUS is not set
+# CONFIG_I2O_BLOCK is not set
+CONFIG_I2O_SCSI=y
+# CONFIG_I2O_PROC is not set
+CONFIG_MACINTOSH_DRIVERS=y
+CONFIG_MAC_EMUMOUSEBTN=y
+CONFIG_NETDEVICES=y
+# CONFIG_IFB is not set
+CONFIG_DUMMY=y
+# CONFIG_BONDING is not set
+# CONFIG_MACVLAN is not set
+# CONFIG_EQUALIZER is not set
+CONFIG_TUN=y
+CONFIG_VETH=y
+CONFIG_ARCNET=y
+CONFIG_ARCNET_1201=y
+CONFIG_ARCNET_1051=y
+# CONFIG_ARCNET_RAW is not set
+# CONFIG_ARCNET_CAP is not set
+CONFIG_ARCNET_COM90xx=y
+CONFIG_ARCNET_COM90xxIO=y
+# CONFIG_ARCNET_RIM_I is not set
+CONFIG_ARCNET_COM20020=y
+# CONFIG_ARCNET_COM20020_PCI is not set
+CONFIG_PHYLIB=y
+
+#
+# MII PHY device drivers
+#
+# CONFIG_MARVELL_PHY is not set
+CONFIG_DAVICOM_PHY=y
+CONFIG_QSEMI_PHY=y
+# CONFIG_LXT_PHY is not set
+# CONFIG_CICADA_PHY is not set
+CONFIG_VITESSE_PHY=y
+CONFIG_SMSC_PHY=y
+# CONFIG_BROADCOM_PHY is not set
+# CONFIG_ICPLUS_PHY is not set
+CONFIG_REALTEK_PHY=y
+# CONFIG_NATIONAL_PHY is not set
+# CONFIG_STE10XP is not set
+CONFIG_LSI_ET1011C_PHY=y
+# CONFIG_MICREL_PHY is not set
+# CONFIG_FIXED_PHY is not set
+CONFIG_MDIO_BITBANG=y
+CONFIG_MDIO_GPIO=y
+CONFIG_NET_ETHERNET=y
+CONFIG_MII=y
+CONFIG_HAPPYMEAL=y
+# CONFIG_SUNGEM is not set
+# CONFIG_CASSINI is not set
+# CONFIG_NET_VENDOR_3COM is not set
+CONFIG_ENC28J60=y
+CONFIG_ENC28J60_WRITEVERIFY=y
+CONFIG_ETHOC=y
+# CONFIG_DNET is not set
+# CONFIG_NET_TULIP is not set
+# CONFIG_HP100 is not set
+# CONFIG_IBM_NEW_EMAC_ZMII is not set
+# CONFIG_IBM_NEW_EMAC_RGMII is not set
+# CONFIG_IBM_NEW_EMAC_TAH is not set
+# CONFIG_IBM_NEW_EMAC_EMAC4 is not set
+# CONFIG_IBM_NEW_EMAC_NO_FLOW_CTRL is not set
+# CONFIG_IBM_NEW_EMAC_MAL_CLR_ICINTSTAT is not set
+# CONFIG_IBM_NEW_EMAC_MAL_COMMON_ERR is not set
+CONFIG_NET_PCI=y
+# CONFIG_PCNET32 is not set
+# CONFIG_AMD8111_ETH is not set
+# CONFIG_ADAPTEC_STARFIRE is not set
+CONFIG_KSZ884X_PCI=y
+# CONFIG_B44 is not set
+CONFIG_FORCEDETH=y
+CONFIG_E100=y
+CONFIG_FEALNX=y
+CONFIG_NATSEMI=y
+# CONFIG_NE2K_PCI is not set
+# CONFIG_8139CP is not set
+CONFIG_8139TOO=y
+# CONFIG_8139TOO_PIO is not set
+# CONFIG_8139TOO_TUNE_TWISTER is not set
+# CONFIG_8139TOO_8129 is not set
+# CONFIG_8139_OLD_RX_RESET is not set
+CONFIG_R6040=y
+CONFIG_SIS900=y
+# CONFIG_EPIC100 is not set
+CONFIG_SMSC9420=y
+CONFIG_SUNDANCE=y
+CONFIG_SUNDANCE_MMIO=y
+CONFIG_TLAN=y
+# CONFIG_KS8842 is not set
+# CONFIG_KS8851 is not set
+# CONFIG_KS8851_MLL is not set
+CONFIG_VIA_RHINE=y
+CONFIG_VIA_RHINE_MMIO=y
+# CONFIG_SC92031 is not set
+# CONFIG_ATL2 is not set
+CONFIG_NETDEV_1000=y
+CONFIG_ACENIC=y
+# CONFIG_ACENIC_OMIT_TIGON_I is not set
+CONFIG_DL2K=y
+CONFIG_E1000=y
+CONFIG_E1000E=y
+CONFIG_IP1000=y
+CONFIG_IGB=y
+# CONFIG_IGB_DCA is not set
+CONFIG_IGBVF=y
+# CONFIG_NS83820 is not set
+CONFIG_HAMACHI=y
+CONFIG_YELLOWFIN=y
+CONFIG_R8169=y
+# CONFIG_SIS190 is not set
+CONFIG_SKGE=y
+# CONFIG_SKGE_DEBUG is not set
+# CONFIG_SKY2 is not set
+CONFIG_VIA_VELOCITY=y
+CONFIG_TIGON3=y
+CONFIG_BNX2=y
+CONFIG_CNIC=y
+CONFIG_QLA3XXX=y
+# CONFIG_ATL1 is not set
+CONFIG_ATL1E=y
+CONFIG_ATL1C=y
+# CONFIG_JME is not set
+CONFIG_NETDEV_10000=y
+CONFIG_MDIO=y
+CONFIG_CHELSIO_T1=y
+CONFIG_CHELSIO_T1_1G=y
+CONFIG_CHELSIO_T3_DEPENDS=y
+CONFIG_CHELSIO_T3=y
+CONFIG_CHELSIO_T4_DEPENDS=y
+CONFIG_CHELSIO_T4=y
+CONFIG_ENIC=y
+# CONFIG_IXGBE is not set
+# CONFIG_IXGB is not set
+CONFIG_S2IO=y
+# CONFIG_VXGE is not set
+CONFIG_MYRI10GE=y
+# CONFIG_MYRI10GE_DCA is not set
+# CONFIG_NETXEN_NIC is not set
+# CONFIG_NIU is not set
+CONFIG_MLX4_EN=y
+CONFIG_MLX4_CORE=y
+CONFIG_MLX4_DEBUG=y
+# CONFIG_TEHUTI is not set
+# CONFIG_BNX2X is not set
+# CONFIG_QLCNIC is not set
+# CONFIG_QLGE is not set
+# CONFIG_SFC is not set
+# CONFIG_BE2NET is not set
+CONFIG_TR=y
+# CONFIG_IBMOL is not set
+# CONFIG_IBMLS is not set
+CONFIG_3C359=y
+CONFIG_TMS380TR=y
+# CONFIG_TMSPCI is not set
+CONFIG_ABYSS=y
+CONFIG_WLAN=y
+CONFIG_PCMCIA_RAYCS=y
+CONFIG_AIRO=y
+CONFIG_ATMEL=y
+# CONFIG_PCI_ATMEL is not set
+# CONFIG_PCMCIA_ATMEL is not set
+# CONFIG_AIRO_CS is not set
+CONFIG_PCMCIA_WL3501=y
+CONFIG_PRISM54=y
+CONFIG_USB_ZD1201=y
+CONFIG_HOSTAP=y
+CONFIG_HOSTAP_FIRMWARE=y
+# CONFIG_HOSTAP_FIRMWARE_NVRAM is not set
+CONFIG_HOSTAP_PLX=y
+# CONFIG_HOSTAP_PCI is not set
+CONFIG_HOSTAP_CS=y
+
+#
+# Enable WiMAX (Networking options) to see the WiMAX drivers
+#
+
+#
+# USB Network Adapters
+#
+# CONFIG_USB_CATC is not set
+# CONFIG_USB_KAWETH is not set
+CONFIG_USB_PEGASUS=y
+CONFIG_USB_RTL8150=y
+CONFIG_USB_USBNET=y
+CONFIG_USB_NET_AX8817X=y
+CONFIG_USB_NET_CDCETHER=y
+# CONFIG_USB_NET_CDC_EEM is not set
+# CONFIG_USB_NET_DM9601 is not set
+CONFIG_USB_NET_SMSC75XX=y
+# CONFIG_USB_NET_SMSC95XX is not set
+# CONFIG_USB_NET_GL620A is not set
+# CONFIG_USB_NET_NET1080 is not set
+CONFIG_USB_NET_PLUSB=y
+CONFIG_USB_NET_MCS7830=y
+CONFIG_USB_NET_RNDIS_HOST=y
+# CONFIG_USB_NET_CDC_SUBSET is not set
+CONFIG_USB_NET_ZAURUS=y
+CONFIG_USB_NET_INT51X1=y
+# CONFIG_USB_CDC_PHONET is not set
+# CONFIG_USB_IPHETH is not set
+CONFIG_USB_SIERRA_NET=y
+CONFIG_NET_PCMCIA=y
+# CONFIG_PCMCIA_3C589 is not set
+# CONFIG_PCMCIA_3C574 is not set
+CONFIG_PCMCIA_FMVJ18X=y
+# CONFIG_PCMCIA_PCNET is not set
+# CONFIG_PCMCIA_NMCLAN is not set
+CONFIG_PCMCIA_SMC91C92=y
+CONFIG_PCMCIA_XIRC2PS=y
+# CONFIG_PCMCIA_AXNET is not set
+CONFIG_ARCNET_COM20020_CS=y
+CONFIG_PCMCIA_IBMTR=y
+# CONFIG_WAN is not set
+CONFIG_ATM_DRIVERS=y
+# CONFIG_ATM_DUMMY is not set
+CONFIG_ATM_TCP=y
+# CONFIG_ATM_LANAI is not set
+# CONFIG_ATM_ENI is not set
+# CONFIG_ATM_FIRESTREAM is not set
+CONFIG_ATM_ZATM=y
+# CONFIG_ATM_ZATM_DEBUG is not set
+# CONFIG_ATM_NICSTAR is not set
+CONFIG_ATM_IDT77252=y
+CONFIG_ATM_IDT77252_DEBUG=y
+# CONFIG_ATM_IDT77252_RCV_ALL is not set
+CONFIG_ATM_IDT77252_USE_SUNI=y
+CONFIG_ATM_AMBASSADOR=y
+# CONFIG_ATM_AMBASSADOR_DEBUG is not set
+CONFIG_ATM_HORIZON=y
+CONFIG_ATM_HORIZON_DEBUG=y
+CONFIG_ATM_IA=y
+CONFIG_ATM_IA_DEBUG=y
+# CONFIG_ATM_FORE200E is not set
+# CONFIG_ATM_HE is not set
+CONFIG_ATM_SOLOS=y
+CONFIG_IEEE802154_DRIVERS=y
+CONFIG_IEEE802154_FAKEHARD=y
+
+#
+# CAIF transport drivers
+#
+CONFIG_CAIF_TTY=y
+CONFIG_FDDI=y
+CONFIG_DEFXX=y
+# CONFIG_DEFXX_MMIO is not set
+# CONFIG_SKFP is not set
+# CONFIG_HIPPI is not set
+CONFIG_PPP=y
+CONFIG_PPP_MULTILINK=y
+CONFIG_PPP_FILTER=y
+# CONFIG_PPP_ASYNC is not set
+CONFIG_PPP_SYNC_TTY=y
+CONFIG_PPP_DEFLATE=y
+# CONFIG_PPP_BSDCOMP is not set
+CONFIG_PPP_MPPE=y
+# CONFIG_PPPOE is not set
+CONFIG_PPPOATM=y
+# CONFIG_PPPOL2TP is not set
+CONFIG_SLIP=y
+# CONFIG_SLIP_COMPRESSED is not set
+CONFIG_SLHC=y
+CONFIG_SLIP_SMART=y
+CONFIG_SLIP_MODE_SLIP6=y
+CONFIG_NET_FC=y
+CONFIG_NETCONSOLE=y
+CONFIG_NETCONSOLE_DYNAMIC=y
+CONFIG_NETPOLL=y
+# CONFIG_NETPOLL_TRAP is not set
+CONFIG_NET_POLL_CONTROLLER=y
+CONFIG_VMXNET3=y
+CONFIG_ISDN=y
+CONFIG_ISDN_I4L=y
+# CONFIG_ISDN_PPP is not set
+# CONFIG_ISDN_AUDIO is not set
+
+#
+# ISDN feature submodules
+#
+# CONFIG_ISDN_DRV_LOOP is not set
+CONFIG_ISDN_DIVERSION=y
+
+#
+# ISDN4Linux hardware drivers
+#
+
+#
+# Passive cards
+#
+# CONFIG_ISDN_DRV_HISAX is not set
+
+#
+# Active cards
+#
+# CONFIG_ISDN_CAPI is not set
+# CONFIG_ISDN_DRV_GIGASET is not set
+# CONFIG_MISDN is not set
+# CONFIG_PHONE is not set
+
+#
+# Input device support
+#
+CONFIG_INPUT=y
+# CONFIG_INPUT_FF_MEMLESS is not set
+CONFIG_INPUT_POLLDEV=y
+# CONFIG_INPUT_SPARSEKMAP is not set
+
+#
+# Userland interfaces
+#
+CONFIG_INPUT_MOUSEDEV=y
+# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
+CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
+CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
+CONFIG_INPUT_JOYDEV=y
+# CONFIG_INPUT_EVDEV is not set
+# CONFIG_INPUT_EVBUG is not set
+
+#
+# Input Device Drivers
+#
+CONFIG_INPUT_KEYBOARD=y
+# CONFIG_KEYBOARD_ADP5520 is not set
+# CONFIG_KEYBOARD_ADP5588 is not set
+CONFIG_KEYBOARD_ATKBD=y
+# CONFIG_QT2160 is not set
+CONFIG_KEYBOARD_LKKBD=y
+# CONFIG_KEYBOARD_GPIO is not set
+CONFIG_KEYBOARD_TCA6416=y
+CONFIG_KEYBOARD_MATRIX=y
+CONFIG_KEYBOARD_LM8323=y
+# CONFIG_KEYBOARD_MAX7359 is not set
+CONFIG_KEYBOARD_NEWTON=y
+CONFIG_KEYBOARD_OPENCORES=y
+CONFIG_KEYBOARD_STOWAWAY=y
+CONFIG_KEYBOARD_SUNKBD=y
+# CONFIG_KEYBOARD_XTKBD is not set
+# CONFIG_INPUT_MOUSE is not set
+CONFIG_INPUT_JOYSTICK=y
+CONFIG_JOYSTICK_ANALOG=y
+CONFIG_JOYSTICK_A3D=y
+CONFIG_JOYSTICK_ADI=y
+# CONFIG_JOYSTICK_COBRA is not set
+# CONFIG_JOYSTICK_GF2K is not set
+CONFIG_JOYSTICK_GRIP=y
+# CONFIG_JOYSTICK_GRIP_MP is not set
+# CONFIG_JOYSTICK_GUILLEMOT is not set
+# CONFIG_JOYSTICK_INTERACT is not set
+CONFIG_JOYSTICK_SIDEWINDER=y
+CONFIG_JOYSTICK_TMDC=y
+# CONFIG_JOYSTICK_IFORCE is not set
+# CONFIG_JOYSTICK_WARRIOR is not set
+# CONFIG_JOYSTICK_MAGELLAN is not set
+CONFIG_JOYSTICK_SPACEORB=y
+CONFIG_JOYSTICK_SPACEBALL=y
+CONFIG_JOYSTICK_STINGER=y
+CONFIG_JOYSTICK_TWIDJOY=y
+# CONFIG_JOYSTICK_ZHENHUA is not set
+CONFIG_JOYSTICK_JOYDUMP=y
+CONFIG_JOYSTICK_XPAD=y
+# CONFIG_JOYSTICK_XPAD_FF is not set
+# CONFIG_JOYSTICK_XPAD_LEDS is not set
+CONFIG_INPUT_TABLET=y
+CONFIG_TABLET_USB_ACECAD=y
+CONFIG_TABLET_USB_AIPTEK=y
+CONFIG_TABLET_USB_GTCO=y
+CONFIG_TABLET_USB_KBTAB=y
+# CONFIG_TABLET_USB_WACOM is not set
+# CONFIG_INPUT_TOUCHSCREEN is not set
+# CONFIG_INPUT_MISC is not set
+
+#
+# Hardware I/O ports
+#
+CONFIG_SERIO=y
+CONFIG_SERIO_I8042=y
+CONFIG_SERIO_SERPORT=y
+# CONFIG_SERIO_CT82C710 is not set
+CONFIG_SERIO_PCIPS2=y
+CONFIG_SERIO_LIBPS2=y
+# CONFIG_SERIO_RAW is not set
+CONFIG_SERIO_ALTERA_PS2=y
+CONFIG_GAMEPORT=y
+CONFIG_GAMEPORT_NS558=y
+CONFIG_GAMEPORT_L4=y
+CONFIG_GAMEPORT_EMU10K1=y
+CONFIG_GAMEPORT_FM801=y
+
+#
+# Character devices
+#
+CONFIG_VT=y
+CONFIG_CONSOLE_TRANSLATIONS=y
+CONFIG_VT_CONSOLE=y
+CONFIG_HW_CONSOLE=y
+CONFIG_VT_HW_CONSOLE_BINDING=y
+# CONFIG_DEVKMEM is not set
+CONFIG_SERIAL_NONSTANDARD=y
+CONFIG_COMPUTONE=y
+# CONFIG_ROCKETPORT is not set
+# CONFIG_CYCLADES is not set
+CONFIG_DIGIEPCA=y
+# CONFIG_MOXA_INTELLIO is not set
+CONFIG_MOXA_SMARTIO=y
+CONFIG_ISI=y
+CONFIG_SYNCLINK=y
+# CONFIG_SYNCLINKMP is not set
+CONFIG_SYNCLINK_GT=y
+CONFIG_N_HDLC=y
+# CONFIG_N_GSM is not set
+CONFIG_RISCOM8=y
+# CONFIG_SPECIALIX is not set
+# CONFIG_STALDRV is not set
+CONFIG_NOZOMI=y
+
+#
+# Serial drivers
+#
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_FIX_EARLYCON_MEM=y
+# CONFIG_SERIAL_8250_PCI is not set
+CONFIG_SERIAL_8250_CS=y
+CONFIG_SERIAL_8250_NR_UARTS=4
+CONFIG_SERIAL_8250_RUNTIME_UARTS=4
+CONFIG_SERIAL_8250_EXTENDED=y
+CONFIG_SERIAL_8250_MANY_PORTS=y
+CONFIG_SERIAL_8250_SHARE_IRQ=y
+CONFIG_SERIAL_8250_DETECT_IRQ=y
+CONFIG_SERIAL_8250_RSA=y
+
+#
+# Non-8250 serial port support
+#
+# CONFIG_SERIAL_MAX3100 is not set
+CONFIG_SERIAL_CORE=y
+CONFIG_SERIAL_CORE_CONSOLE=y
+# CONFIG_SERIAL_JSM is not set
+CONFIG_SERIAL_TIMBERDALE=y
+# CONFIG_SERIAL_ALTERA_JTAGUART is not set
+# CONFIG_SERIAL_ALTERA_UART is not set
+CONFIG_UNIX98_PTYS=y
+# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
+CONFIG_LEGACY_PTYS=y
+CONFIG_LEGACY_PTY_COUNT=256
+CONFIG_IPMI_HANDLER=y
+# CONFIG_IPMI_PANIC_EVENT is not set
+# CONFIG_IPMI_DEVICE_INTERFACE is not set
+CONFIG_IPMI_SI=y
+CONFIG_IPMI_WATCHDOG=y
+CONFIG_IPMI_POWEROFF=y
+CONFIG_HW_RANDOM=y
+CONFIG_HW_RANDOM_TIMERIOMEM=y
+CONFIG_HW_RANDOM_INTEL=y
+CONFIG_HW_RANDOM_AMD=y
+# CONFIG_HW_RANDOM_GEODE is not set
+# CONFIG_HW_RANDOM_VIA is not set
+# CONFIG_NVRAM is not set
+CONFIG_RTC=y
+# CONFIG_R3964 is not set
+CONFIG_APPLICOM=y
+CONFIG_SONYPI=y
+
+#
+# PCMCIA character devices
+#
+# CONFIG_SYNCLINK_CS is not set
+# CONFIG_CARDMAN_4000 is not set
+CONFIG_CARDMAN_4040=y
+# CONFIG_IPWIRELESS is not set
+# CONFIG_MWAVE is not set
+# CONFIG_SCx200_GPIO is not set
+# CONFIG_PC8736x_GPIO is not set
+CONFIG_NSC_GPIO=y
+# CONFIG_CS5535_GPIO is not set
+CONFIG_RAW_DRIVER=y
+CONFIG_MAX_RAW_DEVS=256
+CONFIG_HANGCHECK_TIMER=y
+CONFIG_TCG_TPM=y
+CONFIG_TCG_TIS=y
+# CONFIG_TCG_NSC is not set
+# CONFIG_TCG_ATMEL is not set
+# CONFIG_TELCLOCK is not set
+CONFIG_DEVPORT=y
+# CONFIG_RAMOOPS is not set
+CONFIG_I2C=y
+CONFIG_I2C_BOARDINFO=y
+CONFIG_I2C_COMPAT=y
+# CONFIG_I2C_CHARDEV is not set
+# CONFIG_I2C_HELPER_AUTO is not set
+CONFIG_I2C_SMBUS=y
+
+#
+# I2C Algorithms
+#
+CONFIG_I2C_ALGOBIT=y
+CONFIG_I2C_ALGOPCF=y
+CONFIG_I2C_ALGOPCA=y
+
+#
+# I2C Hardware Bus support
+#
+
+#
+# PC SMBus host controller drivers
+#
+CONFIG_I2C_ALI1535=y
+CONFIG_I2C_ALI1563=y
+# CONFIG_I2C_ALI15X3 is not set
+CONFIG_I2C_AMD756=y
+# CONFIG_I2C_AMD756_S4882 is not set
+# CONFIG_I2C_AMD8111 is not set
+# CONFIG_I2C_I801 is not set
+CONFIG_I2C_ISCH=y
+# CONFIG_I2C_PIIX4 is not set
+# CONFIG_I2C_NFORCE2 is not set
+CONFIG_I2C_SIS5595=y
+CONFIG_I2C_SIS630=y
+CONFIG_I2C_SIS96X=y
+# CONFIG_I2C_VIA is not set
+# CONFIG_I2C_VIAPRO is not set
+
+#
+# I2C system bus drivers (mostly embedded / system-on-chip)
+#
+# CONFIG_I2C_GPIO is not set
+# CONFIG_I2C_OCORES is not set
+CONFIG_I2C_PCA_PLATFORM=y
+CONFIG_I2C_SIMTEC=y
+CONFIG_I2C_XILINX=y
+
+#
+# External I2C/SMBus adapter drivers
+#
+# CONFIG_I2C_PARPORT_LIGHT is not set
+CONFIG_I2C_TAOS_EVM=y
+CONFIG_I2C_TINY_USB=y
+
+#
+# Other I2C/SMBus bus drivers
+#
+CONFIG_SCx200_ACB=y
+CONFIG_I2C_DEBUG_CORE=y
+CONFIG_I2C_DEBUG_ALGO=y
+CONFIG_I2C_DEBUG_BUS=y
+CONFIG_SPI=y
+CONFIG_SPI_MASTER=y
+
+#
+# SPI Master Controller Drivers
+#
+CONFIG_SPI_BITBANG=y
+CONFIG_SPI_GPIO=y
+# CONFIG_SPI_XILINX is not set
+# CONFIG_SPI_DESIGNWARE is not set
+
+#
+# SPI Protocol Masters
+#
+# CONFIG_SPI_SPIDEV is not set
+CONFIG_SPI_TLE62X0=y
+
+#
+# PPS support
+#
+CONFIG_PPS=y
+CONFIG_PPS_DEBUG=y
+
+#
+# PPS clients support
+#
+# CONFIG_PPS_CLIENT_KTIMER is not set
+CONFIG_PPS_CLIENT_LDISC=y
+CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
+CONFIG_GPIOLIB=y
+CONFIG_GPIO_SYSFS=y
+CONFIG_GPIO_MAX730X=y
+
+#
+# Memory mapped GPIO expanders:
+#
+# CONFIG_GPIO_IT8761E is not set
+# CONFIG_GPIO_SCH is not set
+
+#
+# I2C GPIO expanders:
+#
+CONFIG_GPIO_MAX7300=y
+CONFIG_GPIO_MAX732X=y
+# CONFIG_GPIO_MAX732X_IRQ is not set
+CONFIG_GPIO_PCA953X=y
+CONFIG_GPIO_PCA953X_IRQ=y
+# CONFIG_GPIO_PCF857X is not set
+CONFIG_GPIO_WM831X=y
+# CONFIG_GPIO_WM8350 is not set
+CONFIG_GPIO_WM8994=y
+CONFIG_GPIO_ADP5520=y
+CONFIG_GPIO_ADP5588=y
+
+#
+# PCI GPIO expanders:
+#
+CONFIG_GPIO_CS5535=y
+# CONFIG_GPIO_BT8XX is not set
+# CONFIG_GPIO_LANGWELL is not set
+CONFIG_GPIO_RDC321X=y
+
+#
+# SPI GPIO expanders:
+#
+CONFIG_GPIO_MAX7301=y
+CONFIG_GPIO_MCP23S08=y
+# CONFIG_GPIO_MC33880 is not set
+
+#
+# AC97 GPIO expanders:
+#
+
+#
+# MODULbus GPIO expanders:
+#
+CONFIG_W1=y
+CONFIG_W1_CON=y
+
+#
+# 1-wire Bus Masters
+#
+# CONFIG_W1_MASTER_MATROX is not set
+CONFIG_W1_MASTER_DS2490=y
+# CONFIG_W1_MASTER_DS2482 is not set
+CONFIG_W1_MASTER_GPIO=y
+
+#
+# 1-wire Slaves
+#
+CONFIG_W1_SLAVE_THERM=y
+CONFIG_W1_SLAVE_SMEM=y
+CONFIG_W1_SLAVE_DS2431=y
+# CONFIG_W1_SLAVE_DS2433 is not set
+CONFIG_W1_SLAVE_DS2760=y
+CONFIG_W1_SLAVE_BQ27000=y
+CONFIG_POWER_SUPPLY=y
+CONFIG_POWER_SUPPLY_DEBUG=y
+CONFIG_PDA_POWER=y
+# CONFIG_MAX8925_POWER is not set
+CONFIG_WM831X_BACKUP=y
+# CONFIG_WM831X_POWER is not set
+CONFIG_WM8350_POWER=y
+# CONFIG_TEST_POWER is not set
+CONFIG_BATTERY_DS2760=y
+# CONFIG_BATTERY_DS2782 is not set
+# CONFIG_BATTERY_OLPC is not set
+CONFIG_BATTERY_BQ27x00=y
+CONFIG_BATTERY_DA9030=y
+# CONFIG_BATTERY_MAX17040 is not set
+CONFIG_CHARGER_PCF50633=y
+CONFIG_HWMON=y
+CONFIG_HWMON_VID=y
+# CONFIG_HWMON_DEBUG_CHIP is not set
+
+#
+# Native drivers
+#
+# CONFIG_SENSORS_ABITUGURU is not set
+CONFIG_SENSORS_ABITUGURU3=y
+CONFIG_SENSORS_AD7414=y
+# CONFIG_SENSORS_AD7418 is not set
+CONFIG_SENSORS_ADCXX=y
+CONFIG_SENSORS_ADM1021=y
+CONFIG_SENSORS_ADM1025=y
+# CONFIG_SENSORS_ADM1026 is not set
+CONFIG_SENSORS_ADM1029=y
+# CONFIG_SENSORS_ADM1031 is not set
+CONFIG_SENSORS_ADM9240=y
+CONFIG_SENSORS_ADT7411=y
+CONFIG_SENSORS_ADT7462=y
+CONFIG_SENSORS_ADT7470=y
+# CONFIG_SENSORS_ADT7475 is not set
+# CONFIG_SENSORS_ASC7621 is not set
+# CONFIG_SENSORS_K8TEMP is not set
+CONFIG_SENSORS_K10TEMP=y
+CONFIG_SENSORS_ASB100=y
+CONFIG_SENSORS_ATXP1=y
+CONFIG_SENSORS_DS1621=y
+CONFIG_SENSORS_I5K_AMB=y
+CONFIG_SENSORS_F71805F=y
+# CONFIG_SENSORS_F71882FG is not set
+# CONFIG_SENSORS_F75375S is not set
+# CONFIG_SENSORS_FSCHMD is not set
+# CONFIG_SENSORS_G760A is not set
+# CONFIG_SENSORS_GL518SM is not set
+# CONFIG_SENSORS_GL520SM is not set
+# CONFIG_SENSORS_CORETEMP is not set
+# CONFIG_SENSORS_IBMAEM is not set
+# CONFIG_SENSORS_IBMPEX is not set
+# CONFIG_SENSORS_IT87 is not set
+CONFIG_SENSORS_LM63=y
+CONFIG_SENSORS_LM70=y
+# CONFIG_SENSORS_LM73 is not set
+CONFIG_SENSORS_LM75=y
+CONFIG_SENSORS_LM77=y
+CONFIG_SENSORS_LM78=y
+CONFIG_SENSORS_LM80=y
+# CONFIG_SENSORS_LM83 is not set
+# CONFIG_SENSORS_LM85 is not set
+# CONFIG_SENSORS_LM87 is not set
+# CONFIG_SENSORS_LM90 is not set
+# CONFIG_SENSORS_LM92 is not set
+# CONFIG_SENSORS_LM93 is not set
+CONFIG_SENSORS_LTC4215=y
+CONFIG_SENSORS_LTC4245=y
+# CONFIG_SENSORS_LM95241 is not set
+CONFIG_SENSORS_MAX1111=y
+# CONFIG_SENSORS_MAX1619 is not set
+CONFIG_SENSORS_MAX6650=y
+# CONFIG_SENSORS_PC87360 is not set
+# CONFIG_SENSORS_PC87427 is not set
+# CONFIG_SENSORS_PCF8591 is not set
+# CONFIG_SENSORS_SHT15 is not set
+CONFIG_SENSORS_SIS5595=y
+# CONFIG_SENSORS_DME1737 is not set
+CONFIG_SENSORS_EMC1403=y
+CONFIG_SENSORS_SMSC47M1=y
+# CONFIG_SENSORS_SMSC47M192 is not set
+CONFIG_SENSORS_SMSC47B397=y
+# CONFIG_SENSORS_ADS7828 is not set
+CONFIG_SENSORS_ADS7871=y
+CONFIG_SENSORS_AMC6821=y
+# CONFIG_SENSORS_THMC50 is not set
+# CONFIG_SENSORS_TMP102 is not set
+CONFIG_SENSORS_TMP401=y
+CONFIG_SENSORS_TMP421=y
+CONFIG_SENSORS_VIA_CPUTEMP=y
+# CONFIG_SENSORS_VIA686A is not set
+# CONFIG_SENSORS_VT1211 is not set
+CONFIG_SENSORS_VT8231=y
+CONFIG_SENSORS_W83781D=y
+# CONFIG_SENSORS_W83791D is not set
+CONFIG_SENSORS_W83792D=y
+CONFIG_SENSORS_W83793=y
+# CONFIG_SENSORS_W83L785TS is not set
+# CONFIG_SENSORS_W83L786NG is not set
+# CONFIG_SENSORS_W83627HF is not set
+# CONFIG_SENSORS_W83627EHF is not set
+CONFIG_SENSORS_WM831X=y
+CONFIG_SENSORS_WM8350=y
+# CONFIG_SENSORS_HDAPS is not set
+CONFIG_SENSORS_LIS3_SPI=y
+CONFIG_SENSORS_LIS3_I2C=y
+CONFIG_SENSORS_APPLESMC=y
+# CONFIG_SENSORS_MC13783_ADC is not set
+# CONFIG_THERMAL is not set
+# CONFIG_WATCHDOG is not set
+CONFIG_SSB_POSSIBLE=y
+
+#
+# Sonics Silicon Backplane
+#
+# CONFIG_SSB is not set
+CONFIG_MFD_SUPPORT=y
+CONFIG_MFD_CORE=y
+CONFIG_MFD_88PM860X=y
+CONFIG_MFD_SM501=y
+CONFIG_MFD_SM501_GPIO=y
+# CONFIG_HTC_PASIC3 is not set
+CONFIG_HTC_I2CPLD=y
+# CONFIG_TPS65010 is not set
+CONFIG_TPS6507X=y
+# CONFIG_TWL4030_CORE is not set
+# CONFIG_MFD_TC35892 is not set
+# CONFIG_MFD_TMIO is not set
+CONFIG_PMIC_DA903X=y
+CONFIG_PMIC_ADP5520=y
+CONFIG_MFD_MAX8925=y
+# CONFIG_MFD_WM8400 is not set
+CONFIG_MFD_WM831X=y
+CONFIG_MFD_WM8350=y
+CONFIG_MFD_WM8350_I2C=y
+CONFIG_MFD_WM8994=y
+CONFIG_MFD_PCF50633=y
+CONFIG_MFD_MC13783=y
+# CONFIG_PCF50633_ADC is not set
+# CONFIG_PCF50633_GPIO is not set
+CONFIG_ABX500_CORE=y
+CONFIG_AB3100_CORE=y
+# CONFIG_AB3100_OTP is not set
+CONFIG_EZX_PCAP=y
+CONFIG_AB8500_CORE=y
+# CONFIG_AB3550_CORE is not set
+# CONFIG_MFD_TIMBERDALE is not set
+CONFIG_LPC_SCH=y
+CONFIG_MFD_RDC321X=y
+# CONFIG_MFD_JANZ_CMODIO is not set
+CONFIG_REGULATOR=y
+# CONFIG_REGULATOR_DEBUG is not set
+# CONFIG_REGULATOR_DUMMY is not set
+# CONFIG_REGULATOR_FIXED_VOLTAGE is not set
+# CONFIG_REGULATOR_VIRTUAL_CONSUMER is not set
+CONFIG_REGULATOR_USERSPACE_CONSUMER=y
+# CONFIG_REGULATOR_BQ24022 is not set
+# CONFIG_REGULATOR_MAX1586 is not set
+# CONFIG_REGULATOR_MAX8649 is not set
+# CONFIG_REGULATOR_MAX8660 is not set
+CONFIG_REGULATOR_MAX8925=y
+# CONFIG_REGULATOR_WM831X is not set
+CONFIG_REGULATOR_WM8350=y
+# CONFIG_REGULATOR_WM8994 is not set
+# CONFIG_REGULATOR_DA903X is not set
+CONFIG_REGULATOR_PCF50633=y
+# CONFIG_REGULATOR_LP3971 is not set
+CONFIG_REGULATOR_PCAP=y
+# CONFIG_REGULATOR_MC13783 is not set
+# CONFIG_REGULATOR_AB3100 is not set
+CONFIG_REGULATOR_TPS65023=y
+CONFIG_REGULATOR_TPS6507X=y
+CONFIG_REGULATOR_88PM8607=y
+# CONFIG_MEDIA_SUPPORT is not set
+
+#
+# Graphics support
+#
+CONFIG_AGP=y
+CONFIG_AGP_ALI=y
+CONFIG_AGP_ATI=y
+CONFIG_AGP_AMD=y
+CONFIG_AGP_INTEL=y
+# CONFIG_AGP_NVIDIA is not set
+# CONFIG_AGP_SIS is not set
+CONFIG_AGP_SWORKS=y
+# CONFIG_AGP_VIA is not set
+# CONFIG_AGP_EFFICEON is not set
+CONFIG_VGA_ARB=y
+CONFIG_VGA_ARB_MAX_GPUS=16
+CONFIG_DRM=y
+CONFIG_DRM_TDFX=y
+# CONFIG_DRM_R128 is not set
+# CONFIG_DRM_RADEON is not set
+# CONFIG_DRM_I810 is not set
+# CONFIG_DRM_I830 is not set
+# CONFIG_DRM_I915 is not set
+CONFIG_DRM_MGA=y
+CONFIG_DRM_SIS=y
+CONFIG_DRM_VIA=y
+CONFIG_DRM_SAVAGE=y
+# CONFIG_VGASTATE is not set
+CONFIG_VIDEO_OUTPUT_CONTROL=y
+# CONFIG_FB is not set
+CONFIG_BACKLIGHT_LCD_SUPPORT=y
+CONFIG_LCD_CLASS_DEVICE=y
+CONFIG_LCD_L4F00242T03=y
+CONFIG_LCD_LMS283GF05=y
+CONFIG_LCD_LTV350QV=y
+# CONFIG_LCD_TDO24M is not set
+# CONFIG_LCD_VGG2432A4 is not set
+# CONFIG_LCD_PLATFORM is not set
+CONFIG_LCD_S6E63M0=y
+CONFIG_BACKLIGHT_CLASS_DEVICE=y
+# CONFIG_BACKLIGHT_GENERIC is not set
+# CONFIG_BACKLIGHT_PROGEAR is not set
+CONFIG_BACKLIGHT_DA903X=y
+# CONFIG_BACKLIGHT_MAX8925 is not set
+# CONFIG_BACKLIGHT_MBP_NVIDIA is not set
+CONFIG_BACKLIGHT_SAHARA=y
+# CONFIG_BACKLIGHT_WM831X is not set
+# CONFIG_BACKLIGHT_ADP5520 is not set
+CONFIG_BACKLIGHT_ADP8860=y
+# CONFIG_BACKLIGHT_88PM860X is not set
+CONFIG_BACKLIGHT_PCF50633=y
+
+#
+# Display device support
+#
+# CONFIG_DISPLAY_SUPPORT is not set
+
+#
+# Console display driver support
+#
+CONFIG_VGA_CONSOLE=y
+# CONFIG_VGACON_SOFT_SCROLLBACK is not set
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_SOUND=y
+CONFIG_SOUND_OSS_CORE=y
+# CONFIG_SOUND_OSS_CORE_PRECLAIM is not set
+# CONFIG_SND is not set
+CONFIG_SOUND_PRIME=y
+CONFIG_SOUND_OSS=y
+CONFIG_SOUND_TRACEINIT=y
+# CONFIG_SOUND_DMAP is not set
+CONFIG_SOUND_VMIDI=y
+# CONFIG_SOUND_TRIX is not set
+CONFIG_SOUND_MSS=y
+# CONFIG_SOUND_MPU401 is not set
+CONFIG_SOUND_PAS=y
+CONFIG_PAS_JOYSTICK=y
+CONFIG_SOUND_PSS=y
+CONFIG_PSS_MIXER=y
+CONFIG_SOUND_SB=y
+# CONFIG_SOUND_YM3812 is not set
+CONFIG_SOUND_UART6850=y
+CONFIG_SOUND_AEDSP16=y
+CONFIG_SC6600=y
+# CONFIG_SC6600_JOY is not set
+CONFIG_SC6600_CDROM=4
+CONFIG_SC6600_CDROMBASE=0
+# CONFIG_SOUND_KAHLUA is not set
+# CONFIG_HID_SUPPORT is not set
+CONFIG_USB_SUPPORT=y
+CONFIG_USB_ARCH_HAS_HCD=y
+CONFIG_USB_ARCH_HAS_OHCI=y
+CONFIG_USB_ARCH_HAS_EHCI=y
+CONFIG_USB=y
+# CONFIG_USB_DEBUG is not set
+CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
+
+#
+# Miscellaneous USB options
+#
+# CONFIG_USB_DEVICEFS is not set
+CONFIG_USB_DEVICE_CLASS=y
+# CONFIG_USB_DYNAMIC_MINORS is not set
+CONFIG_USB_OTG_WHITELIST=y
+# CONFIG_USB_OTG_BLACKLIST_HUB is not set
+CONFIG_USB_MON=y
+CONFIG_USB_WUSB=y
+CONFIG_USB_WUSB_CBAF=y
+CONFIG_USB_WUSB_CBAF_DEBUG=y
+
+#
+# USB Host Controller Drivers
+#
+CONFIG_USB_C67X00_HCD=y
+CONFIG_USB_XHCI_HCD=y
+# CONFIG_USB_XHCI_HCD_DEBUGGING is not set
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_EHCI_ROOT_HUB_TT=y
+CONFIG_USB_EHCI_TT_NEWSCHED=y
+# CONFIG_USB_OXU210HP_HCD is not set
+# CONFIG_USB_ISP116X_HCD is not set
+CONFIG_USB_ISP1760_HCD=y
+CONFIG_USB_ISP1362_HCD=y
+CONFIG_USB_OHCI_HCD=y
+# CONFIG_USB_OHCI_BIG_ENDIAN_DESC is not set
+# CONFIG_USB_OHCI_BIG_ENDIAN_MMIO is not set
+CONFIG_USB_OHCI_LITTLE_ENDIAN=y
+CONFIG_USB_UHCI_HCD=y
+CONFIG_USB_U132_HCD=y
+# CONFIG_USB_SL811_HCD is not set
+# CONFIG_USB_R8A66597_HCD is not set
+# CONFIG_USB_WHCI_HCD is not set
+# CONFIG_USB_HWA_HCD is not set
+# CONFIG_USB_GADGET_MUSB_HDRC is not set
+
+#
+# USB Device Class drivers
+#
+CONFIG_USB_ACM=y
+CONFIG_USB_PRINTER=y
+# CONFIG_USB_WDM is not set
+CONFIG_USB_TMC=y
+
+#
+# NOTE: USB_STORAGE depends on SCSI but BLK_DEV_SD may
+#
+
+#
+# also be needed; see USB_STORAGE Help for more info
+#
+# CONFIG_USB_STORAGE is not set
+# CONFIG_USB_LIBUSUAL is not set
+
+#
+# USB Imaging devices
+#
+CONFIG_USB_MDC800=y
+# CONFIG_USB_MICROTEK is not set
+
+#
+# USB port drivers
+#
+# CONFIG_USB_SERIAL is not set
+
+#
+# USB Miscellaneous drivers
+#
+# CONFIG_USB_EMI62 is not set
+CONFIG_USB_EMI26=y
+CONFIG_USB_ADUTUX=y
+CONFIG_USB_SEVSEG=y
+# CONFIG_USB_RIO500 is not set
+# CONFIG_USB_LEGOTOWER is not set
+CONFIG_USB_LCD=y
+# CONFIG_USB_LED is not set
+CONFIG_USB_CYPRESS_CY7C63=y
+# CONFIG_USB_CYTHERM is not set
+CONFIG_USB_IDMOUSE=y
+CONFIG_USB_FTDI_ELAN=y
+# CONFIG_USB_APPLEDISPLAY is not set
+# CONFIG_USB_SISUSBVGA is not set
+# CONFIG_USB_LD is not set
+# CONFIG_USB_TRANCEVIBRATOR is not set
+CONFIG_USB_IOWARRIOR=y
+CONFIG_USB_TEST=y
+# CONFIG_USB_ISIGHTFW is not set
+# CONFIG_USB_ATM is not set
+CONFIG_USB_GADGET=y
+# CONFIG_USB_GADGET_DEBUG_FILES is not set
+# CONFIG_USB_GADGET_DEBUG_FS is not set
+CONFIG_USB_GADGET_VBUS_DRAW=2
+CONFIG_USB_GADGET_SELECTED=y
+# CONFIG_USB_GADGET_AT91 is not set
+# CONFIG_USB_GADGET_ATMEL_USBA is not set
+# CONFIG_USB_GADGET_FSL_USB2 is not set
+# CONFIG_USB_GADGET_LH7A40X is not set
+# CONFIG_USB_GADGET_OMAP is not set
+# CONFIG_USB_GADGET_PXA25X is not set
+CONFIG_USB_GADGET_R8A66597=y
+CONFIG_USB_R8A66597=y
+# CONFIG_USB_GADGET_PXA27X is not set
+# CONFIG_USB_GADGET_S3C_HSOTG is not set
+# CONFIG_USB_GADGET_IMX is not set
+# CONFIG_USB_GADGET_S3C2410 is not set
+# CONFIG_USB_GADGET_M66592 is not set
+# CONFIG_USB_GADGET_AMD5536UDC is not set
+# CONFIG_USB_GADGET_FSL_QE is not set
+# CONFIG_USB_GADGET_CI13XXX is not set
+# CONFIG_USB_GADGET_NET2280 is not set
+# CONFIG_USB_GADGET_GOKU is not set
+# CONFIG_USB_GADGET_LANGWELL is not set
+# CONFIG_USB_GADGET_DUMMY_HCD is not set
+CONFIG_USB_GADGET_DUALSPEED=y
+CONFIG_USB_ZERO=y
+# CONFIG_USB_AUDIO is not set
+# CONFIG_USB_ETH is not set
+# CONFIG_USB_GADGETFS is not set
+# CONFIG_USB_FUNCTIONFS is not set
+# CONFIG_USB_FILE_STORAGE is not set
+# CONFIG_USB_MASS_STORAGE is not set
+# CONFIG_USB_G_SERIAL is not set
+# CONFIG_USB_MIDI_GADGET is not set
+# CONFIG_USB_G_PRINTER is not set
+# CONFIG_USB_CDC_COMPOSITE is not set
+# CONFIG_USB_G_NOKIA is not set
+# CONFIG_USB_G_MULTI is not set
+# CONFIG_USB_G_HID is not set
+# CONFIG_USB_G_WEBCAM is not set
+
+#
+# OTG and related infrastructure
+#
+CONFIG_USB_OTG_UTILS=y
+# CONFIG_USB_GPIO_VBUS is not set
+CONFIG_NOP_USB_XCEIV=y
+CONFIG_UWB=y
+CONFIG_UWB_HWA=y
+# CONFIG_UWB_WHCI is not set
+# CONFIG_UWB_WLP is not set
+CONFIG_UWB_I1480U=y
+CONFIG_MMC=y
+CONFIG_MMC_DEBUG=y
+CONFIG_MMC_UNSAFE_RESUME=y
+
+#
+# MMC/SD/SDIO Card Drivers
+#
+# CONFIG_MMC_BLOCK is not set
+# CONFIG_SDIO_UART is not set
+CONFIG_MMC_TEST=y
+
+#
+# MMC/SD/SDIO Host Controller Drivers
+#
+# CONFIG_MMC_SDHCI is not set
+CONFIG_MMC_WBSD=y
+# CONFIG_MMC_TIFM_SD is not set
+CONFIG_MMC_SDRICOH_CS=y
+# CONFIG_MMC_CB710 is not set
+CONFIG_MMC_VIA_SDMMC=y
+# CONFIG_MEMSTICK is not set
+CONFIG_NEW_LEDS=y
+CONFIG_LEDS_CLASS=y
+
+#
+# LED drivers
+#
+# CONFIG_LEDS_88PM860X is not set
+CONFIG_LEDS_PCA9532=y
+# CONFIG_LEDS_GPIO is not set
+CONFIG_LEDS_LP3944=y
+CONFIG_LEDS_CLEVO_MAIL=y
+CONFIG_LEDS_PCA955X=y
+CONFIG_LEDS_WM831X_STATUS=y
+CONFIG_LEDS_WM8350=y
+CONFIG_LEDS_DA903X=y
+# CONFIG_LEDS_DAC124S085 is not set
+CONFIG_LEDS_REGULATOR=y
+# CONFIG_LEDS_BD2802 is not set
+# CONFIG_LEDS_INTEL_SS4200 is not set
+CONFIG_LEDS_LT3593=y
+# CONFIG_LEDS_ADP5520 is not set
+CONFIG_LEDS_MC13783=y
+CONFIG_LEDS_TRIGGERS=y
+
+#
+# LED Triggers
+#
+# CONFIG_LEDS_TRIGGER_TIMER is not set
+CONFIG_LEDS_TRIGGER_HEARTBEAT=y
+CONFIG_LEDS_TRIGGER_BACKLIGHT=y
+# CONFIG_LEDS_TRIGGER_GPIO is not set
+# CONFIG_LEDS_TRIGGER_DEFAULT_ON is not set
+
+#
+# iptables trigger is under Netfilter config (LED target)
+#
+CONFIG_ACCESSIBILITY=y
+# CONFIG_A11Y_BRAILLE_CONSOLE is not set
+CONFIG_INFINIBAND=y
+# CONFIG_INFINIBAND_USER_MAD is not set
+CONFIG_INFINIBAND_USER_ACCESS=y
+CONFIG_INFINIBAND_USER_MEM=y
+CONFIG_INFINIBAND_ADDR_TRANS=y
+CONFIG_INFINIBAND_MTHCA=y
+# CONFIG_INFINIBAND_MTHCA_DEBUG is not set
+# CONFIG_INFINIBAND_AMSO1100 is not set
+# CONFIG_INFINIBAND_CXGB3 is not set
+# CONFIG_INFINIBAND_CXGB4 is not set
+CONFIG_MLX4_INFINIBAND=y
+CONFIG_INFINIBAND_NES=y
+CONFIG_INFINIBAND_NES_DEBUG=y
+CONFIG_INFINIBAND_IPOIB=y
+# CONFIG_INFINIBAND_IPOIB_CM is not set
+CONFIG_INFINIBAND_IPOIB_DEBUG=y
+CONFIG_INFINIBAND_IPOIB_DEBUG_DATA=y
+CONFIG_INFINIBAND_SRP=y
+# CONFIG_INFINIBAND_ISER is not set
+CONFIG_EDAC=y
+
+#
+# Reporting subsystems
+#
+CONFIG_EDAC_DEBUG=y
+# CONFIG_EDAC_DEBUG_VERBOSE is not set
+# CONFIG_EDAC_MM_EDAC is not set
+# CONFIG_RTC_CLASS is not set
+CONFIG_DMADEVICES=y
+CONFIG_DMADEVICES_DEBUG=y
+CONFIG_DMADEVICES_VDEBUG=y
+
+#
+# DMA Devices
+#
+CONFIG_ASYNC_TX_DISABLE_CHANNEL_SWITCH=y
+CONFIG_INTEL_IOATDMA=y
+# CONFIG_TIMB_DMA is not set
+CONFIG_DMA_ENGINE=y
+
+#
+# DMA Clients
+#
+CONFIG_NET_DMA=y
+# CONFIG_ASYNC_TX_DMA is not set
+CONFIG_DMATEST=y
+CONFIG_DCA=y
+# CONFIG_AUXDISPLAY is not set
+CONFIG_UIO=y
+CONFIG_UIO_CIF=y
+CONFIG_UIO_PDRV=y
+CONFIG_UIO_PDRV_GENIRQ=y
+CONFIG_UIO_AEC=y
+# CONFIG_UIO_SERCOS3 is not set
+# CONFIG_UIO_PCI_GENERIC is not set
+CONFIG_UIO_NETX=y
+# CONFIG_STAGING is not set
+CONFIG_X86_PLATFORM_DEVICES=y
+
+#
+# Firmware Drivers
+#
+# CONFIG_EDD is not set
+CONFIG_FIRMWARE_MEMMAP=y
+CONFIG_DELL_RBU=y
+# CONFIG_DCDBAS is not set
+CONFIG_DMIID=y
+CONFIG_ISCSI_IBFT_FIND=y
+CONFIG_ISCSI_IBFT=y
+
+#
+# File systems
+#
+# CONFIG_EXT2_FS is not set
+CONFIG_EXT3_FS=y
+# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+CONFIG_EXT3_FS_XATTR=y
+CONFIG_EXT3_FS_POSIX_ACL=y
+CONFIG_EXT3_FS_SECURITY=y
+# CONFIG_EXT4_FS is not set
+CONFIG_JBD=y
+CONFIG_JBD_DEBUG=y
+CONFIG_JBD2=y
+# CONFIG_JBD2_DEBUG is not set
+CONFIG_FS_MBCACHE=y
+# CONFIG_REISERFS_FS is not set
+CONFIG_JFS_FS=y
+CONFIG_JFS_POSIX_ACL=y
+# CONFIG_JFS_SECURITY is not set
+CONFIG_JFS_DEBUG=y
+CONFIG_JFS_STATISTICS=y
+CONFIG_FS_POSIX_ACL=y
+CONFIG_XFS_FS=y
+CONFIG_XFS_QUOTA=y
+# CONFIG_XFS_POSIX_ACL is not set
+# CONFIG_XFS_RT is not set
+CONFIG_XFS_DEBUG=y
+CONFIG_OCFS2_FS=y
+CONFIG_OCFS2_FS_O2CB=y
+# CONFIG_OCFS2_FS_STATS is not set
+CONFIG_OCFS2_DEBUG_MASKLOG=y
+# CONFIG_OCFS2_DEBUG_FS is not set
+CONFIG_BTRFS_FS=y
+CONFIG_BTRFS_FS_POSIX_ACL=y
+CONFIG_NILFS2_FS=y
+CONFIG_FILE_LOCKING=y
+CONFIG_FSNOTIFY=y
+CONFIG_DNOTIFY=y
+# CONFIG_INOTIFY is not set
+CONFIG_INOTIFY_USER=y
+CONFIG_QUOTA=y
+# CONFIG_QUOTA_NETLINK_INTERFACE is not set
+CONFIG_PRINT_QUOTA_WARNING=y
+CONFIG_QUOTA_DEBUG=y
+CONFIG_QUOTA_TREE=y
+# CONFIG_QFMT_V1 is not set
+# CONFIG_QFMT_V2 is not set
+CONFIG_QUOTACTL=y
+# CONFIG_AUTOFS_FS is not set
+CONFIG_AUTOFS4_FS=y
+# CONFIG_FUSE_FS is not set
+
+#
+# Caches
+#
+CONFIG_FSCACHE=y
+CONFIG_FSCACHE_STATS=y
+# CONFIG_FSCACHE_HISTOGRAM is not set
+CONFIG_FSCACHE_DEBUG=y
+CONFIG_FSCACHE_OBJECT_LIST=y
+CONFIG_CACHEFILES=y
+CONFIG_CACHEFILES_DEBUG=y
+CONFIG_CACHEFILES_HISTOGRAM=y
+
+#
+# CD-ROM/DVD Filesystems
+#
+CONFIG_ISO9660_FS=y
+CONFIG_JOLIET=y
+CONFIG_ZISOFS=y
+# CONFIG_UDF_FS is not set
+
+#
+# DOS/FAT/NT Filesystems
+#
+CONFIG_FAT_FS=y
+CONFIG_MSDOS_FS=y
+CONFIG_VFAT_FS=y
+CONFIG_FAT_DEFAULT_CODEPAGE=437
+CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
+CONFIG_NTFS_FS=y
+# CONFIG_NTFS_DEBUG is not set
+# CONFIG_NTFS_RW is not set
+
+#
+# Pseudo filesystems
+#
+CONFIG_PROC_FS=y
+# CONFIG_PROC_KCORE is not set
+CONFIG_PROC_SYSCTL=y
+CONFIG_PROC_PAGE_MONITOR=y
+CONFIG_SYSFS=y
+# CONFIG_TMPFS is not set
+# CONFIG_HUGETLBFS is not set
+# CONFIG_HUGETLB_PAGE is not set
+CONFIG_CONFIGFS_FS=y
+# CONFIG_MISC_FILESYSTEMS is not set
+CONFIG_NETWORK_FILESYSTEMS=y
+# CONFIG_NFS_FS is not set
+CONFIG_NFSD=y
+CONFIG_NFSD_V3=y
+# CONFIG_NFSD_V3_ACL is not set
+CONFIG_NFSD_V4=y
+CONFIG_LOCKD=y
+CONFIG_LOCKD_V4=y
+CONFIG_EXPORTFS=y
+CONFIG_NFS_COMMON=y
+CONFIG_SUNRPC=y
+CONFIG_SUNRPC_GSS=y
+CONFIG_SUNRPC_XPRT_RDMA=y
+CONFIG_RPCSEC_GSS_KRB5=y
+# CONFIG_RPCSEC_GSS_SPKM3 is not set
+# CONFIG_SMB_FS is not set
+CONFIG_CEPH_FS=y
+# CONFIG_CEPH_FS_PRETTYDEBUG is not set
+# CONFIG_CIFS is not set
+CONFIG_NCP_FS=y
+# CONFIG_NCPFS_PACKET_SIGNING is not set
+CONFIG_NCPFS_IOCTL_LOCKING=y
+CONFIG_NCPFS_STRONG=y
+CONFIG_NCPFS_NFS_NS=y
+# CONFIG_NCPFS_OS2_NS is not set
+# CONFIG_NCPFS_SMALLDOS is not set
+CONFIG_NCPFS_NLS=y
+# CONFIG_NCPFS_EXTRAS is not set
+# CONFIG_CODA_FS is not set
+# CONFIG_AFS_FS is not set
+
+#
+# Partition Types
+#
+CONFIG_PARTITION_ADVANCED=y
+CONFIG_ACORN_PARTITION=y
+# CONFIG_ACORN_PARTITION_CUMANA is not set
+# CONFIG_ACORN_PARTITION_EESOX is not set
+CONFIG_ACORN_PARTITION_ICS=y
+CONFIG_ACORN_PARTITION_ADFS=y
+# CONFIG_ACORN_PARTITION_POWERTEC is not set
+CONFIG_ACORN_PARTITION_RISCIX=y
+CONFIG_OSF_PARTITION=y
+# CONFIG_AMIGA_PARTITION is not set
+CONFIG_ATARI_PARTITION=y
+CONFIG_MAC_PARTITION=y
+CONFIG_MSDOS_PARTITION=y
+CONFIG_BSD_DISKLABEL=y
+# CONFIG_MINIX_SUBPARTITION is not set
+# CONFIG_SOLARIS_X86_PARTITION is not set
+# CONFIG_UNIXWARE_DISKLABEL is not set
+# CONFIG_LDM_PARTITION is not set
+CONFIG_SGI_PARTITION=y
+# CONFIG_ULTRIX_PARTITION is not set
+CONFIG_SUN_PARTITION=y
+# CONFIG_KARMA_PARTITION is not set
+CONFIG_EFI_PARTITION=y
+CONFIG_SYSV68_PARTITION=y
+CONFIG_NLS=y
+CONFIG_NLS_DEFAULT="iso8859-1"
+CONFIG_NLS_CODEPAGE_437=y
+CONFIG_NLS_CODEPAGE_737=y
+# CONFIG_NLS_CODEPAGE_775 is not set
+# CONFIG_NLS_CODEPAGE_850 is not set
+CONFIG_NLS_CODEPAGE_852=y
+CONFIG_NLS_CODEPAGE_855=y
+# CONFIG_NLS_CODEPAGE_857 is not set
+# CONFIG_NLS_CODEPAGE_860 is not set
+CONFIG_NLS_CODEPAGE_861=y
+CONFIG_NLS_CODEPAGE_862=y
+# CONFIG_NLS_CODEPAGE_863 is not set
+# CONFIG_NLS_CODEPAGE_864 is not set
+# CONFIG_NLS_CODEPAGE_865 is not set
+# CONFIG_NLS_CODEPAGE_866 is not set
+# CONFIG_NLS_CODEPAGE_869 is not set
+# CONFIG_NLS_CODEPAGE_936 is not set
+# CONFIG_NLS_CODEPAGE_950 is not set
+# CONFIG_NLS_CODEPAGE_932 is not set
+CONFIG_NLS_CODEPAGE_949=y
+# CONFIG_NLS_CODEPAGE_874 is not set
+# CONFIG_NLS_ISO8859_8 is not set
+# CONFIG_NLS_CODEPAGE_1250 is not set
+CONFIG_NLS_CODEPAGE_1251=y
+CONFIG_NLS_ASCII=y
+# CONFIG_NLS_ISO8859_1 is not set
+CONFIG_NLS_ISO8859_2=y
+# CONFIG_NLS_ISO8859_3 is not set
+CONFIG_NLS_ISO8859_4=y
+# CONFIG_NLS_ISO8859_5 is not set
+CONFIG_NLS_ISO8859_6=y
+CONFIG_NLS_ISO8859_7=y
+CONFIG_NLS_ISO8859_9=y
+# CONFIG_NLS_ISO8859_13 is not set
+CONFIG_NLS_ISO8859_14=y
+CONFIG_NLS_ISO8859_15=y
+CONFIG_NLS_KOI8_R=y
+CONFIG_NLS_KOI8_U=y
+CONFIG_NLS_UTF8=y
+# CONFIG_DLM is not set
+
+#
+# Kernel hacking
+#
+CONFIG_TRACE_IRQFLAGS_SUPPORT=y
+# CONFIG_PRINTK_TIME is not set
+CONFIG_ENABLE_WARN_DEPRECATED=y
+# CONFIG_ENABLE_MUST_CHECK is not set
+CONFIG_FRAME_WARN=1024
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_STRIP_ASM_SYMS=y
+CONFIG_UNUSED_SYMBOLS=y
+CONFIG_DEBUG_FS=y
+CONFIG_HEADERS_CHECK=y
+# CONFIG_DEBUG_KERNEL is not set
+CONFIG_STACKTRACE=y
+CONFIG_DEBUG_BUGVERBOSE=y
+# CONFIG_DEBUG_MEMORY_INIT is not set
+CONFIG_ARCH_WANT_FRAME_POINTERS=y
+CONFIG_FRAME_POINTER=y
+CONFIG_LKDTM=y
+# CONFIG_LATENCYTOP is not set
+# CONFIG_SYSCTL_SYSCALL_CHECK is not set
+CONFIG_USER_STACKTRACE_SUPPORT=y
+CONFIG_NOP_TRACER=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
+CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
+CONFIG_TRACER_MAX_TRACE=y
+CONFIG_RING_BUFFER=y
+CONFIG_EVENT_TRACING=y
+CONFIG_CONTEXT_SWITCH_TRACER=y
+CONFIG_RING_BUFFER_ALLOW_SWAP=y
+CONFIG_TRACING=y
+CONFIG_GENERIC_TRACER=y
+CONFIG_TRACING_SUPPORT=y
+CONFIG_FTRACE=y
+CONFIG_FUNCTION_TRACER=y
+CONFIG_FUNCTION_GRAPH_TRACER=y
+# CONFIG_IRQSOFF_TRACER is not set
+CONFIG_PREEMPT_TRACER=y
+# CONFIG_SYSPROF_TRACER is not set
+CONFIG_SCHED_TRACER=y
+CONFIG_FTRACE_SYSCALLS=y
+# CONFIG_BOOT_TRACER is not set
+CONFIG_BRANCH_PROFILE_NONE=y
+# CONFIG_PROFILE_ANNOTATED_BRANCHES is not set
+# CONFIG_PROFILE_ALL_BRANCHES is not set
+# CONFIG_KSYM_TRACER is not set
+# CONFIG_STACK_TRACER is not set
+# CONFIG_KMEMTRACE is not set
+# CONFIG_WORKQUEUE_TRACER is not set
+CONFIG_BLK_DEV_IO_TRACE=y
+# CONFIG_DYNAMIC_FTRACE is not set
+CONFIG_FUNCTION_PROFILER=y
+# CONFIG_FTRACE_STARTUP_TEST is not set
+CONFIG_MMIOTRACE=y
+# CONFIG_RING_BUFFER_BENCHMARK is not set
+CONFIG_PROVIDE_OHCI1394_DMA_INIT=y
+CONFIG_BUILD_DOCSRC=y
+# CONFIG_DYNAMIC_DEBUG is not set
+CONFIG_DMA_API_DEBUG=y
+CONFIG_ATOMIC64_SELFTEST=y
+CONFIG_SAMPLES=y
+CONFIG_HAVE_ARCH_KGDB=y
+CONFIG_HAVE_ARCH_KMEMCHECK=y
+# CONFIG_STRICT_DEVMEM is not set
+# CONFIG_X86_VERBOSE_BOOTUP is not set
+CONFIG_EARLY_PRINTK=y
+CONFIG_EARLY_PRINTK_DBGP=y
+# CONFIG_4KSTACKS is not set
+# CONFIG_DOUBLEFAULT is not set
+# CONFIG_IOMMU_STRESS is not set
+CONFIG_HAVE_MMIOTRACE_SUPPORT=y
+CONFIG_IO_DELAY_TYPE_0X80=0
+CONFIG_IO_DELAY_TYPE_0XED=1
+CONFIG_IO_DELAY_TYPE_UDELAY=2
+CONFIG_IO_DELAY_TYPE_NONE=3
+CONFIG_IO_DELAY_0X80=y
+# CONFIG_IO_DELAY_0XED is not set
+# CONFIG_IO_DELAY_UDELAY is not set
+# CONFIG_IO_DELAY_NONE is not set
+CONFIG_DEFAULT_IO_DELAY_TYPE=0
+CONFIG_OPTIMIZE_INLINING=y
+
+#
+# Security options
+#
+CONFIG_KEYS=y
+# CONFIG_KEYS_DEBUG_PROC_KEYS is not set
+CONFIG_SECURITY=y
+CONFIG_SECURITYFS=y
+# CONFIG_SECURITY_NETWORK is not set
+CONFIG_SECURITY_PATH=y
+CONFIG_SECURITY_TOMOYO=y
+CONFIG_IMA=y
+CONFIG_IMA_MEASURE_PCR_IDX=10
+CONFIG_IMA_AUDIT=y
+# CONFIG_DEFAULT_SECURITY_SELINUX is not set
+# CONFIG_DEFAULT_SECURITY_SMACK is not set
+CONFIG_DEFAULT_SECURITY_TOMOYO=y
+# CONFIG_DEFAULT_SECURITY_DAC is not set
+CONFIG_DEFAULT_SECURITY="tomoyo"
+CONFIG_ASYNC_TX_DISABLE_PQ_VAL_DMA=y
+CONFIG_ASYNC_TX_DISABLE_XOR_VAL_DMA=y
+CONFIG_CRYPTO=y
+
+#
+# Crypto core or helper
+#
+CONFIG_CRYPTO_FIPS=y
+CONFIG_CRYPTO_ALGAPI=y
+CONFIG_CRYPTO_ALGAPI2=y
+CONFIG_CRYPTO_AEAD=y
+CONFIG_CRYPTO_AEAD2=y
+CONFIG_CRYPTO_BLKCIPHER=y
+CONFIG_CRYPTO_BLKCIPHER2=y
+CONFIG_CRYPTO_HASH=y
+CONFIG_CRYPTO_HASH2=y
+CONFIG_CRYPTO_RNG=y
+CONFIG_CRYPTO_RNG2=y
+CONFIG_CRYPTO_PCOMP=y
+CONFIG_CRYPTO_MANAGER=y
+CONFIG_CRYPTO_MANAGER2=y
+CONFIG_CRYPTO_GF128MUL=y
+# CONFIG_CRYPTO_NULL is not set
+CONFIG_CRYPTO_WORKQUEUE=y
+# CONFIG_CRYPTO_CRYPTD is not set
+# CONFIG_CRYPTO_AUTHENC is not set
+
+#
+# Authenticated Encryption with Associated Data
+#
+# CONFIG_CRYPTO_CCM is not set
+# CONFIG_CRYPTO_GCM is not set
+CONFIG_CRYPTO_SEQIV=y
+
+#
+# Block modes
+#
+CONFIG_CRYPTO_CBC=y
+CONFIG_CRYPTO_CTR=y
+CONFIG_CRYPTO_CTS=y
+CONFIG_CRYPTO_ECB=y
+# CONFIG_CRYPTO_LRW is not set
+CONFIG_CRYPTO_PCBC=y
+CONFIG_CRYPTO_XTS=y
+
+#
+# Hash modes
+#
+CONFIG_CRYPTO_HMAC=y
+# CONFIG_CRYPTO_XCBC is not set
+# CONFIG_CRYPTO_VMAC is not set
+
+#
+# Digest
+#
+CONFIG_CRYPTO_CRC32C=y
+# CONFIG_CRYPTO_CRC32C_INTEL is not set
+CONFIG_CRYPTO_GHASH=y
+CONFIG_CRYPTO_MD4=y
+CONFIG_CRYPTO_MD5=y
+CONFIG_CRYPTO_MICHAEL_MIC=y
+CONFIG_CRYPTO_RMD128=y
+# CONFIG_CRYPTO_RMD160 is not set
+CONFIG_CRYPTO_RMD256=y
+CONFIG_CRYPTO_RMD320=y
+CONFIG_CRYPTO_SHA1=y
+CONFIG_CRYPTO_SHA256=y
+CONFIG_CRYPTO_SHA512=y
+# CONFIG_CRYPTO_TGR192 is not set
+CONFIG_CRYPTO_WP512=y
+
+#
+# Ciphers
+#
+CONFIG_CRYPTO_AES=y
+CONFIG_CRYPTO_AES_586=y
+# CONFIG_CRYPTO_ANUBIS is not set
+CONFIG_CRYPTO_ARC4=y
+# CONFIG_CRYPTO_BLOWFISH is not set
+CONFIG_CRYPTO_CAMELLIA=y
+# CONFIG_CRYPTO_CAST5 is not set
+CONFIG_CRYPTO_CAST6=y
+CONFIG_CRYPTO_DES=y
+CONFIG_CRYPTO_FCRYPT=y
+# CONFIG_CRYPTO_KHAZAD is not set
+CONFIG_CRYPTO_SALSA20=y
+CONFIG_CRYPTO_SALSA20_586=y
+# CONFIG_CRYPTO_SEED is not set
+# CONFIG_CRYPTO_SERPENT is not set
+# CONFIG_CRYPTO_TEA is not set
+CONFIG_CRYPTO_TWOFISH=y
+CONFIG_CRYPTO_TWOFISH_COMMON=y
+# CONFIG_CRYPTO_TWOFISH_586 is not set
+
+#
+# Compression
+#
+# CONFIG_CRYPTO_DEFLATE is not set
+CONFIG_CRYPTO_ZLIB=y
+CONFIG_CRYPTO_LZO=y
+
+#
+# Random Number Generation
+#
+CONFIG_CRYPTO_ANSI_CPRNG=y
+CONFIG_CRYPTO_HW=y
+# CONFIG_CRYPTO_DEV_PADLOCK is not set
+# CONFIG_CRYPTO_DEV_GEODE is not set
+# CONFIG_CRYPTO_DEV_HIFN_795X is not set
+CONFIG_HAVE_KVM=y
+CONFIG_HAVE_KVM_IRQCHIP=y
+CONFIG_HAVE_KVM_EVENTFD=y
+CONFIG_KVM_APIC_ARCHITECTURE=y
+CONFIG_KVM_MMIO=y
+CONFIG_VIRTUALIZATION=y
+CONFIG_KVM=y
+# CONFIG_KVM_INTEL is not set
+# CONFIG_KVM_AMD is not set
+# CONFIG_VHOST_NET is not set
+# CONFIG_LGUEST is not set
+# CONFIG_VIRTIO_PCI is not set
+# CONFIG_VIRTIO_BALLOON is not set
+CONFIG_BINARY_PRINTF=y
+
+#
+# Library routines
+#
+CONFIG_BITREVERSE=y
+CONFIG_GENERIC_FIND_FIRST_BIT=y
+CONFIG_GENERIC_FIND_NEXT_BIT=y
+CONFIG_GENERIC_FIND_LAST_BIT=y
+CONFIG_CRC_CCITT=y
+CONFIG_CRC16=y
+CONFIG_CRC_T10DIF=y
+# CONFIG_CRC_ITU_T is not set
+CONFIG_CRC32=y
+CONFIG_CRC7=y
+CONFIG_LIBCRC32C=y
+CONFIG_ZLIB_INFLATE=y
+CONFIG_ZLIB_DEFLATE=y
+CONFIG_LZO_COMPRESS=y
+CONFIG_LZO_DECOMPRESS=y
+CONFIG_DECOMPRESS_GZIP=y
+CONFIG_DECOMPRESS_LZO=y
+CONFIG_TEXTSEARCH=y
+CONFIG_TEXTSEARCH_KMP=y
+CONFIG_TEXTSEARCH_BM=y
+CONFIG_TEXTSEARCH_FSM=y
+CONFIG_HAS_IOMEM=y
+CONFIG_HAS_IOPORT=y
+CONFIG_HAS_DMA=y
+CONFIG_NLATTR=y
+
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: attachment; filename="crash.log"
+Content-Transfer-Encoding: 8bit
+
+Linux version 2.6.35-rc3+ (mingo@sirius) (gcc version 4.4.4 20100514 (Red Hat 4.4.4-3) (GCC) ) #33238 PREEMPT Fri Sep 3 18:18:47 CEST 2010
+CPU: vendor_id 'AuthenticAMD' unknown, using generic init.
+CPU: Your system may be unstable.
+BIOS-provided physical RAM map:
+ BIOS-e820: 0000000000000000 - 000000000009f800 (usable)
+ BIOS-e820: 000000000009f800 - 00000000000a0000 (reserved)
+ BIOS-e820: 00000000000f0000 - 0000000000100000 (reserved)
+ BIOS-e820: 0000000000100000 - 000000003fff0000 (usable)
+ BIOS-e820: 000000003fff0000 - 000000003fff3000 (ACPI NVS)
+ BIOS-e820: 000000003fff3000 - 0000000040000000 (ACPI data)
+ BIOS-e820: 00000000e0000000 - 00000000f0000000 (reserved)
+ BIOS-e820: 00000000fec00000 - 0000000100000000 (reserved)
+bootconsole [earlyser0] enabled
+debug: ignoring loglevel setting.
+Notice: NX (Execute Disable) protection cannot be enabled: non-PAE kernel!
+DMI 2.3 present.
+Phoenix BIOS detected: BIOS may corrupt low RAM, working around it.
+e820 update range: 0000000000000000 - 0000000000010000 (usable) ==> (reserved)
+e820 update range: 0000000000000000 - 0000000000001000 (usable) ==> (reserved)
+e820 remove range: 00000000000a0000 - 0000000000100000 (usable)
+last_pfn = 0x3fff0 max_arch_pfn = 0x100000
+Scanning 0 areas for low memory corruption
+modified physical RAM map:
+ modified: 0000000000000000 - 0000000000010000 (reserved)
+ modified: 0000000000010000 - 000000000009f800 (usable)
+ modified: 000000000009f800 - 00000000000a0000 (reserved)
+ modified: 00000000000f0000 - 0000000000100000 (reserved)
+ modified: 0000000000100000 - 000000003fff0000 (usable)
+ modified: 000000003fff0000 - 000000003fff3000 (ACPI NVS)
+ modified: 000000003fff3000 - 0000000040000000 (ACPI data)
+ modified: 00000000e0000000 - 00000000f0000000 (reserved)
+ modified: 00000000fec00000 - 0000000100000000 (reserved)
+initial memory mapped : 0 - 02800000
+init_memory_mapping: 0000000000000000-000000003fff0000
+ 0000000000 - 0000400000 page 4k
+ 0000400000 - 003fc00000 page 2M
+ 003fc00000 - 003fff0000 page 4k
+kernel direct mapping tables up to 3fff0000 @ 10000-15000
+0MB HIGHMEM available.
+1023MB LOWMEM available.
+  mapped low ram: 0 - 3fff0000
+  low ram: 0 - 3fff0000
+Zone PFN ranges:
+  DMA      0x00000010 -> 0x00001000
+  Normal   0x00001000 -> 0x0003fff0
+  HighMem  empty
+Movable zone start PFN for each node
+early_node_map[2] active PFN ranges
+    0: 0x00000010 -> 0x0000009f
+    0: 0x00000100 -> 0x0003fff0
+On node 0 totalpages: 262015
+free_area_init_node: node 0, pgdat 41fe5ac0, node_mem_map 4222a200
+  DMA zone: 32 pages used for memmap
+  DMA zone: 0 pages reserved
+  DMA zone: 3951 pages, LIFO batch:0
+  Normal zone: 2016 pages used for memmap
+  Normal zone: 256016 pages, LIFO batch:31
+Allocating PCI resources starting at 40000000 (gap: 40000000:a0000000)
+Booting paravirtualized kernel on bare hardware
+Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 259967
+Kernel command line: root=/dev/sda1 earlyprintk=ttyS0,115200 console=ttyS0,115200 debug initcall_debug enforcing=0 apic=verbose ignore_loglevel sysrq_always_enabled selinux=0 nmi_watchdog=0 3 panic=1 3
+sysrq: sysrq always enabled.
+PID hash table entries: 4096 (order: 2, 16384 bytes)
+Dentry cache hash table entries: 131072 (order: 7, 524288 bytes)
+Inode-cache hash table entries: 65536 (order: 6, 262144 bytes)
+Enabling fast FPU save and restore... done.
+Enabling unmasked SIMD FPU exception support... done.
+Initializing CPU#0
+Subtract (24 early reservations)
+  #0 [0001000000 - 000221d318]   TEXT DATA BSS
+  #1 [000009f800 - 0000100000]   BIOS reserved
+  #2 [000221e000 - 0002228149]             BRK
+  #3 [0000010000 - 0000011000]         PGTABLE
+  #4 [0002229000 - 000222a000]         BOOTMEM
+  #5 [000222a000 - 0002a2a000]         BOOTMEM
+  #6 [000221d340 - 000221d344]         BOOTMEM
+  #7 [000221d380 - 000221d400]         BOOTMEM
+  #8 [000221d400 - 000221d460]         BOOTMEM
+  #9 [0002a2a000 - 0002a2c000]         BOOTMEM
+  #10 [000221d480 - 000221d57c]         BOOTMEM
+  #11 [000221d580 - 000221d5c0]         BOOTMEM
+  #12 [000221d5c0 - 000221d600]         BOOTMEM
+  #13 [000221d600 - 000221d640]         BOOTMEM
+  #14 [000221d640 - 000221d680]         BOOTMEM
+  #15 [000221d680 - 000221d6c0]         BOOTMEM
+  #16 [000221d6c0 - 000221d700]         BOOTMEM
+  #17 [000221d700 - 000221d740]         BOOTMEM
+  #18 [000221d740 - 000221d780]         BOOTMEM
+  #19 [000221d780 - 000221d835]         BOOTMEM
+  #20 [000221d840 - 000221d8f5]         BOOTMEM
+  #21 [0002a2c000 - 0002a30000]         BOOTMEM
+  #22 [0002a30000 - 0002ab0000]         BOOTMEM
+  #23 [0002ab0000 - 0002af0000]         BOOTMEM
+Initializing HighMem for node 0 (00000000:00000000)
+Memory: 1020472k/1048512k available (12632k kernel code, 27588k reserved, 3768k data, 564k init, 0k highmem)
+virtual kernel memory layout:
+    fixmap  : 0xfffe3000 - 0xfffff000   ( 112 kB)
+    pkmap   : 0xff800000 - 0xffc00000   (4096 kB)
+    vmalloc : 0x807f0000 - 0xff7fe000   (2032 MB)
+    lowmem  : 0x40000000 - 0x7fff0000   (1023 MB)
+      .init : 0x42005000 - 0x42092000   ( 564 kB)
+      .data : 0x41c560c7 - 0x42004348   (3768 kB)
+      .text : 0x41000000 - 0x41c560c7   (12632 kB)
+Checking if this processor honours the WP bit even in supervisor mode...Ok.
+SLUB: Genslabs=13, HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+NR_IRQS:16
+CPU 0 irqstacks, hard=41f5f000 soft=41f61000
+spurious 8259A interrupt: IRQ7.
+Console: colour VGA+ 80x25
+console [ttyS0] enabled, bootconsole disabled
+console [ttyS0] enabled, bootconsole disabled
+Fast TSC calibration using PIT
+Detected 2010.601 MHz processor.
+Calibrating delay loop (skipped), value calculated using timer frequency.. 4021.20 BogoMIPS (lpj=20106010)
+pid_max: default: 32768 minimum: 301
+Security Framework initialized
+TOMOYO Linux initialized
+Mount-cache hash table entries: 512
+mce: CPU supports 5 MCE banks
+MCE: unknown CPU type - not enabling MCE support.
+Performance Events: 
+CPU: AuthenticAMD AMD Athlon(tm) 64 X2 Dual Core Processor 3800+ stepping 02
+calling  spawn_ksoftirqd+0x0/0x32 @ 1
+initcall spawn_ksoftirqd+0x0/0x32 returned 0 after 0 usecs
+calling  relay_init+0x0/0x7 @ 1
+initcall relay_init+0x0/0x7 returned 0 after 0 usecs
+calling  tracer_alloc_buffers+0x0/0x163 @ 1
+initcall tracer_alloc_buffers+0x0/0x163 returned 0 after 0 usecs
+calling  init_trace_printk+0x0/0x7 @ 1
+initcall init_trace_printk+0x0/0x7 returned 0 after 0 usecs
+calling  init_mmap_min_addr+0x0/0x11 @ 1
+initcall init_mmap_min_addr+0x0/0x11 returned 0 after 0 usecs
+calling  net_ns_init+0x0/0xf3 @ 1
+initcall net_ns_init+0x0/0xf3 returned 0 after 0 usecs
+calling  pci_reboot_init+0x0/0x11 @ 1
+initcall pci_reboot_init+0x0/0x11 returned 0 after 0 usecs
+calling  reboot_init+0x0/0x11 @ 1
+initcall reboot_init+0x0/0x11 returned 0 after 0 usecs
+calling  sysctl_init+0x0/0x13 @ 1
+initcall sysctl_init+0x0/0x13 returned 0 after 0 usecs
+calling  ksysfs_init+0x0/0x74 @ 1
+initcall ksysfs_init+0x0/0x74 returned 0 after 0 usecs
+calling  async_init+0x0/0x5e @ 1
+initcall async_init+0x0/0x5e returned 0 after 0 usecs
+calling  init_jiffies_clocksource+0x0/0xf @ 1
+initcall init_jiffies_clocksource+0x0/0xf returned 0 after 0 usecs
+calling  pm_init+0x0/0x2d @ 1
+initcall pm_init+0x0/0x2d returned 0 after 0 usecs
+calling  init_ftrace_syscalls+0x0/0x8c @ 1
+initcall init_ftrace_syscalls+0x0/0x8c returned 0 after 9765 usecs
+calling  init_hw_breakpoint+0x0/0x42 @ 1
+initcall init_hw_breakpoint+0x0/0x42 returned 0 after 0 usecs
+calling  init_zero_pfn+0x0/0x14 @ 1
+initcall init_zero_pfn+0x0/0x14 returned 0 after 0 usecs
+calling  filelock_init+0x0/0x30 @ 1
+initcall filelock_init+0x0/0x30 returned 0 after 0 usecs
+calling  init_misc_binfmt+0x0/0x35 @ 1
+initcall init_misc_binfmt+0x0/0x35 returned 0 after 0 usecs
+calling  init_script_binfmt+0x0/0x11 @ 1
+initcall init_script_binfmt+0x0/0x11 returned 0 after 0 usecs
+calling  init_elf_binfmt+0x0/0x11 @ 1
+initcall init_elf_binfmt+0x0/0x11 returned 0 after 0 usecs
+calling  debugfs_init+0x0/0x4a @ 1
+initcall debugfs_init+0x0/0x4a returned 0 after 0 usecs
+calling  securityfs_init+0x0/0x41 @ 1
+initcall securityfs_init+0x0/0x41 returned 0 after 0 usecs
+calling  random32_init+0x0/0x85 @ 1
+initcall random32_init+0x0/0x85 returned 0 after 0 usecs
+calling  test_atomic64+0x0/0x613 @ 1
+atomic64 test passed for i586+ platform with CX8 and with SSE
+initcall test_atomic64+0x0/0x613 returned 0 after 9765 usecs
+calling  regulator_init+0x0/0x2c @ 1
+regulator: core version 0.5
+initcall regulator_init+0x0/0x2c returned 0 after 0 usecs
+calling  cpuidle_init+0x0/0x19 @ 1
+initcall cpuidle_init+0x0/0x19 returned 0 after 0 usecs
+calling  sock_init+0x0/0x5a @ 1
+initcall sock_init+0x0/0x5a returned 0 after 0 usecs
+calling  net_inuse_init+0x0/0x25 @ 1
+initcall net_inuse_init+0x0/0x25 returned 0 after 0 usecs
+calling  netpoll_init+0x0/0x25 @ 1
+initcall netpoll_init+0x0/0x25 returned 0 after 0 usecs
+calling  netlink_proto_init+0x0/0x19e @ 1
+NET: Registered protocol family 16
+initcall netlink_proto_init+0x0/0x19e returned 0 after 0 usecs
+calling  olpc_init+0x0/0x151 @ 1
+initcall olpc_init+0x0/0x151 returned 0 after 0 usecs
+calling  bdi_class_init+0x0/0x40 @ 1
+initcall bdi_class_init+0x0/0x40 returned 0 after 0 usecs
+calling  kobject_uevent_init+0x0/0x1e @ 1
+initcall kobject_uevent_init+0x0/0x1e returned 0 after 0 usecs
+calling  gpiolib_sysfs_init+0x0/0xa2 @ 1
+initcall gpiolib_sysfs_init+0x0/0xa2 returned 0 after 0 usecs
+calling  pcibus_class_init+0x0/0x14 @ 1
+initcall pcibus_class_init+0x0/0x14 returned 0 after 0 usecs
+calling  pci_driver_init+0x0/0xf @ 1
+initcall pci_driver_init+0x0/0xf returned 0 after 0 usecs
+calling  lcd_class_init+0x0/0x46 @ 1
+initcall lcd_class_init+0x0/0x46 returned 0 after 0 usecs
+calling  backlight_class_init+0x0/0x54 @ 1
+initcall backlight_class_init+0x0/0x54 returned 0 after 0 usecs
+calling  video_output_class_init+0x0/0x14 @ 1
+initcall video_output_class_init+0x0/0x14 returned 0 after 0 usecs
+calling  tty_class_init+0x0/0x2f @ 1
+initcall tty_class_init+0x0/0x2f returned 0 after 0 usecs
+calling  vtconsole_class_init+0x0/0xc4 @ 1
+initcall vtconsole_class_init+0x0/0xc4 returned 0 after 0 usecs
+calling  spi_init+0x0/0x99 @ 1
+initcall spi_init+0x0/0x99 returned 0 after 0 usecs
+calling  i2c_init+0x0/0x57 @ 1
+i2c-core: driver [dummy] registered
+initcall i2c_init+0x0/0x57 returned 0 after 0 usecs
+calling  amd_postcore_init+0x0/0x39 @ 1
+initcall amd_postcore_init+0x0/0x39 returned 0 after 0 usecs
+calling  arch_kdebugfs_init+0x0/0x1e @ 1
+initcall arch_kdebugfs_init+0x0/0x1e returned 0 after 0 usecs
+calling  init_pit_clocksource+0x0/0x83 @ 1
+initcall init_pit_clocksource+0x0/0x83 returned 0 after 0 usecs
+calling  dmi_id_init+0x0/0x302 @ 1
+initcall dmi_id_init+0x0/0x302 returned 0 after 0 usecs
+calling  dma_bus_init+0x0/0x32 @ 1
+initcall dma_bus_init+0x0/0x32 returned 0 after 0 usecs
+calling  dma_channel_table_init+0x0/0xe6 @ 1
+initcall dma_channel_table_init+0x0/0xe6 returned 0 after 0 usecs
+calling  dca_init+0x0/0x22 @ 1
+dca service started, version 1.12.1
+initcall dca_init+0x0/0x22 returned 0 after 0 usecs
+calling  pci_arch_init+0x0/0x47 @ 1
+PCI: PCI BIOS revision 3.00 entry at 0xf21d0, last bus=5
+initcall pci_arch_init+0x0/0x47 returned 0 after 9765 usecs
+calling  topology_init+0x0/0x13 @ 1
+initcall topology_init+0x0/0x13 returned 0 after 0 usecs
+calling  param_sysfs_init+0x0/0x387 @ 1
+initcall param_sysfs_init+0x0/0x387 returned 0 after 0 usecs
+calling  pm_sysrq_init+0x0/0x20 @ 1
+initcall pm_sysrq_init+0x0/0x20 returned 0 after 0 usecs
+calling  init_slow_work+0x0/0x2d @ 1
+initcall init_slow_work+0x0/0x2d returned 0 after 0 usecs
+calling  default_bdi_init+0x0/0xae @ 1
+initcall default_bdi_init+0x0/0xae returned 0 after 0 usecs
+calling  init_bio+0x0/0xe8 @ 1
+bio: create slab <bio-0> at 0
+initcall init_bio+0x0/0xe8 returned 0 after 0 usecs
+calling  fsnotify_init+0x0/0xf @ 1
+initcall fsnotify_init+0x0/0xf returned 0 after 0 usecs
+calling  fsnotify_notification_init+0x0/0xe7 @ 1
+initcall fsnotify_notification_init+0x0/0xe7 returned 0 after 0 usecs
+calling  cryptomgr_init+0x0/0xf @ 1
+initcall cryptomgr_init+0x0/0xf returned 0 after 0 usecs
+calling  blk_settings_init+0x0/0x21 @ 1
+initcall blk_settings_init+0x0/0x21 returned 0 after 0 usecs
+calling  blk_ioc_init+0x0/0x30 @ 1
+initcall blk_ioc_init+0x0/0x30 returned 0 after 0 usecs
+calling  blk_softirq_init+0x0/0x2a @ 1
+initcall blk_softirq_init+0x0/0x2a returned 0 after 0 usecs
+calling  blk_iopoll_setup+0x0/0x2a @ 1
+initcall blk_iopoll_setup+0x0/0x2a returned 0 after 0 usecs
+calling  genhd_device_init+0x0/0x50 @ 1
+initcall genhd_device_init+0x0/0x50 returned 0 after 0 usecs
+calling  blk_dev_integrity_init+0x0/0x30 @ 1
+initcall blk_dev_integrity_init+0x0/0x30 returned 0 after 0 usecs
+calling  gpiolib_debugfs_init+0x0/0x2b @ 1
+initcall gpiolib_debugfs_init+0x0/0x2b returned 0 after 0 usecs
+calling  max7300_init+0x0/0x11 @ 1
+i2c-core: driver [max7300] registered
+initcall max7300_init+0x0/0x11 returned 0 after 0 usecs
+calling  max7301_init+0x0/0xf @ 1
+initcall max7301_init+0x0/0xf returned 0 after 0 usecs
+calling  max732x_init+0x0/0x11 @ 1
+i2c-core: driver [max732x] registered
+initcall max732x_init+0x0/0x11 returned 0 after 0 usecs
+calling  mcp23s08_init+0x0/0xf @ 1
+initcall mcp23s08_init+0x0/0xf returned 0 after 0 usecs
+calling  pca953x_init+0x0/0x11 @ 1
+i2c-core: driver [pca953x] registered
+initcall pca953x_init+0x0/0x11 returned 0 after 0 usecs
+calling  wm831x_gpio_init+0x0/0xf @ 1
+initcall wm831x_gpio_init+0x0/0xf returned 0 after 0 usecs
+calling  wm8994_gpio_init+0x0/0xf @ 1
+initcall wm8994_gpio_init+0x0/0xf returned 0 after 0 usecs
+calling  pci_slot_init+0x0/0x50 @ 1
+initcall pci_slot_init+0x0/0x50 returned 0 after 0 usecs
+calling  max8925_regulator_init+0x0/0xf @ 1
+initcall max8925_regulator_init+0x0/0xf returned 0 after 0 usecs
+calling  wm8350_regulator_init+0x0/0xf @ 1
+initcall wm8350_regulator_init+0x0/0xf returned 0 after 0 usecs
+calling  pcf50633_regulator_init+0x0/0xf @ 1
+initcall pcf50633_regulator_init+0x0/0xf returned 0 after 0 usecs
+calling  pcap_regulator_init+0x0/0xf @ 1
+initcall pcap_regulator_init+0x0/0xf returned 0 after 0 usecs
+calling  tps_65023_init+0x0/0x11 @ 1
+i2c-core: driver [tps65023] registered
+initcall tps_65023_init+0x0/0x11 returned 0 after 9765 usecs
+calling  tps6507x_pmic_init+0x0/0xf @ 1
+initcall tps6507x_pmic_init+0x0/0xf returned 0 after 0 usecs
+calling  pm8607_regulator_init+0x0/0xf @ 1
+initcall pm8607_regulator_init+0x0/0xf returned 0 after 0 usecs
+calling  misc_init+0x0/0xae @ 1
+initcall misc_init+0x0/0xae returned 0 after 0 usecs
+calling  vga_arb_device_init+0x0/0x76 @ 1
+vgaarb: loaded
+initcall vga_arb_device_init+0x0/0x76 returned 0 after 0 usecs
+calling  cn_init+0x0/0x9e @ 1
+initcall cn_init+0x0/0x9e returned 0 after 0 usecs
+calling  pm860x_i2c_init+0x0/0x31 @ 1
+i2c-core: driver [88PM860x] registered
+initcall pm860x_i2c_init+0x0/0x31 returned 0 after 0 usecs
+calling  wm831x_i2c_init+0x0/0x31 @ 1
+i2c-core: driver [wm831x] registered
+initcall wm831x_i2c_init+0x0/0x31 returned 0 after 0 usecs
+calling  wm8350_i2c_init+0x0/0x11 @ 1
+i2c-core: driver [wm8350] registered
+initcall wm8350_i2c_init+0x0/0x11 returned 0 after 9765 usecs
+calling  tps6507x_i2c_init+0x0/0x11 @ 1
+i2c-core: driver [tps6507x] registered
+initcall tps6507x_i2c_init+0x0/0x11 returned 0 after 9765 usecs
+calling  mc13783_init+0x0/0xf @ 1
+initcall mc13783_init+0x0/0xf returned 0 after 0 usecs
+calling  ezx_pcap_init+0x0/0xf @ 1
+initcall ezx_pcap_init+0x0/0xf returned 0 after 0 usecs
+calling  da903x_init+0x0/0x11 @ 1
+i2c-core: driver [da903x] registered
+initcall da903x_init+0x0/0x11 returned 0 after 9765 usecs
+calling  max8925_i2c_init+0x0/0x31 @ 1
+i2c-core: driver [max8925] registered
+initcall max8925_i2c_init+0x0/0x31 returned 0 after 9765 usecs
+calling  pcf50633_init+0x0/0x11 @ 1
+i2c-core: driver [pcf50633] registered
+initcall pcf50633_init+0x0/0x11 returned 0 after 0 usecs
+calling  ab3100_i2c_init+0x0/0x11 @ 1
+i2c-core: driver [ab3100] registered
+initcall ab3100_i2c_init+0x0/0x11 returned 0 after 0 usecs
+calling  ab8500_spi_init+0x0/0xf @ 1
+initcall ab8500_spi_init+0x0/0xf returned 0 after 0 usecs
+calling  init_scsi+0x0/0x91 @ 1
+SCSI subsystem initialized
+initcall init_scsi+0x0/0x91 returned 0 after 0 usecs
+calling  ata_init+0x0/0x2bc @ 1
+libata version 3.00 loaded.
+initcall ata_init+0x0/0x2bc returned 0 after 0 usecs
+calling  phy_init+0x0/0x2b @ 1
+initcall phy_init+0x0/0x2b returned 0 after 0 usecs
+calling  init_pcmcia_cs+0x0/0x2d @ 1
+initcall init_pcmcia_cs+0x0/0x2d returned 0 after 0 usecs
+calling  nop_usb_xceiv_init+0x0/0xf @ 1
+initcall nop_usb_xceiv_init+0x0/0xf returned 0 after 0 usecs
+calling  usb_init+0x0/0x143 @ 1
+usbcore: registered new interface driver usbfs
+usbcore: registered new interface driver hub
+usbcore: registered new device driver usb
+initcall usb_init+0x0/0x143 returned 0 after 19531 usecs
+calling  serio_init+0x0/0x8d @ 1
+initcall serio_init+0x0/0x8d returned 0 after 0 usecs
+calling  gameport_init+0x0/0x8d @ 1
+initcall gameport_init+0x0/0x8d returned 0 after 0 usecs
+calling  input_init+0x0/0x128 @ 1
+initcall input_init+0x0/0x128 returned 0 after 0 usecs
+calling  tca6416_keypad_init+0x0/0x11 @ 1
+i2c-core: driver [tca6416-keypad] registered
+initcall tca6416_keypad_init+0x0/0x11 returned 0 after 0 usecs
+calling  pps_init+0x0/0xa3 @ 1
+LinuxPPS API ver. 1 registered
+Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+initcall pps_init+0x0/0xa3 returned 0 after 9765 usecs
+calling  power_supply_class_init+0x0/0x39 @ 1
+initcall power_supply_class_init+0x0/0x39 returned 0 after 0 usecs
+calling  hwmon_init+0x0/0x101 @ 1
+initcall hwmon_init+0x0/0x101 returned 0 after 0 usecs
+calling  md_init+0x0/0xdf @ 1
+initcall md_init+0x0/0xdf returned 0 after 0 usecs
+calling  mmc_init+0x0/0x7c @ 1
+initcall mmc_init+0x0/0x7c returned 0 after 0 usecs
+calling  leds_init+0x0/0x3d @ 1
+initcall leds_init+0x0/0x3d returned 0 after 0 usecs
+calling  init_soundcore+0x0/0x8f @ 1
+initcall init_soundcore+0x0/0x8f returned 0 after 0 usecs
+calling  pci_subsys_init+0x0/0x48 @ 1
+PCI: Probing PCI hardware
+PCI: Probing PCI hardware (bus 00)
+pci 0000:00:01.1: reg 10: [io  0xdc00-0xdc1f]
+pci 0000:00:01.1: reg 20: [io  0x4c00-0x4c3f]
+pci 0000:00:01.1: reg 24: [io  0x4c40-0x4c7f]
+pci 0000:00:01.1: PME# supported from D3hot D3cold
+pci 0000:00:01.1: PME# disabled
+pci 0000:00:02.0: reg 10: [mem 0xda102000-0xda102fff]
+pci 0000:00:02.0: supports D1 D2
+pci 0000:00:02.0: PME# supported from D0 D1 D2 D3hot D3cold
+pci 0000:00:02.0: PME# disabled
+pci 0000:00:02.1: reg 10: [mem 0xfeb00000-0xfeb000ff]
+pci 0000:00:02.1: supports D1 D2
+pci 0000:00:02.1: PME# supported from D0 D1 D2 D3hot D3cold
+pci 0000:00:02.1: PME# disabled
+pci 0000:00:04.0: reg 10: [io  0xd400-0xd4ff]
+pci 0000:00:04.0: reg 14: [io  0xd800-0xd8ff]
+pci 0000:00:04.0: reg 18: [mem 0xda101000-0xda101fff]
+pci 0000:00:04.0: supports D1 D2
+pci 0000:00:06.0: reg 20: [io  0xf000-0xf00f]
+pci 0000:00:0a.0: reg 10: [mem 0xda100000-0xda100fff]
+pci 0000:00:0a.0: reg 14: [io  0xd000-0xd007]
+pci 0000:00:0a.0: supports D1 D2
+pci 0000:00:0a.0: PME# supported from D0 D1 D2 D3hot D3cold
+pci 0000:00:0a.0: PME# disabled
+pci 0000:00:0b.0: PME# supported from D0 D1 D2 D3hot D3cold
+pci 0000:00:0b.0: PME# disabled
+pci 0000:00:0c.0: PME# supported from D0 D1 D2 D3hot D3cold
+pci 0000:00:0c.0: PME# disabled
+pci 0000:00:0d.0: PME# supported from D0 D1 D2 D3hot D3cold
+pci 0000:00:0d.0: PME# disabled
+pci 0000:00:0e.0: PME# supported from D0 D1 D2 D3hot D3cold
+pci 0000:00:0e.0: PME# disabled
+pci 0000:05:07.0: reg 10: [io  0xc000-0xc0ff]
+pci 0000:05:07.0: reg 14: [mem 0xda000000-0xda0000ff]
+pci 0000:05:07.0: supports D1 D2
+pci 0000:05:07.0: PME# supported from D1 D2 D3hot
+pci 0000:05:07.0: PME# disabled
+pci 0000:00:09.0: PCI bridge to [bus 05-05] (subtractive decode)
+pci 0000:00:09.0:   bridge window [io  0xc000-0xcfff]
+pci 0000:00:09.0:   bridge window [mem 0xda000000-0xda0fffff]
+pci 0000:00:09.0:   bridge window [mem 0xfff00000-0x000fffff pref] (disabled)
+pci 0000:00:09.0:   bridge window [io  0x0000-0xffff] (subtractive decode)
+pci 0000:00:09.0:   bridge window [mem 0x00000000-0xffffffff] (subtractive decode)
+pci 0000:00:0b.0: PCI bridge to [bus 04-04]
+pci 0000:00:0b.0:   bridge window [io  0xf000-0x0000] (disabled)
+pci 0000:00:0b.0:   bridge window [mem 0xfff00000-0x000fffff] (disabled)
+pci 0000:00:0b.0:   bridge window [mem 0xfff00000-0x000fffff pref] (disabled)
+pci 0000:00:0c.0: PCI bridge to [bus 03-03]
+pci 0000:00:0c.0:   bridge window [io  0xf000-0x0000] (disabled)
+pci 0000:00:0c.0:   bridge window [mem 0xfff00000-0x000fffff] (disabled)
+pci 0000:00:0c.0:   bridge window [mem 0xfff00000-0x000fffff pref] (disabled)
+pci 0000:00:0d.0: PCI bridge to [bus 02-02]
+pci 0000:00:0d.0:   bridge window [io  0xf000-0x0000] (disabled)
+pci 0000:00:0d.0:   bridge window [mem 0xfff00000-0x000fffff] (disabled)
+pci 0000:00:0d.0:   bridge window [mem 0xfff00000-0x000fffff pref] (disabled)
+pci 0000:01:00.0: reg 10: [mem 0xd0000000-0xd7ffffff pref]
+pci 0000:01:00.0: reg 14: [io  0xb000-0xb0ff]
+pci 0000:01:00.0: reg 18: [mem 0xd9000000-0xd900ffff]
+pci 0000:01:00.0: reg 30: [mem 0x00000000-0x0001ffff pref]
+pci 0000:01:00.0: supports D1 D2
+pci 0000:01:00.1: reg 10: [mem 0xd9010000-0xd901ffff]
+pci 0000:01:00.1: supports D1 D2
+pci 0000:01:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
+pci 0000:00:0e.0: PCI bridge to [bus 01-01]
+pci 0000:00:0e.0:   bridge window [io  0xb000-0xbfff]
+pci 0000:00:0e.0:   bridge window [mem 0xd8000000-0xd9ffffff]
+pci 0000:00:0e.0:   bridge window [mem 0xd0000000-0xd7ffffff 64bit pref]
+vgaarb: device added: PCI:0000:01:00.0,decodes=io+mem,owns=io+mem,locks=none
+pci 0000:00:00.0: default IRQ router [10de:005e]
+PCI: pci_cache_line_size set to 64 bytes
+reserve RAM buffer: 000000000009f800 - 000000000009ffff 
+reserve RAM buffer: 000000003fff0000 - 000000003fffffff initcall pci_subsys_init+0x0/0x48 returned 0 after 332031 usecs
+calling  proto_init+0x0/0xf @ 1
+initcall proto_init+0x0/0xf returned 0 after 0 usecs
+calling  net_dev_init+0x0/0x125 @ 1
+initcall net_dev_init+0x0/0x125 returned 0 after 0 usecs
+calling  neigh_init+0x0/0x7d @ 1
+initcall neigh_init+0x0/0x7d returned 0 after 0 usecs
+calling  pktsched_init+0x0/0xe7 @ 1
+initcall pktsched_init+0x0/0xe7 returned 0 after 0 usecs
+calling  tc_filter_init+0x0/0x53 @ 1
+initcall tc_filter_init+0x0/0x53 returned 0 after 0 usecs
+calling  tc_action_init+0x0/0x53 @ 1
+initcall tc_action_init+0x0/0x53 returned 0 after 0 usecs
+calling  genl_init+0x0/0x80 @ 1
+initcall genl_init+0x0/0x80 returned 0 after 0 usecs
+calling  cipso_v4_init+0x0/0x55 @ 1
+initcall cipso_v4_init+0x0/0x55 returned 0 after 0 usecs
+calling  wanrouter_init+0x0/0x5c @ 1
+Sangoma WANPIPE Router v1.1 (c) 1995-2000 Sangoma Technologies Inc.
+initcall wanrouter_init+0x0/0x5c returned 0 after 0 usecs
+calling  bt_init+0x0/0x54 @ 1
+Bluetooth: Core ver 2.15
+NET: Registered protocol family 31
+Bluetooth: HCI device and connection manager initialized
+Bluetooth: HCI socket layer initialized
+initcall bt_init+0x0/0x54 returned 0 after 19531 usecs
+calling  atm_init+0x0/0xd9 @ 1
+NET: Registered protocol family 8
+NET: Registered protocol family 20
+initcall atm_init+0x0/0xd9 returned 0 after 9765 usecs
+calling  wireless_nlevent_init+0x0/0xf @ 1
+initcall wireless_nlevent_init+0x0/0xf returned 0 after 0 usecs
+calling  netlbl_init+0x0/0x7e @ 1
+NetLabel: Initializing
+NetLabel:  domain hash size = 128
+NetLabel:  protocols = UNLABELED CIPSOv4
+NetLabel:  unlabeled traffic allowed by default
+initcall netlbl_init+0x0/0x7e returned 0 after 9765 usecs
+calling  wpan_phy_class_init+0x0/0x33 @ 1
+initcall wpan_phy_class_init+0x0/0x33 returned 0 after 0 usecs
+calling  sysctl_init+0x0/0xa8 @ 1
+initcall sysctl_init+0x0/0xa8 returned 0 after 0 usecs
+calling  clocksource_done_booting+0x0/0x4f @ 1
+Switching to clocksource tsc
+initcall clocksource_done_booting+0x0/0x4f returned 0 after 0 usecs
+calling  ftrace_init_debugfs+0x0/0x151 @ 1
+initcall ftrace_init_debugfs+0x0/0x151 returned 0 after 15 usecs
+calling  rb_init_debugfs+0x0/0x30 @ 1
+initcall rb_init_debugfs+0x0/0x30 returned 0 after 1 usecs
+calling  tracer_init_debugfs+0x0/0x2dd @ 1
+initcall tracer_init_debugfs+0x0/0x2dd returned 0 after 65 usecs
+calling  init_trace_printk_function_export+0x0/0x34 @ 1
+initcall init_trace_printk_function_export+0x0/0x34 returned 0 after 1 usecs
+calling  event_trace_init+0x0/0x19a @ 1
+initcall event_trace_init+0x0/0x19a returned 0 after 13361 usecs
+calling  init_pipe_fs+0x0/0x3d @ 1
+initcall init_pipe_fs+0x0/0x3d returned 0 after 10 usecs
+calling  eventpoll_init+0x0/0xbe @ 1
+initcall eventpoll_init+0x0/0xbe returned 0 after 4 usecs
+calling  anon_inode_init+0x0/0xfa @ 1
+initcall anon_inode_init+0x0/0xfa returned 0 after 3 usecs
+calling  fscache_init+0x0/0xa6 @ 1
+Slow work thread pool: Starting up
+Slow work thread pool: Ready
+FS-Cache: Loaded
+initcall fscache_init+0x0/0xa6 returned 0 after 7229 usecs
+calling  cachefiles_init+0x0/0x9a @ 1
+CacheFiles: Loaded
+initcall cachefiles_init+0x0/0x9a returned 0 after 1742 usecs
+calling  tomoyo_initerface_init+0x0/0x155 @ 1
+initcall tomoyo_initerface_init+0x0/0x155 returned 0 after 23 usecs
+calling  blk_scsi_ioctl_init+0x0/0x288 @ 1
+initcall blk_scsi_ioctl_init+0x0/0x288 returned 0 after 0 usecs
+calling  chr_dev_init+0x0/0xd0 @ 1
+initcall chr_dev_init+0x0/0xd0 returned 0 after 103 usecs
+calling  firmware_class_init+0x0/0x14 @ 1
+initcall firmware_class_init+0x0/0x14 returned 0 after 6 usecs
+calling  ieee1394_init+0x0/0x226 @ 1
+initcall ieee1394_init+0x0/0x226 returned 0 after 65 usecs
+calling  init_pcmcia_bus+0x0/0x5f @ 1
+initcall init_pcmcia_bus+0x0/0x5f returned 0 after 10 usecs
+calling  pcibios_assign_resources+0x0/0x6c @ 1
+pci 0000:00:09.0: PCI bridge to [bus 05-05]
+pci 0000:00:09.0:   bridge window [io  0xc000-0xcfff]
+pci 0000:00:09.0:   bridge window [mem 0xda000000-0xda0fffff]
+pci 0000:00:09.0:   bridge window [mem pref disabled]
+pci 0000:00:0b.0: PCI bridge to [bus 04-04]
+pci 0000:00:0b.0:   bridge window [io  disabled]
+pci 0000:00:0b.0:   bridge window [mem disabled]
+pci 0000:00:0b.0:   bridge window [mem pref disabled]
+pci 0000:00:0c.0: PCI bridge to [bus 03-03]
+pci 0000:00:0c.0:   bridge window [io  disabled]
+pci 0000:00:0c.0:   bridge window [mem disabled]
+pci 0000:00:0c.0:   bridge window [mem pref disabled]
+pci 0000:00:0d.0: PCI bridge to [bus 02-02]
+pci 0000:00:0d.0:   bridge window [io  disabled]
+pci 0000:00:0d.0:   bridge window [mem disabled]
+pci 0000:00:0d.0:   bridge window [mem pref disabled]
+pci 0000:01:00.0: BAR 6: assigned [mem 0xd8000000-0xd801ffff pref]
+pci 0000:00:0e.0: PCI bridge to [bus 01-01]
+pci 0000:00:0e.0:   bridge window [io  0xb000-0xbfff]
+pci 0000:00:0e.0:   bridge window [mem 0xd8000000-0xd9ffffff]
+pci 0000:00:0e.0:   bridge window [mem 0xd0000000-0xd7ffffff 64bit pref]
+pci 0000:00:09.0: setting latency timer to 64
+pci 0000:00:0b.0: setting latency timer to 64
+pci 0000:00:0c.0: setting latency timer to 64
+pci 0000:00:0d.0: setting latency timer to 64
+pci 0000:00:0e.0: setting latency timer to 64
+pci_bus 0000:00: resource 0 [io  0x0000-0xffff]
+pci_bus 0000:00: resource 1 [mem 0x00000000-0xffffffff]
+pci_bus 0000:05: resource 0 [io  0xc000-0xcfff]
+pci_bus 0000:05: resource 1 [mem 0xda000000-0xda0fffff]
+pci_bus 0000:05: resource 4 [io  0x0000-0xffff]
+pci_bus 0000:05: resource 5 [mem 0x00000000-0xffffffff]
+pci_bus 0000:01: resource 0 [io  0xb000-0xbfff]
+pci_bus 0000:01: resource 1 [mem 0xd8000000-0xd9ffffff]
+pci_bus 0000:01: resource 2 [mem 0xd0000000-0xd7ffffff 64bit pref]
+initcall pcibios_assign_resources+0x0/0x6c returned 0 after 157805 usecs
+calling  sysctl_core_init+0x0/0x2d @ 1
+initcall sysctl_core_init+0x0/0x2d returned 0 after 6 usecs
+calling  inet_init+0x0/0x26c @ 1
+NET: Registered protocol family 2
+IP route cache hash table entries: 32768 (order: 5, 131072 bytes)
+TCP established hash table entries: 131072 (order: 8, 1048576 bytes)
+TCP bind hash table entries: 65536 (order: 6, 262144 bytes)
+TCP: Hash tables configured (established 131072 bind 65536)
+TCP reno registered
+UDP hash table entries: 512 (order: 1, 8192 bytes)
+UDP-Lite hash table entries: 512 (order: 1, 8192 bytes)
+initcall inet_init+0x0/0x26c returned 0 after 37180 usecs
+calling  af_unix_init+0x0/0x4e @ 1
+NET: Registered protocol family 1
+initcall af_unix_init+0x0/0x4e returned 0 after 2987 usecs
+calling  init_sunrpc+0x0/0x53 @ 1
+RPC: Registered udp transport module.
+RPC: Registered tcp transport module.
+RPC: Registered tcp NFSv4.1 backchannel transport module.
+initcall init_sunrpc+0x0/0x53 returned 0 after 11714 usecs
+calling  pci_apply_final_quirks+0x0/0x108 @ 1
+pci 0000:01:00.0: Boot video device
+PCI: CLS 32 bytes, default 64
+initcall pci_apply_final_quirks+0x0/0x108 returned 0 after 23315 usecs
+calling  populate_rootfs+0x0/0x267 @ 1
+initcall populate_rootfs+0x0/0x267 returned 0 after 60 usecs
+calling  pci_iommu_init+0x0/0x21 @ 1
+DMA-API: preallocated 32768 debug entries
+DMA-API: debugging enabled by kernel config
+initcall pci_iommu_init+0x0/0x21 returned 0 after 11984 usecs
+calling  irqfd_module_init+0x0/0x3e @ 1
+initcall irqfd_module_init+0x0/0x3e returned 0 after 38 usecs
+calling  i8259A_init_sysfs+0x0/0x1d @ 1
+initcall i8259A_init_sysfs+0x0/0x1d returned 0 after 24 usecs
+calling  sbf_init+0x0/0x109 @ 1
+initcall sbf_init+0x0/0x109 returned 0 after 0 usecs
+calling  i8237A_init_sysfs+0x0/0x1d @ 1
+initcall i8237A_init_sysfs+0x0/0x1d returned 0 after 11 usecs
+calling  add_rtc_cmos+0x0/0x48 @ 1
+platform rtc_cmos: registered platform RTC device (no PNP device found)
+initcall add_rtc_cmos+0x0/0x48 returned 0 after 6222 usecs
+calling  cache_sysfs_init+0x0/0x1f9 @ 1
+initcall cache_sysfs_init+0x0/0x1f9 returned 0 after 0 usecs
+calling  mcheck_init_device+0x0/0x1d3 @ 1
+initcall mcheck_init_device+0x0/0x1d3 returned -5 after 0 usecs
+initcall mcheck_init_device+0x0/0x1d3 returned with error code -5 
+calling  inject_init+0x0/0x30 @ 1
+Machine check injector initialized
+initcall inject_init+0x0/0x30 returned 0 after 3089 usecs
+calling  cpuid_init+0x0/0xe9 @ 1
+initcall cpuid_init+0x0/0xe9 returned 0 after 30 usecs
+calling  add_pcspkr+0x0/0x2c @ 1
+initcall add_pcspkr+0x0/0x2c returned 0 after 12 usecs
+calling  scx200_init+0x0/0x26 @ 1
+scx200: NatSemi SCx200 Driver
+initcall scx200_init+0x0/0x26 returned 0 after 2657 usecs
+calling  start_periodic_check_for_corruption+0x0/0x40 @ 1
+Scanning for low memory corruption every 60 seconds
+initcall start_periodic_check_for_corruption+0x0/0x40 returned 0 after 4506 usecs
+calling  aes_init+0x0/0xf @ 1
+initcall aes_init+0x0/0xf returned 0 after 74 usecs
+calling  init+0x0/0xf @ 1
+initcall init+0x0/0xf returned 0 after 14 usecs
+calling  proc_execdomains_init+0x0/0x28 @ 1
+initcall proc_execdomains_init+0x0/0x28 returned 0 after 5 usecs
+calling  ioresources_init+0x0/0x45 @ 1
+initcall ioresources_init+0x0/0x45 returned 0 after 2 usecs
+calling  uid_cache_init+0x0/0x8a @ 1
+initcall uid_cache_init+0x0/0x8a returned 0 after 5 usecs
+calling  init_posix_timers+0x0/0x159 @ 1
+initcall init_posix_timers+0x0/0x159 returned 0 after 1 usecs
+calling  init_posix_cpu_timers+0x0/0xb9 @ 1
+initcall init_posix_cpu_timers+0x0/0xb9 returned 0 after 0 usecs
+calling  nsproxy_cache_init+0x0/0x33 @ 1
+initcall nsproxy_cache_init+0x0/0x33 returned 0 after 0 usecs
+calling  timekeeping_init_device+0x0/0x1d @ 1
+initcall timekeeping_init_device+0x0/0x1d returned 0 after 13 usecs
+calling  init_clocksource_sysfs+0x0/0x43 @ 1
+initcall init_clocksource_sysfs+0x0/0x43 returned 0 after 13 usecs
+calling  init_timer_list_procfs+0x0/0x31 @ 1
+initcall init_timer_list_procfs+0x0/0x31 returned 0 after 1 usecs
+calling  futex_init+0x0/0x53 @ 1
+initcall futex_init+0x0/0x53 returned 0 after 5 usecs
+calling  proc_dma_init+0x0/0x28 @ 1
+initcall proc_dma_init+0x0/0x28 returned 0 after 1 usecs
+calling  kallsyms_init+0x0/0x2b @ 1
+initcall kallsyms_init+0x0/0x2b returned 0 after 0 usecs
+calling  crash_save_vmcoreinfo_init+0x0/0x4b5 @ 1
+initcall crash_save_vmcoreinfo_init+0x0/0x4b5 returned 0 after 23 usecs
+calling  crash_notes_memory_init+0x0/0x36 @ 1
+initcall crash_notes_memory_init+0x0/0x36 returned 0 after 0 usecs
+calling  utsname_sysctl_init+0x0/0x11 @ 1
+initcall utsname_sysctl_init+0x0/0x11 returned 0 after 3 usecs
+calling  ftrace_nodyn_init+0x0/0x11 @ 1
+initcall ftrace_nodyn_init+0x0/0x11 returned 0 after 0 usecs
+calling  init_events+0x0/0x60 @ 1
+initcall init_events+0x0/0x60 returned 0 after 5 usecs
+calling  init_sched_switch_trace+0x0/0xf @ 1
+initcall init_sched_switch_trace+0x0/0xf returned 0 after 9 usecs
+calling  init_function_trace+0x0/0xf @ 1
+initcall init_function_trace+0x0/0xf returned 0 after 1 usecs
+calling  init_irqsoff_tracer+0x0/0x11 @ 1
+initcall init_irqsoff_tracer+0x0/0x11 returned 0 after 1 usecs
+calling  init_wakeup_tracer+0x0/0x1d @ 1
+initcall init_wakeup_tracer+0x0/0x1d returned 0 after 1 usecs
+calling  init_mmio_trace+0x0/0xf @ 1
+initcall init_mmio_trace+0x0/0xf returned 0 after 1 usecs
+calling  init_graph_trace+0x0/0x6b @ 1
+initcall init_graph_trace+0x0/0x6b returned 0 after 3 usecs
+calling  init_blk_tracer+0x0/0x57 @ 1
+initcall init_blk_tracer+0x0/0x57 returned 0 after 1 usecs
+calling  perf_event_sysfs_init+0x0/0x14 @ 1
+initcall perf_event_sysfs_init+0x0/0x14 returned 0 after 2 usecs
+calling  init_per_zone_wmark_min+0x0/0x5b @ 1
+initcall init_per_zone_wmark_min+0x0/0x5b returned 0 after 28 usecs
+calling  kswapd_init+0x0/0x13 @ 1
+initcall kswapd_init+0x0/0x13 returned 0 after 8 usecs
+calling  setup_vmstat+0x0/0x8b @ 1
+initcall setup_vmstat+0x0/0x8b returned 0 after 4 usecs
+calling  mm_sysfs_init+0x0/0x22 @ 1
+initcall mm_sysfs_init+0x0/0x22 returned 0 after 2 usecs
+calling  proc_vmalloc_init+0x0/0x2b @ 1
+initcall proc_vmalloc_init+0x0/0x2b returned 0 after 1 usecs
+calling  init_emergency_pool+0x0/0x7f @ 1
+initcall init_emergency_pool+0x0/0x7f returned 0 after 1 usecs
+calling  ksm_init+0x0/0x1e8 @ 1
+initcall ksm_init+0x0/0x1e8 returned 0 after 24 usecs
+calling  fasync_init+0x0/0x30 @ 1
+initcall fasync_init+0x0/0x30 returned 0 after 1 usecs
+calling  proc_filesystems_init+0x0/0x28 @ 1
+initcall proc_filesystems_init+0x0/0x28 returned 0 after 1 usecs
+calling  dnotify_init+0x0/0x82 @ 1
+initcall dnotify_init+0x0/0x82 returned 0 after 1 usecs
+calling  inotify_user_setup+0x0/0x79 @ 1
+initcall inotify_user_setup+0x0/0x79 returned 0 after 1 usecs
+calling  aio_setup+0x0/0xad @ 1
+initcall aio_setup+0x0/0xad returned 0 after 15 usecs
+calling  proc_locks_init+0x0/0x28 @ 1
+initcall proc_locks_init+0x0/0x28 returned 0 after 1 usecs
+calling  init_mbcache+0x0/0x11 @ 1
+initcall init_mbcache+0x0/0x11 returned 0 after 0 usecs
+calling  dquot_init+0x0/0x104 @ 1
+VFS: Disk quotas dquot_6.5.2
+Dquot-cache hash table entries: 1024 (order 0, 4096 bytes)
+initcall dquot_init+0x0/0x104 returned 0 after 7676 usecs
+calling  proc_cmdline_init+0x0/0x28 @ 1
+initcall proc_cmdline_init+0x0/0x28 returned 0 after 1 usecs
+calling  proc_cpuinfo_init+0x0/0x28 @ 1
+initcall proc_cpuinfo_init+0x0/0x28 returned 0 after 1 usecs
+calling  proc_devices_init+0x0/0x28 @ 1
+initcall proc_devices_init+0x0/0x28 returned 0 after 1 usecs
+calling  proc_interrupts_init+0x0/0x28 @ 1
+initcall proc_interrupts_init+0x0/0x28 returned 0 after 1 usecs
+calling  proc_loadavg_init+0x0/0x28 @ 1
+initcall proc_loadavg_init+0x0/0x28 returned 0 after 1 usecs
+calling  proc_meminfo_init+0x0/0x28 @ 1
+initcall proc_meminfo_init+0x0/0x28 returned 0 after 1 usecs
+calling  proc_stat_init+0x0/0x28 @ 1
+initcall proc_stat_init+0x0/0x28 returned 0 after 1 usecs
+calling  proc_uptime_init+0x0/0x28 @ 1
+initcall proc_uptime_init+0x0/0x28 returned 0 after 1 usecs
+calling  proc_version_init+0x0/0x28 @ 1
+initcall proc_version_init+0x0/0x28 returned 0 after 1 usecs
+calling  proc_softirqs_init+0x0/0x28 @ 1
+initcall proc_softirqs_init+0x0/0x28 returned 0 after 1 usecs
+calling  proc_kmsg_init+0x0/0x2b @ 1
+initcall proc_kmsg_init+0x0/0x2b returned 0 after 1 usecs
+calling  proc_page_init+0x0/0x4b @ 1
+initcall proc_page_init+0x0/0x4b returned 0 after 2 usecs
+calling  configfs_init+0x0/0xc9 @ 1
+initcall configfs_init+0x0/0xc9 returned 0 after 5 usecs
+calling  init_devpts_fs+0x0/0x3d @ 1
+initcall init_devpts_fs+0x0/0x3d returned 0 after 9 usecs
+calling  init_ext3_fs+0x0/0x6b @ 1
+initcall init_ext3_fs+0x0/0x6b returned 0 after 4 usecs
+calling  journal_init+0x0/0xd6 @ 1
+initcall journal_init+0x0/0xd6 returned 0 after 16 usecs
+calling  journal_init+0x0/0xb5 @ 1
+initcall journal_init+0x0/0xb5 returned 0 after 3 usecs
+calling  init_ramfs_fs+0x0/0xf @ 1
+initcall init_ramfs_fs+0x0/0xf returned 0 after 0 usecs
+calling  init_fat_fs+0x0/0x4d @ 1
+initcall init_fat_fs+0x0/0x4d returned 0 after 1 usecs
+calling  init_vfat_fs+0x0/0xf @ 1
+initcall init_vfat_fs+0x0/0xf returned 0 after 0 usecs
+calling  init_msdos_fs+0x0/0xf @ 1
+initcall init_msdos_fs+0x0/0xf returned 0 after 0 usecs
+calling  init_iso9660_fs+0x0/0x6b @ 1
+initcall init_iso9660_fs+0x0/0x6b returned 0 after 10 usecs
+calling  init_nfsd+0x0/0xd5 @ 1
+Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
+initcall init_nfsd+0x0/0xd5 returned 0 after 5040 usecs
+calling  init_nlm+0x0/0x1c @ 1
+initcall init_nlm+0x0/0x1c returned 0 after 1 usecs
+calling  init_nls_cp437+0x0/0xf @ 1
+initcall init_nls_cp437+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_cp737+0x0/0xf @ 1
+initcall init_nls_cp737+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_cp852+0x0/0xf @ 1
+initcall init_nls_cp852+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_cp855+0x0/0xf @ 1
+initcall init_nls_cp855+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_cp861+0x0/0xf @ 1
+initcall init_nls_cp861+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_cp862+0x0/0xf @ 1
+initcall init_nls_cp862+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_cp949+0x0/0xf @ 1
+initcall init_nls_cp949+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_cp1251+0x0/0xf @ 1
+initcall init_nls_cp1251+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_ascii+0x0/0xf @ 1
+initcall init_nls_ascii+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_iso8859_2+0x0/0xf @ 1
+initcall init_nls_iso8859_2+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_iso8859_4+0x0/0xf @ 1
+initcall init_nls_iso8859_4+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_iso8859_6+0x0/0xf @ 1
+initcall init_nls_iso8859_6+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_iso8859_7+0x0/0xf @ 1
+initcall init_nls_iso8859_7+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_iso8859_9+0x0/0xf @ 1
+initcall init_nls_iso8859_9+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_iso8859_14+0x0/0xf @ 1
+initcall init_nls_iso8859_14+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_iso8859_15+0x0/0xf @ 1
+initcall init_nls_iso8859_15+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_koi8_r+0x0/0xf @ 1
+initcall init_nls_koi8_r+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_koi8_u+0x0/0xf @ 1
+initcall init_nls_koi8_u+0x0/0xf returned 0 after 0 usecs
+calling  init_nls_koi8_ru+0x0/0x39 @ 1
+initcall init_nls_koi8_ru+0x0/0x39 returned 0 after 0 usecs
+calling  init_nls_utf8+0x0/0x21 @ 1
+initcall init_nls_utf8+0x0/0x21 returned 0 after 0 usecs
+calling  init_ncp_fs+0x0/0x5b @ 1
+initcall init_ncp_fs+0x0/0x5b returned 0 after 1 usecs
+calling  init_ntfs_fs+0x0/0x1ca @ 1
+NTFS driver 2.1.29 [Flags: R/O].
+initcall init_ntfs_fs+0x0/0x1ca returned 0 after 2903 usecs
+calling  init_autofs4_fs+0x0/0x1e @ 1
+initcall init_autofs4_fs+0x0/0x1e returned 0 after 17 usecs
+calling  init_jfs_fs+0x0/0x227 @ 1
+JFS: nTxBlock = 7972, nTxLock = 63779
+initcall init_jfs_fs+0x0/0x227 returned 0 after 6260 usecs
+calling  init_xfs_fs+0x0/0xb3 @ 1
+SGI XFS with security attributes, debug enabled
+SGI XFS Quota Management subsystem
+initcall init_xfs_fs+0x0/0xb3 returned 0 after 7316 usecs
+calling  init_nilfs_fs+0x0/0xe2 @ 1
+NILFS version 2 loaded
+initcall init_nilfs_fs+0x0/0xe2 returned 0 after 2058 usecs
+calling  ocfs2_init+0x0/0x475 @ 1
+OCFS2 1.5.0
+initcall ocfs2_init+0x0/0x475 returned 0 after 1150 usecs
+calling  ocfs2_stack_glue_init+0x0/0x80 @ 1
+initcall ocfs2_stack_glue_init+0x0/0x80 returned 0 after 9 usecs
+calling  o2cb_stack_init+0x0/0xf @ 1
+ocfs2: Registered cluster interface o2cb
+initcall o2cb_stack_init+0x0/0xf returned 0 after 3574 usecs
+calling  init_dlmfs_fs+0x0/0xd9 @ 1
+OCFS2 DLMFS 1.5.0
+OCFS2 User DLM kernel interface loaded
+initcall init_dlmfs_fs+0x0/0xd9 returned 0 after 5053 usecs
+calling  init_o2nm+0x0/0x99 @ 1
+OCFS2 Node Manager 1.5.0
+initcall init_o2nm+0x0/0x99 returned 0 after 2319 usecs
+calling  dlm_init+0x0/0x3a1 @ 1
+OCFS2 DLM 1.5.0
+initcall dlm_init+0x0/0x3a1 returned 0 after 1472 usecs
+calling  init_btrfs_fs+0x0/0x8a @ 1
+Btrfs loaded
+initcall init_btrfs_fs+0x0/0x8a returned 0 after 1234 usecs
+calling  init_ceph+0x0/0x178 @ 1
+ceph: loaded (mon/mds/osd proto 15/32/24, osdmap 5/5 5/5)
+initcall init_ceph+0x0/0x178 returned 0 after 5042 usecs
+calling  ipc_init+0x0/0x20 @ 1
+msgmni has been set to 1993
+initcall ipc_init+0x0/0x20 returned 0 after 2477 usecs
+calling  ipc_sysctl_init+0x0/0x11 @ 1
+initcall ipc_sysctl_init+0x0/0x11 returned 0 after 1 usecs
+calling  init_mqueue_fs+0x0/0x96 @ 1
+initcall init_mqueue_fs+0x0/0x96 returned 0 after 19 usecs
+calling  key_proc_init+0x0/0x38 @ 1
+initcall key_proc_init+0x0/0x38 returned 0 after 1 usecs
+calling  crypto_wq_init+0x0/0x3b @ 1
+initcall crypto_wq_init+0x0/0x3b returned 0 after 11 usecs
+calling  crypto_algapi_init+0x0/0xc @ 1
+initcall crypto_algapi_init+0x0/0xc returned 0 after 2 usecs
+calling  skcipher_module_init+0x0/0x11 @ 1
+initcall skcipher_module_init+0x0/0x11 returned 0 after 0 usecs
+calling  chainiv_module_init+0x0/0xf @ 1
+initcall chainiv_module_init+0x0/0xf returned 0 after 1 usecs
+calling  eseqiv_module_init+0x0/0xf @ 1
+initcall eseqiv_module_init+0x0/0xf returned 0 after 0 usecs
+calling  seqiv_module_init+0x0/0xf @ 1
+initcall seqiv_module_init+0x0/0xf returned 0 after 0 usecs
+calling  hmac_module_init+0x0/0xf @ 1
+initcall hmac_module_init+0x0/0xf returned 0 after 0 usecs
+calling  md4_mod_init+0x0/0xf @ 1
+initcall md4_mod_init+0x0/0xf returned 0 after 62 usecs
+calling  md5_mod_init+0x0/0xf @ 1
+initcall md5_mod_init+0x0/0xf returned 0 after 36 usecs
+calling  rmd128_mod_init+0x0/0xf @ 1
+initcall rmd128_mod_init+0x0/0xf returned 0 after 47 usecs
+calling  rmd256_mod_init+0x0/0xf @ 1
+initcall rmd256_mod_init+0x0/0xf returned 0 after 42 usecs
+calling  rmd320_mod_init+0x0/0xf @ 1
+initcall rmd320_mod_init+0x0/0xf returned 0 after 43 usecs
+calling  sha1_generic_mod_init+0x0/0xf @ 1
+initcall sha1_generic_mod_init+0x0/0xf returned 0 after 39 usecs
+calling  sha256_generic_mod_init+0x0/0x33 @ 1
+initcall sha256_generic_mod_init+0x0/0x33 returned 0 after 66 usecs
+calling  sha512_generic_mod_init+0x0/0x33 @ 1
+initcall sha512_generic_mod_init+0x0/0x33 returned 0 after 153 usecs
+calling  wp512_mod_init+0x0/0x59 @ 1
+initcall wp512_mod_init+0x0/0x59 returned 0 after 399 usecs
+calling  crypto_ecb_module_init+0x0/0xf @ 1
+initcall crypto_ecb_module_init+0x0/0xf returned 0 after 0 usecs
+calling  crypto_cbc_module_init+0x0/0xf @ 1
+initcall crypto_cbc_module_init+0x0/0xf returned 0 after 0 usecs
+calling  crypto_pcbc_module_init+0x0/0xf @ 1
+initcall crypto_pcbc_module_init+0x0/0xf returned 0 after 0 usecs
+calling  crypto_cts_module_init+0x0/0xf @ 1
+initcall crypto_cts_module_init+0x0/0xf returned 0 after 0 usecs
+calling  crypto_module_init+0x0/0xf @ 1
+initcall crypto_module_init+0x0/0xf returned 0 after 0 usecs
+calling  crypto_ctr_module_init+0x0/0x35 @ 1
+initcall crypto_ctr_module_init+0x0/0x35 returned 0 after 0 usecs
+calling  des_generic_mod_init+0x0/0x33 @ 1
+initcall des_generic_mod_init+0x0/0x33 returned 0 after 76 usecs
+calling  fcrypt_mod_init+0x0/0xf @ 1
+alg: No test for fcrypt (fcrypt-generic)
+initcall fcrypt_mod_init+0x0/0xf returned 0 after 3601 usecs
+calling  twofish_mod_init+0x0/0xf @ 1
+initcall twofish_mod_init+0x0/0xf returned 0 after 109 usecs
+calling  aes_init+0x0/0xf @ 1
+initcall aes_init+0x0/0xf returned 0 after 50 usecs
+calling  camellia_init+0x0/0xf @ 1
+initcall camellia_init+0x0/0xf returned 0 after 40 usecs
+calling  cast6_mod_init+0x0/0xf @ 1
+initcall cast6_mod_init+0x0/0xf returned 0 after 41 usecs
+calling  arc4_init+0x0/0xf @ 1
+initcall arc4_init+0x0/0xf returned 0 after 69 usecs
+calling  salsa20_generic_mod_init+0x0/0xf @ 1
+initcall salsa20_generic_mod_init+0x0/0xf returned 0 after 13 usecs
+calling  zlib_mod_init+0x0/0xf @ 1
+initcall zlib_mod_init+0x0/0xf returned 0 after 661 usecs
+calling  michael_mic_init+0x0/0xf @ 1
+initcall michael_mic_init+0x0/0xf returned 0 after 34 usecs
+calling  crc32c_mod_init+0x0/0xf @ 1
+initcall crc32c_mod_init+0x0/0xf returned 0 after 52 usecs
+calling  lzo_mod_init+0x0/0xf @ 1
+initcall lzo_mod_init+0x0/0xf returned 0 after 34 usecs
+calling  krng_mod_init+0x0/0xf @ 1
+alg: No test for stdrng (krng)
+initcall krng_mod_init+0x0/0xf returned 0 after 2744 usecs
+calling  prng_mod_init+0x0/0x1d @ 1
+alg: No test for fips(ansi_cprng) (fips_ansi_cprng)
+initcall prng_mod_init+0x0/0x1d returned 0 after 11543 usecs
+calling  ghash_mod_init+0x0/0xf @ 1
+initcall ghash_mod_init+0x0/0xf returned 0 after 40 usecs
+calling  proc_genhd_init+0x0/0x45 @ 1
+initcall proc_genhd_init+0x0/0x45 returned 0 after 8 usecs
+calling  bsg_init+0x0/0x11b @ 1
+Block layer SCSI generic (bsg) driver version 0.4 loaded (major 253)
+initcall bsg_init+0x0/0x11b returned 0 after 5971 usecs
+calling  noop_init+0x0/0x11 @ 1
+io scheduler noop registered
+initcall noop_init+0x0/0x11 returned 0 after 2559 usecs
+calling  cfq_init+0x0/0x9f @ 1
+io scheduler cfq registered (default)
+initcall cfq_init+0x0/0x9f returned 0 after 3331 usecs
+calling  libcrc32c_mod_init+0x0/0x25 @ 1
+initcall libcrc32c_mod_init+0x0/0x25 returned 0 after 1 usecs
+calling  init_kmp+0x0/0xf @ 1
+initcall init_kmp+0x0/0xf returned 0 after 0 usecs
+calling  init_bm+0x0/0xf @ 1
+initcall init_bm+0x0/0xf returned 0 after 0 usecs
+calling  init_fsm+0x0/0xf @ 1
+initcall init_fsm+0x0/0xf returned 0 after 0 usecs
+calling  adp5520_gpio_init+0x0/0xf @ 1
+initcall adp5520_gpio_init+0x0/0xf returned 0 after 15 usecs
+calling  adp5588_gpio_init+0x0/0x11 @ 1
+i2c-core: driver [adp5588-gpio] registered
+initcall adp5588_gpio_init+0x0/0x11 returned 0 after 3763 usecs
+calling  cs5535_gpio_init+0x0/0x1d3 @ 1
+initcall cs5535_gpio_init+0x0/0x1d3 returned -19 after 11 usecs
+calling  rdc321x_gpio_init+0x0/0xf @ 1
+initcall rdc321x_gpio_init+0x0/0xf returned 0 after 8 usecs
+calling  pci_proc_init+0x0/0x65 @ 1
+initcall pci_proc_init+0x0/0x65 returned 0 after 43 usecs
+calling  pcie_portdrv_init+0x0/0x52 @ 1
+pcieport 0000:00:0b.0: setting latency timer to 64
+pcieport 0000:00:0c.0: setting latency timer to 64
+pcieport 0000:00:0d.0: setting latency timer to 64
+pcieport 0000:00:0e.0: setting latency timer to 64
+initcall pcie_portdrv_init+0x0/0x52 returned 0 after 17825 usecs
+calling  aer_service_init+0x0/0xa @ 1
+initcall aer_service_init+0x0/0xa returned -6 after 0 usecs
+initcall aer_service_init+0x0/0xa returned with error code -6 
+calling  aer_inject_init+0x0/0xf @ 1
+initcall aer_inject_init+0x0/0xf returned 0 after 18 usecs
+calling  l4f00242t03_init+0x0/0xf @ 1
+initcall l4f00242t03_init+0x0/0xf returned 0 after 8 usecs
+calling  lms283gf05_init+0x0/0xf @ 1
+initcall lms283gf05_init+0x0/0xf returned 0 after 7 usecs
+calling  ltv350qv_init+0x0/0xf @ 1
+initcall ltv350qv_init+0x0/0xf returned 0 after 7 usecs
+calling  s6e63m0_init+0x0/0xf @ 1
+initcall s6e63m0_init+0x0/0xf returned 0 after 7 usecs
+calling  da903x_backlight_init+0x0/0xf @ 1
+initcall da903x_backlight_init+0x0/0xf returned 0 after 9 usecs
+calling  kb3886_init+0x0/0x33 @ 1
+initcall kb3886_init+0x0/0x33 returned -19 after 0 usecs
+calling  adp8860_init+0x0/0x11 @ 1
+i2c-core: driver [adp8860_bl] registered
+initcall adp8860_init+0x0/0x11 returned 0 after 3584 usecs
+calling  pcf50633_bl_init+0x0/0xf @ 1
+initcall pcf50633_bl_init+0x0/0xf returned 0 after 8 usecs
+calling  regulator_userspace_consumer_init+0x0/0xf @ 1
+initcall regulator_userspace_consumer_init+0x0/0xf returned 0 after 9 usecs
+calling  rand_initialize+0x0/0x30 @ 1
+initcall rand_initialize+0x0/0x30 returned 0 after 28 usecs
+calling  tty_init+0x0/0x105 @ 1
+initcall tty_init+0x0/0x105 returned 0 after 869 usecs
+calling  pty_init+0x0/0x439 @ 1
+initcall pty_init+0x0/0x439 returned 0 after 13159 usecs
+calling  sysrq_init+0x0/0x7b @ 1
+initcall sysrq_init+0x0/0x7b returned 0 after 4 usecs
+calling  nozomi_init+0x0/0xfc @ 1
+Initializing Nozomi driver 2.1d (build date: Sep  3 2010 18:18:05)
+initcall nozomi_init+0x0/0xfc returned 0 after 5794 usecs
+calling  epca_module_init+0x0/0x3d2 @ 1
+DIGI epca driver version 1.3.0.1-LK2.6 loaded.
+initcall epca_module_init+0x0/0x3d2 returned 0 after 34304 usecs
+calling  mxser_module_init+0x0/0x5b9 @ 1
+MOXA Smartio/Industio family driver version 2.0.5
+initcall mxser_module_init+0x0/0x5b9 returned 0 after 4354 usecs
+calling  ip2_loadmain+0x0/0x1309 @ 1
+Computone IntelliPort Plus multiport driver version 1.2.14
+initcall ip2_loadmain+0x0/0x1309 returned 0 after 5121 usecs
+calling  riscom8_init_module+0x0/0x428 @ 1
+rc: SDL RISCom/8 card driver v1.1, (c) D.Gorodchanin 1994-1996.
+rc0: RISCom/8 Board at 0x220 not found.
+rc1: RISCom/8 Board at 0x240 not found.
+rc2: RISCom/8 Board at 0x250 not found.
+rc3: RISCom/8 Board at 0x260 not found.
+rc: No RISCom/8 boards detected.
+initcall riscom8_init_module+0x0/0x428 returned -5 after 30761 usecs
+initcall riscom8_init_module+0x0/0x428 returned with error code -5 
+calling  isicom_init+0x0/0x151 @ 1
+initcall isicom_init+0x0/0x151 returned 0 after 23 usecs
+calling  synclink_init+0x0/0x235 @ 1
+SyncLink serial driver $Revision: 4.38 $
+SyncLink serial driver $Revision: 4.38 $, tty major#251
+initcall synclink_init+0x0/0x235 returned 0 after 18736 usecs
+calling  slgt_init+0x0/0x186 @ 1
+SyncLink GT
+SyncLink GT, tty major#250
+SyncLink GT no devices found
+initcall slgt_init+0x0/0x186 returned 0 after 6093 usecs
+calling  n_hdlc_init+0x0/0x90 @ 1
+HDLC line discipline maxframe=4096
+N_HDLC line discipline registered.
+initcall n_hdlc_init+0x0/0x90 returned 0 after 6126 usecs
+calling  raw_init+0x0/0xdf @ 1
+initcall raw_init+0x0/0xdf returned 0 after 54 usecs
+calling  applicom_init+0x0/0x496 @ 1
+Applicom driver: $Id: ac.c,v 1.30 2000/03/22 16:03:57 dwmw2 Exp $
+ac.o: No PCI boards found.
+ac.o: For an ISA board you must supply memory and irq parameters.
+initcall applicom_init+0x0/0x496 returned -6 after 13768 usecs
+initcall applicom_init+0x0/0x496 returned with error code -6 
+calling  sonypi_init+0x0/0x80 @ 1
+sonypi: Sony Programmable I/O Controller Driver v1.26.
+initcall sonypi_init+0x0/0x80 returned -19 after 4758 usecs
+calling  rtc_init+0x0/0x1d5 @ 1
+Real Time Clock Driver v1.12b
+initcall rtc_init+0x0/0x1d5 returned 0 after 2707 usecs
+calling  i8k_init+0x0/0x2df @ 1
+initcall i8k_init+0x0/0x2df returned -19 after 3 usecs
+calling  timeriomem_rng_init+0x0/0xf @ 1
+initcall timeriomem_rng_init+0x0/0xf returned 0 after 12 usecs
+calling  mod_init+0x0/0x226 @ 1
+initcall mod_init+0x0/0x226 returned -19 after 79 usecs
+calling  mod_init+0x0/0xa6 @ 1
+initcall mod_init+0x0/0xa6 returned -19 after 15 usecs
+calling  nsc_gpio_init+0x0/0x17 @ 1
+nsc_gpio initializing
+initcall nsc_gpio_init+0x0/0x17 returned 0 after 1965 usecs
+calling  agp_init+0x0/0x30 @ 1
+Linux agpgart interface v0.103
+initcall agp_init+0x0/0x30 returned 0 after 2729 usecs
+calling  agp_ali_init+0x0/0x24 @ 1
+initcall agp_ali_init+0x0/0x24 returned 0 after 15 usecs
+calling  agp_ati_init+0x0/0x24 @ 1
+initcall agp_ati_init+0x0/0x24 returned 0 after 11 usecs
+calling  agp_amdk7_init+0x0/0x24 @ 1
+initcall agp_amdk7_init+0x0/0x24 returned 0 after 11 usecs
+calling  agp_intel_init+0x0/0x24 @ 1
+initcall agp_intel_init+0x0/0x24 returned 0 after 15 usecs
+calling  agp_serverworks_init+0x0/0x24 @ 1
+initcall agp_serverworks_init+0x0/0x24 returned 0 after 12 usecs
+calling  cm4040_init+0x0/0xbd @ 1
+OMNIKEY CardMan 4040 v1.1.0gm5 - All bugs added by Harald Welte
+initcall cm4040_init+0x0/0xbd returned 0 after 5534 usecs
+calling  ipmi_init_msghandler_mod+0x0/0xc @ 1
+ipmi message handler version 39.2
+initcall ipmi_init_msghandler_mod+0x0/0xc returned 0 after 2994 usecs
+calling  init_ipmi_si+0x0/0x640 @ 1
+IPMI System Interface driver.
+ipmi_si: Adding default-specified kcs state machine
+ipmi_si: Trying default-specified kcs state machine at i/o address 0xca2, slave address 0x0, irq 0
+ipmi_si: Interface detection failed
+ipmi_si: Adding default-specified smic state machine
+ipmi_si: Trying default-specified smic state machine at i/o address 0xca9, slave address 0x0, irq 0
+ipmi_si: Interface detection failed
+ipmi_si: Adding default-specified bt state machine
+ipmi_si: Trying default-specified bt state machine at i/o address 0xe4, slave address 0x0, irq 0
+ipmi_si: Interface detection failed
+ipmi_si: Unable to find any System Interface(s)
+initcall init_ipmi_si+0x0/0x640 returned -19 after 55277 usecs
+calling  ipmi_wdog_init+0x0/0x113 @ 1
+IPMI Watchdog: driver initialized
+initcall ipmi_wdog_init+0x0/0x113 returned 0 after 2984 usecs
+calling  ipmi_poweroff_init+0x0/0x80 @ 1
+Copyright (C) 2004 MontaVista Software - IPMI Powerdown via sys_reboot.
+initcall ipmi_poweroff_init+0x0/0x80 returned 0 after 6202 usecs
+calling  hangcheck_init+0x0/0xaa @ 1
+Hangcheck: starting hangcheck timer 0.9.1 (tick is 180 seconds, margin is 60 seconds).
+Hangcheck: Using getrawmonotonic().
+initcall hangcheck_init+0x0/0xaa returned 0 after 10622 usecs
+calling  init_tis+0x0/0x452 @ 1
+tpm_tis tpm_tis: 1.2 TPM (device-id 0xFFFF, rev-id 255)
+tpm_tis tpm_tis: Unable to request irq: 255 for use
+tpm_tis tpm_tis: tpm_transmit: tpm_send: error 4294967291
+tpm_tis tpm_tis: tpm_transmit: tpm_send: error 4294967291
+tpm_tis tpm_tis: tpm_transmit: tpm_send: error 4294967291
+initcall init_tis+0x0/0x452 returned 0 after 24608 usecs
+calling  drm_core_init+0x0/0x12d @ 1
+[drm] Initialized drm 1.1.0 20060810
+initcall drm_core_init+0x0/0x12d returned 0 after 3264 usecs
+calling  tdfx_init+0x0/0xf @ 1
+initcall tdfx_init+0x0/0xf returned 0 after 17 usecs
+calling  mga_init+0x0/0x19 @ 1
+initcall mga_init+0x0/0x19 returned 0 after 11 usecs
+calling  sis_init+0x0/0x19 @ 1
+initcall sis_init+0x0/0x19 returned 0 after 21 usecs
+calling  savage_init+0x0/0x19 @ 1
+initcall savage_init+0x0/0x19 returned 0 after 60 usecs
+calling  via_init+0x0/0x1e @ 1
+initcall via_init+0x0/0x1e returned 0 after 26 usecs
+calling  cn_proc_init+0x0/0x34 @ 1
+initcall cn_proc_init+0x0/0x34 returned 0 after 1 usecs
+calling  serial8250_init+0x0/0x156 @ 1
+Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+async_waiting @ 1
+async_continuing @ 1 after 0 usec
+async_waiting @ 1
+async_continuing @ 1 after 0 usec
+ÿserial8250: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+initcall serial8250_init+0x0/0x156 returned 0 after 282289 usecs
+calling  init_serial_cs+0x0/0xf @ 1
+initcall init_serial_cs+0x0/0xf returned 0 after 30 usecs
+calling  timbuart_init+0x0/0xf @ 1
+initcall timbuart_init+0x0/0xf returned 0 after 9 usecs
+calling  brd_init+0x0/0x165 @ 1
+brd: module loaded
+initcall brd_init+0x0/0x165 returned 0 after 2535 usecs
+calling  cpqarray_init+0x0/0x286 @ 1
+Compaq SMART2 Driver (v 2.6.0)
+initcall cpqarray_init+0x0/0x286 returned -19 after 2752 usecs
+calling  cciss_init+0x0/0x90 @ 1
+HP CISS Driver (v 3.6.20)
+initcall cciss_init+0x0/0x90 returned 0 after 2358 usecs
+calling  DAC960_init_module+0x0/0x48 @ 1
+initcall DAC960_init_module+0x0/0x48 returned 0 after 78 usecs
+calling  mm_init+0x0/0x140 @ 1
+MM: desc_per_page = 128
+initcall mm_init+0x0/0x140 returned 0 after 2152 usecs
+calling  nbd_init+0x0/0x24e @ 1
+nbd: registered device at major 43
+initcall nbd_init+0x0/0x24e returned 0 after 4033 usecs
+calling  carm_init+0x0/0x16 @ 1
+initcall carm_init+0x0/0x16 returned 0 after 13 usecs
+calling  lkdtm_module_init+0x0/0x1a1 @ 1
+lkdtm: No crash points registered, enable through debugfs
+initcall lkdtm_module_init+0x0/0x1a1 returned 0 after 5012 usecs
+calling  sm501_base_init+0x0/0x20 @ 1
+initcall sm501_base_init+0x0/0x20 returned 0 after 24 usecs
+calling  htcpld_core_init+0x0/0x24 @ 1
+i2c-core: driver [htcpld-chip] registered
+initcall htcpld_core_init+0x0/0x24 returned -19 after 3692 usecs
+calling  wm8994_i2c_init+0x0/0x31 @ 1
+i2c-core: driver [wm8994] registered
+initcall wm8994_i2c_init+0x0/0x31 returned 0 after 3244 usecs
+calling  adp5520_init+0x0/0x11 @ 1
+i2c-core: driver [adp5520] registered
+initcall adp5520_init+0x0/0x11 returned 0 after 3329 usecs
+calling  lpc_sch_init+0x0/0x16 @ 1
+initcall lpc_sch_init+0x0/0x16 returned 0 after 13 usecs
+calling  rdc321x_sb_init+0x0/0x16 @ 1
+initcall rdc321x_sb_init+0x0/0x16 returned 0 after 13 usecs
+calling  mac_hid_init+0x0/0x1c @ 1
+initcall mac_hid_init+0x0/0x1c returned 0 after 5 usecs
+calling  scsi_tgt_init+0x0/0x8f @ 1
+initcall scsi_tgt_init+0x0/0x8f returned 0 after 272 usecs
+calling  raid_init+0x0/0xf @ 1
+initcall raid_init+0x0/0xf returned 0 after 13 usecs
+calling  spi_transport_init+0x0/0x77 @ 1
+initcall spi_transport_init+0x0/0x77 returned 0 after 14 usecs
+calling  fc_transport_init+0x0/0x71 @ 1
+initcall fc_transport_init+0x0/0x71 returned 0 after 26 usecs
+calling  iscsi_transport_init+0x0/0x145 @ 1
+Loading iSCSI transport class v2.0-870.
+initcall iscsi_transport_init+0x0/0x145 returned 0 after 3541 usecs
+calling  sas_transport_init+0x0/0x9f @ 1
+initcall sas_transport_init+0x0/0x9f returned 0 after 39 usecs
+calling  sas_class_init+0x0/0x36 @ 1
+initcall sas_class_init+0x0/0x36 returned 0 after 4 usecs
+calling  srp_transport_init+0x0/0x33 @ 1
+initcall srp_transport_init+0x0/0x33 returned 0 after 13 usecs
+calling  libfc_init+0x0/0x3a @ 1
+initcall libfc_init+0x0/0x3a returned 0 after 24 usecs
+calling  fnic_init_module+0x0/0x1c3 @ 1
+fnic: Cisco FCoE HBA Driver, ver 1.4.0.145
+initcall fnic_init_module+0x0/0x1c3 returned 0 after 3789 usecs
+calling  advansys_init+0x0/0x16 @ 1
+initcall advansys_init+0x0/0x16 returned 0 after 14 usecs
+calling  adpt_init+0x0/0xf2c @ 1
+Loading Adaptec I2O RAID: Version 2.4 Build 5go
+Detecting Adaptec I2O RAID controllers...
+initcall adpt_init+0x0/0xf2c returned -19 after 7827 usecs
+calling  ahc_linux_init+0x0/0x5c @ 1
+initcall ahc_linux_init+0x0/0x5c returned 0 after 22 usecs
+calling  ahd_linux_init+0x0/0x6c @ 1
+initcall ahd_linux_init+0x0/0x6c returned 0 after 25 usecs
+calling  aic94xx_init+0x0/0x12e @ 1
+aic94xx: Adaptec aic94xx SAS/SATA driver version 1.0.3 loaded
+initcall aic94xx_init+0x0/0x12e returned 0 after 5379 usecs
+calling  pm8001_init+0x0/0x4c @ 1
+initcall pm8001_init+0x0/0x4c returned 0 after 14 usecs
+calling  ips_module_init+0x0/0x3ad @ 1
+initcall ips_module_init+0x0/0x3ad returned -19 after 22 usecs
+calling  qla1280_init+0x0/0x16 @ 1
+initcall qla1280_init+0x0/0x16 returned 0 after 14 usecs
+calling  qla4xxx_module_init+0x0/0xcb @ 1
+iscsi: registered transport (qla4xxx)
+QLogic iSCSI HBA Driver
+initcall qla4xxx_module_init+0x0/0xcb returned 0 after 5488 usecs
+calling  lpfc_init+0x0/0xb7 @ 1
+Emulex LightPulse Fibre Channel SCSI driver 8.3.12
+Copyright(c) 2004-2009 Emulex.  All rights reserved.
+initcall lpfc_init+0x0/0xb7 returned 0 after 9035 usecs
+calling  hpsa_init+0x0/0x16 @ 1
+initcall hpsa_init+0x0/0x16 returned 0 after 17 usecs
+calling  atp870u_init+0x0/0x16 @ 1
+initcall atp870u_init+0x0/0x16 returned 0 after 14 usecs
+calling  gdth_init+0x0/0xe7 @ 1
+GDT-HA: Storage RAID Controller Driver. Version: 3.05
+initcall gdth_init+0x0/0xe7 returned 0 after 4692 usecs
+calling  initio_init_driver+0x0/0x16 @ 1
+initcall initio_init_driver+0x0/0x16 returned 0 after 13 usecs
+calling  tw_init+0x0/0x2e @ 1
+3ware Storage Controller device driver for Linux v1.26.02.003.
+initcall tw_init+0x0/0x2e returned 0 after 5445 usecs
+calling  twa_init+0x0/0x2e @ 1
+3ware 9000 Storage Controller device driver for Linux v2.26.02.014.
+initcall twa_init+0x0/0x2e returned 0 after 5875 usecs
+calling  init_nsp32+0x0/0x3e @ 1
+nsp32: loading...
+initcall init_nsp32+0x0/0x3e returned 0 after 1642 usecs
+calling  hptiop_module_init+0x0/0x36 @ 1
+RocketRAID 3xxx/4xxx Controller driver v1.6 (090910)
+initcall hptiop_module_init+0x0/0x36 returned 0 after 4604 usecs
+calling  mvs_init+0x0/0x42 @ 1
+initcall mvs_init+0x0/0x42 returned 0 after 15 usecs
+calling  bnx2i_mod_init+0x0/0xb0 @ 1
+Broadcom NetXtreme II iSCSI Driver bnx2i v2.1.1 (Mar 24, 2010)
+iscsi: registered transport (bnx2i)
+initcall bnx2i_mod_init+0x0/0xb0 returned 0 after 8607 usecs
+calling  beiscsi_module_init+0x0/0x9c @ 1
+iscsi: registered transport (be2iscsi)
+initcall beiscsi_module_init+0x0/0x9c returned 0 after 3427 usecs
+calling  pmcraid_init+0x0/0x126 @ 1
+initcall pmcraid_init+0x0/0x126 returned 0 after 26 usecs
+calling  pvscsi_init+0x0/0x36 @ 1
+VMware PVSCSI driver - version 1.0.1.0-k
+initcall pvscsi_init+0x0/0x36 returned 0 after 3587 usecs
+calling  init_sd+0x0/0x130 @ 1
+initcall init_sd+0x0/0x130 returned 0 after 28 usecs
+calling  init_sg+0x0/0x112 @ 1
+initcall init_sg+0x0/0x112 returned 0 after 21 usecs
+calling  ahci_init+0x0/0x16 @ 1
+initcall ahci_init+0x0/0x16 returned 0 after 27 usecs
+calling  inic_init+0x0/0x16 @ 1
+initcall inic_init+0x0/0x16 returned 0 after 13 usecs
+calling  adma_ata_init+0x0/0x16 @ 1
+initcall adma_ata_init+0x0/0x16 returned 0 after 12 usecs
+calling  piix_init+0x0/0x24 @ 1
+initcall piix_init+0x0/0x24 returned 0 after 17 usecs
+calling  mv_init+0x0/0x3a @ 1
+initcall mv_init+0x0/0x3a returned 0 after 25 usecs
+calling  nv_init+0x0/0x16 @ 1
+initcall nv_init+0x0/0x16 returned 0 after 17 usecs
+calling  pdc_ata_init+0x0/0x16 @ 1
+initcall pdc_ata_init+0x0/0x16 returned 0 after 15 usecs
+calling  uli_init+0x0/0x16 @ 1
+initcall uli_init+0x0/0x16 returned 0 after 13 usecs
+calling  ali_init+0x0/0x40 @ 1
+initcall ali_init+0x0/0x40 returned 0 after 16 usecs
+calling  amd_init+0x0/0x16 @ 1
+pata_amd 0000:00:06.0: version 0.4.1
+pata_amd 0000:00:06.0: setting latency timer to 64
+scsi0 : pata_amd
+scsi1 : pata_amd
+ata1: PATA max UDMA/133 cmd 0x1f0 ctl 0x3f6 bmdma 0xf000 irq 14
+ata2: PATA max UDMA/133 cmd 0x170 ctl 0x376 bmdma 0xf008 irq 15
+initcall amd_init+0x0/0x16 returned 0 after 22046 usecs
+calling  atiixp_init+0x0/0x16 @ 1
+initcall atiixp_init+0x0/0x16 returned 0 after 14 usecs
+calling  cs5520_init+0x0/0x16 @ 1
+initcall cs5520_init+0x0/0x16 returned 0 after 13 usecs
+calling  cs5536_init+0x0/0x16 @ 1
+initcall cs5536_init+0x0/0x16 returned 0 after 13 usecs
+calling  cy82c693_init+0x0/0x16 @ 1
+initcall cy82c693_init+0x0/0x16 returned 0 after 13 usecs
+calling  hpt36x_init+0x0/0x16 @ 1
+initcall hpt36x_init+0x0/0x16 returned 0 after 18 usecs
+calling  hpt37x_init+0x0/0x16 @ 1
+initcall hpt37x_init+0x0/0x16 returned 0 after 14 usecs
+calling  hpt3x2n_init+0x0/0x16 @ 1
+initcall hpt3x2n_init+0x0/0x16 returned 0 after 14 usecs
+calling  it8213_init+0x0/0x16 @ 1
+initcall it8213_init+0x0/0x16 returned 0 after 14 usecs
+calling  netcell_init+0x0/0x16 @ 1
+initcall netcell_init+0x0/0x16 returned 0 after 16 usecs
+calling  ns87415_init+0x0/0x16 @ 1
+initcall ns87415_init+0x0/0x16 returned 0 after 14 usecs
+calling  oldpiix_init+0x0/0x16 @ 1
+initcall oldpiix_init+0x0/0x16 returned 0 after 13 usecs
+calling  radisys_init+0x0/0x16 @ 1
+initcall radisys_init+0x0/0x16 returned 0 after 14 usecs
+calling  rdc_init+0x0/0x16 @ 1
+initcall rdc_init+0x0/0x16 returned 0 after 14 usecs
+calling  sc1200_init+0x0/0x16 @ 1
+initcall sc1200_init+0x0/0x16 returned 0 after 13 usecs
+calling  serverworks_init+0x0/0x16 @ 1
+initcall serverworks_init+0x0/0x16 returned 0 after 15 usecs
+calling  via_init+0x0/0x16 @ 1
+initcall via_init+0x0/0x16 returned 0 after 15 usecs
+calling  sl82c105_init+0x0/0x16 @ 1
+initcall sl82c105_init+0x0/0x16 returned 0 after 14 usecs
+calling  ns87410_init+0x0/0x16 @ 1
+initcall ns87410_init+0x0/0x16 returned 0 after 14 usecs
+calling  pata_platform_init+0x0/0xf @ 1
+initcall pata_platform_init+0x0/0xf returned 0 after 9 usecs
+calling  rz1000_init+0x0/0x16 @ 1
+initcall rz1000_init+0x0/0x16 returned 0 after 15 usecs
+calling  ata_generic_init+0x0/0x16 @ 1
+initcall ata_generic_init+0x0/0x16 returned 0 after 15 usecs
+calling  spi_gpio_init+0x0/0x14 @ 1
+initcall spi_gpio_init+0x0/0x14 returned -19 after 15 usecs
+calling  tle62x0_init+0x0/0xf @ 1
+initcall tle62x0_init+0x0/0xf returned 0 after 9 usecs
+calling  davicom_init+0x0/0x4d @ 1
+initcall davicom_init+0x0/0x4d returned 0 after 25 usecs
+calling  qs6612_init+0x0/0xf @ 1
+initcall qs6612_init+0x0/0xf returned 0 after 7 usecs
+calling  smsc_init+0x0/0x81 @ 1
+initcall smsc_init+0x0/0x81 returned 0 after 38 usecs
+calling  vsc82xx_init+0x0/0x33 @ 1
+initcall vsc82xx_init+0x0/0x33 returned 0 after 17 usecs
+calling  realtek_init+0x0/0xf @ 1
+initcall realtek_init+0x0/0xf returned 0 after 7 usecs
+calling  et1011c_init+0x0/0xf @ 1
+initcall et1011c_init+0x0/0xf returned 0 after 7 usecs
+calling  mdio_gpio_init+0x0/0xf @ 1
+initcall mdio_gpio_init+0x0/0xf returned 0 after 9 usecs
+calling  e1000_init_module+0x0/0x82 @ 1
+e1000: Intel(R) PRO/1000 Network Driver - version 7.3.21-k6-NAPI
+e1000: Copyright (c) 1999-2006 Intel Corporation.
+initcall e1000_init_module+0x0/0x82 returned 0 after 9957 usecs
+calling  e1000_init_module+0x0/0x3a @ 1
+e1000e: Intel(R) PRO/1000 Network Driver - 1.0.2-k4
+e1000e: Copyright (c) 1999 - 2009 Intel Corporation.
+initcall e1000_init_module+0x0/0x3a returned 0 after 9114 usecs
+calling  igb_init_module+0x0/0x4a @ 1
+Intel(R) Gigabit Ethernet Network Driver - version 2.1.0-k2
+Copyright (c) 2007-2009 Intel Corporation.
+initcall igb_init_module+0x0/0x4a returned 0 after 8942 usecs
+calling  igbvf_init_module+0x0/0x66 @ 1
+Intel(R) Virtual Function Network Driver - version 1.0.0-k0
+Copyright (c) 2009 Intel Corporation.
+initcall igbvf_init_module+0x0/0x66 returned 0 after 8519 usecs
+calling  ipg_init_module+0x0/0x16 @ 1
+initcall ipg_init_module+0x0/0x16 returned 0 after 15 usecs
+calling  t1_init_module+0x0/0x16 @ 1
+initcall t1_init_module+0x0/0x16 returned 0 after 14 usecs
+calling  cxgb3_init_module+0x0/0x1b @ 1
+initcall cxgb3_init_module+0x0/0x1b returned 0 after 18 usecs
+calling  cxgb4_init_module+0x0/0x50 @ 1
+initcall cxgb4_init_module+0x0/0x50 returned 0 after 20 usecs
+calling  vcan_init_module+0x0/0x34 @ 1
+vcan: Virtual CAN interface driver
+initcall vcan_init_module+0x0/0x34 returned 0 after 3066 usecs
+calling  can_dev_init+0x0/0x2a @ 1
+CAN device driver interface
+initcall can_dev_init+0x0/0x2a returned 0 after 2471 usecs
+calling  ems_usb_init+0x0/0x42 @ 1
+CPC-USB kernel driver loaded
+usbcore: registered new interface driver ems_usb
+initcall ems_usb_init+0x0/0x42 returned 0 after 6818 usecs
+calling  sja1000_init+0x0/0x1f @ 1
+sja1000 CAN netdevice driver
+initcall sja1000_init+0x0/0x1f returned 0 after 2559 usecs
+calling  ems_pci_init+0x0/0x16 @ 1
+initcall ems_pci_init+0x0/0x16 returned 0 after 13 usecs
+calling  kvaser_pci_init+0x0/0x16 @ 1
+initcall kvaser_pci_init+0x0/0x16 returned 0 after 13 usecs
+calling  mcp251x_can_init+0x0/0xf @ 1
+initcall mcp251x_can_init+0x0/0xf returned 0 after 7 usecs
+calling  atl1e_init_module+0x0/0x16 @ 1
+initcall atl1e_init_module+0x0/0x16 returned 0 after 13 usecs
+calling  atl1c_init_module+0x0/0x16 @ 1
+initcall atl1c_init_module+0x0/0x16 returned 0 after 14 usecs
+calling  enic_init_module+0x0/0x36 @ 1
+enic: Cisco VIC Ethernet NIC Driver, ver 1.3.1.1-pp
+initcall enic_init_module+0x0/0x36 returned 0 after 4521 usecs
+calling  vmxnet3_init_module+0x0/0x36 @ 1
+VMware vmxnet3 virtual NIC driver - version 1.0.5.0-k-NAPI
+initcall vmxnet3_init_module+0x0/0x36 returned 0 after 5111 usecs
+calling  happy_meal_probe+0x0/0x16 @ 1
+initcall happy_meal_probe+0x0/0x16 returned 0 after 13 usecs
+calling  vortex_init+0x0/0xa0 @ 1
+initcall vortex_init+0x0/0xa0 returned 0 after 16 usecs
+calling  e100_init_module+0x0/0x5b @ 1
+e100: Intel(R) PRO/100 Network Driver, 3.5.24-k2-NAPI
+e100: Copyright(c) 1999-2006 Intel Corporation
+initcall e100_init_module+0x0/0x5b returned 0 after 8775 usecs
+calling  tlan_probe+0x0/0xe2 @ 1
+ThunderLAN driver v1.15a
+TLAN: 0 devices installed, PCI: 0  EISA: 0
+initcall tlan_probe+0x0/0xe2 returned -19 after 5988 usecs
+calling  smsc9420_init_module+0x0/0x38 @ 1
+initcall smsc9420_init_module+0x0/0x38 returned 0 after 14 usecs
+calling  sis900_init_module+0x0/0x16 @ 1
+initcall sis900_init_module+0x0/0x16 returned 0 after 16 usecs
+calling  r6040_init+0x0/0x16 @ 1
+initcall r6040_init+0x0/0x16 returned 0 after 14 usecs
+calling  yellowfin_init+0x0/0x16 @ 1
+initcall yellowfin_init+0x0/0x16 returned 0 after 14 usecs
+calling  acenic_init+0x0/0x16 @ 1
+initcall acenic_init+0x0/0x16 returned 0 after 14 usecs
+calling  natsemi_init_mod+0x0/0x16 @ 1
+initcall natsemi_init_mod+0x0/0x16 returned 0 after 14 usecs
+calling  fealnx_init+0x0/0x16 @ 1
+initcall fealnx_init+0x0/0x16 returned 0 after 14 usecs
+calling  tg3_init+0x0/0x16 @ 1
+initcall tg3_init+0x0/0x16 returned 0 after 19 usecs
+calling  bnx2_init+0x0/0x16 @ 1
+initcall bnx2_init+0x0/0x16 returned 0 after 15 usecs
+calling  cnic_init+0x0/0x36 @ 1
+cnic: Broadcom NetXtreme II CNIC Driver cnic v2.1.2 (May 26, 2010)
+initcall cnic_init+0x0/0x36 returned 0 after 5785 usecs
+calling  skge_init_module+0x0/0x16 @ 1
+initcall skge_init_module+0x0/0x16 returned 0 after 15 usecs
+calling  ksz884x_init_module+0x0/0x16 @ 1
+initcall ksz884x_init_module+0x0/0x16 returned 0 after 14 usecs
+calling  rhine_init+0x0/0x65 @ 1
+initcall rhine_init+0x0/0x65 returned 0 after 17 usecs
+calling  velocity_init_module+0x0/0x34 @ 1
+initcall velocity_init_module+0x0/0x34 returned 0 after 14 usecs
+calling  sundance_init+0x0/0x16 @ 1
+initcall sundance_init+0x0/0x16 returned 0 after 15 usecs
+calling  hamachi_init+0x0/0x16 @ 1
+initcall hamachi_init+0x0/0x16 returned 0 after 14 usecs
+calling  net_olddevs_init+0x0/0x84 @ 1
+initcall net_olddevs_init+0x0/0x84 returned 0 after 4 usecs
+calling  init_nic+0x0/0x16 @ 1
+forcedeth: Reverse Engineered nForce ethernet driver. Version 0.64.
+forcedeth 0000:00:0a.0: setting latency timer to 64
+nv_probe: set workaround bit for reversed mac addr
+calling  1_async_port_probe+0x0/0x100 @ 78
+calling  2_async_port_probe+0x0/0x100 @ 79
+async_waiting @ 79
+ata1.00: ATA-6: HDS722525VLAT80, V36OA60A, max UDMA/100
+ata1.00: 488397168 sectors, multi 1: LBA48 
+ata1: nv_mode_filter: 0x3f39f&0x3f3ff->0x3f39f, BIOS=0x3f000 (0xc60000c0) ACPI=0x0
+ata1.00: configured for UDMA/100
+async_waiting @ 78
+async_continuing @ 78 after 0 usec
+scsi 0:0:0:0: Direct-Access     ATA      HDS722525VLAT80  V36O PQ: 0 ANSI: 5
+sd 0:0:0:0: Attached scsi generic sg0 type 0
+initcall 1_async_port_probe+0x0/0x100 returned 0 after 290316 usecs
+calling  3_sd_probe_async+0x0/0x1e0 @ 80
+sd 0:0:0:0: [sda] 488397168 512-byte logical blocks: (250 GB/232 GiB)
+async_continuing @ 79 after 305836 usec
+sd 0:0:0:0: [sda] Write Protect is off
+sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
+sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+ sda: sda1 sda2 sda3 < sda5 sda6 sda7 sda8 sda9 sda10 >
+sd 0:0:0:0: [sda] Attached SCSI disk
+initcall 3_sd_probe_async+0x0/0x1e0 returned 0 after 108537 usecs
+ata2.01: ATAPI: DVDRW IDE 16X, VER A079, max UDMA/66
+ata2: nv_mode_filter: 0x1f39f&0x73ff->0x739f, BIOS=0x7000 (0xc60000c0) ACPI=0x0
+forcedeth 0000:00:0a.0: ifname eth0, PHY OUI 0x5043 @ 1, addr 00:13:d4:dc:41:12
+forcedeth 0000:00:0a.0: highdma csum gbit lnktim desc-v3
+initcall init_nic+0x0/0x16 returned 0 after 537717 usecs
+calling  ql3xxx_init_module+0x0/0x16 @ 1
+initcall ql3xxx_init_module+0x0/0x16 returned 0 after 28 usecs
+calling  ppp_init+0x0/0xe5 @ 1
+PPP generic driver version 2.4.2
+initcall ppp_init+0x0/0xe5 returned 0 after 3016 usecs
+calling  ppp_sync_init+0x0/0x34 @ 1
+initcall ppp_sync_init+0x0/0x34 returned 0 after 0 usecs
+calling  deflate_init+0x0/0x34 @ 1
+PPP Deflate Compression module registered
+initcall deflate_init+0x0/0x34 returned 0 after 3657 usecs
+calling  ppp_mppe_init+0x0/0x128 @ 1
+PPP MPPE Compression module registered
+initcall ppp_mppe_init+0x0/0x128 returned 0 after 3684 usecs
+calling  slip_init+0x0/0xaa @ 1
+SLIP: version 0.8.4-NET3.019-NEWTTY (dynamic channels, max=256) (6 bit encapsulation enabled).
+SLIP linefill/keepalive option.
+initcall slip_init+0x0/0xaa returned 0 after 10968 usecs
+calling  dummy_init_module+0x0/0x9c @ 1
+initcall dummy_init_module+0x0/0x9c returned 0 after 67 usecs
+calling  dfx_init+0x0/0x1b @ 1
+initcall dfx_init+0x0/0x1b returned 0 after 23 usecs
+calling  rtl8139_init_module+0x0/0x16 @ 1
+8139too: 8139too Fast Ethernet driver 0.9.28
+8139too 0000:05:07.0: eth1: RealTek RTL8139 at 0x80d38000, 00:c0:df:03:68:5d, IRQ 11
+initcall rtl8139_init_module+0x0/0x16 returned 0 after 11562 usecs
+calling  tun_init+0x0/0x8d @ 1
+tun: Universal TUN/TAP device driver, 1.6
+tun: (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>
+initcall tun_init+0x0/0x8d returned 0 after 8480 usecs
+calling  veth_init+0x0/0xf @ 1
+initcall veth_init+0x0/0xf returned 0 after 0 usecs
+calling  rio_init+0x0/0x16 @ 1
+initcall rio_init+0x0/0x16 returned 0 after 20 usecs
+calling  rtl8169_init_module+0x0/0x16 @ 1
+initcall rtl8169_init_module+0x0/0x16 returned 0 after 17 usecs
+calling  s2io_starter+0x0/0x16 @ 1
+initcall s2io_starter+0x0/0x16 returned 0 after 17 usecs
+calling  myri10ge_init_module+0x0/0x65 @ 1
+myri10ge: Version 1.5.2-1.459
+initcall myri10ge_init_module+0x0/0x65 returned 0 after 2659 usecs
+calling  mlx4_init+0x0/0xc6 @ 1
+initcall mlx4_init+0x0/0xc6 returned 0 after 163 usecs
+calling  mlx4_en_init+0x0/0xf @ 1
+initcall mlx4_en_init+0x0/0xf returned 0 after 0 usecs
+calling  enc28j60_init+0x0/0x1e @ 1
+initcall enc28j60_init+0x0/0x1e returned 0 after 10 usecs
+calling  ethoc_init+0x0/0xf @ 1
+initcall ethoc_init+0x0/0xf returned 0 after 13 usecs
+calling  abyss_init+0x0/0x3f @ 1
+initcall abyss_init+0x0/0x3f returned 0 after 18 usecs
+calling  xl_pci_init+0x0/0x16 @ 1
+initcall xl_pci_init+0x0/0x16 returned 0 after 16 usecs
+calling  arcnet_init+0x0/0x57 @ 1
+arcnet loaded.
+initcall arcnet_init+0x0/0x57 returned 0 after 1374 usecs
+calling  arcnet_rfc1201_init+0x0/0x6a @ 1
+arcnet: RFC1201 "standard" (`a') encapsulation support loaded.
+initcall arcnet_rfc1201_init+0x0/0x6a returned 0 after 5434 usecs
+calling  arcnet_rfc1051_init+0x0/0x42 @ 1
+arcnet: RFC1051 "simple standard" (`s') encapsulation support loaded.
+initcall arcnet_rfc1051_init+0x0/0x42 returned 0 after 6036 usecs
+calling  com90xx_init+0x0/0x29 @ 1
+arcnet: COM90xx chipset support
+S3: No ARCnet cards found.
+initcall com90xx_init+0x0/0x29 returned -5 after 298299 usecs
+initcall com90xx_init+0x0/0x29 returned with error code -5 
+calling  com90io_init+0x0/0x488 @ 1
+arcnet: COM90xx IO-mapped mode support (by David Woodhouse et el.)
+E-mail me if you actually test this driver, please!
+ arc%d: No autoprobe for IO mapped cards; you must specify the base address!
+initcall com90io_init+0x0/0x488 returned -19 after 16904 usecs
+calling  init_fmvj18x_cs+0x0/0xf @ 1
+initcall init_fmvj18x_cs+0x0/0xf returned 0 after 15 usecs
+calling  init_smc91c92_cs+0x0/0xf @ 1
+initcall init_smc91c92_cs+0x0/0xf returned 0 after 13 usecs
+calling  init_xirc2ps_cs+0x0/0xf @ 1
+initcall init_xirc2ps_cs+0x0/0xf returned 0 after 11 usecs
+calling  init_com20020_cs+0x0/0xf @ 1
+initcall init_com20020_cs+0x0/0xf returned 0 after 8 usecs
+calling  init_ibmtr_cs+0x0/0xf @ 1
+initcall init_ibmtr_cs+0x0/0xf returned 0 after 10 usecs
+calling  pegasus_init+0x0/0x13b @ 1
+pegasus: v0.6.14 (2006/09/27), Pegasus/Pegasus II USB Ethernet driver
+usbcore: registered new interface driver pegasus
+initcall pegasus_init+0x0/0x13b returned 0 after 10291 usecs
+calling  usb_rtl8150_init+0x0/0x26 @ 1
+rtl8150: v0.6.2 (2004/08/27):rtl8150 based usb-ethernet driver
+usbcore: registered new interface driver rtl8150
+initcall usb_rtl8150_init+0x0/0x26 returned 0 after 9705 usecs
+calling  asix_init+0x0/0x16 @ 1
+usbcore: registered new interface driver asix
+initcall asix_init+0x0/0x16 returned 0 after 4008 usecs
+calling  cdc_init+0x0/0x16 @ 1
+usbcore: registered new interface driver cdc_ether
+initcall cdc_init+0x0/0x16 returned 0 after 4427 usecs
+calling  smsc75xx_init+0x0/0x16 @ 1
+usbcore: registered new interface driver smsc75xx
+initcall smsc75xx_init+0x0/0x16 returned 0 after 4348 usecs
+calling  plusb_init+0x0/0x16 @ 1
+usbcore: registered new interface driver plusb
+initcall plusb_init+0x0/0x16 returned 0 after 4091 usecs
+calling  rndis_init+0x0/0x16 @ 1
+usbcore: registered new interface driver rndis_host
+initcall rndis_init+0x0/0x16 returned 0 after 4524 usecs
+calling  zaurus_init+0x0/0x16 @ 1
+usbcore: registered new interface driver zaurus
+initcall zaurus_init+0x0/0x16 returned 0 after 4177 usecs
+calling  mcs7830_init+0x0/0x16 @ 1
+usbcore: registered new interface driver MOSCHIP usb-ethernet driver
+initcall mcs7830_init+0x0/0x16 returned 0 after 5956 usecs
+calling  usbnet_init+0x0/0x26 @ 1
+initcall usbnet_init+0x0/0x26 returned 0 after 3 usecs
+calling  int51x1_init+0x0/0x16 @ 1
+usbcore: registered new interface driver int51x1
+initcall int51x1_init+0x0/0x16 returned 0 after 4261 usecs
+calling  sierra_net_init+0x0/0x16 @ 1
+usbcore: registered new interface driver sierra_net
+initcall sierra_net_init+0x0/0x16 returned 0 after 4516 usecs
+calling  airo_init_module+0x0/0xea @ 1
+airo(): Probing for PCI adapters
+airo(): Finished probing for PCI adapters
+initcall airo_init_module+0x0/0xea returned 0 after 6587 usecs
+calling  prism54_module_init+0x0/0x36 @ 1
+Loaded prism54 driver, version 1.2
+initcall prism54_module_init+0x0/0x36 returned 0 after 3084 usecs
+calling  hostap_init+0x0/0x40 @ 1
+initcall hostap_init+0x0/0x40 returned 0 after 4 usecs
+calling  init_prism2_pccard+0x0/0xf @ 1
+initcall init_prism2_pccard+0x0/0xf returned 0 after 13 usecs
+calling  init_prism2_plx+0x0/0x16 @ 1
+initcall init_prism2_plx+0x0/0x16 returned 0 after 18 usecs
+calling  init_ray_cs+0x0/0xb1 @ 1
+initcall init_ray_cs+0x0/0xb1 returned 0 after 16 usecs
+calling  wl3501_init_module+0x0/0xf @ 1
+initcall wl3501_init_module+0x0/0xf returned 0 after 8 usecs
+calling  zd1201_init+0x0/0x16 @ 1
+usbcore: registered new interface driver zd1201
+initcall zd1201_init+0x0/0x16 returned 0 after 4170 usecs
+calling  mkiss_init_driver+0x0/0x40 @ 1
+mkiss: AX.25 Multikiss, Hans Albas PE1AYX
+initcall mkiss_init_driver+0x0/0x40 returned 0 after 3659 usecs
+calling  sixpack_init_driver+0x0/0x40 @ 1
+AX.25: 6pack driver, Revision: 0.3.0
+initcall sixpack_init_driver+0x0/0x40 returned 0 after 3237 usecs
+calling  yam_init_driver+0x0/0x11e @ 1
+YAM driver version 0.8 by F1OAT/F6FBB
+initcall yam_init_driver+0x0/0x11e returned 0 after 3533 usecs
+calling  bpq_init_driver+0x0/0x5d @ 1
+AX.25: bpqether driver version 004
+initcall bpq_init_driver+0x0/0x5d returned 0 after 3072 usecs
+calling  init_baycomserfdx+0x0/0x10d @ 1
+baycom_ser_fdx: (C) 1996-2000 Thomas Sailer, HB9JNX/AE4WA
+baycom_ser_fdx: version 0.10 compiled 18:18:20 Sep  3 2010
+initcall init_baycomserfdx+0x0/0x10d returned 0 after 10329 usecs
+calling  hdlcdrv_init_driver+0x0/0x23 @ 1
+hdlcdrv: (C) 1996-2000 Thomas Sailer HB9JNX/AE4WA
+hdlcdrv: version 0.8 compiled 18:18:20 Sep  3 2010
+initcall hdlcdrv_init_driver+0x0/0x23 returned 0 after 8757 usecs
+calling  init_netconsole+0x0/0x206 @ 1
+console [netcon0] enabled
+netconsole: network logging started
+initcall init_netconsole+0x0/0x206 returned 0 after 5473 usecs
+calling  caif_ser_init+0x0/0x4f @ 1
+initcall caif_ser_init+0x0/0x4f returned 0 after 5 usecs
+calling  zatm_init_module+0x0/0x16 @ 1
+initcall zatm_init_module+0x0/0x16 returned 0 after 21 usecs
+calling  uPD98402_module_init+0x0/0x7 @ 1
+initcall uPD98402_module_init+0x0/0x7 returned 0 after 0 usecs
+calling  amb_module_init+0x0/0x131 @ 1
+Madge ATM Ambassador driver version 1.2.4
+initcall amb_module_init+0x0/0x131 returned 0 after 3676 usecs
+calling  hrz_module_init+0x0/0xd4 @ 1
+Madge ATM Horizon [Ultra] driver version 1.2.1
+hrz: debug bitmap is 0
+initcall hrz_module_init+0x0/0xd4 returned 0 after 6150 usecs
+calling  ia_module_init+0x0/0x4c @ 1
+initcall ia_module_init+0x0/0x4c returned 0 after 17 usecs
+calling  idt77252_init+0x0/0x36 @ 1
+idt77252_init: at 4202c290
+initcall idt77252_init+0x0/0x36 returned 0 after 2407 usecs
+calling  solos_pci_init+0x0/0x2e @ 1
+Solos PCI Driver Version 0.07
+initcall solos_pci_init+0x0/0x2e returned 0 after 2658 usecs
+calling  atmtcp_init+0x0/0x11 @ 1
+initcall atmtcp_init+0x0/0x11 returned 0 after 0 usecs
+calling  i2o_iop_init+0x0/0x46 @ 1
+I2O subsystem v1.325
+i2o: max drivers = 8
+ata2.01: configured for UDMA/33
+initcall i2o_iop_init+0x0/0x46 returned 0 after 6896 usecs
+calling  i2o_scsi_init+0x0/0x3f @ 1
+I2O SCSI Peripheral OSM v1.316
+initcall i2o_scsi_init+0x0/0x3f returned 0 after 2739 usecs
+calling  fusion_init+0x0/0x116 @ 1
+Fusion MPT base driver 3.04.15
+Copyright (c) 1999-2008 LSI Corporation
+initcall fusion_init+0x0/0x116 returned 0 after 6217 usecs
+calling  mptfc_init+0x0/0xd7 @ 1
+Fusion MPT FC Host driver 3.04.15
+initcall mptfc_init+0x0/0xd7 returned 0 after 3005 usecs
+calling  mptsas_init+0x0/0xf0 @ 1
+Fusion MPT SAS Host driver 3.04.15
+initcall mptsas_init+0x0/0xf0 returned 0 after 3085 usecs
+calling  mptctl_init+0x0/0x143 @ 1
+Fusion MPT misc device (ioctl) driver 3.04.15
+mptctl: Registered with Fusion MPT base driver
+mptctl: /dev/mptctl @ (major,minor=10,220)
+initcall mptctl_init+0x0/0x143 returned 0 after 11938 usecs
+calling  pcilynx_init+0x0/0x35 @ 1
+initcall pcilynx_init+0x0/0x35 returned 0 after 23 usecs
+calling  ohci1394_init+0x0/0x16 @ 1
+initcall ohci1394_init+0x0/0x16 returned 0 after 18 usecs
+calling  video1394_init_module+0x0/0xad @ 1
+video1394: Installed video1394 module
+initcall video1394_init_module+0x0/0xad returned 0 after 3332 usecs
+calling  sbp2_module_init+0x0/0x80 @ 1
+initcall sbp2_module_init+0x0/0x80 returned 0 after 8 usecs
+calling  dv1394_init_module+0x0/0x8b @ 1
+initcall dv1394_init_module+0x0/0x8b returned 0 after 8 usecs
+calling  uio_init+0x0/0x7 @ 1
+initcall uio_init+0x0/0x7 returned 0 after 0 usecs
+calling  hilscher_init_module+0x0/0x16 @ 1
+initcall hilscher_init_module+0x0/0x16 returned 0 after 18 usecs
+calling  uio_pdrv_init+0x0/0xf @ 1
+initcall uio_pdrv_init+0x0/0xf returned 0 after 12 usecs
+calling  uio_pdrv_genirq_init+0x0/0xf @ 1
+initcall uio_pdrv_genirq_init+0x0/0xf returned 0 after 9 usecs
+calling  aectc_init+0x0/0x16 @ 1
+initcall aectc_init+0x0/0x16 returned 0 after 22 usecs
+calling  netx_init_module+0x0/0x16 @ 1
+initcall netx_init_module+0x0/0x16 returned 0 after 18 usecs
+calling  nonstatic_sysfs_init+0x0/0xf @ 1
+initcall nonstatic_sysfs_init+0x0/0xf returned 0 after 0 usecs
+calling  pd6729_module_init+0x0/0x20 @ 1
+initcall pd6729_module_init+0x0/0x20 returned 0 after 18 usecs
+calling  uwb_subsys_init+0x0/0x4a @ 1
+initcall uwb_subsys_init+0x0/0x4a returned 0 after 17 usecs
+calling  hwarc_driver_init+0x0/0x16 @ 1
+usbcore: registered new interface driver hwa-rc
+initcall hwarc_driver_init+0x0/0x16 returned 0 after 4179 usecs
+calling  i1480_dfu_driver_init+0x0/0x16 @ 1
+usbcore: registered new interface driver i1480-dfu-usb
+initcall i1480_dfu_driver_init+0x0/0x16 returned 0 after 4777 usecs
+calling  i1480_est_init+0x0/0x96 @ 1
+initcall i1480_est_init+0x0/0x96 returned 0 after 0 usecs
+calling  mon_init+0x0/0xe0 @ 1
+initcall mon_init+0x0/0xe0 returned 0 after 65 usecs
+calling  ehci_hcd_init+0x0/0x6c @ 1
+ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+ehci_hcd 0000:00:02.1: can't find IRQ for PCI INT B; please try using pci=biosirq
+ehci_hcd 0000:00:02.1: Found HC with no IRQ.  Check BIOS/PCI 0000:00:02.1 setup!
+ehci_hcd 0000:00:02.1: init 0000:00:02.1 fail, -19
+initcall ehci_hcd_init+0x0/0x6c returned 0 after 23610 usecs
+calling  isp1362_init+0x0/0x3f @ 1
+driver isp1362-hcd, 2005-04-04
+initcall isp1362_init+0x0/0x3f returned 0 after 2739 usecs
+calling  ohci_hcd_mod_init+0x0/0x70 @ 1
+ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+ohci_hcd 0000:00:02.0: can't find IRQ for PCI INT A; please try using pci=biosirq
+ohci_hcd 0000:00:02.0: Found HC with no IRQ.  Check BIOS/PCI 0000:00:02.0 setup!
+ohci_hcd 0000:00:02.0: init 0000:00:02.0 fail, -19
+initcall ohci_hcd_mod_init+0x0/0x70 returned 0 after 23263 usecs
+calling  uhci_hcd_init+0x0/0xb3 @ 1
+uhci_hcd: USB Universal Host Controller Interface driver
+initcall uhci_hcd_init+0x0/0xb3 returned 0 after 4958 usecs
+calling  xhci_hcd_init+0x0/0x29 @ 1
+initcall xhci_hcd_init+0x0/0x29 returned 0 after 18 usecs
+calling  u132_hcd_init+0x0/0xb0 @ 1
+driver u132_hcd built at 18:18:37 on Sep  3 2010
+initcall u132_hcd_init+0x0/0xb0 returned 0 after 4334 usecs
+calling  isp1760_init+0x0/0x44 @ 1
+initcall isp1760_init+0x0/0x44 returned 0 after 31 usecs
+calling  c67x00_init+0x0/0xf @ 1
+initcall c67x00_init+0x0/0xf returned 0 after 12 usecs
+calling  wusbcore_init+0x0/0x78 @ 1
+initcall wusbcore_init+0x0/0x78 returned 0 after 55 usecs
+calling  cbaf_driver_init+0x0/0x16 @ 1
+usbcore: registered new interface driver wusb-cbaf
+initcall cbaf_driver_init+0x0/0x16 returned 0 after 4440 usecs
+calling  acm_init+0x0/0xce @ 1
+usbcore: registered new interface driver cdc_acm
+cdc_acm: v0.26:USB Abstract Control Model driver for USB modems and ISDN adapters
+initcall acm_init+0x0/0xce returned 0 after 11327 usecs
+calling  usblp_init+0x0/0x16 @ 1
+usbcore: registered new interface driver usblp
+initcall usblp_init+0x0/0x16 returned 0 after 4100 usecs
+calling  usbtmc_init+0x0/0x31 @ 1
+usbcore: registered new interface driver usbtmc
+initcall usbtmc_init+0x0/0x31 returned 0 after 4174 usecs
+calling  usb_mdc800_init+0x0/0x280 @ 1
+usbcore: registered new interface driver mdc800
+mdc800: v0.7.5 (30/10/2000):USB Driver for Mustek MDC800 Digital Camera
+initcall usb_mdc800_init+0x0/0x280 returned 0 after 10374 usecs
+calling  adu_init+0x0/0xa0 @ 1
+usbcore: registered new interface driver adutux
+adutux adutux (see www.ontrak.net) v0.0.13
+adutux is an experimental driver. Use at your own risk
+initcall adu_init+0x0/0xa0 returned 0 after 12679 usecs
+calling  cypress_init+0x0/0x36 @ 1
+usbcore: registered new interface driver cypress_cy7c63
+initcall cypress_init+0x0/0x36 returned 0 after 4849 usecs
+calling  emi26_init+0x0/0x16 @ 1
+usbcore: registered new interface driver emi26 - firmware loader
+initcall emi26_init+0x0/0x16 returned 0 after 5623 usecs
+calling  ftdi_elan_init+0x0/0x16e @ 1
+driver ftdi-elan built at 18:18:35 on Sep  3 2010
+async_waiting @ 79
+async_continuing @ 79 after 0 usec
+usbcore: registered new interface driver ftdi-elan
+initcall ftdi_elan_init+0x0/0x16e returned 0 after 13717 usecs
+calling  usb_idmouse_init+0x0/0x42 @ 1
+idmouse: 0.6:Siemens ID Mouse FingerTIP Sensor Driver
+usbcore: registered new interface driver idmouse
+initcall usb_idmouse_init+0x0/0x42 returned 0 after 8942 usecs
+calling  iowarrior_init+0x0/0x16 @ 1
+usbcore: registered new interface driver iowarrior
+initcall iowarrior_init+0x0/0x16 returned 0 after 4428 usecs
+calling  usb_lcd_init+0x0/0x36 @ 1
+usbcore: registered new interface driver usblcd
+initcall usb_lcd_init+0x0/0x36 returned 0 after 4180 usecs
+calling  usbtest_init+0x0/0x16 @ 1
+usbcore: registered new interface driver usbtest
+initcall usbtest_init+0x0/0x16 returned 0 after 4268 usecs
+calling  usb_sevseg_init+0x0/0x36 @ 1
+usbcore: registered new interface driver usbsevseg
+initcall usb_sevseg_init+0x0/0x36 returned 0 after 4429 usecs
+calling  r8a66597_udc_init+0x0/0x14 @ 1
+initcall r8a66597_udc_init+0x0/0x14 returned -19 after 18 usecs
+calling  init+0x0/0xf @ 1
+initcall init+0x0/0xf returned -19 after 0 usecs
+calling  i8042_init+0x0/0xcb @ 1
+scsi 1:0:1:0: CD-ROM            DVDRW    IDE 16X          A079 PQ: 0 ANSI: 5
+scsi 1:0:1:0: Attached scsi generic sg1 type 5
+initcall 2_async_port_probe+0x0/0x100 returned 0 after 2212221 usecs
+serio: i8042 KBD port at 0x60,0x64 irq 1
+serio: i8042 AUX port at 0x60,0x64 irq 12
+initcall i8042_init+0x0/0xcb returned 0 after 27079 usecs
+calling  serport_init+0x0/0x2f @ 1
+initcall serport_init+0x0/0x2f returned 0 after 0 usecs
+calling  pcips2_init+0x0/0x16 @ 1
+initcall pcips2_init+0x0/0x16 returned 0 after 28 usecs
+calling  altera_ps2_init+0x0/0xf @ 1
+initcall altera_ps2_init+0x0/0xf returned 0 after 11 usecs
+calling  emu_init+0x0/0x16 @ 1
+initcall emu_init+0x0/0x16 returned 0 after 20 usecs
+calling  fm801_gp_init+0x0/0x16 @ 1
+initcall fm801_gp_init+0x0/0x16 returned 0 after 21 usecs
+calling  l4_init+0x0/0x325 @ 1
+initcall l4_init+0x0/0x325 returned -19 after 9 usecs
+calling  ns558_init+0x0/0x331 @ 1
+initcall ns558_init+0x0/0x331 returned -19 after 8745 usecs
+calling  mousedev_init+0x0/0x55 @ 1
+mice: PS/2 mouse device common for all mice
+initcall mousedev_init+0x0/0x55 returned 0 after 3878 usecs
+calling  joydev_init+0x0/0xf @ 1
+initcall joydev_init+0x0/0xf returned 0 after 0 usecs
+calling  atkbd_init+0x0/0x20 @ 1
+initcall atkbd_init+0x0/0x20 returned 0 after 16 usecs
+calling  lkkbd_init+0x0/0x16 @ 1
+initcall lkkbd_init+0x0/0x16 returned 0 after 8 usecs
+calling  lm8323_init+0x0/0x11 @ 1
+i2c-core: driver [lm8323] registered
+initcall lm8323_init+0x0/0x11 returned 0 after 3255 usecs
+calling  matrix_keypad_init+0x0/0xf @ 1
+initcall matrix_keypad_init+0x0/0xf returned 0 after 11 usecs
+calling  nkbd_init+0x0/0x16 @ 1
+initcall nkbd_init+0x0/0x16 returned 0 after 8 usecs
+calling  opencores_kbd_init+0x0/0xf @ 1
+initcall opencores_kbd_init+0x0/0xf returned 0 after 9 usecs
+calling  skbd_init+0x0/0x16 @ 1
+initcall skbd_init+0x0/0x16 returned 0 after 8 usecs
+calling  sunkbd_init+0x0/0x16 @ 1
+initcall sunkbd_init+0x0/0x16 returned 0 after 9 usecs
+calling  a3d_init+0x0/0x16 @ 1
+initcall a3d_init+0x0/0x16 returned 0 after 10 usecs
+calling  adi_init+0x0/0x16 @ 1
+initcall adi_init+0x0/0x16 returned 0 after 8 usecs
+calling  analog_init+0x0/0xdb @ 1
+initcall analog_init+0x0/0xdb returned 0 after 8 usecs
+calling  grip_init+0x0/0x16 @ 1
+initcall grip_init+0x0/0x16 returned 0 after 8 usecs
+calling  joydump_init+0x0/0x16 @ 1
+initcall joydump_init+0x0/0x16 returned 0 after 8 usecs
+calling  sw_init+0x0/0x16 @ 1
+initcall sw_init+0x0/0x16 returned 0 after 10 usecs
+calling  spaceball_init+0x0/0x16 @ 1
+initcall spaceball_init+0x0/0x16 returned 0 after 11 usecs
+calling  spaceorb_init+0x0/0x16 @ 1
+initcall spaceorb_init+0x0/0x16 returned 0 after 9 usecs
+calling  stinger_init+0x0/0x16 @ 1
+initcall stinger_init+0x0/0x16 returned 0 after 9 usecs
+calling  tmdc_init+0x0/0x16 @ 1
+initcall tmdc_init+0x0/0x16 returned 0 after 8 usecs
+calling  twidjoy_init+0x0/0x16 @ 1
+initcall twidjoy_init+0x0/0x16 returned 0 after 8 usecs
+calling  usb_xpad_init+0x0/0x31 @ 1
+usbcore: registered new interface driver xpad
+xpad: X-Box pad driver
+initcall usb_xpad_init+0x0/0x31 returned 0 after 6067 usecs
+calling  usb_acecad_init+0x0/0x31 @ 1
+usbcore: registered new interface driver usb_acecad
+acecad: v3.2:USB Acecad Flair tablet driver
+initcall usb_acecad_init+0x0/0x31 returned 0 after 8344 usecs
+calling  aiptek_init+0x0/0x3d @ 1
+usbcore: registered new interface driver aiptek
+aiptek: v2.3 (May 2, 2007):Aiptek HyperPen USB Tablet Driver (Linux 2.6.x)
+aiptek: Bryan W. Headley/Chris Atenasio/Cedric Brun/Rene van Paassen
+initcall aiptek_init+0x0/0x3d returned 0 after 16582 usecs
+calling  gtco_init+0x0/0x4c @ 1
+usbcore: registered new interface driver gtco
+GTCO usb driver version: 2.00.0006initcall gtco_init+0x0/0x4c returned 0 after 6910 usecs
+calling  kbtab_init+0x0/0x31 @ 1
+usbcore: registered new interface driver kbtab
+kbtab: v0.0.2:USB KB Gear JamStudio Tablet driver
+initcall kbtab_init+0x0/0x31 returned 0 after 8429 usecs
+calling  i2c_smbus_init+0x0/0x11 @ 1
+i2c-core: driver [smbus_alert] registered
+initcall i2c_smbus_init+0x0/0x11 returned 0 after 3664 usecs
+calling  i2c_ali1535_init+0x0/0x16 @ 1
+initcall i2c_ali1535_init+0x0/0x16 returned 0 after 22 usecs
+calling  ali1563_init+0x0/0x16 @ 1
+initcall ali1563_init+0x0/0x16 returned 0 after 19 usecs
+calling  amd756_init+0x0/0x16 @ 1
+initcall amd756_init+0x0/0x16 returned 0 after 20 usecs
+calling  i2c_sch_init+0x0/0xf @ 1
+initcall i2c_sch_init+0x0/0xf returned 0 after 10 usecs
+calling  i2c_sis5595_init+0x0/0x16 @ 1
+initcall i2c_sis5595_init+0x0/0x16 returned 0 after 26 usecs
+calling  i2c_sis630_init+0x0/0x16 @ 1
+initcall i2c_sis630_init+0x0/0x16 returned 0 after 20 usecs
+calling  i2c_sis96x_init+0x0/0x16 @ 1
+initcall i2c_sis96x_init+0x0/0x16 returned 0 after 19 usecs
+calling  i2c_pca_pf_init+0x0/0xf @ 1
+initcall i2c_pca_pf_init+0x0/0xf returned 0 after 10 usecs
+calling  i2c_adap_simtec_init+0x0/0xf @ 1
+initcall i2c_adap_simtec_init+0x0/0xf returned 0 after 9 usecs
+calling  xiic_i2c_init+0x0/0xf @ 1
+initcall xiic_i2c_init+0x0/0xf returned 0 after 9 usecs
+calling  taos_init+0x0/0x16 @ 1
+initcall taos_init+0x0/0x16 returned 0 after 8 usecs
+calling  usb_i2c_tiny_usb_init+0x0/0x16 @ 1
+usbcore: registered new interface driver i2c-tiny-usb
+initcall usb_i2c_tiny_usb_init+0x0/0x16 returned 0 after 4681 usecs
+calling  scx200_acb_init+0x0/0x201 @ 1
+scx200_acb: NatSemi SCx200 ACCESS.bus Driver
+initcall scx200_acb_init+0x0/0x201 returned -19 after 3926 usecs
+calling  pps_tty_init+0x0/0x97 @ 1
+PPS line discipline registered
+initcall pps_tty_init+0x0/0x97 returned 0 after 2730 usecs
+calling  w1_init+0x0/0x98 @ 1
+Driver for 1-wire Dallas network protocol.
+initcall w1_init+0x0/0x98 returned 0 after 3776 usecs
+calling  ds_init+0x0/0x40 @ 1
+usbcore: registered new interface driver DS9490R
+initcall ds_init+0x0/0x40 returned 0 after 4261 usecs
+calling  w1_gpio_init+0x0/0x14 @ 1
+initcall w1_gpio_init+0x0/0x14 returned -19 after 15 usecs
+calling  w1_therm_init+0x0/0x29 @ 1
+initcall w1_therm_init+0x0/0x29 returned 0 after 0 usecs
+calling  w1_smem_init+0x0/0x33 @ 1
+initcall w1_smem_init+0x0/0x33 returned 0 after 0 usecs
+calling  w1_f2d_init+0x0/0xf @ 1
+initcall w1_f2d_init+0x0/0xf returned 0 after 0 usecs
+calling  w1_ds2760_init+0x0/0x29 @ 1
+1-Wire driver for the DS2760 battery monitor  chip  - (c) 2004-2005, Szabolcs Gyurko
+initcall w1_ds2760_init+0x0/0x29 returned 0 after 7299 usecs
+calling  w1_bq27000_init+0x0/0x1d @ 1
+initcall w1_bq27000_init+0x0/0x1d returned -17 after 0 usecs
+initcall w1_bq27000_init+0x0/0x1d returned with error code -17 
+calling  pda_power_init+0x0/0xf @ 1
+initcall pda_power_init+0x0/0xf returned 0 after 10 usecs
+calling  wm831x_backup_init+0x0/0xf @ 1
+initcall wm831x_backup_init+0x0/0xf returned 0 after 10 usecs
+calling  wm8350_power_init+0x0/0xf @ 1
+initcall wm8350_power_init+0x0/0xf returned 0 after 10 usecs
+calling  ds2760_battery_init+0x0/0xf @ 1
+initcall ds2760_battery_init+0x0/0xf returned 0 after 10 usecs
+calling  bq27x00_battery_init+0x0/0x2c @ 1
+i2c-core: driver [bq27x00-battery] registered
+initcall bq27x00_battery_init+0x0/0x2c returned 0 after 4007 usecs
+calling  da903x_battery_init+0x0/0x20 @ 1
+initcall da903x_battery_init+0x0/0x20 returned 0 after 12 usecs
+calling  pcf50633_mbc_init+0x0/0xf @ 1
+initcall pcf50633_mbc_init+0x0/0xf returned 0 after 10 usecs
+calling  asb100_init+0x0/0x11 @ 1
+i2c-core: driver [asb100] registered
+initcall asb100_init+0x0/0x11 returned 0 after 3239 usecs
+calling  sensors_w83792d_init+0x0/0x11 @ 1
+i2c-core: driver [w83792d] registered
+initcall sensors_w83792d_init+0x0/0x11 returned 0 after 3329 usecs
+calling  sensors_w83793_init+0x0/0x11 @ 1
+i2c-core: driver [w83793] registered
+initcall sensors_w83793_init+0x0/0x11 returned 0 after 3247 usecs
+calling  sensors_w83781d_init+0x0/0x11 @ 1
+i2c-core: driver [w83781d] registered
+initcall sensors_w83781d_init+0x0/0x11 returned 0 after 3329 usecs
+calling  abituguru3_init+0x0/0x214 @ 1
+initcall abituguru3_init+0x0/0x214 returned -19 after 0 usecs
+calling  ad7414_init+0x0/0x11 @ 1
+i2c-core: driver [ad7414] registered
+initcall ad7414_init+0x0/0x11 returned 0 after 3241 usecs
+calling  init_adcxx+0x0/0xf @ 1
+initcall init_adcxx+0x0/0xf returned 0 after 9 usecs
+calling  sensors_adm1021_init+0x0/0x11 @ 1
+i2c-core: driver [adm1021] registered
+initcall sensors_adm1021_init+0x0/0x11 returned 0 after 3326 usecs
+calling  sensors_adm1025_init+0x0/0x11 @ 1
+i2c-core: driver [adm1025] registered
+initcall sensors_adm1025_init+0x0/0x11 returned 0 after 3338 usecs
+calling  sensors_adm1029_init+0x0/0x11 @ 1
+i2c-core: driver [adm1029] registered
+initcall sensors_adm1029_init+0x0/0x11 returned 0 after 3329 usecs
+calling  sensors_adm9240_init+0x0/0x11 @ 1
+i2c-core: driver [adm9240] registered
+initcall sensors_adm9240_init+0x0/0x11 returned 0 after 3333 usecs
+calling  ads7871_init+0x0/0xf @ 1
+initcall ads7871_init+0x0/0xf returned 0 after 7 usecs
+calling  sensors_adt7411_init+0x0/0x11 @ 1
+i2c-core: driver [adt7411] registered
+initcall sensors_adt7411_init+0x0/0x11 returned 0 after 3326 usecs
+calling  adt7462_init+0x0/0x11 @ 1
+i2c-core: driver [adt7462] registered
+initcall adt7462_init+0x0/0x11 returned 0 after 3329 usecs
+calling  adt7470_init+0x0/0x11 @ 1
+i2c-core: driver [adt7470] registered
+initcall adt7470_init+0x0/0x11 returned 0 after 3331 usecs
+calling  applesmc_init+0x0/0x4ac @ 1
+applesmc: supported laptop not found!
+applesmc: driver init failed (ret=-19)!
+initcall applesmc_init+0x0/0x4ac returned -19 after 6817 usecs
+calling  atxp1_init+0x0/0x11 @ 1
+i2c-core: driver [atxp1] registered
+initcall atxp1_init+0x0/0x11 returned 0 after 3155 usecs
+calling  ds1621_init+0x0/0x11 @ 1
+i2c-core: driver [ds1621] registered
+initcall ds1621_init+0x0/0x11 returned 0 after 3246 usecs
+calling  sensor_emc1403_init+0x0/0x11 @ 1
+i2c-core: driver [emc1403] registered
+initcall sensor_emc1403_init+0x0/0x11 returned 0 after 3331 usecs
+calling  f71805f_init+0x0/0x126 @ 1
+initcall f71805f_init+0x0/0x126 returned -19 after 23 usecs
+calling  i5k_amb_init+0x0/0x52 @ 1
+initcall i5k_amb_init+0x0/0x52 returned 0 after 46 usecs
+calling  k10temp_init+0x0/0x16 @ 1
+initcall k10temp_init+0x0/0x16 returned 0 after 22 usecs
+calling  lis302dl_init+0x0/0xf @ 1
+initcall lis302dl_init+0x0/0xf returned 0 after 8 usecs
+calling  lis3lv02d_init+0x0/0x11 @ 1
+i2c-core: driver [lis3lv02d_i2c] registered
+initcall lis3lv02d_init+0x0/0x11 returned 0 after 3834 usecs
+calling  sensors_lm63_init+0x0/0x11 @ 1
+i2c-core: driver [lm63] registered
+initcall sensors_lm63_init+0x0/0x11 returned 0 after 3077 usecs
+calling  init_lm70+0x0/0xf @ 1
+initcall init_lm70+0x0/0xf returned 0 after 7 usecs
+calling  sensors_lm75_init+0x0/0x11 @ 1
+i2c-core: driver [lm75] registered
+initcall sensors_lm75_init+0x0/0x11 returned 0 after 3078 usecs
+calling  sensors_lm77_init+0x0/0x11 @ 1
+i2c-core: driver [lm77] registered
+initcall sensors_lm77_init+0x0/0x11 returned 0 after 3074 usecs
+calling  sm_lm78_init+0x0/0x355 @ 1
+i2c-core: driver [lm78] registered
+initcall sm_lm78_init+0x0/0x355 returned 0 after 3093 usecs
+calling  sensors_lm80_init+0x0/0x11 @ 1
+i2c-core: driver [lm80] registered
+initcall sensors_lm80_init+0x0/0x11 returned 0 after 3072 usecs
+calling  ltc4215_init+0x0/0x11 @ 1
+i2c-core: driver [ltc4215] registered
+initcall ltc4215_init+0x0/0x11 returned 0 after 3332 usecs
+calling  ltc4245_init+0x0/0x11 @ 1
+i2c-core: driver [ltc4245] registered
+initcall ltc4245_init+0x0/0x11 returned 0 after 3330 usecs
+calling  max1111_init+0x0/0xf @ 1
+initcall max1111_init+0x0/0xf returned 0 after 8 usecs
+calling  sensors_max6650_init+0x0/0x11 @ 1
+i2c-core: driver [max6650] registered
+initcall sensors_max6650_init+0x0/0x11 returned 0 after 3331 usecs
+calling  sm_sis5595_init+0x0/0x16 @ 1
+initcall sm_sis5595_init+0x0/0x16 returned 0 after 20 usecs
+calling  smsc47b397_init+0x0/0x164 @ 1
+initcall smsc47b397_init+0x0/0x164 returned -19 after 6 usecs
+calling  sm_smsc47m1_init+0x0/0x253 @ 1
+initcall sm_smsc47m1_init+0x0/0x253 returned -19 after 6 usecs
+calling  amc6821_init+0x0/0x11 @ 1
+i2c-core: driver [amc6821] registered
+initcall amc6821_init+0x0/0x11 returned 0 after 3331 usecs
+calling  tmp401_init+0x0/0x11 @ 1
+i2c-core: driver [tmp401] registered
+initcall tmp401_init+0x0/0x11 returned 0 after 3243 usecs
+calling  tmp421_init+0x0/0x11 @ 1
+i2c-core: driver [tmp421] registered
+initcall tmp421_init+0x0/0x11 returned 0 after 3245 usecs
+calling  via_cputemp_init+0x0/0x1a6 @ 1
+via_cputemp: Not a VIA CPU
+initcall via_cputemp_init+0x0/0x1a6 returned -19 after 2386 usecs
+calling  sm_vt8231_init+0x0/0x16 @ 1
+initcall sm_vt8231_init+0x0/0x16 returned 0 after 20 usecs
+calling  wm831x_hwmon_init+0x0/0xf @ 1
+initcall wm831x_hwmon_init+0x0/0xf returned 0 after 11 usecs
+calling  wm8350_hwmon_init+0x0/0xf @ 1
+initcall wm8350_hwmon_init+0x0/0xf returned 0 after 13 usecs
+calling  raid0_init+0x0/0xf @ 1
+md: raid0 personality registered for level 0
+initcall raid0_init+0x0/0xf returned 0 after 3911 usecs
+calling  raid_init+0x0/0xf @ 1
+md: raid1 personality registered for level 1
+initcall raid_init+0x0/0xf returned 0 after 3910 usecs
+calling  raid_init+0x0/0xf @ 1
+md: raid10 personality registered for level 10
+initcall raid_init+0x0/0xf returned 0 after 4079 usecs
+calling  hci_uart_init+0x0/0xcc @ 1
+Bluetooth: HCI UART driver ver 2.2
+Bluetooth: HCI H4 protocol initialized
+Bluetooth: HCI BCSP protocol initialized
+initcall hci_uart_init+0x0/0xcc returned 0 after 10044 usecs
+calling  bpa10x_init+0x0/0x2e @ 1
+Bluetooth: Digianswer Bluetooth USB driver ver 0.10
+usbcore: registered new interface driver bpa10x
+initcall bpa10x_init+0x0/0x2e returned 0 after 8683 usecs
+calling  init_btuart_cs+0x0/0xf @ 1
+initcall init_btuart_cs+0x0/0xf returned 0 after 10 usecs
+calling  btsdio_init+0x0/0x27 @ 1
+Bluetooth: Generic Bluetooth SDIO driver ver 0.1
+initcall btsdio_init+0x0/0x27 returned 0 after 4259 usecs
+calling  isdn_init+0x0/0x2a8 @ 1
+ISDN subsystem Rev: 1.1.2.3/1.1.2.3/1.1.2.2/none/none/1.1.2.2
+initcall isdn_init+0x0/0x2a8 returned 0 after 5533 usecs
+calling  divert_init+0x0/0x63 @ 1
+dss1_divert module successfully installed
+initcall divert_init+0x0/0x63 returned 0 after 3669 usecs
+calling  init_ladder+0x0/0xf @ 1
+cpuidle: using governor ladder
+initcall init_ladder+0x0/0xf returned 0 after 2729 usecs
+calling  init_menu+0x0/0xf @ 1
+cpuidle: using governor menu
+initcall init_menu+0x0/0xf returned 0 after 2564 usecs
+calling  mmc_test_init+0x0/0xf @ 1
+initcall mmc_test_init+0x0/0xf returned 0 after 9 usecs
+calling  wbsd_drv_init+0x0/0x7c @ 1
+wbsd: Winbond W83L51xD SD/MMC card interface driver
+wbsd: Copyright(c) Pierre Ossman
+initcall wbsd_drv_init+0x0/0x7c returned 0 after 7493 usecs
+calling  sdricoh_drv_init+0x0/0xf @ 1
+initcall sdricoh_drv_init+0x0/0xf returned 0 after 10 usecs
+calling  via_sd_drv_init+0x0/0x26 @ 1
+via_sdmmc: VIA SD/MMC Card Reader driver (C) 2008 VIA Technologies, Inc.
+initcall via_sd_drv_init+0x0/0x26 returned 0 after 6307 usecs
+calling  pca9532_init+0x0/0x11 @ 1
+i2c-core: driver [pca9532] registered
+initcall pca9532_init+0x0/0x11 returned 0 after 3340 usecs
+calling  lp3944_module_init+0x0/0x11 @ 1
+i2c-core: driver [lp3944] registered
+initcall lp3944_module_init+0x0/0x11 returned 0 after 3245 usecs
+calling  clevo_mail_led_init+0x0/0x87 @ 1
+initcall clevo_mail_led_init+0x0/0x87 returned -19 after 2 usecs
+calling  pca955x_leds_init+0x0/0x11 @ 1
+i2c-core: driver [leds-pca955x] registered
+initcall pca955x_leds_init+0x0/0x11 returned 0 after 3751 usecs
+calling  da903x_led_init+0x0/0xf @ 1
+initcall da903x_led_init+0x0/0xf returned 0 after 11 usecs
+calling  wm831x_status_init+0x0/0x14 @ 1
+initcall wm831x_status_init+0x0/0x14 returned 0 after 11 usecs
+calling  wm8350_led_init+0x0/0x14 @ 1
+initcall wm8350_led_init+0x0/0x14 returned 0 after 11 usecs
+calling  regulator_led_init+0x0/0xf @ 1
+initcall regulator_led_init+0x0/0xf returned 0 after 10 usecs
+calling  lt3593_led_init+0x0/0xf @ 1
+initcall lt3593_led_init+0x0/0xf returned 0 after 10 usecs
+calling  mc13783_led_init+0x0/0xf @ 1
+initcall mc13783_led_init+0x0/0xf returned 0 after 10 usecs
+calling  heartbeat_trig_init+0x0/0xf @ 1
+initcall heartbeat_trig_init+0x0/0xf returned 0 after 0 usecs
+calling  bl_trig_init+0x0/0xf @ 1
+initcall bl_trig_init+0x0/0xf returned 0 after 0 usecs
+calling  ib_core_init+0x0/0x3f @ 1
+initcall ib_core_init+0x0/0x3f returned 0 after 11 usecs
+calling  ib_mad_init_module+0x0/0xcb @ 1
+initcall ib_mad_init_module+0x0/0xcb returned 0 after 5 usecs
+calling  ib_sa_init+0x0/0x5c @ 1
+initcall ib_sa_init+0x0/0x5c returned 0 after 91 usecs
+calling  ib_cm_init+0x0/0xe9 @ 1
+initcall ib_cm_init+0x0/0xe9 returned 0 after 29 usecs
+calling  iw_cm_init+0x0/0x3e @ 1
+initcall iw_cm_init+0x0/0x3e returned 0 after 14 usecs
+calling  addr_init+0x0/0x4d @ 1
+initcall addr_init+0x0/0x4d returned 0 after 14 usecs
+calling  cma_init+0x0/0x9d @ 1
+initcall cma_init+0x0/0x9d returned 0 after 16 usecs
+calling  ib_uverbs_init+0x0/0xb9 @ 1
+initcall ib_uverbs_init+0x0/0xb9 returned 0 after 10 usecs
+calling  ib_ucm_init+0x0/0x93 @ 1
+initcall ib_ucm_init+0x0/0x93 returned 0 after 0 usecs
+calling  ucma_init+0x0/0x49 @ 1
+initcall ucma_init+0x0/0x49 returned 0 after 139 usecs
+calling  mthca_init+0x0/0x161 @ 1
+initcall mthca_init+0x0/0x161 returned 0 after 49 usecs
+calling  mlx4_ib_init+0x0/0xf @ 1
+initcall mlx4_ib_init+0x0/0xf returned 0 after 0 usecs
+calling  nes_init_module+0x0/0x105 @ 1
+initcall nes_init_module+0x0/0x105 returned 0 after 52 usecs
+calling  ipoib_init_module+0x0/0xf1 @ 1
+input: AT Translated Set 2 keyboard as /class/input/input0
+initcall ipoib_init_module+0x0/0xf1 returned 0 after 5265 usecs
+calling  srp_init_module+0x0/0xd3 @ 1
+initcall srp_init_module+0x0/0xd3 returned 0 after 13 usecs
+calling  dcdrbu_init+0x0/0x106 @ 1
+initcall dcdrbu_init+0x0/0x106 returned 0 after 30 usecs
+calling  ibft_init+0x0/0x53a @ 1
+No iBFT detected.
+initcall ibft_init+0x0/0x53a returned 0 after 1625 usecs
+calling  ioat_init_module+0x0/0x7c @ 1
+ioatdma: Intel(R) QuickData Technology Driver 4.00
+initcall ioat_init_module+0x0/0x7c returned 0 after 4450 usecs
+calling  fake_init+0x0/0x2e @ 1
+ieee802154hardmac ieee802154hardmac: Added ieee802154 HardMAC hardware
+initcall fake_init+0x0/0x2e returned 0 after 6269 usecs
+calling  oss_init+0x0/0x158 @ 1
+initcall oss_init+0x0/0x158 returned 0 after 204 usecs
+calling  do_init_aedsp16+0x0/0xb3d @ 1
+Audio Excel DSP 16 init driver Copyright (C) Riccardo Facchetti 1995-98
+aedsp16: I/O, IRQ and DMA are mandatory
+initcall do_init_aedsp16+0x0/0xb3d returned -22 after 9689 usecs
+initcall do_init_aedsp16+0x0/0xb3d returned with error code -22 
+calling  init_pss+0x0/0x6b0 @ 1
+pss: mss_io, mss_dma, mss_irq and pss_io must be set.
+initcall init_pss+0x0/0x6b0 returned -22 after 4670 usecs
+initcall init_pss+0x0/0x6b0 returned with error code -22 
+calling  init_ad1848+0x0/0x14f @ 1
+ad1848/cs4248 codec driver Copyright (C) by Hannu Savolainen 1993-1996
+initcall init_ad1848+0x0/0x14f returned 0 after 6112 usecs
+calling  init_mpu401+0x0/0x8c @ 1
+initcall init_mpu401+0x0/0x8c returned 0 after 0 usecs
+calling  init_pas2+0x0/0x47c @ 1
+Pro Audio Spectrum driver Copyright (C) by Hannu Savolainen 1993-1996
+I/O, IRQ, DMA and type are mandatory
+initcall init_pas2+0x0/0x47c returned -22 after 9274 usecs
+initcall init_pas2+0x0/0x47c returned with error code -22 
+calling  sb_init+0x0/0x2cc @ 1
+sb: Init: Starting Probe...
+sb: Error: At least io, irq, and dma must be set for legacy cards.
+sb: Init: Done
+initcall sb_init+0x0/0x2cc returned -19 after 9621 usecs
+calling  init_uart401+0x0/0x4e @ 1
+initcall init_uart401+0x0/0x4e returned 0 after 0 usecs
+calling  init_uart6850+0x0/0x176 @ 1
+uart6850: irq and io must be set.
+initcall init_uart6850+0x0/0x176 returned -22 after 2982 usecs
+initcall init_uart6850+0x0/0x176 returned with error code -22 
+calling  init_vmidi+0x0/0x2c4 @ 1
+MIDI Loopback device driver
+initcall init_vmidi+0x0/0x2c4 returned 0 after 2573 usecs
+calling  flow_cache_init_global+0x0/0x113 @ 1
+initcall flow_cache_init_global+0x0/0x113 returned 0 after 10 usecs
+calling  pg_init+0x0/0x28e @ 1
+pktgen 2.73: Packet Generator for packet performance testing.
+initcall pg_init+0x0/0x28e returned 0 after 5867 usecs
+calling  llc_init+0x0/0x1b @ 1
+initcall llc_init+0x0/0x1b returned 0 after 0 usecs
+calling  llc2_init+0x0/0xbb @ 1
+NET: Registered protocol family 26
+initcall llc2_init+0x0/0xbb returned 0 after 3084 usecs
+calling  snap_init+0x0/0x36 @ 1
+initcall snap_init+0x0/0x36 returned 0 after 1 usecs
+calling  rif_init+0x0/0x71 @ 1
+initcall rif_init+0x0/0x71 returned 0 after 3 usecs
+calling  blackhole_module_init+0x0/0xf @ 1
+initcall blackhole_module_init+0x0/0xf returned 0 after 0 usecs
+calling  police_init_module+0x0/0xf @ 1
+initcall police_init_module+0x0/0xf returned 0 after 0 usecs
+calling  mirred_init_module+0x0/0x1f @ 1
+Mirror/redirect action on
+initcall mirred_init_module+0x0/0x1f returned 0 after 2300 usecs
+calling  ipt_init_module+0x0/0xf @ 1
+initcall ipt_init_module+0x0/0xf returned 0 after 0 usecs
+calling  nat_init_module+0x0/0xf @ 1
+initcall nat_init_module+0x0/0xf returned 0 after 0 usecs
+calling  simp_init_module+0x0/0x2a @ 1
+Simple TC action Loaded
+initcall simp_init_module+0x0/0x2a returned 0 after 2133 usecs
+calling  skbedit_init_module+0x0/0xf @ 1
+initcall skbedit_init_module+0x0/0xf returned 0 after 0 usecs
+calling  cbq_module_init+0x0/0xf @ 1
+initcall cbq_module_init+0x0/0xf returned 0 after 0 usecs
+calling  gred_module_init+0x0/0xf @ 1
+initcall gred_module_init+0x0/0xf returned 0 after 0 usecs
+calling  tbf_module_init+0x0/0xf @ 1
+initcall tbf_module_init+0x0/0xf returned 0 after 0 usecs
+calling  teql_init+0x0/0xd5 @ 1
+initcall teql_init+0x0/0xd5 returned 0 after 70 usecs
+calling  prio_module_init+0x0/0xf @ 1
+initcall prio_module_init+0x0/0xf returned 0 after 0 usecs
+calling  drr_init+0x0/0xf @ 1
+initcall drr_init+0x0/0xf returned 0 after 0 usecs
+calling  init_route4+0x0/0xf @ 1
+initcall init_route4+0x0/0xf returned 0 after 0 usecs
+calling  init_fw+0x0/0xf @ 1
+initcall init_fw+0x0/0xf returned 0 after 0 usecs
+calling  init_tcindex+0x0/0xf @ 1
+initcall init_tcindex+0x0/0xf returned 0 after 0 usecs
+calling  init_basic+0x0/0xf @ 1
+initcall init_basic+0x0/0xf returned 0 after 0 usecs
+calling  nfnetlink_init+0x0/0x27 @ 1
+Netfilter messages via NETLINK v0.30.
+initcall nfnetlink_init+0x0/0x27 returned 0 after 3324 usecs
+calling  nfnetlink_log_init+0x0/0xc1 @ 1
+initcall nfnetlink_log_init+0x0/0xc1 returned 0 after 7 usecs
+calling  xt_init+0x0/0xb1 @ 1
+initcall xt_init+0x0/0xb1 returned 0 after 0 usecs
+calling  tcpudp_mt_init+0x0/0x14 @ 1
+initcall tcpudp_mt_init+0x0/0x14 returned 0 after 0 usecs
+calling  mark_mt_init+0x0/0x37 @ 1
+initcall mark_mt_init+0x0/0x37 returned 0 after 0 usecs
+calling  classify_tg_init+0x0/0xf @ 1
+initcall classify_tg_init+0x0/0xf returned 0 after 0 usecs
+calling  hl_tg_init+0x0/0x14 @ 1
+initcall hl_tg_init+0x0/0x14 returned 0 after 0 usecs
+calling  nflog_tg_init+0x0/0xf @ 1
+initcall nflog_tg_init+0x0/0xf returned 0 after 0 usecs
+calling  xt_rateest_tg_init+0x0/0x24 @ 1
+initcall xt_rateest_tg_init+0x0/0x24 returned 0 after 0 usecs
+calling  dccp_mt_init+0x0/0xb5 @ 1
+initcall dccp_mt_init+0x0/0xb5 returned 0 after 0 usecs
+calling  hl_mt_init+0x0/0x14 @ 1
+initcall hl_mt_init+0x0/0x14 returned 0 after 0 usecs
+calling  limit_mt_init+0x0/0xf @ 1
+initcall limit_mt_init+0x0/0xf returned 0 after 0 usecs
+calling  mac_mt_init+0x0/0xf @ 1
+initcall mac_mt_init+0x0/0xf returned 0 after 0 usecs
+calling  multiport_mt_init+0x0/0x14 @ 1
+initcall multiport_mt_init+0x0/0x14 returned 0 after 0 usecs
+calling  xt_osf_init+0x0/0x83 @ 1
+initcall xt_osf_init+0x0/0x83 returned 0 after 0 usecs
+calling  owner_mt_init+0x0/0xf @ 1
+initcall owner_mt_init+0x0/0xf returned 0 after 0 usecs
+calling  quota_mt_init+0x0/0xf @ 1
+initcall quota_mt_init+0x0/0xf returned 0 after 0 usecs
+calling  xt_rateest_mt_init+0x0/0xf @ 1
+initcall xt_rateest_mt_init+0x0/0xf returned 0 after 0 usecs
+calling  realm_mt_init+0x0/0xf @ 1
+initcall realm_mt_init+0x0/0xf returned 0 after 0 usecs
+calling  sctp_mt_init+0x0/0x14 @ 1
+initcall sctp_mt_init+0x0/0x14 returned 0 after 0 usecs
+calling  statistic_mt_init+0x0/0xf @ 1
+initcall statistic_mt_init+0x0/0xf returned 0 after 0 usecs
+calling  string_mt_init+0x0/0xf @ 1
+initcall string_mt_init+0x0/0xf returned 0 after 0 usecs
+calling  tcpmss_mt_init+0x0/0x14 @ 1
+initcall tcpmss_mt_init+0x0/0x14 returned 0 after 0 usecs
+calling  time_mt_init+0x0/0x5e @ 1
+xt_time: kernel timezone is -0000
+initcall time_mt_init+0x0/0x5e returned 0 after 2983 usecs
+calling  u32_mt_init+0x0/0xf @ 1
+initcall u32_mt_init+0x0/0xf returned 0 after 0 usecs
+calling  sysctl_ipv4_init+0x0/0x71 @ 1
+initcall sysctl_ipv4_init+0x0/0x71 returned 0 after 9 usecs
+calling  ipip_init+0x0/0x55 @ 1
+IPv4 over IPv4 tunneling driver
+initcall ipip_init+0x0/0x55 returned 0 after 2875 usecs
+calling  ipgre_init+0x0/0x90 @ 1
+GRE over IPv4 tunneling driver
+initcall ipgre_init+0x0/0x90 returned 0 after 2793 usecs
+calling  init_syncookies+0x0/0x16 @ 1
+initcall init_syncookies+0x0/0x16 returned 0 after 32 usecs
+calling  ah4_init+0x0/0x66 @ 1
+initcall ah4_init+0x0/0x66 returned 0 after 0 usecs
+calling  tunnel4_init+0x0/0x31 @ 1
+initcall tunnel4_init+0x0/0x31 returned 0 after 0 usecs
+calling  xfrm4_transport_init+0x0/0x14 @ 1
+initcall xfrm4_transport_init+0x0/0x14 returned 0 after 0 usecs
+calling  xfrm4_mode_tunnel_init+0x0/0x14 @ 1
+initcall xfrm4_mode_tunnel_init+0x0/0x14 returned 0 after 0 usecs
+calling  ipv4_netfilter_init+0x0/0x20 @ 1
+initcall ipv4_netfilter_init+0x0/0x20 returned 0 after 0 usecs
+calling  ip_tables_init+0x0/0x90 @ 1
+ip_tables: (C) 2000-2006 Netfilter Core Team
+initcall ip_tables_init+0x0/0x90 returned 0 after 3918 usecs
+calling  iptable_filter_init+0x0/0x61 @ 1
+initcall iptable_filter_init+0x0/0x61 returned 0 after 9 usecs
+calling  iptable_security_init+0x0/0x40 @ 1
+initcall iptable_security_init+0x0/0x40 returned 0 after 4 usecs
+calling  addrtype_mt_init+0x0/0x14 @ 1
+initcall addrtype_mt_init+0x0/0x14 returned 0 after 0 usecs
+calling  ah_mt_init+0x0/0xf @ 1
+initcall ah_mt_init+0x0/0xf returned 0 after 0 usecs
+calling  ulog_tg_init+0x0/0xd0 @ 1
+initcall ulog_tg_init+0x0/0xd0 returned 0 after 4 usecs
+calling  arp_tables_init+0x0/0x6c @ 1
+arp_tables: (C) 2002 David S. Miller
+initcall arp_tables_init+0x0/0x6c returned 0 after 3247 usecs
+calling  ip_queue_init+0x0/0x124 @ 1
+initcall ip_queue_init+0x0/0x124 returned 0 after 10 usecs
+calling  inet_diag_init+0x0/0xd8 @ 1
+initcall inet_diag_init+0x0/0xd8 returned 0 after 1 usecs
+calling  tcp_diag_init+0x0/0xf @ 1
+initcall tcp_diag_init+0x0/0xf returned 0 after 0 usecs
+calling  bictcp_register+0x0/0xf @ 1
+TCP bic registered
+initcall bictcp_register+0x0/0xf returned 0 after 1708 usecs
+calling  hstcp_register+0x0/0xf @ 1
+TCP highspeed registered
+initcall hstcp_register+0x0/0xf returned 0 after 2218 usecs
+calling  hybla_register+0x0/0xf @ 1
+TCP hybla registered
+initcall hybla_register+0x0/0xf returned 0 after 1878 usecs
+calling  htcp_register+0x0/0xf @ 1
+TCP htcp registered
+initcall htcp_register+0x0/0xf returned 0 after 1794 usecs
+calling  tcp_vegas_register+0x0/0x11 @ 1
+TCP vegas registered
+initcall tcp_vegas_register+0x0/0x11 returned 0 after 1881 usecs
+calling  tcp_lp_register+0x0/0xf @ 1
+TCP lp registered
+initcall tcp_lp_register+0x0/0xf returned 0 after 1628 usecs
+calling  tcp_yeah_register+0x0/0x11 @ 1
+TCP yeah registered
+initcall tcp_yeah_register+0x0/0x11 returned 0 after 1798 usecs
+calling  packet_init+0x0/0x39 @ 1
+NET: Registered protocol family 17
+initcall packet_init+0x0/0x39 returned 0 after 3070 usecs
+calling  ipsec_pfkey_init+0x0/0x6b @ 1
+NET: Registered protocol family 15
+initcall ipsec_pfkey_init+0x0/0x6b returned 0 after 3067 usecs
+calling  br_init+0x0/0x9b @ 1
+initcall br_init+0x0/0x9b returned 0 after 11 usecs
+calling  dsa_init_module+0x0/0x11 @ 1
+initcall dsa_init_module+0x0/0x11 returned 0 after 0 usecs
+calling  mv88e6131_init+0x0/0x11 @ 1
+initcall mv88e6131_init+0x0/0x11 returned 0 after 0 usecs
+calling  dsa_init_module+0x0/0xf @ 1
+initcall dsa_init_module+0x0/0xf returned 0 after 20 usecs
+calling  ipx_init+0x0/0xd9 @ 1
+NET: Registered protocol family 4
+initcall ipx_init+0x0/0xd9 returned 0 after 3222 usecs
+calling  atalk_init+0x0/0x7b @ 1
+NET: Registered protocol family 5
+initcall atalk_init+0x0/0x7b returned 0 after 2994 usecs
+calling  lapb_init+0x0/0x7 @ 1
+initcall lapb_init+0x0/0x7 returned 0 after 0 usecs
+calling  ax25_init+0x0/0x94 @ 1
+NET: Registered protocol family 3
+initcall ax25_init+0x0/0x94 returned 0 after 2986 usecs
+calling  can_init+0x0/0xcc @ 1
+can: controller area network core (rev 20090105 abi 8)
+NET: Registered protocol family 29
+initcall can_init+0x0/0xcc returned 0 after 7845 usecs
+calling  raw_module_init+0x0/0x36 @ 1
+can: raw protocol (rev 20090105)
+initcall raw_module_init+0x0/0x36 returned 0 after 2894 usecs
+calling  l2cap_init+0x0/0x127 @ 1
+Bluetooth: L2CAP ver 2.14
+Bluetooth: L2CAP socket layer initialized
+initcall l2cap_init+0x0/0x127 returned 0 after 5980 usecs
+calling  rfcomm_init+0x0/0xe8 @ 1
+Bluetooth: RFCOMM TTY layer initialized
+Bluetooth: RFCOMM socket layer initialized
+Bluetooth: RFCOMM ver 1.11
+initcall rfcomm_init+0x0/0xe8 returned 0 after 9638 usecs
+calling  bnep_init+0x0/0x8d @ 1
+Bluetooth: BNEP (Ethernet Emulation) ver 1.3
+Bluetooth: BNEP filters: protocol multicast
+initcall bnep_init+0x0/0x8d returned 0 after 7742 usecs
+calling  init_rpcsec_gss+0x0/0x3f @ 1
+initcall init_rpcsec_gss+0x0/0x3f returned 0 after 10 usecs
+calling  init_kerberos_module+0x0/0x2a @ 1
+initcall init_kerberos_module+0x0/0x2a returned 0 after 2 usecs
+calling  xprt_rdma_init+0x0/0xbe @ 1
+RPC: Registered rdma transport module.
+initcall xprt_rdma_init+0x0/0xbe returned 0 after 3407 usecs
+calling  svc_rdma_init+0x0/0x170 @ 1
+initcall svc_rdma_init+0x0/0x170 returned 0 after 8 usecs
+calling  af_rxrpc_init+0x0/0x189 @ 1
+NET: Registered protocol family 33
+initcall af_rxrpc_init+0x0/0x189 returned 0 after 3098 usecs
+calling  atm_clip_init+0x0/0xa7 @ 1
+initcall atm_clip_init+0x0/0xa7 returned 0 after 12 usecs
+calling  br2684_init+0x0/0x41 @ 1
+initcall br2684_init+0x0/0x41 returned 0 after 1 usecs
+calling  pppoatm_init+0x0/0x11 @ 1
+initcall pppoatm_init+0x0/0x11 returned 0 after 0 usecs
+calling  l2tp_init+0x0/0x33 @ 1
+L2TP core driver, V2.0
+initcall l2tp_init+0x0/0x33 returned 0 after 2060 usecs
+calling  phonet_init+0x0/0x74 @ 1
+NET: Registered protocol family 35
+initcall phonet_init+0x0/0x74 returned 0 after 3083 usecs
+calling  pep_register+0x0/0x14 @ 1
+initcall pep_register+0x0/0x14 returned 0 after 1 usecs
+calling  sctp_init+0x0/0x6b5 @ 1
+SCTP: Hash tables configured (established 65536 bind 65536)
+sctp_init_sock(sk: 7e948000)
+initcall sctp_init+0x0/0x6b5 returned 0 after 8229 usecs
+calling  lib80211_init+0x0/0x1f @ 1
+lib80211: common routines for IEEE802.11 drivers
+lib80211_crypt: registered algorithm 'NULL'
+initcall lib80211_init+0x0/0x1f returned 0 after 8077 usecs
+calling  lib80211_crypto_wep_init+0x0/0xf @ 1
+lib80211_crypt: registered algorithm 'WEP'
+initcall lib80211_crypto_wep_init+0x0/0xf returned 0 after 3742 usecs
+calling  lib80211_crypto_ccmp_init+0x0/0xf @ 1
+lib80211_crypt: registered algorithm 'CCMP'
+initcall lib80211_crypto_ccmp_init+0x0/0xf returned 0 after 3835 usecs
+calling  lib80211_crypto_tkip_init+0x0/0xf @ 1
+lib80211_crypt: registered algorithm 'TKIP'
+initcall lib80211_crypto_tkip_init+0x0/0xf returned 0 after 3828 usecs
+calling  tipc_init+0x0/0xbf @ 1
+TIPC: Activated (version 2.0.0 compiled Sep  3 2010 18:18:22)
+NET: Registered protocol family 30
+TIPC: Started in single node mode
+initcall tipc_init+0x0/0xbf returned 0 after 11508 usecs
+calling  caif_device_init+0x0/0x72 @ 1
+initcall caif_device_init+0x0/0x72 returned 0 after 9 usecs
+calling  caif_sktinit_module+0x0/0x145 @ 1
+NET: Registered protocol family 37
+initcall caif_sktinit_module+0x0/0x145 returned 0 after 3099 usecs
+calling  af_ieee802154_init+0x0/0x63 @ 1
+NET: Registered protocol family 36
+initcall af_ieee802154_init+0x0/0x63 returned 0 after 3070 usecs
+calling  mcheck_debugfs_init+0x0/0x3f @ 1
+initcall mcheck_debugfs_init+0x0/0x3f returned 0 after 3 usecs
+calling  severities_debugfs_init+0x0/0x3f @ 1
+initcall severities_debugfs_init+0x0/0x3f returned 0 after 1 usecs
+calling  check_early_ioremap_leak+0x0/0x6a @ 1
+initcall check_early_ioremap_leak+0x0/0x6a returned 0 after 0 usecs
+calling  init_oops_id+0x0/0x50 @ 1
+initcall init_oops_id+0x0/0x50 returned 0 after 2 usecs
+calling  disable_boot_consoles+0x0/0x45 @ 1
+initcall disable_boot_consoles+0x0/0x45 returned 0 after 0 usecs
+calling  pm_qos_power_init+0x0/0xc0 @ 1
+initcall pm_qos_power_init+0x0/0xc0 returned 0 after 309 usecs
+calling  clear_boot_tracer+0x0/0x2e @ 1
+initcall clear_boot_tracer+0x0/0x2e returned 0 after 0 usecs
+calling  init_ima+0x0/0x14 @ 1
+tpm_tis tpm_tis: tpm_transmit: tpm_send: error 4294967291
+IMA: No TPM chip found, activating TPM-bypass!
+initcall init_ima+0x0/0x14 returned 0 after 9142 usecs
+calling  random32_reseed+0x0/0x56 @ 1
+initcall random32_reseed+0x0/0x56 returned 0 after 5 usecs
+calling  pci_resource_alignment_sysfs_init+0x0/0x14 @ 1
+initcall pci_resource_alignment_sysfs_init+0x0/0x14 returned 0 after 1 usecs
+calling  pci_sysfs_init+0x0/0x44 @ 1
+initcall pci_sysfs_init+0x0/0x44 returned 0 after 564 usecs
+calling  regulator_init_complete+0x0/0x111 @ 1
+initcall regulator_init_complete+0x0/0x111 returned 0 after 0 usecs
+calling  seqgen_init+0x0/0xe @ 1
+initcall seqgen_init+0x0/0xe returned 0 after 13 usecs
+calling  scsi_complete_async_scans+0x0/0x1c0 @ 1
+initcall scsi_complete_async_scans+0x0/0x1c0 returned 0 after 0 usecs
+calling  memmap_init+0x0/0x30 @ 1
+initcall memmap_init+0x0/0x30 returned 0 after 21 usecs
+calling  dmatest_init+0x0/0x1a8 @ 1
+__dma_request_channel: fail ((null))
+initcall dmatest_init+0x0/0x1a8 returned 0 after 3239 usecs
+calling  init_net_drop_monitor+0x0/0xff @ 1
+Initalizing network drop monitor service
+initcall init_net_drop_monitor+0x0/0xff returned 0 after 3583 usecs
+calling  tcp_congestion_default+0x0/0xf @ 1
+initcall tcp_congestion_default+0x0/0xf returned 0 after 0 usecs
+calling  initialize_hashrnd+0x0/0x16 @ 1
+initcall initialize_hashrnd+0x0/0x16 returned 0 after 3 usecs
+async_waiting @ 1
+async_continuing @ 1 after 0 usec
+md: Waiting for all devices to be available before autodetect
+md: If you don't use raid, use raid=noautodetect
+async_waiting @ 1
+async_continuing @ 1 after 0 usec
+md: Autodetecting RAID arrays.
+md: Scanned 0 and added 0 devices.
+md: autorun ...
+md: ... autorun DONE.
+EXT3-fs (sda1): recovery required on readonly filesystem
+EXT3-fs (sda1): write access will be enabled during recovery
+EXT3-fs: barriers not enabled
+BUG: unable to handle kernel NULL pointer dereference at 00000340
+IP: [<4102dde1>] print_context_stack+0x81/0x110
+*pde = 00000000 
+Oops: 0000 [#1] PREEMPT 
+last sysfs file: 
+
+Pid: 0, comm: swapper Not tainted 2.6.35-rc3+ #33238 A8N-E/System Product Name
+EIP: 0060:[<4102dde1>] EFLAGS: 00010016 CPU: 0
+EIP is at print_context_stack+0x81/0x110
+EAX: 00000000 EBX: 41f62d70 ECX: 00000000 EDX: 41f62000
+ESI: 00000000 EDI: 41c5bc3c EBP: 41f62d54 ESP: 41f62d30
+ DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+Process swapper (pid: 0, ti=41f62000 task=41f64a80 task.ti=41f5c000)
+Stack:
+ 41047a83 41f63ffc 41f62d84 ffffe000 41f62000 41f62d84 41f62d70 41c5bc3c
+<0> 41f62000 41f62d84 4102ca48 41c5bc3c 7f9731b0 00000000 41f62d74 41f62d84
+<0> 41047a83 00000000 7f9731b0 00000046 7f9731d4 41f62d9c 41033e50 00000000
+Call Trace:
+ [<41047a83>] ? enqueue_task+0x43/0x60
+BUG: unable to handle kernel NULL pointer dereference at 00000340
+IP: [<4102dde1>] print_context_stack+0x81/0x110
+*pde = 00000000 
+Oops: 0000 [#2] PREEMPT 
+last sysfs file: 
+
+Pid: 0, comm: swapper Not tainted 2.6.35-rc3+ #33238 A8N-E/System Product Name
+EIP: 0060:[<4102dde1>] EFLAGS: 00010016 CPU: 0
+EIP is at print_context_stack+0x81/0x110
+EAX: 00000000 EBX: 41f62d30 ECX: fffe0560 EDX: 41f62000
+ESI: 00000000 EDI: 41c5b894 EBP: 41f62b18 ESP: 41f62af4
+ DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+Process swapper (pid: 0, ti=41f62000 task=41f64a80 task.ti=41f5c000)
+Stack:
+ 41047a83 41f63ffc 41f62b48 ffffe000 41f62000 41f62b48 41f62d30 41c5b894
+<0> 41f62000 41f62b48 4102ca48 41c5b894 41de0bec 00000000 41f62b38 41f62cf4
+<0> 41de0bec 00000000 00000000 41f62cf4 41de0bec 41f62b6c 4102dc3d 00000000
+Call Trace:
+ [<41047a83>] ? enqueue_task+0x43/0x60
+BUG: unable to handle kernel NULL pointer dereference at 00000340
+IP: [<4102dde1>] print_context_stack+0x81/0x110
+*pde = 00000000 
+Oops: 0000 [#3] PREEMPT 
+last sysfs file: 
+
+Pid: 0, comm: swapper Not tainted 2.6.35-rc3+ #33238 A8N-E/System Product Name
+EIP: 0060:[<4102dde1>] EFLAGS: 00010016 CPU: 0
+EIP is at print_context_stack+0x81/0x110
+EAX: 00000000 EBX: 41f62af4 ECX: fffe01d3 EDX: 41f62000
+ESI: 00000000 EDI: 41c5b894 EBP: 41f628dc ESP: 41f628b8
+ DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+Process swapper (pid: 0, ti=41f62000 task=41f64a80 task.ti=41f5c000)
+Stack:
+ 41047a83 41f63ffc 41f6290c ffffe000 41f62000 41f6290c 41f62af4 41c5b894
+<0> 41f62000 41f6290c 4102ca48 41c5b894 41de0bec 00000000 41f628fc 41f62ab8
+<0> 41de0bec 00000000 00000000 41f62ab8 41de0bec 41f62930 4102dc3d 00000000
+Call Trace:
+ [<41047a83>] ? enqueue_task+0x43/0x60
+BUG: unable to handle kernel NULL pointer dereference at 00000340
+IP: [<4102dde1>] print_context_stack+0x81/0x110
+*pde = 00000000 
+Oops: 0000 [#4] PREEMPT 
+last sysfs file: 
+
+Pid: 0, comm: swapper Not tainted 2.6.35-rc3+ #33238 A8N-E/System Product Name
+EIP: 0060:[<4102dde1>] EFLAGS: 00010016 CPU: 0
+EIP is at print_context_stack+0x81/0x110
+EAX: 00000000 EBX: 41f628b8 ECX: fffdfe46 EDX: 41f62000
+ESI: 00000000 EDI: 41c5b894 EBP: 41f626a0 ESP: 41f6267c
+ DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+Process swapper (pid: 0, ti=41f62000 task=41f64a80 task.ti=41f5c000)
+Stack:
+ 41047a83 41f63ffc 41f626d0 ffffe000 41f62000 41f626d0 41f628b8 41c5b894
+<0> 41f62000 41f626d0 4102ca48 41c5b894 41de0bec 00000000 41f626c0 41f6287c
+<0> 41de0bec 00000000 00000000 41f6287c 41de0bec 41f626f4 4102dc3d 00000000
+Call Trace:
+ [<41047a83>] ? enqueue_task+0x43/0x60
+BUG: unable to handle kernel NULL pointer dereference at 00000340
+IP: [<4102dde1>] print_context_stack+0x81/0x110
+*pde = 00000000 
+Oops: 0000 [#5] PREEMPT 
+last sysfs file: 
+
+Pid: 0, comm: swapper Not tainted 2.6.35-rc3+ #33238 A8N-E/System Product Name
+EIP: 0060:[<4102dde1>] EFLAGS: 00010016 CPU: 0
+EIP is at print_context_stack+0x81/0x110
+EAX: 00000000 EBX: 41f6267c ECX: fffdfab9 EDX: 41f62000
+ESI: 00000000 EDI: 41c5b894 EBP: 41f62464 ESP: 41f62440
+ DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+Process swapper (pid: 0, ti=41f62000 task=41f64a80 task.ti=41f5c000)
+Stack:
+ 41047a83 41f63ffc 41f62494 ffffe000 41f62000 41f62494 41f6267c 41c5b894
+<0> 41f62000 41f62494 4102ca48 41c5b894 41de0bec 00000000 41f62484 41f62640
+<0> 41de0bec 00000000 00000000 41f62640 41de0bec 41f624b8 4102dc3d 00000000
+Call Trace:
+ [<41047a83>] ? enqueue_task+0x43/0x60
+BUG: unable to handle kernel NULL pointer dereference at 000003a0
+IP: [<4102dde1>] print_context_stack+0x81/0x110
+*pde = 00000000 
+Oops: 0000 [#6] PREEMPT 
+last sysfs file: 
+
+Pid: 0, comm: swapper Not tainted 2.6.35-rc3+ #33238 A8N-E/System Product Name
+EIP: 0060:[<4102dde1>] EFLAGS: 00010016 CPU: 0
+EIP is at print_context_stack+0x81/0x110
+EAX: 00000060 EBX: 41f62440 ECX: fffdf72c EDX: 41f62000
+ESI: 00000000 EDI: 41c5b894 EBP: 41f62228 ESP: 41f62204
+ DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+Process swapper (pid: 0, ti=41f62000 task=41f64a80 task.ti=41f5c000)
+Stack:
+ 41047a83 41f63ffc 41f62258 ffffe000 41f62000 41f62258 41f62440 41c5b894
+<0> 41f62000 41f62258 4102ca48 41c5b894 41de0bec 00000000 41f62248 41f62404
+<0> 41de0bec 00000000 00000000 41f62404 41de0bec 41f6227c 4102dc3d 00000000
+Call Trace:
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<41033e50>] ? save_stack_trace+0x30/0x50
+ [<4146ac40>] ? dma_entry_alloc+0x80/0xd0
+ [<4146bb33>] ? debug_dma_map_sg+0x83/0x140
+ [<41690881>] ? ata_qc_issue+0x161/0x310
+ [<4169698e>] ? ata_scsi_translate+0x7e/0x140
+ [<410aaa23>] ? mempool_free_slab+0x13/0x20
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<416998b4>] ? ata_scsi_queuecmd+0xb4/0x2b0
+ [<41697e20>] ? ata_scsi_rw_xlat+0x0/0x270
+ [<41549538>] ? scsi_dispatch_cmd+0xd8/0x2c0
+ [<4154f199>] ? scsi_request_fn+0x3c9/0x530
+ [<410b9ddc>] ? clear_bdi_congested+0xc/0x40
+ [<414423ba>] ? __blk_run_queue+0x3a/0x70
+ [<414446f4>] ? blk_run_queue+0x34/0x70
+ [<4154f586>] ? scsi_run_queue+0xd6/0x380
+ [<41548db1>] ? __scsi_put_command+0x71/0xa0
+ [<4154f999>] ? scsi_next_command+0x39/0x50
+ [<4154fec1>] ? scsi_io_completion+0x2f1/0x510
+ [<4154fa95>] ? scsi_device_unbusy+0x95/0xe0
+ [<41547dde>] ? scsi_finish_command+0x8e/0xc0
+ [<41550207>] ? scsi_softirq_done+0x107/0x140
+ [<4144989a>] ? blk_done_softirq+0x6a/0x80
+ [<410545ce>] ? __do_softirq+0x7e/0x1a0
+ [<41054550>] ? __do_softirq+0x0/0x1a0
+ [<4102c9af>] ? do_softirq+0x7f/0xb0
+ [<41008bf6>] ? kvm_vm_ioctl_assigned_device+0x256/0x970
+ <IRQ> 
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<41033e50>] ? save_stack_trace+0x30/0x50
+ [<4146ac40>] ? dma_entry_alloc+0x80/0xd0
+ [<4146bb33>] ? debug_dma_map_sg+0x83/0x140
+ [<41690881>] ? ata_qc_issue+0x161/0x310
+ [<4169698e>] ? ata_scsi_translate+0x7e/0x140
+ [<410aaa23>] ? mempool_free_slab+0x13/0x20
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<416998b4>] ? ata_scsi_queuecmd+0xb4/0x2b0
+ [<41697e20>] ? ata_scsi_rw_xlat+0x0/0x270
+ [<41549538>] ? scsi_dispatch_cmd+0xd8/0x2c0
+ [<4154f199>] ? scsi_request_fn+0x3c9/0x530
+ [<410b9ddc>] ? clear_bdi_congested+0xc/0x40
+ [<414423ba>] ? __blk_run_queue+0x3a/0x70
+ [<414446f4>] ? blk_run_queue+0x34/0x70
+ [<4154f586>] ? scsi_run_queue+0xd6/0x380
+ [<41548db1>] ? __scsi_put_command+0x71/0xa0
+ [<4154f999>] ? scsi_next_command+0x39/0x50
+ [<4154fec1>] ? scsi_io_completion+0x2f1/0x510
+ [<4154fa95>] ? scsi_device_unbusy+0x95/0xe0
+ [<41547dde>] ? scsi_finish_command+0x8e/0xc0
+ [<41550207>] ? scsi_softirq_done+0x107/0x140
+ [<4144989a>] ? blk_done_softirq+0x6a/0x80
+ [<410545ce>] ? __do_softirq+0x7e/0x1a0
+ [<41054550>] ? __do_softirq+0x0/0x1a0
+ [<4102c9af>] ? do_softirq+0x7f/0xb0
+ [<41008bf6>] ? kvm_vm_ioctl_assigned_device+0x256/0x970
+ <IRQ> 
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<41033e50>] ? save_stack_trace+0x30/0x50
+ [<4146ac40>] ? dma_entry_alloc+0x80/0xd0
+ [<4146bb33>] ? debug_dma_map_sg+0x83/0x140
+ [<41690881>] ? ata_qc_issue+0x161/0x310
+ [<4169698e>] ? ata_scsi_translate+0x7e/0x140
+ [<410aaa23>] ? mempool_free_slab+0x13/0x20
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<416998b4>] ? ata_scsi_queuecmd+0xb4/0x2b0
+ [<41697e20>] ? ata_scsi_rw_xlat+0x0/0x270
+ [<41549538>] ? scsi_dispatch_cmd+0xd8/0x2c0
+ [<4154f199>] ? scsi_request_fn+0x3c9/0x530
+ [<410b9ddc>] ? clear_bdi_congested+0xc/0x40
+ [<414423ba>] ? __blk_run_queue+0x3a/0x70
+ [<414446f4>] ? blk_run_queue+0x34/0x70
+ [<4154f586>] ? scsi_run_queue+0xd6/0x380
+ [<41548db1>] ? __scsi_put_command+0x71/0xa0
+ [<4154f999>] ? scsi_next_command+0x39/0x50
+ [<4154fec1>] ? scsi_io_completion+0x2f1/0x510
+ [<4154fa95>] ? scsi_device_unbusy+0x95/0xe0
+ [<41547dde>] ? scsi_finish_command+0x8e/0xc0
+ [<41550207>] ? scsi_softirq_done+0x107/0x140
+ [<4144989a>] ? blk_done_softirq+0x6a/0x80
+ [<410545ce>] ? __do_softirq+0x7e/0x1a0
+ [<41054550>] ? __do_softirq+0x0/0x1a0
+ [<4102c9af>] ? do_softirq+0x7f/0xb0
+ [<41008bf6>] ? kvm_vm_ioctl_assigned_device+0x256/0x970
+ <IRQ> 
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<41033e50>] ? save_stack_trace+0x30/0x50
+ [<4146ac40>] ? dma_entry_alloc+0x80/0xd0
+ [<4146bb33>] ? debug_dma_map_sg+0x83/0x140
+ [<41690881>] ? ata_qc_issue+0x161/0x310
+ [<4169698e>] ? ata_scsi_translate+0x7e/0x140
+ [<410aaa23>] ? mempool_free_slab+0x13/0x20
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<416998b4>] ? ata_scsi_queuecmd+0xb4/0x2b0
+ [<41697e20>] ? ata_scsi_rw_xlat+0x0/0x270
+ [<41549538>] ? scsi_dispatch_cmd+0xd8/0x2c0
+ [<4154f199>] ? scsi_request_fn+0x3c9/0x530
+ [<410b9ddc>] ? clear_bdi_congested+0xc/0x40
+ [<414423ba>] ? __blk_run_queue+0x3a/0x70
+ [<414446f4>] ? blk_run_queue+0x34/0x70
+ [<4154f586>] ? scsi_run_queue+0xd6/0x380
+ [<41548db1>] ? __scsi_put_command+0x71/0xa0
+ [<4154f999>] ? scsi_next_command+0x39/0x50
+ [<4154fec1>] ? scsi_io_completion+0x2f1/0x510
+ [<4154fa95>] ? scsi_device_unbusy+0x95/0xe0
+ [<41547dde>] ? scsi_finish_command+0x8e/0xc0
+ [<41550207>] ? scsi_softirq_done+0x107/0x140
+ [<4144989a>] ? blk_done_softirq+0x6a/0x80
+ [<410545ce>] ? __do_softirq+0x7e/0x1a0
+ [<41054550>] ? __do_softirq+0x0/0x1a0
+ [<4102c9af>] ? do_softirq+0x7f/0xb0
+ [<41008bf6>] ? kvm_vm_ioctl_assigned_device+0x256/0x970
+ <IRQ> 
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<41033e50>] ? save_stack_trace+0x30/0x50
+ [<4146ac40>] ? dma_entry_alloc+0x80/0xd0
+ [<4146bb33>] ? debug_dma_map_sg+0x83/0x140
+ [<41690881>] ? ata_qc_issue+0x161/0x310
+ [<4169698e>] ? ata_scsi_translate+0x7e/0x140
+ [<410aaa23>] ? mempool_free_slab+0x13/0x20
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<416998b4>] ? ata_scsi_queuecmd+0xb4/0x2b0
+ [<41697e20>] ? ata_scsi_rw_xlat+0x0/0x270
+ [<41549538>] ? scsi_dispatch_cmd+0xd8/0x2c0
+ [<4154f199>] ? scsi_request_fn+0x3c9/0x530
+ [<410b9ddc>] ? clear_bdi_congested+0xc/0x40
+ [<414423ba>] ? __blk_run_queue+0x3a/0x70
+ [<414446f4>] ? blk_run_queue+0x34/0x70
+ [<4154f586>] ? scsi_run_queue+0xd6/0x380
+ [<41548db1>] ? __scsi_put_command+0x71/0xa0
+ [<4154f999>] ? scsi_next_command+0x39/0x50
+ [<4154fec1>] ? scsi_io_completion+0x2f1/0x510
+ [<4154fa95>] ? scsi_device_unbusy+0x95/0xe0
+ [<41547dde>] ? scsi_finish_command+0x8e/0xc0
+ [<41550207>] ? scsi_softirq_done+0x107/0x140
+ [<4144989a>] ? blk_done_softirq+0x6a/0x80
+ [<410545ce>] ? __do_softirq+0x7e/0x1a0
+ [<41054550>] ? __do_softirq+0x0/0x1a0
+ [<4102c9af>] ? do_softirq+0x7f/0xb0
+ [<41008bf6>] ? kvm_vm_ioctl_assigned_device+0x256/0x970
+ <IRQ> 
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<41033e50>] ? save_stack_trace+0x30/0x50
+ [<4146ac40>] ? dma_entry_alloc+0x80/0xd0
+ [<4146bb33>] ? debug_dma_map_sg+0x83/0x140
+ [<41690881>] ? ata_qc_issue+0x161/0x310
+ [<4169698e>] ? ata_scsi_translate+0x7e/0x140
+ [<410aaa23>] ? mempool_free_slab+0x13/0x20
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<416998b4>] ? ata_scsi_queuecmd+0xb4/0x2b0
+ [<41697e20>] ? ata_scsi_rw_xlat+0x0/0x270
+ [<41549538>] ? scsi_dispatch_cmd+0xd8/0x2c0
+ [<4154f199>] ? scsi_request_fn+0x3c9/0x530
+ [<410b9ddc>] ? clear_bdi_congested+0xc/0x40
+ [<414423ba>] ? __blk_run_queue+0x3a/0x70
+ [<414446f4>] ? blk_run_queue+0x34/0x70
+ [<4154f586>] ? scsi_run_queue+0xd6/0x380
+ [<41548db1>] ? __scsi_put_command+0x71/0xa0
+ [<4154f999>] ? scsi_next_command+0x39/0x50
+ [<4154fec1>] ? scsi_io_completion+0x2f1/0x510
+ [<4154fa95>] ? scsi_device_unbusy+0x95/0xe0
+ [<41547dde>] ? scsi_finish_command+0x8e/0xc0
+ [<41550207>] ? scsi_softirq_done+0x107/0x140
+ [<4144989a>] ? blk_done_softirq+0x6a/0x80
+ [<410545ce>] ? __do_softirq+0x7e/0x1a0
+ [<41054550>] ? __do_softirq+0x0/0x1a0
+ [<4102c9af>] ? do_softirq+0x7f/0xb0
+ [<41008bf6>] ? kvm_vm_ioctl_assigned_device+0x256/0x970
+ <IRQ> 
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<41033e50>] ? save_stack_trace+0x30/0x50
+ [<4146ac40>] ? dma_entry_alloc+0x80/0xd0
+ [<4146bb33>] ? debug_dma_map_sg+0x83/0x140
+ [<41690881>] ? ata_qc_issue+0x161/0x310
+ [<4169698e>] ? ata_scsi_translate+0x7e/0x140
+ [<410aaa23>] ? mempool_free_slab+0x13/0x20
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<416998b4>] ? ata_scsi_queuecmd+0xb4/0x2b0
+ [<41697e20>] ? ata_scsi_rw_xlat+0x0/0x270
+ [<41549538>] ? scsi_dispatch_cmd+0xd8/0x2c0
+ [<4154f199>] ? scsi_request_fn+0x3c9/0x530
+ [<410b9ddc>] ? clear_bdi_congested+0xc/0x40
+ [<414423ba>] ? __blk_run_queue+0x3a/0x70
+ [<414446f4>] ? blk_run_queue+0x34/0x70
+ [<4154f586>] ? scsi_run_queue+0xd6/0x380
+ [<41548db1>] ? __scsi_put_command+0x71/0xa0
+ [<4154f999>] ? scsi_next_command+0x39/0x50
+ [<4154fec1>] ? scsi_io_completion+0x2f1/0x510
+ [<4154fa95>] ? scsi_device_unbusy+0x95/0xe0
+ [<41547dde>] ? scsi_finish_command+0x8e/0xc0
+ [<41550207>] ? scsi_softirq_done+0x107/0x140
+ [<4144989a>] ? blk_done_softirq+0x6a/0x80
+ [<410545ce>] ? __do_softirq+0x7e/0x1a0
+ [<41054550>] ? __do_softirq+0x0/0x1a0
+ [<4102c9af>] ? do_softirq+0x7f/0xb0
+ [<41008bf6>] ? kvm_vm_ioctl_assigned_device+0x256/0x970
+ <IRQ> 
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<41033e50>] ? save_stack_trace+0x30/0x50
+ [<4146ac40>] ? dma_entry_alloc+0x80/0xd0
+ [<4146bb33>] ? debug_dma_map_sg+0x83/0x140
+ [<41690881>] ? ata_qc_issue+0x161/0x310
+ [<4169698e>] ? ata_scsi_translate+0x7e/0x140
+ [<410aaa23>] ? mempool_free_slab+0x13/0x20
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<416998b4>] ? ata_scsi_queuecmd+0xb4/0x2b0
+ [<41697e20>] ? ata_scsi_rw_xlat+0x0/0x270
+ [<41549538>] ? scsi_dispatch_cmd+0xd8/0x2c0
+ [<4154f199>] ? scsi_request_fn+0x3c9/0x530
+ [<410b9ddc>] ? clear_bdi_congested+0xc/0x40
+ [<414423ba>] ? __blk_run_queue+0x3a/0x70
+ [<414446f4>] ? blk_run_queue+0x34/0x70
+ [<4154f586>] ? scsi_run_queue+0xd6/0x380
+ [<41548db1>] ? __scsi_put_command+0x71/0xa0
+ [<4154f999>] ? scsi_next_command+0x39/0x50
+ [<4154fec1>] ? scsi_io_completion+0x2f1/0x510
+ [<4154fa95>] ? scsi_device_unbusy+0x95/0xe0
+ [<41547dde>] ? scsi_finish_command+0x8e/0xc0
+ [<41550207>] ? scsi_softirq_done+0x107/0x140
+ [<4144989a>] ? blk_done_softirq+0x6a/0x80
+ [<410545ce>] ? __do_softirq+0x7e/0x1a0
+ [<41054550>] ? __do_softirq+0x0/0x1a0
+ [<4102c9af>] ? do_softirq+0x7f/0xb0
+ [<41008bf6>] ? kvm_vm_ioctl_assigned_device+0x256/0x970
+ <IRQ> 
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<41033e50>] ? save_stack_trace+0x30/0x50
+ [<4146ac40>] ? dma_entry_alloc+0x80/0xd0
+ [<4146bb33>] ? debug_dma_map_sg+0x83/0x140
+ [<41690881>] ? ata_qc_issue+0x161/0x310
+ [<4169698e>] ? ata_scsi_translate+0x7e/0x140
+ [<410aaa23>] ? mempool_free_slab+0x13/0x20
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<416998b4>] ? ata_scsi_queuecmd+0xb4/0x2b0
+ [<41697e20>] ? ata_scsi_rw_xlat+0x0/0x270
+ [<41549538>] ? scsi_dispatch_cmd+0xd8/0x2c0
+ [<4154f199>] ? scsi_request_fn+0x3c9/0x530
+ [<410b9ddc>] ? clear_bdi_congested+0xc/0x40
+ [<414423ba>] ? __blk_run_queue+0x3a/0x70
+ [<414446f4>] ? blk_run_queue+0x34/0x70
+ [<4154f586>] ? scsi_run_queue+0xd6/0x380
+ [<41548db1>] ? __scsi_put_command+0x71/0xa0
+ [<4154f999>] ? scsi_next_command+0x39/0x50
+ [<4154fec1>] ? scsi_io_completion+0x2f1/0x510
+ [<4154fa95>] ? scsi_device_unbusy+0x95/0xe0
+ [<41547dde>] ? scsi_finish_command+0x8e/0xc0
+ [<41550207>] ? scsi_softirq_done+0x107/0x140
+ [<4144989a>] ? blk_done_softirq+0x6a/0x80
+ [<410545ce>] ? __do_softirq+0x7e/0x1a0
+ [<41054550>] ? __do_softirq+0x0/0x1a0
+ [<4102c9af>] ? do_softirq+0x7f/0xb0
+ [<41008bf6>] ? kvm_vm_ioctl_assigned_device+0x256/0x970
+ <IRQ> 
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<41033e50>] ? save_stack_trace+0x30/0x50
+ [<4146ac40>] ? dma_entry_alloc+0x80/0xd0
+ [<4146bb33>] ? debug_dma_map_sg+0x83/0x140
+ [<41690881>] ? ata_qc_issue+0x161/0x310
+ [<4169698e>] ? ata_scsi_translate+0x7e/0x140
+ [<410aaa23>] ? mempool_free_slab+0x13/0x20
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<41548810>] ? scsi_done+0x0/0x70
+ [<416998b4>] ? ata_scsi_queuecmd+0xb4/0x2b0
+ [<41697e20>] ? ata_scsi_rw_xlat+0x0/0x270
+ [<41549538>] ? scsi_dispatch_cmd+0xd8/0x2c0
+ [<4154f199>] ? scsi_request_fn+0x3c9/0x530
+ [<410b9ddc>] ? clear_bdi_congested+0xc/0x40
+ [<414423ba>] ? __blk_run_queue+0x3a/0x70
+ [<414446f4>] ? blk_run_queue+0x34/0x70
+ [<4154f586>] ? scsi_run_queue+0xd6/0x380
+ [<41548db1>] ? __scsi_put_command+0x71/0xa0
+ [<4154f999>] ? scsi_next_command+0x39/0x50
+ [<4154fec1>] ? scsi_io_completion+0x2f1/0x510
+ [<4154fa95>] ? scsi_device_unbusy+0x95/0xe0
+ [<41547dde>] ? scsi_finish_command+0x8e/0xc0
+ [<41550207>] ? scsi_softirq_done+0x107/0x140
+ [<4144989a>] ? blk_done_softirq+0x6a/0x80
+ [<410545ce>] ? __do_softirq+0x7e/0x1a0
+ [<41054550>] ? __do_softirq+0x0/0x1a0
+ [<4102c9af>] ? do_softirq+0x7f/0xb0
+ [<41008bf6>] ? kvm_vm_ioctl_assigned_device+0x256/0x970
+ <IRQ> 
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<41c55423>] ? error_code+0x6b/0x70
+ [<4102dde1>] ? print_context_stack+0x81/0x110
+ [<41047a83>] ? enqueue_task+0x43/0x60
+ [<4102ca48>] ? dump_trace+0x68/0xd0
+ [<4102dc3d>] ? show_trace_log_lvl+0x4d/0x60
+ [<4102cb3c>] ? show_stack_log_lvl+0x5c/0xf0
+ [<4102cc87>] ? show_registers+0xb7/0x1f0
+ [<4106e60e>] ? notify_die+0x2e/0x30
+ [<4102d8cb>] ? __die+0xab/0x100
+ [<4103dc72>] ? no_context+0xa2/0x160
+ [<4103ddc0>] ? __bad_area_nosemaphore+0x90/0x140
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4106ddd1>] ? up+0x41/0x70
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+ [<4103dfe0>] ? do_page_fault+0x0/0x380
+ [<4103de88>] ? bad_area_nosemaphore+0x18/0x20
+ [<4103e2af>] ? do_page_fault+0x2cf/0x380
+ [<4104f883>] ? vprintk+0x173/0x3c0
+ [<418676c0>] ? write_msg+0x0/0x110
+ [<4104ec15>] ? __call_console_drivers+0x45/0x60
+ [<41047669>] ? sub_preempt_count+0x9/0x50
+
+--MGYHOYXEY6WxJCY8--
