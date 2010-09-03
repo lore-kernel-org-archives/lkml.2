@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab0ICTMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 15:12:50 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51571 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab0ICTMs convert rfc822-to-8bit (ORCPT
+	id S1756988Ab0ICTNO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 15:13:14 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:50604 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab0ICTNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 15:12:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=I9bBx9ExTlPqlwQrJmW4Lcqh4mGBSnAiUpG0aLPVUJunPlhep33qMwxm3/vc4vTJNL
-         rr2WvsYwgb+84iRnVmS18rnPSU5XB3nCKY9d10KcVx0paPqbu7weczYCyRKP+YFmP3rT
-         gu5uHcRM9TKIYt3bepuPlu4Wq7b2TsQf1+A7w=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: tim.gardner@canonical.com
-Subject: Re: nfsd deadlock, 2.6.36-rc3
-Date: Fri, 3 Sep 2010 21:12:43 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3; KDE/4.4.5; i686; ; )
-Cc: linux-nfs@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        neilb@suse.de, bfields@fieldses.org, Trond.Myklebust@netapp.com
-References: <4C7E73CB.7030603@canonical.com>
-In-Reply-To: <4C7E73CB.7030603@canonical.com>
+	Fri, 3 Sep 2010 15:13:12 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6094"; a="53312133"
+Message-ID: <4C8148C6.2010006@codeaurora.org>
+Date: Fri, 03 Sep 2010 15:13:10 -0400
+From: Neil Leeder <nleeder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201009032112.43524.maciej.rutecki@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Horace Fu <horace.fu@quantatw.com>, Hsin.Wu@quantatw.com,
+        mcuos.com@gmail.com
+Subject: Re: [PATCH 0/1] input: keyboard: add qci keyboard driver
+References: <4C7838DD.1020004@codeaurora.org> <201008271533.01542.dmitry.torokhov@gmail.com> <4C7BF6D2.5080501@codeaurora.org> <20100830215556.GC28865@core.coreip.homeip.net> <4C7D6C17.1070604@codeaurora.org> <20100901063430.GG23585@core.coreip.homeip.net>
+In-Reply-To: <20100901063430.GG23585@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On środa, 1 września 2010 o 17:39:55 Tim Gardner wrote:
-> I've been pursuing a simple reproducer for an NFS lockup that shows up
-> under stress. There is a bunch of info (some of it extraneous) in
-> http://bugs.launchpad.net/bugs/561210. I can reproduce it by writing
-> loop mounted NFS exports:
-> 
-> /etc/fstab: 127.0.0.1:/srv /mnt/srv nfs rw 0 2
-> /etc/exports: /srv 127.0.0.1(rw,insecure,no_subtree_check)
-> 
-> See the attached scripts test_master.sh and test_client.sh. I simply
-> repeat './test_master.sh wait' until nfsd locks up, typically within 1-3
-> cycles, e.g.,
-> 
-> cd /mnt/srv
-> while true; do ./test_master.sh wait; done
-> 
-> Note that this test will run indefinitely if invoked from /srv, e.g.,
-> 
-> cd /srv
-> while true; do ./test_master.sh wait; done
-> 
-> This issue, or something like it, appears to exist as far back as I've
-> tested (Ubuntu Lucid 2.6.32.21). For now I'm assuming that, since the
-> symptoms are similar, any lockup bug found in -rc3 is the likely culprit.
-> 
-> See attached dmesg and config. Debug options of interest that I've
-> enabled are CONFIG_DEBUG_SLAB, CONFIG_DEBUG_SLAB_LEAK,
-> CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_MUTEXES.
-> 
-> dmesg.txt contains the initial 'INFO: task nfsd:1263 blocked for more
-> than 120 seconds.' complaints as well as information dumped from
-> 
-> echo d | sudo tee /proc/sysrq-trigger
-> echo w | sudo tee /proc/sysrq-trigger
-> 
-> Anything else I can provide?
-> 
-> rtg
+On 9/1/2010 2:34 AM, Dmitry Torokhov wrote:
+>
+> OK, I give up on pursuit of serio solution. Again ;)
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=17762
-for your bug report, please add your address to the CC list in there, thanks!
+Dmitry,
 
+Don't give up yet... I've been talking to Quanta and they are using a 
+different EC in their new products, which should have better firmware 
+support for serio over i2c. When I get the new hardware I will try again 
+to overcome the issues that showed up on the previous firmware, and I'll 
+submit new patches for both touchpad and keyboard.
+
+Thanks.
+
+--
+Neil
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
