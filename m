@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab0ICPI0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 11:08:26 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63884 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752874Ab0ICPIZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 11:08:25 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Will Deacon <will.deacon@arm.com>, Christoph Lameter <clameter@sgi.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH] mm: fix typo in mm.h when NODE_NOT_IN_PAGE_FLAGS
-Date: Fri,  3 Sep 2010 16:07:49 +0100
-Message-Id: <1283526469-12328-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.6.3.3
-X-OriginalArrivalTime: 03 Sep 2010 15:07:56.0482 (UTC) FILETIME=[CA263A20:01CB4B79]
+	id S1756660Ab0ICPNb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 11:13:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44917 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800Ab0ICPNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 11:13:30 -0400
+Date: Fri, 3 Sep 2010 11:13:24 -0400
+From: David Teigland <teigland@redhat.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: dlm: Don't send callback to node making lock request when "try
+ 1cb" fails
+Message-ID: <20100903151324.GB28819@redhat.com>
+References: <1283506816.2500.21.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283506816.2500.21.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NODE_NOT_IN_PAGE_FLAGS is defined in mm.h when the node information
-is not stored in the page flags bitmap.
+On Fri, Sep 03, 2010 at 10:40:16AM +0100, Steven Whitehouse wrote:
+> 
+> When converting a lock, an lkb is in the granted state and also being used
+> to request a new state. In the case that the conversion was a "try 1cb"
+> type which has failed, and if the new state was incompatible with the old
+> state, a callback was being generated to the requesting node. This is
+> incorrect as callbacks should only be sent to all the other nodes holding
+> blocking locks. The requesting node should receive the normal (failed)
+> response to its "try 1cb" conversion request only.
+> 
+> This was discovered while debugging a performance problem on GFS2, however
+> this fix also speeds up GFS as well. In the GFS2 case the performance gain
+> is over 10x for cases of write activity to an inode whose glock is cached
+> on another, idle (wrt that glock) node.
 
-Unfortunately, there's a typo in one of the checks for it. This patch
-fixes it (s/NODE_NOT_IN_PAGEFLAGS/NODE_NOT_IN_PAGE_FLAGS/). Since this
-has been around for ages, I doubt it's been causing any serious problems.
+Thanks, I added a comment and queued it up.
+Dave
 
-Patch taken against 2.6.36-rc3.
 
-Cc: Christoph Lameter <clameter@sgi.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+>From 314dd2a05340fffbe217c5e40ec6c3bd1d07bf89 Mon Sep 17 00:00:00 2001
+From: Steven Whitehouse <swhiteho@redhat.com>
+Date: Fri, 3 Sep 2010 10:07:48 -0500
+Subject: [PATCH] dlm: Don't send callback to node making lock request when "try 1cb" fails
+
+When converting a lock, an lkb is in the granted state and also being used
+to request a new state. In the case that the conversion was a "try 1cb"
+type which has failed, and if the new state was incompatible with the old
+state, a callback was being generated to the requesting node. This is
+incorrect as callbacks should only be sent to all the other nodes holding
+blocking locks. The requesting node should receive the normal (failed)
+response to its "try 1cb" conversion request only.
+
+This was discovered while debugging a performance problem on GFS2, however
+this fix also speeds up GFS as well. In the GFS2 case the performance gain
+is over 10x for cases of write activity to an inode whose glock is cached
+on another, idle (wrt that glock) node.
+
+(comment added, dct)
+
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Tested-by: Abhijith Das <adas@redhat.com>
+Signed-off-by: David Teigland <teigland@redhat.com>
 ---
- include/linux/mm.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ fs/dlm/lock.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e6b1210..87f8c5b 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -497,8 +497,8 @@ static inline void set_compound_order(struct page *page, unsigned long order)
- #define NODES_PGSHIFT		(NODES_PGOFF * (NODES_WIDTH != 0))
- #define ZONES_PGSHIFT		(ZONES_PGOFF * (ZONES_WIDTH != 0))
+diff --git a/fs/dlm/lock.c b/fs/dlm/lock.c
+index 031dbe3..64e5f3e 100644
+--- a/fs/dlm/lock.c
++++ b/fs/dlm/lock.c
+@@ -1846,6 +1846,9 @@ static void send_bast_queue(struct dlm_rsb *r, struct list_head *head,
+ 	struct dlm_lkb *gr;
  
--/* NODE:ZONE or SECTION:ZONE is used to ID a zone for the buddy allcator */
--#ifdef NODE_NOT_IN_PAGEFLAGS
-+/* NODE:ZONE or SECTION:ZONE is used to ID a zone for the buddy allocator */
-+#ifdef NODE_NOT_IN_PAGE_FLAGS
- #define ZONEID_SHIFT		(SECTIONS_SHIFT + ZONES_SHIFT)
- #define ZONEID_PGOFF		((SECTIONS_PGOFF < ZONES_PGOFF)? \
- 						SECTIONS_PGOFF : ZONES_PGOFF)
+ 	list_for_each_entry(gr, head, lkb_statequeue) {
++		/* skip self when sending basts to convertqueue */
++		if (gr == lkb)
++			continue;
+ 		if (gr->lkb_bastfn && modes_require_bast(gr, lkb)) {
+ 			queue_bast(r, gr, lkb->lkb_rqmode);
+ 			gr->lkb_highbast = lkb->lkb_rqmode;
 -- 
-1.6.3.3
+1.7.1.1
 
