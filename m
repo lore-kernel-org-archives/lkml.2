@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab0ICJx2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:53:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55538 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900Ab0ICJx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:53:27 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <AANLkTikBLCg_FUwGGiajw3+dgCe6y0s0a1yMs8=A2oCR@mail.gmail.com>
-References: <AANLkTikBLCg_FUwGGiajw3+dgCe6y0s0a1yMs8=A2oCR@mail.gmail.com> <m3vd6nmd68.fsf@hase.home> <19747.1283422807@redhat.com> <20100902102158.19806.14133.stgit@warthog.procyon.org.uk> <m38w3kns4r.fsf@hase.home> <AANLkTikwax-Jb60jT5_TOL=Zkwbgh8FwMk78ncm1dN-P@mail.gmail.com> <3048.1283505520@redhat.com> <4C80C068.1010302@snapgear.com> 
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: dhowells@redhat.com, Greg Ungerer <gerg@snapgear.com>,
-        Andreas Schwab <schwab@redhat.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] M68K: Use CONFIG_MMU not __uClinux__ to select m68knommu contributions
-Date: Fri, 03 Sep 2010 10:52:57 +0100
-Message-ID: <7877.1283507577@redhat.com>
+	id S1756188Ab0ICJ6c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:58:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57586 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab0ICJ6a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 05:58:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=N7CQ7Paqs5HcMnbiJ1SMPURgb8fyIUoVXd1WFBhIg6uR2dMeWJOPGr/p68vVsgMBLA
+         RnOtuljhX+4BHpw+lcC7kWo6L5Cic44Xjg5CSjdWPd5ocGv2sarrRD9x7iQDmufGlugD
+         UR7U1AGHPV5TbSnX22IuAxSRwW7WUWkLN1EEQ=
+Date: Fri, 3 Sep 2010 11:58:32 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH 1/2] posix clocks: introduce a syscall for clock tuning.
+Message-ID: <20100903095832.GA22138@riccoc20.at.omicron.at>
+References: <cover.1283504065.git.richard.cochran@omicron.at>
+ <7f4815cdfcf5bc49df4bdd09d59a4f56ca2598f5.1283504065.git.richard.cochran@omicron.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7f4815cdfcf5bc49df4bdd09d59a4f56ca2598f5.1283504065.git.richard.cochran@omicron.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+On Fri, Sep 03, 2010 at 11:29:05AM +0200, Richard Cochran wrote:
+> +long compat_sys_clock_adjtime(clockid_t which_clock,
+> +		struct compat_timex __user *utp)
+> +{
+> +	struct timex txc;
+> +	mm_segment_t oldfs;
+> +	int err, ret;
+> +
+> +	err = compat_get_timex(&txc, utp);
+> +	if (err)
+> +		return err;
+> +
+> +	oldfs = get_fs();
+> +	set_fs(KERNEL_DS);
+> +	ret = sys_clock_adjtime(which_clock, (struct timex __user *) &txc);
+> +	set_fs(oldfs);
 
-> > Not sure about m68k but m68knommu targets already setup
-> > appropriate -mcpu flags for its various supported CPU types.
-> 
-> Same for m68k.
+I don't know what the purpose of get_fs, set_fs is, but the other
+clock_ functions have it that way. The adjtimex call does not have
+this at all, so I ask, do we need this here, or not?
 
-It doesn't seem to:
-
-	warthog>grep -r mcpu arch/m68k
-	warthog1>grep -r mtune arch/m68k
-	warthog1>
-
-I see that m68knommu does:
-
-	warthog1>grep -r mcpu arch/m68knommu/
-	arch/m68knommu/Makefile:cflags-$(CONFIG_M5206)          := $(call cc-option,-mcpu=5206,-m5200)
-	arch/m68knommu/Makefile:cflags-$(CONFIG_M520x)          := $(call cc-option,-mcpu=5208,-m5200)
-	arch/m68knommu/Makefile:cflags-$(CONFIG_M523x)          := $(call cc-option,-mcpu=523x,-m5307)
-	...
-
-I guess the m68k compiler I already had doesn't fully support -m5200, since I
-see that, but it doesn't compile some of the instructions when compiling the
-m68knommu defconfig (CONFIG_M520x=y).
-
-David
+Thanks,
+Richard
