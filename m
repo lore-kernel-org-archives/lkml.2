@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757181Ab0ICSRK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 14:17:10 -0400
-Received: from [64.59.134.9] ([64.59.134.9]:54700 "EHLO idcmail-mo2no.shaw.ca"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756948Ab0ICSRJ convert rfc822-to-8bit (ORCPT
+	id S1757269Ab0ICSY1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 14:24:27 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:52448 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757153Ab0ICSYZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 14:17:09 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.0 c=1 a=tAX36KLG1GoA:10 a=VphdPIyG4kEA:10 a=kj9zAlcOel0A:10
- a=xqWC_Br6kY4A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=ncr2pnT48pvA3gvVwXcA:9
- a=EVsboizwybUUDuckFoIA:7 a=EyAu1q0cfoyJjTcqfhuRoM_sqkkA:4 a=CjuIK1q_8ugA:10
-Subject: Re: [PATCH 2/3] lib: improve the performance of memcpy and memmove of the general version
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger.kernel@dilger.ca>
-In-Reply-To: <82mxrzrsvq.fsf@mid.bfk.de>
-Date: Fri, 3 Sep 2010 12:16:57 -0600
-Cc: miaox@cn.fujitsu.com, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>
+	Fri, 3 Sep 2010 14:24:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=F/VNw6cfhJZVmzHgI8a+TF/y3EuDL8BvYZFUw5hwoKg66FZtTYIYTV+mvDbDxBZz+k
+         6AI+6qdNRmYgOZScAXHLQ11ewVS3NIi6fAS4BsPQTP7qRviB5bs6M7DkjlXVIGc+W222
+         iS0eQDtl9mdzD+wVlE/wDJTKSK1AnKIz/fVCw=
+From: Diego Calleja <diegocg@gmail.com>
+Reply-To: diegocg@gmail.com
+To: "Henrik Rydberg" <rydberg@euromail.se>
+Subject: Re: [PATCH 3/5] input: wacom: Add support for the Bamboo Touch trackpad (rev3)
+Date: Fri, 3 Sep 2010 20:24:19 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-dirty; KDE/4.5.0; x86_64; ; )
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Ping Cheng <pingc@wacom.com>,
+        Chris Bagwell <chris@cnpbagwell.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1283516247-11624-1-git-send-email-rydberg@euromail.se> <1283516247-11624-4-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1283516247-11624-4-git-send-email-rydberg@euromail.se>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <B1BAFDD8-BA1F-4C03-A19E-09DF91CD98FF@dilger.ca>
-References: <4C7E2CAC.6080102@cn.fujitsu.com> <82mxrzrsvq.fsf@mid.bfk.de>
-To: Florian Weimer <fweimer@bfk.de>
-X-Mailer: Apple Mail (2.1081)
+Message-Id: <201009032024.19745.diegocg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-03, at 05:03, Florian Weimer wrote:
+On Viernes, 3 de Septiembre de 2010 14:17:25 Henrik Rydberg escribió:
+> @@ -1280,6 +1361,7 @@ const struct usb_device_id wacom_ids[] = {
+>  	{ USB_DEVICE_WACOM(0xC6) },
+>  	{ USB_DEVICE_WACOM(0xC7) },
+>  	{ USB_DEVICE_WACOM(0xCE) },
+> +	{ USB_DEVICE_WACOM(0xD0) },
+>  	{ USB_DEVICE_WACOM(0xF0) },
+>  	{ USB_DEVICE_WACOM(0xCC) },
+>  	{ USB_DEVICE_WACOM(0x90) },
 
-> * Miao Xie:
-> 
->> EXPORT_SYMBOL(memcpy);
-> 
-> I think you need to change that to EXPORT_SYMBOL_GPL, because the code
-> is now licensed under the GPL, and not the GPL plus kernel exceptions
-> (whatever they are, but they undoubtly exist), unlike the original
-> implementation.
-
-Ouch.  That would basically make it impossible to implement a non-GPL module.  Also, this should only apply to the "lib" version of the memcpy() routine, not the arch-specific ones that are written in assembly (maybe that already is true, I'm not sure).
-
-Lustre is GPL, so it isn't fatal for us, but it definitely seems draconian, and almost a reason not to include this patch into the kernel.  Also, given that the original code is LGPL (which allows linking to non-GPL code) this seems counter to the intent of the original authors.
-
-I suspect there isn't anything so brilliant in the glibc memcpy() that it couldn't be re-implemented without copying the code.  "implement memcpy with aligned machine-word-sized chunks" would be enough for anyone to reimplement it without ever having come close to the glibc code.
-
-Cheers, Andreas
-
-
-
-
-
+I have a wacom bamboo touch & pen (CTH-461) with a 0xD2 id. Can I do
+something to help to get it supported in these patches?
