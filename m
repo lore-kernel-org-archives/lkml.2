@@ -1,282 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab0ICWPA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 18:15:00 -0400
-Received: from proxima.lp0.eu ([81.2.80.65]:53437 "EHLO proxima.lp0.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356Ab0ICWO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 18:14:58 -0400
-Message-ID: <4C81735E.3030903@simon.arlott.org.uk>
-Date: Fri, 03 Sep 2010 23:14:54 +0100
-From: Simon Arlott <simon@fire.lp0.eu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100605 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Ondrej Zary <linux@rainbow-software.org>
-CC: David Brownell <dbrownell@users.sourceforge.net>, netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [RFC] introduce cx82310_eth: Conexant CX82310-based ADSL
- router USB ethernet driver
-References: <201009032317.14954.linux@rainbow-software.org>
-In-Reply-To: <201009032317.14954.linux@rainbow-software.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753630Ab0ICW3N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 18:29:13 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:37616 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab0ICW3K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 18:29:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=l8mjqrM9+iGjFEh2s5GyupR+LKpIQjtQhSFRIMEdHos0jMPJf4GT1GFi9Qd+fdekth
+         T4rMhb0EG5PmKtFQGEofUQ4wb7jzKi/nR2vO7ifX9CCz8Pe/lZ8tD1eFJdJFqYmtJbWv
+         1mLWQghZXGdiFykO1FQ+aCBhLu4JmBSxrYnQs=
+From: "Mark F. Brown" <mark.brown314@gmail.com>
+To: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        "Mark F. Brown" <mark.brown314@gmail.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Cc: "Mark F. Brown" <mark.brown314@gmail.com>
+Subject: [PATCH v2 1/6 RESEND] ARM: pxa27x/pxa3xx: moved pxa27x_keypad.h to platform pxa directory
+Date: Fri,  3 Sep 2010 18:28:06 -0400
+Message-Id: <1283552891-13966-2-git-send-email-mark.brown314@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1283552891-13966-1-git-send-email-mark.brown314@gmail.com>
+References: <1283552891-13966-1-git-send-email-mark.brown314@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/10 22:17, Ondrej Zary wrote:
-> Hello,
-> this patch introduces cx82310_eth driver - driver for USB ethernet port of 
-> ADSL routers based on Conexant CX82310 chips. Such routers usually have 
-> ethernet port(s) too which are bridged together with the USB ethernet port, 
-> allowing the USB-connected machine to communicate to the network (and also 
-> internet through the ADSL, of course).
-> 
-> This is my first driver, so please check thoroughly. As there's no protocol 
-> documentation, it was done with usbsnoop dumps from Windows driver, some 
-> parts (the commands) inspired by cxacru driver and also other usbnet drivers. 
-> The driver passed my testing - some real work and also pings sized from 0 to 
-> 65507 B.
+mach-mmp utilizes pxa27x_keypad code so we need to move header to
+platform pxa directory.
 
-Try http://isic.sourceforge.net/, you can send a flood of junk traffic
-through the device and check what happens. Be careful what else you have
-on the network as they may not handle it well.
+Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+---
+ arch/arm/mach-pxa/devices.c                        |    2 +-
+ arch/arm/mach-pxa/em-x270.c                        |    2 +-
+ arch/arm/mach-pxa/ezx.c                            |    2 +-
+ arch/arm/mach-pxa/littleton.c                      |    2 +-
+ arch/arm/mach-pxa/mainstone.c                      |    4 ++--
+ arch/arm/mach-pxa/mioa701.c                        |    2 +-
+ arch/arm/mach-pxa/palmld.c                         |    2 +-
+ arch/arm/mach-pxa/palmt5.c                         |    2 +-
+ arch/arm/mach-pxa/palmtreo.c                       |    2 +-
+ arch/arm/mach-pxa/palmtx.c                         |    2 +-
+ arch/arm/mach-pxa/palmz72.c                        |    2 +-
+ arch/arm/mach-pxa/tavorevb.c                       |    2 +-
+ arch/arm/mach-pxa/z2.c                             |    2 +-
+ arch/arm/mach-pxa/zylonite.c                       |    2 +-
+ .../mach => plat-pxa/include/plat}/pxa27x_keypad.h |    0
+ drivers/input/keyboard/pxa27x_keypad.c             |    2 +-
+ 16 files changed, 16 insertions(+), 16 deletions(-)
+ rename arch/arm/{mach-pxa/include/mach => plat-pxa/include/plat}/pxa27x_keypad.h (100%)
 
-> The only problem I found is the ifconfig error counter. When I return 0 (or 1 
-> but empty skb) from rx_fixup(), usbnet increases the error counter although 
-> it's not an error condition (because packets can cross URB boundaries). Maybe 
-> the usbnet should be fixed to allow rx_fixup() to return empty skbs (or some 
-> other value, e.g. 2)?
-> 
-> The USB ID of my device is 0x0572:0xcb01 which conflicts with some ADSL modems 
-> using cxacru driver (they probably use the same chipset but simpler 
-> firmware). The modems seem to use bDeviceClass 0 and iProduct "ADSL USB 
-> MODEM", my router uses bDeviceClass 255 and iProduct "USB NET CARD". The 
-> driver matches only devices with class 255 and checks for the iProduct string 
-> during init. The cxacru driver should be modified to ignore these devices.
-
-You can include the cxacru change as part of your patch; I'll test it.
-
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> 
-> --- /dev/null	2010-09-03 21:17:56.916000000 +0200
-> +++ linux-2.6.35-rc3/drivers/net/usb/cx82310_eth.c	2010-09-03 23:09:16.000000000 +0200
-> @@ -0,0 +1,350 @@
-> +/*
-> + * Driver for USB ethernet port of Conexant CX82310-based ADSL routers
-> + * Copyright (C) 2010 by Ondrej Zary
-> + * some parts inspired by the cxacru driver
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/netdevice.h>
-> +#include <linux/etherdevice.h>
-> +#include <linux/ethtool.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/mii.h>
-> +#include <linux/usb.h>
-> +#include <linux/usb/usbnet.h>
-> +
-> +enum cx82310_cmd {
-> +	CMD_START		= 0x84,	/* no effect? */
-> +	CMD_STOP		= 0x85,	/* no effect? */
-> +	CMD_GET_STATUS		= 0x90,	/* returns nothing? */
-> +	CMD_GET_MAC_ADDR	= 0x91,	/* read MAC address */
-> +	CMD_GET_LINK_STATUS	= 0x92,	/* not useful, link is always up */
-> +	CMD_ETHERNET_MODE	= 0x99,	/* unknown, needed during init */
-> +};
-> +
-> +enum cx82310_status {
-> +	STATUS_UNDEFINED,
-> +	STATUS_SUCCESS,
-> +	STATUS_ERROR,
-> +	STATUS_UNSUPPORTED,
-> +	STATUS_UNIMPLEMENTED,
-> +	STATUS_PARAMETER_ERROR,
-> +	STATUS_DBG_LOOPBACK,
-> +};
-> +
-> +#define CMD_PACKET_SIZE	64
-> +/* first command after power on can take around 8 seconds */
-> +#define CMD_TIMEOUT	15000
-> +#define CMD_REPLY_RETRY 5
-> +
-> +#define CX82310_MTU	1514
-> +#define CMD_EP		0x01
-> +
-> +/*
-> + * execute control command
-> + *  - optionally send some data (command parameters)
-> + *  - optionally wait for the reply
-> + *  - optionally read some data from the reply
-> + */
-> +static int cx82310_cmd(struct usbnet *dev, enum cx82310_cmd cmd, bool reply,
-> +		       u8 *wdata, int wlen, u8 *rdata, int rlen)
-> +{
-> +	int actual_len, retries, ret;
-> +	struct usb_device *udev = dev->udev;
-> +	u8 *buf = kzalloc(CMD_PACKET_SIZE, GFP_KERNEL);
-> +
-> +	if (!buf)
-> +		return -ENOMEM;
-> +
-> +	/* create command packet */
-> +	buf[0] = cmd;
-> +	if (wdata)
-> +		memcpy(buf + 4, wdata, min_t(int, wlen, CMD_PACKET_SIZE - 4));
-> +
-> +	/* send command packet */
-> +	ret = usb_bulk_msg(udev, usb_sndbulkpipe(udev, CMD_EP), buf,
-> +			   CMD_PACKET_SIZE, &actual_len, CMD_TIMEOUT);
-
->From your previous lsusb output this is an interrupt endpoint, although
-usb_bulk_msg will auto-detect the type.
-
-> +	if (ret < 0) {
-> +		dev_err(&dev->udev->dev, "send command %#x: error %d\n",
-> +			cmd, ret);
-> +		goto end;
-> +	}
-> +
-> +	if (reply) {
-> +		/* wait for reply, retry if it's empty */
-> +		for (retries = 0; retries < CMD_REPLY_RETRY; retries++) {
-> +			ret = usb_bulk_msg(udev, usb_rcvbulkpipe(udev, CMD_EP),
-> +					   buf, CMD_PACKET_SIZE, &actual_len,
-> +					   CMD_TIMEOUT);
-> +			if (ret < 0) {
-> +				dev_err(&dev->udev->dev,
-> +					"reply receive error %d\n", ret);
-> +				goto end;
-> +			}
-> +			if (actual_len > 0)
-> +				break;
-> +		}
-> +		if (actual_len == 0) {
-> +			dev_err(&dev->udev->dev, "no reply to command %#x\n",
-> +				cmd);
-> +			ret = -EIO;
-> +			goto end;
-> +		}
-> +		if (buf[0] != cmd) {
-> +			dev_err(&dev->udev->dev,
-> +				"got reply to command %#x, expected: %#x\n",
-> +				buf[0], cmd);
-> +			ret = -EIO;
-> +			goto end;
-> +		}
-> +		if (buf[1] != STATUS_SUCCESS) {
-> +			dev_err(&dev->udev->dev, "command %#x failed: %#x\n",
-> +				cmd, buf[1]);
-> +			ret = -EIO;
-> +			goto end;
-> +		}
-> +		if (rdata)
-> +			memcpy(rdata, buf + 4,
-> +			       min_t(int, rlen, CMD_PACKET_SIZE - 4));
-> +	}
-> +end:
-> +	kfree(buf);
-> +	return ret;
-> +}
-
-> +#define rx_incomplete	(dev->data[0])
-> +#define rx_remainder	(dev->data[1])
-> +#define incomplete_data	(dev->data[2])
-
-This doesn't make the rest of the code particularly readable.
-
-> +static int cx82310_bind(struct usbnet *dev, struct usb_interface *intf)
-> +{
-> +	int ret;
-> +	char buf[15];
-> +	struct usb_device *udev = dev->udev;
-> +
-> +	/* avoid ADSL modems - continue only if iProduct is "USB NET CARD" */
-> +	if (udev->descriptor.iProduct &&
-> +	    usb_string(udev, udev->descriptor.iProduct, buf, sizeof(buf)) &&
-
-I'm not sure I like the assignment within the if condition here, although
-other drivers do it; ret is available to check the result.
-
-> +	    strcmp(buf, "USB NET CARD")) {
-> +		dev_err(&udev->dev,
-> +			"probably an ADSL modem, use cxacru driver instead\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	ret = usbnet_get_endpoints(dev, intf);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/*
-> +	 * this must not include ethernet header as the device can send partial
-> +	 * packets with no header (URB is at least 2 bytes long, so 2 is OK)
-> +	 */
-> +	dev->net->hard_header_len = 2;
-> +	/* we can send at most 1514 bytes of data (+ 2-byte header) per URB */
-> +	dev->hard_mtu = CX82310_MTU + dev->net->hard_header_len;
-
-Have you tried sending larger packets?
-With another 8 bytes it would support 802.1Q (VLAN).
-
-> +	/* we can receive URBs up to 4KB from the device */
-> +	dev->rx_urb_size = 4096;
-> +
-> +	incomplete_data = (unsigned long) kmalloc(dev->hard_mtu, GFP_KERNEL);
-> +	if (!incomplete_data)
-> +		return -ENOMEM;
-> +
-> +	/* enable ethernet mode (?) */
-> +	ret = cx82310_cmd(dev, CMD_ETHERNET_MODE, true, "\x01", 1, NULL, 0);
-> +	if (ret) {
-> +		dev_err(&udev->dev, "unable to enable ethernet mode\n");
-
-I'd include the return value in the message, it can be useful to know if
-it was a timeout response or not.
-
-> +		goto err;
-> +	}
-> +
-> +	/* get the MAC address */
-> +	ret = cx82310_cmd(dev, CMD_GET_MAC_ADDR, true, NULL, 0,
-> +			  dev->net->dev_addr, ETH_ALEN);
-> +	if (ret) {
-> +		dev_err(&udev->dev, "unable to read MAC address\n");
-> +		goto err;
-> +	}
-> +
-> +	/* start (does not seem to have any effect?) */
-> +	ret = cx82310_cmd(dev, CMD_START, false, NULL, 0, NULL, 0);
-> +	if (ret)
-> +		goto err;
-> +
-> +	return 0;
-> +err:
-> +	kfree((void *)incomplete_data);
-> +	return ret;
-> +}
-> +
-> +static void cx82310_unbind(struct usbnet *dev, struct usb_interface *intf)
-> +{
-> +	kfree((void *)incomplete_data);
-> +}
-> +
-
+diff --git a/arch/arm/mach-pxa/devices.c b/arch/arm/mach-pxa/devices.c
+index a2fc859..08b4103 100644
+--- a/arch/arm/mach-pxa/devices.c
++++ b/arch/arm/mach-pxa/devices.c
+@@ -11,7 +11,7 @@
+ #include <mach/mmc.h>
+ #include <mach/irda.h>
+ #include <mach/ohci.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <mach/pxa2xx_spi.h>
+ #include <mach/camera.h>
+ #include <mach/audio.h>
+diff --git a/arch/arm/mach-pxa/em-x270.c b/arch/arm/mach-pxa/em-x270.c
+index 0517c17..51286a7 100644
+--- a/arch/arm/mach-pxa/em-x270.c
++++ b/arch/arm/mach-pxa/em-x270.c
+@@ -43,7 +43,7 @@
+ #include <mach/pxafb.h>
+ #include <mach/ohci.h>
+ #include <mach/mmc.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <plat/i2c.h>
+ #include <mach/camera.h>
+ #include <mach/pxa2xx_spi.h>
+diff --git a/arch/arm/mach-pxa/ezx.c b/arch/arm/mach-pxa/ezx.c
+index 3fe61f4..f997e84 100644
+--- a/arch/arm/mach-pxa/ezx.c
++++ b/arch/arm/mach-pxa/ezx.c
+@@ -32,7 +32,7 @@
+ #include <mach/ohci.h>
+ #include <plat/i2c.h>
+ #include <mach/hardware.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <mach/camera.h>
+ 
+ #include "devices.h"
+diff --git a/arch/arm/mach-pxa/littleton.c b/arch/arm/mach-pxa/littleton.c
+index 83f3236..eb58506 100644
+--- a/arch/arm/mach-pxa/littleton.c
++++ b/arch/arm/mach-pxa/littleton.c
+@@ -43,7 +43,7 @@
+ #include <mach/pxafb.h>
+ #include <mach/mmc.h>
+ #include <mach/pxa2xx_spi.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <mach/littleton.h>
+ #include <plat/i2c.h>
+ #include <plat/pxa3xx_nand.h>
+diff --git a/arch/arm/mach-pxa/mainstone.c b/arch/arm/mach-pxa/mainstone.c
+index c2a8717..126dca1 100644
+--- a/arch/arm/mach-pxa/mainstone.c
++++ b/arch/arm/mach-pxa/mainstone.c
+@@ -41,7 +41,7 @@
+ #include <asm/mach/irq.h>
+ #include <asm/mach/flash.h>
+ 
+-#include <mach/pxa27x.h>
++#include <plat/pxa27x.h>
+ #include <mach/gpio.h>
+ #include <mach/mainstone.h>
+ #include <mach/audio.h>
+@@ -50,7 +50,7 @@
+ #include <mach/mmc.h>
+ #include <mach/irda.h>
+ #include <mach/ohci.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ 
+ #include "generic.h"
+ #include "devices.h"
+diff --git a/arch/arm/mach-pxa/mioa701.c b/arch/arm/mach-pxa/mioa701.c
+index dc66942..ffb3f5a 100644
+--- a/arch/arm/mach-pxa/mioa701.c
++++ b/arch/arm/mach-pxa/mioa701.c
+@@ -45,7 +45,7 @@
+ 
+ #include <mach/pxa27x.h>
+ #include <mach/regs-rtc.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <mach/pxafb.h>
+ #include <mach/mmc.h>
+ #include <mach/udc.h>
+diff --git a/arch/arm/mach-pxa/palmld.c b/arch/arm/mach-pxa/palmld.c
+index 91038ee..3ff0c4a 100644
+--- a/arch/arm/mach-pxa/palmld.c
++++ b/arch/arm/mach-pxa/palmld.c
+@@ -39,7 +39,7 @@
+ #include <mach/mmc.h>
+ #include <mach/pxafb.h>
+ #include <mach/irda.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <mach/palmasoc.h>
+ #include <mach/palm27x.h>
+ 
+diff --git a/arch/arm/mach-pxa/palmt5.c b/arch/arm/mach-pxa/palmt5.c
+index 1c28199..5b9f766 100644
+--- a/arch/arm/mach-pxa/palmt5.c
++++ b/arch/arm/mach-pxa/palmt5.c
+@@ -39,7 +39,7 @@
+ #include <mach/mmc.h>
+ #include <mach/pxafb.h>
+ #include <mach/irda.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <mach/udc.h>
+ #include <mach/palmasoc.h>
+ #include <mach/palm27x.h>
+diff --git a/arch/arm/mach-pxa/palmtreo.c b/arch/arm/mach-pxa/palmtreo.c
+index 52defd5..f685a60 100644
+--- a/arch/arm/mach-pxa/palmtreo.c
++++ b/arch/arm/mach-pxa/palmtreo.c
+@@ -39,7 +39,7 @@
+ #include <mach/mmc.h>
+ #include <mach/pxafb.h>
+ #include <mach/irda.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <mach/udc.h>
+ #include <mach/ohci.h>
+ #include <mach/pxa2xx-regs.h>
+diff --git a/arch/arm/mach-pxa/palmtx.c b/arch/arm/mach-pxa/palmtx.c
+index 144dc2b..89a3792 100644
+--- a/arch/arm/mach-pxa/palmtx.c
++++ b/arch/arm/mach-pxa/palmtx.c
+@@ -43,7 +43,7 @@
+ #include <mach/mmc.h>
+ #include <mach/pxafb.h>
+ #include <mach/irda.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <mach/udc.h>
+ #include <mach/palmasoc.h>
+ #include <mach/palm27x.h>
+diff --git a/arch/arm/mach-pxa/palmz72.c b/arch/arm/mach-pxa/palmz72.c
+index 87e4b10..38f4425 100644
+--- a/arch/arm/mach-pxa/palmz72.c
++++ b/arch/arm/mach-pxa/palmz72.c
+@@ -41,7 +41,7 @@
+ #include <mach/mmc.h>
+ #include <mach/pxafb.h>
+ #include <mach/irda.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <mach/udc.h>
+ #include <mach/palmasoc.h>
+ #include <mach/palm27x.h>
+diff --git a/arch/arm/mach-pxa/tavorevb.c b/arch/arm/mach-pxa/tavorevb.c
+index f02dcb5..0f440c9 100644
+--- a/arch/arm/mach-pxa/tavorevb.c
++++ b/arch/arm/mach-pxa/tavorevb.c
+@@ -25,7 +25,7 @@
+ 
+ #include <mach/pxa930.h>
+ #include <mach/pxafb.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ 
+ #include "devices.h"
+ #include "generic.h"
+diff --git a/arch/arm/mach-pxa/z2.c b/arch/arm/mach-pxa/z2.c
+index f0d0228..8c44bc4 100644
+--- a/arch/arm/mach-pxa/z2.c
++++ b/arch/arm/mach-pxa/z2.c
+@@ -37,7 +37,7 @@
+ #include <mach/z2.h>
+ #include <mach/pxafb.h>
+ #include <mach/mmc.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <mach/pxa2xx_spi.h>
+ 
+ #include <plat/i2c.h>
+diff --git a/arch/arm/mach-pxa/zylonite.c b/arch/arm/mach-pxa/zylonite.c
+index 2edad61..69df3ed 100644
+--- a/arch/arm/mach-pxa/zylonite.c
++++ b/arch/arm/mach-pxa/zylonite.c
+@@ -30,7 +30,7 @@
+ #include <mach/zylonite.h>
+ #include <mach/mmc.h>
+ #include <mach/ohci.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ #include <plat/pxa3xx_nand.h>
+ 
+ #include "devices.h"
+diff --git a/arch/arm/mach-pxa/include/mach/pxa27x_keypad.h b/arch/arm/plat-pxa/include/plat/pxa27x_keypad.h
+similarity index 100%
+rename from arch/arm/mach-pxa/include/mach/pxa27x_keypad.h
+rename to arch/arm/plat-pxa/include/plat/pxa27x_keypad.h
+diff --git a/drivers/input/keyboard/pxa27x_keypad.c b/drivers/input/keyboard/pxa27x_keypad.c
+index 0e53b3b..0610d10 100644
+--- a/drivers/input/keyboard/pxa27x_keypad.c
++++ b/drivers/input/keyboard/pxa27x_keypad.c
+@@ -32,7 +32,7 @@
+ #include <asm/mach/map.h>
+ 
+ #include <mach/hardware.h>
+-#include <mach/pxa27x_keypad.h>
++#include <plat/pxa27x_keypad.h>
+ /*
+  * Keypad Controller registers
+  */
 -- 
-Simon Arlott
+1.7.0.4
+
