@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab0ICMgp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 08:36:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab0ICMgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 08:36:43 -0400
-Date: Fri, 3 Sep 2010 08:36:18 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org,
-        dm-devel@redhat.com, hch@lst.de, konishi.ryusuke@lab.ntt.co.jp,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        k-ueda@ct.jp.nec.com, mpatocka@redhat.com
-Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
- dm
-Message-ID: <20100903123617.GA23812@redhat.com>
-References: <1283509796-1510-1-git-send-email-tj@kernel.org>
- <1283509796-1510-24-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283509796-1510-24-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1756526Ab0ICMoq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 08:44:46 -0400
+Received: from mv-drv-hcb004.ocn.ad.jp ([118.23.109.134]:60843 "EHLO
+	mv-drv-hcb004.ocn.ad.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab0ICMop (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 08:44:45 -0400
+Date: Fri, 03 Sep 2010 21:44:38 +0900 (JST)
+Message-Id: <20100903.214438.232976322.anemo@mba.ocn.ne.jp>
+To: mcuos.com@gmail.com
+Cc: geert@linux-m68k.org, akpm@linux-foundation.org, a.zummo@towertech.it,
+        linux-kernel@vger.kernel.org
+Subject: Re: rtc/m41t80: use rtc_valid_tm() to check returned tm
+From: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+In-Reply-To: <20100817.230531.95061739.anemo@mba.ocn.ne.jp>
+References: <AANLkTin7+UPYJ5tsyrbUhxcEfbHLMVJQOSrV1_3zQ0V3@mail.gmail.com>
+	<AANLkTimbtkvrE0Lhk4vcq-4N3Sr8T84zD7-pkSotO66L@mail.gmail.com>
+	<20100817.230531.95061739.anemo@mba.ocn.ne.jp>
+X-Fingerprint: 6ACA 1623 39BD 9A94 9B1A  B746 CA77 FE94 2874 D52F
+X-Pgp-Public-Key: http://wwwkeys.pgp.net/pks/lookup?op=get&search=0x2874D52F
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03 2010 at  6:29am -0400,
-Tejun Heo <tj@kernel.org> wrote:
+On Tue, 17 Aug 2010 23:05:31 +0900 (JST), Atsushi Nemoto <anemo@mba.ocn.ne.jp> wrote:
+> No, t->time does not contain complete date/time.  It just holds some
+> alarm settings and -1 for some fields.
+> 
+> So rtc_valid_tm(&t->time) will always returns -EINVAL.
+> The correct fix would be just reverting rtc_valid_tm here.
+> 
+> ------------------------------------------------------
+> From: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+> Subject: [PATCH] rtc: m41t80: do not use rtc_valid_tm in m41t80_rtc_read_alarm
 
-> This patch converts bio-based dm to support REQ_FLUSH/FUA instead of
-> now deprecated REQ_HARDBARRIER.
-> 
-> * -EOPNOTSUPP handling logic dropped.
-> 
-> * Preflush is handled as before but postflush is dropped and replaced
->   with passing down REQ_FUA to member request_queues.  This replaces
->   one array wide cache flush w/ member specific FUA writes.
-> 
-> * __split_and_process_bio() now calls __clone_and_map_flush() directly
->   for flushes and guarantees all FLUSH bio's going to targets are zero
-> `  length.
-> 
-> * It's now guaranteed that all FLUSH bio's which are passed onto dm
->   targets are zero length.  bio_empty_barrier() tests are replaced
->   with REQ_FLUSH tests.
-> 
-> * Empty WRITE_BARRIERs are replaced with WRITE_FLUSHes.
-> 
-> * Dropped unlikely() around REQ_FLUSH tests.  Flushes are not unlikely
->   enough to be marked with unlikely().
-> 
-> * Block layer now filters out REQ_FLUSH/FUA bio's if the request_queue
->   doesn't support cache flushing.  Advertise REQ_FLUSH | REQ_FUA
->   capability.
-> 
-> * Request based dm isn't converted yet.  dm_init_request_based_queue()
->   resets flush support to 0 for now.  To avoid disturbing request
->   based dm code, dm->flush_error is added for bio based dm while
->   requested based dm continues to use dm->barrier_error.
-> 
-> Lightly tested linear, stripe, raid1, snap and crypt targets.  Please
-> proceed with caution as I'm not familiar with the code base.
+Sorry, the patch contains non UTF-8 commit log.
+I will resend the patch with corrected commit log.
 
-Reviewed-by: Mike Snitzer <snitzer@redhat.com>
-
-Mikulas and/or Alasdair won't be able to review this until next week.
+---
+Atsushi Nemoto
