@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab0ICKge (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 06:36:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35777 "EHLO hera.kernel.org"
+	id S1757406Ab0ICKel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 06:34:41 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35789 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757077Ab0ICKbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 06:31:25 -0400
+	id S1757109Ab0ICKb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 06:31:26 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
@@ -16,119 +16,93 @@ To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
         snitzer@redhat.com, k-ueda@ct.jp.nec.com, mpatocka@redhat.com
 Cc: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 40/41] block: remove the BLKDEV_IFL_BARRIER flag
-Date: Fri,  3 Sep 2010 12:29:55 +0200
-Message-Id: <1283509796-1510-41-git-send-email-tj@kernel.org>
+Subject: [PATCH 35/41] jbd2: replace barriers with explicit flush / FUA usage
+Date: Fri,  3 Sep 2010 12:29:50 +0200
+Message-Id: <1283509796-1510-36-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283509796-1510-1-git-send-email-tj@kernel.org>
 References: <1283509796-1510-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 10:30:49 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 10:30:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Christoph Hellwig <hch@infradead.org>
 
-Remove support for barriers on discards, which is unused now.  Also
-remove the DISCARD_NOBARRIER I/O type in favour of just setting the
-rw flags up locally in blkdev_issue_discard.
-
-tj: Also remove DISCARD_SECURE and use REQ_SECURE directly.
+Switch to the WRITE_FLUSH_FUA flag for journal commits and remove the
+EOPNOTSUPP detection for barriers.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
-Acked-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- block/blk-lib.c        |   18 ++----------------
- include/linux/blkdev.h |    2 --
- include/linux/fs.h     |    8 --------
- 3 files changed, 2 insertions(+), 26 deletions(-)
+ fs/jbd2/commit.c |   43 ++++---------------------------------------
+ 1 files changed, 4 insertions(+), 39 deletions(-)
 
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index c392029..fe2e6ed 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -39,8 +39,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- {
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 	struct request_queue *q = bdev_get_queue(bdev);
--	int type = flags & BLKDEV_IFL_BARRIER ?
--		DISCARD_BARRIER : DISCARD_NOBARRIER;
-+	int type = REQ_WRITE | REQ_DISCARD;
- 	unsigned int max_discard_sectors;
- 	struct bio *bio;
- 	int ret = 0;
-@@ -65,7 +64,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 	if (flags & BLKDEV_IFL_SECURE) {
- 		if (!blk_queue_secdiscard(q))
- 			return -EOPNOTSUPP;
--		type |= DISCARD_SECURE;
-+		type |= REQ_SECURE;
- 	}
+diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+index d6aeb1f..f204e27 100644
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -134,25 +134,11 @@ static int journal_submit_commit_record(journal_t *journal,
  
- 	while (nr_sects && !ret) {
-@@ -162,12 +161,6 @@ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 	bb.wait = &wait;
- 	bb.end_io = NULL;
- 
--	if (flags & BLKDEV_IFL_BARRIER) {
--		/* issue async barrier before the data */
--		ret = blkdev_issue_flush(bdev, gfp_mask, NULL, 0);
--		if (ret)
--			return ret;
+ 	if (journal->j_flags & JBD2_BARRIER &&
+ 	    !JBD2_HAS_INCOMPAT_FEATURE(journal,
+-				       JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)) {
+-		ret = submit_bh(WRITE_SYNC_PLUG | WRITE_BARRIER, bh);
+-		if (ret == -EOPNOTSUPP) {
+-			printk(KERN_WARNING
+-			       "JBD2: Disabling barriers on %s, "
+-			       "not supported by device\n", journal->j_devname);
+-			write_lock(&journal->j_state_lock);
+-			journal->j_flags &= ~JBD2_BARRIER;
+-			write_unlock(&journal->j_state_lock);
+-
+-			/* And try again, without the barrier */
+-			lock_buffer(bh);
+-			set_buffer_uptodate(bh);
+-			clear_buffer_dirty(bh);
+-			ret = submit_bh(WRITE_SYNC_PLUG, bh);
+-		}
+-	} else {
++				       JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT))
++		ret = submit_bh(WRITE_SYNC_PLUG | WRITE_FLUSH_FUA, bh);
++	else
+ 		ret = submit_bh(WRITE_SYNC_PLUG, bh);
 -	}
- submit:
- 	ret = 0;
- 	while (nr_sects != 0) {
-@@ -199,13 +192,6 @@ submit:
- 		issued++;
- 		submit_bio(WRITE, bio);
- 	}
--	/*
--	 * When all data bios are in flight. Send final barrier if requeted.
--	 */
--	if (nr_sects == 0 && flags & BLKDEV_IFL_BARRIER)
--		ret = blkdev_issue_flush(bdev, gfp_mask, NULL,
--					flags & BLKDEV_IFL_WAIT);
--
- 
- 	if (flags & BLKDEV_IFL_WAIT)
- 		/* Wait for bios in-flight */
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 6b305eb..cfcb3a6 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -869,11 +869,9 @@ static inline struct request *blk_map_queue_find_tag(struct blk_queue_tag *bqt,
++
+ 	*cbh = bh;
+ 	return ret;
  }
- enum{
- 	BLKDEV_WAIT,	/* wait for completion */
--	BLKDEV_BARRIER,	/* issue request with barrier */
- 	BLKDEV_SECURE,	/* secure discard */
- };
- #define BLKDEV_IFL_WAIT		(1 << BLKDEV_WAIT)
--#define BLKDEV_IFL_BARRIER	(1 << BLKDEV_BARRIER)
- #define BLKDEV_IFL_SECURE	(1 << BLKDEV_SECURE)
- extern int blkdev_issue_flush(struct block_device *, gfp_t, sector_t *,
- 			unsigned long);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index d6add69..6b0f6e9 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -163,14 +163,6 @@ struct inodes_stat_t {
- #define WRITE_FLUSH_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
- 				 REQ_FLUSH | REQ_FUA)
+@@ -166,29 +152,8 @@ static int journal_wait_on_commit_record(journal_t *journal,
+ {
+ 	int ret = 0;
  
--/*
-- * These aren't really reads or writes, they pass down information about
-- * parts of device that are now unused by the file system.
-- */
--#define DISCARD_NOBARRIER	(WRITE | REQ_DISCARD)
--#define DISCARD_BARRIER		(WRITE | REQ_DISCARD | REQ_HARDBARRIER)
--#define DISCARD_SECURE		(DISCARD_NOBARRIER | REQ_SECURE)
+-retry:
+ 	clear_buffer_dirty(bh);
+ 	wait_on_buffer(bh);
+-	if (buffer_eopnotsupp(bh) && (journal->j_flags & JBD2_BARRIER)) {
+-		printk(KERN_WARNING
+-		       "JBD2: %s: disabling barries on %s - not supported "
+-		       "by device\n", __func__, journal->j_devname);
+-		write_lock(&journal->j_state_lock);
+-		journal->j_flags &= ~JBD2_BARRIER;
+-		write_unlock(&journal->j_state_lock);
 -
- #define SEL_IN		1
- #define SEL_OUT		2
- #define SEL_EX		4
+-		lock_buffer(bh);
+-		clear_buffer_dirty(bh);
+-		set_buffer_uptodate(bh);
+-		bh->b_end_io = journal_end_buffer_io_sync;
+-
+-		ret = submit_bh(WRITE_SYNC_PLUG, bh);
+-		if (ret) {
+-			unlock_buffer(bh);
+-			return ret;
+-		}
+-		goto retry;
+-	}
+ 
+ 	if (unlikely(!buffer_uptodate(bh)))
+ 		ret = -EIO;
 -- 
 1.7.1
 
