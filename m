@@ -1,89 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab0ICGsj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 02:48:39 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56835 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab0ICGsi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 02:48:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject:references
-         :in-reply-to:content-type:content-transfer-encoding;
-        b=i3TZfBxt98ynD2zwAkjh5GS0zICy5cC7WKffEfBydnE+Uko3wm/Z+iThK8u4e8Kg0H
-         hwCURXmqTnVALJWRfkZuTIiBCEsFiM37V/uB0Tl1a8iLfjeEYqbGrG4K9E1buX8ezJt6
-         PjpjHlOen65ZyEqGXhlGN+4j4h3ffsLNm345s=
-Message-ID: <4C809A40.8070300@gmail.com>
-Date: Fri, 03 Sep 2010 16:18:32 +0930
-From: Graham Gower <graham.gower@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100721 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/char/vt_ioctl.c: Fix VT_OPENQRY error value
-References: <4C809632.6090706@gmail.com>
-In-Reply-To: <4C809632.6090706@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753381Ab0ICGso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 02:48:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61177 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752828Ab0ICGsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 02:48:42 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100903014042.GH2684@bombadil.infradead.org>
+References: <20100903014042.GH2684@bombadil.infradead.org> <20100827015905.27277.39167.stgit@warthog.procyon.org.uk> <20100827020043.27277.2926.stgit@warthog.procyon.org.uk>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/22] Fix PA-RISC irqflags
+Date: Fri, 03 Sep 2010 07:48:27 +0100
+Message-ID: <7137.1283496507@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When all VT's are in use, VT_OPENQRY casts -1 to unsigned char
-before returning it to userspace as an int. VT255 is not the next
-available console.
+Kyle McMartin <kyle@mcmartin.ca> wrote:
 
-Signed-off-by: Graham Gower <graham.gower@gmail.com>
----
+> Should I merge this, or are you going to push this with some larger
+> changes?
 
-Sorry, I seem to have dropped a patch fragment in the previous mail.
+This will need to be merged into the main patch before that is submitted, but
+if I can have your Acked-by, I can include that specifically for the PA-RISC
+bits.
 
---- drivers/char/vt_ioctl.c~	2010-08-11 04:07:31.000000000 +0930
-+++ drivers/char/vt_ioctl.c	2010-09-03 16:13:59.000000000 +0930
-@@ -503,6 +503,7 @@
- 	struct kbd_struct * kbd;
- 	unsigned int console;
- 	unsigned char ucval;
-+	unsigned int uival;
- 	void __user *up = (void __user *)arg;
- 	int i, perm;
- 	int ret = 0;
-@@ -657,7 +658,7 @@
- 		break;
- 
- 	case KDGETMODE:
--		ucval = vc->vc_mode;
-+		uival = vc->vc_mode;
- 		goto setint;
- 
- 	case KDMAPDISP:
-@@ -695,7 +696,7 @@
- 		break;
- 
- 	case KDGKBMODE:
--		ucval = ((kbd->kbdmode == VC_RAW) ? K_RAW :
-+		uival = ((kbd->kbdmode == VC_RAW) ? K_RAW :
- 				 (kbd->kbdmode == VC_MEDIUMRAW) ? K_MEDIUMRAW :
- 				 (kbd->kbdmode == VC_UNICODE) ? K_UNICODE :
- 				 K_XLATE);
-@@ -717,9 +718,9 @@
- 		break;
- 
- 	case KDGKBMETA:
--		ucval = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
-+		uival = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
- 	setint:
--		ret = put_user(ucval, (int __user *)arg);
-+		ret = put_user(uival, (int __user *)arg);
- 		break;
- 
- 	case KDGETKEYCODE:
-@@ -949,7 +950,7 @@
- 		for (i = 0; i < MAX_NR_CONSOLES; ++i)
- 			if (! VT_IS_IN_USE(i))
- 				break;
--		ucval = i < MAX_NR_CONSOLES ? (i+1) : -1;
-+		uival = i < MAX_NR_CONSOLES ? (i+1) : -1;
- 		goto setint;		 
- 
- 	/*
+David
