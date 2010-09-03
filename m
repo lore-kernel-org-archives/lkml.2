@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab0ICJTG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:19:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab0ICJTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:19:04 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <m3vd6nmd68.fsf@hase.home>
-References: <m3vd6nmd68.fsf@hase.home> <19747.1283422807@redhat.com> <20100902102158.19806.14133.stgit@warthog.procyon.org.uk> <m38w3kns4r.fsf@hase.home> <AANLkTikwax-Jb60jT5_TOL=Zkwbgh8FwMk78ncm1dN-P@mail.gmail.com>
-To: Andreas Schwab <schwab@redhat.com>
-Cc: dhowells@redhat.com, Geert Uytterhoeven <geert@linux-m68k.org>,
-        gerg@snapgear.com, linux-arch@vger.kernel.org,
+	id S1756386Ab0ICJWy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:22:54 -0400
+Received: from mx1.moondrake.net ([212.85.150.166]:59529 "EHLO
+	mx1.mandriva.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751966Ab0ICJWw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 05:22:52 -0400
+X-Greylist: delayed 1790 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Sep 2010 05:22:52 EDT
+X-Spam-Virus: No
+From: Arnaud Patard <apatard@mandriva.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Bernhard Walle <walle@corscience.de>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, ddaney@caviumnetworks.com,
+        akpm@linux-foundation.org, ebiederm@xmission.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] M68K: Use CONFIG_MMU not __uClinux__ to select m68knommu contributions
-Date: Fri, 03 Sep 2010 10:18:40 +0100
-Message-ID: <3048.1283505520@redhat.com>
+Subject: Re: [PATCH] MIPS: N32: Fix getdents64 syscall for n32
+References: <1283501734-6532-1-git-send-email-walle@corscience.de>
+	<20100903084213.GA32339@lst.de>
+Organization: Mandriva
+Date: Fri, 03 Sep 2010 10:53:31 +0200
+In-Reply-To: <20100903084213.GA32339@lst.de> (Christoph Hellwig's message of "Fri, 3 Sep 2010 10:42:13 +0200")
+Message-ID: <m3pqwvb438.fsf@anduin.mandriva.com>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Schwab <schwab@redhat.com> wrote:
+Christoph Hellwig <hch@lst.de> writes:
 
-> You are almost able to use the uclinux compiler for both, except that
-> currently __uClinux__ is hardcoded.
+Hi,
 
-The m68knommu arch Makefile in the kernel could specify it on the compiler
-command line, then m68k compilers should be possible.
+> I'm not sure why people suddenly started Ccing me on utterly random
+> patches, but could you guys please bloody stop it?  Thanks!
 
-The kernel should probably also set appropriate -mcpu= and -mtune= flags,
-depending on the type of kernel selected.
+I guess the explanation is the one below :
 
-David
+$ ./scripts/get_maintainer.pl -f arch/mips/kernel/scall64-n32.S
+Ralf Baechle <ralf@linux-mips.org>
+David Daney <ddaney@caviumnetworks.com>
+Andrew Morton <akpm@linux-foundation.org>
+"Eric W. Biederman" <ebiederm@xmission.com>
+Christoph Hellwig <hch@lst.de>
+linux-mips@linux-mips.org
+linux-kernel@vger.kernel.org
+
+
+Arnaud
