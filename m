@@ -1,93 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab0ICAgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 20:36:36 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44554 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752444Ab0ICAgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 20:36:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Colin Cross <ccross@android.com>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
-Date: Fri, 3 Sep 2010 02:35:00 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <AANLkTim7UM80MrwKoAz3hUFrqL2Fbyw6XS=X89PXRc2Q@mail.gmail.com> <201009030109.40816.rjw@sisk.pl> <AANLkTinbgShA+m3sdXrYAvW7ctCExp+fZv5EMuYSMLiE@mail.gmail.com>
-In-Reply-To: <AANLkTinbgShA+m3sdXrYAvW7ctCExp+fZv5EMuYSMLiE@mail.gmail.com>
+	id S1755899Ab0ICAnF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 20:43:05 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43069 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab0ICAnD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 20:43:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Dc/WWhWZwjuxBoVQijrBtz6GJEHxkVKFSTU1JqUrIu7qWTzFi745LzZdxHKxnEsIah
+         jyHshdyFpFwGIyg65oH7lD15VX++PpCSKrZO8tbVyUOc35+fyAYeop0pein0a86DDol1
+         7aPlIW5or97eyjNkPjy9rYqBqKSUR2uyggjQc=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009030235.00270.rjw@sisk.pl>
+In-Reply-To: <ee6a42fe148f72518d475ff3838fc32a@secure211.sgcpanel.com>
+References: <1283443098-15262-1-git-send-email-tom.leiming@gmail.com>
+	<ee6a42fe148f72518d475ff3838fc32a@secure211.sgcpanel.com>
+Date: Fri, 3 Sep 2010 08:43:00 +0800
+Message-ID: <AANLkTimts7SjE9EKrmsSkynWsQc_VtJUVVigrFs2VtrK@mail.gmail.com>
+Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization
+From: Ming Lei <tom.leiming@gmail.com>
+To: Felipe Balbi <me@felipebalbi.com>
+Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Felipe Balbi <felipe.balbi@nokia.com>, Anand Gadiyar <gadiyar@ti.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 03, 2010, Colin Cross wrote:
-> On Thu, Sep 2, 2010 at 4:09 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Friday, September 03, 2010, Colin Cross wrote:
-> >> On Thu, Sep 2, 2010 at 2:34 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> >> > On Thu, 2 Sep 2010, Colin Cross wrote:
-> >> >
-> >> >> That would work, but I still don't see why it's better.  With either
-> >> >> of your changes, the power.completion variable is storing state, and
-> >> >> not just used for notification.  However, the exact meaning of that
-> >> >> state is unclear, especially during the transition from an aborted
-> >> >> suspend to resume, and the state is duplicating power.status.  Setting
-> >> >> it to complete in dpm_prepare is especially confusing, because at that
-> >> >> point nothing is completed, it hasn't even been started.
-> >> >
-> >> > The state being waited for varies from time to time and is only
-> >> > partially related to power.status.  Instead of using a completion I
-> >> > suppose we could have used a new "transition_complete" variable
-> >> > together with a waitqueue.  Would you prefer that?  It's effectively
-> >> > the same thing as a completion, but without the nice packaging already
-> >> > provided by the kernel.
-> >> No, that doesn't change anything.  What I'd prefer to see is a
-> >> wait_for_condition on the desired state of the parent.  As is,
-> >> power.completion means one thing during suspend (the device has
-> >> started, but not finished, suspending), and a different thing during
-> >> resume (the device has not finished resuming, and may not have started
-> >> resuming).  That difference is exactly what caused the bug - the
-> >> completion has to be set on init so that it is set before the device
-> >> starts suspend.
-> >
-> > Not really.  The bug is there, because my analysis of the suspend error code
-> > path was wrong.  Sorry about that, but it has nothing to do with the "different
-> > meaning" of the completions during suspend and resume.
-> >
-> > The completions here are simply used to enforce a specific ordering of
-> > operations, nothing more.  They have no meaning beyond that.
+2010/9/3 Felipe Balbi <me@felipebalbi.com>:
+> Hi,
+
+thanks for your comments.
+
 >
-> The completion variable maintains state.
+> On Thu,  2 Sep 2010 23:58:18 +0800, tom.leiming@gmail.com wrote:
+>> From: Ming Lei <tom.leiming@gmail.com>
+>>
+>> Commit 461c317705eca5cac09a360f488715927fd0a927(into 2.6.36-v3)
+>> is put forward to power down phy if no usb cable is connected,
+>> but does introduce the two issues below:
+>>
+>> 1), phy is not into work state if usb cable is connected
+>> with PC during poweron, so musb device mode is not usable
+>> in such case, follows the reasons:
+>
+> I'm pretty sure I verified both cases.
 
-So what?  Locks also maintain state.
+Could you verify the beagle board in such case? If you commit is
+reverted, no issue #1 for me.
 
-> It has meaning whether or not you want it to.  Leaving it as a completion
-> variable requires that you manage that state, which is difficult considering
-> there is no documentation and no clear idea in the code of exactly when that
-> state is set or clear.
+>
+>>       -twl4030_phy_resume is not called, so
+>>               regulators are not enabled
+>>               i2c access are not enabled
+>>               usb mode not configurated
+>>
+>> 2), The kernel warings[1] of regulators 'unbalanced disables'
+>> is caused if poweron without usb cable connected
+>> with PC or b-device.
+>>
+>> This patch fixes the two issues above:
+>>       -power down phy only if no usb cable is connected with PC
+>> and b-device
+>>       -do phy initialization(via __twl4030_phy_resume) if usb cable
+>> is connected with PC(vbus event) or another b-device(ID event) in
+>> twl4030_usb_probe.
+>>
+>> This patch is verified OK on Beagle board either connected with
+>> usb cable or not when poweron.
+>
+> I kinda doubt it, would have to test it myself, but I'm without
+> enough gear to test it again.
 
-Please run "git show 5af84b82701a96be4b033aaa51d86c72e2ded061" and read the
-changelog.  It's described in there quite clearly (I think).
+See my analysis below.
 
-> It would be much cleaner to use a wait queue, and use
-> wait_on_condition to wait for the device to be in the desired state.
+>
+>> [1]. warnings of 'unbalanced disables' of regulators.
+>> [root@OMAP3EVM /]# dmesg
+>> ------------[ cut here ]------------
+>> WARNING: at drivers/regulator/core.c:1357
+> _regulator_disable+0x38/0x128()
+>
+> this should not have been caused by that patch, though.
 
-Well, in fact that was used in one version of the patchset that introduced
-asynchronous suspend-resume, but it was rejected by Linus, because it was
-based on non-standard synchronization.  The Linus' argument, that I agreed
-with, was that standard snychronization constructs, such as locks or
-completions, were guaranteed to work accross different architectures and thus
-were simply _safer_ to use than open-coded synchronization that you seem to be
-preferring.
+It is surely caused by usb twl4030 otg driver if otg phy is not power down
+in bootloader.
 
-Completions simply allowed us to get the desired behavior with the least
-effort and that's why we used them.
+See my analysis  below.
 
-Thanks,
-Rafael
+>
+>
+>> Cc: Felipe Balbi <felipe.balbi@nokia.com>
+>
+> this email doesn't exist anymore... I'm yet to subscribe the new one,
+> for now keep this one in Cc, sorry for that.
+>
+>> diff --git a/drivers/usb/otg/twl4030-usb.c
+> b/drivers/usb/otg/twl4030-usb.c
+>> index 05aaac1..df6381f 100644
+>> --- a/drivers/usb/otg/twl4030-usb.c
+>> +++ b/drivers/usb/otg/twl4030-usb.c
+>> @@ -347,11 +347,22 @@ static void twl4030_i2c_access(struct twl4030_usb
+>> *twl, int on)
+>>       }
+>>  }
+>>
+>> -static void twl4030_phy_power(struct twl4030_usb *twl, int on)
+>> +static void __twl4030_phy_power(struct twl4030_usb *twl, int on)
+>>  {
+>> +     u8 old_pwr = twl4030_usb_read(twl, PHY_PWR_CTRL);
+>>       u8 pwr;
+>>
+>> -     pwr = twl4030_usb_read(twl, PHY_PWR_CTRL);
+>> +     if (on)
+>> +             pwr = old_pwr & ~PHY_PWR_PHYPWD;
+>> +     else
+>> +             pwr = old_pwr | PHY_PWR_PHYPWD;
+>> +
+>> +     if (pwr != old_pwr)
+>> +             WARN_ON(twl4030_usb_write_verify(twl, PHY_PWR_CTRL, pwr) < 0);
+>
+> writing 1 if register is one won't cause any problems, you're just
+> wasting a variable.
+>
+>> +static void twl4030_phy_power(struct twl4030_usb *twl, int on)
+>> +{
+>>       if (on) {
+>>               regulator_enable(twl->usb3v1);
+>>               regulator_enable(twl->usb1v8);
+>> @@ -365,15 +376,13 @@ static void twl4030_phy_power(struct twl4030_usb
+>> *twl, int on)
+>>               twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0,
+>>                                                       VUSB_DEDICATED2);
+>>               regulator_enable(twl->usb1v5);
+>> -             pwr &= ~PHY_PWR_PHYPWD;
+>> -             WARN_ON(twl4030_usb_write_verify(twl, PHY_PWR_CTRL, pwr) < 0);
+>> +             __twl4030_phy_power(twl, 1);
+>>               twl4030_usb_write(twl, PHY_CLK_CTRL,
+>>                                 twl4030_usb_read(twl, PHY_CLK_CTRL) |
+>>                                       (PHY_CLK_CTRL_CLOCKGATING_EN |
+>>                                               PHY_CLK_CTRL_CLK32K_EN));
+>>       } else  {
+>> -             pwr |= PHY_PWR_PHYPWD;
+>> -             WARN_ON(twl4030_usb_write_verify(twl, PHY_PWR_CTRL, pwr) < 0);
+>> +             __twl4030_phy_power(twl, 0);
+>>               regulator_disable(twl->usb1v5);
+>>               regulator_disable(twl->usb1v8);
+>>               regulator_disable(twl->usb3v1);
+>> @@ -387,19 +396,25 @@ static void twl4030_phy_suspend(struct twl4030_usb
+>> *twl, int controller_off)
+>>
+>>       twl4030_phy_power(twl, 0);
+>>       twl->asleep = 1;
+>> +     dev_dbg(twl->dev, "%s\n", __func__);
+>
+> this is noise.
+
+It is useful to troubleshoot the two issues above,  and I can
+remove it if you doesn't like it.
+
+>
+>>  }
+>>
+>> -static void twl4030_phy_resume(struct twl4030_usb *twl)
+>> +static void __twl4030_phy_resume(struct twl4030_usb *twl)
+>>  {
+>> -     if (!twl->asleep)
+>> -             return;
+>> -
+>>       twl4030_phy_power(twl, 1);
+>>       twl4030_i2c_access(twl, 1);
+>>       twl4030_usb_set_mode(twl, twl->usb_mode);
+>>       if (twl->usb_mode == T2_USB_MODE_ULPI)
+>>               twl4030_i2c_access(twl, 0);
+>> +}
+>> +
+>> +static void twl4030_phy_resume(struct twl4030_usb *twl)
+>> +{
+>> +     if (!twl->asleep)
+>> +             return;
+>> +     __twl4030_phy_resume(twl);
+>>       twl->asleep = 0;
+>> +     dev_dbg(twl->dev, "%s\n", __func__);
+>
+> this is noise.
+
+see above.
+
+>> @@ -502,6 +517,26 @@ static irqreturn_t twl4030_usb_irq(int irq, void
+>> *_twl)
+>>       return IRQ_HANDLED;
+>>  }
+>>
+>> +static void twl4030_usb_phy_init(struct twl4030_usb *twl)
+>> +{
+>> +     int status;
+>> +
+>> +     status = twl4030_usb_linkstat(twl);
+>> +     if (status >= 0) {
+>> +             if (status == USB_EVENT_NONE) {
+>> +                     __twl4030_phy_power(twl, 0);
+>> +                     twl->asleep = 1;
+>> +             } else {
+>> +                     __twl4030_phy_resume(twl);
+>
+> this might break people who are using charger detection, although I
+> would have to revisit some code to be sure.
+
+twl4030_usb_phy_init is only called once from .probe, and I don't think
+break chager detection, which in principle is same with vbus detect, right?
+
+>
+>> +                     twl->asleep = 0;
+>> +             }
+>> +
+>> +             blocking_notifier_call_chain(&twl->otg.notifier, status,
+>> +                             twl->otg.gadget);
+>> +     }
+>> +     sysfs_notify(&twl->dev->kobj, NULL, "vbus");
+>
+> thís should only be called from IRQ handler and is duplicating
+> code.
+
+For the 1st case, something is not same.
+
+>
+>> @@ -550,7 +585,6 @@ static int __devinit twl4030_usb_probe(struct
+>> platform_device *pdev)
+>>       struct twl4030_usb_data *pdata = pdev->dev.platform_data;
+>>       struct twl4030_usb      *twl;
+>>       int                     status, err;
+>> -     u8                      pwr;
+>>
+>>       if (!pdata) {
+>>               dev_dbg(&pdev->dev, "platform_data not available\n");
+>> @@ -569,10 +603,7 @@ static int __devinit twl4030_usb_probe(struct
+>> platform_device *pdev)
+>>       twl->otg.set_peripheral = twl4030_set_peripheral;
+>>       twl->otg.set_suspend    = twl4030_set_suspend;
+>>       twl->usb_mode           = pdata->usb_mode;
+>> -
+>> -     pwr = twl4030_usb_read(twl, PHY_PWR_CTRL);
+>> -
+>> -     twl->asleep             = (pwr & PHY_PWR_PHYPWD);
+>> +     twl->asleep = 1;
+>
+> and now you're lying to the driver again. What happens if
+> bootloader has put transceiver to sleep ??
+
+If bootloader has put transceiver to sleep, all is OK and the two
+issues above will not happen. The patch is to fix the two issues if
+bootloader did not power down phy.
+
+issue #1:
+         -twl->asleep is set as zero in .probe since bootloader has not
+powerdown phy
+         -EVENT_VBUS returned from twl4030_usb_linkstat since usb cable
+is connected with PC
+         -twl4030_phy_resume is called but does nothing since
+twl->asleep is zero
+         -the following are not called to initialize otg phy:
+                  twl4030_phy_power / twl4030_i2c_access / twl4030_usb_set_mode
+         -so musb device mode does not work
+
+issue #2:
+         -twl->asleep is set as zero in .probe since bootloader has
+not powerdown phy
+         -EVENT_NONE returned from twl4030_usb_linkstat since no usb cable is
+connected with board
+         -twl4030_phy_suspend is called
+         -twl4030_phy_power is called since twl->asleep is zero
+         -regulator_disable is called for power down case
+         -so cause the kernel warning since no regulator_enable is called before
+
+>
+>> @@ -610,15 +641,10 @@ static int __devinit twl4030_usb_probe(struct
+>> platform_device *pdev)
+>>               return status;
+>>       }
+>>
+>> -     /* The IRQ handler just handles changes from the previous states
+>> -      * of the ID and VBUS pins ... in probe() we must initialize that
+>> -      * previous state.  The easy way:  fake an IRQ.
+>> -      *
+>> -      * REVISIT:  a real IRQ might have happened already, if PREEMPT is
+>> -      * enabled.  Else the IRQ may not yet be configured or enabled,
+>> -      * because of scheduling delays.
+>> +     /* Power down phy or make it work according to
+>> +      * current link state.
+>
+> if you're changing the comment you might as well fix the comment style.
+>
+>>        */
+>> -     twl4030_usb_irq(twl->irq, twl);
+>> +     twl4030_usb_phy_init(twl);
+>
+> now I see, this doesn't care about that flag, so why even setting
+> it above ??
+
+You mean .asleep? If so, the flag is set to be consistent
+with the actual link state.
+
+-- 
+Lei Ming
