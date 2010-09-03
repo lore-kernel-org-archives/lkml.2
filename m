@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394Ab0ICUKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 16:10:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51052 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754370Ab0ICUKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 16:10:42 -0400
-Date: Fri, 3 Sep 2010 16:10:24 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf, x86: Fix accidentally ack'ing a second
- event on intel perf counter
-Message-ID: <20100903201024.GF4879@redhat.com>
-References: <1283454469-1909-2-git-send-email-dzickus@redhat.com>
- <tip-2e556b5b320838fde98480a1f6cf220a5af200fc@git.kernel.org>
- <4C80A62D.6050901@kernel.org>
- <20100903150055.GY4879@redhat.com>
- <4C812D24.8000704@kernel.org>
- <20100903183559.GB4879@redhat.com>
- <4C814B59.1030109@kernel.org>
+	id S1757498Ab0ICUKs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 16:10:48 -0400
+Received: from sati.usurf.usu.edu ([129.123.194.129]:34081 "EHLO
+	echo.usurf.usu.edu" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1756510Ab0ICUKq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 16:10:46 -0400
+From: Jonathan Haws <Jonathan.Haws@sdl.usu.edu>
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: sata_sil24 memory fragmentation issues / VM allocation failures
+Thread-Topic: sata_sil24 memory fragmentation issues / VM allocation failures
+Thread-Index: AQHLS6QXYLvWJMLmG0yWLXJxAXcEUA==
+Date: Fri, 3 Sep 2010 20:10:44 +0000
+Message-ID: <5ABE8A5E96C0364CAF2B4DC1DEB7CEAC1282A527@Mercury.usurf.usu.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.31.22.105]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C814B59.1030109@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 12:24:09PM -0700, Yinghai Lu wrote:
-> > Let me know if this meets your needs.
-> it should work. will test later
-> > 
-> > Cheers,
-> > Don
-> > 
-> > @@ -371,6 +381,10 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
-> >  			reason, smp_processor_id());
-> >  
-> >  	printk(KERN_EMERG "Do you have a strange power saving mode enabled?\n");
-> > +#if defined(CONFIG_SYSCTL) && defined(CONFIG_X86_LOCAL_APIC)
-> > +	if (unknown_nmi_panic)
-> > +		die_nmi("", regs, 1);
-> > +#endif
-> 
-> can you move it before the two printk(KERN_EMERG...)?
+> I meant that "sata" is just the process name (I assume), it's not
+> really anything to do with the SATA driver. Normally SATA host
+> controller drivers don't really allocate memory at runtime so this
+> wouldn't really be an issue with them. Network controllers do in order
+> to handle received packets, though - it appears that for some reason
+> the memory allocation by the network driver is failing.
 
-Well, then you do not print a reason for the panic.  Though the one printk
-might not be useful.
+You are correct - "sata" is the name of my SATA benchmarking app.  I had the same thought, so I went to the network driver and changed it so that it only ever dealt with single pages - the motivation being that if it only dealt with single pages I would never have a page allocation failure unless I was completely out of memory.  I made those changes and ended up seeing the same errors.
 
-> 
-> >  	if (panic_on_unrecovered_nmi)
-> >  		panic("NMI: Not continuing");
-> 
-> Can you merge those two panic? 
+Someone did mention to me that the VM keeps an emergency reserve around for emergency allocations, so maybe I am hitting that barrier?
 
-I thought about it but did not want to disturb the panic vs die_nmi paths.
-But I can definitely do that I think.
+The thing that really gets me is that when I run the network alone or the disk alone there are no issues at all.  It is only when I run them together that I see problems.  I tried increasing how many packets I would handle in the polling function for the network, but that seemed to have zero effect.
 
-Cheers,
-Don
+> I'm not really sure why that is - it seems like you do have memory
+> available. Hopefully some VM guru can pipe up with a suggestion.
+
+That is what I am hoping as well.  Anyone have any thoughts?
+
