@@ -1,167 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757035Ab0ICS7h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 14:59:37 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21522 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914Ab0ICS7f convert rfc822-to-8bit (ORCPT
+	id S1754432Ab0ICTMu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 15:12:50 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51571 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab0ICTMs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 14:59:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,314,1280732400"; 
-   d="scan'208";a="603554121"
-From: "Allan, Bruce W" <bruce.w.allan@intel.com>
-To: Tony Jones <tonyj@suse.de>
-CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
+	Fri, 3 Sep 2010 15:12:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=I9bBx9ExTlPqlwQrJmW4Lcqh4mGBSnAiUpG0aLPVUJunPlhep33qMwxm3/vc4vTJNL
+         rr2WvsYwgb+84iRnVmS18rnPSU5XB3nCKY9d10KcVx0paPqbu7weczYCyRKP+YFmP3rT
+         gu5uHcRM9TKIYt3bepuPlu4Wq7b2TsQf1+A7w=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: tim.gardner@canonical.com
+Subject: Re: nfsd deadlock, 2.6.36-rc3
+Date: Fri, 3 Sep 2010 21:12:43 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3; KDE/4.4.5; i686; ; )
+Cc: linux-nfs@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bphilips@suse.de" <bphilips@suse.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>
-Date: Fri, 3 Sep 2010 11:59:30 -0700
-Subject: RE: high latency on 82573L
-Thread-Topic: high latency on 82573L
-Thread-Index: ActLkJ9tj1nHGymfSTu8NuiEck3KbgABYcAA
-Message-ID: <8DD2590731AB5D4C9DBF71A877482A900168EDB454@orsmsx509.amr.corp.intel.com>
-References: <20100902033900.GA5283@suse.de>
- <8DD2590731AB5D4C9DBF71A877482A900168E59EFA@orsmsx509.amr.corp.intel.com>
- <20100903175102.GA7767@suse.de>
-In-Reply-To: <20100903175102.GA7767@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        neilb@suse.de, bfields@fieldses.org, Trond.Myklebust@netapp.com
+References: <4C7E73CB.7030603@canonical.com>
+In-Reply-To: <4C7E73CB.7030603@canonical.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201009032112.43524.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 03, 2010 10:51 AM, Tony Jones wrote:
-> On Thu, Sep 02, 2010 at 11:49:12AM -0700, Allan, Bruce W wrote:
->> Please provide more verbose lspci output and include the PCI config
->> space, i.e. 'lspci -s 2:0.0 -vvv -xxx' after the driver is loaded,
+On środa, 1 września 2010 o 17:39:55 Tim Gardner wrote:
+> I've been pursuing a simple reproducer for an NFS lockup that shows up
+> under stress. There is a bunch of info (some of it extraneous) in
+> http://bugs.launchpad.net/bugs/561210. I can reproduce it by writing
+> loop mounted NFS exports:
 > 
-> # lspci -s 2:0.0 -vvv -xxx
-> 02:00.0 Ethernet controller: Intel Corporation 82573L Gigabit
-> 	Ethernet Controller Subsystem: Lenovo ThinkPad T60
-> 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> 	Stepping- SERR+ FastB2B- DisINTx+ Status: Cap+ 66MHz- UDF- FastB2B-
-> 	ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> 	Latency: 0, Cache Line Size: 64 bytes Interrupt: pin A routed to IRQ
-> 	46 Region 0: Memory at ee000000 (32-bit, non-prefetchable)
-> 	[size=128K] Region 2: I/O ports at 3000 [size=32]
-> 	Capabilities: [c8] Power Management version 2
-> 		Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
-> 		PME(D0+,D1-,D2-,D3hot+,D3cold+) Status: D0 NoSoftRst- PME-Enable-
-> 	DSel=0 DScale=1 PME- Capabilities: [d0] MSI: Enable+ Count=1/1
-> 		Maskable- 64bit+ Address: 00000000fee0100c  Data: 41c9
-> 	Capabilities: [e0] Express (v1) Endpoint, MSI 00
-> 		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1
-> 			<64us ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
-> 		DevCtl:	Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
-> 			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-> 			MaxPayload 128 bytes, MaxReadReq 512 bytes
-> 		DevSta:	CorrErr- UncorrErr+ FatalErr- UnsuppReq+ AuxPwr+ TransPend-
-> 		LnkCap:	Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0
-> 			<128ns, L1 <64us ClockPM+ Surprise- LLActRep- BwNot-
-> 		LnkCtl:	ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
-> 			ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
-> 		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive-
-> 	BWMgmt- ABWMgmt- Capabilities: [100 v1] Advanced Error Reporting
-> 		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF-
-> 		MalfTLP- ECRC- UnsupReq+ ACSViol- UEMsk:	DLP- SDES- TLP- FCP-
-> 		CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq-
-> 		ACSViol- UESvrt:	DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt-
-> 		RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol- CESta:	RxErr+ BadTLP+
-> 		BadDLLP- Rollover- Timeout- NonFatalErr- CEMsk:	RxErr- BadTLP-
-> 	BadDLLP- Rollover- Timeout- NonFatalErr- AERCap:	First Error
-> 	Pointer: 14, GenCap- CGenEn- ChkCap- ChkEn- Capabilities: [140 v1]
-> Device Serial Number 00-1a-6b-ff-ff-6c-7e-a4 Kernel driver in use:
-> e1000e 00: 86 80 9a 10 07 05 10 00 00 00 00 02 10 00 00 00 10: 00 00
-> 00 ee 00 00 00 00 01 30 00 00 00 00 00 00 20: 00 00 00 00 00 00 00 00
-> 00 00 00 00 aa 17 01 20 30: 00 00 00 00 c8 00 00 00 00 00 00 00 0b 01
-> 00 00 40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> c0: 00 00 00 00 00 00 00 00 01 d0 22 c8 00 20 00 0f
-> d0: 05 e0 81 00 0c 10 e0 fe 00 00 00 00 c9 41 00 00
-> e0: 10 00 01 00 c1 0c 00 00 1f 28 1a 00 11 1c 07 00
-> f0: 42 01 11 10 00 00 00 00 00 00 00 00 00 00 00 00
+> /etc/fstab: 127.0.0.1:/srv /mnt/srv nfs rw 0 2
+> /etc/exports: /srv 127.0.0.1(rw,insecure,no_subtree_check)
 > 
->> kernel.  Are there any messages in the system log regarding disabling
->> ASPM L0s and/or L1 on that device?
+> See the attached scripts test_master.sh and test_client.sh. I simply
+> repeat './test_master.sh wait' until nfsd locks up, typically within 1-3
+> cycles, e.g.,
 > 
-> It would appear it is being disabled:
+> cd /mnt/srv
+> while true; do ./test_master.sh wait; done
 > 
-> [    0.194271] ACPI FADT declares the system doesn't support PCIe
-> ASPM, so disable it [    0.297112] pci 0000:01:00.0: disabling ASPM
-> on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force' [  
-> 0.298003] pci 0000:02:00.0: disabling ASPM on pre-1.1 PCIe device. 
-> You can enable it with 'pcie_aspm=force' [    0.299123] pci
-> 0000:03:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable
-> it with 'pcie_aspm=force' [   18.135907] e1000e 0000:02:00.0:
-> Disabling ASPM  L1 [   18.137262] e1000e 0000:02:00.0: Disabling ASPM
-> L0s   
+> Note that this test will run indefinitely if invoked from /srv, e.g.,
 > 
-> but I see the same high ping latencies.
+> cd /srv
+> while true; do ./test_master.sh wait; done
 > 
->> I can understand the latency with the OpenSUSE 2.6.34-based kernels
->> assuming commit 19833b5dff is not present, but I do not understand
->> the latency with 2.6.36-rc3.
+> This issue, or something like it, appears to exist as far back as I've
+> tested (Ubuntu Lucid 2.6.32.21). For now I'm assuming that, since the
+> symptoms are similar, any lockup bug found in -rc3 is the likely culprit.
 > 
-> The first thing I tried was OpenSUSE 2.6.34 plus 19833b5dff.   This
-> led me to 
-> think it wasn't related to ASPM so I resorted to a bisect which ended
-> up showing 
-> it was 6f461f6c7c.
+> See attached dmesg and config. Debug options of interest that I've
+> enabled are CONFIG_DEBUG_SLAB, CONFIG_DEBUG_SLAB_LEAK,
+> CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_MUTEXES.
 > 
-> Anyways, all of the above is from vanilla 2.6.36-rc3 so lets ignore
-> OpenSUSE 
-> kernels.
+> dmesg.txt contains the initial 'INFO: task nfsd:1263 blocked for more
+> than 120 seconds.' complaints as well as information dumped from
 > 
-> http://ftp.suse.com/pub/people/tonyj/82573L/config  is the config for
-> .36-rc3 
-> generated using localmodconfig, defaults chosen for all prompts.
+> echo d | sudo tee /proc/sysrq-trigger
+> echo w | sudo tee /proc/sysrq-trigger
 > 
-> http://ftp.suse.com/pub/people/tonyj/82573L/dmesg  is the full dmesg
+> Anything else I can provide?
 > 
-> Tony
+> rtg
 
-ASPM L1 must be disabled on this device otherwise the latency described
-above will happen.  And even though there are log messages indicating
-ASPM L1 is disabled, it really isn't according to the verbose lspci
-output and PCI config space for the 2:0.0 device (see LnkCtl above).
-Since CONFIG_PCIEASPM is enabled in your kernel config, the driver is
-calling the kernel function pci_disable_link_state() to disable ASPM L1
-which it fails to do because the variable aspm_disabled=1 (as indicated
-by the "ACPI FADT declares the system doesn't support PCIe ASPM, so
-disable it" message).
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=17762
+for your bug report, please add your address to the CC list in there, thanks!
 
-I'm unclear on whether the aspm_disabled variable is meant to indicate
-ASPM L0s or both ASPM L0s _and_ L1 are disabled (added PCI maintainer
-and linux-pci mail-list).  To resolve this issue, we need to either a)
-change e1000e to directly write the PCI config space to disable ASPM L1
-as was done before 6f461f6c7c, or b) fix pci_disable_link_state() et. al.
-to allow for ASPM L1 to be disabled properly.  I would prefer the latter
-option so that other drivers do not have to use the same kludge to write
-to the PCI config space.  Any input from the PCI guys?
-
-Alternatively in the meantime, if you disable CONFIG_PCIEASPM the e100e
-driver will act how it did before 6f461f6c7c, i.e. it will directly write
-the PCI config space to disable ASPM L1.
-
-Thanks,
-Bruce.
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
