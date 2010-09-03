@@ -1,166 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab0ICIbn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 04:31:43 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:38615 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873Ab0ICIbl (ORCPT
+	id S1755800Ab0ICIdh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 04:33:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38777 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab0ICIdf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 04:31:41 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Kulikov Vasiliy <segooon@gmail.com>
-Subject: [PATCH -resend 1/1] Char: mxser, call pci_disable_device from probe/remove
-Date: Fri,  3 Sep 2010 10:31:37 +0200
-Message-Id: <1283502697-16068-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.2.2
+	Fri, 3 Sep 2010 04:33:35 -0400
+Subject: Re: [PATCH 4/4] [x86] perf: fix accidentally ack'ing a second
+ event on intel perf counter
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>, Robert Richter <robert.richter@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>
+In-Reply-To: <AANLkTin2KVPpkQWUa_GQ66q+wvZpfYHOKAfWbG-+K5FD@mail.gmail.com>
+References: <AANLkTimA-AZWJugaLR3VPGVhBaJid=t=a1rPVNUE_8Dh@mail.gmail.com>
+	 <20100901145728.GM22783@erda.amd.com>
+	 <AANLkTikOaCL8FqQuUQsYPxm19WZOdarp8AMAugN0mnqQ@mail.gmail.com>
+	 <20100902141900.GG4879@redhat.com>
+	 <AANLkTin2KVPpkQWUa_GQ66q+wvZpfYHOKAfWbG-+K5FD@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 03 Sep 2010 10:33:03 +0200
+Message-ID: <1283502783.1783.172.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vasiliy found that pci_disable_device is not called on fail paths in
-mxser_probe. Actually, it is called from nowhere in the driver.
+On Thu, 2010-09-02 at 16:39 +0200, Stephane Eranian wrote:
+> I managed to reproduce on core i7 860 (without patch4).
+> Looking at the code again, I am dubious you ever execute
+> the retry goto. If the PMU is disabled and you've just
+> cleared the OVF_STAT, then I don't see where the new
+> overflows would come from. But that's a separate problem.
+> 
+> One thing I did is to compare status obtained via OVFL_STATUS
+> with one that I build manually by inspecting each individual
+> counter. The two returned bitmasks should always be identical
+> (with PEBS disabled).  When I got the spurious NMI, it did not
+> trip my status validation. So the OVFL_STATUS is valid.
+> 
+> I found something else that looked fishy. I am experimenting
+> with it. I will report back. 
 
-There are three changes needed:
-1) don't use pseudo-generic mxser_release_res. Let's use it only from
-   ISA paths from now on. All the pci stuff is moved to probe and
-   remove PCI-related functions.
-2) reorder fail-paths in the probe function so that it makes sense and
-   we can call them from the sequential code naturally (the further we
-   are the earlier label we go to).
-3) add pci_disable_device both to mxser_probe and mxser_remove.
-
-There is a nit of adding CONFIG_PCI ifdef to mxser_remove. it is
-because this driver supports ISA-only compilations and it would choke
-up on the newly added calls now.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Kulikov Vasiliy <segooon@gmail.com>
----
- drivers/char/mxser.c |   47 ++++++++++++++++++++++-------------------------
- 1 files changed, 22 insertions(+), 25 deletions(-)
-
-diff --git a/drivers/char/mxser.c b/drivers/char/mxser.c
-index 3fc89da..9d243de 100644
---- a/drivers/char/mxser.c
-+++ b/drivers/char/mxser.c
-@@ -2339,20 +2339,11 @@ struct tty_port_operations mxser_port_ops = {
-  * The MOXA Smartio/Industio serial driver boot-time initialization code!
-  */
- 
--static void mxser_release_res(struct mxser_board *brd, struct pci_dev *pdev,
--		unsigned int irq)
-+static void mxser_release_ISA_res(struct mxser_board *brd)
- {
--	if (irq)
--		free_irq(brd->irq, brd);
--	if (pdev != NULL) {	/* PCI */
--#ifdef CONFIG_PCI
--		pci_release_region(pdev, 2);
--		pci_release_region(pdev, 3);
--#endif
--	} else {
--		release_region(brd->ports[0].ioaddr, 8 * brd->info->nports);
--		release_region(brd->vector, 1);
--	}
-+	free_irq(brd->irq, brd);
-+	release_region(brd->ports[0].ioaddr, 8 * brd->info->nports);
-+	release_region(brd->vector, 1);
- }
- 
- static int __devinit mxser_initbrd(struct mxser_board *brd,
-@@ -2397,13 +2388,11 @@ static int __devinit mxser_initbrd(struct mxser_board *brd,
- 
- 	retval = request_irq(brd->irq, mxser_interrupt, IRQF_SHARED, "mxser",
- 			brd);
--	if (retval) {
-+	if (retval)
- 		printk(KERN_ERR "Board %s: Request irq failed, IRQ (%d) may "
- 			"conflict with another device.\n",
- 			brd->info->name, brd->irq);
--		/* We hold resources, we need to release them. */
--		mxser_release_res(brd, pdev, 0);
--	}
-+
- 	return retval;
- }
- 
-@@ -2555,7 +2544,7 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
- 	ioaddress = pci_resource_start(pdev, 2);
- 	retval = pci_request_region(pdev, 2, "mxser(IO)");
- 	if (retval)
--		goto err;
-+		goto err_dis;
- 
- 	brd->info = &mxser_cards[ent->driver_data];
- 	for (i = 0; i < brd->info->nports; i++)
-@@ -2565,7 +2554,7 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
- 	ioaddress = pci_resource_start(pdev, 3);
- 	retval = pci_request_region(pdev, 3, "mxser(vector)");
- 	if (retval)
--		goto err_relio;
-+		goto err_zero;
- 	brd->vector = ioaddress;
- 
- 	/* irq */
-@@ -2608,7 +2597,7 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
- 	/* mxser_initbrd will hook ISR. */
- 	retval = mxser_initbrd(brd, pdev);
- 	if (retval)
--		goto err_null;
-+		goto err_rel3;
- 
- 	for (i = 0; i < brd->info->nports; i++)
- 		tty_register_device(mxvar_sdriver, brd->idx + i, &pdev->dev);
-@@ -2616,10 +2605,13 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
- 	pci_set_drvdata(pdev, brd);
- 
- 	return 0;
--err_relio:
--	pci_release_region(pdev, 2);
--err_null:
-+err_rel3:
-+	pci_release_region(pdev, 3);
-+err_zero:
- 	brd->info = NULL;
-+	pci_release_region(pdev, 2);
-+err_dis:
-+	pci_disable_device(pdev);
- err:
- 	return retval;
- #else
-@@ -2629,14 +2621,19 @@ err:
- 
- static void __devexit mxser_remove(struct pci_dev *pdev)
- {
-+#ifdef CONFIG_PCI
- 	struct mxser_board *brd = pci_get_drvdata(pdev);
- 	unsigned int i;
- 
- 	for (i = 0; i < brd->info->nports; i++)
- 		tty_unregister_device(mxvar_sdriver, brd->idx + i);
- 
--	mxser_release_res(brd, pdev, 1);
-+	free_irq(pdev->irq, brd);
-+	pci_release_region(pdev, 2);
-+	pci_release_region(pdev, 3);
-+	pci_disable_device(pdev);
- 	brd->info = NULL;
-+#endif
- }
- 
- static struct pci_driver mxser_driver = {
-@@ -2741,7 +2738,7 @@ static void __exit mxser_module_exit(void)
- 
- 	for (i = 0; i < MXSER_BOARDS; i++)
- 		if (mxser_boards[i].info != NULL)
--			mxser_release_res(&mxser_boards[i], NULL, 1);
-+			mxser_release_ISA_res(&mxser_boards[i]);
- }
- 
- module_init(mxser_module_init);
--- 
-1.7.2.2
+One thing we still need to do is on init detect if the BIOS is using one
+of the PMCs and simply disable all of perf and print a nice big message
+to the user to request a new BIOS from their vendor.
 
 
