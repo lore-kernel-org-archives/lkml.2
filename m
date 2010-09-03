@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab0ICJWy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:22:54 -0400
-Received: from mx1.moondrake.net ([212.85.150.166]:59529 "EHLO
-	mx1.mandriva.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751966Ab0ICJWw (ORCPT
+	id S1756392Ab0ICJ1K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:27:10 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:42867 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755460Ab0ICJ1I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:22:52 -0400
-X-Greylist: delayed 1790 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Sep 2010 05:22:52 EDT
-X-Spam-Virus: No
-From: Arnaud Patard <apatard@mandriva.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Bernhard Walle <walle@corscience.de>, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, ddaney@caviumnetworks.com,
-        akpm@linux-foundation.org, ebiederm@xmission.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: N32: Fix getdents64 syscall for n32
-References: <1283501734-6532-1-git-send-email-walle@corscience.de>
-	<20100903084213.GA32339@lst.de>
-Organization: Mandriva
-Date: Fri, 03 Sep 2010 10:53:31 +0200
-In-Reply-To: <20100903084213.GA32339@lst.de> (Christoph Hellwig's message of "Fri, 3 Sep 2010 10:42:13 +0200")
-Message-ID: <m3pqwvb438.fsf@anduin.mandriva.com>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.1 (gnu/linux)
+	Fri, 3 Sep 2010 05:27:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=f5lhyTzJFgjJ8yCBjdzSjjAKWNU3DS8TYnMEqej01oTeAdIo7TS1GPjbjm9PpnLGm/
+         iDB4MM69byW3Qz/vzEknWUy9B8GohOQgB+vchAFAZCyeN/8u3hL/+XhYvKp5XOjez5I8
+         56C4l6GXtEyqZ5Rf/uSiPsK2Zbh3rZT2O1iHU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <4C80BC5C.2010804@kernel.org>
+References: <1283446829-24050-1-git-send-email-namhyung@gmail.com>
+ <4C7FDCE4.1080703@kernel.org> <AANLkTi=Ema3mTkU7J7XKqmntA+VDJizhBuDHHnZtV_9K@mail.gmail.com>
+ <87vd6o9fzf.fsf@gmail.com> <4C80BC5C.2010804@kernel.org>
+From: Namhyung Kim <namhyung@gmail.com>
+Date: Fri, 3 Sep 2010 18:26:47 +0900
+Message-ID: <AANLkTikbZUxrb-n3jxTuPJE4ZvTB4dJ0AsP8rzu4d-Ph@mail.gmail.com>
+Subject: Re: [PATCH] ida: fix up bitmap size calculation
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@lst.de> writes:
+On Fri, Sep 3, 2010 at 18:14, Tejun Heo <tj@kernel.org> wrote:
+> I'd prefer something with a bit more brevity.  If this looks good, can
+> you please send it to trivial@kernel.org?
+>
 
-Hi,
+OK. So can I add 'Acked-by' line for you?
 
-> I'm not sure why people suddenly started Ccing me on utterly random
-> patches, but could you guys please bloody stop it?  Thanks!
-
-I guess the explanation is the one below :
-
-$ ./scripts/get_maintainer.pl -f arch/mips/kernel/scall64-n32.S
-Ralf Baechle <ralf@linux-mips.org>
-David Daney <ddaney@caviumnetworks.com>
-Andrew Morton <akpm@linux-foundation.org>
-"Eric W. Biederman" <ebiederm@xmission.com>
-Christoph Hellwig <hch@lst.de>
-linux-mips@linux-mips.org
-linux-kernel@vger.kernel.org
-
-
-Arnaud
+-- 
+Regards,
+Namhyung Kim
