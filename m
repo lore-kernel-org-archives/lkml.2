@@ -1,125 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab0ICJGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:06:17 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52645 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754432Ab0ICJGP (ORCPT
+	id S1756278Ab0ICJG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:06:27 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:33302 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753496Ab0ICJGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:06:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=kQhfauwLhavhCqsSForRCQuXai4WP7GFbP4Nspaj0fbAp+k3vqi8GqXpNcRhhq2Nx8
-         dqXDh1MXk10C7m7D0HTVe9pHBS4W38Bn99F6i6yVSWO1kc1skr8Mez65aSApjURbQOf2
-         sMpxg5SokvAJp9m8NBoCCSkgLKYcQnL5Rfhbw=
-Subject: Re: Linux Kernel GDB tracepoint module 2010-8-30 release
-From: Steven <mqyoung@gmail.com>
-To: Hui Zhu <teawater@gmail.com>
-Cc: "gdb@sourceware.org" <gdb@sourceware.org>, linux-kernel@vger.kernel.org,
-        Michael Snyder <msnyder@vmware.com>,
-        Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>
-In-Reply-To: <AANLkTimjO7sBzR55XkPB7dmZvxXqc8PS4UDsgptXVt90@mail.gmail.com>
-References: <AANLkTimjO7sBzR55XkPB7dmZvxXqc8PS4UDsgptXVt90@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Sep 2010 17:06:08 +0800
-Message-ID: <1283504768.2100.43.camel@steven>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 3 Sep 2010 05:06:24 -0400
+Message-ID: <4C80BA81.20701@canonical.com>
+Date: Fri, 03 Sep 2010 17:06:09 +0800
+From: Ike Panhc <ike.pan@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 0/8] [Resend] ideapad: using EC command to control rf/camera
+ power
+References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com> <1282127719.2747.211.camel@localhost> <20100818155128.GA24363@darkside.kls.lan> <4C6CA31D.6030407@canonical.com> <20100819193146.GB32665@darkside.kls.lan> <4C6E2833.6080407@canonical.com> <20100820090824.GA23186@darkside.kls.lan> <4C7505A2.3000402@canonical.com> <20100830181954.GE31068@darkside.kls.lan> <4C7E3DE0.7030209@canonical.com> <20100901195617.GD32589@darkside.kls.lan>
+In-Reply-To: <20100901195617.GD32589@darkside.kls.lan>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Hui,
+Hi Mario,
 
-I encountered two issue when I use your GTP.
+I look at the DSDT again and again but unfortunately can not find anything
+may cause the bluetooth device initial failed. BTEN looks like the switch
+for EC to turn on/off bluetooth, BTST records the status of BTEN and BTPS
+means bluetooth present. But no idea why initial failed after BTEN=1
 
-1) Following your HOWTO, I collect the two variables jiffies_64(global),
-*file(argument), the result are as following, where you may see
-jiffies_64 = 4298520928, that's OK, but the members of *file are all 0.
-What's the problem? Thank you very much!
-        -------------------------------------------------------------------
-        (gdb) trace vfs_readdir 
-        Tracepoint 3 at 0xc1175690: file fs/readdir.c, line 23.
-        (gdb) actions
-        Enter actions for tracepoint 3, one per line.
-        End with a line saying just "end".
-        > collect jiffies_64
-        > collect *file
-        > end
-        (gdb) tstart
-        (gdb) tstop
-        (gdb) tfind
-        #0  0xc1175691 i (file=0x0, filler=0, buf=0x0) at
-        fs/readdir.c:23
-        23      {
-        (gdb) p jiffies_64
-        $7 = 4298520928
-        (gdb) p *file
-        $8 = {f_u = {fu_list = {next = 0x0, prev = 0x0}, fu_rcuhead =
-        {next = 0x0, func = 0}}, f_path = {mnt = 0x0, dentry = 0x0},
-        f_op = 0x0, f_lock = {{ rlock = {raw_lock = {slock = 0}}}},
-        f_count = {counter = 0}, f_flags = 0, f_mode = 0, f_pos = 0,
-        f_owner = {lock = {raw_lock = { lock = 0}}, pid = 0x0, pid_type
-        = PIDTYPE_PID, uid = 0, euid = 0, signum = 0}, f_cred = 0x0,
-        f_ra = {stra_pages = 00, f_security = 0x0, private_data = 0x0,
-        f_ep_links = {next = 0x0, prev = 0x0}, f_mapping = 0x0}
-        -------------------------------------------------------------------
+So I fall back to your suggestion. Have a module parameter to tell module
+not to register rfkill for bluetooth.
 
+I prepare the driver and please spend some time testing. Driver is at
 
-2) I can not collect local variable, despite I rebuild the kernel with
--O0 optimization option. what is the problem? Many thanks
-        -------------------------------------------------------------------
-        (gdb) trace fs/readdir.c:29
-        Tracepoint 2 at 0xc11756ca: file fs/readdir.c, line 29.
-        (gdb) actions 
-        Enter actions for tracepoint 2, one per line.
-        End with a line saying just "end".
-        > collect res
-        > end
-        (gdb) tstart
-        res: don't know symbol class 20
-        -------------------------------------------------------------------
-        
-        Code fragment of readdir.c
-        -------------------------------------------------------------------
-         22 int vfs_readdir(struct file *file, filldir_t filler, void
-        *buf)
-         23 {
-         24         struct inode *inode = file->f_path.dentry->d_inode;
-         25         int res = -ENOTDIR;
-         26         if (!file->f_op || !file->f_op->readdir)
-         27                 goto out;
-         28 
-         29         res = security_file_permission(file, MAY_READ);
-         30         if (res)
-         31                 goto out;
-        -------------------------------------------------------------------
+http://kernel.ubuntu.com/git?p=ikepanhc/ideapad-laptop.git;a=blob;f=drivers/platform/x86/ideapad-laptop.c;h=c4cf46a363f3f72d6db5339ec326d282d7e58183;hb=26a58948693b7d25960299a8025e569e68f28937
 
-Best Regards,
-Steven
+and you may use "insmod ideapad-laptop.ko no_bt_rfkill=1" for your S12.
 
+For more information, please see the following link:
 
-On Mon, 2010-08-30 at 15:00 +0800, Hui Zhu wrote:
-> http://kgtp.googlecode.com/files/kgtp_20100830.tar.bz2
-> or
-> svn co https://kgtp.googlecode.com/svn/tags/20100830
-> to get it.
+http://kernel.ubuntu.com/git?p=ikepanhc/ideapad-laptop.git;a=commit;h=26a58948693b7d25960299a8025e569e68f28937
+
+On 09/02/2010 03:56 AM, Mario 'BitKoenig' Holbe wrote:
+> On Wed, Sep 01, 2010 at 07:49:52PM +0800, Ike Panhc wrote:
+>> Your log tells a lot. It tells me if the bluetooth init failed. Then we
+>> have to turning off and power on again by hw switch to make it alive again.
+>>
+>> So, I believe we have two issue here.
+>> * when rfkill unblock, sometimes bluetooth init failed.
 > 
-> Fix bug in ref16, ref32, ref64 in issue
-> https://code.google.com/p/kgtp/issues/detail?id=2
-> Fix bug that disable some tracepoint will make "tstart" get error.
+> Yes.
 > 
-> Support qtstatus. Then KGTP support GDB command "tstatus".
-> Add support for "make install" and "make uninstall".
-> Add support for qtro. Fix a bug about GTP_GDBRSP_REG_SIZE.
+>> * power up system after rfkill block bluetooth, sometimes the cfgbit = 0xc0000
+>> Am I correct?
 > 
-> Change gtp_list make it more efficient.
+> Not completely.
 > 
-> Please goto http://code.google.com/p/kgtp/wiki/HOWTO to get more info
-> about how to use KGTP.
-
+> * reboot system after rfkill block bluetooth, sometimes the cfgbit = 0xc0000
+> 
+> I never had cfgbit = 0xc0000 when I power-cycled the system, only when I
+> rebooted it.
+> This is why I belive the second point has virtually the same reason as
+> the first point: bluetooth device initialization fails and thus its
+> detection by BIOS fails and thus ACPI returns 0xc0000 cfg.
+> Hence, I belive chances are high that solving the first point does also
+> solve the second.
+> 
+> While thinking about it... the init problems persisting a reboot could
+> also mean that not the unblock operation is the real issue but the block
+> operation - which probably leaves the bluetooth device in kind of a
+> semi-disabled state or something like that.
+> 
+> 
+> regards
+>    Mario
 
