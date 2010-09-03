@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab0ICQzi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 12:55:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48925 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756682Ab0ICQzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 12:55:37 -0400
-Date: Fri, 3 Sep 2010 09:55:22 -0700
-From: Greg KH <gregkh@suse.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, Rogier Wolff <R.E.Wolff@bitwizard.nl>,
-        "Michael H. Warfield" <mhw@wittsend.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [RFC 0/5] tty: move stuff around
-Message-ID: <20100903165522.GB26271@suse.de>
-References: <1283115995-4734-1-git-send-email-arnd@arndb.de>
- <20100830184737.GA21339@suse.de>
- <201008302333.22447.arnd@arndb.de>
- <201009031729.58102.arnd@arndb.de>
+	id S1756165Ab0ICRAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 13:00:35 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:63103 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925Ab0ICRAe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 13:00:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009031729.58102.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [81.245.120.218]
+In-Reply-To: <AANLkTinaBJqY0UaMnwJa0nfeNYDm2Dw2t_pBsoGsraHL@mail.gmail.com>
+References: <AANLkTikvbn3+JPc7pnGZk-H4B71MHTu+-vjuzfJw_7PC@mail.gmail.com>
+	<1281957336.1926.1230.camel@laptop>
+	<AANLkTimcXHBw+cbPWATXv=VGFwCHvf8Has4H6bLXPFd=@mail.gmail.com>
+	<AANLkTinaBJqY0UaMnwJa0nfeNYDm2Dw2t_pBsoGsraHL@mail.gmail.com>
+Date: Fri, 3 Sep 2010 19:00:32 +0200
+Message-ID: <AANLkTikg70zAHyA9pcWybz7SsQSPOuzUeuBdwX1cs+MP@mail.gmail.com>
+Subject: Re: [PATCH] tracing, perf: add more power related events
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Renninger <trenn@suse.de>, Len Brown <len.brown@intel.com>,
+        Arjan Van De Ven <arjan@linux.intel.com>, arjan@infradead.org,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 05:29:57PM +0200, Arnd Bergmann wrote:
-> This is the updated list, I hope I captured all the comments correctly:
->  
-> drivers/char/tty_*      -> tty/*
-> drivers/char/{vt stuff} -> tty/vt/
-> 
-> drivers/char/hvc_*      -> drivers/tty/hvc/hvc_*
-> drivers/serial/*        -> drivers/tty/serial/*
-> drivers/usb/serial      -> drivers/usb/serial
-> 
-> amiserial,nozomi,synclink,
-> rocket,ipwireless
-> cyclades,moxa,mxser,
-> isicom,bfin_jtag_comm   -> drivers/tty/
-> 
-> stallion,istallion,
-> epca,specialix,ip2,
-> riscom,serial167	-> drivers/staging/tty/*
->  
-> generic_serial,vme_scc,
-> ser_a2232,sx,rio        -> drivers/staging/generic_serial/*
+Hi,
 
-Looks correct to me.  The staging ones will be "depreciated" and will
-age out over 2 kernel releases unless someone objects.
+I would like to get some feedback on the code or on the new events
+definition, cf. proposed patch in this thread.
 
-As this is just a lot of code movement, it probably makes more sense for
-me to do this myself, right?
+The idea is to provide new events for power management, as indicated
+at http://www.omappedia.com/wiki/Power_Management_Debug_and_Profiling
 
-thanks for getting all of this together.
+As soon as the new events are defined -i.e. accepted in the mainline
+code- the tracepoints will be added for ARM/OMAP.
 
-greg k-h
+Any idea, remark or feedback welcome!
+
+Jean
+
+On Mon, Aug 23, 2010 at 12:25 PM, Jean Pihet <jean.pihet@newoldbits.com> wrote:
+> Hi,
+>
+> On Mon, Aug 16, 2010 at 1:25 PM, Jean Pihet <jean.pihet@newoldbits.com> wrote:
+>> On Mon, Aug 16, 2010 at 1:15 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> On Mon, 2010-08-16 at 13:09 +0200, Jean Pihet wrote:
+>>>> This patch adds new generic events for dynamic power management
+>>>> tracing:
+>>>> - clock events class: used for clock enable/disable and for
+>>>>    clock rate change,
+>>>> - power_domain events class: used for power domains transitions.
+>>>>
+>>>> The OMAP architecture is using the new events for PM debugging, however
+>>>> the new events are made generic enough to be used by all platforms.
+>>>
+>>> Even though I'm blissfully ignorant on power stuffs, the proposed set of
+>>> trace thingies doesn't appear to even start covering x86..
+>> Ok, let's discuss it! The intention is to provide new generic events.
+>>
+>>>
+>>> CC'ed people who know more on the subject.
+> Any news on the topic? Any feedback on the code or on the new events
+> definition is welcome.
+>
+>>>
+> Thanks!
+>
