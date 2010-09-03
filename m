@@ -1,159 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128Ab0ICSgR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 14:36:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13364 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753915Ab0ICSgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 14:36:16 -0400
-Date: Fri, 3 Sep 2010 14:35:59 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf, x86: Fix accidentally ack'ing a second
- event on intel perf counter
-Message-ID: <20100903183559.GB4879@redhat.com>
-References: <1283454469-1909-2-git-send-email-dzickus@redhat.com>
- <tip-2e556b5b320838fde98480a1f6cf220a5af200fc@git.kernel.org>
- <4C80A62D.6050901@kernel.org>
- <20100903150055.GY4879@redhat.com>
- <4C812D24.8000704@kernel.org>
+	id S1757076Ab0ICSnu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 14:43:50 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:32137 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753895Ab0ICSnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 14:43:46 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 0cc2maYVM1lGOwXWb1mY3zIy46QMKEUSmePu6dN9hjuHBAT
+ IaN_rHAB23OeVIoC3f1Xx.QYx1LZV18ybrMFtEUxR4EJb_EnBhEQPVg6cApK
+ UbQN9NmInjGPQZmcIh.R1sasg2CSVzc.U.JkW4MCh7SLFh2spSmRUHC3wzHk
+ EXppwtoDEq41QH230qF7bJeGDKcF1r49NhPk67geerBAAYZA7qAZQZeRZJqr
+ k.5PEXOv91N__thCC.eIf9fvarfg8BnWR_W3qrw--
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 3 Sep 2010 13:43:42 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] percpu: use percpu allocator on UP too
+In-Reply-To: <4C8121BC.7040609@kernel.org>
+Message-ID: <alpine.DEB.2.00.1009031343210.10602@router.home>
+References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <alpine.DEB.2.00.1008241256280.4763@router.home> <4C741029.7090300@cs.helsinki.fi> <alpine.DEB.2.00.1008241352240.5388@router.home> <4C74D1D7.4080608@kernel.org>
+ <4C74DB05.7000101@cs.helsinki.fi> <alpine.DEB.2.00.1008250846590.13026@router.home> <4C762734.1030402@kernel.org> <4C8121BC.7040609@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C812D24.8000704@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 10:15:16AM -0700, Yinghai Lu wrote:
-> On 09/03/2010 08:00 AM, Don Zickus wrote:
-> > On Fri, Sep 03, 2010 at 12:39:25AM -0700, Yinghai Lu wrote:
-> >> Can you put this into perf branch ?
-> >>
-> >> Thanks
-> >>
-> >> Yinghai
-> >>
-> >> [PATCH] x86,nmi: move unknown_nmi_panic to traps.c
-> > 
-> > This patch duplicates a bunch of stuff we already have in
-> > unknown_nmi_error.  The only thing I think you are interested in is using
-> > the 'unknown_nmi_panic' flag.  I am putting together a smaller patch that
-> > uses that flag in traps.c (though it would be nice to combine that flag
-> > with panic_on_unrecovered_nmi).
-> 
-> please make sure
-> keep using unknown_nmi_panic in boot command line and  sysctl
-> when LOCKUP_DETECTOR is defined.
-> 
-> that does work until hw nmi watchdog is merged with software lock detector.
-> assume that time hw nmi watchdog is relying on perf nmi and perf nmi would eat all unknown nmi.
-> good to have Robert/Peter/Don's patches to make per nmi not to eat all unknown nmi.
 
-Hi Yinghai,
+As much as I can review looks okay.
 
-Here is the simpler patch I came up with.  It piggy backs off the
-unknown_nmi_error code already available.  I compile it with the old and
-new nmi watchdog and tested it with sysctl and the kernel parameter.
-Everything seems to panic properly.
+Reviewed-by: Christoph Lameter <cl@linux.com>
 
-Let me know if this meets your needs.
 
-Cheers,
-Don
-
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index cefd694..e66b16d 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -100,7 +100,6 @@ void acpi_nmi_disable(void) { return; }
- #endif
- atomic_t nmi_active = ATOMIC_INIT(0);           /* oprofile uses this */
- EXPORT_SYMBOL(nmi_active);
--int unknown_nmi_panic;
- void cpu_nmi_set_wd_enabled(void) { return; }
- void stop_apic_nmi_watchdog(void *unused) { return; }
- void setup_apic_nmi_watchdog(void *unused) { return; }
-diff --git a/arch/x86/kernel/apic/nmi.c b/arch/x86/kernel/apic/nmi.c
-index a43f71c..dc35af4 100644
---- a/arch/x86/kernel/apic/nmi.c
-+++ b/arch/x86/kernel/apic/nmi.c
-@@ -37,7 +37,6 @@
- 
- #include <asm/mach_traps.h>
- 
--int unknown_nmi_panic;
- int nmi_watchdog_enabled;
- 
- /* For reliability, we're prepared to waste bits here. */
-@@ -483,13 +482,6 @@ static void disable_ioapic_nmi_watchdog(void)
- 	on_each_cpu(stop_apic_nmi_watchdog, NULL, 1);
- }
- 
--static int __init setup_unknown_nmi_panic(char *str)
--{
--	unknown_nmi_panic = 1;
--	return 1;
--}
--__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
--
- static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
- {
- 	unsigned char reason = get_nmi_reason();
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 60788de..095eea8 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -300,6 +300,16 @@ gp_in_kernel:
- 	die("general protection fault", regs, error_code);
- }
- 
-+#if defined(CONFIG_SYSCTL) && defined(CONFIG_X86_LOCAL_APIC)
-+int unknown_nmi_panic;
-+static int __init setup_unknown_nmi_panic(char *str)
-+{
-+	unknown_nmi_panic = 1;
-+	return 1;
-+}
-+__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
-+#endif
-+
- static notrace __kprobes void
- mem_parity_error(unsigned char reason, struct pt_regs *regs)
- {
-@@ -371,6 +381,10 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- 			reason, smp_processor_id());
- 
- 	printk(KERN_EMERG "Do you have a strange power saving mode enabled?\n");
-+#if defined(CONFIG_SYSCTL) && defined(CONFIG_X86_LOCAL_APIC)
-+	if (unknown_nmi_panic)
-+		die_nmi("", regs, 1);
-+#endif
- 	if (panic_on_unrecovered_nmi)
- 		panic("NMI: Not continuing");
- 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index ca38e8e..71516a4 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -739,7 +739,7 @@ static struct ctl_table kern_table[] = {
- 		.extra2		= &one,
- 	},
- #endif
--#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86) && !defined(CONFIG_LOCKUP_DETECTOR)
-+#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86)
- 	{
- 		.procname       = "unknown_nmi_panic",
- 		.data           = &unknown_nmi_panic,
-@@ -747,6 +747,8 @@ static struct ctl_table kern_table[] = {
- 		.mode           = 0644,
- 		.proc_handler   = proc_dointvec,
- 	},
-+#endif
-+#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86) && !defined(CONFIG_LOCKUP_DETECTOR)
- 	{
- 		.procname       = "nmi_watchdog",
- 		.data           = &nmi_watchdog_enabled,
