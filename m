@@ -1,56 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756969Ab0ICRug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 13:50:36 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:64070 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab0ICRuf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 13:50:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xQ35QxXv/IAyUs+baQyuFZdhwDP9Tf93AV1Xmbi3AizHWeINNoMZUQtygQurudSZ/3
-         rNWrY0PwPYgN2bMHBLEmmsl9vcIRGJ8UuaqfgcSZwqOx1yi/uV4fHgkEQR7MBfx8Uhcz
-         +1wR01dHHBL5e1kNrrk6dGd/SrAAJ00GRxHHQ=
+	id S1757031Ab0ICRvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 13:51:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51044 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753900Ab0ICRvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 13:51:09 -0400
+Date: Fri, 3 Sep 2010 10:51:02 -0700
+From: Tony Jones <tonyj@suse.de>
+To: "Allan, Bruce W" <bruce.w.allan@intel.com>
+Cc: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bphilips@suse.de" <bphilips@suse.de>
+Subject: Re: high latency on 82573L
+Message-ID: <20100903175102.GA7767@suse.de>
+References: <20100902033900.GA5283@suse.de>
+ <8DD2590731AB5D4C9DBF71A877482A900168E59EFA@orsmsx509.amr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinYypWdty1eLH1LTyOEZPt-k=cEDGu_coyWVa2t@mail.gmail.com>
-References: <4C80E2D5.1020104@dsn.okisemi.com>
-	<AANLkTinYypWdty1eLH1LTyOEZPt-k=cEDGu_coyWVa2t@mail.gmail.com>
-Date: Fri, 3 Sep 2010 19:50:33 +0200
-Message-ID: <AANLkTinpLeJzYjAh2bUngWD4ZvOyy44t9+4Zs9rm2=xQ@mail.gmail.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Cc: meego-dev@meego.com, LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
-        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        arjan@linux.intel.com, gregkh@suse.de,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8DD2590731AB5D4C9DBF71A877482A900168E59EFA@orsmsx509.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/3 Grant Likely <grant.likely@secretlab.ca>:
-> 2010/9/3 Masayuki Ohtak <masa-korg@dsn.okisemi.com>:
->> SPI driver of Topcliff PCH
+On Thu, Sep 02, 2010 at 11:49:12AM -0700, Allan, Bruce W wrote:
+> Please provide more verbose lspci output and include the PCI config
+> space, i.e. 'lspci -s 2:0.0 -vvv -xxx' after the driver is loaded,
 
-> Instead, the majority of the code should be structured to handle one
-> and only one spi bus instance.  Only at the top level pci probe,
-> remove and PM code should there be for() loops for setting up or
-> tearing down each spi bus instance one at a time.
+# lspci -s 2:0.0 -vvv -xxx
+02:00.0 Ethernet controller: Intel Corporation 82573L Gigabit Ethernet Controller
+	Subsystem: Lenovo ThinkPad T60
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx+
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 64 bytes
+	Interrupt: pin A routed to IRQ 46
+	Region 0: Memory at ee000000 (32-bit, non-prefetchable) [size=128K]
+	Region 2: I/O ports at 3000 [size=32]
+	Capabilities: [c8] Power Management version 2
+		Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
+	Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
+		Address: 00000000fee0100c  Data: 41c9
+	Capabilities: [e0] Express (v1) Endpoint, MSI 00
+		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
+			ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
+		DevCtl:	Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
+			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+			MaxPayload 128 bytes, MaxReadReq 512 bytes
+		DevSta:	CorrErr- UncorrErr+ FatalErr- UnsuppReq+ AuxPwr+ TransPend-
+		LnkCap:	Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <128ns, L1 <64us
+			ClockPM+ Surprise- LLActRep- BwNot-
+		LnkCtl:	ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
+			ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
+		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+	Capabilities: [100 v1] Advanced Error Reporting
+		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
+		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+		UESvrt:	DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+		CESta:	RxErr+ BadTLP+ BadDLLP- Rollover- Timeout- NonFatalErr-
+		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+		AERCap:	First Error Pointer: 14, GenCap- CGenEn- ChkCap- ChkEn-
+	Capabilities: [140 v1] Device Serial Number 00-1a-6b-ff-ff-6c-7e-a4
+	Kernel driver in use: e1000e
+00: 86 80 9a 10 07 05 10 00 00 00 00 02 10 00 00 00
+10: 00 00 00 ee 00 00 00 00 01 30 00 00 00 00 00 00
+20: 00 00 00 00 00 00 00 00 00 00 00 00 aa 17 01 20
+30: 00 00 00 00 c8 00 00 00 00 00 00 00 0b 01 00 00
+40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+c0: 00 00 00 00 00 00 00 00 01 d0 22 c8 00 20 00 0f
+d0: 05 e0 81 00 0c 10 e0 fe 00 00 00 00 c9 41 00 00
+e0: 10 00 01 00 c1 0c 00 00 1f 28 1a 00 11 1c 07 00
+f0: 42 01 11 10 00 00 00 00 00 00 00 00 00 00 00 00
 
-I guess an elegant way to achieve this is to have the
-PCI driver spawn a simple platform device for each bus.
-Then you can even break the driver for that platform device
-into its own file and all.
+> kernel.  Are there any messages in the system log regarding disabling
+> ASPM L0s and/or L1 on that device?
 
-In the MFDs we spawn child platform devices all the time,
-it's great fun!
+It would appear it is being disabled:
 
-Yours,
-Linus Walleij
+[    0.194271] ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
+[    0.297112] pci 0000:01:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
+[    0.298003] pci 0000:02:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
+[    0.299123] pci 0000:03:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
+[   18.135907] e1000e 0000:02:00.0: Disabling ASPM  L1
+[   18.137262] e1000e 0000:02:00.0: Disabling ASPM L0s 
+
+but I see the same high ping latencies.
+
+> I can understand the latency with the OpenSUSE 2.6.34-based kernels
+> assuming commit 19833b5dff is not present, but I do not understand
+> the latency with 2.6.36-rc3.
+
+The first thing I tried was OpenSUSE 2.6.34 plus 19833b5dff.   This led me to
+think it wasn't related to ASPM so I resorted to a bisect which ended up showing
+it was 6f461f6c7c.
+
+Anyways, all of the above is from vanilla 2.6.36-rc3 so lets ignore OpenSUSE
+kernels.
+
+http://ftp.suse.com/pub/people/tonyj/82573L/config  is the config for .36-rc3
+generated using localmodconfig, defaults chosen for all prompts.
+
+http://ftp.suse.com/pub/people/tonyj/82573L/dmesg  is the full dmesg
+
+Tony
