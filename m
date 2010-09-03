@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab0ICKmo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 06:42:44 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:48684 "HELO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756809Ab0ICKml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 06:42:41 -0400
-Message-ID: <4C80D0E0.9010702@snapgear.com>
-Date: Fri, 3 Sep 2010 20:41:36 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andreas Schwab <schwab@redhat.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] M68K: Use CONFIG_MMU not __uClinux__ to select m68knommu
- contributions
-References: <AANLkTikBLCg_FUwGGiajw3+dgCe6y0s0a1yMs8=A2oCR@mail.gmail.com> <m3vd6nmd68.fsf@hase.home> <19747.1283422807@redhat.com> <20100902102158.19806.14133.stgit@warthog.procyon.org.uk> <m38w3kns4r.fsf@hase.home> <AANLkTikwax-Jb60jT5_TOL=Zkwbgh8FwMk78ncm1dN-P@mail.gmail.com> <3048.1283505520@redhat.com> <4C80C068.1010302@snapgear.com> <7877.1283507577@redhat.com>
-In-Reply-To: <7877.1283507577@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Sep 2010 10:41:48.0279 (UTC) FILETIME=[9C5BD070:01CB4B54]
+	id S1757161Ab0ICKpC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 06:45:02 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35574 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756718Ab0ICKbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 06:31:01 -0400
+From: Tejun Heo <tj@kernel.org>
+To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org,
+        dm-devel@redhat.com, hch@lst.de, konishi.ryusuke@lab.ntt.co.jp,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
+        snitzer@redhat.com, k-ueda@ct.jp.nec.com, mpatocka@redhat.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 12/41] block: simplify queue_next_fseq
+Date: Fri,  3 Sep 2010 12:29:27 +0200
+Message-Id: <1283509796-1510-13-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283509796-1510-1-git-send-email-tj@kernel.org>
+References: <1283509796-1510-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 10:30:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/10 19:52, David Howells wrote:
-> Geert Uytterhoeven<geert@linux-m68k.org>  wrote:
->
->>> Not sure about m68k but m68knommu targets already setup
->>> appropriate -mcpu flags for its various supported CPU types.
->>
->> Same for m68k.
->
-> It doesn't seem to:
->
-> 	warthog>grep -r mcpu arch/m68k
-> 	warthog1>grep -r mtune arch/m68k
-> 	warthog1>
->
-> I see that m68knommu does:
->
-> 	warthog1>grep -r mcpu arch/m68knommu/
-> 	arch/m68knommu/Makefile:cflags-$(CONFIG_M5206)          := $(call cc-option,-mcpu=5206,-m5200)
-> 	arch/m68knommu/Makefile:cflags-$(CONFIG_M520x)          := $(call cc-option,-mcpu=5208,-m5200)
-> 	arch/m68knommu/Makefile:cflags-$(CONFIG_M523x)          := $(call cc-option,-mcpu=523x,-m5307)
-> 	...
->
-> I guess the m68k compiler I already had doesn't fully support -m5200, since I
-> see that, but it doesn't compile some of the instructions when compiling the
-> m68knommu defconfig (CONFIG_M520x=y).
+From: Christoph Hellwig <hch@lst.de>
 
-Ah, ok, that would explain it. The m520x is one of the newer ColdFire
-variants (thus proper cpu=5208 support is only in more recent binutils.
-A fallback to -m5200 (which is the absolute minimum ColdFire support)
-looks like it is not quite enough here.
+We need to call blk_rq_init and elv_insert for all cases in queue_next_fseq,
+so take these calls into common code.  Also move the end_io initialization
+from queue_flush into queue_next_fseq and rename queue_flush to
+init_flush_request now that it's old name doesn't apply anymore.
 
-Regards
-Greg
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ block/blk-flush.c |   26 ++++++++++----------------
+ 1 files changed, 10 insertions(+), 16 deletions(-)
+
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 452c552..72905f8 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -74,16 +74,11 @@ static void post_flush_end_io(struct request *rq, int error)
+ 	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_POSTFLUSH, error);
+ }
+ 
+-static void queue_flush(struct request_queue *q, struct request *rq,
+-			rq_end_io_fn *end_io)
++static void init_flush_request(struct request *rq, struct gendisk *disk)
+ {
+-	blk_rq_init(q, rq);
+ 	rq->cmd_type = REQ_TYPE_FS;
+ 	rq->cmd_flags = REQ_FLUSH;
+-	rq->rq_disk = q->orig_flush_rq->rq_disk;
+-	rq->end_io = end_io;
+-
+-	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
++	rq->rq_disk = disk;
+ }
+ 
+ static struct request *queue_next_fseq(struct request_queue *q)
+@@ -91,29 +86,28 @@ static struct request *queue_next_fseq(struct request_queue *q)
+ 	struct request *orig_rq = q->orig_flush_rq;
+ 	struct request *rq = &q->flush_rq;
+ 
++	blk_rq_init(q, rq);
++
+ 	switch (blk_flush_cur_seq(q)) {
+ 	case QUEUE_FSEQ_PREFLUSH:
+-		queue_flush(q, rq, pre_flush_end_io);
++		init_flush_request(rq, orig_rq->rq_disk);
++		rq->end_io = pre_flush_end_io;
+ 		break;
+-
+ 	case QUEUE_FSEQ_DATA:
+-		/* initialize proxy request, inherit FLUSH/FUA and queue it */
+-		blk_rq_init(q, rq);
+ 		init_request_from_bio(rq, orig_rq->bio);
+ 		rq->cmd_flags &= ~(REQ_FLUSH | REQ_FUA);
+ 		rq->cmd_flags |= orig_rq->cmd_flags & (REQ_FLUSH | REQ_FUA);
+ 		rq->end_io = flush_data_end_io;
+-
+-		elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
+ 		break;
+-
+ 	case QUEUE_FSEQ_POSTFLUSH:
+-		queue_flush(q, rq, post_flush_end_io);
++		init_flush_request(rq, orig_rq->rq_disk);
++		rq->end_io = post_flush_end_io;
+ 		break;
+-
+ 	default:
+ 		BUG();
+ 	}
++
++	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
+ 	return rq;
+ }
+ 
+-- 
+1.7.1
+
