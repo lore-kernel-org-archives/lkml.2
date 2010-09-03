@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab0ICPmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 11:42:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47504 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab0ICPmF (ORCPT
+	id S1752990Ab0ICPnT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 11:43:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37436 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593Ab0ICPnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 11:42:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=iGsXs1HH2EWyuQWeBMALoknuNqPbFmOd8w2hDPlqLanYbzXBNjB1NVKfoUIcL5TQfh
-         0E6qqTQyIVqFk5m3aw1akoUCcxEp7d3Tb3PIBC65LgmJJsr/6G0ka/U5aEetGLgBmGef
-         lonjY9R+zPHMC+zhEc1cXPfKhmJs/g2ftRW8E=
-Date: Fri, 3 Sep 2010 17:42:08 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
+	Fri, 3 Sep 2010 11:43:18 -0400
+X-Authority-Analysis: v=1.1 cv=8rLOhk8wZGSvnaCM3aW+9DxbPzg0bBAKX0Qt8NUyFX0= c=1 sm=0 a=ePs-FBDEYOsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=FwUUIVW2wcxW6uF8jvEA:9 a=BQgoSp3Xa3Dhr81Brj8A:7 a=Cjlh5Uwe2F5IKHNwizAoB-s7deMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v4 1/5] irq: add tracepoint to softirq_raise
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Koki Sanagi <sanagi.koki@jp.fujitsu.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, davem@davemloft.net,
         kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
         kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
         laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com,
         eric.dumazet@gmail.com, mathieu.desnoyers@polymtl.ca
-Subject: Re: [PATCH v4 1/5] irq: add tracepoint to softirq_raise
-Message-ID: <20100903154206.GB5352@nowhere>
-References: <4C72422C.5070102@jp.fujitsu.com> <4C724298.4050509@jp.fujitsu.com> <20100903152909.GA5352@nowhere> <1283528376.2356.436.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283528376.2356.436.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100903152909.GA5352@nowhere>
+References: <4C72422C.5070102@jp.fujitsu.com>
+	 <4C724298.4050509@jp.fujitsu.com>  <20100903152909.GA5352@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 03 Sep 2010 11:43:12 -0400
+Message-ID: <1283528592.2356.439.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 11:39:36AM -0400, Steven Rostedt wrote:
-> On Fri, 2010-09-03 at 17:29 +0200, Frederic Weisbecker wrote:
+On Fri, 2010-09-03 at 17:29 +0200, Frederic Weisbecker wrote:
+
+> >  /*
+> >   * These correspond to the IORESOURCE_IRQ_* defines in
+> > @@ -407,7 +408,12 @@ asmlinkage void do_softirq(void);
+> >  asmlinkage void __do_softirq(void);
+> >  extern void open_softirq(int nr, void (*action)(struct softirq_action *));
+> >  extern void softirq_init(void);
+> > -#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
+> > +static inline void __raise_softirq_irqoff(unsigned int nr)
+> > +{
+> > +	trace_softirq_raise((struct softirq_action *)&nr, NULL);
+
+Perhaps doing:
+
+	trace_softirq_raise((struct softirq_action *)((unsigend long)nr),
+				NULL);
+
+and ...
+
+> > +	or_softirq_pending(1UL << nr);
+> > +}
+> > +
+> >  extern void raise_softirq_irqoff(unsigned int nr);
+> >  extern void raise_softirq(unsigned int nr);
+> >  extern void wakeup_softirqd(void);
+> > diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+> > index 0e4cfb6..3ddda02 100644
+> > --- a/include/trace/events/irq.h
+> > +++ b/include/trace/events/irq.h
+> > @@ -5,7 +5,9 @@
+> >  #define _TRACE_IRQ_H
+> >  
+> >  #include <linux/tracepoint.h>
+> > -#include <linux/interrupt.h>
+> > +
+> > +struct irqaction;
+> > +struct softirq_action;
+> >  
+> >  #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
+> >  #define show_softirq_name(val)				\
+> > @@ -93,7 +95,10 @@ DECLARE_EVENT_CLASS(softirq,
+> >  	),
+> >  
+> >  	TP_fast_assign(
+> > -		__entry->vec = (int)(h - vec);
+> > +		if (vec)
+> > +			__entry->vec = (int)(h - vec);
+> > +		else
+> > +			__entry->vec = *((int *)h);
+
+			__entry->vec = (int)h;
+
+would be better.
+
+
+> >  	),
 > 
-> > >  #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
-> > >  #define show_softirq_name(val)				\
-> > > @@ -93,7 +95,10 @@ DECLARE_EVENT_CLASS(softirq,
-> > >  	),
-> > >  
-> > >  	TP_fast_assign(
-> > > -		__entry->vec = (int)(h - vec);
-> > > +		if (vec)
-> > > +			__entry->vec = (int)(h - vec);
-> > > +		else
-> > > +			__entry->vec = *((int *)h);
-> > >  	),
-> > 
-> > 
-> > 
-> > It seems that this will break softirq_entry/exit tracepoints.
-> > __entry->vec will deref vec->action() for these two, which is not
-> > what we want.
 > 
-> But for trace_softirq_entry and trace_softirq_exit, vec will not be
-> NULL.
-
-
-Oh right...
-
-/me slaps his forehead
-
-
- 
 > 
-> > 
-> > If you can't have the same tracepoint signature for the three, just
-> > split the new one in a seperate TRACE_EVENT().
+> It seems that this will break softirq_entry/exit tracepoints.
+> __entry->vec will deref vec->action() for these two, which is not
+> what we want.
 > 
-> It may be a bit of a hack, and questionable about adding another
-> TRACE_EVENT(). There still is a pretty good space savings in using
-> DEFINE_EVENT() over TRACE_EVENT() though.
+> If you can't have the same tracepoint signature for the three, just
+> split the new one in a seperate TRACE_EVENT().
 
+Doing the above will at least be a bit safer.
 
-Yeah, let's keep it as is.
+-- Steve
+
 
