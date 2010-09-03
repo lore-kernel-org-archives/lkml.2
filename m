@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab0ICUHd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 16:07:33 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55172 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757460Ab0ICUHa (ORCPT
+	id S1757484Ab0ICUIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 16:08:42 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35096 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757296Ab0ICUIk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 16:07:30 -0400
-Date: Fri, 3 Sep 2010 13:05:14 -0700
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-        joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-        linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
-        JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@kernel.dk,
-        dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com, mel@csn.ul.ie,
-        yinghan@google.com, gthelen@google.com
-Subject: [PATCH V5 8/8] Cleancache: ocfs2 hook for cleancache
-Message-ID: <20100903200514.GA4750@ca-server1.us.oracle.com>
+	Fri, 3 Sep 2010 16:08:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NO7Jvc+ERiXpoIBwowNBRrNfiC0sLW73rRfK2EVfcfwOB9cQJFuxYcdTd6YeVpWWnf
+         T3gSqNDCHRF22UffVDkZM86Gwmlch1PbNr9ImLbIybBqyyAULFeMo5CPD+y8wNfnpgRq
+         UOe2xU3Cw2caiQhB3+YLZePDVUcPMBg2Ub+bI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
+In-Reply-To: <201009031729.58102.arnd@arndb.de>
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de>
+	<20100830184737.GA21339@suse.de>
+	<201008302333.22447.arnd@arndb.de>
+	<201009031729.58102.arnd@arndb.de>
+Date: Fri, 3 Sep 2010 22:08:38 +0200
+X-Google-Sender-Auth: FK3g-IxqL0UzHzsLw3tsNJevtu8
+Message-ID: <AANLkTimjaqakjEhNc0nVSzfNPSwYtjYXmmOsxuh+iMjC@mail.gmail.com>
+Subject: Re: [RFC 0/5] tty: move stuff around
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Rogier Wolff <R.E.Wolff@bitwizard.nl>,
+        "Michael H. Warfield" <mhw@wittsend.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V5 8/8] Cleancache: ocfs2 hook for cleancache
+On Fri, Sep 3, 2010 at 17:29, Arnd Bergmann <arnd@arndb.de> wrote:
+> amiserial,nozomi,synclink,
+> rocket,ipwireless
+> cyclades,moxa,mxser,
+> isicom,bfin_jtag_comm   -> drivers/tty/
+>
+> stallion,istallion,
+> epca,specialix,ip2,
+> riscom,serial167        -> drivers/staging/tty/*
 
-Filesystems must explicitly enable cleancache by calling
-cleancache_init_fs anytime a instance of the filesystem
-is mounted and must save the returned poolid.  Ocfs2 is
-currently the only user of the clustered filesystem
-interface but nevertheless, the cleancache hooks in the
-VFS layer are sufficient for ocfs2 including
-the matching cleancache_flush_fs hook which must be
-called on unmount.
+I thought we wanted to keep serial167 alive as long as it builds?
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Acked-by: Joel Becker <joel.becker@oracle.com>
+Gr{oetje,eeting}s,
 
-Diffstat:
- super.c                                  |    2 ++
- 1 file changed, 2 insertions(+)
+                        Geert
 
---- linux-2.6.36-rc3/fs/ocfs2/super.c	2010-08-29 09:36:04.000000000 -0600
-+++ linux-2.6.36-rc3-cleancache/fs/ocfs2/super.c	2010-08-31 10:29:14.000000000 -0600
-@@ -42,6 +42,7 @@
- #include <linux/seq_file.h>
- #include <linux/quotaops.h>
- #include <linux/smp_lock.h>
-+#include <linux/cleancache.h>
- 
- #define MLOG_MASK_PREFIX ML_SUPER
- #include <cluster/masklog.h>
-@@ -2284,6 +2285,7 @@ static int ocfs2_initialize_super(struct
- 		mlog_errno(status);
- 		goto bail;
- 	}
-+	cleancache_init_shared_fs((char *)&uuid_net_key, sb);
- 
- bail:
- 	mlog_exit(status);
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
