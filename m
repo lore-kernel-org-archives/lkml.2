@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab0ICKbX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 06:31:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35722 "EHLO hera.kernel.org"
+	id S932351Ab0ICKhv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 06:37:51 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35759 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756986Ab0ICKbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 06:31:19 -0400
+	id S1757030Ab0ICKbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 06:31:23 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
@@ -15,89 +15,41 @@ To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         swhiteho@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
         hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
         snitzer@redhat.com, k-ueda@ct.jp.nec.com, mpatocka@redhat.com
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 20/41] lguest: replace VIRTIO_F_BARRIER support with VIRTIO_F_FLUSH support
-Date: Fri,  3 Sep 2010 12:29:35 +0200
-Message-Id: <1283509796-1510-21-git-send-email-tj@kernel.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 36/41] ext4: do not send discards as barriers
+Date: Fri,  3 Sep 2010 12:29:51 +0200
+Message-Id: <1283509796-1510-37-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283509796-1510-1-git-send-email-tj@kernel.org>
 References: <1283509796-1510-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 10:30:42 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 10:30:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VIRTIO_F_BARRIER is deprecated.  Replace it with VIRTIO_F_FLUSH
-support.
+From: Christoph Hellwig <hch@infradead.org>
 
+ext4 already uses synchronous discards, no need to add I/O barriers.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Christoph Hellwig <hch@lst.de>
 ---
- Documentation/lguest/lguest.c |   29 +++++++++--------------------
- 1 files changed, 9 insertions(+), 20 deletions(-)
+ fs/ext4/mballoc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/lguest/lguest.c b/Documentation/lguest/lguest.c
-index 8a6a8c6..dc73bc5 100644
---- a/Documentation/lguest/lguest.c
-+++ b/Documentation/lguest/lguest.c
-@@ -1640,15 +1640,6 @@ static void blk_request(struct virtqueue *vq)
- 	off = out->sector * 512;
- 
- 	/*
--	 * The block device implements "barriers", where the Guest indicates
--	 * that it wants all previous writes to occur before this write.  We
--	 * don't have a way of asking our kernel to do a barrier, so we just
--	 * synchronize all the data in the file.  Pretty poor, no?
--	 */
--	if (out->type & VIRTIO_BLK_T_BARRIER)
--		fdatasync(vblk->fd);
--
--	/*
- 	 * In general the virtio block driver is allowed to try SCSI commands.
- 	 * It'd be nice if we supported eject, for example, but we don't.
- 	 */
-@@ -1680,6 +1671,13 @@ static void blk_request(struct virtqueue *vq)
- 			/* Die, bad Guest, die. */
- 			errx(1, "Write past end %llu+%u", off, ret);
- 		}
-+
-+		wlen = sizeof(*in);
-+		*in = (ret >= 0 ? VIRTIO_BLK_S_OK : VIRTIO_BLK_S_IOERR);
-+	} else if (out->type & VIRTIO_BLK_T_FLUSH) {
-+		/* Flush */
-+		ret = fdatasync(vblk->fd);
-+		verbose("FLUSH fdatasync: %i\n", ret);
- 		wlen = sizeof(*in);
- 		*in = (ret >= 0 ? VIRTIO_BLK_S_OK : VIRTIO_BLK_S_IOERR);
- 	} else {
-@@ -1703,15 +1701,6 @@ static void blk_request(struct virtqueue *vq)
- 		}
- 	}
- 
--	/*
--	 * OK, so we noted that it was pretty poor to use an fdatasync as a
--	 * barrier.  But Christoph Hellwig points out that we need a sync
--	 * *afterwards* as well: "Barriers specify no reordering to the front
--	 * or the back."  And Jens Axboe confirmed it, so here we are:
--	 */
--	if (out->type & VIRTIO_BLK_T_BARRIER)
--		fdatasync(vblk->fd);
--
- 	/* Finished that request. */
- 	add_used(vq, head, wlen);
- }
-@@ -1736,8 +1725,8 @@ static void setup_block_file(const char *filename)
- 	vblk->fd = open_or_die(filename, O_RDWR|O_LARGEFILE);
- 	vblk->len = lseek64(vblk->fd, 0, SEEK_END);
- 
--	/* We support barriers. */
--	add_feature(dev, VIRTIO_BLK_F_BARRIER);
-+	/* We support FLUSH. */
-+	add_feature(dev, VIRTIO_BLK_F_FLUSH);
- 
- 	/* Tell Guest how many sectors this device has. */
- 	conf.capacity = cpu_to_le64(vblk->len / 512);
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index df44b34..a22bfef 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2567,7 +2567,7 @@ static inline void ext4_issue_discard(struct super_block *sb,
+ 	trace_ext4_discard_blocks(sb,
+ 			(unsigned long long) discard_block, count);
+ 	ret = sb_issue_discard(sb, discard_block, count, GFP_NOFS,
+-			       BLKDEV_IFL_WAIT | BLKDEV_IFL_BARRIER);
++			       BLKDEV_IFL_WAIT);
+ 	if (ret == EOPNOTSUPP) {
+ 		ext4_warning(sb, "discard not supported, disabling");
+ 		clear_opt(EXT4_SB(sb)->s_mount_opt, DISCARD);
 -- 
 1.7.1
 
