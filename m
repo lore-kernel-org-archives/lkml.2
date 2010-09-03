@@ -1,234 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab0ICRQo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 13:16:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:35519 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab0ICRQm (ORCPT
+	id S1756739Ab0ICRSM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 13:18:12 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:48989 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756224Ab0ICRSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 13:16:42 -0400
-Message-ID: <4C812D24.8000704@kernel.org>
-Date: Fri, 03 Sep 2010 10:15:16 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Fri, 3 Sep 2010 13:18:10 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: PYH3wjAVM1nCo8hXgQdIpfGo_Xp0.aP_zSuWTOUftjzUBCz
+ hiqBEggHtlfibqy3mGRT5T4xwu7rvSweKKjva2IlICu8FKgDZKqX_.pNdN.T
+ aA5HhxwDlbv1HtUWpYjhADaICQgaYDiXUtwKLGT8bgb1L6ZbvkOWMSMqUkn0
+ AjAGIscQrHFNENyqUNvzyE3DMVUUPQxbvVC7rVBUJdqIWllAGssMKz4ZoS.3
+ ngkOM0xua5pu9q8tSJvT465ZyptuqzR1iqYN59gsVB.VNXOPx82nQIJYcc0I
+ e.6aohg--
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 3 Sep 2010 12:18:07 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] percpu: reduce PCPU_MIN_UNIT_SIZE to 32k
+In-Reply-To: <4C8121A1.8060809@kernel.org>
+Message-ID: <alpine.DEB.2.00.1009031217510.8658@router.home>
+References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <alpine.DEB.2.00.1008241256280.4763@router.home> <4C741029.7090300@cs.helsinki.fi> <alpine.DEB.2.00.1008241352240.5388@router.home> <4C74D1D7.4080608@kernel.org>
+ <4C74DB05.7000101@cs.helsinki.fi> <alpine.DEB.2.00.1008250846590.13026@router.home> <4C762734.1030402@kernel.org> <4C8121A1.8060809@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf, x86: Fix accidentally ack'ing a second
- event on intel perf counter
-References: <1283454469-1909-2-git-send-email-dzickus@redhat.com> <tip-2e556b5b320838fde98480a1f6cf220a5af200fc@git.kernel.org> <4C80A62D.6050901@kernel.org> <20100903150055.GY4879@redhat.com>
-In-Reply-To: <20100903150055.GY4879@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2010 08:00 AM, Don Zickus wrote:
-> On Fri, Sep 03, 2010 at 12:39:25AM -0700, Yinghai Lu wrote:
->> Can you put this into perf branch ?
->>
->> Thanks
->>
->> Yinghai
->>
->> [PATCH] x86,nmi: move unknown_nmi_panic to traps.c
-> 
-> This patch duplicates a bunch of stuff we already have in
-> unknown_nmi_error.  The only thing I think you are interested in is using
-> the 'unknown_nmi_panic' flag.  I am putting together a smaller patch that
-> uses that flag in traps.c (though it would be nice to combine that flag
-> with panic_on_unrecovered_nmi).
 
-please make sure
-keep using unknown_nmi_panic in boot command line and  sysctl
-when LOCKUP_DETECTOR is defined.
-
-that does work until hw nmi watchdog is merged with software lock detector.
-assume that time hw nmi watchdog is relying on perf nmi and perf nmi would eat all unknown nmi.
-good to have Robert/Peter/Don's patches to make per nmi not to eat all unknown nmi.
-
-
-Thanks
-
-Yinghai
-
-> 
-> Cheers,
-> Don
-> 
->>
->> So we use it even LOCKUP_DETECTOR is defined.
->> need Robert/Peter/Don's patch...
->>
->> that will keep unknown_nmi_panic to have same behavoir before hw nmi watchdog
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
->> ---
->>  arch/x86/include/asm/nmi.h    |    8 --------
->>  arch/x86/kernel/apic/hw_nmi.c |    1 -
->>  arch/x86/kernel/apic/nmi.c    |   27 ---------------------------
->>  arch/x86/kernel/traps.c       |   29 ++++++++++++++++++++++++++++-
->>  kernel/sysctl.c               |    4 +++-
->>  5 files changed, 31 insertions(+), 38 deletions(-)
->>
->> Index: linux-2.6/arch/x86/kernel/apic/nmi.c
->> ===================================================================
->> --- linux-2.6.orig/arch/x86/kernel/apic/nmi.c
->> +++ linux-2.6/arch/x86/kernel/apic/nmi.c
->> @@ -37,7 +37,6 @@
->>  
->>  #include <asm/mach_traps.h>
->>  
->> -int unknown_nmi_panic;
->>  int nmi_watchdog_enabled;
->>  
->>  /* For reliability, we're prepared to waste bits here. */
->> @@ -483,23 +482,6 @@ static void disable_ioapic_nmi_watchdog(
->>  	on_each_cpu(stop_apic_nmi_watchdog, NULL, 1);
->>  }
->>  
->> -static int __init setup_unknown_nmi_panic(char *str)
->> -{
->> -	unknown_nmi_panic = 1;
->> -	return 1;
->> -}
->> -__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
->> -
->> -static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
->> -{
->> -	unsigned char reason = get_nmi_reason();
->> -	char buf[64];
->> -
->> -	sprintf(buf, "NMI received for unknown reason %02x\n", reason);
->> -	die_nmi(buf, regs, 1); /* Always panic here */
->> -	return 0;
->> -}
->> -
->>  /*
->>   * proc handler for /proc/sys/kernel/nmi
->>   */
->> @@ -540,15 +522,6 @@ int proc_nmi_enabled(struct ctl_table *t
->>  
->>  #endif /* CONFIG_SYSCTL */
->>  
->> -int do_nmi_callback(struct pt_regs *regs, int cpu)
->> -{
->> -#ifdef CONFIG_SYSCTL
->> -	if (unknown_nmi_panic)
->> -		return unknown_nmi_panic_callback(regs, cpu);
->> -#endif
->> -	return 0;
->> -}
->> -
->>  void arch_trigger_all_cpu_backtrace(void)
->>  {
->>  	int i;
->> Index: linux-2.6/arch/x86/kernel/apic/hw_nmi.c
->> ===================================================================
->> --- linux-2.6.orig/arch/x86/kernel/apic/hw_nmi.c
->> +++ linux-2.6/arch/x86/kernel/apic/hw_nmi.c
->> @@ -100,7 +100,6 @@ void acpi_nmi_disable(void) { return; }
->>  #endif
->>  atomic_t nmi_active = ATOMIC_INIT(0);           /* oprofile uses this */
->>  EXPORT_SYMBOL(nmi_active);
->> -int unknown_nmi_panic;
->>  void cpu_nmi_set_wd_enabled(void) { return; }
->>  void stop_apic_nmi_watchdog(void *unused) { return; }
->>  void setup_apic_nmi_watchdog(void *unused) { return; }
->> Index: linux-2.6/arch/x86/kernel/traps.c
->> ===================================================================
->> --- linux-2.6.orig/arch/x86/kernel/traps.c
->> +++ linux-2.6/arch/x86/kernel/traps.c
->> @@ -377,6 +377,33 @@ unknown_nmi_error(unsigned char reason,
->>  	printk(KERN_EMERG "Dazed and confused, but trying to continue\n");
->>  }
->>  
->> +#if defined(CONFIG_SYSCTL) && defined(CONFIG_X86_LOCAL_APIC)
->> +int unknown_nmi_panic;
->> +static int __init setup_unknown_nmi_panic(char *str)
->> +{
->> +	unknown_nmi_panic = 1;
->> +	return 1;
->> +}
->> +__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
->> +
->> +static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
->> +{
->> +	unsigned char reason = get_nmi_reason();
->> +	char buf[64];
->> +
->> +	sprintf(buf, "NMI received for unknown reason %02x\n", reason);
->> +	die_nmi(buf, regs, 1); /* Always panic here */
->> +	return 0;
->> +}
->> +
->> +static int do_nmi_callback(struct pt_regs *regs, int cpu)
->> +{
->> +	if (unknown_nmi_panic)
->> +		return unknown_nmi_panic_callback(regs, cpu);
->> +	return 0;
->> +}
->> +#endif
->> +
->>  static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
->>  {
->>  	unsigned char reason = 0;
->> @@ -405,8 +432,8 @@ static notrace __kprobes void default_do
->>  		 */
->>  		if (nmi_watchdog_tick(regs, reason))
->>  			return;
->> -		if (!do_nmi_callback(regs, cpu))
->>  #endif /* !CONFIG_LOCKUP_DETECTOR */
->> +		if (!do_nmi_callback(regs, cpu))
->>  			unknown_nmi_error(reason, regs);
->>  #else
->>  		unknown_nmi_error(reason, regs);
->> Index: linux-2.6/kernel/sysctl.c
->> ===================================================================
->> --- linux-2.6.orig/kernel/sysctl.c
->> +++ linux-2.6/kernel/sysctl.c
->> @@ -739,7 +739,7 @@ static struct ctl_table kern_table[] = {
->>  		.extra2		= &one,
->>  	},
->>  #endif
->> -#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86) && !defined(CONFIG_LOCKUP_DETECTOR)
->> +#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86)
->>  	{
->>  		.procname       = "unknown_nmi_panic",
->>  		.data           = &unknown_nmi_panic,
->> @@ -747,6 +747,8 @@ static struct ctl_table kern_table[] = {
->>  		.mode           = 0644,
->>  		.proc_handler   = proc_dointvec,
->>  	},
->> +#endif
->> +#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86) && !defined(CONFIG_LOCKUP_DETECTOR)
->>  	{
->>  		.procname       = "nmi_watchdog",
->>  		.data           = &nmi_watchdog_enabled,
->> Index: linux-2.6/arch/x86/include/asm/nmi.h
->> ===================================================================
->> --- linux-2.6.orig/arch/x86/include/asm/nmi.h
->> +++ linux-2.6/arch/x86/include/asm/nmi.h
->> @@ -7,14 +7,6 @@
->>  
->>  #ifdef ARCH_HAS_NMI_WATCHDOG
->>  
->> -/**
->> - * do_nmi_callback
->> - *
->> - * Check to see if a callback exists and execute it.  Return 1
->> - * if the handler exists and was handled successfully.
->> - */
->> -int do_nmi_callback(struct pt_regs *regs, int cpu);
->> -
->>  extern void die_nmi(char *str, struct pt_regs *regs, int do_panic);
->>  extern int check_nmi_watchdog(void);
->>  #if !defined(CONFIG_LOCKUP_DETECTOR)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tip-commits" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Reviewed-by: Christoph Lameter <cl@linux.com>
 
