@@ -1,106 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab0ICQsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 12:48:09 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:56866 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752395Ab0ICQsH convert rfc822-to-8bit (ORCPT
+	id S1756473Ab0ICQtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 12:49:12 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51269 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395Ab0ICQtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 12:48:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=o+HpxGz5XtPJbDnp98/LqAXCsDCHgwrAHRG0iPMaz8q3zZXdeVNkY1RzoH52l7GgCy
-         o1/Q2xPmTMBuD4+ZujmA==
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1009030953060.1548-100000@iolanthe.rowland.org>
-References: <AANLkTindhyovNphyCfnSuqN8KogZ0APdWyL7T=vYHHPF@mail.gmail.com>
-	<Pine.LNX.4.44L0.1009030953060.1548-100000@iolanthe.rowland.org>
-Date: Fri, 3 Sep 2010 09:48:00 -0700
-X-Google-Sender-Auth: 93LnSCg6rI5Bmgr83ZpfN84kUtU
-Message-ID: <AANLkTi=gANgv=_PFTqNKy1vDddhYKZJ9nOKhvhOBJwqE@mail.gmail.com>
-Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
-From: Colin Cross <ccross@android.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 3 Sep 2010 12:49:10 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Dave Airlie <airlied@redhat.com>, <hpa@zytor.com>, <mingo@elte.hu>,
+        <tglx@linutronix.de>, FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: <akpm@linux-foundation.org>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 2/3] x86, GART: Disable GART table walk probes
+Date: Fri,  3 Sep 2010 18:39:40 +0200
+Message-Id: <1283531981-7495-3-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283531981-7495-1-git-send-email-bp@amd64.org>
+References: <1283531981-7495-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 3, 2010 at 7:04 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Thu, 2 Sep 2010, Colin Cross wrote:
->
->> You're right, wait_event would be much worse.
->>
->> I think there's another race condition during suspend.  If an
->> asynchronous device calls device_pm_wait_for_dev on a device that
->> hasn't had device_suspend called on it yet, power.completion will
->> still be set from initialization or the last time it completed resume,
->> and it won't wait.
->
-> That can't happen in a properly-designed system.  It would mean the
-> async device didn't suspend because it was waiting for a device which
-> was registered before it -- and that would deadlock even if you used
-> synchronous suspend.
-I see - from the earlier thread, if devices need to break the tree
-model for suspend, they still have to follow the list ordering.
+From: Borislav Petkov <borislav.petkov@amd.com>
 
->> Assuming that problem is fixed somehow, there's also a deadlock
->> possibility.  Consider 3 devices.  A, B, and C, registered in that
->> order.  A is async, and the suspend handler calls
->> device_pm_wait_for_dev(C).  B's suspend handler returns an error.  A's
->> suspend handler is now stuck waiting on C->power.completion, but
->> device_suspend(C) will never be called.
->
-> Why not?  The normal suspend order is last-to-first, so C will be
-> suspended before B.
-Reverse A and C, but then the earlier comment applies.
+Current code tramples over bit F3x90[6] which can be used to disable
+GART table walk probes. However, this bit should be set for performance
+reasons (speed up GART table walks). We are allowed to do that since we
+put GART tables in UC memory later anyway. Make it so.
 
->> There are also an unhandled edge condition - what is the expected
->> behavior for a call to device_pm_wait_for_dev on a device if the
->> suspend handler for that device returns an error?  Currently, the
->> calling device will continue as if the target device had suspended.
->
-> It looks like __device_suspend needs to set async_error.  Which means
-> async_suspend doesn't need to set it.  This is indeed a bug.
-Is this sufficient?  The waiting device will complete its suspend
-handler, and then be resumed, but the waited-on device never
-suspended.  Are drivers expected to handle that case?
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/include/asm/gart.h   |   14 ++++++++++++++
+ arch/x86/kernel/aperture_64.c |   14 ++++++++------
+ arch/x86/kernel/pci-gart_64.c |    2 +-
+ drivers/char/agp/amd64-agp.c  |    2 +-
+ 4 files changed, 24 insertions(+), 8 deletions(-)
 
->> What about splitting power.completion into two flags,
->> power.suspend_complete and power.resume_complete?
->> power.resume_complete is initialized to 1, because the devices start
->> resumed.  Clear power.suspend_complete for all devices at the
->> beginning of dpm_suspend, and clear power.resume_complete for any
->> device that is suspended at the beginning of dpm_resume.  The
->> semantics of each flag is then always clear.  Any time between the
->> beginning and end of dpm_suspend, waiting on any device's
->> power.suspend_complete will block until that device is in suspend.
->> Any time between the beginning and end of dpm_resume, waiting on
->> power.resume_complete will block IFF the device is suspended.
->
-> How are you going to wait for these things?  With wait_event?  Didn't
-> you say above that it would be worse than using completions?
-I'd have to complete them on errors to abort any waiters, which would
-complicate the meaning of the completion flags, but keep the rules
-above about the same.
+diff --git a/arch/x86/include/asm/gart.h b/arch/x86/include/asm/gart.h
+index fba0a72..bf357f9 100644
+--- a/arch/x86/include/asm/gart.h
++++ b/arch/x86/include/asm/gart.h
+@@ -17,6 +17,7 @@ extern int fix_aperture;
+ #define GARTEN		(1<<0)
+ #define DISGARTCPU	(1<<4)
+ #define DISGARTIO	(1<<5)
++#define DISTLBWALKPRB	(1<<6)
+ 
+ /* GART cache control register bits. */
+ #define INVGART		(1<<0)
+@@ -56,6 +57,19 @@ static inline void gart_iommu_hole_init(void)
+ 
+ extern int agp_amd64_init(void);
+ 
++static inline void gart_set_size_and_enable(struct pci_dev *dev, u32 order)
++{
++	u32 ctl;
++
++	/*
++	 * Don't enable translation but enable GART IO and CPU accesses.
++	 * Also, set DISTLBWALKPRB since GART tables memory is UC.
++	 */
++	ctl = DISTLBWALKPRB | order << 1;
++
++	pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
++}
++
+ static inline void enable_gart_translation(struct pci_dev *dev, u64 addr)
+ {
+ 	u32 tmp, ctl;
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index 6fabd40..c9cb173 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -505,8 +505,13 @@ out:
+ 
+ 	/* Fix up the north bridges */
+ 	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
+-		int bus;
+-		int dev_base, dev_limit;
++		int bus, dev_base, dev_limit;
++
++		/*
++		 * Don't enable translation yet but enable GART IO and CPU
++		 * accesses and set DISTLBWALKPRB since GART table memory is UC.
++		 */
++		u32 ctl = DISTLBWALKPRB | aper_order << 1;
+ 
+ 		bus = bus_dev_ranges[i].bus;
+ 		dev_base = bus_dev_ranges[i].dev_base;
+@@ -515,10 +520,7 @@ out:
+ 			if (!early_is_k8_nb(read_pci_config(bus, slot, 3, 0x00)))
+ 				continue;
+ 
+-			/* Don't enable translation yet. That is done later.
+-			   Assume this BIOS didn't initialise the GART so
+-			   just overwrite all previous bits */
+-			write_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL, aper_order << 1);
++			write_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL, ctl);
+ 			write_pci_config(bus, slot, 3, AMD64_GARTAPERTUREBASE, aper_alloc >> 25);
+ 		}
+ 	}
+diff --git a/arch/x86/kernel/pci-gart_64.c b/arch/x86/kernel/pci-gart_64.c
+index 0f7f130..6015ee1 100644
+--- a/arch/x86/kernel/pci-gart_64.c
++++ b/arch/x86/kernel/pci-gart_64.c
+@@ -601,7 +601,7 @@ static void gart_fixup_northbridges(struct sys_device *dev)
+ 		 * Don't enable translations just yet.  That is the next
+ 		 * step.  Restore the pre-suspend aperture settings.
+ 		 */
+-		pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, aperture_order << 1);
++		gart_set_size_and_enable(dev, aperture_order);
+ 		pci_write_config_dword(dev, AMD64_GARTAPERTUREBASE, aperture_alloc >> 25);
+ 	}
+ }
+diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
+index bfe372b..564808a 100644
+--- a/drivers/char/agp/amd64-agp.c
++++ b/drivers/char/agp/amd64-agp.c
+@@ -313,7 +313,7 @@ static __devinit int fix_northbridge(struct pci_dev *nb, struct pci_dev *agp,
+ 	if (order < 0 || !agp_aperture_valid(aper, (32*1024*1024)<<order))
+ 		return -1;
+ 
+-	pci_write_config_dword(nb, AMD64_GARTAPERTURECTL, order << 1);
++	gart_set_size_and_enable(nb, order);
+ 	pci_write_config_dword(nb, AMD64_GARTAPERTUREBASE, aper >> 25);
+ 
+ 	return 0;
+-- 
+1.7.1
 
->> A solution to the 2nd and 3rd problems would still be needed - a way
->> to abort drivers that call device_pm_wait_for_dev when suspend is
->> aborted, and a return value to tell them the device being waited on is
->> not suspended.
->
-> No solutions are needed.  See above.
->
-> Alan Stern
->
->
