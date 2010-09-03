@@ -1,445 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab0ICDeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 23:34:11 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:40407 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab0ICDeJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 23:34:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=PW7E75N/9B8XbXpHqdrvmDwJz7f6O5J5+k8kea4byHZI9Yq9WoGmr0hK1arAuMLOiQ
-         aoFsMkNiDVqeQ/yCjX3g==
-MIME-Version: 1.0
-In-Reply-To: <20100828223547.016319253@chello.nl>
-References: <20100828223025.054328145@chello.nl> <20100828223547.016319253@chello.nl>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 3 Sep 2010 04:33:35 +0100
-Message-ID: <AANLkTineCQ=7wt_ErN6sw5TP1z2Yp1Gvoo0Y0jyp7Gjq@mail.gmail.com>
-Subject: Re: [RFC][PATCH 2/3] sched: On-demand cfs_rq list
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Pierre Bourdon <pbourdon@excellency.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1756077Ab0ICDwQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 23:52:16 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44016 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755964Ab0ICDwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 23:52:14 -0400
+Date: Fri, 3 Sep 2010 13:52:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for September 3
+Message-Id: <20100903135206.d9bc2093.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__3_Sep_2010_13_52_06_+1000_nmwgJf9x0zuT3AMI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 28, 2010 at 3:30 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> Make certain load-balance actions scale per number of active cgroups
-> instead of the number of existing cgroups.
->
-> This makes wakeup/sleep paths more expensive, but is a win for systems
-> where the vast majority of existing cgroups are idle.
->
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/sched.c      |   86 +++++++++-------------------------------------------
->  kernel/sched_fair.c |   41 ++++++++++++++++++++++--
->  kernel/sched_rt.c   |   24 ++++++++++++++
->  3 files changed, 76 insertions(+), 75 deletions(-)
->
-> Index: linux-2.6/kernel/sched.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched.c
-> +++ linux-2.6/kernel/sched.c
-> @@ -344,6 +344,7 @@ struct cfs_rq {
->         * leaf_cfs_rq_list ties together list of leaf cfs_rq's in a cpu. This
->         * list is used during load balance.
->         */
-> +       int on_list;
->        struct list_head leaf_cfs_rq_list;
->        struct task_group *tg;  /* group that "owns" this runqueue */
->
-> @@ -1529,7 +1530,7 @@ static unsigned long cpu_avg_load_per_ta
->
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->
-> -static void update_cfs_load(struct cfs_rq *cfs_rq);
-> +static void update_cfs_load(struct cfs_rq *cfs_rq, int lb);
->  static void update_cfs_shares(struct cfs_rq *cfs_rq);
->
->  /*
-> @@ -1552,7 +1553,7 @@ static int tg_shares_up(struct task_grou
->        raw_spin_lock_irqsave(&rq->lock, flags);
->
->        update_rq_clock(rq);
-> -       update_cfs_load(cfs_rq);
-> +       update_cfs_load(cfs_rq, 1);
->
->        load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
->        load_avg -= cfs_rq->load_contribution;
-> @@ -7553,15 +7554,13 @@ static void init_rt_rq(struct rt_rq *rt_
->
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->  static void init_tg_cfs_entry(struct task_group *tg, struct cfs_rq *cfs_rq,
-> -                               struct sched_entity *se, int cpu, int add,
-> +                               struct sched_entity *se, int cpu,
->                                struct sched_entity *parent)
->  {
->        struct rq *rq = cpu_rq(cpu);
->        tg->cfs_rq[cpu] = cfs_rq;
->        init_cfs_rq(cfs_rq, rq);
->        cfs_rq->tg = tg;
-> -       if (add)
-> -               list_add(&cfs_rq->leaf_cfs_rq_list, &rq->leaf_cfs_rq_list);
->
->        tg->se[cpu] = se;
->        /* se could be NULL for init_task_group */
-> @@ -7581,7 +7580,7 @@ static void init_tg_cfs_entry(struct tas
->
->  #ifdef CONFIG_RT_GROUP_SCHED
->  static void init_tg_rt_entry(struct task_group *tg, struct rt_rq *rt_rq,
-> -               struct sched_rt_entity *rt_se, int cpu, int add,
-> +               struct sched_rt_entity *rt_se, int cpu,
->                struct sched_rt_entity *parent)
->  {
->        struct rq *rq = cpu_rq(cpu);
-> @@ -7590,8 +7589,6 @@ static void init_tg_rt_entry(struct task
->        init_rt_rq(rt_rq, rq);
->        rt_rq->tg = tg;
->        rt_rq->rt_runtime = tg->rt_bandwidth.rt_runtime;
-> -       if (add)
-> -               list_add(&rt_rq->leaf_rt_rq_list, &rq->leaf_rt_rq_list);
->
->        tg->rt_se[cpu] = rt_se;
->        if (!rt_se)
-> @@ -7700,7 +7697,7 @@ void __init sched_init(void)
->                 * We achieve this by letting init_task_group's tasks sit
->                 * directly in rq->cfs (i.e init_task_group->se[] = NULL).
->                 */
-> -               init_tg_cfs_entry(&init_task_group, &rq->cfs, NULL, i, 1, NULL);
-> +               init_tg_cfs_entry(&init_task_group, &rq->cfs, NULL, i, NULL);
->  #endif
->  #endif /* CONFIG_FAIR_GROUP_SCHED */
->
-> @@ -7708,7 +7705,7 @@ void __init sched_init(void)
->  #ifdef CONFIG_RT_GROUP_SCHED
->                INIT_LIST_HEAD(&rq->leaf_rt_rq_list);
->  #ifdef CONFIG_CGROUP_SCHED
-> -               init_tg_rt_entry(&init_task_group, &rq->rt, NULL, i, 1, NULL);
-> +               init_tg_rt_entry(&init_task_group, &rq->rt, NULL, i, NULL);
->  #endif
->  #endif
->
-> @@ -7984,7 +7981,7 @@ int alloc_fair_sched_group(struct task_g
->                if (!se)
->                        goto err_free_rq;
->
-> -               init_tg_cfs_entry(tg, cfs_rq, se, i, 0, parent->se[i]);
-> +               init_tg_cfs_entry(tg, cfs_rq, se, i, parent->se[i]);
->        }
->
->        return 1;
-> @@ -8015,14 +8012,6 @@ int alloc_fair_sched_group(struct task_g
->  {
->        return 1;
->  }
-> -
-> -static inline void register_fair_sched_group(struct task_group *tg, int cpu)
-> -{
-> -}
-> -
-> -static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
-> -{
-> -}
->  #endif /* CONFIG_FAIR_GROUP_SCHED */
->
->  #ifdef CONFIG_RT_GROUP_SCHED
-> @@ -8074,7 +8063,7 @@ int alloc_rt_sched_group(struct task_gro
->                if (!rt_se)
->                        goto err_free_rq;
->
-> -               init_tg_rt_entry(tg, rt_rq, rt_se, i, 0, parent->rt_se[i]);
-> +               init_tg_rt_entry(tg, rt_rq, rt_se, i, parent->rt_se[i]);
->        }
->
->        return 1;
-> @@ -8084,17 +8073,6 @@ int alloc_rt_sched_group(struct task_gro
->  err:
->        return 0;
->  }
-> -
-> -static inline void register_rt_sched_group(struct task_group *tg, int cpu)
-> -{
-> -       list_add_rcu(&tg->rt_rq[cpu]->leaf_rt_rq_list,
-> -                       &cpu_rq(cpu)->leaf_rt_rq_list);
-> -}
-> -
-> -static inline void unregister_rt_sched_group(struct task_group *tg, int cpu)
-> -{
-> -       list_del_rcu(&tg->rt_rq[cpu]->leaf_rt_rq_list);
-> -}
->  #else /* !CONFIG_RT_GROUP_SCHED */
->  static inline void free_rt_sched_group(struct task_group *tg)
->  {
-> @@ -8105,14 +8083,6 @@ int alloc_rt_sched_group(struct task_gro
->  {
->        return 1;
->  }
-> -
-> -static inline void register_rt_sched_group(struct task_group *tg, int cpu)
-> -{
-> -}
-> -
-> -static inline void unregister_rt_sched_group(struct task_group *tg, int cpu)
-> -{
-> -}
->  #endif /* CONFIG_RT_GROUP_SCHED */
->
->  #ifdef CONFIG_CGROUP_SCHED
-> @@ -8128,7 +8098,6 @@ struct task_group *sched_create_group(st
->  {
->        struct task_group *tg;
->        unsigned long flags;
-> -       int i;
->
->        tg = kzalloc(sizeof(*tg), GFP_KERNEL);
->        if (!tg)
-> @@ -8141,10 +8110,6 @@ struct task_group *sched_create_group(st
->                goto err;
->
->        spin_lock_irqsave(&task_group_lock, flags);
-> -       for_each_possible_cpu(i) {
-> -               register_fair_sched_group(tg, i);
-> -               register_rt_sched_group(tg, i);
-> -       }
->        list_add_rcu(&tg->list, &task_groups);
->
->        WARN_ON(!parent); /* root should already exist */
-> @@ -8175,10 +8140,12 @@ void sched_destroy_group(struct task_gro
->        int i;
->
->        spin_lock_irqsave(&task_group_lock, flags);
-> -       for_each_possible_cpu(i) {
-> -               unregister_fair_sched_group(tg, i);
-> -               unregister_rt_sched_group(tg, i);
-> -       }
-> +       /*
-> +        * XXX should not be a race against enqueue, even without rq->lock
-> +        * because only empty groups can be destroyed.
-> +        */
-> +       for_each_possible_cpu(i)
-> +               list_del_leaf_cfs_rq(tg->cfs_rq[i]);
->        list_del_rcu(&tg->list);
->        list_del_rcu(&tg->siblings);
->        spin_unlock_irqrestore(&task_group_lock, flags);
-> @@ -8256,7 +8223,6 @@ static DEFINE_MUTEX(shares_mutex);
->  int sched_group_set_shares(struct task_group *tg, unsigned long shares)
->  {
->        int i;
-> -       unsigned long flags;
->
->        /*
->         * We can't change the weight of the root cgroup.
-> @@ -8273,19 +8239,6 @@ int sched_group_set_shares(struct task_g
->        if (tg->shares == shares)
->                goto done;
->
-> -       spin_lock_irqsave(&task_group_lock, flags);
-> -       for_each_possible_cpu(i)
-> -               unregister_fair_sched_group(tg, i);
-> -       list_del_rcu(&tg->siblings);
-> -       spin_unlock_irqrestore(&task_group_lock, flags);
-> -
-> -       /* wait for any ongoing reference to this group to finish */
-> -       synchronize_sched();
-> -
-> -       /*
-> -        * Now we are free to modify the group's share on each cpu
-> -        * w/o tripping rebalance_share or load_balance_fair.
-> -        */
->        tg->shares = shares;
->        for_each_possible_cpu(i) {
->                /*
-> @@ -8294,15 +8247,6 @@ int sched_group_set_shares(struct task_g
->                set_se_shares(tg->se[i], shares);
->        }
->
-> -       /*
-> -        * Enable load balance activity on this group, by inserting it back on
-> -        * each cpu's rq->leaf_cfs_rq_list.
-> -        */
-> -       spin_lock_irqsave(&task_group_lock, flags);
-> -       for_each_possible_cpu(i)
-> -               register_fair_sched_group(tg, i);
-> -       list_add_rcu(&tg->siblings, &tg->parent->children);
-> -       spin_unlock_irqrestore(&task_group_lock, flags);
->  done:
->        mutex_unlock(&shares_mutex);
->        return 0;
-> Index: linux-2.6/kernel/sched_fair.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched_fair.c
-> +++ linux-2.6/kernel/sched_fair.c
-> @@ -143,6 +143,23 @@ static inline struct cfs_rq *cpu_cfs_rq(
->        return cfs_rq->tg->cfs_rq[this_cpu];
->  }
->
-> +static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-> +{
-> +       if (!cfs_rq->on_list) {
-> +               list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
-> +                               &rq_of(cfs_rq)->leaf_cfs_rq_list);
-> +               cfs_rq->on_list = 1;
-> +       }
-> +}
-> +
-> +static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-> +{
-> +       if (cfs_rq->on_list) {
-> +               list_del_rcu(&cfs_rq->leaf_cfs_rq_list);
-> +               cfs_rq->on_list = 0;
-> +       }
-> +}
-> +
->  /* Iterate thr' all leaf cfs_rq's on a runqueue */
->  #define for_each_leaf_cfs_rq(rq, cfs_rq) \
->        list_for_each_entry_rcu(cfs_rq, &rq->leaf_cfs_rq_list, leaf_cfs_rq_list)
-> @@ -246,6 +263,14 @@ static inline struct cfs_rq *cpu_cfs_rq(
->        return &cpu_rq(this_cpu)->cfs;
->  }
->
-> +static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-> +{
-> +}
-> +
-> +static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-> +{
-> +}
-> +
->  #define for_each_leaf_cfs_rq(rq, cfs_rq) \
->                for (cfs_rq = &rq->cfs; cfs_rq; cfs_rq = NULL)
->
-> @@ -648,7 +673,7 @@ account_entity_dequeue(struct cfs_rq *cf
->  }
->
->  #ifdef CONFIG_FAIR_GROUP_SCHED
-> -static void update_cfs_load(struct cfs_rq *cfs_rq)
-> +static void update_cfs_load(struct cfs_rq *cfs_rq, int lb)
->  {
->        u64 period = sched_avg_period();
->        u64 now = rq_of(cfs_rq)->clock;
-> @@ -668,6 +693,11 @@ static void update_cfs_load(struct cfs_r
->                cfs_rq->load_period /= 2;
->                cfs_rq->load_avg /= 2;
->        }
-> +
-> +       if (lb && !cfs_rq->nr_running) {
-> +               if (cfs_rq->load_period < (period / 8))
-> +                       list_del_leaf_cfs_rq(cfs_rq);
-> +       }
->  }
->
+--Signature=_Fri__3_Sep_2010_13_52_06_+1000_nmwgJf9x0zuT3AMI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In the case of zero load, load_avg above will decay however
-load_period will remain in the range  [period/2, period], any entity
-that has passed period/8 time will remain on the leaf rq list.
+Hi all,
 
-The lb condition could also be relaxed in the dequeue_entity case.
+Changes since 20100902:
 
->  static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
-> @@ -729,7 +759,7 @@ static void update_cfs_shares(struct cfs
->        reweight_entity(cfs_rq_of(se), se, shares);
->  }
->  #else /* CONFIG_FAIR_GROUP_SCHED */
-> -static inline void update_cfs_load(struct cfs_rq *cfs_rq)
-> +static inline void update_cfs_load(struct cfs_rq *cfs_rq, int lb)
->  {
->  }
->
-> @@ -859,7 +889,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
->         * Update run-time statistics of the 'current'.
->         */
->        update_curr(cfs_rq);
-> -       update_cfs_load(cfs_rq);
-> +       update_cfs_load(cfs_rq, 0);
->        account_entity_enqueue(cfs_rq, se);
->        update_cfs_shares(group_cfs_rq(se));
->
-> @@ -873,6 +903,9 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
->        if (se != cfs_rq->curr)
->                __enqueue_entity(cfs_rq, se);
->        se->on_rq = 1;
-> +
-> +       if (cfs_rq->nr_running == 1)
-> +               list_add_leaf_cfs_rq(cfs_rq);
->  }
->
->  static void __clear_buddies(struct cfs_rq *cfs_rq, struct sched_entity *se)
-> @@ -917,7 +950,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
->        if (se != cfs_rq->curr)
->                __dequeue_entity(cfs_rq, se);
->        se->on_rq = 0;
-> -       update_cfs_load(cfs_rq);
-> +       update_cfs_load(cfs_rq, 0);
->        account_entity_dequeue(cfs_rq, se);
->        update_min_vruntime(cfs_rq);
->        update_cfs_shares(group_cfs_rq(se));
-> Index: linux-2.6/kernel/sched_rt.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched_rt.c
-> +++ linux-2.6/kernel/sched_rt.c
-> @@ -183,6 +183,17 @@ static inline u64 sched_rt_period(struct
->        return ktime_to_ns(rt_rq->tg->rt_bandwidth.rt_period);
->  }
->
-> +static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
-> +{
-> +       list_add_rcu(&rt_rq->leaf_rt_rq_list,
-> +                       &rq_of_rt_rq(rt_rq)->leaf_rt_rq_list);
-> +}
-> +
-> +static inline void list_del_leaf_rt_rq(struct rt_rq *rt_rq)
-> +{
-> +       list_del_rcu(&rt_rq->leaf_rt_rq_list);
-> +}
-> +
->  #define for_each_leaf_rt_rq(rt_rq, rq) \
->        list_for_each_entry_rcu(rt_rq, &rq->leaf_rt_rq_list, leaf_rt_rq_list)
->
-> @@ -276,6 +287,14 @@ static inline u64 sched_rt_period(struct
->        return ktime_to_ns(def_rt_bandwidth.rt_period);
->  }
->
-> +static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
-> +{
-> +}
-> +
-> +static inline void list_del_leaf_rt_rq(struct rt_rq *rt_rq)
-> +{
-> +}
-> +
->  #define for_each_leaf_rt_rq(rt_rq, rq) \
->        for (rt_rq = &rq->rt; rt_rq; rt_rq = NULL)
->
-> @@ -825,6 +844,9 @@ static void __enqueue_rt_entity(struct s
->        if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
->                return;
->
-> +       if (!rt_rq->rt_nr_running)
-> +               list_add_leaf_rt_rq(rt_rq);
-> +
->        if (head)
->                list_add(&rt_se->run_list, queue);
->        else
-> @@ -844,6 +866,8 @@ static void __dequeue_rt_entity(struct s
->                __clear_bit(rt_se_prio(rt_se), array->bitmap);
->
->        dec_rt_tasks(rt_se, rt_rq);
-> +       if (!rt_rq->rt_nr_running)
-> +               list_del_leaf_rt_rq(rt_rq);
->  }
->
->  /*
->
->
->
+The powerpc tree gained a build failure for which I applied a patch.
+
+The galak tree gained a conflict against the powerpc-merge tree.
+
+The net tree lost its build failure.
+
+The input tree lost a conflict.
+
+I still have a patch to the drivers-x86 tree to remove a Kconfig warning.
+
+The tty tree gained a conflict against the microblaze tree.
+
+The usb tree lost its conflicts and build failure.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 171 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/Makefile
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/mach-smdk6410.c
+CONFLICT (content): Merge conflict in arch/arm/plat-samsung/Kconfig
+CONFLICT (content): Merge conflict in drivers/input/touchscreen/s3c2410_ts.c
+Merging s5p/for-next
+Merging tegra/for-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/platforms/85xx/mpc85xx_m=
+ds.c
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+CONFLICT (content): Merge conflict in drivers/media/IR/ir-raw-event.c
+CONFLICT (add/add): Merge conflict in drivers/media/video/s5p-fimc/fimc-cor=
+e.c
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging swiotlb-xen/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+CONFLICT (content): Merge conflict in net/mac80211/main.c
+Merging mtd/master
+Merging crypto/master
+Merging sound-asoc/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/mach-smdk6410.c
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+Merging i7core_edac/linux_next
+CONFLICT (content): Merge conflict in MAINTAINERS
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging limits/writable_limits
+Merging omap_dss2/for-next
+Merging xen/upstream/xen
+Merging rcu/rcu/next
+Merging tip/auto-latest
+Merging lost-spurious-irq/lost-spurious-irq
+CONFLICT (content): Merge conflict in drivers/ata/libata-core.c
+CONFLICT (content): Merge conflict in include/linux/libata.h
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Applying: Fix Kconfig mistaken update
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+Merging quilt/driver-core
+Merging quilt/tty
+CONFLICT (content): Merge conflict in drivers/serial/uartlite.c
+Merging quilt/usb
+Merging staging-next/staging-next
+Merging slabh/slabh
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+Applying: powerpc: define a compat_sys_recv cond_syscall
+
+--Signature=_Fri__3_Sep_2010_13_52_06_+1000_nmwgJf9x0zuT3AMI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMgHDmAAoJEDMEi1NhKgbs31gIAIK/GjEdJF8Mu++XzSVR11RC
+aWFWf2sTvms+V14NzwZJn+iger09NedKHNfmip6c+o4MEuQW4VEDpc1Ja3YA8kt6
+GERb05eesaq4xvl4TecgldZ20i0VhK/GkcAX1IU/C4NLrm6fpwB+otjBtA+zAjgi
+EZ/MGt/IzDDazAknERISkJjWsZl0CWN93xncGnsMJY9RPDOxHitRclDo9zKZix3p
+ioYg51L01ciideUOrIKQxYPSOxBe8sxTzlA6V1jwnxTx1MIkrtqvTe+FUutMUu2o
+crRP6NSTgsDoNt55KYF+cKpObDquNbIvETj23oRXwHh8Atr+rIZUdBNKpdG3goQ=
+=x05J
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__3_Sep_2010_13_52_06_+1000_nmwgJf9x0zuT3AMI--
