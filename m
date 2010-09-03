@@ -1,73 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab0ICJSt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:18:49 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:34896 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab0ICJSs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:18:48 -0400
-Date: Fri, 3 Sep 2010 17:18:42 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Miloslav =?utf-8?B?VHJtYcSN?= <mitr@redhat.com>
-Cc: linux-crypto@vger.kernel.org,
-        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
-        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/19] User-space API definition
-Message-ID: <20100903091842.GC28952@gondor.apana.org.au>
-References: <1282293963-27807-1-git-send-email-mitr@redhat.com> <1282293963-27807-2-git-send-email-mitr@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1282293963-27807-2-git-send-email-mitr@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756612Ab0ICJTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:19:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40233 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751850Ab0ICJTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 05:19:04 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <m3vd6nmd68.fsf@hase.home>
+References: <m3vd6nmd68.fsf@hase.home> <19747.1283422807@redhat.com> <20100902102158.19806.14133.stgit@warthog.procyon.org.uk> <m38w3kns4r.fsf@hase.home> <AANLkTikwax-Jb60jT5_TOL=Zkwbgh8FwMk78ncm1dN-P@mail.gmail.com>
+To: Andreas Schwab <schwab@redhat.com>
+Cc: dhowells@redhat.com, Geert Uytterhoeven <geert@linux-m68k.org>,
+        gerg@snapgear.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] M68K: Use CONFIG_MMU not __uClinux__ to select m68knommu contributions
+Date: Fri, 03 Sep 2010 10:18:40 +0100
+Message-ID: <3048.1283505520@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 20, 2010 at 10:45:44AM +0200, Miloslav Trmač wrote:
-> This patch introduces the new user-space API, <ncr.h>.
-> 
-> Quick overview:
-> 
-> * open("/dev/crypto") to get a FD, which acts as a namespace for key and
->   session identifiers.
-> 
-> * ioctl(NCRIO_KEY_INIT) to allocate a key object; then generate the key
->   material inside the kernel, load a plaintext key, unwrap a key, or
->   derive a key.  Similarly the key material can be copied out of the
->   kernel or wrapped.
-> 
-> * ioctl(NCRIO_SESSION_INIT) to allocate a crypto session (to encrypt,
->   decrypt, hash, sign, or verify signature), then
->   ioctl(NCRIO_SESSION_UPDATE) to act on chunks of data.  Deallocate the
->   session, and optionally retrieve session results (e.g. hash or
->   signature), using ioctl(NCRIO_SESSION_FINAL).
-> 
->   There is also NCRIO_SESSION_ONCE for an one-shot crypto operation
->   using a single user->kernel context switch.
-> 
-> Full documentation of the interface is in
-> Documentation/crypto/userspace.txt .
+Andreas Schwab <schwab@redhat.com> wrote:
 
-Thanks for the updated patch-set.  It does indeed fulfil some
-of the requirements raised earlier.
+> You are almost able to use the uclinux compiler for both, except that
+> currently __uClinux__ is hardcoded.
 
-However, as far as I can see this still does not address the
-extensibility.  For example, say we want add an interface to
-allow the xoring of two arbitrary data streams using DMA offload,
-this interface would make that quite awkward.
+The m68knommu arch Makefile in the kernel could specify it on the compiler
+command line, then m68k compilers should be possible.
 
-In fact the whole interface is really tailored to the traditional
-encryption/hash operations that BSD provided so I think this is not
-a good foundation for our user-space API.
+The kernel should probably also set appropriate -mcpu= and -mtune= flags,
+depending on the type of kernel selected.
 
-I will be looking at this myself so please stay tuned and be ready
-to yell if you see that your requirements are not met.
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+David
