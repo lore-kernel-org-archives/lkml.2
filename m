@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab0ICEls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 00:41:48 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:42566 "EHLO
+	id S1755018Ab0ICElz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 00:41:55 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:42727 "EHLO
 	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab0ICElK (ORCPT
+	with ESMTP id S1754626Ab0ICElv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 00:41:10 -0400
+	Fri, 3 Sep 2010 00:41:51 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -14,9 +14,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
         "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
         linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 05/10] HWPOISON, hugetlb: add free check to dequeue_hwpoison_huge_page()
-Date: Fri,  3 Sep 2010 13:37:33 +0900
-Message-Id: <1283488658-23137-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 10/10] page-types.c: fix name of unpoison interface
+Date: Fri,  3 Sep 2010 13:37:38 +0900
+Message-Id: <1283488658-23137-11-git-send-email-n-horiguchi@ah.jp.nec.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1283488658-23137-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1283488658-23137-1-git-send-email-n-horiguchi@ah.jp.nec.com>
@@ -24,110 +24,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This check is necessary to avoid race between dequeue and allocation,
-which can cause a free hugepage to be dequeued twice and get kernel unstable.
+debugfs:hwpoison/renew-pfn is the old interface.
+This patch renames and fixes it.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Acked-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/linux/hugetlb.h |    4 ++--
- mm/hugetlb.c            |   29 +++++++++++++++++++++++++----
- mm/memory-failure.c     |    6 ++++--
- 3 files changed, 31 insertions(+), 8 deletions(-)
+ Documentation/vm/page-types.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git v2.6.36-rc2/include/linux/hugetlb.h v2.6.36-rc2/include/linux/hugetlb.h
-index 9e51f77..796f30e 100644
---- v2.6.36-rc2/include/linux/hugetlb.h
-+++ v2.6.36-rc2/include/linux/hugetlb.h
-@@ -43,7 +43,7 @@ int hugetlb_reserve_pages(struct inode *inode, long from, long to,
- 						struct vm_area_struct *vma,
- 						int acctflags);
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
--void __isolate_hwpoisoned_huge_page(struct page *page);
-+int dequeue_hwpoisoned_huge_page(struct page *page);
- void copy_huge_page(struct page *dst, struct page *src);
- 
- extern unsigned long hugepages_treat_as_movable;
-@@ -102,7 +102,7 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
- #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
- #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
- #define huge_pte_offset(mm, address)	0
--#define __isolate_hwpoisoned_huge_page(page)	0
-+#define dequeue_hwpoisoned_huge_page(page)	0
- static inline void copy_huge_page(struct page *dst, struct page *src)
- {
- }
-diff --git v2.6.36-rc2/mm/hugetlb.c v2.6.36-rc2/mm/hugetlb.c
-index d3e9d29..7cf9225 100644
---- v2.6.36-rc2/mm/hugetlb.c
-+++ v2.6.36-rc2/mm/hugetlb.c
-@@ -2952,18 +2952,39 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
- 	hugetlb_acct_memory(h, -(chg - freed));
- }
- 
-+/* Should be called in hugetlb_lock */
-+static int is_hugepage_on_freelist(struct page *hpage)
-+{
-+	struct page *page;
-+	struct page *tmp;
-+	struct hstate *h = page_hstate(hpage);
-+	int nid = page_to_nid(hpage);
-+
-+	list_for_each_entry_safe(page, tmp, &h->hugepage_freelists[nid], lru)
-+		if (page == hpage)
-+			return 1;
-+	return 0;
-+}
-+
-+#ifdef CONFIG_MEMORY_FAILURE
- /*
-  * This function is called from memory failure code.
-  * Assume the caller holds page lock of the head page.
-  */
--void __isolate_hwpoisoned_huge_page(struct page *hpage)
-+int dequeue_hwpoisoned_huge_page(struct page *hpage)
- {
- 	struct hstate *h = page_hstate(hpage);
- 	int nid = page_to_nid(hpage);
-+	int ret = -EBUSY;
- 
- 	spin_lock(&hugetlb_lock);
--	list_del(&hpage->lru);
--	h->free_huge_pages--;
--	h->free_huge_pages_node[nid]--;
-+	if (is_hugepage_on_freelist(hpage)) {
-+		list_del(&hpage->lru);
-+		h->free_huge_pages--;
-+		h->free_huge_pages_node[nid]--;
-+		ret = 0;
-+	}
- 	spin_unlock(&hugetlb_lock);
-+	return ret;
- }
-+#endif
-diff --git v2.6.36-rc2/mm/memory-failure.c v2.6.36-rc2/mm/memory-failure.c
-index 9c26eec..c67f801 100644
---- v2.6.36-rc2/mm/memory-failure.c
-+++ v2.6.36-rc2/mm/memory-failure.c
-@@ -698,6 +698,7 @@ static int me_swapcache_clean(struct page *p, unsigned long pfn)
-  */
- static int me_huge_page(struct page *p, unsigned long pfn)
- {
-+	int res = 0;
- 	struct page *hpage = compound_head(p);
- 	/*
- 	 * We can safely recover from error on free or reserved (i.e.
-@@ -710,8 +711,9 @@ static int me_huge_page(struct page *p, unsigned long pfn)
- 	 * so there is no race between isolation and mapping/unmapping.
- 	 */
- 	if (!(page_mapping(hpage) || PageAnon(hpage))) {
--		__isolate_hwpoisoned_huge_page(hpage);
--		return RECOVERED;
-+		res = dequeue_hwpoisoned_huge_page(hpage);
-+		if (!res)
-+			return RECOVERED;
+diff --git v2.6.36-rc2/Documentation/vm/page-types.c v2.6.36-rc2/Documentation/vm/page-types.c
+index ccd951f..cc96ee2 100644
+--- v2.6.36-rc2/Documentation/vm/page-types.c
++++ v2.6.36-rc2/Documentation/vm/page-types.c
+@@ -478,7 +478,7 @@ static void prepare_hwpoison_fd(void)
  	}
- 	return DELAYED;
+ 
+ 	if (opt_unpoison && !hwpoison_forget_fd) {
+-		sprintf(buf, "%s/renew-pfn", hwpoison_debug_fs);
++		sprintf(buf, "%s/unpoison-pfn", hwpoison_debug_fs);
+ 		hwpoison_forget_fd = checked_open(buf, O_WRONLY);
+ 	}
  }
 -- 
 1.7.2.2
