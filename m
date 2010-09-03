@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757084Ab0ICR6D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 13:58:03 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61049 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab0ICR6B convert rfc822-to-8bit (ORCPT
+	id S1757070Ab0ICSBP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 14:01:15 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:35576 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756927Ab0ICSBN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 13:58:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinpLeJzYjAh2bUngWD4ZvOyy44t9+4Zs9rm2=xQ@mail.gmail.com>
-References: <4C80E2D5.1020104@dsn.okisemi.com> <AANLkTinYypWdty1eLH1LTyOEZPt-k=cEDGu_coyWVa2t@mail.gmail.com>
- <AANLkTinpLeJzYjAh2bUngWD4ZvOyy44t9+4Zs9rm2=xQ@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 3 Sep 2010 11:57:40 -0600
-X-Google-Sender-Auth: aBo_kcuVlw4kSeUxpZbzlEW6BXA
-Message-ID: <AANLkTi==2=zX5A2L0=HFmWef_gXPmmVt1MHPGRS26wSw@mail.gmail.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: Masayuki Ohtak <masa-korg@dsn.okisemi.com>, meego-dev@meego.com,
+	Fri, 3 Sep 2010 14:01:13 -0400
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 4/15]  4: uprobes: x86 specific
+ functions for user space breakpointing.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
-        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        arjan@linux.intel.com, gregkh@suse.de,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20100903174832.GB14891@linux.vnet.ibm.com>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+	 <20100825134210.5447.10126.sendpatchset@localhost6.localdomain6>
+	 <87pqwvm8cl.fsf@basil.nowhere.org>
+	 <20100903174832.GB14891@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Fri, 03 Sep 2010 20:00:57 +0200
+Message-ID: <1283536857.2050.347.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 3, 2010 at 11:50 AM, Linus Walleij
-<linus.ml.walleij@gmail.com> wrote:
-> 2010/9/3 Grant Likely <grant.likely@secretlab.ca>:
->> 2010/9/3 Masayuki Ohtak <masa-korg@dsn.okisemi.com>:
->>> SPI driver of Topcliff PCH
->
->> Instead, the majority of the code should be structured to handle one
->> and only one spi bus instance.  Only at the top level pci probe,
->> remove and PM code should there be for() loops for setting up or
->> tearing down each spi bus instance one at a time.
->
-> I guess an elegant way to achieve this is to have the
-> PCI driver spawn a simple platform device for each bus.
-> Then you can even break the driver for that platform device
-> into its own file and all.
+On Fri, 2010-09-03 at 23:18 +0530, Srikar Dronamraju wrote:
+> > Maybe it's me, but I would prefer breakpoint instead of bkpt
+> 
+> Even Peter wasnt comfortable with user_bkpt. 
 
-Yes, that is exactly what I mean.
-
-g.
+My main objection was the uprobe.c and user_bkpt.c splitup, its all
+about uprobes, but as to this name, you can simply name it
+uprobe_opcode_t, no need to preserve the whole user breakpoint thing at
+all.
