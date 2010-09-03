@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab0ICJej (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:34:39 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43298 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756548Ab0ICJeh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:34:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OWqHCMjsbG5srWkSAFA2IJGwNuoYkVE+3AiAqgS0gWW1Rjvub4yuz2Fvvk2Oxj0f/S
-         oHxL69k6HdpMnndYZR3/SAeEYUfpuwMoCSURAc3JwGJF98I1kgmhIkMbJ9zNS7eosTd1
-         X50Z1oBjFIxmgHYq+y968311iBTcSle8QobSE=
+	id S1755910Ab0ICJgJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:36:09 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36520 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347Ab0ICJgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 05:36:08 -0400
+Date: Fri, 3 Sep 2010 11:35:53 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Len Brown <lenb@kernel.org>,
+        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        lm-sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH] therm_throt.c: Fix error handling in
+ thermal_throttle_add_dev
+Message-ID: <20100903093553.GA6821@elte.hu>
+References: <1283474726-20109-1-git-send-email-fenghua.yu@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20100903091842.GC28952@gondor.apana.org.au>
-References: <1282293963-27807-1-git-send-email-mitr@redhat.com>
-	<1282293963-27807-2-git-send-email-mitr@redhat.com>
-	<20100903091842.GC28952@gondor.apana.org.au>
-Date: Fri, 3 Sep 2010 11:34:36 +0200
-Message-ID: <AANLkTi=xtLpd7f_xxTa8G0H9L6wBn1r_SV8qTXwmOdB_@mail.gmail.com>
-Subject: Re: [PATCH 01/19] User-space API definition
-From: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: =?UTF-8?Q?Miloslav_Trma=C4=8D?= <mitr@redhat.com>,
-        linux-crypto@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283474726-20109-1-git-send-email-fenghua.yu@intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/3 Herbert Xu <herbert@gondor.apana.org.au>:
 
->> * ioctl(NCRIO_SESSION_INIT) to allocate a crypto session (to encrypt,
->>   decrypt, hash, sign, or verify signature), then
->>   ioctl(NCRIO_SESSION_UPDATE) to act on chunks of data.  Deallocate the
->>   session, and optionally retrieve session results (e.g. hash or
->>   signature), using ioctl(NCRIO_SESSION_FINAL).
->>   There is also NCRIO_SESSION_ONCE for an one-shot crypto operation
->>   using a single user->kernel context switch.
->> Full documentation of the interface is in
->> Documentation/crypto/userspace.txt .
->
-> Thanks for the updated patch-set.  It does indeed fulfil some
-> of the requirements raised earlier.
->
-> However, as far as I can see this still does not address the
-> extensibility.  For example, say we want add an interface to
-> allow the xoring of two arbitrary data streams using DMA offload,
-> this interface would make that quite awkward.
+* Fenghua Yu <fenghua.yu@intel.com> wrote:
 
-Although I think the current API could handle something like this, I
-also think it is undesirable to do so. The API was designed with
-cryptographic operations in mind, and its extensibility might better
-be judged on how it can incorporate future cryptographic protocols
-(sigma-proofs and other zero-knowledge protocols and other protocols
-that I might not know of). An XOR operation, doesn't really fit into a
-cryptographic API. It could however be included in the current design
-with some utility ioctls() that address such helper operations. Even
-better, I think a XOR operation deserves a system call, since it is
-quite useful in a variety of applications, not only cryptographic
-ones.
+> From: Fenghua Yu <fenghua.yu@intel.com>
+> 
+> Warn when sysfs_add_file_to_group fails.
+> 
+> Also add missing curly braces.
+> 
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/therm_throt.c |   14 ++++++++++----
+>  1 files changed, 10 insertions(+), 4 deletions(-)
 
-> In fact the whole interface is really tailored to the traditional
-> encryption/hash operations that BSD provided so I think this is not
-> a good foundation for our user-space API.
+> +               WARN_ON(err);
 
-It supports much more than the openbsd API, but indeed it is designed
-with cryptographic operations in mind and this limitation can allow a
-semi-formal verification of its properties. I'll try to post a link to
-the design document as soon.
+Hm, we tend to use WARN_ON_ONCE(), to avoid repeat spamming of the 
+syslog. Also, and perhaps more importantly, WARN_ON() is not a 
+particularly smart way to handle errors. How do other drivers handle 
+sysfs registration failures?
 
-regards,
-Nikos
+Also, that's not the only thing the patch does:
+
+> @@ -211,20 +211,26 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev)
+
+> -	return err;
+> +	return 0;
+
+How is the ignoring of an error and turning it into a WARN_ON() a fix? 
+Either it makes no sense to return errors - in which case the whole 
+add_dev method needs to be fixed in all drivers - or it makes sense, in 
+which case the behavior here is inconsistent.
+
+At minimum more explanation is needed in the changelog.
+
+Thanks,
+
+	Ingo
