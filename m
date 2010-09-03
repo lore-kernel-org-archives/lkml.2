@@ -1,94 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758033Ab0ICMTY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 08:19:24 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:34432 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757754Ab0ICMTU (ORCPT
+	id S1757951Ab0ICMWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 08:22:41 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:46891 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab0ICMWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 08:19:20 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 1/5] input: wacom: Add fuzz parameters to features
-Date: Fri,  3 Sep 2010 14:17:23 +0200
-Message-Id: <1283516247-11624-2-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1283516247-11624-1-git-send-email-rydberg@euromail.se>
-References: <1283516247-11624-1-git-send-email-rydberg@euromail.se>
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OrVDI-0005FT-A7.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1OrVDI-0005FT-A7 3b1057f03ad924d8eb7541e721e4bab1
+	Fri, 3 Sep 2010 08:22:39 -0400
+X-SpamScore: -21
+X-BigFish: VS-21(zz1432N98dNzz1202hzz8275bh15d4Rz32i87h2a8h)
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L867NS-01-AGG-02
+X-M-MSG: 
+Date: Fri, 3 Sep 2010 14:21:40 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: SVM: Clean up rip handling in vmrun emulation
+Message-ID: <20100903122140.GG1964@amd.com>
+References: <1283441387-7378-1-git-send-email-joerg.roedel@amd.com>
+ <1283441387-7378-4-git-send-email-joerg.roedel@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1283441387-7378-4-git-send-email-joerg.roedel@amd.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The signal-to-noise ratio varies between devices, but currently all
-devices are treated the same way. Add fuzz parameters to the feature
-struct, allowing for tailored treatment of devices.
+On Thu, Sep 02, 2010 at 11:29:47AM -0400, Joerg Roedel wrote:
+> This patch changes the rip handling in the vmrun emulation
+> path from using next_rip to the generic kvm register access
+> functions.
+> 
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> ---
+>  arch/x86/kvm/svm.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index ecd4e58..1643f30 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -2069,7 +2069,7 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
+>  		return false;
+>  	}
+>  
+> -	trace_kvm_nested_vmrun(svm->vmcb->save.rip - 3, vmcb_gpa,
+> +	trace_kvm_nested_vmrun(svm->vmcb->save.rip, vmcb_gpa,
+>  			       nested_vmcb->save.rip,
+>  			       nested_vmcb->control.int_ctl,
+>  			       nested_vmcb->control.event_inj,
+> @@ -2270,8 +2270,8 @@ static int vmrun_interception(struct vcpu_svm *svm)
+>  	if (nested_svm_check_permissions(svm))
+>  		return 1;
+>  
+> -	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
+> -	skip_emulated_instruction(&svm->vcpu);
+> +	/* Save rip after vmrun instruction */
+> +	kvm_rip_write(&svm->vcpu, kvm_rip_read(&svm->vcpu) + 3);
+>  
+>  	if (!nested_svm_vmrun(svm))
+>  		return 1;
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Argh, in my interactive commit I forgot one part of this patch. Please
+apply the attached one instead.
+
+
+>From 42450df2b72c23538d61616834dbdf1b53deafd7 Mon Sep 17 00:00:00 2001
+From: Joerg Roedel <joerg.roedel@amd.com>
+Date: Thu, 2 Sep 2010 17:12:18 +0200
+Subject: [PATCH 3/3] KVM: SVM: Clean up rip handling in vmrun emulation
+
+This patch changes the rip handling in the vmrun emulation
+path from using next_rip to the generic kvm register access
+functions.
+
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/input/tablet/wacom_sys.c |    6 +++++-
- drivers/input/tablet/wacom_wac.c |    9 ++++++---
- drivers/input/tablet/wacom_wac.h |    4 ++++
- 3 files changed, 15 insertions(+), 4 deletions(-)
+ arch/x86/kvm/svm.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-index 42ba369..e510e4f 100644
---- a/drivers/input/tablet/wacom_sys.c
-+++ b/drivers/input/tablet/wacom_sys.c
-@@ -333,8 +333,12 @@ static int wacom_retrieve_hid_descriptor(struct usb_interface *intf,
- 	struct usb_host_interface *interface = intf->cur_altsetting;
- 	struct hid_descriptor *hid_desc;
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index ecd4e58..6808f64 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -2069,7 +2069,7 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
+ 		return false;
+ 	}
  
--	/* default device to penabled */
-+	/* default features */
- 	features->device_type = BTN_TOOL_PEN;
-+	features->x_fuzz = 4;
-+	features->y_fuzz = 4;
-+	features->pressure_fuzz = 0;
-+	features->distance_fuzz = 0;
+-	trace_kvm_nested_vmrun(svm->vmcb->save.rip - 3, vmcb_gpa,
++	trace_kvm_nested_vmrun(svm->vmcb->save.rip, vmcb_gpa,
+ 			       nested_vmcb->save.rip,
+ 			       nested_vmcb->control.int_ctl,
+ 			       nested_vmcb->control.event_inj,
+@@ -2098,7 +2098,7 @@ static bool nested_svm_vmrun(struct vcpu_svm *svm)
+ 	hsave->save.cr0    = kvm_read_cr0(&svm->vcpu);
+ 	hsave->save.cr4    = svm->vcpu.arch.cr4;
+ 	hsave->save.rflags = vmcb->save.rflags;
+-	hsave->save.rip    = svm->next_rip;
++	hsave->save.rip    = kvm_rip_read(&svm->vcpu);
+ 	hsave->save.rsp    = vmcb->save.rsp;
+ 	hsave->save.rax    = vmcb->save.rax;
+ 	if (npt_enabled)
+@@ -2270,8 +2270,8 @@ static int vmrun_interception(struct vcpu_svm *svm)
+ 	if (nested_svm_check_permissions(svm))
+ 		return 1;
  
- 	/* only Tablet PCs need to retrieve the info */
- 	if ((features->type != TABLETPC) && (features->type != TABLETPC2FG))
-diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
-index 40d77ba..bfe5654 100644
---- a/drivers/input/tablet/wacom_wac.c
-+++ b/drivers/input/tablet/wacom_wac.c
-@@ -951,9 +951,12 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
+-	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
+-	skip_emulated_instruction(&svm->vcpu);
++	/* Save rip after vmrun instruction */
++	kvm_rip_write(&svm->vcpu, kvm_rip_read(&svm->vcpu) + 3);
  
- 	__set_bit(BTN_TOUCH, input_dev->keybit);
- 
--	input_set_abs_params(input_dev, ABS_X, 0, features->x_max, 4, 0);
--	input_set_abs_params(input_dev, ABS_Y, 0, features->y_max, 4, 0);
--	input_set_abs_params(input_dev, ABS_PRESSURE, 0, features->pressure_max, 0, 0);
-+	input_set_abs_params(input_dev, ABS_X, 0, features->x_max,
-+			     features->x_fuzz, 0);
-+	input_set_abs_params(input_dev, ABS_Y, 0, features->y_max,
-+			     features->y_fuzz, 0);
-+	input_set_abs_params(input_dev, ABS_PRESSURE, 0, features->pressure_max,
-+			     features->pressure_fuzz, 0);
- 
- 	__set_bit(ABS_MISC, input_dev->absbit);
- 
-diff --git a/drivers/input/tablet/wacom_wac.h b/drivers/input/tablet/wacom_wac.h
-index 99e1a54..d769e9a 100644
---- a/drivers/input/tablet/wacom_wac.h
-+++ b/drivers/input/tablet/wacom_wac.h
-@@ -73,6 +73,10 @@ struct wacom_features {
- 	int y_phy;
- 	unsigned char unit;
- 	unsigned char unitExpo;
-+	int x_fuzz;
-+	int y_fuzz;
-+	int pressure_fuzz;
-+	int distance_fuzz;
- };
- 
- struct wacom_shared {
+ 	if (!nested_svm_vmrun(svm))
+ 		return 1;
 -- 
-1.7.1
+1.7.0.4
+
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
