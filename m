@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab0ICQtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 12:49:17 -0400
-Received: from 29.mail-out.ovh.net ([87.98.216.213]:43471 "HELO
-	29.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756520Ab0ICQtP (ORCPT
+	id S1756520Ab0ICQwM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 12:52:12 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41454 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755815Ab0ICQwK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 12:49:15 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Sep 2010 12:49:14 EDT
-Date: Fri, 3 Sep 2010 18:41:58 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        bn@niasdigital.com, ryan@bluewatersys.com, david-b@pacbell.net,
-        avictor.za@gmail.com
-Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
-Message-ID: <20100903164158.GH17702@game.jcrosoft.org>
-References: <20091107122002.1ecf6483@hskinnemoen-d830>
- <1282575669-24501-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282575669-24501-1-git-send-email-nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 2712574351161011052
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Fri, 3 Sep 2010 12:52:10 -0400
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 3/15]  3: uprobes: Slot allocation
+ for Execution out of line(XOL)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20100903164010.GA1904@linux.vnet.ibm.com>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+	 <20100825134156.5447.43216.sendpatchset@localhost6.localdomain6>
+	 <1283372009.2059.1557.camel@laptop>
+	 <20100903164010.GA1904@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 03 Sep 2010 18:51:54 +0200
+Message-ID: <1283532714.2050.244.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17:01 Mon 23 Aug     , Nicolas Ferre wrote:
-> Add a simple gpio_is_valid() function to replace
-> the standard one. It introduces the __HAVE_ARCH_GPIO_IS_VALID
-> macro to overload the generic code.
-> As an implementation example, it takes into account the AT91
-> pio numbering to check if a proper value is used.
+On Fri, 2010-09-03 at 22:10 +0530, Srikar Dronamraju wrote:
+> > > +   mb();
+> > 
+> > Where is the matching barrier?
 > 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> Hi all,
+> I dont want the compiler to reorder the instructions and do the
+> assignment for user_bkpt to be done before we complete the copy above.
 > 
-> I come back on this thread as I would like to implement the gpio_is_valid()
-> function for AT91. I have based this piece of code on comments from Ben and
-> Haavard and chose the  __HAVE_ARCH_* macro definition as it seems wide spread
-> in kernel code.
-> Please make comments and if it is ok for you, eventually accept for merging...
+> If the assignment happens before we copy the content into the slot,
+> someother thread that might hit the same probe actually things the slot
+> is ready and tries to jump to that slot even before the slot is
+> initialized.
 > 
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Please let me know if I could have done it differently. 
 
-specially when the drivers are share between different arch such as here avr32
-and arm
-but also for renesas between sh and arm and ST between SH and ST200
 
-the representation of an invalid gpio could differ and invalade it dito
+If you want a compiler barrier, use barrier(), but here you seem to
+describe a multi-threaded situation, in which case the observer thread
+needs at least a rmb() in order for that mb() to mean anything other
+than the compiler barrier it implies.
 
-Best Regards,
-J.
+Also, use smp_* barriers.
+
+
