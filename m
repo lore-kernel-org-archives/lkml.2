@@ -1,113 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab0ICDUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 23:20:03 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46167 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755872Ab0ICDUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 23:20:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=l2DHtelp55N6N8rltiXCSaND8W+/mvB9F+9a90d2w6DfFFY45P7YRUwvOw9x2/cEwF
-         SEGIcjQ0vjSlfCw4lJ2xm5NiwRyDxN1D3h7yf0T+ASgluk6IvbQ0sn+pvMYOf9sVGAKM
-         y4U+ONlFl802P1c5QtXI4jXxUmGpQ7R9CTnm8=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Roland McGrath <roland@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 02/24] ptrace: cleanup ptrace_request()
-References: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
-	<1283442391-23612-3-git-send-email-namhyung@gmail.com>
-	<20100902183210.0CA3C40465@magilla.sf.frob.com>
-Date: Fri, 03 Sep 2010 12:19:48 +0900
-In-Reply-To: <20100902183210.0CA3C40465@magilla.sf.frob.com> (Roland McGrath's
-	message of "Thu, 2 Sep 2010 11:32:09 -0700 (PDT)")
-Message-ID: <87mxrzh5t7.fsf@gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755912Ab0ICDYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 23:24:14 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44906 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755453Ab0ICDYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 23:24:13 -0400
+Date: Fri, 3 Sep 2010 13:24:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ian Munsie <imunsie@au1.ibm.com>
+Subject: linux-next: build failure after merge of the final tree (powerpc
+ related)
+Message-Id: <20100903132410.ede593ed.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roland McGrath <roland@redhat.com> writes:
-> You've still changed put_user to copy_to_user here.
-> I thought you'd agreed not to change that.
->
+Hi all,
 
-My bad. I just sent v1, sorry.
-Here comes updated version.
+After merging the final tree, today's linux-next build
+(powerpc64 allnoconfig) failed like this:
 
+arch/powerpc/kernel/built-in.o: In function `.sys_call_table':
+(.text+0x8d48): undefined reference to `.compat_sys_recv'
 
->From 2e6543cdfb05c66dcb18ce5e8d941d835a4767af Mon Sep 17 00:00:00 2001
-From: Namhyung Kim <namhyung@gmail.com>
-Date: Thu, 26 Aug 2010 01:46:52 +0900
-Subject: [PATCH v2 02/24 UPDATED] ptrace: cleanup ptrace_request()
+Caused by commit 86250b9d12caa1a3dee12a7cf638b7dd70eaadb6 ("powerpc: Wire
+up direct socket system calls").
 
-Use new 'datavp' and 'datalp' variables to remove unnecesary castings.
+I have applied this patch for today:
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 3 Sep 2010 13:19:04 +1000
+Subject: [PATCH] powerpc: define a compat_sys_recv cond_syscall
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- kernel/ptrace.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ kernel/sys_ni.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index f838afe..dded1d6 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -563,6 +563,8 @@ int ptrace_request(struct task_struct *child, long request,
- {
- 	int ret = -EIO;
- 	siginfo_t siginfo;
-+	void __user *datavp = (void __user *) data;
-+	unsigned long __user *datalp = datavp;
- 
- 	switch (request) {
- 	case PTRACE_PEEKTEXT:
-@@ -579,19 +581,17 @@ int ptrace_request(struct task_struct *child, long request,
- 		ret = ptrace_setoptions(child, data);
- 		break;
- 	case PTRACE_GETEVENTMSG:
--		ret = put_user(child->ptrace_message, (unsigned long __user *) data);
-+		ret = put_user(child->ptrace_message, datalp);
- 		break;
- 
- 	case PTRACE_GETSIGINFO:
- 		ret = ptrace_getsiginfo(child, &siginfo);
- 		if (!ret)
--			ret = copy_siginfo_to_user((siginfo_t __user *) data,
--						   &siginfo);
-+			ret = copy_siginfo_to_user(datavp, &siginfo);
- 		break;
- 
- 	case PTRACE_SETSIGINFO:
--		if (copy_from_user(&siginfo, (siginfo_t __user *) data,
--				   sizeof siginfo))
-+		if (copy_from_user(&siginfo, datavp, sizeof siginfo))
- 			ret = -EFAULT;
- 		else
- 			ret = ptrace_setsiginfo(child, &siginfo);
-@@ -622,7 +622,7 @@ int ptrace_request(struct task_struct *child, long request,
- 		}
- 		mmput(mm);
- 
--		ret = put_user(tmp, (unsigned long __user *) data);
-+		ret = put_user(tmp, datalp);
- 		break;
- 	}
- #endif
-@@ -651,7 +651,7 @@ int ptrace_request(struct task_struct *child, long request,
- 	case PTRACE_SETREGSET:
- 	{
- 		struct iovec kiov;
--		struct iovec __user *uiov = (struct iovec __user *) data;
-+		struct iovec __user *uiov = datavp;
- 
- 		if (!access_ok(VERIFY_WRITE, uiov, sizeof(*uiov)))
- 			return -EFAULT;
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index bad369e..c782fe9 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -50,6 +50,7 @@ cond_syscall(compat_sys_sendmsg);
+ cond_syscall(sys_recvmsg);
+ cond_syscall(sys_recvmmsg);
+ cond_syscall(compat_sys_recvmsg);
++cond_syscall(compat_sys_recv);
+ cond_syscall(compat_sys_recvfrom);
+ cond_syscall(compat_sys_recvmmsg);
+ cond_syscall(sys_socketcall);
 -- 
-1.7.2.2
+1.7.1
 
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
