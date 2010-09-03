@@ -1,52 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab0ICPws (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 11:52:48 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:46287 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752784Ab0ICPwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 11:52:47 -0400
-Date: Fri, 3 Sep 2010 08:52:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: herbert@gondor.hengli.com.au, linville@tuxdriver.com,
-        netdev@vger.kernel.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-        peterz@infradead.org
-Subject: Re: [PATCH] netpoll: use non-BH variant of RCU
-Message-ID: <20100903155244.GC2413@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100813175157.GA29586@gondor.apana.org.au>
- <20100814.235033.02286546.davem@davemloft.net>
- <20100902172625.GD2349@linux.vnet.ibm.com>
- <20100903.083409.52185570.davem@davemloft.net>
+	id S1754626Ab0ICPyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 11:54:15 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48805 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355Ab0ICPyO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 11:54:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=J3XjrYb7lpaFUr5nzZ267PCWjQl+vVkklj/dsvgpr4CSgTy8G1bG7KUqm42w0ixJJk
+         0WboIzR5NjoC/7RzKAQfvm4ea+t3PiiLASysh3hcDUfis+SDFDC33mRgmG5r5uwRhhNH
+         i3ca3zDgwOowkiFsibqe/ZKxKVB36wQ+ejELk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100903.083409.52185570.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C8118F6.3010405@hp.com>
+References: <AANLkTineCKfL-UvqfQBTZPDFeqm3Nrpb=pFnZpkSqbEQ@mail.gmail.com>
+	<4C810313.80000@hp.com>
+	<AANLkTikRBOhTQM0gyS8_Vwu7EsetaaaEuv0owkBp7B_F@mail.gmail.com>
+	<AANLkTi=dtsjCvvoOYBiMe6+sro8Ui8P7xtMH=k808BwU@mail.gmail.com>
+	<4C8118F6.3010405@hp.com>
+Date: Fri, 3 Sep 2010 11:54:12 -0400
+Message-ID: <AANLkTin=qJxn1dYjmAa8pwR38EEin8fsJJnR0vc1JxJT@mail.gmail.com>
+Subject: Re: [PATCH] sctp: prevent reading out-of-bounds memory
+From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+To: Vlad Yasevich <vladislav.yasevich@hp.com>
+Cc: sri@us.ibm.com, linux-sctp@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 08:34:09AM -0700, David Miller wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Date: Thu, 2 Sep 2010 10:26:25 -0700
-> 
-> >     softirq: adjust error check
-> >     
-> >     The error check for _local_bh_enable_ip() warns on both in_irq() and
-> >     irqs_disabled().  The check for in_irq() is necessary, because a hardirq
-> >     might well have interrupted bh execution, in which case it is simply
-> >     not possible for the hardirq to exclude the bh that got interrupted.
-> >     
-> >     However, it is perfectly reasonable to disable bh while hardirqs are
-> >     disabled, and this in fact promotes common code.  This commit therefore
-> >     removes the irqs_disabled() check.
-> >     
-> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Acked-by: David S. Miller <davem@davemloft.net>
+Hopefully this covers everything.
 
-Thank you, David!
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 
-							Thanx, Paul
+--- linux-2.6.35.4.orig/net/sctp/socket.c	2010-09-03 08:58:48.127080114 -0400
++++ linux-2.6.35.4/net/sctp/socket.c	2010-09-03 11:52:28.239595395 -0400
+@@ -916,6 +916,12 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+ 	/* Walk through the addrs buffer and count the number of addresses. */
+ 	addr_buf = kaddrs;
+ 	while (walk_size < addrs_size) {
++
++		if (walk_size + sizeof(sa_family_t) > addrs_size) {
++			kfree(kaddrs);
++			return -EINVAL;
++		}
++
+ 		sa_addr = (struct sockaddr *)addr_buf;
+ 		af = sctp_get_af_specific(sa_addr->sa_family);
+
+@@ -1002,9 +1008,14 @@ static int __sctp_connect(struct sock* s
+ 	/* Walk through the addrs buffer and count the number of addresses. */
+ 	addr_buf = kaddrs;
+ 	while (walk_size < addrs_size) {
++
++		if (walk_size + sizeof(sa_family_t) > addrs_size) {
++			err = -EINVAL;
++			goto out_free;
++		}
++
+ 		sa_addr = (union sctp_addr *)addr_buf;
+ 		af = sctp_get_af_specific(sa_addr->sa.sa_family);
+-		port = ntohs(sa_addr->v4.sin_port);
+
+ 		/* If the address family is not supported or if this address
+ 		 * causes the address buffer to overflow return EINVAL.
+@@ -1013,6 +1024,8 @@ static int __sctp_connect(struct sock* s
+ 			err = -EINVAL;
+ 			goto out_free;
+ 		}
++		
++		port = ntohs(sa_addr->v4.sin_port);
+
+ 		/* Save current address so we can work with it */
+ 		memcpy(&to, sa_addr, af->sockaddr_len);
+
+
+
+On Fri, Sep 3, 2010 at 11:49 AM, Vlad Yasevich
+<vladislav.yasevich@hp.com> wrote:
+> On 09/03/2010 10:47 AM, Dan Rosenberg wrote:
+>> Ugh, just remembered the port number is also dereferenced, so the
+>> second of these two checks needs to be expanded to the size of a
+>> sockaddr_in.  Note to self: don't write patches on too little sleep.
+>> Apologies for the unnecessary traffic.
+>>
+>
+> Actually, you can move that down.  Otherwise, we'd end up executing the same code
+> twice which is just silly.
+>
+> So, the code should be like this:
+>        1.  see if we can get the address family.
+>        2.  Get the address family.
+>        3.  see if we get the sockaddr of appropriate size,
+>        4.  Get that structure.
+>        5.  reference fields.
+>
+> -vlad
+>
+>> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+>>
+>> --- linux-2.6.35.4.orig/net/sctp/socket.c     2010-09-03 08:58:48.127080114 -0400
+>> +++ linux-2.6.35.4/net/sctp/socket.c  2010-09-03 10:45:08.467098052 -0400
+>> @@ -916,6 +916,12 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+>>       /* Walk through the addrs buffer and count the number of addresses. */
+>>       addr_buf = kaddrs;
+>>       while (walk_size < addrs_size) {
+>> +
+>> +             if (walk_size + sizeof(sa_family_t) > addrs_size) {
+>> +                     kfree(kaddrs);
+>> +                     return -EINVAL;
+>> +             }
+>> +
+>>               sa_addr = (struct sockaddr *)addr_buf;
+>>               af = sctp_get_af_specific(sa_addr->sa_family);
+>>
+>> @@ -1002,6 +1008,12 @@ static int __sctp_connect(struct sock* s
+>>       /* Walk through the addrs buffer and count the number of addresses. */
+>>       addr_buf = kaddrs;
+>>       while (walk_size < addrs_size) {
+>> +
+>> +             if (walk_size + sizeof(struct sockaddr_in) > addrs_size) {
+>> +                     err = -EINVAL;
+>> +                     goto out_free;
+>> +             }
+>> +
+>>               sa_addr = (union sctp_addr *)addr_buf;
+>>               af = sctp_get_af_specific(sa_addr->sa.sa_family);
+>>               port = ntohs(sa_addr->v4.sin_port);
+>>
+>>
+>>
+>> On Fri, Sep 3, 2010 at 10:35 AM, Dan Rosenberg
+>> <dan.j.rosenberg@gmail.com> wrote:
+>>> Ha, I knew there was an easier way.  Take two:
+>>>
+>>> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+>>>
+>>> --- linux-2.6.35.4.orig/net/sctp/socket.c       2010-09-03 08:58:48.127080114 -0400
+>>> +++ linux-2.6.35.4/net/sctp/socket.c    2010-09-03 10:28:14.929595312 -0400
+>>> @@ -916,6 +916,12 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+>>>        /* Walk through the addrs buffer and count the number of addresses. */
+>>>        addr_buf = kaddrs;
+>>>        while (walk_size < addrs_size) {
+>>> +
+>>> +               if (walk_size + sizeof(sa_family_t) > addrs_size) {
+>>> +                       kfree(kaddrs);
+>>> +                       return -EINVAL;
+>>> +               }
+>>> +
+>>>                sa_addr = (struct sockaddr *)addr_buf;
+>>>                af = sctp_get_af_specific(sa_addr->sa_family);
+>>>
+>>> @@ -1002,6 +1008,12 @@ static int __sctp_connect(struct sock* s
+>>>        /* Walk through the addrs buffer and count the number of addresses. */
+>>>        addr_buf = kaddrs;
+>>>        while (walk_size < addrs_size) {
+>>> +
+>>> +               if (walk_size + sizeof(sa_family_t) > addrs_size) {
+>>> +                       err = -EINVAL;
+>>> +                       goto out_free;
+>>> +               }
+>>> +
+>>>                sa_addr = (union sctp_addr *)addr_buf;
+>>>                af = sctp_get_af_specific(sa_addr->sa.sa_family);
+>>>                port = ntohs(sa_addr->v4.sin_port);
+>>>
+>>>
+>>>>
+>>>> Hm.. we already validate that we have the proper amount of space for a given sockaddr.
+>>>> The only thing we are missing is making sure that there is room to get the proper address
+>>>> family and I think you can do that without adding any extra variables:
+>>>>
+>>>>        if (walk_size + sizeof(sa_family_t) > addr_size) {
+>>>>                /* Not enough room for address family */
+>>>>                kfree(kaddrs);
+>>>>                return -EINVAL;
+>>>>        }
+>>>>
+>>>> -vlad
+>>>>
+>>>
+>>> On Fri, Sep 3, 2010 at 10:15 AM, Vlad Yasevich
+>>> <vladislav.yasevich@hp.com> wrote:
+>>>> On 09/03/2010 09:48 AM, Dan Rosenberg wrote:
+>>>>> Two user-controlled allocations in SCTP are subsequently dereferenced
+>>>>> as sockaddr structs, without checking if the dereferenced struct
+>>>>> members fall beyond the end of the allocated chunk.  There doesn't
+>>>>> appear to be any information leakage here based on how these members
+>>>>> are used and additional checking, but it's still worth fixing.
+>>>>>
+>>>>> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+>>>>>
+>>>>> --- linux-2.6.35.4.orig/net/sctp/socket.c     2010-09-03 08:58:48.127080114 -0400
+>>>>> +++ linux-2.6.35.4/net/sctp/socket.c  2010-09-03 09:22:06.337096825 -0400
+>>>>> @@ -889,6 +889,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+>>>>>       int err;
+>>>>>       int addrcnt = 0;
+>>>>>       int walk_size = 0;
+>>>>> +     unsigned int remaining = addrs_size;
+>>>>>       struct sockaddr *sa_addr;
+>>>>>       void *addr_buf;
+>>>>>       struct sctp_af *af;
+>>>>> @@ -916,6 +917,13 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+>>>>>       /* Walk through the addrs buffer and count the number of addresses. */
+>>>>>       addr_buf = kaddrs;
+>>>>>       while (walk_size < addrs_size) {
+>>>>> +
+>>>>> +             /* Don't read out-of-bounds memory */
+>>>>> +             if (remaining < sizeof(struct sockaddr)) {
+>>>>> +                     kfree(kaddrs);
+>>>>> +                     return -EINVAL;
+>>>>> +             }
+>>>>> +
+>>>>>               sa_addr = (struct sockaddr *)addr_buf;
+>>>>>               af = sctp_get_af_specific(sa_addr->sa_family);
+>>>>>
+>>>>> @@ -929,6 +937,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+>>>>>               addrcnt++;
+>>>>>               addr_buf += af->sockaddr_len;
+>>>>>               walk_size += af->sockaddr_len;
+>>>>> +             remaining -= af->sockaddr_len;
+>>>>>       }
+>>>>>
+>>>>>       /* Do the work. */
+>>>>> @@ -984,6 +993,7 @@ static int __sctp_connect(struct sock* s
+>>>>>       void *addr_buf;
+>>>>>       unsigned short port;
+>>>>>       unsigned int f_flags = 0;
+>>>>> +     unsigned int remaining = addrs_size;
+>>>>>
+>>>>>       sp = sctp_sk(sk);
+>>>>>       ep = sp->ep;
+>>>>> @@ -1002,6 +1012,13 @@ static int __sctp_connect(struct sock* s
+>>>>>       /* Walk through the addrs buffer and count the number of addresses. */
+>>>>>       addr_buf = kaddrs;
+>>>>>       while (walk_size < addrs_size) {
+>>>>> +
+>>>>> +             /* Don't read out-of-bounds memory */
+>>>>> +             if (remaining < sizeof(union sctp_addr)) {
+>>>>> +                     err = -EINVAL;
+>>>>> +                     goto out_free;
+>>>>> +             }
+>>>>> +
+>>>>>               sa_addr = (union sctp_addr *)addr_buf;
+>>>>>               af = sctp_get_af_specific(sa_addr->sa.sa_family);
+>>>>>               port = ntohs(sa_addr->v4.sin_port);
+>>>>> @@ -1101,6 +1118,7 @@ static int __sctp_connect(struct sock* s
+>>>>>               addrcnt++;
+>>>>>               addr_buf += af->sockaddr_len;
+>>>>>               walk_size += af->sockaddr_len;
+>>>>> +             remaining -= af->sockaddr_len;
+>>>>>       }
+>>>>>
+>>>>>       /* In case the user of sctp_connectx() wants an association
+>>>>>
+>>>>
+>>>>
+>>>
+>>
+>
+>
