@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab0ICNwH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 09:52:07 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:3969 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab0ICNwF (ORCPT
+	id S1755951Ab0ICNwg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 09:52:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52715 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab0ICNwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 09:52:05 -0400
-X-IronPort-AV: E=Sophos;i="4.56,313,1280707200"; 
-   d="scan'208";a="1683396"
-Date: Fri, 3 Sep 2010 14:51:50 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 0/7] PV on HVM: receive interrupts as xen events
-In-Reply-To: <4C7FF538.7020704@goop.org>
-Message-ID: <alpine.DEB.2.00.1009031240510.2714@kaball-desktop>
-References: <alpine.DEB.2.00.1008301134160.2545@kaball-desktop> <4C7FF538.7020704@goop.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 3 Sep 2010 09:52:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=jXQlmwltzIJZGrRut4sAV+fUvHlVMdXB/vSBlqjBzQzpBif1AOoTZnlkq+5hKf24xS
+         d+ATcGtOU1hsyvTV6ik8hcI/nHMZk9sLUkAf8y9spSz9H94Hft/wEo2qLJN1bE2s1Mgn
+         lQhlRH6koDFq15F7U2r8p1lHgNYWhyDySmfts=
+Message-ID: <4C80FD9E.5040408@gmail.com>
+Date: Fri, 03 Sep 2010 15:52:30 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Eric Paris <eparis@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: audit_tree: sleep inside atomic
+References: <4C1F8217.5020909@gmail.com>
+In-Reply-To: <4C1F8217.5020909@gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010, Jeremy Fitzhardinge wrote:
->  On 08/30/2010 04:20 AM, Stefano Stabellini wrote:
-> > Hi all,
-> > this patch series introduces some performance improvements for xen PV on
-> > HVM guests: interacting with the emulated APIC is slow because it causes
-> > traps in the hypervisor while receiving xen events using the vector callback
-> > mechanism allow us to skip all that. For this reason we remap interrupts
-> > and MSIs into xen pirqs so that from that point on we can receive them
-> > as xen events instead.
-> > This series is based on Konrad's pcifront series (not upstream yet):
-> >
-> > http://lkml.org/lkml/2010/8/4/374
-> >
-> > and requires a patch to xen and a patch to qemu-xen (just sent to
-> > xen-devel).
-> 
-> My only concern with this series is the pirq remapping stuff.  Why do
-> pirq and irq need to be non-identical?  Is it because pirq is a global
-> namespace, and dom0 has already assigned it?
->
-> Why do guests need to know about max pirq?  Would it be better to make
-> Xen use a more dynamic structure for pirqs so that any arbitrary value
-> can be used?
-> 
- 
-No, pirq is a per-domain namespace, but pirq and irq are conceptually
-different: pirqs are used by xen as a reference for interrupts of
-devices assigned to the guest, while linux uses irqs for its
-internal purposes.
-The pirq namespace is chosen by xen while the linux irq namespace is
-chosen by linux.
-Linux is allowed to choose the pirq number it wants when mapping an
-interrupt, this is why linux needs to know the max pirq, so that it can
-safely chose a pirq that is in the allowed range.
-The difference between pirqs and linux irqs increases when we talk about
-PV on HVM guests: in this case qemu also maps interrupts in the guests
-getting pirqs in return, so the linux kernel has to be able to cope with
-already assigned pirq numbers.
-The current PHYSDEVOP_map_pirq interface is already flexible enough for
-that because it provides the possibility for the caller to let xen
-choose the pirq, something that linux never does in the pure PV case,
-but it is still possible. Obviously if you let xen choose the pirq
-number you are safe from conflicts but you must be able to cope with
-pirq numbers different from linux irq numbers.
+Ideas, comments?
 
+On 06/21/2010 05:15 PM, Jiri Slaby wrote:
+> Hi,
+> 
+> stanse found a sleep inside atomic added by the following commit:
+> commit fb36de479642bc9bdd3af251ae48b882d8a1ad5d
+> Author: Eric Paris <eparis@redhat.com>
+> Date:   Thu Dec 17 20:12:05 2009 -0500
+> 
+>     audit: reimplement audit_trees using fsnotify rather than inotify
+> 
+>     Simply switch audit_trees from using inotify to using fsnotify for it's
+>     inode pinning and disappearing act information.
+> 
+>     Signed-off-by: Eric Paris <eparis@redhat.com>
+> 
+> 
+> In untag_chunk, there is
+>   spin_lock(&entry->lock);
+>   ...
+>   new = alloc_chunk(size);
+>   ...
+>   spin_unlock(&entry->lock);
+> 
+> with
+> static struct audit_chunk *alloc_chunk(int count)
+> {
+>   struct audit_chunk *chunk;
+>   ...
+>   chunk = kzalloc(size, GFP_KERNEL);
+> 
+> But this can sleep. How big the allocations are? Could it be ATOMIC or
+> moved outside the spinlock?
+> 
+> thanks,
+-- 
+js
