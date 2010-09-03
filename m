@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab0ICVf3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 17:35:29 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36770 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075Ab0ICVf2 (ORCPT
+	id S1757597Ab0ICVgH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 17:36:07 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:41544 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab0ICVgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 17:35:28 -0400
-Date: Fri, 3 Sep 2010 23:35:24 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Luotao Fu <l.fu@pengutronix.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/2] Input: stmpe-ts - return -ENOMEM if memory
-	allocation fail
-Message-ID: <20100903213524.GA32515@pengutronix.de>
-References: <1283477451.5439.6.camel@mola> <1283477533.5439.8.camel@mola>
+	Fri, 3 Sep 2010 17:36:06 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C816A00.9030507@s5r6.in-berlin.de>
+Date: Fri, 03 Sep 2010 23:34:56 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
-Content-Disposition: inline
-In-Reply-To: <1283477533.5439.8.camel@mola>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: linux-fsdevel@vger.kernel.org
+CC: bugzilla-daemon@bugzilla.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [Bug 17752] 2.6.36-rc3: inconsistent lock state (iprune_sem,
+ shrink_icache_memory)
+References: <bug-17752-4803@https.bugzilla.kernel.org/> <201009031907.o83J7tdw011454@demeter1.kernel.org>
+In-Reply-To: <201009031907.o83J7tdw011454@demeter1.kernel.org>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+bugzilla-daemon@bugzilla.kernel.org wrote:
+> https://bugzilla.kernel.org/show_bug.cgi?id=17752
+> 
+> 
+> Maciej Rutecki <maciej.rutecki@gmail.com> changed:
+> 
+>            What    |Removed                     |Added
+> ----------------------------------------------------------------------------
+>              Blocks|                            |16444
 
---xHFwDpU9dbj6ez1V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is probably not a regression.  See this earlier discussion:
+http://lkml.org/lkml/2010/1/15/76
 
-On Fri, Sep 03, 2010 at 09:32:13AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+And another report, coincidentally at the same time:
+http://lkml.org/lkml/2010/1/18/108
 
-Basically correct. Should be simpler to just use
+As I understand Christoph's post on January 19, several code paths are
+independently affected:
+http://lkml.org/lkml/2010/1/19/267
+(Maybe some of those have been fixed in the meantime.)
 
-	int ret =3D -ENOMEM;
+I don't see in my trace from September 1 which filesystem caused the
+particular lockdep report.  I may have unmounted ext4, vfat, or fuse prior to
+that.
 
-though.
+Dave wrote on September 2:
+>> Any memory allocation that enters reclaim in the unmount path will
+>> generate this warning. The problem is that the normal memory reclaim
+>> path is:
+>> 
+>> 	alloc -> reclaim -> shrink_slab -> shrink_icache_memory -> iprune_sem -> s_umount
+>> 
+>> while unmmount does:
+>> 
+>> 	unmount -> s_umount -> alloc -> lockdep goes boom!
+>> or
+>> 	unmount -> iprune_sem -> alloc -> lockdep goes boom!
+>> 
+>> I never got a straight answer on this, but it the warnings are
+>> indicating that you must use GFP_NOFS allocations for every
+>> allocation in the unmount path, which is kind of hard to know
+>> about given the code is not unomunt path specific....
 
-> ---
->  drivers/input/touchscreen/stmpe-ts.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/input/touchscreen/stmpe-ts.c b/drivers/input/touchsc=
-reen/stmpe-ts.c
-> index 0339d1d..e715b27 100644
-> --- a/drivers/input/touchscreen/stmpe-ts.c
-> +++ b/drivers/input/touchscreen/stmpe-ts.c
-> @@ -276,12 +276,16 @@ static int __devinit stmpe_input_probe(struct platf=
-orm_device *pdev)
->  		return ts_irq;
-> =20
->  	ts =3D kzalloc(sizeof(*ts), GFP_KERNEL);
-> -	if (!ts)
-> +	if (!ts) {
-> +		ret =3D -ENOMEM;
->  		goto err_out;
-> +	}
-> =20
->  	idev =3D input_allocate_device();
-> -	if (!idev)
-> +	if (!idev) {
-> +		ret =3D -ENOMEM;
->  		goto err_free_ts;
-> +	}
-> =20
->  	platform_set_drvdata(pdev, ts);
->  	ts->stmpe =3D stmpe;
-> --=20
-> 1.7.2
->=20
->=20
->=20
->=20
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---xHFwDpU9dbj6ez1V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkyBahwACgkQD27XaX1/VRuSPgCffsSyfWHCiazjZmXWw7fS7Hbk
-IQ8An0QM0culSodkZ9KEmoeRqCsHgQux
-=OaGn
------END PGP SIGNATURE-----
-
---xHFwDpU9dbj6ez1V--
+Is it feasible to add a gfp_flag argument to all call chains that could lead
+to allocations in unmount?
+-- 
+Stefan Richter
+-=====-==-=- =--= ---==
+http://arcgraph.de/sr/
