@@ -1,133 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab0ICIKm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 04:10:42 -0400
-Received: from mail.perches.com ([173.55.12.10]:1266 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754639Ab0ICIKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 04:10:40 -0400
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
-From: Joe Perches <joe@perches.com>
-To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Crane Cai <crane.cai@amd.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yong.y.wang@intel.com, qi.wang@intel.com,
-        andrew.chih.howe.khor@intel.com, arjan@linux.intel.com,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
-        Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <4C80A089.508@dsn.okisemi.com>
-References: <4C80A089.508@dsn.okisemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Sep 2010 01:10:37 -0700
-Message-ID: <1283501437.1797.441.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1755605Ab0ICIQK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 04:16:10 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58616 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754219Ab0ICIQI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 04:16:08 -0400
+From: Bernhard Walle <walle@corscience.de>
+To: linux-mips@linux-mips.org
+Cc: ralf@linux-mips.org, ddaney@caviumnetworks.com, akpm@linux-foundation.org,
+        ebiederm@xmission.com, hch@lst.de, linux-kernel@vger.kernel.org
+Subject: [PATCH] MIPS: N32: Fix getdents64 syscall for n32
+Date: Fri,  3 Sep 2010 10:15:34 +0200
+Message-Id: <1283501734-6532-1-git-send-email-walle@corscience.de>
+X-Mailer: git-send-email 1.7.0.4
+X-Provags-ID: V02:K0:80V1Up6k0zdnJ31H8L7+4YcvYB5b3HphSFXeOchfLvB
+ PJmxnxjDizFnOMFLZy6OrXoa52hfKBImRO3aRy97PkVqsYVHQl
+ X5F+qmtAHvlY89sVlzRbTEED21n0yWVU1XEvDvUrQWjoXsSoTG
+ bFGlYRWtVTMZHYxxGigMHmQfUDUn705ztv33ubL24z5IrbSNlm
+ +LYQRSUBr+lwyaPK+I6jQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-03 at 16:15 +0900, Masayuki Ohtak wrote:
-[]
-> +#define pch_dbg(adap, fmt, arg...)  \
-> +	dev_dbg(adap->pch_adapter.dev.parent, "%s :"fmt, __func__, ##arg)
-> +
-> +#define pch_err(adap, fmt, arg...)  \
-> +	dev_err(adap->pch_adapter.dev.parent, "%s :"fmt, __func__, ##arg)
-> +
-> +#define pch_pci_err(pdev, fmt, arg...)  \
-> +				dev_err(&pdev->dev, "%s :"fmt, __func__, ##arg)
-> +#define pch_pci_dbg(pdev, fmt, arg...)  \
-> +				dev_dbg(&pdev->dev, "%s :"fmt, __func__, ##arg)
+Commit 31c984a5acabea5d8c7224dc226453022be46f33 introduced a new syscall
+getdents64. However, in the syscall table, the new syscall still refers
+to the old getdents which doesn't work.
 
-OK, but it seems careless because the two types
-are not uniformly indented, there's a blank line
-between pch_dbg and pch_err, and the two pch_pci_<level>
-defines are in the reverse order without a blank line
-between them. 
+The problem appeared with a system that uses the eglibc 2.12-r11187
+(that utilizes that new syscall) is very confused. The fix has been
+tested with that eglibc version.
 
-I think it's better to use separate multiple strings
-that are concatentated by the preprocessor like:
-	"%s :" fmt
-not
-	"%s :"fmt
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+---
+ arch/mips/kernel/scall64-n32.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Almost all code in kernel uses "%s: " to format __func__.
-Some use "%s(): ".  I think "%s :" is unique.
-
-The rest of the logging messages look good.
-
-Some other comments:
-
-> +	if ((pch_wait_for_xfer_complete(adap) == 0) &&
-> +						(pch_getack(adap) == 0)) {
-
-This would look better as:
-
-	if ((pch_wait_for_xfer_complete(adap) == 0) &&
-	    (pch_getack(adap) == 0)) {
-
-> +	if ((pch_wait_for_xfer_complete(adap) == 0)
-> +					    && (pch_getack(adap) == 0)) {
-
-Here too.
-
-> +	for (i = 0; i < PCH_MAX_CHN; i++) {
-> +		while ((adap_info->pch_data[i].pch_xfer_in_progress)) {
-> +			/* Wait until all channel transfers are completed */
-> +			msleep(1);
-> +		}
-> +		/* Disable the i2c interrupts */
-> +		pch_disbl_int(&adap_info->pch_data[i]);
-> +	}
-
-Would it be better to disable all possible interrupts first
-or do you need to disable them in order?
-
-Something like:
-
-	bool *disabled = kzalloc(PCH_MAX_CHN * sizeof(bool), GFP_KERNEL);
-/*
- * or a static with a memset, or check something
- * like pch_is_int_enabled(&adap_info->pch_data[i])
- * then remove the else because the kzalloc couldn't fail.
- */
-	if (disabled) {
-		bool alldone;
-		do {
-			alldone = true;
-			for (i = 0; i < PCH_MAX_CHN; i++) {
-				if (!adap_info->pch_data[i].pch_xfer_in_progress &&
-				    !disabled[i])) {
-					pch_disbl_int(&adap_info->pch_data[i]);
-					disabled[i] = true;
-				} else
-					alldone = false;
-			}
-			if (!alldone) {
-				/* Wait until all channel transfers are completed */
-				msleep(1);
-			}
-		} while (!alldone);
-		kfree(disabled);
-
-/* remove the else if there's a static etc */
-
-	} else {
-		for (i = 0; i < PCH_MAX_CHN; i++) {
-			while ((adap_info->pch_data[i].pch_xfer_in_progress)) {
-				/* Wait until all channel transfers are completed */
-				msleep(1);
-			}
-			/* Disable the i2c interrupts */
-			pch_disbl_int(&adap_info->pch_data[i]);
-		}
-	}
-
-cheers, Joe
+diff --git a/arch/mips/kernel/scall64-n32.S b/arch/mips/kernel/scall64-n32.S
+index a3d6613..dfa8cbc 100644
+--- a/arch/mips/kernel/scall64-n32.S
++++ b/arch/mips/kernel/scall64-n32.S
+@@ -419,5 +419,5 @@ EXPORT(sysn32_call_table)
+ 	PTR	sys_perf_event_open
+ 	PTR	sys_accept4
+ 	PTR     compat_sys_recvmmsg
+-	PTR     sys_getdents
++	PTR     sys_getdents64
+ 	.size	sysn32_call_table,.-sysn32_call_table
+-- 
+1.7.0.4
 
