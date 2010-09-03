@@ -1,55 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab0ICGog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 02:44:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5222 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432Ab0ICGof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 02:44:35 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4C804F3A.8020001@snapgear.com>
-References: <4C804F3A.8020001@snapgear.com> <19747.1283422807@redhat.com> <20100902102203.19806.39028.stgit@warthog.procyon.org.uk>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] Fix M68K irqflags
-Date: Fri, 03 Sep 2010 07:44:19 +0100
-Message-ID: <7077.1283496259@redhat.com>
+	id S1753152Ab0ICGsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 02:48:39 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56835 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab0ICGsi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 02:48:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=i3TZfBxt98ynD2zwAkjh5GS0zICy5cC7WKffEfBydnE+Uko3wm/Z+iThK8u4e8Kg0H
+         hwCURXmqTnVALJWRfkZuTIiBCEsFiM37V/uB0Tl1a8iLfjeEYqbGrG4K9E1buX8ezJt6
+         PjpjHlOen65ZyEqGXhlGN+4j4h3ffsLNm345s=
+Message-ID: <4C809A40.8070300@gmail.com>
+Date: Fri, 03 Sep 2010 16:18:32 +0930
+From: Graham Gower <graham.gower@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100721 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/char/vt_ioctl.c: Fix VT_OPENQRY error value
+References: <4C809632.6090706@gmail.com>
+In-Reply-To: <4C809632.6090706@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Ungerer <gerg@snapgear.com> wrote:
+When all VT's are in use, VT_OPENQRY casts -1 to unsigned char
+before returning it to userspace as an int. VT255 is not the next
+available console.
 
-> >  -	DEFINE(THREAD_SIZE, THREAD_SIZE);
-> > -
-> 
-> This breaks final link due to missing THREAD_SIZE definition in head.S:
-> 
->   LD      vmlinux
-> arch/m68knommu/platform/coldfire/head.o: In function `_clear_bss':
-> (.head.text+0xa4): undefined reference to `THREAD_SIZE'
-> 
-> 
-> Without that asm-offsets.c change it works on my ColdFire boards.
-> I am happy with it:
+Signed-off-by: Graham Gower <graham.gower@gmail.com>
+---
 
-With that, I get a duplicate reference to THREAD_SIZE.  head.S should include
-asm/thread_info.h rather than THREAD_SIZE being redefined in asm-offsets.
+Sorry, I seem to have dropped a patch fragment in the previous mail.
 
-  CC      init/do_mounts_rd.o
-In file included from /warthog/nfs/linux-2.6-fscache/arch/m68k/include/asm/asm-offsets.h:1,
-                 from arch/m68knommu/platform/coldfire/entry.S:36:
-include/generated/asm-offsets.h:46:1: warning: "THREAD_SIZE" redefined
-In file included from /warthog/nfs/linux-2.6-fscache/arch/m68k/include/asm/thread_info.h:2,
-                 from arch/m68knommu/platform/coldfire/entry.S:32:
-/warthog/nfs/linux-2.6-fscache/arch/m68k/include/asm/thread_info_no.h:27:1: warning: this is the location of the previous definition
-
-Unfortunately, I don't have a binutils that can handle the funny Coldfire
-instructions.  Can you point me at a Coldfire toolchain?
-
-David
+--- drivers/char/vt_ioctl.c~	2010-08-11 04:07:31.000000000 +0930
++++ drivers/char/vt_ioctl.c	2010-09-03 16:13:59.000000000 +0930
+@@ -503,6 +503,7 @@
+ 	struct kbd_struct * kbd;
+ 	unsigned int console;
+ 	unsigned char ucval;
++	unsigned int uival;
+ 	void __user *up = (void __user *)arg;
+ 	int i, perm;
+ 	int ret = 0;
+@@ -657,7 +658,7 @@
+ 		break;
+ 
+ 	case KDGETMODE:
+-		ucval = vc->vc_mode;
++		uival = vc->vc_mode;
+ 		goto setint;
+ 
+ 	case KDMAPDISP:
+@@ -695,7 +696,7 @@
+ 		break;
+ 
+ 	case KDGKBMODE:
+-		ucval = ((kbd->kbdmode == VC_RAW) ? K_RAW :
++		uival = ((kbd->kbdmode == VC_RAW) ? K_RAW :
+ 				 (kbd->kbdmode == VC_MEDIUMRAW) ? K_MEDIUMRAW :
+ 				 (kbd->kbdmode == VC_UNICODE) ? K_UNICODE :
+ 				 K_XLATE);
+@@ -717,9 +718,9 @@
+ 		break;
+ 
+ 	case KDGKBMETA:
+-		ucval = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
++		uival = (vc_kbd_mode(kbd, VC_META) ? K_ESCPREFIX : K_METABIT);
+ 	setint:
+-		ret = put_user(ucval, (int __user *)arg);
++		ret = put_user(uival, (int __user *)arg);
+ 		break;
+ 
+ 	case KDGETKEYCODE:
+@@ -949,7 +950,7 @@
+ 		for (i = 0; i < MAX_NR_CONSOLES; ++i)
+ 			if (! VT_IS_IN_USE(i))
+ 				break;
+-		ucval = i < MAX_NR_CONSOLES ? (i+1) : -1;
++		uival = i < MAX_NR_CONSOLES ? (i+1) : -1;
+ 		goto setint;		 
+ 
+ 	/*
