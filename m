@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab0ICBJM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 21:09:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44619 "EHLO ogre.sisk.pl"
+	id S1752297Ab0ICBMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 21:12:13 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37153 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751966Ab0ICBJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 21:09:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
-Date: Fri, 3 Sep 2010 03:07:33 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "M. Vefa Bicakci" <bicave@superonline.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org,
-        Minchan Kim <minchan.kim@gmail.com>
-References: <201009022157.18561.rjw@sisk.pl> <201009022224.59313.rjw@sisk.pl> <20100903085756.B657.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100903085756.B657.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009030307.34057.rjw@sisk.pl>
+	id S1750761Ab0ICBMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 21:12:12 -0400
+Date: Fri, 3 Sep 2010 11:12:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: linux-next: manual merge of the galak tree with the powerpc-merge
+ tree
+Message-Id: <20100903111202.6529b9c4.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__3_Sep_2010_11_12_02_+1000_FoOh2.BmjlSlcK1B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 03, 2010, KOSAKI Motohiro wrote:
-> Hello,
-> 
-> > > > > Like in the patch below, perhaps?
-> > > > 
-> > > > Looks like fine. but I have one question. hibernate_preallocate_memory() call
-> > > > preallocate_image_memory() two times. Why do you only care latter one?
-> > > > former one seems similar risk.
-> > > 
-> > > The first one is mandatory, ie. if we can't allocate the requested number of
-> > > pages at this point, we fail the entire hibernation.  In that case the
-> > > performance hit doesn't matter.
-> > 
-> > IOW, your patch at http://lkml.org/lkml/2010/9/2/262 is still necessary to
-> > protect against the infinite loop in that case.
-> 
-> As far as I understand, we need distinguish two allocation failure.
->   1) failure because no enough memory
-> 	-> yes, hibernation should fail
->  2) failure because already allocated enough lower zone memory
-> 	-> why should we fail?
-> 
-> If the system has a lot of memory, scenario (2) is happen frequently than (1).
-> I think we need check alloc_highmem and alloc_normal variable and call
-> preallocate_image_highmem() again instead preallocate_image_memory()
-> if we've alread allocated enough lots normal memory.
-> 
-> nit?
+--Signature=_Fri__3_Sep_2010_11_12_02_+1000_FoOh2.BmjlSlcK1B
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Actually I thought about that, but we don't really see hibernation fail for
-this reason.  In all of the tests I carried out the requested 50% of highmem
-had been allocated before allocations from the normal zone started to be
-made, even if highmem was 100% full at that point.  So this appears to be
-a theoretical issue and covering it would require us to change the algorithm
-entirely (eg. it doesn't make sense to call preallocate_highmem_fraction() down
-the road if that happens).
+Hi Kumar,
 
-Thanks,
-Rafael
+Today's linux-next merge of the galak tree got a conflict in
+arch/powerpc/platforms/85xx/mpc85xx_mds.c between commit
+6d4f2fb0860c36e7ef16cc41126242a8b6542771 ("powerpc/85xx: Fix compilation
+of mpc85xx_mds.c") from the powerpc-merge tree and commit
+5dc45967402dd124980fce88d34d7f4a012a381b ("powerpc/85xx: Fix compile
+error in mpc85xx_mds.c") from the galak tree.
+
+I used the version in the powerpc-merge tree as the inititalisation of np
+is unnecessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__3_Sep_2010_11_12_02_+1000_FoOh2.BmjlSlcK1B
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMgEtiAAoJEDMEi1NhKgbsh6oH/jrfmOL7kCK6FhIe5T7E4nDi
+HE/vSbMMW5tPQupQTy2srr9drBupSnBUg6EMuJJrbHmk4c+0iD3YjtmT4RYHYHNG
+oy05IccAIYmNuf+w3zOY/CewZPTr/ibLNMdbML7C1OrR3+RY6ZCfCcpTDBcy4COA
+LBBLfTgA4176QRVhcU7YdckxeSCVyB6K3vXkNCJNUpnERoJzEWV7XMe056/7DiuR
+Ij/zGn5LdGyS4zHbHTOEHr4vZDWIR/acwKx5c5ro0hvIi5CrMeTdOxM1n+BXLyT6
+Q1L7jAs221gCwGAdNrv0nH2Pci5OsS+eyys8wBMd13ruUhzsTAR2h+YnlAjM/tc=
+=DHLf
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__3_Sep_2010_11_12_02_+1000_FoOh2.BmjlSlcK1B--
