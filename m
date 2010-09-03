@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab0ICOHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 10:07:45 -0400
-Received: from cantor.suse.de ([195.135.220.2]:32994 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752941Ab0ICOHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 10:07:43 -0400
-Date: Fri, 3 Sep 2010 16:07:41 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Michael Poole <mdpoole@troilus.org>, Henrik Rydberg <rydberg@euromail.se>,
-        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
+	id S1755767Ab0ICOJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 10:09:47 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:53378 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753281Ab0ICOJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 10:09:46 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/7yYV58vb7yZFcKSMID4YahPeRIL3svqQuK/z+T+
+	oCRoghAKywDNoc
+Subject: Re: 2.6.32 cgroup regression
+From: Mike Galbraith <efault@gmx.de>
+To: Minoru Usui <usui@mxm.nes.nec.co.jp>
+Cc: johunt@akamai.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7 v3] HID: magicmouse: simplify touch data bit
- manipulation
-In-Reply-To: <1283306184-28833-4-git-send-email-chase.douglas@canonical.com>
-Message-ID: <alpine.LNX.2.00.1009031607330.26813@pobox.suse.cz>
-References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com> <1283306184-28833-4-git-send-email-chase.douglas@canonical.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100831162542.98269492.usui@mxm.nes.nec.co.jp>
+References: <4C74274D.9060300@akamai.com>
+	 <1282715761.20033.23.camel@marge.simson.net>
+	 <20100831162542.98269492.usui@mxm.nes.nec.co.jp>
+Content-Type: text/plain
+Date: Fri, 03 Sep 2010 16:09:57 +0200
+Message-Id: <1283522997.8373.25.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 31 Aug 2010, Chase Douglas wrote:
-
-> The new format should be easier to read to determine which bits
-> correspond to which data. It also brings all the manipulation logic to
-> the top of the function. This makes size and orientation reading more
-> clear.
+On Tue, 2010-08-31 at 16:25 +0900, Minoru Usui wrote:
+> Hi, Mike
 > 
-> Note that the impetus for this change is the forthcoming support for the
-> Magic Trackpad, which has a different touch data protocol.
+> On Wed, 25 Aug 2010 07:56:01 +0200
+> Mike Galbraith <efault@gmx.de> wrote:
 > 
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> Acked-by: Michael Poole <mdpoole@troilus.org>
-
-Applied, thanks.
-
-> ---
->  drivers/hid/hid-magicmouse.c |   25 +++++++++++++------------
->  1 files changed, 13 insertions(+), 12 deletions(-)
+> > On Tue, 2010-08-24 at 13:10 -0700, Josh Hunt wrote:
+> > > This commit makes the ltp cpuctl latency test #2 hang indefinitely:
+> > > 
+> > > commit b5d9d734a53e0204aab0089079cbde2a1285a38f
+> > > Author: Mike Galbraith <efault@gmx.de>
+> > > Date:   Tue Sep 8 11:12:28 2009 +0200
+> > > 
+> > >     sched: Ensure that a child can't gain time over it's parent after fork()
+> > 
+> > Ouch.  Yeah, that commit is buggy, and never got fixed up in stable.
+> > Reverting it will restore a slightly less buggy, but not very good
+> > situation.  Getting the fork problems all fixed up took a while.
+> > (quick fix vs revert didn't help your testcase)
 > 
-> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-> index 8a2fe78..2ee59a8 100644
-> --- a/drivers/hid/hid-magicmouse.c
-> +++ b/drivers/hid/hid-magicmouse.c
-> @@ -166,18 +166,21 @@ static void magicmouse_emit_buttons(struct magicmouse_sc *msc, int state)
->  static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tdata)
->  {
->  	struct input_dev *input = msc->input;
-> -	__s32 x_y = tdata[0] << 8 | tdata[1] << 16 | tdata[2] << 24;
-> -	int misc = tdata[5] | tdata[6] << 8;
-> -	int id = (misc >> 6) & 15;
-> -	int x = x_y << 12 >> 20;
-> -	int y = -(x_y >> 20);
-> -	int down = (tdata[7] & TOUCH_STATE_MASK) != TOUCH_STATE_NONE;
-> +	int id = (tdata[6] << 2 | tdata[5] >> 6) & 0xf;
-> +	int x = (tdata[1] << 28 | tdata[0] << 20) >> 20;
-> +	int y = -((tdata[2] << 24 | tdata[1] << 16) >> 20);
-> +	int size = tdata[5] & 0x3f;
-> +	int orientation = (tdata[6] >> 2) - 32;
-> +	int touch_major = tdata[3];
-> +	int touch_minor = tdata[4];
-> +	int state = tdata[7] & TOUCH_STATE_MASK;
-> +	int down = state != TOUCH_STATE_NONE;
->  
->  	/* Store tracking ID and other fields. */
->  	msc->tracking_ids[raw_id] = id;
->  	msc->touches[id].x = x;
->  	msc->touches[id].y = y;
-> -	msc->touches[id].size = misc & 63;
-> +	msc->touches[id].size = size;
->  
->  	/* If requested, emulate a scroll wheel by detecting small
->  	 * vertical touch motions.
-> @@ -188,7 +191,7 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
->  		int step_y = msc->touches[id].scroll_y - y;
->  
->  		/* Calculate and apply the scroll motion. */
-> -		switch (tdata[7] & TOUCH_STATE_MASK) {
-> +		switch (state) {
->  		case TOUCH_STATE_START:
->  			msc->touches[id].scroll_x = x;
->  			msc->touches[id].scroll_y = y;
-> @@ -224,13 +227,11 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
->  
->  	/* Generate the input events for this touch. */
->  	if (report_touches && down) {
-> -		int orientation = (misc >> 10) - 32;
-> -
->  		msc->touches[id].down = 1;
->  
->  		input_report_abs(input, ABS_MT_TRACKING_ID, id);
-> -		input_report_abs(input, ABS_MT_TOUCH_MAJOR, tdata[3]);
-> -		input_report_abs(input, ABS_MT_TOUCH_MINOR, tdata[4]);
-> +		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major);
-> +		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor);
->  		input_report_abs(input, ABS_MT_ORIENTATION, orientation);
->  		input_report_abs(input, ABS_MT_POSITION_X, x);
->  		input_report_abs(input, ABS_MT_POSITION_Y, y);
-> -- 
-> 1.7.1
+> I'm interested in this problem, because I hit the same problem in RHEL6 beta2.
+> (It based on 2.6.32)
 > 
+> Are you writing a patch to solving this problem?
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+No, the necessary patches were already written.  I just needed to
+backport.  Illness and squabbles with git sendemail (i lost) held me up.
+
+> If you are doing, I can test it in RHEL6 beta2 (or latest).
+
+I just sent a 50 patch series, ever so lovingly git am applied. git
+format-patch exported, then imported into evolution one darn patch at a
+time, to stable to either apply or bin as maintainers see fit.  To test,
+all you should need to do is test mainline.  If you'd like a quilt
+tarball against 32.21 anyway, just holler.
+
+The series has all the fork/exec/wakeup/hotplug yada yada fixes I think
+are mana from heaven for our long-term stable kernel.  I may well get
+"are you outta yer ever lovin' mind?" back, but _I_ think it's needed,
+so...
+
+	-Mike
+
