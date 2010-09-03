@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab0ICJd1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:33:27 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43518 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849Ab0ICJdZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:33:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=JNdmpwQYYJ79OjijjzpOjsKcDEkFmcTg+9grWZVCEIAjX5NyWkNwfE/OfZ+AHl3JGG
-         be+Ta82VtluuLn0dlBVs3QYwT+qGHUPnFwTqL5faSDj+qrM7E7LytOduO04U/BOBER7Q
-         yIe3aldC9G1niTVygRCH+ZGVn/rnxiSg2DtUg=
+	id S1756723Ab0ICJde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:33:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43588 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756699Ab0ICJdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 05:33:32 -0400
+Message-ID: <4C80C0D6.4030405@kernel.org>
+Date: Fri, 03 Sep 2010 11:33:10 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <4C80C068.1010302@snapgear.com>
-References: <m3vd6nmd68.fsf@hase.home>
-	<19747.1283422807@redhat.com>
-	<20100902102158.19806.14133.stgit@warthog.procyon.org.uk>
-	<m38w3kns4r.fsf@hase.home>
-	<AANLkTikwax-Jb60jT5_TOL=Zkwbgh8FwMk78ncm1dN-P@mail.gmail.com>
-	<3048.1283505520@redhat.com>
-	<4C80C068.1010302@snapgear.com>
-Date: Fri, 3 Sep 2010 11:33:24 +0200
-X-Google-Sender-Auth: B0tQiIl0Al6PRAZ3iLFkLg9XVgo
-Message-ID: <AANLkTikBLCg_FUwGGiajw3+dgCe6y0s0a1yMs8=A2oCR@mail.gmail.com>
-Subject: Re: [PATCH 2/3] M68K: Use CONFIG_MMU not __uClinux__ to select
- m68knommu contributions
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: David Howells <dhowells@redhat.com>, Andreas Schwab <schwab@redhat.com>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+CC: Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com,
+        j-nomura@ce.jp.nec.com, jamie@shareable.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-raid@vger.kernel.org, hch@lst.de
+Subject: Re: [PATCH] block: make sure FSEQ_DATA request has the same rq_disk
+ as the original
+References: <1283162296-13650-1-git-send-email-tj@kernel.org> <1283162296-13650-5-git-send-email-tj@kernel.org> <20100830132836.GB5283@redhat.com> <4C7BB932.1070405@kernel.org> <4C7BD202.4040700@kernel.org> <4C7DFD8F.6070200@ct.jp.nec.com> <4C7FE251.2020003@kernel.org> <4C808BF8.7060402@ct.jp.nec.com>
+In-Reply-To: <4C808BF8.7060402@ct.jp.nec.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 09:33:13 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 3, 2010 at 11:31, Greg Ungerer <gerg@snapgear.com> wrote:
-> On 03/09/10 19:18, David Howells wrote:
->> Andreas Schwab<schwab@redhat.com>  wrote:
->>
->>> You are almost able to use the uclinux compiler for both, except that
->>> currently __uClinux__ is hardcoded.
->>
->> The m68knommu arch Makefile in the kernel could specify it on the compiler
->> command line, then m68k compilers should be possible.
->>
->> The kernel should probably also set appropriate -mcpu= and -mtune= flags,
->> depending on the type of kernel selected.
->
-> Not sure about m68k but m68knommu targets already setup
-> appropriate -mcpu flags for its various supported CPU types.
+Hello,
 
-Same for m68k.
+On 09/03/2010 07:47 AM, Kiyoshi Ueda wrote:
+> Ah, I see, thank you for the quick fix!
+> I confirmed no panic occurs with this patch.
+> 
+> Tested-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
 
-Gr{oetje,eeting}s,
+Great, thanks for testing.
 
-                        Geert
+> By the way, I had been considering a block-layer interface which remaps
+> struct request and its bios to a block device such as:
+> void blk_remap_request(struct request *rq, struct block_device *bdev)
+> {
+> 	rq->rq_disk = bdev->bd_disk;
+> 
+> 	__rq_for_each_bio(bio, rq) {
+> 		bio->bi_bdev = bdev->bd_disk;
+> 	}
+> }
+> 
+> If there is such an interface and remapping drivers use it, then these
+> kind of issues may be avoided in the future.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+I think the problem is more with request initialization.  After all,
+once bios are packed into a request, they are (or at least should be)
+just data containers.  We now have multiple request init paths in
+block layer and different ones initialize different subsets and it's
+not very clear which fields are supposed to be initialized to what by
+whom.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+But yeah I agree removing discrepancy between request and bio would be
+nice to have too.  It's not really remapping tho.  Maybe just
+blk_set_rq_q() or something like that (it should also set rq->q)?
+
+Thanks.
+
+-- 
+tejun
