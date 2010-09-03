@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab0ICIQK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 04:16:10 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58616 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754219Ab0ICIQI (ORCPT
+	id S1755468Ab0ICIXa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 04:23:30 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34365 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab0ICIX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 04:16:08 -0400
-From: Bernhard Walle <walle@corscience.de>
-To: linux-mips@linux-mips.org
-Cc: ralf@linux-mips.org, ddaney@caviumnetworks.com, akpm@linux-foundation.org,
-        ebiederm@xmission.com, hch@lst.de, linux-kernel@vger.kernel.org
-Subject: [PATCH] MIPS: N32: Fix getdents64 syscall for n32
-Date: Fri,  3 Sep 2010 10:15:34 +0200
-Message-Id: <1283501734-6532-1-git-send-email-walle@corscience.de>
-X-Mailer: git-send-email 1.7.0.4
-X-Provags-ID: V02:K0:80V1Up6k0zdnJ31H8L7+4YcvYB5b3HphSFXeOchfLvB
- PJmxnxjDizFnOMFLZy6OrXoa52hfKBImRO3aRy97PkVqsYVHQl
- X5F+qmtAHvlY89sVlzRbTEED21n0yWVU1XEvDvUrQWjoXsSoTG
- bFGlYRWtVTMZHYxxGigMHmQfUDUn705ztv33ubL24z5IrbSNlm
- +LYQRSUBr+lwyaPK+I6jQ==
+	Fri, 3 Sep 2010 04:23:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=nEp3EYeakOz8ESGUtcwrqsMRZTChRHDWjgG14g1CTLx3g4jUD2nKO3xUfK1TEkqtli
+         UeitQorMxwzNw37xwStaFNQZeeZwLxuUV6jzozhom4OZdzr8mxNtD/Bp4P0ABBJy/0RZ
+         s0kYr/vuvHhrM77qjzGjUNphED5SZv1+6lu8U=
+Message-ID: <4C80B07B.7050102@suse.cz>
+Date: Fri, 03 Sep 2010 10:23:23 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 1/1] FS: btrfs, use helpers for rlimits
+References: <1265832009-8070-1-git-send-email-jslaby@suse.cz> <20100210200134.GK18175@think>
+In-Reply-To: <20100210200134.GK18175@think>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 31c984a5acabea5d8c7224dc226453022be46f33 introduced a new syscall
-getdents64. However, in the syscall table, the new syscall still refers
-to the old getdents which doesn't work.
+On 02/10/2010 09:01 PM, Chris Mason wrote:
+> Thanks, I have this queued up for .34
 
-The problem appeared with a system that uses the eglibc 2.12-r11187
-(that utilizes that new syscall) is very confused. The fix has been
-tested with that eglibc version.
+Hi, this is still not merged. Was it lost?
 
-Signed-off-by: Bernhard Walle <walle@corscience.de>
----
- arch/mips/kernel/scall64-n32.S |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On Wed, Feb 10, 2010 at 09:00:09PM +0100, Jiri Slaby wrote:
+>> Make sure compiler won't do weird things with limits. E.g. fetching
+>> them twice may return 2 different values after writable limits are
+>> implemented.
+>>
+>> I.e. either use rlimit helpers added in
+>> 3e10e716abf3c71bdb5d86b8f507f9e72236c9cd
+>> or ACCESS_ONCE if not applicable.
+>>
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> Cc: Chris Mason <chris.mason@oracle.com>
+>> Cc: linux-btrfs@vger.kernel.org
+>> ---
+>>  fs/btrfs/inode.c |    3 +--
+>>  1 files changed, 1 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+>> index c41db6d..5aa0cef 100644
+>> --- a/fs/btrfs/inode.c
+>> +++ b/fs/btrfs/inode.c
+>> @@ -3256,8 +3256,7 @@ static int btrfs_setattr_size(struct inode *inode, struct iattr *attr)
+>>  		return 0;
+>>  
+>>  	if (attr->ia_size > inode->i_size) {
+>> -		unsigned long limit;
+>> -		limit = current->signal->rlim[RLIMIT_FSIZE].rlim_cur;
+>> +		unsigned long limit = rlimit(RLIMIT_FSIZE);
+>>  		if (attr->ia_size > inode->i_sb->s_maxbytes)
+>>  			return -EFBIG;
+>>  		if (limit != RLIM_INFINITY && attr->ia_size > limit) {
+>> -- 
+>> 1.6.6.1
+>>
 
-diff --git a/arch/mips/kernel/scall64-n32.S b/arch/mips/kernel/scall64-n32.S
-index a3d6613..dfa8cbc 100644
---- a/arch/mips/kernel/scall64-n32.S
-+++ b/arch/mips/kernel/scall64-n32.S
-@@ -419,5 +419,5 @@ EXPORT(sysn32_call_table)
- 	PTR	sys_perf_event_open
- 	PTR	sys_accept4
- 	PTR     compat_sys_recvmmsg
--	PTR     sys_getdents
-+	PTR     sys_getdents64
- 	.size	sysn32_call_table,.-sysn32_call_table
+
 -- 
-1.7.0.4
-
+js
+suse labs
