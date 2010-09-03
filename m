@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757322Ab0ICTZs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 15:25:48 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:59936 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757302Ab0ICTZq (ORCPT
+	id S1757292Ab0ICT0J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 15:26:09 -0400
+Received: from exprod7og118.obsmtp.com ([64.18.2.8]:49408 "EHLO
+	exprod7og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757329Ab0ICT0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 15:25:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=Hl8AgllzGEpio5hVKcMzTgCuKbzjN+8tQx0sUjYhCV40SzBE2SH3tDGLO+yF84KjGd
-         xkAF6RNgtPeIg8H/D/YjYwF516bAVmAq6lD4cLW9u64o5dnYRLYGJb7Pwem6RYyMgwRf
-         p5jUk/am9zfXbz4cWE6wfXAXqPpL2gVhVgvqI=
-Date: Fri, 3 Sep 2010 21:24:46 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Gorskin Ilya <revent82@gmail.com>
-Cc: gregkh@suse.de, mchehab@redhat.com, palash.bandyopadhyay@conexant.com,
-        olimpiu.pascariu@gmail.com, laurent.pinchart@ideasonboard.com,
-        peterhuewe@gmx.de, tsg321@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] Staging: cx25821: fix coding style issue in
-	cx25821-audio-upstream.h, cx25821-core.c, cx25821-i2c.c,
-	cx25821-medusa-reg.h, cx25821-medusa-video.c
-Message-ID: <20100903192446.GK5437@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Gorskin Ilya <revent82@gmail.com>, gregkh@suse.de,
-	mchehab@redhat.com, palash.bandyopadhyay@conexant.com,
-	olimpiu.pascariu@gmail.com, laurent.pinchart@ideasonboard.com,
-	peterhuewe@gmx.de, tsg321@gmail.com, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1283538384-12227-1-git-send-email-revent82@gmail.com>
+	Fri, 3 Sep 2010 15:26:06 -0400
+Message-ID: <4C814B8D.7050100@genband.com>
+Date: Fri, 03 Sep 2010 13:25:01 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283538384-12227-1-git-send-email-revent82@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Jens Axboe <axboe@kernel.dk>
+CC: fuse-devel@lists.sourceforge.net,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: ionice and FUSE-based filesystems?
+References: <4C800B06.90005@genband.com> <4C814514.4040103@kernel.dk>
+In-Reply-To: <4C814514.4040103@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Sep 2010 19:25:03.0968 (UTC) FILETIME=[B5A5C600:01CB4B9D]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17614.001
+X-TM-AS-Result: No--11.965100-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 04, 2010 at 12:26:24AM +0600, Gorskin Ilya wrote:
-> @@ -977,8 +977,8 @@ static int cx25821_dev_setup(struct cx25821_dev *dev)
->  	dev->lmmio = ioremap(dev->base_io_addr, pci_resource_len(dev->pci, 0));
->  
->  	if (!dev->lmmio) {
-> -		CX25821_ERR
-> -		    ("ioremap failed, maybe increasing __VMALLOC_RESERVE in page.h\n");
-> +		CX25821_ERR("ioremap failed,
-> +			    maybe increasing __VMALLOC_RESERVE in page.h\n");
->  		cx25821_iounmap(dev);
->  		return -ENOMEM;
->  	}
+On 09/03/2010 12:57 PM, Jens Axboe wrote:
+> On 09/02/2010 10:37 PM, Chris Friesen wrote:
+>>
+>> I'm curious about the limits of using ionice with multiple layers of
+>> filesystems and devices.
+>>
+>> In particular, we have a scenario with a FUSE-based filesystem running
+>> on top of xfs on top of LVM, on top of software RAID, on top of spinning
+>> disks.  (Something like that, anyways.)  The IO scheduler is CFQ.
+>>
+>> In the above scenario would you expect the IO nice value of the writes
+>> done by a task to be propagated all the way down to the disk writes?  Or
+>> would they get stripped off at some point?
+> 
+> Miklos should be able to expand on what fuse does, but at least on
+> the write side priorities will only be carried through for non-buffered
+> writes with the current design (since actual write out happens out of
+> context of the submitting application).
 
-You didn't try compile this.
+So we're talking either O_SYNC or O_DIRECT only?  That seems an
+unfortunate limitation given that it then forces the app to block.  Has
+any thought been given to somehow associating the priority with the
+actual operation so that it would affect buffered writes as well?
+
+As for fuse...I was concerned that the addition of userspace tasks to
+handle the filesystem operations would result in the I/O operations
+taking on the priority of the fuse tasks rather than the originating
+task.  Or does fuse adjust its I/O nice level according to that of the
+incoming requests?
+
+Chris
 
 
-> --- a/drivers/staging/cx25821/cx25821-medusa-video.c
-> +++ b/drivers/staging/cx25821/cx25821-medusa-video.c
-> @@ -500,8 +500,8 @@ void medusa_set_resolution(struct cx25821_dev *dev, int width,
->  	/* validate the width - cannot be negative */
->  	if (width > MAX_WIDTH) {
->  		printk
-> -		    ("cx25821 %s() : width %d > MAX_WIDTH %d ! resetting to MAX_WIDTH\n",
-> -		     __func__, width, MAX_WIDTH);
-> +		    ("cx25821 %s() : width %d > MAX_WIDTH %d !
-> +		    resetting to MAX_WIDTH\n", __func__, width, MAX_WIDTH);
->  		width = MAX_WIDTH;
->  	}
-
-The string is damaged here.  We don't want those tabs in the final
-output.
-
-Please look the patch over again and resend.  There maybe some other
-things I missed.  Wait a day between writing patches and sending them
-so that you can review it with fresh eyes.
-
-regards,
-dan carpenter
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
