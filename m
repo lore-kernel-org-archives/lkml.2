@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab0ICJi1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:38:27 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33600 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542Ab0ICJi0 (ORCPT
+	id S1752832Ab0ICJmF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:42:05 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53757 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab0ICJmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:38:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=uSGy8AwcpYvkC0xE405aP8OGFny0RMJSu9PJLuvIFiNw86xP4f4M/ZuiFl1m1r2Tp5
-         3rPzIoifgQzlz0CHVgI0WLhwKJXceFTf0LANKxgfHAzOVQNrhaBKtXpu4q2WjPpORrFN
-         BLWA1wzPw8cqNerBmtC9Rs3XO2QXe+cy+XRKQ=
-From: Namhyung Kim <namhyung@gmail.com>
-To: trivial@kernel.org
-Cc: tj@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ida: document IDA_BITMAP_LONGS calculation
-Date: Fri,  3 Sep 2010 18:38:18 +0900
-Message-Id: <1283506698-21369-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+	Fri, 3 Sep 2010 05:42:03 -0400
+Date: Fri, 3 Sep 2010 10:42:01 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Changhwan Youn <chaos.youn@samsung.com>, lrg@slimlogic.co.uk
+Subject: Re: [PATCH] regulators: add support max8952 regulator
+Message-ID: <20100903094200.GC8381@sirena.org.uk>
+References: <1283476524-12820-1-git-send-email-kgene.kim@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283476524-12820-1-git-send-email-kgene.kim@samsung.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IDA_BITMAP_LONGS value is calculated take into account struct ida_bitmap
-not to waste memory space. Comment it.
+On Fri, Sep 03, 2010 at 10:15:24AM +0900, Kukjin Kim wrote:
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Acked-by: Tejun Heo <tj@kernel.org>
----
- include/linux/idr.h |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+> +	ret2 = max8649_reg_read(info->i2c, MAX8649_CHIP_ID2);
+> +	if (ret2 < 0) {
+> +		dev_err(info->dev, "Failed to detect ID of %s:%d\n",
+> +			id->name, ret2);
+>  		goto out;
+>  	}
 
-diff --git a/include/linux/idr.h b/include/linux/idr.h
-index e968db7..3f4b718 100644
---- a/include/linux/idr.h
-+++ b/include/linux/idr.h
-@@ -117,10 +117,13 @@ void idr_init(struct idr *idp);
- /*
-  * IDA - IDR based id allocator, use when translation from id to
-  * pointer isn't necessary.
-+ *
-+ * IDA_BITMAP_LONGS is calculated to be one less to accommodate
-+ * ida_bitmap->nr_busy so that the whole struct fits in 128 bytes.
-  */
- #define IDA_CHUNK_SIZE		128	/* 128 bytes per chunk */
- #define IDA_BITMAP_LONGS	(128 / sizeof(long) - 1)
--#define IDA_BITMAP_BITS		(IDA_BITMAP_LONGS * sizeof(long) * 8)
-+#define IDA_BITMAP_BITS 	(IDA_BITMAP_LONGS * sizeof(long) * 8)
- 
- struct ida_bitmap {
- 	long			nr_busy;
--- 
-1.7.2.2
+If the read fails you'll not set an error code when you jump to out so
+the probe will report success.  It might be clearer to have separate id
+variables which you store the read values into if they're OK, just from
+a legibility point of view.
 
+> -	dev_info(info->dev, "Detected MAX8649 (ID:%x)\n", ret);
+> +	dev_info(info->dev, "Detected %s (ID:%x %x)\n", id->name, ret, ret2);
+> +
+> +	info->type = id->driver_data;
+
+It'd be nice to check that the type that was supplied matches the ID
+read from the chip in case the user got things wrong, just for
+defensiveness.
