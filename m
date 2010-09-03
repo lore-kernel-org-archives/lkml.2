@@ -1,156 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab0ICOfV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 10:35:21 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62326 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab0ICOfS convert rfc822-to-8bit (ORCPT
+	id S1755965Ab0ICOkB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 10:40:01 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:52794 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753094Ab0ICOj7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 10:35:18 -0400
+	Fri, 3 Sep 2010 10:39:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=uuePDlmtGEUTroSR6Qo89FM7dbonXf4n/q5ZbuMYgTHVw/GVOHOA1dOkgQBop4PAJv
-         cikTZzfIhpSS2iQ5ywo4uKOowY2ujncHK5WT+9pmVAbbA/grwH8yR2WUfrXenYQHHrVi
-         rs3nWpc/5d5ZdQmFLxUlfMOOSB97RCSdKpr1I=
+        b=q/rHGvVEAxDMtJPXgXURMAX14L3SVtbRSUJoVSW2kbbJh+WfYesACv+dS9Tuokbvpo
+         kNlf6lKa1dnRpbUZaWKcxBxGpH9R0HdOqDXwPwhfiCZJoTSbtDAck9/4/xkSYrU5cWXJ
+         Dv2g5CAejWA7SsI2UVld9dkSVPOQGHF3glD/E=
 MIME-Version: 1.0
-In-Reply-To: <4C810313.80000@hp.com>
-References: <AANLkTineCKfL-UvqfQBTZPDFeqm3Nrpb=pFnZpkSqbEQ@mail.gmail.com>
-	<4C810313.80000@hp.com>
-Date: Fri, 3 Sep 2010 10:35:15 -0400
-Message-ID: <AANLkTikRBOhTQM0gyS8_Vwu7EsetaaaEuv0owkBp7B_F@mail.gmail.com>
-Subject: Re: [PATCH] sctp: prevent reading out-of-bounds memory
-From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-To: Vlad Yasevich <vladislav.yasevich@hp.com>
-Cc: sri@us.ibm.com, linux-sctp@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <201009031611.16464.marek.vasut@gmail.com>
+References: <1282814339-10934-1-git-send-email-mark.brown314@gmail.com>
+ <AANLkTi=OkRUmBgx_ezWtGHywGJkFAJsdGLR07v8dgzD7@mail.gmail.com>
+ <AANLkTi=2ZJTy=RD_L0g-HnLF=r27bZLm5hTHemyNQFEi@mail.gmail.com> <201009031611.16464.marek.vasut@gmail.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Fri, 3 Sep 2010 22:39:37 +0800
+Message-ID: <AANLkTikXUFvevRzOKkW8oA1jm8HRJspTkh6Sx-d1YneC@mail.gmail.com>
+Subject: Re: [PATCH 5/5] ARM: pxa168: aspenite: add board support for keypad
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: "Mark F. Brown" <mark.brown314@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ha, I knew there was an easier way.  Take two:
-
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-
---- linux-2.6.35.4.orig/net/sctp/socket.c	2010-09-03 08:58:48.127080114 -0400
-+++ linux-2.6.35.4/net/sctp/socket.c	2010-09-03 10:28:14.929595312 -0400
-@@ -916,6 +916,12 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
- 	/* Walk through the addrs buffer and count the number of addresses. */
- 	addr_buf = kaddrs;
- 	while (walk_size < addrs_size) {
-+
-+		if (walk_size + sizeof(sa_family_t) > addrs_size) {
-+			kfree(kaddrs);
-+			return -EINVAL;
-+		}
-+
- 		sa_addr = (struct sockaddr *)addr_buf;
- 		af = sctp_get_af_specific(sa_addr->sa_family);
-
-@@ -1002,6 +1008,12 @@ static int __sctp_connect(struct sock* s
- 	/* Walk through the addrs buffer and count the number of addresses. */
- 	addr_buf = kaddrs;
- 	while (walk_size < addrs_size) {
-+
-+		if (walk_size + sizeof(sa_family_t) > addrs_size) {
-+			err = -EINVAL;
-+			goto out_free;
-+		}
-+
- 		sa_addr = (union sctp_addr *)addr_buf;
- 		af = sctp_get_af_specific(sa_addr->sa.sa_family);
- 		port = ntohs(sa_addr->v4.sin_port);
-
-
+On Fri, Sep 3, 2010 at 10:11 PM, Marek Vasut <marek.vasut@gmail.com> wrote:
+> Dne PÃ¡ 3. zÃ¡Å™Ã­ 2010 06:50:28 Mark F. Brown napsal(a):
+>> On Tue, Aug 31, 2010 at 1:00 AM, Haojian Zhuang
+>>
+>> <haojian.zhuang@gmail.com> wrote:
+>> > On Thu, Aug 26, 2010 at 5:18 PM, Mark F. Brown <mark.brown314@gmail.com>
+> wrote:
+>> >> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+>> >> ---
+>> >> Â arch/arm/mach-mmp/aspenite.c | Â  27 +++++++++++++++++++++++++++
+>> >> Â 1 files changed, 27 insertions(+), 0 deletions(-)
+>> >>
+>> >> diff --git a/arch/arm/mach-mmp/aspenite.c b/arch/arm/mach-mmp/aspenite.c
+>> >> index 9e1bd6b..1b788c5 100644
+>> >> --- a/arch/arm/mach-mmp/aspenite.c
+>> >> +++ b/arch/arm/mach-mmp/aspenite.c
+>> >> @@ -24,6 +24,8 @@
+>> >> Â #include <mach/pxa168.h>
+>> >> Â #include <mach/gpio.h>
+>> >> Â #include <video/pxa168fb.h>
+>> >> +#include <linux/input.h>
+>> >> +#include <plat/pxa27x_keypad.h>
+>> >>
+>> >> Â #include "common.h"
+>> >>
+>> >> @@ -97,6 +99,13 @@ static unsigned long common_pin_config[] __initdata =
+>> >> { GPIO81_LCD_DD21,
+>> >> Â  Â  Â  Â GPIO82_LCD_DD22,
+>> >> Â  Â  Â  Â GPIO83_LCD_DD23,
+>> >> +
+>> >> + Â  Â  Â  /* Keypad */
+>> >> + Â  Â  Â  GPIO109_KP_MKIN1,
+>> >> + Â  Â  Â  GPIO110_KP_MKIN0,
+>> >> + Â  Â  Â  GPIO111_KP_MKOUT7,
+>> >> + Â  Â  Â  GPIO112_KP_MKOUT6,
+>> >> + Â  Â  Â  GPIO121_KP_MKIN4,
+>> >> Â };
+>> >>
+>> >> Â static struct smc91x_platdata smc91x_info = {
+>> >> @@ -193,6 +202,23 @@ struct pxa168fb_mach_info aspenite_lcd_info = {
+>> >> Â  Â  Â  Â .invert_pixclock Â  Â  Â  Â = 0,
+>> >> Â };
+>> >>
+>> >> +static unsigned int aspenite_matrix_key_map[] = {
+>> >> + Â  Â  Â  KEY(0, 6, KEY_UP), Â  Â  Â /* SW 4 */
+>> >> + Â  Â  Â  KEY(0, 7, KEY_DOWN), Â  Â /* SW 5 */
+>> >> + Â  Â  Â  KEY(1, 6, KEY_LEFT), Â  Â /* SW 6 */
+>> >> + Â  Â  Â  KEY(1, 7, KEY_RIGHT), Â  /* SW 7 */
+>> >> + Â  Â  Â  KEY(4, 6, KEY_ENTER), Â  /* SW 8 */
+>> >> + Â  Â  Â  KEY(4, 7, KEY_ESC), Â  Â  /* SW 9 */
+>> >> +};
+>> >> +
+>> >> +static struct pxa27x_keypad_platform_data aspenite_keypad_info
+>> >> __initdata = { + Â  Â  Â  .matrix_key_rows Â  Â  Â  Â = 8,
+>> >> + Â  Â  Â  .matrix_key_cols Â  Â  Â  Â = 8,
+>> >
+>> > It seems that maxium columns is 5, not 8.
+>> >
+>> >> + Â  Â  Â  .matrix_key_map Â  Â  Â  Â  = aspenite_matrix_key_map,
+>> >> + Â  Â  Â  .matrix_key_map_size Â  Â = ARRAY_SIZE(aspenite_matrix_key_map),
+>> >> + Â  Â  Â  .debounce_interval Â  Â  Â = 30,
+>> >> +};
+>> >> +
+>> >> Â static void __init common_init(void)
+>> >> Â {
+>> >> Â  Â  Â  Â mfp_config(ARRAY_AND_SIZE(common_pin_config));
+>> >> @@ -203,6 +229,7 @@ static void __init common_init(void)
+>> >> Â  Â  Â  Â pxa168_add_ssp(1);
+>> >> Â  Â  Â  Â pxa168_add_nand(&aspenite_nand_info);
+>> >> Â  Â  Â  Â pxa168_add_fb(&aspenite_lcd_info);
+>> >> + Â  Â  Â  pxa168_add_keypad(&aspenite_keypad_info);
+>> >>
+>> >> Â  Â  Â  Â /* off-chip devices */
+>> >> Â  Â  Â  Â platform_device_register(&smc91x_device);
+>> >> --
+>> >> 1.7.0.4
+>> >>
+>> >> --
+>> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>> >> in the body of a message to majordomo@vger.kernel.org
+>> >> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
+>> >> Please read the FAQ at Â http://www.tux.org/lkml/
+>>
+>> The maximum keypad columns are 8 and the maximum keypad rows are 5 for
+>> Aspenite. I will correct that in my patch resubmission!
 >
-> Hm.. we already validate that we have the proper amount of space for a given sockaddr.
-> The only thing we are missing is making sure that there is room to get the proper address
-> family and I think you can do that without adding any extra variables:
->
->        if (walk_size + sizeof(sa_family_t) > addr_size) {
->                /* Not enough room for address family */
->                kfree(kaddrs);
->                return -EINVAL;
->        }
->
-> -vlad
+> Eric, did you merge this already ? If so, we'll need a separate patch here?
 >
 
-On Fri, Sep 3, 2010 at 10:15 AM, Vlad Yasevich
-<vladislav.yasevich@hp.com> wrote:
-> On 09/03/2010 09:48 AM, Dan Rosenberg wrote:
->> Two user-controlled allocations in SCTP are subsequently dereferenced
->> as sockaddr structs, without checking if the dereferenced struct
->> members fall beyond the end of the allocated chunk.  There doesn't
->> appear to be any information leakage here based on how these members
->> are used and additional checking, but it's still worth fixing.
+Nope. Together with Mark's other change to the pxa27x_keypad platform_data
+for the wakeup cleanup in IRQ, I'd expect a v2 series of this patchset.
+
 >>
->> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
->>
->> --- linux-2.6.35.4.orig/net/sctp/socket.c     2010-09-03 08:58:48.127080114 -0400
->> +++ linux-2.6.35.4/net/sctp/socket.c  2010-09-03 09:22:06.337096825 -0400
->> @@ -889,6 +889,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
->>       int err;
->>       int addrcnt = 0;
->>       int walk_size = 0;
->> +     unsigned int remaining = addrs_size;
->>       struct sockaddr *sa_addr;
->>       void *addr_buf;
->>       struct sctp_af *af;
->> @@ -916,6 +917,13 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
->>       /* Walk through the addrs buffer and count the number of addresses. */
->>       addr_buf = kaddrs;
->>       while (walk_size < addrs_size) {
->> +
->> +             /* Don't read out-of-bounds memory */
->> +             if (remaining < sizeof(struct sockaddr)) {
->> +                     kfree(kaddrs);
->> +                     return -EINVAL;
->> +             }
->> +
->>               sa_addr = (struct sockaddr *)addr_buf;
->>               af = sctp_get_af_specific(sa_addr->sa_family);
->>
->> @@ -929,6 +937,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
->>               addrcnt++;
->>               addr_buf += af->sockaddr_len;
->>               walk_size += af->sockaddr_len;
->> +             remaining -= af->sockaddr_len;
->>       }
->>
->>       /* Do the work. */
->> @@ -984,6 +993,7 @@ static int __sctp_connect(struct sock* s
->>       void *addr_buf;
->>       unsigned short port;
->>       unsigned int f_flags = 0;
->> +     unsigned int remaining = addrs_size;
->>
->>       sp = sctp_sk(sk);
->>       ep = sp->ep;
->> @@ -1002,6 +1012,13 @@ static int __sctp_connect(struct sock* s
->>       /* Walk through the addrs buffer and count the number of addresses. */
->>       addr_buf = kaddrs;
->>       while (walk_size < addrs_size) {
->> +
->> +             /* Don't read out-of-bounds memory */
->> +             if (remaining < sizeof(union sctp_addr)) {
->> +                     err = -EINVAL;
->> +                     goto out_free;
->> +             }
->> +
->>               sa_addr = (union sctp_addr *)addr_buf;
->>               af = sctp_get_af_specific(sa_addr->sa.sa_family);
->>               port = ntohs(sa_addr->v4.sin_port);
->> @@ -1101,6 +1118,7 @@ static int __sctp_connect(struct sock* s
->>               addrcnt++;
->>               addr_buf += af->sockaddr_len;
->>               walk_size += af->sockaddr_len;
->> +             remaining -= af->sockaddr_len;
->>       }
->>
->>       /* In case the user of sctp_connectx() wants an association
->>
->
+>> Regards,
+>> -- Mark
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
 >
