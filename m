@@ -1,150 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568Ab0ICJvI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:51:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59913 "EHLO mx2.suse.de"
+	id S1755081Ab0ICJx2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:53:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55538 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754422Ab0ICJuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:50:52 -0400
-Date: Fri, 3 Sep 2010 11:50:49 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kleen, Andi" <andi.kleen@intel.com>,
-        Haicheng Li <haicheng.li@linux.intel.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] Make is_mem_section_removable more conformable
- with offlining code
-Message-ID: <20100903095049.GG10686@tiehlicka.suse.cz>
-References: <20100902092454.GA17971@tiehlicka.suse.cz>
- <AANLkTi=cLzRGPCc3gCubtU7Ggws7yyAK5c7tp4iocv6u@mail.gmail.com>
- <20100902131855.GC10265@tiehlicka.suse.cz>
- <AANLkTikYt3Hu_XeNuwAa9KjzfWgpC8cNen6q657ZKmm-@mail.gmail.com>
- <20100902143939.GD10265@tiehlicka.suse.cz>
- <20100902150554.GE10265@tiehlicka.suse.cz>
- <20100903121003.e2b8993a.kamezawa.hiroyu@jp.fujitsu.com>
- <20100903121452.2d22b3aa.kamezawa.hiroyu@jp.fujitsu.com>
- <20100903082558.GC10686@tiehlicka.suse.cz>
- <20100903181327.7dad3f84.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100903181327.7dad3f84.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751900Ab0ICJx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 05:53:27 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <AANLkTikBLCg_FUwGGiajw3+dgCe6y0s0a1yMs8=A2oCR@mail.gmail.com>
+References: <AANLkTikBLCg_FUwGGiajw3+dgCe6y0s0a1yMs8=A2oCR@mail.gmail.com> <m3vd6nmd68.fsf@hase.home> <19747.1283422807@redhat.com> <20100902102158.19806.14133.stgit@warthog.procyon.org.uk> <m38w3kns4r.fsf@hase.home> <AANLkTikwax-Jb60jT5_TOL=Zkwbgh8FwMk78ncm1dN-P@mail.gmail.com> <3048.1283505520@redhat.com> <4C80C068.1010302@snapgear.com> 
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: dhowells@redhat.com, Greg Ungerer <gerg@snapgear.com>,
+        Andreas Schwab <schwab@redhat.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] M68K: Use CONFIG_MMU not __uClinux__ to select m68knommu contributions
+Date: Fri, 03 Sep 2010 10:52:57 +0100
+Message-ID: <7877.1283507577@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 03-09-10 18:13:27, KAMEZAWA Hiroyuki wrote:
-> On Fri, 3 Sep 2010 10:25:58 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Fri 03-09-10 12:14:52, KAMEZAWA Hiroyuki wrote:
-> > [...]
-[...]
-> > Cannot ZONE_MOVABLE contain different MIGRATE_types?
-> > 
-> never.
+Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-Then I am terribly missing something. Zone contains free lists for
-different MIGRATE_TYPES, doesn't it? Pages allocated from those free
-lists keep the migration type of the list, right?
+> > Not sure about m68k but m68knommu targets already setup
+> > appropriate -mcpu flags for its various supported CPU types.
+> 
+> Same for m68k.
 
-ZONE_MOVABLE just says whether it makes sense to move pages in that zone
-at all, right?
+It doesn't seem to:
 
-> 
-> > > +
-> > > +	pfn = page_to_pfn(page);
-> > > +	for (found = 0, iter = 0; iter < pageblock_nr_pages; iter++) {
-> > > +		unsigned long check = pfn + iter;
-> > > +
-> > > +		if (!pfn_valid_within(check)) {
-> > > +			iter++;
-> > > +			continue;
-> > > +		}
-> > > +		page = pfn_to_page(check);
-> > > +		if (!page_count(page)) {
-> > > +			if (PageBuddy(page))
-> > 
-> > Why do you check page_count as well? PageBuddy has alwyas count==0,
-> > right?
-> > 
-> 
-> But PageBuddy() flag is considered to be valid only when page_count()==0.
-> This is for safe handling.
+	warthog>grep -r mcpu arch/m68k
+	warthog1>grep -r mtune arch/m68k
+	warthog1>
 
-OK. I don't see that documented anywhere but it makes sense. Anyway
-there are some places which don't do this test (e.g.
-isolate_freepages_block, suitable_migration_target, etc.).
+I see that m68knommu does:
 
-> 
-> 
-> > > +				iter += (1 << page_order(page)) - 1;
-> > > +			continue;
-> > > +		}
-> > > +		if (!PageLRU(page))
-> > > +			found++;
-> > > +		/*
-> > > +		 * If the page is not RAM, page_count()should be 0.
-> > > +		 * we don't need more check. This is an _used_ not-movable page.
-> > > +		 *
-> > > +		 * The problematic thing here is PG_reserved pages. But if
-> > > +		 * a PG_reserved page is _used_ (at boot), page_count > 1.
-> > > +		 * But...is there PG_reserved && page_count(page)==0 page ?
-> > 
-> > Can we have PG_reserved && PG_lru? 
-> 
-> I think never.
-> 
-> > I also quite don't understand the comment. 
-> 
-> There an issue that "remove an memory section which includes memory hole".
-> Then,
-> 
->    a page used by bootmem .... PG_reserved.
->    a page of memory hole  .... PG_reserved.
-> 
-> We need to call page_is_ram() or some for handling this mess.
+	warthog1>grep -r mcpu arch/m68knommu/
+	arch/m68knommu/Makefile:cflags-$(CONFIG_M5206)          := $(call cc-option,-mcpu=5206,-m5200)
+	arch/m68knommu/Makefile:cflags-$(CONFIG_M520x)          := $(call cc-option,-mcpu=5208,-m5200)
+	arch/m68knommu/Makefile:cflags-$(CONFIG_M523x)          := $(call cc-option,-mcpu=523x,-m5307)
+	...
 
-OK, I see.
+I guess the m68k compiler I already had doesn't fully support -m5200, since I
+see that, but it doesn't compile some of the instructions when compiling the
+m68knommu defconfig (CONFIG_M520x=y).
 
-> 
-> 
-> > At this place we are sure that the page is valid and neither
-> > free nor LRU.
-> > 
-[...]
-> > > +bool is_pageblock_removable(struct page *page)
-> > > +{
-> > > +	struct zone *zone = page_zone(page);
-> > > +	unsigned long flags;
-> > > +	int num;
-> > > +
-> > > +	spin_lock_irqsave(&zone->lock, flags);
-> > > +	num = __count_unmovable_pages(zone, page);
-> > > +	spin_unlock_irqrestore(&zone->lock, flags);
-> > 
-> > Isn't this a problem? The function is triggered from userspace by sysfs
-> > (0444 file) and holds the lock for pageblock_nr_pages. So someone can
-> > simply read the file and block the zone->lock preventing/delaying
-> > allocations for the rest of the system.
-> > 
-> But we need to take this. Maybe no panic you'll see even if no-lock.
-
-Yes, I think that this can only lead to a false possitive in sysfs
-interface. Isolating code holds the lock.
-
-Thanks
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+David
