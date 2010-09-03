@@ -1,1666 +1,736 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab0ICUUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 16:20:10 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37067 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756715Ab0ICUUE convert rfc822-to-8bit (ORCPT
+	id S1756713Ab0ICUW6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 16:22:58 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:34447 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753490Ab0ICUW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 16:20:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:content-type:content-transfer-encoding;
-        b=HfSEF03PAX4pDGkgy1VAJCv+dCemZCOhnnBg2Wat6KKEgYXT/wgrr3FZCMGQTJZDPy
-         NFmIeWgktjI3MwN2mCK94B56suTOik4Q7Tav+VWHUJwkucJMxBWNCrY6/RdFeE71Viz4
-         SmXDwceuwdYxDn4JbFV38bJwhvxZ/TMQ7sHWI=
+	Fri, 3 Sep 2010 16:22:57 -0400
+From: Christophe Henri RICARD <christophe-h.ricard@st.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "'Marcel Selhorst'" <m.selhorst@sirrix.com>,
+        "debora@linux.vnet.ibm.com" <debora@linux.vnet.ibm.com>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        "jmorris@namei.org" <jmorris@namei.org>
+Date: Fri, 3 Sep 2010 21:54:12 +0200
+Subject: [tpmdd-devel] ST19NP18 I2C driver submission + possible bug found
+ in the last TPM kernel core
+Thread-Topic: [tpmdd-devel] ST19NP18 I2C driver submission + possible bug
+ found in the last TPM kernel core
+Thread-Index: Acs+DAx5vSrGMui6So+3XxfhGeXruwNlO+BQ
+Message-ID: <0B9F1C5B86169C4EA9D042C251022E49105CD81DE1@SAFEX1MAIL3.st.com>
+References: <002501cacb5d$9c883650$d598a2f0$@ricard@st.com>
+ <5C722288-63DA-494B-AD37-1B4CA5A35EA0@linux.vnet.ibm.com>
+ <002801cacc24$385cdf60$a9169e20$@ricard@st.com>
+ <1269551792.3027.5.camel@blackbox.ibm.com>
+ <51078F5F-518D-4B08-8BB0-CEB672AD10FF@linux.vnet.ibm.com>
+ <000601cae64a$a532aad0$ef980070$@ricard@st.com>
+ <4BD98EEA.4060805@sirrix.com>
+ <!&!AAAAAAAAAAAYAAAAAAAAAP0vDh1zjO1PkFCA0mWh9hHCgAAAEAAAANBlGrYv425GtuqHVwaJ6hkBAAAAAA==@st.com>
+ <35E2570B-DD77-4CDB-9B13-7211E18E7000@linux.vnet.ibm.com>
+In-Reply-To: <35E2570B-DD77-4CDB-9B13-7211E18E7000@linux.vnet.ibm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: multipart/mixed;
+	boundary="_002_0B9F1C5B86169C4EA9D042C251022E49105CD81DE1SAFEX1MAIL3st_"
 MIME-Version: 1.0
-Date: Fri, 3 Sep 2010 22:20:03 +0200
-X-Google-Sender-Auth: suB-yQx8rSk1PzDC8-P7y8jXoOg
-Message-ID: <AANLkTi=oqzXfD5H+v08jEZft7M2sOhQEpJoiYUoRKfG=@mail.gmail.com>
-Subject: Build regressions/improvements in v2.6.36-rc3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below is the list of all build error/warning regressions/improvements
-in v2.6.36-rc3
-compared to v2.6.35.
+--_002_0B9F1C5B86169C4EA9D042C251022E49105CD81DE1SAFEX1MAIL3st_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-When comparing v2.6.36-rc3 to v2.6.36-rc2, the summaries are:
-  - build errors: +64/-7
-  - build warnings: +146/-109
-I.e. in general the build is still regressing.
+Hi,
 
-In addition, I put the verbose summary at
-http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v2.6.36-rc3.summary.gz
-so you can easily find out for which configs and architectures the
-errors/warnings you're
-interested in are happening.
+Please find in attached file the tpm driver for the ST19NP18 device working=
+ on a I2C bus.
+This driver use the Linux I2C cores, TPM cores and generic gpio interfaces.
 
-Happy fixing! ;-)
+It has been tested with the latest stable kernel 2.6.35.4 available on kern=
+el.org.
 
-Thanks to the linux-next team for providing the build service.
+Let me know of your feedback.
+Best Regards
+Christophe RICARD.
 
 
-*** ERRORS ***
+--------------------- Previous Message ------------------------------------=
+--------------
 
-161 regressions:
-	/opt/crosstool/gcc-4.3.2-nolibc/bin/../lib/gcc/sh4-linux/4.3.2/../../../../sh4-linux/bin/ld:
-error in arch/sh/kernel/vsyscall/vsyscall-trapa.o(.eh_frame); no
-.eh_frame_hdr table will be created.:  => N/A
-	arch/avr32/include/asm/syscalls.h: error: previous declaration of
-‘sys_execve’ was here:  => 25
-	arch/avr32/kernel/process.c: error: conflicting types for ‘sys_execve’:  => 390
-	arch/cris/arch-v10/drivers/sync_serial.c: error: 'ret' undeclared
-(first use in this function):  => 626
-	arch/cris/arch-v10/drivers/sync_serial.c: error: (Each undeclared
-identifier is reported only once:  => 626
-	arch/cris/arch-v10/drivers/sync_serial.c: error: conflicting types
-for 'sync_serial_ioctl':  => 959
-	arch/cris/arch-v10/drivers/sync_serial.c: error: for each function it
-appears in.):  => 626
-	arch/cris/arch-v10/drivers/sync_serial.c: error: previous declaration
-of 'sync_serial_ioctl' was here:  => 160
-	arch/cris/arch-v10/kernel/irq.c: error: implicit declaration of
-function 'breakpoint':  => 261
-	arch/cris/arch-v10/kernel/irq.c: error: implicit declaration of
-function 'kgdb_init':  => 260
-	arch/mips/include/asm/bug.h: error: previous definition of 'BUG' was
-here:  => 12
-	arch/mips/include/asm/fcntl.h: error: expected
-specifier-qualifier-list before 'off_t':  => 63
-	arch/parisc/include/asm/spinlock.h: error: 'asm' operand has
-impossible constraints:  => 25
-	arch/parisc/include/asm/spinlock.h: error: can't find a register in
-class 'R1_REGS' while reloading 'asm':  => 25
-	arch/powerpc/platforms/85xx/mpc85xx_mds.c: error: 'np' undeclared
-(first use in this function):  => 367
-	arch/powerpc/platforms/85xx/mpc85xx_mds.c: error: (Each undeclared
-identifier is reported only once:  => 367
-	arch/powerpc/platforms/85xx/mpc85xx_mds.c: error: for each function
-it appears in.):  => 367
-	arch/powerpc/platforms/85xx/p1022_ds.c: error: 'udbg_progress'
-undeclared here (not in a function):  => 147
-	arch/powerpc/platforms/85xx/p1022_ds.c: error: implicit declaration
-of function 'lmb_end_of_DRAM':  => 100
-	arch/powerpc/platforms/85xx/p1022_ds.c: error: linux/lmb.h: No such
-file or directory:  => 22:23
-	arch/powerpc/sysdev/fsl_rio.c: error: 'MCSR_MASK' undeclared (first
-use in this function):  => 248
-	arch/powerpc/sysdev/fsl_rio.c: error: (Each undeclared identifier is
-reported only once:  => 248
-	arch/powerpc/sysdev/fsl_rio.c: error: for each function it appears
-in.):  => 248
-	arch/sh/include/asm/syscalls_32.h: error: previous declaration of
-'sys_execve' was here:  => 22
-	arch/sh/kernel/process_32.c: error: conflicting types for 'sys_execve':  => 299
-	arch/sparc/include/asm/uaccess_64.h: error: call to
-'copy_from_user_overflow' declared with attribute error:
-copy_from_user() buffer size is not provably correct:  => 232
-	arch/xtensa/kernel/irq.c: error: 'irq_cpustat_t' has no member named
-'__nmi_count':  => 107
-	arch/xtensa/kernel/pci.c: error: '_PAGE_NO_CACHE' undeclared (first
-use in this function):  => 362
-	arch/xtensa/kernel/pci.c: error: (Each undeclared identifier is
-reported only once:  => 362
-	arch/xtensa/kernel/pci.c: error: for each function it appears in.):  => 362
-	arch/xtensa/platforms/iss/network.c: error: 'struct net_device' has
-no member named 'change_mtu':  => 697
-	arch/xtensa/platforms/iss/network.c: error: 'struct net_device' has
-no member named 'get_stats':  => 693
-	arch/xtensa/platforms/iss/network.c: error: 'struct net_device' has
-no member named 'hard_start_xmit':  => 691
-	arch/xtensa/platforms/iss/network.c: error: 'struct net_device' has
-no member named 'open':  => 690
-	arch/xtensa/platforms/iss/network.c: error: 'struct net_device' has
-no member named 'set_mac_address':  => 696
-	arch/xtensa/platforms/iss/network.c: error: 'struct net_device' has
-no member named 'set_multicast_list':  => 694
-	arch/xtensa/platforms/iss/network.c: error: 'struct net_device' has
-no member named 'stop':  => 692
-	arch/xtensa/platforms/iss/network.c: error: 'struct net_device' has
-no member named 'tx_timeout':  => 695
-	drivers/block/hd.c: error: implicit declaration of function 'inb_p':  => 257
-	drivers/block/hd.c: error: implicit declaration of function 'outb_p':  => 298
-	drivers/block/paride/bpck.c: error: invalid operands to binary &
-(have 'void *' and 'int'):  => 56, 62
-	drivers/block/paride/kbic.c: error: invalid operands to binary |
-(have 'void *' and 'int'):  => 67, 85, 53, 57, 61, 91
-	drivers/char/ipmi/ipmi_si_intf.c: error: invalid operands to binary
-<< (have 'void *' and 'int'):  => 1378, 1393
-	drivers/char/specialix.c: error: invalid operands to binary | (have
-'void *' and 'int'):  => 238, 228
-	drivers/char/tpm/tpm.h: error: invalid operands to binary & (have
-'void *' and 'int'):  => 125
-	drivers/char/tpm/tpm_tis.c: error: implicit declaration of function
-'ioread32':  => 392
-	drivers/char/tpm/tpm_tis.c: error: implicit declaration of function
-'ioread8':  => 83
-	drivers/char/tpm/tpm_tis.c: error: implicit declaration of function
-'iowrite32':  => 401
-	drivers/char/tpm/tpm_tis.c: error: implicit declaration of function
-'iowrite8':  => 96
-	drivers/gpio/timbgpio.c: error: 'IRQ_TYPE_EDGE_BOTH' undeclared
-(first use in this function):  => 146
-	drivers/gpio/timbgpio.c: error: 'IRQ_TYPE_EDGE_FALLING' undeclared
-(first use in this function):  => 153
-	drivers/gpio/timbgpio.c: error: 'IRQ_TYPE_LEVEL_HIGH' undeclared
-(first use in this function):  => 138
-	drivers/gpio/timbgpio.c: error: 'IRQ_TYPE_LEVEL_LOW' undeclared
-(first use in this function):  => 138
-	drivers/gpio/timbgpio.c: error: 'handle_simple_irq' undeclared (first
-use in this function):  => 258
-	drivers/gpio/timbgpio.c: error: (Each undeclared identifier is
-reported only once:  => 138
-	drivers/gpio/timbgpio.c: error: dereferencing pointer to incomplete
-type:  => 173
-	drivers/gpio/timbgpio.c: error: for each function it appears in.):  => 138
-	drivers/gpio/timbgpio.c: error: implicit declaration of function
-'generic_handle_irq':  => 178
-	drivers/gpio/timbgpio.c: error: implicit declaration of function
-'get_irq_chip_data':  => 109
-	drivers/gpio/timbgpio.c: error: implicit declaration of function
-'get_irq_data':  => 169
-	drivers/gpio/timbgpio.c: error: implicit declaration of function
-'set_irq_chained_handler':  => 266
-	drivers/gpio/timbgpio.c: error: implicit declaration of function
-'set_irq_chip':  => 293
-	drivers/gpio/timbgpio.c: error: implicit declaration of function
-'set_irq_chip_and_handler_name':  => 257
-	drivers/gpio/timbgpio.c: error: implicit declaration of function
-'set_irq_chip_data':  => 259
-	drivers/gpio/timbgpio.c: error: implicit declaration of function
-'set_irq_data':  => 265
-	drivers/gpio/timbgpio.c: error: implicit declaration of function
-'set_irq_handler':  => 297
-	drivers/gpio/timbgpio.c: error: unknown field 'disable' specified in
-initializer:  => 184
-	drivers/gpio/timbgpio.c: error: unknown field 'enable' specified in
-initializer:  => 183
-	drivers/gpio/timbgpio.c: error: unknown field 'name' specified in
-initializer:  => 182
-	drivers/gpio/timbgpio.c: error: unknown field 'set_type' specified in
-initializer:  => 185
-	drivers/gpio/timbgpio.c: error: variable 'timbgpio_irqchip' has
-initializer but incomplete type:  => 181
-	drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of
-function 'ioread8':  => 74
-	drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of
-function 'iowrite8':  => 69
-	drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of
-function 'ioread8':  => 46
-	drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of
-function 'iowrite8':  => 64
-	drivers/input/gameport/lightning.c: error: invalid operands to binary
-& (have 'void *' and 'int'):  => 177, 141, 86
-	drivers/input/gameport/ns558.c: error: invalid operands to binary &
-(have 'void *' and 'int'):  => 84
-	drivers/input/keyboard/hil_kbd.c: error: implicit declaration of
-function 'input_abs_max':  => 241
-	drivers/input/touchscreen/mk712.c: error: invalid operands to binary
-| (have 'void *' and 'int'):  => 129
-	drivers/misc/lkdtm.c: error: 'BUG' redeclared as different kind of
-symbol:  => 70
-	drivers/misc/lkdtm.c: error: called object '2' is not a function:  => 281
-	drivers/mmc/host/tmio_mmc.h: error: negative width in bit-field
-'<anonymous>':  => 192
-	drivers/net/can/sja1000/sja1000_platform.c: error: implicit
-declaration of function 'ioread8':  => 41
-	drivers/net/can/sja1000/sja1000_platform.c: error: implicit
-declaration of function 'iowrite8':  => 46
-	drivers/net/cris/eth_v10.c: error: too many arguments to function
-'e100rxtx_interrupt':  => 1721
-	drivers/net/hamradio/baycom_ser_fdx.c: error: invalid operands to
-binary >> (have 'void *' and 'int'):  => 188
-	drivers/net/hamradio/baycom_ser_fdx.c: error: invalid operands to
-binary | (have 'void *' and 'int'):  => 387, 328
-	drivers/net/hamradio/baycom_ser_hdx.c: error: invalid operands to
-binary | (have 'void *' and 'int'):  => 446, 208
-	drivers/net/hamradio/yam.c: error: invalid operands to binary ^ (have
-'void *' and 'int'):  => 715
-	drivers/net/hamradio/yam.c: error: invalid operands to binary | (have
-'void *' and 'int'):  => 519, 483, 337, 310, 321, 318
-	drivers/parport/parport_pc.c: error: asm/parport.h: No such file or
-directory:  => 67:25
-	drivers/parport/parport_pc.c: error: implicit declaration of function
-'parport_pc_find_nonpci_ports':  => 3377
-	drivers/parport/parport_pc.c: error: invalid operands to binary &
-(have 'void *' and 'int'):  => 266
-	drivers/parport/parport_pc.c: error: invalid operands to binary ^
-(have 'void *' and 'int'):  => 1778, 123
-	drivers/parport/parport_pc.c: error: invalid operands to binary |
-(have 'void *' and 'int'):  => 1643, 265
-	drivers/serial/8250.c: error: asm/serial.h: No such file or
-directory:  => 110:24
-	drivers/serial/8250.c: error: implicit declaration of function
-'inb_p':  => 1278
-	drivers/serial/8250.c: error: implicit declaration of function
-'outb_p':  => 1279
-	drivers/serial/8250_early.c: error: 'BASE_BAUD' undeclared (first use
-in this function):  => 160
-	drivers/serial/8250_early.c: error: (Each undeclared identifier is
-reported only once:  => 160
-	drivers/serial/8250_early.c: error: asm/serial.h: No such file or
-directory:  => 37:24
-	drivers/serial/8250_early.c: error: for each function it appears in.):  => 160
-	drivers/serial/mfd.c: error: implicit declaration of function 'kfree':  => 175
-	drivers/serial/mfd.c: error: implicit declaration of function
-'kzalloc':  => 144
-	drivers/serial/mrst_max3110.c: error: 'IRQ_TYPE_EDGE_FALLING'
-undeclared (first use in this function):  => 470
-	drivers/serial/mrst_max3110.c: error: (Each undeclared identifier is
-reported only once:  => 470
-	drivers/serial/mrst_max3110.c: error: for each function it appears
-in.):  => 470
-	drivers/staging/comedi/drivers.c: error: 'PAGE_KERNEL_NOCACHE'
-undeclared (first use in this function):  => 505
-	drivers/staging/comedi/drivers.c: error: (Each undeclared identifier
-is reported only once:  => 505
-	drivers/staging/comedi/drivers.c: error: for each function it appears
-in.):  => 505
-	error: "pci_domain_nr" [drivers/gpu/drm/drm.ko] undefined!:  => N/A
-	error: "vgacon_remap_base" [drivers/video/vga16fb.ko] undefined!:  => N/A
-	error: vsprintf.c: relocation truncated to fit: R_AVR32_11H_PCREL
-against `.text'+718:  => (.text+0xb1e)
-	fs/ceph/mds_client.c: error: insn does not satisfy its constraints::  => 3190
-	fs/fcntl.c: error: negative width in bit-field '<anonymous>':  => 773
-	fs/nfs/nfsroot.c: error: __setup_str_nfs_root_setup causes a section
-type conflict:  => 403
-	fs/ntfs/file.c: error: insn does not satisfy its constraints::  => 2069
-	include/drm/drmP.h: error: implicit declaration of function
-'pci_domain_nr':  => 1102
-	include/linux/vgaarb.h: error: asm/vga.h: No such file or directory:  => 34:21
-	include/scsi/libsrp.h: error: field 'queue' has incomplete type:  => 24
-	init/Kconfig: error: recursive dependency detected!:  => 985
-	kernel/cgroup.c: error: this is the insn::  => 4685, 4755
-	kernel/cgroup.c: error: unable to find a register to spill in class
-'R0_REGS':  => 4685, 4755
-	kernel/trace/trace_clock.c: error: implicit declaration of function
-'raw_local_irq_restore':  => 112
-	kernel/trace/trace_clock.c: error: implicit declaration of function
-'raw_local_irq_save':  => 86
-	lib/atomic64_test.c: error: 'atomic64_t' undeclared (first use in
-this function):  => 24
-	lib/atomic64_test.c: error: 'v' undeclared (first use in this function):  => 26
-	lib/atomic64_test.c: error: (Each undeclared identifier is reported
-only once:  => 24
-	lib/atomic64_test.c: error: expected ';' before 'v':  => 24
-	lib/atomic64_test.c: error: for each function it appears in.):  => 24
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_add':  => 34
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_add_return':  => 45
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_add_unless':  => 108
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_cmpxchg':  => 99
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_dec':  => 84
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_dec_if_positive':  => 119
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_dec_return':  => 90
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_inc':  => 74
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_inc_not_zero':  => 135
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_inc_return':  => 80
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_read':  => 31
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_set':  => 28
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_sub':  => 54
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_sub_return':  => 65
-	lib/atomic64_test.c: error: implicit declaration of function
-'atomic64_xchg':  => 94
-	mm/memcontrol.c: error: implicit declaration of function
-'is_swap_pte':  => 4016
-	mm/memcontrol.c: error: implicit declaration of function
-'mem_cgroup_do_precharge':  => 4118
-	mm/memcontrol.c: error: previous definition of
-'mem_cgroup_can_attach' was here:  => 3954
-	mm/memcontrol.c: error: previous definition of
-'mem_cgroup_cancel_attach' was here:  => 3961
-	mm/memcontrol.c: error: previous definition of 'mem_cgroup_move_task'
-was here:  => 3968
-	mm/memcontrol.c: error: redefinition of 'mem_cgroup_can_attach':  => 4165
-	mm/memcontrol.c: error: redefinition of 'mem_cgroup_cancel_attach':  => 4206
-	mm/memcontrol.c: error: redefinition of 'mem_cgroup_move_task':  => 4314
-	net/mac80211/led.c: error: dereferencing pointer to incomplete type:
-=> 74, 85, 63, 96
-	net/mac80211/led.c: error: implicit declaration of function
-'led_trigger_register':  => 64
-	net/mac80211/led.c: error: implicit declaration of function
-'led_trigger_unregister':  => 107
-	net/mac80211/led.c: error: invalid application of 'sizeof' to
-incomplete type 'struct led_trigger' :  => 92, 81, 59, 70
-	net/rds/rdma.c: error: insn does not satisfy its constraints::  => 647
-	sound/isa/es18xx.c: error: implicit declaration of function
-'snd_dma_pointer':  => 818
-	sound/isa/es18xx.c: error: implicit declaration of function
-'snd_dma_program':  => 501
-	sound/isa/sscape.c: error: implicit declaration of function
-'snd_dma_program':  => 481
+Hi Chris,
+
+Just submit it to LKML with us on CC, so I'll then ack and CC James Morris.
+
+Thanks
+---
+Rajiv Andrade
+Security Development
+IBM Linux Technology Center
 
 
-*** WARNINGS ***
 
-616 regressions:
-	.config: warning: override: SLOB changes choice state:  => 155, 111
-	.config: warning: override: reassigning to symbol ENABLE_MUST_CHECK:
-=> 4893, 5227
-	.config: warning: override: reassigning to symbol
-PROFILE_ALL_BRANCHES:  => 4891, 5225
-	<stdin>: warning: #warning syscall dup3 not implemented:  => 1494:2, 1495:2
-	<stdin>: warning: #warning syscall epoll_create1 not implemented:  =>
-1490:2, 1491:2
-	<stdin>: warning: #warning syscall eventfd2 not implemented:  => 1486:2, 1487:2
-	<stdin>: warning: #warning syscall fallocate not implemented:  =>
-1470:2, 1471:2
-	<stdin>: warning: #warning syscall fanotify_init not implemented:  => 1526:2
-	<stdin>: warning: #warning syscall fanotify_mark not implemented:  => 1530:2
-	<stdin>: warning: #warning syscall inotify_init1 not implemented:  =>
-1503:2, 1502:2
-	<stdin>: warning: #warning syscall perf_event_open not implemented:
-=> 1518:2, 1519:2
-	<stdin>: warning: #warning syscall pipe2 not implemented:  => 1499:2, 1498:2
-	<stdin>: warning: #warning syscall pread64 not implemented:  => 906:2, 907:2
-	<stdin>: warning: #warning syscall preadv not implemented:  => 1507:2, 1506:2
-	<stdin>: warning: #warning syscall prlimit64 not implemented:  => 1534:2
-	<stdin>: warning: #warning syscall pwrite64 not implemented:  => 910:2, 911:2
-	<stdin>: warning: #warning syscall pwritev not implemented:  => 1511:2, 1510:2
-	<stdin>: warning: #warning syscall recvmmsg not implemented:  => 1523:2, 1522:2
-	<stdin>: warning: #warning syscall rt_tgsigqueueinfo not implemented:
- => 1515:2, 1514:2
-	<stdin>: warning: #warning syscall signalfd4 not implemented:  =>
-1483:2, 1482:2
-	<stdin>: warning: #warning syscall sync_file_range not implemented:
-=> 1431:2, 1430:2
-	<stdin>: warning: #warning syscall timerfd_create not implemented:
-=> 1462:2, 1463:2
-	<stdin>: warning: #warning syscall timerfd_gettime not implemented:
-=> 1478:2, 1479:2
-	<stdin>: warning: #warning syscall timerfd_settime not implemented:
-=> 1474:2, 1475:2
-	<stdin>: warning: #warning syscall umount2 not implemented:  => 394:2, 395:2
-	arch/cris/arch-v10/drivers/axisflashmap.c: warning: format '%08x'
-expects type 'unsigned int', but argument 3 has type 'uint64_t':  =>
-356, 374, 292
-	arch/cris/arch-v10/drivers/axisflashmap.c: warning: format '%08x'
-expects type 'unsigned int', but argument 4 has type 'uint64_t':  =>
-356, 374
-	arch/cris/arch-v10/drivers/sync_serial.c: warning: initialization
-from incompatible pointer type:  => 251
-	arch/cris/arch-v10/drivers/sync_serial.c: warning: passing argument 1
-of 'memcpy' discards qualifiers from pointer target type:  => 1341,
-1351
-	arch/cris/arch-v10/drivers/sync_serial.c: warning: passing argument 1
-of 'virt_to_phys' discards qualifiers from pointer target type:  =>
-1222
-	arch/cris/arch-v32/drivers/axisflashmap.c: warning: ISO C90 forbids
-mixed declarations and code:  => 403, 530
-	arch/cris/arch-v32/drivers/axisflashmap.c: warning: cast to pointer
-from integer of different size:  => 593
-	arch/cris/arch-v32/drivers/axisflashmap.c: warning: format '%08x'
-expects type 'unsigned int', but argument 3 has type 'uint64_t':  =>
-342
-	arch/cris/arch-v32/kernel/debugport.c: warning: ISO C90 forbids mixed
-declarations and code:  => 123
-	arch/cris/arch-v32/kernel/fasttimer.c: warning: ISO C90 forbids mixed
-declarations and code:  => 353
-	arch/cris/arch-v32/kernel/ptrace.c: warning: unused variable 'tmp':  => 118
-	arch/cris/arch-v32/mach-a3/pinmux.c: warning: ISO C90 forbids mixed
-declarations and code:  => 273, 96
-	arch/cris/arch-v32/mach-fs/pinmux.c: warning: ISO C90 forbids mixed
-declarations and code:  => 225, 97
-	arch/cris/arch-v32/mm/intmem.c: warning: comparison of distinct
-pointer types lacks a cast:  => 123, 116
-	arch/cris/arch-v32/mm/intmem.c: warning: initialization from
-incompatible pointer type:  => 149
-	arch/cris/mm/fault.c: warning: ISO C90 forbids mixed declarations and
-code:  => 205
-	arch/ia64/kernel/mca.c: warning: assignment makes pointer from
-integer without a cast:  => 1862
-	arch/ia64/sn/kernel/bte.c: warning: cast from pointer to integer of
-different size:  => 125, 117
-	arch/ia64/sn/kernel/tiocx.c: warning: ignoring return value of
-'bus_register', declared with attribute warn_unused_result:  => 493
-	arch/ia64/sn/kernel/tiocx.c: warning: ignoring return value of
-'device_create_file', declared with attribute warn_unused_result:  =>
-213
-	arch/ia64/sn/kernel/tiocx.c: warning: ignoring return value of
-'device_register', declared with attribute warn_unused_result:  => 210
-	arch/ia64/sn/pci/tioca_provider.c: warning: initialization from
-incompatible pointer type:  => 660, 659
-	arch/m68k/include/asm/io_mm.h: warning: this is the location of the
-previous definition:  => 274:1, 271:1
-	arch/m68k/include/asm/parport.h: warning: "insl" redefined:  => 14:1
-	arch/m68k/include/asm/parport.h: warning: "outsl" redefined:  => 15:1
-	arch/m68k/kernel/setup.c: warning: unused variable 'i':  => 218
-	arch/m68k/kernel/sys_m68k.c: warning: passing argument 1 of 'kunmap'
-from incompatible pointer type:  => 519, 511
-	arch/m68k/mvme147/config.c: warning: #warning check me!:  => 152:2
-	arch/m68k/mvme16x/config.c: warning: #warning check me!:  => 261:2
-	arch/mips/pci/pci.c: warning: passing argument 2 of 'pci_fixup_irqs'
-from incompatible pointer type:  => 160
-	arch/mips/sibyte/bcm1480/smp.c: warning: passing argument 1 of
-'__cpus_clear' discards qualifiers from pointer target type:  => 149
-	arch/parisc/kernel/signal.c: warning: cast from pointer to integer of
-different size:  => 294
-	arch/powerpc/include/asm/io-defs.h: warning: array subscript is above
-array bounds:  => 6, 11, 9
-	arch/powerpc/include/asm/io.h: warning: array subscript is above
-array bounds:  => 159
-	arch/s390/kvm/../../../virt/kvm/kvm_main.c: warning: unused variable
-'r':  => 1781
-	arch/s390/mm/extmem.c: warning: 'end_addr' may be used uninitialized
-in this function:  => 573
-	arch/s390/mm/extmem.c: warning: 'start_addr' may be used
-uninitialized in this function:  => 573
-	arch/sh/boards/mach-se/770x/setup.c: warning: initialization makes
-pointer from integer without a cast:  => 134, 157
-	arch/sh/drivers/dma/dma-sh.c: warning: 'dmae_name' defined but not used:  => 28
-	arch/sh/drivers/dma/dma-sh.c: warning: unused variable 'cnt':  => 235
-	arch/sh/include/asm/ptrace.h: warning: this is the location of the
-previous definition:  => 39:1
-	arch/sh/kernel/cpu/clock-cpg.c: warning: 'arch_init_clk_ops' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/clock.h:58):  => 336
-	arch/sh/kernel/cpu/clock-cpg.c: warning: 'arch_init_clk_ops' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/clock.h:7)  CC
-kernel/kfifo.o:  => 54
-	arch/sh/kernel/cpu/clock-cpg.c: warning: 'arch_init_clk_ops' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/clock.h:7):  => 54
-	arch/sh/kernel/cpu/clock-cpg.c: warning: 'cpg_clk_init' is deprecated
-(declared at /scratch/kisskb/src/arch/sh/kernel/cpu/clock-cpg.c:331):
-=> 350
-	arch/sh/kernel/cpu/clock-cpg.c: warning: 'cpg_clk_init' is deprecated
-(declared at /scratch/kisskb/src/arch/sh/kernel/cpu/clock-cpg.c:49):
-=> 75
-	arch/sh/kernel/cpu/sh2/../../entry-common.S: Warning: overflow in
-branch to syscall_call; converted into longer instruction sequence:
-=> 209
-	arch/sh/kernel/cpu/sh2/../../entry-common.S: Warning: overflow in
-branch to syscall_exit_work; converted into longer instruction
-sequence:  => 364, 361
-	arch/sh/kernel/cpu/sh2/../../entry-common.S: Warning: overflow in
-branch to syscall_trace_entry; converted into longer instruction
-sequence:  => 337, 335
-	arch/sh/kernel/cpu/sh2a/clock-sh7201.c: warning: 'return' with a
-value, in function returning void:  => 37
-	arch/sh/kernel/cpu/sh4/clock-sh4-202.c: warning: 'cpg_clk_init' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/clock.h:11):  => 165
-	arch/sh/kernel/cpu/sh4a/clock-sh7780.c: warning: 'cpg_clk_init' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/clock.h:11):  => 112
-	arch/sh/kernel/cpu/sh4a/clock-shx3.c: warning: 'cpg_clk_init' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/clock.h:11):  => 122
-	arch/sh/math-emu/math.c: warning: left shift count >= width of type:
-=> 334, 145, 310, 122, 108, 115
-	arch/sh/math-emu/math.c: warning: left shift count is negative:  =>
-333, 310, 323, 129, 122, 108, 115, 81, 92
-	arch/sh/math-emu/math.c: warning: right shift count >= width of type:
- => 294, 296
-	arch/sh/math-emu/math.c: warning: right shift count is negative:  =>
-334, 310, 129, 122, 108, 115, 294, 324, 145
-	arch/um/kernel/exec.c: warning: passing argument 2 of 'execve1' from
-incompatible pointer type:  => 69, 85
-	arch/um/kernel/exec.c: warning: passing argument 3 of 'execve1' from
-incompatible pointer type:  => 69, 85
-	arch/x86/kernel/head_32.S: Warning: shift count out of range (32 is
-not between 0 and 31):  => 64
-	arch/x86/kernel/pci-gart_64.c: warning: 'info.aper_base' may be used
-uninitialized in this function:  => 735
-	arch/xtensa/kernel/entry.S: Warning: value 0xffffffff30000000
-truncated to 0x30000000:  => 1544, 1545
-	arch/xtensa/kernel/pci.c: warning: format '%ld' expects type 'long
-int', but argument 4 has type 'resource_size_t':  => 84
-	arch/xtensa/kernel/process.c: warning: unused variable 'ti':  => 180
-	arch/xtensa/kernel/time.c: warning: initialization from incompatible
-pointer type:  => 42
-	block/cfq-iosched.c: warning: control reaches end of non-void
-function:  => 2882
-	block/compat_ioctl.c: warning: 'n' may be used uninitialized in this
-function:  => 191
-	block/compat_ioctl.c: warning: 'udata' may be used uninitialized in
-this function:  => 190
-	block/elevator.c: warning: 'elevator_get' uses dynamic stack
-allocation:  => 175
-	crypto/anubis.c: warning: 'inter' is used uninitialized in this
-function:  => 581
-	crypto/async_tx/async_pq.c: warning: 'async_syndrome_val' uses
-dynamic stack allocation:  => 392
-	crypto/async_tx/raid6test.c: warning: 'raid6_dual_recov' uses dynamic
-stack allocation:  => 131
-	crypto/cbc.c: warning: 'crypto_cbc_decrypt_inplace' uses dynamic
-stack allocation:  => 167
-	crypto/cipher.c: warning: 'cipher_crypt_unaligned' uses dynamic stack
-allocation:  => 76
-	crypto/ctr.c: warning: 'crypto_ctr_crypt_final' uses dynamic stack
-allocation:  => 66
-	crypto/ctr.c: warning: 'crypto_ctr_crypt_inplace' uses dynamic stack
-allocation:  => 119
-	crypto/ctr.c: warning: 'crypto_rfc3686_crypt' uses dynamic stack
-allocation:  => 300
-	crypto/cts.c: warning: 'cts_cbc_decrypt' uses dynamic stack allocation:  => 217
-	crypto/cts.c: warning: 'cts_cbc_encrypt' uses dynamic stack allocation:  => 123
-	crypto/hmac.c: warning: 'hmac_setkey' uses dynamic stack allocation:  => 90
-	crypto/pcbc.c: warning: 'crypto_pcbc_decrypt_inplace' uses dynamic
-stack allocation:  => 175
-	crypto/pcbc.c: warning: 'crypto_pcbc_encrypt_inplace' uses dynamic
-stack allocation:  => 95
-	crypto/shash.c: warning: 'shash_final_unaligned' uses dynamic stack
-allocation:  => 129
-	crypto/shash.c: warning: 'shash_update_unaligned' uses dynamic stack
-allocation:  => 93
-	crypto/testmgr.c: warning: 'alg_test_crc32c' uses dynamic stack
-allocation:  => 1499
-	crypto/vmac.c: warning: passing argument 1 of 'vmac_set_key' discards
-qualifiers from pointer target type:  => 548
-	crypto/xcbc.c: warning: 'crypto_xcbc_digest_setkey' uses dynamic
-stack allocation:  => 79
-	drivers/acpi/acpi_pad.c: warning: 'num_cpus' may be used
-uninitialized in this function:  => 432
-	drivers/acpi/acpica/nsrepair.c: warning: 'new_object' may be used
-uninitialized in this function:  => 125
-	drivers/acpi/sysfs.c: warning: passing argument 1 of
-'__check_old_set_param' from incompatible pointer type:  => 152, 154
-	drivers/ata/sata_mv.c: warning: 'msi' defined but not used:  => 80
-	drivers/ata/sata_mv.c: warning: 'mv5_sht' defined but not used:  => 653
-	drivers/ata/sata_mv.c: warning: 'mv_dump_pci_cfg' defined but not
-used:  => 1255
-	drivers/atm/nicstar.c: warning: 'err' may be used uninitialized in
-this function:  => 956
-	drivers/base/power/main.c: warning: comparison of distinct pointer
-types lacks a cast:  => 414
-	drivers/block/drbd/drbd_vli.h: warning: control reaches end of
-non-void function:  => 164
-	drivers/block/hd.c: warning: statement with no effect:  => 468
-	drivers/block/z2ram.c: warning: format '%lu' expects type 'long
-unsigned int', but argument 2 has type 'sector_t':  => 83, 82
-	drivers/cdrom/gdrom.c: warning: 'ctrl_inb' is deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/io.h:94):  => 238, 149, 538,
-155, 387, 400, 548, 144, 634
-	drivers/cdrom/gdrom.c: warning: 'ctrl_inl' is deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/io.h:104):  => 409
-	drivers/cdrom/gdrom.c: warning: 'ctrl_inw' is deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/io.h:99):  => 190
-	drivers/cdrom/gdrom.c: warning: 'ctrl_outb' is deprecated (declared
-at /scratch/kisskb/src/arch/sh/include/asm/io.h:114):  => 613, 204,
-206, 720, 638, 617, 205, 235, 616, 615, 183, 213, 618, 199, 202, 716,
-201, 717, 619, 624
-	drivers/cdrom/gdrom.c: warning: 'ctrl_outl' is deprecated (declared
-at /scratch/kisskb/src/arch/sh/include/asm/io.h:124):  => 605, 602,
-730, 731, 603, 604, 407
-	drivers/char/cyclades.c: warning: 'cyz_interrupt' defined but not
-used:  => 1200, 1201
-	drivers/char/hw_random/n2-drv.c: warning: initialization makes
-pointer from integer without a cast:  => 390
-	drivers/char/ip2/ip2main.c: warning: 'ip2main_pci_tbl' defined but
-not used:  => 3212, 3194
-	drivers/char/keyboard.c: warning: comparison is always true due to
-limited range of data type:  => 719
-	drivers/char/mbcs.c: warning: ignoring return value of
-'device_create_file', declared with attribute warn_unused_result:  =>
-786
-	drivers/char/mem.c: warning: cast to pointer from integer of
-different size:  => 342
-	drivers/char/mxser.c: warning: 'mxser_disable_must_enchance_mode'
-defined but not used:  => 306, 307
-	drivers/char/mxser.c: warning: 'mxser_get_must_hardware_id' defined
-but not used:  => 391, 392
-	drivers/char/n_gsm.c: warning: ignoring return value of
-'__kfifo_must_check_helper', declared with attribute
-warn_unused_result:  => 1580
-	drivers/char/rocket.c: warning: 'rmSpeakerReset' defined but not
-used:  => 3152, 3163, 3164
-	drivers/char/rocket.c: warning: 'rocket_pci_ids' defined but not
-used:  => 1756, 1767
-	drivers/char/rocket.c: warning: 'sPCIInitController' defined but not
-used:  => 2611, 2627, 2622
-	drivers/char/specialix.c: warning: 'specialx_pci_tbl' defined but not
-used:  => 2359
-	drivers/char/tpm/tpm.c: warning: 'tpm_suspend_setup' defined but not
-used:  => 1085
-	drivers/char/tpm/tpm.c: warning: format '%zd' expects type 'signed
-size_t', but argument 3 has type 'ssize_t':  => 390, 423
-	drivers/char/tty_buffer.c: warning: comparison of distinct pointer
-types lacks a cast:  => 251, 288
-	drivers/gpio/timbgpio.c: warning: (near initialization for
-'timbgpio_irqchip'):  => 182, 185, 183, 184
-	drivers/gpio/timbgpio.c: warning: excess elements in struct
-initializer:  => 182, 185, 183, 184
-	drivers/gpio/timbgpio.c: warning: initialization makes pointer from
-integer without a cast:  => 109, 169, 125, 117
-	drivers/gpio/wm8994-gpio.c: warning: 'wm8994_gpio_to_irq' defined but
-not used:  => 84
-	drivers/gpu/drm/drm_context.c: warning: passing argument 2 of
-'__constant_test_and_set_bit' discards qualifiers from pointer target
-type:  => 233
-	drivers/gpu/drm/drm_context.c: warning: passing argument 2 of
-'__generic_test_and_set_bit' discards qualifiers from pointer target
-type:  => 233
-	drivers/gpu/drm/drm_edid.c: warning: array subscript is above array
-bounds:  => 1076, 1294, 1252
-	drivers/gpu/drm/drm_pci.c: warning: passing argument 1 of
-'virt_to_phys' makes pointer from integer without a cast:  => 109, 84
-	drivers/gpu/drm/drm_vm.c: warning: passing argument 1 of
-'virt_to_phys' makes pointer from integer without a cast:  => 308
-	drivers/gpu/drm/radeon/radeon_gart.c: warning: passing argument 3 of
-'pci_free_consistent' discards qualifiers from pointer target type:
-=> 69
-	drivers/hwmon/i5k_amb.c: warning: 'i5k_amb_ids' defined but not used:
- => 500, 493
-	drivers/i2c/busses/i2c-cpm.c: warning: passing argument 3 of
-'dma_alloc_coherent' from incompatible pointer type:  => 536, 543
-	drivers/i2c/busses/i2c-sh7760.c: warning: 'ctrl_inl' is deprecated
-(declared at /scratch/kisskb/src/arch/sh/include/asm/io.h:104):  =>
-109
-	drivers/i2c/busses/i2c-sh7760.c: warning: 'ctrl_outl' is deprecated
-(declared at /scratch/kisskb/src/arch/sh/include/asm/io.h:124):  =>
-104
-	drivers/ide/ide-floppy.c: warning: 'pc' may be used uninitialized in
-this function:  => 234
-	drivers/ide/ide-io-std.c: warning: statement with no effect:  => 200, 185
-	drivers/ide/ide-io.c: warning: control reaches end of non-void
-function:  => 295
-	drivers/ide/ide-io.c: warning: passing argument 2 of
-'__constant_test_and_set_bit' discards qualifiers from pointer target
-type:  => 415
-	drivers/ide/ide-io.c: warning: passing argument 2 of
-'__generic_test_and_set_bit' discards qualifiers from pointer target
-type:  => 415
-	drivers/infiniband/core/uverbs_main.c: warning: the address of
-'uverbs_event_fops' will always evaluate as 'true':  => 526, 537
-	drivers/infiniband/hw/amso1100/c2_qp.c: warning: 'actual_sge_count'
-may be used uninitialized in this function:  => 960, 798, 799, 961
-	drivers/infiniband/hw/amso1100/c2_qp.c: warning: 'tot_len' may be
-used uninitialized in this function:  => 797, 798
-	drivers/infiniband/hw/amso1100/c2_vq.c: warning: cast from pointer to
-integer of different size:  => 154, 126, 110
-	drivers/infiniband/hw/cxgb4/cm.c: warning: cast to pointer from
-integer of different size:  => 2326
-	drivers/infiniband/hw/cxgb4/cq.c: warning: cast from pointer to
-integer of different size:  => 58, 135
-	drivers/infiniband/hw/cxgb4/mem.c: warning: cast from pointer to
-integer of different size:  => 74
-	drivers/infiniband/hw/cxgb4/qp.c: warning: cast from pointer to
-integer of different size:  => 147, 1063, 988
-	drivers/infiniband/hw/ipath/ipath_driver.c: warning: 'pnum' may be
-used uninitialized in this function:  => 1637
-	drivers/infiniband/hw/nes/nes_verbs.c: warning: cast to pointer from
-integer of different size:  => 476, 3487, 477, 3486
-	drivers/input/joystick/analog.c: warning: #warning Precise timer not
-defined for this architecture.:  => 175:2
-	drivers/input/keyboard/jornada680_kbd.c: warning: 'ctrl_inb' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/io.h:94):  => 170, 158, 169,
-157
-	drivers/input/keyboard/jornada680_kbd.c: warning: 'ctrl_inw' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/io.h:99):  => 142, 143
-	drivers/input/keyboard/jornada680_kbd.c: warning: 'ctrl_outb' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/io.h:114):  => 152, 161, 162,
-153
-	drivers/input/keyboard/jornada680_kbd.c: warning: 'ctrl_outw' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/io.h:119):  => 147, 166, 165,
-148
-	drivers/input/misc/hp_sdc_rtc.c: warning: 'hp_sdc_rtc_set_fhs'
-defined but not used:  => 319, 320
-	drivers/input/misc/hp_sdc_rtc.c: warning: 'hp_sdc_rtc_set_i8042timer'
-defined but not used:  => 359, 360
-	drivers/input/misc/hp_sdc_rtc.c: warning: 'hp_sdc_rtc_set_rt' defined
-but not used:  => 280, 279
-	drivers/input/misc/hp_sdc_rtc.c: warning: ignoring return value of
-'down_interruptible', declared with attribute warn_unused_result:  =>
-182, 178, 111
-	drivers/input/misc/twl4030-vibra.c: warning: 'twl4030_vibra_resume'
-defined but not used:  => 188
-	drivers/input/misc/twl4030-vibra.c: warning: 'twl4030_vibra_suspend'
-defined but not used:  => 177
-	drivers/input/touchscreen/hp680_ts_input.c: warning: 'ctrl_inb' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/io.h:94):  => 32, 53, 40, 31,
-48
-	drivers/input/touchscreen/hp680_ts_input.c: warning: 'ctrl_outb' is
-deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/io.h:114):  => 35, 51, 43
-	drivers/isdn/hardware/eicon/message.c: warning: array subscript is
-above array bounds:  => 8426, 8436, 8427, 8447, 8435, 8434
-	drivers/isdn/hardware/mISDN/hfcpci.c: warning: ignoring return value
-of 'driver_for_each_device', declared with attribute
-warn_unused_result:  => 2320
-	drivers/isdn/hardware/mISDN/mISDNipac.c: warning: unsupported
-argument to '__builtin_return_address':  => 754
-	drivers/isdn/hardware/mISDN/netjet.c: warning: comparison is always
-false due to limited range of data type:  => 318
-	drivers/isdn/hardware/mISDN/w6692.c: warning: 'enable_pots' defined
-but not used:  => 560
-	drivers/isdn/hardware/mISDN/w6692.c: warning: 'setvolume' defined but
-not used:  => 533
-	drivers/isdn/hardware/mISDN/w6692.c: warning: unsupported argument to
-'__builtin_return_address':  => 1188
-	drivers/isdn/hisax/config.c: warning: 'hisax_pci_tbl' defined but not
-used:  => 1910, 1909
-	drivers/isdn/i4l/isdn_common.c: warning: unused variable 's':  => 1285
-	drivers/isdn/icn/icn.c: warning: #warning TODO test headroom or use
-skb->nb to flag ACK:  => 721:4
-	drivers/isdn/sc/init.c: warning: passing argument 1 of 'readl' makes
-pointer from integer without a cast:  => 497, 487, 507
-	drivers/leds/leds-gpio.c: warning: 'flags' may be used uninitialized
-in this function:  => 251
-	drivers/md/dm-raid1.c: warning: 'do_write' uses dynamic stack
-allocation:  => 650
-	drivers/md/dm-raid1.c: warning: 'mirror_flush' uses dynamic stack
-allocation:  => 285
-	drivers/md/dm-raid1.c: warning: 'mirror_status' uses dynamic stack
-allocation:  => 1391
-	drivers/md/dm-stripe.c: warning: 'stripe_status' uses dynamic stack
-allocation:  => 336
-	drivers/md/raid0.c: warning: control reaches end of non-void function:  => 424
-	drivers/media/dvb/frontends/dib3000mc.c: warning: the frame size of
-2208 bytes is larger than 2048 bytes:  => 853
-	drivers/media/dvb/frontends/dib7000p.c: warning: the frame size of
-2288 bytes is larger than 2048 bytes:  => 1367
-	drivers/media/dvb/ngene/ngene-core.c: warning: unused variable
-'flags':  => 1308
-	drivers/media/video/sh_mobile_ceu_camera.c: warning: 'sd' is used
-uninitialized in this function:  => 1245
-	drivers/media/video/sh_mobile_ceu_camera.c: warning: 'sd' may be used
-uninitialized in this function:  => 1707, 1683, 943
-	drivers/media/video/sh_mobile_ceu_camera.c: warning: unused variable
-'sd':  => 1648
-	drivers/media/video/vino.c: warning: 'data_norm' may be used
-uninitialized in this function:  => 2566, 2656
-	drivers/memstick/core/mspro_block.c: warning: control reaches end of
-non-void function:  => 663
-	drivers/message/fusion/mptsas.c: warning: unused variable 'log_info':  => 5010
-	drivers/message/i2o/i2o_config.c: warning: cast to pointer from
-integer of different size:  => 935, 880
-	drivers/mfd/twl4030-irq.c: warning: passing argument 1 of
-'spin_lock_irq' from incompatible pointer type:  => 571
-	drivers/mfd/twl4030-irq.c: warning: passing argument 1 of
-'spin_unlock_irq' from incompatible pointer type:  => 576
-	drivers/mfd/twl6030-irq.c: warning: cast to pointer from integer of
-different size:  => 267
-	drivers/misc/ics932s401.c: warning: 'reg' may be used uninitialized
-in this function:  => 392
-	drivers/misc/ics932s401.c: warning: 'x' may be used uninitialized in
-this function:  => 375
-	drivers/misc/sgi-gru/grufault.c: warning: 'paddr' may be used
-uninitialized in this function:  => 265
-	drivers/misc/sgi-gru/grufault.c: warning: 'ps' may be used
-uninitialized in this function:  => 266
-	drivers/mmc/host/sdhci.c: warning: 'pwr' may be used uninitialized in
-this function:  => 1037
-	drivers/mtd/chips/cfi_cmdset_0001.c: warning: the frame size of 1044
-bytes is larger than 1024 bytes:  => 858
-	drivers/mtd/chips/cfi_cmdset_0001.c: warning: the frame size of 1412
-bytes is larger than 1024 bytes:  => 1800
-	drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1132
-bytes is larger than 1024 bytes:  => 420
-	drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1376
-bytes is larger than 1024 bytes:  => 983
-	drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1672
-bytes is larger than 1024 bytes:  => 658
-	drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 2288
-bytes is larger than 2048 bytes:  => 657
-	drivers/mtd/devices/doc2001plus.c: warning: passing argument 2 of
-'MemWriteDOC' discards qualifiers from pointer target type:  => 767
-	drivers/mtd/devices/docprobe.c: warning: #warning Unknown
-architecture for DiskOnChip. No default probe locations defined:  =>
-80:2, 79:2
-	drivers/mtd/ftl.c: warning: passing argument 4 of
-'part->mbd.mtd->read' from incompatible pointer type:  => 527, 294,
-228, 490
-	drivers/mtd/ftl.c: warning: passing argument 4 of
-'part->mbd.mtd->write' from incompatible pointer type:  => 564, 535,
-426, 507, 442, 555
-	drivers/mtd/maps/solutionengine.c: warning: assignment makes pointer
-from integer without a cast:  => 74, 76
-	drivers/mtd/maps/solutionengine.c: warning: format '%08lx' expects
-type 'long unsigned int', but argument 2 has type 'resource_size_t':
-=> 86
-	drivers/mtd/maps/solutionengine.c: warning: format '%08lx' expects
-type 'long unsigned int', but argument 3 has type 'resource_size_t':
-=> 86
-	drivers/mtd/nand/alauda.c: warning: passing argument 3 of
-'alauda_write_page' discards qualifiers from pointer target type:  =>
-480
-	drivers/mtd/nand/diskonchip.c: warning: #warning Unknown architecture
-for DiskOnChip. No default probe locations defined:  => 56:2, 57:2
-	drivers/mtd/sm_ftl.c: warning: comparison of distinct pointer types
-lacks a cast:  => 200, 199
-	drivers/mtd/ubi/vmt.c: warning: ‘err’ may be used uninitialized in
-this function:  => 408
-	drivers/mtd/ubi/wl.c: warning: 'e' may be used uninitialized in this
-function:  => 390
-	drivers/net/acenic.c: warning: passing argument 3 of
-'pci_free_consistent' discards qualifiers from pointer target type:
-=> 775, 770, 781
-	drivers/net/arcnet/capmode.c: warning: 'arcnet_cap_init' defined but
-not used:  => 64
-	drivers/net/can/sja1000/sja1000.h: warning: "REG_SR" redefined:  => 60:1
-	drivers/net/gianfar_ethtool.c: warning: the frame size of 2048 bytes
-is larger than 1024 bytes:  => 846
-	drivers/net/hamradio/baycom_ser_fdx.c: warning: statement with no
-effect:  => 395, 307, 311, 396
-	drivers/net/hamradio/baycom_ser_fdx.c: warning: suggest explicit
-braces to avoid ambiguous 'else':  => 327
-	drivers/net/hamradio/baycom_ser_hdx.c: warning: statement with no
-effect:  => 413, 392, 455, 454, 396
-	drivers/net/hamradio/yam.c: warning: statement with no effect:  =>
-315, 527, 528, 492, 909, 493, 316
-	drivers/net/hp100.c: warning: label 'out3' defined but not used:  => 3048
-	drivers/net/lib82596.c: warning: passing argument 2 of
-'dma_cache_sync' discards qualifiers from pointer target type:  =>
-391, 1262, 600, 961, 896, 581, 1287, 629, 375, 1318, 580, 855, 837,
-372, 388
-	drivers/net/lib8390.c: warning: '____alloc_ei_netdev' defined but not
-used:  => 1016
-	drivers/net/lib8390.c: warning: '__ei_get_stats' defined but not used:  => 879
-	drivers/net/lib8390.c: warning: '__ei_poll' defined but not used:  => 526
-	drivers/net/lib8390.c: warning: '__ei_set_multicast_list' defined but
-not used:  => 981
-	drivers/net/lib8390.c: warning: '__ei_start_xmit' defined but not used:  => 302
-	drivers/net/lib8390.c: warning: '__ei_tx_timeout' defined but not used:  => 256
-	drivers/net/ll_temac_main.c: warning: cast to pointer from integer of
-different size:  => 626
-	drivers/net/pcmcia/ibmtr_cs.c: warning:
-'pcmcia_request_exclusive_irq' is deprecated (declared at
-/scratch/kisskb/src/include/pcmcia/ds.h:200):  => 235
-	drivers/net/pcmcia/ibmtr_cs.c: warning:
-'pcmcia_request_exclusive_irq' is deprecated (declared at
-/scratch/kisskb/src/include/pcmcia/ds.h:202):  => 235
-	drivers/net/pcmcia/nmclan_cs.c: warning:
-'pcmcia_request_exclusive_irq' is deprecated (declared at
-/scratch/kisskb/src/include/pcmcia/ds.h:200):  => 650
-	drivers/net/pcmcia/nmclan_cs.c: warning:
-'pcmcia_request_exclusive_irq' is deprecated (declared at
-/scratch/kisskb/src/include/pcmcia/ds.h:202):  => 650
-	drivers/net/pcmcia/smc91c92_cs.c: warning: 'j' may be used
-uninitialized in this function:  => 846
-	drivers/net/pcmcia/smc91c92_cs.c: warning: unused variable 'smc':  => 1004
-	drivers/net/phy/broadcom.c: warning: 'broadcom_tbl' defined but not
-used:  => 933
-	drivers/net/phy/cicada.c: warning: 'cicada_tbl' defined but not used:  => 162
-	drivers/net/phy/davicom.c: warning: 'davicom_tbl' defined but not used:  => 222
-	drivers/net/phy/et1011c.c: warning: 'et1011c_tbl' defined but not used:  => 114
-	drivers/net/phy/icplus.c: warning: 'icplus_tbl' defined but not used:  => 137
-	drivers/net/phy/lxt.c: warning: 'lxt_tbl' defined but not used:  => 226
-	drivers/net/phy/marvell.c: warning: 'marvell_tbl' defined but not used:  => 724
-	drivers/net/phy/micrel.c: warning: 'micrel_tbl' defined but not used:  => 234
-	drivers/net/phy/national.c: warning: 'ns_tbl' defined but not used:  => 154
-	drivers/net/phy/qsemi.c: warning: 'qs6612_tbl' defined but not used:  => 141
-	drivers/net/phy/realtek.c: warning: 'realtek_tbl' defined but not used:  => 82
-	drivers/net/phy/smsc.c: warning: 'smsc_tbl' defined but not used:  => 257
-	drivers/net/phy/ste10Xp.c: warning: 'ste10Xp_tbl' defined but not used:  => 135
-	drivers/net/phy/vitesse.c: warning: 'vitesse_tbl' defined but not used:  => 195
-	drivers/net/qlcnic/qlcnic_main.c: warning: 'pci_using_dac' may be
-used uninitialized in this function:  => 1340
-	drivers/net/s2io.c: warning: 'tcp_len' may be used uninitialized in
-this function:  => 7568
-	drivers/net/seeq8005.c: warning: integer overflow in expression:  => 701, 544
-	drivers/net/sh_eth.c: warning: 'ctrl_inl' is deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/io.h:104):  => 365, 860, 660,
-288, 1128, 814, 937, 891, 366, 1258, 286, 848, 361, 906, 664, 1298,
-1266, 1256, 1302, 394, 842, 363, 830, 857, 364, 388, 1003, 362, 382,
-855, 1199, 1254, 852
-	drivers/net/sh_eth.c: warning: 'ctrl_outl' is deprecated (declared at
-/scratch/kisskb/src/arch/sh/include/asm/io.h:124):  => 892, 643, 685,
-660, 1330, 1314, 942, 831, 288, 1332, 1218, 647, 1200, 667, 918, 690,
-676, 1310, 1312, 633, 1267, 1311, 1257, 1315, 815, 1319, 342, 1333,
-1324, 857, 683, 1215, 1219, 1328, 382, 1318, 658, 1329, 673, 860,
-1327, 650, 640, 661, 1317, 339, 286, 655, 848, 531, 687, 1259, 1313,
-1298, 1325, 1255, 1302, 626, 639, 1316, 1331, 388, 636, 509, 1003,
-652, 629, 855, 852
-	drivers/net/smc911x.c: warning: unused variable 'lp':  => 2127
-	drivers/net/smc911x.h: warning: control reaches end of non-void
-function:  => 135
-	drivers/net/smc91x.c: warning: cast from pointer to integer of
-different size:  => 1913
-	drivers/net/smc91x.c: warning: passing argument 1 of 'sh_mv.mv_insw'
-makes integer from pointer without a cast:  => 488
-	drivers/net/smc91x.c: warning: passing argument 1 of 'sh_mv.mv_inw'
-makes integer from pointer without a cast:  => 1341, 1248, 1284, 831,
-794, 1659, 727, 1287, 677, 1339, 798, 1231, 1224, 1881, 1172, 1664,
-1898, 722, 858, 490, 1196, 1343, 772, 1949, 1826, 1690, 468, 328, 394,
-438, 1223, 715, 419, 754, 1685, 1344, 1264, 1692, 675, 569, 750, 689,
-312, 1278, 619, 409, 1924, 1911, 1340
-	drivers/net/smc91x.c: warning: passing argument 1 of 'sh_mv.mv_outsw'
-makes integer from pointer without a cast:  => 595
-	drivers/net/smc91x.c: warning: passing argument 2 of 'sh_mv.mv_outw'
-makes integer from pointer without a cast:  => 836, 1839, 276, 1284,
-831, 1457, 1460, 723, 598, 1923, 937, 580, 667, 595, 1666, 1681, 488,
-1694, 938, 379, 1653, 1680, 1130, 1072, 343, 1263, 849, 612, 936, 579,
-347, 726, 394, 294, 1022, 1458, 1225, 378, 803, 592, 1695, 1198, 751,
-1023, 689, 393, 1199, 311, 1948, 1248, 1173, 309, 795, 1195, 1683,
-389, 1660, 469, 327, 1652, 1287, 677, 1345, 1197, 1171, 416, 1293,
-252, 760, 1656, 863, 323, 758, 783, 268, 345, 308, 348, 819, 1910,
-1265, 858, 1658, 1897, 1818, 1684, 387, 755, 307, 801, 491, 269, 1294,
-1463, 354, 759, 344, 1073, 388, 355, 1811, 1667, 1461, 251, 1342, 326,
-1686, 1655, 439, 1278, 619, 781, 1812
-	drivers/net/smc91x.h: warning: "SMC_inb" redefined:  => 567:1
-	drivers/net/smc91x.h: warning: "SMC_inl" redefined:  => 525:1
-	drivers/net/smc91x.h: warning: "SMC_insl" redefined:  => 527:1
-	drivers/net/smc91x.h: warning: "SMC_outb" redefined:  => 568:1
-	drivers/net/smc91x.h: warning: "SMC_outl" redefined:  => 526:1
-	drivers/net/smc91x.h: warning: "SMC_outsl" redefined:  => 528:1
-	drivers/net/smc91x.h: warning: this is the location of the previous
-definition:  => 181:1, 180:1, 183:1, 185:1, 178:1, 184:1
-	drivers/net/tehuti.c: warning: passing argument 2 of
-'bdx_tx_push_desc_safe' discards qualifiers from pointer target type:
-=> 330
-	drivers/net/tlan.c: warning: label 'err_out' defined but not used:  => 685
-	drivers/net/wan/farsync.c: warning: cast to pointer from integer of
-different size:  => 1408
-	drivers/net/wireless/ath/ar9170/ar9170.h: warning: control reaches
-end of non-void function:  => 76
-	drivers/net/wireless/iwmc3200wifi/rx.c: warning: comparison is always
-true due to limited range of data type:  => 1198
-	drivers/net/wireless/libertas/cfg.c: warning: passing argument 3 of
-'lbs_deb_hex' discards qualifiers from pointer target type:  => 273
-	drivers/net/wireless/mwl8k.c: warning: 'ap_legacy_rates' may be used
-uninitialized in this function:  => 3403
-	drivers/net/wireless/p54/p54usb.c: warning: 'p54u_device_reset'
-defined but not used:  => 406, 407
-	drivers/parisc/led.c: warning: assignment from incompatible pointer
-type:  => 366
-	drivers/parport/parport_pc.c: warning: 'parport_pc_find_isa_ports'
-defined but not used:  => 3333
-	drivers/parport/parport_pc.c: warning: statement with no effect:  =>
-1890, 413, 359, 334, 357, 332
-	drivers/parport/parport_pc.c: warning: suggest explicit braces to
-avoid ambiguous 'else':  => 385
-	drivers/pci/probe.c: warning: large integer implicitly truncated to
-unsigned type:  => 197, 207
-	drivers/pci/setup-bus.c: warning: passing argument 1 of
-'pdev_assign_resources_sorted' discards qualifiers from pointer target
-type:  => 706
-	drivers/pcmcia/cs.c: warning: 'pcmcia_socket_dev_resume' defined but
-not used:  => 849
-	drivers/regulator/wm831x-dcdc.c: warning: control reaches end of
-non-void function:  => 124
-	drivers/rtc/rtc-cmos.c: warning: #warning Assuming 128 bytes of
-RTC+NVRAM address space, not 64 bytes.:  => 693:2
-	drivers/rtc/rtc-m41t80.c: warning: passing argument 1 of
-'rtc_valid_tm' from incompatible pointer type:  => 367
-	drivers/rtc/rtc-msm6242.c: warning: 'return' with a value, in
-function returning void:  => 85
-	drivers/rtc/rtc-rp5c01.c: warning: 'return' with a value, in function
-returning void:  => 79
-	drivers/s390/block/dasd_alias.c: warning: 'flags' may be used
-uninitialized in this function:  => 381
-	drivers/scsi/NCR5380.h: warning: 'NCR5380_exit' declared 'static' but
-never defined:  => 303
-	drivers/scsi/advansys.c: warning: #warning this driver is still not
-properly converted to the DMA API:  => 72:2
-	drivers/scsi/aic7xxx_old.c: warning: passing argument 3 of
-'pci_free_consistent' discards qualifiers from pointer target type:
-=> 8490
-	drivers/scsi/atari_NCR5380.c: warning: unused variable 'oldto':  => 917
-	drivers/scsi/constants.c: warning: zero-length gnu_printf format
-string:  => 1407, 1413, 1456
-	drivers/scsi/constants.c: warning: zero-length printf format string:
-=> 1407, 1413, 1456
-	drivers/scsi/fdomain.c: warning: 'fdomain_pci_tbl' defined but not
-used:  => 1773
-	drivers/scsi/hpsa.c: warning: 'cp' may be used uninitialized in this
-function:  => 2335, 2299
-	drivers/scsi/initio.c: warning: 'i91u_pci_devices' defined but not
-used:  => 131
-	drivers/scsi/ips.c: warning: #warning "This driver has only been
-tested on the x86/ia64/x86_64 platforms":  => 210:2
-	drivers/scsi/mac_scsi.c: warning: "NDEBUG_ABORT" is not defined:  =>
-220:5, 271:5
-	drivers/scsi/mpt2sas/mpt2sas_base.c: warning: right shift count >=
-width of type:  => 3022, 3020
-	drivers/scsi/mpt2sas/mpt2sas_ctl.c: warning:
-'_ctl_sas_device_find_by_handle' defined but not used:  => 94
-	drivers/scsi/mpt2sas/mpt2sas_scsih.c: warning: unused variable
-'mpi_reply':  => 2718
-	drivers/scsi/pmcraid.c: warning: passing argument 2 of 'access_ok'
-makes pointer from integer without a cast:  => 3800
-	drivers/scsi/scsi_debug.c: warning: comparison of distinct pointer
-types lacks a cast:  => 1965, 1846, 1756, 2013, 1992, 1686
-	drivers/scsi/scsi_debug.c: warning: passing argument 1 of
-'__div64_32' from incompatible pointer type:  => 1965, 1846, 1756,
-2013, 1992, 1686
-	drivers/scsi/scsi_debug.c: warning: right shift count >= width of
-type:  => 1965, 1846, 1756, 2013, 1992, 1686
-	drivers/scsi/scsi_sysfs.c: warning: dereferencing 'void *' pointer:  => 384
-	drivers/scsi/scsi_tgt_if.c: warning: passing argument 1 of
-'virt_to_phys' makes pointer from integer without a cast:  => 289
-	drivers/scsi/sd.c: warning: zero-length gnu_printf format string:  =>
-2586, 2630, 2636, 2594, 2628, 2588
-	drivers/scsi/sd.c: warning: zero-length printf format string:  =>
-2630, 2636, 2628
-	drivers/scsi/stex.c: warning: passing argument 2 of
-'scsi_sg_copy_from_buffer' discards qualifiers from pointer target
-type:  => 636
-	drivers/scsi/sun3_NCR5380.c: warning: "NCR_TIMEOUT" is not defined:  => 1440:5
-	drivers/scsi/sun3_NCR5380.c: warning: "NDEBUG_MERGING" is not
-defined:  => 476:15, 487:15, 495:15
-	drivers/scsi/sun3_NCR5380.c: warning: 'merge_contiguous_buffers'
-defined but not used:  => 473
-	drivers/scsi/sun3_NCR5380.c: warning: assignment discards qualifiers
-from pointer target type:  => 2331, 2275, 993, 1145
-	drivers/scsi/sun3_scsi.h: warning: "NDEBUG" is not defined:  =>
-346:5, 232:5, 334:5, 286:5, 262:5, 298:5, 328:5, 280:5, 250:5, 268:5,
-310:5, 238:5, 316:5, 322:5, 226:5, 358:5, 352:5, 274:5, 340:5, 292:5,
-304:5, 244:5, 256:5
-	drivers/scsi/sun3_scsi.h: warning: "NDEBUG_ABORT" is not defined:  => 346:14
-	drivers/scsi/sun3_scsi.h: warning: "NDEBUG_MERGING" is not defined:  => 358:14
-	drivers/scsi/sun3_scsi.h: warning: "NDEBUG_TAGS" is not defined:  => 352:14
-	drivers/scsi/sym53c8xx_2/sym_hipd.c: warning: zero-length gnu_printf
-format string:  => 78
-	drivers/scsi/sym53c8xx_2/sym_hipd.c: warning: zero-length printf
-format string:  => 78
-	drivers/serial/8250.c: warning: 'i' may be used uninitialized in this
-function:  => 1701
-	drivers/serial/8250.c: warning: statement with no effect:  => 2190
-	drivers/serial/mfd.c: warning: assignment makes pointer from integer
-without a cast:  => 144, 1361, 818, 187
-	drivers/serial/ucc_uart.c: warning: format '%x' expects type
-'unsigned int', but argument 3 has type 'dma_addr_t':  => 238
-	drivers/sh/maple/maple.c: warning: 'ctrl_inl' is deprecated (declared
-at /scratch/kisskb/src/arch/sh/include/asm/io.h:104):  => 133
-	drivers/sh/maple/maple.c: warning: 'ctrl_outl' is deprecated
-(declared at /scratch/kisskb/src/arch/sh/include/asm/io.h:124):  =>
-109, 453, 99, 639, 278, 97, 108, 799, 110
-	drivers/sh/superhyway/superhyway-sysfs.c: warning: format '%08lx'
-expects type 'long unsigned int', but argument 3 has type
-'resource_size_t':  => 33
-	drivers/telephony/ixj.c: warning: 'ixj_pci_tbl' defined but not used:  => 286
-	drivers/uio/uio.c: warning: passing argument 1 of 'virt_to_phys'
-makes pointer from integer without a cast:  => 654
-	drivers/usb/core/devio.c: warning: cast from pointer to integer of
-different size:  => 1380
-	drivers/usb/gadget/dbgp.c: warning: comparison is always true due to
-limited range of data type:  => 389
-	drivers/usb/gadget/r8a66597-udc.h: warning: 'data' may be used
-uninitialized in this function:  => 139
-	drivers/usb/gadget/storage_common.c: warning: 'fsg_show_nofua'
-defined but not used:  => 718, 720
-	drivers/usb/gadget/storage_common.c: warning: 'fsg_store_nofua'
-defined but not used:  => 782, 785
-	drivers/usb/host/ehci-hcd.c: warning: 'ehci_port_power' defined but
-not used:  => 436
-	drivers/usb/host/ehci-hub.c: warning: 'ehci_adjust_port_wakeup_flags'
-defined but not used:  => 109
-	drivers/usb/host/ehci-lpm.c: warning: 'ehci_lpm_check' defined but
-not used:  => 40
-	drivers/usb/host/ehci-lpm.c: warning: 'ehci_lpm_set_da' defined but
-not used:  => 20
-	drivers/usb/host/ohci-hub.c: warning: 'ohci_finish_controller_resume'
-defined but not used:  => 318
-	drivers/usb/host/oxu210hp-hcd.c: warning: unused variable 'base':  => 3906
-	drivers/usb/host/whci/hcd.c: warning: 'whci_hcd_id_table' defined but
-not used:  => 359
-	drivers/usb/host/xhci-ring.c: warning: 'event_trb' may be used
-uninitialized in this function:  => 1719
-	drivers/usb/storage/isd200.c: warning: the frame size of 2208 bytes
-is larger than 2048 bytes:  => 580
-	drivers/uwb/i1480/i1480-est.c: warning: 'i1480_est_id_table' defined
-but not used:  => 94
-	drivers/uwb/whc-rc.c: warning: 'whcrc_id_table' defined but not used:
- => 452, 451
-	drivers/video/gbefb.c: warning: ignoring return value of
-'device_create_file', declared with attribute warn_unused_result:  =>
-1094, 1093
-	drivers/video/metronomefb.c: warning: passing argument 1 of
-'load_waveform' discards qualifiers from pointer target type:  => 687
-	drivers/video/s1d13xxxfb.c: warning: 'bltbit_fifo_status' defined but
-not used:  => 464, 463, 465
-	drivers/video/s1d13xxxfb.c: warning: 'bltbit_wait_bitset' defined but
-not used:  => 421, 420, 422
-	drivers/virtio/virtio_ring.c: warning: cast to pointer from integer
-of different size:  => 274
-	drivers/w1/masters/ds2490.c: warning: passing argument 2 of
-'ds_write_block' discards qualifiers from pointer target type:  => 827
-	drivers/watchdog/alim7101_wdt.c: warning: 'alim7101_pci_tbl' defined
-but not used:  => 433
-	drivers/xen/events.c: warning: 'gsi_from_irq' defined but not used:  => 187
-	drivers/xen/events.c: warning: 'mk_pirq_info' defined but not used:  => 141
-	drivers/xen/events.c: warning: 'vector_from_irq' defined but not used:  => 197
-	fs/9p/xattr.c: warning: format '%zd' expects type 'signed size_t',
-but argument 3 has type 'ssize_t':  => 52
-	fs/9p/xattr.c: warning: format '%zd' expects type 'signed size_t',
-but argument 4 has type 'ssize_t':  => 52
-	fs/afs/internal.h: warning: 'packed' attribute ignored for field of
-type 'enum <anonymous>':  => 163
-	fs/afs/write.c: warning: format '%zd' expects type 'signed size_t',
-but argument 4 has type 'ssize_t':  => 672, 668
-	fs/autofs/root.c: warning: 'autofs_root_compat_ioctl' declared
-'static' but never defined:  => 30
-	fs/autofs4/root.c: warning: 'autofs4_root_compat_ioctl' declared
-'static' but never defined:  => 31
-	fs/autofs4/symlink.c: warning: passing argument 2 of 'nd_set_link'
-discards qualifiers from pointer target type:  => 18
-	fs/bio-integrity.c: warning: control reaches end of non-void function:  => 61
-	fs/btrfs/acl.c: warning: 'name' may be used uninitialized in this
-function:  => 36
-	fs/btrfs/inode.c: warning: 'extent_end' may be used uninitialized in
-this function:  => 1029
-	fs/btrfs/tree-log.c: warning: 'dst_di' may be used uninitialized in
-this function:  => 1173
-	fs/ceph/messenger.c: warning: 'proto' may be used uninitialized in
-this function:  => 631
-	fs/cifs/cifssmb.c: warning: 'pdata' may be used uninitialized in this
-function:  => 3085
-	fs/compat_ioctl.c: warning: 'fp' may be used uninitialized in this
-function:  => 177
-	fs/compat_ioctl.c: warning: 'length' may be used uninitialized in
-this function:  => 209
-	fs/compat_ioctl.c: warning: 'palp' may be used uninitialized in this
-function:  => 208
-	fs/compat_ioctl.c: warning: 'size' may be used uninitialized in this
-function:  => 178
-	fs/dcache.c: warning: control reaches end of non-void function:  => 1899, 1887
-	fs/ecryptfs/crypto.c: warning: format '%zd' expects type 'signed
-size_t', but argument 3 has type 'ssize_t':  => 1543
-	fs/ext2/acl.c: warning: 'name_index' may be used uninitialized in
-this function:  => 134
-	fs/ext2/balloc.c: warning: passing argument 2 of 'test_and_clear_bit'
-from incompatible pointer type:  => 550
-	fs/ext2/balloc.c: warning: passing argument 2 of 'test_and_set_bit'
-from incompatible pointer type:  => 740, 725
-	fs/ext2/ialloc.c: warning: passing argument 2 of 'test_and_set_bit'
-from incompatible pointer type:  => 493
-	fs/ext3/acl.c: warning: 'name_index' may be used uninitialized in
-this function:  => 137
-	fs/ext3/balloc.c: warning: passing argument 2 of 'test_and_clear_bit'
-from incompatible pointer type:  => 832, 619
-	fs/ext3/balloc.c: warning: passing argument 2 of 'test_and_set_bit'
-from incompatible pointer type:  => 828, 610
-	fs/ext3/ialloc.c: warning: passing argument 2 of 'test_and_clear_bit'
-from incompatible pointer type:  => 142
-	fs/ext3/ialloc.c: warning: passing argument 2 of 'test_and_set_bit'
-from incompatible pointer type:  => 471
-	fs/ext4/acl.c: warning: 'name_index' may be used uninitialized in
-this function:  => 137
-	fs/ext4/balloc.c: warning: passing argument 2 of 'test_and_clear_bit'
-from incompatible pointer type:  => 439
-	fs/fat/namei_vfat.c: warning: 'lcase' may be used uninitialized in
-this function:  => 590
-	fs/fat/namei_vfat.c: warning: 'ulen' may be used uninitialized in
-this function:  => 595
-	fs/freevxfs/vxfs_lookup.c: warning: 'pp' may be used uninitialized in
-this function:  => 179
-	fs/fuse/dev.c: warning: 'total_len' may be used uninitialized in this
-function:  => 1357
-	fs/fuse/dev.c: warning: ‘total_len’ may be used uninitialized in this
-function:  => 1357
-	fs/isofs/compress.c: warning: 'zisofs_readpage' uses dynamic stack
-allocation:  => 360
-	fs/isofs/compress.c: warning: 'zisofs_uncompress_block' uses dynamic
-stack allocation:  => 193
-	fs/jffs2/acl.c: warning: 'xprefix' may be used uninitialized in this
-function:  => 163
-	fs/logfs/dir.c: warning: control reaches end of non-void function:  => 155
-	fs/logfs/readwrite.c: warning: 'val' may be used uninitialized in
-this function:  => 470
-	fs/logfs/segment.c: warning: control reaches end of non-void function:  => 280
-	fs/nfsd/export.c: warning: 'an_int' may be used uninitialized in this
-function:  => 504
-	fs/nfsd/nfs4state.c: warning: control reaches end of non-void function:  => 452
-	fs/nilfs2/alloc.c: warning: passing argument 2 of
-'test_and_clear_bit' from incompatible pointer type:  => 670, 557, 520
-	fs/nilfs2/alloc.c: warning: passing argument 2 of 'test_and_set_bit'
-from incompatible pointer type:  => 374, 355
-	fs/notify/fanotify/fanotify.c: warning: 'marks_ignored_mask' may be
-used uninitialized in this function:  => 162
-	fs/notify/fanotify/fanotify.c: warning: 'marks_mask' may be used
-uninitialized in this function:  => 162
-	fs/ntfs/aops.c: warning: 'ntfs_write_mst_block' uses dynamic stack
-allocation:  => 1329
-	fs/ntfs/compress.c: warning: 'ntfs_decompress' uses dynamic stack
-allocation:  => 445
-	fs/ntfs/mft.c: warning: 'ntfs_sync_mft_mirror' uses dynamic stack
-allocation:  => 636
-	fs/ntfs/mft.c: warning: 'write_mft_record_nolock' uses dynamic stack
-allocation:  => 844
-	fs/ocfs2/cluster/tcp.c: warning: format '%zd' expects type 'signed
-size_t', but argument 12 has type 'ssize_t':  => 936
-	fs/ocfs2/dlmfs/dlmfs.c: warning: format '%zd' expects type 'signed
-size_t', but argument 7 has type 'ssize_t':  => 328, 284
-	fs/proc/task_mmu.c: warning: passing argument 1 of 'kunmap' from
-incompatible pointer type:  => 631, 378, 473
-	fs/qnx4/namei.c: warning: 'ino' may be used uninitialized in this
-function:  => 104
-	fs/reiserfs/inode.c: warning: 'reiserfs_new_directory' uses dynamic
-stack allocation:  => 1709
-	fs/reiserfs/xattr_acl.c: warning: 'name' may be used uninitialized in
-this function:  => 203
-	fs/smbfs/file.c: warning: format '%Zd' expects type 'signed size_t',
-but argument 5 has type 'ssize_t':  => 353, 230, 277
-	fs/sysfs/dir.c: warning: 'sysfs_pathname' defined but not used:  => 411
-	fs/udf/super.c: warning: 'map' may be used uninitialized in this
-function:  => 1158
-	fs/udf/truncate.c: warning: 'adsize' may be used uninitialized in
-this function:  => 209, 75
-	fs/xfs/linux-2.6/xfs_acl.c: warning: 'ea_name' may be used
-uninitialized in this function:  => 110
-	fs/xfs/linux-2.6/xfs_trace.c: warning: 'xfs_fmtfsblock' defined but
-not used:  => 57
-	include/config/auto.conf: warning: symbol value '' invalid for
-CROSS_COMPILE:  => 149, 3707, 307, 4062, 429
-	include/config/auto.conf: warning: symbol value 'm' invalid for
-BLK_CGROUP:  => 1302
-	include/config/auto.conf: warning: symbol value 'm' invalid for
-NET_CLS_CGROUP:  => 296
-	include/config/auto.conf: warning: symbol value 'm' invalid for
-SPI_DESIGNWARE:  => 1014
-	include/linux/dmaengine.h: warning: control reaches end of non-void
-function:  => 578
-	include/linux/mca-legacy.h: warning: #warning "MCA legacy - please
-move your driver to the new sysfs api":  => 12:2
-	include/linux/ncp_fs_sb.h: warning: 'packed' attribute ignored for
-field of type '__u16':  => 112, 109, 111, 113, 110
-	include/linux/ncp_fs_sb.h: warning: 'packed' attribute ignored for
-field of type '__u32':  => 108, 107
-	include/linux/of_gpio.h: warning: 'struct gpio_chip' declared inside
-parameter list:  => 74, 75
-	include/linux/of_gpio.h: warning: its scope is only this definition
-or declaration, which is probably not what you want:  => 74
-	include/linux/sysv_fs.h: warning: 'packed' attribute ignored for
-field of type '__fs32':  => 130, 181, 142, 114, 168, 42, 112, 180, 30,
-144, 43, 100
-	include/linux/sysv_fs.h: warning: 'packed' attribute ignored for
-field of type 'sysv_zone_t[64]':  => 171
-	include/math-emu/double.h: warning: "__BIG_ENDIAN" is not defined:  => 59:21
-	include/math-emu/single.h: warning: "__BIG_ENDIAN" is not defined:  => 50:21
-	include/media/soc_camera.h: warning: 'dummy' is used uninitialized in
-this function:  => 278
-	include/net/ipx.h: warning: 'packed' attribute ignored for field of
-type '__be16':  => 32, 30
-	include/net/ipx.h: warning: 'packed' attribute ignored for field of
-type 'struct ipx_address':  => 42, 41
-	include/sound/tlv320aic3x.h: warning: no newline at end of file:  => 17:7
-	kernel/futex.c: warning: cast from pointer to integer of different
-size:  => 2406
-	kernel/irq/handle.c: warning: #warning __do_IRQ is deprecated. Please
-convert to proper flow handlers:  => 432:3, 437:3
-	kernel/kprobes.c: warning: ‘cleanup_rp_inst’ defined but not used:  => 910
-	kernel/module.c: warning: passing argument 2 of 'add_kallsyms'
-discards qualifiers from pointer target type:  => 2534
-	kernel/pm_qos_params.c: warning: control may reach end of non-void
-function ‘pm_qos_get_value’ being inlined:  => 200
-	kernel/pm_qos_params.c: warning: control reaches end of non-void
-function:  => 132
-	kernel/power/hibernate.c: warning: comparison of distinct pointer
-types lacks a cast:  => 223
-	kernel/profile.c: warning: 'profile_cpu_callback' defined but not used:  => 359
-	kernel/profile.c: warning: 'profile_discard_flip_buffers' defined but
-not used:  => 293
-	kernel/profile.c: warning: 'profile_flip_buffers' defined but not used:  => 270
-	kernel/sched.c: warning: unsupported argument to
-'__builtin_return_address':  => 3592, 3594
-	kernel/signal.c: warning: cast from pointer to integer of different
-size:  => 2207, 2551, 2230, 2214
-	kernel/trace/trace_events.c: warning: enumeration value
-'TRACE_REG_PERF_REGISTER' not handled in switch:  => 146
-	kernel/trace/trace_events.c: warning: enumeration value
-'TRACE_REG_PERF_UNREGISTER' not handled in switch:  => 146
-	kernel/trace/trace_functions_graph.c: warning: comparison of distinct
-pointer types lacks a cast:  => 652
-	kernel/trace/trace_kprobe.c: warning: enumeration value
-'TRACE_REG_PERF_REGISTER' not handled in switch:  => 1641
-	kernel/trace/trace_kprobe.c: warning: enumeration value
-'TRACE_REG_PERF_UNREGISTER' not handled in switch:  => 1641
-	kernel/watchdog.c: warning: 'watchdog_disable_all_cpus' defined but
-not used:  => 476, 477
-	kernel/watchdog.c: warning: 'watchdog_enable_all_cpus' defined but
-not used:  => 464, 463
-	lib/atomic64_test.c: warning: #warning Please implement
-atomic64_dec_if_positive for your  CC      fs/filesystems.o:  => 131:2
-	lib/atomic64_test.c: warning: #warning Please implement
-atomic64_dec_if_positive for your architecture, and add it to the IF
-above:  => 131:2
-	lib/atomic64_test.c: warning: ISO C90 forbids mixed declarations and
-code:  => 25
-	lib/btree.c: warning: 'btree_get_prev' uses dynamic stack allocation:  => 359
-	lib/btree.c: warning: 'btree_merge' uses dynamic stack allocation:  => 670
-	lib/decompress_bunzip2.c: warning: the frame size of 1888 bytes is
-larger than 1024 bytes:  => 511
-	lib/iomap.c: warning: statement with no effect:  => 205, 197, 201
-	lib/libcrc32c.c: warning: 'crc32c' uses dynamic stack allocation:  => 58
-	lib/radix-tree.c: warning: 'radix_tree_range_tag_if_tagged' uses
-dynamic stack allocation:  => 737
-	lib/vsprintf.c: warning: 'resource_string' uses dynamic stack
-allocation:  => 693
-	mm/bootmem.c: warning: control reaches end of non-void function:  => 413, 420
-	mm/fremap.c: warning: passing argument 1 of 'kunmap' from
-incompatible pointer type:  => 78
-	mm/memcontrol.c: warning: 'move_anon' defined but not used:  => 286
-	mm/memcontrol.c: warning: 'move_file' defined but not used:  => 292
-	mm/memcontrol.c: warning: 'thresholds' may be used uninitialized in
-this function:  => 3621, 3703
-	mm/memcontrol.c: warning: 'val' may be used uninitialized in this
-function:  => 3192
-	mm/memory.c: warning: passing argument 1 of 'kunmap' from
-incompatible pointer type:  => 3347, 772, 1643, 1319, 1314, 1410,
-1391, 770, 3021, 1403, 984, 3376, 1705, 3160, 2749, 1954, 2809, 2337,
-2185, 1640, 2852, 2754, 2240, 1805, 2139, 3062, 2046, 1323
-	mm/mempolicy.c: warning: control reaches end of non-void function:  => 1597
-	mm/mincore.c: warning: passing argument 1 of 'kunmap' from
-incompatible pointer type:  => 144
-	mm/mprotect.c: warning: passing argument 1 of 'kunmap' from
-incompatible pointer type:  => 78
-	mm/mremap.c: warning: passing argument 1 of 'kunmap' from
-incompatible pointer type:  => 123, 122
-	mm/pagewalk.c: warning: passing argument 1 of 'kunmap' from
-incompatible pointer type:  => 23
-	mm/percpu.c: warning: 'pcpu_build_alloc_info' defined but not used:  => 1092
-	mm/rmap.c: warning: passing argument 1 of 'kunmap' from incompatible
-pointer type:  => 1200, 1069, 704, 470, 523, 445, 434, 1064
-	mm/slab.c: warning: passing argument 2 of '__cache_free' discards
-qualifiers from pointer target type:  => 3854
-	mm/slob.c: warning: comparison of distinct pointer types lacks a
-cast:  => 482, 549, 481, 530, 550, 531
-	mm/swapfile.c: warning: passing argument 1 of 'kunmap' from
-incompatible pointer type:  => 976, 947, 983
-	mm/vmalloc.c: warning: passing argument 1 of 'kunmap' from
-incompatible pointer type:  => 230
-	modpost: WARNING: modpost: Found 1 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 12 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 13 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 14 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 2 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 3 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 4 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 5 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 57 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 6 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 68 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 7 section mismatch(es).:  => N/A
-	modpost: WARNING: modpost: Found 8 section mismatch(es).:  => N/A
-	net/bluetooth/hci_sysfs.c: warning: the frame size of 4112 bytes is
-larger than 2048 bytes:  => 441
-	net/bridge/br_netfilter.c: warning: passing argument 4 of 'NF_HOOK'
-discards qualifiers from pointer target type:  => 753
-	net/bridge/br_netfilter.c: warning: passing argument 5 of 'NF_HOOK'
-discards qualifiers from pointer target type:  => 753
-	net/core/pktgen.c: warning: 'pktgen_if_write' uses dynamic stack
-allocation:  => 1717
-	net/core/rtnetlink.c: warning: 'rtnl_newlink' uses dynamic stack
-allocation:  => 1570
-	net/dccp/ccids/ccid2.c: warning: 'veclen' may be used uninitialized
-in this function:  => 508
-	net/dccp/ccids/ccid2.c: warning: 'vector' may be used uninitialized
-in this function:  => 507
-	net/dccp/timer.c: warning: comparison of distinct pointer types lacks
-a cast:  => 281
-	net/econet/af_econet.c: warning: 'econet_sendmsg' uses dynamic stack
-allocation:  => 508
-	net/ipv4/igmp.c: warning: overflow in implicit constant conversion:
-=> 2304, 1887
-	net/ipv4/netfilter/arp_tables.c: warning: passing argument 1 of
-'arpt_get_target' discards qualifiers from pointer target type:  =>
-234
-	net/ipv4/netfilter/ip_tables.c: warning: passing argument 1 of
-'ipt_get_target' discards qualifiers from pointer target type:  => 192
-	net/ipv4/netfilter/ipt_ULOG.c: warning: passing argument 1 of
-'__net_timestamp' discards qualifiers from pointer target type:  =>
-210
-	net/ipv6/netfilter/ip6_tables.c: warning: passing argument 1 of
-'ip6t_get_target' discards qualifiers from pointer target type:  =>
-221
-	net/ipv6/xfrm6_state.c: warning: '__xfrm6_sort' uses dynamic stack
-allocation:  => 76
-	net/irda/irnet/irnet_ppp.c: warning: format '%Zd' expects type
-'signed size_t', but argument 3 has type 'ssize_t':  => 332
-	net/llc/llc_sap.c: warning: 'llc_sap_mcast' uses dynamic stack
-allocation:  => 423
-	net/mac80211/tx.c: warning: unused variable 'mesh_hdr':  => 1702
-	net/netfilter/nfnetlink.c: warning: 'nfnetlink_rcv_msg' uses dynamic
-stack allocation:  => 175
-	net/netfilter/xt_time.c: warning: passing argument 1 of
-'__net_timestamp' discards qualifiers from pointer target type:  =>
-171
-	net/packet/af_packet.c: warning: 'hdrlen' may be used uninitialized
-in this function:  => 657, 648
-	net/packet/af_packet.c: warning: ‘vnet_hdr_len’ may be used
-uninitialized in this function:  => 1107
-	net/rds/connection.c: warning: 'rds_for_each_conn_info' uses dynamic
-stack allocation:  => 410
-	net/rds/message.c: warning: passing argument 1 of 'virt_to_phys'
-makes pointer from integer without a cast:  => 252
-	net/rds/tcp_send.c: warning: passing argument 1 of 'virt_to_phys'
-makes pointer from integer without a cast:  => 113
-	net/rfkill/core.c: warning: control reaches end of non-void function:  => 603
-	net/sched/cls_flow.c: warning: 'flow_classify' uses dynamic stack
-allocation:  => 387
-	net/sched/sch_generic.c: warning: unused variable 'drivername':  => 256
-	net/sctp/socket.c: warning: 'newsock' may be used uninitialized in
-this function:  => 4025
-	net/sctp/tsnmap.c: warning: 'end' may be used uninitialized in this
-function:  => 347
-	net/sctp/tsnmap.c: warning: 'start' may be used uninitialized in this
-function:  => 347
-	net/sunrpc/auth_gss/auth_gss.c: warning: format '%Zd' expects type
-'signed size_t', but argument 2 has type 'ssize_t':  => 706
-	net/sunrpc/auth_gss/auth_gss.c: warning: format '%zd' expects type
-'signed size_t', but argument 3 has type 'ssize_t':  => 688
-	net/sunrpc/auth_gss/gss_krb5_crypto.c: warning: 'gss_krb5_cts_crypt'
-uses dynamic stack allocation:  => 637
-	net/sunrpc/svcauth_unix.c: warning: 'sin6' may be used uninitialized
-in this function:  => 689, 690
-	net/sunrpc/xprtsock.c: warning: format '%Zd' expects type 'signed
-size_t', but argument 3 has type 'ssize_t':  => 1032
-	net/xfrm/xfrm_policy.c: warning: 'xfrm_dst_ops' may be used
-uninitialized in this function:  => 2340, 2393
-	security/keys/keyctl.c: warning: #warning TIF_NOTIFY_RESUME not
-implemented:  => 1342:2
-	security/selinux/netnode.c: warning: 'idx' may be used uninitialized
-in this function:  => 132
-	sound/drivers/serial-u16550.c: warning: 'uart' may be used
-uninitialized in this function:  => 905
-	sound/mips/hal2.c: warning: 'l' may be used uninitialized in this
-function:  => 203
-	sound/mips/hal2.c: warning: 'new' may be used uninitialized in this
-function:  => 232
-	sound/mips/hal2.c: warning: 'old' may be used uninitialized in this
-function:  => 232
-	sound/mips/hal2.c: warning: 'r' may be used uninitialized in this
-function:  => 203
-	sound/oss/pss.c: warning: 'check_region' is deprecated (declared at
-/scratch/kisskb/src/include/linux/ioport.h:169):  => 676
-	sound/pci/atiixp.c: warning: 'chip' may be used uninitialized in this
-function:  => 1652
-	sound/pci/atiixp_modem.c: warning: 'chip' may be used uninitialized
-in this function:  => 1288
-	sound/pci/cs5535audio/cs5535audio_pcm.c: warning: large integer
-implicitly truncated to unsigned type:  => 152, 161, 160, 153
-	sound/pci/ctxfi/ctvmem.c: warning: 'entry' may be used uninitialized
-in this function:  => 34, 80
-	sound/pci/hda/hda_codec.c: warning: 'hda_cleanup_all_streams' defined
-but not used:  => 1326
-	sound/pci/hda/hda_codec.c: warning: 'restore_shutup_pins' defined but
-not used:  => 940
-	sound/pci/hda/patch_analog.c: warning: 'ad198x_power_eapd' defined
-but not used:  => 480
-	sound/pci/lx6464es/lx6464es.c: warning: cast to pointer from integer
-of different size:  => 456, 455
-	sound/pci/lx6464es/lx_core.c: warning: cast to pointer from integer
-of different size:  => 1185
-	sound/pci/via82xx.c: warning: 'chip' may be used uninitialized in
-this function:  => 2503
-	sound/pci/via82xx_modem.c: warning: 'chip' may be used uninitialized
-in this function:  => 1168
-	sound/pcmcia/pdaudiocf/pdaudiocf.c: warning:
-'pcmcia_request_exclusive_irq' is deprecated (declared at
-/scratch/kisskb/src/include/pcmcia/ds.h:200):  => 226
-	sound/pcmcia/pdaudiocf/pdaudiocf.c: warning:
-'pcmcia_request_exclusive_irq' is deprecated (declared at
-/scratch/kisskb/src/include/pcmcia/ds.h:202):  => 226
-	sound/pcmcia/vx/vxpocket.c: warning: 'pcmcia_request_exclusive_irq'
-is deprecated (declared at
-/scratch/kisskb/src/include/pcmcia/ds.h:200):  => 233
-	sound/pcmcia/vx/vxpocket.c: warning: 'pcmcia_request_exclusive_irq'
-is deprecated (declared at
-/scratch/kisskb/src/include/pcmcia/ds.h:202):  => 233
-	sound/soc/codecs/wm8350.c: warning: 'mask' may be used uninitialized
-in this function:  => 1349
-	sound/soc/codecs/wm8900.c: warning: 'fll_div.fll_ratio' may be used
-uninitialized in this function:  => 749
-	sound/soc/codecs/wm8900.c: warning: 'fll_div.fll_slow_lock_ref' may
-be used uninitialized in this function:  => 749
-	sound/soc/codecs/wm8900.c: warning: 'fll_div.fllclk_div' may be used
-uninitialized in this function:  => 749
-	sound/soc/codecs/wm8900.c: warning: 'fll_div.k' may be used
-uninitialized in this function:  => 749
-	sound/soc/codecs/wm8900.c: warning: 'fll_div.n' may be used
-uninitialized in this function:  => 749
-	sound/soc/codecs/wm_hubs.c: warning: 'reg_l' may be used
-uninitialized in this function:  => 95
-	sound/soc/codecs/wm_hubs.c: warning: 'reg_r' may be used
-uninitialized in this function:  => 95
-	sound/soc/soc-dapm.c: warning: unused variable 'codec':  => 440
-	sound/usb/mixer.c: warning: unused variable 'chip':  => 762
-	warning: "cause_of_death" [vmlinux] is COMMON symbol:  => N/A
-	warning: "saved_config" [vmlinux] is COMMON symbol:  => N/A
-	warning: (AMIGAONE && 6xx && BROKEN_ON_SMP) selects PCSPKR_PLATFORM
-which has unmet direct dependencies (ALPHA || X86 || MIPS || PPC_PREP
-|| PPC_CHRP || PPC_PSERIES):  => N/A
-	warning: (BATTERY_DS2760 && POWER_SUPPLY) selects W1 which has unmet
-direct dependencies (HAS_IOMEM):  => N/A
-	warning: (COMPAT && SPARC64) selects COMPAT_BINFMT_ELF which has
-unmet direct dependencies (COMPAT && BINFMT_ELF):  => N/A
-	warning: (CRYPTO_LRW && CRYPTO && EXPERIMENTAL || CRYPTO_XTS &&
-CRYPTO && EXPERIMENTAL || CRYPTO_GHASH && CRYPTO) selects
-CRYPTO_GF128MUL which has unmet direct dependencies (EXPERIMENTAL):
-=> N/A
-	warning: (EP8248E && PPC_82xx || MPC85xx_MDS && FSL_SOC_BOOKE ||
-NET_DSA && NET && EXPERIMENTAL && NETDEVICES && !S390 || MACB &&
-NETDEVICES && NET_ETHERNET && (AVR32 || ARCH_AT91SAM9260 ||
-ARCH_AT91SAM9263 || ARCH_AT91SAM9G20 || ARCH_AT91SAM9G45 ||
-ARCH_AT91CAP9) || IXP4XX_ETH && NETDEVICES && NET_ETHERNET && ARM &&
-ARCH_IXP4XX && IXP4XX_NPE && IXP4XX_QMGR || W90P910_ETH && NETDEVICES
-&& NET_ETHERNET && ARM && ARCH_W90X900 || MIPS_AU1X00_ENET &&
-NETDEVICES && NET_ETHERNET && MIPS_ALCHEMY || SH_ETH && NETDEVICES &&
-NET_ETHERNET && SUPERH && (CPU_SUBTYPE_SH7710 || CPU_SUBTYPE_SH7712 ||
-CPU_SUBTYPE_SH7763 || CPU_SUBTYPE_SH7619 || CPU_SUBTYPE_SH7724 ||
-CPU_SUBTYPE_SH7757) || BFIN_MAC && NETDEVICES && NET_ETHERNET &&
-(BF516 || BF518 || BF526 || BF527 || BF536 || BF537) || PXA168_ETH &&
-NETDEVICES && NET_ETHERNET && CPU_PXA168 || TI_DAVINCI_EMAC &&
-NETDEVICES && NET_ETHERNET && ARM && (ARCH_DAVINCI || ARCH_OMAP3) ||
-ETHOC && NETDEVICES && NET_ETHERNET && HAS_IOMEM && HAS_DMA || GRETH
-&& NETDEVICES && NET_ETHERNET && SPARC || SMSC911X && NETDEVICES &&
-NET_ETHERNET && (ARM || SUPERH || BLACKFIN || MIPS) || DNET &&
-NETDEVICES && NET_ETHERNET && HAS_IOMEM || TC35815 && NETDEVICES &&
-NET_ETHERNET && NET_PCI && PCI && MIPS || R6040 && NETDEVICES &&
-NET_ETHERNET && NET_PCI && PCI || SMSC9420 && NETDEVICES &&
-NET_ETHERNET && NET_PCI && PCI || CPMAC && NETDEVICES && NET_ETHERNET
-&& EXPERIMENTAL && AR7 || FEC && NETDEVICES && NET_ETHERNET && (M523x
-|| M527x || M5272 || M528x || M520x || M532x || MACH_MX27 || ARCH_MX35
-|| ARCH_MX25 || ARCH_MX5) || FEC_MPC52xx && NETDEVICES && NET_ETHERNET
-&& PPC_MPC52xx && PPC_BESTCOMM || XILINX_EMACLITE && NETDEVICES &&
-NET_ETHERNET && (PPC32 || MICROBLAZE) || BCM63XX_ENET && NETDEVICES &&
-NET_ETHERNET && BCM63XX || FS_ENET && NETDEVICES && NET_ETHERNET &&
-(CPM1 || CPM2 || PPC_MPC512x) || OCTEON_MGMT_ETHERNET && NETDEVICES &&
-NET_ETHERNET && CPU_CAVIUM_OCTEON || SB1250_MAC && NETDEVICES &&
-NETDEV_1000 && SIBYTE_SB1xxx_SOC || TIGON3 && NETDEVICES &&
-NETDEV_1000 && PCI || FSL_PQ_MDIO && NETDEVICES && NETDEV_1000 &&
-FSL_SOC || GIANFAR && NETDEVICES && NETDEV_1000 && FSL_SOC || UCC_GETH
-&& NETDEVICES && NETDEV_1000 && QUICC_ENGINE || MV643XX_ETH &&
-NETDEVICES && NETDEV_1000 && (MV64X60 || PPC32 || PLAT_ORION) ||
-XILINX_LL_TEMAC && NETDEVICES && NETDEV_1000 && (PPC || MICROBLAZE) ||
-S6GMAC && NETDEVICES && NETDEV_1000 && XTENSA_VARIANT_S6000 ||
-STMMAC_ETH && NETDEV_1000 && NETDEVICES && CPU_SUBTYPE_ST40 ||
-PASEMI_MAC && NETDEVICES && NETDEV_10000 && PPC_PASEMI && PCI ||
-OCTEON_ETHERNET && STAGING && !STAGING_EXCLUDE_BUILD &&
-CPU_CAVIUM_OCTEON) selects PHYLIB which has unmet direct dependencies
-(!S390 && NETDEVICES):  => N/A
-	warning: (ETRAX_USB_HOST && ETRAX_ARCH_V10 || MOUSE_APPLETOUCH &&
-!S390 && INPUT && INPUT_MOUSE && USB_ARCH_HAS_HCD || MOUSE_BCM5974 &&
-!S390 && INPUT && INPUT_MOUSE && USB_ARCH_HAS_HCD || JOYSTICK_XPAD &&
-!S390 && INPUT && INPUT_JOYSTICK && USB_ARCH_HAS_HCD ||
-TABLET_USB_ACECAD && !S390 && INPUT && INPUT_TABLET &&
-USB_ARCH_HAS_HCD || TABLET_USB_AIPTEK && !S390 && INPUT &&
-INPUT_TABLET && USB_ARCH_HAS_HCD || TABLET_USB_KBTAB && !S390 && INPUT
-&& INPUT_TABLET && USB_ARCH_HAS_HCD || TABLET_USB_WACOM && !S390 &&
-INPUT && INPUT_TABLET && USB_ARCH_HAS_HCD || TOUCHSCREEN_USB_COMPOSITE
-&& !S390 && INPUT && INPUT_TOUCHSCREEN && USB_ARCH_HAS_HCD ||
-INPUT_ATI_REMOTE && !S390 && INPUT && INPUT_MISC && USB_ARCH_HAS_HCD
-|| INPUT_ATI_REMOTE2 && !S390 && INPUT && INPUT_MISC &&
-USB_ARCH_HAS_HCD || INPUT_KEYSPAN_REMOTE && !S390 && INPUT &&
-INPUT_MISC && EXPERIMENTAL && USB_ARCH_HAS_HCD || INPUT_POWERMATE &&
-!S390 && INPUT && INPUT_MISC && USB_ARCH_HAS_HCD || INPUT_YEALINK &&
-!S390 && INPUT && INPUT_MISC && EXPERIMENTAL && USB_ARCH_HAS_HCD ||
-INPUT_CM109 && !S390 && INPUT && INPUT_MISC && EXPERIMENTAL &&
-USB_ARCH_HAS_HCD) selects USB which has unmet direct dependencies
-(USB_ARCH_HAS_HCD):  => N/A
-	warning: (GFS2_FS && BLOCK && EXPERIMENTAL && (64BIT || LBDAF))
-selects QUOTACTL which has unmet direct dependencies (XFS_QUOTA ||
-QUOTA):  => N/A
-	warning: (IMA && SECURITY && !S390) selects TCG_TPM which has unmet
-direct dependencies (HAS_IOMEM && EXPERIMENTAL):  => N/A
-	warning: (IRQSOFF_TRACER && TRACING_SUPPORT && FTRACE &&
-TRACE_IRQFLAGS_SUPPORT && !ARCH_USES_GETTIMEOFFSET) selects
-TRACE_IRQFLAGS which has unmet direct dependencies (DEBUG_KERNEL &&
-TRACE_IRQFLAGS_SUPPORT && PROVE_LOCKING):  => N/A
-	warning: (LOCKDEP && DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT &&
-STACKTRACE_SUPPORT && LOCKDEP_SUPPORT && !MIPS && !PPC && !ARM_UNWIND
-&& !S390 && !MICROBLAZE || FAULT_INJECTION_STACKTRACE_FILTER &&
-FAULT_INJECTION_DEBUG_FS && STACKTRACE_SUPPORT && !X86_64 && !PPC &&
-!S390 && !MICROBLAZE || LATENCYTOP && HAVE_LATENCYTOP_SUPPORT &&
-DEBUG_KERNEL && STACKTRACE_SUPPORT && PROC_FS && !MIPS && !PPC &&
-!S390 && !MICROBLAZE || FUNCTION_TRACER && TRACING_SUPPORT && FTRACE
-&& HAVE_FUNCTION_TRACER || KMEMCHECK && HAVE_ARCH_KMEMCHECK &&
-DEBUG_KERNEL && !X86_USE_3DNOW && (SLUB || SLAB) &&
-!CC_OPTIMIZE_FOR_SIZE && !FUNCTION_TRACER) selects FRAME_POINTER which
-has unmet direct dependencies (DEBUG_KERNEL && (CRIS || M68K ||
-M68KNOMMU || FRV || UML || AVR32 || SUPERH || BLACKFIN || MN10300) ||
-ARCH_WANT_FRAME_POINTERS):  => N/A
-	warning: (PAGE_POISONING && DEBUG_KERNEL &&
-!ARCH_SUPPORTS_DEBUG_PAGEALLOC && !HIBERNATION) selects
-DEBUG_PAGEALLOC which has unmet direct dependencies (DEBUG_KERNEL &&
-ARCH_SUPPORTS_DEBUG_PAGEALLOC && (!HIBERNATION || !PPC && !SPARC) &&
-!KMEMCHECK):  => N/A
-	warning: (PPC_PRPMC2800 && EMBEDDED6xx || PPC_C2K && EMBEDDED6xx ||
-AMIGAONE && 6xx && BROKEN_ON_SMP) selects NOT_COHERENT_CACHE which has
-unmet direct dependencies (4xx || 8xx || E200 || PPC_MPC512x ||
-GAMECUBE_COMMON):  => N/A
-	warning: (PS3_PS3AV && PPC_PS3 || PS3_SYS_MANAGER && PPC_PS3) selects
-PS3_VUART which has unmet direct dependencies (PPC_PS3 &&
-PS3_ADVANCED):  => N/A
-	warning: (RADIO_MIROPCM20 && MEDIA_SUPPORT && RADIO_ADAPTERS && ISA
-&& VIDEO_V4L2 && SND) selects SND_ISA which has unmet direct
-dependencies (ISA && ISA_DMA_API):  => N/A
-	warning: (SCSI_SAS_LIBSAS && SCSI || SCSI_MPT2SAS && SCSI_LOWLEVEL &&
-PCI && SCSI || FUSION_SAS && FUSION && PCI && SCSI) selects
-SCSI_SAS_ATTRS which has unmet direct dependencies (SCSI &&
-BLK_DEV_BSG):  => N/A
-	warning: (SINGLE_MEMORY_CHUNK) selects NEED_MULTIPLE_NODES which has
-unmet direct dependencies (DISCONTIGMEM || NUMA):  => N/A
-	warning: (SUPERH32) selects HAVE_HW_BREAKPOINT which has unmet direct
-dependencies (PERF_EVENTS):  => N/A
-	warning: (USB_WUSB && USB_SUPPORT && EXPERIMENTAL && USB) selects UWB
-which has unmet direct dependencies (EXPERIMENTAL && PCI):  => N/A
-	warning: 3 bad relocations:  => N/A
 
-Gr{oetje,eeting}s,
 
-                        Geert
+--_002_0B9F1C5B86169C4EA9D042C251022E49105CD81DE1SAFEX1MAIL3st_
+Content-Type: application/octet-stream; name="tpm_stm_st19_i2c.patch"
+Content-Description: tpm_stm_st19_i2c.patch
+Content-Disposition: attachment; filename="tpm_stm_st19_i2c.patch";
+	size=36725; creation-date="Fri, 03 Sep 2010 16:42:42 GMT";
+	modification-date="Fri, 03 Sep 2010 16:42:42 GMT"
+Content-Transfer-Encoding: base64
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+ZGlmZiAtdU5yIGxpbnV4LTIuNi4zNS40L0RvY3VtZW50YXRpb24vdHBtL3RwbV9zdG1fc3QxOV9p
+MmMudHh0IGxpbnV4LXRwbS9Eb2N1bWVudGF0aW9uL3RwbS90cG1fc3RtX3N0MTlfaTJjLnR4dAot
+LS0gbGludXgtMi42LjM1LjQvRG9jdW1lbnRhdGlvbi90cG0vdHBtX3N0bV9zdDE5X2kyYy50eHQJ
+MTk2OS0xMi0zMSAxODowMDowMC4wMDAwMDAwMDAgLTA2MDAKKysrIGxpbnV4LXRwbS9Eb2N1bWVu
+dGF0aW9uL3RwbS90cG1fc3RtX3N0MTlfaTJjLnR4dAkyMDEwLTA5LTAyIDA3OjIyOjM2LjMxNTA3
+NjM3NCAtMDUwMApAQCAtMCwwICsxLDE2OCBAQAorLyoKKyAqIFNUTWljcm9lbGVjdHJvbmljcyBU
+UE0gSTJDIExpbnV4IGRyaXZlciBmb3IgVFBNIFNUMTlOUDE4CisgKiBDb3B5cmlnaHQgKEMpIDIw
+MDksIDIwMTAgU1RNaWNyb2VsZWN0cm9uaWNzCisgKiBUaGlzIHByb2dyYW0gaXMgZnJlZSBzb2Z0
+d2FyZTsgeW91IGNhbiByZWRpc3RyaWJ1dGUgaXQgYW5kL29yIG1vZGlmeQorICogaXQgdW5kZXIg
+dGhlIHRlcm1zIG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGljZW5zZSBhcyBwdWJsaXNoZWQg
+YnkKKyAqIHRoZSBGcmVlIFNvZnR3YXJlIEZvdW5kYXRpb247IGVpdGhlciB2ZXJzaW9uIDIgb2Yg
+dGhlIExpY2Vuc2UsIG9yCisgKiAoYXQgeW91ciBvcHRpb24pIGFueSBsYXRlciB2ZXJzaW9uLgor
+ICoKKyAqIFRoaXMgcHJvZ3JhbSBpcyBkaXN0cmlidXRlZCBpbiB0aGUgaG9wZSB0aGF0IGl0IHdp
+bGwgYmUgdXNlZnVsLAorICogYnV0IFdJVEhPVVQgQU5ZIFdBUlJBTlRZOyB3aXRob3V0IGV2ZW4g
+dGhlIGltcGxpZWQgd2FycmFudHkgb2YKKyAqIE1FUkNIQU5UQUJJTElUWSBvciBGSVRORVNTIEZP
+UiBBIFBBUlRJQ1VMQVIgUFVSUE9TRS4gIFNlZSB0aGUKKyAqIEdOVSBHZW5lcmFsIFB1YmxpYyBM
+aWNlbnNlIGZvciBtb3JlIGRldGFpbHMuCisgKgorICogWW91IHNob3VsZCBoYXZlIHJlY2VpdmVk
+IGEgY29weSBvZiB0aGUgR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2UgYWxvbmcKKyAqIHdpdGgg
+dGhpcyBwcm9ncmFtOyBpZiBub3QsIHdyaXRlIHRvIHRoZSBGcmVlIFNvZnR3YXJlIEZvdW5kYXRp
+b24sIEluYy4sCisgKiA1MSBGcmFua2xpbiBTdHJlZXQsIEZpZnRoIEZsb29yLCBCb3N0b24sIE1B
+IDAyMTEwLTEzMDEgVVNBLgorICoKKyAqIFNUTWljcm9lbGVjdHJvbmljcyB2ZXJzaW9uIDEuMi4w
+LCBDb3B5cmlnaHQgKEMpIDIwMTAKKyAqIFNUTWljcm9lbGVjdHJvbmljcyBjb21lcyB3aXRoIEFC
+U09MVVRFTFkgTk8gV0FSUkFOVFkuCisgKiBUaGlzIGlzIGZyZWUgc29mdHdhcmUsIGFuZCB5b3Ug
+YXJlIHdlbGNvbWUgdG8gcmVkaXN0cmlidXRlIGl0CisgKiB1bmRlciBjZXJ0YWluIGNvbmRpdGlv
+bnMuCisgKgorICogQEF1dGhvcjogQ2hyaXN0b3BoZSBSSUNBUkQgdHBtc3VwcG9ydEBzdC5jb20K
+KyAqLworCitQVVJQT1NFIE9GIFRIRSBET0NVTUVOVAorLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+CitUaGlzIGRvY3VtZW50IGlzIGludGVuZCB0byBkZXNjcmliZSBob3cgdG8gaW5zdGFsbCB0aGUg
+VFBNIGRyaXZlciBmb3IKK1RQTSBTVDE5TlAxOCB1c2luZyBJMkMgcHJvdG9jb2xzLgorCisKK1BM
+QVRGT1JNIFVTRUQgRk9SIFRFU1RJTkcKKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCitEdXJp
+bmcgdGhlIGRldmVsb3BtZW50LCBzZXZlcmFsIGVtYmVkZGVkIHBsYXRmb3JtcyBydW5uaW5nIEFS
+TSBDUFUgaGF2ZSBiZWVuCit1c2VkLgorVmFsaWRhdGVkIHBsYXRmb3JtcyBsaXN0aW5nOgorLSBU
+SSBCZWFnbGVib2FyZAorLSBTVE1pY3JvZWxlY3Ryb25pY3MgU3BlYXIgMzAwCistIFNUTWljcm9l
+bGVjdHJvbmljcyBTcGVhciA2MDAKKworUkVRVUlSRU1FTlRTCistLS0tLS0tLS0tLS0tCitTb2Z0
+d2FyZQorPT09PT09PT09CitUaGlzIFRQTSBkcml2ZXIgY291bGQgYmUgaW5zdGFsbCB1bmRlciBh
+IGtlcm5lbCB3aGljaCBpbXBsZW1lbnQgYXQgbGVhc3QgdGhlCitmb2xsb3dpbmcgZmVhdHVyZXM6
+CistIExpbnV4IEdFTkVSSUNfR1BJTyBwcm9ncmFtbWluZyBpbnRlcmZhY2VzLgorLSBJMkMgbmV3
+IHN0eWxlIHByb2dyYW1taW5nIGludGVyZmFjZSBiYXNlICh3aXRoIHByb2JlICYgcmVtb3ZlIGZ1
+bmN0aW9ucykKKy0gMSBJMkMgYWRhcHRlciAoSTJDIExpbnV4IGNvbnRyb2xsZXIgZHJpdmVyKSBv
+ciB1c2Ugb2YgSTJDX0dQSU8gZHJpdmVyIGZvciBJMkMKK2JpdGJhbmdpbmcuCisKKworSGFyZHdh
+cmUKKz09PT09PT09PQorVG8gcnVuIGEgVFBNIHRoZSBwbGF0Zm9ybSBuZWVkcyAgYXQgbGVhc3Q6
+CistIDIgUG93ZXIgc3VwcGx5ICgzLjNWKS4KKy0gMSBJMkMgY29udHJvbGxlciBvciAyIEdQSU9z
+IHVzZWQgZm9yIFNEQSAmIFNDTCAoSTJDIGJpdCBiYW5nIG1ldGhvZCkuCistIDIgR1BJT3MgZm9y
+IHNpZ25hbHMgYWNjZXB0X2NvbW1hbmQgJiBkYXRhX2F2YWlsYWJsZS4KKworVFBNIEkyQyBzcGVl
+ZCBpcyAxMDBLaHogKE1heGltdW0pCisKK0FsbCBUUE0gc2lnbmFscyB3b3JrIGF0IDMuM1YKKwor
+SE9XIFRPIElOU1RBTEwKKy0tLS0tLS0tLS0tLS0tLQorUGxhdGZvcm0gaW5zdGFsbGF0aW9uIGZp
+bGUKKz09PT09PT09PT09PT09PT09PT09PT09PT09PQorKE4uQjogcGxhdGZvcm0gZmlsZSBpbiBh
+cmNoLzxwcm9jZXNzb3JfdHlwZT4vbWFjaC08cGxhdGZvcm0tbmFtZT4vCisKKworMSAtIFNvZnR3
+YXJlIGludGVncmF0aW9uCis9PT09PT09PT09PT09PT09PT09PT09PT09Cis8cHJvY2Vzc29yX3R5
+cGU+IGNvdWxkIGJlOiBhbHBoYSwgYXJtLCBhdnIzMiwgYmxhY2tmaW4sIGNyaXMsIGZydiwgaDgz
+MDAsIGlhNjQsCittMzJyLCBtNjhrLCBtNjhrbm9tbXUsIHBhcmlzYywgcG93ZXJwYywgczM5MCwg
+c2gsIHNwYXJjLCBzcGFyYzY0LCB1bSwgeDg2LAoreHRlbnNhLi4uCis8cGxhdGZvcm0tbmFtZT4g
+Y29ycmVzcG9uZHMgdG8geW91ciBwbGF0Zm9ybQorCitJbiB0aGUgZmlsZSB3aGVyZSB0aGUgbWFj
+aGluZV9pbml0KCkgZnVuY3Rpb24gZXhpc3RzLCB0aGUgZGV2ZWxvcGVyIG11c3QKK2RlY2xhcmU6
+CistIDEgc3RydWN0IHN0MTlucDE4X3BsYXRmb3JtX2RhdGEgdG8gcHJvdmlkZSB3aGljaCBncGlv
+IHRoZSBkcml2ZXIgd2lsbCB1c2UuCisJKiBUaGUgYWNjZXB0X3BpbiBhbmQgZGF0YV9hdmFpbF9w
+aW4gZ3BpbyBhcmUgY29uZmlndXJlZCBhcyBpbnB1dCBvbmx5LgorCSogVGhpcyBncGlvIG1hbmFn
+ZW1lbnQgaXMgdW5kZXIgdGhlIHBsYXRmb3JtIGRldmVsb3BlciByZXNwb25zYWJpbGl0eS4KKwor
+RmluYWxseSBpbiB0aGUgbWFjaGluZV9pbml0KCkgZnVuY3Rpb24gcHJvdmlkZWQgaW4gdGhlIHNh
+bWUgZmlsZSwgdGhlIGRldmVsb3Blcgorc2hvdWxkIHVzZSB0aGUgd2VsbCBrbm93biBmdW5jdGlv
+biBpMmNfcmVnaXN0ZXJfYm9hcmRfaW5mbygpIGZyb20gdGhlIEkyQyBMaW51eAorQVBJIENvcmUu
+CisKKzItIEhhcmR3YXJlIGludGVncmF0aW9uCis9PT09PT09PT09PT09PT09PT09PT09PT0KKy0g
+U1QgcmVjb21tZW5kcyBjb25uZWN0aW5nIFZQUzEgYW5kIFZQUzIgdG8gYm9hcmQgcG93ZXIgc3Vw
+cGx5IGFuZCBhdCBsZWFzdCB0d28KK0dORHMgKG9uIGVhY2ggc2lkZSBvZiBUU1NPUDI4IHBhY2th
+Z2UpLiAoU2VlIGRhdGFzaGVldCBmb3IgZnVydGhlciBpbmZvcm1hdGlvbnMpCisKKy0gQXMgdGhl
+IFNUMTlOUDE4IGhhcyBubyBpbnRlcm5hbCBwdWxsIHVwLCBTVCByZWNvbW1hbmRzIHRvIGhhZDoK
+KyAgKiAyIGV4dGVybmFsIHB1bGwgdXAgb24gU0RBICYgU0NMIHNpZ25hbHMgKFJwU0RBL1JwU0NM
+KSB3aXRoIHZhbHVlIGFjY29yZGluZwordG8gdGhlIGFiYWN1cyBvbiBwYWdlIDQwIG9yIHRoZSAi
+STJDIEJ1cyBzcGVjaWZpY2F0aW9uIiwgdmVyc2lvbiAyLjEgSmFudWFyeQorMjAwMC4KKworCitQ
+bGF0Zm9ybSBpbnRlZ3JhdGlvbiBhZHZpc2VzCis9PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PQorCitGb3IgcG93ZXIgbWFuYWdlbWVudCBwdXJwb3NlcywgdGhlIGtlcm5lbCB3aWxsIHNlbmQg
+YSBUUE1fU2F2ZVN0YXRlIGNvbW1hbmQgaW4gdGhlCitzdXNwZW5kIHRwbSBkcml2ZXIgZnVuY3Rp
+b24uCitJZiB0aGUgcGxhdGZvcm0gZ2VuZXJhdGUgYSBUUE0gSW5pdCBldmVudCBvbiB3YWtldXAs
+IHRoZSBmaXJzdCBUUE0gY29tbWFuZCB0aGF0IHNob3VsZAorYmUgZXhlY3V0ZWQgYmVmb3JlIHRo
+ZSBMaW51eCBrZXJuZWwgaXMgYmFjayAocmVzdW1lIGZ1bmN0aW9uIGV4ZWN1dGlvbikgaXMKK1RQ
+TV9TdGFydHVwKFNUX1NUQVRFKS4KKworSGVyZSBpcyBhbiBleGFtcGxlIHdpdGggYmVhZ2xlYm9h
+cmQ6Cis9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KK0RlcGVuZGluZyBvbiB0
+aGUgcGxhdGZvcm0sIHRoZSBkZXZlbG9wcGVyIHNob3VsZCBzcGVjaWZ5IGluCit0aGUgcGxhdGZv
+cm0gaW5pdCBmaWxlIHRoZSBmb2xsb3dpbmcgaW5mb3JtYXRpb25zOgorLSBUaGUgcGxhdGZvcm0g
+Z3BpbydzIHVzZWQgdG8gbWFuYWdlZCB0aGUgdHBtJ3MgYWNjZXB0X3Bpbi9kYXRhX2F2YWlsX3Bp
+bgorKGluIGEgc3RydWN0IHN0MTlucDE4X3BsYXRmb3JtX2RhdGEgZGVjbGFyYXRpb24pLgorLSBU
+aGUgVFBNIEkyQyA3IGJpdHMgYWRkcmVzcyAoVFBNX0kyQ19TVDE5X0FERFJfV1IpIChpbiBhIHN0
+cnVjdCBpMmNfYm9hcmRfaW5mbykuCisKK1RoZW4gdGhlIGRldmVsb3BwZXIgc2hvdWxkIGFkZCAg
+dGhlIFRQTSBzbGF2ZSBkZXZpY2UgdG8gdGhlIGdvb2QgaTJjIGFkYXB0ZXIgd2l0aCB0aGUKK2ky
+Y19yZWdpc3Rlcl9ib2FyZF9pbmZvIGZ1bmN0aW9uIChBc3N1bWluZyB0aGF0IHRoZSBncGlvIGFu
+ZCB0aGUgaTJjIGJ1cyBhcmUgd2VsbCBjb25maWd1cmVkKS4KKworZmlsZSBhcmNoXGFybVxtYWNo
+LW9tYXAyXGJvYXJkLW9tYXAzYmVhZ2xlLmMKK2FkZCB0aGUgZm9sbG93aW5nOgorLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0KKworc3RhdGljIHN0cnVjdCBzdDE5bnAxOF9wbGF0Zm9ybV9kYXRhIHRwbV9kYXRhID0g
+eworICAgICAgICAuYWNjZXB0X3BpbiA9IDEzNSwKKyAgICAgICAgLmRhdGFfYXZhaWxfcGluID0g
+MTQzLAorfTsKKworc3RhdGljIHN0cnVjdCBpMmNfYm9hcmRfaW5mbyBfX2luaXRkYXRhIHRwbV9z
+dDE5X2kyY19ib2FyZF9pbmZvW10gPSB7CisgICAgICAgIHsKKyAgICAgICAgIEkyQ19CT0FSRF9J
+TkZPKFRQTV9EUklWRVJfTkFNRSwgVFBNX0kyQ19TVDE5X0FERFJfV1IpLAorICAgICAgICAgLnBs
+YXRmb3JtX2RhdGEgPSAmdHBtX2RhdGEsCisgICAgICAgICB9LAorfTsKKworLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tCitUaGVuIGNvbXBsZXRlIHRoZSBiZWFnbGVib2FyZCBpbml0IHRvIGJlIGxpa2UgdGhhdDoK
+Ky0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLQorc3RhdGljIHZvaWQgX19pbml0IG9tYXAzX2JlYWdsZV9pbml0KHZv
+aWQpCit7CisgICAgICAgIG9tYXAzX211eF9pbml0KGJvYXJkX211eCwgT01BUF9QQUNLQUdFX0NC
+Qik7CisgICAgICAgIG9tYXAzX2JlYWdsZV9pMmNfaW5pdCgpOworICAgICAgICBwbGF0Zm9ybV9h
+ZGRfZGV2aWNlcyhvbWFwM19iZWFnbGVfZGV2aWNlcywKKyAgICAgICAgICAgICAgICAgICAgICAg
+IEFSUkFZX1NJWkUob21hcDNfYmVhZ2xlX2RldmljZXMpKTsKKyAgICAgICAgb21hcF9zZXJpYWxf
+aW5pdCgpOworCisgICAgICAgIG9tYXBfbXV4X2luaXRfZ3BpbygxNzAsIE9NQVBfUElOX0lOUFVU
+KTsKKyAgICAgICAgZ3Bpb19yZXF1ZXN0KDE3MCwgIkRWSV9uUEQiKTsKKyAgICAgICAgLyogUkVW
+SVNJVCBsZWF2ZSBEVkkgcG93ZXJlZCBkb3duIHVudGlsIGl0J3MgbmVlZGVkIC4uLiAqLworICAg
+ICAgICBncGlvX2RpcmVjdGlvbl9vdXRwdXQoMTcwLCB0cnVlKTsKKworICAgICAgICB1c2JfbXVz
+Yl9pbml0KCZtdXNiX2JvYXJkX2RhdGEpOworICAgICAgICB1c2JfZWhjaV9pbml0KCZlaGNpX3Bk
+YXRhKTsKKyAgICAgICAgb21hcDNiZWFnbGVfZmxhc2hfaW5pdCgpOworCisgICAgICAgIGJlYWds
+ZV9kaXNwbGF5X2luaXQoKTsKKworICAgICAgICAvKiBFbnN1cmUgU0RSQyBwaW5zIGFyZSBtdXgn
+ZCBmb3Igc2VsZi1yZWZyZXNoICovCisgICAgICAgIG9tYXBfbXV4X2luaXRfc2lnbmFsKCJzZHJj
+X2NrZTAiLCBPTUFQX1BJTl9PVVRQVVQpOworICAgICAgICBvbWFwX211eF9pbml0X3NpZ25hbCgi
+c2RyY19ja2UxIiwgT01BUF9QSU5fT1VUUFVUKTsKKyAgICAgICAgb21hcF9tdXhfaW5pdF9ncGlv
+KCgoc3RydWN0IHN0MTlucDE4X3BsYXRmb3JtX2RhdGEgKikKKyAgICAgICAgICAgICAgICAgICAg
+ICAgICAgIHRwbV9zdDE5X2kyY19ib2FyZF9pbmZvWzBdLnBsYXRmb3JtX2RhdGEpLT5kYXRhX2F2
+YWlsX3BpbiwKKyAgICAgICAgICAgICAgICAgICAgICAgICAgIE9NQVBfUElOX0lOUFVUKTsKKwlv
+bWFwX211eF9pbml0X2dwaW8oKChzdHJ1Y3Qgc3QxOW5wMThfcGxhdGZvcm1fZGF0YSAqKQorICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgdHBtX3N0MTlfaTJjX2JvYXJkX2luZm9bMF0ucGxhdGZv
+cm1fZGF0YSktPmFjY2VwdF9waW4sCisgICAgICAgICAgICAgICAgICAgICAgICAgICBPTUFQX1BJ
+Tl9JTlBVVCk7CisKKwlpMmNfcmVnaXN0ZXJfYm9hcmRfaW5mbygzLCB0cG1fc3QxOV9pMmNfYm9h
+cmRfaW5mbywgQVJSQVlfU0laRSh0cG1fc3QxOV9pMmNfYm9hcmRfaW5mbykpOworfQpkaWZmIC11
+TnIgbGludXgtMi42LjM1LjQvZHJpdmVycy9jaGFyL3RwbS9LY29uZmlnIGxpbnV4LXRwbS9kcml2
+ZXJzL2NoYXIvdHBtL0tjb25maWcKLS0tIGxpbnV4LTIuNi4zNS40L2RyaXZlcnMvY2hhci90cG0v
+S2NvbmZpZwkyMDEwLTA4LTI2IDE4OjQ3OjEyLjAwMDAwMDAwMCAtMDUwMAorKysgbGludXgtdHBt
+L2RyaXZlcnMvY2hhci90cG0vS2NvbmZpZwkyMDEwLTA4LTMxIDEyOjUxOjAyLjk0NDQwNzc2MyAt
+MDUwMApAQCAtNjAsNCArNjAsMTMgQEAKIAkgIEZ1cnRoZXIgaW5mb3JtYXRpb24gb24gdGhpcyBk
+cml2ZXIgYW5kIHRoZSBzdXBwb3J0ZWQgaGFyZHdhcmUKIAkgIGNhbiBiZSBmb3VuZCBhdCBodHRw
+Oi8vd3d3LnByb3NlYy5ydWIuZGUvdHBtCiAKK2NvbmZpZyBUQ0dfU1QxOV9JMkMKKyAgICAgICAg
+dHJpc3RhdGUgIlNUTWljcm9lbGVjdHJvbmljcyBTVDE5IEkyQyBUUE0iCisgICAgICAgIGRlcGVu
+ZHMgb24gSTJDCisgICAgICAgIGRlcGVuZHMgb24gR1BJT0xJQgorICAgICAgICAtLS1oZWxwLS0t
+CisgICAgICAgIElmIHlvdSBoYXZlIGEgVFBNIHNlY3VyaXR5IGNoaXAgZnJvbSBTVE1pY3JvZWxl
+Y3Ryb25pY3Mgd29ya2luZyB3aXRoCisgICAgICAgIGFuIEkyQyBidXMgc2F5IFllcyBhbmQgaXQg
+d2lsbCBiZSBhY2Nlc3NpYmxlIGZyb20gd2l0aGluIExpbnV4LgorICAgICAgICBUbyBjb21waWxl
+IHRoaXMgZHJpdmVyIGFzIGEgbW9kdWxlLCBjaG9vc2UgTSBoZXJlOyB0aGUgbW9kdWxlIHdpbGwg
+YmUKKyAgICAgICAgY2FsbGVkIHRwbV9zdG1fc3QxOV9pMmMuCiBlbmRpZiAjIFRDR19UUE0KZGlm
+ZiAtdU5yIGxpbnV4LTIuNi4zNS40L2RyaXZlcnMvY2hhci90cG0vTWFrZWZpbGUgbGludXgtdHBt
+L2RyaXZlcnMvY2hhci90cG0vTWFrZWZpbGUKLS0tIGxpbnV4LTIuNi4zNS40L2RyaXZlcnMvY2hh
+ci90cG0vTWFrZWZpbGUJMjAxMC0wOC0yNiAxODo0NzoxMi4wMDAwMDAwMDAgLTA1MDAKKysrIGxp
+bnV4LXRwbS9kcml2ZXJzL2NoYXIvdHBtL01ha2VmaWxlCTIwMTAtMDgtMzEgMTI6NTE6MDIuOTY0
+NDA3NjkwIC0wNTAwCkBAIC05LDMgKzksNCBAQAogb2JqLSQoQ09ORklHX1RDR19OU0MpICs9IHRw
+bV9uc2Mubwogb2JqLSQoQ09ORklHX1RDR19BVE1FTCkgKz0gdHBtX2F0bWVsLm8KIG9iai0kKENP
+TkZJR19UQ0dfSU5GSU5FT04pICs9IHRwbV9pbmZpbmVvbi5vCitvYmotJChDT05GSUdfVENHX1NU
+MTlfSTJDKSArPSB0cG1fc3RtX3N0MTlfaTJjLm8KZGlmZiAtdU5yIGxpbnV4LTIuNi4zNS40L2Ry
+aXZlcnMvY2hhci90cG0vdHBtX3N0bV9zdDE5X2kyYy5jIGxpbnV4LXRwbS9kcml2ZXJzL2NoYXIv
+dHBtL3RwbV9zdG1fc3QxOV9pMmMuYwotLS0gbGludXgtMi42LjM1LjQvZHJpdmVycy9jaGFyL3Rw
+bS90cG1fc3RtX3N0MTlfaTJjLmMJMTk2OS0xMi0zMSAxODowMDowMC4wMDAwMDAwMDAgLTA2MDAK
+KysrIGxpbnV4LXRwbS9kcml2ZXJzL2NoYXIvdHBtL3RwbV9zdG1fc3QxOV9pMmMuYwkyMDEwLTA5
+LTAyIDA2OjE3OjUyLjU0NDQ1MTU5OSAtMDUwMApAQCAtMCwwICsxLDgyMiBAQAorLyoKKyAqIFNU
+TWljcm9lbGVjdHJvbmljcyBUUE0gSTJDIExpbnV4IGRyaXZlciBmb3IgVFBNIFNUMTlOUDE4Cisg
+KiBDb3B5cmlnaHQgKEMpIDIwMDksIDIwMTAgIFNUTWljcm9lbGVjdHJvbmljcworICoKKyAqIFRo
+aXMgcHJvZ3JhbSBpcyBmcmVlIHNvZnR3YXJlOyB5b3UgY2FuIHJlZGlzdHJpYnV0ZSBpdCBhbmQv
+b3IgbW9kaWZ5CisgKiBpdCB1bmRlciB0aGUgdGVybXMgb2YgdGhlIEdOVSBHZW5lcmFsIFB1Ymxp
+YyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieQorICogdGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlv
+bjsgZWl0aGVyIHZlcnNpb24gMiBvZiB0aGUgTGljZW5zZSwgb3IKKyAqIChhdCB5b3VyIG9wdGlv
+bikgYW55IGxhdGVyIHZlcnNpb24uCisgKgorICogVGhpcyBwcm9ncmFtIGlzIGRpc3RyaWJ1dGVk
+IGluIHRoZSBob3BlIHRoYXQgaXQgd2lsbCBiZSB1c2VmdWwsCisgKiBidXQgV0lUSE9VVCBBTlkg
+V0FSUkFOVFk7IHdpdGhvdXQgZXZlbiB0aGUgaW1wbGllZCB3YXJyYW50eSBvZgorICogTUVSQ0hB
+TlRBQklMSVRZIG9yIEZJVE5FU1MgRk9SIEEgUEFSVElDVUxBUiBQVVJQT1NFLiAgU2VlIHRoZQor
+ICogR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2UgZm9yIG1vcmUgZGV0YWlscy4KKyAqCisgKiBZ
+b3Ugc2hvdWxkIGhhdmUgcmVjZWl2ZWQgYSBjb3B5IG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMg
+TGljZW5zZSBhbG9uZworICogd2l0aCB0aGlzIHByb2dyYW07IGlmIG5vdCwgd3JpdGUgdG8gdGhl
+IEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbiwgSW5jLiwKKyAqIDUxIEZyYW5rbGluIFN0cmVldCwg
+RmlmdGggRmxvb3IsIEJvc3RvbiwgTUEgMDIxMTAtMTMwMSBVU0EuCisgKgorICogU1RNaWNyb2Vs
+ZWN0cm9uaWNzIHZlcnNpb24gMS4yLjAsIENvcHlyaWdodCAoQykgMjAxMAorICogU1RNaWNyb2Vs
+ZWN0cm9uaWNzIGNvbWVzIHdpdGggQUJTT0xVVEVMWSBOTyBXQVJSQU5UWS4KKyAqIFRoaXMgaXMg
+ZnJlZSBzb2Z0d2FyZSwgYW5kIHlvdSBhcmUgd2VsY29tZSB0byByZWRpc3RyaWJ1dGUgaXQKKyAq
+IHVuZGVyIGNlcnRhaW4gY29uZGl0aW9ucy4KKyAqCisgKiBAQXV0aG9yOiBDaHJpc3RvcGhlIFJJ
+Q0FSRCB0cG1zdXBwb3J0QHN0LmNvbQorICoKKyAqIEBGaWxlOiB0cG1fc3RtX3N0MTlfaTJjLmMK
+KyAqCisgKiBAU3lub3BzaXM6CisgKiAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCisgKgkwMi8xMi8yMDA4CisgKgkt
+IFN0YW5kIGFsb25lIGltcGxlbWVudGF0aW9uICh3aXRob3V0IGFueSBUUE0gYXBpKQorICogLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLQorICoJMDMvMDIvMjAxMAorICoJLSBQb3dlciBtYW5hZ2VtZW50IChzdXNwZW5k
+IGFuZCByZXN1bWUgZnVuY3Rpb25zKQorICoJaW1wbGVtZW50YXRpb24KKyAqIC0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0KKyAqCTAzLzE5LzIwMTAKKyAqCS0gVXNlIG9mIHRoZSBsaW51eCBrZXJuZWwgVFBNIGFwaSAt
+LT4gZHJpdmVyL2NoYXIvdHBtCisgKiAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCisgKgkwNS8yNi8yMDEwCisgKgkt
+IFVwZGF0ZSBjb2RlIGZvciBjb2RlIHN1Ym1pc3Npb24gYW5kIGJ1ZyBmaXhlczoKKyAqCS0gQ29t
+bWVudHMgc3BlbGxpbmcgZml4ZXMKKyAqCS0gTGluZGVudCBzY3JpcHQgZXhlY3V0aW9uCisgKgkt
+IGNoZWNrcGF0Y2gucGwgc2NyaXB0IGV4ZWN1dGlvbgorICoJLSBmaXggc3lzbG9nIGVycm9yIHdo
+ZW4gbG9hZGVkIGFzIGEgbW9kdWxlOgorICoJICJyZWxlYXNlKCkgZnVuY3Rpb24gbWlzc2luZyBh
+bmQgbXVzdCBiZSBmaXhlZCIKKyAqCS0gbmFtZSBmaWxlcyBjaGFuZ2UgZnJvbQorICoJICBzdG1f
+c3QxOV90cG1faTJjIHRvIHRwbV9zdG1fc3QxOV9pMmMKKyAqIC0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KKyAqCTA2
+LzE1LzIwMTAKKyAqCS0gVXBkYXRlIGZvciBuZXcgdHBtIGNvcmUgZGV2aWNlLgorICoJbnVtX29w
+ZW5zIC0tPiBpc19vcGVuCisgKiAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCisgKgkwNy8wOC8yMDEwCisgKgktIFVw
+ZGF0ZSBwcm9iZSwgcmVzdW1lIHN1c3BlbmQgZnVuY3Rpb25zCisgKgktIEZpeCBpc3N1ZSBzdXNw
+ZW5kIGJ1ZmZlciBhbmQgd29yayBhcm91bmQgcmVsYXRlZCB0byB0aGUKKyAqCWNoaXAtPmRhdGFf
+YnVmZmVyIG5vdCBhbGxvY2F0ZWQuCisgKiAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCisgKi8KKworI2luY2x1ZGUg
+PGxpbnV4L21vZHVsZS5oPgorI2luY2x1ZGUgPGxpbnV4L2tlcm5lbC5oPgorI2luY2x1ZGUgPGxp
+bnV4L2RlbGF5Lmg+CisjaW5jbHVkZSA8bGludXgvaW5pdC5oPgorI2luY2x1ZGUgPGxpbnV4L2ky
+Yy5oPgorI2luY2x1ZGUgPGxpbnV4L2kyYy1pZC5oPgorI2luY2x1ZGUgPGxpbnV4L3dhaXQuaD4K
+KyNpbmNsdWRlIDxsaW51eC9zdHJpbmcuaD4KKyNpbmNsdWRlIDxsaW51eC9pbnRlcnJ1cHQuaD4K
+KyNpbmNsdWRlIDxsaW51eC9zcGlubG9jay5oPgorI2luY2x1ZGUgPGxpbnV4L3N5c2ZzLmg+Cisj
+aW5jbHVkZSA8bGludXgvZ3Bpby5oPgorI2luY2x1ZGUgPGxpbnV4L3NjaGVkLmg+CisjaW5jbHVk
+ZSA8bGludXgvdWFjY2Vzcy5oPgorI2luY2x1ZGUgPGxpbnV4L2lvLmg+CisjaW5jbHVkZSA8bGlu
+dXgvc2xhYi5oPgorCisjaW5jbHVkZSA8bGludXgvaTJjL3RwbV9zdG1fc3QxOV9pMmMuaD4KKwor
+I2luY2x1ZGUgInRwbS5oIgorCisjaW5jbHVkZSAidHBtX3N0bV9zdDE5X2kyYy5oIgorCisvKgor
+ICogQENvbW1lbnRzOiB0cG1fc3RtX3N0MTlfcGxhdGZvcm1fc3BlY2lmaWMuaCBkZWxpdmVyIHNo
+b3dzIGEgcGxhdGZvcm0gc3BlY2lmaWMKKyAqIGZpbGUgZXhhbXBsZS4KKyAqIEl0IGhhcyBiZWVu
+IGNyZWF0ZWQgdG8gc3BsaXQgVFBNIGRhdGFzIGFuZCBwbGF0Zm9ybS4KKyAqIFRoaXMgZXhhbXBs
+ZSBjb3VsZCBiZSB1c2VkIHdoZW4gdGhlIGRyaXZlciBpcyBidWlsdCBhcyBhIG1vZHVsZS4KKyAq
+IEluIGNhc2Ugb2Ygb3RoZXIgcGxhdGZvcm0sIHBsZWFzZSBhZGQgYSBzdHJ1Y3QgaTJjX2JvYXJk
+X2luZm8gaW4geW91ciBhcmNoLworICogcGxhdGZvcm0gZmlsZS4KKyAqLworc3RhdGljIHN0cnVj
+dCBzdDE5bnAxOF9wbGF0Zm9ybV9kYXRhICpwaW5faW5mb3M7CisKKy8qCisgKiBncGlvX3JlYWRw
+aW4gaXMgYSB3cmFwcGVyIHRvIHJlYWQgYSBncGlvIHZhbHVlLgorICogVXNlIGdlbmVyaWMgZ3Bp
+byBBUElzCisgKiBAcGFyYW06IHBpbl9pZCwgdGhlIHBpbiBpZGVudGlmaWVyIHdoZXJlIHRoZSB2
+YWx1ZSB3aWxsIGJlIHJlYWQuCisgKiBAcmV0dXJuOiB0aGUgZ3BpbyB2YWx1ZSAoc2hvdWxkIGJl
+IDAgb3IgMSkgb3IgbmVnYXRpdmUgZXJybm8KKyAqLworc3RhdGljIGludCBncGlvX3JlYWRwaW4o
+aW50IHBpbl9pZCkKK3sKKwlpbnQgcmV0OworCXJldCA9IGdwaW9fZGlyZWN0aW9uX2lucHV0KHBp
+bl9pZCk7CisJaWYgKHJldCA9PSAwKQorCQlyZXR1cm4gZ3Bpb19nZXRfdmFsdWUocGluX2lkKTsK
+KwlyZXR1cm4gcmV0OworfQorCisvKgorICogZ3Bpb193cml0ZXBpbiBpcyBhIHdyYXBwZXIgdG8g
+d3JpdGUgYSBncGlvIHZhbHVlLgorICogVXNlIGdlbmVyaWMgZ3BpbyBBUElzLgorICogQHBhcmFt
+OiBwaW5faWQsIHRoZSBwaW4gaWRlbnRpZmllciB3aGVyZSB0aGUgdmFsdWUgd2lsbCBiZSB3cm90
+ZS4KKyAqIEBwYXJhbTogdmFsdWUsIHRoZSB2YWx1ZSB0aGF0IHdpbGwgYmUgd3JpdHRlbi4KKyAq
+IEByZXR1cm46IDAgaW4gY2FzZSBvZiBzdWNjZXNzCisgKi8KKyNpZmRlZiBERUJVRworc3RhdGlj
+IGludCBncGlvX3dyaXRlcGluKGludCBwaW5faWQsIGludCB2YWx1ZSkKK3sKKwlpbnQgcmV0Owor
+CXJldCA9IGdwaW9fZGlyZWN0aW9uX291dHB1dChwaW5faWQsIHZhbHVlKTsKKworCWlmIChyZXQg
+PT0gMCkKKwkJZ3Bpb19zZXRfdmFsdWUocGluX2lkLCB2YWx1ZSk7CisJcmV0dXJuIHJldDsKK30K
+KyNlbmRpZgorCitzdGF0aWMgaW50IHdhaXRfdW50aWxfZ29vZF9zaGFwZSh2b2lkKQoreworCWlu
+dCBzdGF0ZV9kYXRhID0gMDsKKwlpbnQgc3RhdGVfY29tbWFuZCA9IDA7CisJaW50IHRpbWVvdXQg
+PSBtc2Vjc190b19qaWZmaWVzKFNUQVJUVVBfV0FJVF9JTlRFUlZBTCk7CisJaW50IHRpbWUgPSBt
+c2Vjc190b19qaWZmaWVzKFRJQ0tfR1BJT19TUE9PTElORyk7CisJaW50IHJldCA9IDA7CisJd2Fp
+dF9xdWV1ZV9oZWFkX3QgcXVldWU7CisKKwlpbnQgd2FpdF90aW1lID0gMDsKKwlERUZJTkVfV0FJ
+VChfX3dhaXQpOworCWluaXRfd2FpdHF1ZXVlX2hlYWQoJnF1ZXVlKTsKKworCWRvIHsKKwkJcHJl
+cGFyZV90b193YWl0KCZxdWV1ZSwgJl9fd2FpdCwgVEFTS19JTlRFUlJVUFRJQkxFKTsKKwkJc3Rh
+dGVfZGF0YSA9IGdwaW9fcmVhZHBpbihwaW5faW5mb3MtPmRhdGFfYXZhaWxfcGluKTsKKwkJc3Rh
+dGVfY29tbWFuZCA9IGdwaW9fcmVhZHBpbihwaW5faW5mb3MtPmFjY2VwdF9waW4pOworCisJCWlm
+IChzdGF0ZV9kYXRhID09IDAgJiYgc3RhdGVfY29tbWFuZCA+IDApCisJCQlyZXR1cm4gMDsKKwkJ
+ZWxzZSBpZiAod2FpdF90aW1lID49IHRpbWVvdXQpCisJCQlyZXR1cm4gLUVJTzsKKwkJZWxzZSBp
+ZiAoIXNpZ25hbF9wZW5kaW5nKGN1cnJlbnQpKSB7CisJCQlyZXQgPSBzY2hlZHVsZV90aW1lb3V0
+KHRpbWUpOworCQkJd2FpdF90aW1lICs9IHRpbWU7CisJCX0gZWxzZQorCQkJcmV0ID0gLUVSRVNU
+QVJUU1lTOworCX0gd2hpbGUgKDEpOworCWZpbmlzaF93YWl0KCZxdWV1ZSwgJl9fd2FpdCk7CisK
+KwlyZXR1cm4gcmV0OworfQorCisvKgorICogd2FpdF9ldmVudF9pbnRlcnJ1cHRpYmxlX29uX2dw
+aW8gaXMgYSBmdW5jdGlvbiB0aGF0IHBvbGwgb24KKyAqIEdQSU8gZGF0YWF2YWlsYWJsZSBhbmQg
+R1BJTyBhY2NlcHRjb21tYW5kCisgKiBAcGFyYW06IHF1ZXVlLCB0aGUgcXVldWUgd2hlcmUgdGhl
+IHdvcmsgd2lsbCBiZSBzdG9yZWQKKyAqIEBwYXJhbTogdGltZW91dCwgbWF4aW1hbCBwb29saW5n
+IHRpbWUuCisgKiBAcmV0dXJuOiBEQVRBX09OIGluIGNhc2Ugb2YgZGF0YV9hdmFpbGFibGUgcGlu
+IGdvZXMgaGlnaCAobG9naWNhbCB2YWx1ZSAxKS4KKyAqIENPTU1BTkRfT04gaW4gY2FzZSBvZiBh
+Y2NlcHRfY29tbWFuZCBwaW4gZ29lcyBoaWdoIChsb2dpY2FsIHZhbHVlIDEpLgorICogLUVJTyBp
+biBjYXNlIG9mIGRhdGFfYXZhaWxhYmxlICYgYWNjZXB0X2NvbW1hbmQgcGluIGdvZXMgaGlnaAor
+ICoJCShsb2dpY2FsIHZhbHVlIDEpLgorICogLUVQRVJNIGluIGNhc2Ugb2YgZGF0YV9hdmFpbGFi
+bGUgJiBhY2NlcHRfY29tbWFuZCBwaW4gc3RpbGwgbG93CisgKgkJKGxvZ2ljYWwgdmFsdWUgMCku
+CisgKi8KK3N0YXRpYyBpbnQgd2FpdF9ldmVudF9pbnRlcnJ1cHRpYmxlX29uX2dwaW8od2FpdF9x
+dWV1ZV9oZWFkX3QgcXVldWUsCisJCQkJCSAgICBpbnQgdGltZW91dCkKK3sKKwlpbnQgc3RhdGVf
+ZGF0YSA9IDA7CisJaW50IHN0YXRlX2NvbW1hbmQgPSAwOworCWludCByZXQgPSBtc2Vjc190b19q
+aWZmaWVzKFRJQ0tfR1BJT19TUE9PTElORyk7CisJc3RydWN0IHRwbV9jaGlwICpjaGlwID0KKwkg
+ICAgKHN0cnVjdCB0cG1fY2hpcCAqKWkyY19nZXRfY2xpZW50ZGF0YShwaW5faW5mb3MtPmNsaWVu
+dCk7CisJaW50IGxvbmdfdGltZW91dCA9CisJICAgIHRwbV9jYWxjX29yZGluYWxfZHVyYXRpb24o
+Y2hpcCwgVFBNX0kyQ19PUkRJTkFMX0xPTkcpOworCWludCB3YWl0X3RpbWUgPSAwOworCURFRklO
+RV9XQUlUKF9fd2FpdCk7CisKKwlpZiAodGltZW91dCA+IGxvbmdfdGltZW91dCkKKwkJdGltZW91
+dCA9IGxvbmdfdGltZW91dDsKKworCWRvIHsKKwkJcHJlcGFyZV90b193YWl0KCZxdWV1ZSwgJl9f
+d2FpdCwgVEFTS19JTlRFUlJVUFRJQkxFKTsKKwkJc3RhdGVfZGF0YSA9IGdwaW9fcmVhZHBpbihw
+aW5faW5mb3MtPmRhdGFfYXZhaWxfcGluKTsKKwkJc3RhdGVfY29tbWFuZCA9IGdwaW9fcmVhZHBp
+bihwaW5faW5mb3MtPmFjY2VwdF9waW4pOworCisJCWlmIChzdGF0ZV9kYXRhID4gMCB8fCBzdGF0
+ZV9jb21tYW5kID4gMCkKKwkJCWJyZWFrOworCQllbHNlIGlmICh3YWl0X3RpbWUgPj0gdGltZW91
+dCkKKwkJCWJyZWFrOworCQllbHNlIGlmICghc2lnbmFsX3BlbmRpbmcoY3VycmVudCkpIHsKKwkJ
+CXJldCA9CisJCQkgICAgc2NoZWR1bGVfdGltZW91dChtc2Vjc190b19qaWZmaWVzCisJCQkJCSAg
+ICAgKFRJQ0tfR1BJT19TUE9PTElORykpOworCQkJd2FpdF90aW1lICs9IG1zZWNzX3RvX2ppZmZp
+ZXMoVElDS19HUElPX1NQT09MSU5HKTsKKwkJfSBlbHNlIHsKKwkJCXJldCA9IC1FUkVTVEFSVFNZ
+UzsKKwkJCWJyZWFrOworCQl9CisJfSB3aGlsZSAoMSk7CisJZmluaXNoX3dhaXQoJnF1ZXVlLCAm
+X193YWl0KTsKKworCXJldHVybiAoc3RhdGVfZGF0YSAmJiBzdGF0ZV9jb21tYW5kKSA/IC1FSU8g
+OiBzdGF0ZV9kYXRhID8gREFUQV9PTiA6CisJICAgIHN0YXRlX2NvbW1hbmQgPyBDT01NQU5EX09O
+IDogLUVQRVJNOworfQorCisvKgorICogcmVzcG9uc2VTaXplIHJldHVybiB0aGUgY29tbWFuZCBz
+aXplCisgKiBAcGFyYW06IGJ1ZmZlciwgY29tbWFuZCBidWZmZXIuCisgKiBAcGFyYW06IHNpemUs
+IHRoZSBidWZmZXIgc2l6ZS4KKyAqIEByZXR1cm46IHRoZSBjb21tYW5kIHNpemUuCisgKi8KK3N0
+YXRpYyBpbnQgcmVzcG9uc2VTaXplKGNvbnN0IGNoYXIgKmJ1ZmZlciwgc2l6ZV90IHNpemUpCit7
+CisJc2l6ZV90IHZhbCA9IDA7CisJaWYgKHNpemUgPj0gVFBNX0hFQURFUl9TSVpFKSB7CisJCXZh
+bCA9IChzaXplX3QpICgoKHVuc2lnbmVkKWJ1ZmZlclsyXSkgPDwgMjQKKwkJCQl8ICgodW5zaWdu
+ZWQpYnVmZmVyWzNdKSA8PCAxNgorCQkJCXwgKCh1bnNpZ25lZClidWZmZXJbNF0pIDw8IDggfCAo
+dW5zaWduZWQpCisJCQkJYnVmZmVyWzVdKTsKKwl9CisKKwlpZiAodmFsIDwgVFBNX0JVRlNJWkUp
+CisJCXJldHVybiB2YWw7CisJZWxzZQorCQlyZXR1cm4gVFBNX0JVRlNJWkU7Cit9CisKKy8qCisg
+KiB0cG1fc3RtX2kyY19zZW5kIHNlbmQgVFBNIGNvbW1hbmRzIHRocm91Z2ggdGhlIEkyQyBidXMu
+CisgKiBCZWZvcmUgc2VuZGluZyBhbnkgVFBNIGNvbW1hbmRzLCB0cG1fc3RtX2kyY19zZW5kIHBv
+bGwgZGF0YV9hdmFpbGFibGUgYW5kCisgKiBhY2NlcHRfY29tbWFuZCBUUE0gR1BJT3MuCisgKgor
+ICogSW4gY2FzZSB0aGUgZGF0YV9hdmFpbGFibGUgaXMgaGlnaCAobG9naWNhbCB2YWx1ZSAxKSwg
+dHBtX3N0bV9pMmNfc2VuZCB3aWxsCisgKiBlbXB0eSB0aGUgVFBNIEZJRk8gYnkgcmVhZGluZyBh
+bGwgdGhlIGRhdGFzIHN0b3JlZCBpbnNpZGUgdGhlIFRQTS4KKyAqCisgKiBUaGVuLCBpZiB0aGUg
+YWNjZXB0X2NvbW1hbmQgVFBNIEdQSU8gaXMgaGlnaChsb2dpY2FsIHZhbHVlIDEpCisgKiB0cG1f
+c3RtX2kyY19zZW5kIHdpbGwgZmlyc3Qgc2VuZCB0aGUgMTAgYnl0ZXMgaGVhZGVyIG9mIHRoZSBU
+Q0cgY29tbWFuZHMgYW5kCisgKiB0aGVuIHNlbmQgdGhlIG90aGVycyBieXRlcyBieSA0MCBieXRl
+cyBibG9ja3MuCisgKgorICogZGF0YV9hdmFpbGFibGUgYW5kIGFjY2VwdF9jb21tYW5kIFRQTSBH
+UElPcyB3aWxsIGdvZXMgbG93IHdoZW4gdGhlIFRQTQorICogY29tcHV0ZSB0aGUgY29tbWFuZC4K
+KyAqCisgKiBAcGFyYW06IGNoaXAsIHRoZSB0cG1fY2hpcCBkZXNjcmlwdGlvbiBhcyBzcGVjaWZp
+ZWQgaW4gZHJpdmVyL2NoYXIvdHBtL3RwbS5oLgorICogQHBhcmFtOiBidWYsCXRoZSBidWZmZXIg
+dG8gc2VuZC4KKyAqIEBwYXJhbTogY291bnQsIHRoZSBudW1iZXIgb2YgYnl0ZXMgdG8gc2VuZC4K
+KyAqIEByZXR1cm46IEluIGNhc2Ugb2Ygc3VjY2VzcyB0aGUgbnVtYmVyIG9mIGJ5dGVzIHNlbnQu
+CisgKgkJCUluIG90aGVyIGNhc2UsIGEgPCAwIHZhbHVlIGRlc2NyaWJpbmcgdGhlIGlzc3VlLgor
+ICovCitzdGF0aWMgaW50IHRwbV9zdG1faTJjX3NlbmQoc3RydWN0IHRwbV9jaGlwICpjaGlwLCB1
+bnNpZ25lZCBjaGFyICpidWYsCisJCQkgICAgc2l6ZV90IGNvdW50KQoreworCXUzMiByZXQgPSAw
+LCBpLCBzaXplLCBvcmRpbmFsLCBwaW4gPSAwOworCXN0cnVjdCBpMmNfY2xpZW50ICpjbGllbnQ7
+CisKKyNpZmRlZiBERUJVRworCXByaW50ayhLRVJOX0lORk8gInRwbV9zdDE5X2kyYzogdHBtX3N0
+bV9pMmNfc2VuZFxuIik7CisjZW5kaWYKKworCWlmIChjaGlwID09IE5VTEwpCisJCXJldHVybiAt
+RUJVU1k7CisJaWYgKGNvdW50IDwgVFBNX0hFQURFUl9TSVpFKQorCQlyZXR1cm4gLUVCVVNZOwor
+CWNsaWVudCA9IChzdHJ1Y3QgaTJjX2NsaWVudCAqKXBpbl9pbmZvcy0+Y2xpZW50OworCisJb3Jk
+aW5hbCA9IGJlMzJfdG9fY3B1KCooKF9fYmUzMiAqKSAoYnVmICsgNikpKTsKKworCS8qIGkyY19j
+bGllbnQgaW5pdGlhbGl6YXRpb24gKi8KKwljbGllbnQtPmZsYWdzID0gMDsKKworCS8qIFdhaXQg
+Zm9yIEFjY2VwdENtZCBzaWduYWwgaGlnaCAqLworCS8qIENoZWNrIGlmIGRhdGEgYXJlIGF2YWls
+YWJsZSBiZWZvcmUgKi8KKwkvKiBzZW5kaW5nIGRhdGEgKGRhdGFfYXZhaWxfcGluIGhpZ2h0KSAq
+LworCS8qIElmIGRhdGEgYXJlIGF2YWlsYWJsZSwgd2UgcmVhZCB0aGUgZGF0YSAqLworCWluaXRf
+d2FpdHF1ZXVlX2hlYWQoJnBpbl9pbmZvcy0+d3JpdGVfcXVldWUpOworCXBpbiA9IHdhaXRfZXZl
+bnRfaW50ZXJydXB0aWJsZV9vbl9ncGlvKHBpbl9pbmZvcy0+d3JpdGVfcXVldWUsCisJCQkJCSAg
+ICAgICB0cG1fY2FsY19vcmRpbmFsX2R1cmF0aW9uCisJCQkJCSAgICAgICAoY2hpcCwgb3JkaW5h
+bCkpOworCWlmIChwaW4gPCAwKSB7CisJCXJldCA9IHBpbjsKKwkJZ290byBlbmQ7CisJfQorCisJ
+Y2xpZW50LT5mbGFncyA9IEkyQ19NX1JEOworCisJc2l6ZSA9IFRQTV9IRUFERVJfU0laRTsKKwlm
+b3IgKGkgPSAwOyBwaW4gPT0gREFUQV9PTiAmJiBpIDwgc2l6ZTspIHsKKwkJcmV0ID0gaTJjX21h
+c3Rlcl9yZWN2KGNsaWVudCwKKwkJCQkgICAgICBwaW5faW5mb3MtPnRwbV9pMmNfYnVmZmVyWzFd
+LAorCQkJCSAgICAgIChpID09IDApID8gVFBNX0hFQURFUl9TSVpFIDoKKwkJCQkgICAgICBjb3Vu
+dCAtIGkgPiBUUE1fSTJDX0JMT0NLX1NJWkUgPworCQkJCSAgICAgIFRQTV9JMkNfQkxPQ0tfU0la
+RSA6IGNvdW50IC0gaSk7CisJCWlmIChyZXQgPCAwKQorCQkJZ290byBlbmQ7CisJCWlmIChpID09
+IDApCisJCQlzaXplID0KKwkJCSAgICByZXNwb25zZVNpemUocGluX2luZm9zLT50cG1faTJjX2J1
+ZmZlclsxXSwgY291bnQpOworCQkoaSA9PSAwKSA/IChpICs9IFRQTV9IRUFERVJfU0laRSkgOiAo
+aSArPSBUUE1fSTJDX0JMT0NLX1NJWkUpOworCisJCWlmIChpIDwgc2l6ZSkKKwkJCXBpbiA9CisJ
+CQkgICAgd2FpdF9ldmVudF9pbnRlcnJ1cHRpYmxlX29uX2dwaW8ocGluX2luZm9zLT4KKwkJCQkJ
+CQkgICAgIHdyaXRlX3F1ZXVlLAorCQkJCQkJCSAgICAgbXNlY3NfdG9famlmZmllcworCQkJCQkJ
+CSAgICAgKFRQTV9JMkNfU0hPUlQpKTsKKwl9CisKKwlwaW4gPSB3YWl0X2V2ZW50X2ludGVycnVw
+dGlibGVfb25fZ3BpbyhwaW5faW5mb3MtPndyaXRlX3F1ZXVlLAorCQkJCQkgICAgICAgbXNlY3Nf
+dG9famlmZmllcyhUUE1fSTJDX1NIT1JUKSk7CisKKwkvKiBpMmNfY2xpZW50IGluaXRpYWxpemF0
+aW9uICovCisJY2xpZW50LT5mbGFncyA9IDA7CisKKwlzaXplID0gVFBNX0hFQURFUl9TSVpFOwor
+CWZvciAoaSA9IDA7IGkgPCBzaXplICYmIHBpbiA9PSBDT01NQU5EX09OOykgeworCQltZW1jcHko
+cGluX2luZm9zLT50cG1faTJjX2J1ZmZlclswXSwgYnVmICsgaSwKKwkJICAgICAgIChpID09IDAp
+ID8gVFBNX0hFQURFUl9TSVpFIDogY291bnQgLSBpID4KKwkJICAgICAgIFRQTV9JMkNfQkxPQ0tf
+U0laRSA/IFRQTV9JMkNfQkxPQ0tfU0laRSA6IGNvdW50IC0gaSk7CisKKwkJaWYgKGkgPT0gMCkg
+eworCQkJc2l6ZSA9IHJlc3BvbnNlU2l6ZShidWYsIGNvdW50KTsKKwkJCXNpemUgPSAoc2l6ZSA8
+IGNvdW50ID8gc2l6ZSA6IGNvdW50KTsKKwkJfQorCQlyZXQgPQorCQkgICAgaTJjX21hc3Rlcl9z
+ZW5kKGNsaWVudCwKKwkJCQkgICAgcGluX2luZm9zLT50cG1faTJjX2J1ZmZlclswXSwKKwkJCQkg
+ICAgY291bnQgPj0gVFBNX0hFQURFUl9TSVpFID8gKGkgPT0KKwkJCQkJCQkJMCkgPworCQkJCSAg
+ICBUUE1fSEVBREVSX1NJWkUgOiBjb3VudCAtIGkgPgorCQkJCSAgICBUUE1fSTJDX0JMT0NLX1NJ
+WkUgPyBUUE1fSTJDX0JMT0NLX1NJWkUgOgorCQkJCSAgICBjb3VudCAtIGkgOiBjb3VudCk7CisJ
+CWlmIChyZXQgPCAwKSB7CisJCQlwcmludGsoS0VSTl9JTkZPICJ0cG1fc3QxOV9pMmM6IEZhaWxl
+ZCB0byBzZW5kIGRhdGFcbiIpOworCQkJZ290byBlbmQ7CisJCX0KKworCQkoaSA9PSAwKSA/IChp
+ICs9IFRQTV9IRUFERVJfU0laRSkgOiAoaSArPSBUUE1fSTJDX0JMT0NLX1NJWkUpOworCQkvKiBX
+YWl0IGZvciBBY2NlcHRDbWQgc2lnbmFsIGhpZ2h0ICovCisJCWlmIChpIDwgc2l6ZSkKKwkJCXBp
+biA9CisJCQkgICAgd2FpdF9ldmVudF9pbnRlcnJ1cHRpYmxlX29uX2dwaW8ocGluX2luZm9zLT4K
+KwkJCQkJCQkgICAgIHdyaXRlX3F1ZXVlLAorCQkJCQkJCSAgICAgbXNlY3NfdG9famlmZmllcwor
+CQkJCQkJCSAgICAgKFRQTV9JMkNfU0hPUlQpKTsKKworCQlpZiAocGluICE9IENPTU1BTkRfT04p
+IHsKKwkJCXByaW50ayhLRVJOX0lORk8KKwkJCSAgICAgICAidHBtX3N0MTlfaTJjOiIKKwkJCSAg
+ICAgICAiIEZhaWxlZCB0byByZWFkIGdwaW8gcGluIChBY2NlcHRDbWQpXG4iKTsKKwkJCXJldCA9
+IC1FSU87CisJCQlnb3RvIGVuZDsKKwkJfQorCX0KKwlpZiAoaSA9PSAwKSB7CisJCXByaW50ayhL
+RVJOX0lORk8KKwkJICAgICAgICJ0cG1fc3QxOV9pMmM6IEZhaWxlZCB0byByZWFkIGdwaW8gcGlu
+IChBY2NlcHRDbWQpXG4iKTsKKwkJcmV0ID0gLUVJTzsKKwl9CitlbmQ6CisJcmV0dXJuIHJldCA/
+IHJldCA6IGNvdW50OworfQorCisvKgorICogdHBtX3N0bV9pMmNfcmVjdiByZWNlaXZlZCBUUE0g
+cmVzcG9uc2UgdGhyb3VnaCB0aGUgSTJDIGJ1cy4KKyAqIEJlZm9yZSByZWNlaXZpbmcgYW55IFRQ
+TSByZXNwb25zZSwgdHBtX3N0bV9pMmNfcmVjdiBwb2xsIGRhdGFfYXZhaWxhYmxlIGFuZAorICog
+YWNjZXB0X2NvbW1hbmQgVFBNIEdQSU9zLgorICoKKyAqIEluIGNhc2UgdGhlIGFjY2VwdF9jb21t
+YW5kIGlzIGhpZ2ggKGxvZ2ljYWwgdmFsdWUgMSksIHRwbV9zdG1faTJjX3JlY3Ygd2lsbAorICog
+ZG8gbm90aGluZy4KKyAqCisgKiBUaGVuLCBpZiB0aGUgZGF0YV9hdmFpbGFibGUgVFBNIEdQSU8g
+aXMgaGlnaChsb2dpY2FsIHZhbHVlIDEpCisgKiB0cG1fc3RtX2kyY19yZWN2IHdpbGwgZmlyc3Qg
+cmVjZWl2ZSB0aGUgMTAgYnl0ZXMgaGVhZGVyIG9mIHRoZSBUQ0cgVFBNCisgKiByZXNwb25zZSBh
+bmQgdGhlbiByZWNlaXZlIHRoZSBvdGhlcnMgYnl0ZXMgYnkgNDAgYnl0ZXMgYmxvY2tzLgorICoK
+KyAqIGFjY2VwdF9jb21tYW5kIFRQTSBHUElPcyB3aWxsIGdvZXMgaGlnaCB3aGVuIHRoZSBUUE0g
+Rm9mbyBpcyBlbXB0eS4KKyAqCisgKiBAcGFyYW06IGNoaXAsIHRoZSB0cG1fY2hpcCBkZXNjcmlw
+dGlvbiBhcyBzcGVjaWZpZWQgaW4gZHJpdmVyL2NoYXIvdHBtL3RwbS5oLgorICogQHBhcmFtOiBi
+dWYsCXRoZSBidWZmZXIgdG8gc3RvcmUgZGF0YXMuCisgKiBAcGFyYW06IGNvdW50LCB0aGUgbnVt
+YmVyIG9mIGJ5dGVzIHRvIHNlbmQuCisgKiBAcmV0dXJuOiBJbiBjYXNlIG9mIHN1Y2Nlc3MgdGhl
+IG51bWJlciBvZiBieXRlcyByZWNlaXZlZC4KKyAqCQkJSW4gb3RoZXIgY2FzZSwgYSA8IDAgdmFs
+dWUgZGVzY3JpYmluZyB0aGUgaXNzdWUuCisgKi8KK3N0YXRpYyBpbnQgdHBtX3N0bV9pMmNfcmVj
+dihzdHJ1Y3QgdHBtX2NoaXAgKmNoaXAsIHVuc2lnbmVkIGNoYXIgKmJ1ZiwKKwkJCSAgICBzaXpl
+X3QgY291bnQpCit7CisJaW50IHJldCA9IDA7CisJaW50IGksIHNpemU7CisJaW50IHBpbiA9IDA7
+CisJc3RydWN0IGkyY19jbGllbnQgKmNsaWVudDsKKworI2lmZGVmIERFQlVHCisJcHJpbnRrKEtF
+Uk5fSU5GTyAidHBtX3N0MTlfaTJjOiB0cG1fc3RtX2kyY19yZWN2XG4iKTsKKyNlbmRpZgorCisJ
+aWYgKGNoaXAgPT0gTlVMTCkKKwkJcmV0dXJuIC1FQlVTWTsKKwlpZiAoY291bnQgPCBUUE1fSEVB
+REVSX1NJWkUpCisJCXJldHVybiAtRUJVU1k7CisKKwljbGllbnQgPSAoc3RydWN0IGkyY19jbGll
+bnQgKilwaW5faW5mb3MtPmNsaWVudDsKKworCS8qIENvbmZpZ3VyZSBUUE0gSTJDICovCisJY2xp
+ZW50LT5mbGFncyA9IEkyQ19NX1JEOworCisJLyogU3Bvb2wgb24gdGhlIGdvb2QgZ3BpbyBhcyBs
+b25nIGFzIHBpbiBHUElPIDMgbm90IEhJR0hUICovCisJaW5pdF93YWl0cXVldWVfaGVhZCgmY2hp
+cC0+dmVuZG9yLnJlYWRfcXVldWUpOworCXBpbiA9IHdhaXRfZXZlbnRfaW50ZXJydXB0aWJsZV9v
+bl9ncGlvKGNoaXAtPnZlbmRvci5yZWFkX3F1ZXVlLAorCQkJCQkgICAgICAgdHBtX2NhbGNfb3Jk
+aW5hbF9kdXJhdGlvbgorCQkJCQkgICAgICAgKGNoaXAsIFRQTV9JMkNfT1JESU5BTF9MT05HKSk7
+CisKKwlzaXplID0gVFBNX0hFQURFUl9TSVpFOworCWZvciAoaSA9IDA7IGkgPCBzaXplICYmIHBp
+biA9PSBEQVRBX09OOykgeworCQlyZXQgPQorCQkgICAgaTJjX21hc3Rlcl9yZWN2KGNsaWVudCwK
+KwkJCQkgICAgcGluX2luZm9zLT50cG1faTJjX2J1ZmZlclsxXSwKKwkJCQkgICAgKGNvdW50ID49
+IFRQTV9IRUFERVJfU0laRSA/IGkgPT0KKwkJCQkgICAgIDAgPyBUUE1fSEVBREVSX1NJWkUgOiAo
+c2l6ZSAtIGkpID4KKwkJCQkgICAgIFRQTV9JMkNfQkxPQ0tfU0laRSA/IFRQTV9JMkNfQkxPQ0tf
+U0laRSA6CisJCQkJICAgICBzaXplIC0gaSA6IGNvdW50KSk7CisJCWlmIChyZXQgPCAwKSB7CisJ
+CQlwcmludGsoS0VSTl9JTkZPCisJCQkgICAgICAgInRwbV9zdDE5X2kyYzoiCisJCQkgICAgICAg
+IiBGYWlsZWQgdG8gcmVhZCBncGlvIHBpbiAoRGF0YUF2YWxhaWJsZSlcbiIpOworCQkJZ290byBl
+bmQ7CisJCX0KKworCQlpZiAoYnVmICE9IE5VTEwpIHsKKwkJCW1lbWNweShidWYgKyBpLCBwaW5f
+aW5mb3MtPnRwbV9pMmNfYnVmZmVyWzFdLAorCQkJICAgICAgIChjb3VudCA+PSBUUE1fSEVBREVS
+X1NJWkUgPyBpID09IDAgPworCQkJCVRQTV9IRUFERVJfU0laRSA6IChzaXplIC0gaSkgPgorCQkJ
+CVRQTV9JMkNfQkxPQ0tfU0laRSA/IFRQTV9JMkNfQkxPQ0tfU0laRSA6IHNpemUgLQorCQkJCWkg
+OiBjb3VudCkpOworCisJCQlpZiAoaSA9PSAwKSB7CisJCQkJc2l6ZSA9IHJlc3BvbnNlU2l6ZShi
+dWYsIHNpemUpOworCQkJCWlmIChzaXplID4gY291bnQpCisJCQkJCXNpemUgPSBjb3VudDsKKwkJ
+CX0KKwkJfSBlbHNlIHsKKwkJCXByaW50ayhLRVJOX0lORk8gInRwbV9zdDE5X2kyYzogcmVhZCBi
+dWZmZXIgaXMgTlVMTFxuIik7CisJCQlnb3RvIGVuZDsKKwkJfQorCisJCShpID09IDApID8gKGkg
+Kz0gVFBNX0hFQURFUl9TSVpFKSA6IChpICs9IFRQTV9JMkNfQkxPQ0tfU0laRSk7CisKKwkJaWYg
+KGkgPCBzaXplKQorCQkJcGluID0KKwkJCSAgICB3YWl0X2V2ZW50X2ludGVycnVwdGlibGVfb25f
+Z3BpbyhjaGlwLT52ZW5kb3IuCisJCQkJCQkJICAgICByZWFkX3F1ZXVlLAorCQkJCQkJCSAgICAg
+bXNlY3NfdG9famlmZmllcworCQkJCQkJCSAgICAgKFRQTV9JMkNfU0hPUlQpKTsKKwl9CisKKwlp
+ZiAoaSA9PSAwKSB7CisJCXByaW50ayhLRVJOX0lORk8KKwkJICAgICAgICJ0cG1fc3QxOV9pMmM6
+ICIKKwkJICAgICAgICJGYWlsZWQgdG8gcmVhZCBncGlvIHBpbiAoRGF0YUF2YWxhaWJsZSlcbiIp
+OworCQlyZXQgPSAtRUlPOworCQlnb3RvIGVuZDsKKwl9CisJcmV0dXJuIHNpemU7CitlbmQ6CisJ
+cmV0dXJuIHJldDsKK30KKworLyoKKyAqIHRwbV9zdG1faTJjX2NhbmNlbCwgY2FuY2VsIGlzIG5v
+dCBpbXBsZW1lbnRlZC4KKyAqIEBwYXJhbTogY2hpcCwgdGhlIHRwbV9jaGlwIGRlc2NyaXB0aW9u
+IGFzIHNwZWNpZmllZCBpbiBkcml2ZXIvY2hhci90cG0vdHBtLmguCisgKi8KK3N0YXRpYyB2b2lk
+IHRwbV9zdG1faTJjX2NhbmNlbChzdHJ1Y3QgdHBtX2NoaXAgKmNoaXApCit7Cit9CQkJCS8qIHRw
+bV9zdG1faTJjX2NhbmNlbCgpICovCisKKy8qCisgKiB0cG1fc3RtX2kyY19zdGF0dXMgaXMgbm90
+IGltcGxlbWVudGVkIGJlY2F1c2UgVElTIHJlZ2lzdGVycyBhcmUgbm90CisgKiBpbXBsZW1lbnRl
+ZC4KKyAqLworc3RhdGljIHU4IHRwbV9zdG1faTJjX3N0YXR1cyhzdHJ1Y3QgdHBtX2NoaXAgKmNo
+aXApCit7CisJcmV0dXJuIC1FTk9TWVM7Cit9CQkJCS8qIHRwbV9zdG1faTJjX3N0YXR1cygpICov
+CisKKyNpZmRlZiBfTU9EVUxFCisKK3N0YXRpYyB2b2lkIHRwbV9zdDE5X2kyY19kdW1teShzdHJ1
+Y3QgZGV2aWNlICpkZXYpCit7CisKK30JCQkJLyp0cG1fc3QxOV9pMmNfZHVtbXkoKSAqLworCisv
+KgorICogdHBtX3N0MTlfaTJjX3JlbGVhc2UgZG8gbm90aGluZworICogQHBhcmFtOiBrb2JqLCBu
+b3QgdXNlZAorICovCitzdGF0aWMgdm9pZCB0cG1fc3QxOV9pMmNfcmVsZWFzZShzdHJ1Y3Qga29i
+amVjdCAqa29iaikKK3sKKwlzdHJ1Y3QgdHBtX2NoaXAgKmNoaXA7CisJcHJpbnRrKEtFUk5fSU5G
+TyAidHBtX3N0MTlfaTJjX3JlbGVhc2VcbiIpOworCisJaWYgKF9jbGllbnQgIT0gTlVMTCkgewor
+CQljaGlwID0gKHN0cnVjdCB0cG1fY2hpcCAqKWkyY19nZXRfY2xpZW50ZGF0YShfY2xpZW50KTsK
+KworCQlpZiAoY2hpcCAhPSBOVUxMKSB7CisJCQljaGlwLT5yZWxlYXNlID0gdHBtX3N0MTlfaTJj
+X2R1bW15OworCQkJY2hpcC0+ZGV2LT5yZWxlYXNlKGNoaXAtPmRldik7CisJCX0KKwl9Cit9CQkJ
+CS8qIHRwbV9zdDE5X2kyY19yZWxlYXNlKCkgKi8KKyNlbmRpZiAvKl9NT0RVTEUgKi8KKy8qCisg
+KiB0cG1fc3QxOV9pMmNfaW9jdGwgcHJvdmlkZXMgMiBoYW5kbGVzOgorICogLSBUUE1JT0NfQ0FO
+Q0VMOiBhbGxvdyB0byBDQU5DRUwgYSBUUE0gY29tbWFuZHMgZXhlY3V0aW9uLgorICogICBTZWUg
+dHBtX3N0bV9pMmNfY2FuY2VsIGRlc2NyaXB0aW9uIGFib3ZlCisgKiAtIFRQTUlPQ19UUkFOU01J
+VDogYWxsb3cgdG8gdHJhbnNtaXQgYSBUUE0gY29tbWFuZHMuCisgKgorICogQHJldHVybjogSW4g
+Y2FzZSBvZiBzdWNjZXNzLCByZXR1cm4gVFBNIHJlc3BvbnNlIHNpemUuCisgKiBJbiBvdGhlciBj
+YXNlIHJldHVybiA8IDAgdmFsdWUgZGVzY3JpYmluZyB0aGUgaXNzdWUuCisgKi8KK3N0YXRpYyBz
+c2l6ZV90IHRwbV9zdDE5X2kyY19pb2N0bChzdHJ1Y3QgaW5vZGUgKmlub2RlLCBzdHJ1Y3QgZmls
+ZSAqZmlsZSwKKwkJCQkgIHVuc2lnbmVkIGludCBjbWQsIHVuc2lnbmVkIGxvbmcgYXJnKQorewor
+CWludCBpbl9zaXplID0gMCwgb3V0X3NpemUgPSAwOworCXN0cnVjdCB0cG1fY2hpcCAqY2hpcCA9
+IGZpbGUtPnByaXZhdGVfZGF0YTsKKworCXN3aXRjaCAoY21kKSB7CisJY2FzZSBUUE1JT0NfQ0FO
+Q0VMOgorCQl0cG1fc3RtX2kyY19jYW5jZWwoY2hpcCk7CisJCXJldHVybiAtRU5PU1lTOworCWNh
+c2UgVFBNSU9DX1RSQU5TTUlUOgorCQlpZiAoY29weV9mcm9tX3VzZXIocGluX2luZm9zLT50cG1f
+aTJjX2J1ZmZlclswXSwKKwkJICAgIChjb25zdCBjaGFyICopYXJnLCBUUE1fSEVBREVSX1NJWkUp
+KQorCQkJcmV0dXJuIC1FRkFVTFQ7CisJCWluX3NpemUgPSByZXNwb25zZVNpemUocGluX2luZm9z
+LT50cG1faTJjX2J1ZmZlclswXSwKKwkJCQkgICAgICBUUE1fSEVBREVSX1NJWkUpOworCQlpZiAo
+aW5fc2l6ZSA+IHNpemVvZihwaW5faW5mb3MtPnRwbV9pMmNfYnVmZmVyWzBdKSkKKwkJCWluX3Np
+emUgPSBzaXplb2YocGluX2luZm9zLT50cG1faTJjX2J1ZmZlclswXSk7CisJCWlmIChjb3B5X2Zy
+b21fdXNlcihwaW5faW5mb3MtPnRwbV9pMmNfYnVmZmVyWzBdLAorCQkJCSAgIChjb25zdCBjaGFy
+ICopYXJnLCBpbl9zaXplKSkKKwkJCXJldHVybiAtRUZBVUxUOworCQl0cG1fc3RtX2kyY19zZW5k
+KGNoaXAsIHBpbl9pbmZvcy0+dHBtX2kyY19idWZmZXJbMF0sIGluX3NpemUpOworCisJCW91dF9z
+aXplID0gdHBtX3N0bV9pMmNfcmVjdihjaGlwLCBwaW5faW5mb3MtPnRwbV9pMmNfYnVmZmVyWzFd
+LAorCQkJCQkgICAgVFBNX0JVRlNJWkUpOworCQlpZiAoY29weV90b191c2VyKChjaGFyICopYXJn
+LCBwaW5faW5mb3MtPnRwbV9pMmNfYnVmZmVyWzFdLAorCQkJCSBvdXRfc2l6ZSkpCisJCQlyZXR1
+cm4gLUVGQVVMVDsKKwkJcmV0dXJuIG91dF9zaXplOworCWRlZmF1bHQ6CisJCXJldHVybiAtRU5P
+VFRZOworCX0KKwlyZXR1cm4gLUVOT1RUWTsKK30KKworc3RhdGljIGNvbnN0IHN0cnVjdCBmaWxl
+X29wZXJhdGlvbnMgdHBtX3N0MTlfaTJjX2ZvcHMgPSB7CisJLm93bmVyID0gVEhJU19NT0RVTEUs
+CisJLmxsc2VlayA9IG5vX2xsc2VlaywKKwkucmVhZCA9IHRwbV9yZWFkLAorCS5pb2N0bCA9IHRw
+bV9zdDE5X2kyY19pb2N0bCwKKwkud3JpdGUgPSB0cG1fd3JpdGUsCisJLm9wZW4gPSB0cG1fb3Bl
+biwKKwkucmVsZWFzZSA9IHRwbV9yZWxlYXNlLAorfTsKKworc3RhdGljIERFVklDRV9BVFRSKHB1
+YmVrLCBTX0lSVUdPLCB0cG1fc2hvd19wdWJlaywgTlVMTCk7CitzdGF0aWMgREVWSUNFX0FUVFIo
+cGNycywgU19JUlVHTywgdHBtX3Nob3dfcGNycywgTlVMTCk7CitzdGF0aWMgREVWSUNFX0FUVFIo
+ZW5hYmxlZCwgU19JUlVHTywgdHBtX3Nob3dfZW5hYmxlZCwgTlVMTCk7CitzdGF0aWMgREVWSUNF
+X0FUVFIoYWN0aXZlLCBTX0lSVUdPLCB0cG1fc2hvd19hY3RpdmUsIE5VTEwpOworc3RhdGljIERF
+VklDRV9BVFRSKG93bmVkLCBTX0lSVUdPLCB0cG1fc2hvd19vd25lZCwgTlVMTCk7CitzdGF0aWMg
+REVWSUNFX0FUVFIodGVtcF9kZWFjdGl2YXRlZCwgU19JUlVHTywgdHBtX3Nob3dfdGVtcF9kZWFj
+dGl2YXRlZCwgTlVMTCk7CitzdGF0aWMgREVWSUNFX0FUVFIoY2FwcywgU19JUlVHTywgdHBtX3No
+b3dfY2Fwc18xXzIsIE5VTEwpOworc3RhdGljIERFVklDRV9BVFRSKGNhbmNlbCwgU19JV1VTUiB8
+IFNfSVdHUlAsIE5VTEwsIHRwbV9zdG9yZV9jYW5jZWwpOworCitzdGF0aWMgc3RydWN0IGF0dHJp
+YnV0ZSAqc3RtX3RwbV9hdHRyc1tdID0geworCSZkZXZfYXR0cl9wdWJlay5hdHRyLAorCSZkZXZf
+YXR0cl9wY3JzLmF0dHIsCisJJmRldl9hdHRyX2VuYWJsZWQuYXR0ciwKKwkmZGV2X2F0dHJfYWN0
+aXZlLmF0dHIsCisJJmRldl9hdHRyX293bmVkLmF0dHIsCisJJmRldl9hdHRyX3RlbXBfZGVhY3Rp
+dmF0ZWQuYXR0ciwKKwkmZGV2X2F0dHJfY2Fwcy5hdHRyLAorCSZkZXZfYXR0cl9jYW5jZWwuYXR0
+ciwgTlVMTCwKK307CisKK3N0YXRpYyBzdHJ1Y3QgYXR0cmlidXRlX2dyb3VwIHN0bV90cG1fYXR0
+cl9ncnAgPSB7CisJLmF0dHJzID0gc3RtX3RwbV9hdHRycworfTsKKworc3RhdGljIHN0cnVjdCB0
+cG1fdmVuZG9yX3NwZWNpZmljIHN0X2kyY190cG0gPSB7CisJLnNlbmQgPSB0cG1fc3RtX2kyY19z
+ZW5kLAorCS5yZWN2ID0gdHBtX3N0bV9pMmNfcmVjdiwKKwkuY2FuY2VsID0gdHBtX3N0bV9pMmNf
+Y2FuY2VsLAorCS5zdGF0dXMgPSB0cG1fc3RtX2kyY19zdGF0dXMsCisJLmF0dHJfZ3JvdXAgPSAm
+c3RtX3RwbV9hdHRyX2dycCwKKwkubWlzY2RldiA9IHsuZm9wcyA9ICZ0cG1fc3QxOV9pMmNfZm9w
+cyx9LAorfTsKKworLyoKKyAqIHRwbV9zdDE5X2kyY19wcm9iZSBpbml0aWFsaXplIHRoZSBUUE0g
+ZGV2aWNlCisgKiBAcGFyYW06IGNsaWVudCwgdGhlIGkyY19jbGllbnQgZHJlc2NyaXB0aW9uIChU
+UE0gSTJDIGRlc2NyaXB0aW9uKS4KKyAqIEBwYXJhbTogaWQsIHRoZSBpMmNfZGV2aWNlX2lkIHN0
+cnVjdC4KKyAqIEByZXR1cm46IDAgaW4gY2FzZSBvZiBzdWNjZXNzLgorICoJCQktMSBpbiBvdGhl
+ciBjYXNlLgorICovCitzdGF0aWMgaW50Cit0cG1fc3QxOV9pMmNfcHJvYmUoc3RydWN0IGkyY19j
+bGllbnQgKmNsaWVudCwgY29uc3Qgc3RydWN0IGkyY19kZXZpY2VfaWQgKmlkKQoreworCWludCBl
+cnI7CisJc3RydWN0IHRwbV9jaGlwICpjaGlwOworCXN0cnVjdCBzdDE5bnAxOF9wbGF0Zm9ybV9k
+YXRhICpwbGF0Zm9ybV9kYXRhOworCisJcHJpbnRrKEtFUk5fSU5GTyAidHBtX3N0MTlfaTJjOiB0
+cG1fc3QxOV9pMmNfcHJvYmVcbiIpOworCisJZXJyID0gMDsKKworCS8qIENoZWNrIEkyQyBwbGF0
+Zm9ybSBmdW5jdGlvbm5hbGl0aWVzICovCisJaWYgKGNsaWVudCA9PSBOVUxMKSB7CisJCXByaW50
+ayhLRVJOX0lORk8gImNsaWVudCBpcyBOVUxMLiBleGl0aW5nLlxuIik7CisJCWVyciA9IC1FTk9E
+RVY7CisJCWdvdG8gZW5kOworCX0KKworCWlmICghaTJjX2NoZWNrX2Z1bmN0aW9uYWxpdHkoY2xp
+ZW50LT5hZGFwdGVyLCBJMkNfRlVOQ19JMkMpKSB7CisJCXByaW50ayhLRVJOX0lORk8gInRwbV9z
+dDE5X2kyYzogY2xpZW50IG5vdCBpMmMgY2FwYWJsZVxuIik7CisJCWVyciA9IC1FTk9ERVY7CisJ
+CWdvdG8gZW5kOworCX0KKworCWNoaXAgPSB0cG1fcmVnaXN0ZXJfaGFyZHdhcmUoJmNsaWVudC0+
+ZGV2LCAmc3RfaTJjX3RwbSk7CisJaWYgKCFjaGlwKSB7CisJCWVyciA9IC1FTk9ERVY7CisJCWdv
+dG8gZW5kOworCX0KKworCS8qCisJICogU1QxOSBUUE0gZG9lcyBub3Qgc3VwcG9ydCBpbnRlcnJ1
+cHQuIGNoaXAtPnZlbmRvci5pcnEgaXMgb25seQorCSAqIHNldCB0byBhIHZhbHVlIGdyZWF0ZXIg
+dGhhdCAwIGJlY2F1c2Ugc3RhdHVzIGZ1bmN0aW9uIGhhdmUgbm8KKwkgKiBzZW5zZSB3aXRoIHRo
+aXMgZGV2aWNlIChUSVMgcmVnaXN0ZXIgbm90IGF2YWlsYWJsZSkKKwkgKi8KKwljaGlwLT52ZW5k
+b3IuaXJxID0gMTsKKworCXBsYXRmb3JtX2RhdGEgPSBjbGllbnQtPmRldi5wbGF0Zm9ybV9kYXRh
+OworCXBpbl9pbmZvcyA9IHBsYXRmb3JtX2RhdGE7CisJcGxhdGZvcm1fZGF0YS0+dHBtX2kyY19i
+dWZmZXJbMF0gPQorCSAgICBrbWFsbG9jKFRQTV9CVUZTSVpFICogc2l6ZW9mKHU4KSwgR0ZQX0tF
+Uk5FTCk7CisJaWYgKHBsYXRmb3JtX2RhdGEtPnRwbV9pMmNfYnVmZmVyWzBdID09IE5VTEwpIHsK
+KwkJZXJyID0gLUVOT01FTTsKKwkJZ290byBfdHBtX2NsZWFuX2Fuc3dlcjsKKwl9CisJcGxhdGZv
+cm1fZGF0YS0+dHBtX2kyY19idWZmZXJbMV0gPQorCSAgICBrbWFsbG9jKFRQTV9CVUZTSVpFICog
+c2l6ZW9mKHU4KSwgR0ZQX0tFUk5FTCk7CisJaWYgKHBsYXRmb3JtX2RhdGEtPnRwbV9pMmNfYnVm
+ZmVyWzFdID09IE5VTEwpIHsKKwkJZXJyID0gLUVOT01FTTsKKwkJZ290byBfdHBtX2NsZWFuX3Jl
+c3BvbnNlOworCX0KKworCXBsYXRmb3JtX2RhdGEtPmNsaWVudCA9IGNsaWVudDsKKworCS8qIFJl
+Z2lzdGVyIEdQSU8gcGluIHRocm91Z2ggZ2VuZXJpYyBMaW51eCBHUElPIEFQSSAqLworCWVyciA9
+IGdwaW9fcmVxdWVzdChwbGF0Zm9ybV9kYXRhLT5hY2NlcHRfcGluLCAiYWNjZXB0IGNvbW1hbmQi
+KTsKKwlpZiAoZXJyKQorCQlnb3RvIF9ncGlvX2luaXQ7CisKKwllcnIgPSBncGlvX3JlcXVlc3Qo
+cGxhdGZvcm1fZGF0YS0+ZGF0YV9hdmFpbF9waW4sICJkYXRhIGF2YWlsYWJsZSIpOworCWlmIChl
+cnIpCisJCWdvdG8gX2dwaW9faW5pdDsKKworCWVyciA9IHdhaXRfdW50aWxfZ29vZF9zaGFwZSgp
+OworCWlmIChlcnIpCisJCWdvdG8gX2dwaW9fc2V0OworCisJdHBtX2dldF90aW1lb3V0cyhjaGlw
+KTsKKworCS8qIGF0dGFjaCBjaGlwIGRhdGFzIHRvIGNsaWVudCAqLworCWkyY19zZXRfY2xpZW50
+ZGF0YShjbGllbnQsIGNoaXApOworCXBpbl9pbmZvcy0+YkNoaXBGID0gZmFsc2U7CisKKwlwcmlu
+dGsoS0VSTl9JTkZPICJ0cG1fc3QxOV9pMmM6IFRQTSBJMkMgSW5pdGlhbGl6ZWRcbiIpOworCXJl
+dHVybiAwOworX2dwaW9fc2V0OgorX2dwaW9faW5pdDoKKwlpZiAocGxhdGZvcm1fZGF0YSkgewor
+CQlncGlvX2ZyZWUocGxhdGZvcm1fZGF0YS0+YWNjZXB0X3Bpbik7CisJCWdwaW9fZnJlZShwbGF0
+Zm9ybV9kYXRhLT5kYXRhX2F2YWlsX3Bpbik7CisJfQorX3RwbV9jbGVhbl9yZXNwb25zZToKKwl0
+cG1fcmVtb3ZlX2hhcmR3YXJlKGNoaXAtPmRldik7CisJaWYgKHBsYXRmb3JtX2RhdGEtPnRwbV9p
+MmNfYnVmZmVyWzFdICE9IE5VTEwpIHsKKwkJa2ZyZWUocGxhdGZvcm1fZGF0YS0+dHBtX2kyY19i
+dWZmZXJbMV0pOworCQlwbGF0Zm9ybV9kYXRhLT50cG1faTJjX2J1ZmZlclsxXSA9IE5VTEw7CisJ
+fQorX3RwbV9jbGVhbl9hbnN3ZXI6CisJaWYgKHBsYXRmb3JtX2RhdGEtPnRwbV9pMmNfYnVmZmVy
+WzBdICE9IE5VTEwpIHsKKwkJa2ZyZWUocGxhdGZvcm1fZGF0YS0+dHBtX2kyY19idWZmZXJbMF0p
+OworCQlwbGF0Zm9ybV9kYXRhLT50cG1faTJjX2J1ZmZlclswXSA9IE5VTEw7CisJfQorCXBpbl9p
+bmZvcy0+YkNoaXBGID0gdHJ1ZTsKK2VuZDoKKwlwcmludGsoS0VSTl9JTkZPICJ0cG1fc3QxOV9p
+MmM6IFRQTSBJMkMgaW5pdGlhbGlzYXRpb24gZmFpbFxuIik7CisJcmV0dXJuIGVycjsKK30KKwor
+LyoKKyAqIHRwbV9zdDE5X2kyY19yZW1vdmUgcmVtb3ZlIHRoZSBUUE0gZGV2aWNlCisgKiBAcGFy
+YW06IGNsaWVudCwgdGhlIGkyY19jbGllbnQgZHJlc2NyaXB0aW9uIChUUE0gSTJDIGRlc2NyaXB0
+aW9uKS4KKwkJY2xlYXJfYml0KDAsICZjaGlwLT5pc19vcGVuKTsKKyAqIEByZXR1cm46IDAgaW4g
+Y2FzZSBvZiBzdWNjZXNzLgorICovCitzdGF0aWMgX19kZXZleGl0IGludCB0cG1fc3QxOV9pMmNf
+cmVtb3ZlKHN0cnVjdCBpMmNfY2xpZW50ICpjbGllbnQpCit7CisJc3RydWN0IHRwbV9jaGlwICpj
+aGlwID0gKHN0cnVjdCB0cG1fY2hpcCAqKWkyY19nZXRfY2xpZW50ZGF0YShjbGllbnQpOworCXBy
+aW50ayhLRVJOX0lORk8gInRwbV9zdDE5X2kyYzogdHBtX3N0MTlfaTJjX3JlbW92ZVxuIik7CisK
+KwlpZiAocGluX2luZm9zICE9IE5VTEwpIHsKKwkJZ3Bpb19mcmVlKHBpbl9pbmZvcy0+YWNjZXB0
+X3Bpbik7CisJCWdwaW9fZnJlZShwaW5faW5mb3MtPmRhdGFfYXZhaWxfcGluKTsKKworCQkvKiBD
+aGVjayBpZiBjaGlwIGhhcyBiZWVuIHByZXZpb3VzbHkgY2xlYW4gKi8KKwkJaWYgKHBpbl9pbmZv
+cy0+YkNoaXBGICE9IHRydWUpCisJCQl0cG1fcmVtb3ZlX2hhcmR3YXJlKGNoaXAtPmRldik7CisJ
+CWlmIChwaW5faW5mb3MtPnRwbV9pMmNfYnVmZmVyWzFdICE9IE5VTEwpIHsKKwkJCWtmcmVlKHBp
+bl9pbmZvcy0+dHBtX2kyY19idWZmZXJbMV0pOworCQkJcGluX2luZm9zLT50cG1faTJjX2J1ZmZl
+clsxXSA9IE5VTEw7CisJCX0KKwkJaWYgKHBpbl9pbmZvcy0+dHBtX2kyY19idWZmZXJbMF0gIT0g
+TlVMTCkgeworCQkJa2ZyZWUocGluX2luZm9zLT50cG1faTJjX2J1ZmZlclswXSk7CisJCQlwaW5f
+aW5mb3MtPnRwbV9pMmNfYnVmZmVyWzBdID0gTlVMTDsKKwkJfQorCX0KKworCXJldHVybiAwOwor
+fQorCisvKgorICogdHBtX3N0MTlfaTJjX3BtX3N1c3BlbmQgc3VzcGVuZCB0aGUgVFBNIGRldmlj
+ZQorICogQWRkZWQ6IFdvcmsgYXJvdW5kIHdoZW4gc3VzcGVuZCBhbmQgbm8gdHBtIGFwcGxpY2F0
+aW9uIGlzIHJ1bm5pbmcsIHN1c3BlbmQKKyAqIG1heSBmYWlsIGJlY2F1c2UgY2hpcC0+ZGF0YV9i
+dWZmZXIgaXMgbm90IHNldCAob25seSBzZXQgaW4gdHBtX29wZW4gaW4gTGludXgKKyAqIFRQTSBj
+b3JlKQorICogQHBhcmFtOiBjbGllbnQsIHRoZSBpMmNfY2xpZW50IGRyZXNjcmlwdGlvbiAoVFBN
+IEkyQyBkZXNjcmlwdGlvbikuCisgKiBAcGFyYW06IG1lc2csIHRoZSBwb3dlciBtYW5hZ2VtZW50
+IG1lc3NhZ2UuCisgKiBAcmV0dXJuOiAwIGluIGNhc2Ugb2Ygc3VjY2Vzcy4KKyAqLworc3RhdGlj
+IGludCB0cG1fc3QxOV9pMmNfcG1fc3VzcGVuZChzdHJ1Y3QgaTJjX2NsaWVudCAqY2xpZW50LCBw
+bV9tZXNzYWdlX3QgbWVzZykKK3sKKwlzdHJ1Y3QgdHBtX2NoaXAgKmNoaXAgPQorCSAgICAoc3Ry
+dWN0IHRwbV9jaGlwICopaTJjX2dldF9jbGllbnRkYXRhKHBpbl9pbmZvcy0+Y2xpZW50KTsKKwlp
+bnQgcmV0ID0gMDsKKwlpZiAoY2hpcC0+ZGF0YV9idWZmZXIgPT0gTlVMTCkKKwkJY2hpcC0+ZGF0
+YV9idWZmZXIgPSBwaW5faW5mb3MtPnRwbV9pMmNfYnVmZmVyWzBdOworCXJldCA9IHRwbV9wbV9z
+dXNwZW5kKCZjbGllbnQtPmRldiwgbWVzZyk7CisJcmV0dXJuIHJldDsKK30JCQkJLyogdHBtX3N0
+MTlfaTJjX3N1c3BlbmQoKSAqLworCisvKgorICogdHBtX3N0MTlfaTJjX3BtX3Jlc3VtZSByZXN1
+bWUgdGhlIFRQTSBkZXZpY2UKKyAqIFRoaXMgcGFydCBvZiB0aGUgTGludXggZHJpdmVyIHNob3Vs
+ZCBiZSBtb3ZlIGluIGFuIG90aGVyIHBhcnQgb3IKKyAqIGVudmlyb25tZW50IChib290bG9hZGVy
+ID8pCisgKiBAcGFyYW06IGNsaWVudCwgdGhlIGkyY19jbGllbnQgZHJlc2NyaXB0aW9uIChUUE0g
+STJDIGRlc2NyaXB0aW9uKS4KKyAqIEByZXR1cm46IDAgaW4gY2FzZSBvZiBzdWNjZXNzLgorICov
+CitzdGF0aWMgaW50IHRwbV9zdDE5X2kyY19wbV9yZXN1bWUoc3RydWN0IGkyY19jbGllbnQgKmNs
+aWVudCkKK3sKKwlzdHJ1Y3QgdHBtX2NoaXAgKmNoaXAgPQorCSAgICAoc3RydWN0IHRwbV9jaGlw
+ICopaTJjX2dldF9jbGllbnRkYXRhKHBpbl9pbmZvcy0+Y2xpZW50KTsKKwlpbnQgcmV0ID0gMDsK
+KwlpZiAoY2hpcC0+ZGF0YV9idWZmZXIgPT0gTlVMTCkKKwkJY2hpcC0+ZGF0YV9idWZmZXIgPSBw
+aW5faW5mb3MtPnRwbV9pMmNfYnVmZmVyWzBdOworCXJldCA9IHRwbV9wbV9yZXN1bWUoJmNsaWVu
+dC0+ZGV2KTsKKwlyZXR1cm4gcmV0OworfQkJCQkvKiB0cG1fc3QxOV9pMmNfcG1fcmVzdW1lKCkg
+Ki8KKworc3RhdGljIGNvbnN0IHN0cnVjdCBpMmNfZGV2aWNlX2lkIHRwbV9zdDE5X2kyY19pZFtd
+ID0geworCXtUUE1fRFJJVkVSX05BTUUsIDB9LAorCXt9Cit9OworCitNT0RVTEVfREVWSUNFX1RB
+QkxFKGkyYywgdHBtX3N0MTlfaTJjX2lkKTsKKworc3RhdGljIHN0cnVjdCBpMmNfZHJpdmVyIHRw
+bV9zdDE5X2kyY19kcml2ZXIgPSB7CisJLmRyaXZlciA9IHsKKwkJICAgLm93bmVyID0gVEhJU19N
+T0RVTEUsCisJCSAgIC5uYW1lID0gVFBNX0RSSVZFUl9OQU1FLAorCQkgICB9LAorCS5wcm9iZSA9
+IHRwbV9zdDE5X2kyY19wcm9iZSwKKwkucmVtb3ZlID0gdHBtX3N0MTlfaTJjX3JlbW92ZSwKKwku
+cmVzdW1lID0gdHBtX3N0MTlfaTJjX3BtX3Jlc3VtZSwKKwkuc3VzcGVuZCA9IHRwbV9zdDE5X2ky
+Y19wbV9zdXNwZW5kLAorCS5pZF90YWJsZSA9IHRwbV9zdDE5X2kyY19pZAorfTsKKworLyoKKyAq
+IHRwbV9zdDE5X2kyY19pbml0IGluaXRpYWxpemUgZHJpdmVyCisgKiBAcmV0dXJuOiAwIGlmIHN1
+Y2Nlc3NmdWwsIGVsc2Ugbm9uIHplcm8gdmFsdWUuCisgKi8KK3N0YXRpYyBpbnQgX19pbml0IHRw
+bV9zdDE5X2kyY19pbml0KHZvaWQpCit7CisJcHJpbnRrKEtFUk5fSU5GTyAidHBtX3N0MTlfaTJj
+OiB0cG1fc3QxOV9pMmNfaW5pdFxuIik7CisJcmV0dXJuIGkyY19hZGRfZHJpdmVyKCZ0cG1fc3Qx
+OV9pMmNfZHJpdmVyKTsKK30KKworLyoKKyAqIHRwbV9zdDE5X2kyY19leGl0IFRoZSBrZXJuZWwg
+Y2FsbHMgdGhpcyBmdW5jdGlvbiBkdXJpbmcgdW5sb2FkaW5nIHRoZQorICogbW9kdWxlIG9yIGR1
+cmluZyBzaHV0IGRvd24gcHJvY2VzcworICovCitzdGF0aWMgdm9pZCBfX2V4aXQgdHBtX3N0MTlf
+aTJjX2V4aXQodm9pZCkKK3sKKwlwcmludGsoS0VSTl9JTkZPICJ0cG1fc3QxOV9pMmM6IHRwbV9z
+dDE5X2kyY19leGl0XG4iKTsKKwlpMmNfZGVsX2RyaXZlcigmdHBtX3N0MTlfaTJjX2RyaXZlcik7
+Cit9CisKK21vZHVsZV9pbml0KHRwbV9zdDE5X2kyY19pbml0KTsKK21vZHVsZV9leGl0KHRwbV9z
+dDE5X2kyY19leGl0KTsKKworTU9EVUxFX0FVVEhPUigiQ2hyaXN0b3BoZSBSaWNhcmQgKHRwbXN1
+cHBvcnRAc3QuY29tKSIpOworTU9EVUxFX0RFU0NSSVBUSU9OKCJTVE0gVFBNIEkyQyBTVDE5IERy
+aXZlciIpOworTU9EVUxFX1ZFUlNJT04oIjEuMi4wIik7CitNT0RVTEVfTElDRU5TRSgiR1BMIik7
+CmRpZmYgLXVOciBsaW51eC0yLjYuMzUuNC9kcml2ZXJzL2NoYXIvdHBtL3RwbV9zdG1fc3QxOV9p
+MmMuaCBsaW51eC10cG0vZHJpdmVycy9jaGFyL3RwbS90cG1fc3RtX3N0MTlfaTJjLmgKLS0tIGxp
+bnV4LTIuNi4zNS40L2RyaXZlcnMvY2hhci90cG0vdHBtX3N0bV9zdDE5X2kyYy5oCTE5NjktMTIt
+MzEgMTg6MDA6MDAuMDAwMDAwMDAwIC0wNjAwCisrKyBsaW51eC10cG0vZHJpdmVycy9jaGFyL3Rw
+bS90cG1fc3RtX3N0MTlfaTJjLmgJMjAxMC0wOS0wMyAwNzowOToyNC4yNjQzOTM0NzYgLTA1MDAK
+QEAgLTAsMCArMSw2MyBAQAorLyoKKyAqIFNUTWljcm9lbGVjdHJvbmljcyBUUE0gSTJDIExpbnV4
+IGRyaXZlciBmb3IgVFBNIFNUMTlOUDE4CisgKiBDb3B5cmlnaHQgKEMpIDIwMDksIDIwMTAgIFNU
+TWljcm9lbGVjdHJvbmljcworICoKKyAqIFRoaXMgcHJvZ3JhbSBpcyBmcmVlIHNvZnR3YXJlOyB5
+b3UgY2FuIHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5CisgKiBpdCB1bmRlciB0aGUgdGVy
+bXMgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieQorICog
+dGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbjsgZWl0aGVyIHZlcnNpb24gMiBvZiB0aGUgTGlj
+ZW5zZSwgb3IKKyAqIChhdCB5b3VyIG9wdGlvbikgYW55IGxhdGVyIHZlcnNpb24uCisgKgorICog
+VGhpcyBwcm9ncmFtIGlzIGRpc3RyaWJ1dGVkIGluIHRoZSBob3BlIHRoYXQgaXQgd2lsbCBiZSB1
+c2VmdWwsCisgKiBidXQgV0lUSE9VVCBBTlkgV0FSUkFOVFk7IHdpdGhvdXQgZXZlbiB0aGUgaW1w
+bGllZCB3YXJyYW50eSBvZgorICogTUVSQ0hBTlRBQklMSVRZIG9yIEZJVE5FU1MgRk9SIEEgUEFS
+VElDVUxBUiBQVVJQT1NFLiAgU2VlIHRoZQorICogR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2Ug
+Zm9yIG1vcmUgZGV0YWlscy4KKyAqCisgKiBZb3Ugc2hvdWxkIGhhdmUgcmVjZWl2ZWQgYSBjb3B5
+IG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGljZW5zZSBhbG9uZworICogd2l0aCB0aGlzIHBy
+b2dyYW07IGlmIG5vdCwgd3JpdGUgdG8gdGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbiwgSW5j
+LiwKKyAqIDUxIEZyYW5rbGluIFN0cmVldCwgRmlmdGggRmxvb3IsIEJvc3RvbiwgTUEgMDIxMTAt
+MTMwMSBVU0EuCisgKgorICogU1RNaWNyb2VsZWN0cm9uaWNzIHZlcnNpb24gMS4yLjAsIENvcHly
+aWdodCAoQykgMjAxMAorICogU1RNaWNyb2VsZWN0cm9uaWNzIGNvbWVzIHdpdGggQUJTT0xVVEVM
+WSBOTyBXQVJSQU5UWS4KKyAqIFRoaXMgaXMgZnJlZSBzb2Z0d2FyZSwgYW5kIHlvdSBhcmUgd2Vs
+Y29tZSB0byByZWRpc3RyaWJ1dGUgaXQKKyAqIHVuZGVyIGNlcnRhaW4gY29uZGl0aW9ucy4KKyAq
+CisgKiBAQXV0aG9yOiBDaHJpc3RvcGhlIFJJQ0FSRCB0cG1zdXBwb3J0QHN0LmNvbQorICoKKyAq
+IEBGaWxlOiBzdG1fc3QxOV90cG1faTJjLmgKKyAqCisgKiBARGF0ZTogMDIvMTIvMjAwOAorICov
+CisjaWZuZGVmIF9fU1RNX1NUMTlfVFBNX0kyQ19NQUlOX0hfXworI2RlZmluZSBfX1NUTV9TVDE5
+X1RQTV9JMkNfTUFJTl9IX18KKworI2luY2x1ZGUgPGxpbnV4L3BjaS5oPgorI2luY2x1ZGUgPGxp
+bnV4L21vZHVsZS5oPgorI2luY2x1ZGUgPGxpbnV4L3BsYXRmb3JtX2RldmljZS5oPgorI2luY2x1
+ZGUgPGxpbnV4L2kyYy5oPgorI2luY2x1ZGUgPGxpbnV4L2kyYy1pZC5oPgorI2luY2x1ZGUgPGxp
+bnV4L2ZzLmg+CisjaW5jbHVkZSA8bGludXgvbWlzY2RldmljZS5oPgorCisjZGVmaW5lIE1JTk9S
+X05VTV9JMkMJCTIyNAorCisjZGVmaW5lIFRQTV9EUklWRVJfTkFNRQkJInN0MTlucDE4IgorCisj
+ZGVmaW5lCVRQTV9CVUZTSVpFCQkyMDQ4CisKKyNkZWZpbmUgVFBNX0hFQURFUl9TSVpFCQkxMAor
+I2RlZmluZSBUUE1fSTJDX0JMT0NLX1NJWkUJMHgyOAorCisjZGVmaW5lIFRQTV9JMkNfT1JESU5B
+TF9MT05HCTB4MEQJLyogVFBNX09SRF9UYWtlT3duZXJzaGlwICovCisKKyNkZWZpbmUgVFBNX0ky
+Q19TSE9SVAkyMDAwCS8qIDJzICovCisjZGVmaW5lIFRJQ0tfR1BJT19TUE9PTElORwkyCisjZGVm
+aW5lIFNUQVJUVVBfV0FJVF9JTlRFUlZBTAk4IC8qIDhtcyAqLworCisvKiBpb2N0bCBjb21tYW5k
+cyAqLworI2RlZmluZSBUUE1JT0NfQ0FOQ0VMCQlfSU8oJ1QnLCAweDAwKQkvKiBOb3Qgc3VwcG9y
+dGVkICovCisjZGVmaW5lIFRQTUlPQ19UUkFOU01JVAkJX0lPKCdUJywgMHgwMSkKKworI2RlZmlu
+ZSBEQVRBX09OCQkJICAxCS8qIGRhdGEgYXZhaWxhYmxlICovCisjZGVmaW5lIENPTU1BTkRfT04J
+CSAgMgkvKiBhY2NlcHQgY29tbWFuZCAqLworCisjZW5kaWYgLyogX19TVE1fU1QxOV9UUE1fSTJD
+X01BSU5fSF9fICovCmRpZmYgLXVOciBsaW51eC0yLjYuMzUuNC9pbmNsdWRlL2xpbnV4L2kyYy90
+cG1fc3RtX3N0MTlfaTJjLmggbGludXgtdHBtL2luY2x1ZGUvbGludXgvaTJjL3RwbV9zdG1fc3Qx
+OV9pMmMuaAotLS0gbGludXgtMi42LjM1LjQvaW5jbHVkZS9saW51eC9pMmMvdHBtX3N0bV9zdDE5
+X2kyYy5oCTE5NjktMTItMzEgMTg6MDA6MDAuMDAwMDAwMDAwIC0wNjAwCisrKyBsaW51eC10cG0v
+aW5jbHVkZS9saW51eC9pMmMvdHBtX3N0bV9zdDE5X2kyYy5oCTIwMTAtMDgtMzEgMTI6NTA6MzEu
+Nzc0NDEwODgxIC0wNTAwCkBAIC0wLDAgKzEsNDUgQEAKKy8qCisgKiBTVE1pY3JvZWxlY3Ryb25p
+Y3MgVFBNIEkyQyBMaW51eCBkcml2ZXIgZm9yIFRQTSBTVDE5TlAxOAorICogQ29weXJpZ2h0IChD
+KSAyMDA5LCAyMDEwIFNUTWljcm9lbGVjdHJvbmljcworICogQ2hyaXN0b3BoZSBSSUNBUkQgdHBt
+c3VwcG9ydEBzdC5jb20KKyAqIFRoaXMgcHJvZ3JhbSBpcyBmcmVlIHNvZnR3YXJlOyB5b3UgY2Fu
+IHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5CisgKiBpdCB1bmRlciB0aGUgdGVybXMgb2Yg
+dGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieQorICogdGhlIEZy
+ZWUgU29mdHdhcmUgRm91bmRhdGlvbjsgZWl0aGVyIHZlcnNpb24gMiBvZiB0aGUgTGljZW5zZSwg
+b3IKKyAqIChhdCB5b3VyIG9wdGlvbikgYW55IGxhdGVyIHZlcnNpb24uCisgKgorICogVGhpcyBw
+cm9ncmFtIGlzIGRpc3RyaWJ1dGVkIGluIHRoZSBob3BlIHRoYXQgaXQgd2lsbCBiZSB1c2VmdWws
+CisgKiBidXQgV0lUSE9VVCBBTlkgV0FSUkFOVFk7IHdpdGhvdXQgZXZlbiB0aGUgaW1wbGllZCB3
+YXJyYW50eSBvZgorICogTUVSQ0hBTlRBQklMSVRZIG9yIEZJVE5FU1MgRk9SIEEgUEFSVElDVUxB
+UiBQVVJQT1NFLiAgU2VlIHRoZQorICogR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2UgZm9yIG1v
+cmUgZGV0YWlscy4KKyAqCisgKiBZb3Ugc2hvdWxkIGhhdmUgcmVjZWl2ZWQgYSBjb3B5IG9mIHRo
+ZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGljZW5zZSBhbG9uZworICogd2l0aCB0aGlzIHByb2dyYW07
+IGlmIG5vdCwgd3JpdGUgdG8gdGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbiwgSW5jLiwKKyAq
+IDUxIEZyYW5rbGluIFN0cmVldCwgRmlmdGggRmxvb3IsIEJvc3RvbiwgTUEgMDIxMTAtMTMwMSBV
+U0EuCisgKgorICogU1RNaWNyb2VsZWN0cm9uaWNzIHZlcnNpb24gMS4yLjAsIENvcHlyaWdodCAo
+QykgMjAxMAorICogU1RNaWNyb2VsZWN0cm9uaWNzIGNvbWVzIHdpdGggQUJTT0xVVEVMWSBOTyBX
+QVJSQU5UWS4KKyAqIFRoaXMgaXMgZnJlZSBzb2Z0d2FyZSwgYW5kIHlvdSBhcmUgd2VsY29tZSB0
+byByZWRpc3RyaWJ1dGUgaXQKKyAqIHVuZGVyIGNlcnRhaW4gY29uZGl0aW9ucy4KKyAqCisgKiBA
+RmlsZTogc3RtX3N0MTlfdHBtX2kyYy5oCisgKgorICogQERhdGU6IDA2LzE1LzIwMDgKKyAqLwor
+I2lmbmRlZiBfX1NUTV9TVDE5X1RQTV9JMkNfSF9fCisjZGVmaW5lIF9fU1RNX1NUMTlfVFBNX0ky
+Q19IX18KKworI2luY2x1ZGUgPGxpbnV4L2kyYy5oPgorCisjZGVmaW5lIFRQTV9EUklWRVJfTkFN
+RSAgICAgICAgICJzdDE5bnAxOCIKKyNkZWZpbmUgVFBNX0kyQ19TVDE5X0FERFJfV1IJKDB4MjYg
+Pj4gMSkKKworc3RydWN0IHN0MTlucDE4X3BsYXRmb3JtX2RhdGEgeworCWludCBhY2NlcHRfcGlu
+OwkvKiBhY2NlcHQgY29tbWFuZCBwaW4gKi8KKwlpbnQgZGF0YV9hdmFpbF9waW47LyogZGF0YSBh
+dmFpbGFibGUgcGluICovCisJc3RydWN0IGkyY19jbGllbnQgKmNsaWVudDsKKwlib29sIGJDaGlw
+RjsKKwl1OCAqdHBtX2kyY19idWZmZXJbMl07IC8qIDAgUmVxdWVzdCAxIFJlc3BvbnNlICovCisJ
+d2FpdF9xdWV1ZV9oZWFkX3Qgd3JpdGVfcXVldWU7Cit9OworCisjZW5kaWYgLyogX19TVE1fU1Qx
+OV9UUE1fSTJDX0hfXyAqLwo=
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--_002_0B9F1C5B86169C4EA9D042C251022E49105CD81DE1SAFEX1MAIL3st_--
