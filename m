@@ -1,124 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab0ICWbl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 18:31:41 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:42436 "EHLO
+	id S1754954Ab0ICWbw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 18:31:52 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:42439 "EHLO
 	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612Ab0ICWbi (ORCPT
+	with ESMTP id S1753713Ab0ICWbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 18:31:38 -0400
+	Fri, 3 Sep 2010 18:31:39 -0400
 From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org, "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH RFCv1 1/3] fpga: add basic CARMA board support
-Date: Fri,  3 Sep 2010 15:30:50 -0700
-Message-Id: <1283553052-23576-2-git-send-email-iws@ovro.caltech.edu>
+Subject: [PATCH RFCv1 2/3] fpga: add CARMA DATA-FPGA Access Driver
+Date: Fri,  3 Sep 2010 15:30:51 -0700
+Message-Id: <1283553052-23576-3-git-send-email-iws@ovro.caltech.edu>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283553052-23576-1-git-send-email-iws@ovro.caltech.edu>
 References: <1283553052-23576-1-git-send-email-iws@ovro.caltech.edu>
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Fri, 03 Sep 2010 15:31:37 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Fri, 03 Sep 2010 15:31:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds basic support for the system controller FPGA on the OVRO CARMA
-board. This patch only adds infrastructure that will be used by later
-drivers.
+This driver allows userspace to access the data processing FPGAs on the
+OVRO CARMA board. It has two modes of operation:
+
+1) random access
+
+This allows users to poke any DATA-FPGA registers by using mmap to map
+the address region directly into their memory map.
+
+2) correlation dumping
+
+When correlating, the DATA-FPGA's have special requirements for getting
+the data out of their memory before the next correlation. This nominally
+happens at 64Hz (every 15.625ms). If the data is not dumped before the
+next correlation, data is lost.
+
+The data dumping driver handles buffering up to 1 second worth of
+correlation data from the FPGAs. This lowers the realtime scheduling
+requirements for the userspace process reading the device.
 
 Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
 ---
- drivers/Kconfig             |    2 +
- drivers/Makefile            |    1 +
- drivers/fpga/Kconfig        |    1 +
- drivers/fpga/Makefile       |    1 +
- drivers/fpga/carma/Kconfig  |   21 ++++++++++++
- drivers/fpga/carma/Makefile |    1 +
- drivers/fpga/carma/carma.c  |   73 +++++++++++++++++++++++++++++++++++++++++++
- drivers/fpga/carma/carma.h  |   22 +++++++++++++
- 8 files changed, 122 insertions(+), 0 deletions(-)
- create mode 100644 drivers/fpga/Kconfig
- create mode 100644 drivers/fpga/Makefile
- create mode 100644 drivers/fpga/carma/Kconfig
- create mode 100644 drivers/fpga/carma/Makefile
- create mode 100644 drivers/fpga/carma/carma.c
- create mode 100644 drivers/fpga/carma/carma.h
+ drivers/fpga/carma/Kconfig      |    9 +
+ drivers/fpga/carma/Makefile     |    1 +
+ drivers/fpga/carma/carma-fpga.c | 1447 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 1457 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/fpga/carma/carma-fpga.c
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index a2b902f..8945ae6 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -111,4 +111,6 @@ source "drivers/xen/Kconfig"
- source "drivers/staging/Kconfig"
- 
- source "drivers/platform/Kconfig"
-+
-+source "drivers/fpga/Kconfig"
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index ae47344..c0b05de 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -115,3 +115,4 @@ obj-$(CONFIG_VLYNQ)		+= vlynq/
- obj-$(CONFIG_STAGING)		+= staging/
- obj-y				+= platform/
- obj-y				+= ieee802154/
-+obj-$(CONFIG_FPGA_DRIVERS)	+= fpga/
-diff --git a/drivers/fpga/Kconfig b/drivers/fpga/Kconfig
-new file mode 100644
-index 0000000..c85c2cc
---- /dev/null
-+++ b/drivers/fpga/Kconfig
-@@ -0,0 +1 @@
-+source "drivers/fpga/carma/Kconfig"
-diff --git a/drivers/fpga/Makefile b/drivers/fpga/Makefile
-new file mode 100644
-index 0000000..409a5f9
---- /dev/null
-+++ b/drivers/fpga/Makefile
-@@ -0,0 +1 @@
-+obj-y		+= carma/
 diff --git a/drivers/fpga/carma/Kconfig b/drivers/fpga/carma/Kconfig
-new file mode 100644
-index 0000000..448885e
---- /dev/null
+index 448885e..5592f73 100644
+--- a/drivers/fpga/carma/Kconfig
 +++ b/drivers/fpga/carma/Kconfig
-@@ -0,0 +1,21 @@
-+
-+menuconfig FPGA_DRIVERS
-+	bool "FPGA Drivers"
+@@ -18,4 +18,13 @@ config CARMA
+ 	  Say Y here to include basic support for the CARMA System Controller
+ 	  FPGA. This option allows the other more advanced drivers to be built.
+ 
++config CARMA_FPGA
++	tristate "CARMA DATA-FPGA Access Driver"
++	depends on CARMA
++	select VIDEOBUF_DMA_SG
 +	default n
 +	help
-+	  Say Y here to see options for devices used with custom FPGAs.
-+	  This option alone does not add any kernel code.
++	  Say Y here to include support for communicating with the data
++	  processing FPGAs on the CARMA board.
 +
-+	  If you say N, all options in this submenu will be skipped and disabled.
-+
-+if FPGA_DRIVERS
-+
-+config CARMA
-+	tristate "CARMA System Controller FPGA support"
-+	depends on FSL_SOC && PPC_83xx
-+	default n
-+	help
-+	  Say Y here to include basic support for the CARMA System Controller
-+	  FPGA. This option allows the other more advanced drivers to be built.
-+
-+endif # FPGA_DRIVERS
+ endif # FPGA_DRIVERS
 diff --git a/drivers/fpga/carma/Makefile b/drivers/fpga/carma/Makefile
-new file mode 100644
-index 0000000..90d0594
---- /dev/null
+index 90d0594..c175d34 100644
+--- a/drivers/fpga/carma/Makefile
 +++ b/drivers/fpga/carma/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_CARMA)			+= carma.o
-diff --git a/drivers/fpga/carma/carma.c b/drivers/fpga/carma/carma.c
+@@ -1 +1,2 @@
+ obj-$(CONFIG_CARMA)			+= carma.o
++obj-$(CONFIG_CARMA_FPGA)		+= carma-fpga.o
+diff --git a/drivers/fpga/carma/carma-fpga.c b/drivers/fpga/carma/carma-fpga.c
 new file mode 100644
-index 0000000..97549d2
+index 0000000..ab1b536
 --- /dev/null
-+++ b/drivers/fpga/carma/carma.c
-@@ -0,0 +1,73 @@
++++ b/drivers/fpga/carma/carma-fpga.c
+@@ -0,0 +1,1447 @@
 +/*
-+ * CARMA Board Utility Driver
++ * CARMA DATA-FPGA Access Driver
 + *
 + * Copyright (c) 2009-2010 Ira W. Snyder <iws@ovro.caltech.edu>
 + *
@@ -128,96 +90,1442 @@ index 0000000..97549d2
 + * option) any later version.
 + */
 +
++/*
++ * FPGA Memory Dump Format
++ *
++ * FPGA #0 control registers (32 x 32-bit words)
++ * FPGA #1 control registers (32 x 32-bit words)
++ * FPGA #2 control registers (32 x 32-bit words)
++ * FPGA #3 control registers (32 x 32-bit words)
++ * SYSFPGA control registers (32 x 32-bit words)
++ * FPGA #0 correlation array (NUM_CORL0 correlation blocks)
++ * FPGA #1 correlation array (NUM_CORL1 correlation blocks)
++ * FPGA #2 correlation array (NUM_CORL2 correlation blocks)
++ * FPGA #3 correlation array (NUM_CORL3 correlation blocks)
++ *
++ * Each correlation array consists of:
++ *
++ * Correlation Data      (2 x NUM_LAGSn x 32-bit words)
++ * Pipeline Metadata     (2 x NUM_METAn x 32-bit words)
++ * Quantization Counters (2 x NUM_QCNTn x 32-bit words)
++ *
++ * The NUM_CORLn, NUM_LAGSn, NUM_METAn, and NUM_QCNTn values come from
++ * the FPGA configuration registers. They do not change once the FPGA's
++ * have been programmed, they only change on re-programming.
++ */
++
++/*
++ * Basic Description:
++ *
++ * This driver is used to capture correlation spectra off of the four data
++ * processing FPGAs. The FPGAs are often reprogrammed at runtime, therefore
++ * this driver supports dynamic enable/disable of capture while the device
++ * remains open.
++ *
++ * The nominal capture rate is 64Hz (every 15.625ms). To facilitate this fast
++ * capture rate, all buffers are pre-allocated to avoid any potentially long
++ * running memory allocations while capturing.
++ *
++ * There are three lists which are used to keep track of the different states
++ * of data buffers.
++ *
++ * 1) free list
++ * This list holds all empty data buffers which are ready to receive data.
++ *
++ * 2) inflight list
++ * This list holds data buffers which are currently waiting for a DMA operation
++ * to complete.
++ *
++ * 3) used list
++ * This list holds data buffers which have been filled, and are waiting to be
++ * read by userspace.
++ *
++ * All buffers start life on the free list, then move successively to the
++ * inflight list, and then to the used list. After they have been read by
++ * userspace, they are moved back to the free list. The cycle repeats as long
++ * as necessary.
++ */
++
++/*
++ * Notes on the IRQ masking scheme:
++ *
++ * The IRQ masking scheme here is different than most other hardware. The only
++ * way for the DATA-FPGAs to detect if the kernel has taken too long to copy
++ * the data is if the status registers are not cleared before the next
++ * correlation data dump is ready.
++ *
++ * The interrupt line is connected to the status registers, such that when they
++ * are cleared, the interrupt is de-asserted. Therein lies our problem. We need
++ * to schedule a long-running DMA operation and return from the interrupt
++ * handler quickly, but we cannot clear the status registers.
++ *
++ * To handle this, the system controller FPGA has the capability to connect the
++ * interrupt line to a user-controlled GPIO pin. This pin is driven high
++ * (unasserted) and left that way. To mask the interrupt, we change the
++ * interrupt source to the GPIO pin. Tada, we hid the interrupt. :)
++ */
++
++#include <linux/of_platform.h>
++#include <linux/dma-mapping.h>
++#include <linux/interrupt.h>
++#include <linux/dmaengine.h>
++#include <linux/highmem.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
++#include <linux/cdev.h>
++#include <linux/poll.h>
 +#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/err.h>
++#include <linux/io.h>
++
++#include <media/videobuf-dma-sg.h>
++#include <asm/fsldma.h>
 +
 +#include "carma.h"
 +
-+static struct class *carma_class;
-+static const char drv_name[] = "carma";
++/* system controller registers */
++#define SYS_IRQ_SOURCE_CTL	0x24
++#define SYS_IRQ_OUTPUT_EN	0x28
++#define SYS_IRQ_OUTPUT_DATA	0x2C
++#define SYS_IRQ_INPUT_DATA	0x30
 +
-+/*
-+ * CARMA Device Class Functions
-+ */
++/* GPIO IRQ line assignment */
++#define IRQ_CORL_DONE		0x10
 +
-+struct device *carma_device_create(struct device *parent, dev_t devno,
-+				   const char *fmt, ...)
-+{
++/* FPGA registers */
++#define MMAP_REG_CORL_CONF1	0x08
++#define MMAP_REG_CORL_CONF2	0x0C
++#define MMAP_REG_STATUS		0x48
++
++#define SYS_FPGA_BLOCK		0xF0000000
++
++static const char drv_name[] = "carma-fpga";
++
++#define NUM_FPGA	4
++
++#define MIN_DATA_BUFS	8
++#define MAX_DATA_BUFS	64
++
++struct fpga_info {
++	unsigned int num_corl;
++	unsigned int blk_size;
++};
++
++struct data_buf {
++	struct list_head entry;
++	struct videobuf_dmabuf vb;
++	bool mapped;
++	size_t size;
++};
++
++struct fpga_device {
++	struct cdev cdev;
++	dev_t devno;
++
 +	struct device *dev;
-+	va_list vargs;
++	struct mutex mutex;
 +
-+	va_start(vargs, fmt);
-+	dev = device_create_vargs(carma_class, parent, devno, NULL, fmt, vargs);
-+	va_end(vargs);
++	/* FPGA registers and information */
++	struct fpga_info info[NUM_FPGA];
++	void __iomem *regs;
++	int irq;
 +
-+	return dev;
-+}
-+EXPORT_SYMBOL_GPL(carma_device_create);
++	/* FPGA Physical Address/Size Information */
++	resource_size_t phys_addr;
++	size_t phys_size;
 +
-+void carma_device_destroy(dev_t devno)
-+{
-+	device_destroy(carma_class, devno);
-+}
-+EXPORT_SYMBOL_GPL(carma_device_destroy);
++	/* DMA structures */
++	struct fsl_dma_slave *slave;
++	struct dma_chan *chan;
++	struct device *dmadev;
++
++	/* Protection for all members below */
++	spinlock_t lock;
++
++	/* Device enable/disable flag */
++	bool enabled;
++
++	/* Correlation data buffers */
++	wait_queue_head_t wait;
++	struct list_head free;
++	struct list_head used;
++	struct list_head inflight;
++
++	/* Information about data buffers */
++	unsigned int num_dropped;
++	unsigned int num_buffers;
++	size_t bufsize;
++};
++
++struct fpga_reader {
++	struct fpga_device *priv;
++	struct data_buf *buf;
++	off_t buf_start;
++};
++
++#define inode_to_dev(inode) container_of(inode->i_cdev, struct fpga_device, cdev)
 +
 +/*
-+ * Module Init / Exit
++ * Data Buffer Allocation Helpers
 + */
 +
-+static int __init carma_init(void)
++static int data_map_buffer(struct device *dev, struct data_buf *buf)
 +{
-+	/* Register the CARMA device class */
-+	carma_class = class_create(THIS_MODULE, "carma");
-+	if (IS_ERR(carma_class)) {
-+		pr_err("%s: unable to create CARMA class\n", drv_name);
-+		return PTR_ERR(carma_class);
++	int ret;
++
++	/* if the buffer is already mapped, we're done */
++	if (buf->mapped)
++		return 0;
++
++	ret = videobuf_dma_map(dev, &buf->vb);
++	if (ret)
++		return ret;
++
++	buf->mapped = true;
++	return 0;
++}
++
++static void data_unmap_buffer(struct device *dev, struct data_buf *buf)
++{
++	/* the buffer is already unmapped, we're done */
++	if (!buf->mapped)
++		return;
++
++	videobuf_dma_unmap(dev, &buf->vb);
++	buf->mapped = false;
++}
++
++/*
++ * Free a single data buffer and all allocated pages
++ *
++ * This will free all of the pages allocated to the given data buffer, and
++ * then free the structure itself
++ *
++ * @dev: the DMA device to map for
++ * @buf: the buffer to free
++ */
++static void data_free_buffer(struct device *dev, struct data_buf *buf)
++{
++	/* It is ok to free a NULL buffer */
++	if (!buf)
++		return;
++
++	/* Make sure the buffer is not on any list */
++	list_del_init(&buf->entry);
++
++	/* unmap it for DMA */
++	data_unmap_buffer(dev, buf);
++
++	/* free all memory */
++	videobuf_dma_free(&buf->vb);
++	kfree(buf);
++}
++
++/*
++ * Allocate and fill a data buffer
++ *
++ * This allocates all space needed for a data buffer, and gets it ready to be
++ * used in a DMA transaction. It only needs to be used, never mapped before
++ * use. This avoids calling vmalloc in hardirq context.
++ *
++ * @dev: the DMA device to map for
++ * @bytes: the number of bytes required
++ * @return: a new buffer or NULL on failure
++ */
++static struct data_buf *data_alloc_buffer(struct device *dev, const size_t bytes)
++{
++	unsigned int nr_pages;
++	struct data_buf *buf;
++	int ret;
++
++	/* calculate the number of pages necessary */
++	nr_pages = DIV_ROUND_UP(bytes, PAGE_SIZE);
++
++	/* allocate the buffer structure */
++	buf = kzalloc(sizeof(*buf), GFP_KERNEL);
++	if (!buf)
++		goto out_return;
++
++	/* initialize internal fields */
++	INIT_LIST_HEAD(&buf->entry);
++	buf->size = bytes;
++
++	/* allocate the videobuf */
++	videobuf_dma_init(&buf->vb);
++	ret = videobuf_dma_init_kernel(&buf->vb, DMA_FROM_DEVICE, nr_pages);
++	if (ret)
++		goto out_free_buf;
++
++	/* map it for DMA */
++	ret = data_map_buffer(dev, buf);
++	if (ret)
++		goto out_free_videobuf;
++
++	return buf;
++
++out_free_videobuf:
++	videobuf_dma_free(&buf->vb);
++out_free_buf:
++	kfree(buf);
++out_return:
++	return NULL;
++}
++
++/*
++ * Free all of the buffers allocated for correlation data
++ *
++ * This routine will free all data buffers that are being used by the driver.
++ *
++ * REQUIREMENTS: all list manipulation must have ceased
++ * REQUIREMENTS: all DMA must be complete, and the engine stopped
++ *
++ * CONTEXT: user
++ *
++ * @param priv the driver's private data structure
++ */
++static void data_free_buffers(struct fpga_device *priv)
++{
++	struct device *dev = priv->dmadev;
++	struct data_buf *buf, *tmp;
++
++	spin_lock_irq(&priv->lock);
++	BUG_ON(!list_empty(&priv->inflight));
++
++	list_for_each_entry_safe(buf, tmp, &priv->free, entry) {
++		list_del_init(&buf->entry);
++		spin_unlock_irq(&priv->lock);
++		data_free_buffer(dev, buf);
++		spin_lock_irq(&priv->lock);
++	}
++
++	list_for_each_entry_safe(buf, tmp, &priv->used, entry) {
++		list_del_init(&buf->entry);
++		spin_unlock_irq(&priv->lock);
++		data_free_buffer(dev, buf);
++		spin_lock_irq(&priv->lock);
++	}
++
++	priv->num_buffers = 0;
++	priv->bufsize = 0;
++
++	spin_unlock_irq(&priv->lock);
++}
++
++/*
++ * Allocate enough buffers for a whole second worth of data
++ *
++ * This routine will attempt to degrade nicely by succeeding even if a full
++ * second worth of data buffers could not be allocated, as long as a minimum
++ * number were allocated. In this case, it will print a message to the kernel
++ * log.
++ *
++ * CONTEXT: user
++ *
++ * @param priv the driver's private data structure
++ * @return 0 on success, -ERRNO otherwise
++ */
++static int data_alloc_buffers(struct fpga_device *priv)
++{
++	struct device *dev = priv->dmadev;
++	struct data_buf *buf;
++	int i;
++
++	for (i = 0; i < MAX_DATA_BUFS; i++) {
++		buf = data_alloc_buffer(dev, priv->bufsize);
++		if (!buf)
++			break;
++
++		spin_lock_irq(&priv->lock);
++		list_add_tail(&buf->entry, &priv->free);
++		spin_unlock_irq(&priv->lock);
++	}
++
++	/* Make sure we allocated the minimum required number of buffers */
++	if (i < MIN_DATA_BUFS) {
++		dev_err(priv->dev, "Unable to allocate enough data buffers\n");
++		data_free_buffers(priv);
++		return -ENOMEM;
++	}
++
++	/* Warn if we are running in a degraded state, but do not fail */
++	if (i < MAX_DATA_BUFS) {
++		dev_warn(priv->dev, "Unable to allocate one second worth of "
++				   "buffers, using %d buffers instead\n", i);
++	}
++
++	priv->num_buffers = i;
++	return 0;
++}
++
++/*
++ * DMA Operations Helpers
++ */
++
++/*
++ * Calculate the physical address of the start of FPGA memory
++ *
++ * @param priv the driver's private data structure
++ * @param fpga the FPGA number
++ * @return the physical address of the correlation data block
++ */
++static dma_addr_t fpga_start_addr(struct fpga_device *priv, unsigned int fpga)
++{
++	return priv->phys_addr + 0x400000 + (0x80000 * fpga);
++}
++
++/*
++ * Calculate the physical address of an FPGA correlation data block
++ *
++ * @param priv the driver's private data structure
++ * @param fpga the FPGA number
++ * @param blknum the correlation data block number
++ * @return the physical address of the correlation data block
++ */
++static dma_addr_t fpga_block_addr(struct fpga_device *priv, unsigned int fpga,
++				  unsigned int blknum)
++{
++	return fpga_start_addr(priv, fpga) + (0x10000 * (1 + blknum));
++}
++
++/*
++ * Add the correlation data for a single DATA FPGA to the DMA_SLAVE structure
++ *
++ * @param priv the driver's private data structure
++ * @param slave the Freescale DMA_SLAVE structure
++ * @param fpga the FPGA number
++ * @return 0 on success, -ERRNO otherwise
++ */
++static int fpga_append_correlation_data(struct fpga_device *priv,
++					struct fsl_dma_slave *slave,
++					unsigned int fpga)
++{
++	struct fpga_info *info = &priv->info[fpga];
++	dma_addr_t addr;
++	size_t len;
++	int i, ret;
++
++	for (i = 0; i < info->num_corl; i++) {
++		addr = fpga_block_addr(priv, fpga, i);
++		len = info->blk_size;
++		ret = fsl_dma_slave_append(slave, addr, len);
++		if (ret)
++			return ret;
 +	}
 +
 +	return 0;
 +}
 +
-+static void __exit carma_exit(void)
++/*
++ * Create the DMA_SLAVE structure for transferring data from the DATA FPGA's
++ *
++ * This structure will be reused for each buffer that needs to be filled
++ * with correlation data from the DATA FPGA's
++ *
++ * @param priv the driver's private data structure
++ * @return 0 on success, -ERRNO otherwise
++ */
++static int data_setup_dma_slave(struct fpga_device *priv)
 +{
-+	class_destroy(carma_class);
++	static const char prefix[] = "DMA_SLAVE: unable to";
++	struct fsl_dma_slave *slave;
++	dma_addr_t addr;
++	size_t len;
++	int i, ret;
++
++	/* Create the Freescale DMA_SLAVE structure */
++	slave = fsl_dma_slave_alloc(GFP_KERNEL);
++	if (!slave) {
++		dev_err(priv->dev, "%s allocate structure\n", prefix);
++		ret = -ENOMEM;
++		goto out_return;
++	}
++
++	/* Add the FPGA registers to the slave list */
++	for (i = 0; i < NUM_FPGA; i++) {
++		addr = fpga_start_addr(priv, i);
++		len = 32 * 4;
++		ret = fsl_dma_slave_append(slave, addr, len);
++		if (ret) {
++			dev_err(priv->dev, "%s add FPGA registers\n", prefix);
++			goto out_free_slave;
++		}
++	}
++
++	/* Add the SYS-FPGA registers to the slave list */
++	addr = SYS_FPGA_BLOCK;
++	len = 32 * 4;
++	ret = fsl_dma_slave_append(slave, addr, len);
++	if (ret) {
++		dev_err(priv->dev, "%s add SYS-FPGA registers\n", prefix);
++		goto out_free_slave;
++	}
++
++	/* Add the FPGA correlation data blocks to the slave list */
++	for (i = 0; i < NUM_FPGA; i++) {
++		ret = fpga_append_correlation_data(priv, slave, i);
++		if (ret) {
++			dev_err(priv->dev, "%s add correlation data\n", prefix);
++			goto out_free_slave;
++		}
++	}
++
++	/*
++	 * That's everything, this slave structure can be re-used for
++	 * every FPGA DATA interrupt
++	 */
++	priv->slave = slave;
++	return 0;
++
++out_free_slave:
++	fsl_dma_slave_free(slave);
++out_return:
++	return ret;
++}
++
++/*
++ * FPGA Register Access Helpers
++ */
++
++static void fpga_write_reg(struct fpga_device *priv, unsigned int fpga,
++			   unsigned int reg, u32 val)
++{
++	iowrite32be(val, priv->regs + 0x400000 + (fpga * 0x80000) + reg);
++}
++
++static u32 fpga_read_reg(struct fpga_device *priv, unsigned int fpga,
++			 unsigned int reg)
++{
++	return ioread32be(priv->regs + 0x400000 + (fpga * 0x80000) + reg);
++}
++
++/*
++ * Calculate the total buffer size needed to hold a single block
++ * of correlation data
++ *
++ * CONTEXT: user
++ *
++ * @param priv the driver's private data structure
++ * @return 0 on success, -ERRNO otherwise
++ */
++static int data_calculate_bufsize(struct fpga_device *priv)
++{
++	u32 num_corl, num_lags, num_meta, num_qcnt, blk_size;
++	u32 conf1, conf2;
++	int i;
++
++	/* Zero the total buffer size */
++	priv->bufsize = 0;
++
++	/* Read and store the configuration data for each FPGA */
++	for (i = 0; i < NUM_FPGA; i++) {
++		conf1 = fpga_read_reg(priv, i, MMAP_REG_CORL_CONF1);
++		conf2 = fpga_read_reg(priv, i, MMAP_REG_CORL_CONF2);
++
++		num_corl = (conf1 & 0x000000F0) >> 4;
++		num_lags = (conf1 & 0x000FFF00) >> 8;
++		num_meta = (conf1 & 0x7FF00000) >> 20;
++		num_qcnt = (conf2 & 0x00000FFF) >> 0;
++		blk_size = (num_lags + num_meta + num_qcnt) * 8;
++
++		priv->info[i].num_corl = num_corl;
++		priv->info[i].blk_size = blk_size;
++		priv->bufsize += num_corl * blk_size;
++
++		dev_dbg(priv->dev, "FPGA %d NUM_CORL: %d\n", i, num_corl);
++		dev_dbg(priv->dev, "FPGA %d NUM_LAGS: %d\n", i, num_lags);
++		dev_dbg(priv->dev, "FPGA %d NUM_META: %d\n", i, num_meta);
++		dev_dbg(priv->dev, "FPGA %d NUM_QCNT: %d\n", i, num_qcnt);
++		dev_dbg(priv->dev, "FPGA %d BLK_SIZE: %d\n", i, blk_size);
++	}
++
++	/* Add in the 5 FPGA register areas */
++	priv->bufsize += 5 * (32 * 4);
++	dev_dbg(priv->dev, "TOTAL BUFFER SIZE: %zu bytes\n", priv->bufsize);
++
++	return 0;
++}
++
++/*
++ * Interrupt Handling
++ */
++
++/*
++ * Hide interrupts by switching to GPIO interrupt source
++ *
++ * LOCKING: must hold dev->lock
++ */
++static void data_disable_interrupts(struct fpga_device *priv)
++{
++	/* hide the interrupt by switching the IRQ driver to GPIO */
++	iowrite32be(0x2F, priv->regs + SYS_IRQ_SOURCE_CTL);
++}
++
++/*
++ * Unhide interrupts by switching to the FPGA interrupt source
++ *
++ * LOCKING: must hold dev->lock
++ */
++static void data_enable_interrupts(struct fpga_device *priv)
++{
++	/* clear the actual FPGA corl_done interrupt */
++	fpga_write_reg(priv, 0, MMAP_REG_STATUS, 0x0);
++	fpga_write_reg(priv, 1, MMAP_REG_STATUS, 0x0);
++	fpga_write_reg(priv, 2, MMAP_REG_STATUS, 0x0);
++	fpga_write_reg(priv, 3, MMAP_REG_STATUS, 0x0);
++
++	/* flush the writes */
++	fpga_read_reg(priv, 0, MMAP_REG_STATUS);
++
++	/* switch back to the external interrupt source */
++	iowrite32be(0x3F, priv->regs + SYS_IRQ_SOURCE_CTL);
++}
++
++/*
++ * Complete a DMA transfer from the FPGA's
++ *
++ * This is called via the DMA callback mechanism, and will handle moving the
++ * completed DMA transaction to the used list, and then wake any processes
++ * waiting for new data
++ *
++ * CONTEXT: any, softirq expected
++ *
++ * @param data the driver's private data structure
++ */
++static void data_dma_cb(void *data)
++{
++	struct fpga_device *priv = data;
++	struct data_buf *buf;
++	unsigned long flags;
++
++	spin_lock_irqsave(&priv->lock, flags);
++
++	/* clear the FPGA status and re-enable interrupts */
++	data_enable_interrupts(priv);
++
++	/* If the inflight list is empty, we've got a bug */
++	BUG_ON(list_empty(&priv->inflight));
++
++	/* Grab the first buffer from the inflight list */
++	buf = list_first_entry(&priv->inflight, struct data_buf, entry);
++	list_del_init(&buf->entry);
++
++	/* Add it to the used list */
++	list_add_tail(&buf->entry, &priv->used);
++
++	spin_unlock_irqrestore(&priv->lock, flags);
++
++	/* We've changed both the inflight and used lists, so we need
++	 * to wake up any processes that are blocking for those events */
++	wake_up(&priv->wait);
++}
++
++/*
++ * Prepare and submit a DMA_SLAVE transaction for a correlation data buffer
++ *
++ * LOCKING: must hold dev->lock
++ * CONTEXT: hardirq only
++ *
++ * @param priv the driver's private data structure
++ * @param buf the data buffer to DMA into
++ * @return 0 on success, -ERRNO otherwise
++ */
++static int data_submit_dma(struct fpga_device *priv, struct data_buf *buf)
++{
++	struct scatterlist *sg = buf->vb.sglist;
++	unsigned int nents = buf->vb.sglen;
++	struct dma_chan *chan = priv->chan;
++	struct dma_async_tx_descriptor *tx;
++	dma_cookie_t cookie;
++	dma_addr_t dst, src;
++
++	/*
++	 * All buffers passed to this function should be ready and mapped
++	 * for DMA already. Therefore, we don't need to do anything except
++	 * submit it to the Freescale DMA Engine for processing
++	 */
++
++	/* setup the DMA_SLAVE transaction */
++	chan->private = priv->slave;
++	tx = chan->device->device_prep_slave_sg(chan, sg, nents,
++						DMA_FROM_DEVICE, 0);
++	if (!tx) {
++		dev_err(priv->dev, "unable to prep slave DMA 1\n");
++		return -ENOMEM;
++	}
++
++	/* submit the transaction to the DMA controller */
++	cookie = tx->tx_submit(tx);
++	if (dma_submit_error(cookie)) {
++		dev_err(priv->dev, "unable to submit slave DMA 1\n");
++		return -ENOMEM;
++	}
++
++	/* Prepare the re-read of the SYS-FPGA block */
++	dst = sg_dma_address(sg) + (NUM_FPGA * 32 * 4);
++	src = SYS_FPGA_BLOCK;
++	tx = chan->device->device_prep_dma_memcpy(chan, dst, src, 32 * 4,
++						  DMA_PREP_INTERRUPT);
++	if (!tx) {
++		dev_err(priv->dev, "unable to prep slave DMA 2\n");
++		return -ENOMEM;
++	}
++
++	/* Setup the callback */
++	tx->callback = data_dma_cb;
++	tx->callback_param = priv;
++
++	/* submit the transaction to the DMA controller */
++	cookie = tx->tx_submit(tx);
++	if (dma_submit_error(cookie)) {
++		dev_err(priv->dev, "unable to submit slave DMA 2\n");
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
++#define CORL_DONE	0x1
++#define CORL_ERR	0x2
++
++static irqreturn_t data_irq(int irq, void *dev_id)
++{
++	struct fpga_device *priv = dev_id;
++	struct data_buf *buf;
++	u32 status;
++	int i;
++
++	/* detect spurious interrupts via FPGA status */
++	for (i = 0; i < 4; i++) {
++		status = fpga_read_reg(priv, i, MMAP_REG_STATUS);
++		if (!(status & (CORL_DONE | CORL_ERR))) {
++			dev_err(priv->dev, "spurious irq detected (FPGA)\n");
++			return IRQ_NONE;
++		}
++	}
++
++	/* detect spurious interrupts via raw IRQ pin readback */
++	status = ioread32be(priv->regs + SYS_IRQ_INPUT_DATA);
++	if (status & IRQ_CORL_DONE) {
++		dev_err(priv->dev, "spurious irq detected (IRQ)\n");
++		return IRQ_NONE;
++	}
++
++	spin_lock(&priv->lock);
++
++	/* hide the interrupt by switching the IRQ driver to GPIO */
++	data_disable_interrupts(priv);
++
++	/* Check that we actually have a free buffer */
++	if (list_empty(&priv->free)) {
++		priv->num_dropped++;
++		data_enable_interrupts(priv);
++		goto out_unlock;
++	}
++
++	buf = list_first_entry(&priv->free, struct data_buf, entry);
++	list_del_init(&buf->entry);
++
++	/* Check the buffer size */
++	BUG_ON(buf->size != priv->bufsize);
++
++	/* Submit a DMA transfer to get the correlation data */
++	if (data_submit_dma(priv, buf)) {
++		dev_err(priv->dev, "Unable to setup DMA transfer\n");
++		list_add_tail(&buf->entry, &priv->free);
++		data_enable_interrupts(priv);
++		goto out_unlock;
++	}
++
++	/* DMA setup succeeded, GO!!! */
++	list_add_tail(&buf->entry, &priv->inflight);
++	dma_async_memcpy_issue_pending(priv->chan);
++
++out_unlock:
++	spin_unlock(&priv->lock);
++	return IRQ_HANDLED;
++}
++
++/*
++ * Realtime Device Enable Helpers
++ */
++
++/*
++ * Enable the device for buffered dumping
++ *
++ * ASSUMES: the FPGA's are powered on and reads will succeed
++ * LOCKING: dev->mutex held
++ * CONTEXT: user context only
++ */
++static int data_device_enable(struct fpga_device *priv)
++{
++	u32 val;
++	int ret;
++
++	/* multiple enables are safe: they do nothing */
++	if (priv->enabled)
++		return 0;
++
++	/* check that the FPGAs are programmed */
++	val = ioread32be(priv->regs + 0x44);
++	if (!(val & (1 << 18))) {
++		dev_err(priv->dev, "DATA-FPGAs are not enabled\n");
++		return -ENODATA;
++	}
++
++	/* read the FPGAs to calculate the buffer size */
++	ret = data_calculate_bufsize(priv);
++	if (ret) {
++		dev_err(priv->dev, "unable to calculate buffer size\n");
++		goto out_error;
++	}
++
++	/* allocate the correlation data buffers */
++	ret = data_alloc_buffers(priv);
++	if (ret) {
++		dev_err(priv->dev, "unable to allocate buffers\n");
++		goto out_error;
++	}
++
++	/* allocate the DMA_SLAVE structure for correlation data */
++	ret = data_setup_dma_slave(priv);
++	if (ret) {
++		dev_err(priv->dev, "unable to setup DMA list\n");
++		goto out_error;
++	}
++
++	/* switch to the external FPGA IRQ line */
++	data_enable_interrupts(priv);
++
++	/* hookup the irq handler */
++	ret = request_irq(priv->irq, data_irq, IRQF_SHARED, drv_name, priv);
++	if (ret) {
++		dev_err(priv->dev, "unable to request IRQ handler\n");
++		goto out_free_slave;
++	}
++
++	/* success, we're enabled */
++	priv->enabled = true;
++	return 0;
++
++out_free_slave:
++	fsl_dma_slave_free(priv->slave);
++	priv->slave = NULL;
++out_error:
++	data_free_buffers(priv);
++	return ret;
++}
++
++/*
++ * Disable the device for buffered dumping
++ *
++ * LOCKING: must hold dev->mutex
++ * CONTEXT: user only
++ */
++static int data_device_disable(struct fpga_device *priv)
++{
++	struct list_head *list;
++	int ret;
++
++	/* allow multiple disable */
++	if (!priv->enabled)
++		return 0;
++
++	/* switch to the internal GPIO IRQ line */
++	data_disable_interrupts(priv);
++
++	/* unhook the irq handler */
++	free_irq(priv->irq, priv);
++
++	/* wait for all outstanding DMA to complete */
++	list = &priv->inflight;
++
++	spin_lock_irq(&priv->lock);
++	while (!list_empty(list)) {
++		spin_unlock_irq(&priv->lock);
++
++		ret = wait_event_interruptible(priv->wait, list_empty(list));
++		if (ret)
++			return -ERESTARTSYS;
++
++		spin_lock_irq(&priv->lock);
++	}
++	spin_unlock_irq(&priv->lock);
++
++	/* free the DMA_SLAVE structure */
++	fsl_dma_slave_free(priv->slave);
++	priv->slave = NULL;
++
++	/* free all of the buffers */
++	data_free_buffers(priv);
++	priv->enabled = false;
++	return 0;
++}
++
++/*
++ * SYSFS Attributes
++ */
++
++/*
++ * Count the number of entries in the given list
++ */
++static unsigned int list_num_entries(struct list_head *list)
++{
++	struct list_head *entry;
++	unsigned int ret = 0;
++
++	list_for_each(entry, list)
++		ret++;
++
++	return ret;
++}
++
++static ssize_t data_num_buffers_show(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	struct fpga_device *priv = dev_get_drvdata(dev);
++	unsigned int num;
++
++	spin_lock_irq(&priv->lock);
++	num = priv->num_buffers;
++	spin_unlock_irq(&priv->lock);
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", num);
++}
++
++static ssize_t data_bufsize_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	struct fpga_device *priv = dev_get_drvdata(dev);
++	size_t num;
++
++	spin_lock_irq(&priv->lock);
++	num = priv->bufsize;
++	spin_unlock_irq(&priv->lock);
++
++	return snprintf(buf, PAGE_SIZE, "%zu\n", num);
++}
++
++static ssize_t data_inflight_show(struct device *dev,
++				  struct device_attribute *attr, char *buf)
++{
++	struct fpga_device *priv = dev_get_drvdata(dev);
++	unsigned int num;
++
++	spin_lock_irq(&priv->lock);
++	num = list_num_entries(&priv->inflight);
++	spin_unlock_irq(&priv->lock);
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", num);
++}
++
++static ssize_t data_free_show(struct device *dev,
++			      struct device_attribute *attr, char *buf)
++{
++	struct fpga_device *priv = dev_get_drvdata(dev);
++	unsigned int num;
++
++	spin_lock_irq(&priv->lock);
++	num = list_num_entries(&priv->free);
++	spin_unlock_irq(&priv->lock);
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", num);
++}
++
++static ssize_t data_used_show(struct device *dev,
++			      struct device_attribute *attr, char *buf)
++{
++	struct fpga_device *priv = dev_get_drvdata(dev);
++	unsigned int num;
++
++	spin_lock_irq(&priv->lock);
++	num = list_num_entries(&priv->used);
++	spin_unlock_irq(&priv->lock);
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", num);
++}
++
++static ssize_t data_num_dropped_show(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	struct fpga_device *priv = dev_get_drvdata(dev);
++	unsigned int num;
++
++	spin_lock_irq(&priv->lock);
++	num = priv->num_dropped;
++	spin_unlock_irq(&priv->lock);
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", num);
++}
++
++static ssize_t data_en_show(struct device *dev, struct device_attribute *attr,
++			    char *buf)
++{
++	struct fpga_device *priv = dev_get_drvdata(dev);
++	ssize_t count;
++
++	if (mutex_lock_interruptible(&priv->mutex))
++		return -ERESTARTSYS;
++
++	count = snprintf(buf, PAGE_SIZE, "%u\n", priv->enabled);
++	mutex_unlock(&priv->mutex);
++	return count;
++}
++
++static ssize_t data_en_set(struct device *dev, struct device_attribute *attr,
++			   const char *buf, size_t count)
++{
++	struct fpga_device *priv = dev_get_drvdata(dev);
++	unsigned long enable;
++	int ret;
++
++	ret = strict_strtoul(buf, 0, &enable);
++	if (ret) {
++		dev_err(priv->dev, "unable to parse enable input\n");
++		return -EINVAL;
++	}
++
++	if (mutex_lock_interruptible(&priv->mutex))
++		return -ERESTARTSYS;
++
++	if (enable)
++		ret = data_device_enable(priv);
++	else
++		ret = data_device_disable(priv);
++
++	if (ret) {
++		dev_err(priv->dev, "device %s failed\n",
++			enable ? "enable" : "disable");
++		count = ret;
++		goto out_unlock;
++	}
++
++out_unlock:
++	mutex_unlock(&priv->mutex);
++	return count;
++}
++
++static DEVICE_ATTR(num_buffers, S_IRUGO, data_num_buffers_show, NULL);
++static DEVICE_ATTR(buffer_size, S_IRUGO, data_bufsize_show, NULL);
++static DEVICE_ATTR(num_inflight, S_IRUGO, data_inflight_show, NULL);
++static DEVICE_ATTR(num_free, S_IRUGO, data_free_show, NULL);
++static DEVICE_ATTR(num_used, S_IRUGO, data_used_show, NULL);
++static DEVICE_ATTR(num_dropped, S_IRUGO, data_num_dropped_show, NULL);
++static DEVICE_ATTR(enable, S_IWUGO | S_IRUGO, data_en_show, data_en_set);
++
++static struct attribute *data_sysfs_attrs[] = {
++	&dev_attr_num_buffers.attr,
++	&dev_attr_buffer_size.attr,
++	&dev_attr_num_inflight.attr,
++	&dev_attr_num_free.attr,
++	&dev_attr_num_used.attr,
++	&dev_attr_num_dropped.attr,
++	&dev_attr_enable.attr,
++	NULL,
++};
++
++static const struct attribute_group rt_sysfs_attr_group = {
++	.attrs = data_sysfs_attrs,
++};
++
++/*
++ * FPGA Realtime Data Character Device
++ */
++
++static int data_open(struct inode *inode, struct file *filp)
++{
++	struct fpga_device *priv = inode_to_dev(inode);
++	struct fpga_reader *reader;
++	int ret;
++
++	/* allocate private data */
++	reader = kzalloc(sizeof(*reader), GFP_KERNEL);
++	if (!reader)
++		return -ENOMEM;
++
++	reader->priv = priv;
++	reader->buf = NULL;
++
++	filp->private_data = reader;
++	ret = nonseekable_open(inode, filp);
++	if (ret) {
++		dev_err(priv->dev, "nonseekable-open failed\n");
++		kfree(reader);
++		return ret;
++	}
++
++	return 0;
++}
++
++static int data_release(struct inode *inode, struct file *filp)
++{
++	struct fpga_reader *reader = filp->private_data;
++	struct fpga_device *priv = reader->priv;
++
++	/* free the per-reader structure */
++	data_free_buffer(priv->dmadev, reader->buf);
++	kfree(reader);
++	return 0;
++}
++
++static ssize_t data_read(struct file *filp, char __user *ubuf, size_t count,
++			 loff_t *f_pos)
++{
++	struct fpga_reader *reader = filp->private_data;
++	struct fpga_device *priv = reader->priv;
++	struct list_head *used = &priv->used;
++	struct data_buf *dbuf;
++	size_t avail;
++	void *data;
++	int ret;
++
++	/* check if we already have a partial buffer */
++	if (reader->buf) {
++		dbuf = reader->buf;
++		goto have_buffer;
++	}
++
++	spin_lock_irq(&priv->lock);
++
++	/* Block until there is at least one buffer on the used list */
++	while (list_empty(used)) {
++		spin_unlock_irq(&priv->lock);
++
++		if (filp->f_flags & O_NONBLOCK)
++			return -EAGAIN;
++
++		if (wait_event_interruptible(priv->wait, !list_empty(used)))
++			return -ERESTARTSYS;
++
++		spin_lock_irq(&priv->lock);
++	}
++
++	/* Grab the first buffer off of the used list */
++	dbuf = list_first_entry(used, struct data_buf, entry);
++	list_del_init(&dbuf->entry);
++
++	spin_unlock_irq(&priv->lock);
++
++	/* Buffers are always mapped: unmap it */
++	data_unmap_buffer(priv->dmadev, dbuf);
++
++	/* save the buffer for later */
++	reader->buf = dbuf;
++	reader->buf_start = 0;
++
++	/* we removed a buffer from the used list: wake any waiters */
++	wake_up(&priv->wait);
++
++have_buffer:
++	/* Get the number of bytes available */
++	avail = dbuf->size - reader->buf_start;
++	data = dbuf->vb.vaddr + reader->buf_start;
++
++	/* Get the number of bytes we can transfer */
++	count = min(count, avail);
++
++	/* Copy the data to the userspace buffer */
++	if (copy_to_user(ubuf, data, count))
++		return -EFAULT;
++
++	/* Update the amount of available space */
++	avail -= count;
++
++	/* Lock against concurrent enable/disable */
++	if (mutex_lock_interruptible(&priv->mutex))
++		return -ERESTARTSYS;
++
++	/* Still some space available: save the buffer for later */
++	if (avail != 0) {
++		reader->buf_start += count;
++		reader->buf = dbuf;
++		goto out_unlock;
++	}
++
++	/*
++	 * No space is available in this buffer
++	 *
++	 * This is a complicated decision:
++	 * - if the device is not enabled: free the buffer
++	 * - if the buffer is too small: free the buffer
++	 */
++	if (!priv->enabled || dbuf->size != priv->bufsize) {
++		data_free_buffer(priv->dmadev, dbuf);
++		reader->buf = NULL;
++		goto out_unlock;
++	}
++
++	/*
++	 * The buffer is safe to recycle: remap it and finish
++	 *
++	 * If this fails, we pretend that the read never happened, and return
++	 * -EFAULT to userspace. They'll retry the read again.
++	 */
++	ret = data_map_buffer(priv->dmadev, dbuf);
++	if (ret) {
++		dev_err(priv->dev, "unable to remap buffer for DMA\n");
++		count = -EFAULT;
++		goto out_unlock;
++	}
++
++	/* Add the buffer back to the free list */
++	reader->buf = NULL;
++	spin_lock_irq(&priv->lock);
++	list_add_tail(&dbuf->entry, &priv->free);
++	spin_unlock_irq(&priv->lock);
++
++out_unlock:
++	mutex_unlock(&priv->mutex);
++	return count;
++}
++
++static unsigned int data_poll(struct file *filp, struct poll_table_struct *tbl)
++{
++	struct fpga_reader *reader = filp->private_data;
++	struct fpga_device *priv = reader->priv;
++	unsigned int mask = 0;
++
++	poll_wait(filp, &priv->wait, tbl);
++
++	spin_lock_irq(&priv->lock);
++
++	if (!list_empty(&priv->used))
++		mask |= POLLIN | POLLRDNORM;
++
++	spin_unlock_irq(&priv->lock);
++	return mask;
++}
++
++static int data_mmap(struct file *filp, struct vm_area_struct *vma)
++{
++	struct fpga_reader *reader = filp->private_data;
++	struct fpga_device *priv = reader->priv;
++	unsigned long offset, vsize, psize, addr;
++
++	/* VMA properties */
++	offset = vma->vm_pgoff << PAGE_SHIFT;
++	vsize = vma->vm_end - vma->vm_start;
++	psize = priv->phys_size - offset;
++	addr = (priv->phys_addr + offset) >> PAGE_SHIFT;
++
++	/* Check against the FPGA region's physical memory size */
++	if (vsize > psize) {
++		dev_err(priv->dev, "requested mmap mapping too large\n");
++		return -EINVAL;
++	}
++
++	/* IO memory (stop cacheing) */
++	vma->vm_flags |= VM_IO | VM_RESERVED;
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++
++	return io_remap_pfn_range(vma, vma->vm_start, addr, vsize,
++				  vma->vm_page_prot);
++}
++
++static const struct file_operations data_fops = {
++	.owner		= THIS_MODULE,
++	.open		= data_open,
++	.release	= data_release,
++	.read		= data_read,
++	.poll		= data_poll,
++	.mmap		= data_mmap,
++	.llseek		= no_llseek,
++};
++
++/*
++ * OpenFirmware Device Subsystem
++ */
++
++static bool dma_filter(struct dma_chan *chan, void *data)
++{
++	/*
++	 * DMA Channel #0 is used for the FPGA Programmer, so ignore it
++	 *
++	 * This probably won't survive an unload/load cycle of the Freescale
++	 * DMAEngine driver, but that won't be a problem
++	 */
++	if (chan->chan_id == 0 && chan->device->dev_id == 0)
++		return false;
++
++	return true;
++}
++
++static int data_of_probe(struct platform_device *op,
++			 const struct of_device_id *match)
++{
++	struct device_node *of_node = op->dev.of_node;
++	struct fpga_device *priv;
++	struct resource res;
++	dma_cap_mask_t mask;
++	int ret;
++
++	/* Allocate private data */
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv) {
++		dev_err(&op->dev, "Unable to allocate device private data\n");
++		ret = -ENOMEM;
++		goto out_return;
++	}
++
++	dev_set_drvdata(&op->dev, priv);
++	priv->dmadev = &op->dev;
++
++	/* Allocate the character device */
++	ret = alloc_chrdev_region(&priv->devno, 0, 1, drv_name);
++	if (ret) {
++		dev_err(&op->dev, "Unable to allocate chardev region\n");
++		goto out_free_priv;
++	}
++
++	/* Get the physical address of the FPGA registers */
++	ret = of_address_to_resource(of_node, 0, &res);
++	if (ret) {
++		dev_err(&op->dev, "Unable to find FPGA physical address\n");
++		ret = -ENODEV;
++		goto out_unregister_chrdev_region;
++	}
++
++	priv->phys_addr = res.start;
++	priv->phys_size = resource_size(&res);
++
++	/* ioremap the registers for use */
++	priv->regs = of_iomap(of_node, 0);
++	if (!priv->regs) {
++		dev_err(&op->dev, "Unable to ioremap registers\n");
++		ret = -ENOMEM;
++		goto out_unregister_chrdev_region;
++	}
++
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_MEMCPY, mask);
++	dma_cap_set(DMA_INTERRUPT, mask);
++	dma_cap_set(DMA_SLAVE, mask);
++
++	/* Request a DMA channel */
++	priv->chan = dma_request_channel(mask, dma_filter, NULL);
++	if (!priv->chan) {
++		dev_err(&op->dev, "Unable to request DMA channel\n");
++		ret = -ENODEV;
++		goto out_unmap_regs;
++	}
++
++	/* Find the correct IRQ number */
++	priv->irq = irq_of_parse_and_map(of_node, 0);
++	if (priv->irq == NO_IRQ) {
++		dev_err(&op->dev, "Unable to find IRQ line\n");
++		ret = -ENODEV;
++		goto out_release_dma;
++	}
++
++	priv->dev = carma_device_create(&op->dev, priv->devno, drv_name);
++	if (IS_ERR(priv->dev)) {
++		dev_err(&op->dev, "Unable to create CARMA device\n");
++		ret = PTR_ERR(priv->dev);
++		goto out_irq_dispose_mapping;
++	}
++
++	dev_set_drvdata(priv->dev, priv);
++	cdev_init(&priv->cdev, &data_fops);
++	mutex_init(&priv->mutex);
++	spin_lock_init(&priv->lock);
++	INIT_LIST_HEAD(&priv->free);
++	INIT_LIST_HEAD(&priv->used);
++	INIT_LIST_HEAD(&priv->inflight);
++	init_waitqueue_head(&priv->wait);
++
++	/* Drive the GPIO for FPGA IRQ high (no interrupt) */
++	iowrite32be(IRQ_CORL_DONE, priv->regs + SYS_IRQ_OUTPUT_DATA);
++
++	/* Register the character device */
++	ret = cdev_add(&priv->cdev, priv->devno, 1);
++	if (ret) {
++		dev_err(&op->dev, "Unable to add character device\n");
++		goto out_destroy_carma_device;
++	}
++
++	/* Create the sysfs files */
++	ret = sysfs_create_group(&priv->dev->kobj, &rt_sysfs_attr_group);
++	if (ret) {
++		dev_err(&op->dev, "Unable to create sysfs files\n");
++		goto out_cdev_del;
++	}
++
++	dev_info(&op->dev, "CARMA FPGA Realtime Data Driver Loaded\n");
++	return 0;
++
++out_cdev_del:
++	cdev_del(&priv->cdev);
++out_destroy_carma_device:
++	carma_device_destroy(priv->devno);
++out_irq_dispose_mapping:
++	irq_dispose_mapping(priv->irq);
++out_release_dma:
++	dma_release_channel(priv->chan);
++out_unmap_regs:
++	iounmap(priv->regs);
++out_unregister_chrdev_region:
++	unregister_chrdev_region(priv->devno, 1);
++out_free_priv:
++	kfree(priv);
++out_return:
++	return ret;
++}
++
++static int data_of_remove(struct platform_device *op)
++{
++	struct fpga_device *priv = dev_get_drvdata(&op->dev);
++
++	/* make sure the IRQ line is disabled */
++	mutex_lock(&priv->mutex);
++	data_device_disable(priv);
++	mutex_unlock(&priv->mutex);
++
++	sysfs_remove_group(&priv->dev->kobj, &rt_sysfs_attr_group);
++	cdev_del(&priv->cdev);
++	carma_device_destroy(priv->devno);
++
++	irq_dispose_mapping(priv->irq);
++	dma_release_channel(priv->chan);
++	iounmap(priv->regs);
++	unregister_chrdev_region(priv->devno, 1);
++	kfree(priv);
++
++	return 0;
++}
++
++static struct of_device_id data_of_match[] = {
++	{ .compatible = "carma,carma-fpga", },
++	{},
++};
++
++static struct of_platform_driver data_of_driver = {
++	.probe		= data_of_probe,
++	.remove		= data_of_remove,
++	.driver		= {
++		.name		= drv_name,
++		.of_match_table	= data_of_match,
++		.owner		= THIS_MODULE,
++	},
++};
++
++/*
++ * Module Init / Exit
++ */
++
++static int __init data_init(void)
++{
++	return of_register_platform_driver(&data_of_driver);
++}
++
++static void __exit data_exit(void)
++{
++	of_unregister_platform_driver(&data_of_driver);
 +}
 +
 +MODULE_AUTHOR("Ira W. Snyder <iws@ovro.caltech.edu>");
-+MODULE_DESCRIPTION("CARMA Device Class Driver");
++MODULE_DESCRIPTION("CARMA DATA-FPGA Access Driver");
 +MODULE_LICENSE("GPL");
 +
-+module_init(carma_init);
-+module_exit(carma_exit);
-diff --git a/drivers/fpga/carma/carma.h b/drivers/fpga/carma/carma.h
-new file mode 100644
-index 0000000..f556dc8
---- /dev/null
-+++ b/drivers/fpga/carma/carma.h
-@@ -0,0 +1,22 @@
-+/*
-+ * CARMA Board Utilities
-+ *
-+ * Copyright (c) 2009-2010 Ira W. Snyder <iws@ovro.caltech.edu>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2 of the License, or (at your
-+ * option) any later version.
-+ */
-+
-+#ifndef CARMA_DEVICE_H
-+#define CARMA_DEVICE_H
-+
-+#include <linux/device.h>
-+
-+struct device *carma_device_create(struct device *parent, dev_t devno,
-+				   const char *fmt, ...)
-+				   __attribute__((format(printf, 3, 4)));
-+void carma_device_destroy(dev_t devno);
-+
-+#endif /* CARMA_DEVICE_H */
++module_init(data_init);
++module_exit(data_exit);
 -- 
 1.7.1
 
