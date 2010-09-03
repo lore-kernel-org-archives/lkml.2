@@ -1,263 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab0ICOqw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 10:46:52 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54358 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756602Ab0ICOqu (ORCPT
+	id S1756826Ab0ICOrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 10:47:46 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48769 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964Ab0ICOrp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 10:46:50 -0400
+	Fri, 3 Sep 2010 10:47:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qa/YyIHW3SvxVAr7ro5ZNq5cwQ7MS9jH8g6Ycfxu4TkPJvFg4pMAFH+eBfXr594O8i
+         ifj4veuFHnqtJ9EzEgnvdr0SFJR3aELvbFw+tU4DTurqURMFem4UWq3RN7NZWeXysmdB
+         c3fY53auXfv6fQNtzDa+YuAHSwcoQJ7Dxzua8=
 MIME-Version: 1.0
-In-Reply-To: <4C80E2D5.1020104@dsn.okisemi.com>
-References: <4C80E2D5.1020104@dsn.okisemi.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 3 Sep 2010 08:46:29 -0600
-X-Google-Sender-Auth: mzDMD_DwcGZqzbsDbj7150yf1mw
-Message-ID: <AANLkTinYypWdty1eLH1LTyOEZPt-k=cEDGu_coyWVa2t@mail.gmail.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Cc: meego-dev@meego.com, LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
-        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        arjan@linux.intel.com, gregkh@suse.de,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>
+In-Reply-To: <AANLkTikRBOhTQM0gyS8_Vwu7EsetaaaEuv0owkBp7B_F@mail.gmail.com>
+References: <AANLkTineCKfL-UvqfQBTZPDFeqm3Nrpb=pFnZpkSqbEQ@mail.gmail.com>
+	<4C810313.80000@hp.com>
+	<AANLkTikRBOhTQM0gyS8_Vwu7EsetaaaEuv0owkBp7B_F@mail.gmail.com>
+Date: Fri, 3 Sep 2010 10:47:43 -0400
+Message-ID: <AANLkTi=dtsjCvvoOYBiMe6+sro8Ui8P7xtMH=k808BwU@mail.gmail.com>
+Subject: Re: [PATCH] sctp: prevent reading out-of-bounds memory
+From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+To: Vlad Yasevich <vladislav.yasevich@hp.com>
+Cc: sri@us.ibm.com, linux-sctp@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/3 Masayuki Ohtak <masa-korg@dsn.okisemi.com>:
-> SPI driver of Topcliff PCH
+Ugh, just remembered the port number is also dereferenced, so the
+second of these two checks needs to be expanded to the size of a
+sockaddr_in.  Note to self: don't write patches on too little sleep.
+Apologies for the unnecessary traffic.
+
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+
+--- linux-2.6.35.4.orig/net/sctp/socket.c	2010-09-03 08:58:48.127080114 -0400
++++ linux-2.6.35.4/net/sctp/socket.c	2010-09-03 10:45:08.467098052 -0400
+@@ -916,6 +916,12 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+ 	/* Walk through the addrs buffer and count the number of addresses. */
+ 	addr_buf = kaddrs;
+ 	while (walk_size < addrs_size) {
++
++		if (walk_size + sizeof(sa_family_t) > addrs_size) {
++			kfree(kaddrs);
++			return -EINVAL;
++		}
++
+ 		sa_addr = (struct sockaddr *)addr_buf;
+ 		af = sctp_get_af_specific(sa_addr->sa_family);
+
+@@ -1002,6 +1008,12 @@ static int __sctp_connect(struct sock* s
+ 	/* Walk through the addrs buffer and count the number of addresses. */
+ 	addr_buf = kaddrs;
+ 	while (walk_size < addrs_size) {
++
++		if (walk_size + sizeof(struct sockaddr_in) > addrs_size) {
++			err = -EINVAL;
++			goto out_free;
++		}
++
+ 		sa_addr = (union sctp_addr *)addr_buf;
+ 		af = sctp_get_af_specific(sa_addr->sa.sa_family);
+ 		port = ntohs(sa_addr->v4.sin_port);
+
+
+
+On Fri, Sep 3, 2010 at 10:35 AM, Dan Rosenberg
+<dan.j.rosenberg@gmail.com> wrote:
+> Ha, I knew there was an easier way.  Take two:
 >
-> Topcliff PCH is the platform controller hub that is going to be used in
-> Intel's upcoming general embedded platform. All IO peripherals in
-> Topcliff PCH are actually devices sitting on AMBA bus.
-> Topcliff PCH has SPI I/F. Using this I/F, it is able to access system
-> devices connected to SPI.
+> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 >
-> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-
-Hi Ohtak-san
-
-Comments below.  Also, please also fix the method that you're using to
-post patches.  The email client you're currently using is posting the
-patches in HTML format, and is mangling them.  git send-email can help
-you here.
-
-> ---
->  drivers/spi/Kconfig   |   19 +
->  drivers/spi/Makefile  |    1 +
->  drivers/spi/spi_pch.c | 1813
-> +++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 1833 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/spi/spi_pch.c
+> --- linux-2.6.35.4.orig/net/sctp/socket.c       2010-09-03 08:58:48.127080114 -0400
+> +++ linux-2.6.35.4/net/sctp/socket.c    2010-09-03 10:28:14.929595312 -0400
+> @@ -916,6 +916,12 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+>        /* Walk through the addrs buffer and count the number of addresses. */
+>        addr_buf = kaddrs;
+>        while (walk_size < addrs_size) {
+> +
+> +               if (walk_size + sizeof(sa_family_t) > addrs_size) {
+> +                       kfree(kaddrs);
+> +                       return -EINVAL;
+> +               }
+> +
+>                sa_addr = (struct sockaddr *)addr_buf;
+>                af = sctp_get_af_specific(sa_addr->sa_family);
 >
-> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-> index 91c2f4f..2c93667 100644
-> --- a/drivers/spi/Kconfig
-> +++ b/drivers/spi/Kconfig
-> @@ -53,6 +53,25 @@ if SPI_MASTER
+> @@ -1002,6 +1008,12 @@ static int __sctp_connect(struct sock* s
+>        /* Walk through the addrs buffer and count the number of addresses. */
+>        addr_buf = kaddrs;
+>        while (walk_size < addrs_size) {
+> +
+> +               if (walk_size + sizeof(sa_family_t) > addrs_size) {
+> +                       err = -EINVAL;
+> +                       goto out_free;
+> +               }
+> +
+>                sa_addr = (union sctp_addr *)addr_buf;
+>                af = sctp_get_af_specific(sa_addr->sa.sa_family);
+>                port = ntohs(sa_addr->v4.sin_port);
 >
->  comment "SPI Master Controller Drivers"
 >
-> +config PCH_SPI
-> +#	tristate "PCH SPI Controller"
-> +	boolean "PCH SPI Controller"
-> +	depends on PCI
-> +	help
-> +	  This driver is for PCH(Platform controller Hub) SPI of Topcliff which
-> +	  is an IOH(Input/Output Hub) for x86 embedded processor.
-> +	  This driver can access PCH SPI bus device.
-> +
-> +config PCH_SPI_PLATFORM_DEVICE_COUNT
-> +	int "PCH SPI Bus count"
-> +	range 1 2
-> +	depends on PCH_SPI
-> +	help
-> +	  This driver is for PCH(Platform controller Hub) SPI of Topcliff which
-> +	  is an IOH(Input/Output Hub) for x86 embedded processor.
-> +	  The number of SPI buses/channels supported by the PCH SPI controller.
-> +	  PCH SPI of Topcliff supports only one channel.
-> +
-
-As previously discussed, PCH_SPI_PLATFORM_DEVICE_COUNT needs to be
-removed (see below).
-
-[...]
-
-> +static int pch_spi_probe(struct pci_dev *pdev, const struct pci_device_id
-> *id)
-> +{
-> +
-> +	struct spi_master *master[PCH_MAX_DEV];
-> +
-> +	struct pch_spi_board_data *board_dat;
-> +	int retval, i;
-> +	int spi_alloc_num, master_num;
-> +
-> +	dev_dbg(&pdev->dev, "%s ENTRY\n", __func__);
-> +
-> +	/* allocate memory for private data */
-> +	board_dat = kzalloc(sizeof(struct pch_spi_board_data), GFP_KERNEL);
-> +
-> +	if (board_dat == NULL) {
-> +		dev_err(&pdev->dev,
-> +			" %s memory allocation for private data failed\n",
-> +			__func__);
-> +		retval = -ENOMEM;
-> +		goto err_kmalloc;
-> +	}
-> +
-> +	dev_dbg(&pdev->dev,
-> +		"%s memory allocation for private data success\n", __func__);
-> +
-> +	/* enable PCI device */
-> +	retval = pci_enable_device(pdev);
-> +	if (retval != 0) {
-> +		dev_err(&pdev->dev, "%s pci_enable_device FAILED\n", __func__);
-> +
-> +		goto err_pci_en_device;
-> +	}
-> +
-> +	dev_dbg(&pdev->dev, "%s pci_enable_device returned=%d\n",
-> +		__func__, retval);
-> +
-> +	board_dat->pdev = pdev;
-> +
-> +	/* alllocate memory for SPI master */
-> +	for (i = 0, spi_alloc_num = 0; i < PCH_MAX_DEV; i++, spi_alloc_num++) {
-> +		master[i] = spi_alloc_master(&pdev->dev,
-> +					     sizeof(struct pch_spi_data));
-> +
-> +		if (master[i] == NULL) {
-> +			retval = -ENOMEM;
-> +			dev_err(&pdev->dev, "%s [ch=%d]Fail.\n", __func__, i);
-> +			goto err_spi_alloc_master;
-> +		}
-> +	}
-> +
-> +	dev_dbg(&pdev->dev,
-> +		"%s spi_alloc_master returned non NULL\n", __func__);
-> +
-> +	/* initialize members of SPI master */
-> +	for (i = 0, master_num = 0; i < PCH_MAX_DEV;
-> +							i++, master_num++) {
-> +		master[i]->bus_num = i;
-
-This is not okay.  The driver cannot assume that it provides the only
-SPI busses in the system.  The bus number should either be set to -1
-so that it gets auto-assigned, or the bus number should be passed in
-by board-specific setup code.
-
-> +		master[i]->num_chipselect = PCH_MAX_CS;
-> +		master[i]->setup = pch_spi_setup;
-> +		dev_dbg(&pdev->dev,
-> +			"%s setup member of SPI master initialized\n",
-> +			__func__);
-> +		master[i]->transfer = pch_spi_transfer;
-> +		dev_dbg(&pdev->dev,
-> +			"%s transfer member of SPI master initialized\n",
-> +			__func__);
-> +
-> +		board_dat->data[i] = spi_master_get_devdata(master[i]);
-> +
-> +		board_dat->data[i]->master = master[i];
-> +		board_dat->data[i]->n_curnt_chip = 255;
-> +		board_dat->data[i]->current_chip = NULL;
-> +		board_dat->data[i]->transfer_complete = false;
-> +		board_dat->data[i]->pkt_tx_buff = NULL;
-> +		board_dat->data[i]->pkt_rx_buff = NULL;
-> +		board_dat->data[i]->tx_index = 0;
-> +		board_dat->data[i]->rx_index = 0;
-> +		board_dat->data[i]->transfer_active = false;
-> +		board_dat->data[i]->board_dat = board_dat;
-> +		board_dat->suspend_sts = false;
-> +
-> +		mutex_init(&board_dat->data[i]->mutex);
-> +	}
-> +
-> +
-> +	/* allocate resources for PCH SPI */
-> +	retval = pch_spi_get_resources(board_dat);
-> +	if (retval != 0) {
-> +		dev_err(&pdev->dev, "%s fail(retval=%d)\n",
-> +			__func__, retval);
-> +		goto err_spi_get_resources;
-> +	}
-> +
-> +	dev_dbg(&pdev->dev, "%s pch_spi_get_resources returned=%d\n",
-> +		__func__, retval);
-> +
-> +	/* save private data in dev */
-> +	pci_set_drvdata(pdev, (void *)board_dat);
-> +	dev_dbg(&pdev->dev, "%s invoked pci_set_drvdata\n", __func__);
-> +
-> +	/* set master mode */
-> +	for (i = 0; i < PCH_MAX_DEV; i++) {
-> +		pch_spi_set_master_mode(master[i]);
-> +		dev_dbg(&pdev->dev,
-> +			"%s invoked pch_spi_set_master_mode\n", __func__);
-> +	}
-> +
-> +	/* Register the controller with the SPI core. */
-> +	for (i = 0, master_num = 0; i < PCH_MAX_DEV; i++, master_num++) {
-> +		retval = spi_register_master(master[i]);
-> +		if (retval != 0) {
-> +			dev_err(&pdev->dev,
-> +				"%s spi_register_master FAILED\n", __func__);
-> +			goto err_spi_reg_master;
-> +		}
-> +	}
-
-I *finally* understand what you're trying to do here.  It looks like
-you have a single PCI device that has multiple independent SPI busses.
- It also appears that this driver attempts to handle all of the
-instances within a single context.
-
-Doing it this way overcomplicates the driver because you need to have
-for() loops all over the driver to deal with the multiple instances.
-
-Instead, the majority of the code should be structured to handle one
-and only one spi bus instance.  Only at the top level pci probe,
-remove and PM code should there be for() loops for setting up or
-tearing down each spi bus instance one at a time.
-
-In fact, it may be better for the pci_probe() hook to simply register
-one or more platform_devices; one for each instance of the SPI bus,
-and then have a separate platform_driver that binds to each instance.
-
-> +static int __init pch_spi_init(void)
-> +{
-> +#ifdef PCH_SPIDEV_REG_OLD
-> +	int retval;
-> +
-> +	retval = spi_register_board_info
-> +		(pch_spi_slaves, ARRAY_SIZE(pch_spi_slaves));
-> +	if (retval)
-> +		return retval;
-> +#endif
-
-As we discussed previously, this driver must *not* register child spi
-devices with static code like this.  Remove the above lines and the
-pch_spi_slaves array.
-
-> +	return pci_register_driver(&pch_spi_pcidev);
-> +}
-> +
-> +
-> +static void __exit pch_spi_exit(void)
-> +{
-> +	pci_unregister_driver(&pch_spi_pcidev);
-> +}
-> +
-> +MODULE_LICENSE("GPL");
-> +MODULE_DESCRIPTION("PCH SPI PCI Driver");
-> +module_init(pch_spi_init);
-> +module_exit(pch_spi_exit);
-
-module_init() and modules_exit() should appear immediately after the
-functions they register as init and exit hooks.
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+>>
+>> Hm.. we already validate that we have the proper amount of space for a given sockaddr.
+>> The only thing we are missing is making sure that there is room to get the proper address
+>> family and I think you can do that without adding any extra variables:
+>>
+>>        if (walk_size + sizeof(sa_family_t) > addr_size) {
+>>                /* Not enough room for address family */
+>>                kfree(kaddrs);
+>>                return -EINVAL;
+>>        }
+>>
+>> -vlad
+>>
+>
+> On Fri, Sep 3, 2010 at 10:15 AM, Vlad Yasevich
+> <vladislav.yasevich@hp.com> wrote:
+>> On 09/03/2010 09:48 AM, Dan Rosenberg wrote:
+>>> Two user-controlled allocations in SCTP are subsequently dereferenced
+>>> as sockaddr structs, without checking if the dereferenced struct
+>>> members fall beyond the end of the allocated chunk.  There doesn't
+>>> appear to be any information leakage here based on how these members
+>>> are used and additional checking, but it's still worth fixing.
+>>>
+>>> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+>>>
+>>> --- linux-2.6.35.4.orig/net/sctp/socket.c     2010-09-03 08:58:48.127080114 -0400
+>>> +++ linux-2.6.35.4/net/sctp/socket.c  2010-09-03 09:22:06.337096825 -0400
+>>> @@ -889,6 +889,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+>>>       int err;
+>>>       int addrcnt = 0;
+>>>       int walk_size = 0;
+>>> +     unsigned int remaining = addrs_size;
+>>>       struct sockaddr *sa_addr;
+>>>       void *addr_buf;
+>>>       struct sctp_af *af;
+>>> @@ -916,6 +917,13 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+>>>       /* Walk through the addrs buffer and count the number of addresses. */
+>>>       addr_buf = kaddrs;
+>>>       while (walk_size < addrs_size) {
+>>> +
+>>> +             /* Don't read out-of-bounds memory */
+>>> +             if (remaining < sizeof(struct sockaddr)) {
+>>> +                     kfree(kaddrs);
+>>> +                     return -EINVAL;
+>>> +             }
+>>> +
+>>>               sa_addr = (struct sockaddr *)addr_buf;
+>>>               af = sctp_get_af_specific(sa_addr->sa_family);
+>>>
+>>> @@ -929,6 +937,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+>>>               addrcnt++;
+>>>               addr_buf += af->sockaddr_len;
+>>>               walk_size += af->sockaddr_len;
+>>> +             remaining -= af->sockaddr_len;
+>>>       }
+>>>
+>>>       /* Do the work. */
+>>> @@ -984,6 +993,7 @@ static int __sctp_connect(struct sock* s
+>>>       void *addr_buf;
+>>>       unsigned short port;
+>>>       unsigned int f_flags = 0;
+>>> +     unsigned int remaining = addrs_size;
+>>>
+>>>       sp = sctp_sk(sk);
+>>>       ep = sp->ep;
+>>> @@ -1002,6 +1012,13 @@ static int __sctp_connect(struct sock* s
+>>>       /* Walk through the addrs buffer and count the number of addresses. */
+>>>       addr_buf = kaddrs;
+>>>       while (walk_size < addrs_size) {
+>>> +
+>>> +             /* Don't read out-of-bounds memory */
+>>> +             if (remaining < sizeof(union sctp_addr)) {
+>>> +                     err = -EINVAL;
+>>> +                     goto out_free;
+>>> +             }
+>>> +
+>>>               sa_addr = (union sctp_addr *)addr_buf;
+>>>               af = sctp_get_af_specific(sa_addr->sa.sa_family);
+>>>               port = ntohs(sa_addr->v4.sin_port);
+>>> @@ -1101,6 +1118,7 @@ static int __sctp_connect(struct sock* s
+>>>               addrcnt++;
+>>>               addr_buf += af->sockaddr_len;
+>>>               walk_size += af->sockaddr_len;
+>>> +             remaining -= af->sockaddr_len;
+>>>       }
+>>>
+>>>       /* In case the user of sctp_connectx() wants an association
+>>>
+>>
+>>
+>
