@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab0ICFXz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 01:23:55 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61039 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab0ICFXy (ORCPT
+	id S1751743Ab0ICFs7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 01:48:59 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:65196 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab0ICFs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 01:23:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=DCS1tuqZ59Vey4scZ5WXI0LbW9vVN2Dpio3OVdQB1Lf36xGKXUYkZECSuEbeBAM9PI
-         J4YH63q1MQHqirIyMEFYinN/HfKdPmPfyzn4FrchJ6a1Vj7y+B/CuhExvSXmcYtIF8AE
-         PotI6i23Bjy6D+uUpEix/FxrTgEmWVDki7YGA=
+	Fri, 3 Sep 2010 01:48:57 -0400
+Message-ID: <4C808BB8.6040005@ct.jp.nec.com>
+Date: Fri, 03 Sep 2010 14:46:32 +0900
+From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikY5vhj3uHQ1HXSVdbWcjbMffzhsnRGGL7z_yEC@mail.gmail.com>
-References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com>
- <20100902121853.e90f6c53.randy.dunlap@oracle.com> <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
- <AANLkTikBOUSGYkopdUcV+5KsayRi-_88kktMLv=KXRU0@mail.gmail.com>
- <AANLkTin9cX5S1ToK=2yFN5TsqH25aN2fFoCdvSizqOH9@mail.gmail.com> <AANLkTikY5vhj3uHQ1HXSVdbWcjbMffzhsnRGGL7z_yEC@mail.gmail.com>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Fri, 3 Sep 2010 02:23:34 -0300
-Message-ID: <AANLkTi=dPxBeDK6RkcgyqYG3pRdix63EmJXVds7-pgf2@mail.gmail.com>
-Subject: Re: [RFC] Fix typos
-To: Phillip Lougher <phil.lougher@gmail.com>, trivial@kernel.org
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        Mike Frysinger <vapier.adi@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com,
+        j-nomura@ce.jp.nec.com, jamie@shareable.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-raid@vger.kernel.org, hch@lst.de
+Subject: Re: [PATCH UPDATED 4/5] dm: implement REQ_FLUSH/FUA support for request-based
+ dm
+References: <1283162296-13650-1-git-send-email-tj@kernel.org> <1283162296-13650-5-git-send-email-tj@kernel.org> <20100830132836.GB5283@redhat.com> <4C7BB932.1070405@kernel.org> <4C7BD202.4040700@kernel.org> <4C7DFD8F.6070200@ct.jp.nec.com> <4C7FA531.7060300@kernel.org>
+In-Reply-To: <4C7FA531.7060300@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 3, 2010 at 02:20, Lucas De Marchi <lucas.de.marchi@gmail.com> wrote:
-> http://people.profusion.mobi/~/lucas/kernel/0001-Automatic-spell-fixes.patch
-> http://people.profusion.mobi/~/lucas/kernel/0002-Manual-fixes-using-suggestions.patch
-> http://people.profusion.mobi/~/lucas/kernel/0003-Remove-false-positives-on-Documentation.patch
-> http://people.profusion.mobi/~/lucas/kernel/kernel-typos-fix-v2.patch
+Hi Tejun,
 
-Sorry, wrong links. The right ones are here:
+On 09/02/2010 10:22 PM +0900, Tejun Heo wrote:
+> On 09/01/2010 09:15 AM, Kiyoshi Ueda wrote:
+>>> @@ -2619,9 +2458,8 @@ int dm_suspend(struct mapped_device *md,
+>>>  	up_write(&md->io_lock);
+>>>
+>>>  	/*
+>>> -	 * Request-based dm uses md->wq for barrier (dm_rq_barrier_work) which
+>>> -	 * can be kicked until md->queue is stopped.  So stop md->queue before
+>>> -	 * flushing md->wq.
+>>> +	 * Stop md->queue before flushing md->wq in case request-based
+>>> +	 * dm defers requests to md->wq from md->queue.
+>>>  	 */
+>>>  	if (dm_request_based(md))
+>>>  		stop_queue(md->queue);
+>> 
+>> Request-based dm doesn't use md->wq now, so you can just remove
+>> the comment above.
+> 
+> I sure can remove it but md->wq already has most stuff necessary to
+> process deferred requests and when someone starts using it, having the
+> comment there about the rather delicate ordering would definitely be
+> helpful, so I suggest keeping the comment.
 
-http://people.profusion.mobi/~lucas/kernel/0001-Automatic-spell-fixes.patch
-http://people.profusion.mobi/~lucas/kernel/0002-Manual-fixes-using-suggestions.patch
-http://people.profusion.mobi/~lucas/kernel/0003-Remove-false-positives-on-Documentation.patch
-http://people.profusion.mobi/~lucas/kernel/kernel-typos-fix-v2.patch
+OK, makes sense.
 
-
--- 
-
-Lucas De Marchi
+Thanks,
+Kiyoshi Ueda
