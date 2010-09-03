@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab0ICJEF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:04:05 -0400
-Received: from cantor.suse.de ([195.135.220.2]:49440 "EHLO mx1.suse.de"
+	id S1756229Ab0ICJEW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:04:22 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44090 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754432Ab0ICJEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:04:01 -0400
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-To: Tony Luck <tony.luck@intel.com>
-Subject: Re: Serious problem with ticket spinlocks on ia64
-Date: Fri, 3 Sep 2010 11:04:37 +0200
-User-Agent: KMail/1.9.10
-Cc: "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <201008271537.35709.ptesarik@suse.cz> <20100902002641.GI18967@zorg.emea.sgi.com> <AANLkTimCOWvBs1pdWeMZD9DR=u2ioFPXt7Jja73VQaZn@mail.gmail.com>
-In-Reply-To: <AANLkTimCOWvBs1pdWeMZD9DR=u2ioFPXt7Jja73VQaZn@mail.gmail.com>
+	id S1756185Ab0ICJEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 05:04:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,312,1280732400"; 
+   d="scan'208";a="834532601"
+Date: Fri, 3 Sep 2010 17:04:07 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haicheng Li <haicheng.li@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: linux-next: build warning after merge of the tip tree
+Message-ID: <20100903090407.GA19771@localhost>
+References: <20100903121023.54c40e73.sfr@canb.auug.org.au>
+ <20100903121201.336c4ba8.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201009031104.38433.ptesarik@suse.cz>
+In-Reply-To: <20100903121201.336c4ba8.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 of September 2010 02:06:33 Tony Luck wrote:
-> Today's experiments were inspired by Petr's comment at the start of this
-> thread:
->
->    "Interestingly, CPU 5 and CPU 7 are both granted the same ticket"
->
-> I added an "owner" element to every lock - I have 32 cpus, so I made
-> it "unsigned int". Then added to the lock and trylock paths code to
-> check that owner was 0 when the lock was granted, followed by:
-> lock->owner |= (1u << cpu);  Then in the unlock path I check that just
-> the (1u << cpu) bit is set before doing: lock->owner &= ~(1u << cpu);
->
-> In my first test I got a hit. cpu28 had failed to get the lock and was
-> spinning holding ticket "1". When "now serving" hit 1, cpu28 saw that
-> the owner field was set to 0x1, indicating that cpu0 had also claimed
-> the lock. The lockword was 0x20002 at this point ... so cpu28 was
-> correct to believe that the lock had been freed and handed to it.  It
-> was unclear why cpu0 had muscled in and set its bit in the owner
-> field. Also can't tell whether that was a newly allocated lock, or one
-> that had recently wrapped around.
->
-> Subsequent tests have failed to reproduce that result - system just
-> hangs without complaining about multiple cpus owning the same lock at
-> the same time - perhaps because of the extra tracing I included to
-> capture more details.
+On Fri, Sep 03, 2010 at 10:12:01AM +0800, Stephen Rothwell wrote:
+> On Fri, 3 Sep 2010 12:10:23 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
+> > produced this warning:
+> > 
+> > arch/x86/mm/init_64.c: In function 'kernel_physical_mapping_init':
+> > arch/x86/mm/init_64.c:601: warning: 'addr' may be used uninitialized in this function
+> > 
+> > The code does look suspicious ... 'addr' gets declared and then passed to
+> > a function, but is not set anywhere ...
+> 
+> Forgot to say:
+> 
+> Introduced by commit 9b861528a8012e7bc4d1f7bae07395b225331477 ("x86-64,
+> mem: Update all PGDs for direct mapping and vmemmap mapping changes").
 
-I did some extensive testing of the issue. I wrote a Kprobe that attaches to 
-copy_process and if the new task is one of the "count" processes, it sets up 
-a pair of DBR registers to watch for all writes to the siglock. (Obviously, I 
-had to limit parallel runs of "count" to 4, because there are only 8 dbr 
-registers.) When I hit the breakpoint, I record the old value (with ld4.acq), 
-single step one instruction and read the new value (with ld4.acq). The code 
-panics the machine (producing a core-dump) if neither the new head is larger 
-than the old head nor the new tail is larger than the old tail.
 
-What I got is rather disturbing. I got three different traces so far, all of 
-them on the same fetchadd4.acq instruction. The observed values are:
+The original patch has the following line, however get lost some time
+later:
 
-   BEFORE   reg   AFTER   DUMP
-A.    0      1       0      0
-B.    1      0       1      1
-C.    0      1       0      1
+        http://www.spinics.net/lists/linux-mm/msg08152.html
 
-BEFORE .. value seen by ld4.acq in the first debug fault
-reg .. value in the target register of fetchadd
-AFTER .. value seen by ld4.acq after single step
-DUMP .. value saved to the crash dump
+===
+x86, mm: fix uninitialized addr in kernel_physical_mapping_init()
 
-Interestingly, sometimes there was no write recorded with the new value equal 
-to the BEFORE column. Then it occured to me that I probably missed some 
-writes from interrupt context, because psr.db gets cleared by the CPU. So I 
-modified ivt.S so that it explicitly re-enabled psr.db. And I got a crash 
-dump with variant C.
+This re-adds the lost chunk in commit 9b861528a80.
 
-I thought that I still missed some writes somehow, but consider that I never 
-got any failures other than after a wrap-around, even though the code would 
-catch any case where the lock does not increment correctly.
-
-Moreover, variant B cannot be explained even if I did miss a fetchadd4. How 
-can we get 1 on the first ld4.acq, and then 0 from the fetchadd4.acq?
-
-I'm now trying to modify the lock primitives:
-
-1. replace the fetchadd4.acq with looping over cmpxchg
-2. replace the st2.rel with looping over cmpxchg
-
-I'll write again when I have the results.
-
-Petr Tesarik
+CC: Haicheng Li <haicheng.li@linux.intel.com>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 64e7bc2..74f0f35 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -570,6 +570,7 @@ kernel_physical_mapping_init(unsigned long start,
+ 
+ 	start = (unsigned long)__va(start);
+ 	end = (unsigned long)__va(end);
++	addr = start;
+ 
+ 	for (; start < end; start = next) {
+ 		pgd_t *pgd = pgd_offset_k(start);
