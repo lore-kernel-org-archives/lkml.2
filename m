@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab0ICBOV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 21:14:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17207 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750761Ab0ICBOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 21:14:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,310,1280732400"; 
-   d="scan'208";a="603267101"
-From: "Wang, Qi" <qi.wang@intel.com>
-To: Greg KH <gregkh@suse.de>
-CC: Greg KH <greg@kroah.com>, "meego-dev@meego.com" <meego-dev@meego.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
-        Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Date: Fri, 3 Sep 2010 09:13:43 +0800
-Subject: RE: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
-Thread-Topic: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
-Thread-Index: ActKoWLFwdXNfO+OSYKrGDRT+gq6rAAY60lA
-Message-ID: <D5AB6E638E5A3E4B8F4406B113A5A19A2A56E877@shsmsx501.ccr.corp.intel.com>
-References: <4C7E441E.4090006@dsn.okisemi.com>
- <20100902010236.GA21782@kroah.com>
- <000601cb4a47$b1a7d1d0$66f8800a@maildom.okisemi.com>
- <20100902032227.GA27463@suse.de>
- <D5AB6E638E5A3E4B8F4406B113A5A19A2A56E53B@shsmsx501.ccr.corp.intel.com>
- <002b01cb4a6a$3ae499c0$66f8800a@maildom.okisemi.com>
- <20100902131913.GB1021@suse.de>
-In-Reply-To: <20100902131913.GB1021@suse.de>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1752782Ab0ICBP4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 21:15:56 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:63327 "HELO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751900Ab0ICBPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 21:15:55 -0400
+Date: Fri, 3 Sep 2010 11:15:19 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+Message-ID: <201009030115.o831FJN0011687@goober.internal.moreton.com.au>
+CC: <gerg@uclinux.org>, <linux-kernel@vger.kernel.org>,
+        <linux-m68k@vger.kernel.org>
+Subject: [PATCH] m68knommu: fix missing linker segments
+To: <torvalds@linux-foundation.org>
+X-Mailer: mail (GNU Mailutils 2.0)
+X-OriginalArrivalTime: 03 Sep 2010 01:15:41.0419 (UTC) FILETIME=[86884BB0:01CB4B05]
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o831EVXl018091
 
-Hi Greg KH,
+Recent changes to linker segments that hold per-cpu data broke linking
+for m68knommu targets:
 
-When all the drivers are accepted by the upstream, our source-forge is useless. Currently it's a temporary site for us to smoke test the driver quality.
+  LD      vmlinux
+/usr/local/bin/m68k-uclinux-ld.real: error: no memory region specified for loadable section `.data..shared_aligned'
 
-Best Regards,
-Qi.
+Add missing segments into the m68knommu linker script.
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Thursday, September 02, 2010 9:19 PM
-> To: Masayuki Ohtake
-> Cc: Wang, Qi; Greg KH; meego-dev@meego.com; LKML; Wang, Yong Y; Khor,
-> Andrew Chih Howe; arjan@linux.intel.com; alan@linux.intel.com; Foster,
-> Margie; Tomoya MORINAGA
-> Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
-> 
-> On Thu, Sep 02, 2010 at 03:44:00PM +0900, Masayuki Ohtake wrote:
-> > Hi Qi-san
-> >
-> > I will sync this phub patch to source-forge by today.
-> 
-> You are going to delete this version when the driver is merged into the
-> kernel tree, right?  Please don't try to maintain the code external to
-> the kernel, that never works properly.
-> 
-> thanks,
-> 
-> greg k-h
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Greg Ungerer <gerg@uclinux.org>
+
+
+diff --git a/arch/m68knommu/kernel/vmlinux.lds.S b/arch/m68knommu/kernel/vmlinux.lds.S
+index a91b271..ef33213 100644
+--- a/arch/m68knommu/kernel/vmlinux.lds.S
++++ b/arch/m68knommu/kernel/vmlinux.lds.S
+@@ -150,6 +150,8 @@ SECTIONS {
+ 		_sdata = . ;
+ 		DATA_DATA
+ 		CACHELINE_ALIGNED_DATA(32)
++		PAGE_ALIGNED_DATA(PAGE_SIZE)
++		*(.data..shared_aligned)
+ 		INIT_TASK_DATA(THREAD_SIZE)
+ 		_edata = . ;
+ 	} > DATA
