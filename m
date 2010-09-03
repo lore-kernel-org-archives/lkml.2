@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab0ICNRj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 09:17:39 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49299 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752122Ab0ICNRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 09:17:38 -0400
-Date: Fri, 3 Sep 2010 13:15:57 GMT
-From: tip-bot for Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com, hpa@zytor.com,
-        mingo@redhat.com, peterz@infradead.org, ak@linux.intel.com,
-        tglx@linutronix.de, sfr@canb.auug.org.au, fengguang.wu@intel.com,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, haicheng.li@linux.intel.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, ak@linux.intel.com,
-        tglx@linutronix.de, sfr@canb.auug.org.au, fengguang.wu@intel.com,
-        mingo@elte.hu
-In-Reply-To: <20100903090407.GA19771@localhost>
-References: <20100903090407.GA19771@localhost>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, mm: fix uninitialized addr in kernel_physical_mapping_init()
-Message-ID: <tip-1c5f50ee347daea013671f718b70cd6bf497bef9@git.kernel.org>
-Git-Commit-ID: 1c5f50ee347daea013671f718b70cd6bf497bef9
-X-Mailer: tip-git-log-daemon
+	id S1754098Ab0ICNMR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 09:12:17 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:54036 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753595Ab0ICNMP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 09:12:15 -0400
+Date: Fri, 3 Sep 2010 09:12:13 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: ltt-dev@lists.casi.polymtl.ca
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [ANNOUNCEMENT] LTTng tracer re-packaged as stand-alone modules
+Message-ID: <20100903131213.GA3230@Krystal>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 13:15:58 +0000 (UTC)
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 08:21:58 up 223 days, 14:58,  4 users,  load average: 0.01, 0.02,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1c5f50ee347daea013671f718b70cd6bf497bef9
-Gitweb:     http://git.kernel.org/tip/1c5f50ee347daea013671f718b70cd6bf497bef9
-Author:     Wu Fengguang <fengguang.wu@intel.com>
-AuthorDate: Fri, 3 Sep 2010 17:04:07 +0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 3 Sep 2010 11:40:11 +0200
+Hi everyone,
 
-x86, mm: fix uninitialized addr in kernel_physical_mapping_init()
+Here is a news that should please Linux distributions which have been
+overwhelmed by the size of the LTTng patchset. I have extracted the LTTng tracer
+patches from the LTTng kernel tree and repackaged it into a new "lttng-modules"
+package. There is still a dependency on the LTTng kernel tree at the moment, but
+the objective is to gradually reduce the size of this 5 years long mainline
+fork.
 
-This re-adds the lost chunk in commit 9b861528a80.
+The objective of this re-packaging is to make life easier for the LTTng users.
+Some distributions have been shipping the LTTng tree for years (Wind River,
+MontaVista, STLinux). I am still planning to contribute some LTTng pieces to
+mainline, but this restructuration will let me focus on the parts that really
+need to go into mainline without making my users suffer any longer.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Haicheng Li <haicheng.li@linux.intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <20100903090407.GA19771@localhost>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/mm/init_64.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+The development of this package is done in the following tree:
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 64e7bc2..74f0f35 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -570,6 +570,7 @@ kernel_physical_mapping_init(unsigned long start,
- 
- 	start = (unsigned long)__va(start);
- 	end = (unsigned long)__va(end);
-+	addr = start;
- 
- 	for (; start < end; start = next) {
- 		pgd_t *pgd = pgd_offset_k(start);
+git://lttng.org/lttng-modules.git
+
+It will follow a linear development workflow (no more rebases). The kernel LTTng
+tree (on which the LTTng tracer module depends) will still be rebased on Linux
+mainline.
+
+This is a first step towards cleaning up the LTTng kernel tree. The following
+steps will be to refactor the LTTng tree patches, remove part of the
+instrumentation from the kernel tree, migrate to TRACE_EVENT(), and migrate to
+the generic ring buffer library.
+
+This change is effective as of LTTng 0.227 for kernel 2.6.35.4.
+This matches the new lttng-modules package version 0.16.
+
+LTTng, the Linux Trace Toolkit Next Generation, is a project that aims at
+producing a highly efficient full system tracing solution.  It is composed of
+several components to allow tracing of the kernel, of userspace, trace viewing
+and analysis and trace streaming.
+
+Project website: http://lttng.org
+Download link: http://lttng.org/content/download
+(please refer to the LTTng Manual for installation instructions)
+
+Enjoy!
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
