@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab0ICDPn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 23:15:43 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:33516 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629Ab0ICDPm (ORCPT
+	id S1755807Ab0ICDRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 23:17:08 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60607 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754629Ab0ICDRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 23:15:42 -0400
+	Thu, 2 Sep 2010 23:17:06 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 3 Sep 2010 12:10:03 +0900
+Date: Fri, 3 Sep 2010 12:11:59 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
         Wu Fengguang <fengguang.wu@intel.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -20,10 +21,9 @@ Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
         Christoph Lameter <cl@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Mel Gorman <mel@linux.vnet.ibm.com>
-Subject: [PATCH 0/2 v2] Make is_mem_section_removable more conformable with
- offlining code
-Message-Id: <20100903121003.e2b8993a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100902150554.GE10265@tiehlicka.suse.cz>
+Subject: [PATCH 1/2][BUGFIX] fix next active pageblock calculation
+Message-Id: <20100903121159.30099a9c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100903121003.e2b8993a.kamezawa.hiroyu@jp.fujitsu.com>
 References: <20100901121951.GC6663@tiehlicka.suse.cz>
 	<20100901124138.GD6663@tiehlicka.suse.cz>
 	<20100902144500.a0d05b08.kamezawa.hiroyu@jp.fujitsu.com>
@@ -35,6 +35,7 @@ References: <20100901121951.GC6663@tiehlicka.suse.cz>
 	<AANLkTikYt3Hu_XeNuwAa9KjzfWgpC8cNen6q657ZKmm-@mail.gmail.com>
 	<20100902143939.GD10265@tiehlicka.suse.cz>
 	<20100902150554.GE10265@tiehlicka.suse.cz>
+	<20100903121003.e2b8993a.kamezawa.hiroyu@jp.fujitsu.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -44,57 +45,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010 17:05:54 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
->  extern int mem_online_node(int nid);
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index a4cfcdc..2b736ed 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -569,16 +569,25 @@ out:
->  EXPORT_SYMBOL_GPL(add_memory);
->  
->  #ifdef CONFIG_MEMORY_HOTREMOVE
-> +
->  /*
-> - * A free page on the buddy free lists (not the per-cpu lists) has PageBuddy
-> - * set and the size of the free page is given by page_order(). Using this,
-> - * the function determines if the pageblock contains only free pages.
-> - * Due to buddy contraints, a free page at least the size of a pageblock will
-> - * be located at the start of the pageblock
-> + * A free or LRU pages block are removable
-> + * Do not use MIGRATE_MOVABLE because it can be insufficient and
-> + * other MIGRATE types are tricky.
->   */
-> -static inline int pageblock_free(struct page *page)
-> -{
-> -	return PageBuddy(page) && page_order(page) >= pageblock_order;
-> +bool is_page_removable(struct page *page)
-> +{
-> +	int page_block = 1 << pageblock_order;
-> +	while (page_block > 0) {
-> +		if (PageBuddy(page)) {
-> +			page_block -= page_order(page);
-> +		} else if (PageLRU(page))
-> +			page_block--;
-> +		else 
-> +			return false;
-> +	}
+next_active_pageblock() is for finding next _used_ freeblock. It skips
+several blocks when it finds there are a chunk of free pages lager than
+pageblock. But it has 2 bugs.
 
-still seems wrong..."page" pointer should be updated.
+  1. We have no lock. page_order(page) - pageblock_order can be minus.
+  2. pageblocks_stride += is wrong. it should skip page_order(p) of pages.
 
-Ok, here is my patch in reply to this mail. (changed the subject as v2.)
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memory_hotplug.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-1. bugfix for current code.
-2. show precise removable information.
-
-Tested and seems to work well.
-
-Thanks,
--Kame
-
-
-
-
+Index: mmotm-0827/mm/memory_hotplug.c
+===================================================================
+--- mmotm-0827.orig/mm/memory_hotplug.c
++++ mmotm-0827/mm/memory_hotplug.c
+@@ -584,19 +584,19 @@ static inline int pageblock_free(struct 
+ /* Return the start of the next active pageblock after a given page */
+ static struct page *next_active_pageblock(struct page *page)
+ {
+-	int pageblocks_stride;
+-
+ 	/* Ensure the starting page is pageblock-aligned */
+ 	BUG_ON(page_to_pfn(page) & (pageblock_nr_pages - 1));
+ 
+-	/* Move forward by at least 1 * pageblock_nr_pages */
+-	pageblocks_stride = 1;
+-
+ 	/* If the entire pageblock is free, move to the end of free page */
+-	if (pageblock_free(page))
+-		pageblocks_stride += page_order(page) - pageblock_order;
++	if (pageblock_free(page)) {
++		int order;
++		/* be careful. we don't have locks, page_order can be changed.*/
++		order = page_order(page);
++		if (order > pageblock_order)
++			return page + (1 << order);
++	}
+ 
+-	return page + (pageblocks_stride * pageblock_nr_pages);
++	return page + pageblock_nr_pages;
+ }
+ 
+ /* Checks if this range of memory is likely to be hot-removable. */
 
