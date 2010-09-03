@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751229Ab0ICEHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 00:07:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54722 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab0ICEHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 00:07:49 -0400
-Message-ID: <4C807593.1050903@cn.fujitsu.com>
-Date: Fri, 03 Sep 2010 12:12:03 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1751339Ab0ICE23 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 00:28:29 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55033 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab0ICE22 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 00:28:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=XIlKoooXF4fAbyh5scDGaXEYSyJi0c1zuC5BUPbjkXy0XlriGUd76utEu1ovQUOSEi
+         DjAeMufx2qTz7VJyG6yV2mtaVzInxQWIP+OYCTKn4gIIYEAGxd6/TTnEi6dyl0THG0bA
+         aKIgONxDyy8277T8mL7pO2peSwqCM5miSPdjo=
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH] KVM: don't sent IPI if the vcpu is not online
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201009022204.14661.rjw@sisk.pl>
+References: <1283442461-16290-1-git-send-email-minchan.kim@gmail.com>
+	<201009022204.14661.rjw@sisk.pl>
+Date: Fri, 3 Sep 2010 13:28:27 +0900
+Message-ID: <AANLkTinNZYQ7WV_xu7_WE-ekPhHOjqsfr9xtnW3m9r1V@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: don't use return value trick when oom_killer_disabled
+From: Minchan Kim <minchan.kim@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        "M. Vefa Bicakci" <bicave@superonline.com>, stable@kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's no need sent IPI to the vcpu which is schedule out
+2010/9/3 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Thursday, September 02, 2010, Minchan Kim wrote:
+>> M. Vefa Bicakci reported 2.6.35 kernel hang up when hibernation on his
+>> 32bit 3GB mem machine. (https://bugzilla.kernel.org/show_bug.cgi?id=16771)
+>> Also he was bisected first bad commit is below
+>>
+>>   commit bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
+>>   Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>   Date:   Fri Jun 4 14:15:05 2010 -0700
+>>
+>>      vmscan: fix do_try_to_free_pages() return value when priority==0 reclaim failure
+>>
+>> At first impression, this seemed very strange because the above commit only
+>> chenged function return value and hibernate_preallocate_memory() ignore
+>> return value of shrink_all_memory(). But it's related.
+>>
+>> Now, page allocation from hibernation code may enter infinite loop if
+>> the system has highmem.
+>>
+>> The reasons are two. 1) hibernate_preallocate_memory() call
+>> alloc_pages() wrong order
+>
+> This isn't the case, as explained here: http://lkml.org/lkml/2010/9/1/316 .
+>
+> The ordering of calls is correct, but it's better to check if there are any
+> non-highmem pages to allocate from before the last call (for performance
+> reasons, but that also would eliminate the failure in question).
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- include/linux/kvm_host.h |    1 +
- virt/kvm/kvm_main.c      |    5 ++++-
- 2 files changed, 5 insertions(+), 1 deletions(-)
+I actually didn't look into the 1) problem detail.
+Just copy and paste from KOSAKI's description.
+As I look the thread, KOSAKI seem to admit the description is wrong.
+I will resend the patch removing phrase about 1) problem if KOSAKI don't mind.
+KOSAKI. Is it okay?
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index f2ecdd5..a2682cf 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -86,6 +86,7 @@ struct kvm_vcpu {
- 	unsigned long requests;
- 	unsigned long guest_debug;
- 	int srcu_idx;
-+	bool online;
- 
- 	int fpu_active;
- 	int guest_fpu_loaded, guest_xcr0_loaded;
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 9a73b98..998cbc8 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -148,8 +148,9 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
- 	raw_spin_lock(&kvm->requests_lock);
- 	me = smp_processor_id();
- 	kvm_for_each_vcpu(i, vcpu, kvm) {
--		if (kvm_make_check_request(req, vcpu))
-+		if (kvm_make_check_request(req, vcpu) || !vcpu->online)
- 			continue;
-+
- 		cpu = vcpu->cpu;
- 		if (cpus != NULL && cpu != -1 && cpu != me)
- 			cpumask_set_cpu(cpu, cpus);
-@@ -2245,6 +2246,7 @@ static void kvm_sched_in(struct preempt_notifier *pn, int cpu)
- {
- 	struct kvm_vcpu *vcpu = preempt_notifier_to_vcpu(pn);
- 
-+	vcpu->online = true;
- 	kvm_arch_vcpu_load(vcpu, cpu);
- }
- 
-@@ -2253,6 +2255,7 @@ static void kvm_sched_out(struct preempt_notifier *pn,
- {
- 	struct kvm_vcpu *vcpu = preempt_notifier_to_vcpu(pn);
- 
-+	vcpu->online = false;
- 	kvm_arch_vcpu_put(vcpu);
- }
- 
+Thanks.
+
+
 -- 
-1.7.0.4
+Kind regards,
+Minchan Kim
