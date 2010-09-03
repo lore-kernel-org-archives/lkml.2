@@ -1,136 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab0ICIg4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 04:36:56 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45580 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755409Ab0ICIgy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 04:36:54 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4C80B3C2.7030500@np.css.fujitsu.com>
-Date: Fri, 03 Sep 2010 17:37:22 +0900
-From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1756106Ab0ICIir (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 04:38:47 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:53798 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755875Ab0ICIip convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 04:38:45 -0400
+From: Linus WALLEIJ <linus.walleij@stericsson.com>
+To: Kenneth Heitke <kheitke@codeaurora.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        "tsoni@codeaurora.org" <tsoni@codeaurora.org>
+Cc: "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Crane Cai <crane.cai@amd.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 3 Sep 2010 10:38:08 +0200
+Subject: RE: [PATCH v2 2/2] i2c: QUP based bus driver for Qualcomm MSM
+ chipsets
+Thread-Topic: [PATCH v2 2/2] i2c: QUP based bus driver for Qualcomm MSM
+ chipsets
+Thread-Index: ActK9stP3n1GLKWWSDScK0P0zqEYWwAS89OA
+Message-ID: <CEE6BB42CAD6E947908279175AF8470A026B35EA9D@EXDCVYMBSTM006.EQ1STM.local>
+References: <1283470197-21148-1-git-send-email-kheitke@codeaurora.org>
+ <1283470197-21148-3-git-send-email-kheitke@codeaurora.org>
+In-Reply-To: <1283470197-21148-3-git-send-email-kheitke@codeaurora.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: APEI-lenb <lenb@kernel.org>, Huang Ying <ying.huang@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] [Patch-next] ACPI, APEI Fix the return value(==NULL)
- of acpi_pre_map().
-References: <4C7F5032.70108@np.css.fujitsu.com> <201009020947.44090.bjorn.helgaas@hp.com>
-In-Reply-To: <201009020947.44090.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Bjorn Helgaas
+[Kenneth]
 
-I will modify this patch and resend it as soon as possible in next week.
+> From: Kenneth Heitke [mailto:kheitke@codeaurora.org]
+> Subject: [PATCH v2 2/2] i2c: QUP based bus driver for Qualcomm MSM
+> chipsets
+> (...)
+> +	dev->one_bit_t = USEC_PER_SEC/pdata->bus_freq;
 
-Best Regards,
-Jin Dongming
+Maybe you want to use DIV_ROUND_UP() from kernel.h here
+to be on the safe side?
 
-(2010/09/03 0:47), Bjorn Helgaas wrote:
-> On Thursday, September 02, 2010 01:20:18 am Jin Dongming wrote:
->> acpi_pre_map() is used for remapping the physical address of I/O, so
->> it should be return NULL or remapped virtual address. The problem is
->> that when (paddr - pg_off) equals 0, no matter whether I/O remapping is
->> successful or not, the function returns NULL.
->>
->> In acpi_pre_map(), after the physical address is remapped successfully,
->> it will check whether the physical address has been added into acpi_iomaps
->> list again.
->>    - If the physical address has been added into acpi_iomaps, the virtual
->>      address will be saved in vaddr.
->>    - Otherwise, NULL be saved in vaddr.
->>
->> So if the physical address is the first time to be remapped, vaddr will be
->> NULL always.
->>
->> In many cases, (paddr - pg_off) may not equal 0. So the function could work
->> well. In our machine, (paddr - pg_off) equals 0, so the return value of
->> acpi_pre_map() is NULL.
->>
->> This patch fixed it and I confirmed it on x86_64 next-tree.
-> 
-> This description is complicated and obscures the very simple bug
-> you are fixing.  I suggest something like this:
-> 
->   ACPI: fix acpi_pre_map() return value
-> 
->   After we ioremap() a new region, we call __acpi_try_ioremap() to
->   see whether another thread has already mapped the same region.
->   This check clobbers "vaddr", so compute the return value using
->   the ioremap() result "map->vaddr" instead.
-> 
->> v2:
->>     Modified the unsuitable description of patch.
->>
->> v3:
->>     Modified the wrong words in the description of patch.   
->>
->> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
->> Acked-by: Huang Ying <ying.huang@intel.com>
->> ---
->>  drivers/acpi/atomicio.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
->> index 8f8bd73..1bc2614 100644
->> --- a/drivers/acpi/atomicio.c
->> +++ b/drivers/acpi/atomicio.c
->> @@ -133,7 +133,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
->>  
->>  	spin_lock_irqsave(&acpi_iomaps_lock, flags);
->>  	vaddr = __acpi_try_ioremap(paddr, size);
->> -	if (vaddr) {
->> +	if (unlikely(vaddr)) {
-> 
-> This "unlikely" addition also obscures things.  It's completely
-> unrelated to the bug you're fixing, so it should be in a different
-> patch, and I'm dubious that there's enough performance advantage to
-> compensate for the decreased code readability.  I wouldn't make this
-> change unless you can measure a performance improvement.
-> 
->>  		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
->>  		iounmap(map->vaddr);
->>  		kfree(map);
->> @@ -142,7 +142,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
->>  	list_add_tail_rcu(&map->list, &acpi_iomaps);
->>  	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
->>  
->> -	return vaddr + (paddr - pg_off);
->> +	return map->vaddr + (paddr - pg_off);
-> 
-> Since you're changing this line anyway, I think you should change it to:
-> 
->   return map->vaddr + (paddr - map->paddr);
-> 
-> so it matches __acpi_try_ioremap().
-> 
->>  err_unmap:
->>  	iounmap(vaddr);
->>  	return NULL;
->> -- 1.7.1.
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-
-
+Yours,
+Linus Walleij
