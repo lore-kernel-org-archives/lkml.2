@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab0ICXkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 19:40:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60603 "EHLO
+	id S1753348Ab0ICXy7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 19:54:59 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34748 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752481Ab0ICXkl (ORCPT
+	by vger.kernel.org with ESMTP id S1751266Ab0ICXy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 19:40:41 -0400
-Date: Fri, 3 Sep 2010 16:40:33 -0700
+	Fri, 3 Sep 2010 19:54:58 -0400
+Date: Fri, 3 Sep 2010 16:54:46 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] fsldma: fix missing header include
-Message-Id: <20100903164033.6ae37727.akpm@linux-foundation.org>
-In-Reply-To: <20100902194752.GA24861@ovro.caltech.edu>
-References: <20100902194752.GA24861@ovro.caltech.edu>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fix integer overflow in groups_search
+Message-Id: <20100903165446.378e8ceb.akpm@linux-foundation.org>
+In-Reply-To: <4C7FC0B4.3040005@redhat.com>
+References: <4C7FC0B4.3040005@redhat.com>
 X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,37 +23,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010 12:47:52 -0700
-"Ira W. Snyder" <iws@ovro.caltech.edu> wrote:
+On Thu, 02 Sep 2010 17:20:20 +0200
+Jerome Marchand <jmarchan@redhat.com> wrote:
 
-> The slab.h header is required to use the kmalloc() family of functions.
-> Due to recent kernel changes, this header must be directly included by
-> code that calls into the memory allocator.
 > 
-> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+> gid_t is a unsigned int. If group_info contains a gid greater than
+> MAX_INT, groups_search() function may look on the wrong side of the 
+> search tree.
+> This solves some unfair "permission denied" problems.
+> 
+> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
 > ---
-> 
-> Without this patch, any code which includes this header fails to build.
-> 
->  arch/powerpc/include/asm/fsldma.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/fsldma.h b/arch/powerpc/include/asm/fsldma.h
-> index a67aeed..debc5ed 100644
-> --- a/arch/powerpc/include/asm/fsldma.h
-> +++ b/arch/powerpc/include/asm/fsldma.h
-> @@ -11,6 +11,7 @@
->  #ifndef __ARCH_POWERPC_ASM_FSLDMA_H__
->  #define __ARCH_POWERPC_ASM_FSLDMA_H__
->  
-> +#include <linux/slab.h>
->  #include <linux/dmaengine.h>
->  
+> diff --git a/kernel/groups.c b/kernel/groups.c
+> index 53b1916..253dc0f 100644
+> --- a/kernel/groups.c
+> +++ b/kernel/groups.c
+> @@ -143,10 +143,9 @@ int groups_search(const struct group_info *group_info, gid_t grp)
+>  	right = group_info->ngroups;
+>  	while (left < right) {
+>  		unsigned int mid = (left+right)/2;
+> -		int cmp = grp - GROUP_AT(group_info, mid);
+> -		if (cmp > 0)
+> +		if (grp > GROUP_AT(group_info, mid))
+>  			left = mid + 1;
+> -		else if (cmp < 0)
+> +		else if (grp < GROUP_AT(group_info, mid))
+>  			right = mid;
+>  		else
+>  			return 1;
 
-It also needs list.h, but appears to get it via sheer luck.
+hah, that's some pretty ancient code there.  You must have a lot of
+groups.
 
-The functions in that header simply shouldn't have been inlined.
-
-It's peculiar that fsl_dma_slave_append() hardwires GFP_ATOMIC, whereas
-fsl_dma_slave_alloc() takes a gfp_t.
+The patch is a no-brainer and I guess you've encountered the bug in
+real kernels so I think we'll wave the fix at the -stable guys for
+backporting, OK?
 
