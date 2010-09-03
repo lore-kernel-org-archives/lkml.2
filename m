@@ -1,168 +1,648 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab0ICFTX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 01:19:23 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:42932 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab0ICFTV convert rfc822-to-8bit (ORCPT
+	id S1752415Ab0ICFVD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 01:21:03 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33458 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab0ICFVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 01:19:21 -0400
-From: <samu.p.onkalo@nokia.com>
-To: <alan@lxorguk.ukuu.org.uk>, <achew@nvidia.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-iio@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <khali@linux-fr.org>, <ldewangan@nvidia.com>
-Date: Fri, 3 Sep 2010 07:18:34 +0200
-Subject: RE: [PATCH 1/1] iio: ak8975: Add Ak8975 magnetometer sensor
-Thread-Topic: [PATCH 1/1] iio: ak8975: Add Ak8975 magnetometer sensor
-Thread-Index: ActK6npYXcHL3g40TOyVwAQ2WpP23gAOwmSw
-Message-ID: <62697B07E9803846BC582181BD6FB6B82B9C057FFC@NOK-EUMSG-02.mgdnok.nokia.com>
-References: <1283463351-15816-1-git-send-email-achew@nvidia.com>
- <20100902231942.21375cc0@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100902231942.21375cc0@lxorguk.ukuu.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 3 Sep 2010 01:21:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=N1RVZpy4qlYzodpknjNq8ELWkC1qZUpkDRoxd7vGpNjPL0Ec8/yBayYGEvgK6c2haV
+         wtdrpxwRDfNXjEXWwJ++T5L+YYFGKKGs2PGgmjJgyeNuY/z6NOGrHnW3FYtx9ViePfjP
+         e5+LgVD88L/D9p/5s6sAjtIwYsuUNmj/3CU2w=
 MIME-Version: 1.0
-X-OriginalArrivalTime: 03 Sep 2010 05:18:37.0627 (UTC) FILETIME=[76A120B0:01CB4B27]
-X-Nokia-AV: Clean
+In-Reply-To: <AANLkTin9cX5S1ToK=2yFN5TsqH25aN2fFoCdvSizqOH9@mail.gmail.com>
+References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com>
+ <20100902121853.e90f6c53.randy.dunlap@oracle.com> <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
+ <AANLkTikBOUSGYkopdUcV+5KsayRi-_88kktMLv=KXRU0@mail.gmail.com> <AANLkTin9cX5S1ToK=2yFN5TsqH25aN2fFoCdvSizqOH9@mail.gmail.com>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Fri, 3 Sep 2010 02:20:39 -0300
+Message-ID: <AANLkTikY5vhj3uHQ1HXSVdbWcjbMffzhsnRGGL7z_yEC@mail.gmail.com>
+Subject: Re: [RFC] Fix typos
+To: Phillip Lougher <phil.lougher@gmail.com>, trivial@kernel.org
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        Mike Frysinger <vapier.adi@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Here is the second version. I've split the patch to be easier to
+review. The first one is the patch generated in an automated way. The
+second is the manual application of some fixes that were given as
+warns when running the script. The third one is the removal of false
+positives on Documentation/ as detailed by Phillip Lougher. Finally,
+the fourth is all of them together.
+
+http://people.profusion.mobi/~/lucas/kernel/0001-Automatic-spell-fixes.patch
+http://people.profusion.mobi/~/lucas/kernel/0002-Manual-fixes-using-suggestions.patch
+http://people.profusion.mobi/~/lucas/kernel/0003-Remove-false-positives-on-Documentation.patch
+http://people.profusion.mobi/~/lucas/kernel/kernel-typos-fix-v2.patch
+
+Below is the list of changes that were effectively applied on the first patch:
 
 
->-----Original Message-----
->From: linux-iio-owner@vger.kernel.org [mailto:linux-iio-
->owner@vger.kernel.org] On Behalf Of ext Alan Cox
->Sent: 03 September, 2010 01:20
->To: achew@nvidia.com
->Cc: linux-kernel@vger.kernel.org; linux-iio@vger.kernel.org; linux-
->i2c@vger.kernel.org; akpm@linux-foundation.org; khali@linux-fr.org;
->ldewangan@nvidia.com
->Subject: Re: [PATCH 1/1] iio: ak8975: Add Ak8975 magnetometer sensor
->
->> +/*
->> + * Shows the device's mode.  0 = off, 1 = on.
->> + */
->
->Should this not be handled by runtime pm nowdays ?
->
->> +	if ((oval < 0) || (oval > 1)) {
->> +		dev_err(dev, "mode value is not supported\n");
->> +		return -EINVAL;
->> +	}
->
->ulong cannot be < 0 and doesn't need all the brackets
->
->
->> +	/* Wait for the conversion to complete. */
->> +	while (timeout_ms) {
->> +		msleep(AK8975_CONVERSION_DONE_POLL_TIME);
->> +		state = (gpio_get_value(data->eoc_gpio) ? 1 : 0);
->> +		if (state)
->> +			break;
->> +		timeout_ms -= AK8975_CONVERSION_DONE_POLL_TIME;
->> +	}
->
->This makes some fairly specific wiring assumptions about how the ak8975
->is configured. I'm looking at the ak8974 driver in our tree and also
->wondering if they can be combined sanely.
-
-With ak8974 chip, it is possible to have similar functionality without interrupt
-pin. This is most probably true also for ak8975 chip. It is not good to assume
-that everyone uses interrupt pin if the same functionally can be achieved
-another way. I mean polling via I2C instead of checking GPIO state after the
-sleep. 
-
-Based on the this driver it seems that ak8974 and ak8975 are quite similar, but
-also there are many differences like different register map. Maybe combining
-these two makes implementation just messy.
-
-
->
->> +	status = ak8975_read_data(client, AK8975_REG_ST1, 1,
->&read_status);
->> +	if (!status) {
->> +		dev_err(&client->dev, "Error in reading ST1\n");
->> +		return false;
->
->I would have expected these to return a meaningful error code not 0 ?
->
->> +static IIO_DEVICE_ATTR(mode, S_IRUGO | S_IWUSR, show_mode,
->store_mode, 0);
->> +static IIO_DEVICE_ATTR(magn_x_calibscale, S_IRUGO, show_calibscale,
->NULL, 0);
->> +static IIO_DEVICE_ATTR(magn_y_calibscale, S_IRUGO, show_calibscale,
->NULL, 1);
->> +static IIO_DEVICE_ATTR(magn_z_calibscale, S_IRUGO, show_calibscale,
->NULL, 2);
->> +static IIO_DEV_ATTR_MAGN_X(show_raw, AK8975_REG_HXL);
->> +static IIO_DEV_ATTR_MAGN_Y(show_raw, AK8975_REG_HYL);
->> +static IIO_DEV_ATTR_MAGN_Z(show_raw, AK8975_REG_HZL);
->
->This seems odd as an interface as it's raw when the maths to provide
->non-raw (and thus abstract and easy for user space) data is trivial
->enough to do in kernel
->
->(but then I still suspect it should jusst be an input device of course)
->
->> +static int ak8975_probe(struct i2c_client *client,
->> +			const struct i2c_device_id *id)
->> +{
->> +	struct ak8975_data *data;
->> +	int err;
->> +
->> +	/* Allocate our device context. */
->> +	data = kzalloc(sizeof(struct ak8975_data), GFP_KERNEL);
->> +	if (!data) {
->> +		dev_err(&client->dev, "Memory allocation fails\n");
->> +		err = -ENOMEM;
->> +		goto exit;
->> +	}
->> +
->> +	i2c_set_clientdata(client, data);
->> +	data->client = client;
->> +
->> +	mutex_init(&data->lock);
->> +
->> +	/* Grab and set up the supplied GPIO. */
->> +	data->eoc_irq = client->irq;
->> +	data->eoc_gpio = irq_to_gpio(client->irq);
->
->It may not be via a GPIO. Better to do the GPIO handling in platform
->abstraction or accept passing IRQ and no GPIO value to mean "just use
->the
->IRQ". Ie do all the gpio foo if (data->eoc_gpio) { ... }
->
->
->> +
->> +	err = gpio_request(data->eoc_gpio, "ak_8975");
->> +	if (err < 0) {
->> +		dev_err(&client->dev, "failed to request GPIO %d, error
->%d\n",
->> +			data->eoc_gpio, err);
->> +		goto exit_free;
->> +	}
->> +
->> +	err = gpio_direction_input(data->eoc_gpio);
->> +	if (err < 0) {
->> +		dev_err(&client->dev, "Failed to configure input direction
->for"
->> +			" GPIO %d, error %d\n", data->eoc_gpio, err);
->> +		gpio_free(data->eoc_gpio);
->
->This frees the GPIO twice ?
->
->Looks basically sound to me.
->
->Alan
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+absense->absence
+absolutly->absolutely
+absorbtion->absorption
+accelleration->acceleration
+acceptible->acceptable
+accessable->accessible
+accidently->accidentally
+accomodate->accommodate
+accomodated->accommodated
+accomodates->accommodates
+accoring->according
+accross->across
+achievment->achievement
+acommodate->accommodate
+acomplish->accomplish
+acomplished->accomplished
+acording->according
+activly->actively
+additionaly->additionally
+additonal->additional
+addres->address
+addresing->addressing
+addressess->addresses
+addtion->addition
+addtional->additional
+adminstered->administered
+adminstrator->administrator
+adn->and
+adress->address
+advertisment->advertisement
+advertisments->advertisements
+agains->against
+aggresive->aggressive
+aginst->against
+agregates->aggregates
+agressive->aggressive
+agressively->aggressively
+alledgedly->allegedly
+allign->align
+alligned->aligned
+alltime->all-time
+alot->a lot
+alse->also
+amoung->among
+analagous->analogous
+ancilliary->ancillary
+anomolous->anomalous
+aparent->apparent
+aplication->application
+applicaiton->application
+appropiate->appropriate
+appropraite->appropriate
+apropriate->appropriate
+aproximately->approximately
+aquiring->acquiring
+aquisition->acquisition
+arbitarily->arbitrarily
+arbitary->arbitrary
+architechture->architecture
+architechtures->architectures
+aready->already
+argubly->arguably
+aroud->around
+arrangment->arrangement
+arrangments->arrangements
+arround->around
+artifical->artificial
+artifically->artificially
+asign->assign
+asside->aside
+assocation->association
+assoicate->associate
+assoicated->associated
+assymetric->asymmetric
+asume->assume
+aswell->as well
+atribute->attribute
+atributes->attributes
+attemp->attempt
+attemts->attempts
+automaticly->automatically
+auxilary->auxiliary
+auxillaries->auxiliaries
+auxillary->auxiliary
+auxilliary->auxiliary
+availabe-> available
+availablity->availability
+availble->available
+availiable->available
+avalable->available
+avaliable->available
+avilable->available
+bandwith->bandwidth
+basicaly->basically
+basicly->basically
+beacuse->because
+becasue->because
+becomming->becoming
+becouse->because
+becuase->because
+begining->beginning
+beginnig->beginning
+belive->believe
+benifit->benefit
+betwen->between
+beween->between
+bizzare->bizarre
+bondary->boundary
+boundry->boundary
+burried->buried
+bussiness->business
+caluclated->calculated
+caluculate->calculate
+calulate->calculate
+cannnot->cannot
+cant->can't
+carefull->careful
+catagory->category
+changable->changeable
+charactor->character
+choosen->chosen
+cmo->com
+collegues->colleagues
+collosal->colossal
+comision->commission
+comitted->committed
+comming->coming
+commited->committed
+commiting->committing
+compability->compatibility
+comparision->comparison
+comparisions->comparisons
+compatability->compatibility
+compatable->compatible
+compatiable->compatible
+compatiblity->compatibility
+completetion->completion
+complier->compiler
+concious->conscious
+conciously->consciously
+conected->connected
+conection->connection
+conjuction->conjunction
+consectutive->consecutive
+consideres->considered
+consistant->consistent
+consistantly->consistently
+constaints->constraints
+containes->contains
+contigent->contingent
+continous->continuous
+continously->continuously
+continueing->continuing
+contributers->contributors
+controled->controlled
+controler->controller
+controling->controlling
+controll->control
+controlls->controls
+controversal->controversial
+convertion->conversion
+convienient->convenient
+correponding->corresponding
+corrisponding->corresponding
+decendents->descendants
+decribed->described
+decribes->describes
+dectect->detect
+definatly->definitely
+definining->defining
+definiton->definition
+defintion->definition
+demostration->demonstration
+dependant->dependent
+descibed->described
+desgined->designed
+destory->destroy
+detailled->detailed
+detatched->detached
+developement->development
+developped->developed
+devided->divided
+devide->divide
+didnt->didn't
+diferent->different
+differnt->different
+diffrent->different
+dimentions->dimensions
+disasterous->disastrous
+discribed->described
+discribe->describe
+dissapearance->disappearance
+dissapear->disappear
+dissapeared->disappeared
+dissapears->disappears
+dissappear->disappear
+divison->division
+doens->does
+doesnt->doesn't
+dosen't->doesn't
+dupicate->duplicate
+durring->during
+eahc->each
+ealier->earlier
+ect->etc
+efficent->efficient
+eiter->either
+eligable->eligible
+embarassing->embarrassing
+embarassment->embarrassment
+emited->emitted
+emiting->emitting
+emmited->emitted
+emmitted->emitted
+engeneering->engineering
+enviromental->environmental
+enviroment->environment
+equiped->equipped
+equivilent->equivalent
+esle->else
+eventhough->even though
+eventualy->eventually
+everthing->everything
+everytime->every time
+everyting->everything
+excecuted->executed
+excecution->execution
+excercise->exercise
+exection->execution
+exeedingly->exceedingly
+exept->except
+existance->existence
+existant->existent
+explaination->explanation
+explictly->explicitly
+extention->extension
+extentions->extensions
+extremly->extremely
+facilites->facilities
+Febuary->February
+fictious->fictitious
+finaly->finally
+follwoing->following
+folowing->following
+forseeable->foreseeable
+foward->forward
+frome->from
+fucntion->function
+fullfilled->fulfilled
+fullfill->fulfill
+funtion->function
+futher->further
+garanteed->guaranteed
+garantee->guarantee
+gauranteed->guaranteed
+gaurantee->guarantee
+gaurantees->guarantees
+Ghandi->Gandhi
+gracefull->graceful
+grammer->grammar
+grat->great
+guarenteed->guaranteed
+guarentee->guarantee
+guarentees->guarantees
+Guiness->Guinness
+guranteed->guaranteed
+gurantee->guarantee
+hapen->happen
+happended->happened
+happend->happened
+hasnt->hasn't
+helpfull->helpful
+hertzs->hertz
+higest->highest
+identifers->identifiers
+idiosyncracy->idiosyncrasy
+imcomplete->incomplete
+imediately->immediately
+immediatley->immediately
+immediatly->immediately
+immidiately->immediately
+impedence->impedance
+improvments->improvements
+inadvertantly->inadvertently
+inbetween->between
+inconsistant->inconsistent
+indefinately->indefinitely
+indentical->identical
+independant->independent
+independantly->independently
+infinit->infinite
+infomation->information
+inheritence->inheritance
+inital->initial
+initally->initially
+inlcuding->including
+inot->into
+inteligence->intelligence
+intepretation->interpretation
+interchangable->interchangeable
+interelated->interrelated
+interm->interim
+interupt->interrupt
+intial->initial
+irregardless->regardless
+irrelevent->irrelevant
+isnt->isn't
+issueing->issuing
+iwth->with
+knowlege->knowledge
+larg->large
+lastr->last
+layed->laid
+lazyness->laziness
+legitamate->legitimate
+lenght->length
+libary->library
+liftime->lifetime
+likelyhood->likelihood
+littel->little
+loosing->losing
+lsat->last
+maintainance->maintenance
+maintainence->maintenance
+managment->management
+mantained->maintained
+millenium->millennium
+miniscule->minuscule
+minumum->minimum
+mirrorred->mirrored
+miscellanous->miscellaneous
+mispelling->misspelling
+misterious->mysterious
+mistery->mystery
+modle->model
+momento->memento
+multipled->multiplied
+multiplers->multipliers
+neccesarily->necessarily
+neccesary->necessary
+neccessarily->necessarily
+neccessary->necessary
+necesary->necessary
+negociate->negotiate
+negociation->negotiation
+negotation->negotiation
+nessecary->necessary
+nonsence->nonsense
+noone->no one
+noticable->noticeable
+noticible->noticeable
+nowdays->nowadays
+occassionally->occasionally
+occationally->occasionally
+occour->occur
+occurance->occurrence
+occurances->occurrences
+occured->occurred
+occurence->occurrence
+occurences->occurrences
+occuring->occurring
+occurrance->occurrence
+occurr->occur
+ocurred->occurred
+offical->official
+officialy->officially
+ommited->omitted
+ommitted->omitted
+oportunity->opportunity
+oposite->opposite
+oppossed->opposed
+orginal->original
+originaly->originally
+origional->original
+orignally->originally
+oustanding->outstanding
+overwelming->overwhelming
+pallete->palette
+paralell->parallel
+paralel->parallel
+parallely->parallelly
+parrallel->parallel
+partialy->partially
+particualr->particular
+particularily->particularly
+particulary->particularly
+pased->passed
+paticular->particular
+payed->paid
+peformed->performed
+perfomance->performance
+performence->performance
+peristent->persistent
+permanant->permanent
+permissable->permissible
+persistant->persistent
+planed->planned
+platfrom->platform
+posession->possession
+positon->position
+possibile->possible
+possibilty->possibility
+possiblility->possibility
+postion->position
+postive->positive
+practially->practically
+practicaly->practically
+preample->preamble
+preceeded->preceded
+preceeding->preceding
+preceed->precede
+preceeds->precedes
+prefered->preferred
+preferrably->preferably
+prepartion->preparation
+preperation->preparation
+presense->presence
+primative->primitive
+priviledges->privileges
+privledge->privilege
+probelm->problem
+proccessing->processing
+proccess->process
+proces->process
+processer->processor
+programable->programmable
+promiscous->promiscuous
+propietary->proprietary
+propogate->propagate
+propper->proper
+protocal->protocol
+psuedo->pseudo
+publically->publicly
+purposedly->purposely
+puting->putting
+realy->really
+reccomended->recommended
+receving->receiving
+recieved->received
+recieve->receive
+reciever->receiver
+recieves->receives
+recieving->receiving
+recived->received
+recomended->recommended
+recurrance->recurrence
+referece->reference
+refered->referred
+refereneces->references
+refering->referring
+refernce->reference
+referrence->reference
+referrs->refers
+refrence->reference
+relativly->relatively
+relevent->relevant
+reliablity->reliability
+remaing->remaining
+remeber->remember
+rendevous->rendezvous
+repectively->respectively
+reponse->response
+reponsible->responsible
+reproducable->reproducible
+repsectively->respectively
+requirment->requirement
+resemblence->resemblance
+respectivly->respectively
+responce->response
+responisble->responsible
+responsability->responsibility
+responsibile->responsible
+ressemble->resemble
+retreive->retrieve
+reversable->reversible
+rougly->roughly
+runing->running
+saftey->safety
+satelite->satellite
+seach->search
+seeked->sought
+seldomly->seldom
+seperate->separate
+seperating->separating
+sevice->service
+shaddow->shadow
+shouldnt->shouldn't
+shrinked->shrunk
+sicne->since
+signficant->significant
+signifigant->significant
+similarily->similarly
+similiar->similar
+simmilar->similar
+simplier->simpler
+simultanous->simultaneous
+slighly->slightly
+smae->same
+sofware->software
+sourth->south
+speach->speech
+specfic->specific
+specifiying->specifying
+spreaded->spread
+stange->strange
+strenght->strength
+structual->structural
+stucture->structure
+sturcture->structure
+subsquently->subsequently
+subsquent->subsequent
+substracted->subtracted
+substracting->subtracting
+substraction->subtraction
+substracts->subtracts
+substract->subtract
+succedded->succeeded
+succeded->succeeded
+succesfully->successfully
+succesful->successful
+successfull->successful
+successully->successfully
+suceeded->succeeded
+suceeds->succeeds
+sucessfully->successfully
+sucessful->successful
+sufficently->sufficiently
+sufficent->sufficient
+suposing->supposing
+supresses->suppresses
+supressing->suppressing
+supress->suppress
+suprise->surprise
+surounding->surrounding
+surpressed->suppressed
+surpress->suppress
+syncronization->synchronization
+taht->that
+targetted->targeted
+targetting->targeting
+teh->the
+tempertaure->temperature
+temprary->temporary
+tendancy->tendency
+theese->these
+themselfs->themselves
+thigns->things
+thoughout->throughout
+threshhold->threshold
+thsi->this
+tihs->this
+toghether->together
+toke->took
+transfered->transferred
+transfering->transferring
+transistion->transition
+translater->translator
+truely->truly
+twelth->twelfth
+typicaly->typically
+unavailible->unavailable
+unecessary->unnecessary
+unfortunatly->unfortunately
+unkown->unknown
+unneccessarily->unnecessarily
+unnecesarily->unnecessarily
+unnecesary->unnecessary
+unoffical->unofficial
+unplesant->unpleasant
+unsed->unused
+unsuccesful->unsuccessful
+unsuccessfull->unsuccessful
+untill->until
+unuseable->unusable
+unusuable->unusable
+upto->up to
+usally->usually
+useage->usage
+usefull->useful
+useing->using
+ususally->usually
+verfication->verification
+verison->version
+virutal->virtual
+visable->visible
+wanna->want to
+wasnt->wasn't
+whcih->which
+whereever->wherever
+whic->which
+whihc->which
+whith->with
+whther->whether
+wich->which
+wierd->weird
+wih->with
+wille->will
+withing->within
+writen->written
+yeild->yield
