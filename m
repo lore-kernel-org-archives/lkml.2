@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab0ICCQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 22:16:32 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54485
+	id S1754913Ab0ICCR0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 22:17:26 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54493
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753503Ab0ICCQb (ORCPT
+	by vger.kernel.org with ESMTP id S1753764Ab0ICCRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 22:16:31 -0400
-Date: Thu, 02 Sep 2010 19:16:47 -0700 (PDT)
-Message-Id: <20100902.191647.258116956.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, peppe.cavallaro@st.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
+	Thu, 2 Sep 2010 22:17:25 -0400
+Date: Thu, 02 Sep 2010 19:17:41 -0700 (PDT)
+Message-Id: <20100902.191741.233696520.davem@davemloft.net>
+To: sanagi.koki@jp.fujitsu.com
+Cc: rostedt@goodmis.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: Re: [PATCH v4 0/5] netdev: show a process of packets
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100903115226.52d0ccb3.sfr@canb.auug.org.au>
-References: <20100903114750.3d8994b7.sfr@canb.auug.org.au>
-	<20100903115226.52d0ccb3.sfr@canb.auug.org.au>
+In-Reply-To: <4C80592B.2060406@jp.fujitsu.com>
+References: <4C72422C.5070102@jp.fujitsu.com>
+	<1283212210.3656.84.camel@gandalf.stny.rr.com>
+	<4C80592B.2060406@jp.fujitsu.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -27,21 +30,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 3 Sep 2010 11:52:26 +1000
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Date: Fri, 03 Sep 2010 11:10:51 +0900
 
-> Hi all,
+> Thanks many acks. and I have one question.
 > 
-> On Fri, 3 Sep 2010 11:47:50 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>
->> Exposed by commit ac75791aa943c7953521cb4fa7728bf51f9abd2d ("stmmac:
->> remove dead option in the driver's Kconfig")  That allowed the driver to
->> be built on a lot more platforms that previously.
+> These patches have several component.
 > 
-> That commit was the result of the only platform that this driver was ever
-> used on being removed by commit f96691872439ab2071171d4531c4a95b5d493ae5
-> ("sh: Kill off the remaining ST40 cruft").  So maybe this driver should
-> actually be removed from the tree as well?
+> Patch1 is kernel component, but patch2-5 are netdev component.
+> What tree is good to be included ?
+> If it is not net-next, I must rebase to another tree.
 
-That's up to whoever maintains this thing, well... there is no listed
-maintainer in MAINTAINERS.
+I would prefer it goes into the tracing tree or whatever is the most appropriate
+for patch #1.
