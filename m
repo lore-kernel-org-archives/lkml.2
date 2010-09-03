@@ -1,91 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab0ICQ2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 12:28:48 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36626 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655Ab0ICQ2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 12:28:46 -0400
-Message-ID: <4C812209.1040707@kernel.org>
-Date: Fri, 03 Sep 2010 18:27:53 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1755864Ab0ICQfD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 12:35:03 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33339 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755170Ab0ICQfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 12:35:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vYg/4BzYfWNdNgrmieVMPfk1EQHpjFET28LEk1BPsgTit7ndOoKxbzT6y+ygOYlk5T
+         ax30vxj9kpEt1GKwOexvOlaML1M+lhYe1IOtSDDSQQiYUXEO9W81XqbdZxhCtLwUnVyh
+         xnxejIHMZBBowm4MvwCa4od1vpyzkYJrmbylE=
+Date: Fri, 3 Sep 2010 09:34:39 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Hemanth V <hemanthv@ti.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [RFC] [PATCH V2 1/2] input: CMA3000 Accelerometer driver
+Message-ID: <20100903163438.GB2200@core.coreip.homeip.net>
+References: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com>
+ <20100829184904.GC26209@core.coreip.homeip.net>
+ <017e01cb4b53$45925da0$LocalHost@wipblrx0099946>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: [PATCH RESEND 1/3] vmalloc: pcpu_get/free_vm_areas() aren't needed
- on UP
-References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <alpine.DEB.2.00.1008241256280.4763@router.home> <4C741029.7090300@cs.helsinki.fi> <alpine.DEB.2.00.1008241352240.5388@router.home> <4C74D1D7.4080608@kernel.org> <4C74DB05.7000101@cs.helsinki.fi> <alpine.DEB.2.00.1008250846590.13026@router.home> <4C762734.1030402@kernel.org>
-In-Reply-To: <4C762734.1030402@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 16:27:55 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <017e01cb4b53$45925da0$LocalHost@wipblrx0099946>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These functions are used only by percpu memory allocator on SMP.
-Don't build them on UP.
+Hi Hemanth,
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
----
-(resending w/ Nick's new email address)
+On Fri, Sep 03, 2010 at 04:02:11PM +0530, Hemanth V wrote:
+> >
+> >
+> >Do not like repeated release of resources in main and error path... Can
+> >we do it like:
+> >
+> >...
+> >disable_irq();
+> >error = cma3000_set(data, CMA3000_CTRL, ctrl, "ctrl");
+> >if (!error) {
+> >/* Settling time delay required after mode change */
+> >msleep(CMA3000_SETDELAY);
+> >}
+> >enable_irq();
+> >out:
+> >mutex_unlock();
+> >return error ? error : count;
+> 
+> I am thinking I can just add the below statement, and should be able to
+> remove repeated release.
+> 
+> return error ? error : count;
+> 
 
-So, something like these three patches.  Also available in the
-following git tree.
+That would make us sleep for CMA3000_SETDELAY even in case of failure...
+... But that should be OK.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git review-up
+> >>+
+> >>+ if (data->client->irq) {
+> >>+ ret = request_threaded_irq(data->client->irq, NULL,
+> >>+ cma3000_thread_irq,
+> >>+ irqflags | IRQF_ONESHOT,
+> >>+ data->client->name, data);
+> >>+
+> >>+ if (ret < 0) {
+> >>+ dev_err(&data->client->dev,
+> >>+ "request_threaded_irq failed\n");
+> >>+ goto err_op1_failed;
+> >>+ }
+> >>+ }
+> >
+> >What is the utility of the driver when there is no IRQ line?
+> 
+> Not sure I fully understand your comments.
+> Currently probe would return a failure.
+> 
 
-Nick, can I route this one through percpu tree?
+You have a check for data->client->irq != 0 and finish probe() with
+success in case it is 0. The question is what is the use of the
+device/driver combo in case when data->client->irq == 0?
 
-Thanks.
-
- include/linux/vmalloc.h |    2 ++
- mm/vmalloc.c            |    2 ++
- 2 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index de05e96..3d510e8 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -115,10 +115,12 @@ extern rwlock_t vmlist_lock;
- extern struct vm_struct *vmlist;
- extern __init void vm_area_register_early(struct vm_struct *vm, size_t align);
-
-+#ifdef CONFIG_SMP
- struct vm_struct **pcpu_get_vm_areas(const unsigned long *offsets,
- 				     const size_t *sizes, int nr_vms,
- 				     size_t align, gfp_t gfp_mask);
-
- void pcpu_free_vm_areas(struct vm_struct **vms, int nr_vms);
-+#endif
-
- #endif /* _LINUX_VMALLOC_H */
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index b7e314b..eb57a63 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2052,6 +2052,7 @@ void free_vm_area(struct vm_struct *area)
- }
- EXPORT_SYMBOL_GPL(free_vm_area);
-
-+#ifdef CONFIG_SMP
- static struct vmap_area *node_to_va(struct rb_node *n)
- {
- 	return n ? rb_entry(n, struct vmap_area, rb_node) : NULL;
-@@ -2332,6 +2333,7 @@ void pcpu_free_vm_areas(struct vm_struct **vms, int nr_vms)
- 		free_vm_area(vms[i]);
- 	kfree(vms);
- }
-+#endif	/* CONFIG_SMP */
-
- #ifdef CONFIG_PROC_FS
- static void *s_start(struct seq_file *m, loff_t *pos)
 -- 
-1.7.1
-
+Dmitry
