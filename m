@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab0ICGjr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 02:39:47 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57799 "EHLO mx3.mail.elte.hu"
+	id S1753216Ab0ICGog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 02:44:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5222 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432Ab0ICGjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 02:39:45 -0400
-Date: Fri, 3 Sep 2010 08:39:34 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
-Message-ID: <20100903063934.GA25863@elte.hu>
-References: <20100901213318.19353.54619.stgit@localhost.localdomain>
- <20100902065731.GB29972@elte.hu>
- <20100902100308.GA17167@basil.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100902100308.GA17167@basil.fritz.box>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751432Ab0ICGof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 02:44:35 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4C804F3A.8020001@snapgear.com>
+References: <4C804F3A.8020001@snapgear.com> <19747.1283422807@redhat.com> <20100902102203.19806.39028.stgit@warthog.procyon.org.uk>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] Fix M68K irqflags
+Date: Fri, 03 Sep 2010 07:44:19 +0100
+Message-ID: <7077.1283496259@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Greg Ungerer <gerg@snapgear.com> wrote:
 
-* Andi Kleen <andi@firstfloor.org> wrote:
-
-> > This isnt a particularly useful solution to users of said systems - 
-> > they have to figure out that this option exists, and then they have 
-> > to enter this option on the boot line.
+> >  -	DEFINE(THREAD_SIZE, THREAD_SIZE);
+> > -
 > 
-> This usually only happens in early preproduction systems. So far the 
-> BIOS always got fixed before they shipped to users.
+> This breaks final link due to missing THREAD_SIZE definition in head.S:
+> 
+>   LD      vmlinux
+> arch/m68knommu/platform/coldfire/head.o: In function `_clear_bss':
+> (.head.text+0xa4): undefined reference to `THREAD_SIZE'
+> 
+> 
+> Without that asm-offsets.c change it works on my ColdFire boards.
+> I am happy with it:
 
-'Usually' != 'always'. Read the changelog:
+With that, I get a duplicate reference to THREAD_SIZE.  head.S should include
+asm/thread_info.h rather than THREAD_SIZE being redefined in asm-offsets.
 
-  ' There are BIOSes in production that have these failures, so this will 
-    allow people in the field to work around these BIOS issues. '
+  CC      init/do_mounts_rd.o
+In file included from /warthog/nfs/linux-2.6-fscache/arch/m68k/include/asm/asm-offsets.h:1,
+                 from arch/m68knommu/platform/coldfire/entry.S:36:
+include/generated/asm-offsets.h:46:1: warning: "THREAD_SIZE" redefined
+In file included from /warthog/nfs/linux-2.6-fscache/arch/m68k/include/asm/thread_info.h:2,
+                 from arch/m68knommu/platform/coldfire/entry.S:32:
+/warthog/nfs/linux-2.6-fscache/arch/m68k/include/asm/thread_info_no.h:27:1: warning: this is the location of the previous definition
 
-Peter, which system in production that has this problem? That one needs 
-a DMI match.
+Unfortunately, I don't have a binutils that can handle the funny Coldfire
+instructions.  Can you point me at a Coldfire toolchain?
 
-Preproduction systems can certainly be hacked around with the boot 
-option and are not worth the DMI match. (preproduction systems also tend 
-to have have very unspecific DMI strings in most cases - things like 
-'1234567890' or 'to be filled by OEM')
-
-In important cases a PCI ID match can be done for serious bugs in 
-widespread preproduction systems - we have a handful of examples in-tree 
-for such workarounds - but i doubt this is such a case - we use it for 
-crasher bugs, not for 'boots up slow' cases.
-
-Nevertheless, production systems need a DMI match.
-
-Thanks,
-
-	Ingo
+David
