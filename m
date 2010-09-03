@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab0ICJiI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:38:08 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:56473 "EHLO
-	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751250Ab0ICJiG (ORCPT
+	id S1753025Ab0ICJi1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:38:27 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33600 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542Ab0ICJi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:38:06 -0400
-Date: Fri, 3 Sep 2010 05:38:00 -0400 (EDT)
-From: Miloslav Trmac <mitr@redhat.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-crypto@vger.kernel.org,
-        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
-        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org
-Message-ID: <245859135.862181283506680927.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <423332662.861981283506383923.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-Subject: Re: [PATCH 01/19] User-space API definition
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
+	Fri, 3 Sep 2010 05:38:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=uSGy8AwcpYvkC0xE405aP8OGFny0RMJSu9PJLuvIFiNw86xP4f4M/ZuiFl1m1r2Tp5
+         3rPzIoifgQzlz0CHVgI0WLhwKJXceFTf0LANKxgfHAzOVQNrhaBKtXpu4q2WjPpORrFN
+         BLWA1wzPw8cqNerBmtC9Rs3XO2QXe+cy+XRKQ=
+From: Namhyung Kim <namhyung@gmail.com>
+To: trivial@kernel.org
+Cc: tj@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ida: document IDA_BITMAP_LONGS calculation
+Date: Fri,  3 Sep 2010 18:38:18 +0900
+Message-Id: <1283506698-21369-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ "Herbert Xu" <herbert@gondor.hengli.com.au> wrote:
-> Thanks for the updated patch-set.  It does indeed fulfil some
-> of the requirements raised earlier.
-> 
-> However, as far as I can see this still does not address the
-> extensibility.  For example, say we want add an interface to
-> allow the xoring of two arbitrary data streams using DMA offload,
-> this interface would make that quite awkward.
-I don't think this would be a problem:
+IDA_BITMAP_LONGS value is calculated take into account struct ida_bitmap
+not to waste memory space. Comment it.
 
-- Expose the xoring as a crypto_tfm, with the usual crypto API string identifier
-  (this is supposed to be a crypto API interface, not a generic interface
-  to the platform DMA controller, after all).
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/idr.h |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-- Check to see if the operation can be supported using the existing
-  attributes, add attributes if necessary.
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index e968db7..3f4b718 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -117,10 +117,13 @@ void idr_init(struct idr *idp);
+ /*
+  * IDA - IDR based id allocator, use when translation from id to
+  * pointer isn't necessary.
++ *
++ * IDA_BITMAP_LONGS is calculated to be one less to accommodate
++ * ida_bitmap->nr_busy so that the whole struct fits in 128 bytes.
+  */
+ #define IDA_CHUNK_SIZE		128	/* 128 bytes per chunk */
+ #define IDA_BITMAP_LONGS	(128 / sizeof(long) - 1)
+-#define IDA_BITMAP_BITS		(IDA_BITMAP_LONGS * sizeof(long) * 8)
++#define IDA_BITMAP_BITS 	(IDA_BITMAP_LONGS * sizeof(long) * 8)
+ 
+ struct ida_bitmap {
+ 	long			nr_busy;
+-- 
+1.7.2.2
 
-  In this case, NCR_UPDATE_INPUT_DATA can be used for the read-only
-  stream and NCR_UPDATE_OUTPUT_BUFFER for the read-write steram.
-
-- If this is an entirely new crypto transform type, add support to
-  the session interface.
-
-  In this case, this would probably mean adding NCR_OP_COMBINE (or
-  something similar); SESSION_INIT would only allocate the tfm,
-  SESSION_UPDATE would be used for handling blocks of data as they
-  come and go.
-
-The interface would have to be extended, but the extension would be completely backward-compatible and the additions to the interface would probably be smaller than the additions to the internal crypto API.  Notably no new ioctl()s would be needed.
-    Mirek
