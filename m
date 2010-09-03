@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab0ICC3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 22:29:43 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51016 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754219Ab0ICC3m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 22:29:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=LUfl9Yi4NA0W1LKVv7716OcUszswcjkfSw/8/XgFkOz//3OaEN5gYm6QFWloieXBHG
-         larRjV8TrEyV0ANLpiRUsYAoq3y0rLgXX7JGOyxdOeIy9uoWwYIhg07WBDjz1rZVsIeO
-         1NQe/EROgcmvFvZIwsfnDlkCpCs5jGZxV1O+Q=
+	id S1755215Ab0ICCfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 22:35:25 -0400
+Received: from claw.goop.org ([74.207.240.146]:54431 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753764Ab0ICCfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 22:35:24 -0400
+Message-ID: <4C805EEA.1080205@goop.org>
+Date: Thu, 02 Sep 2010 19:35:22 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
-References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com>
-	<20100902121853.e90f6c53.randy.dunlap@oracle.com>
-	<AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
-Date: Fri, 3 Sep 2010 03:29:41 +0100
-Message-ID: <AANLkTikBOUSGYkopdUcV+5KsayRi-_88kktMLv=KXRU0@mail.gmail.com>
-Subject: Re: [RFC] Fix typos
-From: Phillip Lougher <phil.lougher@gmail.com>
-To: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: add RESERVE_BRK_ARRAY() helper
+Content-Type: multipart/mixed;
+ boundary="------------070207080705080002020503"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 8:31 PM, Lucas De Marchi
-<lucas.de.marchi@gmail.com> wrote:
-> On Thu, Sep 2, 2010 at 16:18, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+This is a multi-part message in MIME format.
+--------------070207080705080002020503
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
->> I'm not so sure about "is rose up" being better.  and what about "ar"?
->
-> I'm only changing words with 3 chars or more, because otherwise I
-> would have a lot of false positives, but I think I can add this word
-> without much trouble.
->
 
-The problem with "ar" is it is too short to know for certain what it
-should be...  "ar" though likely a typo for "are" could also be a typo
-for e.g. "arm", "arc", "arg", "ark", and "arp".
 
-Perhaps in this and similar cases the script should flag these errors
-for human attention rather than automatically fixing them.
+Useful when converting static arrays into boot-time brk allocated objects.
 
-Phillip
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index 4093d1e..632cafd 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -126,6 +126,11 @@ void *extend_brk(size_t size, size_t align);
+ 			: : "i" (sz));					\
+ 	}
+ 
++/* Helper for reserving space for arrays of things */
++#define RESERVE_BRK_ARRAY(type, name, entries)		\
++	type *name;					\
++	RESERVE_BRK(name, sizeof(type) * entries)
++
+ #ifdef __i386__
+ 
+ void __init i386_start_kernel(void);
+
+
+
+--------------070207080705080002020503
+Content-Type: text/plain;
+ name="x86-brk-array.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="x86-brk-array.patch"
+
+RnJvbSA5MDBkOTc3ZTZjZTAwNGM1OWI5ODZhNDk0ODM4ZGFkZGVjYmUxMDZhIE1vbiBTZXAg
+MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBKZXJlbXkgRml0emhhcmRpbmdlIDxqZXJlbXkuZml0
+emhhcmRpbmdlQGNpdHJpeC5jb20+CkRhdGU6IFRodSwgMjYgQXVnIDIwMTAgMTU6MzE6MzYg
+LTA3MDAKU3ViamVjdDogW1BBVENIXSB4ODY6IGFkZCBSRVNFUlZFX0JSS19BUlJBWSgpIGhl
+bHBlcgoKVXNlZnVsIHdoZW4gY29udmVydGluZyBzdGF0aWMgYXJyYXlzIGludG8gYm9vdHRp
+bWUgYnJrIGFsbG9jYXRlZCBvYmplY3RzLgoKU2lnbmVkLW9mZi1ieTogSmVyZW15IEZpdHpo
+YXJkaW5nZSA8amVyZW15LmZpdHpoYXJkaW5nZUBjaXRyaXguY29tPgoKZGlmZiAtLWdpdCBh
+L2FyY2gveDg2L2luY2x1ZGUvYXNtL3NldHVwLmggYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9z
+ZXR1cC5oCmluZGV4IDQwOTNkMWUuLjYzMmNhZmQgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2lu
+Y2x1ZGUvYXNtL3NldHVwLmgKKysrIGIvYXJjaC94ODYvaW5jbHVkZS9hc20vc2V0dXAuaApA
+QCAtMTI2LDYgKzEyNiwxMSBAQCB2b2lkICpleHRlbmRfYnJrKHNpemVfdCBzaXplLCBzaXpl
+X3QgYWxpZ24pOwogCQkJOiA6ICJpIiAoc3opKTsJCQkJCVwKIAl9CiAKKy8qIEhlbHBlciBm
+b3IgcmVzZXJ2aW5nIHNwYWNlIGZvciBhcnJheXMgb2YgdGhpbmdzICovCisjZGVmaW5lIFJF
+U0VSVkVfQlJLX0FSUkFZKHR5cGUsIG5hbWUsIGVudHJpZXMpCQlcCisJdHlwZSAqbmFtZTsJ
+CQkJCVwKKwlSRVNFUlZFX0JSSyhuYW1lLCBzaXplb2YodHlwZSkgKiBlbnRyaWVzKQorCiAj
+aWZkZWYgX19pMzg2X18KIAogdm9pZCBfX2luaXQgaTM4Nl9zdGFydF9rZXJuZWwodm9pZCk7
+Cg==
+--------------070207080705080002020503--
