@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab0ICPcR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 11:32:17 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:54033 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629Ab0ICPcP (ORCPT
+	id S1752909Ab0ICPdy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 11:33:54 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49570
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752197Ab0ICPdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 11:32:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=lNBJQ+dyWJAvkYI21qNMsE43DzI3LTwu49tMqmoUuk0UNZwp5BIBYlADrWX70HE8sr
-         AIulu6uXh4kUMS4QSMPt3C/B6Qcl6suXQQod/OsFqwmVpD+HvurPRypuIFDcZgdTy4SS
-         GXcoUmh0XCIsgwEXrfzxmRJuCjCGuoHSdDhvE=
-Date: Fri, 3 Sep 2010 18:32:38 +0300
-From: Jarkko Nikula <jhnikula@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH] regulator: Fix machine constraints apply for min_uV !=
- max_uV
-Message-Id: <20100903183238.23f9887c.jhnikula@gmail.com>
-In-Reply-To: <20100903145420.GB7614@rakim.wolfsonmicro.main>
-References: <1283521429-32499-1-git-send-email-jhnikula@gmail.com>
-	<20100903145420.GB7614@rakim.wolfsonmicro.main>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Fri, 3 Sep 2010 11:33:52 -0400
+Date: Fri, 03 Sep 2010 08:34:09 -0700 (PDT)
+Message-Id: <20100903.083409.52185570.davem@davemloft.net>
+To: paulmck@linux.vnet.ibm.com
+Cc: herbert@gondor.hengli.com.au, linville@tuxdriver.com,
+        netdev@vger.kernel.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+        peterz@infradead.org
+Subject: Re: [PATCH] netpoll: use non-BH variant of RCU
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100902172625.GD2349@linux.vnet.ibm.com>
+References: <20100813175157.GA29586@gondor.apana.org.au>
+	<20100814.235033.02286546.davem@davemloft.net>
+	<20100902172625.GD2349@linux.vnet.ibm.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010 15:54:20 +0100
-Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 2 Sep 2010 10:26:25 -0700
 
-> This is deliberate behaviour, apply_uV can only be used with a fixed
-> voltage at startup in order to avoid issues with handover from the
-> bootloader if we suddenly drop the supply voltage on a device which has
-> not yet been claimed by a driver.  The expectation is that if the
-> voltage can vary then something that understands the hardware state
-> needs to be involved in maintaining the voltage.
+>     softirq: adjust error check
+>     
+>     The error check for _local_bh_enable_ip() warns on both in_irq() and
+>     irqs_disabled().  The check for in_irq() is necessary, because a hardirq
+>     might well have interrupted bh execution, in which case it is simply
+>     not possible for the hardirq to exclude the bh that got interrupted.
+>     
+>     However, it is perfectly reasonable to disable bh while hardirqs are
+>     disabled, and this in fact promotes common code.  This commit therefore
+>     removes the irqs_disabled() check.
+>     
+>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Ah, true. It could be possible that machine constraints are specified
-broader, like they include standby state voltage which is not enough to
-probe & initialize the device etc.
-
-
--- 
-Jarkko
+Acked-by: David S. Miller <davem@davemloft.net>
