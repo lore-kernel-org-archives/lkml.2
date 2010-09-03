@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab0ICMXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 08:23:38 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54740 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab0ICMXe convert rfc822-to-8bit (ORCPT
+	id S1757936Ab0ICM06 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 08:26:58 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38134 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753186Ab0ICM05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 08:23:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Jd7yA8uXvmL/gD1Mg8++JxNDP6IDiSxoxnWDTkFJXqoRAocMJrR8yewez067atIdCz
-         O1xfi/MsMAxJp3CSG7QAztRgLYSaBhE7FLER46asoWSbmsci52J6oXFOG8Y8BSA3HoAx
-         dUOWo1C58XMCQQ/cXqJYmPofWTZG45lRSlHRs=
+	Fri, 3 Sep 2010 08:26:57 -0400
+Date: Fri, 3 Sep 2010 14:26:20 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Masayuki Ohtak <masa-korg@dsn.okisemi.com>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Crane Cai <crane.cai@amd.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        joe@perches.com, yong.y.wang@intel.com, qi.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, arjan@linux.intel.com,
+        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
+Message-ID: <20100903122619.GC4813@pengutronix.de>
+References: <4C80CBC0.5050908@dsn.okisemi.com>
+ <20100903133613.1c519c49@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1282932708.1946.8.camel@work-vm>
-References: <AANLkTi=ivkOHRYwLy5FDg3RnK18+opjGd9XsxC7yZqi7@mail.gmail.com>
-	<AANLkTik0ZGs3i_mHtB0s6iT6X0cLgxMjRN7Hi9FK_ZLF@mail.gmail.com>
-	<AANLkTikTF9uvKw+48_jJKLAwqp7MJnypvvUsHN3qQ58+@mail.gmail.com>
-	<AANLkTin80q4tGPZ1FefWCUMmhpNKj3_-KZZB12gZvwSA@mail.gmail.com>
-	<AANLkTin5cLQG9ApxhCs92Twm958MP0J+u4GdBysJ3aNk@mail.gmail.com>
-	<AANLkTikWTLeDLbWWi-LJDD5SRAFN60v5065Vc_wGoY5N@mail.gmail.com>
-	<1282932708.1946.8.camel@work-vm>
-Date: Fri, 3 Sep 2010 14:23:32 +0200
-X-Google-Sender-Auth: kQGaECIxxEGq5Ss6VgD7GEHGpK0
-Message-ID: <AANLkTina8xAwnGVuPKywsf1qEzpu+rWNbv7JjqAgLqp1@mail.gmail.com>
-Subject: Re: System time drifts when processor idle.
-From: jean-philippe francois <jp.francois@cynove.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Lin Ming <lin@ming.vg>, venki@google.com, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        jslaby@suse.cz
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6zdv2QT/q3FMhpsV"
+Content-Disposition: inline
+In-Reply-To: <20100903133613.1c519c49@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/27 john stultz <johnstul@us.ibm.com>:
-> On Fri, 2010-08-27 at 16:12 +0200, jean-philippe francois wrote:
->> My Timekeeping bug is still present, here is an updated script and log.
->> I am willing to make test, but I don't know what kind of debugging
->> info is needed.
->>
->> cat /sys/devices/system/clocksource/clocksource0/available_clocksource
->> hpet acpi_pm
->> cat /sys/devices/system/clocksource/clocksource0/current_clocksource
->> hpet
->
-> Huh. hpet was not what I would have expected.
->
->
-> So first, two experiments:
->
-> 1) Does booting with "clock=acpi_pm" cause the issue to disappear?
->
 
-Hi,
+--6zdv2QT/q3FMhpsV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The same bug happens with clock=acpi_pm.
-My apologies for a previous mail where I said it was not hapenning with acpi_pm.
+On Fri, Sep 03, 2010 at 01:36:13PM +0100, Alan Cox wrote:
+> > +config PCH_I2C_CH_COUNT
+> > +	int "PCH I2C the number of channel count"
+> > +	range 1 2
+> > +	depends on PCH_I2C
+> > +	help
+> > +	  This driver is for PCH(Platform controller Hub) I2C of Topcliff whi=
+ch
+> > +	  is an IOH(Input/Output Hub) for x86 embedded processor.
+> > +	  The number of I2C buses/channels supported by the PCH I2C controlle=
+r.
+> > +	  PCH I2C of Topcliff supports only one channel.
+>=20
+> These sort of settings need to be runtime so one kernel can be built for
+> many platform variants. In this case if I understand correctly the
+> current device only has one channel so the define could just be moved
+> into the driver for now and made a variable later as/when/if new hardware
+> with more channels appears.
+>=20
+>=20
+>=20
+> > +static s32 pch_wait_for_xfer_complete(struct i2c_algo_pch_data *adap)
+> > +{
+> > +	s32 ret;
+> > +	ret =3D wait_event_interruptible_timeout(pch_event,
+> > +			(adap->pch_event_flag !=3D 0), msecs_to_jiffies(50));
+> > +	if (ret < 0) {
+> > +		pch_err(adap, "timeout: %x\n", adap->pch_event_flag);
+> > +		return ret;
+> > +	}
+>=20
+> You are reporting a timeout when _interruptible can also be woken by a
+> signal to the process (eg the user hitting ^C)
 
-With both clock, the timekeeping gap augments by amount of 5 minutes.
+Sidenote: a number of embedded drivers decided to switch to
+wait_event_timeout() recently because reacting to a signal may have
+subtle issues and must be carefully implemented and tested. Stalled
+busses were often the consequence. I don't know if this applies here but
+better keep it in mind.
 
-Jean-Philippe François
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--6zdv2QT/q3FMhpsV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkyA6WsACgkQD27XaX1/VRvuegCePEjeDK6jbUpGowZEgn4sypLr
+SF0An3IpzLGC7sR79cqh3JN8jUABMu3P
+=0AiJ
+-----END PGP SIGNATURE-----
+
+--6zdv2QT/q3FMhpsV--
