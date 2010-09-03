@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab0ICNey (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 09:34:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:51472 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754357Ab0ICNex (ORCPT
+	id S1754867Ab0ICNlv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 09:41:51 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:58587 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab0ICNlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 09:34:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Gene Heskett <gene.heskett@gmail.com>
-Subject: Re: [RFC 0/5] tty: move stuff around
-Date: Fri, 3 Sep 2010 15:34:22 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: mhw@wittsend.com, Rogier Wolff <R.E.Wolff@bitwizard.nl>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mike Frysinger <vapier.adi@gmail.com>
-References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <201009031413.00266.arnd@arndb.de> <201009030858.08060.gene.heskett@gmail.com>
-In-Reply-To: <201009030858.08060.gene.heskett@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009031534.22286.arnd@arndb.de>
-X-Provags-ID: V02:K0:KGMoKFzJtOQYwyCsdoTOhTOswQ5Z8Lq2rEn9WgbrPq2
- C1CM6PxuWo55A6CRD0HQVbfkrph0sMRI/gmpan6FHJizRvpOd4
- ietCbhQxy6cpBDyKnDvsPJI5Uznoc9ujTTgkMrztjd8cO723cJ
- hBHQLNLGwC6ATwCXrh989TCTHVHH0KTSMYdLLqXg2cHh1hnJGL
- JnflO6g9RTNFqik+ViBAQ==
+	Fri, 3 Sep 2010 09:41:50 -0400
+Message-Id: <20100903134116.039612691@szeredi.hu>
+User-Agent: quilt/0.46-1
+Date: Fri, 03 Sep 2010 15:41:16 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: vaurora@redhat.com, neilb@suse.de, viro@zeniv.linux.org.uk
+Subject: [PATCH 0/6] overlay filesystem prototype
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 September 2010, Gene Heskett wrote:
-> Dipping an interested oar in this water, but speaking purely from the user 
-> viewpoint;
-> 
-> That is all well and good I suppose, but please ask yourselves if there are 
-> suitable modern replacements for this hardware, and are the drivers 
-> available in linux?
+Updated patches follow.
 
-As far as I understand, these are all fairly simple (by today's standards)
-serial boards, so the assumption is that anyone running a machine with
-a 2.6.35 kernel would get a $5 (more for mulitport) USB serial adapter.
+Changes since the last version:
 
-> If there are not suitable replacements, buy able at the likes of newegg et 
-> all, then this attitude seems a bit premature.
-> 
-> I presume the same can be said of the rocketport drivers, I haven't seen 
-> those boards for sale in yonks, but there are probably at least 1 of them 
-> in every television station in the country (USA), doing wire service 
-> capture.
+ - rename "hybrid union filesystem" to "overlay filesystem" or overlayfs
 
-Ok, good to know, this is the kind of information I was looking for.
-I agree that as long as there are users, we shouldn't just kill the drivers.
-For rocket.c, Alan already mentioned that there users left, so it's not
-going away.
+ - added documentation written by Neil
 
-Note that there are also cases where we know that users exist, but for some
-reason they are all stuck on 2.4 kernels or older anyway, so there is no
-point in keeping the driver for new kernel releases. Also, we can always
-add them back if the situation changes or we hear of users we didn't
-know about.
+ - correct st_dev for directories (reported by Neil)
 
-	Arnd
+ - use getattr() to get attributes from the underlying filesystems,
+   this means that now an overlay filesystem itself can be the lower,
+   read-only layer of another overlay
+
+ - listxattr filters out private extended attributes
+
+ - get write ref on the upper layer on mount unless the overlay
+   itself is mounted read-only
+
+ - raise capabilities for copy up, dealing with whiteouts and opaque
+   directories.  Now the overlay works for non-root users as well
+
+ - "rm -rf" didn't work correctly in all cases if the directory was
+   copied up between opendir and the first readdir, this is now fixed
+   (and the directory operations consolidated)
+
+ - simplified copy up, this broke optimization for truncate and
+   open(O_TRUNC) (now file is copied up to be immediately truncated,
+   will fix)
+
+ - st_nlink for merged directories set to 1, this is an "illegal"
+   value that normal filesystems never have but some use it to
+   indicate that the number of subdirectories is unknown.  Utilities
+   (find, ...) seem to tolerate this well.
+
+ - misc fixes I forgot about
+
+Git tree is here:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs
+
+Thanks,
+Miklos
