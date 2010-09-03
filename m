@@ -1,567 +1,541 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab0ICKgu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 06:36:50 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35774 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757066Ab0ICKbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 06:31:25 -0400
-From: Tejun Heo <tj@kernel.org>
-To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org,
-        dm-devel@redhat.com, hch@lst.de, konishi.ryusuke@lab.ntt.co.jp,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        snitzer@redhat.com, k-ueda@ct.jp.nec.com, mpatocka@redhat.com
-Cc: Tejun Heo <tj@kernel.org>, Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH 08/41] block: rename blk-barrier.c to blk-flush.c
-Date: Fri,  3 Sep 2010 12:29:23 +0200
-Message-Id: <1283509796-1510-9-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1283509796-1510-1-git-send-email-tj@kernel.org>
-References: <1283509796-1510-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 10:30:40 +0000 (UTC)
+	id S932295Ab0ICKfF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 06:35:05 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49942 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757427Ab0ICKe7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 06:34:59 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 3 Sep 2010 19:29:43 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        =?UTF-8?B?TWljaGHFgg==?= Nazarewicz <m.nazarewicz@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mel Gorman <mel@csn.ul.ie>, linux-media@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+Message-Id: <20100903192943.f4f74136.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100902175424.5849c197.kamezawa.hiroyu@jp.fujitsu.com>
+References: <cover.1282286941.git.m.nazarewicz@samsung.com>
+	<1282310110.2605.976.camel@laptop>
+	<20100825155814.25c783c7.akpm@linux-foundation.org>
+	<20100826095857.5b821d7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<op.vh0wektv7p4s8u@localhost>
+	<20100826115017.04f6f707.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100826124434.6089630d.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTi=T1y+sQuqVTYgOkYvqrxdYB1bZmCpKafN5jPqi@mail.gmail.com>
+	<20100826133028.39d731da.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTimB+s0tO=wrODAU4qCaZnCBoLZ2A9pGjR_jheOj@mail.gmail.com>
+	<20100827171639.83c8642c.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100902175424.5849c197.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without ordering requirements, barrier and ordering are minomers.
-Rename block/blk-barrier.c to block/blk-flush.c.  Rename of symbols
-will follow.
+On Thu, 2 Sep 2010 17:54:24 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Christoph Hellwig <hch@infradead.org>
+> Here is a rough code for this.
+
+here is a _tested_ one. 
+If I tested correctly, I allocated 40MB of contigous pages by the new funciton.
+I'm grad this can be some hints for people.
+
+Thanks,
+-Kame
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+This patch as a memory allocator for contiguous memory larger than MAX_ORDER.
+
+  alloc_contig_pages(hint, size, list);
+
+  This function allocates 'size' of contigoues pages, whose physical address
+  is higher than 'hint'. size is specicied in byte unit.
+  Allocated pages are all linked into the list and all of their page_count()
+  are set to 1. Return value is the top page. 
+
+ free_contig_pages(list)
+ returns all pages in the list.
+
+This patch does
+  - find an area which can be ISOLATED.
+  - migrate remaining pages in the area.
+  - steal chunk of pages from allocator.
+
+Limitation is:
+  - retruned pages will be aligend to MAX_ORDER.
+  - returned length of page will be aligned to MAX_ORDER.
+    (so, the caller may have to return tails of pages by itself.)
+  - may allocate contiguous pages which overlap node/zones.
+
+This is fully experimental and written as example.
+(Maybe need more patches to make this complete.)
+
+This patch moves some amount of codes from memory_hotplug.c to
+page_isolation.c and based on page-offline technique used by
+memory_hotplug.c 
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- block/Makefile      |    2 +-
- block/blk-barrier.c |  248 ---------------------------------------------------
- block/blk-flush.c   |  248 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 249 insertions(+), 249 deletions(-)
- delete mode 100644 block/blk-barrier.c
- create mode 100644 block/blk-flush.c
+ include/linux/page-isolation.h |   10 +
+ mm/memory_hotplug.c            |   84 --------------
+ mm/page_alloc.c                |   32 +++++
+ mm/page_isolation.c            |  244 +++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 287 insertions(+), 83 deletions(-)
 
-diff --git a/block/Makefile b/block/Makefile
-index 0bb499a..f627e4b 100644
---- a/block/Makefile
-+++ b/block/Makefile
-@@ -3,7 +3,7 @@
- #
+Index: mmotm-0827/mm/page_isolation.c
+===================================================================
+--- mmotm-0827.orig/mm/page_isolation.c
++++ mmotm-0827/mm/page_isolation.c
+@@ -3,8 +3,11 @@
+  */
  
- obj-$(CONFIG_BLOCK) := elevator.o blk-core.o blk-tag.o blk-sysfs.o \
--			blk-barrier.o blk-settings.o blk-ioc.o blk-map.o \
-+			blk-flush.o blk-settings.o blk-ioc.o blk-map.o \
- 			blk-exec.o blk-merge.o blk-softirq.o blk-timeout.o \
- 			blk-iopoll.o blk-lib.o ioctl.o genhd.o scsi_ioctl.o
+ #include <linux/mm.h>
++#include <linux/swap.h>
+ #include <linux/page-isolation.h>
+ #include <linux/pageblock-flags.h>
++#include <linux/mm_inline.h>
++#include <linux/migrate.h>
+ #include "internal.h"
  
-diff --git a/block/blk-barrier.c b/block/blk-barrier.c
-deleted file mode 100644
-index e8b2e5c..0000000
---- a/block/blk-barrier.c
-+++ /dev/null
-@@ -1,248 +0,0 @@
--/*
-- * Functions related to barrier IO handling
-- */
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/bio.h>
--#include <linux/blkdev.h>
--#include <linux/gfp.h>
--
--#include "blk.h"
--
--static struct request *queue_next_ordseq(struct request_queue *q);
--
--/*
-- * Cache flushing for ordered writes handling
-- */
--unsigned blk_ordered_cur_seq(struct request_queue *q)
--{
--	if (!q->ordseq)
--		return 0;
--	return 1 << ffz(q->ordseq);
--}
--
--static struct request *blk_ordered_complete_seq(struct request_queue *q,
--						unsigned seq, int error)
--{
--	struct request *next_rq = NULL;
--
--	if (error && !q->orderr)
--		q->orderr = error;
--
--	BUG_ON(q->ordseq & seq);
--	q->ordseq |= seq;
--
--	if (blk_ordered_cur_seq(q) != QUEUE_ORDSEQ_DONE) {
--		/* not complete yet, queue the next ordered sequence */
--		next_rq = queue_next_ordseq(q);
--	} else {
--		/* complete this barrier request */
--		__blk_end_request_all(q->orig_bar_rq, q->orderr);
--		q->orig_bar_rq = NULL;
--		q->ordseq = 0;
--
--		/* dispatch the next barrier if there's one */
--		if (!list_empty(&q->pending_barriers)) {
--			next_rq = list_entry_rq(q->pending_barriers.next);
--			list_move(&next_rq->queuelist, &q->queue_head);
--		}
--	}
--	return next_rq;
--}
--
--static void pre_flush_end_io(struct request *rq, int error)
--{
--	elv_completed_request(rq->q, rq);
--	blk_ordered_complete_seq(rq->q, QUEUE_ORDSEQ_PREFLUSH, error);
--}
--
--static void bar_end_io(struct request *rq, int error)
--{
--	elv_completed_request(rq->q, rq);
--	blk_ordered_complete_seq(rq->q, QUEUE_ORDSEQ_BAR, error);
--}
--
--static void post_flush_end_io(struct request *rq, int error)
--{
--	elv_completed_request(rq->q, rq);
--	blk_ordered_complete_seq(rq->q, QUEUE_ORDSEQ_POSTFLUSH, error);
--}
--
--static void queue_flush(struct request_queue *q, struct request *rq,
--			rq_end_io_fn *end_io)
--{
--	blk_rq_init(q, rq);
--	rq->cmd_type = REQ_TYPE_FS;
--	rq->cmd_flags = REQ_FLUSH;
--	rq->rq_disk = q->orig_bar_rq->rq_disk;
--	rq->end_io = end_io;
--
--	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
--}
--
--static struct request *queue_next_ordseq(struct request_queue *q)
--{
--	struct request *rq = &q->bar_rq;
--
--	switch (blk_ordered_cur_seq(q)) {
--	case QUEUE_ORDSEQ_PREFLUSH:
--		queue_flush(q, rq, pre_flush_end_io);
--		break;
--
--	case QUEUE_ORDSEQ_BAR:
--		/* initialize proxy request and queue it */
--		blk_rq_init(q, rq);
--		init_request_from_bio(rq, q->orig_bar_rq->bio);
--		rq->cmd_flags &= ~REQ_HARDBARRIER;
--		if (q->ordered & QUEUE_ORDERED_DO_FUA)
--			rq->cmd_flags |= REQ_FUA;
--		rq->end_io = bar_end_io;
--
--		elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
--		break;
--
--	case QUEUE_ORDSEQ_POSTFLUSH:
--		queue_flush(q, rq, post_flush_end_io);
--		break;
--
--	default:
--		BUG();
--	}
--	return rq;
--}
--
--struct request *blk_do_ordered(struct request_queue *q, struct request *rq)
--{
--	unsigned skip = 0;
--
--	if (!(rq->cmd_flags & REQ_HARDBARRIER))
--		return rq;
--
--	if (q->ordseq) {
--		/*
--		 * Barrier is already in progress and they can't be
--		 * processed in parallel.  Queue for later processing.
--		 */
--		list_move_tail(&rq->queuelist, &q->pending_barriers);
--		return NULL;
--	}
--
--	if (unlikely(q->next_ordered == QUEUE_ORDERED_NONE)) {
--		/*
--		 * Queue ordering not supported.  Terminate
--		 * with prejudice.
--		 */
--		blk_dequeue_request(rq);
--		__blk_end_request_all(rq, -EOPNOTSUPP);
--		return NULL;
--	}
--
--	/*
--	 * Start a new ordered sequence
--	 */
--	q->orderr = 0;
--	q->ordered = q->next_ordered;
--	q->ordseq |= QUEUE_ORDSEQ_STARTED;
--
--	/*
--	 * For an empty barrier, there's no actual BAR request, which
--	 * in turn makes POSTFLUSH unnecessary.  Mask them off.
--	 */
--	if (!blk_rq_sectors(rq))
--		q->ordered &= ~(QUEUE_ORDERED_DO_BAR |
--				QUEUE_ORDERED_DO_POSTFLUSH);
--
--	/* stash away the original request */
--	blk_dequeue_request(rq);
--	q->orig_bar_rq = rq;
--
--	if (!(q->ordered & QUEUE_ORDERED_DO_PREFLUSH))
--		skip |= QUEUE_ORDSEQ_PREFLUSH;
--
--	if (!(q->ordered & QUEUE_ORDERED_DO_BAR))
--		skip |= QUEUE_ORDSEQ_BAR;
--
--	if (!(q->ordered & QUEUE_ORDERED_DO_POSTFLUSH))
--		skip |= QUEUE_ORDSEQ_POSTFLUSH;
--
--	/* complete skipped sequences and return the first sequence */
--	return blk_ordered_complete_seq(q, skip, 0);
--}
--
--static void bio_end_empty_barrier(struct bio *bio, int err)
--{
--	if (err) {
--		if (err == -EOPNOTSUPP)
--			set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
--		clear_bit(BIO_UPTODATE, &bio->bi_flags);
--	}
--	if (bio->bi_private)
--		complete(bio->bi_private);
--	bio_put(bio);
--}
--
--/**
-- * blkdev_issue_flush - queue a flush
-- * @bdev:	blockdev to issue flush for
-- * @gfp_mask:	memory allocation flags (for bio_alloc)
-- * @error_sector:	error sector
-- * @flags:	BLKDEV_IFL_* flags to control behaviour
-- *
-- * Description:
-- *    Issue a flush for the block device in question. Caller can supply
-- *    room for storing the error offset in case of a flush error, if they
-- *    wish to. If WAIT flag is not passed then caller may check only what
-- *    request was pushed in some internal queue for later handling.
-- */
--int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
--		sector_t *error_sector, unsigned long flags)
--{
--	DECLARE_COMPLETION_ONSTACK(wait);
--	struct request_queue *q;
--	struct bio *bio;
--	int ret = 0;
--
--	if (bdev->bd_disk == NULL)
--		return -ENXIO;
--
--	q = bdev_get_queue(bdev);
--	if (!q)
--		return -ENXIO;
--
--	/*
--	 * some block devices may not have their queue correctly set up here
--	 * (e.g. loop device without a backing file) and so issuing a flush
--	 * here will panic. Ensure there is a request function before issuing
--	 * the barrier.
--	 */
--	if (!q->make_request_fn)
--		return -ENXIO;
--
--	bio = bio_alloc(gfp_mask, 0);
--	bio->bi_end_io = bio_end_empty_barrier;
--	bio->bi_bdev = bdev;
--	if (test_bit(BLKDEV_WAIT, &flags))
--		bio->bi_private = &wait;
--
--	bio_get(bio);
--	submit_bio(WRITE_BARRIER, bio);
--	if (test_bit(BLKDEV_WAIT, &flags)) {
--		wait_for_completion(&wait);
--		/*
--		 * The driver must store the error location in ->bi_sector, if
--		 * it supports it. For non-stacked drivers, this should be
--		 * copied from blk_rq_pos(rq).
--		 */
--		if (error_sector)
--			*error_sector = bio->bi_sector;
--	}
--
--	if (bio_flagged(bio, BIO_EOPNOTSUPP))
--		ret = -EOPNOTSUPP;
--	else if (!bio_flagged(bio, BIO_UPTODATE))
--		ret = -EIO;
--
--	bio_put(bio);
--	return ret;
--}
--EXPORT_SYMBOL(blkdev_issue_flush);
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-new file mode 100644
-index 0000000..e8b2e5c
---- /dev/null
-+++ b/block/blk-flush.c
-@@ -0,0 +1,248 @@
-+/*
-+ * Functions related to barrier IO handling
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/bio.h>
-+#include <linux/blkdev.h>
-+#include <linux/gfp.h>
+ static inline struct page *
+@@ -140,3 +143,244 @@ int test_pages_isolated(unsigned long st
+ 	spin_unlock_irqrestore(&zone->lock, flags);
+ 	return ret ? 0 : -EBUSY;
+ }
 +
-+#include "blk.h"
-+
-+static struct request *queue_next_ordseq(struct request_queue *q);
++#define CONTIG_ALLOC_MIGRATION_RETRY	(5)
 +
 +/*
-+ * Cache flushing for ordered writes handling
++ * Scanning pfn is much easier than scanning lru list.
++ * Scan pfn from start to end and Find LRU page.
 + */
-+unsigned blk_ordered_cur_seq(struct request_queue *q)
++unsigned long scan_lru_pages(unsigned long start, unsigned long end)
 +{
-+	if (!q->ordseq)
-+		return 0;
-+	return 1 << ffz(q->ordseq);
-+}
-+
-+static struct request *blk_ordered_complete_seq(struct request_queue *q,
-+						unsigned seq, int error)
-+{
-+	struct request *next_rq = NULL;
-+
-+	if (error && !q->orderr)
-+		q->orderr = error;
-+
-+	BUG_ON(q->ordseq & seq);
-+	q->ordseq |= seq;
-+
-+	if (blk_ordered_cur_seq(q) != QUEUE_ORDSEQ_DONE) {
-+		/* not complete yet, queue the next ordered sequence */
-+		next_rq = queue_next_ordseq(q);
-+	} else {
-+		/* complete this barrier request */
-+		__blk_end_request_all(q->orig_bar_rq, q->orderr);
-+		q->orig_bar_rq = NULL;
-+		q->ordseq = 0;
-+
-+		/* dispatch the next barrier if there's one */
-+		if (!list_empty(&q->pending_barriers)) {
-+			next_rq = list_entry_rq(q->pending_barriers.next);
-+			list_move(&next_rq->queuelist, &q->queue_head);
++	unsigned long pfn;
++	struct page *page;
++	for (pfn = start; pfn < end; pfn++) {
++		if (pfn_valid(pfn)) {
++			page = pfn_to_page(pfn);
++			if (PageLRU(page))
++				return pfn;
 +		}
 +	}
-+	return next_rq;
++	return 0;
 +}
 +
-+static void pre_flush_end_io(struct request *rq, int error)
++/* Migrate all LRU pages in the range to somewhere else */
++static struct page *
++hotremove_migrate_alloc(struct page *page, unsigned long private, int **x)
 +{
-+	elv_completed_request(rq->q, rq);
-+	blk_ordered_complete_seq(rq->q, QUEUE_ORDSEQ_PREFLUSH, error);
++	/* This should be improooooved!! */
++	return alloc_page(GFP_HIGHUSER_MOVABLE);
 +}
 +
-+static void bar_end_io(struct request *rq, int error)
++#define NR_MOVE_AT_ONCE_PAGES	(256)
++int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
 +{
-+	elv_completed_request(rq->q, rq);
-+	blk_ordered_complete_seq(rq->q, QUEUE_ORDSEQ_BAR, error);
-+}
-+
-+static void post_flush_end_io(struct request *rq, int error)
-+{
-+	elv_completed_request(rq->q, rq);
-+	blk_ordered_complete_seq(rq->q, QUEUE_ORDSEQ_POSTFLUSH, error);
-+}
-+
-+static void queue_flush(struct request_queue *q, struct request *rq,
-+			rq_end_io_fn *end_io)
-+{
-+	blk_rq_init(q, rq);
-+	rq->cmd_type = REQ_TYPE_FS;
-+	rq->cmd_flags = REQ_FLUSH;
-+	rq->rq_disk = q->orig_bar_rq->rq_disk;
-+	rq->end_io = end_io;
-+
-+	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
-+}
-+
-+static struct request *queue_next_ordseq(struct request_queue *q)
-+{
-+	struct request *rq = &q->bar_rq;
-+
-+	switch (blk_ordered_cur_seq(q)) {
-+	case QUEUE_ORDSEQ_PREFLUSH:
-+		queue_flush(q, rq, pre_flush_end_io);
-+		break;
-+
-+	case QUEUE_ORDSEQ_BAR:
-+		/* initialize proxy request and queue it */
-+		blk_rq_init(q, rq);
-+		init_request_from_bio(rq, q->orig_bar_rq->bio);
-+		rq->cmd_flags &= ~REQ_HARDBARRIER;
-+		if (q->ordered & QUEUE_ORDERED_DO_FUA)
-+			rq->cmd_flags |= REQ_FUA;
-+		rq->end_io = bar_end_io;
-+
-+		elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
-+		break;
-+
-+	case QUEUE_ORDSEQ_POSTFLUSH:
-+		queue_flush(q, rq, post_flush_end_io);
-+		break;
-+
-+	default:
-+		BUG();
-+	}
-+	return rq;
-+}
-+
-+struct request *blk_do_ordered(struct request_queue *q, struct request *rq)
-+{
-+	unsigned skip = 0;
-+
-+	if (!(rq->cmd_flags & REQ_HARDBARRIER))
-+		return rq;
-+
-+	if (q->ordseq) {
-+		/*
-+		 * Barrier is already in progress and they can't be
-+		 * processed in parallel.  Queue for later processing.
-+		 */
-+		list_move_tail(&rq->queuelist, &q->pending_barriers);
-+		return NULL;
-+	}
-+
-+	if (unlikely(q->next_ordered == QUEUE_ORDERED_NONE)) {
-+		/*
-+		 * Queue ordering not supported.  Terminate
-+		 * with prejudice.
-+		 */
-+		blk_dequeue_request(rq);
-+		__blk_end_request_all(rq, -EOPNOTSUPP);
-+		return NULL;
-+	}
-+
-+	/*
-+	 * Start a new ordered sequence
-+	 */
-+	q->orderr = 0;
-+	q->ordered = q->next_ordered;
-+	q->ordseq |= QUEUE_ORDSEQ_STARTED;
-+
-+	/*
-+	 * For an empty barrier, there's no actual BAR request, which
-+	 * in turn makes POSTFLUSH unnecessary.  Mask them off.
-+	 */
-+	if (!blk_rq_sectors(rq))
-+		q->ordered &= ~(QUEUE_ORDERED_DO_BAR |
-+				QUEUE_ORDERED_DO_POSTFLUSH);
-+
-+	/* stash away the original request */
-+	blk_dequeue_request(rq);
-+	q->orig_bar_rq = rq;
-+
-+	if (!(q->ordered & QUEUE_ORDERED_DO_PREFLUSH))
-+		skip |= QUEUE_ORDSEQ_PREFLUSH;
-+
-+	if (!(q->ordered & QUEUE_ORDERED_DO_BAR))
-+		skip |= QUEUE_ORDSEQ_BAR;
-+
-+	if (!(q->ordered & QUEUE_ORDERED_DO_POSTFLUSH))
-+		skip |= QUEUE_ORDSEQ_POSTFLUSH;
-+
-+	/* complete skipped sequences and return the first sequence */
-+	return blk_ordered_complete_seq(q, skip, 0);
-+}
-+
-+static void bio_end_empty_barrier(struct bio *bio, int err)
-+{
-+	if (err) {
-+		if (err == -EOPNOTSUPP)
-+			set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
-+		clear_bit(BIO_UPTODATE, &bio->bi_flags);
-+	}
-+	if (bio->bi_private)
-+		complete(bio->bi_private);
-+	bio_put(bio);
-+}
-+
-+/**
-+ * blkdev_issue_flush - queue a flush
-+ * @bdev:	blockdev to issue flush for
-+ * @gfp_mask:	memory allocation flags (for bio_alloc)
-+ * @error_sector:	error sector
-+ * @flags:	BLKDEV_IFL_* flags to control behaviour
-+ *
-+ * Description:
-+ *    Issue a flush for the block device in question. Caller can supply
-+ *    room for storing the error offset in case of a flush error, if they
-+ *    wish to. If WAIT flag is not passed then caller may check only what
-+ *    request was pushed in some internal queue for later handling.
-+ */
-+int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
-+		sector_t *error_sector, unsigned long flags)
-+{
-+	DECLARE_COMPLETION_ONSTACK(wait);
-+	struct request_queue *q;
-+	struct bio *bio;
++	unsigned long pfn;
++	struct page *page;
++	int move_pages = NR_MOVE_AT_ONCE_PAGES;
++	int not_managed = 0;
 +	int ret = 0;
++	LIST_HEAD(source);
 +
-+	if (bdev->bd_disk == NULL)
-+		return -ENXIO;
-+
-+	q = bdev_get_queue(bdev);
-+	if (!q)
-+		return -ENXIO;
-+
-+	/*
-+	 * some block devices may not have their queue correctly set up here
-+	 * (e.g. loop device without a backing file) and so issuing a flush
-+	 * here will panic. Ensure there is a request function before issuing
-+	 * the barrier.
-+	 */
-+	if (!q->make_request_fn)
-+		return -ENXIO;
-+
-+	bio = bio_alloc(gfp_mask, 0);
-+	bio->bi_end_io = bio_end_empty_barrier;
-+	bio->bi_bdev = bdev;
-+	if (test_bit(BLKDEV_WAIT, &flags))
-+		bio->bi_private = &wait;
-+
-+	bio_get(bio);
-+	submit_bio(WRITE_BARRIER, bio);
-+	if (test_bit(BLKDEV_WAIT, &flags)) {
-+		wait_for_completion(&wait);
++	for (pfn = start_pfn; pfn < end_pfn && move_pages > 0; pfn++) {
++		if (!pfn_valid(pfn))
++			continue;
++		page = pfn_to_page(pfn);
++		if (!page_count(page))
++			continue;
 +		/*
-+		 * The driver must store the error location in ->bi_sector, if
-+		 * it supports it. For non-stacked drivers, this should be
-+		 * copied from blk_rq_pos(rq).
++		 * We can skip free pages. And we can only deal with pages on
++		 * LRU.
 +		 */
-+		if (error_sector)
-+			*error_sector = bio->bi_sector;
++		ret = isolate_lru_page(page);
++		if (!ret) { /* Success */
++			list_add_tail(&page->lru, &source);
++			move_pages--;
++			inc_zone_page_state(page, NR_ISOLATED_ANON +
++					    page_is_file_cache(page));
++
++		} else {
++			/* Becasue we don't have big zone->lock. we should
++			   check this again here. */
++			if (page_count(page))
++				not_managed++;
++#ifdef CONFIG_DEBUG_VM
++			printk(KERN_ALERT "removing pfn %lx from LRU failed\n",
++			       pfn);
++			dump_page(page);
++#endif
++		}
 +	}
++	ret = -EBUSY;
++	if (not_managed) {
++		if (!list_empty(&source))
++			putback_lru_pages(&source);
++		goto out;
++	}
++	ret = 0;
++	if (list_empty(&source))
++		goto out;
++	/* this function returns # of failed pages */
++	ret = migrate_pages(&source, hotremove_migrate_alloc, 0, 1);
 +
-+	if (bio_flagged(bio, BIO_EOPNOTSUPP))
-+		ret = -EOPNOTSUPP;
-+	else if (!bio_flagged(bio, BIO_UPTODATE))
-+		ret = -EIO;
-+
-+	bio_put(bio);
++out:
 +	return ret;
 +}
-+EXPORT_SYMBOL(blkdev_issue_flush);
--- 
-1.7.1
++
++
++/*
++ * An interface to isolate pages in specified size and range.
++ * Purpose is to return contigous free pages larger than MAX_ORDER.
++ * Below codes are very slow and sleeps, please never call this under
++ * performance critical codes.
++ */
++
++struct page_range {
++	unsigned long base, end, pages;
++};
++
++int __get_contig_block(unsigned long pfn, unsigned long nr_pages, void *arg)
++{
++	struct page_range *blockinfo = arg;
++	unsigned long end;
++
++	end = pfn + nr_pages;
++	pfn = ALIGN(pfn, MAX_ORDER_NR_PAGES);
++	end = end & ~(MAX_ORDER_NR_PAGES - 1);
++	if (end < pfn)
++		return 0;
++	if (end - pfn > blockinfo->pages) {
++		blockinfo->base = pfn;
++		blockinfo->end = end;
++		return 1;
++	}
++	return 0;
++}
++
++
++unsigned long __find_contig_block(unsigned long base,
++		unsigned long end, unsigned long pages)
++{
++	unsigned long pfn;
++	struct page_range blockinfo;
++	int ret;
++
++	/* Skip memory holes */
++retry:
++	blockinfo.base = base;
++	blockinfo.end = end;
++	blockinfo.pages = pages;
++	ret = walk_system_ram_range(base, end - base, &blockinfo,
++		__get_contig_block);
++	if (!ret)
++		return 0;
++	/* Ok, we gound contiguous memory chunk of size. Isolate it.*/
++	for (pfn = blockinfo.base;
++	     pfn + pages < blockinfo.end;
++	     pfn += MAX_ORDER_NR_PAGES) {
++		/*
++		 * Now, we know [base,end) of a contiguous chunk.
++		 * Don't need to take care of memory holes.
++		 */
++		if (!start_isolate_page_range(pfn, pfn + pages))
++			return pfn;
++	}
++	/* failed ? */
++	if (blockinfo.end + pages < end) {
++		/* Move base address and find the next block of RAM. */
++		base = blockinfo.end;
++		goto retry;
++	}
++	return 0;
++}
++
++struct page *alloc_contig_pages(unsigned long long hint,
++		unsigned long size, struct list_head *list)
++{
++	unsigned long base, found, end, pages, start;
++	struct page *ret = NULL;
++	int nid, retry;
++
++	if (hint)
++		hint = ALIGN(hint, MAX_ORDER_NR_PAGES);
++	/* request size should be aligned to pageblock */
++	size >>= PAGE_SHIFT;
++	pages = ALIGN(size, MAX_ORDER_NR_PAGES);
++	found = 0;
++retry:
++	for_each_node_state(nid, N_HIGH_MEMORY) {
++		unsigned long node_end;
++		pg_data_t *node = NODE_DATA(nid);
++
++		node_end = node->node_start_pfn + node->node_spanned_pages;
++		/* does this node have proper range of memory ? */
++		if (node_end < hint + pages)
++			continue;
++		base = hint;
++		if (base < node->node_start_pfn)
++			base = node->node_start_pfn;
++
++		base = ALIGN(base, MAX_ORDER_NR_PAGES);
++		found = 0;
++		end = node_end & ~(MAX_ORDER_NR_PAGES -1);
++		/* Maybe we can use this Node */
++		if (base + pages < end)
++			found = __find_contig_block(base, end, pages);
++		if (found) /* Found ? */
++			break;
++		base = hint;
++	}
++	if (!found)
++		goto out;
++	/*
++	 * Ok, here, we have contiguous pageblock marked as "isolated"
++	 * try migration.
++ 	 */
++	retry = CONTIG_ALLOC_MIGRATION_RETRY;
++	end = found + pages;
++	for (start = scan_lru_pages(found, end); start < end;) {
++
++		if (do_migrate_range(found, end)) {
++			/* migration failure ... */
++			if (retry-- < 0)
++				break;
++			/* take a rest and synchronize LRU etc. */
++			lru_add_drain_all();
++			flush_scheduled_work();
++			cond_resched();
++			drain_all_pages();
++		}
++		start = scan_lru_pages(start, end);
++		if (!start)
++			break;
++	}
++	lru_add_drain_all();
++	flush_scheduled_work();
++	drain_all_pages();
++	if (test_pages_isolated(found, found+pages))
++		goto retry; /* goto next chunk */
++	/*
++	 * Ok, here, [found...found+pages) memory are isolated.
++	 * All pages in the range will be moved into the list with
++	 * page_count(page)=1.
++	 */
++	alloc_contig_freed_pages(found, found + pages, list);
++	/* unset ISOLATE */
++	undo_isolate_page_range(found, pages);
++	ret = pfn_to_page(found);
++out:
++	return ret;
++}
++
++
++void free_contig_pages(struct list_head *list)
++{
++	struct page *page, *tmp;
++
++	list_for_each_entry_safe(page, tmp, list, lru)
++		__free_page(page);
++	return;
++}
++
++EXPORT_SYMBOL_GPL(alloc_contig_pages);
++EXPORT_SYMBOL_GPL(free_contig_pages);
+Index: mmotm-0827/include/linux/page-isolation.h
+===================================================================
+--- mmotm-0827.orig/include/linux/page-isolation.h
++++ mmotm-0827/include/linux/page-isolation.h
+@@ -33,5 +33,15 @@ test_pages_isolated(unsigned long start_
+ extern int set_migratetype_isolate(struct page *page);
+ extern void unset_migratetype_isolate(struct page *page);
+ 
++/* For contiguous memory alloc */
++extern int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn);
++extern void alloc_contig_freed_pages(unsigned long pfn,  unsigned long end,
++        struct list_head *list);
++extern unsigned long scan_lru_pages(unsigned long start, unsigned long end);
++
++
++extern struct page *alloc_contig_pages(unsigned long long hint,
++			unsigned long size, struct list_head *list);
++extern void free_contig_pages(struct list_head *list);
+ 
+ #endif
+Index: mmotm-0827/mm/memory_hotplug.c
+===================================================================
+--- mmotm-0827.orig/mm/memory_hotplug.c
++++ mmotm-0827/mm/memory_hotplug.c
+@@ -568,7 +568,7 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(add_memory);
+ 
+-#ifdef CONFIG_MEMORY_HOTREMOVE
++#if defined(CONFIG_MEMORY_HOTREMOVE) || defined(CONFIG_CONTIG_ALLOC)
+ /*
+  * A free page on the buddy free lists (not the per-cpu lists) has PageBuddy
+  * set and the size of the free page is given by page_order(). Using this,
+@@ -643,87 +643,6 @@ static int test_pages_in_a_zone(unsigned
+ }
+ 
+ /*
+- * Scanning pfn is much easier than scanning lru list.
+- * Scan pfn from start to end and Find LRU page.
+- */
+-int scan_lru_pages(unsigned long start, unsigned long end)
+-{
+-	unsigned long pfn;
+-	struct page *page;
+-	for (pfn = start; pfn < end; pfn++) {
+-		if (pfn_valid(pfn)) {
+-			page = pfn_to_page(pfn);
+-			if (PageLRU(page))
+-				return pfn;
+-		}
+-	}
+-	return 0;
+-}
+-
+-static struct page *
+-hotremove_migrate_alloc(struct page *page, unsigned long private, int **x)
+-{
+-	/* This should be improooooved!! */
+-	return alloc_page(GFP_HIGHUSER_MOVABLE);
+-}
+-
+-#define NR_OFFLINE_AT_ONCE_PAGES	(256)
+-static int
+-do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
+-{
+-	unsigned long pfn;
+-	struct page *page;
+-	int move_pages = NR_OFFLINE_AT_ONCE_PAGES;
+-	int not_managed = 0;
+-	int ret = 0;
+-	LIST_HEAD(source);
+-
+-	for (pfn = start_pfn; pfn < end_pfn && move_pages > 0; pfn++) {
+-		if (!pfn_valid(pfn))
+-			continue;
+-		page = pfn_to_page(pfn);
+-		if (!page_count(page))
+-			continue;
+-		/*
+-		 * We can skip free pages. And we can only deal with pages on
+-		 * LRU.
+-		 */
+-		ret = isolate_lru_page(page);
+-		if (!ret) { /* Success */
+-			list_add_tail(&page->lru, &source);
+-			move_pages--;
+-			inc_zone_page_state(page, NR_ISOLATED_ANON +
+-					    page_is_file_cache(page));
+-
+-		} else {
+-			/* Becasue we don't have big zone->lock. we should
+-			   check this again here. */
+-			if (page_count(page))
+-				not_managed++;
+-#ifdef CONFIG_DEBUG_VM
+-			printk(KERN_ALERT "removing pfn %lx from LRU failed\n",
+-			       pfn);
+-			dump_page(page);
+-#endif
+-		}
+-	}
+-	ret = -EBUSY;
+-	if (not_managed) {
+-		if (!list_empty(&source))
+-			putback_lru_pages(&source);
+-		goto out;
+-	}
+-	ret = 0;
+-	if (list_empty(&source))
+-		goto out;
+-	/* this function returns # of failed pages */
+-	ret = migrate_pages(&source, hotremove_migrate_alloc, 0, 1);
+-
+-out:
+-	return ret;
+-}
+-
+-/*
+  * remove from free_area[] and mark all as Reserved.
+  */
+ static int
+@@ -740,7 +659,6 @@ offline_isolated_pages(unsigned long sta
+ 	walk_system_ram_range(start_pfn, end_pfn - start_pfn, NULL,
+ 				offline_isolated_pages_cb);
+ }
+-
+ /*
+  * Check all pages in range, recoreded as memory resource, are isolated.
+  */
+Index: mmotm-0827/mm/page_alloc.c
+===================================================================
+--- mmotm-0827.orig/mm/page_alloc.c
++++ mmotm-0827/mm/page_alloc.c
+@@ -5393,6 +5393,38 @@ out:
+ 	spin_unlock_irqrestore(&zone->lock, flags);
+ }
+ 
++void alloc_contig_freed_pages(unsigned long pfn,  unsigned long end,
++	struct list_head *list)
++{
++	struct page *page;
++	struct zone *zone;
++	int i, order;
++
++	zone = page_zone(pfn_to_page(pfn));
++	spin_lock_irq(&zone->lock);
++	while (pfn < end) {
++		VM_BUG_ON(!pfn_valid(pfn));
++		page = pfn_to_page(pfn);
++		VM_BUG_ON(page_count(page));
++		VM_BUG_ON(!PageBuddy(page));
++		list_del(&page->lru);
++		order = page_order(page);
++		zone->free_area[order].nr_free--;
++		rmv_page_order(page);
++		__mod_zone_page_state(zone, NR_FREE_PAGES, - (1UL << order));
++		for (i = 0;i < (1 << order); i++) {
++			struct page *x = page + i;
++			list_add(&x->lru, list);
++		}
++		page += 1 << order;
++	}
++	spin_unlock_irq(&zone->lock);
++
++	/*After this, pages on the list can be freed one be one */
++	list_for_each_entry(page, list, lru)
++		prep_new_page(page, 0, 0);
++}
++
+ #ifdef CONFIG_MEMORY_HOTREMOVE
+ /*
+  * All pages in the range must be isolated before calling this.
 
