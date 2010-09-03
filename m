@@ -1,108 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab0ICNnW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 09:43:22 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:58591 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362Ab0ICNlu (ORCPT
+	id S1756079Ab0ICNne (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 09:43:34 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:32894 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755520Ab0ICNnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 09:41:50 -0400
-Message-Id: <20100903134146.278025655@szeredi.hu>
-References: <20100903134116.039612691@szeredi.hu>
-User-Agent: quilt/0.46-1
-Date: Fri, 03 Sep 2010 15:41:17 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: vaurora@redhat.com, neilb@suse.de, viro@zeniv.linux.org.uk
-Subject: [PATCH 1/6] vfs: implement open "forwarding"
-Content-Disposition: inline; filename=vfs-open-redirect.patch
+	Fri, 3 Sep 2010 09:43:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=YEpmYw/n6txWQZSTUAgqMoUJ2u+uFGbV+xBgs00bgJhfq4PBvDUBZXXzVYEd0ma8Y1
+         YFIKRRKaVFvNrHtH7EjxITXFZSddvBSNqP6YWq6N1XKq4egoB0BDf7HvXdItddfL41qm
+         rbSc7GgWiryXdIU+q67S5iWKKkOGfWBBI8Hdo=
+From: Jarkko Nikula <jhnikula@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jarkko Nikula <jhnikula@gmail.com>
+Subject: [PATCH] regulator: Fix machine constraints apply for min_uV != max_uV
+Date: Fri,  3 Sep 2010 16:43:49 +0300
+Message-Id: <1283521429-32499-1-git-send-email-jhnikula@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+Constraints are not applied until both min_uV and max_uV are the same. This
+looks like a typo in the test.
 
-Add a new file operation f_op->open_other().  This acts just like
-f_op->open() except the return value can be another open struct file
-pointer.  In that case the original file is discarded and the
-replacement file is used instead.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Jarkko Nikula <jhnikula@gmail.com>
 ---
- fs/open.c          |   23 +++++++++++++++++------
- include/linux/fs.h |    1 +
- 2 files changed, 18 insertions(+), 6 deletions(-)
+ drivers/regulator/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Index: linux-2.6/fs/open.c
-===================================================================
---- linux-2.6.orig/fs/open.c	2010-08-19 09:45:50.000000000 +0200
-+++ linux-2.6/fs/open.c	2010-08-19 09:46:27.000000000 +0200
-@@ -657,6 +657,7 @@ static struct file *__dentry_open(struct
- 					const struct cred *cred)
- {
- 	struct inode *inode;
-+	struct file *ret;
- 	int error;
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 422a709..b092070 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -724,7 +724,7 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
  
- 	f->f_mode = OPEN_FMODE(f->f_flags) | FMODE_LSEEK |
-@@ -664,6 +665,7 @@ static struct file *__dentry_open(struct
- 	inode = dentry->d_inode;
- 	if (f->f_mode & FMODE_WRITE) {
- 		error = __get_file_write_access(inode, mnt);
-+		ret = ERR_PTR(error);
- 		if (error)
- 			goto cleanup_file;
- 		if (!special_file(inode->i_mode))
-@@ -678,15 +680,24 @@ static struct file *__dentry_open(struct
- 	file_sb_list_add(f, inode->i_sb);
- 
- 	error = security_dentry_open(f, cred);
-+	ret = ERR_PTR(error);
- 	if (error)
- 		goto cleanup_all;
- 
--	if (!open && f->f_op)
--		open = f->f_op->open;
--	if (open) {
--		error = open(inode, f);
--		if (error)
-+	if (!open && f->f_op && f->f_op->open_other) {
-+		/* NULL means keep f, non-error non-null means replace */
-+		ret = f->f_op->open_other(f);
-+		if (IS_ERR(ret) || ret != NULL)
- 			goto cleanup_all;
-+	} else {
-+		if (!open && f->f_op)
-+			open = f->f_op->open;
-+		if (open) {
-+			error = open(inode, f);
-+			ret = ERR_PTR(error);
-+			if (error)
-+				goto cleanup_all;
-+		}
- 	}
- 	ima_counts_get(f);
- 
-@@ -728,7 +739,7 @@ cleanup_file:
- 	put_filp(f);
- 	dput(dentry);
- 	mntput(mnt);
--	return ERR_PTR(error);
-+	return ret;
- }
- 
- /**
-Index: linux-2.6/include/linux/fs.h
-===================================================================
---- linux-2.6.orig/include/linux/fs.h	2010-08-19 09:46:15.000000000 +0200
-+++ linux-2.6/include/linux/fs.h	2010-08-19 09:46:27.000000000 +0200
-@@ -1494,6 +1494,7 @@ struct file_operations {
- 	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
- 	int (*mmap) (struct file *, struct vm_area_struct *);
- 	int (*open) (struct inode *, struct file *);
-+	struct file *(*open_other) (struct file *);
- 	int (*flush) (struct file *, fl_owner_t id);
- 	int (*release) (struct inode *, struct file *);
- 	int (*fsync) (struct file *, int datasync);
-
+ 	/* do we need to apply the constraint voltage */
+ 	if (rdev->constraints->apply_uV &&
+-		rdev->constraints->min_uV == rdev->constraints->max_uV &&
++		rdev->constraints->min_uV && rdev->constraints->max_uV &&
+ 		ops->set_voltage) {
+ 		ret = ops->set_voltage(rdev,
+ 			rdev->constraints->min_uV, rdev->constraints->max_uV);
 -- 
+1.7.1
+
