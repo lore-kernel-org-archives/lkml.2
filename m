@@ -1,81 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab0ICKH6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 06:07:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1471 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753271Ab0ICKH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 06:07:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,312,1280732400"; 
-   d="scan'208";a="834544489"
-Message-ID: <4C80C8FB.6070902@linux.intel.com>
-Date: Fri, 03 Sep 2010 18:07:55 +0800
-From: Haicheng Li <haicheng.li@linux.intel.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
-MIME-Version: 1.0
-To: Wu Fengguang <fengguang.wu@intel.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+	id S1754699Ab0ICKK1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 06:10:27 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:50030 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab0ICKK0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 06:10:26 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 3 Sep 2010 19:05:20 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        Haicheng Li <haicheng.li@linux.intel.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: linux-next: build warning after merge of the tip tree
-References: <20100903121023.54c40e73.sfr@canb.auug.org.au> <20100903121201.336c4ba8.sfr@canb.auug.org.au> <20100903090407.GA19771@localhost>
-In-Reply-To: <20100903090407.GA19771@localhost>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+        Mel Gorman <mel@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] Make is_mem_section_removable more conformable with
+ offlining code
+Message-Id: <20100903190520.8751aab6.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100903095049.GG10686@tiehlicka.suse.cz>
+References: <20100902092454.GA17971@tiehlicka.suse.cz>
+	<AANLkTi=cLzRGPCc3gCubtU7Ggws7yyAK5c7tp4iocv6u@mail.gmail.com>
+	<20100902131855.GC10265@tiehlicka.suse.cz>
+	<AANLkTikYt3Hu_XeNuwAa9KjzfWgpC8cNen6q657ZKmm-@mail.gmail.com>
+	<20100902143939.GD10265@tiehlicka.suse.cz>
+	<20100902150554.GE10265@tiehlicka.suse.cz>
+	<20100903121003.e2b8993a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100903121452.2d22b3aa.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100903082558.GC10686@tiehlicka.suse.cz>
+	<20100903181327.7dad3f84.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100903095049.GG10686@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wu Fengguang wrote:
-> On Fri, Sep 03, 2010 at 10:12:01AM +0800, Stephen Rothwell wrote:
->> On Fri, 3 Sep 2010 12:10:23 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
->>> produced this warning:
->>>
->>> arch/x86/mm/init_64.c: In function 'kernel_physical_mapping_init':
->>> arch/x86/mm/init_64.c:601: warning: 'addr' may be used uninitialized in this function
->>>
->>> The code does look suspicious ... 'addr' gets declared and then passed to
->>> a function, but is not set anywhere ...
->> Forgot to say:
->>
->> Introduced by commit 9b861528a8012e7bc4d1f7bae07395b225331477 ("x86-64,
->> mem: Update all PGDs for direct mapping and vmemmap mapping changes").
-> 
-> 
-> The original patch has the following line, however get lost some time
-> later:
-> 
->         http://www.spinics.net/lists/linux-mm/msg08152.html
-> 
-> ===
-> x86, mm: fix uninitialized addr in kernel_physical_mapping_init()
-> 
-> This re-adds the lost chunk in commit 9b861528a80.
-> 
-> CC: Haicheng Li <haicheng.li@linux.intel.com>
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index 64e7bc2..74f0f35 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -570,6 +570,7 @@ kernel_physical_mapping_init(unsigned long start,
->  
->  	start = (unsigned long)__va(start);
->  	end = (unsigned long)__va(end);
-> +	addr = start;
+On Fri, 3 Sep 2010 11:50:49 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-weird, this line was in my original patch: http://lkml.org/lkml/2010/8/20/166
-
-Acked-by: Haicheng Li <haicheng.li@linux.intel.com>
-
->  	for (; start < end; start = next) {
->  		pgd_t *pgd = pgd_offset_k(start);
+> On Fri 03-09-10 18:13:27, KAMEZAWA Hiroyuki wrote:
+> > On Fri, 3 Sep 2010 10:25:58 +0200
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> > > On Fri 03-09-10 12:14:52, KAMEZAWA Hiroyuki wrote:
+> > > [...]
+> [...]
+> > > Cannot ZONE_MOVABLE contain different MIGRATE_types?
+> > > 
+> > never.
 > 
+> Then I am terribly missing something. Zone contains free lists for
+> different MIGRATE_TYPES, doesn't it? Pages allocated from those free
+> lists keep the migration type of the list, right?
+> 
+> ZONE_MOVABLE just says whether it makes sense to move pages in that zone
+> at all, right?
+> 
+
+ ZONE_MOVABLE means "it only contains MOVABLE pages."
+ So, we can ignore migrate-type.
+
+
+
+
+
+> > 
+> > > > +
+> > > > +	pfn = page_to_pfn(page);
+> > > > +	for (found = 0, iter = 0; iter < pageblock_nr_pages; iter++) {
+> > > > +		unsigned long check = pfn + iter;
+> > > > +
+> > > > +		if (!pfn_valid_within(check)) {
+> > > > +			iter++;
+> > > > +			continue;
+> > > > +		}
+> > > > +		page = pfn_to_page(check);
+> > > > +		if (!page_count(page)) {
+> > > > +			if (PageBuddy(page))
+> > > 
+> > > Why do you check page_count as well? PageBuddy has alwyas count==0,
+> > > right?
+> > > 
+> > 
+> > But PageBuddy() flag is considered to be valid only when page_count()==0.
+> > This is for safe handling.
+> 
+> OK. I don't see that documented anywhere but it makes sense. Anyway
+> there are some places which don't do this test (e.g.
+> isolate_freepages_block, suitable_migration_target, etc.).
+> 
+> > 
+> > 
+> > > > +				iter += (1 << page_order(page)) - 1;
+> > > > +			continue;
+> > > > +		}
+> > > > +		if (!PageLRU(page))
+> > > > +			found++;
+> > > > +		/*
+> > > > +		 * If the page is not RAM, page_count()should be 0.
+> > > > +		 * we don't need more check. This is an _used_ not-movable page.
+> > > > +		 *
+> > > > +		 * The problematic thing here is PG_reserved pages. But if
+> > > > +		 * a PG_reserved page is _used_ (at boot), page_count > 1.
+> > > > +		 * But...is there PG_reserved && page_count(page)==0 page ?
+> > > 
+> > > Can we have PG_reserved && PG_lru? 
+> > 
+> > I think never.
+> > 
+> > > I also quite don't understand the comment. 
+> > 
+> > There an issue that "remove an memory section which includes memory hole".
+> > Then,
+> > 
+> >    a page used by bootmem .... PG_reserved.
+> >    a page of memory hole  .... PG_reserved.
+> > 
+> > We need to call page_is_ram() or some for handling this mess.
+> 
+> OK, I see.
+> 
+> > 
+> > 
+> > > At this place we are sure that the page is valid and neither
+> > > free nor LRU.
+> > > 
+> [...]
+> > > > +bool is_pageblock_removable(struct page *page)
+> > > > +{
+> > > > +	struct zone *zone = page_zone(page);
+> > > > +	unsigned long flags;
+> > > > +	int num;
+> > > > +
+> > > > +	spin_lock_irqsave(&zone->lock, flags);
+> > > > +	num = __count_unmovable_pages(zone, page);
+> > > > +	spin_unlock_irqrestore(&zone->lock, flags);
+> > > 
+> > > Isn't this a problem? The function is triggered from userspace by sysfs
+> > > (0444 file) and holds the lock for pageblock_nr_pages. So someone can
+> > > simply read the file and block the zone->lock preventing/delaying
+> > > allocations for the rest of the system.
+> > > 
+> > But we need to take this. Maybe no panic you'll see even if no-lock.
+> 
+> Yes, I think that this can only lead to a false possitive in sysfs
+> interface. Isolating code holds the lock.
+> 
+
+ok, let's go step by step.
+
+I'm ok that your new patch to be merged. I'll post some clean up and small
+bugfix (not related to your patch), later.
+(I'll be very busy in this weekend, sorry.)
+
+
+Thanks,
+-Kame
+
