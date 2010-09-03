@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab0ICGJz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 02:09:55 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57294 "EHLO mx3.mail.elte.hu"
+	id S1752657Ab0ICGZM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 02:25:12 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50129 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab0ICGJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 02:09:54 -0400
-Date: Fri, 3 Sep 2010 08:09:27 +0200
+	id S1750800Ab0ICGZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 02:25:11 -0400
+Date: Fri, 3 Sep 2010 08:21:50 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        akpm@linux-foundation.org, mingo@redhat.com,
-        hugh.dickins@tiscali.co.uk, riel@redhat.com, peterz@infradead.org,
-        anton@samba.org, hch@infradead.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/2] Add trace points to mmap, munmap, and brk
-Message-ID: <20100903060927.GA19074@elte.hu>
-References: <20100721223359.8710.A69D9226@jp.fujitsu.com>
- <20100727110904.GA6519@mgebm.net>
- <20100727201644.2F46.A69D9226@jp.fujitsu.com>
- <20100902134827.GA6957@mgebm.net>
+To: Vegard Nossum <vegard.nossum@gmail.com>
+Cc: mingo@redhat.com, hpa@zytor.com, julia@diku.dk,
+        linux-kernel@vger.kernel.org, penberg@cs.helsinki.fi,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/mm] x86, kmemcheck: Remove double test
+Message-ID: <20100903062150.GC19074@elte.hu>
+References: <1283010066-20935-5-git-send-email-julia@diku.dk>
+ <tip-9fbaf49c7f717740002d49eee1bbd03d89d8766a@git.kernel.org>
+ <AANLkTi=-7Dq09Svwo9nwYA4xzZx4NJapPigW6SodF6g4@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100902134827.GA6957@mgebm.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=-7Dq09Svwo9nwYA4xzZx4NJapPigW6SodF6g4@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -37,25 +35,52 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Eric B Munson <emunson@mgebm.net> wrote:
+* Vegard Nossum <vegard.nossum@gmail.com> wrote:
 
-> Sorry for the long delay, the enter/exit routines are not compatible 
-> with the information that these new trace points provides.  When 
-> tracing mmap, for instance, the addr and len arguments can be altered 
-> by the function.  If you use the enter/exit trace points you would not 
-> see this as the arguments are sampled at function entrance and not 
-> given again on exit.  Also, the new trace points are only hit on 
-> function success, the exit trace point happens any time you leave the 
-> system call.
+> On 30 August 2010 10:36, tip-bot for Julia Lawall <julia@diku.dk> wrote:
+> > Commit-ID:  9fbaf49c7f717740002d49eee1bbd03d89d8766a
+> > Gitweb:     http://git.kernel.org/tip/9fbaf49c7f717740002d49eee1bbd03d89d8766a
+> > Author:     Julia Lawall <julia@diku.dk>
+> > AuthorDate: Sat, 28 Aug 2010 17:41:03 +0200
+> > Committer:  Ingo Molnar <mingo@elte.hu>
+> > CommitDate: Mon, 30 Aug 2010 09:19:28 +0200
+> >
+> > x86, kmemcheck: Remove double test
+> >
+> > The opcodes 0x2e and 0x3e are tested for in the first Group 2
+> > line as well.
+> >
+> > The sematic match that finds this problem is as follows:
+> > (http://coccinelle.lip6.fr/)
+> >
+> > // <smpl>
+> > @expression@
+> > expression E;
+> > @@
+> >
+> > (
+> > * E
+> >  || ... || E
+> > |
+> > * E
+> >  && ... && E
+> > )
+> > // </smpl>
+> >
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > Reviewed-by: Pekka Enberg <penberg@cs.helsinki.fi>
+> > Cc: Vegard Nossum <vegardno@ifi.uio.no>
+> > LKML-Reference: <1283010066-20935-5-git-send-email-julia@diku.dk>
+> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > ---
+> >  arch/x86/mm/kmemcheck/opcode.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> 
+> Sorry, was a bit late.
+> 
+> Thanks for the patch, review, and picking up :-)
 
-Would it be feasible to use enter/exit information as the main source of 
-events - and only add new tracepoints for the _missing_ information? 
-(such as when mmap arguments change)
-
-Then user-space can combine the two. The new tracepoints would also 
-carry useful information in themselves: they would show the cases where 
-user-space did not get what it wished. (or so)
-
-Thanks,
+You are welcome :)
 
 	Ingo
