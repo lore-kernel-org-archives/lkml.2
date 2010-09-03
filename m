@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757146Ab0ICOyX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 10:54:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60566 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756121Ab0ICOyW (ORCPT
+	id S1756698Ab0ICO71 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 10:59:27 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:35169 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752810Ab0ICO70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 10:54:22 -0400
-Date: Fri, 3 Sep 2010 15:54:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jarkko Nikula <jhnikula@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH] regulator: Fix machine constraints apply for min_uV !=
- max_uV
-Message-ID: <20100903145420.GB7614@rakim.wolfsonmicro.main>
-References: <1283521429-32499-1-git-send-email-jhnikula@gmail.com>
+	Fri, 3 Sep 2010 10:59:26 -0400
+Date: Fri, 3 Sep 2010 10:59:20 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: ltt-dev@lists.casi.polymtl.ca
+Cc: linux-kernel@vger.kernel.org
+Subject: [RELEASE] LTTng 0.229, lttng-modules 0.18
+Message-ID: <20100903145920.GA2272@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283521429-32499-1-git-send-email-jhnikula@gmail.com>
-X-Cookie: Life is not for everyone.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 10:58:30 up 223 days, 17:35,  5 users,  load average: 0.03, 0.04,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 04:43:49PM +0300, Jarkko Nikula wrote:
-> Constraints are not applied until both min_uV and max_uV are the same. This
-> looks like a typo in the test.
-> 
-> Signed-off-by: Jarkko Nikula <jhnikula@gmail.com>
+LTTng, the Linux Trace Toolkit Next Generation, is a project that aims at
+producing a highly efficient full system tracing solution.  It is composed of
+several components to allow tracing of the kernel, of userspace, trace viewing
+and analysis and trace streaming.
 
-This is deliberate behaviour, apply_uV can only be used with a fixed
-voltage at startup in order to avoid issues with handover from the
-bootloader if we suddenly drop the supply voltage on a device which has
-not yet been claimed by a driver.  The expectation is that if the
-voltage can vary then something that understands the hardware state
-needs to be involved in maintaining the voltage.
+Changelog:
+* LTTng 0.229 and lttng-modules 0.18 re-insert a few missing patches in the
+  kernel patchset and fixes a circular module dependency in lttng-modules.
+
+Project website: http://lttng.org
+Download link: http://lttng.org/content/download
+(please refer to the LTTng Manual for installation instructions)
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
