@@ -1,120 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031Ab0ICRvL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 13:51:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51044 "EHLO mx2.suse.de"
+	id S1757045Ab0ICRy0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 13:54:26 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:56590 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753900Ab0ICRvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 13:51:09 -0400
-Date: Fri, 3 Sep 2010 10:51:02 -0700
-From: Tony Jones <tonyj@suse.de>
-To: "Allan, Bruce W" <bruce.w.allan@intel.com>
-Cc: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bphilips@suse.de" <bphilips@suse.de>
-Subject: Re: high latency on 82573L
-Message-ID: <20100903175102.GA7767@suse.de>
-References: <20100902033900.GA5283@suse.de>
- <8DD2590731AB5D4C9DBF71A877482A900168E59EFA@orsmsx509.amr.corp.intel.com>
+	id S1756846Ab0ICRyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 13:54:25 -0400
+Date: Fri, 3 Sep 2010 23:18:32 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 4/15]  4: uprobes: x86 specific
+ functions for user space breakpointing.
+Message-ID: <20100903174832.GB14891@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+ <20100825134210.5447.10126.sendpatchset@localhost6.localdomain6>
+ <87pqwvm8cl.fsf@basil.nowhere.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <8DD2590731AB5D4C9DBF71A877482A900168E59EFA@orsmsx509.amr.corp.intel.com>
+In-Reply-To: <87pqwvm8cl.fsf@basil.nowhere.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 02, 2010 at 11:49:12AM -0700, Allan, Bruce W wrote:
-> Please provide more verbose lspci output and include the PCI config
-> space, i.e. 'lspci -s 2:0.0 -vvv -xxx' after the driver is loaded,
+> 
+> One general comment here: since with uprobes the instruction
+> decoder becomes security critical did you do any fuzz tests
+> on it (e.g. like using it on crashme or on code that has 
+> been corrupted with a few bitflips) ?
 
-# lspci -s 2:0.0 -vvv -xxx
-02:00.0 Ethernet controller: Intel Corporation 82573L Gigabit Ethernet Controller
-	Subsystem: Lenovo ThinkPad T60
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Interrupt: pin A routed to IRQ 46
-	Region 0: Memory at ee000000 (32-bit, non-prefetchable) [size=128K]
-	Region 2: I/O ports at 3000 [size=32]
-	Capabilities: [c8] Power Management version 2
-		Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
-	Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-		Address: 00000000fee0100c  Data: 41c9
-	Capabilities: [e0] Express (v1) Endpoint, MSI 00
-		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
-			ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
-		DevCtl:	Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-			MaxPayload 128 bytes, MaxReadReq 512 bytes
-		DevSta:	CorrErr- UncorrErr+ FatalErr- UnsuppReq+ AuxPwr+ TransPend-
-		LnkCap:	Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <128ns, L1 <64us
-			ClockPM+ Surprise- LLActRep- BwNot-
-		LnkCtl:	ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
-			ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-	Capabilities: [100 v1] Advanced Error Reporting
-		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
-		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-		UESvrt:	DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
-		CESta:	RxErr+ BadTLP+ BadDLLP- Rollover- Timeout- NonFatalErr-
-		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
-		AERCap:	First Error Pointer: 14, GenCap- CGenEn- ChkCap- ChkEn-
-	Capabilities: [140 v1] Device Serial Number 00-1a-6b-ff-ff-6c-7e-a4
-	Kernel driver in use: e1000e
-00: 86 80 9a 10 07 05 10 00 00 00 00 02 10 00 00 00
-10: 00 00 00 ee 00 00 00 00 01 30 00 00 00 00 00 00
-20: 00 00 00 00 00 00 00 00 00 00 00 00 aa 17 01 20
-30: 00 00 00 00 c8 00 00 00 00 00 00 00 0b 01 00 00
-40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c0: 00 00 00 00 00 00 00 00 01 d0 22 c8 00 20 00 0f
-d0: 05 e0 81 00 0c 10 e0 fe 00 00 00 00 c9 41 00 00
-e0: 10 00 01 00 c1 0c 00 00 1f 28 1a 00 11 1c 07 00
-f0: 42 01 11 10 00 00 00 00 00 00 00 00 00 00 00 00
+I havent tried any fuzz tests with the instruction decoder. But I am
+not sure if Masami has tried that out some of these. 
+One question: Do you want to test uprobes with crashme or test
+instruction decoder with crashme.
 
-> kernel.  Are there any messages in the system log regarding disabling
-> ASPM L0s and/or L1 on that device?
+> 
+> > +typedef u8 user_bkpt_opcode_t;
+> 
+> Maybe it's me, but I would prefer breakpoint instead of bkpt
 
-It would appear it is being disabled:
+Even Peter wasnt comfortable with user_bkpt. How about user_bp?
+i.e the above field would be user_bp_opcode_t. I felt 
+user_breakpoint_opcode_t might look long. Also we would have to
+rename other structures accordingly like user_bkpt_task_arch_info
+would become user_breakpoint_task_arch_info. Do let me know your
+choice.
 
-[    0.194271] ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
-[    0.297112] pci 0000:01:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
-[    0.298003] pci 0000:02:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
-[    0.299123] pci 0000:03:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force'
-[   18.135907] e1000e 0000:02:00.0: Disabling ASPM  L1
-[   18.137262] e1000e 0000:02:00.0: Disabling ASPM L0s 
 
-but I see the same high ping latencies.
+> > +#ifdef CONFIG_X86_32
+> > +#define is_32bit_app(tsk) 1
+> > +#else
+> > +#define is_32bit_app(tsk) (test_tsk_thread_flag(tsk, TIF_IA32))
+> > +#endif
+> 
+> This probably should be elsewhere.
 
-> I can understand the latency with the OpenSUSE 2.6.34-based kernels
-> assuming commit 19833b5dff is not present, but I do not understand
-> the latency with 2.6.36-rc3.
+Would this fit in x86 Instruction decoder?
 
-The first thing I tried was OpenSUSE 2.6.34 plus 19833b5dff.   This led me to
-think it wasn't related to ASPM so I resorted to a bisect which ended up showing
-it was 6f461f6c7c.
+> 
+> > +
+> > +#define UPROBES_FIX_RIP_AX	0x8000
+> > +#define UPROBES_FIX_RIP_CX	0x4000
+> > +
+> > +/* Adaptations for mhiramat x86 decoder v14. */
+> > +#define OPCODE1(insn) ((insn)->opcode.bytes[0])
+> > +#define OPCODE2(insn) ((insn)->opcode.bytes[1])
+> > +#define OPCODE3(insn) ((insn)->opcode.bytes[2])
+> > +#define MODRM_REG(insn) X86_MODRM_REG(insn->modrm.value)
+> > +
+> > +/*
+> > + * @reg: reflects the saved state of the task
+> > + * @vaddr: the virtual address to jump to.
+> > + * Return 0 on success or a -ve number on error.
+> > + */
+> > +void set_ip(struct pt_regs *regs, unsigned long vaddr)
+> > +{
+> > +	regs->ip = vaddr;
+> > +}
+> > +
+> > +#ifdef CONFIG_X86_64
+> > +static bool is_riprel_insn(struct user_bkpt *user_bkpt)
+> > +{
+> > +	return ((user_bkpt->fixups &
+> > +			(UPROBES_FIX_RIP_AX | UPROBES_FIX_RIP_CX)) != 0);
+> > +}
+> > +
+> 
+> Shouldn't all this stuff be in the instruction decoder? 
+> 
+> It seems weird to have the knowledge spread over multiple files.
 
-Anyways, all of the above is from vanilla 2.6.36-rc3 so lets ignore OpenSUSE
-kernels.
+Agree,  Shall move it to instruction decoder.
 
-http://ftp.suse.com/pub/people/tonyj/82573L/config  is the config for .36-rc3
-generated using localmodconfig, defaults chosen for all prompts.
+> 
+> > +
+> > +static void report_bad_prefix(void)
+> > +{
+> > +	printk(KERN_ERR "uprobes does not currently support probing "
+> > +		"instructions with any of the following prefixes: "
+> > +		"cs:, ds:, es:, ss:, lock:\n");
+> > +}
+> > +
+> > +static void report_bad_1byte_opcode(int mode, user_bkpt_opcode_t op)
+> > +{
+> > +	printk(KERN_ERR "In %d-bit apps, "
+> > +		"uprobes does not currently support probing "
+> > +		"instructions whose first byte is 0x%2.2x\n", mode, op);
+> > +}
+> > +
+> > +static void report_bad_2byte_opcode(user_bkpt_opcode_t op)
+> > +{
+> > +	printk(KERN_ERR "uprobes does not currently support probing "
+> > +		"instructions with the 2-byte opcode 0x0f 0x%2.2x\n", op);
+> > +}
+> 
+> These functions that just do a single printk seem weird. I would
+> do that in the caller. Also the message could be shortened I guess
+> and should just dump the bytes.
+> 
 
-http://ftp.suse.com/pub/people/tonyj/82573L/dmesg  is the full dmesg
+Okay, I can move the printk to the caller, I will try to shorten the
+message, Would something like "uprobes: no support for 2-byte
+opcode 0x0f 0x%2" look fine?
 
-Tony
+> > +
+> > +/**
+> > + * analyze_insn - instruction analysis including validity and fixups.
+> > + * @tsk: the probed task.
+> > + * @user_bkpt: the probepoint information.
+> > + * Return 0 on success or a -ve number on error.
+> > + */
+> > +int analyze_insn(struct task_struct *tsk, struct user_bkpt *user_bkpt)
+> > +{
+> > +	int ret;
+> > +	struct insn insn;
+> > +
+> > +	user_bkpt->fixups = 0;
+> > +#ifdef CONFIG_X86_64
+> > +	user_bkpt->arch_info.rip_target_address = 0x0;
+> > +#endif
+> > +
+> > +	if (is_32bit_app(tsk))
+> 
+> This check is not fully correct because it's valid to have
+> 32bit code in 64bit programs and vice versa.  The only good
+> way to check that is to look at the code segment at runtime
+> though (and it gets complicated if you want to handle LDTs,
+> but that could be optional). May be difficult to do though.
+
+validate_insn_32bit is able to identify all valid instructions in a 32
+bit app and validate_insn_64bits is a superset of
+validate_insn_32bits; i.e it considers valid 32 bit codes as valid too.
+
+Did you get a chance to look at
+validate_insn_32bit/validate_insn_64bits? If you feel that
+validate_insn_32bit/validate_insn_64bits? are unable to detect
+valid codes, then I will certainly rework.
+
+> 
+> Also the compat bit is not necessarily set if no system call is
+> executing. You would rather need to check the exec_domain.
+
+Okay, I shall check and revert on this.
+
+> > + */
+> > +static int adjust_ret_addr(struct task_struct *tsk, unsigned long sp,
+> > +							long correction)
+> > +{
+> > +	int rasize, ncopied;
+> > +	long ra = 0;
+> > +
+> > +	if (is_32bit_app(tsk))
+> > +		rasize = 4;
+> > +	else
+> > +		rasize = 8;
+> > +	ncopied = uprobes_read_vm(tsk, (void __user *) sp, &ra, rasize);
+> > +	if (unlikely(ncopied != rasize))
+> > +		goto fail;
+> 
+> goto is automatically unlikely and unlikely is deprecated anyways.
+
+Okay, shall remove unlikely from the above.
+
+--
+Thanks and Regards
+Srikar
