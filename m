@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab0ICB2t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 21:28:49 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:61616 "HELO
+	id S1752915Ab0ICB3y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 21:29:54 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:61650 "HELO
 	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751281Ab0ICB2r (ORCPT
+	with SMTP id S1751281Ab0ICB3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 21:28:47 -0400
-Message-ID: <4C804F3A.8020001@snapgear.com>
-Date: Fri, 3 Sep 2010 11:28:26 +1000
+	Thu, 2 Sep 2010 21:29:53 -0400
+Message-ID: <4C804F7D.5090105@snapgear.com>
+Date: Fri, 3 Sep 2010 11:29:33 +1000
 From: Greg Ungerer <gerg@snapgear.com>
 User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
 To: David Howells <dhowells@redhat.com>
 CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] Fix M68K irqflags
-References: <19747.1283422807@redhat.com> <20100902102203.19806.39028.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20100902102203.19806.39028.stgit@warthog.procyon.org.uk>
+Subject: Re: [PATCH 1/3] Drop a couple of unnecessary asm/include.h inclusions
+References: <19747.1283422807@redhat.com> <20100902102153.19806.82031.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20100902102153.19806.82031.stgit@warthog.procyon.org.uk>
 Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Sep 2010 01:28:44.0938 (UTC) FILETIME=[598BCEA0:01CB4B07]
+X-OriginalArrivalTime: 03 Sep 2010 01:29:51.0332 (UTC) FILETIME=[811EBA40:01CB4B07]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi David,
-
 David Howells wrote:
-> From: Greg Ungerer <gerg@snapgear.com>
+> Drop inclusions of asm/include.h from linux/hardirq.h and linux/list.h as
+> they're no longer required and prevent the M68K arch's IRQ flag handling macros
+> from being made into inlined functions due to circular dependencies.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
 
-Almost :-)
+Acked-by: Greg Ungerer <gerg@uclinux.org>
 
 
->  arch/m68k/include/asm/entry_no.h    |    2 -
->  arch/m68k/include/asm/irqflags.h    |   76 +++++++++++++++++++++++++++++++++++
->  arch/m68k/include/asm/system_mm.h   |   25 ------------
->  arch/m68k/include/asm/system_no.h   |   57 --------------------------
->  arch/m68knommu/kernel/asm-offsets.c |    2 -
->  include/asm-generic/hardirq.h       |    1 
->  6 files changed, 79 insertions(+), 84 deletions(-)
->  create mode 100644 arch/m68k/include/asm/irqflags.h
-[snip]
->  #endif /* _M68KNOMMU_SYSTEM_H */
-> diff --git a/arch/m68knommu/kernel/asm-offsets.c b/arch/m68knommu/kernel/asm-offsets.c
-> index 9a8876f..2433502 100644
-> --- a/arch/m68knommu/kernel/asm-offsets.c
-> +++ b/arch/m68knommu/kernel/asm-offsets.c
-> @@ -74,8 +74,6 @@ int main(void)
+> ---
+> 
+>  include/linux/hardirq.h |    1 -
+>  include/linux/list.h    |    1 -
+>  2 files changed, 0 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+> index d5b3876..7dfdc06 100644
+> --- a/include/linux/hardirq.h
+> +++ b/include/linux/hardirq.h
+> @@ -8,7 +8,6 @@
+>  #include <linux/lockdep.h>
+>  #include <linux/ftrace_irq.h>
+>  #include <asm/hardirq.h>
+> -#include <asm/system.h>
 >  
->  	DEFINE(PT_PTRACED, PT_PTRACED);
+>  /*
+>   * We put the hardirq and softirq counter into the preemption
+> diff --git a/include/linux/list.h b/include/linux/list.h
+> index d167b5d..88a0006 100644
+> --- a/include/linux/list.h
+> +++ b/include/linux/list.h
+> @@ -5,7 +5,6 @@
+>  #include <linux/stddef.h>
+>  #include <linux/poison.h>
+>  #include <linux/prefetch.h>
+> -#include <asm/system.h>
 >  
-> -	DEFINE(THREAD_SIZE, THREAD_SIZE);
-> -
-
-This breaks final link due to missing THREAD_SIZE definition in head.S:
-
-   LD      vmlinux
-arch/m68knommu/platform/coldfire/head.o: In function `_clear_bss':
-(.head.text+0xa4): undefined reference to `THREAD_SIZE'
+>  /*
+>   * Simple doubly linked list implementation.
+> 
+> 
 
 
-Without that asm-offsets.c change it works on my ColdFire boards.
-I am happy with it:
-
-Acked-by:  Greg Ungerer <gerg@uclinux.org>
-
-Thanks
-Greg
-
-
-
+-- 
 ------------------------------------------------------------------------
 Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
 SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
