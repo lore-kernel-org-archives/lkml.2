@@ -1,92 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab0ICIas (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 04:30:48 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:58291 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430Ab0ICIap (ORCPT
+	id S1755956Ab0ICIbn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 04:31:43 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:38615 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752873Ab0ICIbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 04:30:45 -0400
-Date: Fri, 3 Sep 2010 16:30:28 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jarek Poplawski <jarkao2@gmail.com>,
-        Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: [Bug #16626] Machine hangs with EIP at skb_copy_and_csum_dev
-Message-ID: <20100903083028.GB28952@gondor.apana.org.au>
-References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera> <4AUWBNzTkbD.A.ey.cGueMB@chimera> <courier.4C7C99F2.00001F74@fs.ru.acad.bg> <20100831192659.GA3093@del.dom.local> <1283338251.2556.124.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283338251.2556.124.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 3 Sep 2010 04:31:41 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Kulikov Vasiliy <segooon@gmail.com>
+Subject: [PATCH -resend 1/1] Char: mxser, call pci_disable_device from probe/remove
+Date: Fri,  3 Sep 2010 10:31:37 +0200
+Message-Id: <1283502697-16068-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 01, 2010 at 12:50:51PM +0200, Eric Dumazet wrote:
-> Plamen, could you test following patch ?
-> 
-> I reproduced problem on a dev machine and following patch cured it.
-> 
-> Thanks
-> 
-> [PATCH] gro: fix different skb headrooms
-> 
-> packets entering GRO might have different headrooms, even for a given
-> flow (because of implementation details in drivers, like copybreak).
-> We cant force drivers to deliver packets with a fixed headroom.
-> 
-> 1) fix skb_segment()
-> 
-> skb_segment() makes the false assumption headrooms of fragments are same
-> than the head. When CHECKSUM_PARTIAL is used, this can give csum_start
-> errors, and crash later in skb_copy_and_csum_dev()
-> 
-> 2) allocate a minimal skb for head of frag_list
-> 
-> skb_gro_receive() uses netdev_alloc_skb(headroom + skb_gro_offset(p)) to
-> allocate a fresh skb. This adds NET_SKB_PAD to a padding already
-> provided by netdevice, depending on various things, like copybreak.
-> 
-> Use alloc_skb() to allocate an exact padding, to reduce cache line
-> needs:
-> NET_SKB_PAD + NET_IP_ALIGN
-> 
-> bugzilla : https://bugzilla.kernel.org/show_bug.cgi?id=16626
-> 
-> Many thanks to Plamen Petrov, testing many debugging patches !
-> With help of Jarek Poplawski.
-> 
-> Reported-by: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> CC: Jarek Poplawski <jarkao2@gmail.com>
+Vasiliy found that pci_disable_device is not called on fail paths in
+mxser_probe. Actually, it is called from nowhere in the driver.
 
-Thanks for diagnosing and fixing this!
+There are three changes needed:
+1) don't use pseudo-generic mxser_release_res. Let's use it only from
+   ISA paths from now on. All the pci stuff is moved to probe and
+   remove PCI-related functions.
+2) reorder fail-paths in the probe function so that it makes sense and
+   we can call them from the sequential code naturally (the further we
+   are the earlier label we go to).
+3) add pci_disable_device both to mxser_probe and mxser_remove.
 
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index 3a2513f..26396ff 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -2573,6 +2573,10 @@ struct sk_buff *skb_segment(struct sk_buff *skb, int features)
->  		__copy_skb_header(nskb, skb);
->  		nskb->mac_len = skb->mac_len;
->  
-> +		/* nskb and skb might have different headroom */
-> +		if (nskb->ip_summed == CHECKSUM_PARTIAL)
-> +			nskb->csum_start += skb_headroom(nskb) - headroom;
+There is a nit of adding CONFIG_PCI ifdef to mxser_remove. it is
+because this driver supports ISA-only compilations and it would choke
+up on the newly added calls now.
 
-This test is redundant since we require CHECKSUM_PARTIAL for
-GSO packets.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/char/mxser.c |   47 ++++++++++++++++++++++-------------------------
+ 1 files changed, 22 insertions(+), 25 deletions(-)
 
-Cheers,
+diff --git a/drivers/char/mxser.c b/drivers/char/mxser.c
+index 3fc89da..9d243de 100644
+--- a/drivers/char/mxser.c
++++ b/drivers/char/mxser.c
+@@ -2339,20 +2339,11 @@ struct tty_port_operations mxser_port_ops = {
+  * The MOXA Smartio/Industio serial driver boot-time initialization code!
+  */
+ 
+-static void mxser_release_res(struct mxser_board *brd, struct pci_dev *pdev,
+-		unsigned int irq)
++static void mxser_release_ISA_res(struct mxser_board *brd)
+ {
+-	if (irq)
+-		free_irq(brd->irq, brd);
+-	if (pdev != NULL) {	/* PCI */
+-#ifdef CONFIG_PCI
+-		pci_release_region(pdev, 2);
+-		pci_release_region(pdev, 3);
+-#endif
+-	} else {
+-		release_region(brd->ports[0].ioaddr, 8 * brd->info->nports);
+-		release_region(brd->vector, 1);
+-	}
++	free_irq(brd->irq, brd);
++	release_region(brd->ports[0].ioaddr, 8 * brd->info->nports);
++	release_region(brd->vector, 1);
+ }
+ 
+ static int __devinit mxser_initbrd(struct mxser_board *brd,
+@@ -2397,13 +2388,11 @@ static int __devinit mxser_initbrd(struct mxser_board *brd,
+ 
+ 	retval = request_irq(brd->irq, mxser_interrupt, IRQF_SHARED, "mxser",
+ 			brd);
+-	if (retval) {
++	if (retval)
+ 		printk(KERN_ERR "Board %s: Request irq failed, IRQ (%d) may "
+ 			"conflict with another device.\n",
+ 			brd->info->name, brd->irq);
+-		/* We hold resources, we need to release them. */
+-		mxser_release_res(brd, pdev, 0);
+-	}
++
+ 	return retval;
+ }
+ 
+@@ -2555,7 +2544,7 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
+ 	ioaddress = pci_resource_start(pdev, 2);
+ 	retval = pci_request_region(pdev, 2, "mxser(IO)");
+ 	if (retval)
+-		goto err;
++		goto err_dis;
+ 
+ 	brd->info = &mxser_cards[ent->driver_data];
+ 	for (i = 0; i < brd->info->nports; i++)
+@@ -2565,7 +2554,7 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
+ 	ioaddress = pci_resource_start(pdev, 3);
+ 	retval = pci_request_region(pdev, 3, "mxser(vector)");
+ 	if (retval)
+-		goto err_relio;
++		goto err_zero;
+ 	brd->vector = ioaddress;
+ 
+ 	/* irq */
+@@ -2608,7 +2597,7 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
+ 	/* mxser_initbrd will hook ISR. */
+ 	retval = mxser_initbrd(brd, pdev);
+ 	if (retval)
+-		goto err_null;
++		goto err_rel3;
+ 
+ 	for (i = 0; i < brd->info->nports; i++)
+ 		tty_register_device(mxvar_sdriver, brd->idx + i, &pdev->dev);
+@@ -2616,10 +2605,13 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
+ 	pci_set_drvdata(pdev, brd);
+ 
+ 	return 0;
+-err_relio:
+-	pci_release_region(pdev, 2);
+-err_null:
++err_rel3:
++	pci_release_region(pdev, 3);
++err_zero:
+ 	brd->info = NULL;
++	pci_release_region(pdev, 2);
++err_dis:
++	pci_disable_device(pdev);
+ err:
+ 	return retval;
+ #else
+@@ -2629,14 +2621,19 @@ err:
+ 
+ static void __devexit mxser_remove(struct pci_dev *pdev)
+ {
++#ifdef CONFIG_PCI
+ 	struct mxser_board *brd = pci_get_drvdata(pdev);
+ 	unsigned int i;
+ 
+ 	for (i = 0; i < brd->info->nports; i++)
+ 		tty_unregister_device(mxvar_sdriver, brd->idx + i);
+ 
+-	mxser_release_res(brd, pdev, 1);
++	free_irq(pdev->irq, brd);
++	pci_release_region(pdev, 2);
++	pci_release_region(pdev, 3);
++	pci_disable_device(pdev);
+ 	brd->info = NULL;
++#endif
+ }
+ 
+ static struct pci_driver mxser_driver = {
+@@ -2741,7 +2738,7 @@ static void __exit mxser_module_exit(void)
+ 
+ 	for (i = 0; i < MXSER_BOARDS; i++)
+ 		if (mxser_boards[i].info != NULL)
+-			mxser_release_res(&mxser_boards[i], NULL, 1);
++			mxser_release_ISA_res(&mxser_boards[i]);
+ }
+ 
+ module_init(mxser_module_init);
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.2.2
+
+
