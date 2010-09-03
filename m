@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab0ICW4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 18:56:25 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17121 "EHLO mga01.intel.com"
+	id S1753485Ab0ICW4Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 18:56:24 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48420 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752871Ab0ICW4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 18:56:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,315,1280732400"; 
-   d="scan'208";a="603633556"
-Message-ID: <4C817D0E.6020702@linux.intel.com>
-Date: Fri, 03 Sep 2010 15:56:14 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
+	id S1752362Ab0ICW4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 18:56:11 -0400
+Date: Fri, 3 Sep 2010 15:46:06 -0700
+From: Greg KH <gregkh@suse.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, Rogier Wolff <R.E.Wolff@bitwizard.nl>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [RFC 0/5] tty: move stuff around
+Message-ID: <20100903224606.GA12229@suse.de>
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de>
+ <201009031729.58102.arnd@arndb.de>
+ <20100903165522.GB26271@suse.de>
+ <201009031942.46289.arnd@arndb.de>
 MIME-Version: 1.0
-To: Thomas Renninger <trenn@suse.de>
-CC: Ingo Molnar <mingo@elte.hu>, Jean Pihet <jean.pihet@newoldbits.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tracing, perf: add more power related events
-References: <AANLkTikvbn3+JPc7pnGZk-H4B71MHTu+-vjuzfJw_7PC@mail.gmail.com> <201009032005.08268.trenn@suse.de> <20100903195555.GA1663@elte.hu> <201009032210.08524.trenn@suse.de>
-In-Reply-To: <201009032210.08524.trenn@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009031942.46289.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/3/2010 1:10 PM, Thomas Renninger wrote:
->
->> - and check how existing tools like
->> powertop make use of such events - and sync it all up.
->>      
-> Does powertop use these events?
->
->    
+On Fri, Sep 03, 2010 at 07:42:46PM +0200, Arnd Bergmann wrote:
+> On Friday 03 September 2010, Greg KH wrote:
+> > As this is just a lot of code movement, it probably makes more sense for
+> > me to do this myself, right?
+> 
+> Depends on whether you want a git tree or full patches for this.
+> I'd prefer not doing it myself, if you already offer to do it.
+> 
+> I guess the hardest part is splitting the Makefile and Kconfig
+> files appropriately. I've done that mostly for the first version,
+> so you should probably start from there and move it around some
+> more, splitting out the staging parts.
 
-the next version will; I've already coded this stuff ;-)
+Ok, I'll do it this weekend.  I have a 12 hour plane ride so I need
+something to do on it...
 
+thanks,
+
+greg k-h
