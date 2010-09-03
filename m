@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757012Ab0ICOQH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 10:16:07 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49564 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755160Ab0ICOQF (ORCPT
+	id S1755022Ab0ICOY6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 10:24:58 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:59799 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985Ab0ICOY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 10:16:05 -0400
-Date: Fri, 3 Sep 2010 10:16:03 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tejun Heo <htejun@gmail.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
+	Fri, 3 Sep 2010 10:24:57 -0400
+Date: Fri, 3 Sep 2010 17:24:32 +0300
+From: Pauli Nieminen <ext-pauli.nieminen@nokia.com>
+To: ext Peter Zijlstra <peterz@infradead.org>
+Cc: ext Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tony Lindgren <tony@atomide.com>, Jarkko Nikula <jhnikula@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>
-Subject: Re: [linux-pm] [PATCH] libata: skip EH autopsy and recovery during
- suspend
-In-Reply-To: <4C80B81F.8090803@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1009031006510.1548-100000@iolanthe.rowland.org>
+        Pauli <suokkos@gmail.com>
+Subject: Re: IPC between application and xserver is causing extra context
+ switches
+Message-ID: <20100903142432.GG19353@squeeze>
+References: <20100809150211.GA29771@burn-it>
+ <20100901025817.GA6200@Krystal>
+ <20100903071738.GA19353@squeeze>
+ <1283499074.1783.59.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283499074.1783.59.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 03 Sep 2010 14:24:35.0973 (UTC) FILETIME=[BC200B50:01CB4B73]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010, Tejun Heo wrote:
-
-> > Tejun, I'm planning to make a few changes to the block layer and the
-> > SCSI core in order to implement delayed autosuspend.  These changes
-> > will affect system sleep too, so you may need to know about them.
-> > 
-> > Each request_queue structure will have an rpm_status variable that gets
-> > updated as the corresponding device is suspended or resumed.  When the
-> > status is SUSPENDING or RESUMING, requests will not be sent from the
-> > request_queue to the driver unless they have cmd_type set to
-> > REQ_TYPE_PM_SUSPEND or REQ_TYPE_PM_RESUME (actually I may combine those
-> > two into a single REQ_TYPE_PM type).  If other types of request are
-> > added to the queue when the status isn't ACTIVE, they will cause a
-> > runtime resume to be started.
-> > 
-> > Initially this will affect only drivers using the SCSI layer.  
-> > Commands sent during error handling won't be affected though, because
-> > the SCSI error handler doesn't use requests or queues -- it sends
-> > commands directly to the lower-level driver.
-> > 
-> > Does that all sound okay to you?
+On 03/09/10 09:31 +0200, ext Peter Zijlstra wrote:
+> On Fri, 2010-09-03 at 10:17 +0300, Pauli Nieminen wrote:
+> > Scheduling at write is wrong because xserver doesn't know about client
+> > priorities. 
 > 
-> Hmm... I can't really tell much without looking at the actual patch
-> but I'm a bit doubtful about using REQ_TYPE_* for suspend/resumes,
-> well, for that matter, for any other purpose than actual IO requests.
-> The current REQ_TYPE_PM_* are only used by ide and it's really messy.
+> Waking up the client at write is correct because you don't know if there
+> is more to be written.
+> 
 
-Yes.  I'm hoping that these changes will help simplify IDE, but I 
-haven't looked at it yet.
+IMO xserver is already signaling kernel when there is nothing more to write.
+There is nothing more to write when xserver calls select after processing
+request and writing responses.
 
-> Those special requests are very difficult to use in generic manner.
-> ie. How should remapping / cloning drivers like md, dm and loopback
-> handle them?
+O_NONBLOCK is set for file descriptors if it matters.
 
-They should never need to handle them.  These requests get used only
-for preparing a device to change power modes.  Logical devices don't
-need them, only physical devices do.  For example, you can't put a
-logical RAID device into low-power mode; all you can do is put the
-underlying physical drives into low power.
+syscalls will be:
 
->  They end up just being a mechanism for specific low
-> level drivers to feed certain requests back to themselves to implement
-> suspend/resume sequence and as there's no clear defined common usage,
-> the meaning of those flags becomes ambiguous and confusing depending
-> on drivers and so on.
+select(all_fds);
 
-With my changes there now will be a clear defined usage.
+read(2, ...);
+read(5, ...);
 
-> Another issue is that power management is probably better handled as a
-> sub problem of generic IO exception handling.  If you throw in
-> hot[un]plugs and transport errors and consider what should happen when
-> those events happen together, things get hairy if power management is
-> not well integrated with the usual exceptionn handling.
+writev(3, ...);
+writev(5, ...);
+writev(6, ...);
 
-I don't see why.  Power management is not exceptional.  The relation
-with hot [un]plug is already taken care of.  Transport error recovery
-will block runtime power management if it occurs while the device is at
-full power; it is an issue only if it occurs during a power transition.  
-The SCSI error handler should work okay since it doesn't send commands
-through the block layer.
+select(all_fds);
 
-Alan Stern
+Of course this is a lot simplified what really happens.
 
