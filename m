@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab0ICQ0U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 12:26:20 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60106 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab0ICQ0T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 12:26:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=CzLhoC/gnSBbJPfGRxJGsqOgBgbZV0vydEyDL/EOJFByzirMck5c5dGdzCNVJ51Rf6
-         0SVIkNoPwGIXOzUxzZY09xbKtsBa93W7/LS2eveQiHsFqtfQsXUaJgym34zVDCdPLK0s
-         tJ28XnDjdoF2/IZpxKcE+0FMuEmA9XdLWnwQw=
-Date: Fri, 3 Sep 2010 09:26:08 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ping Cheng <pinglinux@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, Ping Cheng <pingc@wacom.com>,
-        Chris Bagwell <chris@cnpbagwell.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] input: wacom: Add support for the Bamboo Touch
- trackpad (rev3)
-Message-ID: <20100903162608.GA2200@core.coreip.homeip.net>
-References: <1283516247-11624-1-git-send-email-rydberg@euromail.se>
- <1283516247-11624-4-git-send-email-rydberg@euromail.se>
- <6753EB6004AFF34FAA275742C104F952022BB10E@wacom-nt10.wacom.com>
- <4C80F2CD.2040708@euromail.se>
- <AANLkTinUxPMezfSHjfPPJ6PoZ1Put26ZAMrzQ36K2fjV@mail.gmail.com>
+	id S1755623Ab0ICQ0o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 12:26:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47890 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752655Ab0ICQ0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 12:26:42 -0400
+Message-ID: <4C8121A1.8060809@kernel.org>
+Date: Fri, 03 Sep 2010 18:26:09 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinUxPMezfSHjfPPJ6PoZ1Put26ZAMrzQ36K2fjV@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/3] percpu: reduce PCPU_MIN_UNIT_SIZE to 32k
+References: <20100824120714.8918f8de.sfr@canb.auug.org.au> <4C740450.3030000@cs.helsinki.fi> <alpine.DEB.2.00.1008241256280.4763@router.home> <4C741029.7090300@cs.helsinki.fi> <alpine.DEB.2.00.1008241352240.5388@router.home> <4C74D1D7.4080608@kernel.org> <4C74DB05.7000101@cs.helsinki.fi> <alpine.DEB.2.00.1008250846590.13026@router.home> <4C762734.1030402@kernel.org>
+In-Reply-To: <4C762734.1030402@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 16:26:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 05:30:27PM +0200, Ping Cheng wrote:
-> On Fri, Sep 3, 2010 at 3:06 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> > On 09/03/2010 03:01 PM, Ping Cheng wrote:
-> > [...]
-> >
-> >> +     input_report_key(input, BTN_LEFT, (data[1] & 0x08) != 0);
-> >> +     input_report_key(input, BTN_MIDDLE, (data[1] & 0x04) != 0);
-> >> +     input_report_key(input, BTN_4, (data[1] & 0x02) != 0);
-> >> +     input_report_key(input, BTN_RIGHT, (data[1] & 0x01) != 0);
-> >>
-> >> Since you are assigning meaningful defaults to three of the tablet
-> >> buttons instead of using BTN_#, can we move one more step to make the
-> >> fourth button useful out-of-box too? I am thinking of something like
-> >> BTN_FORWARD and BTN_BACK while getting rid of the BTN_MIDDLE. So, it
-> >> would be:
-> >>
-> >>       input_report_key(input, BTN_LEFT, (data[1] & 0x08) != 0);
-> >>       input_report_key(input, BTN_FORWARD, (data[1] & 0x04) != 0);
-> >>       input_report_key(input, BTN_BACK, (data[1] & 0x02) != 0);
-> >>       input_report_key(input, BTN_RIGHT, (data[1] & 0x01) != 0);
-> >>
-> >> Does this make sense to you?
-> >
-> >
-> > Well, this is all a matter of taste, isn't it. If middle-button emulation works
-> > out of the box, for the benefit of us old X users who seem unwilling to ever let
-> > go of the click-to-paste functionality, then I would not mind terribly.
-> 
-> I agree and I use middle click more than right click myself ;). I just
-> wanted to give BTN_4 a life. If no one has a good suggestion for that,
-> I can live with it.
-> 
+In preparation of enabling percpu allocator for UP, reduce
+PCPU_MIN_UNIT_SIZE to 32k.  On UP, the first chunk doesn't have to
+include static percpu variables and chunk size can be smaller which is
+important as UP percpu allocator will use contiguous kernel memory to
+populate chunks.
 
-Another option could be allowing usirs to remap buttons via EVIOGSKEYCODE.
+PCPU_MIN_UNIT_SIZE also determines the maximum supported allocation
+size but 32k should still be enough.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/percpu.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index 49466b1..fc8130a 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -42,7 +42,7 @@
+ #ifdef CONFIG_SMP
+
+ /* minimum unit size, also is the maximum supported allocation size */
+-#define PCPU_MIN_UNIT_SIZE		PFN_ALIGN(64 << 10)
++#define PCPU_MIN_UNIT_SIZE		PFN_ALIGN(32 << 10)
+
+ /*
+  * Percpu allocator can serve percpu allocations before slab is
 -- 
-Dmitry
+1.7.1
+
