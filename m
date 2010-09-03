@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757551Ab0ICVUq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 17:20:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46168 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753962Ab0ICVUo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 17:20:44 -0400
-Date: Fri, 3 Sep 2010 14:20:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Sembera <jsembera@suse.cz>
-Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        ink@jurassic.park.msu.ru, stable@kernel.org,
-        linux-ia64@vger.kernel.org, "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] binfmt_misc: Fix binfmt_misc priority
-Message-Id: <20100903142003.b6f02a0c.akpm@linux-foundation.org>
-In-Reply-To: <20100823141520.GB17894@alaris.suse.cz>
-References: <20100823141520.GB17894@alaris.suse.cz>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757541Ab0ICVYH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 17:24:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753962Ab0ICVYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 17:24:05 -0400
+Message-ID: <4C816760.4010807@redhat.com>
+Date: Fri, 03 Sep 2010 17:23:44 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Venkatesh Pallipadi <venki@google.com>, Ying Han <yinghan@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap
+ system
+References: <1283096628-4450-1-git-send-email-minchan.kim@gmail.com> <20100903140649.09dee316.akpm@linux-foundation.org>
+In-Reply-To: <20100903140649.09dee316.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/03/2010 05:06 PM, Andrew Morton wrote:
 
-(cc stable@kernel.org and the ia64 d00ds)
+> We don't have any quantitative data on the effect of these excess tlb
+> flushes, which makes it difficult to decide which kernel versions
+> should receive this patch.
+>
+> Help?
 
-On Mon, 23 Aug 2010 16:15:20 +0200
-Jan Sembera <jsembera@suse.cz> wrote:
+I assume it is a relatively small performance optimization,
+as well as a nice code cleanup ... so probably no real hurry
+to get it upstream (next time you send Linus mm patches?),
+and no real reason to have it backported to a -stable kernel
+either.
 
-> Commit 74641f584da introduced a regression - binfmt_misc is now consulted
-> after binfmt_elf, which will unfortunately break ia32el. ia32 ELF binaries
-> on ia64 used to be matched using binfmt_misc and executed using wrapper. As
-> 32bit binaries are now matched by binfmt_elf before bindmt_misc kicks in,
-> the wrapper is ignored.
-> 
-> The fix increases precedence of binfmt_misc to the original state.
-> 
-> Signed-off-by: Jan Sembera <jsembera@suse.cz>
-> ---
->  fs/binfmt_misc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-> index a7528b9..fd0cc0b 100644
-> --- a/fs/binfmt_misc.c
-> +++ b/fs/binfmt_misc.c
-> @@ -724,7 +724,7 @@ static int __init init_misc_binfmt(void)
->  {
->  	int err = register_filesystem(&bm_fs_type);
->  	if (!err) {
-> -		err = register_binfmt(&misc_format);
-> +		err = insert_binfmt(&misc_format);
->  		if (err)
->  			unregister_filesystem(&bm_fs_type);
->  	}
-
-Yikes, 74641f584da was merged in May 2009.  I wonder why this problem
-wasn't noticed before now?
-
-If we're going to change this then I guess we should change it in
-2.6.36 and backport the fix as far as we can go.
+-- 
+All rights reversed
