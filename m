@@ -1,115 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab0ICIIF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 04:08:05 -0400
-Received: from [83.228.35.12] ([83.228.35.12]:35747 "EHLO fs.ru.acad.bg"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755576Ab0ICIGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 04:06:25 -0400
-X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Sep 2010 04:06:25 EDT
-Message-ID: <4C80AB34.20501@fs.uni-ruse.bg>
-Date: Fri, 03 Sep 2010 11:00:52 +0300
-From: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; bg; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1755318Ab0ICIGK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 04:06:10 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:7615 "EHLO
+	VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754699Ab0ICIGF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 04:06:05 -0400
+X-SpamScore: -2
+X-BigFish: VPS-2(zzbb2cKzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0L85VMK-01-HXP-02
+X-M-MSG: 
+From: Andre Przywara <andre.przywara@amd.com>
+To: <hpa@zytor.com>, <tglx@linutronix.de>, <mingo@elte.hu>
+CC: <linux-kernel@vger.kernel.org>, Andre Przywara <andre.przywara@amd.com>
+Subject: [PATCH 4/4] x86, kvm: add new AMD SVM feature bits
+Date: Fri, 3 Sep 2010 10:03:08 +0200
+Message-ID: <1283500988-32409-5-git-send-email-andre.przywara@amd.com>
+X-Mailer: git-send-email 1.6.4
+In-Reply-To: <1283500988-32409-1-git-send-email-andre.przywara@amd.com>
+References: <1283500988-32409-1-git-send-email-andre.przywara@amd.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Jarek Poplawski <jarkao2@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: [Bug #16626] Machine hangs with EIP at skb_copy_and_csum_dev
-References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera>	 <4AUWBNzTkbD.A.ey.cGueMB@chimera> <courier.4C7C99F2.00001F74@fs.ru.acad.bg>	 <20100831192659.GA3093@del.dom.local> <1283338251.2556.124.camel@edumazet-laptop>
-In-Reply-To: <1283338251.2556.124.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-На 01.9.2010 г. 13:50, Eric Dumazet написа:
-> Plamen, could you test following patch ?
->
-> I reproduced problem on a dev machine and following patch cured it.
->
-> Thanks
->
-> [PATCH] gro: fix different skb headrooms
->
-> packets entering GRO might have different headrooms, even for a given
-> flow (because of implementation details in drivers, like copybreak).
-> We cant force drivers to deliver packets with a fixed headroom.
->
-> 1) fix skb_segment()
->
-> skb_segment() makes the false assumption headrooms of fragments are same
-> than the head. When CHECKSUM_PARTIAL is used, this can give csum_start
-> errors, and crash later in skb_copy_and_csum_dev()
->
-> 2) allocate a minimal skb for head of frag_list
->
-> skb_gro_receive() uses netdev_alloc_skb(headroom + skb_gro_offset(p)) to
-> allocate a fresh skb. This adds NET_SKB_PAD to a padding already
-> provided by netdevice, depending on various things, like copybreak.
->
-> Use alloc_skb() to allocate an exact padding, to reduce cache line
-> needs:
-> NET_SKB_PAD + NET_IP_ALIGN
->
-> bugzilla : https://bugzilla.kernel.org/show_bug.cgi?id=16626
->
-> Many thanks to Plamen Petrov, testing many debugging patches !
-> With help of Jarek Poplawski.
->
-> Reported-by: Plamen Petrov<pvp-lsts@fs.uni-ruse.bg>
-> Signed-off-by: Eric Dumazet<eric.dumazet@gmail.com>
-> CC: Jarek Poplawski<jarkao2@gmail.com>
-> ---
-> patch against linux-2.6 current tree
->
->   net/core/skbuff.c |    8 ++++++--
->   1 file changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index 3a2513f..26396ff 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -2573,6 +2573,10 @@ struct sk_buff *skb_segment(struct sk_buff *skb, int features)
->   		__copy_skb_header(nskb, skb);
->   		nskb->mac_len = skb->mac_len;
->
-> +		/* nskb and skb might have different headroom */
-> +		if (nskb->ip_summed == CHECKSUM_PARTIAL)
-> +			nskb->csum_start += skb_headroom(nskb) - headroom;
-> +
->   		skb_reset_mac_header(nskb);
->   		skb_set_network_header(nskb, skb->mac_len);
->   		nskb->transport_header = (nskb->network_header +
-> @@ -2702,8 +2706,8 @@ int skb_gro_receive(struct sk_buff **head, struct sk_buff *skb)
->   	} else if (skb_gro_len(p) != pinfo->gso_size)
->   		return -E2BIG;
->
-> -	headroom = skb_headroom(p);
-> -	nskb = netdev_alloc_skb(p->dev, headroom + skb_gro_offset(p));
-> +	headroom = NET_SKB_PAD + NET_IP_ALIGN;
-> +	nskb = alloc_skb(headroom + skb_gro_offset(p), GFP_ATOMIC);
->   	if (unlikely(!nskb))
->   		return -ENOMEM;
->
->
->
+The recently updated CPUID specification names new SVM feature bits.
+Add them to the list of reported features.
 
-I confirm that the above patch applied on top of v2.6.36-rc3 does not
-show the problems that all the kernels since v2.6.35 (both stable
-and Linus' tree) had.
+Signed-off-by: Andre Przywara <andre.przywara@amd,com>
+---
+ arch/x86/include/asm/cpufeature.h |    7 +++++++
+ arch/x86/kernel/cpu/scattered.c   |    6 ++++++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
 
-My problematic machine has been running the patched 36-rc3 for 36 hours, 
-and couning, with "generic receive offload" enabled only my tg3 nic.
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 341835d..bffeab7 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -183,6 +183,13 @@
+ #define X86_FEATURE_LBRV	(8*32+ 6) /* AMD LBR Virtualization support */
+ #define X86_FEATURE_SVML	(8*32+ 7) /* "svm_lock" AMD SVM locking MSR */
+ #define X86_FEATURE_NRIPS	(8*32+ 8) /* "nrip_save" AMD SVM next_rip save */
++#define X86_FEATURE_TSCRATEMSR  (8*32+ 9) /* "tsc_scale" AMD TSC scaling support */
++#define X86_FEATURE_VMCBCLEAN   (8*32+10) /* "vmcb_clean" AMD VMCB clean bits support */
++#define X86_FEATURE_FLUSHBYASID (8*32+11) /* AMD flush-by-ASID support */
++#define X86_FEATURE_DECODEASSISTS (8*32+12) /* AMD Decode Assists support */
++#define X86_FEATURE_PAUSEFILTER (8*32+13) /* AMD filtered pause intercept */
++#define X86_FEATURE_PFTHRESHOLD (8*32+14) /* AMD pause filter threshold */
++
+ 
+ /* Intel-defined CPU features, CPUID level 0x00000007:0 (ebx), word 9 */
+ #define X86_FEATURE_FSGSBASE	(9*32+ 0) /* {RD/WR}{FS/GS}BASE instructions*/
+diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
+index 34b4dad..2c77931 100644
+--- a/arch/x86/kernel/cpu/scattered.c
++++ b/arch/x86/kernel/cpu/scattered.c
+@@ -43,6 +43,12 @@ void __cpuinit init_scattered_cpuid_features(struct cpuinfo_x86 *c)
+ 		{ X86_FEATURE_LBRV,		CR_EDX, 1, 0x8000000a, 0 },
+ 		{ X86_FEATURE_SVML,		CR_EDX, 2, 0x8000000a, 0 },
+ 		{ X86_FEATURE_NRIPS,		CR_EDX, 3, 0x8000000a, 0 },
++		{ X86_FEATURE_TSCRATEMSR,	CR_EDX, 4, 0x8000000a, 0 },
++		{ X86_FEATURE_VMCBCLEAN,	CR_EDX, 5, 0x8000000a, 0 },
++		{ X86_FEATURE_FLUSHBYASID,	CR_EDX, 6, 0x8000000a, 0 },
++		{ X86_FEATURE_DECODEASSISTS,	CR_EDX, 7, 0x8000000a, 0 },
++		{ X86_FEATURE_PAUSEFILTER,	CR_EDX,10, 0x8000000a, 0 },
++		{ X86_FEATURE_PFTHRESHOLD,	CR_EDX,12, 0x8000000a, 0 },
+ 		{ 0, 0, 0, 0, 0 }
+ 	};
+ 
+-- 
+1.6.4
 
-Thank you very much for the wonderful job, Eric!
-Thanks to you, too, Jarek!
 
-Plamen Petrov
