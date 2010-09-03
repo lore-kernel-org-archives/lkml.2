@@ -1,79 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756Ab0ICOKN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 10:10:13 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:45149 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756573Ab0ICOKH (ORCPT
+	id S1756578Ab0ICOLo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 10:11:44 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:46145 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753494Ab0ICOLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 10:10:07 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: oWs8keEVM1n5DIthkBV07mq8omYoDFwYuHXRp8dOWj8dyS2
- LHoFpfu0GYHQvm5GUWuX2lyOdovzuSysSGKrnpty9lngyzJyXywP6RVy7uaR
- n7EsPJOxTq5lFLGGobWWoVoqik5icZZzM93suvg.GwWCzZYL3CO48UnUcZI_
- xdMWCtmh1BjmGLh9_hWm8YhMX2CZCRFo4qUK3OLmjqzwGwMVjFPXQMFUs9mB
- zOU6M.TvjKRSBmNXt5ACG8pVF9gQ8
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 3 Sep 2010 09:10:03 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/10] hugetlb: hugepage migration core
-In-Reply-To: <1283488658-23137-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.DEB.2.00.1009030907080.5633@router.home>
-References: <1283488658-23137-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1283488658-23137-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 3 Sep 2010 10:11:43 -0400
+Message-ID: <000601cb4b71$ee6adec0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Eric Dumazet" <eric.dumazet@gmail.com>
+Cc: "Stephen Hemminger" <shemminger@vyatta.com>,
+        "Sam Ravnborg" <sam@ravnborg.org>, "Joe Perches" <joe@perches.com>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "ML netdev" <netdev@vger.kernel.org>,
+        "Greg Rose" <gregory.v.rose@intel.com>,
+        "Maxime Bizon" <mbizon@freebox.fr>,
+        "Kristoffer Glembo" <kristoffer@gaisler.com>,
+        "Ralf Baechle" <ralf@linux-mips.org>,
+        "John Linn" <john.linn@xilinx.com>,
+        "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, "MeeGo" <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Andrew" <andrew.chih.howe.khor@intel.com>,
+        "Intel OTC" <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        "Toshiharu Okada" <okada533@dsn.okisemi.com>,
+        "Tomoya Morinaga" <morinaga526@dsn.okisemi.com>,
+        "Takahiro Shimizu" <shimizu394@dsn.okisemi.com>
+References: <4C763A67.5040107@dsn.okisemi.com> <4C7D0E7A.5060309@dsn.okisemi.com> <1283266263.2550.106.camel@edumazet-laptop> <000a01cb4a9b$e8d6ab00$66f8800a@maildom.okisemi.com> <1283434847.2454.726.camel@edumazet-laptop> <20100902081007.2f910bc0@nehalam> <000e01cb4b6c$73b4c8d0$66f8800a@maildom.okisemi.com> <1283521416.2453.823.camel@edumazet-laptop>
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+Date: Fri, 3 Sep 2010 23:11:35 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010, Naoya Horiguchi wrote:
+Hi Eric
 
-> diff --git v2.6.36-rc2/mm/vmscan.c v2.6.36-rc2/mm/vmscan.c
-> index c391c32..69ce2a3 100644
-> --- v2.6.36-rc2/mm/vmscan.c
-> +++ v2.6.36-rc2/mm/vmscan.c
-> @@ -40,6 +40,7 @@
->  #include <linux/memcontrol.h>
->  #include <linux/delayacct.h>
->  #include <linux/sysctl.h>
-> +#include <linux/hugetlb.h>
+Thank you for your information.
+I will confirm other drivers.
+
+Thanks, Ohtake(OKISemi)
+----- Original Message ----- 
+From: "Eric Dumazet" <eric.dumazet@gmail.com>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Stephen Hemminger" <shemminger@vyatta.com>; "Sam Ravnborg" <sam@ravnborg.org>; "Joe Perches" <joe@perches.com>;
+"LKML" <linux-kernel@vger.kernel.org>; "ML netdev" <netdev@vger.kernel.org>; "Greg Rose" <gregory.v.rose@intel.com>;
+"Maxime Bizon" <mbizon@freebox.fr>; "Kristoffer Glembo" <kristoffer@gaisler.com>; "Ralf Baechle" <ralf@linux-mips.org>;
+"John Linn" <john.linn@xilinx.com>; "Randy Dunlap" <randy.dunlap@oracle.com>; "David S. Miller" <davem@davemloft.net>;
+"MeeGo" <meego-dev@meego.com>; "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y" <yong.y.wang@intel.com>; "Andrew"
+<andrew.chih.howe.khor@intel.com>; "Intel OTC" <joel.clark@intel.com>; "Foster, Margie" <margie.foster@intel.com>;
+"Toshiharu Okada" <okada533@dsn.okisemi.com>; "Tomoya Morinaga" <morinaga526@dsn.okisemi.com>; "Takahiro Shimizu"
+<shimizu394@dsn.okisemi.com>
+Sent: Friday, September 03, 2010 10:43 PM
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+
+
+> Le vendredi 03 septembre 2010 a 22:32 +0900, Masayuki Ohtake a ecrit :
+> > Hi Eric and Stephen
+> >
+> > Thank you for your suggestion.
+> >
+> > I tried modification of "dev->hard_header_len".
+> > However, there was no changed to a format of SKB received by kernel.
+> >   [Header:14octet] + [payload]
+> >
+> > So, I can not a single memcpy.
 >
->  #include <asm/tlbflush.h>
->  #include <asm/div64.h>
-> @@ -508,6 +509,10 @@ void putback_lru_page(struct page *page)
+> Hmm, maybe you did this at the wrong place ?
 >
->  	VM_BUG_ON(PageLRU(page));
+> Take a look at other drivers how they do this
 >
-> +	if (PageHuge(page)) {
-> +		put_page(page);
-> +		return;
-> +	}
->  redo:
->  	ClearPageUnevictable(page);
+> (network stack default hard_header_len to 14, in net/ethernet/eth.c,
+> function ether_setup())
 >
-> @@ -1112,7 +1117,9 @@ int isolate_lru_page(struct page *page)
->  {
->  	int ret = -EBUSY;
 >
-> -	if (PageLRU(page)) {
-> +	if (PageHuge(page) && get_page_unless_zero(compound_head(page)))
-> +		ret = 0;
-> +	else if (PageLRU(page)) {
->  		struct zone *zone = page_zone(page);
+> find drivers/net | xargs grep -n hard_header_len
 >
->  		spin_lock_irq(&zone->lru_lock);
+> Example in drivers/net/wan/hdlc.c
+>
+> static void hdlc_setup_dev(struct net_device *dev)
+> {
+>         /* Re-init all variables changed by HDLC protocol drivers,
+>          * including ether_setup() called from hdlc_raw_eth.c.
+>          */
+>         dev->flags               = IFF_POINTOPOINT | IFF_NOARP;
+>         dev->priv_flags          = IFF_WAN_HDLC;
+>         dev->mtu                 = HDLC_MAX_MTU;
+>         dev->type                = ARPHRD_RAWHDLC;
+>         dev->hard_header_len     = 16;
+>         dev->addr_len            = 0;
+>         dev->header_ops          = &hdlc_null_ops;
+> }
+>
+>
 >
 
-Huge pages are not on the LRU right? So why use the lru functions for
-them and then not use the lru? Its a bit stranger. The caller must aware
-of the different handling of huge pages since there is no toying around
-with the lru. So just have the caller do a put or get page instead.
 
