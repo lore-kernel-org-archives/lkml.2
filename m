@@ -1,42 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018Ab0ICMTP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 08:19:15 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51456 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757754Ab0ICMTN (ORCPT
+	id S1758033Ab0ICMTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 08:19:24 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:34432 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757754Ab0ICMTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 08:19:13 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [PATCH -mm 8/8] add the common dma_addr_t typedef to include/linux/types.h
-Date: Fri, 3 Sep 2010 14:19:09 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: akpm@linux-foundation.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20100903094753S.fujita.tomonori@lab.ntt.co.jp> <1283474956-14710-8-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1283474956-14710-8-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009031419.09298.arnd@arndb.de>
-X-Provags-ID: V02:K0:o2nN+SANdeAtTxNOGDoAg0LgntDx4fFAiJBED68ABGl
- GN7A+xvth79GKa6nrT+zNkqDQ9kWhdnvlGWMOas5VdpgLCK/6K
- aLnaQQllsM5VYQMefoQjnOjorOzGq5f4NMKw+BZITSoIXZzMKQ
- NG8XOU3qYZjj+oyF7/3vAsr3mCV86w1Ir6zG8PbAD7FMYWeoFf
- xHLGKkKTN1WeiU9tBekfQ==
+	Fri, 3 Sep 2010 08:19:20 -0400
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 1/5] input: wacom: Add fuzz parameters to features
+Date: Fri,  3 Sep 2010 14:17:23 +0200
+Message-Id: <1283516247-11624-2-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283516247-11624-1-git-send-email-rydberg@euromail.se>
+References: <1283516247-11624-1-git-send-email-rydberg@euromail.se>
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OrVDI-0005FT-A7.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1OrVDI-0005FT-A7 3b1057f03ad924d8eb7541e721e4bab1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 September 2010, FUJITA Tomonori wrote:
-> All architectures can use the common dma_addr_t typedef now. We can
-> remove the arch specific dma_addr_t.
+The signal-to-noise ratio varies between devices, but currently all
+devices are treated the same way. Add fuzz parameters to the feature
+struct, allowing for tailored treatment of devices.
 
-Very nice!
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/input/tablet/wacom_sys.c |    6 +++++-
+ drivers/input/tablet/wacom_wac.c |    9 ++++++---
+ drivers/input/tablet/wacom_wac.h |    4 ++++
+ 3 files changed, 15 insertions(+), 4 deletions(-)
 
-> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> Cc: arnd@arndb.de
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index 42ba369..e510e4f 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -333,8 +333,12 @@ static int wacom_retrieve_hid_descriptor(struct usb_interface *intf,
+ 	struct usb_host_interface *interface = intf->cur_altsetting;
+ 	struct hid_descriptor *hid_desc;
+ 
+-	/* default device to penabled */
++	/* default features */
+ 	features->device_type = BTN_TOOL_PEN;
++	features->x_fuzz = 4;
++	features->y_fuzz = 4;
++	features->pressure_fuzz = 0;
++	features->distance_fuzz = 0;
+ 
+ 	/* only Tablet PCs need to retrieve the info */
+ 	if ((features->type != TABLETPC) && (features->type != TABLETPC2FG))
+diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
+index 40d77ba..bfe5654 100644
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -951,9 +951,12 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
+ 
+ 	__set_bit(BTN_TOUCH, input_dev->keybit);
+ 
+-	input_set_abs_params(input_dev, ABS_X, 0, features->x_max, 4, 0);
+-	input_set_abs_params(input_dev, ABS_Y, 0, features->y_max, 4, 0);
+-	input_set_abs_params(input_dev, ABS_PRESSURE, 0, features->pressure_max, 0, 0);
++	input_set_abs_params(input_dev, ABS_X, 0, features->x_max,
++			     features->x_fuzz, 0);
++	input_set_abs_params(input_dev, ABS_Y, 0, features->y_max,
++			     features->y_fuzz, 0);
++	input_set_abs_params(input_dev, ABS_PRESSURE, 0, features->pressure_max,
++			     features->pressure_fuzz, 0);
+ 
+ 	__set_bit(ABS_MISC, input_dev->absbit);
+ 
+diff --git a/drivers/input/tablet/wacom_wac.h b/drivers/input/tablet/wacom_wac.h
+index 99e1a54..d769e9a 100644
+--- a/drivers/input/tablet/wacom_wac.h
++++ b/drivers/input/tablet/wacom_wac.h
+@@ -73,6 +73,10 @@ struct wacom_features {
+ 	int y_phy;
+ 	unsigned char unit;
+ 	unsigned char unitExpo;
++	int x_fuzz;
++	int y_fuzz;
++	int pressure_fuzz;
++	int distance_fuzz;
+ };
+ 
+ struct wacom_shared {
+-- 
+1.7.1
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
