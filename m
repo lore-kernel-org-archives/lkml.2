@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858Ab0ICRmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 13:42:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39246 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857Ab0ICRmJ convert rfc822-to-8bit (ORCPT
+	id S1756957Ab0ICRmt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 13:42:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57346 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857Ab0ICRms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 13:42:09 -0400
-Subject: Re: [PATCHv11 2.6.36-rc2-tip 3/15]  3: uprobes: Slot allocation
- for Execution out of line(XOL)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20100903172620.GA32733@linux.vnet.ibm.com>
-References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
-	 <20100825134156.5447.43216.sendpatchset@localhost6.localdomain6>
-	 <1283372009.2059.1557.camel@laptop>
-	 <20100903164010.GA1904@linux.vnet.ibm.com>
-	 <1283532714.2050.244.camel@laptop>
-	 <20100903172620.GA32733@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 03 Sep 2010 19:41:32 +0200
-Message-ID: <1283535692.2050.325.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 3 Sep 2010 13:42:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <gregkh@suse.de>
+Subject: Re: [RFC 0/5] tty: move stuff around
+Date: Fri, 3 Sep 2010 19:42:46 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, Rogier Wolff <R.E.Wolff@bitwizard.nl>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <201009031729.58102.arnd@arndb.de> <20100903165522.GB26271@suse.de>
+In-Reply-To: <20100903165522.GB26271@suse.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009031942.46289.arnd@arndb.de>
+X-Provags-ID: V02:K0:iMsZfCb3PcRN+/yeHqbVQTLgXpyH5pLQF47Xz4/iN9v
+ pVrWnqP3opvuRSmlMSYz5Q5ImiqB0B84U8WT18Lpwuxa0f6YDc
+ qr11i3+DQVvEZIFcr/aTMAP+pDtXarEqd4Q125yYmpDUP//8UV
+ GlO0qP99SLjbCZkyEb2mMX01Rs2s0f+UM+MlH+w/vvI57UNmmf
+ V6PafGxJGgI9bkiK6JD1A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-03 at 22:56 +0530, Srikar Dronamraju wrote:
-> 
-> 
-> static unsigned long xol_get_insn_slot(struct user_bkpt *user_bkpt,
->                                 struct uprobes_xol_area *xol_area)
-> {
->         unsigned long flags, xol_vaddr = 0;
->         int len;
-> 
->         if (unlikely(!xol_area))
->                 return 0;
-> 
->         smp_rmb();
->         if (user_bkpt->xol_vaddr)
->                 return user_bkpt->xol_vaddr;
-> 
->         spin_lock_irqsave(&xol_area->lock, flags);
->         xol_vaddr = xol_take_insn_slot(xol_area);
->         spin_unlock_irqrestore(&xol_area->lock, flags);
-> 
->         /*
->          * Initialize the slot if user_bkpt->vaddr points to valid
->          * instruction slot.
->          */
->         if (!xol_vaddr)
->                 return 0;
-> 
->         len = access_process_vm(current, xol_vaddr, user_bkpt->insn,
->                                         UPROBES_XOL_SLOT_BYTES, 1);
->         if (unlikely(len < UPROBES_XOL_SLOT_BYTES))
->                 printk(KERN_ERR "Failed to copy instruction at %#lx "
->                                 "len = %d\n", user_bkpt->vaddr, len);
-> 
->         /*
->          * Update user_bkpt->xol_vaddr after giving a chance for the slot to
->          * be initialized.
->          */
->         smp_mb();
->         user_bkpt->xol_vaddr = xol_vaddr;
->         return user_bkpt->xol_vaddr;
-> } 
+On Friday 03 September 2010, Greg KH wrote:
+> As this is just a lot of code movement, it probably makes more sense for
+> me to do this myself, right?
 
-Racy like you won't believe..
+Depends on whether you want a git tree or full patches for this.
+I'd prefer not doing it myself, if you already offer to do it.
 
-Suppose multiple threads hitting the trap at the same time, every thread
-will end up failing the check and allocating a new slot for it, at the
-end the slowest thread will end up setting the value.
+I guess the hardest part is splitting the Makefile and Kconfig
+files appropriately. I've done that mostly for the first version,
+so you should probably start from there and move it around some
+more, splitting out the staging parts.
+
+	Arnd
 
 
