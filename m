@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab0ICGeM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 02:34:12 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48709 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177Ab0ICGeK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 02:34:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=RN1aV5hVzLgkh0JN9te+BbR/VTR6O6HZaWkahJJdzzDlYzXOj1oJOwzOln6HXZN9Iq
-         QCki1bnqTLmUEW7SERaoemXzGsEDQdW3vMnDy1pxmlU6rjB/ARFX1YYGCDd+c96Mj6Ch
-         KnTexY6+wGkDzqkBgjEZXUQRSuBbSkz/bs+vY=
-MIME-Version: 1.0
-Date: Fri, 3 Sep 2010 12:04:09 +0530
-Message-ID: <AANLkTimSsj5eW1Vy3g7S0XCKRcZ0fZ0jQ6_9VpjVMYcj@mail.gmail.com>
-Subject: Crash on reducing the kernel mem.
-From: Prabhu Chawandi <prabhu.chavandi@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        kernelnewbies@nl.linux.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753055Ab0ICGgp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 02:36:45 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:60262 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab0ICGgo convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:1>);
+	Fri, 3 Sep 2010 02:36:44 -0400
+Message-Id: <4C80B39B02000078000141B9@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 03 Sep 2010 07:36:43 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <heukelum@fastmail.fm>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: fix CFI coverage for error_entry()
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+The scope should really extend to the end of the function, not the
+return location.
 
- I am using MIPS processor, with 256 MB RAM. currently I am using 128
-M for drivers and 128 M for Kernel. I tried to allocate more memory
-for Drivers,
-surprisingly I got crash when I reduced kernel memory to 110 M. My
-debugging took me to USB controller, which was not reset in
-bootloader.
+(Subject was wrong in the variant I sent yesterday.)
 
-I am not having any clue, why it didnt crash with 128 M ? How reducing
-memory  for kernel bringing it up ?
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Acked-by: Alexander van Heukelum <heukelum@fastmail.fm>
 
-Or am I going in wrong path ?
+---
+ arch/x86/kernel/entry_64.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-please share your views.
+--- linux-2.6.36-rc3/arch/x86/kernel/entry_64.S
++++ 2.6.36-rc3-x86_64-error_entry-unwind-scope/arch/x86/kernel/entry_64.S
+@@ -1445,7 +1445,6 @@ error_swapgs:
+ error_sti:
+ 	TRACE_IRQS_OFF
+ 	ret
+-	CFI_ENDPROC
+ 
+ /*
+  * There are two places in the kernel that can potentially fault with
+@@ -1470,6 +1469,7 @@ bstep_iret:
+ 	/* Fix truncated RIP */
+ 	movq %rcx,RIP+8(%rsp)
+ 	jmp error_swapgs
++	CFI_ENDPROC
+ END(error_entry)
+ 
+ 
 
-Thanks,
-prabhu
+
+
