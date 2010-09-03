@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab0ICGx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 02:53:56 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:59747 "HELO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752227Ab0ICGxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 02:53:54 -0400
-Message-ID: <4C809B63.2040802@snapgear.com>
-Date: Fri, 3 Sep 2010 16:53:23 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] Fix M68K irqflags
-References: <4C804F3A.8020001@snapgear.com> <19747.1283422807@redhat.com> <20100902102203.19806.39028.stgit@warthog.procyon.org.uk> <7077.1283496259@redhat.com>
-In-Reply-To: <7077.1283496259@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Sep 2010 06:53:41.0968 (UTC) FILETIME=[BEAE7D00:01CB4B34]
+	id S1752946Ab0ICHIj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 03:08:39 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:54288 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab0ICHIi convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Fri, 3 Sep 2010 03:08:38 -0400
+Message-Id: <4C80BB1502000078000141D7@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 03 Sep 2010 08:08:37 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Fenghua Yu" <fenghua.yu@intel.com>
+Cc: "r.marek@assembler.cz" <r.marek@assembler.cz>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [PATCH] x86/hwmon: fix configuration and initialization of
+	 coretemp and pkgtemp
+References: <4C7FB8370200007800013F40@vpn.id2.novell.com>
+ <20100902212505.GA31811@fenghua-desk.sc.intel.com>
+In-Reply-To: <20100902212505.GA31811@fenghua-desk.sc.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells wrote:
-> Greg Ungerer <gerg@snapgear.com> wrote:
+>>> On 02.09.10 at 23:25, Fenghua Yu <fenghua.yu@intel.com> wrote:
+>> --- linux-2.6.36-rc3/arch/x86/include/asm/cpufeature.h
+>> +++ 2.6.36-rc3-x86-hwmon/arch/x86/include/asm/cpufeature.h
+>> @@ -168,6 +168,7 @@
+>>  #define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
+>>  #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
+>>  #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
+>> +#define X86_FEATURE_DTS		(7*32+31) /* Digital Thermal Sensor */
 > 
->>>  -	DEFINE(THREAD_SIZE, THREAD_SIZE);
->>> -
->> This breaks final link due to missing THREAD_SIZE definition in head.S:
->>
->>   LD      vmlinux
->> arch/m68knommu/platform/coldfire/head.o: In function `_clear_bss':
->> (.head.text+0xa4): undefined reference to `THREAD_SIZE'
->>
->>
->> Without that asm-offsets.c change it works on my ColdFire boards.
->> I am happy with it:
+> Is there any paticular reason to chose 7*32+31 instead of 7*32+7?
+
+Oh, right, I actually wanted to changes this before final submission
+(I coded it this way locally to avoid eventual collisions until I would
+get to submit this).
+
+>> --- linux-2.6.36-rc3/drivers/hwmon/coretemp.c
+>> +++ 2.6.36-rc3-x86-hwmon/drivers/hwmon/coretemp.c
+>> @@ -423,9 +423,18 @@ static int __cpuinit coretemp_device_add
+>>  	int err;
+>>  	struct platform_device *pdev;
+>>  	struct pdev_entry *pdev_entry;
+>> -#ifdef CONFIG_SMP
+>>  	struct cpuinfo_x86 *c = &cpu_data(cpu);
+>> -#endif
+>> +
+>> +	/*
+>> +	 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
+>> +	 * sensors. We check this bit only, all the early CPUs
+>> +	 * without thermal sensors will be filtered out.
+>> +	 */
+>> +	if (!cpu_has(c, X86_FEATURE_DTS)) {
+>> +		printk(KERN_INFO DRVNAME ": CPU (model=0x%x)"
+>> +		       " has no thermal sensor.\n", c->x86_model);
+>> +		return 0;
 > 
-> With that, I get a duplicate reference to THREAD_SIZE.  head.S should include
-> asm/thread_info.h rather than THREAD_SIZE being redefined in asm-offsets.
-> 
->   CC      init/do_mounts_rd.o
-> In file included from /warthog/nfs/linux-2.6-fscache/arch/m68k/include/asm/asm-offsets.h:1,
->                  from arch/m68knommu/platform/coldfire/entry.S:36:
-> include/generated/asm-offsets.h:46:1: warning: "THREAD_SIZE" redefined
-> In file included from /warthog/nfs/linux-2.6-fscache/arch/m68k/include/asm/thread_info.h:2,
->                  from arch/m68knommu/platform/coldfire/entry.S:32:
-> /warthog/nfs/linux-2.6-fscache/arch/m68k/include/asm/thread_info_no.h:27:1: warning: this is the location of the previous definition
+> Return an error (e.g. -ENODEV) could be better because there is no device for
+> this driver. Then caller may handle this error accordingly (no caller 
+> handles
+> the error currently, though).
 
-Yes, I get that too. I just hadn't tracked down why that was yet.
+No, the intention of the change is for the code to remain logically
+the same as it was - since the failed check previously only resulted
+in a message getting printed, returning an error indication
+(irrespective of there not being a check at the call sites) didn't
+seem right to me.
 
+Jan
 
-> Unfortunately, I don't have a binutils that can handle the funny Coldfire
-> instructions.  Can you point me at a Coldfire toolchain?
-
-This is what I currently use:
-
-http://www.uclinux.org/pub/uClinux/m68k-elf-tools/tools-20080626/m68k-uclinux-tools-20080626.sh
-
-Its just a binutils-2.18 and gcc-4.2.4 configured for m68k-uclinux
-target.
-
-Regards
-Greg
-
-
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
