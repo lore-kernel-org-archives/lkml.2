@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab0ICBEI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 21:04:08 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64308 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab0ICBEH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 21:04:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=ddCVtk530sddpeUJxlpNe52KjVzzt00EQfjBbhj1LhROC2xQN97s5Ru8bG/BrzdF56
-         dWZprNIBnlcAo+EU4ZwTIR8Tm1QSrfEgJnP3mhuc5Ow1pND6xgyBCU5nszxa70Qsbh0w
-         rMf+6GMLKXvZgvG1kAEA0O1E24QUOWQMUcY3U=
-Subject: [PATCH] Input: tps6507x-ts - call input_unregister_device instead
-	of input_free_device in tps6507x_ts_remove
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Todd Fischer <todd.fischer@ridgerun.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Content-Type: text/plain
-Date: Fri, 03 Sep 2010 09:08:07 +0800
-Message-Id: <1283476087.5439.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1752910Ab0ICBE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 21:04:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59223 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751217Ab0ICBE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 21:04:57 -0400
+Message-ID: <4C804AE8.1090203@cn.fujitsu.com>
+Date: Fri, 03 Sep 2010 09:10:00 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: David Miller <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Dave Jones <davej@redhat.com>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] cls_cgroup: Fix rcu lockdep warning
+References: <4C7F446F.8040303@cn.fujitsu.com> <1283423916.2059.1847.camel@laptop>
+In-Reply-To: <1283423916.2059.1847.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/input/touchscreen/tps6507x-ts.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Peter Zijlstra wrote:
+> On Thu, 2010-09-02 at 14:30 +0800, Li Zefan wrote:
+>> Calling task_subsys_state() without holding rcu_read_lock or
+>> cgroup_mutex can cause lockdep warning.
+>>
+> 
+> That is not a suitable changelog.
+> 
+> Was the warning correct? Is your patch correct? What does RCU protect
+> here and why can we use classid after dropping it.
+> 
+> Simply frobbing code to make the warning go away is not good.
+> 
+> 
 
-diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
-index 7286209..c8c136c 100644
---- a/drivers/input/touchscreen/tps6507x-ts.c
-+++ b/drivers/input/touchscreen/tps6507x-ts.c
-@@ -359,7 +359,7 @@ static int __devexit tps6507x_ts_remove(struct platform_device *pdev)
- 	cancel_delayed_work_sync(&tsc->work);
- 	destroy_workqueue(tsc->wq);
- 
--	input_free_device(input_dev);
-+	input_unregister_device(input_dev);
- 
- 	tps6507x_dev->ts = NULL;
- 	kfree(tsc);
--- 
-1.7.2
+task->cgroups and task->cgroups->subsys[i] are protected by RCU.
+So we avoid accessing invalid pointers here. This can happen,
+for example, when you are deref those pointers while someone move
+@task from one cgroup to another.
 
-
-
+otoh, there is no lock rule for ->classid.
