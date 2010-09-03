@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341Ab0ICJG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:06:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49467 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754432Ab0ICJGZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:06:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=osvk46kEFEc53FSlrIGqOYaB4PQQ/86bDZTFZAFAngMwMW65LyCr9hsm7vr6F7brBr
-         BW+mhdyOvqJ+f6dqJMpgKecVaBvk8r+v19RC4XlHavxuUxsT48PC23g9KEznMzIY0Xt2
-         /qU/61ZaO3GN/bdRJMHTA0oqzSjsg/FeJ0qro=
-Date: Fri, 3 Sep 2010 09:06:20 +0000
-From: Jarek Poplawski <jarkao2@gmail.com>
-To: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: [Bug #16626] Machine hangs with EIP at skb_copy_and_csum_dev
-Message-ID: <20100903090620.GA6645@ff.dom.local>
-References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera> <4AUWBNzTkbD.A.ey.cGueMB@chimera> <courier.4C7C99F2.00001F74@fs.ru.acad.bg> <20100831192659.GA3093@del.dom.local> <1283338251.2556.124.camel@edumazet-laptop> <4C80AB34.20501@fs.uni-ruse.bg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C80AB34.20501@fs.uni-ruse.bg>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756245Ab0ICJIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:08:51 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:57955 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753200Ab0ICJIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 05:08:49 -0400
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH 1/3] mm: page allocator: Update free page counters after pages are placed on the free list
+Date: Fri,  3 Sep 2010 10:08:44 +0100
+Message-Id: <1283504926-2120-2-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283504926-2120-1-git-send-email-mel@csn.ul.ie>
+References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 11:00:52AM +0300, Plamen Petrov wrote:
-> ???? 01.9.2010 ??. 13:50, Eric Dumazet ????????????:
->
-> I confirm that the above patch applied on top of v2.6.36-rc3 does not
-> show the problems that all the kernels since v2.6.35 (both stable
-> and Linus' tree) had.
->
-> My problematic machine has been running the patched 36-rc3 for 36 hours,  
-> and couning, with "generic receive offload" enabled only my tg3 nic.
->
-> Thank you very much for the wonderful job, Eric!
-> Thanks to you, too, Jarek!
+When allocating a page, the system uses NR_FREE_PAGES counters to determine
+if watermarks would remain intact after the allocation was made. This
+check is made without interrupts disabled or the zone lock held and so is
+race-prone by nature. Unfortunately, when pages are being freed in batch,
+the counters are updated before the pages are added on the list. During this
+window, the counters are misleading as the pages do not exist yet. When
+under significant pressure on systems with large numbers of CPUs, it's
+possible for processes to make progress even though they should have been
+stalled. This is particularly problematic if a number of the processes are
+using GFP_ATOMIC as the min watermark can be accidentally breached and in
+extreme cases, the system can livelock.
 
-Not at all! I only messed up a bit :-(
+This patch updates the counters after the pages have been added to the
+list. This makes the allocator more cautious with respect to preserving
+the watermarks and mitigates livelock possibilities.
 
-All credits to Eric and Plamen!
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/page_alloc.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-Thanks again,
-Jarek P.
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a9649f4..97d74a0 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -588,12 +588,12 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+ {
+ 	int migratetype = 0;
+ 	int batch_free = 0;
++	int freed = count;
+ 
+ 	spin_lock(&zone->lock);
+ 	zone->all_unreclaimable = 0;
+ 	zone->pages_scanned = 0;
+ 
+-	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
+ 	while (count) {
+ 		struct page *page;
+ 		struct list_head *list;
+@@ -621,6 +621,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+ 			trace_mm_page_pcpu_drain(page, 0, page_private(page));
+ 		} while (--count && --batch_free && !list_empty(list));
+ 	}
++	__mod_zone_page_state(zone, NR_FREE_PAGES, freed);
+ 	spin_unlock(&zone->lock);
+ }
+ 
+@@ -631,8 +632,8 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+ 	zone->all_unreclaimable = 0;
+ 	zone->pages_scanned = 0;
+ 
+-	__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
+ 	__free_one_page(page, zone, order, migratetype);
++	__mod_zone_page_state(zone, NR_FREE_PAGES, 1 << order);
+ 	spin_unlock(&zone->lock);
+ }
+ 
+-- 
+1.7.1
+
