@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab0ICBMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 21:12:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37153 "EHLO smtps.tip.net.au"
+	id S1752646Ab0ICBOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 21:14:21 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17207 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750761Ab0ICBMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 21:12:12 -0400
-Date: Fri, 3 Sep 2010 11:12:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: manual merge of the galak tree with the powerpc-merge
- tree
-Message-Id: <20100903111202.6529b9c4.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__3_Sep_2010_11_12_02_+1000_FoOh2.BmjlSlcK1B"
+	id S1750761Ab0ICBOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 21:14:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,310,1280732400"; 
+   d="scan'208";a="603267101"
+From: "Wang, Qi" <qi.wang@intel.com>
+To: Greg KH <gregkh@suse.de>
+CC: Greg KH <greg@kroah.com>, "meego-dev@meego.com" <meego-dev@meego.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
+        Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Date: Fri, 3 Sep 2010 09:13:43 +0800
+Subject: RE: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+Thread-Topic: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+Thread-Index: ActKoWLFwdXNfO+OSYKrGDRT+gq6rAAY60lA
+Message-ID: <D5AB6E638E5A3E4B8F4406B113A5A19A2A56E877@shsmsx501.ccr.corp.intel.com>
+References: <4C7E441E.4090006@dsn.okisemi.com>
+ <20100902010236.GA21782@kroah.com>
+ <000601cb4a47$b1a7d1d0$66f8800a@maildom.okisemi.com>
+ <20100902032227.GA27463@suse.de>
+ <D5AB6E638E5A3E4B8F4406B113A5A19A2A56E53B@shsmsx501.ccr.corp.intel.com>
+ <002b01cb4a6a$3ae499c0$66f8800a@maildom.okisemi.com>
+ <20100902131913.GB1021@suse.de>
+In-Reply-To: <20100902131913.GB1021@suse.de>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o831EVXl018091
 
---Signature=_Fri__3_Sep_2010_11_12_02_+1000_FoOh2.BmjlSlcK1B
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Greg KH,
 
-Hi Kumar,
+When all the drivers are accepted by the upstream, our source-forge is useless. Currently it's a temporary site for us to smoke test the driver quality.
 
-Today's linux-next merge of the galak tree got a conflict in
-arch/powerpc/platforms/85xx/mpc85xx_mds.c between commit
-6d4f2fb0860c36e7ef16cc41126242a8b6542771 ("powerpc/85xx: Fix compilation
-of mpc85xx_mds.c") from the powerpc-merge tree and commit
-5dc45967402dd124980fce88d34d7f4a012a381b ("powerpc/85xx: Fix compile
-error in mpc85xx_mds.c") from the galak tree.
+Best Regards,
+Qi.
 
-I used the version in the powerpc-merge tree as the inititalisation of np
-is unnecessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__3_Sep_2010_11_12_02_+1000_FoOh2.BmjlSlcK1B
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMgEtiAAoJEDMEi1NhKgbsh6oH/jrfmOL7kCK6FhIe5T7E4nDi
-HE/vSbMMW5tPQupQTy2srr9drBupSnBUg6EMuJJrbHmk4c+0iD3YjtmT4RYHYHNG
-oy05IccAIYmNuf+w3zOY/CewZPTr/ibLNMdbML7C1OrR3+RY6ZCfCcpTDBcy4COA
-LBBLfTgA4176QRVhcU7YdckxeSCVyB6K3vXkNCJNUpnERoJzEWV7XMe056/7DiuR
-Ij/zGn5LdGyS4zHbHTOEHr4vZDWIR/acwKx5c5ro0hvIi5CrMeTdOxM1n+BXLyT6
-Q1L7jAs221gCwGAdNrv0nH2Pci5OsS+eyys8wBMd13ruUhzsTAR2h+YnlAjM/tc=
-=DHLf
------END PGP SIGNATURE-----
-
---Signature=_Fri__3_Sep_2010_11_12_02_+1000_FoOh2.BmjlSlcK1B--
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Thursday, September 02, 2010 9:19 PM
+> To: Masayuki Ohtake
+> Cc: Wang, Qi; Greg KH; meego-dev@meego.com; LKML; Wang, Yong Y; Khor,
+> Andrew Chih Howe; arjan@linux.intel.com; alan@linux.intel.com; Foster,
+> Margie; Tomoya MORINAGA
+> Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_PHUB driver to 2.6.35
+> 
+> On Thu, Sep 02, 2010 at 03:44:00PM +0900, Masayuki Ohtake wrote:
+> > Hi Qi-san
+> >
+> > I will sync this phub patch to source-forge by today.
+> 
+> You are going to delete this version when the driver is merged into the
+> kernel tree, right?  Please don't try to maintain the code external to
+> the kernel, that never works properly.
+> 
+> thanks,
+> 
+> greg k-h
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
