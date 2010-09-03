@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab0ICCpd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 22:45:33 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54768 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755003Ab0ICCpc convert rfc822-to-8bit (ORCPT
+	id S1755617Ab0ICCzW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 22:55:22 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:60935 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003Ab0ICCzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 22:45:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=uwiJ6y9LD3Wa9O9QgvWeUR1Ac/udfykqZ+8kTNI1lwoXPd+0dvkCTV6jLvTrA4AQNR
-         JY+o/uQTzbr5YCFSJyHyQRbqjHjMhMTpjsv5tRslRj8tgDCTnUGz9xvpolPzIDZoHFbu
-         pKzkgbmGcxA7HSwf+ydoI0FCv3cVaR4L8qB+8=
+	Thu, 2 Sep 2010 22:55:21 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C806388.9020509@jp.fujitsu.com>
+Date: Fri, 03 Sep 2010 11:55:04 +0900
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikBOUSGYkopdUcV+5KsayRi-_88kktMLv=KXRU0@mail.gmail.com>
-References: <AANLkTi=Y7RmojC2+1Zdw0jeGm99Gj7anVqReJkrgDmRg@mail.gmail.com>
- <20100902121853.e90f6c53.randy.dunlap@oracle.com> <AANLkTinehv75C+xhsDA_7HHoT9m_BkmL1aE_oyM9BJO4@mail.gmail.com>
- <AANLkTikBOUSGYkopdUcV+5KsayRi-_88kktMLv=KXRU0@mail.gmail.com>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Thu, 2 Sep 2010 23:45:12 -0300
-Message-ID: <AANLkTin9cX5S1ToK=2yFN5TsqH25aN2fFoCdvSizqOH9@mail.gmail.com>
-Subject: Re: [RFC] Fix typos
-To: Phillip Lougher <phil.lougher@gmail.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org
+To: David Miller <davem@davemloft.net>
+CC: rostedt@goodmis.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: Re: [PATCH v4 0/5] netdev: show a process of packets
+References: <4C72422C.5070102@jp.fujitsu.com>	<1283212210.3656.84.camel@gandalf.stny.rr.com>	<4C80592B.2060406@jp.fujitsu.com> <20100902.191741.233696520.davem@davemloft.net>
+In-Reply-To: <20100902.191741.233696520.davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 23:29, Phillip Lougher <phil.lougher@gmail.com> wrote:
-> On Thu, Sep 2, 2010 at 8:31 PM, Lucas De Marchi
-> <lucas.de.marchi@gmail.com> wrote:
->> On Thu, Sep 2, 2010 at 16:18, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->
->>> I'm not so sure about "is rose up" being better.  and what about "ar"?
+(2010/09/03 11:17), David Miller wrote:
+> From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+> Date: Fri, 03 Sep 2010 11:10:51 +0900
+> 
+>> Thanks many acks. and I have one question.
 >>
->> I'm only changing words with 3 chars or more, because otherwise I
->> would have a lot of false positives, but I think I can add this word
->> without much trouble.
+>> These patches have several component.
 >>
->
-> The problem with "ar" is it is too short to know for certain what it
-> should be...  "ar" though likely a typo for "are" could also be a typo
-> for e.g. "arm", "arc", "arg", "ark", and "arp".
->
-> Perhaps in this and similar cases the script should flag these errors
-> for human attention rather than automatically fixing them.
+>> Patch1 is kernel component, but patch2-5 are netdev component.
+>> What tree is good to be included ?
+>> If it is not net-next, I must rebase to another tree.
+> 
+> I would prefer it goes into the tracing tree or whatever is the most appropriate
+> for patch #1.
+> 
 
-Yes, after enabling it I've saw a lot of false positives and wrong
-fixes. Even cases where "ar" was the correct one, referring to the ar
-tool.
+O.K. I'll rebase to linux-2.6-tip.
 
-Now, I put this together with other warnings.
+Thanks,
+Koki Sanagi.
 
-
-
--- 
-
-Lucas De Marchi
