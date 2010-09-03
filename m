@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab0ICMB7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 08:01:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63195 "EHLO
+	id S1757898Ab0ICMN2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 08:13:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61469 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373Ab0ICMB4 (ORCPT
+	with ESMTP id S1756681Ab0ICMN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 08:01:56 -0400
+	Fri, 3 Sep 2010 08:13:27 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
+To: mhw@wittsend.com
 Subject: Re: [RFC 0/5] tty: move stuff around
-Date: Fri, 3 Sep 2010 14:01:39 +0200
+Date: Fri, 3 Sep 2010 14:13:00 +0200
 User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        Roger Wolff <R.E.Wolff@bitwizard.nl>,
-        "Michael H. Warfield" <mhw@wittsend.com>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <201008311126.45190.arnd@arndb.de> <AANLkTinUjfWqEdOQoomR=TZnQEsiGj1wxvbv5c_MtZKp@mail.gmail.com>
-In-Reply-To: <AANLkTinUjfWqEdOQoomR=TZnQEsiGj1wxvbv5c_MtZKp@mail.gmail.com>
+Cc: Rogier Wolff <R.E.Wolff@bitwizard.nl>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg KH <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mike Frysinger <vapier.adi@gmail.com>
+References: <1283115995-4734-1-git-send-email-arnd@arndb.de> <20100831104205.GA2301@bitwizard.nl> <1283440567.5202.19.camel@canyon.wittsend.com>
+In-Reply-To: <1283440567.5202.19.camel@canyon.wittsend.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009031401.39224.arnd@arndb.de>
-X-Provags-ID: V02:K0:USyrBbIyKf9lR1UoDSDvzIV1G1ZFHFr4IlzVjWXPVSk
- J/Nwt3lKN+VvRLbh5zx5R+MxGixMpQZIeriBZPLC8Sm9ll/cUg
- EFMb5mR9w6FYzsYHBfVxsbg+WceVYqj4wBwF42YeF5VfDX8UiY
- aY2UDfJwuXiWaPBB/LYZRIKUrkq+bLNtTygCUIcvJD07Y0q855
- b+iJPVa9xdZy5t06iEwJg==
+Message-Id: <201009031413.00266.arnd@arndb.de>
+X-Provags-ID: V02:K0:D6CsEGtj9WNZ81WB6cZi0y8YHyAPLQUtEYmzxx1USGD
+ MMeLMnnOIHOvkrgWIY71RyXNE5AXvRij1pb2qv08H1NHDAsdHY
+ lUQrMCdz2DlTmezDe647OXj6iqPIwvNe74op+M+qpAfuOfgDjt
+ wPmIhp8Vsp9m2ExYBVNVfQ9BI6QQwJEQRN+OxZkInTm6p3onDH
+ LGOTDFl395a1/qjIMr2xQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 September 2010, Geert Uytterhoeven wrote:
-> On Tue, Aug 31, 2010 at 11:26, Arnd Bergmann <arnd@arndb.de> wrote:
->   - generic_serial-based:
+On Thursday 02 September 2010, Michael H. Warfield wrote:
+> On Tue, 2010-08-31 at 12:42 +0200, Rogier Wolff wrote: 
+> > The question is whether I want the drivers I wrote to stay or to
+> > go away?
 > 
->       o MVME147_SCC
->       o MVME162_SCC
->       o BVME6000_SCC
->       o A2232
+> > I was paid years ago to make Linux support the Specialix cards. It
+> > started with one card from their line of "solutions", but the others
+> > followed.
 > 
->     All of these were marked BROKEN lately due to generic_serial,
-> while there's even a
->     new ATARI_SCC under "active" development...
+> My story is very similar with the Computone Intelliport II boards.  I
+> was paid (in hardware) by Computone to get their drivers integrated into
+> the mainline kernel and support them.  That was a long long time ago.
+> The boards have not been manufactured in over a decade and the company
+> went of of business a long time ago.  I'm still in touch with several of
+> the old developers that use to work there.
 
-Ok, so I'll keep the plan of moving generic_serial to staging.
- 
->   - plain drivers/char:
-> 
->       o SERIAL167
->       o AMIGA_BUILTIN_SERIAL
+Ok, so it sounds both of you successfully managed to maintain the device
+drivers way beyond the life time of the hardware, great work!
 
-Since these are the builtin ports for the Amiga and MVME16x
-platforms, I suppose we should keep them around as long as the
-platforms themselves are there and the code builds.
-
->   - drivers/serial:
-> 
->       o SERIAL_PMACZILOG (Mac)
-> 
->     Sun 3/3x support might be (re)added to SERIAL_SUNZILOG
-
-Same category I guess.
-
-Thanks for your feedback!
+Let's send the drivers into their well-earned retirement in drivers/staging
+where they can die from a natural cause. If someone still has a use for
+them after all, we can always bring them back and he or she can become
+the new maintainer ;-).
 
 	Arnd
