@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab0ICUAN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 16:00:13 -0400
-Received: from mail.perches.com ([173.55.12.10]:1277 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753348Ab0ICUAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 16:00:11 -0400
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-From: Joe Perches <joe@perches.com>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, Ralf Baechle <ralf@linux-mips.org>,
-        ML netdev <netdev@vger.kernel.org>, MeeGo <meego-dev@meego.com>,
-        Maxime Bizon <mbizon@freebox.fr>, LKML <linux-kernel@vger.kernel.org>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        John Linn <john.linn@xilinx.com>, Greg Rose <gregory.v.rose@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
-        Toshiharu Okada <okada533@dsn.okisemi.com>,
-        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
-        Takahiro Shimizu <shimizu394@dsn.okisemi.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>
-In-Reply-To: <4C81019E.1010808@dsn.okisemi.com>
-References: <4C81019E.1010808@dsn.okisemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Sep 2010 13:00:08 -0700
-Message-ID: <1283544008.5387.3.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1756951Ab0ICUD4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 16:03:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51603 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415Ab0ICUDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 16:03:53 -0400
+Date: Fri, 3 Sep 2010 13:02:13 -0700
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
+        joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+        linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
+        JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@kernel.dk,
+        dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com, mel@csn.ul.ie,
+        yinghan@google.com, gthelen@google.com
+Subject: [PATCH V5 2/8] Cleancache: cleancache_poolid in superblock
+Message-ID: <20100903200212.GA4581@ca-server1.us.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.16 (2007-06-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-03 at 23:09 +0900, Masayuki Ohtake wrote:
-> Thank you for your comments and patch.
-> I have modified.
-> Gigabit Ethernet driver of Topcliff PCH
-> Patch created against 2.6.35
+[PATCH V5 2/8] Cleancache: cleancache_poolid in superblock
 
-Hello Ohtake.
+Add cleancache_poolid to superblock structure... not tied
+to CONFIG_CLEANCACHE so as to avoid unnecessary clutter.
 
-It's a bit tedious to track changes in this code when you
-post the entire patch.
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-Do you have a git tree for these Topcliff changes?
+Diffstat:
+ fs.h                                     |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-
+--- linux-2.6.36-rc3/include/linux/fs.h	2010-08-29 09:36:04.000000000 -0600
++++ linux-2.6.36-rc3-cleancache/include/linux/fs.h	2010-08-30 09:20:43.000000000 -0600
+@@ -1381,6 +1381,11 @@ struct super_block {
+ 	 * generic_show_options()
+ 	 */
+ 	char *s_options;
++
++	/*
++	 * Saved pool identifier for cleancache (-1 means none)
++	 */
++	int cleancache_poolid;
+ };
+ 
+ extern struct timespec current_fs_time(struct super_block *sb);
