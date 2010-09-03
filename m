@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597Ab0ICVgH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 17:36:07 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:41544 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079Ab0ICVgG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 17:36:06 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C816A00.9030507@s5r6.in-berlin.de>
-Date: Fri, 03 Sep 2010 23:34:56 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	id S1757608Ab0ICVo4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 17:44:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:35270 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754075Ab0ICVoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 17:44:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,315,1280732400"; 
+   d="scan'208";a="834721060"
+Date: Fri, 3 Sep 2010 14:34:56 -0700
+From: Fenghua Yu <fenghua.yu@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
+        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        lm-sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH] therm_throt.c: Fix error handling in
+	thermal_throttle_add_dev
+Message-ID: <20100903213456.GA22124@fenghua-desk.sc.intel.com>
+References: <1283474726-20109-1-git-send-email-fenghua.yu@intel.com> <20100903093553.GA6821@elte.hu>
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: bugzilla-daemon@bugzilla.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [Bug 17752] 2.6.36-rc3: inconsistent lock state (iprune_sem,
- shrink_icache_memory)
-References: <bug-17752-4803@https.bugzilla.kernel.org/> <201009031907.o83J7tdw011454@demeter1.kernel.org>
-In-Reply-To: <201009031907.o83J7tdw011454@demeter1.kernel.org>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100903093553.GA6821@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bugzilla-daemon@bugzilla.kernel.org wrote:
-> https://bugzilla.kernel.org/show_bug.cgi?id=17752
+On Fri, Sep 03, 2010 at 02:35:53AM -0700, Ingo Molnar wrote:
 > 
+> * Fenghua Yu <fenghua.yu@intel.com> wrote:
 > 
-> Maciej Rutecki <maciej.rutecki@gmail.com> changed:
+> > From: Fenghua Yu <fenghua.yu@intel.com>
+> > 
+> > Warn when sysfs_add_file_to_group fails.
+> > 
+> > Also add missing curly braces.
+> > 
+> > Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> > ---
+> >  arch/x86/kernel/cpu/mcheck/therm_throt.c |   14 ++++++++++----
+> >  1 files changed, 10 insertions(+), 4 deletions(-)
 > 
->            What    |Removed                     |Added
-> ----------------------------------------------------------------------------
->              Blocks|                            |16444
+> > +               WARN_ON(err);
+> 
+> Hm, we tend to use WARN_ON_ONCE(), to avoid repeat spamming of the 
+> syslog. Also, and perhaps more importantly, WARN_ON() is not a 
+> particularly smart way to handle errors. How do other drivers handle 
+> sysfs registration failures?
 
-This is probably not a regression.  See this earlier discussion:
-http://lkml.org/lkml/2010/1/15/76
+drivers/pci/pcie/aspm.c doesn't collect error from sysfs_add_file_to_group. This
+driver is similar to our case because neither of sysfs_add_file_to_group error
+is fatal and we can ignore the error and continue to add other files.
 
-And another report, coincidentally at the same time:
-http://lkml.org/lkml/2010/1/18/108
+Other drivers exit function when sysfs_add_file_to_group fails. This assumes
+there is dependency among each devices and an earlier failure prevents from
+later sysfs_add_file_to_group. This is different from our case.
 
-As I understand Christoph's post on January 19, several code paths are
-independently affected:
-http://lkml.org/lkml/2010/1/19/267
-(Maybe some of those have been fixed in the meantime.)
+> 
+> Also, that's not the only thing the patch does:
+> 
+> > @@ -211,20 +211,26 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev)
+> 
+> > -	return err;
+> > +	return 0;
+> 
+> How is the ignoring of an error and turning it into a WARN_ON() a fix? 
+> Either it makes no sense to return errors - in which case the whole 
+> add_dev method needs to be fixed in all drivers - or it makes sense, in 
+> which case the behavior here is inconsistent.
+> 
+> At minimum more explanation is needed in the changelog.
 
-I don't see in my trace from September 1 which filesystem caused the
-particular lockdep report.  I may have unmounted ext4, vfat, or fuse prior to
-that.
+"return err" always returns the err value from the last sysfs_add_file_to_group
+I.e. one earlier err value is not reflected by thermal_throttle_add_dev(). If
+you think the original code is ok, I can keep the original error handling code
+and just have the missing curly braces fix.
 
-Dave wrote on September 2:
->> Any memory allocation that enters reclaim in the unmount path will
->> generate this warning. The problem is that the normal memory reclaim
->> path is:
->> 
->> 	alloc -> reclaim -> shrink_slab -> shrink_icache_memory -> iprune_sem -> s_umount
->> 
->> while unmmount does:
->> 
->> 	unmount -> s_umount -> alloc -> lockdep goes boom!
->> or
->> 	unmount -> iprune_sem -> alloc -> lockdep goes boom!
->> 
->> I never got a straight answer on this, but it the warnings are
->> indicating that you must use GFP_NOFS allocations for every
->> allocation in the unmount path, which is kind of hard to know
->> about given the code is not unomunt path specific....
+To log an error, the patch just warns on each error but returns 0 because
+neither of the error is fatal. If you think this option is ok, I can change
+WAR_ON to WARN_ON_ONCE.
 
-Is it feasible to add a gfp_flag argument to all call chains that could lead
-to allocations in unmount?
--- 
-Stefan Richter
--=====-==-=- =--= ---==
-http://arcgraph.de/sr/
+Or other options could be:
+
+1. Just calling sysfs_add_file_to_group() without collecting returned error and
+return 0 at the end (driver/pci/pcie/aspm.c does like this). The drawback is
+there is no error logged if an unlikely errorr occurs. But user can see some
+files are missing in sysfs.
+2. Or collect errors in err1, err2, etc for each sysfs_add_file_to_group. At
+the end, return -ENODEV(??) if any err1, err2, etc is not 0. This option makes
+code unreasonable complex to handle unlikely errors.
+
+What do you think?
+
+Thanks.
+
+-Fenghua
