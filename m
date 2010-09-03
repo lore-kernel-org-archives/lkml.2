@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab0ICDa5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 23:30:57 -0400
-Received: from kroah.org ([198.145.64.141]:36303 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752832Ab0ICDa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 23:30:56 -0400
-Date: Thu, 2 Sep 2010 20:27:18 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Simek <michal.simek@petalogix.com>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: linux-next: manual merge of the tty tree with the microblaze
-	tree
-Message-ID: <20100903032718.GA13847@kroah.com>
-References: <20100903130236.1f5f331c.sfr@canb.auug.org.au>
+	id S1756033Ab0ICDbK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 23:31:10 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:44426 "HELO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755964Ab0ICDbH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 23:31:07 -0400
+Message-ID: <4C806BD5.2090000@snapgear.com>
+Date: Fri, 3 Sep 2010 13:30:29 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100903130236.1f5f331c.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Andreas Schwab <schwab@redhat.com>, David Howells <dhowells@redhat.com>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] M68K: Use CONFIG_MMU not __uClinux__ to select m68knommu
+ contributions
+References: <19747.1283422807@redhat.com>	<20100902102158.19806.14133.stgit@warthog.procyon.org.uk>	<m38w3kns4r.fsf@hase.home> <AANLkTikwax-Jb60jT5_TOL=Zkwbgh8FwMk78ncm1dN-P@mail.gmail.com>
+In-Reply-To: <AANLkTikwax-Jb60jT5_TOL=Zkwbgh8FwMk78ncm1dN-P@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Sep 2010 03:30:49.0485 (UTC) FILETIME=[6750FBD0:01CB4B18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 01:02:36PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+Geert Uytterhoeven wrote:
+> On Thu, Sep 2, 2010 at 16:21, Andreas Schwab <schwab@redhat.com> wrote:
+>> David Howells <dhowells@redhat.com> writes:
+>>
+>>> Use CONFIG_MMU not __uClinux__ to select m68knommu contributions as nothing in
+>>> the arch defines __uClinux__ for the build.
+>> You are using the wrong compiler.
 > 
-> Today's linux-next merge of the tty tree got a conflict in
-> drivers/serial/uartlite.c between commit
-> 52ea4a7ef12f286bd68d13a93daaa688f56a1e14 ("serial: Add CONSOLE_POLL
-> support for uartlite") from the microblaze tree and commit
-> 0e5176373d9c9a7741b54ce81a9eea342291bdca ("serial: Add CONSOLE_POLL
-> support for uartlite") from the tty tree.
-> 
-> The same, but slightly different patch. I used the version from the tty
-> tree.
+> it would be nice if you could use the same compiler for m68k and m68knommu, at
+> least for compiling kernels.
 
-Yes please, that's the version that works :)
+It would be very nice :-)
 
-Can someone drop it from the microblaze tree please?
+Regards
+Greg
 
-thanks,
 
-greg k-h
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
