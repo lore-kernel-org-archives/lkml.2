@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab0ICIwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 04:52:45 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:36296 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab0ICIwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 04:52:43 -0400
-To: Valerie Aurora <vaurora@redhat.com>
-CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, neilb@suse.de, viro@zeniv.linux.org.uk,
-        jblunck@suse.de, hch@infradead.org
-In-reply-to: <20100902213315.GA16004@shell> (message from Valerie Aurora on
-	Thu, 2 Sep 2010 17:33:15 -0400)
-Subject: Re: [PATCH 5/5] union: hybrid union filesystem prototype
-References: <20100826183340.027591901@szeredi.hu> <20100826183507.402136609@szeredi.hu> <20100901214238.GC15849@shell> <E1Or5xN-0001uq-Ob@pomaz-ex.szeredi.hu> <20100902213315.GA16004@shell>
-Message-Id: <E1OrS0g-0006Ns-E9@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Fri, 03 Sep 2010 10:52:34 +0200
+	id S1755228Ab0ICIzb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 04:55:31 -0400
+Received: from verein.lst.de ([213.95.11.210]:38263 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752609Ab0ICIza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 04:55:30 -0400
+Date: Fri, 3 Sep 2010 10:55:21 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Arnaud Patard <apatard@mandriva.com>
+Cc: Christoph Hellwig <hch@lst.de>, Bernhard Walle <walle@corscience.de>,
+        linux-mips@linux-mips.org, ralf@linux-mips.org,
+        ddaney@caviumnetworks.com, akpm@linux-foundation.org,
+        ebiederm@xmission.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MIPS: N32: Fix getdents64 syscall for n32
+Message-ID: <20100903085521.GA304@lst.de>
+References: <1283501734-6532-1-git-send-email-walle@corscience.de> <20100903084213.GA32339@lst.de> <m3pqwvb438.fsf@anduin.mandriva.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m3pqwvb438.fsf@anduin.mandriva.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Sep 2010, Valerie Aurora wrote:
-> Hm, I suspect it's more complicated than this.  I looked at how
-> unionfs does it in init_lower_nd() and it requires poking around in
-> VFS internal details in the file system implementation.  So unioning
-> code is not in the VFS, but VFS code is in the union fs.  Progress?  I
-> dunno.
-
-Definitely not progress.
-
-Progress would be if the intents mess would go away.  Which Al's been
-working on for what, one, two years?
-
-Until that's cleared up it's pointless to add hacks like that (which
-in actual fact don't make much sense anyway, NFS will work fine
-without the intents stuff most of the time, only perhaps
-suboptimally).
-
-> > "Fortunately" NFS isn't good for a writable layer of a union for other
-> > reasons, so this isn't a big concern at the moment.
+On Fri, Sep 03, 2010 at 10:53:31AM +0200, Arnaud Patard wrote:
+> Christoph Hellwig <hch@lst.de> writes:
 > 
-> It's the long-term effect on the code structure that concerns me more.
+> Hi,
+> 
+> > I'm not sure why people suddenly started Ccing me on utterly random
+> > patches, but could you guys please bloody stop it?  Thanks!
+> 
+> I guess the explanation is the one below :
+> 
+> $ ./scripts/get_maintainer.pl -f arch/mips/kernel/scall64-n32.S
 
-Nameidata in any filesystem operation should not be in the long term
-design structure (well, in follow_link() it was OK while it was used
-recursiveley, now it's flattened out, it would also be cleaner if it
-didn't get the nameidata).
+I'm certainly not the maintainer of it, nor anything near it.  Whoever
+wrote such a stupid script really needs to be beaten up seriously.
 
-Thanks,
-Miklos
