@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261Ab0ICKcd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 06:32:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45319 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932099Ab0ICKca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 06:32:30 -0400
-Date: Fri, 3 Sep 2010 13:25:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        kvm@vger.kernel.org, virtualization@lists.osdl.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] vhost: error handling fix
-Message-ID: <20100903102543.GA31883@redhat.com>
+	id S1757235Ab0ICKbi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 06:31:38 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:34347 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756972Ab0ICKbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 06:31:35 -0400
+Message-ID: <4C80CDC6.8060100@ct.jp.nec.com>
+Date: Fri, 03 Sep 2010 19:28:22 +0900
+From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Tejun Heo <tj@kernel.org>
+CC: Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com,
+        j-nomura@ce.jp.nec.com, jamie@shareable.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-raid@vger.kernel.org, hch@lst.de
+Subject: Re: [PATCH] block: make sure FSEQ_DATA request has the same rq_disk
+ as the original
+References: <1283162296-13650-1-git-send-email-tj@kernel.org> <1283162296-13650-5-git-send-email-tj@kernel.org> <20100830132836.GB5283@redhat.com> <4C7BB932.1070405@kernel.org> <4C7BD202.4040700@kernel.org> <4C7DFD8F.6070200@ct.jp.nec.com> <4C7FE251.2020003@kernel.org> <4C808BF8.7060402@ct.jp.nec.com> <4C80C0D6.4030405@kernel.org>
+In-Reply-To: <4C80C0D6.4030405@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vhost should set worker to NULL on cgroups attach failure,
-so that we won't try to destroy the worker again on close.
+Hi Tejun,
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+On 09/03/2010 06:33 PM +0900, Tejun Heo wrote:
+> On 09/03/2010 07:47 AM, Kiyoshi Ueda wrote:
+>> By the way, I had been considering a block-layer interface which remaps
+>> struct request and its bios to a block device such as:
+>> void blk_remap_request(struct request *rq, struct block_device *bdev)
+>> {
+>> 	rq->rq_disk = bdev->bd_disk;
+>>
+>> 	__rq_for_each_bio(bio, rq) {
+>> 		bio->bi_bdev = bdev->bd_disk;
+>> 	}
+>> }
+>>
+>> If there is such an interface and remapping drivers use it, then these
+>> kind of issues may be avoided in the future.
+> 
+> I think the problem is more with request initialization.  After all,
+> once bios are packed into a request, they are (or at least should be)
+> just data containers.  We now have multiple request init paths in
+> block layer and different ones initialize different subsets and it's
+> not very clear which fields are supposed to be initialized to what by
+> whom.
+> 
+> But yeah I agree removing discrepancy between request and bio would be
+> nice to have too.  It's not really remapping tho.  Maybe just
+> blk_set_rq_q() or something like that (it should also set rq->q)?
 
-Dave, no need to bother with this one unless you really want to -
-I'll put it on my tree.
+Thank you for pointing it.
+Yes, the interface should also set rq->q.
 
-This is a follow up to Eric's patch - fixes error handling in a similar way.
+About the naming of the interface, blk_set_<something> sounds
+reasonable to me.
+But does blk_set_rq_q() take request and queue as arguments?
+Then, I'm afraid we can't find bdev for bio from given queue.
 
- drivers/vhost/vhost.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 7c75dce..666aa36 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -298,6 +298,7 @@ static long vhost_dev_set_owner(struct vhost_dev *dev)
- 	return 0;
- err_cgroup:
- 	kthread_stop(worker);
-+	dev->worker = NULL;
- err_worker:
- 	if (dev->mm)
- 		mmput(dev->mm);
--- 
-1.7.2.rc0.14.g41c1c
+Thanks,
+Kiyoshi Ueda
