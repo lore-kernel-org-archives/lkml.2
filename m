@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab0ICJG1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 05:06:27 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:33302 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab0ICJGY (ORCPT
+	id S1756341Ab0ICJG3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 05:06:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49467 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432Ab0ICJGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 05:06:24 -0400
-Message-ID: <4C80BA81.20701@canonical.com>
-Date: Fri, 03 Sep 2010 17:06:09 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100820 Thunderbird/3.1.2
+	Fri, 3 Sep 2010 05:06:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=osvk46kEFEc53FSlrIGqOYaB4PQQ/86bDZTFZAFAngMwMW65LyCr9hsm7vr6F7brBr
+         BW+mhdyOvqJ+f6dqJMpgKecVaBvk8r+v19RC4XlHavxuUxsT48PC23g9KEznMzIY0Xt2
+         /qU/61ZaO3GN/bdRJMHTA0oqzSjsg/FeJ0qro=
+Date: Fri, 3 Sep 2010 09:06:20 +0000
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: [Bug #16626] Machine hangs with EIP at skb_copy_and_csum_dev
+Message-ID: <20100903090620.GA6645@ff.dom.local>
+References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera> <4AUWBNzTkbD.A.ey.cGueMB@chimera> <courier.4C7C99F2.00001F74@fs.ru.acad.bg> <20100831192659.GA3093@del.dom.local> <1283338251.2556.124.camel@edumazet-laptop> <4C80AB34.20501@fs.uni-ruse.bg>
 MIME-Version: 1.0
-To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH 0/8] [Resend] ideapad: using EC command to control rf/camera
- power
-References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com> <1282127719.2747.211.camel@localhost> <20100818155128.GA24363@darkside.kls.lan> <4C6CA31D.6030407@canonical.com> <20100819193146.GB32665@darkside.kls.lan> <4C6E2833.6080407@canonical.com> <20100820090824.GA23186@darkside.kls.lan> <4C7505A2.3000402@canonical.com> <20100830181954.GE31068@darkside.kls.lan> <4C7E3DE0.7030209@canonical.com> <20100901195617.GD32589@darkside.kls.lan>
-In-Reply-To: <20100901195617.GD32589@darkside.kls.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C80AB34.20501@fs.uni-ruse.bg>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mario,
+On Fri, Sep 03, 2010 at 11:00:52AM +0300, Plamen Petrov wrote:
+> ???? 01.9.2010 ??. 13:50, Eric Dumazet ????????????:
+>
+> I confirm that the above patch applied on top of v2.6.36-rc3 does not
+> show the problems that all the kernels since v2.6.35 (both stable
+> and Linus' tree) had.
+>
+> My problematic machine has been running the patched 36-rc3 for 36 hours,  
+> and couning, with "generic receive offload" enabled only my tg3 nic.
+>
+> Thank you very much for the wonderful job, Eric!
+> Thanks to you, too, Jarek!
 
-I look at the DSDT again and again but unfortunately can not find anything
-may cause the bluetooth device initial failed. BTEN looks like the switch
-for EC to turn on/off bluetooth, BTST records the status of BTEN and BTPS
-means bluetooth present. But no idea why initial failed after BTEN=1
+Not at all! I only messed up a bit :-(
 
-So I fall back to your suggestion. Have a module parameter to tell module
-not to register rfkill for bluetooth.
+All credits to Eric and Plamen!
 
-I prepare the driver and please spend some time testing. Driver is at
-
-http://kernel.ubuntu.com/git?p=ikepanhc/ideapad-laptop.git;a=blob;f=drivers/platform/x86/ideapad-laptop.c;h=c4cf46a363f3f72d6db5339ec326d282d7e58183;hb=26a58948693b7d25960299a8025e569e68f28937
-
-and you may use "insmod ideapad-laptop.ko no_bt_rfkill=1" for your S12.
-
-For more information, please see the following link:
-
-http://kernel.ubuntu.com/git?p=ikepanhc/ideapad-laptop.git;a=commit;h=26a58948693b7d25960299a8025e569e68f28937
-
-On 09/02/2010 03:56 AM, Mario 'BitKoenig' Holbe wrote:
-> On Wed, Sep 01, 2010 at 07:49:52PM +0800, Ike Panhc wrote:
->> Your log tells a lot. It tells me if the bluetooth init failed. Then we
->> have to turning off and power on again by hw switch to make it alive again.
->>
->> So, I believe we have two issue here.
->> * when rfkill unblock, sometimes bluetooth init failed.
-> 
-> Yes.
-> 
->> * power up system after rfkill block bluetooth, sometimes the cfgbit = 0xc0000
->> Am I correct?
-> 
-> Not completely.
-> 
-> * reboot system after rfkill block bluetooth, sometimes the cfgbit = 0xc0000
-> 
-> I never had cfgbit = 0xc0000 when I power-cycled the system, only when I
-> rebooted it.
-> This is why I belive the second point has virtually the same reason as
-> the first point: bluetooth device initialization fails and thus its
-> detection by BIOS fails and thus ACPI returns 0xc0000 cfg.
-> Hence, I belive chances are high that solving the first point does also
-> solve the second.
-> 
-> While thinking about it... the init problems persisting a reboot could
-> also mean that not the unblock operation is the real issue but the block
-> operation - which probably leaves the bluetooth device in kind of a
-> semi-disabled state or something like that.
-> 
-> 
-> regards
->    Mario
-
+Thanks again,
+Jarek P.
