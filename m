@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153Ab0ICVrP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 17:47:15 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:1546 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932118Ab0ICVrO (ORCPT
+	id S1757630Ab0ICVrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 17:47:43 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:15425 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754075Ab0ICVrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 17:47:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=L4llpo7Z2aSMEK1oy7ATWVt5EXVVQhfYSxTBzolfMNm55/JcsJbj+0uniSzDlfmTIk
-         p25uRhRz7AODxE5268Rw==
-MIME-Version: 1.0
-In-Reply-To: <20100903140649.09dee316.akpm@linux-foundation.org>
-References: <1283096628-4450-1-git-send-email-minchan.kim@gmail.com>
-	<20100903140649.09dee316.akpm@linux-foundation.org>
-Date: Fri, 3 Sep 2010 14:47:03 -0700
-Message-ID: <AANLkTimTpj+CSvGx=HC4qnArBV9jxORkKoDA9eap3_cN@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap system
-From: Ying Han <yinghan@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Venkatesh Pallipadi <venki@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Fri, 3 Sep 2010 17:47:42 -0400
+Date: Sat, 04 Sep 2010 06:47:52 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH] regulators: add support max8952 regulator
+In-reply-to: <20100903094200.GC8381@sirena.org.uk>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Changhwan Youn'" <chaos.youn@samsung.com>, lrg@slimlogic.co.uk
+Message-id: <01e301cb4bb1$ac1fa240$045ee6c0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: ActLTEXAHf2uWOLLTh2PsSwBRlF95wAZN9PA
+References: <1283476524-12820-1-git-send-email-kgene.kim@samsung.com>
+ <20100903094200.GC8381@sirena.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 3, 2010 at 2:06 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
->
-> On Mon, 30 Aug 2010 00:43:48 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
-> > Ying Han reported that backing aging of anon pages in no swap system
-> > causes unnecessary TLB flush.
-> >
-> > When I sent a patch(69c8548175), I wanted this patch but Rik pointed out
-> > and allowed aging of anon pages to give a chance to promote from inactive
-> > to active LRU.
-> >
-> > It has a two problem.
-> >
-> > 1) non-swap system
-> >
-> > Never make sense to age anon pages.
-> >
-> > 2) swap configured but still doesn't swapon
-> >
-> > It doesn't make sense to age anon pages until swap-on time.
-> > But it's arguable. If we have aged anon pages by swapon, VM have moved
-> > anon pages from active to inactive. And in the time swapon by admin,
-> > the VM can't reclaim hot pages so we can protect hot pages swapout.
-> >
-> > But let's think about it. When does swap-on happen? It depends on admin.
-> > we can't expect it. Nonetheless, we have done aging of anon pages to
-> > protect hot pages swapout. It means we lost run time overhead when
-> > below high watermark but gain hot page swap-[in/out] overhead when VM
-> > decide swapout. Is it true? Let's think more detail.
-> > We don't promote anon pages in case of non-swap system. So even though
-> > VM does aging of anon pages, the pages would be in inactive LRU for a long
-> > time. It means many of pages in there would mark access bit again. So access
-> > bit hot/code separation would be pointless.
-> >
-> > This patch prevents unnecessary anon pages demotion in not-swapon and
-> > non-configured swap system. Of course, it could make side effect that
-> > hot anon pages could swap out when admin does swap on.
-> > But I think sooner or later it would be steady state.
-> > So it's not a big problem.
-> > We could lose someting but gain more thing(TLB flush and unnecessary
-> > function call to demote anon pages).
-> >
-> > I used total_swap_pages because we want to age anon pages
-> > even though swap full happens.
->
-> We don't have any quantitative data on the effect of these excess tlb
-> flushes, which makes it difficult to decide which kernel versions
-> should receive this patch.
->
-> Help?
+Mark Brown wrote:
+> 
+Hi,
 
-Andrew:
+Thanks for your review.
 
-We observed the degradation on 2.6.34 compared to 2.6.26 kernel. The
-workload we are running is doing 4k-random-write which runs about 3-4
-minutes. We captured the TLB shootsdowns before/after:
+> On Fri, Sep 03, 2010 at 10:15:24AM +0900, Kukjin Kim wrote:
+> 
+> > +	ret2 = max8649_reg_read(info->i2c, MAX8649_CHIP_ID2);
+> > +	if (ret2 < 0) {
+> > +		dev_err(info->dev, "Failed to detect ID of %s:%d\n",
+> > +			id->name, ret2);
+> >  		goto out;
+> >  	}
+> 
+> If the read fails you'll not set an error code when you jump to out so
+> the probe will report success.  It might be clearer to have separate id
+> variables which you store the read values into if they're OK, just from
+> a legibility point of view.
+> 
+Ok..will fix it.
 
-Before the change:
-TLB: 29435 22208 37146 25332 47952 43698 43545 40297 49043 44843 46127
-50959 47592 46233 43698 44690 TLB shootdowns [HSUM =  662798 ]
+> > -	dev_info(info->dev, "Detected MAX8649 (ID:%x)\n", ret);
+> > +	dev_info(info->dev, "Detected %s (ID:%x %x)\n", id->name, ret,
+ret2);
+> > +
+> > +	info->type = id->driver_data;
+> 
+> It'd be nice to check that the type that was supplied matches the ID
+> read from the chip in case the user got things wrong, just for
+> defensiveness.
 
-After the change:
-TLB: 2340 3113 1547 1472 2944 4194 2181 1212 2607 4373 1690 1446 2310
-3784 1744 1134 TLB shootdowns [HSUM =  38091 ]
+Ok..will modify as per your suggestion.
 
-Also worthy to mention, we are running in fake numa system where each
-fake node is 128M size. That makes differences on the check
-inactive_anon_is_low() since the active/inactive ratio falls to 1.
+Thanks.
 
---Ying
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
