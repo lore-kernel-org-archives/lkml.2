@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab0ICLNB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 07:13:01 -0400
-Received: from mx01.bfk.de ([193.227.124.2]:60790 "EHLO mx01.bfk.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903Ab0ICLNA convert rfc822-to-8bit (ORCPT
+	id S1757267Ab0ICLUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 07:20:52 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:16531 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756560Ab0ICLUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 07:13:00 -0400
-X-Greylist: delayed 523 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Sep 2010 07:13:00 EDT
-To: miaox@cn.fujitsu.com
-Cc: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 2/3] lib: improve the performance of memcpy and memmove of the general version
-References: <4C7E2CAC.6080102@cn.fujitsu.com>
-From: Florian Weimer <fweimer@bfk.de>
-Date: Fri, 03 Sep 2010 11:03:37 +0000
-In-Reply-To: <4C7E2CAC.6080102@cn.fujitsu.com> (Miao Xie's message of "Wed\, 01 Sep 2010 18\:36\:28 +0800")
-Message-ID: <82mxrzrsvq.fsf@mid.bfk.de>
+	Fri, 3 Sep 2010 07:20:51 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAIJ2gExXQl6R/2dsb2JhbAChC3K8TA2FLgQ
+Date: Fri, 3 Sep 2010 13:20:36 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Kevin Wells <wellsk40@gmail.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Vitaly Wool <vitalywool@gmail.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] watchdog: Enable NXP LPC32XX support in Kconfig
+	(resend)
+Message-ID: <20100903112036.GL354@infomag.iguana.be>
+References: <AANLkTinmWzTBPEsicB-AWv9-=mA8HE2qqEoYqhbV39t8@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinmWzTBPEsicB-AWv9-=mA8HE2qqEoYqhbV39t8@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Miao Xie:
+Hi Kevin,
 
->  EXPORT_SYMBOL(memcpy);
+> The NXP LPC32XX processor use the same watchdog as the Philips
+> PNX4008 processor.
+> 
+> Signed-off-by: Kevin Wells <wellsk40@gmail.com>
+> Tested-by: Wolfram Sang <w.sang@pengutronix.de>
 
-I think you need to change that to EXPORT_SYMBOL_GPL, because the code
-is now licensed under the GPL, and not the GPL plus kernel exceptions
-(whatever they are, but they undoubtly exist), unlike the original
-implementation.
+Will add this to linux-2.6-watchdog-next today.
+(PS: sorry for the delay, I was on holiday).
 
--- 
-Florian Weimer                <fweimer@bfk.de>
-BFK edv-consulting GmbH       http://www.bfk.de/
-Kriegsstraﬂe 100              tel: +49-721-96201-1
-D-76133 Karlsruhe             fax: +49-721-96201-99
+Kind regards,
+Wim.
+
