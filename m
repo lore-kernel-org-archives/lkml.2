@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab0ICEmY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 00:42:24 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:48842 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab0ICEmX (ORCPT
+	id S1752636Ab0ICEq6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 00:46:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63071 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab0ICEq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 00:42:23 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/10] HWPOISON, hugetlb: fix unpoison for hugepage
-Date: Fri,  3 Sep 2010 13:37:37 +0900
-Message-Id: <1283488658-23137-10-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1283488658-23137-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1283488658-23137-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	Fri, 3 Sep 2010 00:46:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=oEWQLpbRYTZKvfAbM4tUwEd1Wm/TzJD0B0DnkCR8OgVrSKw9A2Ld+letf50N35agBk
+         OrH+iEpzFaPHVk8HuoMPbuI0YDnpLC7IvR6XO8jj+hNFueBQLBLKtfDddG3eidg2NoGl
+         DHuHuuxhWfjA4vFco5N205iWgpUP/d1gxrqvw=
+Date: Fri, 3 Sep 2010 06:46:58 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Cc: David Miller <davem@davemloft.net>, rostedt@goodmis.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com,
+        eric.dumazet@gmail.com, mathieu.desnoyers@polymtl.ca
+Subject: Re: [PATCH v4 0/5] netdev: show a process of packets
+Message-ID: <20100903044656.GA6589@nowhere>
+References: <4C72422C.5070102@jp.fujitsu.com> <1283212210.3656.84.camel@gandalf.stny.rr.com> <4C80592B.2060406@jp.fujitsu.com> <20100902.191741.233696520.davem@davemloft.net> <4C806388.9020509@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C806388.9020509@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently unpoisoning hugepages doesn't work correctly because
-clearing PG_HWPoison is done outside if (TestClearPageHWPoison).
-This patch fixes it.
+On Fri, Sep 03, 2010 at 11:55:04AM +0900, Koki Sanagi wrote:
+> (2010/09/03 11:17), David Miller wrote:
+> > From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+> > Date: Fri, 03 Sep 2010 11:10:51 +0900
+> > 
+> >> Thanks many acks. and I have one question.
+> >>
+> >> These patches have several component.
+> >>
+> >> Patch1 is kernel component, but patch2-5 are netdev component.
+> >> What tree is good to be included ?
+> >> If it is not net-next, I must rebase to another tree.
+> > 
+> > I would prefer it goes into the tracing tree or whatever is the most appropriate
+> > for patch #1.
+> > 
+> 
+> O.K. I'll rebase to linux-2.6-tip.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
----
- mm/memory-failure.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git v2.6.36-rc2/mm/memory-failure.c v2.6.36-rc2/mm/memory-failure.c
-index 80e71cd..b7fb8cc 100644
---- v2.6.36-rc2/mm/memory-failure.c
-+++ v2.6.36-rc2/mm/memory-failure.c
-@@ -1202,9 +1202,9 @@ int unpoison_memory(unsigned long pfn)
- 		pr_debug("MCE: Software-unpoisoned page %#lx\n", pfn);
- 		atomic_long_sub(nr_pages, &mce_bad_pages);
- 		freeit = 1;
-+		if (PageHuge(page))
-+			clear_page_hwpoison_huge_page(page);
- 	}
--	if (PageHuge(p))
--		clear_page_hwpoison_huge_page(page);
- 	unlock_page(page);
- 
- 	put_page(page);
--- 
-1.7.2.2
+No need, they apply very well :)
+
+I'll push that to -tip soon.
+
+Thanks.
 
