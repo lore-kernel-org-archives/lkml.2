@@ -1,81 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab0ICHIj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 03:08:39 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:54288 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab0ICHIi convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Fri, 3 Sep 2010 03:08:38 -0400
-Message-Id: <4C80BB1502000078000141D7@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Fri, 03 Sep 2010 08:08:37 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Fenghua Yu" <fenghua.yu@intel.com>
-Cc: "r.marek@assembler.cz" <r.marek@assembler.cz>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH] x86/hwmon: fix configuration and initialization of
-	 coretemp and pkgtemp
-References: <4C7FB8370200007800013F40@vpn.id2.novell.com>
- <20100902212505.GA31811@fenghua-desk.sc.intel.com>
-In-Reply-To: <20100902212505.GA31811@fenghua-desk.sc.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753283Ab0ICHKh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 03:10:37 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43022 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752124Ab0ICHKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 03:10:35 -0400
+Date: Fri, 3 Sep 2010 07:10:17 GMT
+From: tip-bot for Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, mingo@elte.hu, dzickus@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, dzickus@redhat.com, mingo@elte.hu
+In-Reply-To: <1283454469-1909-2-git-send-email-dzickus@redhat.com>
+References: <1283454469-1909-2-git-send-email-dzickus@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf, x86: Fix accidentally ack'ing a second event on intel perf counter
+Message-ID: <tip-2e556b5b320838fde98480a1f6cf220a5af200fc@git.kernel.org>
+Git-Commit-ID: 2e556b5b320838fde98480a1f6cf220a5af200fc
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 03 Sep 2010 07:10:18 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 02.09.10 at 23:25, Fenghua Yu <fenghua.yu@intel.com> wrote:
->> --- linux-2.6.36-rc3/arch/x86/include/asm/cpufeature.h
->> +++ 2.6.36-rc3-x86-hwmon/arch/x86/include/asm/cpufeature.h
->> @@ -168,6 +168,7 @@
->>  #define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
->>  #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
->>  #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
->> +#define X86_FEATURE_DTS		(7*32+31) /* Digital Thermal Sensor */
-> 
-> Is there any paticular reason to chose 7*32+31 instead of 7*32+7?
+Commit-ID:  2e556b5b320838fde98480a1f6cf220a5af200fc
+Gitweb:     http://git.kernel.org/tip/2e556b5b320838fde98480a1f6cf220a5af200fc
+Author:     Don Zickus <dzickus@redhat.com>
+AuthorDate: Thu, 2 Sep 2010 15:07:47 -0400
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 3 Sep 2010 08:05:17 +0200
 
-Oh, right, I actually wanted to changes this before final submission
-(I coded it this way locally to avoid eventual collisions until I would
-get to submit this).
+perf, x86: Fix accidentally ack'ing a second event on intel perf counter
 
->> --- linux-2.6.36-rc3/drivers/hwmon/coretemp.c
->> +++ 2.6.36-rc3-x86-hwmon/drivers/hwmon/coretemp.c
->> @@ -423,9 +423,18 @@ static int __cpuinit coretemp_device_add
->>  	int err;
->>  	struct platform_device *pdev;
->>  	struct pdev_entry *pdev_entry;
->> -#ifdef CONFIG_SMP
->>  	struct cpuinfo_x86 *c = &cpu_data(cpu);
->> -#endif
->> +
->> +	/*
->> +	 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
->> +	 * sensors. We check this bit only, all the early CPUs
->> +	 * without thermal sensors will be filtered out.
->> +	 */
->> +	if (!cpu_has(c, X86_FEATURE_DTS)) {
->> +		printk(KERN_INFO DRVNAME ": CPU (model=0x%x)"
->> +		       " has no thermal sensor.\n", c->x86_model);
->> +		return 0;
-> 
-> Return an error (e.g. -ENODEV) could be better because there is no device for
-> this driver. Then caller may handle this error accordingly (no caller 
-> handles
-> the error currently, though).
+During testing of a patch to stop having the perf subsytem
+swallow nmis, it was uncovered that Nehalem boxes were randomly
+getting unknown nmis when using the perf tool.
 
-No, the intention of the change is for the code to remain logically
-the same as it was - since the failed check previously only resulted
-in a message getting printed, returning an error indication
-(irrespective of there not being a check at the call sites) didn't
-seem right to me.
+Moving the ack'ing of the PMI closer to when we get the status
+allows the hardware to properly re-set the PMU bit signaling
+another PMI was triggered during the processing of the first
+PMI.  This allows the new logic for dealing with the
+shortcomings of multiple PMIs to handle the extra NMI by
+'eat'ing it later.
 
-Jan
+Now one can wonder why are we getting a second PMI when we
+disable all the PMUs in the begining of the NMI handler to
+prevent such a case, for that I do not know.  But I know the fix
+below helps deal with this quirk.
 
+Tested on multiple Nehalems where the problem was occuring.
+With the patch, the code now loops a second time to handle the
+second PMI (whereas before it was not).
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Cc: peterz@infradead.org
+Cc: robert.richter@amd.com
+Cc: gorcunov@gmail.com
+Cc: fweisbec@gmail.com
+Cc: ying.huang@intel.com
+Cc: ming.m.lin@intel.com
+Cc: eranian@google.com
+LKML-Reference: <1283454469-1909-2-git-send-email-dzickus@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index d8d86d0..1297bf1 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -712,7 +712,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	struct perf_sample_data data;
+ 	struct cpu_hw_events *cpuc;
+ 	int bit, loops;
+-	u64 ack, status;
++	u64 status;
+ 
+ 	perf_sample_data_init(&data, 0);
+ 
+@@ -728,6 +728,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 
+ 	loops = 0;
+ again:
++	intel_pmu_ack_status(status);
+ 	if (++loops > 100) {
+ 		WARN_ONCE(1, "perfevents: irq loop stuck!\n");
+ 		perf_event_print_debug();
+@@ -736,7 +737,6 @@ again:
+ 	}
+ 
+ 	inc_irq_stat(apic_perf_irqs);
+-	ack = status;
+ 
+ 	intel_pmu_lbr_read();
+ 
+@@ -761,8 +761,6 @@ again:
+ 			x86_pmu_stop(event);
+ 	}
+ 
+-	intel_pmu_ack_status(ack);
+-
+ 	/*
+ 	 * Repeat if there is more work to be done:
+ 	 */
