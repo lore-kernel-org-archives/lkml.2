@@ -1,754 +1,589 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab0ICDKN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 23:10:13 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:35276 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab0ICDKK convert rfc822-to-8bit (ORCPT
+	id S1755515Ab0ICDMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 23:12:50 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:48657 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752832Ab0ICDMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 23:10:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Qj5LcQnn6cjqelWXFo3bUNZUxaeB7fO+xsd0wWXiGFAskP1rOwmsSPgKVAsuvCJcP4
-         UKUX9tL3iphj0VEMV3KQ==
-MIME-Version: 1.0
-In-Reply-To: <20100828223546.952988054@chello.nl>
-References: <20100828223025.054328145@chello.nl> <20100828223546.952988054@chello.nl>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 3 Sep 2010 04:09:28 +0100
-Message-ID: <AANLkTi=ugQbFNV2h-wQkoTBkQgFvDXEzwctgch8XpWVB@mail.gmail.com>
-Subject: Re: [RFC][PATCH 1/3] sched: Rewrite tg_shares_up
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Pierre Bourdon <pbourdon@excellency.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 2 Sep 2010 23:12:49 -0400
+Message-ID: <000501cb4b15$e25f3d80$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Linus Walleij" <linus.ml.walleij@gmail.com>
+Cc: "Jean Delvare \(PC drivers, core\)" <khali@linux-fr.org>,
+        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
+        "Crane Cai" <crane.cai@amd.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Ralf Baechle" <ralf@linux-mips.org>,
+        "srinidhi kasagar" <srinidhi.kasagar@stericsson.com>,
+        <linux-i2c@vger.kernel.org>,
+        "ML linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Wang Yong Y\"" <yong.y.wang@intel.com>,
+        "Wang Qi\"" <qi.wang@intel.com>,
+        "Andrew\"" <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
+        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
+        "Arnd Bergmann" <arnd@arndb.de>
+References: <4C7DB9CF.5000905@dsn.okisemi.com> <AANLkTik5qxaGAj2-jBYfJjeP43XNep61fxwVXbfVA3J4@mail.gmail.com>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
+Date: Fri, 3 Sep 2010 12:12:40 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 28, 2010 at 11:30 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> By tracking a per-cpu load-avg for each cfs_rq and folding it into a
-> global task_group load on each tick we can rework tg_shares_up to be
-> strictly per-cpu.
+> ----- Original Message ----- 
+> From: "Linus Walleij" <linus.ml.walleij@gmail.com>
+> To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+> Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>; "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>;
+"Crane Cai" <crane.cai@amd.com>; "Samuel Ortiz" <sameo@linux.intel.com>; "Ralf Baechle" <ralf@linux-mips.org>; "srinidhi
+kasagar" <srinidhi.kasagar@stericsson.com>; <linux-i2c@vger.kernel.org>; <linux-kernel@vger.kernel.org>; "Wang Yong Y""
+<yong.y.wang@intel.com>; "Wang Qi"" <qi.wang@intel.com>; "Andrew"" <andrew.chih.howe.khor@intel.com>;
+<arjan@linux.intel.com>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>; "Arnd Bergmann" <arnd@arndb.de>
+> Sent: Thursday, September 02, 2010 4:44 AM
+> Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
 >
-> This should improve cpu-cgroup performance for smp systems
-> significantly.
 >
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  include/linux/sched.h   |    2
->  kernel/sched.c          |  173 ++++++++++++------------------------------------
->  kernel/sched_debug.c    |   11 ++-
->  kernel/sched_fair.c     |  153 ++++++++++++++++++++++++++----------------
->  kernel/sched_features.h |    2
->  kernel/sysctl.c         |   17 ----
->  6 files changed, 147 insertions(+), 211 deletions(-)
+> 2010/9/1 Masayuki Ohtak <masa-korg@dsn.okisemi.com>:
 >
-> Index: linux-2.6/include/linux/sched.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/sched.h
-> +++ linux-2.6/include/linux/sched.h
-> @@ -1858,8 +1858,6 @@ static inline void wake_up_idle_cpu(int
->  extern unsigned int sysctl_sched_latency;
->  extern unsigned int sysctl_sched_min_granularity;
->  extern unsigned int sysctl_sched_wakeup_granularity;
-> -extern unsigned int sysctl_sched_shares_ratelimit;
-> -extern unsigned int sysctl_sched_shares_thresh;
->  extern unsigned int sysctl_sched_child_runs_first;
+> > I2C driver of Topcliff PCH
+> > (...)
+> > +++ b/drivers/i2c/busses/i2c-pch.c
+> > (...)
+> > +/**
+> > + * pch_wait_for_bus_idle() - check the status of bus.
+> > + * @adap: Pointer to struct i2c_algo_pch_data.
+> > + * @timeout: waiting time counter (us).
+> > + */
+> > +static s32 pch_wait_for_bus_idle(struct i2c_algo_pch_data *adap,
+> > + s32 timeout)
+> > +{
+> > + void __iomem *p = adap->pch_base_address;
+> > +
+> > + /* MAX timeout value is timeout*1000*1000nsec */
+> > + ktime_t ns_val = ktime_add_ns(ktime_get(), timeout*1000*1000);
+> > + do {
+> > + if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
+> > + break;
+> > + msleep(1);
+> > + } while (ktime_lt(ktime_get(), ns_val));
+> > +
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "%s : I2CSR = %x\n", __func__, ioread32(p + PCH_I2CSR));
+> > +
+> > + if (timeout == 0) {
+> > + dev_err(adap->pch_adapter.dev.parent,
+> > + "%s :return%d\n", __func__, -ETIME);
 >
->  enum sched_tunable_scaling {
-> Index: linux-2.6/kernel/sched.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched.c
-> +++ linux-2.6/kernel/sched.c
-> @@ -253,6 +253,8 @@ struct task_group {
->        /* runqueue "owned" by this group on each cpu */
->        struct cfs_rq **cfs_rq;
->        unsigned long shares;
-> +
-> +       atomic_t load_weight;
->  #endif
+> Why not just return -ETIME; here?
 >
->  #ifdef CONFIG_RT_GROUP_SCHED
-> @@ -359,15 +361,11 @@ struct cfs_rq {
->         */
->        unsigned long h_load;
+> > + } else {
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "%s : return %d\n", __func__, 0);
+> > + }
 >
-> -       /*
-> -        * this cpu's part of tg->shares
-> -        */
-> -       unsigned long shares;
-> +       u64 load_avg;
-> +       u64 load_period;
-> +       u64 load_stamp;
+> Delete this else clause, who is interested in return 0???
 >
-> -       /*
-> -        * load.weight at the time we set shares
-> -        */
-> -       unsigned long rq_weight;
-> +       unsigned long load_contribution;
->  #endif
->  #endif
->  };
-> @@ -793,20 +791,6 @@ late_initcall(sched_init_debug);
->  const_debug unsigned int sysctl_sched_nr_migrate = 32;
+> > + return ((timeout <= 0) ? (-ETIME) : (0));
 >
->  /*
-> - * ratelimit for updating the group shares.
-> - * default: 0.25ms
-> - */
-> -unsigned int sysctl_sched_shares_ratelimit = 250000;
-> -unsigned int normalized_sysctl_sched_shares_ratelimit = 250000;
-> -
-> -/*
-> - * Inject some fuzzyness into changing the per-cpu group shares
-> - * this avoids remote rq-locks at the expense of fairness.
-> - * default: 4
-> - */
-> -unsigned int sysctl_sched_shares_thresh = 4;
-> -
-> -/*
->  * period over which we average the RT time consumption, measured
->  * in ms.
->  *
-> @@ -1351,6 +1335,12 @@ static inline void update_load_sub(struc
->        lw->inv_weight = 0;
->  }
+> return 0;
 >
-> +static inline void update_load_set(struct load_weight *lw, unsigned long w)
-> +{
-> +       lw->weight = w;
-> +       lw->inv_weight = 0;
-> +}
-> +
->  /*
->  * To aid in avoiding the subversion of "niceness" due to uneven distribution
->  * of tasks with abnormal "nice" values across CPUs the contribution that
-> @@ -1539,97 +1529,44 @@ static unsigned long cpu_avg_load_per_ta
+> > (...)
+> > +/**
+> > + * pch_wait_for_xfer_complete() - initiates a wait for the tx complete event
+> > + * @adap: Pointer to struct i2c_algo_pch_data.
+> > + */
+> > +static s32 pch_wait_for_xfer_complete(struct i2c_algo_pch_data *adap)
+> > +{
+> > + s32 ret;
+> > + ret = wait_event_interruptible_timeout(pch_event,
+> > + (adap->pch_event_flag != 0), msecs_to_jiffies(50));
+> > + if (ret < 0)
+> > + goto out;
 >
->  #ifdef CONFIG_FAIR_GROUP_SCHED
+> The goto construction is unnecessary, just
 >
-> -static __read_mostly unsigned long __percpu *update_shares_data;
-> -
-> -static void __set_se_shares(struct sched_entity *se, unsigned long shares);
-> -
-> -/*
-> - * Calculate and set the cpu's group shares.
-> - */
-> -static void update_group_shares_cpu(struct task_group *tg, int cpu,
-> -                                   unsigned long sd_shares,
-> -                                   unsigned long sd_rq_weight,
-> -                                   unsigned long *usd_rq_weight)
-> -{
-> -       unsigned long shares, rq_weight;
-> -       int boost = 0;
-> -
-> -       rq_weight = usd_rq_weight[cpu];
-> -       if (!rq_weight) {
-> -               boost = 1;
-> -               rq_weight = NICE_0_LOAD;
-> -       }
-> -
-> -       /*
-> -        *             \Sum_j shares_j * rq_weight_i
-> -        * shares_i =  -----------------------------
-> -        *                  \Sum_j rq_weight_j
-> -        */
-> -       shares = (sd_shares * rq_weight) / sd_rq_weight;
-> -       shares = clamp_t(unsigned long, shares, MIN_SHARES, MAX_SHARES);
-> -
-> -       if (abs(shares - tg->se[cpu]->load.weight) >
-> -                       sysctl_sched_shares_thresh) {
-> -               struct rq *rq = cpu_rq(cpu);
-> -               unsigned long flags;
-> -
-> -               raw_spin_lock_irqsave(&rq->lock, flags);
-> -               tg->cfs_rq[cpu]->rq_weight = boost ? 0 : rq_weight;
-> -               tg->cfs_rq[cpu]->shares = boost ? 0 : shares;
-> -               __set_se_shares(tg->se[cpu], shares);
-> -               raw_spin_unlock_irqrestore(&rq->lock, flags);
-> -       }
-> -}
-> +static void update_cfs_load(struct cfs_rq *cfs_rq);
-> +static void update_cfs_shares(struct cfs_rq *cfs_rq);
+> return ret;
 >
->  /*
-> - * Re-compute the task group their per cpu shares over the given domain.
-> - * This needs to be done in a bottom-up fashion because the rq weight of a
-> - * parent group depends on the shares of its child groups.
-> + * update tg->load_weight by folding this cpu's load_avg
->  */
->  static int tg_shares_up(struct task_group *tg, void *data)
->  {
-> -       unsigned long weight, rq_weight = 0, sum_weight = 0, shares = 0;
-> -       unsigned long *usd_rq_weight;
-> -       struct sched_domain *sd = data;
-> +       unsigned long load_avg;
-> +       struct cfs_rq *cfs_rq;
->        unsigned long flags;
-> -       int i;
-> +       int cpu = (long)data;
-> +       struct rq *rq;
+> > +
+> > + if (ret == 0) {
+> > + ret = -ETIMEDOUT;
+> > + goto out;
 >
-> -       if (!tg->se[0])
-> +       if (!tg->se[cpu])
->                return 0;
+> return -ETIMEDOUT;
 >
-> -       local_irq_save(flags);
-> -       usd_rq_weight = per_cpu_ptr(update_shares_data, smp_processor_id());
-> -
-> -       for_each_cpu(i, sched_domain_span(sd)) {
-> -               weight = tg->cfs_rq[i]->load.weight;
-> -               usd_rq_weight[i] = weight;
-> -
-> -               rq_weight += weight;
-> -               /*
-> -                * If there are currently no tasks on the cpu pretend there
-> -                * is one of average load so that when a new task gets to
-> -                * run here it will not get delayed by group starvation.
-> -                */
-> -               if (!weight)
-> -                       weight = NICE_0_LOAD;
-> +       rq = cpu_rq(cpu);
-> +       cfs_rq = tg->cfs_rq[cpu];
+> > + }
+> > +
+> > + if (adap->pch_event_flag & I2C_ERROR_MASK) {
+> > + ret = -EIO;
+> > + dev_err(adap->pch_adapter.dev.parent,
+> > + "error bits set: %x\n", adap->pch_event_flag);
+> > + goto out;
 >
-> -               sum_weight += weight;
-> -               shares += tg->cfs_rq[i]->shares;
-> -       }
-> +       raw_spin_lock_irqsave(&rq->lock, flags);
+> Skip ret assignment
+> return -EIO;
 >
-> -       if (!rq_weight)
-> -               rq_weight = sum_weight;
-> +       update_rq_clock(rq);
-> +       update_cfs_load(cfs_rq);
+> > + }
+> > +
+> > + adap->pch_event_flag = 0;
+> > + ret = 0;
 >
-> -       if ((!shares && rq_weight) || shares > tg->shares)
-> -               shares = tg->shares;
-> +       load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
-> +       load_avg -= cfs_rq->load_contribution;
+> Skip this
 >
-> -       if (!sd->parent || !(sd->parent->flags & SD_LOAD_BALANCE))
-> -               shares = tg->shares;
-> +       atomic_add(load_avg, &tg->load_weight);
-> +       cfs_rq->load_contribution += load_avg;
+> > +out:
+> > + return ret;
 >
-> -       for_each_cpu(i, sched_domain_span(sd))
-> -               update_group_shares_cpu(tg, i, shares, rq_weight, usd_rq_weight);
-> +       /*
-> +        * We need to update shares after updating tg->load_weight in
-> +        * order to adjust the weight of groups with long running tasks.
-> +        */
-> +       update_cfs_shares(cfs_rq);
+> return 0;
 >
-> -       local_irq_restore(flags);
-> +       raw_spin_unlock_irqrestore(&rq->lock, flags);
+> > +}
+> > (...)
+> > +/**
+> > + * pch_getack() - to confirm ACK/NACK
+> > + * @adap: Pointer to struct i2c_algo_pch_data.
+> > + */
+> > +static s32 pch_getack(struct i2c_algo_pch_data *adap)
+> > +{
+> > + u32 reg_val;
+> > + void __iomem *p = adap->pch_base_address;
+> > + reg_val = ioread32(p + PCH_I2CSR) & PCH_GETACK;
+> > +
+> > + if (reg_val == 0)
+> > + dev_dbg(adap->pch_adapter.dev.parent, "%s : return 0\n",
+> > + __func__);
+> > + else
+> > + dev_dbg(adap->pch_adapter.dev.parent, "%s : return%d\n",
+> > + __func__, -EPROTO);
+> > +
+> > + return (((reg_val) == 0) ? (0) : (-EPROTO));
 >
->        return 0;
->  }
-> @@ -1648,7 +1585,7 @@ static int tg_load_down(struct task_grou
->                load = cpu_rq(cpu)->load.weight;
->        } else {
->                load = tg->parent->cfs_rq[cpu]->h_load;
-> -               load *= tg->cfs_rq[cpu]->shares;
-> +               load *= tg->se[cpu]->load.weight;
->                load /= tg->parent->cfs_rq[cpu]->load.weight + 1;
->        }
+> Refactor this like the other function, no weirdo debug prints
+> return 0;
 >
-> @@ -1657,21 +1594,16 @@ static int tg_load_down(struct task_grou
->        return 0;
->  }
+> > +}
+> > (...)
+> > +/**
+> > + * pch_writebytes() - write data to I2C bus in normal mode
+> > + * @i2c_adap: Pointer to the struct i2c_adapter.
+> > + * @last: specifies whether last message or not.
+> > + * In the case of compound mode it will be 1 for last message,
+> > + * otherwise 0.
+> > + * @first: specifies whether first message or not.
+> > + * 1 for first message otherwise 0.
+> > + */
+> > +static s32 pch_writebytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+> > + u32 last, u32 first)
+> > +{
+> > + struct i2c_algo_pch_data *adap = i2c_adap->algo_data;
+> > + u8 *buf;
+> > + u32 length;
+> > + u32 addr;
+> > + u32 addr_2_msb;
+> > + u32 addr_8_lsb;
+> > + s32 wrcount;
 >
-> -static void update_shares(struct sched_domain *sd)
-> +static void update_shares(long cpu)
->  {
-> -       s64 elapsed;
-> -       u64 now;
-> -
->        if (root_task_group_empty())
->                return;
+> You don't assign anything to wrcount...
 >
-> -       now = local_clock();
-> -       elapsed = now - sd->last_update;
-> +       /*
-> +        * XXX: replace with an on-demand list
-> +        */
+> > + void __iomem *p = adap->pch_base_address;
+> > + length = msgs->len;
+> > + buf = msgs->buf;
+> > + addr = msgs->addr;
+> > + /* enable master tx */
+> > + pch_setbit((adap->pch_base_address), PCH_I2CCTL, I2C_TX_MODE);
+> > +
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "%s : I2CCTL = %x msgs->len = %d\n", __func__,
+> > + ioread32(p + PCH_I2CCTL), length);
+> > +
+> > + if (first) {
+> > + if (pch_wait_for_bus_idle(adap, BUS_IDLE_TIMEOUT) == -ETIME)
+> > + return -ETIME;
+> > + }
+> > +
+> > + if (msgs->flags & I2C_M_TEN) {
+> > + addr_2_msb = ((addr & I2C_MSB_2B_MSK) >> 7);
+> > + iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
+> > + if (first)
+> > + pch_start(adap);
+> > + if ((pch_wait_for_xfer_complete(adap) == 0) &&
+> > + (pch_getack(adap) == 0)) {
+> > + addr_8_lsb = (addr & I2C_ADDR_MSK);
+> > + iowrite32(addr_8_lsb, p + PCH_I2CDR);
+> > + } else {
+> > + pch_stop(adap);
+> > + return -ETIME;
+> > + }
+> > + } else {
+> > + /* set 7 bit slave address and R/W bit as 0 */
+> > + iowrite32(addr << 1, p + PCH_I2CDR);
+> > + if (first)
+> > + pch_start(adap);
+> > + }
+> > +
+> > + if ((pch_wait_for_xfer_complete(adap) == 0) &&
+> > + (pch_getack(adap) == 0)) {
+> > + for (wrcount = 0; wrcount < length; ++wrcount) {
 >
-> -       if (elapsed >= (s64)(u64)sysctl_sched_shares_ratelimit) {
-> -               sd->last_update = now;
-> -               walk_tg_tree(tg_nop, tg_shares_up, sd);
-> -       }
-> +       walk_tg_tree(tg_nop, tg_shares_up, (void *)cpu);
->  }
+> ...but it is only conditionally used here...
 >
->  static void update_h_load(long cpu)
-> @@ -1681,7 +1613,7 @@ static void update_h_load(long cpu)
+> > + /* write buffer value to I2C data register */
+> > + iowrite32(buf[wrcount], p + PCH_I2CDR);
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "%s : writing %x to Data register\n",
+> > + __func__, buf[wrcount]);
+> > +
+> > + if (pch_wait_for_xfer_complete(adap) != 0) {
+> > + wrcount = -ETIME;
+> > + break;
+> > + }
+> > +
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "%s return %d", __func__, 0);
+> > +
+> > + if (pch_getack(adap)) {
+> > + wrcount = -ETIME;
+> > + break;
+> > + }
+> > + }
+> > +
+> > + /* check if this is the last message */
+> > + if (last)
+> > + pch_stop(adap);
+> > + else
+> > + pch_repstart(adap);
+> > + } else {
+> > + pch_stop(adap);
+> > + }
+> > +
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "%s return=%d\n", __func__, wrcount);
+> > +
+> > + return wrcount;
 >
->  #else
+> ...and then you return it, leading to a possibly unassigned state.
 >
-> -static inline void update_shares(struct sched_domain *sd)
-> +static inline void update_shares(int cpu)
->  {
->  }
+> > +}
+> > (...)
+> > +/**
+> > + * pch_readbytes() - read data from I2C bus in normal mode.
+> > + * @i2c_adap: Pointer to the struct i2c_adapter.
+> > + * @msgs: Pointer to i2c_msg structure.
+> > + * @last: specifies whether last message or not.
+> > + * @first: specifies whether first message or not.
+> > + */
+> > +s32 pch_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+> > + u32 last, u32 first)
+> > +{
+> > + struct i2c_algo_pch_data *adap = i2c_adap->algo_data;
+> > +
+> > + u8 *buf;
+> > + u32 count;
 >
-> @@ -1806,15 +1738,6 @@ static void double_rq_unlock(struct rq *
->
->  #endif
->
-> -#ifdef CONFIG_FAIR_GROUP_SCHED
-> -static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
-> -{
-> -#ifdef CONFIG_SMP
-> -       cfs_rq->shares = shares;
-> -#endif
-> -}
-> -#endif
-> -
->  static void calc_load_account_idle(struct rq *this_rq);
->  static void update_sysctl(void);
->  static int get_update_sysctl_factor(void);
-> @@ -5400,7 +5323,6 @@ static void update_sysctl(void)
->        SET_SYSCTL(sched_min_granularity);
->        SET_SYSCTL(sched_latency);
->        SET_SYSCTL(sched_wakeup_granularity);
-> -       SET_SYSCTL(sched_shares_ratelimit);
->  #undef SET_SYSCTL
->  }
->
-> @@ -7652,8 +7574,7 @@ static void init_tg_cfs_entry(struct tas
->                se->cfs_rq = parent->my_q;
->
->        se->my_q = cfs_rq;
-> -       se->load.weight = tg->shares;
-> -       se->load.inv_weight = 0;
-> +       update_load_set(&se->load, tg->shares);
+> Same problem here. Initialize to 0.
 
-Given now instantaneous update of shares->load on enqueue/dequeue
-initialization to 0 would result in sane(r) sums across tg->se->load.
-Only relevant for debug though.
-
->        se->parent = parent;
->  }
->  #endif
-> @@ -7746,10 +7667,6 @@ void __init sched_init(void)
->
->  #endif /* CONFIG_CGROUP_SCHED */
->
-> -#if defined CONFIG_FAIR_GROUP_SCHED && defined CONFIG_SMP
-> -       update_shares_data = __alloc_percpu(nr_cpu_ids * sizeof(unsigned long),
-> -                                           __alignof__(unsigned long));
-> -#endif
->        for_each_possible_cpu(i) {
->                struct rq *rq;
->
-> @@ -8317,8 +8234,7 @@ static void __set_se_shares(struct sched
->        if (on_rq)
->                dequeue_entity(cfs_rq, se, 0);
->
-> -       se->load.weight = shares;
-> -       se->load.inv_weight = 0;
-> +       update_load_set(&se->load, shares);
->
->        if (on_rq)
->                enqueue_entity(cfs_rq, se, 0);
-> @@ -8375,7 +8291,6 @@ int sched_group_set_shares(struct task_g
->                /*
->                 * force a rebalance
->                 */
-> -               cfs_rq_set_shares(tg->cfs_rq[i], 0);
->                set_se_shares(tg->se[i], shares);
-
-I think a update_cfs_shares is wanted instead here, this will
-potentially over-commit everything until we hit tg_shares_up (e.g.
-long running task case).
-
-Ironically, the heavy weight full enqueue/dequeue in the
-__set_se_shares path will actually fix up the weights ignoring the
-passed weight for the se->on_rq case.
-
-I think both functions can be knocked out and just replaced with a
-<lock> <update load> <update shares> <unlock>
-
-Although.. for total correctness this update should probably be hierarchical.
-
->        }
->
-> Index: linux-2.6/kernel/sched_debug.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched_debug.c
-> +++ linux-2.6/kernel/sched_debug.c
-> @@ -204,13 +204,18 @@ void print_cfs_rq(struct seq_file *m, in
->                        SPLIT_NS(spread0));
->        SEQ_printf(m, "  .%-30s: %ld\n", "nr_running", cfs_rq->nr_running);
->        SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
-> +       SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "load_avg",
-> +                       SPLIT_NS(cfs_rq->load_avg));
-> +       SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "load_period",
-> +                       SPLIT_NS(cfs_rq->load_period));
-> +       SEQ_printf(m, "  .%-30s: %ld\n", "load_contrib",
-> +                       cfs_rq->load_contribution);
-> +       SEQ_printf(m, "  .%-30s: %d\n", "load_tg",
-> +                       atomic_read(&tg->load_weight));
->
->        SEQ_printf(m, "  .%-30s: %d\n", "nr_spread_over",
->                        cfs_rq->nr_spread_over);
->  #ifdef CONFIG_FAIR_GROUP_SCHED
-> -#ifdef CONFIG_SMP
-> -       SEQ_printf(m, "  .%-30s: %lu\n", "shares", cfs_rq->shares);
-> -#endif
->        print_cfs_group_stats(m, cpu, cfs_rq->tg);
->  #endif
->  }
-> Index: linux-2.6/kernel/sched_fair.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched_fair.c
-> +++ linux-2.6/kernel/sched_fair.c
-> @@ -417,7 +417,6 @@ int sched_proc_update_handler(struct ctl
->        WRT_SYSCTL(sched_min_granularity);
->        WRT_SYSCTL(sched_latency);
->        WRT_SYSCTL(sched_wakeup_granularity);
-> -       WRT_SYSCTL(sched_shares_ratelimit);
->  #undef WRT_SYSCTL
->
->        return 0;
-> @@ -633,7 +632,6 @@ account_entity_enqueue(struct cfs_rq *cf
->                list_add(&se->group_node, &cfs_rq->tasks);
->        }
->        cfs_rq->nr_running++;
-> -       se->on_rq = 1;
->  }
->
->  static void
-> @@ -647,9 +645,84 @@ account_entity_dequeue(struct cfs_rq *cf
->                list_del_init(&se->group_node);
->        }
->        cfs_rq->nr_running--;
-> -       se->on_rq = 0;
->  }
->
-> +#ifdef CONFIG_FAIR_GROUP_SCHED
-> +static void update_cfs_load(struct cfs_rq *cfs_rq)
-> +{
-> +       u64 period = sched_avg_period();
-
-This is a pretty large history window; while it should overlap the
-update period for obvious reasons, intuition suggests a smaller window
-(e.g. 2 x sched_latency) would probably be preferable here in terms of
-reducing over-commit and reducing convergence time.
-
-I'll run some benchmarks and see how it impacts fairness.
-
-> +       u64 now = rq_of(cfs_rq)->clock;
-> +       u64 delta = now - cfs_rq->load_stamp;
-> +
-
-Is is meaningful/useful to maintain cfs_rq->load for the rq->cfs_rq case?
-
-> +       cfs_rq->load_stamp = now;
-> +       cfs_rq->load_period += delta;
-> +       cfs_rq->load_avg += delta * cfs_rq->load.weight;
-> +
-> +       while (cfs_rq->load_period > period) {
-> +               /*
-> +                * Inline assembly required to prevent the compiler
-> +                * optimising this loop into a divmod call.
-> +                * See __iter_div_u64_rem() for another example of this.
-> +                */
-> +               asm("" : "+rm" (cfs_rq->load_period));
-> +               cfs_rq->load_period /= 2;
-> +               cfs_rq->load_avg /= 2;
-> +       }
-> +}
-> +
-> +static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
-> +                           unsigned long weight)
-> +{
-> +       if (se->on_rq)
-> +               account_entity_dequeue(cfs_rq, se);
-> +
-> +       update_load_set(&se->load, weight);
-> +
-> +       if (se->on_rq)
-> +               account_entity_enqueue(cfs_rq, se);
-> +}
-> +
-> +static void update_cfs_shares(struct cfs_rq *cfs_rq)
-> +{
-> +       struct task_group *tg;
-> +       struct sched_entity *se;
-> +       unsigned long load_weight, load, shares;
-> +
-> +       if (!cfs_rq)
-> +               return;
-> +
-> +       tg = cfs_rq->tg;
-> +       se = tg->se[cpu_of(rq_of(cfs_rq))];
-> +       if (!se)
-> +               return;
-> +
-> +       load = cfs_rq->load.weight;
-> +
-> +       load_weight = atomic_read(&tg->load_weight);
-> +       load_weight -= cfs_rq->load_contribution;
-> +       load_weight += load;
-> +
-> +       shares = (tg->shares * load);
-> +       if (load_weight)
-> +               shares /= load_weight;
-> +
-> +       if (shares < MIN_SHARES)
-> +               shares = MIN_SHARES;
-> +       if (shares > tg->shares)
-> +               shares = tg->shares;
-> +
-> +       reweight_entity(cfs_rq_of(se), se, shares);
-> +}
-> +#else /* CONFIG_FAIR_GROUP_SCHED */
-> +static inline void update_cfs_load(struct cfs_rq *cfs_rq)
-> +{
-> +}
-> +
-> +static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
-> +{
-> +}
-> +#endif /* CONFIG_FAIR_GROUP_SCHED */
-> +
->  static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
->  {
->  #ifdef CONFIG_SCHEDSTATS
-> @@ -771,7 +844,9 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
->         * Update run-time statistics of the 'current'.
->         */
->        update_curr(cfs_rq);
-> +       update_cfs_load(cfs_rq);
->        account_entity_enqueue(cfs_rq, se);
-> +       update_cfs_shares(group_cfs_rq(se));
-
-Don't we want to be updating the queuing cfs_rq's shares here?
-
-The owned cfs_rq's share proportion isn't going to change as a result
-of being enqueued -- and is guaranteed to be hit by a previous queuing
-cfs_rq update in the initial enqueue case.
+When I submit other patch to upstream,
+a maintainer said "variable shouldn't initialize to 0".
+Thus, we don't do.
+Can you admit above?
 
 >
->        if (flags & ENQUEUE_WAKEUP) {
->                place_entity(cfs_rq, se, 0);
-> @@ -782,6 +857,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
->        check_spread(cfs_rq, se);
->        if (se != cfs_rq->curr)
->                __enqueue_entity(cfs_rq, se);
-> +       se->on_rq = 1;
->  }
+> > + u32 length;
+> > + u32 addr;
+> > + u32 addr_2_msb;
+> > + void __iomem *p = adap->pch_base_address;
+> > + length = msgs->len;
+> > + buf = msgs->buf;
+> > + addr = msgs->addr;
+> > +
+> > + /* enable master reception */
+> > + pch_clrbit((adap->pch_base_address), PCH_I2CCTL, I2C_TX_MODE);
+> > +
+> > + if (first) {
+> > + if (pch_wait_for_bus_idle(adap, BUS_IDLE_TIMEOUT) == -ETIME)
+> > + return -ETIME;
+> > + }
+> > +
+> > + if (msgs->flags & I2C_M_TEN) {
+> > + addr_2_msb = (((addr & I2C_MSB_2B_MSK) >> 7) | (I2C_RD));
+> > + iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
+> > +
+> > + } else {
+> > + /* 7 address bits + R/W bit */
+> > + addr = (((addr) << 1) | (I2C_RD));
+> > + iowrite32(addr, p + PCH_I2CDR);
+> > + }
+> > +
+> > + /* check if it is the first message */
+> > + if (first)
+> > + pch_start(adap);
+> > +
+> > + if ((pch_wait_for_xfer_complete(adap) == 0)
+> > + && (pch_getack(adap) == 0)) {
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "%s return %d", __func__, 0);
+> > +
+> > + if (length == 0) {
+> > + pch_stop(adap);
+> > + ioread32(p + PCH_I2CDR); /* Dummy read needs */
+> > +
+> > + count = length;
+> > + } else {
+> > + int read_index;
+> > + int loop;
+> > + pch_sendack(adap);
+> > +
+> > + /* Dummy read */
+> > + for (loop = 1, read_index = 0; loop < length; loop++) {
+> > + buf[read_index] = ioread32(p + PCH_I2CDR);
+> > +
+> > + if (loop != 1)
+> > + read_index++;
+> > +
+> > + if (pch_wait_for_xfer_complete(adap) != 0) {
+> > + pch_stop(adap);
+> > + return -ETIME;
+> > + }
+> > + } /* end for */
+> > +
+> > + pch_sendnack(adap);
+> > +
+> > + buf[read_index] = ioread32(p + PCH_I2CDR);
+> > +
+> > + if (length != 1)
+> > + read_index++;
+> > +
+> > + if (pch_wait_for_xfer_complete(adap) == 0) {
+> > + if (last)
+> > + pch_stop(adap);
+> > + else
+> > + pch_repstart(adap);
+> > +
+> > + buf[read_index++] = ioread32(p + PCH_I2CDR);
+> > + count = read_index;
+> > + } else {
+> > + count = -ETIME;
+> > + }
+> > +
+> > + }
+> > + } else {
+> > + count = -ETIME;
+> > + pch_stop(adap);
+> > + }
+> > +
+> > + return count;
+> > +}
 >
->  static void __clear_buddies(struct cfs_rq *cfs_rq, struct sched_entity *se)
-> @@ -825,8 +901,11 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+> > (...)
+> > +/**
+> > + * pch_handler_ch0() - interrupt handler for the PCH I2C controller
+> > + * @irq: irq number.
+> > + * @pData: cookie passed back to the handler function.
+> > + */
+> > +static irqreturn_t pch_handler_ch0(int irq, void *pData)
+> > +{
+> > + s32 reg_val;
+> > +
+> > + struct i2c_algo_pch_data *adap_data = (struct i2c_algo_pch_data *)pData;
+> > + void __iomem *p = adap_data->pch_base_address;
+> > + u32 mode = ioread32(p + PCH_I2CMOD) & (BUFFER_MODE | EEPROM_SR_MODE);
+> > +
+> > + if (mode == NORMAL_MODE) {
 >
->        if (se != cfs_rq->curr)
->                __dequeue_entity(cfs_rq, se);
-> +       se->on_rq = 0;
-> +       update_cfs_load(cfs_rq);
->        account_entity_dequeue(cfs_rq, se);
->        update_min_vruntime(cfs_rq);
-> +       update_cfs_shares(group_cfs_rq(se));
+> No.
 >
->        /*
->         * Normalize the entity after updating the min_vruntime because the
-> @@ -1055,6 +1134,9 @@ enqueue_task_fair(struct rq *rq, struct
->                flags = ENQUEUE_WAKEUP;
->        }
+> if (mode != NORMAL_MODE) {
+>   dev_err(...)
+>   return IRQ_NONE;
+> }
 >
-> +       for_each_sched_entity(se)
-> +               update_cfs_shares(group_cfs_rq(se));
+> Then de-indent the rest and remove the else clause.
+>
+> > + reg_val = ioread32(p + PCH_I2CSR);
+> > + if (reg_val & (I2CMAL_BIT | I2CMCF_BIT | I2CMIF_BIT))
+> > + pch_cb_ch0(adap_data);
+> > + else
+> > + goto err_out;
+> > + } else {
+> > + dev_err(adap_data->pch_adapter.dev.parent,
+> > + "%s I2C mode is not supported\n", __func__);
+> > + goto err_out;
+> > + }
+> > + return IRQ_HANDLED;
+> > +
+> > +err_out:
+> > + return IRQ_NONE;
+> > +}
+>
+> > (...)
+> > +/**
+> > + * pch_xfer() - Reading adnd writing data through I2C bus
+> > + * @i2c_adap: Pointer to the struct i2c_adapter.
+> > + * @msgs: Pointer to i2c_msg structure.
+> > + * @num: number of messages.
+> > + */
+> > +static s32 pch_xfer(struct i2c_adapter *i2c_adap,
+> > + struct i2c_msg *msgs, s32 num)
+> > +{
+> > + struct i2c_msg *pmsg;
+> > + u32 i;
+> > + u32 status;
+> > + u32 msglen;
+> > + u32 subaddrlen;
+> > + s32 ret;
+> > +
+> > + struct i2c_algo_pch_data *adap = i2c_adap->algo_data;
+> > +
+> > + ret = mutex_lock_interruptible(&pch_mutex);
+> > + if (ret) {
+> > + ret = -ERESTARTSYS;
+> > + goto return_err_nomutex;
+> > + }
+> > + if (adap->p_adapter_info->pch_suspended == false) {
+>
+> No.
+>
+> if (adap->p_adapter_info->pch_suspended) {
+>    mutex_unlock(&pch_nomutex);
+>    return -EBUSY;
+> }
+>
+> De-indent the rest and remove the else clause.
+>
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "%s adap->p_adapter_info->pch_suspended is %d\n",
+> > + __func__, adap->p_adapter_info->pch_suspended);
+> > + /* transfer not completed */
+> > + adap->pch_xfer_in_progress = true;
+> > +
+> > + ret = -EBUSY;
+> > + for (i = 0; i < num; i++) {
+> > + pmsg = &msgs[i];
+> > + pmsg->flags |= adap->pch_buff_mode_en;
+> > + status = pmsg->flags;
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "After invoking I2C_MODE_SEL :flag= 0x%x\n",
+> > + status);
+> > + /* calculate sub address length and message length */
+> > + /* these are applicable only for buffer mode */
+> > + subaddrlen = pmsg->buf[0];
+> > + /* calculate actual message length excluding
+> > + * the sub address fields */
+> > + msglen = (pmsg->len) - (subaddrlen + 1);
+> > + if (status & (I2C_M_RD)) {
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "%s invoking pch_readbytes\n",
+> > + __func__);
+> > + ret = pch_readbytes(i2c_adap, pmsg,
+> > + (i + 1 == num),
+> > + (i == 0));
+> > + } else {
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "%s invoking pch_writebytes\n",
+> > + __func__);
+> > + ret = pch_writebytes(i2c_adap, pmsg,
+> > + (i + 1 == num),
+> > + (i == 0));
+> > + }
+> > +
+> > + }
+> > +
+> > + adap->pch_xfer_in_progress = false; /* transfer completed */
+> > +
+> > + dev_dbg(adap->pch_adapter.dev.parent,
+> > + "adap->pch_xfer_in_progress is %d\n",
+> > + adap->pch_xfer_in_progress);
+> > + } else {
+> > + ret = -EBUSY;
+> > + }
+> > +
+> > + mutex_unlock(&pch_mutex);
+> > +return_err_nomutex:
+> > + dev_dbg(adap->pch_adapter.dev.parent, "%s return:%d\n\n\n\n",
+> > + __func__, ret);
+> > + return ret;
+> > +}
+>
+> > (...)
+> > +static int __devinit pch_probe(struct pci_dev *pdev,
+> > + const struct pci_device_id *id)
+> > +{
+> > + int i;
+> > + void __iomem *base_addr;
+> > + s32 ret;
+> > + struct adapter_info *adap_info =
+> > + kzalloc((sizeof(struct adapter_info)), GFP_KERNEL);
+> > +
+> > + dev_dbg(&pdev->dev, "Enterred in %s\n", __func__);
+> > +
+> > + if (adap_info == NULL) {
+> > + dev_err(&pdev->dev, "Memory allocation failed FAILED");
+> > + ret = -ENOMEM;
+> > + goto return_err;
+>
+> Just
+> return -ENOMEM;
+>
+> Goto construction unnecessary here.
+>
+> > (...)
+> > +#ifdef CONFIG_PM
+> > +static int pch_suspend(struct pci_dev *pdev, pm_message_t state)
+> > +{
+> > + int i;
+> > + int ret;
+> > +
+> > + struct adapter_info *adap_info = pci_get_drvdata(pdev);
+> > + void __iomem *p = adap_info->pch_data[0].pch_base_address;
+> > +
+> > + adap_info->pch_suspended = true;
+> > +
+> > + for (i = 0; i < PCH_MAX_CHN; i++) {
+> > + while ((adap_info->pch_data[i].pch_xfer_in_progress)) {
+> > + /* It is assumed that any pending transfer will
+> > + * be completed after the delay
+> > + */
+> > + msleep(1);
+> > + }
+>
+> The comment seems to be a lie. It is not assumed that it will
+> be completed at all, because you're sleeping repeatedly until all
+> transfers are completed.
+>
+> What you are doing is you are waiting for channel zero to
+> complete transfers, then channel 1 etc up to channel PCH_MAX_CHN.
+>
+> > + /* Disable the i2c interrupts */
+> > + pch_disbl_int(&adap_info->pch_data[i]);
+> > + }
+> > +
+> > + dev_dbg(&pdev->dev,
+> > + "I2CSR = %x I2CBUFSTA = %x I2CESRSTA = %x "
+> > + "invoked function pch_disbl_int successfully\n",
+> > + ioread32(p + 0x08),
+> > + ioread32(p + 0x30),
+> > + ioread32(p + 0x44));
+> > +
+> > + ret = pci_save_state(pdev);
+> > +
+> > + if (ret) {
+> > + dev_err(&pdev->dev, "pci_save_state failed\n");
+> > + return ret;
+> > + }
+> > +
+> > + pci_enable_wake(pdev, PCI_D3hot, 0);
+> > + pci_disable_device(pdev);
+> > + pci_set_power_state(pdev, pci_choose_state(pdev, state));
+> > +
+> > + return 0;
+> > +}
+>
+>
+> Yours,
+> Linus Walleij
 
-If the queuing cfs_rq is used above then group_cfs_rq is redundant
-here, cfs_rq_of can be used.
+Thanks, Ohtake(OKISemi)
 
-Also, the respective load should be updated here.
 
-> +
->        hrtick_update(rq);
->  }
->
-> @@ -1071,12 +1153,16 @@ static void dequeue_task_fair(struct rq
->        for_each_sched_entity(se) {
->                cfs_rq = cfs_rq_of(se);
->                dequeue_entity(cfs_rq, se, flags);
-> +
->                /* Don't dequeue parent if it has other entities besides us */
->                if (cfs_rq->load.weight)
->                        break;
->                flags |= DEQUEUE_SLEEP;
->        }
->
-> +       for_each_sched_entity(se)
-> +               update_cfs_shares(group_cfs_rq(se));
-> +
->        hrtick_update(rq);
->  }
->
-> @@ -1143,51 +1229,20 @@ static void task_waking_fair(struct rq *
->  * Adding load to a group doesn't make a group heavier, but can cause movement
->  * of group shares between cpus. Assuming the shares were perfectly aligned one
->  * can calculate the shift in shares.
-> - *
-> - * The problem is that perfectly aligning the shares is rather expensive, hence
-> - * we try to avoid doing that too often - see update_shares(), which ratelimits
-> - * this change.
-> - *
-> - * We compensate this by not only taking the current delta into account, but
-> - * also considering the delta between when the shares were last adjusted and
-> - * now.
-> - *
-> - * We still saw a performance dip, some tracing learned us that between
-> - * cgroup:/ and cgroup:/foo balancing the number of affine wakeups increased
-> - * significantly. Therefore try to bias the error in direction of failing
-> - * the affine wakeup.
-> - *
->  */
-> -static long effective_load(struct task_group *tg, int cpu,
-> -               long wl, long wg)
-> +static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
->  {
->        struct sched_entity *se = tg->se[cpu];
->
->        if (!tg->parent)
->                return wl;
->
-> -       /*
-> -        * By not taking the decrease of shares on the other cpu into
-> -        * account our error leans towards reducing the affine wakeups.
-> -        */
-> -       if (!wl && sched_feat(ASYM_EFF_LOAD))
-> -               return wl;
-> -
->        for_each_sched_entity(se) {
->                long S, rw, s, a, b;
-> -               long more_w;
->
-> -               /*
-> -                * Instead of using this increment, also add the difference
-> -                * between when the shares were last updated and now.
-> -                */
-> -               more_w = se->my_q->load.weight - se->my_q->rq_weight;
-> -               wl += more_w;
-> -               wg += more_w;
-> -
-> -               S = se->my_q->tg->shares;
-> -               s = se->my_q->shares;
-> -               rw = se->my_q->rq_weight;
-> +               S = tg->shares;
-> +               s = se->load.weight;
-> +               rw = se->my_q->load.weight;
->
->                a = S*(rw + wl);
->                b = S*rw + s*wg;
-> @@ -1509,23 +1564,6 @@ select_task_rq_fair(struct rq *rq, struc
->                        sd = tmp;
->        }
->
-> -#ifdef CONFIG_FAIR_GROUP_SCHED
-> -       if (sched_feat(LB_SHARES_UPDATE)) {
-> -               /*
-> -                * Pick the largest domain to update shares over
-> -                */
-> -               tmp = sd;
-> -               if (affine_sd && (!tmp || affine_sd->span_weight > sd->span_weight))
-> -                       tmp = affine_sd;
-> -
-> -               if (tmp) {
-> -                       raw_spin_unlock(&rq->lock);
-> -                       update_shares(tmp);
-> -                       raw_spin_lock(&rq->lock);
-> -               }
-> -       }
-> -#endif
-> -
->        if (affine_sd) {
->                if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
->                        return select_idle_sibling(p, cpu);
-> @@ -2980,7 +3018,6 @@ static int load_balance(int this_cpu, st
->        schedstat_inc(sd, lb_count[idle]);
->
->  redo:
-> -       update_shares(sd);
->        group = find_busiest_group(sd, this_cpu, &imbalance, idle, &sd_idle,
->                                   cpus, balance);
->
-> @@ -3115,8 +3152,6 @@ out_one_pinned:
->        else
->                ld_moved = 0;
->  out:
-> -       if (ld_moved)
-> -               update_shares(sd);
->        return ld_moved;
->  }
->
-> @@ -3510,6 +3545,8 @@ static void rebalance_domains(int cpu, e
->        int update_next_balance = 0;
->        int need_serialize;
->
-> +       update_shares(cpu);
-> +
-
-This may not be frequent enough, especially in the dilated cpus-busy case
-
->        for_each_domain(cpu, sd) {
->                if (!(sd->flags & SD_LOAD_BALANCE))
->                        continue;
-> Index: linux-2.6/kernel/sched_features.h
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched_features.h
-> +++ linux-2.6/kernel/sched_features.h
-> @@ -52,8 +52,6 @@ SCHED_FEAT(ARCH_POWER, 0)
->  SCHED_FEAT(HRTICK, 0)
->  SCHED_FEAT(DOUBLE_TICK, 0)
->  SCHED_FEAT(LB_BIAS, 1)
-> -SCHED_FEAT(LB_SHARES_UPDATE, 1)
-> -SCHED_FEAT(ASYM_EFF_LOAD, 1)
->
->  /*
->  * Spin-wait on mutex acquisition when the mutex owner is running on
-> Index: linux-2.6/kernel/sysctl.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sysctl.c
-> +++ linux-2.6/kernel/sysctl.c
-> @@ -307,15 +307,6 @@ static struct ctl_table kern_table[] = {
->                .extra2         = &max_wakeup_granularity_ns,
->        },
->        {
-> -               .procname       = "sched_shares_ratelimit",
-> -               .data           = &sysctl_sched_shares_ratelimit,
-> -               .maxlen         = sizeof(unsigned int),
-> -               .mode           = 0644,
-> -               .proc_handler   = sched_proc_update_handler,
-> -               .extra1         = &min_sched_shares_ratelimit,
-> -               .extra2         = &max_sched_shares_ratelimit,
-> -       },
-> -       {
->                .procname       = "sched_tunable_scaling",
->                .data           = &sysctl_sched_tunable_scaling,
->                .maxlen         = sizeof(enum sched_tunable_scaling),
-> @@ -325,14 +316,6 @@ static struct ctl_table kern_table[] = {
->                .extra2         = &max_sched_tunable_scaling,
->        },
->        {
-> -               .procname       = "sched_shares_thresh",
-> -               .data           = &sysctl_sched_shares_thresh,
-> -               .maxlen         = sizeof(unsigned int),
-> -               .mode           = 0644,
-> -               .proc_handler   = proc_dointvec_minmax,
-> -               .extra1         = &zero,
-> -       },
-> -       {
->                .procname       = "sched_migration_cost",
->                .data           = &sysctl_sched_migration_cost,
->                .maxlen         = sizeof(unsigned int),
->
->
->
