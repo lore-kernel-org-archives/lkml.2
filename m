@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab0ICAzf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 20:55:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37454 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752012Ab0ICAzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 20:55:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,310,1280732400"; 
-   d="scan'208";a="551221477"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H Peter Anvin" <hpa@zytor.com>, "Len Brown" <lenb@kernel.org>,
-        "Jin Dongming" <jin.dongming@np.css.fujitsu.com>,
-        "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>,
-        "Jean Delvare" <khali@linux-fr.org>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "lm-sensors" <lm-sensors@lm-sensors.org>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH] therm_throt.c: Fix error handling in thermal_throttle_add_dev
-Date: Thu,  2 Sep 2010 17:45:26 -0700
-Message-Id: <1283474726-20109-1-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
+	id S1752690Ab0ICBEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 21:04:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64308 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab0ICBEH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Sep 2010 21:04:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=ddCVtk530sddpeUJxlpNe52KjVzzt00EQfjBbhj1LhROC2xQN97s5Ru8bG/BrzdF56
+         dWZprNIBnlcAo+EU4ZwTIR8Tm1QSrfEgJnP3mhuc5Ow1pND6xgyBCU5nszxa70Qsbh0w
+         rMf+6GMLKXvZgvG1kAEA0O1E24QUOWQMUcY3U=
+Subject: [PATCH] Input: tps6507x-ts - call input_unregister_device instead
+	of input_free_device in tps6507x_ts_remove
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Todd Fischer <todd.fischer@ridgerun.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Content-Type: text/plain
+Date: Fri, 03 Sep 2010 09:08:07 +0800
+Message-Id: <1283476087.5439.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
-
-Warn when sysfs_add_file_to_group fails.
-
-Also add missing curly braces.
-
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- arch/x86/kernel/cpu/mcheck/therm_throt.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+ drivers/input/touchscreen/tps6507x-ts.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index c2a8b26..4c3cd62 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -211,20 +211,26 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev)
- 	if (err)
- 		return err;
+diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
+index 7286209..c8c136c 100644
+--- a/drivers/input/touchscreen/tps6507x-ts.c
++++ b/drivers/input/touchscreen/tps6507x-ts.c
+@@ -359,7 +359,7 @@ static int __devexit tps6507x_ts_remove(struct platform_device *pdev)
+ 	cancel_delayed_work_sync(&tsc->work);
+ 	destroy_workqueue(tsc->wq);
  
--	if (cpu_has(c, X86_FEATURE_PLN))
-+	if (cpu_has(c, X86_FEATURE_PLN)) {
- 		err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					      &attr_core_power_limit_count.attr,
- 					      thermal_attr_group.name);
--	if (cpu_has(c, X86_FEATURE_PTS))
-+		WARN_ON(err);
-+	}
-+	if (cpu_has(c, X86_FEATURE_PTS)) {
- 		err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					      &attr_package_throttle_count.attr,
- 					      thermal_attr_group.name);
--		if (cpu_has(c, X86_FEATURE_PLN))
-+		WARN_ON(err);
-+		if (cpu_has(c, X86_FEATURE_PLN)) {
- 			err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					&attr_package_power_limit_count.attr,
- 					thermal_attr_group.name);
-+			WARN_ON(err);
-+		}
-+	}
+-	input_free_device(input_dev);
++	input_unregister_device(input_dev);
  
--	return err;
-+	return 0;
- }
- 
- static __cpuinit void thermal_throttle_remove_dev(struct sys_device *sys_dev)
+ 	tps6507x_dev->ts = NULL;
+ 	kfree(tsc);
 -- 
-1.6.0.3
+1.7.2
+
+
 
