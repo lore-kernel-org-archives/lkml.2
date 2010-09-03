@@ -1,103 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab0ICI2i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 04:28:38 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:38597 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754083Ab0ICI2g (ORCPT
+	id S1755771Ab0ICIas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 04:30:48 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:58291 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab0ICIap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 04:28:36 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH -resend 1/1] HPET: unmap unused I/O space
-Date: Fri,  3 Sep 2010 10:27:54 +0200
-Message-Id: <1283502474-15379-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.2.2
+	Fri, 3 Sep 2010 04:30:45 -0400
+Date: Fri, 3 Sep 2010 16:30:28 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jarek Poplawski <jarkao2@gmail.com>,
+        Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: [Bug #16626] Machine hangs with EIP at skb_copy_and_csum_dev
+Message-ID: <20100903083028.GB28952@gondor.apana.org.au>
+References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera> <4AUWBNzTkbD.A.ey.cGueMB@chimera> <courier.4C7C99F2.00001F74@fs.ru.acad.bg> <20100831192659.GA3093@del.dom.local> <1283338251.2556.124.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283338251.2556.124.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the initialization code in hpet founds a memory resource and does
-not found IRQ, it does not unmap the memory resource previously
-mapped.
+On Wed, Sep 01, 2010 at 12:50:51PM +0200, Eric Dumazet wrote:
+> Plamen, could you test following patch ?
+> 
+> I reproduced problem on a dev machine and following patch cured it.
+> 
+> Thanks
+> 
+> [PATCH] gro: fix different skb headrooms
+> 
+> packets entering GRO might have different headrooms, even for a given
+> flow (because of implementation details in drivers, like copybreak).
+> We cant force drivers to deliver packets with a fixed headroom.
+> 
+> 1) fix skb_segment()
+> 
+> skb_segment() makes the false assumption headrooms of fragments are same
+> than the head. When CHECKSUM_PARTIAL is used, this can give csum_start
+> errors, and crash later in skb_copy_and_csum_dev()
+> 
+> 2) allocate a minimal skb for head of frag_list
+> 
+> skb_gro_receive() uses netdev_alloc_skb(headroom + skb_gro_offset(p)) to
+> allocate a fresh skb. This adds NET_SKB_PAD to a padding already
+> provided by netdevice, depending on various things, like copybreak.
+> 
+> Use alloc_skb() to allocate an exact padding, to reduce cache line
+> needs:
+> NET_SKB_PAD + NET_IP_ALIGN
+> 
+> bugzilla : https://bugzilla.kernel.org/show_bug.cgi?id=16626
+> 
+> Many thanks to Plamen Petrov, testing many debugging patches !
+> With help of Jarek Poplawski.
+> 
+> Reported-by: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Jarek Poplawski <jarkao2@gmail.com>
 
-There are buggy BIOSes which report resources exactly like this and
-what is worse the memory region bases point to normal RAM. This
-normally would not matter since the space is not touched. But when PAT
-is turned on, ioremap causes the page to be uncached and sets this bit
-in page->flags.
+Thanks for diagnosing and fixing this!
 
-Then when the page is about to be used by the allocator, it is
-reported as:
-BUG: Bad page state in process md5sum  pfn:3ed00
-page:ffffea0000dbd800 count:0 mapcount:0 mapping:(null) index:0x0
-page flags: 0x20000001000000(uncached)
-Pid: 7956, comm: md5sum Not tainted 2.6.34-12-desktop #1
-Call Trace:
- [<ffffffff810df851>] bad_page+0xb1/0x100
- [<ffffffff810dfa45>] prep_new_page+0x1a5/0x1c0
- [<ffffffff810dfe01>] get_page_from_freelist+0x3a1/0x640
- [<ffffffff810e01af>] __alloc_pages_nodemask+0x10f/0x6b0
-...
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 3a2513f..26396ff 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -2573,6 +2573,10 @@ struct sk_buff *skb_segment(struct sk_buff *skb, int features)
+>  		__copy_skb_header(nskb, skb);
+>  		nskb->mac_len = skb->mac_len;
+>  
+> +		/* nskb and skb might have different headroom */
+> +		if (nskb->ip_summed == CHECKSUM_PARTIAL)
+> +			nskb->csum_start += skb_headroom(nskb) - headroom;
 
-In this particular case:
+This test is redundant since we require CHECKSUM_PARTIAL for
+GSO packets.
 
-1) HPET returns 3ed00000 as memory region base, but it is not in
-reserved ranges reported by the BIOS (excerpt):
- BIOS-e820: 0000000000100000 - 00000000af6cf000 (usable)
- BIOS-e820: 00000000af6cf000 - 00000000afdcf000 (reserved)
-
-2) there is no IRQ resource reported by HPET method. On the other
-hand, the Intel HPET specs (1.0a) says (3.2.5.1):
-_CRS (
-  // Report 1K of memory consumed by this Timer Block
-  memory range consumed
-  // Optional: only used if BIOS allocates Interrupts [1]
-  IRQs consumed
-)
-
-[1] For case where Timer Block is configured to consume IRQ0/IRQ8 AND
-Legacy 8254/Legacy RTC hardware still exists, the device objects
-associated with 8254 & RTC devices should not report IRQ0/IRQ8 as
-“consumed resources.”
-
-So in theory we should check whether if it is the case and use those
-interrupts instead.
-
-Anyway the address reported by the BIOS here is bogus, so non-presence
-of IRQ doesn't mean the "optional" part in point 2).
-
-Since I got no reply previously, fix this by simply unmapping the
-space when IRQ is not found and memory region was mapped previously.
-It would be probably more safe to walk the resources again and unmap
-appropriately depending on type.  But as we now use only ioremap for
-both 2 memory resource types, it is not necessarily needed right now.
-
-References: https://bugzilla.novell.com/show_bug.cgi?id=629908
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
----
- drivers/char/hpet.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index 8372a34..e3e184b 100644
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -1017,6 +1017,8 @@ static int hpet_acpi_add(struct acpi_device *device)
- 		return -ENODEV;
- 
- 	if (!data.hd_address || !data.hd_nirqs) {
-+		if (data.hd_address)
-+			iounmap(data.hd_address);
- 		printk("%s: no address or irqs in _CRS\n", __func__);
- 		return -ENODEV;
- 	}
+Cheers,
 -- 
-1.7.2.1
-
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
