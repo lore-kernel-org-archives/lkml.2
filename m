@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab0ICNno (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 09:43:44 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44905 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541Ab0ICNnm (ORCPT
+	id S1755186Ab0ICNsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 09:48:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57273 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752873Ab0ICNsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 09:43:42 -0400
+	Fri, 3 Sep 2010 09:48:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=O+mX+pc8iJa28x/MPMvdlHcPWIQryq4C8Yelx0wH6oxJ3iYlOdPARkeU+ly9QDsS7J
-         vsLb2DdJRBl9Ep+Cp2NtCqmXRzL37253giEemZfWOitNd8KJdrzkpwqwa/OEPzsu97Mv
-         EfPXK8EpPYQx51TpbKfdGpjjFeoMOkL4yTWNg=
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        ML netdev <netdev@vger.kernel.org>,
-        Greg Rose <gregory.v.rose@intel.com>, Maxime Bizon <mbizon@freebox.fr>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        Ralf Baechle <ralf@linux-mips.org>, John Linn <john.linn@xilinx.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, MeeGo <meego-dev@meego.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Toshiharu Okada <okada533@dsn.okisemi.com>,
-        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
-        Takahiro Shimizu <shimizu394@dsn.okisemi.com>
-In-Reply-To: <000e01cb4b6c$73b4c8d0$66f8800a@maildom.okisemi.com>
-References: <4C763A67.5040107@dsn.okisemi.com>
-	 <4C7D0E7A.5060309@dsn.okisemi.com>
-	 <1283266263.2550.106.camel@edumazet-laptop>
-	 <000a01cb4a9b$e8d6ab00$66f8800a@maildom.okisemi.com>
-	 <1283434847.2454.726.camel@edumazet-laptop>
-	 <20100902081007.2f910bc0@nehalam>
-	 <000e01cb4b6c$73b4c8d0$66f8800a@maildom.okisemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 03 Sep 2010 15:43:36 +0200
-Message-ID: <1283521416.2453.823.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=D25qd0PPM04eucbXnBgI8bmc9OjQrvGHbHTI5obaBP58PE1BBf4eAQ1R+zTQTgudZ8
+         zF1Tsdzv3e7tMaov6sMvFaQX90EicVYc0wIka+o9sE7oCo6evMRwXZqaabEKghhJar4T
+         3K22Ij9Fmyk2hpPRaaGepiJ02Losw5uziO/GQ=
+MIME-Version: 1.0
+Date: Fri, 3 Sep 2010 09:48:18 -0400
+Message-ID: <AANLkTineCKfL-UvqfQBTZPDFeqm3Nrpb=pFnZpkSqbEQ@mail.gmail.com>
+Subject: [PATCH] sctp: prevent reading out-of-bounds memory
+From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+To: vladislav.yasevich@hp.com, sri@us.ibm.com
+Cc: linux-sctp@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 03 septembre 2010 à 22:32 +0900, Masayuki Ohtake a écrit :
-> Hi Eric and Stephen
-> 
-> Thank you for your suggestion.
-> 
-> I tried modification of "dev->hard_header_len".
-> However, there was no changed to a format of SKB received by kernel.
->   [Header:14octet] + [payload]
-> 
-> So, I can not a single memcpy.
+Two user-controlled allocations in SCTP are subsequently dereferenced
+as sockaddr structs, without checking if the dereferenced struct
+members fall beyond the end of the allocated chunk.  There doesn't
+appear to be any information leakage here based on how these members
+are used and additional checking, but it's still worth fixing.
 
-Hmm, maybe you did this at the wrong place ?
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 
-Take a look at other drivers how they do this
+--- linux-2.6.35.4.orig/net/sctp/socket.c	2010-09-03 08:58:48.127080114 -0400
++++ linux-2.6.35.4/net/sctp/socket.c	2010-09-03 09:22:06.337096825 -0400
+@@ -889,6 +889,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+ 	int err;
+ 	int addrcnt = 0;
+ 	int walk_size = 0;
++	unsigned int remaining = addrs_size;
+ 	struct sockaddr *sa_addr;
+ 	void *addr_buf;
+ 	struct sctp_af *af;
+@@ -916,6 +917,13 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+ 	/* Walk through the addrs buffer and count the number of addresses. */
+ 	addr_buf = kaddrs;
+ 	while (walk_size < addrs_size) {
++
++		/* Don't read out-of-bounds memory */
++		if (remaining < sizeof(struct sockaddr)) {
++			kfree(kaddrs);
++			return -EINVAL;
++		}
++
+ 		sa_addr = (struct sockaddr *)addr_buf;
+ 		af = sctp_get_af_specific(sa_addr->sa_family);
 
-(network stack default hard_header_len to 14, in net/ethernet/eth.c,
-function ether_setup())
+@@ -929,6 +937,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
+ 		addrcnt++;
+ 		addr_buf += af->sockaddr_len;
+ 		walk_size += af->sockaddr_len;
++		remaining -= af->sockaddr_len;
+ 	}
 
+ 	/* Do the work. */
+@@ -984,6 +993,7 @@ static int __sctp_connect(struct sock* s
+ 	void *addr_buf;
+ 	unsigned short port;
+ 	unsigned int f_flags = 0;
++	unsigned int remaining = addrs_size;
 
-find drivers/net | xargs grep -n hard_header_len
+ 	sp = sctp_sk(sk);
+ 	ep = sp->ep;
+@@ -1002,6 +1012,13 @@ static int __sctp_connect(struct sock* s
+ 	/* Walk through the addrs buffer and count the number of addresses. */
+ 	addr_buf = kaddrs;
+ 	while (walk_size < addrs_size) {
++
++		/* Don't read out-of-bounds memory */
++		if (remaining < sizeof(union sctp_addr)) {
++			err = -EINVAL;
++			goto out_free;
++		}
++
+ 		sa_addr = (union sctp_addr *)addr_buf;
+ 		af = sctp_get_af_specific(sa_addr->sa.sa_family);
+ 		port = ntohs(sa_addr->v4.sin_port);
+@@ -1101,6 +1118,7 @@ static int __sctp_connect(struct sock* s
+ 		addrcnt++;
+ 		addr_buf += af->sockaddr_len;
+ 		walk_size += af->sockaddr_len;
++		remaining -= af->sockaddr_len;
+ 	}
 
-Example in drivers/net/wan/hdlc.c
-
-static void hdlc_setup_dev(struct net_device *dev)
-{
-        /* Re-init all variables changed by HDLC protocol drivers,
-         * including ether_setup() called from hdlc_raw_eth.c.
-         */
-        dev->flags               = IFF_POINTOPOINT | IFF_NOARP;
-        dev->priv_flags          = IFF_WAN_HDLC;
-        dev->mtu                 = HDLC_MAX_MTU;
-        dev->type                = ARPHRD_RAWHDLC;
-        dev->hard_header_len     = 16;
-        dev->addr_len            = 0;
-        dev->header_ops          = &hdlc_null_ops;
-}
-
-
-
+ 	/* In case the user of sctp_connectx() wants an association
