@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab0ICT0J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 15:26:09 -0400
-Received: from exprod7og118.obsmtp.com ([64.18.2.8]:49408 "EHLO
-	exprod7og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757329Ab0ICT0G (ORCPT
+	id S1757302Ab0ICTis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 15:38:48 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:35383 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201Ab0ICTir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 15:26:06 -0400
-Message-ID: <4C814B8D.7050100@genband.com>
-Date: Fri, 03 Sep 2010 13:25:01 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Fri, 3 Sep 2010 15:38:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=Z1LGs+INGp4fwrYewet1oeRATFgcSwk2daPNu2sz23G9o7yjvhxhmjGgT1mj74yNx+
+         h0nAhZOuSQOEXQE/Ry83/ImZZRK77+aOTDew+6DrYa5+RZ27OCWBx5oTUwNf59ydR6JN
+         2iPUGlr7I7oN8DKlJC2AeRyZW3B19Q4ky5A+Q=
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: fuse-devel@lists.sourceforge.net,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: ionice and FUSE-based filesystems?
-References: <4C800B06.90005@genband.com> <4C814514.4040103@kernel.dk>
-In-Reply-To: <4C814514.4040103@kernel.dk>
+In-Reply-To: <1283268367-3525-1-git-send-email-linus.walleij@stericsson.com>
+References: <1283268367-3525-1-git-send-email-linus.walleij@stericsson.com>
+Date: Fri, 3 Sep 2010 21:38:45 +0200
+X-Google-Sender-Auth: U6h4bP3St2ZFFAHwA88rTpwJ_Uw
+Message-ID: <AANLkTik-uLMUz2g2znaF0K43D8CONsGdjrRqxTCqpS_X@mail.gmail.com>
+Subject: Re: [PATCH] MMC: move regulator handling closer to core v2
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Sundar Iyer <sundar.iyer@stericsson.com>,
+        Daniel Mack <daniel@caiaq.de>, Pierre Ossman <pierre@ossman.eu>,
+        Matt Fleming <matt@console-pimps.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Cliff Brake <cbrake@bec-systems.com>,
+        Jarkko Lavinen <jarkko.lavinen@nokia.com>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Sep 2010 19:25:03.0968 (UTC) FILETIME=[B5A5C600:01CB4B9D]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17614.001
-X-TM-AS-Result: No--11.965100-5.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2010 12:57 PM, Jens Axboe wrote:
-> On 09/02/2010 10:37 PM, Chris Friesen wrote:
->>
->> I'm curious about the limits of using ionice with multiple layers of
->> filesystems and devices.
->>
->> In particular, we have a scenario with a FUSE-based filesystem running
->> on top of xfs on top of LVM, on top of software RAID, on top of spinning
->> disks.  (Something like that, anyways.)  The IO scheduler is CFQ.
->>
->> In the above scenario would you expect the IO nice value of the writes
->> done by a task to be propagated all the way down to the disk writes?  Or
->> would they get stripped off at some point?
-> 
-> Miklos should be able to expand on what fuse does, but at least on
-> the write side priorities will only be carried through for non-buffered
-> writes with the current design (since actual write out happens out of
-> context of the submitting application).
+2010/8/31 Linus Walleij <linus.walleij@stericsson.com>:
 
-So we're talking either O_SYNC or O_DIRECT only?  That seems an
-unfortunate limitation given that it then forces the app to block.  Has
-any thought been given to somehow associating the priority with the
-actual operation so that it would affect buffered writes as well?
+> After discovering a problem in regulator reference counting I
+> took Mark Brown's advice to move the reference count into the
+> MMC core by making the regulator status a member of
+> struct mmc_host.
 
-As for fuse...I was concerned that the addition of userspace tasks to
-handle the filesystem operations would result in the I/O operations
-taking on the priority of the fuse tasks rather than the originating
-task.  Or does fuse adjust its I/O nice level according to that of the
-incoming requests?
+This has an Reveiwed-by from the regulator maintainer and
+seems to address all comments, noone is objection so Andrew
+can you pick it up?
 
-Chris
-
-
--- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+Yours,
+Linus Walleij
