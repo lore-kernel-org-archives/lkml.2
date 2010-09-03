@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757776Ab0ICKlA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 06:41:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35628 "EHLO hera.kernel.org"
+	id S1757807Ab0ICKlF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 06:41:05 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35624 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756089Ab0ICKbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756865Ab0ICKbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Sep 2010 06:31:07 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
@@ -15,10 +15,10 @@ To: jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
         swhiteho@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
         hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
         snitzer@redhat.com, k-ueda@ct.jp.nec.com, mpatocka@redhat.com
-Cc: Tejun Heo <tj@kernel.org>, Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH 17/41] block: use REQ_FLUSH in blkdev_issue_flush()
-Date: Fri,  3 Sep 2010 12:29:32 +0200
-Message-Id: <1283509796-1510-18-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 15/41] block: make sure FSEQ_DATA request has the same rq_disk as the original
+Date: Fri,  3 Sep 2010 12:29:30 +0200
+Message-Id: <1283509796-1510-16-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283509796-1510-1-git-send-email-tj@kernel.org>
 References: <1283509796-1510-1-git-send-email-tj@kernel.org>
@@ -27,68 +27,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update blkdev_issue_flush() to use new REQ_FLUSH interface.
+rq->rq_disk and bio->bi_bdev->bd_disk may differ if a request has
+passed through remapping drivers.  FSEQ_DATA request incorrectly
+followed bio->bi_bdev->bd_disk ending up being issued w/ mismatching
+rq_disk.  Make it follow orig_rq->rq_disk.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Christoph Hellwig <hch@infradead.org>
+Reported-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+Tested-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
 ---
- block/blk-flush.c |   17 ++++++-----------
- 1 files changed, 6 insertions(+), 11 deletions(-)
+ block/blk-flush.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
 diff --git a/block/blk-flush.c b/block/blk-flush.c
-index 7d1fc98..62b7df9 100644
+index cb4c844..7d1fc98 100644
 --- a/block/blk-flush.c
 +++ b/block/blk-flush.c
-@@ -191,13 +191,10 @@ struct request *blk_do_flush(struct request_queue *q, struct request *rq)
- 	return blk_flush_complete_seq(q, skip, 0);
- }
- 
--static void bio_end_empty_barrier(struct bio *bio, int err)
-+static void bio_end_flush(struct bio *bio, int err)
- {
--	if (err) {
--		if (err == -EOPNOTSUPP)
--			set_bit(BIO_EOPNOTSUPP, &bio->bi_flags);
-+	if (err)
- 		clear_bit(BIO_UPTODATE, &bio->bi_flags);
--	}
- 	if (bio->bi_private)
- 		complete(bio->bi_private);
- 	bio_put(bio);
-@@ -235,19 +232,19 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
- 	 * some block devices may not have their queue correctly set up here
- 	 * (e.g. loop device without a backing file) and so issuing a flush
- 	 * here will panic. Ensure there is a request function before issuing
--	 * the barrier.
-+	 * the flush.
- 	 */
- 	if (!q->make_request_fn)
- 		return -ENXIO;
- 
- 	bio = bio_alloc(gfp_mask, 0);
--	bio->bi_end_io = bio_end_empty_barrier;
-+	bio->bi_end_io = bio_end_flush;
- 	bio->bi_bdev = bdev;
- 	if (test_bit(BLKDEV_WAIT, &flags))
- 		bio->bi_private = &wait;
- 
- 	bio_get(bio);
--	submit_bio(WRITE_BARRIER, bio);
-+	submit_bio(WRITE_FLUSH, bio);
- 	if (test_bit(BLKDEV_WAIT, &flags)) {
- 		wait_for_completion(&wait);
- 		/*
-@@ -259,9 +256,7 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
- 			*error_sector = bio->bi_sector;
- 	}
- 
--	if (bio_flagged(bio, BIO_EOPNOTSUPP))
--		ret = -EOPNOTSUPP;
--	else if (!bio_flagged(bio, BIO_UPTODATE))
-+	if (!bio_flagged(bio, BIO_UPTODATE))
- 		ret = -EIO;
- 
- 	bio_put(bio);
+@@ -111,6 +111,13 @@ static struct request *queue_next_fseq(struct request_queue *q)
+ 		break;
+ 	case QUEUE_FSEQ_DATA:
+ 		init_request_from_bio(rq, orig_rq->bio);
++		/*
++		 * orig_rq->rq_disk may be different from
++		 * bio->bi_bdev->bd_disk if orig_rq got here through
++		 * remapping drivers.  Make sure rq->rq_disk points
++		 * to the same one as orig_rq.
++		 */
++		rq->rq_disk = orig_rq->rq_disk;
+ 		rq->cmd_flags &= ~(REQ_FLUSH | REQ_FUA);
+ 		rq->cmd_flags |= orig_rq->cmd_flags & (REQ_FLUSH | REQ_FUA);
+ 		rq->end_io = flush_data_end_io;
 -- 
 1.7.1
 
