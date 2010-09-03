@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab0ICOPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 10:15:54 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:15638 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423Ab0ICOPx (ORCPT
+	id S1757012Ab0ICOQH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 10:16:07 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49564 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755160Ab0ICOQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 10:15:53 -0400
-Message-ID: <4C810313.80000@hp.com>
-Date: Fri, 03 Sep 2010 10:15:47 -0400
-From: Vlad Yasevich <vladislav.yasevich@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Lightning/1.0b1 Thunderbird/3.0.6
+	Fri, 3 Sep 2010 10:16:05 -0400
+Date: Fri, 3 Sep 2010 10:16:03 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tejun Heo <htejun@gmail.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [linux-pm] [PATCH] libata: skip EH autopsy and recovery during
+ suspend
+In-Reply-To: <4C80B81F.8090803@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1009031006510.1548-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-CC: sri@us.ibm.com, linux-sctp@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sctp: prevent reading out-of-bounds memory
-References: <AANLkTineCKfL-UvqfQBTZPDFeqm3Nrpb=pFnZpkSqbEQ@mail.gmail.com>
-In-Reply-To: <AANLkTineCKfL-UvqfQBTZPDFeqm3Nrpb=pFnZpkSqbEQ@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2010 09:48 AM, Dan Rosenberg wrote:
-> Two user-controlled allocations in SCTP are subsequently dereferenced
-> as sockaddr structs, without checking if the dereferenced struct
-> members fall beyond the end of the allocated chunk.  There doesn't
-> appear to be any information leakage here based on how these members
-> are used and additional checking, but it's still worth fixing.
-> 
-> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-> 
-> --- linux-2.6.35.4.orig/net/sctp/socket.c	2010-09-03 08:58:48.127080114 -0400
-> +++ linux-2.6.35.4/net/sctp/socket.c	2010-09-03 09:22:06.337096825 -0400
-> @@ -889,6 +889,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
->  	int err;
->  	int addrcnt = 0;
->  	int walk_size = 0;
-> +	unsigned int remaining = addrs_size;
->  	struct sockaddr *sa_addr;
->  	void *addr_buf;
->  	struct sctp_af *af;
-> @@ -916,6 +917,13 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
->  	/* Walk through the addrs buffer and count the number of addresses. */
->  	addr_buf = kaddrs;
->  	while (walk_size < addrs_size) {
-> +
-> +		/* Don't read out-of-bounds memory */
-> +		if (remaining < sizeof(struct sockaddr)) {
-> +			kfree(kaddrs);
-> +			return -EINVAL;
-> +		}
-> +
+On Fri, 3 Sep 2010, Tejun Heo wrote:
 
-Hm.. we already validate that we have the proper amount of space for a given sockaddr.
-The only thing we are missing is making sure that there is room to get the proper address
-family and I think you can do that without adding any extra variables:
+> > Tejun, I'm planning to make a few changes to the block layer and the
+> > SCSI core in order to implement delayed autosuspend.  These changes
+> > will affect system sleep too, so you may need to know about them.
+> > 
+> > Each request_queue structure will have an rpm_status variable that gets
+> > updated as the corresponding device is suspended or resumed.  When the
+> > status is SUSPENDING or RESUMING, requests will not be sent from the
+> > request_queue to the driver unless they have cmd_type set to
+> > REQ_TYPE_PM_SUSPEND or REQ_TYPE_PM_RESUME (actually I may combine those
+> > two into a single REQ_TYPE_PM type).  If other types of request are
+> > added to the queue when the status isn't ACTIVE, they will cause a
+> > runtime resume to be started.
+> > 
+> > Initially this will affect only drivers using the SCSI layer.  
+> > Commands sent during error handling won't be affected though, because
+> > the SCSI error handler doesn't use requests or queues -- it sends
+> > commands directly to the lower-level driver.
+> > 
+> > Does that all sound okay to you?
+> 
+> Hmm... I can't really tell much without looking at the actual patch
+> but I'm a bit doubtful about using REQ_TYPE_* for suspend/resumes,
+> well, for that matter, for any other purpose than actual IO requests.
+> The current REQ_TYPE_PM_* are only used by ide and it's really messy.
 
-	if (walk_size + sizeof(sa_family_t) > addr_size) {
-		/* Not enough room for address family */
-		kfree(kaddrs);
-		return -EINVAL;
-	}
+Yes.  I'm hoping that these changes will help simplify IDE, but I 
+haven't looked at it yet.
 
--vlad
+> Those special requests are very difficult to use in generic manner.
+> ie. How should remapping / cloning drivers like md, dm and loopback
+> handle them?
 
->  		sa_addr = (struct sockaddr *)addr_buf;
->  		af = sctp_get_af_specific(sa_addr->sa_family);
-> 
-> @@ -929,6 +937,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
->  		addrcnt++;
->  		addr_buf += af->sockaddr_len;
->  		walk_size += af->sockaddr_len;
-> +		remaining -= af->sockaddr_len;
->  	}
-> 
->  	/* Do the work. */
-> @@ -984,6 +993,7 @@ static int __sctp_connect(struct sock* s
->  	void *addr_buf;
->  	unsigned short port;
->  	unsigned int f_flags = 0;
-> +	unsigned int remaining = addrs_size;
-> 
->  	sp = sctp_sk(sk);
->  	ep = sp->ep;
-> @@ -1002,6 +1012,13 @@ static int __sctp_connect(struct sock* s
->  	/* Walk through the addrs buffer and count the number of addresses. */
->  	addr_buf = kaddrs;
->  	while (walk_size < addrs_size) {
-> +
-> +		/* Don't read out-of-bounds memory */
-> +		if (remaining < sizeof(union sctp_addr)) {
-> +			err = -EINVAL;
-> +			goto out_free;
-> +		}
-> +
->  		sa_addr = (union sctp_addr *)addr_buf;
->  		af = sctp_get_af_specific(sa_addr->sa.sa_family);
->  		port = ntohs(sa_addr->v4.sin_port);
-> @@ -1101,6 +1118,7 @@ static int __sctp_connect(struct sock* s
->  		addrcnt++;
->  		addr_buf += af->sockaddr_len;
->  		walk_size += af->sockaddr_len;
-> +		remaining -= af->sockaddr_len;
->  	}
-> 
->  	/* In case the user of sctp_connectx() wants an association
-> 
+They should never need to handle them.  These requests get used only
+for preparing a device to change power modes.  Logical devices don't
+need them, only physical devices do.  For example, you can't put a
+logical RAID device into low-power mode; all you can do is put the
+underlying physical drives into low power.
+
+>  They end up just being a mechanism for specific low
+> level drivers to feed certain requests back to themselves to implement
+> suspend/resume sequence and as there's no clear defined common usage,
+> the meaning of those flags becomes ambiguous and confusing depending
+> on drivers and so on.
+
+With my changes there now will be a clear defined usage.
+
+> Another issue is that power management is probably better handled as a
+> sub problem of generic IO exception handling.  If you throw in
+> hot[un]plugs and transport errors and consider what should happen when
+> those events happen together, things get hairy if power management is
+> not well integrated with the usual exceptionn handling.
+
+I don't see why.  Power management is not exceptional.  The relation
+with hot [un]plug is already taken care of.  Transport error recovery
+will block runtime power management if it occurs while the device is at
+full power; it is an issue only if it occurs during a power transition.  
+The SCSI error handler should work okay since it doesn't send commands
+through the block layer.
+
+Alan Stern
 
