@@ -1,97 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab0ICNsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 09:48:22 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57273 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873Ab0ICNsU (ORCPT
+	id S1755841Ab0ICNsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 09:48:31 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57463 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755403Ab0ICNsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 09:48:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=D25qd0PPM04eucbXnBgI8bmc9OjQrvGHbHTI5obaBP58PE1BBf4eAQ1R+zTQTgudZ8
-         zF1Tsdzv3e7tMaov6sMvFaQX90EicVYc0wIka+o9sE7oCo6evMRwXZqaabEKghhJar4T
-         3K22Ij9Fmyk2hpPRaaGepiJ02Losw5uziO/GQ=
+	Fri, 3 Sep 2010 09:48:30 -0400
+Date: Fri, 3 Sep 2010 14:48:27 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+Cc: meego-dev@meego.com, Andrew Morton <akpm@linux-foundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Alek Du <alek.du@intel.com>,
+        Richard =?iso-8859-1?Q?R=F6jfors?= 
+	<richard.rojfors@mocean-labs.com>,
+        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        arjan@linux.intel.com, gregkh@suse.de, yong.y.wang@intel.com,
+        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_GPIO driver to 2.6.35
+Message-ID: <20100903134827.GA7614@rakim.wolfsonmicro.main>
+References: <4C80D3C8.9020204@dsn.okisemi.com>
 MIME-Version: 1.0
-Date: Fri, 3 Sep 2010 09:48:18 -0400
-Message-ID: <AANLkTineCKfL-UvqfQBTZPDFeqm3Nrpb=pFnZpkSqbEQ@mail.gmail.com>
-Subject: [PATCH] sctp: prevent reading out-of-bounds memory
-From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-To: vladislav.yasevich@hp.com, sri@us.ibm.com
-Cc: linux-sctp@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C80D3C8.9020204@dsn.okisemi.com>
+X-Cookie: Life is not for everyone.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two user-controlled allocations in SCTP are subsequently dereferenced
-as sockaddr structs, without checking if the dereferenced struct
-members fall beyond the end of the allocated chunk.  There doesn't
-appear to be any information leakage here based on how these members
-are used and additional checking, but it's still worth fixing.
+On Fri, Sep 03, 2010 at 07:54:00PM +0900, Masayuki Ohtak wrote:
 
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+> Topcliff PCH is the platform controller hub that is going to be used in
+> Intel's upcoming general embedded platform. All IO peripherals in
+> Topcliff PCH are actually devices sitting on AMBA bus.
+> Topcliff PCH has GPIO I/F. Using this I/F, it is able to access system
+> devices connected to GPIO.
 
---- linux-2.6.35.4.orig/net/sctp/socket.c	2010-09-03 08:58:48.127080114 -0400
-+++ linux-2.6.35.4/net/sctp/socket.c	2010-09-03 09:22:06.337096825 -0400
-@@ -889,6 +889,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
- 	int err;
- 	int addrcnt = 0;
- 	int walk_size = 0;
-+	unsigned int remaining = addrs_size;
- 	struct sockaddr *sa_addr;
- 	void *addr_buf;
- 	struct sctp_af *af;
-@@ -916,6 +917,13 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
- 	/* Walk through the addrs buffer and count the number of addresses. */
- 	addr_buf = kaddrs;
- 	while (walk_size < addrs_size) {
-+
-+		/* Don't read out-of-bounds memory */
-+		if (remaining < sizeof(struct sockaddr)) {
-+			kfree(kaddrs);
-+			return -EINVAL;
-+		}
-+
- 		sa_addr = (struct sockaddr *)addr_buf;
- 		af = sctp_get_af_specific(sa_addr->sa_family);
+This has a similar issue to the CAN driver - it isn't a standard kernel
+GPIO driver, it implements a custom ioctl based userspace ABI.  This
+means it's not usable from within the kernel and isn't suitable for
+mainline.  You should be implementing support for the device using the
+standard interfaces used by the other GPIO drivers in kernel.
 
-@@ -929,6 +937,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(st
- 		addrcnt++;
- 		addr_buf += af->sockaddr_len;
- 		walk_size += af->sockaddr_len;
-+		remaining -= af->sockaddr_len;
- 	}
+> +/**
+> + * pch_gpio_handler - Implements the interrupt handler functionality of
+> + *		      the gpio module.
+> + * @irq:	Contains the irq value
+> + * @pData:	Contains the reference to the base gpio address.
 
- 	/* Do the work. */
-@@ -984,6 +993,7 @@ static int __sctp_connect(struct sock* s
- 	void *addr_buf;
- 	unsigned short port;
- 	unsigned int f_flags = 0;
-+	unsigned int remaining = addrs_size;
+Please use the standard kernel coding style conventions for naming
+variables.
 
- 	sp = sctp_sk(sk);
- 	ep = sp->ep;
-@@ -1002,6 +1012,13 @@ static int __sctp_connect(struct sock* s
- 	/* Walk through the addrs buffer and count the number of addresses. */
- 	addr_buf = kaddrs;
- 	while (walk_size < addrs_size) {
-+
-+		/* Don't read out-of-bounds memory */
-+		if (remaining < sizeof(union sctp_addr)) {
-+			err = -EINVAL;
-+			goto out_free;
-+		}
-+
- 		sa_addr = (union sctp_addr *)addr_buf;
- 		af = sctp_get_af_specific(sa_addr->sa.sa_family);
- 		port = ntohs(sa_addr->v4.sin_port);
-@@ -1101,6 +1118,7 @@ static int __sctp_connect(struct sock* s
- 		addrcnt++;
- 		addr_buf += af->sockaddr_len;
- 		walk_size += af->sockaddr_len;
-+		remaining -= af->sockaddr_len;
- 	}
+> +static irqreturn_t pch_gpio_handler(s32 irq, void *pData)
+> +{
+> +	irqreturn_t ret = IRQ_NONE;
+> +	u32 pch_idisp_regval;
+> +	struct pch_gpio_chip *chip =  (struct pch_gpio_chip *)pData;
 
- 	/* In case the user of sctp_connectx() wants an association
+No need to cast away from void.
+
+> +
+> +	pch_idisp_regval =
+> +			chip->pch_gpio_bit_mask & ioread32(&chip->reg->idisp);
+> +	if (pch_idisp_regval != 0) {
+> +		/*invoke the callback */
+> +		(*pch_gpio_cbr) (pch_idisp_regval, chip);
+
+The interrupts from the controller should be hooked up to genirq, not
+using this custom callback mechanism.
