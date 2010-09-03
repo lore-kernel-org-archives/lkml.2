@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757904Ab0ICMbH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 08:31:07 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:6771 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab0ICMbF (ORCPT
+	id S1757968Ab0ICMbb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 08:31:31 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:54809 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757939Ab0ICMba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 08:31:05 -0400
-Message-ID: <4C80EA87.60604@tilera.com>
-Date: Fri, 3 Sep 2010 08:31:03 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: <akpm@linux-foundation.org>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 7/8] tile: enable ARCH_DMA_ADDR_T_64BIT
-References: <20100903094753S.fujita.tomonori@lab.ntt.co.jp> <5uMrkKwSLHA.6664@exchange1.tad.internal.tilera.com> <4C804AAE.2060803@tilera.com>
-In-Reply-To: <4C804AAE.2060803@tilera.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Sep 2010 08:31:30 -0400
+To: Valerie Aurora <vaurora@redhat.com>
+CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, neilb@suse.de, viro@zeniv.linux.org.uk,
+        jblunck@suse.de, hch@infradead.org
+In-reply-to: <20100902214215.GB16004@shell> (message from Valerie Aurora on
+	Thu, 2 Sep 2010 17:42:15 -0400)
+Subject: Re: [PATCH 5/5] union: hybrid union filesystem prototype
+References: <20100826183340.027591901@szeredi.hu> <20100826183507.402136609@szeredi.hu> <20100902214215.GB16004@shell>
+Message-Id: <E1OrVQR-0007Ds-MY@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Fri, 03 Sep 2010 14:31:23 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 9/2/2010 9:09 PM, Chris Metcalf wrote:
-> On 9/2/2010 8:49 PM, FUJITA Tomonori wrote:
->> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
->> Cc: cmetcalf@tilera.com
->> ---
->>  arch/tile/Kconfig |    3 +++
->>  1 files changed, 3 insertions(+), 0 deletions(-)
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+On Thu, 2 Sep 2010, Valerie Aurora wrote:
+> > Missing:
+> > 
+> >  - upgrade credentials for copy-up
+> >  - ensure that filesystems part of the union are not modified outside
+> >    the union
+> 
+> Just a note that the infrastructure I wrote to do this last bullet
+> point for union mounts (hard read-only count plus mount checks) is
+> completely compatible with hybrid union fs.
 
-Sorry, should have said
+Thanks.
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+I've used some infrastructure (like parts of the copy up code) from
+union mounts.
 
-I didn't mean to suggest I was taking the patch into my own patch queue.
+One way to generalize the read-only counts infrastructure is not to
+require MS_RDONLY on the superblock, but count the number of
+read-write mounts of the sb.  If it's zero then that's equivalent to
+MS_RDONLY.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+For the writable layer the same can be used, except the overlay
+filesystem can get a single private read-write mount.  This means that
+the upper layer can also be mounted multiple times, but cannot be part
+of other unions and cannot be mounted read write to userspace.
 
+Thanks,
+Miklos
