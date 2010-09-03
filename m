@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab0ICNyC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 09:54:02 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36998 "EHLO mga02.intel.com"
+	id S1755941Ab0ICN4x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 09:56:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44163 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751405Ab0ICNyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 09:54:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,313,1280732400"; 
-   d="scan'208";a="653932517"
-Message-ID: <4C80FDF7.1080106@linux.intel.com>
-Date: Fri, 03 Sep 2010 06:53:59 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        "robert.richter" <robert.richter@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1752958Ab0ICN4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 09:56:50 -0400
+Date: Fri, 3 Sep 2010 09:56:13 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.kernel.org>
-Subject: Re: [PATCH] perf, x86: Disable perf if the BIOS got its grubby paws
- on the PMU
-References: <1283505227.1783.224.camel@laptop>
-In-Reply-To: <1283505227.1783.224.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-ide@vger.kernel.org
+Subject: Re: hibernation hangs with ATA errors (lockup_detector bug)
+Message-ID: <20100903135613.GV4879@redhat.com>
+References: <4C03C608.1040600@gmail.com>
+ <20100601135004.GP15159@redhat.com>
+ <4C051D44.7040203@gmail.com>
+ <20100602184459.GA15159@redhat.com>
+ <4C0B3E94.6020506@gmail.com>
+ <4C80B338.6020701@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C80B338.6020701@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/3/2010 2:13 AM, Peter Zijlstra wrote:
->
-> +static void print_BIOS_fail(void)
-> +{
-> +	printk(KERN_ERR "\n");
-> +	printk(KERN_ERR "=============================================\n");
-> +	printk(KERN_ERR "It appears the BIOS is actively using the PMU\n");
-> +	printk(KERN_ERR "this avoids Linux from using it, please de-  \n");
-> +	printk(KERN_ERR "activate this BIOS feature or request a BIOS \n");
-> +	printk(KERN_ERR "update from your vendor.                     \n");
-> +	printk(KERN_ERR "=============================================\n");
-> +
-> +	memset(&x86_pmu, 0, sizeof(x86_pmu));
-> +}
-> +
->    
+On Fri, Sep 03, 2010 at 10:35:04AM +0200, Jiri Slaby wrote:
+> On 06/06/2010 08:22 AM, Jiri Slaby wrote:
+> > On 06/02/2010 08:44 PM, Don Zickus wrote:
+> >> --- a/kernel/watchdog.c
+> >> +++ b/kernel/watchdog.c
+> >> @@ -550,8 +550,7 @@ cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+> >>  		break;
+> >>  	case CPU_ONLINE:
+> >>  	case CPU_ONLINE_FROZEN:
+> >> -		if (watchdog_enable(hotcpu))
+> >> -			return NOTIFY_BAD;
+> >> +		watchdog_enable(hotcpu)
+> > 
+> > This fixes the problem indeed.
+> 
+> Hi, was this fixed somehow? I still use this hunk and don't know if it
+> is needed:
 
+I have to go re-review the problem again.  I might have forgot to bring it
+in.  Thanks for reminding me!
 
-tell us how you really feel :-)
+Cheers,
+Don
 
-do you want to add a phone number of the support line of the vendor 
-(based on DMI data of course) ?
-
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -524,7 +524,7 @@ cpu_callback(struct notifier_block *nfb, unsigned
+> long action, void *hcpu)
+>                 break;
+>         case CPU_ONLINE:
+>         case CPU_ONLINE_FROZEN:
+> -               err = watchdog_enable(hotcpu);
+> +               watchdog_enable(hotcpu);
+>                 break;
+>  #ifdef CONFIG_HOTPLUG_CPU
+>         case CPU_UP_CANCELED:
+> 
+> thanks,
+> -- 
+> js
