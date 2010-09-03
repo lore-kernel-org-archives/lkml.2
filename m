@@ -1,33 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab0ICIir (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 04:38:47 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:53798 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755875Ab0ICIip convert rfc822-to-8bit
+	id S1756127Ab0ICIk0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 04:40:26 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:41131 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755548Ab0ICIkZ convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 04:38:45 -0400
+	Fri, 3 Sep 2010 04:40:25 -0400
 From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Kenneth Heitke <kheitke@codeaurora.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        "tsoni@codeaurora.org" <tsoni@codeaurora.org>
-Cc: "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
         Crane Cai <crane.cai@amd.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Ralf Baechle <ralf@linux-mips.org>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
         "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 3 Sep 2010 10:38:08 +0200
-Subject: RE: [PATCH v2 2/2] i2c: QUP based bus driver for Qualcomm MSM
- chipsets
-Thread-Topic: [PATCH v2 2/2] i2c: QUP based bus driver for Qualcomm MSM
- chipsets
-Thread-Index: ActK9stP3n1GLKWWSDScK0P0zqEYWwAS89OA
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A026B35EA9D@EXDCVYMBSTM006.EQ1STM.local>
-References: <1283470197-21148-1-git-send-email-kheitke@codeaurora.org>
- <1283470197-21148-3-git-send-email-kheitke@codeaurora.org>
-In-Reply-To: <1283470197-21148-3-git-send-email-kheitke@codeaurora.org>
+Cc: "yong.y.wang@intel.com" <yong.y.wang@intel.com>,
+        "qi.wang@intel.com" <qi.wang@intel.com>,
+        "andrew.chih.howe.khor@intel.com" <andrew.chih.howe.khor@intel.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Date: Fri, 3 Sep 2010 10:39:45 +0200
+Subject: RE: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
+Thread-Topic: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
+Thread-Index: ActLFiQ0kULADb/2QM+c15scoe8zvQALVPtw
+Message-ID: <CEE6BB42CAD6E947908279175AF8470A026B35EAA3@EXDCVYMBSTM006.EQ1STM.local>
+References: <4C80692E.80004@dsn.okisemi.com>
+In-Reply-To: <4C80692E.80004@dsn.okisemi.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -40,16 +41,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Kenneth]
+[Masayuki]
 
-> From: Kenneth Heitke [mailto:kheitke@codeaurora.org]
-> Subject: [PATCH v2 2/2] i2c: QUP based bus driver for Qualcomm MSM
-> chipsets
-> (...)
-> +	dev->one_bit_t = USEC_PER_SEC/pdata->bus_freq;
+> We have updated for your comments.
+> Please confirm below.
 
-Maybe you want to use DIV_ROUND_UP() from kernel.h here
-to be on the safe side?
+It's really looking good now! :-)
+Reviewed-by: Linus Walleij <linus.walleij@stericsson.com>
 
 Yours,
 Linus Walleij
