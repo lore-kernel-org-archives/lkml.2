@@ -1,122 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757098Ab0ICU2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 16:28:50 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35933 "EHLO mx3.mail.elte.hu"
+	id S1754040Ab0ICUaG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 16:30:06 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:53922 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752829Ab0ICU2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 16:28:49 -0400
-Date: Fri, 3 Sep 2010 22:28:39 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Jean Pihet <jean.pihet@newoldbits.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        Arjan Van De Ven <arjan@linux.intel.com>, arjan@infradead.org,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tracing, perf: add more power related events
-Message-ID: <20100903202839.GA8679@elte.hu>
-References: <AANLkTikvbn3+JPc7pnGZk-H4B71MHTu+-vjuzfJw_7PC@mail.gmail.com>
- <201009032005.08268.trenn@suse.de>
- <20100903195555.GA1663@elte.hu>
- <201009032210.08524.trenn@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009032210.08524.trenn@suse.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -0.9
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-0.9 required=5.9 tests=BAYES_00,URIBL_RHS_DOB autolearn=no SpamAssassin version=3.2.5
-	1.1 URIBL_RHS_DOB          Contains an URI of a new domain (Day Old Bread)
-	[URIs: marc.info]
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754705Ab0ICUaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 16:30:04 -0400
+Subject: Re: [RFC PATCH v9 00/16] Provide a zero-copy method on KVM
+ virtio-net.
+From: Sridhar Samudrala <sri@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Shirley Ma <mashirle@us.ibm.com>, xiaohui.xin@intel.com,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+In-Reply-To: <20100903101437.GA31575@redhat.com>
+References: <1281086624-5765-1-git-send-email-xiaohui.xin@intel.com>
+	 <1281489804.3391.23.camel@localhost.localdomain>
+	 <20100903101437.GA31575@redhat.com>
+Content-Type: text/plain
+Date: Fri, 03 Sep 2010 13:29:57 -0700
+Message-Id: <1283545797.14478.5.camel@w-sridhar.beaverton.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Thomas Renninger <trenn@suse.de> wrote:
-
-> On Friday 03 September 2010 21:55:55 Ingo Molnar wrote:
+On Fri, 2010-09-03 at 13:14 +0300, Michael S. Tsirkin wrote:
+> On Tue, Aug 10, 2010 at 06:23:24PM -0700, Shirley Ma wrote:
+> > Hello Xiaohui,
 > > 
-> > * Thomas Renninger <trenn@suse.de> wrote:
+> > On Fri, 2010-08-06 at 17:23 +0800, xiaohui.xin@intel.com wrote:
+> > > Our goal is to improve the bandwidth and reduce the CPU usage.
+> > > Exact performance data will be provided later. 
 > > 
-> > > Hi Jean,
-> > > 
-> > > Summary at the beginning if people stop reading on the details
-> > > below...:
-> > > Nice work!
-> > > You have my vote to get this merged.
-> > > I think it's up to Ingo to push it.
+> > Have you had any performance data to share here? I tested my
+> > experimental macvtap zero copy for TX only. The performance I have seen
+> > as below without any tuning, (default setting):
 > > 
-> > Well, the patch that got posted:
+> > Before: netperf 16K message size results with 60 secs run is 7.5Gb/s
+> > over ixgbe 10GbE card. perf top shows:
 > > 
-> >   [PATCH] tracing, perf: add more power related events
+> > 2103.00 12.9% copy_user_generic_string
+> > 1541.00  9.4% handle_tx
+> > 1490.00  9.1% _raw_spin_unlock_irqrestore
+> > 1361.00  8.3% _raw_spin_lock_irqsave
+> > 1288.00  7.9% _raw_spin_lock
+> > 924.00  5.7% vhost_worker
 > > 
-> > Only adds tracepoints to power.h, but doesnt actually use them anywhere 
-> > ...
+> > After: netperf results with 60 secs run is 8.1Gb/s, perf output:
 > > 
-> > Is there a companion patch i missed?
-> Yep.
-> Jean has nicely made up a tiny website he refered to in his mail:
-> http://www.omappedia.com/wiki/Power_Management_Debug_and_Profiling
-
-Ah, that wasnt in the first patch. (Please re-start discussion threads 
-when something is re-submitted)
-
-Nice website. Looks like these new tracepoints are really useful.
-
-> There he shows the whole big patch and states:
-
-Generally it's nice to post patches to lkml too, so that people have 
-something to discuss.
-
-> Since the patch touches generic files (in include/trace/events/power.h), it is split in parts:
->     * generic code: submitted to the LKML, cf. http://marc.info/?l=linux-kernel&m=128195697205096&w=4 ,
->     * ARM/OMAP specific code for the already existing events: to be submitted to l-o, cf. http://www.spinics.net/lists/linux-omap/msg35357.html,
->     * ARM/OMAP specific code for the new events, to be submitted once the generic code is accepted. 
+> > 1093.00  9.9% _raw_spin_unlock_irqrestore
+> > 1048.00  9.5% handle_tx
+> > 934.00  8.5% _raw_spin_lock_irqsave
+> > 864.00  7.9% _raw_spin_lock
+> > 644.00  5.9% vhost_worker
+> > 387.00  3.5% use_mm 
+> > 
+> > I am still working on collecting more data (latency, cpu
+> > utilization...). I will let you know once I get all data for macvtap TX
+> > zero copy. Also I found some vhost performance regression on the new
+> > kernel with tuning. I used to get 9.4Gb/s, now I couldn't get it.
+> > 
+> > Shirley
 > 
-> > Also, it would be nice to add it to x86 and to OMAP at once, and 
-> > synchronize up all the power events
->
-> I can add sleep state events to x86 acpi parts, but even these are, as 
-> said, not that interesting as they might be on ARM ultra mobile use 
-> cases.
+> Could you please try disabling mergeable buffers, and see if this gets
+> you back where you were?
+> -global virtio-net-pci.mrg_rxbuf=off 
 
-Yeah - but as long as they are at least attempted to be cross-platform, 
-that would be fine. The ACPI folks are Cc:-ed so they can object if they 
-dont like something.
+I don't think Shirley had mergeable buffers on when she ran these tests. 
+The qemu patch to support mergeable buffers with vhost is not yet upstream.
 
-> > - and check how existing tools like 
-> > powertop make use of such events - and sync it all up.
->
-> Does powertop use these events?
+Shirley is on vacation and will be back on Sept 7 and can provide more
+detailed performance data and post her patch.
 
-It certainly does quite a few things wrt. power usage analysis. Arjan is 
-on the Cc:, maybe he has an opinion about these tracepoints.
+Thanks
+Sridhar
 
-> > We dont want to have inconsistent, architecture-dependent events in 
-> > the end, for obvious reasons.
->
-> Jean also shows screenshots at the link above
-> how perf timechart or the the corresponding
-> gui app PyTimechart still works together with these.
-> I can't see how the new events should break an existing app, they should
-> just ignore events they are not aware of.
-
-Yeah, extensions rarely break anything. What i mentioned was 
-'inconsistent, architecture-dependent events', which is not a fact but a 
-possible danger: as these new events are only for OMAP right now. They 
-might be OK, they might be not OK - i dont know, that's why i suggested 
-to make them cross-platform in practice too.
-
-So it would be nice to get some feedback from the ACPI folks - but if 
-you guys can also do an ACPI patch that would be even better!
-
-Thanks,
-
-	Ingo
