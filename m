@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab0ICANm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Sep 2010 20:13:42 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:53417 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab0ICANl (ORCPT
+	id S1756904Ab0ICAOK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Sep 2010 20:14:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14705 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab0ICAOI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Sep 2010 20:13:41 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
-Cc: kosaki.motohiro@jp.fujitsu.com, "M. Vefa Bicakci" <bicave@superonline.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org,
-        Minchan Kim <minchan.kim@gmail.com>
-In-Reply-To: <201009022224.59313.rjw@sisk.pl>
-References: <201009022157.18561.rjw@sisk.pl> <201009022224.59313.rjw@sisk.pl>
-Message-Id: <20100903085756.B657.A69D9226@jp.fujitsu.com>
+	Thu, 2 Sep 2010 20:14:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=SXE3+M6f/BDBT550cNXIGAJBnN/7mOLGpwvN6V8/tPZ9yRKpI43zGSqZpZ16j24g4R
+         pF7fHPxAH/WRi/CayGbg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  3 Sep 2010 09:13:37 +0900 (JST)
+In-Reply-To: <201009030109.40816.rjw@sisk.pl>
+References: <AANLkTim7UM80MrwKoAz3hUFrqL2Fbyw6XS=X89PXRc2Q@mail.gmail.com>
+	<Pine.LNX.4.44L0.1009021723460.1311-100000@iolanthe.rowland.org>
+	<AANLkTin_-y2nsXhH+mXv=bku=WXO7VhfvknYwtLhURfv@mail.gmail.com>
+	<201009030109.40816.rjw@sisk.pl>
+Date: Thu, 2 Sep 2010 17:14:04 -0700
+X-Google-Sender-Auth: 4Qu_rad8fR8-V15DL97UJZIWc7A
+Message-ID: <AANLkTinbgShA+m3sdXrYAvW7ctCExp+fZv5EMuYSMLiE@mail.gmail.com>
+Subject: Re: [PATCH] PM: Prevent waiting forever on asynchronous resume after abort
+From: Colin Cross <ccross@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Sep 2, 2010 at 4:09 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, September 03, 2010, Colin Cross wrote:
+>> On Thu, Sep 2, 2010 at 2:34 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> > On Thu, 2 Sep 2010, Colin Cross wrote:
+>> >
+>> >> That would work, but I still don't see why it's better.  With either
+>> >> of your changes, the power.completion variable is storing state, and
+>> >> not just used for notification.  However, the exact meaning of that
+>> >> state is unclear, especially during the transition from an aborted
+>> >> suspend to resume, and the state is duplicating power.status.  Setting
+>> >> it to complete in dpm_prepare is especially confusing, because at that
+>> >> point nothing is completed, it hasn't even been started.
+>> >
+>> > The state being waited for varies from time to time and is only
+>> > partially related to power.status.  Instead of using a completion I
+>> > suppose we could have used a new "transition_complete" variable
+>> > together with a waitqueue.  Would you prefer that?  It's effectively
+>> > the same thing as a completion, but without the nice packaging already
+>> > provided by the kernel.
+>> No, that doesn't change anything.  What I'd prefer to see is a
+>> wait_for_condition on the desired state of the parent.  As is,
+>> power.completion means one thing during suspend (the device has
+>> started, but not finished, suspending), and a different thing during
+>> resume (the device has not finished resuming, and may not have started
+>> resuming).  That difference is exactly what caused the bug - the
+>> completion has to be set on init so that it is set before the device
+>> starts suspend.
+>
+> Not really.  The bug is there, because my analysis of the suspend error code
+> path was wrong.  Sorry about that, but it has nothing to do with the "different
+> meaning" of the completions during suspend and resume.
+>
+> The completions here are simply used to enforce a specific ordering of
+> operations, nothing more.  They have no meaning beyond that.
+The completion variable maintains state.  It has meaning whether or
+not you want it to.  Leaving it as a completion variable requires that
+you manage that state, which is difficult considering there is no
+documentation and no clear idea in the code of exactly when that state
+is set or clear.
 
-> > > > Like in the patch below, perhaps?
-> > > 
-> > > Looks like fine. but I have one question. hibernate_preallocate_memory() call
-> > > preallocate_image_memory() two times. Why do you only care latter one?
-> > > former one seems similar risk.
-> > 
-> > The first one is mandatory, ie. if we can't allocate the requested number of
-> > pages at this point, we fail the entire hibernation.  In that case the
-> > performance hit doesn't matter.
-> 
-> IOW, your patch at http://lkml.org/lkml/2010/9/2/262 is still necessary to
-> protect against the infinite loop in that case.
+It would be much cleaner to use a wait queue, and use
+wait_on_condition to wait for the device to be in the desired state.
 
-As far as I understand, we need distinguish two allocation failure.
-  1) failure because no enough memory
-	-> yes, hibernation should fail
- 2) failure because already allocated enough lower zone memory
-	-> why should we fail?
-
-If the system has a lot of memory, scenario (2) is happen frequently than (1).
-I think we need check alloc_highmem and alloc_normal variable and call
-preallocate_image_highmem() again instead preallocate_image_memory()
-if we've alread allocated enough lots normal memory.
-
-nit?
-
-
-
+>> I'll send the complete_all on init patch, as it's the only way to fix
+>> the problem given the current implementation of dpm_wait.
+>
+> Great, thanks.
+>
+> Rafael
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
