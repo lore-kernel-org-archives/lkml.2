@@ -1,151 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab0ICI0E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 04:26:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57364 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754219Ab0ICI0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 04:26:00 -0400
-Date: Fri, 3 Sep 2010 10:25:58 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kleen, Andi" <andi.kleen@intel.com>,
-        Haicheng Li <haicheng.li@linux.intel.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] Make is_mem_section_removable more conformable
- with offlining code
-Message-ID: <20100903082558.GC10686@tiehlicka.suse.cz>
-References: <20100902082829.GA10265@tiehlicka.suse.cz>
- <20100902180343.f4232c6e.kamezawa.hiroyu@jp.fujitsu.com>
- <20100902092454.GA17971@tiehlicka.suse.cz>
- <AANLkTi=cLzRGPCc3gCubtU7Ggws7yyAK5c7tp4iocv6u@mail.gmail.com>
- <20100902131855.GC10265@tiehlicka.suse.cz>
- <AANLkTikYt3Hu_XeNuwAa9KjzfWgpC8cNen6q657ZKmm-@mail.gmail.com>
- <20100902143939.GD10265@tiehlicka.suse.cz>
- <20100902150554.GE10265@tiehlicka.suse.cz>
- <20100903121003.e2b8993a.kamezawa.hiroyu@jp.fujitsu.com>
- <20100903121452.2d22b3aa.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755325Ab0ICI2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 04:28:38 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:38597 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083Ab0ICI2g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 04:28:36 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH -resend 1/1] HPET: unmap unused I/O space
+Date: Fri,  3 Sep 2010 10:27:54 +0200
+Message-Id: <1283502474-15379-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100903121452.2d22b3aa.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 03-09-10 12:14:52, KAMEZAWA Hiroyuki wrote:
-[...]
-> ---
->  include/linux/memory_hotplug.h |    1 
->  mm/memory_hotplug.c            |   15 --------
->  mm/page_alloc.c                |   76 ++++++++++++++++++++++++++++++-----------
->  3 files changed, 59 insertions(+), 33 deletions(-)
-> 
-> Index: mmotm-0827/mm/page_alloc.c
-> ===================================================================
-> --- mmotm-0827.orig/mm/page_alloc.c
-> +++ mmotm-0827/mm/page_alloc.c
-> @@ -5274,11 +5274,63 @@ void set_pageblock_flags_group(struct pa
->   * page allocater never alloc memory from ISOLATE block.
->   */
->  
-> +static int __count_unmovable_pages(struct zone *zone, struct page *page)
-> +{
-> +	unsigned long pfn, iter, found;
-> +	/*
-> +	 * For avoiding noise data, lru_add_drain_all() should be called.
-> + 	 * before this.
-> + 	 */
-> +	if (zone_idx(zone) == ZONE_MOVABLE)
-> +		return 0;
+When the initialization code in hpet founds a memory resource and does
+not found IRQ, it does not unmap the memory resource previously
+mapped.
 
-Cannot ZONE_MOVABLE contain different MIGRATE_types?
+There are buggy BIOSes which report resources exactly like this and
+what is worse the memory region bases point to normal RAM. This
+normally would not matter since the space is not touched. But when PAT
+is turned on, ioremap causes the page to be uncached and sets this bit
+in page->flags.
 
-> +
-> +	pfn = page_to_pfn(page);
-> +	for (found = 0, iter = 0; iter < pageblock_nr_pages; iter++) {
-> +		unsigned long check = pfn + iter;
-> +
-> +		if (!pfn_valid_within(check)) {
-> +			iter++;
-> +			continue;
-> +		}
-> +		page = pfn_to_page(check);
-> +		if (!page_count(page)) {
-> +			if (PageBuddy(page))
+Then when the page is about to be used by the allocator, it is
+reported as:
+BUG: Bad page state in process md5sum  pfn:3ed00
+page:ffffea0000dbd800 count:0 mapcount:0 mapping:(null) index:0x0
+page flags: 0x20000001000000(uncached)
+Pid: 7956, comm: md5sum Not tainted 2.6.34-12-desktop #1
+Call Trace:
+ [<ffffffff810df851>] bad_page+0xb1/0x100
+ [<ffffffff810dfa45>] prep_new_page+0x1a5/0x1c0
+ [<ffffffff810dfe01>] get_page_from_freelist+0x3a1/0x640
+ [<ffffffff810e01af>] __alloc_pages_nodemask+0x10f/0x6b0
+...
 
-Why do you check page_count as well? PageBuddy has alwyas count==0,
-right?
+In this particular case:
 
-> +				iter += (1 << page_order(page)) - 1;
-> +			continue;
-> +		}
-> +		if (!PageLRU(page))
-> +			found++;
-> +		/*
-> +		 * If the page is not RAM, page_count()should be 0.
-> +		 * we don't need more check. This is an _used_ not-movable page.
-> +		 *
-> +		 * The problematic thing here is PG_reserved pages. But if
-> +		 * a PG_reserved page is _used_ (at boot), page_count > 1.
-> +		 * But...is there PG_reserved && page_count(page)==0 page ?
+1) HPET returns 3ed00000 as memory region base, but it is not in
+reserved ranges reported by the BIOS (excerpt):
+ BIOS-e820: 0000000000100000 - 00000000af6cf000 (usable)
+ BIOS-e820: 00000000af6cf000 - 00000000afdcf000 (reserved)
 
-Can we have PG_reserved && PG_lru? I also quite don't understand the
-comment. At this place we are sure that the page is valid and neither
-free nor LRU.
+2) there is no IRQ resource reported by HPET method. On the other
+hand, the Intel HPET specs (1.0a) says (3.2.5.1):
+_CRS (
+  // Report 1K of memory consumed by this Timer Block
+  memory range consumed
+  // Optional: only used if BIOS allocates Interrupts [1]
+  IRQs consumed
+)
 
-> +		 */
-> +	}
-> +	return found;
-> +}
-> +
-> +bool is_pageblock_removable(struct page *page)
-> +{
-> +	struct zone *zone = page_zone(page);
-> +	unsigned long flags;
-> +	int num;
-> +
-> +	spin_lock_irqsave(&zone->lock, flags);
-> +	num = __count_unmovable_pages(zone, page);
-> +	spin_unlock_irqrestore(&zone->lock, flags);
+[1] For case where Timer Block is configured to consume IRQ0/IRQ8 AND
+Legacy 8254/Legacy RTC hardware still exists, the device objects
+associated with 8254 & RTC devices should not report IRQ0/IRQ8 as
+“consumed resources.”
 
-Isn't this a problem? The function is triggered from userspace by sysfs
-(0444 file) and holds the lock for pageblock_nr_pages. So someone can
-simply read the file and block the zone->lock preventing/delaying
-allocations for the rest of the system.
+So in theory we should check whether if it is the case and use those
+interrupts instead.
 
-I think that the function should rather bail out as soon as possible.
+Anyway the address reported by the BIOS here is bogus, so non-presence
+of IRQ doesn't mean the "optional" part in point 2).
 
-[...]
+Since I got no reply previously, fix this by simply unmapping the
+space when IRQ is not found and memory region was mapped previously.
+It would be probably more safe to walk the resources again and unmap
+appropriately depending on type.  But as we now use only ioremap for
+both 2 memory resource types, it is not necessarily needed right now.
 
->  	/* All pageblocks in the memory block are likely to be hot-removable */
-> Index: mmotm-0827/include/linux/memory_hotplug.h
-> ===================================================================
-> --- mmotm-0827.orig/include/linux/memory_hotplug.h
-> +++ mmotm-0827/include/linux/memory_hotplug.h
-> @@ -76,6 +76,7 @@ extern int __add_pages(int nid, struct z
->  extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
->  	unsigned long nr_pages);
->  
-> +extern bool is_pageblock_removable(struct page *page);
->  #ifdef CONFIG_NUMA
->  extern int memory_add_physaddr_to_nid(u64 start);
->  #else
+References: https://bugzilla.novell.com/show_bug.cgi?id=629908
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
+---
+ drivers/char/hpet.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Shouldn't this go rather under CONFIG_MEMORY_HOTREMOVE?
-
-Thanks!
+diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
+index 8372a34..e3e184b 100644
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -1017,6 +1017,8 @@ static int hpet_acpi_add(struct acpi_device *device)
+ 		return -ENODEV;
+ 
+ 	if (!data.hd_address || !data.hd_nirqs) {
++		if (data.hd_address)
++			iounmap(data.hd_address);
+ 		printk("%s: no address or irqs in _CRS\n", __func__);
+ 		return -ENODEV;
+ 	}
 -- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.2.1
+
+
