@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab0IDWpF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 18:45:05 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:54172 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754158Ab0IDWpE (ORCPT
+	id S1754293Ab0IDWuI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 18:50:08 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:52277 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754158Ab0IDWuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 18:45:04 -0400
-Date: Sat, 4 Sep 2010 23:44:53 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: Hugh Dickins <hughd@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] Revert "drm/i915: fix vblank wait test condition"
-Message-ID: <20100904224453.GA31664@sucs.org>
-References: <1283588234-2514-1-git-send-email-penberg@kernel.org> <89k83a$9hv9li@azsmga001.ch.intel.com> <AANLkTi=_OW5NvnS1oWzt3DW9CPPwNX_sAkPh_QOuXzhv@mail.gmail.com> <alpine.LSU.2.00.1009041244440.3044@sister.anvils> <87vd6ls0jd.fsf@turtle.gmx.de>
+	Sat, 4 Sep 2010 18:50:07 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C82CD1B.7000607@s5r6.in-berlin.de>
+Date: Sun, 05 Sep 2010 00:50:03 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87vd6ls0jd.fsf@turtle.gmx.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Martin Steigerwald <Martin@lichtvoll.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: stable? quality assurance?
+References: <201007110918.42120.Martin@lichtvoll.de> <201009041839.09261.Martin@lichtvoll.de> <4C829CFF.8080905@s5r6.in-berlin.de> (sfid-20100904_213939_880548_666DFBB9) <201009042221.43862.Martin@lichtvoll.de>
+In-Reply-To: <201009042221.43862.Martin@lichtvoll.de>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 04, 2010 at 10:42:46PM +0200, Sven Joachim wrote:
-> On 2010-09-04 21:54 +0200, Hugh Dickins wrote:
+Martin Steigerwald wrote:
+> Am Samstag 04 September 2010 schrieb Stefan Richter:
+>> Put simply, the paid developers work on what they are paid for.  The
+>> volunteers work on what they are interested in.
 > 
-> > On Sat, 4 Sep 2010, Pekka Enberg wrote:
-> >> On Sat,  4 Sep 2010 11:17:14 +0300, Pekka Enberg <penberg@kernel.org> wrote:
-> >> >> This reverts commit 9559fcdbff4f93d29af04478bbc48294519424f5. The commit causes
-> >> >> wrong screen resolution on some i915 machines such as MacBook which is a
-> >> >> regression from 2.6.35. The issue has been reported multiple times but no fix
-> >> >> has emerged:
-> >> 
-> >> On Sat, Sep 4, 2010 at 12:21 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> >> > NAK. You can't simply hide one bug by introducing a much bigger one.
-> >> 
-> >> Dude, it's a nasty regression from 2.6.35. What exactly are you NAK'ing here?
-> >> 
-> >> > As you have an affected machine, find which wait_for_vblank() needs to be
-> >> > replaced with a msleep(20|50).
-> >> 
-> >> The attached patch fixes things here. I'm not a drm developer so I
-> >> don't know if it makes technical sense.
-> >
-> > Many thanks to you, Pekka: I also don't know if it makes technical sense,
-> > but it solves the same issue for me, so I can at last use 2.6.36-rc on
-> > this laptop.
+> And they are paid for features instead of fixing bugs?
+
+There are lots of people who fix bugs on paid time or are even specifically
+paid to fix bugs.
+
+[...]
+> I will think a bit more about this. But my first impression is that all of 
+> these provisions are currently in conflict with time for feature work. If 
+> there is no stabilization or sorta of freeze period, the speed won't calm 
+> down in order to give stabilizitation a realistic chance.
+
+Linus' merge--rc--release cycle only influences what is pulled into the
+mainline when.  It does not prevent anyone to implement a new feature or to
+stabilize an existing feature any time.
+
+[...]
+>> However, you can hardly tell people to implement less features and fix
+>> more bugs if they don't owe you anything.
 > 
-> Helps for me as well, but I cannot judge whether it makes technical
-> sense either.  Thanks, Pekka!
+> Sorry for the demanding tone in my post that initiated the thread, but in 
+> the post you are answering too I merely made a suggestion. No one does owe 
+> me anything and I am aware of that.
+> 
+> But still even when I do not prepend each of my mails with a list of what 
+> I have done for the kernel - which is clearly less than what any core 
+> kernel developer or even a casual kernel developer did for the kernel  - I 
+> still can make a valuable suggestion.
+> 
+> That said I compiled a kernel a day or two for some time to help Ingo 
+> Molnar with testing an use case for his CFS scheduler. And am I regularily 
+> testing new TuxOnIce kernels and report back to Nigel how they fare. I 
+> report bugs for other open source projects like KDE or Debian as well and 
+> contribute a bit here and then, like my first debian package "fio".
+> 
+> And this work mostly has been enjoyable. Neither Ingo, nor Nigel, nor Jens 
+> Axboe asked me what I did for the kernel prior to working with me. They 
+> have just been happy for the feedback I gave.
+> 
+> I admit my initial post did well to provoke the kind of "what did you do?" 
+> feedback as it actually was demanding.
 
-Sadly this doesn't help my EeePC 900 with an i915 when it is booted with
-a battery inside or after doing a suspend to ram (running
-modetest/xrandr in these situations says VGA is connected when there
-isn't even a cable attached).
+By the sentence above I merely meant to say that you or I or anybody cannot
+lay out work schedules for others who are not our employees. :-)
 
+> But then I really was frustrated 
+> with the kernel and I think sometimes an oppinionated post like my 
+> "stable? quality assurance?" can be quite good. If I think a kernel is 
+> crap, why should it be prohibited that I tell it to their developers?
+
+It is not prohibited.  OTOH I don't know how useful it is at this general
+level.  There are lots of subsystem projects in the kernel project, all in
+different situations regarding how mature their subsystem is, how many
+developers and testers they have, what their balance of new features vs.
+stabilization work is.
 -- 
-Sitsofe | http://sucs.org/~sits/
+Stefan Richter
+-=====-==-=- =--= --=--
+http://arcgraph.de/sr/
