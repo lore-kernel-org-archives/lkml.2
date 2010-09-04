@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab0IDIPX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 04:15:23 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:53516 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753682Ab0IDIPU (ORCPT
+	id S1754413Ab0IDIRT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 04:17:19 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:56067 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753656Ab0IDIRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 04:15:20 -0400
-Date: Sat, 4 Sep 2010 18:14:14 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
- direct reclaim allocation fails
-Message-ID: <20100904081414.GF705@dastard>
-References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie>
- <1283504926-2120-4-git-send-email-mel@csn.ul.ie>
- <20100903160026.564fdcc9.akpm@linux-foundation.org>
- <20100904022545.GD705@dastard>
- <20100903202101.f937b0bb.akpm@linux-foundation.org>
- <20100904075840.GE705@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100904075840.GE705@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 4 Sep 2010 04:17:17 -0400
+From: Pekka Enberg <penberg@kernel.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH] Revert "drm/i915: fix vblank wait test condition"
+Date: Sat,  4 Sep 2010 11:17:14 +0300
+Message-Id: <1283588234-2514-1-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 04, 2010 at 05:58:40PM +1000, Dave Chinner wrote:
-> On Fri, Sep 03, 2010 at 08:21:01PM -0700, Andrew Morton wrote:
-> > On Sat, 4 Sep 2010 12:25:45 +1000 Dave Chinner <david@fromorbit.com> wrote:
-> > 
-> > > Still, given the improvements in performance from this patchset,
-> > > I'd say inclusion is a no-braniner....
-> > 
-> > OK, thanks.
-> > 
-> > It'd be interesting to check the IPI frequency with and without -
-> > /proc/interrupts "CAL" field.  Presumably it went down a lot.
-> 
-> Maybe I suspected you would ask for this. I happened to dump
-> /proc/interrupts after the livelock run finished, so you're in
-> luck :)
-....
-> 
-> livelock:  59458 58367 58559 59493 59614 57970 59060 58207
-> 
-> So the livelock case tends to indicate roughly 40,000 more IPI
-> interrupts per CPU occurred.  The livelock occurred for close to 5
-> minutes, so that's roughly 130 IPIs per second per CPU....
+This reverts commit 9559fcdbff4f93d29af04478bbc48294519424f5. The commit causes
+wrong screen resolution on some i915 machines such as MacBook which is a
+regression from 2.6.35. The issue has been reported multiple times but no fix
+has emerged:
 
-And just to confuse the issue further, I just had a livelock on a
-vanilla kernel that did *not* cause the CAL counts to increase.
-Hence it appears that the IPI storms are not the cause of the
-livelocks І'm triggering....
+  - i915: 2.6.36-rc2 wrong resolution on gdm start:
+    http://lkml.org/lkml/2010/8/23/452
 
-Cheers,
+  - i915: wrong framebuffer size in 2.6.36-rc3
+    http://kerneltrap.org/mailarchive/linux-kernel/2010/8/30/4613057
 
-Dave.
+I think it's time to revert the commit and try again in 2.6.37.
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reported-by Ivan Bulatovic <combuster@gmx.com>
+Reported-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ drivers/gpu/drm/i915/intel_display.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 11a3394..23157e1 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -992,7 +992,7 @@ void intel_wait_for_vblank(struct drm_device *dev, int pipe)
+ 
+ 	/* Wait for vblank interrupt bit to set */
+ 	if (wait_for((I915_READ(pipestat_reg) &
+-		      PIPE_VBLANK_INTERRUPT_STATUS),
++		      PIPE_VBLANK_INTERRUPT_STATUS) == 0,
+ 		     50, 0))
+ 		DRM_DEBUG_KMS("vblank wait timed out\n");
+ }
 -- 
-Dave Chinner
-david@fromorbit.com
+1.6.3.3
+
