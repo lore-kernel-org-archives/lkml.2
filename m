@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab0IDAyF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 20:54:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49741 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751420Ab0IDAyE (ORCPT
+	id S1753305Ab0IDAyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 20:54:15 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:42834 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753002Ab0IDAyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 20:54:04 -0400
-Date: Fri, 3 Sep 2010 17:58:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] fsldma: fix missing header include
-Message-Id: <20100903175831.27bb56fc.akpm@linux-foundation.org>
-In-Reply-To: <20100904004724.GA4085@ovro.caltech.edu>
-References: <20100902194752.GA24861@ovro.caltech.edu>
-	<20100903164033.6ae37727.akpm@linux-foundation.org>
-	<20100904004724.GA4085@ovro.caltech.edu>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 3 Sep 2010 20:54:07 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: STeVeHsVM1nDo4Vh_M5ytNjRWFURa5eOrgtccmUVV69symg
+ ge9VzeyrDFXpxpLiLA6RHJpt.380K8_V_ymWnTNADYZKNkqSmuha79Qp9qpp
+ x_HSKjbb5A.ZK5fNBei_MgoU7Ks_hpXy0yxpAhZzxg0Uu7mvUtySHutig9E8
+ DVhT9sbImipiQ_FRsJnuxcCc.ALn35jwX8tGXdmiezUhZuo2Xg3_qkP3EeOn
+ WDoCBZfcQ83QzkVPCzSRv6a0pqqJu
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 3 Sep 2010 19:54:01 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mel@csn.ul.ie>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 2/3] mm: page allocator: Calculate a better estimate of
+ NR_FREE_PAGES when memory is low and kswapd is awake
+In-Reply-To: <20100903162821.48ec57cc.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1009031950100.18051@router.home>
+References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie> <1283504926-2120-3-git-send-email-mel@csn.ul.ie> <20100903155537.41f1a3a7.akpm@linux-foundation.org> <alpine.DEB.2.00.1009031811090.16264@router.home>
+ <20100903162821.48ec57cc.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010 17:47:24 -0700 "Ira W. Snyder" <iws@ovro.caltech.edu> wrote:
+On Fri, 3 Sep 2010, Andrew Morton wrote:
 
-> On Fri, Sep 03, 2010 at 04:40:33PM -0700, Andrew Morton wrote:
-> > On Thu, 2 Sep 2010 12:47:52 -0700
-> > "Ira W. Snyder" <iws@ovro.caltech.edu> wrote:
-> > 
-> > > The slab.h header is required to use the kmalloc() family of functions.
-> > > Due to recent kernel changes, this header must be directly included by
-> > > code that calls into the memory allocator.
-> > > 
-> > > Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-> > > ---
-> > > 
-> > > Without this patch, any code which includes this header fails to build.
-> > > 
-> > >  arch/powerpc/include/asm/fsldma.h |    1 +
-> > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/arch/powerpc/include/asm/fsldma.h b/arch/powerpc/include/asm/fsldma.h
-> > > index a67aeed..debc5ed 100644
-> > > --- a/arch/powerpc/include/asm/fsldma.h
-> > > +++ b/arch/powerpc/include/asm/fsldma.h
-> > > @@ -11,6 +11,7 @@
-> > >  #ifndef __ARCH_POWERPC_ASM_FSLDMA_H__
-> > >  #define __ARCH_POWERPC_ASM_FSLDMA_H__
-> > >  
-> > > +#include <linux/slab.h>
-> > >  #include <linux/dmaengine.h>
-> > >  
-> > 
-> > It also needs list.h, but appears to get it via sheer luck.
-> > 
-> > The functions in that header simply shouldn't have been inlined.
-> > 
-> > It's peculiar that fsl_dma_slave_append() hardwires GFP_ATOMIC, whereas
-> > fsl_dma_slave_alloc() takes a gfp_t.
-> > 
-> 
-> Would you like a patch that moves the functions to drivers/dma/fsldma.c
-> and EXPORT_SYMBOL_GPL()'s them?
+> > percpu counters must always be added up when their value is determined.
+>
+> Nope.  That's the difference between percpu_counter_read() and
+> percpu_counter_sum().
 
-Sure, thanks.  Then I can harrass Dan with it ;)
-
-> I don't know the consequences to doing
-> so, which is why I avoided it when I wrote
-> arch/powerpc/include/asm/fsldma.h.
-
-The minimal fix for the bug was appropriate.
+Hmmm... Okay you can fold them therefore. That is analogous to what we do
+in the _snapshot function now.
