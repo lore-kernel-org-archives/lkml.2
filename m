@@ -1,106 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab0IDD4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 23:56:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55168 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754306Ab0IDDz7 (ORCPT
+	id S1751730Ab0IDE2r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 00:28:47 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:6813 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab0IDE2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 23:55:59 -0400
-Date: Fri, 3 Sep 2010 20:59:45 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Dave Chinner <david@fromorbit.com>, Mel Gorman <mel@csn.ul.ie>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
- direct reclaim allocation fails
-Message-Id: <20100903205945.44e1aa38.akpm@linux-foundation.org>
-In-Reply-To: <20100904032311.GA14222@localhost>
-References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie>
-	<1283504926-2120-4-git-send-email-mel@csn.ul.ie>
-	<20100903160026.564fdcc9.akpm@linux-foundation.org>
-	<20100904022545.GD705@dastard>
-	<20100904032311.GA14222@localhost>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 4 Sep 2010 00:28:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6094"; a="53230977"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Colin Cross <ccross@android.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>, Shilimkar@vger.kernel.org,
+        Santosh <santosh.shilimkar@ti.com>
+Subject: [PATCH 3/3] [ARM] Implement a timer based __delay() loop
+Date: Fri,  3 Sep 2010 21:28:34 -0700
+Message-Id: <1283574514-8070-4-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.2.2.177.geec0d
+In-Reply-To: <1283574514-8070-1-git-send-email-sboyd@codeaurora.org>
+References: <1283574514-8070-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 4 Sep 2010 11:23:11 +0800 Wu Fengguang <fengguang.wu@intel.com> wrote:
+udelay() can be incorrect on SMP machines that scale their CPU
+frequencies independently of one another (as pointed out here
+http://article.gmane.org/gmane.linux.kernel/977567). The delay
+loop can either be too fast or too slow depending on which CPU the
+loops_per_jiffy counter is calibrated on and which CPU the delay
+loop is running on. udelay() can also be incorrect if the
+CPU frequency switches during the __delay() loop, causing the loop
+to either terminate too early, or too late. 
 
-> > Still, given the improvements in performance from this patchset,
-> > I'd say inclusion is a no-braniner....
-> 
-> In your case it's not really high memory pressure, but maybe too many
-> concurrent direct reclaimers, so that when one reclaimed some free
-> pages, others kick in and "steal" the free pages. So we need to kill
-> the second cond_resched() call (which effectively gives other tasks a
-> good chance to steal this task's vmscan fruits), and only do
-> drain_all_pages() when nothing was reclaimed (instead of allocated).
+We'd rather not fix udelay() by forcing it to run on one CPU or
+take the penalty of a rather large loops_per_jiffy being used in
+udelay() when the CPU is actually running slower. Instead we
+solve the problem by making __delay() into a timer based loop
+which should be unaffected by CPU frequency scaling. Therefore,
+implement a timer based __delay() loop which can be used in place
+of the current register based __delay() if a machine so chooses.
 
-Well...  cond_resched() will only resched when this task has been
-marked for preemption.  If that's happening at such a high frequency
-then Something Is Up with the scheduler, and the reported context
-switch rate will be high.
+The kernel is already prepared for a timer based approach
+(evident by the read_current_timer() function). If an arch
+implements read_current_timer(), calibrate_delay() will use a
+timer based function, calibrate_delay_direct(), to calculate
+loops_per_jiffy (in which case loops_per_jiffy should really be
+renamed to timer_ticks_per_jiffy). Since the loops_per_jiffy will
+be based on timer ticks, __delay() should be implemented as a
+loop around read_current_timer().
 
-> Dave, will you give a try of this patch? It's based on Mel's.
-> 
-> 
-> --- linux-next.orig/mm/page_alloc.c	2010-09-04 11:08:03.000000000 +0800
-> +++ linux-next/mm/page_alloc.c	2010-09-04 11:16:33.000000000 +0800
-> @@ -1850,6 +1850,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
->  
->  	cond_resched();
->  
-> +retry:
->  	/* We now go into synchronous reclaim */
->  	cpuset_memory_pressure_bump();
->  	p->flags |= PF_MEMALLOC;
-> @@ -1863,26 +1864,23 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
->  	lockdep_clear_current_reclaim_state();
->  	p->flags &= ~PF_MEMALLOC;
->  
-> -	cond_resched();
-> -
-> -	if (unlikely(!(*did_some_progress)))
-> +	if (unlikely(!(*did_some_progress))) {
-> +		if (!drained) {
-> +			drain_all_pages();
-> +			drained = true;
-> +			goto retry;
-> +		}
->  		return NULL;
-> +	}
->  
-> -retry:
->  	page = get_page_from_freelist(gfp_mask, nodemask, order,
->  					zonelist, high_zoneidx,
->  					alloc_flags, preferred_zone,
->  					migratetype);
->  
-> -	/*
-> -	 * If an allocation failed after direct reclaim, it could be because
-> -	 * pages are pinned on the per-cpu lists. Drain them and try again
-> -	 */
-> -	if (!page && !drained) {
-> -		drain_all_pages();
-> -		drained = true;
-> +	/* someone steal our vmscan fruits? */
-> +	if (!page && *did_some_progress)
->  		goto retry;
-> -	}
+Doing this makes the expensive loops_per_jiffy calculation go
+away (saving ~150ms on boot time on my machine) and fixes
+udelay() by making it safe in the face of independently scaling
+CPUs. The only prerequisite is that read_current_timer() is
+monotonically increasing across calls (and doesn't overflow
+within ~2000us).
 
-Perhaps the fruit-stealing event is worth adding to the
-userspace-exposed vm stats somewhere.  But not in /proc - somewhere
-more temporary, in debugfs.
+There is a downside to this approach though. BogoMIPS is no
+longer "accurate" in that it reflects the BogoMIPS of the timer
+and not the CPU. On most SoC's the timer isn't running anywhere
+near as fast as the CPU so BogoMIPS will be ridiculously low (my
+timer runs at 4.8 MHz and thus my BogoMIPS is 9.6 compared to my
+CPU's 800). This shouldn't be too much of a concern though since
+BogoMIPS are bogus anyway (hence the name).
+
+This loop is pretty much a copy of AVR's version made more generic.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Reviewed-by: Saravana Kannan <skannan@codeaurora.org>
+---
+ arch/arm/include/asm/delay.h |    1 +
+ arch/arm/lib/delay.c         |   18 ++++++++++++++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/include/asm/delay.h b/arch/arm/include/asm/delay.h
+index 7c732b5..5c6b9a3 100644
+--- a/arch/arm/include/asm/delay.h
++++ b/arch/arm/include/asm/delay.h
+@@ -41,6 +41,7 @@ extern void __const_udelay(unsigned long);
+ 	  __udelay(n))
+ 
+ extern void set_delay_fn(void (*fn)(unsigned long));
++extern void read_current_timer_delay_loop(unsigned long loops);
+ 
+ #endif /* defined(_ARM_DELAY_H) */
+ 
+diff --git a/arch/arm/lib/delay.c b/arch/arm/lib/delay.c
+index b307fcc..59fdf64 100644
+--- a/arch/arm/lib/delay.c
++++ b/arch/arm/lib/delay.c
+@@ -5,6 +5,7 @@
+  *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+  *  Copyright (C) 1993 Linus Torvalds
+  *  Copyright (C) 1997 Martin Mares <mj@atrey.karlin.mff.cuni.cz>
++ *  Copyright (C) 2005-2006 Atmel Corporation
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -12,6 +13,7 @@
+  */
+ #include <linux/module.h>
+ #include <linux/delay.h>
++#include <linux/timex.h>
+ 
+ /*
+  * Oh, if only we had a cycle counter...
+@@ -26,6 +28,22 @@ void delay_loop(unsigned long loops)
+ 	);
+ }
+ 
++#ifdef ARCH_HAS_READ_CURRENT_TIMER
++/*
++ * Assuming read_current_timer() is monotonically increasing
++ * across calls.
++ */
++void read_current_timer_delay_loop(unsigned long loops)
++{
++	unsigned long bclock, now;
++
++	read_current_timer(&bclock);
++	do {
++		read_current_timer(&now);
++	} while ((now - bclock) < loops);
++}
++#endif
++
+ static void (*delay_fn)(unsigned long) = delay_loop;
+ 
+ void set_delay_fn(void (*fn)(unsigned long))
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
