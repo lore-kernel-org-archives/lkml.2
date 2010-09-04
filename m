@@ -1,49 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab0IDQi5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 12:38:57 -0400
-Received: from void.printf.net ([89.145.121.20]:56456 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab0IDQiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 12:38:55 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Dan Carpenter <error27@gmail.com>
-Subject: Re: HIDDEV: potential NULL dereference
-References: <4C82419C.3050903@suse.cz>
-Date: Sat, 04 Sep 2010 12:39:27 -0400
-In-Reply-To: <4C82419C.3050903@suse.cz> (Jiri Slaby's message of "Sat, 04 Sep
-	2010 14:54:52 +0200")
-Message-ID: <m38w3hqx8g.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
+	id S1754507Ab0IDQjP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 12:39:15 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:59093 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754453Ab0IDQjN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 12:39:13 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: stable? quality assurance?
+Date: Sat, 4 Sep 2010 18:38:59 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.33-rc4-tp42-00127-g3a86e18; KDE/4.4.5; i686; ; )
+References: <201007110918.42120.Martin@lichtvoll.de> <201007111651.42963.Martin@lichtvoll.de> <20100711172252.GA3379@1wt.eu> (sfid-20100711_193037_169001_8F8BE25C)
+In-Reply-To: <20100711172252.GA3379@1wt.eu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed;
+  boundary="nextPart1635895.5yhrE27gSE";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009041839.09261.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+--nextPart1635895.5yhrE27gSE
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-   > If hid was ever NULL at this phase, the check couldn't improve
-   > anything due to hid->driver_data dereference being still before
-   > the check. So again my question, how this could change anything?
-   > 
-   > Above that, it just makes the window shorter, but the bug is
-   > still there, isn't it? Is the following scenario reasonable?
+Am Sonntag 11 Juli 2010 schrieb Willy Tarreau:
+> Hi Martin,
 
-You're right -- I'd missed the other dereference, sorry.  It's
-surprising that we have two reports from users saying that the
-patch got rid of a reproducible oops for them.
+Hi Willy, hi everyone else reading this,
 
-Dan Carpenter has commented on this too:
-   http://www.spinics.net/lists/linux-input/msg10541.html
+> On Sun, Jul 11, 2010 at 04:51:42PM +0200, Martin Steigerwald wrote:
+> > I hope that someone answers who actually can take some critique. From
+> > the  current replies I perceive a lack of that ability.
+>=20
+> well, I'll try to do then :-)
+>=20
+> There were some threads in the past about kernel releases quality,
+> where Linus explained why it could not be completely black or white.
+>=20
+> Among the things he explained, I remember that one of primary concern
+> was the inability to slow down development. I mean, if he waits 2 more
+> weeks for things to stabilize, then there will be two more weeks of
+> crap^H^H^H^Hdevelopment merged in next merge window, so in fact this
+> will just shift dates and not quality.
 
-As he says, it looks like the code's overdue for some real locking.
+During bisecting [Bug 16376] random - possibly Radeon DRM KMS related=20
+freezes, which goes very slowly due to having lots of unbootable kernels=20
+with an ext4 / readahead related backtrace during boot, I had an idea:
 
-Thanks,
+I think main problem is that the current development process does not give=
+=20
+time for quality work and bug fixing. As I understand it currently its just=
+=20
+a constant development of new features with bug fixing and quality work=20
+having to be done beneath that development:
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>
-One Laptop Per Child
+=2D before 2.6.36 is released developers aim at developing new stuff for=20
+2.6.37.
+
+=2D after 2.6.36 is released developers aim at getting as much stuff into=20
+2.6.37 and then after two weeks at developing new features for 2.6.38.
+
+This process does not take bug fixing into account at all, cause after the=
+=20
+merge window has closing, developers hurry to get the stuff ready for the=20
+next window.
+
+In that model extending the freeze period after rc1 doesn't help at all,=20
+cause as you say more "crap^H^H^H^Hdevelopment" gets collected for the=20
+next kernel.
+
+But is that a *given* that no one actually has any influence to? Is=20
+collecting changes for next kernel like rain that either pours down or not=
+=20
+=2D usually pours down in this case like in August in Germany ;)? Who feeds=
+=20
+Linus with new stuff during the merge window? From what I understand of the=
+=20
+Linux development process its mainly the subsystem maintainers and Andrew=20
+Morton.
+
+What if those people stop collecting new stuff for Linus except bugfixes=20
+about two or three weeks before the next kernel is relased? This would=20
+give the subsystem trees and the mm tree some time to stabilize a bit, so=20
+that Linus gets more quality stuff in the first time. And more importantly,=
+=20
+since developers know that subsystem maintainers and Andrew only collect=20
+bugfixes 2-3 weeks before the release of a stable kernel, they can as well=
+=20
+spend some time on quality work.
+
+Of course, developers can still decide: Well if 2.6.37 work is closed=20
+already and continue developing for 2.6.38 even earlier, but I still think=
+=20
+this would help to slow things down a bit prior to the critical phase=20
+before releasing a stable kernel. Cause when I know my subsystem=20
+maintainer or Andrew won't be taking my stuff anyway, before the release=20
+kernel is released, I can take a little time for other things.
+
+The main idea here is to have a two-staged freeze process and to=20
+distribute the "I am only taking bug fixes" work to more people than Linus.
+
+=46or this to work properly, I think at the time of the release of the=20
+stable kernel subsystem maintainers and Andrew should branch their trees.=20
+=46or example when 2.6.36 is released:
+
+=2D tree=20
+  =3D> 2.6.36-stable-tree
+  =3D> tree, where 2.6.37 stuff will be going in
+
+Thus when subsystem maintainers take new stuff during the merge window, it=
+=20
+will be for the next kernel release already, not for the current one.=20
+Except bugfix work. Whereas I think the criteria for bug fix work should no=
+t=20
+be that strict than for the stable patches Greg collects.
+
+Thus it needs to be clear: No new stuff for next kernel already two weeks=20
+prior to release the current stable kernel.
+
+I think, this could help. Its a bit like the two-staged development=20
+process of Debian, but with the freeze period for "unstable" being a fixed=
+=20
+time interval of about 2 weeks instead of RC=3D0 for stable ;). Its a bit o=
+f=20
+a formal shift of attention to the stable kernel about 2 weeks before its=20
+release. Developers might find creative ways to circumvent it, or they=20
+understand, that this process serves a purpose of improving kernel=20
+quality.
+
+When you think these two weeks cannot be squeezed into the three-monthly=20
+development cycle, a four-monthly development cycle might do. But actually=
+=20
+I don't see why these two weeks could not be made to fit in there.
+
+Installing and testing next kernel after yet another mail to this thread,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+
+--nextPart1635895.5yhrE27gSE
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkyCdiQACgkQmRvqrKWZhMd7JwCfWDlL4CeQYlrd46YHnMBTrJCO
+nhsAoK2NJXQWq8Q8cKgk3k4BHpZH2Uhh
+=PSy/
+-----END PGP SIGNATURE-----
+
+--nextPart1635895.5yhrE27gSE--
