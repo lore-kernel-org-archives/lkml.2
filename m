@@ -1,35 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab0IDVHU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 17:07:20 -0400
-Received: from web51001.mail.re2.yahoo.com ([206.190.38.132]:42986 "HELO
-	web51001.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753051Ab0IDVHT (ORCPT
+	id S1753718Ab0IDVYR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 17:24:17 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43225 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752579Ab0IDVYQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 17:07:19 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=k5HMgAQPhnfxetG/GdXrvOp+uIrzQR1WuwwtEthZkVXwc3G1g0vF3v2JxU7VgF8KZzpIVVNyKTlZ/kedI7c7G0vp+sd2AjZJBFekzDR3PbKssVSTh/PuLQPiKV/z/27xO9uaCLH+rFJ6ngfeKPLIpwDzba0TwWf9xqulilEhhqY=;
-Message-ID: <559766.92360.qm@web51001.mail.re2.yahoo.com>
-X-YMail-OSG: Nu4WWBAVM1kT4BTYHJWgjvVNT47rfxmDKWvdwhfLadvo5mC
- zw.LWnf11a414sb8owbHC8r54Oirotab9FxChOqEHCdawxdYFz_GltjEk2gZ
- e5xyWBIZVikvrlF.aNJr4Dg9dmLafTlYh_g2T5FqoANF9xQxGKLbsyTcfzYL
- iv.gl2eRr_sNXaZGXxqFWc0NnR58LH5lm7mEAlOshcVCHbvSBEPAGkyRhiIc
- FSc5oVn.2KCfaf39GbGbH118AWiTcDqJtJ5xrKAn9C07_zWF0F_nQUDp8VM5
- Dx4ngwf7wz_Bm2CajJBtTOW8PE3EVNthlgNpypPZCIGv2NImTH9heKrC39v1
- WcYOX0FLF2neba8fakN7RA0Q4GlmH9A--
-X-Mailer: YahooMailWebService/0.8.105.279950
-Date: Sat, 4 Sep 2010 14:07:16 -0700 (PDT)
-From: Eugene K <evgfpeters@yahoo.com>
-To: linux-kernel@vger.kernel.org
+	Sat, 4 Sep 2010 17:24:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rIYUMrP9oHC1GyqqI19g4Nht9NZ3TVY9Z/EgLUnfxO2+HrGDXlq0+SqojmJXU7KbGP
+         kjcL+p6EQGAF3NvS8qRUqKbNwnmsvk+5K1sdwKAmSeL69YuWD44yrq9+sw1dNl8+dV3x
+         COXGb+Cu3yY0+M1JveC+UguGEgQe9DNEiE6ew=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1283607783-29388-1-git-send-email-rydberg@euromail.se>
+References: <1283607783-29388-1-git-send-email-rydberg@euromail.se>
+Date: Sat, 4 Sep 2010 23:24:12 +0200
+Message-ID: <AANLkTi=9F1HpUyhGOp0TJdazoshKgxbFkyqWvztb5OeH@mail.gmail.com>
+Subject: Re: [PATCH 0/5] input: wacom: Initial support for Bamboo (rev3)
+From: Ping Cheng <pinglinux@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Ping Cheng <pingc@wacom.com>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://adazyjyten.exactpages.com/agerudu.html
+On Saturday, September 4, 2010, Henrik Rydberg <rydberg@euromail.se> wrote:
+> This the fourth iteration of the Bamboo patches. Hopefully no big
+> surprises.  The ordering has changed to allow setting the pressure_max
+> which is not parsed in the hid function. Ping's button mapping has
+> been implemented, relying on middle-button emulation instead.  The
+> lowres quirks now apply to all touch devices in the family.
 
+Thank you Henrik for the patchset. Very much appreciated.
 
-      
+Acked-by: Ping Cheng < pingc@wacom.com>  for the series.
+
+Ping
+
+> Henrik Rydberg (4):
+>   input: wacom: Add fuzz parameters to features
+>   input: wacom: Collect device quirks into single function (rev2)
+>   input: wacom: Add support for the Bamboo Touch trackpad (rev4)
+>   input: wacom: Add a quirk for lowres Bamboo devices (rev2)
+>
+> Ping Cheng (1):
+>   input: wacom: Parse the Bamboo device family
+>
+>  drivers/input/tablet/wacom.h     |    1 +
+>  drivers/input/tablet/wacom_sys.c |   57 +++++++++++++-----
+>  drivers/input/tablet/wacom_wac.c |  123 +++++++++++++++++++++++++++++++++++++-
+>  drivers/input/tablet/wacom_wac.h |   14 ++++
+>  4 files changed, 176 insertions(+), 19 deletions(-)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
