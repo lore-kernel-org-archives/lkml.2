@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab0IDTYw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 15:24:52 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:50802 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab0IDTYv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 15:24:51 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C829CFF.8080905@s5r6.in-berlin.de>
-Date: Sat, 04 Sep 2010 21:24:47 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	id S1752698Ab0IDTcp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 15:32:45 -0400
+Received: from 8bytes.org ([88.198.83.132]:53602 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925Ab0IDTcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 15:32:43 -0400
+Date: Sat, 4 Sep 2010 21:32:42 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Alexander Graf <agraf@suse.de>
+Cc: "Roedel, Joerg" <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: SVM: Clean up rip handling in vmrun emulation
+Message-ID: <20100904193241.GB8162@8bytes.org>
+References: <1283441387-7378-1-git-send-email-joerg.roedel@amd.com> <1283441387-7378-4-git-send-email-joerg.roedel@amd.com> <20100903122140.GG1964@amd.com> <1E478B32-8E9D-4041-B841-F64016FA5AB1@suse.de>
 MIME-Version: 1.0
-To: Martin Steigerwald <Martin@lichtvoll.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: stable? quality assurance?
-References: <201007110918.42120.Martin@lichtvoll.de> <201007111651.42963.Martin@lichtvoll.de> <20100711172252.GA3379@1wt.eu> (sfid-20100711_193037_169001_8F8BE25C) <201009041839.09261.Martin@lichtvoll.de>
-In-Reply-To: <201009041839.09261.Martin@lichtvoll.de>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1E478B32-8E9D-4041-B841-F64016FA5AB1@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Steigerwald wrote:
-> I think main problem is that the current development process does not give 
-> time for quality work and bug fixing.
+On Fri, Sep 03, 2010 at 11:29:11PM +0200, Alexander Graf wrote:
+> Any reason we can't use the next_rip information here? A hypervisor
+> could potentially do badness and put a prefix here, thus break all the
+> logic, right?
 
-This has little to do with process.
+Next_rip is not available on older hardware. Yes, this problem exists in
+theory (as it does with rdmsr/wrmsr, cpuid, ... too). But a fix for this
+on non-next-rip capable hardware would involve the instruction emulator
+and kills all performance there. So we use this stupid and fast solution
+here which works for all hypervisors I tested :-)
 
-Put simply, the paid developers work on what they are paid for.  The
-volunteers work on what they are interested in.
+> (yes, I know, I wrote that code, but still ...)
 
-If you feel that too little work is spent on stabilization and bug fixing, pay
-someone or take matters into your own hand.  I.e. report bugs and work with
-the developers to get the bugs fixed.
+When you wrote that code next_rip capable hardware was not available, so
+don't worry :-)
 
-The current development process OTOH gives plenty of time for quality work and
-bug fixing:
 
-  - There are several stages at which new code can be tested:
-    When it lives in subsystem development trees,
-    when it has been pulled into the linux-next tree,
-    when it has been pulled into Linus' tree.
-
-  - Bug fixes are pulled by Linus almost any time whenever they are ready.
-    (Of course, since fixes can and do introduce regressions too, only
-    critical fixes are accepted in later -rcs.)
-
-  - New code submissions are pulled by Linus in a fairly reliable cycle
-    with reasonable frequency (less than three months).  That way,
-    developers know that if their stuff did not quite cut it for
-    mainline merge in month N, they know they can try again in month
-    N+2 or N+3.  They are not left to guess whether their next chance
-    will be in half a year or two years or next week.  Hence, nobody
-    needs to panic and rush things when a merge window draws near.
-    Plus, the code and the repository are open, so anybody can ship
-    features to customers at any time independently of Linus' release
-    cycle.  Linux distributors do this all the time.
-
-> But is that a *given* that no one actually has any influence to? Is 
-> collecting changes for next kernel like rain that either pours down or not 
-> - usually pours down in this case like in August in Germany ;)? Who feeds 
-> Linus with new stuff during the merge window? From what I understand of the 
-> Linux development process its mainly the subsystem maintainers and Andrew 
-> Morton.
-> 
-> What if those people stop collecting new stuff for Linus except bugfixes 
-> about two or three weeks before the next kernel is relased?
-
-Most of the maintainers are responsible enough to put only stuff into
-linux-next which belongs there, i.e. tested, release-ready stuff.  Likewise
-with submissions to Linus during the merge window.
-
-Only some maintainers do in fact try to submit rushed, untested crap.
-Sometimes they get caught red-handed.
-
-The release-ready submissions that come via responsible maintainers still
-contain some regressions though.  This is inevitable.  There are less
-regressions if there are more enthusiasts who test development trees and
-linux-next.  There are less regressions in Linus' releases if there are more
-enthusiasts who test -rc kernels.  (And submit good bug reports and work with
-the developers on them.)  And vice versa.
-
-Process does not do much to prevent bugs or fix bugs.  People do. :-)
-
-However, you can hardly tell people to implement less features and fix more
-bugs if they don't owe you anything.
--- 
-Stefan Richter
--=====-==-=- =--= --=--
-http://arcgraph.de/sr/
+	Joerg
