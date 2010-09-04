@@ -1,168 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab0IDDnd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 23:43:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754306Ab0IDDnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 23:43:32 -0400
-Message-ID: <4C81C058.9050105@redhat.com>
-Date: Fri, 03 Sep 2010 17:43:20 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-CC: kvm@vger.kernel.org, Glauber Costa <glommer@redhat.com>,
-        Jan Kiszka <jan.kiszka@web.de>, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping] Revert getnsboottime() kernel API
-References: <1283320624-31262-1-git-send-email-zamsden@redhat.com>
-In-Reply-To: <1283320624-31262-1-git-send-email-zamsden@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754691Ab0IDD4A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 23:56:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55168 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754306Ab0IDDz7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 23:55:59 -0400
+Date: Fri, 3 Sep 2010 20:59:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Dave Chinner <david@fromorbit.com>, Mel Gorman <mel@csn.ul.ie>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
+ direct reclaim allocation fails
+Message-Id: <20100903205945.44e1aa38.akpm@linux-foundation.org>
+In-Reply-To: <20100904032311.GA14222@localhost>
+References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie>
+	<1283504926-2120-4-git-send-email-mel@csn.ul.ie>
+	<20100903160026.564fdcc9.akpm@linux-foundation.org>
+	<20100904022545.GD705@dastard>
+	<20100904032311.GA14222@localhost>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Never got any feedback on this.  I don't really have a strong opinion on 
-it either way, but I'll need to know which way to go with my rebased 
-patches.  Also nice if we can avoid polluting upstream with unnecessary 
-changes.
+On Sat, 4 Sep 2010 11:23:11 +0800 Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-I believe it would suffice also to revert these two commits:
+> > Still, given the improvements in performance from this patchset,
+> > I'd say inclusion is a no-braniner....
+> 
+> In your case it's not really high memory pressure, but maybe too many
+> concurrent direct reclaimers, so that when one reclaimed some free
+> pages, others kick in and "steal" the free pages. So we need to kill
+> the second cond_resched() call (which effectively gives other tasks a
+> good chance to steal this task's vmscan fruits), and only do
+> drain_all_pages() when nothing was reclaimed (instead of allocated).
 
-2616ac0be4b12bf31cfe8880a5b21c5a2da7d150
-b8a578a03d18fab78ea1f79886e32c90f1d071a1
+Well...  cond_resched() will only resched when this task has been
+marked for preemption.  If that's happening at such a high frequency
+then Something Is Up with the scheduler, and the reported context
+switch rate will be high.
 
-Zach
+> Dave, will you give a try of this patch? It's based on Mel's.
+> 
+> 
+> --- linux-next.orig/mm/page_alloc.c	2010-09-04 11:08:03.000000000 +0800
+> +++ linux-next/mm/page_alloc.c	2010-09-04 11:16:33.000000000 +0800
+> @@ -1850,6 +1850,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
+>  
+>  	cond_resched();
+>  
+> +retry:
+>  	/* We now go into synchronous reclaim */
+>  	cpuset_memory_pressure_bump();
+>  	p->flags |= PF_MEMALLOC;
+> @@ -1863,26 +1864,23 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
+>  	lockdep_clear_current_reclaim_state();
+>  	p->flags &= ~PF_MEMALLOC;
+>  
+> -	cond_resched();
+> -
+> -	if (unlikely(!(*did_some_progress)))
+> +	if (unlikely(!(*did_some_progress))) {
+> +		if (!drained) {
+> +			drain_all_pages();
+> +			drained = true;
+> +			goto retry;
+> +		}
+>  		return NULL;
+> +	}
+>  
+> -retry:
+>  	page = get_page_from_freelist(gfp_mask, nodemask, order,
+>  					zonelist, high_zoneidx,
+>  					alloc_flags, preferred_zone,
+>  					migratetype);
+>  
+> -	/*
+> -	 * If an allocation failed after direct reclaim, it could be because
+> -	 * pages are pinned on the per-cpu lists. Drain them and try again
+> -	 */
+> -	if (!page && !drained) {
+> -		drain_all_pages();
+> -		drained = true;
+> +	/* someone steal our vmscan fruits? */
+> +	if (!page && *did_some_progress)
+>  		goto retry;
+> -	}
 
-On 08/31/2010 07:57 PM, Zachary Amsden wrote:
-> Turns out this doesn't actually save any math or locking, name
-> is chosen rather poorly, it doesn't match the existing kernel
-> APIs, and requires kvm-kmod changes.
->
-> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
-> ---
->   arch/x86/kvm/x86.c        |   18 ++++++++++++++----
->   include/linux/time.h      |    1 -
->   kernel/time/timekeeping.c |   28 +---------------------------
->   3 files changed, 15 insertions(+), 32 deletions(-)
->
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 4014d6c..03605b8 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -919,6 +919,16 @@ static inline u64 nsec_to_cycles(u64 nsec)
->   	return ret;
->   }
->
-> +static inline u64 get_kernel_ns(void)
-> +{
-> +	struct timespec ts;
-> +
-> +	WARN_ON(preemptible());
-> +	ktime_get_ts(&ts);
-> +	monotonic_to_bootbased(&ts);
-> +	return timespec_to_ns(&ts);
-> +}
-> +
->   void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
->   {
->   	struct kvm *kvm = vcpu->kvm;
-> @@ -928,7 +938,7 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
->
->   	spin_lock_irqsave(&kvm->arch.tsc_write_lock, flags);
->   	offset = data - native_read_tsc();
-> -	ns = getnsboottime();
-> +	ns = get_kernel_ns();
->   	elapsed = ns - kvm->arch.last_tsc_nsec;
->   	sdiff = data - kvm->arch.last_tsc_write;
->   	if (sdiff<  0)
-> @@ -981,7 +991,7 @@ static int kvm_write_guest_time(struct kvm_vcpu *v)
->   	/* Keep irq disabled to prevent changes to the clock */
->   	local_irq_save(flags);
->   	kvm_get_msr(v, MSR_IA32_TSC,&tsc_timestamp);
-> -	kernel_ns = getnsboottime();
-> +	kernel_ns = get_kernel_ns();
->   	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
->   	local_irq_restore(flags);
->
-> @@ -3327,7 +3337,7 @@ long kvm_arch_vm_ioctl(struct file *filp,
->   			goto out;
->
->   		r = 0;
-> -		now_ns = getnsboottime();
-> +		now_ns = get_kernel_ns();
->   		delta = user_ns.clock - now_ns;
->   		kvm->arch.kvmclock_offset = delta;
->   		break;
-> @@ -3336,7 +3346,7 @@ long kvm_arch_vm_ioctl(struct file *filp,
->   		struct kvm_clock_data user_ns;
->   		u64 now_ns;
->
-> -		now_ns = getnsboottime();
-> +		now_ns = get_kernel_ns();
->   		user_ns.clock = kvm->arch.kvmclock_offset + now_ns;
->   		user_ns.flags = 0;
->
-> diff --git a/include/linux/time.h b/include/linux/time.h
-> index 909e62a..9f15ac7 100644
-> --- a/include/linux/time.h
-> +++ b/include/linux/time.h
-> @@ -160,7 +160,6 @@ extern void getnstimeofday(struct timespec *tv);
->   extern void getrawmonotonic(struct timespec *ts);
->   extern void getboottime(struct timespec *ts);
->   extern void monotonic_to_bootbased(struct timespec *ts);
-> -extern s64 getnsboottime(void);
->
->   extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
->   extern int timekeeping_valid_for_hres(void);
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index 77e930d..dfbe271 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -284,33 +284,6 @@ void ktime_get_ts(struct timespec *ts)
->   }
->   EXPORT_SYMBOL_GPL(ktime_get_ts);
->
-> -
-> -/**
-> - * getnsboottime - get the bootbased clock in nsec format
-> - *
-> - * The function calculates the bootbased clock from the realtime
-> - * clock and the wall_to_monotonic offset and stores the result
-> - * in normalized timespec format in the variable pointed to by @ts.
-> - */
-> -s64 getnsboottime(void)
-> -{
-> -	unsigned int seq;
-> -	s64 secs, nsecs;
-> -
-> -	WARN_ON(timekeeping_suspended);
-> -
-> -	do {
-> -		seq = read_seqbegin(&xtime_lock);
-> -		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
-> -		secs += total_sleep_time.tv_sec;
-> -		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
-> -		nsecs += total_sleep_time.tv_nsec + timekeeping_get_ns();
-> -
-> -	} while (read_seqretry(&xtime_lock, seq));
-> -	return nsecs + (secs * NSEC_PER_SEC);
-> -}
-> -EXPORT_SYMBOL_GPL(getnsboottime);
-> -
->   /**
->    * do_gettimeofday - Returns the time of day in a timeval
->    * @tv:		pointer to the timeval to be set
-> @@ -327,6 +300,7 @@ void do_gettimeofday(struct timeval *tv)
->   }
->
->   EXPORT_SYMBOL(do_gettimeofday);
-> +
->   /**
->    * do_settimeofday - Sets the time of day
->    * @tv:		pointer to the timespec variable containing the new time
->    
+Perhaps the fruit-stealing event is worth adding to the
+userspace-exposed vm stats somewhere.  But not in /proc - somewhere
+more temporary, in debugfs.
 
