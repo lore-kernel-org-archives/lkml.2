@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab0IDQCv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 12:02:51 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:54097 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753959Ab0IDQCu (ORCPT
+	id S1754107Ab0IDQEk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 12:04:40 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:44098 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959Ab0IDQEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 12:02:50 -0400
+	Sat, 4 Sep 2010 12:04:39 -0400
 From: Michael Williamson <michael.williamson@criticallink.com>
 To: linux-kernel@vger.kernel.org
 Cc: lrg@slimlogic.co.uk, broonie@opensource.wolfsonmicro.com, dtor@mail.ru,
         khali@linux-fr.org, gregkh@suse.de,
         Michael Williamson <michael.williamson@criticallink.com>
-Subject: [PATCH 1/3] tps65023: Allow platforms to specify DCDC_2 and DCDC_3 value.
-Date: Sat,  4 Sep 2010 12:02:40 -0400
-Message-Id: <1283616160-6215-1-git-send-email-michael.williamson@criticallink.com>
+Subject: [PATCH RESEND] tps65023: Allow platforms to specify DCDC_2 and DCDC_3 value.
+Date: Sat,  4 Sep 2010 12:04:31 -0400
+Message-Id: <1283616271-6286-1-git-send-email-michael.williamson@criticallink.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,6 +33,8 @@ sysfs.
 
 Signed-off-by: Michael Williamson <michael.williamson@criticallink.com>
 ---
+Previous submission said 1/3.  Should only be 1/1.
+
  drivers/regulator/tps65023-regulator.c |   17 +++++++++++++----
  1 files changed, 13 insertions(+), 4 deletions(-)
 
