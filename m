@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab0IDCKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 22:10:43 -0400
-Received: from kroah.org ([198.145.64.141]:48487 "EHLO coco.kroah.org"
+	id S1754458Ab0IDCK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 22:10:59 -0400
+Received: from kroah.org ([198.145.64.141]:48492 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754050Ab0IDCKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 22:10:10 -0400
-Date: Fri, 3 Sep 2010 19:09:55 -0700
+	id S1754435Ab0IDCK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 22:10:57 -0400
+Date: Fri, 3 Sep 2010 19:10:51 -0700
 From: Greg KH <greg@kroah.com>
-To: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
 Subject: [GIT PATCH] STAGING fixes for 2.6.36-git
-Message-ID: <20100904020955.GD28645@kroah.com>
+Message-ID: <20100904021051.GA28709@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
