@@ -1,161 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab0IDUTR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 16:19:17 -0400
-Received: from 1wt.eu ([62.212.114.60]:43484 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753336Ab0IDUTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 16:19:16 -0400
-Date: Sat, 4 Sep 2010 22:19:12 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: linux-kernel@vger.kernel.org
+	id S1753535Ab0IDUVv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 16:21:51 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:37943 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753336Ab0IDUVu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 16:21:50 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Subject: Re: stable? quality assurance?
-Message-ID: <20100904201912.GN25062@1wt.eu>
-References: <201009041842.19968.Martin@lichtvoll.de> <20100904172201.GM25062@1wt.eu> <201009042133.28709.Martin@lichtvoll.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009042133.28709.Martin@lichtvoll.de>
-User-Agent: Mutt/1.4.2.3i
+Date: Sat, 4 Sep 2010 22:21:34 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.33-tp42-01231-g11b897c; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201007110918.42120.Martin@lichtvoll.de> <201009041839.09261.Martin@lichtvoll.de> <4C829CFF.8080905@s5r6.in-berlin.de> (sfid-20100904_213939_880548_666DFBB9)
+In-Reply-To: <4C829CFF.8080905@s5r6.in-berlin.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1340580.cGEzoFZqgP";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009042221.43862.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 04, 2010 at 09:33:27PM +0200, Martin Steigerwald wrote:
-> > Thus at one point you can't hope to get bug reports anymore.
-> > When you see an -rc7 or -rc8, you think "hey, -rc4 was OK, let's
-> > wait for -final and install it".
-> 
-> That fits perfectly well. If the first rcs are nicely testing, then ideally 
-> all major issues should be done, when rc7 or rc8 are reached. And thus 
-> time can be spent on fixing the major remaining open regression.
+--nextPart1340580.cGEzoFZqgP
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-OK I see that you're talking about *open* regressions. I thought you were
-talking about bugs in general. I think (but that's my own feeling) that as
-soon as the cause of a regression is narrowed down enough to identify the
-commit that caused it, it gets quickly fixed (though I have no numbers on
-the subject). But when someone says "I was doing this or that when my
-kernel froze", it can be anything. Drivers are different because they
-impact less people than the core. However the developers don't always
-have access to the hardware combination causing a reproducible error case.
+Am Samstag 04 September 2010 schrieb Stefan Richter:
+> Martin Steigerwald wrote:
+> > I think main problem is that the current development process does not
+> > give time for quality work and bug fixing.
+>=20
+> This has little to do with process.
+>=20
+> Put simply, the paid developers work on what they are paid for.  The
+> volunteers work on what they are interested in.
 
-> I guess 
-> those who reported these regression are interested in testing a fix.
+And they are paid for features instead of fixing bugs? I doubt enterprise=20
+customers have this preference. I admit, they have no reason to pay for=20
+fixing my bug, unless they experience it too, however.
 
-I really think that there's good interactivity when the bug is spotted.
-The hard part is the one before.
+> If you feel that too little work is spent on stabilization and bug
+> fixing, pay someone or take matters into your own hand.  I.e. report
+> bugs and work with the developers to get the bugs fixed.
 
-> >   - people concerned by stability don't test every release. They test
-> > when they can, precisely because they can't impact production. So they
-> > don't contribute bug reports in time. And as the 2.4 maintainer, I'm
-> > well aware of that, because when I break something, I only know about
-> > it 3-4 months later.
-> 
-> How does this affect my suggestion above? If as you say the first rcs are 
-> tested better and if as I assume those who reported regressions have an 
-> interest in testing their fixes, I think this can work out nicely.
+I do already for the bugs I encountered.
 
-But you can't have developer sit on their code for 4 months waiting for
-bug reports to come in. And if you're talking about open bugs only, each
-one of them will think the issue is probably in the other one's code.
-Common problem of development teams.
+> The current development process OTOH gives plenty of time for quality
+> work and bug fixing:
+>=20
+>   - There are several stages at which new code can be tested:
+>     When it lives in subsystem development trees,
+>     when it has been pulled into the linux-next tree,
+>     when it has been pulled into Linus' tree.
+>
+>   - Bug fixes are pulled by Linus almost any time whenever they are
+> ready. (Of course, since fixes can and do introduce regressions too,
+> only critical fixes are accepted in later -rcs.)
+>=20
+>   - New code submissions are pulled by Linus in a fairly reliable cycle
+>     with reasonable frequency (less than three months).  That way,
+>     developers know that if their stuff did not quite cut it for
+>     mainline merge in month N, they know they can try again in month
+>     N+2 or N+3.  They are not left to guess whether their next chance
+[...]
 
-> Aside from that, I am not sure whether most people step in with rc1 or rc2 
-> already. When I tested rc kernels - there have been some times - I usually 
-> waited to rc3 or rc4 so I could be somewhat confident that really major 
-> issues are fixed already.
+I will think a bit more about this. But my first impression is that all of=
+=20
+these provisions are currently in conflict with time for feature work. If=20
+there is no stabilization or sorta of freeze period, the speed won't calm=20
+down in order to give stabilizitation a realistic chance.
+=20
+> > But is that a *given* that no one actually has any influence to? Is
+> > collecting changes for next kernel like rain that either pours down
+> > or not - usually pours down in this case like in August in Germany
+> > ;)? Who feeds Linus with new stuff during the merge window? From
+> > what I understand of the Linux development process its mainly the
+> > subsystem maintainers and Andrew Morton.
+> >=20
+> > What if those people stop collecting new stuff for Linus except
+> > bugfixes about two or three weeks before the next kernel is relased?
+>=20
+> Most of the maintainers are responsible enough to put only stuff into
+> linux-next which belongs there, i.e. tested, release-ready stuff.=20
+> Likewise with submissions to Linus during the merge window.
+>=20
+> Only some maintainers do in fact try to submit rushed, untested crap.
+> Sometimes they get caught red-handed.
+>=20
+> The release-ready submissions that come via responsible maintainers
+> still contain some regressions though.  This is inevitable.  There are
+> less regressions if there are more enthusiasts who test development
+> trees and linux-next.  There are less regressions in Linus' releases
+> if there are more enthusiasts who test -rc kernels.  (And submit good
+> bug reports and work with the developers on them.)  And vice versa.
+>=20
+> Process does not do much to prevent bugs or fix bugs.  People do. :-)
 
-I think that people waiting for a specific feature will immediately jump on
-rc1 or rc2. People who are curious about what was stuffed in the new kernel
-will likely wait for rc3/4, hoping to get something they can run a day long.
+Yes, my suggestion do not guarantee that people do report and fix bugs. But=
+=20
+it gives more room for doing so, especially regarding fixing the open and=20
+known regressions. Again two of those that I mentioned initially have been=
+=20
+reported by people *during* the rc phase already. Still the stable kernel=20
+did not receive the bug fix patch for the nastier one of it in time:=20
 
-> > I think that trying to evaluate and publish quality per developer or
-> > maintainer can have a better effect because everyone in the commit
-> > chain is responsible. But even doing that is hard because some changes
-> > touch everything and it's not obvious to say that Mr X or Y has done
-> > some crap.
-> 
-> And who judges on what is crap? Build failures could be tracked 
-> automatically. Partly maybe even performance regression as the automated 
-> tests from Phoronix show. Well boot failures or freezes are even more 
-> important. But then, you are probably not judging the quality of the work 
-> of the developer but the difficulty of the area he works on.
+That is what I am concerned about. If people do test, do report and=20
+someone even does a patch and yet its not in the stable kernel then, what=20
+for did they do it?
 
-I agree with you in general on this point, which makes the issue even harder
-to solve. However, some bugs are definitely caused by crap (look for Al
-Viro's occasional audit reports, missing locks and thinks like this should
-not get merged). Every developer starts inexperienced, and may humbly ask
-for help.
+Okay, it was in 2.6.35.1, but when a major and reported regression is only=
+=20
+fixed in stable patches I still think that any release without at least two=
+=20
+or three stable patches should not be called stable at all - its just=20
+misleading then. And I think I am perfectly entitled to that oppinion.=20
+Anyway I will relabel kernels in my mind and not consider a kernel without=
+=20
+stable patches stable anymore. I did so theoretically before already but=20
+now I experienced it for myself the first time.
 
-> Nix pointed out that programming ATI Radeon cards can be quite 
-> challenging. And I do have lots of respect for the Radeon KMS related 
-> work. So I think it would be unfair to point at one of the Radeon KMS 
-> developers and say to him "you did crap" for example.
+> However, you can hardly tell people to implement less features and fix
+> more bugs if they don't owe you anything.
 
-100% agreed. It's the same in my opinion for every piece of code that
-relies on configs that are hard to obtain. For instance, if a driver
-breaks on configs with more than 256 CPUs or 1 TB of RAM, we can't
-necessarily blame the author for not being able to test his code in
-such situations.
+Sorry for the demanding tone in my post that initiated the thread, but in=20
+the post you are answering too I merely made a suggestion. No one does owe=
+=20
+me anything and I am aware of that.
 
-> I think crap does happen and am more concerned about how to handle it when 
-> it does.
+But still even when I do not prepend each of my mails with a list of what=20
+I have done for the kernel - which is clearly less than what any core=20
+kernel developer or even a casual kernel developer did for the kernel  - I=
+=20
+still can make a valuable suggestion.
 
-OK, but when an unusual config is required, sometimes the author cannot
-help getting his code fixed.
+That said I compiled a kernel a day or two for some time to help Ingo=20
+Molnar with testing an use case for his CFS scheduler. And am I regularily=
+=20
+testing new TuxOnIce kernels and report back to Nigel how they fare. I=20
+report bugs for other open source projects like KDE or Debian as well and=20
+contribute a bit here and then, like my first debian package "fio".
 
-> Okay, my contribution then: I report bugs. I reported 4-5 kernels bugs in 
-> the last time. I reported some before, but only occassionally. 
+And this work mostly has been enjoyable. Neither Ingo, nor Nigel, nor Jens=
+=20
+Axboe asked me what I did for the kernel prior to working with me. They=20
+have just been happy for the feedback I gave.
 
-That's really nice.
+I admit my initial post did well to provoke the kind of "what did you do?"=
+=20
+feedback as it actually was demanding. But then I really was frustrated=20
+with the kernel and I think sometimes an oppinionated post like my=20
+"stable? quality assurance?" can be quite good. If I think a kernel is=20
+crap, why should it be prohibited that I tell it to their developers? At=20
+least I learned a lot and even started bisecting that bug even though it=20
+takes an insane amount of time to do so.
 
-> I didn't 
-> face that many bugs prior to 2.6.34 which contributed to my admittedly 
-> very subjective impression that kernel quality has lowered.
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
 
-Possible, but it's also possible that the new bugs affect an area that
-you're using much more than the ones affected by bugs in older versions.
-It's also possible that you became better at noticing bugs.
+--nextPart1340580.cGEzoFZqgP
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-> > Last, developers must not betray their users' trust. When they're not
-> > certain of their code, this must be advertised (this is often the case
-> > but not always). That helps a lot end users select only reliable
-> > features and experience more stability.
-> 
-> Well for me a balance must be met: A kernel has to work good enough for me 
-> to use it regularily.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-That's what everyone looks for, and obviously the threshold is not the same
-for everyone, and the bugs don't affect everyone. You see, while 2.4 is in
-feature freeze and thought to be very stable by its users (and I occasionally
-encounter systems with 2 years of uptime under permanent stress), i would
-not be surprized that some people consider it still not stable enough for
-their usages. It's just a matter of personal taste.
+iEYEABECAAYFAkyCqk8ACgkQmRvqrKWZhMfdyQCgneviN9NgliQyQgbBXHZYU2cK
+JyYAnj4rVf1nDzrH+qpSWK2gRPkiNGHc
+=6OFh
+-----END PGP SIGNATURE-----
 
-> And currently 2.6.34 upto 2.6.36-rc2 on my ThinkPad 
-> T42 simply do not fulfil that criterium. What annoys me most: Radeon KMS 
-> already works perfectly stable on 2.6.33 for me. So the issue was not in 
-> the initial version of Radeon KMS. It has been introduced afterwards. Thus 
-> a supposedly more matured and stable version of it is working less stable 
-> for me.
-
-That's where you're on the wrong side. 2.6.34 is not supposed to be a more
-matured and stable version than 2.6.33. It's supposed to be a more *advanced*
-version. Some issues were fixed, some features were added, some improvements
-were performed and many bugs were added in that whole process. There's a rule
-to follow concerning kernel upgrades in my opinion : you should only upgrade
-for at least one of these 4 reasons :
-  - test new kernels
-  - get new features
-  - fix a known bug
-  - remain on a supported version
-
-It's very likely that you'll regularly switch between newer and older kernels
-to switch between the first 2 and the last 2 reasons. But people who upgrade
-just to be on the edge and who don't even contribute bug reports back are just
-looking for trouble in my opinion.
-
-Regards,
-Willy
-
+--nextPart1340580.cGEzoFZqgP--
