@@ -1,95 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab0IDCCj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 22:02:39 -0400
-Received: from mail.atheros.com ([12.19.149.2]:41033 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753320Ab0IDCCh convert rfc822-to-8bit (ORCPT
+	id S1753966Ab0IDCE7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 22:04:59 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:24695 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab0IDCE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 22:02:37 -0400
-From: Vipin Mehta <Vipin.Mehta@Atheros.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "gregkh@suse.de" <gregkh@suse.de>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 3 Sep 2010 19:02:36 -0700
-Subject: RE: linux-next: Tree for September 3 (ar6k)
-Thread-Topic: linux-next: Tree for September 3 (ar6k)
-Thread-Index: ActLzWqzjLAnutYeRIKRSqvaxQXWIQABlHVQ
-Message-ID: <35B17FE5076C7040809188FBE7913F983F23479B57@SC1EXMB-MBCL.global.atheros.com>
-References: <20100903135206.d9bc2093.sfr@canb.auug.org.au>
- <20100903180614.81e5eee0.randy.dunlap@oracle.com>
-In-Reply-To: <20100903180614.81e5eee0.randy.dunlap@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 3 Sep 2010 22:04:58 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6094"; a="53349055"
+Message-ID: <4C81A949.5080707@codeaurora.org>
+Date: Fri, 03 Sep 2010 19:04:57 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
+To: markgross@thegnar.org
+CC: Kevin Hilman <khilman@deeprootsystems.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <james.bottomley@suse.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
+References: <20100827064153.GB3414@gvim.org> <b3ebe52382d37d37e93021c33cb4d6d9.squirrel@codeaurora.org> <20100828020540.GB8341@gvim.org> <4C787AA9.4090906@codeaurora.org> <20100828225255.GA12402@gvim.org> <878w3o3p55.fsf@deeprootsystems.com> <20100831184030.GB9305@gvim.org> <4C7D844C.5050403@codeaurora.org> <20100901142804.GA13985@gvim.org> <4C7F1BF2.4050200@codeaurora.org> <20100902140922.GB2818@gvim.org>
+In-Reply-To: <20100902140922.GB2818@gvim.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apologies for the inconvenience. I synced to the linux-next tree and looked into the drivers/staging/ath6kl directory. I was able to compile the driver without any issues.
+mark gross wrote:
+> I'll do a patch by monday as an RFC but, I'm wondering if we want it in
+> the main line vrs an implementation that scales by bus integrated into
+> the driver model per what Kevin has been talking about....
 
-One of the reasons this might happen is if the following symbolic link is broken.
+The model Kevin is thinking about will probably need some time and work 
+before it's usable. In the meanwhile, can we have this added?
 
-drivers/staging/ath6kl/include/common/AR6002/hw2.0/hw
+Thanks,
+Saravana
 
-The link should point to drivers/staging/ath6kl/include/common/AR6002/hw2.0/hw.0
-
-Can you pls send me the output of
-ls -al drivers/staging/ath6kl/include/common/AR6002/hw2.0/
-
-or if someone can help with the steps to reproduce the problem.
-
-Regards,
-Vipin
-
-> -----Original Message-----
-> From: Randy Dunlap [mailto:randy.dunlap@oracle.com]
-> Sent: Friday, September 03, 2010 6:06 PM
-> To: Stephen Rothwell; gregkh@suse.de
-> Cc: linux-next@vger.kernel.org; LKML; Vipin Mehta
-> Subject: Re: linux-next: Tree for September 3 (ar6k)
-> 
-> On Fri, 3 Sep 2010 13:52:06 +1000 Stephen Rothwell wrote:
-> 
-> > Hi all,
-> >
-> > Changes since 20100902:
-> 
-> 
-> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:29:43: error:
-> AR6002/hw2.0/hw/mbox_host_reg.h: No such file or directory
-> 
-> which leads to lots of these (this is just a sample):
-> 
-> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:227: error: implicit declaration
-> of function 'INT_STATUS_ENABLE_ERROR_SET'
-> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:228: error: implicit declaration
-> of function 'INT_STATUS_ENABLE_CPU_SET'
-> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:229: error: implicit declaration
-> of function 'INT_STATUS_ENABLE_COUNTER_SET'
-> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:232: error: implicit declaration
-> of function 'INT_STATUS_ENABLE_MBOX_DATA_SET'
-> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:245: error: implicit declaration
-> of function 'CPU_INT_STATUS_ENABLE_BIT_SET'
-> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:249: error: implicit declaration
-> of function 'ERROR_STATUS_ENABLE_RX_UNDERFLOW_SET'
-> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:250: error: implicit declaration
-> of function 'ERROR_STATUS_ENABLE_TX_OVERFLOW_SET'
-> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:254: error: implicit declaration
-> of function 'COUNTER_INT_STATUS_ENABLE_BIT_SET'
-> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:263: error:
-> 'INT_STATUS_ENABLE_ADDRESS' undeclared (first use in this function)
-> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:296: error:
-> 'INT_STATUS_ENABLE_ADDRESS' undeclared (first use in this function)
-> 
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code
-> ***
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
