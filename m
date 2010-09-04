@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754279Ab0IDQIE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 12:08:04 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55670 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab0IDQIC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 12:08:02 -0400
-From: Michael Williamson <michael.williamson@criticallink.com>
-To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: ben-linux@fluff.org, khilman@deeprootsystems.com, chaithrika@ti.com,
-        pjohn@in.mvista.com, nageswari@ti.com, dirk.behme@gmail.com,
-        Michael Williamson <michael.williamson@criticallink.com>
-Subject: [PATCH] i2c-davinci: Fix use of default platform data if none supplied.
-Date: Sat,  4 Sep 2010 12:07:48 -0400
-Message-Id: <1283616468-6344-1-git-send-email-michael.williamson@criticallink.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1754222Ab0IDQM6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 12:12:58 -0400
+Received: from proxima.lp0.eu ([81.2.80.65]:42447 "EHLO proxima.lp0.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753538Ab0IDQM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 12:12:57 -0400
+Message-ID: <4C827002.6060808@simon.arlott.org.uk>
+Date: Sat, 04 Sep 2010 17:12:50 +0100
+From: Simon Arlott <simon@fire.lp0.eu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100605 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Ondrej Zary <linux@rainbow-software.org>
+CC: David Brownell <dbrownell@users.sourceforge.net>, netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [RFC] introduce cx82310_eth: Conexant CX82310-based ADSL
+ router USB ethernet driver
+References: <201009032317.14954.linux@rainbow-software.org> <4C81735E.3030903@simon.arlott.org.uk> <201009041357.26215.linux@rainbow-software.org>
+In-Reply-To: <201009041357.26215.linux@rainbow-software.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a bug in the i2c-davinci device init routine that attempts
-to use default platform data if none is supplied (e.g., is NULL).
-This patch fixes the bug.
+On 04/09/10 12:57, Ondrej Zary wrote:
+> On Saturday 04 September 2010 00:14:54 Simon Arlott wrote:
+>> On 03/09/10 22:17, Ondrej Zary wrote:
+>> > +	/* send command packet */
+>> > +	ret = usb_bulk_msg(udev, usb_sndbulkpipe(udev, CMD_EP), buf,
+>> > +			   CMD_PACKET_SIZE, &actual_len, CMD_TIMEOUT);
+>>
+>> From your previous lsusb output this is an interrupt endpoint, although
+>> usb_bulk_msg will auto-detect the type.
+> 
+> There's also usb_interrupt_msg() function but it calls usb_bulk_msg() directly 
+> so it probably does not matter...
+> Otherwise, I already found out that sending interrupt URBs to bulk endpoints 
+> is a very bad idea (when programming Nexio support for usbtouchscreen). Alan 
+> Stern then created a patch that checks for this.
 
-Signed-off-by: Michael Williamson <michael.williamson@criticallink.com>
----
- drivers/i2c/busses/i2c-davinci.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+I know... it broke cxacru when the device has a bulk command endpoint.
 
-diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
-index 2222c87..6d4eeeb 100644
---- a/drivers/i2c/busses/i2c-davinci.c
-+++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -235,10 +235,12 @@ static void i2c_davinci_calc_clk_dividers(struct davinci_i2c_dev *dev)
-  */
- static int i2c_davinci_init(struct davinci_i2c_dev *dev)
- {
--	struct davinci_i2c_platform_data *pdata = dev->dev->platform_data;
-+	struct davinci_i2c_platform_data *pdata;
- 
--	if (!pdata)
--		pdata = &davinci_i2c_platform_data_default;
-+	if (!dev->dev->platform_data)
-+		dev->dev->platform_data = &davinci_i2c_platform_data_default;
-+
-+	pdata = dev->dev->platform_data;
- 
- 	/* put I2C into reset */
- 	davinci_i2c_reset_ctrl(dev, 0);
+>> >
+>> > +#define rx_incomplete	(dev->data[0])
+>> > +#define rx_remainder	(dev->data[1])
+>> > +#define incomplete_data	(dev->data[2])
+>>
+>> This doesn't make the rest of the code particularly readable.
+> 
+> I agree. Maybe I should abuse data[0] as a pointer to private data...
+> This data[] array does not seem like a good thing. Various usbnet drivers 
+> abuse it in various ways. It should probably be removed and replaced by one 
+> priv pointer.
+
+There's driver_priv, added in 2008 and used only by rndis_wlan.
+
+>> > +	/* we can send at most 1514 bytes of data (+ 2-byte header) per URB */
+>> > +	dev->hard_mtu = CX82310_MTU + dev->net->hard_header_len;
+>>
+>> Have you tried sending larger packets?
+>> With another 8 bytes it would support 802.1Q (VLAN).
+> 
+> Larger packets seem to be dropped. No surprise as the router firmware does not 
+> support VLANs either.
+
+I hadn't considered that it'd need to be able to receive/transmit the
+larger packets over the built-in ethernet ports too.
+
 -- 
-1.7.0.4
-
+Simon Arlott
