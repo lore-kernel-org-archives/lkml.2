@@ -1,79 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab0IDXXy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 19:23:54 -0400
-Received: from THUNK.ORG ([69.25.196.29]:53224 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754291Ab0IDXXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 19:23:53 -0400
-Date: Sat, 4 Sep 2010 19:23:52 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: stable? quality assurance?
-Message-ID: <20100904232351.GG4887@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Martin Steigerwald <Martin@lichtvoll.de>,
-	linux-kernel@vger.kernel.org
-References: <201007110918.42120.Martin@lichtvoll.de>
- <201009041839.09261.Martin@lichtvoll.de>
- <20100904184611.GC4887@thunk.org>
- <201009042111.41695.Martin@lichtvoll.de>
+	id S1754483Ab0IDXYs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 19:24:48 -0400
+Received: from n68.bullet.mail.sp1.yahoo.com ([98.136.44.44]:24788 "HELO
+	n68.bullet.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754344Ab0IDXYq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 19:24:46 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 458558.76934.bm@omp204.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=YDGPbEZ5/JcEiePV+H5xJq3KryyuEhZvpkzx3LPfUd57b7sMHgVR5axapwjbrC1kBSIwPvQWVwqpb8lrlltwbc+s1JFDsT8jvLjvilX2rtSqt589Xl4H9yX4w3ESVwQ08nT76z8pX+t7T4VWO3MiCCcz5QfUaVzjwYgv1GQQHeg=;
+Message-ID: <365612.7945.qm@web180309.mail.gq1.yahoo.com>
+X-YMail-OSG: JAWE2F8VM1lB_O7VcXqaWmX7EgVoYKSacacuIEFwnUutY0_
+ fMfseaUNGUYuUxBeZCRNrmCFjudQ2GJl8UVgy0nnOS3DiuF1SYhiOqe9m0Of
+ CaeOA5Gdqxi7ajJo1R0hHOAyYzKMH1xtjgCGG7Lqgz99HmF3Fbyh4cPPn61l
+ Lb_L7vGJibI3icdMDZ.v2VKSFjKfISwtDeAMNuWwkoBD2vt5Fn4RATgTxuCl
+ BmhA.LRXZPiatPFCU81fOYOWOZd07aLkH0LG24ITaOFja1NVxKYhmwEEDwGg
+ _kddkJUAlEePr13mA8.cgHzoMMbLYTya8sx4obpDRUi4tqGzi5C6.CyCEdTj
+ N90yqHiLZzSQvxpH89rLRVBfLf8Q-
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Sat, 4 Sep 2010 16:24:46 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH] usbnet: allow rx_process() to ignore packets
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Ondrej Zary <linux@rainbow-software.org>
+Cc: netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+In-Reply-To: <201009042352.24197.linux@rainbow-software.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009042111.41695.Martin@lichtvoll.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 04, 2010 at 09:11:34PM +0200, Martin Steigerwald wrote:
+
+
+--- On Sat, 9/4/10, Ondrej Zary <linux@rainbow-software.org> wrote:
+
+> From: Ondrej Zary <linux@rainbow-software.org>
+> Subject: [PATCH] usbnet: allow rx_process() to ignore packets
+
+It already can ... I'm already not
+liking this patch...
+
+You've not convinced me this is even necessary.
+
+
+> To: "David Brownell" <dbrownell@users.sourceforge.net>
+> Cc: netdev@vger.kernel.org, "Kernel development list" <linux-kernel@vger.kernel.org>
+> Date: Saturday, September 4, 2010, 2:52 PM
+> Allow rx_process() to ignore a packet
+> without incrementing error counters if 
+> rx_fixup() returns value other than 0 or 1 (e.g. 2).
 > 
-> Stop! I think we are misunderstanding.
+> This allows to simplify rx_fixup() functions of drivers who
+> do complex 
+> processing there. Currently, drivers must process
+
+Not many drivers.  Or even most.
+
+ the last
+> packet in a 
+> special way - leave it for usbnet to process.
+
+Don't you mean "clean up"?  The usbnet core knows
+exactly zero about packet framing, 
+
+Which in your scenario -- packet crosses URB
+boundaries, can't be handled by usbnet at all,
+since it's specific to the framing used by the
+protocol the driver understands.
+
+The way to handle such perversity (or is it bad
+design ... just use large-enough RX urbs!
+
+Or ... have the usbnet minidriver queue up the
+packets it's got to re-assemble, and do that
+work the next time rx_fixup() is called.  Very
+straightforward, and doesn't affect the core
+usbnet framework at all.
+
+Better of course is to stick to the simple
+framing model that places the least load on the
+whole stack:  one Ethernet packet per URB...
+
+This is not
+> easily possible 
+> when a driver (like the new cx82310_eth) needs to process
+> packets that cross 
+> URB (and thus skb) boundaries. With this patch, the driver
+> can process all 
+> packets in the skb and just return 2 at the end.
+
+With "2" signifying just what?  And what's keeping
+that routine from handing up multiple SKBs *NOW* ??
+
+ISTR nothing is keeping it from doing that, since
+the RNDIS code has done so forever.  (More evidence
+that this change is not needed.)
 > 
-> Its a bug I stumpled across the bisecting process. Neither 2.6.33 or 
-> 2.6.34 are affected, but some kernels in between. As such I didn't think 
-> its worth reporting the bug.
+> Also fix asix driver that was returning 2 at one place
+> before this change 
+> (probably by mistake).
+
+
+If that's worth fixing, it's worth doing it
+in a patch by itself, instead of glommed into
+an otherwise unrelated patch.  Does that really
+break that driver?
+
+
 > 
-> I made a photo of part of the backtrace tough, so if you want I open a bug 
-> report about it nonetheless. But I really think it has been fixed during 
-> the 2.6.33 to 2.6.34 development cycle.
+> 
 
-FYI, it's fair game to send a note to LKML with the backtrace, saying,
-I'm getting this wierd stack trace while trying to do a bisect; it
-looks like it's fixed in 2.6.34, does it look familiar?  If so,
-someone might be able to point you at the commit that fixes the bug,
-and then you can apply that patch by hand while doing the bisect at
-each step (and then unapply it before doing the next bisect
-iteration).
-
-> For now I just skipped affected kernels in the bisection process in the 
-> hope that none is the first last good or first bad one regarding the freeze 
-> bug. Since for now it has all been kernels of a usb merge that showed this 
-> issue, I don't think the freeze bug is in there.
-
-Are you actually booting off of a USB device?  Even if you are, it
-seems... strange... that a series of USB patches would cause an
-ext4/readahead kernel OOPS.  Can you disable using USB devices, which
-would hopefully prevent the problem from showing up?
-
-Note by the way, that you don't have to try compiling at the points
-chosen by "git bisect".  If you run into problems, you can try going
-to the head of the USB patches, and if that works, report that
-particular commit as "good" or "bad".
-
-> So I just wanted to show that I am seriously working on tracking down that 
-> likely radeon kms related freeze bug and that its time-consuming for me 
-> due to having lots of unbootable kernels.
-
-Have you reported this bug to the maintainer?  Is he helping you out?
-Have you looked at the various Radeon-related commits between 2.6.34
-and 2.6.33?  I imagine there probably aren't that many of them.  You
-might try testing commits just before and after the Radeon-related
-commits, which might speed up the git bisect significantly.
-
-						- Ted
