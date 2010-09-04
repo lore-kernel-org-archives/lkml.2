@@ -1,108 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009Ab0IDBKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 21:10:45 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:60020 "HELO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752057Ab0IDBKn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 21:10:43 -0400
+	id S1753363Ab0IDBMI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 21:12:08 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:7283 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212Ab0IDBMG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 21:12:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GCFOtnjFI/xsMiGXdxX1SdctQhSmjPLRnBkNnOhMgWvwxMQTgZlumgcqs2u3DXL4oL
+         mBuoptMtGTYJh8jmvfQw==
 MIME-Version: 1.0
-In-Reply-To: <4C80DB38.9040101@gmail.com>
-References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>
-	<1283306184-28833-2-git-send-email-chase.douglas@canonical.com>
-	<4C7E94F6.9050806@gmail.com>
-	<AANLkTi=z5s8mbjG54930Lxj-O9Of2fXHE6kDJhijyOb7@mail.gmail.com>
-	<4C7F6E26.2030301@gmail.com>
-	<AANLkTikb=eNzek-vQ=d3jZxitsbtJ5gD6BNDipAUpUcJ@mail.gmail.com>
-	<4C80DB38.9040101@gmail.com>
-Date: Fri, 3 Sep 2010 21:10:41 -0400
-Message-ID: <AANLkTi=xeHUV2s8Tu3tF2A8hODML68MYpH4_7j1z-t0a@mail.gmail.com>
-Subject: Re: [PATCH 1/7 v3] HID: magicmouse: don't allow hidinput to
- initialize the device
-From: Michael Poole <mdpoole@troilus.org>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Chase Douglas <chase.douglas@canonical.com>, Jiri Kosina <jkosina@suse.cz>,
-        Henrik Rydberg <rydberg@euromail.se>, Tejun Heo <tj@kernel.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100903145646.15063c1d.akpm@linux-foundation.org>
+References: <1283096628-4450-1-git-send-email-minchan.kim@gmail.com>
+	<20100903140649.09dee316.akpm@linux-foundation.org>
+	<AANLkTimTpj+CSvGx=HC4qnArBV9jxORkKoDA9eap3_cN@mail.gmail.com>
+	<20100903145646.15063c1d.akpm@linux-foundation.org>
+Date: Fri, 3 Sep 2010 18:12:03 -0700
+Message-ID: <AANLkTi=gDnMjTfC756wABD_K6evk+hEOtp_7JVvnwjki@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap system
+From: Venkatesh Pallipadi <venki@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ying Han <yinghan@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 3, 2010 at 7:25 AM, Jiri Slaby <jirislaby@gmail.com> wrote:
-> On 09/02/2010 02:06 PM, Michael Poole wrote:
->> On Thu, Sep 2, 2010 at 5:28 AM, Jiri Slaby wrote:
->>> On 09/02/2010 01:57 AM, Michael Poole wrote:
->>>> Jiri Slaby wrote:
->>>>> This looks weird. Is there any past discussion about why you cannot use
->>>>> hidinput and you have to do all the input bits yourself while cheating
->>>>> this very weird way?
->>>>
->>>> The Magic Mouse and Magic Trackpad do not publish HID descriptors for
->>>> the multitouch reports.  Given the variable-length report packets --
->>>> and especially the Magic Trackpad's new, mutant DOUBLE_REPORT_ID
->>>> packets -- it would be non-trivial to write accurate descriptors that
->>>> the HID core can use.  (Someone wrote a patch to try that a few months
->>>> ago.  It ended up adding significantly more lines to hid-magicmouse.c
->>>> than it removed, and it was not obvious to me that it got the Report
->>>> Count fields correct.)
->>>
->>> Ok, makes sense. The proper solution is to call a driver hook in
->>> hidinput_connect to do the mapping instead of report parsing done there,
->>> right? (And not setting [gs]etkeycode in that case.)
+On Fri, Sep 3, 2010 at 2:56 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Fri, 3 Sep 2010 14:47:03 -0700
+> Ying Han <yinghan@google.com> wrote:
+>
+>> > We don't have any quantitative data on the effect of these excess tlb
+>> > flushes, which makes it difficult to decide which kernel versions
+>> > should receive this patch.
+>> >
+>> > Help?
 >>
->> I do not know how this would work with the current HID core; could you
->> elaborate?
+>> Andrew:
+>>
+>> We observed the degradation on 2.6.34 compared to 2.6.26 kernel. The
+>> workload we are running is doing 4k-random-write which runs about 3-4
+>> minutes. We captured the TLB shootsdowns before/after:
+>>
+>> Before the change:
+>> TLB: 29435 22208 37146 25332 47952 43698 43545 40297 49043 44843 46127
+>> 50959 47592 46233 43698 44690 TLB shootdowns [HSUM =  662798 ]
+>>
+>> After the change:
+>> TLB: 2340 3113 1547 1472 2944 4194 2181 1212 2607 4373 1690 1446 2310
+>> 3784 1744 1134 TLB shootdowns [HSUM =  38091 ]
 >
-> No way. You would have to implement that.
+> Do you have data on how much additional CPU time (and/or wall time) was
+> consumed?
 >
->>  For the Magic Mouse, there is a valid descriptor for the
->> 0x10 (traditional mouse motion and clicks) report, and a pretty
->> trivial descriptor in the vendor-defined usage region (which I assume
->> Apple drivers use to identify the ensemble of multi-touch,
->> mouse-up/down, laser status and battery level reports).  How would the
->> driver's input_mapping() hook, or any other hook, map that single
->> descriptor into fields for each of the parts of a multi-touch report,
->> or support the other reports?  How would hid-magicmouse describe the
->> report so that hid-core handles the variable-length multi-touch
->> reports properly?  As far as I can tell, hid_report_raw_event() and
->> its callees assume each report has fixed length.
->
-> If I understand correctly, you have 2 reports. One report is standard
-> HID and one is very specific and broken.
-> 1) I don't understand where events from the standard report are going
-> now while no output is claimed. In other words, why you return from
-> raw_event in the default case 0, there is nobody to eat the data, right?
 
-hid-magicmouse.c parses the standard-compliant report.  It is the
-"case 0x10:" handler.
+Just reran the workload to get this data
+- after - before of /proc/interrupts:TLB
+- after - before of /proc/stat:cpu
+  (output is: "cpu" user nice sys idle iowait irq softirq steal guest guestnice)
 
-> 2) You handle events from the broken (or missing) report in
-> magicmouse_raw_event and it will remain as is.
->
-> So in the end there will be some .parse_reports hook called from inside
-> hidinput_connect or somewhere instead of parsing and you will do the job
-> you currently do in magicmouse_setup_input except the input structure
-> setup (this will be done generically in hid core).
->
-> The approach you have now is prone to errors, because somebody in the
-> future may add a new claimant without bearing in mind to update these
-> drivers.
+Without this change
+TLB: 28550 21232 33876 14300 40661 43118 38227 34887 34376 38208 35735
+33591 36305 43649 36558 42013 TLB shootdowns [HSUM =  555286 ]
+cpu 41056 381 17945 308706 26447 39 9713 0 0 0
 
-What input_dev should this use for delivering events from the
-non-standard report?  The only way I saw (or see) for hid-magicmouse
-to get the (hid-input-created) input_dev for the mouse is to look at
-hid_device->report_enum[HID_INPUT_REPORT].report_list to get a struct
-hid_report*, then use hid_report->field[0]->hidinput->input.  That
-seemed more fragile and abstraction-breaking than the existing
-approach.
+With this change
+TLB: 660 1088 761 474 778 1050 697 551 712 1353 651 730 788 1419 574
+521 TLB shootdowns [HSUM =  12807 ]
+cpu 40375 231 16622 204115 19317 36 9464 0 0 0
 
-Right now, the device-specific driver's raw_event hook gets the first
-shot at parsing any report; hid-core and hid-input process reports for
-which raw_event returns 0.  If someone adds a new kind of claimant
-that gets higher priority than both of those categories, by definition
-it wouldn't be an error for it to supersede hid-magicmouse's handler.
+This is on a 16 way system, so 16 * 100 count in cpu line above counts as 1s.
 
-Michael Poole
+I don't think all the reduction in CPU time (especially idle time!)
+can be attributed to this change. There is some run to run variation
+especially with the setup and teardown of the tests. But, there is a
+notable reduction in user, system and irq time. For what its worth,
+for this particular workload, throughput number reported by the run is
+4% up.
+
+Thanks,
+Venki
