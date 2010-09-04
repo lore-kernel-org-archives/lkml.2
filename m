@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab0IDOmx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 10:42:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48576 "EHLO mx2.suse.de"
+	id S1753664Ab0IDOnQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 10:43:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48580 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752647Ab0IDOmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 10:42:52 -0400
-Date: Sat, 4 Sep 2010 07:20:26 -0700
+	id S1753531Ab0IDOm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 10:42:58 -0400
+Date: Sat, 4 Sep 2010 07:38:12 -0700
 From: Greg KH <gregkh@suse.de>
-To: CAI Qian <caiqian@redhat.com>
-Cc: Dave Anderson <anderson@redhat.com>, guenter.roeck@ericsson.com,
-        tj@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: crash failure with 2.6.36-rc3 vmcore
-Message-ID: <20100904142026.GA13166@suse.de>
-References: <856089343.1931201283439399228.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <223297751.117871283580066858.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+To: Mika Westerberg <mika.westerberg@iki.fi>
+Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH] serial: amba-pl010: fix set_ldisc
+Message-ID: <20100904143812.GA13340@suse.de>
+References: <1283101965-12161-1-git-send-email-mika.westerberg@iki.fi> <20100904072323.GR25559@gw.healthdatacare.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <223297751.117871283580066858.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <20100904072323.GR25559@gw.healthdatacare.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 04, 2010 at 02:01:06AM -0400, CAI Qian wrote:
+On Sat, Sep 04, 2010 at 10:23:23AM +0300, Mika Westerberg wrote:
+> On Sun, Aug 29, 2010 at 08:12:45PM +0300, Mika Westerberg wrote:
+> > Commit d87d9b7d1 ("tty: serial - fix tty referencing in set_ldisc") changed
+> > set_ldisc to take ldisc number as parameter. This patch fixes AMBA PL010 driver
+> > according the new prototype.
 > 
-> > crash> mod -S
-> > 
-> > mod: invalid structure member offset: attribute_owner
-> >      FILE: symbols.c  LINE: 8577  FUNCTION: add_symbol_file_kallsyms()
-> > 
-> >      MODULE       NAME                   SIZE  OBJECT FILE
-> > ffffffffa000de60  dm_mod                76230 
-> > /lib/modules/2.6.36-rc2-mm1-wqfix-mkdfix+/kernel/drivers/md/dm-mod.ko
-> > [/usr/bin/crash] error trace: 4affb0 => 4f3236 => 4f12b5 => 4e587a
-> > 
-> >   4e587a: OFFSET_verify.clone.4+186
-> >   4f12b5: add_symbol_file+933
-> >   4f3236: load_module_symbols+566
-> >   4affb0: do_module_cmd+1264
-> > 
-> > mod: invalid structure member offset: attribute_owner
-> >      FILE: symbols.c  LINE: 8577  FUNCTION: add_symbol_file_kallsyms()
-> This failure was due to this commit,
+> Hi,
 > 
-> commit 6fd69dc578fa0b1bbc3aad70ae3af9a137211707
+> If there are no objections, could this be merged? I CC'd Greg as I'm not sure
+> who is the serial maintainer.
 
-<snip>
+I've been acting as the def-facto serial maintainer, so I can take it.
+I'll queue it up in my tree, give me a few days till I get to it.
 
-I don't understand, is this patch causing a problem, or did you forget
-to rebuild your code?
-
-confused,
+thanks,
 
 greg k-h
