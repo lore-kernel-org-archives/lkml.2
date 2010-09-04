@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab0IDSjT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 14:39:19 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:51944 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab0IDSjS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 14:39:18 -0400
-Subject: [ANNOUNCE] Linux Test Project for AUGUST 2010 has been released
-From: Subrata Modak <subrata@linux.vnet.ibm.com>
-Reply-To: subrata@linux.vnet.ibm.com
-To: ltp-list <ltp-list@lists.sf.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Garrett Cooper <yanegomi@gmail.com>, Mike Frysinger <vapier@gentoo.org>
-Content-Type: text/plain
-Organization: IBM
-Date: Sun, 05 Sep 2010 00:09:09 +0530
-Message-Id: <1283625550.5303.5.camel@subratamodak.linux.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.2) 
-Content-Transfer-Encoding: 7bit
+	id S1752988Ab0IDSqO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 14:46:14 -0400
+Received: from THUNK.ORG ([69.25.196.29]:44367 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023Ab0IDSqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 14:46:13 -0400
+Date: Sat, 4 Sep 2010 14:46:11 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: stable? quality assurance?
+Message-ID: <20100904184611.GC4887@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Martin Steigerwald <Martin@lichtvoll.de>,
+	linux-kernel@vger.kernel.org
+References: <201007110918.42120.Martin@lichtvoll.de>
+ <201007111651.42963.Martin@lichtvoll.de>
+ <20100711172252.GA3379@1wt.eu>
+ <201009041839.09261.Martin@lichtvoll.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009041839.09261.Martin@lichtvoll.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Sep 04, 2010 at 06:38:59PM +0200, Martin Steigerwald wrote:
+> 
+> During bisecting [Bug 16376] random - possibly Radeon DRM KMS related 
+> freezes, which goes very slowly due to having lots of unbootable kernels 
+> with an ext4 / readahead related backtrace during boot, I had an idea:
 
-LTP for August 2010 has been released. Please pick your copy from:
-http://ltp.sourceforge.net/,
+So I'm not sure what you're referring to here.  If there's an ext4
+bug, why haven't you reported it to the linux-ext4 list?  I've done a
+Google search for "Steigerwald ext4 readahead" and I can't find any
+bug report related to kernel oops that are ext4/readahead-related.
 
-Changes during last 2 months can be found here:
-http://ltp.git.sourceforge.net/git/gitweb.cgi?p=ltp/ltp-dev.git;a=commitdiff;h=63bb9536f66b8117a723e99149ee8091dcae4fad,
+No one else has reported such a bug to me, and I run a complete set of
+regression tests before I push ext4 changes to Linus.  So I'm not sure
+what you're seeing.  But complaining about it in passing on an e-mail
+without sending a formal bug report to the linux-ext4 mailing list is
+not likely to solve your problem...
 
-Regards--
-Subrata
-
-
+						- Ted
