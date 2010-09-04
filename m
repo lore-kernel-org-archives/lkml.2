@@ -1,56 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506Ab0IDISV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 04:18:21 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47795 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754057Ab0IDIST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 04:18:19 -0400
-Date: Sat, 4 Sep 2010 10:18:01 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Thomas Renninger <trenn@suse.de>, Jean Pihet <jean.pihet@newoldbits.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tracing, perf: add more power related events
-Message-ID: <20100904081801.GA19876@elte.hu>
-References: <AANLkTikvbn3+JPc7pnGZk-H4B71MHTu+-vjuzfJw_7PC@mail.gmail.com>
- <201009032005.08268.trenn@suse.de>
- <20100903195555.GA1663@elte.hu>
- <201009032210.08524.trenn@suse.de>
- <4C817D0E.6020702@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C817D0E.6020702@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0042]
+	id S1751554Ab0IDIj2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 04:39:28 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64264 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab0IDIj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 04:39:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=eWsXK3bmdBZkDNSDK/tkPdsqaIlP71EIQky2615OTJBk4NDwOPzqmsrNhoyT/VfJv3
+         2rIaaFZHvzwxV72I4Ckbs33eh8dnD3h9zSUh5VcDZsgEYsBf0MxpUDNZK/Xk7l3fTm5r
+         vpqZP561XoPYNSTqVXyhpmAMzancq8vSfouBQ=
+Subject: Re: Linux Kernel GDB tracepoint module 2010-8-30 release
+From: Steven <mqyoung@gmail.com>
+To: Hui Zhu <teawater@gmail.com>
+Cc: "gdb@sourceware.org" <gdb@sourceware.org>, linux-kernel@vger.kernel.org,
+        Michael Snyder <msnyder@vmware.com>,
+        Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+In-Reply-To: <AANLkTik=0wMHh9fg8_vK_Aor40J43mNojvfHadhHObKA@mail.gmail.com>
+References: <AANLkTimjO7sBzR55XkPB7dmZvxXqc8PS4UDsgptXVt90@mail.gmail.com>
+	 <1283504768.2100.43.camel@steven>
+	 <AANLkTik=0wMHh9fg8_vK_Aor40J43mNojvfHadhHObKA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 04 Sep 2010 16:39:18 +0800
+Message-ID: <1283589558.1685.20.camel@steven>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Arjan van de Ven <arjan@linux.intel.com> wrote:
-
-> On 9/3/2010 1:10 PM, Thomas Renninger wrote:
+On Sat, 2010-09-04 at 11:41 +0800, Hui Zhu wrote:
+> Hi Steven,
+> 
+> On Fri, Sep 3, 2010 at 17:06, Steven <mqyoung@gmail.com> wrote:
+> > Dear Hui,
 > >
-> >>- and check how existing tools like
-> >>powertop make use of such events - and sync it all up.
-> >Does powertop use these events?
+> > I encountered two issue when I use your GTP.
+> >
+> > 1) Following your HOWTO, I collect the two variables
+> jiffies_64(global),
+> > *file(argument), the result are as following, where you may see
+> > jiffies_64 = 4298520928, that's OK, but the members of *file are all
+> 0.
+> > What's the problem? Thank you very much!
+> >
+>  -------------------------------------------------------------------
+> >        (gdb) trace vfs_readdir
+> >        Tracepoint 3 at 0xc1175690: file fs/readdir.c, line 23.
+> >        (gdb) actions
+> >        Enter actions for tracepoint 3, one per line.
+> >        End with a line saying just "end".
+> >        > collect jiffies_64
+> >        > collect *file
+> >        > end
+> >        (gdb) tstart
+> >        (gdb) tstop
+> >        (gdb) tfind
+> >        #0  0xc1175691 i (file=0x0, filler=0, buf=0x0) at
+> >        fs/readdir.c:23
+> >        23      {
+> >        (gdb) p jiffies_64
+> >        $7 = 4298520928
+> >        (gdb) p *file
+> >        $8 = {f_u = {fu_list = {next = 0x0, prev = 0x0}, fu_rcuhead =
+> >        {next = 0x0, func = 0}}, f_path = {mnt = 0x0, dentry = 0x0},
+> >        f_op = 0x0, f_lock = {{ rlock = {raw_lock = {slock = 0}}}},
+> >        f_count = {counter = 0}, f_flags = 0, f_mode = 0, f_pos = 0,
+> >        f_owner = {lock = {raw_lock = { lock = 0}}, pid = 0x0,
+> pid_type
+> >        = PIDTYPE_PID, uid = 0, euid = 0, signum = 0}, f_cred = 0x0,
+> >        f_ra = {stra_pages = 00, f_security = 0x0, private_data =
+> 0x0,
+> >        f_ep_links = {next = 0x0, prev = 0x0}, f_mapping = 0x0}
+> >
+>  -------------------------------------------------------------------
 > >
 > 
-> the next version will; I've already coded this stuff ;-)
+> It looks like a old bug that I have fixed in new version.
+> I try it in 20100830 version cannot reproduce this issue:
+> (gdb) target remote /proc/gtp
+> Remote debugging using /proc/gtp
+> 0x0000000000000000 in ?? ()
+> (gdb) trace vfs_readdir
+> Tracepoint 1 at 0xffffffff81147d3c: file
+> /home/teawater/kernel/linux-2.6/fs/readdir.c, line 24.
+> (gdb) actions
+> Enter actions for tracepoint 1, one per line.
+> End with a line saying just "end".
+> >collect jiffies_64
+> >collect *file
+> >end
+> (gdb) tstart
+> (gdb) sh
+> sharedlibrary  shell          show
+> (gdb) shell ls
+> 2      block    firmware  i        ipc     Makefile
+> modules.order
+> scripts   source          t~    vmlinux
+> a.out  crypto   fs        include  kernel  mm
+> Module.symvers  security
+> System.map  usr vmlinux.o
+> arch   drivers  gdb.txt   init     lib     modules.builtin
+> net         
+> sound     t               virt
+> (gdb) tstop
+> (gdb) tfind
+> Found trace frame 0, tracepoint 1
+> #0  0xffffffff81147d3d in vfs_readdir (file=0xffff88007b22bcc0,
+> filler=0xffffffff81147ba0 <filldir>, buf=0xffff88006cc31f38)
+>     at /home/teawater/kernel/linux-2.6/fs/readdir.c:24
+> 24      {
+> (gdb) p jiffies_64
+> $1 = 4295113995
+> (gdb) p *file
+> $2 = {f_u = {fu_list = {next = 0xffff88007b22b480, prev =
+> 0xffffe8ffffc86960}, fu_rcuhead = {next = 0xffff88007b22b480,
+>       func = 0xffffe8ffffc86960}}, f_path = {mnt = 0xffff880037bd6b00,
+> dentry = 0xffff88007e15b6c0}, f_op = 0xffffffff81622b00, f_lock = {{
+>       rlock = {raw_lock = {slock = 0}}}}, f_sb_list_cpu = 1, f_count =
+> {counter = 2}, f_flags = 624640, f_mode = 29, f_pos = 0, f_owner = {
+>     lock = {raw_lock = {lock = 16777216}}, pid = 0x0, pid_type =
+> PIDTYPE_PID, uid = 0, euid = 0, signum = 0}, f_cred =
+> 0xffff88007ae6f780,
+>   f_ra = {start = 0, size = 0, async_size = 0, ra_pages = 32,
+> mmap_miss = 0, prev_pos = -1}, f_version = 0, f_security = 0x0,
+>   private_data = 0x0, f_ep_links = {next = 0xffff88007b22bd68, prev =
+> 0xffff88007b22bd68}, f_mapping = 0xffff880036662590}
+> 
+> 
+> Could you try the new version?  I think it will work OK. 
 
-Ok, so an Acked-by from you for the new tracepoints (once they are fully 
-posted) would certainly be useful.
 
-Thanks,
+I use the latest GTP, the same problem, while I use the latest GDB(7.2),
+I get the correct value of *file(the version of my old gdb is 6.8).
+(Intel P3 CPU)
 
-	Ingo
+Many thanks to ALL,
+Steven
+
