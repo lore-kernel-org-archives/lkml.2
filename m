@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab0IDBSL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 21:18:11 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59457 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332Ab0IDBRy (ORCPT
+	id S1754478Ab0IDBSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 21:18:37 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49628 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493Ab0IDBSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 21:17:54 -0400
+	Fri, 3 Sep 2010 21:18:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ae/JqHcbfP1qXjldby2y/b98X4SIq0L8j5tlRTQYMhjwP3BgiZShUiaX4Xpr9ZfUos
-         Ge4bAU2v6FpFDPqSaE+wY41y7IDQuMkgvNuRKTmI471p4JUEaWy/uBHTwHUXElouXBXx
-         vB8ms277glKI06FezhC6xKQaSKGG1hFAVUB9w=
+        b=JFqpozi/G11YzRj+GMw4oAgBiJ/LuppYyIe8SlHd9joYsGFp04ZNumlYg9nVUuDleo
+         gBLkXB6E9JgKVpC60yzTyLrZAfvzqJRL8zujT2WYdfInvy9mnD52Vaurl7P/gwIf3psl
+         4RrSJPfEsuPm+payvY27U/joozJp9wFSTliEk=
 From: Brian Gerst <brgerst@gmail.com>
 To: hpa@zytor.com
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, penberg@kernel.org
-Subject: [PATCH 02/12] x86: Merge fpu_init()
-Date: Fri,  3 Sep 2010 21:17:09 -0400
-Message-Id: <1283563039-3466-3-git-send-email-brgerst@gmail.com>
+Subject: [PATCH 11/12] x86-32: Rewrite fpu_save_init()
+Date: Fri,  3 Sep 2010 21:17:18 -0400
+Message-Id: <1283563039-3466-12-git-send-email-brgerst@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1283563039-3466-1-git-send-email-brgerst@gmail.com>
 References: <1283563039-3466-1-git-send-email-brgerst@gmail.com>
@@ -26,112 +26,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make fpu_init() handle 32-bit setup.
+Rewrite fpu_save_init() to prepare for merging with 64-bit.
 
 Signed-off-by: Brian Gerst <brgerst@gmail.com>
 ---
- arch/x86/kernel/cpu/common.c |    7 -------
- arch/x86/kernel/i387.c       |   30 ++++++++++++++----------------
- arch/x86/kernel/traps.c      |   12 ------------
- 3 files changed, 14 insertions(+), 35 deletions(-)
+ arch/x86/include/asm/i387.h |   47 ++++++++++++++++++++----------------------
+ 1 files changed, 22 insertions(+), 25 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 490dac6..f9e23e8 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1264,13 +1264,6 @@ void __cpuinit cpu_init(void)
- 	clear_all_debug_regs();
- 	dbg_restore_debug_regs();
- 
--	/*
--	 * Force FPU initialization:
--	 */
--	current_thread_info()->status = 0;
--	clear_used_math();
--	mxcsr_feature_mask_init();
--
- 	fpu_init();
- 	xsave_init();
- }
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index a46cb35..1f082f3 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -80,7 +80,6 @@ static void __cpuinit init_thread_xstate(void)
- #endif
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index 907967e..b45abef 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -73,6 +73,11 @@ static __always_inline __pure bool use_xsave(void)
+ 	return static_cpu_has(X86_FEATURE_XSAVE);
  }
  
--#ifdef CONFIG_X86_64
- /*
-  * Called at bootup to set up the initial FPU state that is later cloned
-  * into all processes.
-@@ -88,12 +87,21 @@ static void __cpuinit init_thread_xstate(void)
- 
- void __cpuinit fpu_init(void)
- {
--	unsigned long oldcr0 = read_cr0();
--
--	set_in_cr4(X86_CR4_OSFXSR);
--	set_in_cr4(X86_CR4_OSXMMEXCPT);
-+	unsigned long cr0;
-+	unsigned long cr4_mask = 0;
- 
--	write_cr0(oldcr0 & ~(X86_CR0_TS|X86_CR0_EM)); /* clear TS and EM */
-+	if (cpu_has_fxsr)
-+		cr4_mask |= X86_CR4_OSFXSR;
-+	if (cpu_has_xmm)
-+		cr4_mask |= X86_CR4_OSXMMEXCPT;
-+	if (cr4_mask)
-+		set_in_cr4(cr4_mask);
++static __always_inline __pure bool use_fxsr(void)
++{
++        return static_cpu_has(X86_FEATURE_FXSR);
++}
 +
-+	cr0 = read_cr0();
-+	cr0 &= ~(X86_CR0_TS|X86_CR0_EM); /* clear TS and EM */
-+	if (!HAVE_HWFP)
-+		cr0 |= X86_CR0_EM;
-+	write_cr0(cr0);
+ extern void __sanitize_i387_state(struct task_struct *);
  
- 	if (!smp_processor_id())
- 		init_thread_xstate();
-@@ -104,16 +112,6 @@ void __cpuinit fpu_init(void)
- 	clear_used_math();
+ static inline void sanitize_i387_state(struct task_struct *tsk)
+@@ -211,6 +216,12 @@ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
+ 	return 0;
  }
  
--#else	/* CONFIG_X86_64 */
--
--void __cpuinit fpu_init(void)
--{
--	if (!smp_processor_id())
--		init_thread_xstate();
--}
--
--#endif	/* CONFIG_X86_32 */
--
- void fpu_finit(struct fpu *fpu)
++static inline void fpu_fxsave(struct fpu *fpu)
++{
++	asm volatile("fxsave %[fx]"
++		     : [fx] "=m" (fpu->state->fxsave));
++}
++
+ /* We need a safe address that is cheap to find and that is already
+    in L1 during context switch. The best choices are unfortunately
+    different for UP and SMP */
+@@ -226,36 +237,24 @@ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
+ static inline void fpu_save_init(struct fpu *fpu)
  {
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 60788de..d0029eb 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -881,18 +881,6 @@ void __init trap_init(void)
- #endif
- 
- #ifdef CONFIG_X86_32
--	if (cpu_has_fxsr) {
--		printk(KERN_INFO "Enabling fast FPU save and restore... ");
--		set_in_cr4(X86_CR4_OSFXSR);
--		printk("done.\n");
--	}
--	if (cpu_has_xmm) {
--		printk(KERN_INFO
--			"Enabling unmasked SIMD FPU exception support... ");
--		set_in_cr4(X86_CR4_OSXMMEXCPT);
--		printk("done.\n");
--	}
+ 	if (use_xsave()) {
+-		struct xsave_struct *xstate = &fpu->state->xsave;
+-		struct i387_fxsave_struct *fx = &fpu->state->fxsave;
 -
- 	set_system_trap_gate(SYSCALL_VECTOR, &system_call);
- 	set_bit(SYSCALL_VECTOR, used_vectors);
- #endif
+ 		fpu_xsave(fpu);
+ 
+ 		/*
+ 		 * xsave header may indicate the init state of the FP.
+ 		 */
+-		if (!(xstate->xsave_hdr.xstate_bv & XSTATE_FP))
+-			goto end;
+-
+-		if (unlikely(fx->swd & X87_FSW_ES))
+-			asm volatile("fnclex");
+-
+-		/*
+-		 * we can do a simple return here or be paranoid :)
+-		 */
+-		goto clear_state;
++		if (!(fpu->state->xsave.xsave_hdr.xstate_bv & XSTATE_FP))
++			return;
++	} else if (use_fxsr()) {
++		fpu_fxsave(fpu);
++	} else {
++		asm volatile("fsave %[fx]; fwait"
++			     : [fx] "=m" (fpu->state->fsave));
++		return;
+ 	}
+ 
+-	/* Use more nops than strictly needed in case the compiler
+-	   varies code */
+-	alternative_input(
+-		"fnsave %[fx] ;fwait;" GENERIC_NOP8 GENERIC_NOP4,
+-		"fxsave %[fx]\n"
+-		"bt $7,%[fsw] ; jnc 1f ; fnclex\n1:",
+-		X86_FEATURE_FXSR,
+-		[fx] "m" (fpu->state->fxsave),
+-		[fsw] "m" (fpu->state->fxsave.swd) : "memory");
+-clear_state:
++	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES))
++		asm volatile("fnclex");
++
+ 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
+ 	   is pending.  Clear the x87 state here by setting it to fixed
+ 	   values. safe_address is a random variable that should be in L1 */
+@@ -265,8 +264,6 @@ clear_state:
+ 		"fildl %[addr]", 	/* set F?P to defined value */
+ 		X86_FEATURE_FXSAVE_LEAK,
+ 		[addr] "m" (safe_address));
+-end:
+-	;
+ }
+ 
+ #endif	/* CONFIG_X86_64 */
 -- 
 1.7.2.2
 
