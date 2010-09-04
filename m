@@ -1,219 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab0IDBqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 21:46:18 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48532 "EHLO ogre.sisk.pl"
+	id S1753856Ab0IDCCj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 22:02:39 -0400
+Received: from mail.atheros.com ([12.19.149.2]:41033 "EHLO mail.atheros.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798Ab0IDBqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 21:46:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
-Date: Sat, 4 Sep 2010 03:44:42 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "M. Vefa Bicakci" <bicave@superonline.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org,
-        Minchan Kim <minchan.kim@gmail.com>
-References: <20100903085756.B657.A69D9226@jp.fujitsu.com> <201009030307.34057.rjw@sisk.pl> <20100903105216.B65C.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100903105216.B65C.A69D9226@jp.fujitsu.com>
+	id S1753320Ab0IDCCh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 22:02:37 -0400
+From: Vipin Mehta <Vipin.Mehta@Atheros.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "gregkh@suse.de" <gregkh@suse.de>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 3 Sep 2010 19:02:36 -0700
+Subject: RE: linux-next: Tree for September 3 (ar6k)
+Thread-Topic: linux-next: Tree for September 3 (ar6k)
+Thread-Index: ActLzWqzjLAnutYeRIKRSqvaxQXWIQABlHVQ
+Message-ID: <35B17FE5076C7040809188FBE7913F983F23479B57@SC1EXMB-MBCL.global.atheros.com>
+References: <20100903135206.d9bc2093.sfr@canb.auug.org.au>
+ <20100903180614.81e5eee0.randy.dunlap@oracle.com>
+In-Reply-To: <20100903180614.81e5eee0.randy.dunlap@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009040344.42342.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 03, 2010, KOSAKI Motohiro wrote:
-> > On Friday, September 03, 2010, KOSAKI Motohiro wrote:
-> > > Hello,
-> > > 
-> > > > > > > Like in the patch below, perhaps?
-> > > > > > 
-> > > > > > Looks like fine. but I have one question. hibernate_preallocate_memory() call
-> > > > > > preallocate_image_memory() two times. Why do you only care latter one?
-> > > > > > former one seems similar risk.
-> > > > > 
-> > > > > The first one is mandatory, ie. if we can't allocate the requested number of
-> > > > > pages at this point, we fail the entire hibernation.  In that case the
-> > > > > performance hit doesn't matter.
-> > > > 
-> > > > IOW, your patch at http://lkml.org/lkml/2010/9/2/262 is still necessary to
-> > > > protect against the infinite loop in that case.
-> > > 
-> > > As far as I understand, we need distinguish two allocation failure.
-> > >   1) failure because no enough memory
-> > > 	-> yes, hibernation should fail
-> > >  2) failure because already allocated enough lower zone memory
-> > > 	-> why should we fail?
-> > > 
-> > > If the system has a lot of memory, scenario (2) is happen frequently than (1).
-> > > I think we need check alloc_highmem and alloc_normal variable and call
-> > > preallocate_image_highmem() again instead preallocate_image_memory()
-> > > if we've alread allocated enough lots normal memory.
-> > > 
-> > > nit?
-> > 
-> > Actually I thought about that, but we don't really see hibernation fail for
-> > this reason.  In all of the tests I carried out the requested 50% of highmem
-> > had been allocated before allocations from the normal zone started to be
-> > made, even if highmem was 100% full at that point.  So this appears to be
-> > a theoretical issue and covering it would require us to change the algorithm
-> > entirely (eg. it doesn't make sense to call preallocate_highmem_fraction() down
-> > the road if that happens).
+Apologies for the inconvenience. I synced to the linux-next tree and looked into the drivers/staging/ath6kl directory. I was able to compile the driver without any issues.
+
+One of the reasons this might happen is if the following symbolic link is broken.
+
+drivers/staging/ath6kl/include/common/AR6002/hw2.0/hw
+
+The link should point to drivers/staging/ath6kl/include/common/AR6002/hw2.0/hw.0
+
+Can you pls send me the output of
+ls -al drivers/staging/ath6kl/include/common/AR6002/hw2.0/
+
+or if someone can help with the steps to reproduce the problem.
+
+Regards,
+Vipin
+
+> -----Original Message-----
+> From: Randy Dunlap [mailto:randy.dunlap@oracle.com]
+> Sent: Friday, September 03, 2010 6:06 PM
+> To: Stephen Rothwell; gregkh@suse.de
+> Cc: linux-next@vger.kernel.org; LKML; Vipin Mehta
+> Subject: Re: linux-next: Tree for September 3 (ar6k)
 > 
-> ok, thanks. probably I've catched your point. please feel free to use my reviewed-by
-> for your fix.
-
-Thanks.
-
-In the meantime, though, I prepared a patch that should address the issue
-entirely.  The patch is appended and if it looks good to you, I'd rather use it
-instead of the previous one (it is still untested).
-
-Rafael
-
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM / Hibernate: Avoid hitting OOM during preallocation of memory
-
-There is a problem in hibernate_preallocate_memory() that it calls
-preallocate_image_memory() with an argument that may be greater than
-the number of available non-highmem memory pages.  This may trigger
-the OOM condition which in turn can cause significant slowdown to
-occur.
-
-To avoid that, modify preallocate_image_memory() so that it checks
-if there is a sufficient number of non-highmem pages to allocate from
-before calling preallocate_image_pages() and change
-hibernate_preallocate_memory() to try to allocate from highmem if
-the number of pages allocated by preallocate_image_memory() is too
-low.
-
-Adjust free_unnecessary_pages() to take all possible memory
-allocation patterns into account.
-
-Reported-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- kernel/power/snapshot.c |   66 +++++++++++++++++++++++++++++++++---------------
- 1 file changed, 46 insertions(+), 20 deletions(-)
-
-Index: linux-2.6/kernel/power/snapshot.c
-===================================================================
---- linux-2.6.orig/kernel/power/snapshot.c
-+++ linux-2.6/kernel/power/snapshot.c
-@@ -1122,9 +1122,19 @@ static unsigned long preallocate_image_p
- 	return nr_alloc;
- }
- 
--static unsigned long preallocate_image_memory(unsigned long nr_pages)
-+static unsigned long preallocate_image_memory(unsigned long nr_pages,
-+					      unsigned long size_normal)
- {
--	return preallocate_image_pages(nr_pages, GFP_IMAGE);
-+	unsigned long alloc;
-+
-+	if (size_normal <= alloc_normal)
-+		return 0;
-+
-+	alloc = size_normal - alloc_normal;
-+	if (nr_pages < alloc)
-+		alloc = nr_pages;
-+
-+	return preallocate_image_pages(alloc, GFP_IMAGE);
- }
- 
- #ifdef CONFIG_HIGHMEM
-@@ -1170,15 +1180,22 @@ static inline unsigned long preallocate_
-  */
- static void free_unnecessary_pages(void)
- {
--	unsigned long save_highmem, to_free_normal, to_free_highmem;
-+	unsigned long save, to_free_normal, to_free_highmem;
- 
--	to_free_normal = alloc_normal - count_data_pages();
--	save_highmem = count_highmem_pages();
--	if (alloc_highmem > save_highmem) {
--		to_free_highmem = alloc_highmem - save_highmem;
-+	save = count_data_pages();
-+	if (alloc_normal >= save) {
-+		to_free_normal = alloc_normal - save;
-+		save = 0;
-+	} else {
-+		to_free_normal = 0;
-+		save -= alloc_normal;
-+	}
-+	save += count_highmem_pages();
-+	if (alloc_highmem >= save) {
-+		to_free_highmem = alloc_highmem - save;
- 	} else {
- 		to_free_highmem = 0;
--		to_free_normal -= save_highmem - alloc_highmem;
-+		to_free_normal -= save - alloc_highmem;
- 	}
- 
- 	memory_bm_position_reset(&copy_bm);
-@@ -1259,7 +1276,7 @@ int hibernate_preallocate_memory(void)
- {
- 	struct zone *zone;
- 	unsigned long saveable, size, max_size, count, highmem, pages = 0;
--	unsigned long alloc, save_highmem, pages_highmem;
-+	unsigned long alloc, save_highmem, pages_highmem, size_normal;
- 	struct timeval start, stop;
- 	int error;
- 
-@@ -1296,6 +1313,7 @@ int hibernate_preallocate_memory(void)
- 		else
- 			count += zone_page_state(zone, NR_FREE_PAGES);
- 	}
-+	size_normal = count;
- 	count += highmem;
- 	count -= totalreserve_pages;
- 
-@@ -1310,7 +1328,7 @@ int hibernate_preallocate_memory(void)
- 	 */
- 	if (size >= saveable) {
- 		pages = preallocate_image_highmem(save_highmem);
--		pages += preallocate_image_memory(saveable - pages);
-+		pages += preallocate_image_memory(saveable - pages, size_normal);
- 		goto out;
- 	}
- 
-@@ -1336,16 +1354,24 @@ int hibernate_preallocate_memory(void)
- 	 */
- 	pages_highmem = preallocate_image_highmem(highmem / 2);
- 	alloc = (count - max_size) - pages_highmem;
--	pages = preallocate_image_memory(alloc);
--	if (pages < alloc)
--		goto err_out;
--	size = max_size - size;
--	alloc = size;
--	size = preallocate_highmem_fraction(size, highmem, count);
--	pages_highmem += size;
--	alloc -= size;
--	pages += preallocate_image_memory(alloc);
--	pages += pages_highmem;
-+	pages = preallocate_image_memory(alloc, size_normal);
-+	if (pages < alloc) {
-+		/* We have exhausted non-highmem pages, try highmem. */
-+		alloc -= pages;
-+		pages = preallocate_image_highmem(alloc);
-+		if (pages < alloc)
-+			goto err_out;
-+		pages += preallocate_image_highmem(max_size - size);
-+	} else {
-+		size = max_size - size;
-+		alloc = size;
-+		size = preallocate_highmem_fraction(size, highmem, count);
-+		pages_highmem += size;
-+		alloc -= size;
-+		size = preallocate_image_memory(alloc, size_normal);
-+		pages_highmem += preallocate_image_highmem(alloc - size);
-+		pages += pages_highmem + size;
-+	}
- 
- 	/*
- 	 * We only need as many page frames for the image as there are saveable
+> On Fri, 3 Sep 2010 13:52:06 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> >
+> > Changes since 20100902:
+> 
+> 
+> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:29:43: error:
+> AR6002/hw2.0/hw/mbox_host_reg.h: No such file or directory
+> 
+> which leads to lots of these (this is just a sample):
+> 
+> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:227: error: implicit declaration
+> of function 'INT_STATUS_ENABLE_ERROR_SET'
+> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:228: error: implicit declaration
+> of function 'INT_STATUS_ENABLE_CPU_SET'
+> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:229: error: implicit declaration
+> of function 'INT_STATUS_ENABLE_COUNTER_SET'
+> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:232: error: implicit declaration
+> of function 'INT_STATUS_ENABLE_MBOX_DATA_SET'
+> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:245: error: implicit declaration
+> of function 'CPU_INT_STATUS_ENABLE_BIT_SET'
+> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:249: error: implicit declaration
+> of function 'ERROR_STATUS_ENABLE_RX_UNDERFLOW_SET'
+> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:250: error: implicit declaration
+> of function 'ERROR_STATUS_ENABLE_TX_OVERFLOW_SET'
+> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:254: error: implicit declaration
+> of function 'COUNTER_INT_STATUS_ENABLE_BIT_SET'
+> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:263: error:
+> 'INT_STATUS_ENABLE_ADDRESS' undeclared (first use in this function)
+> drivers/staging/ath6kl/htc2/AR6000/ar6k.c:296: error:
+> 'INT_STATUS_ENABLE_ADDRESS' undeclared (first use in this function)
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code
+> ***
