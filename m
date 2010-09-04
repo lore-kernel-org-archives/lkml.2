@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab0IDOGk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 10:06:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59319 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632Ab0IDOGi (ORCPT
+	id S1753149Ab0IDOVq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 10:21:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64065 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752584Ab0IDOVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 10:06:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Qx0K5Xxd0lGvVh7AXZIB2uMAk09y+6As8GTmVbtnCz+cbeSiHyGDZPGxbF4YKG44K6
-         daxsye1SmeaxFchUtmCqdNBUSsvTgxkZxhz5/ylP2/PypRP+q4Y/HNwKMKqfT8Rl9n0w
-         X7NOIEHo0BKD2QrKkBMbi9MbPlkAPZHEPr2e0=
-Date: Sat, 4 Sep 2010 16:06:39 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH 1/2] posix clocks: introduce a syscall for clock tuning.
-Message-ID: <20100904140639.GA22074@riccoc20.at.omicron.at>
-References: <cover.1283504065.git.richard.cochran@omicron.at>
- <7f4815cdfcf5bc49df4bdd09d59a4f56ca2598f5.1283504065.git.richard.cochran@omicron.at>
+	Sat, 4 Sep 2010 10:21:45 -0400
+Message-ID: <4C825629.9090707@steinhoff.de>
+Date: Sat, 04 Sep 2010 16:22:33 +0200
+From: Armin Steinhoff <armin@steinhoff.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2 ThunderBrowse/3.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7f4815cdfcf5bc49df4bdd09d59a4f56ca2598f5.1283504065.git.richard.cochran@omicron.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [ISA bus] or platform bus ?
+References: <4C7DFF2C.8070709@steinhoff.de> <ABD0E28F-0839-4C6F-A0BD-999A28A6803A@niasdigital.com> <4C7F78CA.3020506@steinhoff.de> <59079FAE-8CF7-4E2F-B5C6-77B6A6D2B8F8@niasdigital.com>
+In-Reply-To: <59079FAE-8CF7-4E2F-B5C6-77B6A6D2B8F8@niasdigital.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:USNJWHETskDMllt/eh501WqxePLtTdNH0+Obs7cNYSO
+ mMm2oyDvMUd8fxI9XqF0i3SYkxg92S9UF/ddsOieJoFUBIfhex
+ FQSosfUl5yPHbVwPKegEKdpOYGxemI/Jsk/OvxLRfygj8RvtMn
+ 8FlOh9IS0ii0+jyCMyjsIRiZYOPN6zE/X8P03K+md8APVRwUmB
+ yRD7WdGN1iWoGOJxpNMRA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 11:29:05AM +0200, Richard Cochran wrote:
-> A new syscall is introduced that allows tuning of a POSIX clock. The
-> syscall is implemented for four architectures: arm, blackfin, powerpc,
-> and x86.
-> 
-> The new syscall, clock_adjtime, takes two parameters, the clock ID,
-> and a pointer to a struct timex. The semantics of the timex struct
-> have been expanded by one additional mode flag, which allows an
-> absolute offset correction. When specificied, the clock offset is
-> immediately corrected by skipping to the new time value.
 
-Sorry, last sentence should read, "corrected by adding the given time
-value to the current time value."
+Hi,
 
-Richard
+I have developed a UIO based driver using the platform bus. The target 
+device is an ISA bus board.
+
+Can an ISA bus board create interrupts for a device based on the 
+platform bus ?
+
+I don't see any interrupts. The hardware and BIOS settings are OK .. was 
+verified on an other OS.
+
+--Armin
+
+
+
