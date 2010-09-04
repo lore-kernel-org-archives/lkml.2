@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab0IDRWj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 13:22:39 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37676 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137Ab0IDRWP (ORCPT
+	id S1754546Ab0IDRYA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 13:24:00 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:46411 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754460Ab0IDRX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 13:22:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ZacgW9su2bGYrkDxeCG5dL5afuewBvU5lzZbTOSxahGXotlYKUm0/Sfb1ec1wdkpZD
-         DjrrNKc4q/uDtb3WSIwUKIVCj5PJxoYYBCrnoa4R7qWe8j7Bk6osgbRFXJ+KClLBGAcb
-         miNDeLHkG+W8loDIjX/Z+juHK+lZ7PoxLtaGU=
-From: Brian Gerst <brgerst@gmail.com>
-To: tj@kernel.org
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] x86, percpu: Optimize this_cpu_ptr
-Date: Sat,  4 Sep 2010 13:21:10 -0400
-Message-Id: <1283620871-818-2-git-send-email-brgerst@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1283620871-818-1-git-send-email-brgerst@gmail.com>
-References: <1283620871-818-1-git-send-email-brgerst@gmail.com>
+	Sat, 4 Sep 2010 13:23:58 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: cwYVzpoVM1lhcUI5mlsPuTL1SlebMSSbkOGF5IVmx6ENVVa
+ 6cbQaQObCeJID1LHH_iORmh.KZfmxyLBNqL.LaMmLF0qeZPJdE5A7EHLSbAg
+ UBErGNB01AIgS.zQUVgbOxrE32SpZj4XPR_ot21lwv8d9UJjS6Rs3LJN0Zni
+ fK63z7luCzAk3baHJMqWjofwRRwFWF_UnT6N3o0HS.DxZum6MvNgvBTPLRI5
+ N
+X-Yahoo-Newman-Property: ymail-3
+Date: Sat, 4 Sep 2010 12:23:55 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Richard Cochran <richardcochran@gmail.com>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH 0/2] [RFC] posix clock tuning
+In-Reply-To: <cover.1283504065.git.richard.cochran@omicron.at>
+Message-ID: <alpine.DEB.2.00.1009041221240.888@router.home>
+References: <cover.1283504065.git.richard.cochran@omicron.at>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow arches to implement __this_cpu_ptr, and provide an x86 version.
+On Fri, 3 Sep 2010, Richard Cochran wrote:
 
-Before:
-	movq $foo, %rax
-	movq %gs:this_cpu_off, %rdx
-	addq %rdx, %rax
+> Recently on the lkml, we discussed how to allow adjustment of posix
+> clocks. I have tried to understand and implement the ideas expressed
+> in the various threads.
+>
+> If there is agreement on this approach, I will resubmit these two
+> patches as part of a longer series, including support for a new kind
+> of hardware clock, so you can see how it all fits together. But first,
+> I would like to concentrate on the new syscall itself.
+>
+> The patches are against a recent net-next tree. Please don't worry if
+> the syscall tables are not quite up to date. I can fix that later.
 
-After:
-	movq $foo, %rax
-	addq %gs:this_cpu_off, %rax
+Could you explain why the existing interfaces are not sufficient that do
+what you describe?
 
-The benefit is doing it in one less instruction and not clobbering
-a temporary register.
+man adjtime
+man adjtimex
+man clock_settime
+?
 
-Signed-off-by: Brian Gerst <brgerst@gmail.com>
----
- arch/x86/include/asm/percpu.h |    9 +++++++++
- include/asm-generic/percpu.h  |    9 +++++++--
- 2 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
-index cd28f9a..d854438 100644
---- a/arch/x86/include/asm/percpu.h
-+++ b/arch/x86/include/asm/percpu.h
-@@ -47,6 +47,15 @@
- #ifdef CONFIG_SMP
- #define __percpu_arg(x)		"%%"__stringify(__percpu_seg)":%P" #x
- #define __my_cpu_offset		percpu_read(this_cpu_off)
-+#define __this_cpu_ptr(ptr)				\
-+({							\
-+	typeof(ptr) __ptr = (ptr);			\
-+	__verify_pcpu_ptr(ptr);				\
-+	asm volatile("add " __percpu_arg(1) ", %0"	\
-+		     : "+r" (__ptr)			\
-+		     : "m" (this_cpu_off));		\
-+	__ptr;						\
-+}) 
- #else
- #define __percpu_arg(x)		"%P" #x
- #endif
-diff --git a/include/asm-generic/percpu.h b/include/asm-generic/percpu.h
-index b5043a9..5820fcb 100644
---- a/include/asm-generic/percpu.h
-+++ b/include/asm-generic/percpu.h
-@@ -60,9 +60,14 @@ extern unsigned long __per_cpu_offset[NR_CPUS];
- #define __raw_get_cpu_var(var) \
- 	(*SHIFT_PERCPU_PTR(&(var), __my_cpu_offset))
- 
--#define this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, my_cpu_offset)
-+#ifndef __this_cpu_ptr
- #define __this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, __my_cpu_offset)
--
-+#endif
-+#ifdef CONFIG_DEBUG_PREEMPT
-+#define this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, my_cpu_offset)
-+#else
-+#define this_cpu_ptr(ptr) __this_cpu_ptr(ptr)
-+#endif
- 
- #ifdef CONFIG_HAVE_SETUP_PER_CPU_AREA
- extern void setup_per_cpu_areas(void);
--- 
-1.7.2.2
+Why would you need this to support a new hardware clock? You want the
+clock to run at a different speed from system time?
 
