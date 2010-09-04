@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab0IDGBO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 02:01:14 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:54055 "EHLO
-	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751868Ab0IDGBN (ORCPT
+	id S1753332Ab0IDGLf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 02:11:35 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:18055 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab0IDGLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 02:01:13 -0400
-Date: Sat, 4 Sep 2010 02:01:06 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: Dave Anderson <anderson@redhat.com>, guenter.roeck@ericsson.com,
-        tj@kernel.org, gregkh@suse.de
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Message-ID: <223297751.117871283580066858.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <856089343.1931201283439399228.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-Subject: crash failure with 2.6.36-rc3 vmcore
+	Sat, 4 Sep 2010 02:11:34 -0400
+Message-ID: <4C81E2CF.8070406@nokia.com>
+Date: Sat, 04 Sep 2010 09:10:23 +0300
+From: Adrian Hunter <adrian.hunter@nokia.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Sundar Iyer <sundar.iyer@stericsson.com>,
+        Daniel Mack <daniel@caiaq.de>, Pierre Ossman <pierre@ossman.eu>,
+        Matt Fleming <matt@console-pimps.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Cliff Brake <cbrake@bec-systems.com>,
+        "Lavinen Jarkko (Nokia-MS/Helsinki)" <jarkko.lavinen@nokia.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] MMC: move regulator handling closer to core v2
+References: <1283268367-3525-1-git-send-email-linus.walleij@stericsson.com> <AANLkTik-uLMUz2g2znaF0K43D8CONsGdjrRqxTCqpS_X@mail.gmail.com>
+In-Reply-To: <AANLkTik-uLMUz2g2znaF0K43D8CONsGdjrRqxTCqpS_X@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
+X-OriginalArrivalTime: 04 Sep 2010 06:10:24.0309 (UTC) FILETIME=[DCC4EE50:01CB4BF7]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> crash> mod -S
+Linus Walleij wrote:
+> 2010/8/31 Linus Walleij <linus.walleij@stericsson.com>:
 > 
-> mod: invalid structure member offset: attribute_owner
->      FILE: symbols.c  LINE: 8577  FUNCTION: add_symbol_file_kallsyms()
+>> After discovering a problem in regulator reference counting I
+>> took Mark Brown's advice to move the reference count into the
+>> MMC core by making the regulator status a member of
+>> struct mmc_host.
 > 
->      MODULE       NAME                   SIZE  OBJECT FILE
-> ffffffffa000de60  dm_mod                76230 
-> /lib/modules/2.6.36-rc2-mm1-wqfix-mkdfix+/kernel/drivers/md/dm-mod.ko
-> [/usr/bin/crash] error trace: 4affb0 => 4f3236 => 4f12b5 => 4e587a
+> This has an Reveiwed-by from the regulator maintainer and
+> seems to address all comments, noone is objection so Andrew
+> can you pick it up?
+
+One of our contractors had a look at the patch and had this comment:
+
+One comment/question:
+/host/mmci.c in function
+"static int __devexit mmci_remove(struct amba_device *dev)" there is code:
+         if (regulator_is_enabled(host->vcc))
+             regulator_disable(host->vcc);
+should "ret = mmc_regulator_set_ocr(mmc, host->vcc, 0);" be added here?
+
 > 
->   4e587a: OFFSET_verify.clone.4+186
->   4f12b5: add_symbol_file+933
->   4f3236: load_module_symbols+566
->   4affb0: do_module_cmd+1264
+> Yours,
+> Linus Walleij
 > 
-> mod: invalid structure member offset: attribute_owner
->      FILE: symbols.c  LINE: 8577  FUNCTION: add_symbol_file_kallsyms()
-This failure was due to this commit,
 
-commit 6fd69dc578fa0b1bbc3aad70ae3af9a137211707
-Author: Guenter Roeck <guenter.roeck@ericsson.com>
-Date:   Wed Jul 28 22:09:26 2010 -0700
-
-    sysfs: Remove owner field from sysfs struct attribute
-    
-    Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-    Acked-by: Tejun Heo <tj@kernel.org>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 8bf06b6..3c92121 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -22,14 +22,8 @@ struct kobject;
- struct module;
- enum kobj_ns_type;
- 
--/* FIXME
-- * The *owner field is no longer used.
-- * x86 tree has been cleaned up. The owner
-- * attribute is still left for other arches.
-- */
- struct attribute {
-        const char              *name;
--       struct module           *owner;
-        mode_t                  mode;
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
-        struct lock_class_key   *key;
