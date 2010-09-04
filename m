@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab0IDBCg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 21:02:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36076 "EHLO
+	id S1753066Ab0IDBGj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 21:06:39 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19191 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212Ab0IDBCe (ORCPT
+	with ESMTP id S1752263Ab0IDBGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 21:02:34 -0400
-Date: Fri, 3 Sep 2010 18:01:56 -0700
+	Fri, 3 Sep 2010 21:06:38 -0400
+Date: Fri, 3 Sep 2010 18:06:14 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
 To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
 Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        sreedhara.ds@intel.com
-Subject: [PATCH -next] staging: mrst touchscreen depends on SPI
-Message-Id: <20100903180156.af17d4a8.randy.dunlap@oracle.com>
+        Vipin Mehta <vmehta@atheros.com>
+Subject: Re: linux-next: Tree for September 3 (ar6k)
+Message-Id: <20100903180614.81e5eee0.randy.dunlap@oracle.com>
 In-Reply-To: <20100903135206.d9bc2093.sfr@canb.auug.org.au>
 References: <20100903135206.d9bc2093.sfr@canb.auug.org.au>
 Organization: Oracle Linux Eng.
@@ -25,27 +25,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Fri, 3 Sep 2010 13:52:06 +1000 Stephen Rothwell wrote:
 
-Moorestown touchscreen driver should depend on SPI.
-Fixes these build errors:
+> Hi all,
+> 
+> Changes since 20100902:
 
-intel-mid-touch.c:(.init.text+0xdd34): undefined reference to `spi_register_driver'
-drivers/built-in.o:(.data+0x21778): undefined reference to `spi_bus_type'
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: sreedhara.ds@intel.com
+drivers/staging/ath6kl/htc2/AR6000/ar6k.c:29:43: error: AR6002/hw2.0/hw/mbox_host_reg.h: No such file or directory
+
+which leads to lots of these (this is just a sample):
+
+drivers/staging/ath6kl/htc2/AR6000/ar6k.c:227: error: implicit declaration of function 'INT_STATUS_ENABLE_ERROR_SET'
+drivers/staging/ath6kl/htc2/AR6000/ar6k.c:228: error: implicit declaration of function 'INT_STATUS_ENABLE_CPU_SET'
+drivers/staging/ath6kl/htc2/AR6000/ar6k.c:229: error: implicit declaration of function 'INT_STATUS_ENABLE_COUNTER_SET'
+drivers/staging/ath6kl/htc2/AR6000/ar6k.c:232: error: implicit declaration of function 'INT_STATUS_ENABLE_MBOX_DATA_SET'
+drivers/staging/ath6kl/htc2/AR6000/ar6k.c:245: error: implicit declaration of function 'CPU_INT_STATUS_ENABLE_BIT_SET'
+drivers/staging/ath6kl/htc2/AR6000/ar6k.c:249: error: implicit declaration of function 'ERROR_STATUS_ENABLE_RX_UNDERFLOW_SET'
+drivers/staging/ath6kl/htc2/AR6000/ar6k.c:250: error: implicit declaration of function 'ERROR_STATUS_ENABLE_TX_OVERFLOW_SET'
+drivers/staging/ath6kl/htc2/AR6000/ar6k.c:254: error: implicit declaration of function 'COUNTER_INT_STATUS_ENABLE_BIT_SET'
+drivers/staging/ath6kl/htc2/AR6000/ar6k.c:263: error: 'INT_STATUS_ENABLE_ADDRESS' undeclared (first use in this function)
+drivers/staging/ath6kl/htc2/AR6000/ar6k.c:296: error: 'INT_STATUS_ENABLE_ADDRESS' undeclared (first use in this function)
+
 ---
- drivers/staging/mrst-touchscreen/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-next-20100903.orig/drivers/staging/mrst-touchscreen/Kconfig
-+++ linux-next-20100903/drivers/staging/mrst-touchscreen/Kconfig
-@@ -1,6 +1,6 @@
- config TOUCHSCREEN_INTEL_MID
- 	tristate "Intel MID platform resistive touchscreen"
--	depends on INTEL_SCU_IPC
-+	depends on INTEL_SCU_IPC && SPI
- 	default y
- 	help
- 	  Say Y here if you have a Intel MID based touchscreen
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
