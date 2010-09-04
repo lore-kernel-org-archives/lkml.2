@@ -1,72 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab0IDQM6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 12:12:58 -0400
-Received: from proxima.lp0.eu ([81.2.80.65]:42447 "EHLO proxima.lp0.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753538Ab0IDQM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 12:12:57 -0400
-Message-ID: <4C827002.6060808@simon.arlott.org.uk>
-Date: Sat, 04 Sep 2010 17:12:50 +0100
-From: Simon Arlott <simon@fire.lp0.eu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100605 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Ondrej Zary <linux@rainbow-software.org>
-CC: David Brownell <dbrownell@users.sourceforge.net>, netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [RFC] introduce cx82310_eth: Conexant CX82310-based ADSL
- router USB ethernet driver
-References: <201009032317.14954.linux@rainbow-software.org> <4C81735E.3030903@simon.arlott.org.uk> <201009041357.26215.linux@rainbow-software.org>
-In-Reply-To: <201009041357.26215.linux@rainbow-software.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754176Ab0IDQRp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 12:17:45 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:29890 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753946Ab0IDQRo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 12:17:44 -0400
+Date: Sat, 4 Sep 2010 18:17:28 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        lm-sensors <lm-sensors@lm-sensors.org>,
+        Huaxu Wan <huaxu.wan@intel.com>
+Subject: Re: [lm-sensors] [PATCH] drivers/hwmon/coretemp: Remove warnings 
+ of unused variables
+Message-ID: <20100904181728.6e5ea4f0@hyperion.delvare>
+In-Reply-To: <20100904143010.GB31566@ericsson.com>
+References: <1282172027-640-1-git-send-email-fenghua.yu@intel.com>
+	<1282172027-640-2-git-send-email-fenghua.yu@intel.com>
+	<20100819092423.00f76256@hyperion.delvare>
+	<4C6D8026.2060800@zytor.com>
+	<20100819232655.4223e61f@hyperion.delvare>
+	<20100819215124.GA8097@ericsson.com>
+	<20100904143911.4461f918@hyperion.delvare>
+	<20100904143010.GB31566@ericsson.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/10 12:57, Ondrej Zary wrote:
-> On Saturday 04 September 2010 00:14:54 Simon Arlott wrote:
->> On 03/09/10 22:17, Ondrej Zary wrote:
->> > +	/* send command packet */
->> > +	ret = usb_bulk_msg(udev, usb_sndbulkpipe(udev, CMD_EP), buf,
->> > +			   CMD_PACKET_SIZE, &actual_len, CMD_TIMEOUT);
->>
->> From your previous lsusb output this is an interrupt endpoint, although
->> usb_bulk_msg will auto-detect the type.
+On Sat, 4 Sep 2010 07:30:10 -0700, Guenter Roeck wrote:
+> Hi Jean,
 > 
-> There's also usb_interrupt_msg() function but it calls usb_bulk_msg() directly 
-> so it probably does not matter...
-> Otherwise, I already found out that sending interrupt URBs to bulk endpoints 
-> is a very bad idea (when programming Nexio support for usbtouchscreen). Alan 
-> Stern then created a patch that checks for this.
-
-I know... it broke cxacru when the device has a bulk command endpoint.
-
->> >
->> > +#define rx_incomplete	(dev->data[0])
->> > +#define rx_remainder	(dev->data[1])
->> > +#define incomplete_data	(dev->data[2])
->>
->> This doesn't make the rest of the code particularly readable.
+> On Sat, Sep 04, 2010 at 08:39:11AM -0400, Jean Delvare wrote:
+> > Hi Guenter,
+> > 
+> > On Thu, 19 Aug 2010 14:51:24 -0700, Guenter Roeck wrote:
+> > > On Thu, Aug 19, 2010 at 05:26:55PM -0400, Jean Delvare wrote:
+> > > > On Thu, 19 Aug 2010 12:04:06 -0700, H. Peter Anvin wrote:
+> > > > > Hi Jean,
+> > > > > 
+> > > > > Are you overall hwmon maintainer now?  That job is currently listed as
+> > > > > Orphan in the MAINTAINERS file.
+> > > > 
+> > > > MAINTAINERS is correct. I do not have the time, nor the will, to be the
+> > > > single official maintainer of the hwmon subsystem. I would be happy to
+> > > > be a co-maintainer, but nobody stepped in to co-maintain with me.
+> > >
+> > > I can step in if needed. I don't want to step on anyone's feet, though,
+> > > and I would not want to be the sole maintainer, at least not yet - I just
+> > > don't know the code well enough.
+> > 
+> > Please don't say this lightly. This is a very serious matter :p
+> > 
+> > Do you realize how much work this represents? Are you ready to take the
+> > load for a long period of time?
+> > 
+> I would not propose it if I didnt take it seriously.
 > 
-> I agree. Maybe I should abuse data[0] as a pointer to private data...
-> This data[] array does not seem like a good thing. Various usbnet drivers 
-> abuse it in various ways. It should probably be removed and replaced by one 
-> priv pointer.
-
-There's driver_priv, added in 2008 and used only by rndis_wlan.
-
->> > +	/* we can send at most 1514 bytes of data (+ 2-byte header) per URB */
->> > +	dev->hard_mtu = CX82310_MTU + dev->net->hard_header_len;
->>
->> Have you tried sending larger packets?
->> With another 8 bytes it would support 802.1Q (VLAN).
+> > If you are aware that being a subsystem (co-)maintainer can take
+> > several hours per week, and are ready to spend that much time on it for
+> > at least 6 months, then please let me know if you would be OK with the
+> > following:
+> > 
+> > --- linux-2.6.36-rc3.orig/MAINTAINERS	2010-08-30 08:21:58.000000000 +0200
+> > +++ linux-2.6.36-rc3/MAINTAINERS	2010-09-04 14:38:43.000000000 +0200
+> > @@ -2641,9 +2641,11 @@ S:	Maintained
+> >  F:	drivers/media/video/gspca/
+> >  
+> >  HARDWARE MONITORING
+> > +M:	Jean Delvare <khali@linux-fr.org>
+> > +M:	Guenter Roeck <guenter.roeck@ericsson.com>
+> >  L:	lm-sensors@lm-sensors.org
+> >  W:	http://www.lm-sensors.org/
+> > -S:	Orphan
+> > +S:	Maintained
+> >  F:	Documentation/hwmon/
+> >  F:	drivers/hwmon/
+> >  F:	include/linux/hwmon*.h
+> > 
+> Yes.
 > 
-> Larger packets seem to be dropped. No surprise as the router firmware does not 
-> support VLANs either.
+> > I am not working with you for such a long time, but collaboration went
+> > just fine from my perspective, so I would be very happy to co-maintain
+> > the hwmon subsystem with you.
+> > 
+> Same here.
 
-I hadn't considered that it'd need to be able to receive/transmit the
-larger packets over the built-in ethernet ports too.
+Wonderful. I'll commit the above patch upstream soon.
 
 -- 
-Simon Arlott
+Jean Delvare
