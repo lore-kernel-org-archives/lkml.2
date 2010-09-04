@@ -1,160 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab0IDQmY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 12:42:24 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:47610 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab0IDQmY (ORCPT
+	id S1754520Ab0IDQnI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 12:43:08 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49163 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134Ab0IDQnF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 12:42:24 -0400
-To: linux-kernel@vger.kernel.org
-Subject: Re: stable? quality assurance?
-From: Martin Steigerwald <Martin@lichtvoll.de>
-Date: Sat, 4 Sep 2010 18:42:19 +0200
-Cc: Willy Tarreau <w@1wt.eu>
+	Sat, 4 Sep 2010 12:43:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=SB6SPRid8wNv1iNhmeq7SHngaGH/5Fz/lRTspujJ+YpixmRtDLsBk/3JYmDCJNeofQ
+         hR9RF7mIHmz12R0rIxuIs84zpA7D3I43LwH7gdxrfdK9uqlqCK7JANcIS8bJJ1JUbQdO
+         /rR/AFdI+iQgdeXPyiiRjY2eH27hQjFCaSNDQ=
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2010521.kMYM9Ngh7n";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009041842.19968.Martin@lichtvoll.de>
+In-Reply-To: <1283616109.1685.98.camel@steven>
+References: <AANLkTimjO7sBzR55XkPB7dmZvxXqc8PS4UDsgptXVt90@mail.gmail.com>
+ <1283504768.2100.43.camel@steven> <AANLkTik=0wMHh9fg8_vK_Aor40J43mNojvfHadhHObKA@mail.gmail.com>
+ <1283590584.1685.39.camel@steven> <AANLkTimYgMotZBbGTvPGSzfo3jjZ_-TeXftVQ6bBzHrT@mail.gmail.com>
+ <1283592366.1685.50.camel@steven> <AANLkTim5_vf9Tg1g13HAmiO7zAjPzR6QaJ3k2edQzkCv@mail.gmail.com>
+ <1283616109.1685.98.camel@steven>
+From: Hui Zhu <teawater@gmail.com>
+Date: Sun, 5 Sep 2010 00:42:44 +0800
+Message-ID: <AANLkTikpuWov=ee2g4B60HOvCd1ZYcnGhH8jT=ANqHNe@mail.gmail.com>
+Subject: Re: Linux Kernel GDB tracepoint module 2010-8-30 release
+To: Steven <mqyoung@gmail.com>
+Cc: "gdb@sourceware.org" <gdb@sourceware.org>, linux-kernel@vger.kernel.org,
+        Michael Snyder <msnyder@vmware.com>,
+        Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2010521.kMYM9Ngh7n
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Could you post the other part of this code?  Then I can try to reproduce on it.
 
-Sorry, forgot Cc again.
+Thanks,
+Hui
 
-Am Sonntag 11 Juli 2010 schrieb Willy Tarreau:
-> Hi Martin,
-
-Hi Willy, hi everyone else reading this,
-
-> On Sun, Jul 11, 2010 at 04:51:42PM +0200, Martin Steigerwald wrote:
-> > I hope that someone answers who actually can take some critique. From
-> > the  current replies I perceive a lack of that ability.
->=20
-> well, I'll try to do then :-)
->=20
-> There were some threads in the past about kernel releases quality,
-> where Linus explained why it could not be completely black or white.
->=20
-> Among the things he explained, I remember that one of primary concern
-> was the inability to slow down development. I mean, if he waits 2 more
-> weeks for things to stabilize, then there will be two more weeks of
-> crap^H^H^H^Hdevelopment merged in next merge window, so in fact this
-> will just shift dates and not quality.
-
-During bisecting [Bug 16376] random - possibly Radeon DRM KMS related=20
-freezes, which goes very slowly due to having lots of unbootable kernels=20
-with an ext4 / readahead related backtrace during boot, I had an idea:
-
-I think main problem is that the current development process does not give=
-=20
-time for quality work and bug fixing. As I understand it currently its just=
-=20
-a constant development of new features with bug fixing and quality work=20
-having to be done beneath that development:
-
-=2D before 2.6.36 is released developers aim at developing new stuff for=20
-2.6.37.
-
-=2D after 2.6.36 is released developers aim at getting as much stuff into=20
-2.6.37 and then after two weeks at developing new features for 2.6.38.
-
-This process does not take bug fixing into account at all, cause after the=
-=20
-merge window has closing, developers hurry to get the stuff ready for the=20
-next window.
-
-In that model extending the freeze period after rc1 doesn't help at all,=20
-cause as you say more "crap^H^H^H^Hdevelopment" gets collected for the=20
-next kernel.
-
-But is that a *given* that no one actually has any influence to? Is=20
-collecting changes for next kernel like rain that either pours down or not=
-=20
-=2D usually pours down in this case like in August in Germany ;)? Who feeds=
-=20
-Linus with new stuff during the merge window? From what I understand of the=
-=20
-Linux development process its mainly the subsystem maintainers and Andrew=20
-Morton.
-
-What if those people stop collecting new stuff for Linus except bugfixes=20
-about two or three weeks before the next kernel is relased? This would=20
-give the subsystem trees and the mm tree some time to stabilize a bit, so=20
-that Linus gets more quality stuff in the first time. And more importantly,=
-=20
-since developers know that subsystem maintainers and Andrew only collect=20
-bugfixes 2-3 weeks before the release of a stable kernel, they can as well=
-=20
-spend some time on quality work.
-
-Of course, developers can still decide: Well if 2.6.37 work is closed=20
-already and continue developing for 2.6.38 even earlier, but I still think=
-=20
-this would help to slow things down a bit prior to the critical phase=20
-before releasing a stable kernel. Cause when I know my subsystem=20
-maintainer or Andrew won't be taking my stuff anyway, before the release=20
-kernel is released, I can take a little time for other things.
-
-The main idea here is to have a two-staged freeze process and to=20
-distribute the "I am only taking bug fixes" work to more people than Linus.
-
-=46or this to work properly, I think at the time of the release of the=20
-stable kernel subsystem maintainers and Andrew should branch their trees.=20
-=46or example when 2.6.36 is released:
-
-=2D tree=20
-  =3D> 2.6.36-stable-tree
-  =3D> tree, where 2.6.37 stuff will be going in
-
-Thus when subsystem maintainers take new stuff during the merge window, it=
-=20
-will be for the next kernel release already, not for the current one.=20
-Except bugfix work. Whereas I think the criteria for bug fix work should no=
-t=20
-be that strict than for the stable patches Greg collects.
-
-Thus it needs to be clear: No new stuff for next kernel already two weeks=20
-prior to release the current stable kernel.
-
-I think, this could help. Its a bit like the two-staged development=20
-process of Debian, but with the freeze period for "unstable" being a fixed=
-=20
-time interval of about 2 weeks instead of RC=3D0 for stable ;). Its a bit o=
-f=20
-a formal shift of attention to the stable kernel about 2 weeks before its=20
-release. Developers might find creative ways to circumvent it, or they=20
-understand, that this process serves a purpose of improving kernel=20
-quality.
-
-When you think these two weeks cannot be squeezed into the three-monthly=20
-development cycle, a four-monthly development cycle might do. But actually=
-=20
-I don't see why these two weeks could not be made to fit in there.
-
-Installing and testing next kernel after yet another mail to this thread,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---nextPart2010521.kMYM9Ngh7n
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkyCdusACgkQmRvqrKWZhMcN2ACeOHcexnHFho6yL7gySrAx7AMY
-5UwAoJ1IznybMIjAJ/rqAxtDqEoCrvBp
-=na2u
------END PGP SIGNATURE-----
-
---nextPart2010521.kMYM9Ngh7n--
+On Sun, Sep 5, 2010 at 00:01, Steven <mqyoung@gmail.com> wrote:
+> Dear All,
+>
+> As I mentioned before, I could collect the variables of kernel function
+> such as vfs_readdir(ext3 is built in kernel not module). And I tried I
+> could collect variables of kernel's module(such as my ethernet card
+> driver 3c59x.ko). I will collect these info later.
+>
+> BUT, I can not collect the value of my testing module, neither global
+> nor local. I think there is some thing wrong with my compile option or
+> Makefile, any one know it? Thanks very much.
+>
+> Program:
+> -------------------------------------------------
+>  6 volatile struct timeval tv;
+>  7 int year;
+>  8
+>  9 int test_thread(void *data)
+>  10 {
+>  11         volatile int cnt = 0;
+>  12         set_current_state(TASK_INTERRUPTIBLE);
+>  13         schedule_timeout(1 * HZ); /* wait for the terminal ready */
+>  14
+>  15         while(1){
+>  16                 set_current_state(TASK_INTERRUPTIBLE);
+>  17                 if(kthread_should_stop()) break;
+>  18
+>  19                 year = 2010;
+>  20                 do_gettimeofday (&tv);
+>  21                 printk("\ntv_sec: %d - %d\n", (int)tv.tv_sec, cnt);
+>  22                 cnt++;
+>  23
+>  24                 do_gettimeofday (&tv);
+>  25                 printk("tv_sec: %d - %d\n", (int)tv.tv_sec, year);
+>  26                 cnt++;
+>  27
+>  28                 //reschedule after 5 seconds(approximately)
+>  29                 schedule_timeout(60 * HZ);
+>  30         }
+>  31
+>  32         return 0;
+>  33 }
+> -------------------------------------------------
+>
+> Makefile
+> -------------------------------------------------
+> obj-m := hello.o
+>
+> KERNELBUILD := /lib/modules/`uname -r`/build
+>
+> default:
+>        make -C $(KERNELBUILD) M=$(shell pwd) modules
+> -------------------------------------------------
+>
+>
+> Screen log
+> -------------------------------------------------
+> debian:/home/linux-2.6.33.6# /usr/local/bin/gdb vmlinux
+> GNU gdb (GDB) 7.2
+> Copyright (C) 2010 Free Software Foundation, Inc.
+> License GPLv3+: GNU GPL version 3 or later
+> <http://gnu.org/licenses/gpl.html>
+> This is free software: you are free to change and redistribute it.
+> There is NO WARRANTY, to the extent permitted by law.  Type "show
+> copying"
+> and "show warranty" for details.
+> This GDB was configured as "i686-pc-linux-gnu".
+> For bug reporting instructions, please see:
+> <http://www.gnu.org/software/gdb/bugs/>...
+> Reading symbols from /home/linux-2.6.33.6/vmlinux...[ 3909.310118]
+> [ 3909.310124] tv_sec: 1283648666 - 16
+> [ 3909.315385] tv_sec: 1283648666 - 2010
+> done.
+> (gdb) target remote /proc/gtp
+> Remote debugging using /proc/gtp
+> 0x00000000 in ?? ()
+> (gdb) add-symbol-file /home/steven/hello/hello.ko 0xc8b2b000
+> add symbol table from file "/home/steven/hello/hello.ko" at
+>        .text_addr = 0xc8b2b000
+> (y or n) y
+> Reading symbols from /home/steven/hello/hello.ko...done.
+> (gdb) trace /home/steven/hello/hello.c:22
+> Tracepoint 1 at 0xc8b2b094: file /home/steven/hello/hello.c, line 22.
+> (gdb) trace /home/steven/hello/hello.c:26
+> Tracepoint 2 at 0xc8b2b0c1: file /home/steven/hello/hello.c, line 26.
+> (gdb) actions 1
+> Enter actions for tracepoint 1, one per line.
+> End with a line saying just "end".
+>>
+>>collect tv, year, cnt
+>>end
+> (gdb) actions 2
+> Enter actions for tracepoint 2, one per line.
+> End with a line saying just "end".
+>>collect tv, year, cnt
+>>end
+> (gdb) tstart
+> [ 4029.328129]
+> [ 4029.328136] tv_sec: 1283648786 - 20
+> [ 4029.333456] tv_sec: 1283648786 - 2010
+> tstop
+> (gdb) tfind
+> Found trace frame 0, tracepoint 1
+> #0  0xc8b2b095 in test_thread (data=0x0)
+> at /home/steven/hello/hello.c:22
+> 22                      cnt++;
+> (gdb) p tv
+> $1 = {tv_sec = 0, tv_usec = 0}
+> (gdb) p cnt
+> $2 = 0
+> (gdb) p year
+> $3 = 0
+> (gdb) tfind
+> Found trace frame 1, tracepoint 2
+> 0xc8b2b0c2      26                      cnt++;
+> (gdb) p cnt
+> $4 = 0
+> (gdb) p tv
+> $5 = {tv_sec = 0, tv_usec = 0}
+> (gdb) p year
+> $6 = 0
+> -------------------------------------------------
+>
+> Thanks,
+> Steven
+>
+> On Sat, 2010-09-04 at 22:58 +0800, Hui Zhu wrote:
+>> On Sat, Sep 4, 2010 at 17:26, Steven <mqyoung@gmail.com> wrote:
+>> > On Sat, 2010-09-04 at 17:17 +0800, Hui Zhu wrote:
+>> >> On Sat, Sep 4, 2010 at 16:56, Steven <mqyoung@gmail.com> wrote:
+>> >> > On Sat, 2010-09-04 at 11:41 +0800, Hui Zhu wrote:
+>> >> >> BTW, looks GCC and GDB don't want handle the optimization debug
+>> >> >> trouble (all they want is rewrite the GCC in C++ :P).
+>> >> >> So I think make linux kernel can close optimization is better idea, do
+>> >> >> you know some way or some patch to do it?
+>> >> >>
+>> >> >
+>> >> > Just disable CONFIG_CC_OPTIMIZE_FOR_SIZE and modify the Makefile of
+>> >> > kernel:
+>> >> > KBUILD_CFLAGS   += -O2
+>> >> > to
+>> >> > KBUILD_CFLAGS   += -O0
+>> >>
+>> >> Cool,  :)
+>> >>
+>> >> I try just change the compile option of readdir.c to without -O2, it
+>> >> works OK.  I think maybe it's a GDB bug too.
+>> >> Could you try the second issue with gdb 7.2?
+>> >
+>> > I have covered the two issues in the previous mail that I could collect
+>> > both global variables and locals(-O0 kernel + gdb7.2):
+>> >
+>> >        --------
+>> >        (gdb) trace vfs_readdir
+>> >        Tracepoint 3 at 0xc11756a0: file fs/readdir.c, line 24.
+>> >        (gdb) actions
+>> >        Enter actions for tracepoint 3, one per line.
+>> >        End with a line saying just "end".
+>> >        >collect *file
+>> >        >end
+>> >        (gdb) trace fs/readdir.c:29
+>> >        Tracepoint 4 at 0xc11756ca: file fs/readdir.c, line 29.
+>> >        (gdb) actions
+>> >        Enter actions for tracepoint 4, one per line.
+>> >        End with a line saying just "end".
+>> >        >collect res
+>> >        >end
+>> >        (gdb) tstart
+>> >        (gdb) tstop
+>> >        (gdb) tfind
+>> >        Found trace frame 0, tracepoint 3
+>> >        #0  0xc11756a1 in vfs_readdir (file=0xc7b2cf00, filler=0,
+>> >        buf=0x0)
+>> >            at fs/readdir.c:24
+>> >        24              struct inode *inode =
+>> >        file->f_path.dentry->d_inode;
+>> >        (gdb) p *file
+>> >        $4 = {f_u = {fu_list = {next = 0xc6dca500, prev = 0xc7ade480},
+>> >        fu_rcuhead = {
+>> >              next = 0xc6dca500, func = 0xc7ade480}}, f_path = {mnt =
+>> >        0xc6c05300,
+>> >            dentry = 0xc761d440}, f_op = 0xc1709a20, f_lock = {{rlock =
+>> >        {raw_lock = {
+>> >                  slock = 0}}}}, f_count = {counter = 2}, f_flags =
+>> >        624640,
+>> >          f_mode = 29, f_pos = 0, f_owner = {lock = {raw_lock = {lock =
+>> >        16777216}},
+>> >           = 0start = 0, size = 0, async_size = 0,
+>> >            ra_pages = 32, mmap_miss = 0, prev_pos = -1}, f_version =
+>> >        0,
+>> >          f_security = 0xc7b30120, private_data = 0x0, f_ep_links = {
+>> >            next = 0xc7b2cf74, prev = 0xc7b2cf74}, f_mapping =
+>> >        0xc761c74c}
+>> >        (gdb) p res
+>> >        $5 = 0
+>> >        (gdb) tfind
+>> >        Found trace frame 1, tracepoint 4
+>> >        0xc11756cb      29              res =
+>> >        security_file_permission(file, MAY_READ);
+>> >        (gdb) p res
+>> >        $6 = -20
+>> >        --------
+>> >
+>> >
+>> >
+>>
+>> Great.  :)
+>>
+>> Hui
+>
+>
