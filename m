@@ -1,38 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab0IDRos (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 13:44:48 -0400
-Received: from tex.lwn.net ([70.33.254.29]:50389 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754366Ab0IDRor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 13:44:47 -0400
-Date: Sat, 4 Sep 2010 11:44:45 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Someone Something <fordhaivat@gmail.com>, linux-kernel@vger.kernel.org,
-        gregkh <greg@kroah.com>
-Subject: Re: LDD examples
-Message-ID: <20100904114445.3f008551@bike.lwn.net>
-In-Reply-To: <20100903110158.aadf7850.rdunlap@xenotime.net>
-References: <AANLkTim7eHwkbbOHdXax7dQiMzSAktxjNYBpQjKOwTUy@mail.gmail.com>
-	<20100903110158.aadf7850.rdunlap@xenotime.net>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.6; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1754530Ab0IDRz0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 13:55:26 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.29.7]:38022 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754158Ab0IDRzZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 13:55:25 -0400
+X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 Sep 2010 13:55:25 EDT
+Message-ID: <4C828652.4060804@gmail.com>
+Date: Sat, 04 Sep 2010 19:48:02 +0200
+From: Christian Riesch <christian.riesch@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH 0/2] [RFC] posix clock tuning
+References: <cover.1283504065.git.richard.cochran@omicron.at> <alpine.DEB.2.00.1009041221240.888@router.home>
+In-Reply-To: <alpine.DEB.2.00.1009041221240.888@router.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: christian@riesch.at
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010 11:01:58 -0700
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+Christoph Lameter wrote:
+> On Fri, 3 Sep 2010, Richard Cochran wrote:
+>> Recently on the lkml, we discussed how to allow adjustment of posix
+>> clocks. I have tried to understand and implement the ideas expressed
+>> in the various threads.
+....
+> Could you explain why the existing interfaces are not sufficient that do
+> what you describe?
 
-> The examples are certainly out of date.
+Richard's idea is to support clock hardware for IEEE 1588 (PTP, 
+Precision Time Protocol). Have a look at the earlier discussions:
 
-The entire book is out of date - it's from 2.6.10!
+http://lkml.org/lkml/2010/8/16/90
+and
+http://lkml.org/lkml/2010/8/23/49
 
-We are (very slowly) pondering ways to update it; I hope to get
-something going in the near future.  Stay tuned...
-
-jon
+Christian
