@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab0IDCE7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 22:04:59 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:24695 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab0IDCE6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 22:04:58 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6094"; a="53349055"
-Message-ID: <4C81A949.5080707@codeaurora.org>
-Date: Fri, 03 Sep 2010 19:04:57 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1754113Ab0IDCFO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 22:05:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43912 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753689Ab0IDCFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Sep 2010 22:05:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,316,1280732400"; 
+   d="scan'208";a="603671908"
+Date: Sat, 4 Sep 2010 10:04:53 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Mel Gorman <mel@csn.ul.ie>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND PATCH v2] compaction: fix COMPACTPAGEFAILED counting
+Message-ID: <20100904020452.GA7788@localhost>
+References: <1283438087-11842-1-git-send-email-minchan.kim@gmail.com>
+ <20100903170227.b2f18ba4.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: markgross@thegnar.org
-CC: Kevin Hilman <khilman@deeprootsystems.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <james.bottomley@suse.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH] pm_qos: Add system bus performance parameter
-References: <20100827064153.GB3414@gvim.org> <b3ebe52382d37d37e93021c33cb4d6d9.squirrel@codeaurora.org> <20100828020540.GB8341@gvim.org> <4C787AA9.4090906@codeaurora.org> <20100828225255.GA12402@gvim.org> <878w3o3p55.fsf@deeprootsystems.com> <20100831184030.GB9305@gvim.org> <4C7D844C.5050403@codeaurora.org> <20100901142804.GA13985@gvim.org> <4C7F1BF2.4050200@codeaurora.org> <20100902140922.GB2818@gvim.org>
-In-Reply-To: <20100902140922.GB2818@gvim.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100903170227.b2f18ba4.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mark gross wrote:
-> I'll do a patch by monday as an RFC but, I'm wondering if we want it in
-> the main line vrs an implementation that scales by bus integrated into
-> the driver model per what Kevin has been talking about....
+On Sat, Sep 04, 2010 at 08:02:27AM +0800, Andrew Morton wrote:
+> On Thu,  2 Sep 2010 23:34:47 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+> 
+> > Now update_nr_listpages doesn't have a role. That's because
+> > lists passed is always empty just after calling migrate_pages.
+> > The migrate_pages cleans up page list which have failed to migrate
+> > before returning by aaa994b3.
+> > 
+> >  [PATCH] page migration: handle freeing of pages in migrate_pages()
+> > 
+> >  Do not leave pages on the lists passed to migrate_pages().  Seems that we will
+> >  not need any postprocessing of pages.  This will simplify the handling of
+> >  pages by the callers of migrate_pages().
+> > 
+> > At that time, we thought we don't need any postprocessing of pages.
+> > But the situation is changed. The compaction need to know the number of
+> > failed to migrate for COMPACTPAGEFAILED stat
+> > 
+> > This patch makes new rule for caller of migrate_pages to call putback_lru_pages.
+> > So caller need to clean up the lists so it has a chance to postprocess the pages.
+> > [suggested by Christoph Lameter]
+> 
+> I'm having trouble predicting what the user-visible effects of this bug
+> might be.  Just an inaccuracy in the COMPACTPAGEFAILED vm event?
 
-The model Kevin is thinking about will probably need some time and work 
-before it's usable. In the meanwhile, can we have this added?
+Right, it's an accounting fix. Before patch COMPACTPAGEFAILED will
+remain 0 regardless of how many migration failures.
+
+The patch does slightly add dependency for migrate_pages() to return
+error code properly. Before patch, migrate_pages() calls
+putback_lru_pages() regardless of the error code. After patch, the
+migrate_pages() callers will check its return value before calling
+putback_lru_pages().
+
+In current code, the two conditions do seem to match:
+
+"some pages remained in the *from list" == "migrate_pages() returns an error code".
 
 Thanks,
-Saravana
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Fengguang
