@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab0IDKbx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 06:31:53 -0400
-Received: from sh.osrg.net ([192.16.179.4]:44841 "EHLO sh.osrg.net"
+	id S1754057Ab0IDKrM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 06:47:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43986 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751747Ab0IDKbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 06:31:52 -0400
-Date: Sat, 4 Sep 2010 19:31:26 +0900
-To: sam@ravnborg.org
-Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
-        miklos@szeredi.hu, jdike@addtoit.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm] uml: disable CONFIG_HAS_DMA
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100904101313.GA26489@merkur.ravnborg.org>
-References: <20100904181622P.fujita.tomonori@lab.ntt.co.jp>
-	<20100904101313.GA26489@merkur.ravnborg.org>
+	id S1752790Ab0IDKrK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 06:47:10 -0400
+Date: Sat, 4 Sep 2010 06:45:01 -0400
+From: Chuck Ebbert <cebbert@redhat.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Fixes for 2.6.35
+Message-ID: <20100904064501.09ab7450@katamari>
+In-Reply-To: <20100903060055.GA28915@gondor.apana.org.au>
+References: <20090613020512.GA21024@gondor.apana.org.au>
+	<20090910141905.GA17948@gondor.apana.org.au>
+	<20091020065442.GA5947@gondor.apana.org.au>
+	<20091230021253.GA17067@gondor.apana.org.au>
+	<20100201195204.GA6953@gondor.apana.org.au>
+	<20100305071043.GA3548@gondor.apana.org.au>
+	<20100427135547.GA4008@gondor.apana.org.au>
+	<20100603100550.GA30681@gondor.apana.org.au>
+	<20100716022648.GA28219@gondor.apana.org.au>
+	<20100722055043.GA25689@gondor.apana.org.au>
+	<20100903060055.GA28915@gondor.apana.org.au>
+Organization: Red Hat, Inc.
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100904193013B.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 04 Sep 2010 19:31:27 +0900 (JST)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 4 Sep 2010 12:13:13 +0200
-Sam Ravnborg <sam@ravnborg.org> wrote:
+On Fri, 3 Sep 2010 14:00:55 +0800
+Herbert Xu <herbert@gondor.hengli.com.au> wrote:
 
-> On Sat, Sep 04, 2010 at 06:17:56PM +0900, FUJITA Tomonori wrote:
-> > I think that it's better to detect DMA misuse at build time rather
-> > than calling BUG_ON. Architectures that can't do DMA need to disable
-> > CONFIG_HAS_DMA.
-> > 
-> > Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> > ---
-> >  arch/um/Kconfig.um                |    3 +
-> >  arch/um/defconfig                 |    1 -
-> >  arch/um/include/asm/dma-mapping.h |  112 -------------------------------------
-> >  3 files changed, 3 insertions(+), 113 deletions(-)
-> >  delete mode 100644 arch/um/include/asm/dma-mapping.h
-> > 
-> > diff --git a/arch/um/Kconfig.um b/arch/um/Kconfig.um
-> > index ec2b8da..3de40b8 100644
-> > --- a/arch/um/Kconfig.um
-> > +++ b/arch/um/Kconfig.um
-> > @@ -147,3 +147,6 @@ config KERNEL_STACK_ORDER
-> >  	  This option determines the size of UML kernel stacks.  They will
-> >  	  be 1 << order pages.  The default is OK unless you're running Valgrind
-> >  	  on UML, in which case, set this to 3.
-> > +
-> > +config HAS_DMA
-> > +       def_bool n
+> Please pull from
 > 
-> Other archs define NO_DMA to say they do not have DMA.
-> We should do it the same way for um.
+> git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+> 
+> or
+> 
+> master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+> 
+> 
+> Herbert Xu (2):
+>       crypto: testmgr - Fix test disabling option
+>       crypto: testmgr - Default to no tests
+> 
+> Szilveszter Ördög (1):
+>       crypto: hash - Fix handling of small unaligned buffers
+> 
 
-Defining NO_DMA affects any code? In other words, we can kill NO_DMA
-definition?
+What happened to my minor fix?
+
+ [ http://marc.info/?l=linux-crypto-vger&m=128311860504202&w=2 ]
+
+I never got a reply about it.
