@@ -1,121 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab0IDTLq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 15:11:46 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:34600 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966Ab0IDTLp (ORCPT
+	id S1752091Ab0IDTYw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 15:24:52 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:50802 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab0IDTYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 15:11:45 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: "Ted Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
-Subject: Re: stable? quality assurance?
-Date: Sat, 4 Sep 2010 21:11:34 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.33-tp42-01231-g11b897c; KDE/4.4.5; i686; ; )
-References: <201007110918.42120.Martin@lichtvoll.de> <201009041839.09261.Martin@lichtvoll.de> <20100904184611.GC4887@thunk.org> (sfid-20100904_205601_461929_71B6D5A7)
-In-Reply-To: <20100904184611.GC4887@thunk.org>
+	Sat, 4 Sep 2010 15:24:51 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C829CFF.8080905@s5r6.in-berlin.de>
+Date: Sat, 04 Sep 2010 21:24:47 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1771521.9o0aSr4Zlh";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Martin Steigerwald <Martin@lichtvoll.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: stable? quality assurance?
+References: <201007110918.42120.Martin@lichtvoll.de> <201007111651.42963.Martin@lichtvoll.de> <20100711172252.GA3379@1wt.eu> (sfid-20100711_193037_169001_8F8BE25C) <201009041839.09261.Martin@lichtvoll.de>
+In-Reply-To: <201009041839.09261.Martin@lichtvoll.de>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009042111.41695.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1771521.9o0aSr4Zlh
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Martin Steigerwald wrote:
+> I think main problem is that the current development process does not give 
+> time for quality work and bug fixing.
 
-Am Samstag 04 September 2010 schrieb Ted Ts'o:
-> On Sat, Sep 04, 2010 at 06:38:59PM +0200, Martin Steigerwald wrote:
-> > During bisecting [Bug 16376] random - possibly Radeon DRM KMS related
-> > freezes, which goes very slowly due to having lots of unbootable
-> > kernels
->=20
-> > with an ext4 / readahead related backtrace during boot, I had an idea:
-> So I'm not sure what you're referring to here.  If there's an ext4
-> bug, why haven't you reported it to the linux-ext4 list?  I've done a
-> Google search for "Steigerwald ext4 readahead" and I can't find any
-> bug report related to kernel oops that are ext4/readahead-related.
->=20
-> No one else has reported such a bug to me, and I run a complete set of
-> regression tests before I push ext4 changes to Linus.  So I'm not sure
-> what you're seeing.  But complaining about it in passing on an e-mail
-> without sending a formal bug report to the linux-ext4 mailing list is
-> not likely to solve your problem...
+This has little to do with process.
 
-Stop! I think we are misunderstanding.
+Put simply, the paid developers work on what they are paid for.  The
+volunteers work on what they are interested in.
 
-Its a bug I stumpled across the bisecting process. Neither 2.6.33 or=20
-2.6.34 are affected, but some kernels in between. As such I didn't think=20
-its worth reporting the bug.
+If you feel that too little work is spent on stabilization and bug fixing, pay
+someone or take matters into your own hand.  I.e. report bugs and work with
+the developers to get the bugs fixed.
 
-I made a photo of part of the backtrace tough, so if you want I open a bug=
-=20
-report about it nonetheless. But I really think it has been fixed during=20
-the 2.6.33 to 2.6.34 development cycle.
+The current development process OTOH gives plenty of time for quality work and
+bug fixing:
 
-=46or now I just skipped affected kernels in the bisection process in the=20
-hope that none is the first last good or first bad one regarding the freeze=
-=20
-bug. Since for now it has all been kernels of a usb merge that showed this=
-=20
-issue, I don't think the freeze bug is in there.
+  - There are several stages at which new code can be tested:
+    When it lives in subsystem development trees,
+    when it has been pulled into the linux-next tree,
+    when it has been pulled into Linus' tree.
 
-Its from:
+  - Bug fixes are pulled by Linus almost any time whenever they are ready.
+    (Of course, since fixes can and do introduce regressions too, only
+    critical fixes are accepted in later -rcs.)
 
-# skip: [124d255382ddd37ffa920e9f5183efa54bbfe4f2] USB: pl2303: remove=20
-unnecessary reset of usb_device in urbs
+  - New code submissions are pulled by Linus in a fairly reliable cycle
+    with reasonable frequency (less than three months).  That way,
+    developers know that if their stuff did not quite cut it for
+    mainline merge in month N, they know they can try again in month
+    N+2 or N+3.  They are not left to guess whether their next chance
+    will be in half a year or two years or next week.  Hence, nobody
+    needs to panic and rush things when a merge window draws near.
+    Plus, the code and the repository are open, so anybody can ship
+    features to customers at any time independently of Linus' release
+    cycle.  Linux distributors do this all the time.
 
-to
+> But is that a *given* that no one actually has any influence to? Is 
+> collecting changes for next kernel like rain that either pours down or not 
+> - usually pours down in this case like in August in Germany ;)? Who feeds 
+> Linus with new stuff during the merge window? From what I understand of the 
+> Linux development process its mainly the subsystem maintainers and Andrew 
+> Morton.
+> 
+> What if those people stop collecting new stuff for Linus except bugfixes 
+> about two or three weeks before the next kernel is relased?
 
-# skip: [c68bb0d738897ed39b90c7ccb22e01c938117051] USB: cxacru: document=20
-how to interact with the flash memory
+Most of the maintainers are responsible enough to put only stuff into
+linux-next which belongs there, i.e. tested, release-ready stuff.  Likewise
+with submissions to Linus during the merge window.
 
-I did not test booting every single of those >100 revisions, but got fed=20
-up with this after the fifth non booting kernel or so. I didn't get why git=
-=20
-bisect insisted on taking me back to this range of commits - even in the=20
-middle of two skips! - instead of just readjusting the binary search so=20
-that that range is met later in the process. Cause then it might have not=20
-met again at all. In the end I skipped every commit in this USB merge=20
-manually. The ext4 readahead thing must have been introduced before that=20
-merge and fixed somewhere after that merge. But I didn't find the comment=20
-that might have fixed it from a quick glance.
+Only some maintainers do in fact try to submit rushed, untested crap.
+Sometimes they get caught red-handed.
 
-I do not even know whether its ext4 related at all, but ext4 and readahead=
-=20
-has been in that backtrace.
+The release-ready submissions that come via responsible maintainers still
+contain some regressions though.  This is inevitable.  There are less
+regressions if there are more enthusiasts who test development trees and
+linux-next.  There are less regressions in Linus' releases if there are more
+enthusiasts who test -rc kernels.  (And submit good bug reports and work with
+the developers on them.)  And vice versa.
 
-So I just wanted to show that I am seriously working on tracking down that=
-=20
-likely radeon kms related freeze bug and that its time-consuming for me=20
-due to having lots of unbootable kernels. I got another one of these with=20
-"Destination address too large" before even InitRD seems to have done=20
-anything. I skipped this one commit as well, and now git bisect seems to=20
-have taken me to a good one again, lets see. At least it didn't freeze=20
-prior up to now and I better press send now ;-). But from my bet on where=20
-the offending commit might be, this should be a good one. I am learning a=20
-lot on how to bisect a kernel right now ;).
+Process does not do much to prevent bugs or fix bugs.  People do. :-)
 
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---nextPart1771521.9o0aSr4Zlh
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkyCmeYACgkQmRvqrKWZhMdCLwCdE7ZecgXqnotk6iBgfEi9RO9Z
-HqQAoI6c2fm8xoxriNbcCvhxCNWbsrCw
-=/B3o
------END PGP SIGNATURE-----
-
---nextPart1771521.9o0aSr4Zlh--
+However, you can hardly tell people to implement less features and fix more
+bugs if they don't owe you anything.
+-- 
+Stefan Richter
+-=====-==-=- =--= --=--
+http://arcgraph.de/sr/
