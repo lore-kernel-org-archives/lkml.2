@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab0IDGLf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 02:11:35 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:18055 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940Ab0IDGLe (ORCPT
+	id S1754050Ab0IDGdI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 02:33:08 -0400
+Received: from torres.zugschlus.de ([85.214.131.164]:58531 "EHLO
+	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab0IDGdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 02:11:34 -0400
-Message-ID: <4C81E2CF.8070406@nokia.com>
-Date: Sat, 04 Sep 2010 09:10:23 +0300
-From: Adrian Hunter <adrian.hunter@nokia.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Sat, 4 Sep 2010 02:33:07 -0400
+Date: Sat, 4 Sep 2010 08:33:05 +0200
+From: Marc Haber <mh+linux-kernel@zugschlus.de>
+To: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
+Cc: Linux Kernel Developers <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Subject: Re: No link on e1000e with 2.6.35.3 and ThinkPad T60
+Message-ID: <20100904063305.GA18734@torres.zugschlus.de>
+References: <20100724092644.GA13353@torres.zugschlus.de> <20100824094524.GA17608@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A136600821444B@rrsmsx501.amr.corp.intel.com> <20100826112732.GA15559@torres.zugschlus.de> <20100826171442.GA22941@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A13660082E9090@rrsmsx501.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Sundar Iyer <sundar.iyer@stericsson.com>,
-        Daniel Mack <daniel@caiaq.de>, Pierre Ossman <pierre@ossman.eu>,
-        Matt Fleming <matt@console-pimps.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Cliff Brake <cbrake@bec-systems.com>,
-        "Lavinen Jarkko (Nokia-MS/Helsinki)" <jarkko.lavinen@nokia.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] MMC: move regulator handling closer to core v2
-References: <1283268367-3525-1-git-send-email-linus.walleij@stericsson.com> <AANLkTik-uLMUz2g2znaF0K43D8CONsGdjrRqxTCqpS_X@mail.gmail.com>
-In-Reply-To: <AANLkTik-uLMUz2g2znaF0K43D8CONsGdjrRqxTCqpS_X@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Sep 2010 06:10:24.0309 (UTC) FILETIME=[DCC4EE50:01CB4BF7]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <EA929A9653AAE14F841771FB1DE5A13660082E9090@rrsmsx501.amr.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote:
-> 2010/8/31 Linus Walleij <linus.walleij@stericsson.com>:
-> 
->> After discovering a problem in regulator reference counting I
->> took Mark Brown's advice to move the reference count into the
->> MMC core by making the regulator status a member of
->> struct mmc_host.
-> 
-> This has an Reveiwed-by from the regulator maintainer and
-> seems to address all comments, noone is objection so Andrew
-> can you pick it up?
+Hi,
 
-One of our contractors had a look at the patch and had this comment:
-
-One comment/question:
-/host/mmci.c in function
-"static int __devexit mmci_remove(struct amba_device *dev)" there is code:
-         if (regulator_is_enabled(host->vcc))
-             regulator_disable(host->vcc);
-should "ret = mmc_regulator_set_ocr(mmc, host->vcc, 0);" be added here?
-
+On Thu, Aug 26, 2010 at 03:31:07PM -0600, Tantilov, Emil S wrote:
+> Marc Haber wrote:
+> > On Thu, Aug 26, 2010 at 01:27:32PM +0200, Marc Haber wrote:
+> >> On Wed, Aug 25, 2010 at 12:01:40PM -0600, Tantilov, Emil S wrote:
+> >>> We have a tool that you can use to dump the registers from the port
+> >>> in the failed state:
+> >>> http://sourceforge.net/projects/e1000/files/Ethregs%20-%20Register%20Dump%20Tool/ethregs-1.12.3/
+> >> 
+> >> Attached, for an interface in the working state. I'll deliver another
+> >> regdump when I see the issue again
+> > 
+> > Here we go, with a non-working interface.
 > 
-> Yours,
-> Linus Walleij
-> 
+> After reviewing the output from dmidecode I determined that your model
+> T60 is slightly different than mine. It appears that you have the
+> widescreen version. Is that correct?
 
+The dmidecode output is from the widescreen model, yes, but I also
+have two "normal" T60 with the non-wide screen 15" display (with
+1400x1050 pixels). The freezes happen on all three. The one I have at
+hand is running BIOS 2.26 dated 2010-04-01. I will also try updating
+the Widescreen unit which is - not surprisingly - the one I use the
+most.
+
+> Also you seem to be running a fairly old version of the BIOS (1.08).
+> The latest is 1.18:
+> http://www-307.ibm.com/pc/support/site.wss/MIGR-67020.html
+
+Thanks for that pointer, I am having difficulties in navigating the
+IBM/Lenovo web sites.
+
+> I would recommend that you upgrade your BIOS. If that does not help we
+> can continue with the investigation. I will also try to locate a
+> widescreen T60 that would hopefully help me with the repro. 
+
+I can give you ssh access to mine if you want to. Do you have IPv6
+connectivity? If you want me to, send me your ssh key.
+
+> The model I have has been running all kinds of stress since you first
+> reported this issue, and so far is rock solid.
+
+Please note that usually the freezes happen when the network is rather
+slightly loaded, for example when I'm typing into an ssh window with
+nothing else happening on the box. When I do things that are rather
+traffic intensive such as a backup, the box is fine. The "no link"
+issue appears most frequently on a system that has been running for
+some time and suspend-to-ram was used. I am traveling a lot, and every
+change of train or bus involves a suspend-resume cycle.
+
+Greetings
+Marc
+
+-- 
+-----------------------------------------------------------------------------
+Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
+Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 72739834
+Nordisch by Nature |  How to make an American Quilt | Fax: *49 3221 2323190
