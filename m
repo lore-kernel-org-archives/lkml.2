@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab0IDNMO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 09:12:14 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:55602 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab0IDNMO (ORCPT
+	id S1753257Ab0IDNe2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 09:34:28 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33881 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752922Ab0IDNe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 09:12:14 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: tiwai@suse.de
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Liam Girdwood <lg@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@suse.cz>
-Subject: [PATCH 1/1] SOUND: wm8753, remove dead code
-Date: Sat,  4 Sep 2010 15:12:09 +0200
-Message-Id: <1283605929-15961-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.2.2
+	Sat, 4 Sep 2010 09:34:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=v8rpICsCetajODCr3eeaDjmmWMSKaKEEV73avDUVoXe7oVGb5uTwhGGlqU85riRmIJ
+         BPChpbGcXZtlMbmX3AD9wBugXHspcBR/ZSjVUzXjY9OgDbN8wGI4WfV77GEz5/IrBDGP
+         pTZLWDhL1aJpqV11zniADxjl519HU46T8qyJU=
+Subject: Re: Nouveau driver fails
+From: Calvin Walton <calvin.walton@gmail.com>
+To: piotr@hosowicz.com
+Cc: LKML <linux-kernel@vger.kernel.org>, nouveau@lists.freedesktop.org
+In-Reply-To: <4C80DBE5.1040701@example.com>
+References: <4C80DBE5.1040701@example.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 04 Sep 2010 09:34:23 -0400
+Message-ID: <1283607263.9039.15.camel@ayu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is adangling code in wm8753_probe which is never executed.
-Remove it.
+On Fri, 2010-09-03 at 13:28 +0200, Piotr Hosowicz wrote:
+> Hello,
+> 
+> Nouveau driver seems to fail. Please find attached Xorg.0.log, lspci and 
+> kernel config. My card is 01:00.0 VGA compatible controller: nVidia 
+> Corporation G96 [GeForce 9400 GT] (rev a1). Tried with today's Linux Next.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Liam Girdwood <lg@opensource.wolfsonmicro.com>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@suse.cz>
----
- sound/soc/codecs/wm8753.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+You might get better results asking the nouveau developers directly -
+I've added the nouveau mailing list to the CC.
 
-diff --git a/sound/soc/codecs/wm8753.c b/sound/soc/codecs/wm8753.c
-index 4844232..4a945d3 100644
---- a/sound/soc/codecs/wm8753.c
-+++ b/sound/soc/codecs/wm8753.c
-@@ -1600,9 +1600,6 @@ static int wm8753_probe(struct snd_soc_codec *codec)
- 	wm8753_add_widgets(codec);
- 
- 	return 0;
--
--	run_delayed_work(&codec->delayed_work);
--	return ret;
- }
- 
- /* power down chip */
+(http://www.spinics.net/lists/kernel/msg1079386.html has the attachments
+archived.)
+
 -- 
-1.7.2.2
-
+Calvin Walton <calvin.walton@gmail.com>
 
