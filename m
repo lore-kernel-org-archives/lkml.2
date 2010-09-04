@@ -1,64 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab0IDUmw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 16:42:52 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:54828 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751854Ab0IDUmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 16:42:51 -0400
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX1/IZjQIfLLIzmX0zla/IAWVyoa/5OFcnSXIoF1loA
-	wk032LLxTBNKqn
-From: Sven Joachim <svenjoac@gmx.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Chris Wilson <chris@chris-wilson.co.uk>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] Revert "drm/i915: fix vblank wait test condition"
-References: <1283588234-2514-1-git-send-email-penberg@kernel.org>
-	<89k83a$9hv9li@azsmga001.ch.intel.com>
-	<AANLkTi=_OW5NvnS1oWzt3DW9CPPwNX_sAkPh_QOuXzhv@mail.gmail.com>
-	<alpine.LSU.2.00.1009041244440.3044@sister.anvils>
-Date: Sat, 04 Sep 2010 22:42:46 +0200
-In-Reply-To: <alpine.LSU.2.00.1009041244440.3044@sister.anvils> (Hugh
-	Dickins's message of "Sat, 4 Sep 2010 12:54:38 -0700 (PDT)")
-Message-ID: <87vd6ls0jd.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S1753598Ab0IDU45 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 16:56:57 -0400
+Received: from mx1.riseup.net ([204.13.164.18]:50441 "EHLO mx1.riseup.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753002Ab0IDU4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 16:56:55 -0400
+From: Francisco Jerez <currojerez@riseup.net>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 2/2] io-mapping: Fix the address space annotations.
+Date: Sat,  4 Sep 2010 22:56:44 +0200
+Message-Id: <1283633804-11749-2-git-send-email-currojerez@riseup.net>
+X-Mailer: git-send-email 1.6.4.4
+In-Reply-To: <1283633804-11749-1-git-send-email-currojerez@riseup.net>
+References: <1283633804-11749-1-git-send-email-currojerez@riseup.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-04 21:54 +0200, Hugh Dickins wrote:
+Fixes a bunch of sparse warnings in io-mapping.h because of the
+inconsistent __iomem usage.
 
-> On Sat, 4 Sep 2010, Pekka Enberg wrote:
->> On Sat,  4 Sep 2010 11:17:14 +0300, Pekka Enberg <penberg@kernel.org> wrote:
->> >> This reverts commit 9559fcdbff4f93d29af04478bbc48294519424f5. The commit causes
->> >> wrong screen resolution on some i915 machines such as MacBook which is a
->> >> regression from 2.6.35. The issue has been reported multiple times but no fix
->> >> has emerged:
->> 
->> On Sat, Sep 4, 2010 at 12:21 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->> > NAK. You can't simply hide one bug by introducing a much bigger one.
->> 
->> Dude, it's a nasty regression from 2.6.35. What exactly are you NAK'ing here?
->> 
->> > As you have an affected machine, find which wait_for_vblank() needs to be
->> > replaced with a msleep(20|50).
->> 
->> The attached patch fixes things here. I'm not a drm developer so I
->> don't know if it makes technical sense.
->
-> Many thanks to you, Pekka: I also don't know if it makes technical sense,
-> but it solves the same issue for me, so I can at last use 2.6.36-rc on
-> this laptop.
+Signed-off-by: Francisco Jerez <currojerez@riseup.net>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+---
+ include/linux/io-mapping.h |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-Helps for me as well, but I cannot judge whether it makes technical
-sense either.  Thanks, Pekka!
+diff --git a/include/linux/io-mapping.h b/include/linux/io-mapping.h
+index 0a6b3d5..7fb5927 100644
+--- a/include/linux/io-mapping.h
++++ b/include/linux/io-mapping.h
+@@ -79,7 +79,7 @@ io_mapping_free(struct io_mapping *mapping)
+ }
+ 
+ /* Atomic map/unmap */
+-static inline void *
++static inline void __iomem *
+ io_mapping_map_atomic_wc(struct io_mapping *mapping,
+ 			 unsigned long offset,
+ 			 int slot)
+@@ -94,12 +94,12 @@ io_mapping_map_atomic_wc(struct io_mapping *mapping,
+ }
+ 
+ static inline void
+-io_mapping_unmap_atomic(void *vaddr, int slot)
++io_mapping_unmap_atomic(void __iomem *vaddr, int slot)
+ {
+ 	iounmap_atomic(vaddr, slot);
+ }
+ 
+-static inline void *
++static inline void __iomem *
+ io_mapping_map_wc(struct io_mapping *mapping, unsigned long offset)
+ {
+ 	resource_size_t phys_addr;
+@@ -111,7 +111,7 @@ io_mapping_map_wc(struct io_mapping *mapping, unsigned long offset)
+ }
+ 
+ static inline void
+-io_mapping_unmap(void *vaddr)
++io_mapping_unmap(void __iomem *vaddr)
+ {
+ 	iounmap(vaddr);
+ }
+@@ -125,38 +125,38 @@ struct io_mapping;
+ static inline struct io_mapping *
+ io_mapping_create_wc(resource_size_t base, unsigned long size)
+ {
+-	return (struct io_mapping *) ioremap_wc(base, size);
++	return (struct io_mapping __force *) ioremap_wc(base, size);
+ }
+ 
+ static inline void
+ io_mapping_free(struct io_mapping *mapping)
+ {
+-	iounmap(mapping);
++	iounmap((void __force __iomem *) mapping);
+ }
+ 
+ /* Atomic map/unmap */
+-static inline void *
++static inline void __iomem *
+ io_mapping_map_atomic_wc(struct io_mapping *mapping,
+ 			 unsigned long offset,
+ 			 int slot)
+ {
+-	return ((char *) mapping) + offset;
++	return ((char __force __iomem *) mapping) + offset;
+ }
+ 
+ static inline void
+-io_mapping_unmap_atomic(void *vaddr, int slot)
++io_mapping_unmap_atomic(void __iomem *vaddr, int slot)
+ {
+ }
+ 
+ /* Non-atomic map/unmap */
+-static inline void *
++static inline void __iomem *
+ io_mapping_map_wc(struct io_mapping *mapping, unsigned long offset)
+ {
+-	return ((char *) mapping) + offset;
++	return ((char __force __iomem *) mapping) + offset;
+ }
+ 
+ static inline void
+-io_mapping_unmap(void *vaddr)
++io_mapping_unmap(void __iomem *vaddr)
+ {
+ }
+ 
+-- 
+1.6.4.4
 
-Sven
