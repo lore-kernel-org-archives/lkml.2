@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab0IDMI5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 08:08:57 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:55115 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724Ab0IDMI4 (ORCPT
+	id S1752618Ab0IDMW5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 08:22:57 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:54022 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab0IDMW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 08:08:56 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com, netdev@vger.kernel.org,
-        Debashis Dutt <ddutt@brocade.com>, Rasesh Mody <rmody@brocade.com>
-Subject: [PATCH 1/1] NET: bna, fix lock imbalance
-Date: Sat,  4 Sep 2010 14:08:41 +0200
-Message-Id: <1283602121-11443-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.2.2
+	Sat, 4 Sep 2010 08:22:56 -0400
+Date: Sat, 4 Sep 2010 20:22:45 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Chuck Ebbert <cebbert@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Fixes for 2.6.35
+Message-ID: <20100904122245.GA10640@gondor.apana.org.au>
+References: <20091020065442.GA5947@gondor.apana.org.au> <20091230021253.GA17067@gondor.apana.org.au> <20100201195204.GA6953@gondor.apana.org.au> <20100305071043.GA3548@gondor.apana.org.au> <20100427135547.GA4008@gondor.apana.org.au> <20100603100550.GA30681@gondor.apana.org.au> <20100716022648.GA28219@gondor.apana.org.au> <20100722055043.GA25689@gondor.apana.org.au> <20100903060055.GA28915@gondor.apana.org.au> <20100904064501.09ab7450@katamari>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100904064501.09ab7450@katamari>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bnad_set_rx_mode omit to unlock bna_lock on one fail path. Fix that.
+On Sat, Sep 04, 2010 at 06:45:01AM -0400, Chuck Ebbert wrote:
+> On Fri, 3 Sep 2010 14:00:55 +0800
+> Herbert Xu <herbert@gondor.hengli.com.au> wrote:
+> 
+> > Please pull from
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+> > 
+> > or
+> > 
+> > master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+> > 
+> > 
+> > Herbert Xu (2):
+> >       crypto: testmgr - Fix test disabling option
+> >       crypto: testmgr - Default to no tests
+> > 
+> > Szilveszter Ördög (1):
+> >       crypto: hash - Fix handling of small unaligned buffers
+> > 
+> 
+> What happened to my minor fix?
+> 
+>  [ http://marc.info/?l=linux-crypto-vger&m=128311860504202&w=2 ]
+> 
+> I never got a reply about it.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Debashis Dutt <ddutt@brocade.com>
-Cc: Rasesh Mody <rmody@brocade.com>
-Cc: David S. Miller <davem@davemloft.net>
----
- drivers/net/bna/bnad.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Hmm I did send you a reply.
 
-diff --git a/drivers/net/bna/bnad.c b/drivers/net/bna/bnad.c
-index cbc1d56..a1a449a 100644
---- a/drivers/net/bna/bnad.c
-+++ b/drivers/net/bna/bnad.c
-@@ -2706,7 +2706,7 @@ bnad_set_rx_mode(struct net_device *netdev)
- 			kzalloc((mc_count + 1) * ETH_ALEN,
- 				GFP_ATOMIC);
- 		if (!mcaddr_list)
--			return;
-+			goto unlock;
- 
- 		memcpy(&mcaddr_list[0], &bnad_bcast_addr[0], ETH_ALEN);
- 
-@@ -2719,6 +2719,7 @@ bnad_set_rx_mode(struct net_device *netdev)
- 		/* Should we enable BNAD_CF_ALLMULTI for err != 0 ? */
- 		kfree(mcaddr_list);
- 	}
-+unlock:
- 	spin_unlock_irqrestore(&bnad->bna_lock, flags);
- }
- 
+Anyway it's in cryptodev-2.6.
+
+Cheers,
 -- 
-1.7.2.2
-
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
