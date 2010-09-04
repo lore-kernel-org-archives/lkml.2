@@ -1,34 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab0IDQjP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 12:39:15 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:59093 "EHLO
+	id S1754493Ab0IDQmY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 12:42:24 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:47610 "EHLO
 	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453Ab0IDQjN (ORCPT
+	with ESMTP id S1754134Ab0IDQmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 12:39:13 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
+	Sat, 4 Sep 2010 12:42:24 -0400
 To: linux-kernel@vger.kernel.org
 Subject: Re: stable? quality assurance?
-Date: Sat, 4 Sep 2010 18:38:59 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.33-rc4-tp42-00127-g3a86e18; KDE/4.4.5; i686; ; )
-References: <201007110918.42120.Martin@lichtvoll.de> <201007111651.42963.Martin@lichtvoll.de> <20100711172252.GA3379@1wt.eu> (sfid-20100711_193037_169001_8F8BE25C)
-In-Reply-To: <20100711172252.GA3379@1wt.eu>
+From: Martin Steigerwald <Martin@lichtvoll.de>
+Date: Sat, 4 Sep 2010 18:42:19 +0200
+Cc: Willy Tarreau <w@1wt.eu>
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart1635895.5yhrE27gSE";
+  boundary="nextPart2010521.kMYM9Ngh7n";
   protocol="application/pgp-signature";
   micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009041839.09261.Martin@lichtvoll.de>
+Message-Id: <201009041842.19968.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1635895.5yhrE27gSE
-Content-Type: Text/Plain;
+--nextPart2010521.kMYM9Ngh7n
+Content-Type: text/plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: quoted-printable
+
+Sorry, forgot Cc again.
 
 Am Sonntag 11 Juli 2010 schrieb Willy Tarreau:
 > Hi Martin,
@@ -145,16 +145,16 @@ Installing and testing next kernel after yet another mail to this thread,
 Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
 GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
 
---nextPart1635895.5yhrE27gSE
+--nextPart2010521.kMYM9Ngh7n
 Content-Type: application/pgp-signature; name=signature.asc 
 Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAkyCdiQACgkQmRvqrKWZhMd7JwCfWDlL4CeQYlrd46YHnMBTrJCO
-nhsAoK2NJXQWq8Q8cKgk3k4BHpZH2Uhh
-=PSy/
+iEYEABECAAYFAkyCdusACgkQmRvqrKWZhMcN2ACeOHcexnHFho6yL7gySrAx7AMY
+5UwAoJ1IznybMIjAJ/rqAxtDqEoCrvBp
+=na2u
 -----END PGP SIGNATURE-----
 
---nextPart1635895.5yhrE27gSE--
+--nextPart2010521.kMYM9Ngh7n--
