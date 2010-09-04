@@ -1,162 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751127Ab0IDEh0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 00:37:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63215 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750749Ab0IDEhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 00:37:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,316,1280732400"; 
-   d="scan'208";a="654115280"
-Date: Sat, 4 Sep 2010 12:37:12 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, Mel Gorman <mel@csn.ul.ie>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
- direct reclaim allocation fails
-Message-ID: <20100904043712.GA17217@localhost>
-References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie>
- <1283504926-2120-4-git-send-email-mel@csn.ul.ie>
- <20100903160026.564fdcc9.akpm@linux-foundation.org>
- <20100904022545.GD705@dastard>
- <20100904032311.GA14222@localhost>
- <20100903205945.44e1aa38.akpm@linux-foundation.org>
+	id S1751413Ab0IDEj1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 00:39:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45072 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab0IDEjZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 00:39:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=cUmiJrHinZu7oOq89nGCPwtdj4rn87cBKvO2t85C6dGUaMEx3iP8slkyBswCn0VlhS
+         6mnxCxX4fi5d8Xm54lGSIdyIzQteAW80zLyLs93d3PigR8zbTa8fK2q7lik9oUSStFRt
+         zw3iRdIzvghrlvPvmvV4chzoo8jKvLoq8sHuM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100903205945.44e1aa38.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Sat, 4 Sep 2010 04:39:20 +0000
+Message-ID: <AANLkTin1XDdJisP9vTS8tax3yfgJLO+BpX2XqZOOV5RU@mail.gmail.com>
+Subject: BUG ext4_inode_cache: Padding overwritten. 0xffff88000008fe00-0xffff88000008fe32
+From: Justin Mattock <justinmattock@gmail.com>
+To: linux-ext4@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 04, 2010 at 11:59:45AM +0800, Andrew Morton wrote:
-> On Sat, 4 Sep 2010 11:23:11 +0800 Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > > Still, given the improvements in performance from this patchset,
-> > > I'd say inclusion is a no-braniner....
-> > 
-> > In your case it's not really high memory pressure, but maybe too many
-> > concurrent direct reclaimers, so that when one reclaimed some free
-> > pages, others kick in and "steal" the free pages. So we need to kill
-> > the second cond_resched() call (which effectively gives other tasks a
-> > good chance to steal this task's vmscan fruits), and only do
-> > drain_all_pages() when nothing was reclaimed (instead of allocated).
-> 
-> Well...  cond_resched() will only resched when this task has been
-> marked for preemption.  If that's happening at such a high frequency
-> then Something Is Up with the scheduler, and the reported context
-> switch rate will be high.
+Im not sure if theres already assigned to this or not...  but noticed
+this in dmesg..
+only thing I remember was building glibc, and looking into an issue
+with it, suspended a few times and such..
 
-Yes it may not necessarily schedule away. But if ever this happens,
-the task will likely run into drain_all_pages() when re-gain CPU.
-Because the drain_all_pages() cost is very high, it don't need too
-many reschedules to create the IPI storm..
+[13299.426905] =============================================================================
+[13299.426913] BUG ext4_inode_cache: Padding overwritten.
+0xffff88000008fe00-0xffff88000008fe32
+[13299.426919] -----------------------------------------------------------------------------
+[13299.426922]
+[13299.426928] INFO: Slab 0xffffea0000001ea0 objects=13 used=11
+fp=0xffff88000008d798 flags=0x4081
+[13299.426936] Pid: 17044, comm: rm Tainted: G   M
+2.6.36-rc3-00001-gb0425ef #2
+[13299.426942] Call Trace:
+[13299.426955]  [<ffffffff810e3a5c>] slab_err+0x89/0x95
+[13299.426966]  [<ffffffff8109c5fe>] ? call_rcu_sched+0x10/0x12
+[13299.426974]  [<ffffffff8109c609>] ? call_rcu+0x9/0xb
+[13299.426982]  [<ffffffff810e48b9>] slab_pad_check.part.46+0xc0/0xf7
+[13299.426991]  [<ffffffff8114c1b9>] ? ext4_destroy_inode+0x96/0x9d
+[13299.426999]  [<ffffffff810e4984>] check_slab+0x94/0x9a
+[13299.427008]  [<ffffffff813e5c38>] __slab_free+0x15e/0x342
+[13299.427008]  [<ffffffff810e4f34>] kmem_cache_free+0x96/0xed
+[13299.427008]  [<ffffffff8114c1b9>] ext4_destroy_inode+0x96/0x9d
+[13299.427008]  [<ffffffff81114fd9>] ? __fsnotify_inode_delete+0x9/0xb
+[13299.427008]  [<ffffffff810fd046>] ? __destroy_inode+0x27/0x76
+[13299.427008]  [<ffffffff810fd4fb>] destroy_inode+0x2a/0x3f
+[13299.427008]  [<ffffffff810fd948>] iput+0x223/0x228
+[13299.427008]  [<ffffffff810f4bcb>] do_unlinkat+0x118/0x16b
+[13299.427008]  [<ffffffff810ee3ad>] ? sys_newfstatat+0x25/0x2e
+[13299.427008]  [<ffffffff81094841>] ? audit_syscall_entry+0x1d1/0x1fd
+[13299.427008]  [<ffffffff810f641e>] sys_unlinkat+0x24/0x26
+[13299.427008]  [<ffffffff81027602>] system_call_fastpath+0x16/0x1b
+[13299.427008]  Padding 0xffff88000008fb8b:  00 ad 4e ad de ff ff ff
+ff 00 00 00 00 ff ff ff .­N­Þÿÿÿÿ....ÿÿÿ
+[13299.427008]  Padding 0xffff88000008fb9b:  ff ff ff ff ff a0 fb 08
+00 00 88 ff ff a0 fb 08 ÿÿÿÿÿ.û....ÿÿ.û.
+[13299.427008]  Padding 0xffff88000008fbab:  00 00 88 ff ff 00 00 00
+00 00 00 00 00 b8 fb 08 ...ÿÿ........¸û.
+[13299.427008]  Padding 0xffff88000008fbbb:  00 00 88 ff ff b8 fb 08
+00 00 88 ff ff 00 00 00 ...ÿÿ¸û....ÿÿ...
+[13299.427008]  Padding 0xffff88000008fbcb:  00 00 00 00 00 25 53 d9
+92 00 00 00 00 00 00 00 .....%SÙ........
+[13299.427008]  Padding 0xffff88000008fbdb:  00 00 00 00 00 00 00 00
+00 00 00 00 00 d9 59 bb .............ÙY»
+[13299.427008]  Padding 0xffff88000008fbeb:  00 01 00 00 00 00 00 00
+00 00 00 00 00 10 1a b7 ...............·
+[13299.427008]  Padding 0xffff88000008fbfb:  2e 00 88 ff ff ff ff ff
+ff ff ff ff ff ff ff ff ...ÿÿÿÿÿÿÿÿÿÿÿÿÿ
+[13299.427008]  Padding 0xffff88000008fc0b:  ff ff ff ff ff 00 00 00
+00 00 00 00 00 00 00 00 ÿÿÿÿÿ...........
+[13299.427008]  Padding 0xffff88000008fc1b:  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 01 10 ................
+[13299.427008]  Padding 0xffff88000008fc2b:  00 00 00 ad de 00 02 20
+00 00 00 ad de 80 f9 08 ...­Þ......­Þ.ù.
+[13299.427008]  Padding 0xffff88000008fc3b:  00 00 88 ff ff 00 00 00
+00 5a 5a 5a 5a b8 b6 28 ...ÿÿ....ZZZZ¸¶(
+[13299.427008]  Padding 0xffff88000008fc4b:  00 00 00 00 00 00 00 00
+00 01 00 00 00 02 00 00 ................
+[13299.427008]  Padding 0xffff88000008fc5b:  00 00 00 00 00 a2 99 81
+4c 00 00 00 00 13 41 21 .....¢..L.....A!
+[13299.427008]  Padding 0xffff88000008fc6b:  37 00 00 00 00 70 fc 08
+00 00 88 ff ff 70 fc 08 7....pü....ÿÿpü.
+[13299.427008]  Padding 0xffff88000008fc7b:  00 00 88 ff ff 01 01 00
+00 ad 4e ad de ff ff ff ...ÿÿ....­N­Þÿÿÿ
+[13299.427008]  Padding 0xffff88000008fc8b:  ff 5a 5a 5a 5a ff ff ff
+ff ff ff ff ff ff ff ff ÿZZZZÿÿÿÿÿÿÿÿÿÿÿ
+[13299.427008]  Padding 0xffff88000008fc9b:  ff 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 5a ÿ..............Z
+[13299.427008]  Padding 0xffff88000008fcab:  5a 5a 5a 5a 5a 00 00 00
+00 00 00 00 00 00 00 00 ZZZZZ...........
+[13299.427008]  Padding 0xffff88000008fcbb:  00 1c 00 5a 5a 0e 0e 00
+00 ad 4e ad de ff ff ff ...ZZ....­N­Þÿÿÿ
+[13299.427008]  Padding 0xffff88000008fccb:  ff 5a 5a 5a 5a ff ff ff
+ff ff ff ff ff d8 fc 08 ÿZZZZÿÿÿÿÿÿÿÿØü.
+[13299.427008]  Padding 0xffff88000008fcdb:  00 00 88 ff ff d8 fc 08
+00 00 88 ff ff 00 00 00 ...ÿÿØü....ÿÿ...
+[13299.427008]  Padding 0xffff88000008fceb:  00 ad 4e ad de ff ff ff
+ff 5a 5a 5a 5a ff ff ff .­N­ÞÿÿÿÿZZZZÿÿÿ
+[13299.427008]  Padding 0xffff88000008fcfb:  ff ff ff ff ff 00 00 00
+00 00 00 00 00 bb 59 03 ÿÿÿÿÿ........»Y.
+[13299.427008]  Padding 0xffff88000008fd0b:  00 bb 59 03 00 cc cc cc
+cc cc cc cc cc e8 f3 08 .»Y..ÌÌÌÌÌÌÌÌèó.
+[13299.427008]  Padding 0xffff88000008fd1b:  00 00 88 ff ff 9f 60 14
+81 ff ff ff ff 01 00 00 ...ÿÿ.`..ÿÿÿÿ...
+[13299.427008]  Padding 0xffff88000008fd2b:  00 c0 28 00 00 a5 58 bb
+00 01 00 00 00 b9 c1 14 .À(..¥X».....¹Á.
+[13299.427008]  Padding 0xffff88000008fd3b:  81 ff ff ff ff 01 00 00
+00 0f 1c 00 00 b0 7a ba .ÿÿÿÿ........°zº
+[13299.427008]  Padding 0xffff88000008fd4b:  00 01 00 00 00 5a 5a 5a
+5a 5a 5a 5a 5a 5a 5a 5a .....ZZZZZZZZZZZ
+[13299.427008]  Padding 0xffff88000008fd5b:  5a 5a 5a 5a 5a 5a 5a 5a
+5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+[13299.427008]  Padding 0xffff88000008fd6b:  5a 5a 5a 5a 5a 5a 5a 5a
+5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+[13299.427008]  Padding 0xffff88000008fd7b:  5a 5a 5a 5a 5a 5a 5a 5a
+5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+[13299.427008]  Padding 0xffff88000008fd8b:  5a 5a 5a 5a 5a 5a 5a 5a
+5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+[13299.427008]  Padding 0xffff88000008fd9b:  5a 5a 5a 5a 5a 5a 5a 5a
+5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+[13299.427008]  Padding 0xffff88000008fdab:  5a 5a 5a 5a 5a 5a 5a 5a
+5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+[13299.427008]  Padding 0xffff88000008fdbb:  5a 5a 5a 5a 5a 5a 5a 5a
+5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+[13299.427008]  Padding 0xffff88000008fdcb:  5a 5a 5a 5a 5a 5a 5a 5a
+5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+[13299.427008]  Padding 0xffff88000008fddb:  5a 5a 5a 5a 5a 5a 5a 5a
+5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+[13299.427008]  Padding 0xffff88000008fdeb:  5a 5a 5a 5a 5a 5a 5a 5a
+5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+[13299.427008]  Padding 0xffff88000008fdfb:  5a 5a 5a 5a 5a 00 5a 5a
+5a 10 20 0f 3f 00 80 00 ZZZZZ.ZZZ...?...
+[13299.427008]  Padding 0xffff88000008fe0b:  00 c7 60 ed 3f 3f 00 10
+df ed 3f ff 07 10 c0 ed .Ç`í??..ßí?ÿ..Àí
+[13299.427008]  Padding 0xffff88000008fe1b:  3f fa 33 c9 33 d2 b8 3c
+fe 08 00 0f 01 c8 b8 31 ?ú3É3Ò¸<þ....È¸1
+[13299.427008]  Padding 0xffff88000008fe2b:  00 00 00 0f 01 c9 eb e9
+                      .....Éëé
+[13299.427008] FIX ext4_inode_cache: Restoring
+0xffff88000008fb8b-0xffff88000008fe32=0x5a
+[13299.427008]
+[13369.168442] general protection fault: 0000 [#1] SMP
+[13369.168448] last sysfs file: /sys/devices/platform/applesmc.768/light
+[13369.168451] CPU 0
+[13369.168453] Modules linked in: xfrm4_mode_transport xcbc rmd160
+sha512_generic sco bnep xt_tcpudp ipt_LOG iptable_nat nf_nat xt_state
+nf_conntrack_ftp nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4
+iptable_filter ip_tables x_tables snd_hda_codec_idt ath9k
+firewire_ohci firewire_core ath9k_common evdev ath9k_hw ohci1394
+joydev button thermal battery sky2 ac ath snd_hda_intel snd_hda_codec
+snd_hwdep snd_pcm snd_timer snd soundcore snd_page_alloc i2c_i801
+video aes_x86_64 lzo lzo_compress tun kvm_intel ipcomp xfrm_ipcomp
+crypto_null sha256_generic cbc des_generic cast5 blowfish serpent
+camellia twofish_generic twofish_x86_64 twofish_common ctr ah4 esp4
+authenc raw1394 ieee1394 uhci_hcd ehci_hcd hci_uart rfcomm btusb hidp
+l2cap bluetooth coretemp acpi_cpufreq processor mperf appletouch
+applesmc
+[13369.168522]
+[13369.168526] Pid: 21876, comm: objdump Tainted: G   M
+2.6.36-rc3-00001-gb0425ef #2 Mac-F42187C8/MacBookPro2,2
+[13369.168529] RIP: 0010:[<ffffffff811a19ad>]  [<ffffffff811a19ad>]
+selinux_dentry_open+0x27/0x91
+[13369.168540] RSP: 0018:ffff88000dcb7c98  EFLAGS: 00010292
+[13369.168543] RAX: 5a5a5a5a5a5a5a5a RBX: ffff88000008f980 RCX: ffff880001800000
+[13369.168545] RDX: ffff880001800000 RSI: ffff88000ddf6800 RDI: ffff880030d6f500
+[13369.168548] RBP: ffff88000dcb7cb8 R08: 0000000000000000 R09: ffff88001aa70360
+[13369.168551] R10: ffff880030f25c6c R11: ffff88000191c000 R12: ffff880030d6f500
+[13369.168553] R13: ffff88001e6b79a0 R14: ffff88000ddf6800 R15: ffff88000008f980
+[13369.168557] FS:  00002ab84b7ebb20(0000) GS:ffff880001800000(0000)
+knlGS:0000000000000000
+[13369.168560] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[13369.168562] CR2: 00002ab84b52b300 CR3: 00000000276ed000 CR4: 00000000000006f0
+[13369.168565] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[13369.168568] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[13369.168571] Process objdump (pid: 21876, threadinfo
+ffff88000dcb6000, task ffff88001e799ec0)
+[13369.168573] Stack:
+[13369.168575]  ffff880030d6f500 ffff88003ecf08c0 ffff88001aa70360
+0000000000000000
+[13369.168579] <0> ffff88000dcb7cd8 ffffffff8119afc9 ffff880030d6f500
+ffff880030d6f500
+[13369.168584] <0> ffff88000dcb7d48 ffffffff810e8ebc ffff88000dcb7d18
+ffffffff810f2f78
+[13369.168589] Call Trace:
+[13369.168595]  [<ffffffff8119afc9>] security_dentry_open+0x19/0x4c
+[13369.168601]  [<ffffffff810e8ebc>] __dentry_open+0x159/0x2be
+[13369.168607]  [<ffffffff810f2f78>] ? generic_permission+0x17/0xa4
+[13369.168611]  [<ffffffff810e9e96>] nameidata_to_filp+0x3a/0x4b
+[13369.168616]  [<ffffffff810f58cb>] do_last+0x504/0x691
+[13369.168620]  [<ffffffff810f5c48>] do_filp_open+0x1f0/0x621
+[13369.168625]  [<ffffffff810ff29f>] ? alloc_fd+0x102/0x114
+[13369.168629]  [<ffffffff810e9f02>] do_sys_open+0x5b/0xf7
+[13369.168633]  [<ffffffff810e9fb9>] sys_open+0x1b/0x1d
+[13369.168639]  [<ffffffff81027602>] system_call_fastpath+0x16/0x1b
+[13369.168642] Code: ff ff c9 c3 55 48 89 e5 41 56 49 89 f6 41 55 41
+54 49 89 fc 53 48 8b 47 18 4c 8b af c0 00 00 00 48 8b 58 28 48 8b 83
+78 02 00 00 <8b> 40 1c 41 89 45 08 e8 a1 af ff ff 41 89 45 0c 41 8b 44
+24 54
+[13369.168681] RIP  [<ffffffff811a19ad>] selinux_dentry_open+0x27/0x91
+[13369.168685]  RSP <ffff88000dcb7c98>
+[13369.168688] ---[ end trace a79a28a58d538d97 ]---
 
-> > Dave, will you give a try of this patch? It's based on Mel's.
-> > 
-> > 
-> > --- linux-next.orig/mm/page_alloc.c	2010-09-04 11:08:03.000000000 +0800
-> > +++ linux-next/mm/page_alloc.c	2010-09-04 11:16:33.000000000 +0800
-> > @@ -1850,6 +1850,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
-> >  
-> >  	cond_resched();
-> >  
-> > +retry:
-> >  	/* We now go into synchronous reclaim */
-> >  	cpuset_memory_pressure_bump();
-> >  	p->flags |= PF_MEMALLOC;
-> > @@ -1863,26 +1864,23 @@ __alloc_pages_direct_reclaim(gfp_t gfp_m
-> >  	lockdep_clear_current_reclaim_state();
-> >  	p->flags &= ~PF_MEMALLOC;
-> >  
-> > -	cond_resched();
-> > -
-> > -	if (unlikely(!(*did_some_progress)))
-> > +	if (unlikely(!(*did_some_progress))) {
-> > +		if (!drained) {
-> > +			drain_all_pages();
-> > +			drained = true;
-> > +			goto retry;
-> > +		}
-> >  		return NULL;
-> > +	}
-> >  
-> > -retry:
-> >  	page = get_page_from_freelist(gfp_mask, nodemask, order,
-> >  					zonelist, high_zoneidx,
-> >  					alloc_flags, preferred_zone,
-> >  					migratetype);
-> >  
-> > -	/*
-> > -	 * If an allocation failed after direct reclaim, it could be because
-> > -	 * pages are pinned on the per-cpu lists. Drain them and try again
-> > -	 */
-> > -	if (!page && !drained) {
-> > -		drain_all_pages();
-> > -		drained = true;
-> > +	/* someone steal our vmscan fruits? */
-> > +	if (!page && *did_some_progress)
-> >  		goto retry;
-> > -	}
-> 
-> Perhaps the fruit-stealing event is worth adding to the
-> userspace-exposed vm stats somewhere.  But not in /proc - somewhere
-> more temporary, in debugfs.
+as for performance issues,would of never know about this if I hadnt
+looked in dmesg.
 
-There are no existing debugfs interfaces for vm stats, and I need to
-go out right now.. So I did the following quick (and temporary) hack
-to allow Dave to collect the information. Will revisit the proper
-interface to use later :)
 
-Thanks,
-Fengguang
----
- include/linux/mmzone.h |    1 +
- mm/page_alloc.c        |    4 +++-
- mm/vmstat.c            |    1 +
- 3 files changed, 5 insertions(+), 1 deletion(-)
-
---- linux-next.orig/include/linux/mmzone.h	2010-09-04 12:30:26.000000000 +0800
-+++ linux-next/include/linux/mmzone.h	2010-09-04 12:30:36.000000000 +0800
-@@ -104,6 +104,7 @@ enum zone_stat_item {
- 	NR_ISOLATED_ANON,	/* Temporary isolated pages from anon lru */
- 	NR_ISOLATED_FILE,	/* Temporary isolated pages from file lru */
- 	NR_SHMEM,		/* shmem pages (included tmpfs/GEM pages) */
-+	NR_RECLAIM_STEAL,
- #ifdef CONFIG_NUMA
- 	NUMA_HIT,		/* allocated in intended node */
- 	NUMA_MISS,		/* allocated in non intended node */
---- linux-next.orig/mm/page_alloc.c	2010-09-04 12:28:09.000000000 +0800
-+++ linux-next/mm/page_alloc.c	2010-09-04 12:33:39.000000000 +0800
-@@ -1879,8 +1879,10 @@ retry:
- 					migratetype);
- 
- 	/* someone steal our vmscan fruits? */
--	if (!page && *did_some_progress)
-+	if (!page && *did_some_progress) {
-+		inc_zone_state(preferred_zone, NR_RECLAIM_STEAL);
- 		goto retry;
-+	}
- 
- 	return page;
- }
---- linux-next.orig/mm/vmstat.c	2010-09-04 12:31:30.000000000 +0800
-+++ linux-next/mm/vmstat.c	2010-09-04 12:31:42.000000000 +0800
-@@ -732,6 +732,7 @@ static const char * const vmstat_text[] 
- 	"nr_isolated_anon",
- 	"nr_isolated_file",
- 	"nr_shmem",
-+	"nr_reclaim_steal",
- #ifdef CONFIG_NUMA
- 	"numa_hit",
- 	"numa_miss",
+-- 
+Justin P. Mattock
