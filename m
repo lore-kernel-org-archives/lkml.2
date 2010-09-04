@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab0IDBSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 21:18:36 -0400
+	id S1754229Ab0IDBS3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 21:18:29 -0400
 Received: from mail-qw0-f46.google.com ([209.85.216.46]:59457 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab0IDBSF (ORCPT
+	with ESMTP id S1753452Ab0IDBSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 21:18:05 -0400
+	Fri, 3 Sep 2010 21:18:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=qHXNGRBm/bfZD1HzHKcaDnn4hu+Yt2aVhMo6T0RCq8LwoWQgIAv11oRu1+RvI91Nxm
-         4gRD4Uk9cVdMYz1x4j3piBwKoyJ9fohefMBttX0wIbvlI1GvTdsM9sKqnVI5qT+L+vNH
-         pZP3acELwtmFhZ4Ad2ydhcbK7OLn+3QuMhP6g=
+        b=DShmHPJb8K+hiIYVf6iFWh7V2TvbPwJg2b11eNlYaE8N1h0dgJfUqUoJsRR6oypbzT
+         yq+TDhEeMseeH8WVRj7F+9Rij6qWI+KI0mztkor8qOhXi48EBpgkmnTh7/+Ily6rbSv/
+         MykTvweaVGH0InGxM16cQ+jmYl6RNPbfdyE64=
 From: Brian Gerst <brgerst@gmail.com>
 To: hpa@zytor.com
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, penberg@kernel.org
-Subject: [PATCH 10/12] x86: Remove PSHUFB_XMM5_* macros
-Date: Fri,  3 Sep 2010 21:17:17 -0400
-Message-Id: <1283563039-3466-11-git-send-email-brgerst@gmail.com>
+Subject: [PATCH 09/12] x86: Remove unnecessary ifdefs from i387 code.
+Date: Fri,  3 Sep 2010 21:17:16 -0400
+Message-Id: <1283563039-3466-10-git-send-email-brgerst@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1283563039-3466-1-git-send-email-brgerst@gmail.com>
 References: <1283563039-3466-1-git-send-email-brgerst@gmail.com>
@@ -26,25 +26,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PSHUFB_XMM5_* macros are no longer used.
+Remove ifdefs for code that the compiler can optimize away on 64-bit.
 
 Signed-off-by: Brian Gerst <brgerst@gmail.com>
 ---
- arch/x86/include/asm/i387.h |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/i387.h |   12 ++++++------
+ arch/x86/kernel/i387.c      |    4 ----
+ 2 files changed, 6 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index 42b507e..907967e 100644
+index 768fcb2..42b507e 100644
 --- a/arch/x86/include/asm/i387.h
 +++ b/arch/x86/include/asm/i387.h
-@@ -465,7 +465,4 @@ extern void fpu_finit(struct fpu *fpu);
+@@ -55,6 +55,12 @@ extern int save_i387_xstate_ia32(void __user *buf);
+ extern int restore_i387_xstate_ia32(void __user *buf);
+ #endif
  
- #endif /* __ASSEMBLY__ */
++#ifdef CONFIG_MATH_EMULATION
++extern void finit_soft_fpu(struct i387_soft_struct *soft);
++#else
++static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
++#endif
++
+ #define X87_FSW_ES (1 << 7)	/* Exception Summary */
  
--#define PSHUFB_XMM5_XMM0 .byte 0x66, 0x0f, 0x38, 0x00, 0xc5
--#define PSHUFB_XMM5_XMM6 .byte 0x66, 0x0f, 0x38, 0x00, 0xf5
+ static __always_inline __pure bool use_xsaveopt(void)
+@@ -189,12 +195,6 @@ static inline void fpu_save_init(struct fpu *fpu)
+ 
+ #else  /* CONFIG_X86_32 */
+ 
+-#ifdef CONFIG_MATH_EMULATION
+-extern void finit_soft_fpu(struct i387_soft_struct *soft);
+-#else
+-static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
+-#endif
 -
- #endif /* _ASM_X86_I387_H */
+ /* perform fxrstor iff the processor has extended states, otherwise frstor */
+ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
+ {
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 966fdcb..9238309 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -74,10 +74,8 @@ static void __cpuinit init_thread_xstate(void)
+ 
+ 	if (cpu_has_fxsr)
+ 		xstate_size = sizeof(struct i387_fxsave_struct);
+-#ifdef CONFIG_X86_32
+ 	else
+ 		xstate_size = sizeof(struct i387_fsave_struct);
+-#endif
+ }
+ 
+ /*
+@@ -114,12 +112,10 @@ void __cpuinit fpu_init(void)
+ 
+ void fpu_finit(struct fpu *fpu)
+ {
+-#ifdef CONFIG_X86_32
+ 	if (!HAVE_HWFP) {
+ 		finit_soft_fpu(&fpu->state->soft);
+ 		return;
+ 	}
+-#endif
+ 
+ 	if (cpu_has_fxsr) {
+ 		struct i387_fxsave_struct *fx = &fpu->state->fxsave;
 -- 
 1.7.2.2
 
