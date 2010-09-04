@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab0IDHMh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 03:12:37 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55658 "EHLO mgw2.diku.dk"
+	id S1753523Ab0IDHRv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 03:17:51 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:49607 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753159Ab0IDHMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 03:12:36 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: kernel-janitors@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH] arch/powerpc/platforms/52xx/efika.c: Add of_node_put to avoid memory leak
-Date: Sat,  4 Sep 2010 09:13:17 +0200
-Message-Id: <1283584397-7697-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1753159Ab0IDHRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 03:17:50 -0400
+Message-ID: <4C81F29C.7030600@kernel.dk>
+Date: Sat, 04 Sep 2010 09:17:48 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Florian Mickler <florian@mickler.org>
+CC: Martin Pirker <lkml.collector@gmail.com>,
+        Dan Carpenter <error27.lkml@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Richard Kennedy <richard@rsk.demon.co.uk>, mjg@redhat.com
+Subject: Re: 2.6.35-rc5 inconsistent lock state
+References: <AANLkTikDF0TL6OyPVCzPlUTwxFehcrETn3ysgSSeTq92@mail.gmail.com>	<201007142304.48660.rjw@sisk.pl>	<AANLkTin5Bj6HEEriLVFDQKptrZHmh698TsnMWHzVYt5H@mail.gmail.com>	<4C42099C.3070708@kernel.dk>	<AANLkTik5VjJsdWhRcxCGCoayMTZRUwTNUzWNpqYxjzLs@mail.gmail.com> <20100903093755.6fa13d4f@schatten.dmk.lab>
+In-Reply-To: <20100903093755.6fa13d4f@schatten.dmk.lab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is implemented as though the function of_get_next_child does
-not increment the reference count of its result, but actually it does.
-Thus the patch adds of_node_put in error handling code and drops a call to
-of_node_get.
+On 09/03/2010 09:37 AM, Florian Mickler wrote:
+> On Mon, 19 Jul 2010 21:48:04 +0200
+> Martin Pirker <lkml.collector@gmail.com> wrote:
+> 
+>> On Sat, Jul 17, 2010 at 9:50 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>>> I posted a patch for this the other day, but I just now notice
+>>> that it was a private list of CC addresses.
+>>>
+>>> Can anyone try this completed untested patch?
+>>
+>> [sorry Jens for my first failed test attempt, my idiocy...]
+>>
+>> applied to 2.6.35-rc5 -> error message so far not seen again.
+>> about functionality, well, HD spin up control via laptop_mode I cannot
+>> say, I've a SSD...
+>>
+>> HTH,
+>> Martin
+> 
+> Is this patch on route to mainline? Or did this get fixed some other
+> way?
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+The lock is bh safe in mainline now, the patch should not be
+needed. Are you still seeing the bad behaviour?
 
-// <smpl>
-@r exists@
-local idexpression x;
-expression E1;
-position p1,p2;
-@@
-
-x@p1 = of_get_next_child(...);
-... when != x = E1
-of_node_get@p2(x)
-
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-cocci.print_main("call",p1)
-cocci.print_secs("get",p2)
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- arch/powerpc/platforms/52xx/efika.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/arch/powerpc/platforms/52xx/efika.c b/arch/powerpc/platforms/52xx/efika.c
-index 45c0cb9..18c1048 100644
---- a/arch/powerpc/platforms/52xx/efika.c
-+++ b/arch/powerpc/platforms/52xx/efika.c
-@@ -99,7 +99,7 @@ static void __init efika_pcisetup(void)
- 	if (bus_range == NULL || len < 2 * sizeof(int)) {
- 		printk(KERN_WARNING EFIKA_PLATFORM_NAME
- 		       ": Can't get bus-range for %s\n", pcictrl->full_name);
--		return;
-+		goto out_put;
- 	}
- 
- 	if (bus_range[1] == bus_range[0])
-@@ -111,12 +111,12 @@ static void __init efika_pcisetup(void)
- 	printk(" controlled by %s\n", pcictrl->full_name);
- 	printk("\n");
- 
--	hose = pcibios_alloc_controller(of_node_get(pcictrl));
-+	hose = pcibios_alloc_controller(pcictrl);
- 	if (!hose) {
- 		printk(KERN_WARNING EFIKA_PLATFORM_NAME
- 		       ": Can't allocate PCI controller structure for %s\n",
- 		       pcictrl->full_name);
--		return;
-+		goto out_put;
- 	}
- 
- 	hose->first_busno = bus_range[0];
-@@ -124,6 +124,9 @@ static void __init efika_pcisetup(void)
- 	hose->ops = &rtas_pci_ops;
- 
- 	pci_process_bridge_OF_ranges(hose, pcictrl, 0);
-+	return;
-+out_put:
-+	of_node_put(pcictrl);
- }
- 
- #else
+-- 
+Jens Axboe
 
