@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab0IDAyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 20:54:15 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:42834 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753002Ab0IDAyH (ORCPT
+	id S1752913Ab0IDBCg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 21:02:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36076 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212Ab0IDBCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 20:54:07 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: STeVeHsVM1nDo4Vh_M5ytNjRWFURa5eOrgtccmUVV69symg
- ge9VzeyrDFXpxpLiLA6RHJpt.380K8_V_ymWnTNADYZKNkqSmuha79Qp9qpp
- x_HSKjbb5A.ZK5fNBei_MgoU7Ks_hpXy0yxpAhZzxg0Uu7mvUtySHutig9E8
- DVhT9sbImipiQ_FRsJnuxcCc.ALn35jwX8tGXdmiezUhZuo2Xg3_qkP3EeOn
- WDoCBZfcQ83QzkVPCzSRv6a0pqqJu
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 3 Sep 2010 19:54:01 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Mel Gorman <mel@csn.ul.ie>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 2/3] mm: page allocator: Calculate a better estimate of
- NR_FREE_PAGES when memory is low and kswapd is awake
-In-Reply-To: <20100903162821.48ec57cc.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1009031950100.18051@router.home>
-References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie> <1283504926-2120-3-git-send-email-mel@csn.ul.ie> <20100903155537.41f1a3a7.akpm@linux-foundation.org> <alpine.DEB.2.00.1009031811090.16264@router.home>
- <20100903162821.48ec57cc.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 3 Sep 2010 21:02:34 -0400
+Date: Fri, 3 Sep 2010 18:01:56 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        sreedhara.ds@intel.com
+Subject: [PATCH -next] staging: mrst touchscreen depends on SPI
+Message-Id: <20100903180156.af17d4a8.randy.dunlap@oracle.com>
+In-Reply-To: <20100903135206.d9bc2093.sfr@canb.auug.org.au>
+References: <20100903135206.d9bc2093.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010, Andrew Morton wrote:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-> > percpu counters must always be added up when their value is determined.
->
-> Nope.  That's the difference between percpu_counter_read() and
-> percpu_counter_sum().
+Moorestown touchscreen driver should depend on SPI.
+Fixes these build errors:
 
-Hmmm... Okay you can fold them therefore. That is analogous to what we do
-in the _snapshot function now.
+intel-mid-touch.c:(.init.text+0xdd34): undefined reference to `spi_register_driver'
+drivers/built-in.o:(.data+0x21778): undefined reference to `spi_bus_type'
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: sreedhara.ds@intel.com
+---
+ drivers/staging/mrst-touchscreen/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-next-20100903.orig/drivers/staging/mrst-touchscreen/Kconfig
++++ linux-next-20100903/drivers/staging/mrst-touchscreen/Kconfig
+@@ -1,6 +1,6 @@
+ config TOUCHSCREEN_INTEL_MID
+ 	tristate "Intel MID platform resistive touchscreen"
+-	depends on INTEL_SCU_IPC
++	depends on INTEL_SCU_IPC && SPI
+ 	default y
+ 	help
+ 	  Say Y here if you have a Intel MID based touchscreen
