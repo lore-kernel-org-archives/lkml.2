@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab0IDBMI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Sep 2010 21:12:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:7283 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212Ab0IDBMG convert rfc822-to-8bit (ORCPT
+	id S1753130Ab0IDBRx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Sep 2010 21:17:53 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59457 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212Ab0IDBRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Sep 2010 21:12:06 -0400
+	Fri, 3 Sep 2010 21:17:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GCFOtnjFI/xsMiGXdxX1SdctQhSmjPLRnBkNnOhMgWvwxMQTgZlumgcqs2u3DXL4oL
-         mBuoptMtGTYJh8jmvfQw==
-MIME-Version: 1.0
-In-Reply-To: <20100903145646.15063c1d.akpm@linux-foundation.org>
-References: <1283096628-4450-1-git-send-email-minchan.kim@gmail.com>
-	<20100903140649.09dee316.akpm@linux-foundation.org>
-	<AANLkTimTpj+CSvGx=HC4qnArBV9jxORkKoDA9eap3_cN@mail.gmail.com>
-	<20100903145646.15063c1d.akpm@linux-foundation.org>
-Date: Fri, 3 Sep 2010 18:12:03 -0700
-Message-ID: <AANLkTi=gDnMjTfC756wABD_K6evk+hEOtp_7JVvnwjki@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: prevent background aging of anon page in no swap system
-From: Venkatesh Pallipadi <venki@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ying Han <yinghan@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ZUJjpWSVA8enkgqD9pV9B/h+d468UTVQk2Em2MxZfscvHU8s4c0NKvjG9zpT96Juxu
+         N41WT8CSrqIcWwZ4mkj5eiZI7EnsLAb6fV7HG4sN3fwE9E94uu5dpt6dnllyUMJ3PZpF
+         bRz3QZIX7IkNYqNCXxXys+JoVUEIePfS/Hngk=
+From: Brian Gerst <brgerst@gmail.com>
+To: hpa@zytor.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, penberg@kernel.org
+Subject: [PATCH 0/12] x86 FPU cleanups (v2)
+Date: Fri,  3 Sep 2010 21:17:07 -0400
+Message-Id: <1283563039-3466-1-git-send-email-brgerst@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 3, 2010 at 2:56 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Fri, 3 Sep 2010 14:47:03 -0700
-> Ying Han <yinghan@google.com> wrote:
->
->> > We don't have any quantitative data on the effect of these excess tlb
->> > flushes, which makes it difficult to decide which kernel versions
->> > should receive this patch.
->> >
->> > Help?
->>
->> Andrew:
->>
->> We observed the degradation on 2.6.34 compared to 2.6.26 kernel. The
->> workload we are running is doing 4k-random-write which runs about 3-4
->> minutes. We captured the TLB shootsdowns before/after:
->>
->> Before the change:
->> TLB: 29435 22208 37146 25332 47952 43698 43545 40297 49043 44843 46127
->> 50959 47592 46233 43698 44690 TLB shootdowns [HSUM =  662798 ]
->>
->> After the change:
->> TLB: 2340 3113 1547 1472 2944 4194 2181 1212 2607 4373 1690 1446 2310
->> 3784 1744 1134 TLB shootdowns [HSUM =  38091 ]
->
-> Do you have data on how much additional CPU time (and/or wall time) was
-> consumed?
->
+This patch set cleans up and merges the 32-bit and 64-bit FPU code.
 
-Just reran the workload to get this data
-- after - before of /proc/interrupts:TLB
-- after - before of /proc/stat:cpu
-  (output is: "cpu" user nice sys idle iowait irq softirq steal guest guestnice)
+v2:
+- Don't write to %cr4 unless some bits are set
+- Reworked the fpu_save_init() merge
 
-Without this change
-TLB: 28550 21232 33876 14300 40661 43118 38227 34887 34376 38208 35735
-33591 36305 43649 36558 42013 TLB shootdowns [HSUM =  555286 ]
-cpu 41056 381 17945 308706 26447 39 9713 0 0 0
+[PATCH 01/12] x86: Use correct type for %cr4
+[PATCH 02/12] x86: Merge fpu_init()
+[PATCH 03/12] x86: Merge tolerant_fwait()
+[PATCH 04/12] x86: Merge __save_init_fpu()
+[PATCH 05/12] x86-64: Disable preemption when using TS_USEDFPU
+[PATCH 06/12] x86-64: Fix %cs value in convert_from_fxsr()
+[PATCH 07/12] x86-64: Simplify constraints for fxsave/fxtstor
+[PATCH 08/12] x86-32: Remove math_emulate stub
+[PATCH 09/12] x86: Remove unnecessary ifdefs from i387 code.
+[PATCH 10/12] x86: Remove PSHUFB_XMM5_* macros
+[PATCH 11/12] x86-32: Rewrite fpu_save_init()
+[PATCH 12/12] x86: Merge fpu_save_init()
 
-With this change
-TLB: 660 1088 761 474 778 1050 697 551 712 1353 651 730 788 1419 574
-521 TLB shootdowns [HSUM =  12807 ]
-cpu 40375 231 16622 204115 19317 36 9464 0 0 0
+ arch/x86/include/asm/i387.h      |  195 ++++++++++---------------------------
+ arch/x86/include/asm/processor.h |    4 +-
+ arch/x86/kernel/cpu/common.c     |    7 --
+ arch/x86/kernel/i387.c           |   52 +++++------
+ arch/x86/kernel/process_64.c     |    2 +-
+ arch/x86/kernel/traps.c          |   35 +------
+ 6 files changed, 84 insertions(+), 211 deletions(-)
 
-This is on a 16 way system, so 16 * 100 count in cpu line above counts as 1s.
-
-I don't think all the reduction in CPU time (especially idle time!)
-can be attributed to this change. There is some run to run variation
-especially with the setup and teardown of the tests. But, there is a
-notable reduction in user, system and irq time. For what its worth,
-for this particular workload, throughput number reported by the run is
-4% up.
-
-Thanks,
-Venki
