@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab0IDVYl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 17:24:41 -0400
-Received: from ns1.siteground211.com ([209.62.36.12]:50783 "EHLO
-	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab0IDVYi (ORCPT
+	id S1753928Ab0IDVwf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 17:52:35 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:44167 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753689Ab0IDVwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 17:24:38 -0400
+	Sat, 4 Sep 2010 17:52:32 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: David Brownell <dbrownell@users.sourceforge.net>
+Subject: [PATCH] usbnet: allow rx_process() to ignore packets
+Date: Sat, 4 Sep 2010 23:52:22 +0200
+User-Agent: KMail/1.9.10
+Cc: netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Date: Sat, 04 Sep 2010 16:24:39 -0500
-From: Felipe Balbi <me@felipebalbi.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <felipe.balbi@nokia.com>, Anand Gadiyar <gadiyar@ti.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization
-In-Reply-To: <AANLkTikiFbw6xz5jbvgPR5-X5mZxDkOjLdFuc=vG10qK@mail.gmail.com>
-References: <1283443098-15262-1-git-send-email-tom.leiming@gmail.com> <ee6a42fe148f72518d475ff3838fc32a@secure211.sgcpanel.com> <AANLkTimts7SjE9EKrmsSkynWsQc_VtJUVVigrFs2VtrK@mail.gmail.com> <AANLkTikiFbw6xz5jbvgPR5-X5mZxDkOjLdFuc=vG10qK@mail.gmail.com>
-Message-ID: <1fb6fc37cd0f017043d5c124bca4bb1a@secure211.sgcpanel.com>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - serv01.siteground211.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - felipebalbi.com
+Content-Disposition: inline
+X-Length: 1582
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009042352.24197.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Allow rx_process() to ignore a packet without incrementing error counters if 
+rx_fixup() returns value other than 0 or 1 (e.g. 2).
 
-On Sat, 4 Sep 2010 23:36:39 +0800, Ming Lei <tom.leiming@gmail.com> wrote:
-> Considered bit PHYPWD of PHY_PWR_CTRL is zero at default,
-> say, OTG phy is not put into power down after system poweron,
-> so 2.6.36-rc3 will make musb device mode broken if bootloader
-> doesn't touch  PHYPWD of PHY_PWR_CTRL.
-> 
-> Could you ack the patch if no further objections or give other
-> suggestions?
+This allows to simplify rx_fixup() functions of drivers who do complex 
+processing there. Currently, drivers must process the last packet in a 
+special way - leave it for usbnet to process. This is not easily possible 
+when a driver (like the new cx82310_eth) needs to process packets that cross 
+URB (and thus skb) boundaries. With this patch, the driver can process all 
+packets in the skb and just return 2 at the end.
 
-I don't see why that patch should cause problems with device
-mode. Fact is that transceiver is only "asleep" when PHYPWD
-bit is true and without setting that flag correctly we were
-leaving phy's LDOs powered on for nothing when we were
-booting without a USB cable connected.
+Also fix asix driver that was returning 2 at one place before this change 
+(probably by mistake).
 
-If you don't explain exactly what is the problem you see
-(besides the WARN) it's to help any further, specially now
-that I'm 100% without HW to test against. I'm also in a
-big hurry packing a buch of stuff for moving to another
-appartment, so if there isn't enough information, I can't
-be of any help.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Still, I would NACK you patch because I don't think it's
-approaching the correct problem. If you only see that WARN,
-you could start by chaging the code so that:
+--- linux-2.6.36-rc3-orig/drivers/net/usb/usbnet.c	2010-08-29 17:36:04.000000000 +0200
++++ linux-2.6.36-rc3/drivers/net/usb/usbnet.c	2010-09-04 23:47:14.000000000 +0200
+@@ -385,18 +385,24 @@ static int rx_submit (struct usbnet *dev
+ 
+ static inline void rx_process (struct usbnet *dev, struct sk_buff *skb)
+ {
+-	if (dev->driver_info->rx_fixup &&
+-	    !dev->driver_info->rx_fixup (dev, skb))
+-		goto error;
+-	// else network stack removes extra byte if we forced a short packet
++	int fixup = 1;
+ 
+-	if (skb->len)
+-		usbnet_skb_return (dev, skb);
+-	else {
+-		netif_dbg(dev, rx_err, dev->net, "drop\n");
+-error:
++	if (dev->driver_info->rx_fixup)
++		fixup = dev->driver_info->rx_fixup(dev, skb);
++
++	switch (fixup) {
++	case 1:	/* skb is correct */
++		if (skb->len) {
++			usbnet_skb_return(dev, skb);
++			break;
++		} else
++			netif_dbg(dev, rx_err, dev->net, "drop\n");
++		/* fall through */
++	case 0: /* skb is incorrect */
+ 		dev->net->stats.rx_errors++;
+-		skb_queue_tail (&dev->done, skb);
++		/* fall through */
++	default: /* skb does not need processing */
++		skb_queue_tail(&dev->done, skb);
+ 	}
+ }
+ 
+--- linux-2.6.36-rc3-orig/drivers/net/usb/asix.c	2010-08-29 17:36:04.000000000 +0200
++++ linux-2.6.36-rc3/drivers/net/usb/asix.c	2010-09-04 23:48:42.000000000 +0200
+@@ -341,7 +341,7 @@ static int asix_rx_fixup(struct usbnet *
+ 				skb->data -= realignment;
+ 				skb_set_tail_pointer(skb, size);
+ 			}
+-			return 2;
++			return 1;
+ 		}
+ 
+ 		if (size > dev->net->mtu + ETH_HLEN) {
 
-if (!regulator_is_enabled(twl->usb3v1)
-    regulator_enable(twl->usb3v1);
-
-and similarly for the regulator_disable() call, then check
-whether there are any other problems. If there are, we will
-take it from there.
-
-All in all, I doubt that patch would cause break anything
-since it's just checking the initial state from the
-transceiver itself to set a flag in the driver structure,
-that's all.
 
 -- 
-balbi
+Ondrej Zary
