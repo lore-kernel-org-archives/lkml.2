@@ -1,192 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab0IEPOp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 11:14:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59727 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428Ab0IEPOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 11:14:43 -0400
-Date: Sun, 5 Sep 2010 18:08:38 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>, Tejun Heo <tj@kernel.org>,
-        kvm@vger.kernel.org, virtualization@lists.osdl.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] vhost: fix attach to cgroups regression
-Message-ID: <20100905150837.GA22170@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752842Ab0IEPQs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 11:16:48 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:43271 "HELO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752430Ab0IEPQq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 11:16:46 -0400
+Subject: [RFC PATCH] hid-magicmouse: Map inputs rather than munging input
+ devices
+From: Michael Poole <mdpoole@troilus.org>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Chase Douglas <chase.douglas@canonical.com>, Jiri Kosina <jkosina@suse.cz>,
+        Henrik Rydberg <rydberg@euromail.se>, Tejun Heo <tj@kernel.org>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4C80DB38.9040101@gmail.com>
+References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>
+	 <1283306184-28833-2-git-send-email-chase.douglas@canonical.com>
+	 <4C7E94F6.9050806@gmail.com>
+	 <AANLkTi=z5s8mbjG54930Lxj-O9Of2fXHE6kDJhijyOb7@mail.gmail.com>
+	 <4C7F6E26.2030301@gmail.com>
+	 <AANLkTikb=eNzek-vQ=d3jZxitsbtJ5gD6BNDipAUpUcJ@mail.gmail.com>
+	 <4C80DB38.9040101@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 05 Sep 2010 11:16:41 -0400
+Message-ID: <1283699801.26830.4.camel@graviton>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 2.6.36-rc1, non-root users of vhost-net fail to attach
-if they are in any cgroups. This is a regression, and libvirt
-actually uses this functionality, as it runs qemu with reduced
-priveledges.
+Let the HID core handle input device setup and HID-compliant reports.
+This driver then only has to worry about the non-standard reports.
 
-The bug is that when qemu uses vhost, vhost wants to attach
-its thread to all cgroups that qemu has.  But we got the API backwards,
-so a non-priveledged process (qemu) tried to control
-the priveledged one (vhost), which fails.
-
-Fix this using the new cgroup_attach_task_all,
-and running it from the vhost thread.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Michael Poole <mdpoole@troilus.org>
 ---
+Jiri (Slaby), is this the kind of change you had in mind for getting rid
+of the input device setup for hid-magicmouse?
 
-Dave, no need to bother with this one unless you really want to -
-I'll put it on my tree.
+(This applies on top of commit a462230e16 from the magicmouse branch at
+git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git.)
 
- drivers/vhost/vhost.c |   79 +++++++++++++++++++++++++++++++++++-------------
- 1 files changed, 57 insertions(+), 22 deletions(-)
+ drivers/hid/hid-magicmouse.c |   87
++++++++++++------------------------------
+ 1 files changed, 24 insertions(+), 63 deletions(-)
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 4b99117..7c75dce 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -60,22 +60,25 @@ static int vhost_poll_wakeup(wait_queue_t *wait, unsigned mode, int sync,
- 	return 0;
+diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+index 8791a08..3778f9b 100644
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -278,14 +278,12 @@ static int magicmouse_raw_event(struct hid_device
+*hdev,
+ 	struct input_dev *input = msc->input;
+ 	int x = 0, y = 0, ii, clicks = 0, npoints;
+ 
++	/* Slightly paranoid, but "input" only gets set when our
++	 * input_mapping sees the right field. */
++	if (!input)
++		return 0;
++
+ 	switch (data[0]) {
+-	case 0x10:
+-		if (size != 6)
+-			return 0;
+-		x = (__s16)(data[2] | data[3] << 8);
+-		y = (__s16)(data[4] | data[5] << 8);
+-		clicks = data[1];
+-		break;
+ 	case TRACKPAD_REPORT_ID:
+ 		/* Expect four bytes of prefix, and N*9 bytes of touch data. */
+ 		if (size < 4 || ((size - 4) % 9) != 0)
+@@ -343,13 +341,6 @@ static int magicmouse_raw_event(struct hid_device
+*hdev,
+ 		magicmouse_raw_event(hdev, report, data + 2 + data[1],
+ 			size - 2 - data[1]);
+ 		break;
+-	case 0x20: /* Theoretically battery status (0-100), but I have
+-		    * never seen it -- maybe it is only upon request.
+-		    */
+-	case 0x60: /* Unknown, maybe laser on/off. */
+-	case 0x61: /* Laser reflection status change.
+-		    * data[1]: 0 = spotted, 1 = lost
+-		    */
+ 	default:
+ 		return 0;
+ 	}
+@@ -377,36 +368,8 @@ static int magicmouse_raw_event(struct hid_device
+*hdev,
+ 	return 1;
  }
  
-+static void vhost_work_init(struct vhost_work *work, vhost_work_fn_t fn)
-+{
-+	INIT_LIST_HEAD(&work->node);
-+	work->fn = fn;
-+	init_waitqueue_head(&work->done);
-+	work->flushing = 0;
-+	work->queue_seq = work->done_seq = 0;
-+}
-+
- /* Init poll structure */
- void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
- 		     unsigned long mask, struct vhost_dev *dev)
- {
--	struct vhost_work *work = &poll->work;
+-static int magicmouse_input_open(struct input_dev *dev)
+-{
+-	struct hid_device *hid = input_get_drvdata(dev);
 -
- 	init_waitqueue_func_entry(&poll->wait, vhost_poll_wakeup);
- 	init_poll_funcptr(&poll->table, vhost_poll_func);
- 	poll->mask = mask;
- 	poll->dev = dev;
- 
--	INIT_LIST_HEAD(&work->node);
--	work->fn = fn;
--	init_waitqueue_head(&work->done);
--	work->flushing = 0;
--	work->queue_seq = work->done_seq = 0;
-+	vhost_work_init(&poll->work, fn);
- }
- 
- /* Start polling a file. We add ourselves to file's wait queue. The caller must
-@@ -95,35 +98,38 @@ void vhost_poll_stop(struct vhost_poll *poll)
- 	remove_wait_queue(poll->wqh, &poll->wait);
- }
- 
--/* Flush any work that has been scheduled. When calling this, don't hold any
-- * locks that are also used by the callback. */
--void vhost_poll_flush(struct vhost_poll *poll)
-+void vhost_work_flush(struct vhost_dev *dev, struct vhost_work *work)
+-	return hid->ll_driver->open(hid);
+-}
+-
+-static void magicmouse_input_close(struct input_dev *dev)
+-{
+-	struct hid_device *hid = input_get_drvdata(dev);
+-
+-	hid->ll_driver->close(hid);
+-}
+-
+ static void magicmouse_setup_input(struct input_dev *input, struct
+hid_device *hdev)
  {
--	struct vhost_work *work = &poll->work;
- 	unsigned seq;
- 	int left;
- 	int flushing;
+-	input_set_drvdata(input, hdev);
+-	input->event = hdev->ll_driver->hidinput_input_event;
+-	input->open = magicmouse_input_open;
+-	input->close = magicmouse_input_close;
+-
+-	input->name = hdev->name;
+-	input->phys = hdev->phys;
+-	input->uniq = hdev->uniq;
+-	input->id.bustype = hdev->bus;
+-	input->id.vendor = hdev->vendor;
+-	input->id.product = hdev->product;
+-	input->id.version = hdev->version;
+-	input->dev.parent = hdev->dev.parent;
+-
+ 	__set_bit(EV_KEY, input->evbit);
  
--	spin_lock_irq(&poll->dev->work_lock);
-+	spin_lock_irq(&dev->work_lock);
- 	seq = work->queue_seq;
- 	work->flushing++;
--	spin_unlock_irq(&poll->dev->work_lock);
-+	spin_unlock_irq(&dev->work_lock);
- 	wait_event(work->done, ({
--		   spin_lock_irq(&poll->dev->work_lock);
-+		   spin_lock_irq(&dev->work_lock);
- 		   left = seq - work->done_seq <= 0;
--		   spin_unlock_irq(&poll->dev->work_lock);
-+		   spin_unlock_irq(&dev->work_lock);
- 		   left;
- 	}));
--	spin_lock_irq(&poll->dev->work_lock);
-+	spin_lock_irq(&dev->work_lock);
- 	flushing = --work->flushing;
--	spin_unlock_irq(&poll->dev->work_lock);
-+	spin_unlock_irq(&dev->work_lock);
- 	BUG_ON(flushing < 0);
+ 	if (input->id.product == USB_DEVICE_ID_APPLE_MAGICMOUSE) {
+@@ -466,11 +429,22 @@ static void magicmouse_setup_input(struct
+input_dev *input, struct hid_device *h
+ 	}
  }
  
--void vhost_poll_queue(struct vhost_poll *poll)
-+/* Flush any work that has been scheduled. When calling this, don't hold any
-+ * locks that are also used by the callback. */
-+void vhost_poll_flush(struct vhost_poll *poll)
++static int magicmouse_input_mapping(struct hid_device *hdev,
++		struct hid_input *hi, struct hid_field *field,
++		struct hid_usage *usage, unsigned long **bit, int *max)
 +{
-+	vhost_work_flush(poll->dev, &poll->work);
++	struct magicmouse_sc *msc = hid_get_drvdata(hdev);
++
++	if (!msc->input)
++		msc->input = hi->input;
++
++	return 0;
 +}
 +
-+static inline void vhost_work_queue(struct vhost_dev *dev,
-+				    struct vhost_work *work)
+ static int magicmouse_probe(struct hid_device *hdev,
+ 	const struct hid_device_id *id)
  {
--	struct vhost_dev *dev = poll->dev;
--	struct vhost_work *work = &poll->work;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&dev->work_lock, flags);
-@@ -135,6 +141,11 @@ void vhost_poll_queue(struct vhost_poll *poll)
- 	spin_unlock_irqrestore(&dev->work_lock, flags);
- }
- 
-+void vhost_poll_queue(struct vhost_poll *poll)
-+{
-+	vhost_work_queue(poll->dev, &poll->work);
-+}
-+
- static void vhost_vq_reset(struct vhost_dev *dev,
- 			   struct vhost_virtqueue *vq)
- {
-@@ -236,6 +247,29 @@ long vhost_dev_check_owner(struct vhost_dev *dev)
- 	return dev->mm == current->mm ? 0 : -EPERM;
- }
- 
-+struct vhost_attach_cgroups_struct {
-+        struct vhost_work work;
-+        struct task_struct *owner;
-+        int ret;
-+};
-+
-+static void vhost_attach_cgroups_work(struct vhost_work *work)
-+{
-+        struct vhost_attach_cgroups_struct *s;
-+        s = container_of(work, struct vhost_attach_cgroups_struct, work);
-+        s->ret = cgroup_attach_task_all(s->owner, current);
-+}
-+
-+static int vhost_attach_cgroups(struct vhost_dev *dev)
-+{
-+        struct vhost_attach_cgroups_struct attach;
-+        attach.owner = current;
-+        vhost_work_init(&attach.work, vhost_attach_cgroups_work);
-+        vhost_work_queue(dev, &attach.work);
-+        vhost_work_flush(dev, &attach.work);
-+        return attach.ret;
-+}
-+
- /* Caller should have device mutex */
- static long vhost_dev_set_owner(struct vhost_dev *dev)
- {
-@@ -255,10 +289,11 @@ static long vhost_dev_set_owner(struct vhost_dev *dev)
+ 	__u8 feature[] = { 0xd7, 0x01 };
+-	struct input_dev *input;
+ 	struct magicmouse_sc *msc;
+ 	struct hid_report *report;
+ 	int ret;
+@@ -500,8 +474,12 @@ static int magicmouse_probe(struct hid_device
+*hdev,
+ 		goto err_free;
  	}
  
- 	dev->worker = worker;
--	err = cgroup_attach_task_current_cg(worker);
-+	wake_up_process(worker);	/* avoid contributing to loadavg */
-+
-+	err = vhost_attach_cgroups(dev);
- 	if (err)
- 		goto err_cgroup;
--	wake_up_process(worker);	/* avoid contributing to loadavg */
+-	/* we are handling the input ourselves */
+-	hidinput_disconnect(hdev);
++	/* We do this after HID maps its inputs so that the
++	 * Magic Mouse's HID-compliant report gets the right
++	 * button and axis IDs.
++	 */
++	if (msc->input)
++		magicmouse_setup_input(msc->input, hdev);
  
+ 	if (id->product == USB_DEVICE_ID_APPLE_MAGICMOUSE)
+ 		report = hid_register_report(hdev, HID_INPUT_REPORT,
+@@ -528,24 +506,7 @@ static int magicmouse_probe(struct hid_device
+*hdev,
+ 		goto err_stop_hw;
+ 	}
+ 
+-	input = input_allocate_device();
+-	if (!input) {
+-		dev_err(&hdev->dev, "can't alloc input device\n");
+-		ret = -ENOMEM;
+-		goto err_stop_hw;
+-	}
+-	magicmouse_setup_input(input, hdev);
+-
+-	ret = input_register_device(input);
+-	if (ret) {
+-		dev_err(&hdev->dev, "input device registration failed\n");
+-		goto err_input;
+-	}
+-	msc->input = input;
+-
  	return 0;
- err_cgroup:
+-err_input:
+-	input_free_device(input);
+ err_stop_hw:
+ 	hid_hw_stop(hdev);
+ err_free:
+@@ -558,7 +519,6 @@ static void magicmouse_remove(struct hid_device
+*hdev)
+ 	struct magicmouse_sc *msc = hid_get_drvdata(hdev);
+ 
+ 	hid_hw_stop(hdev);
+-	input_unregister_device(msc->input);
+ 	kfree(msc);
+ }
+ 
+@@ -577,6 +537,7 @@ static struct hid_driver magicmouse_driver = {
+ 	.probe = magicmouse_probe,
+ 	.remove = magicmouse_remove,
+ 	.raw_event = magicmouse_raw_event,
++	.input_mapping = magicmouse_input_mapping,
+ };
+ 
+ static int __init magicmouse_init(void)
 -- 
-1.7.2.rc0.14.g41c1c
+1.7.2.2
+
+
+
