@@ -1,110 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab0IETXo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 15:23:44 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61727 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211Ab0IETXn (ORCPT
+	id S1754794Ab0IETYJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 15:24:09 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53994 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754646Ab0IETX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 15:23:43 -0400
+	Sun, 5 Sep 2010 15:23:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=BwFoy9nFt4M4RgiarxA1Zz3Ov8H6G4Vj1SMSoocNuxhlJX2hZB56dP3+7IBOVRAr4z
-         w/SDMjo1FJZDjCt8U15lhM7ChcK3i6XHsw2MlUryAHVJKM++/8Y9ZlUNqCb8o2sI+/z2
-         zfmNUCTur3dqScmpwMDF+fosJrrlrNnDTuFjQ=
-Date: Sun, 5 Sep 2010 23:23:35 +0400
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: kernel-janitors@vger.kernel.org, Neil Brown <neilb@suse.de>,
-        Jens Axboe <jaxboe@fusionio.com>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] md: do not use ++ in rcu_dereference() argument
-Message-ID: <20100905192335.GA8140@albatros>
-References: <1283711539-7123-1-git-send-email-segooon@gmail.com>
- <20100905190139.GA3163@merkur.ravnborg.org>
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lQfOPi9rxZ4azMg2xPY2tLUWPxtXQ+RbBnmy9HzhCG/20FInJulwp0fvePjGEcktBd
+         +NQzhMNIzkpkY6WzdUrBKtrHcr0zlW5aoxLQfaXboCWrYEt2b0cFD1wf1Jn0IHxYIhpZ
+         Zm++/SaBY03uHcjii3qufCtzsUZDftUdBf+eY=
+Date: Sun, 5 Sep 2010 12:23:53 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Luotao Fu <l.fu@pengutronix.de>, linux-input@vger.kernel.org
+Subject: Re: [PATCH 2/2 v2] Input: stmpe-ts - return -ENOMEM if memory
+ allocation fail
+Message-ID: <20100905192353.GA18411@core.coreip.homeip.net>
+References: <1283656244.8339.3.camel@phoenix>
+ <20100905052101.GA5797@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100905190139.GA3163@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100905052101.GA5797@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 05, 2010 at 21:01 +0200, Sam Ravnborg wrote:
-> On Sun, Sep 05, 2010 at 10:32:18PM +0400, Kulikov Vasiliy wrote:
-> > From: Vasiliy Kulikov <segooon@gmail.com>
-> > 
-> > rcu_dereference() is macro, so it might use its argument twice.
-> > Argument must not has side effects.
-> > 
-> > It was found by compiler warning:
-> > drivers/md/raid1.c: In function ‘read_balance’:
-> > drivers/md/raid1.c:445: warning: operation on ‘new_disk’ may be undefined
+On Sun, Sep 05, 2010 at 07:21:01AM +0200, Wolfram Sang wrote:
+> On Sun, Sep 05, 2010 at 11:10:44AM +0800, Axel Lin wrote:
+> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
 > 
-> This change looks wrong.
-> In the original implementation new_disk is incremented and
-> then we do the array lookup.
-> With your implementation it looks like we increment it after
-> the array lookup.
+> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+> 
 
-No, the original code increments new_disk and then dereferences mirrors.
+Applied, thank you.
 
-The full code:
-
-		for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
-		     r1_bio->bios[new_disk] == IO_BLOCKED ||
-		     !rdev || !test_bit(In_sync, &rdev->flags)
-			     || test_bit(WriteMostly, &rdev->flags);
-		     rdev = rcu_dereference(conf->mirrors[++new_disk].rdev)) {
-
-			if (rdev && test_bit(In_sync, &rdev->flags) &&
-				r1_bio->bios[new_disk] != IO_BLOCKED)
-				wonly_disk = new_disk;
-
-			if (new_disk == conf->raid_disks - 1) {
-				new_disk = wonly_disk;
-				break;
-			}
-		}
-
-    so,
-
-    for (a; b; c = f(++g)) {
-       ...
-    } 
-
-    ==
-
-    a;
-    while (b) {
-       ...
-       l_continue:
-       c = f(++g);
-    }
-
-    ==
-
-    a;
-    while (b) {
-       ...
-       l_continue:
-       g++;
-       c = f(g);
-    }
-
-    ==
-
-    for (a; b; c = f(g)) {
-       ...
-       g++;
-    } 
-
-Or you mean smth more?
 
 -- 
-Vasiliy
+Dmitry
