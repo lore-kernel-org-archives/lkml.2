@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab0IESv5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 14:51:57 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34373 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab0IESv4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 14:51:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=coLI3TWz2l+3Dijom8hOxFOdzHGD0XbMHVZuDTAxTEPFZT9ccrevXZ3eHSWE8Cdvfs
-         Q4nHJjY+RO7U96M8PJNQAI3oAndBoP3czg+LJMbsuJWasQ2uJzJNKhXCTkIew+Aipmxg
-         yUXDFs6g+lVzasb1asHtLiPxQJGf6i+ojR19Q=
-Message-ID: <4C83E6C8.7030608@gmail.com>
-Date: Mon, 06 Sep 2010 02:51:52 +0800
-From: =?UTF-8?B?Ik1yLiBUZW8gRW4gTWluZyAoWmhhbmcgRW5taW5nKSDlvKDmganpuKMgbw==?=
-	 =?UTF-8?B?ZiBTaW5nYXBvcmUi?= <space.time.universe@gmail.com>
-Reply-To: space.time.universe@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: "space.time.universe@gmail.com" <space.time.universe@gmail.com>,
-        "teoenming@hotmail.com" <teoenming@hotmail.com>,
-        zhang_enming@lavabit.com
-Subject: What are the Xen paravirt-operations Domain 0 Features That Have
- Been Merged into the Mainline Linux Kernel 2.6.36?
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1754840Ab0IES7k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 14:59:40 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35486 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754754Ab0IES7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 14:59:38 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 6/8] drivers/staging/comedi/drivers: Fix unsigned return type
+Date: Sun,  5 Sep 2010 21:00:24 +0200
+Message-Id: <1283713226-8429-7-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283713226-8429-1-git-send-email-julia@diku.dk>
+References: <1283713226-8429-1-git-send-email-julia@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+In each case, the function has an unsigned return type, but returns a
+negative constant to indicate an error condition.  For move_block_from_dma,
+there is only one call and the return value is dropped, so it need not be
+unsigned.  For labpc_eeprom_write, there is only one call and the result is
+stored in a signed variable, so again the unsigned return type is not
+necessary.
 
-May I know what are the Xen pv-ops dom0 features that have been merged 
-into the mainline Linux kernel 2.6.36?
+A sematic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-Yours sincerely,
+// <smpl>
+@exists@
+identifier f;
+constant C;
+@@
 
-Mr. Teo En Ming (Zhang Enming)
-Citizenship: Singapore Citizen/Singaporean
-Facebook account: Teo En Ming (Zhang Enming)
-Facebook link:http://www.facebook.com/profile.php?id=100000750083982
-Facebook photos:
+ unsigned f(...)
+ { <+...
+*  return -C;
+ ...+> }
+// </smpl>
 
-http://www.facebook.com/profile.php?id=100000750083982#!/profile.php?id=100000750083982&v=photos 
-<http://www.facebook.com/profile.php?id=100000750083982#%21/profile.php?id=100000750083982&v=photos> 
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
+---
+ drivers/staging/comedi/drivers/adl_pci9118.c |    2 +-
+ drivers/staging/comedi/drivers/ni_labpc.c    |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-Facebook videos:
-http://www.facebook.com/profile.php?id=100000750083982&v=app_2392950137  <http://www.facebook.com/profile.php?id=100000750083982&v=app_2392950137>
-Mobile Phone (Starhub pre-paid): +65-8369-2618
-Windows Live Messenger: teoenming at hotmail.com
-Location: Bedok Reservoir Road, Singapore
-ZIP: 470103
-My Open Letter (Plea for Medical Help/Assistance) to World Leaders:-
-http://lists.mcs.anl.gov/pipermail/mpich-discuss/2010-August/007811.html
-http://mythtv.org/pipermail/mythtv-users/2010-August/295952.html
-http://archives.gentoo.org/gentoo-user/msg_f6a341d9623fda17880159b137c07335.xml
-Photo of Mr. Teo En Ming (Zhang Enming) 张恩鸣 of Singapore:http://i38.tinypic.com/2a6pp4z.jpg
-
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+index a2bd4e6..cb2843d 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -634,7 +634,7 @@ static unsigned int defragment_dma_buffer(struct comedi_device *dev,
+ /*
+ ==============================================================================
+ */
+-static unsigned int move_block_from_dma(struct comedi_device *dev,
++static int move_block_from_dma(struct comedi_device *dev,
+ 					struct comedi_subdevice *s,
+ 					short *dma_buffer,
+ 					unsigned int num_samples)
+diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
+index 3acf7e6..19f79e8 100644
+--- a/drivers/staging/comedi/drivers/ni_labpc.c
++++ b/drivers/staging/comedi/drivers/ni_labpc.c
+@@ -250,7 +250,7 @@ static unsigned int labpc_serial_in(struct comedi_device *dev);
+ static unsigned int labpc_eeprom_read(struct comedi_device *dev,
+ 				      unsigned int address);
+ static unsigned int labpc_eeprom_read_status(struct comedi_device *dev);
+-static unsigned int labpc_eeprom_write(struct comedi_device *dev,
++static int labpc_eeprom_write(struct comedi_device *dev,
+ 				       unsigned int address,
+ 				       unsigned int value);
+ static void write_caldac(struct comedi_device *dev, unsigned int channel,
+@@ -1986,8 +1986,8 @@ static unsigned int labpc_eeprom_read(struct comedi_device *dev,
+ 	return value;
+ }
+ 
+-static unsigned int labpc_eeprom_write(struct comedi_device *dev,
+-				       unsigned int address, unsigned int value)
++static int labpc_eeprom_write(struct comedi_device *dev,
++				unsigned int address, unsigned int value)
+ {
+ 	const int write_enable_instruction = 0x6;
+ 	const int write_instruction = 0x2;
 
