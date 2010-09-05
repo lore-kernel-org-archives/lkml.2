@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab0IENEV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 09:04:21 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53060 "EHLO hera.kernel.org"
+	id S1754116Ab0IENEm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 09:04:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53066 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752881Ab0IENEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 09:04:20 -0400
-Date: Sun, 5 Sep 2010 13:03:53 GMT
+	id S1753467Ab0IENEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 09:04:34 -0400
+Date: Sun, 5 Sep 2010 13:04:15 GMT
 From: tip-bot for Francisco Jerez <currojerez@riseup.net>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         akpm@linux-foundation.org, currojerez@riseup.net, tglx@linutronix.de,
@@ -14,86 +14,122 @@ Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org, currojerez@riseup.net, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <1283633804-11749-1-git-send-email-currojerez@riseup.net>
-References: <1283633804-11749-1-git-send-email-currojerez@riseup.net>
+In-Reply-To: <1283633804-11749-2-git-send-email-currojerez@riseup.net>
+References: <1283633804-11749-2-git-send-email-currojerez@riseup.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Fix the address space annotations of iomap_atomic_prot_pfn()
-Message-ID: <tip-cc1a8e523333bc3d990102140f4d12908fa83caf@git.kernel.org>
-Git-Commit-ID: cc1a8e523333bc3d990102140f4d12908fa83caf
+Subject: [tip:x86/urgent] io-mapping: Fix the address space annotations
+Message-ID: <tip-29bc17ecb856ffb2b47c7009a71971c6f9334205@git.kernel.org>
+Git-Commit-ID: 29bc17ecb856ffb2b47c7009a71971c6f9334205
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 05 Sep 2010 13:03:54 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 05 Sep 2010 13:04:15 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cc1a8e523333bc3d990102140f4d12908fa83caf
-Gitweb:     http://git.kernel.org/tip/cc1a8e523333bc3d990102140f4d12908fa83caf
+Commit-ID:  29bc17ecb856ffb2b47c7009a71971c6f9334205
+Gitweb:     http://git.kernel.org/tip/29bc17ecb856ffb2b47c7009a71971c6f9334205
 Author:     Francisco Jerez <currojerez@riseup.net>
-AuthorDate: Sat, 4 Sep 2010 22:56:43 +0200
+AuthorDate: Sat, 4 Sep 2010 22:56:44 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 5 Sep 2010 14:26:14 +0200
+CommitDate: Sun, 5 Sep 2010 14:26:15 +0200
 
-x86: Fix the address space annotations of iomap_atomic_prot_pfn()
+io-mapping: Fix the address space annotations
 
-This patch fixes the sparse warnings when the return pointer of
-iomap_atomic_prot_pfn() is used as an argument of iowrite32()
-and friends.
+Fixes a bunch of sparse warnings in io-mapping.h because of the
+inconsistent __iomem usage.
 
 Signed-off-by: Francisco Jerez <currojerez@riseup.net>
-LKML-Reference: <1283633804-11749-1-git-send-email-currojerez@riseup.net>
+LKML-Reference: <1283633804-11749-2-git-send-email-currojerez@riseup.net>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/iomap.h |    4 ++--
- arch/x86/mm/iomap_32.c       |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ include/linux/io-mapping.h |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/include/asm/iomap.h b/arch/x86/include/asm/iomap.h
-index f35eb45..c4191b3 100644
---- a/arch/x86/include/asm/iomap.h
-+++ b/arch/x86/include/asm/iomap.h
-@@ -26,11 +26,11 @@
- #include <asm/pgtable.h>
- #include <asm/tlbflush.h>
- 
--void *
-+void __iomem *
- iomap_atomic_prot_pfn(unsigned long pfn, enum km_type type, pgprot_t prot);
- 
- void
--iounmap_atomic(void *kvaddr, enum km_type type);
-+iounmap_atomic(void __iomem *kvaddr, enum km_type type);
- 
- int
- iomap_create_wc(resource_size_t base, unsigned long size, pgprot_t *prot);
-diff --git a/arch/x86/mm/iomap_32.c b/arch/x86/mm/iomap_32.c
-index 84e236c..72fc70c 100644
---- a/arch/x86/mm/iomap_32.c
-+++ b/arch/x86/mm/iomap_32.c
-@@ -74,7 +74,7 @@ void *kmap_atomic_prot_pfn(unsigned long pfn, enum km_type type, pgprot_t prot)
- /*
-  * Map 'pfn' using fixed map 'type' and protections 'prot'
-  */
--void *
-+void __iomem *
- iomap_atomic_prot_pfn(unsigned long pfn, enum km_type type, pgprot_t prot)
- {
- 	/*
-@@ -86,12 +86,12 @@ iomap_atomic_prot_pfn(unsigned long pfn, enum km_type type, pgprot_t prot)
- 	if (!pat_enabled && pgprot_val(prot) == pgprot_val(PAGE_KERNEL_WC))
- 		prot = PAGE_KERNEL_UC_MINUS;
- 
--	return kmap_atomic_prot_pfn(pfn, type, prot);
-+	return (void __force __iomem *) kmap_atomic_prot_pfn(pfn, type, prot);
+diff --git a/include/linux/io-mapping.h b/include/linux/io-mapping.h
+index 0a6b3d5..7fb5927 100644
+--- a/include/linux/io-mapping.h
++++ b/include/linux/io-mapping.h
+@@ -79,7 +79,7 @@ io_mapping_free(struct io_mapping *mapping)
  }
- EXPORT_SYMBOL_GPL(iomap_atomic_prot_pfn);
  
- void
--iounmap_atomic(void *kvaddr, enum km_type type)
-+iounmap_atomic(void __iomem *kvaddr, enum km_type type)
+ /* Atomic map/unmap */
+-static inline void *
++static inline void __iomem *
+ io_mapping_map_atomic_wc(struct io_mapping *mapping,
+ 			 unsigned long offset,
+ 			 int slot)
+@@ -94,12 +94,12 @@ io_mapping_map_atomic_wc(struct io_mapping *mapping,
+ }
+ 
+ static inline void
+-io_mapping_unmap_atomic(void *vaddr, int slot)
++io_mapping_unmap_atomic(void __iomem *vaddr, int slot)
  {
- 	unsigned long vaddr = (unsigned long) kvaddr & PAGE_MASK;
- 	enum fixed_addresses idx = type + KM_TYPE_NR*smp_processor_id();
+ 	iounmap_atomic(vaddr, slot);
+ }
+ 
+-static inline void *
++static inline void __iomem *
+ io_mapping_map_wc(struct io_mapping *mapping, unsigned long offset)
+ {
+ 	resource_size_t phys_addr;
+@@ -111,7 +111,7 @@ io_mapping_map_wc(struct io_mapping *mapping, unsigned long offset)
+ }
+ 
+ static inline void
+-io_mapping_unmap(void *vaddr)
++io_mapping_unmap(void __iomem *vaddr)
+ {
+ 	iounmap(vaddr);
+ }
+@@ -125,38 +125,38 @@ struct io_mapping;
+ static inline struct io_mapping *
+ io_mapping_create_wc(resource_size_t base, unsigned long size)
+ {
+-	return (struct io_mapping *) ioremap_wc(base, size);
++	return (struct io_mapping __force *) ioremap_wc(base, size);
+ }
+ 
+ static inline void
+ io_mapping_free(struct io_mapping *mapping)
+ {
+-	iounmap(mapping);
++	iounmap((void __force __iomem *) mapping);
+ }
+ 
+ /* Atomic map/unmap */
+-static inline void *
++static inline void __iomem *
+ io_mapping_map_atomic_wc(struct io_mapping *mapping,
+ 			 unsigned long offset,
+ 			 int slot)
+ {
+-	return ((char *) mapping) + offset;
++	return ((char __force __iomem *) mapping) + offset;
+ }
+ 
+ static inline void
+-io_mapping_unmap_atomic(void *vaddr, int slot)
++io_mapping_unmap_atomic(void __iomem *vaddr, int slot)
+ {
+ }
+ 
+ /* Non-atomic map/unmap */
+-static inline void *
++static inline void __iomem *
+ io_mapping_map_wc(struct io_mapping *mapping, unsigned long offset)
+ {
+-	return ((char *) mapping) + offset;
++	return ((char __force __iomem *) mapping) + offset;
+ }
+ 
+ static inline void
+-io_mapping_unmap(void *vaddr)
++io_mapping_unmap(void __iomem *vaddr)
+ {
+ }
+ 
