@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057Ab0IEHTA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 03:19:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27501 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752669Ab0IEHS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 03:18:59 -0400
-Message-ID: <4C83445B.4020103@redhat.com>
-Date: Sun, 05 Sep 2010 10:18:51 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	id S1752796Ab0IEHUj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 03:20:39 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43180 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab0IEHUh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 03:20:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=riIGUGqg+Z/HIAsJKHSCrJJLbGVOn6JBsjjdvqxDy7j9mp1T9Z/ptmMpYDsuRe7KUq
+         gGF6jLJcTIuK8+dDF1q8bhq42ZZjinWWHOr6VxgjFi1gVxVkXJ2lhXgX9J/G0B9GaZ5x
+         c4yrziWz0dYU5Hk9PT01DDrUy3Qy/wmdEEgFA=
+Date: Sun, 5 Sep 2010 09:20:41 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Christian Riesch <christian.riesch@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH 0/2] [RFC] posix clock tuning
+Message-ID: <20100905072041.GA2928@riccoc20.at.omicron.at>
+References: <cover.1283504065.git.richard.cochran@omicron.at>
+ <alpine.DEB.2.00.1009041221240.888@router.home>
+ <4C828652.4060804@gmail.com>
+ <alpine.DEB.2.00.1009042042130.9425@router.home>
+ <20100905062240.GB2699@riccoc20.at.omicron.at>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: don't sent IPI if the vcpu is not online
-References: <4C807593.1050903@cn.fujitsu.com>
-In-Reply-To: <4C807593.1050903@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100905062240.GB2699@riccoc20.at.omicron.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/03/2010 07:12 AM, Xiao Guangrong wrote:
-> It's no need sent IPI to the vcpu which is schedule out
->
->
-> @@ -86,6 +86,7 @@ struct kvm_vcpu {
->   	unsigned long requests;
->   	unsigned long guest_debug;
->   	int srcu_idx;
-> +	bool online;
+On Sun, Sep 05, 2010 at 08:22:40AM +0200, Richard Cochran wrote:
+> At this point, I think it is clear that, in order to support IEEE
+> 1588, some kind of changes are needed. I have argued and discussed the
 
-Why not check for guest_mode instead?
+Just to be absolutely clear, I should have said, "hardare clocks for
+IEEE 1588." The aim of the patch set is to support a new kind of
+hardware.
 
->
->   	int fpu_active;
->   	int guest_fpu_loaded, guest_xcr0_loaded;
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index 9a73b98..998cbc8 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -148,8 +148,9 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
->   	raw_spin_lock(&kvm->requests_lock);
->   	me = smp_processor_id();
->   	kvm_for_each_vcpu(i, vcpu, kvm) {
-> -		if (kvm_make_check_request(req, vcpu))
-> +		if (kvm_make_check_request(req, vcpu) || !vcpu->online)
->   			continue;
-> +
->   		cpu = vcpu->cpu;
->   		if (cpus != NULL&&  cpu != -1&&  cpu != me)
->   			cpumask_set_cpu(cpu, cpus);
+> Having said that, if you are convinced that the existing interfaces
+> are good enough to support PTP (and possible future methods, as
 
-btw, I think a more important optimization would be to drop 
-kvm->requests_lock.  But I have no idea how to do it.
+Again, I meant "PTP hardware clocks."
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+When I get some more time, I'll try to put together an executive
+summary of PTP and of all the discussions that have taken place over
+the last few months on linux-netdev and the lkml.
+
+Richard
 
