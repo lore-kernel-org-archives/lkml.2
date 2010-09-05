@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab0IEBxT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 21:53:19 -0400
-Received: from mail.perches.com ([173.55.12.10]:1401 "EHLO mail.perches.com"
+	id S1754764Ab0IEBxO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 21:53:14 -0400
+Received: from mail.perches.com ([173.55.12.10]:1378 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786Ab0IEBxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 21:53:15 -0400
+	id S1754606Ab0IEBxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 21:53:10 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 13/13] sound: Remove unnecessary casts of private_data
-Date: Sat,  4 Sep 2010 18:52:54 -0700
-Message-Id: <be899c96449d2f49bc564e0b6fc8500d5a45d527.1283650107.git.joe@perches.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 10/13] kernel/trace: Remove unnecessary casts of private_data
+Date: Sat,  4 Sep 2010 18:52:51 -0700
+Message-Id: <3c301ab7b883206341b34562c6101a8b310b7aa2.1283650107.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.2.19.g9a302
 In-Reply-To: <cover.1283650107.git.joe@perches.com>
 References: <cover.1283650107.git.joe@perches.com>
@@ -22,447 +23,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- sound/core/oss/mixer_oss.c     |   22 +++++++++++-----------
- sound/core/pcm.c               |    3 +--
- sound/drivers/virmidi.c        |    2 +-
- sound/i2c/other/ak4xxx-adda.c  |    2 +-
- sound/isa/ad1816a/ad1816a.c    |    2 +-
- sound/isa/azt2320.c            |    2 +-
- sound/isa/gus/gusmax.c         |    4 ++--
- sound/isa/sb/sb8.c             |    2 +-
- sound/oss/au1550_ac97.c        |   18 +++++++++---------
- sound/pci/emu10k1/emumpu401.c  |    2 +-
- sound/pci/ice1712/pontis.c     |    6 +++---
- sound/pci/ice1712/prodigy192.c |    2 +-
- sound/pci/rme96.c              |    8 ++++----
- sound/pci/rme9652/hdsp.c       |    8 ++++----
- 14 files changed, 41 insertions(+), 42 deletions(-)
+ kernel/trace/ftrace.c |    4 ++--
+ kernel/trace/trace.c  |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/sound/core/oss/mixer_oss.c b/sound/core/oss/mixer_oss.c
-index f50ebf2..86afb13 100644
---- a/sound/core/oss/mixer_oss.c
-+++ b/sound/core/oss/mixer_oss.c
-@@ -77,7 +77,7 @@ static int snd_mixer_oss_release(struct inode *inode, struct file *file)
- 	struct snd_mixer_oss_file *fmixer;
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 7cb1f45..fc9ee37 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1599,7 +1599,7 @@ ftrace_failures_open(struct inode *inode, struct file *file)
  
- 	if (file->private_data) {
--		fmixer = (struct snd_mixer_oss_file *) file->private_data;
-+		fmixer = file->private_data;
- 		module_put(fmixer->card->module);
- 		snd_card_file_remove(fmixer->card, file);
- 		kfree(fmixer);
-@@ -368,7 +368,7 @@ static int snd_mixer_oss_ioctl1(struct snd_mixer_oss_file *fmixer, unsigned int
- 
- static long snd_mixer_oss_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- {
--	return snd_mixer_oss_ioctl1((struct snd_mixer_oss_file *) file->private_data, cmd, arg);
-+	return snd_mixer_oss_ioctl1(file->private_data, cmd, arg);
- }
- 
- int snd_mixer_oss_ioctl_card(struct snd_card *card, unsigned int cmd, unsigned long arg)
-@@ -582,7 +582,7 @@ static int snd_mixer_oss_get_volume1(struct snd_mixer_oss_file *fmixer,
- 				     struct snd_mixer_oss_slot *pslot,
- 				     int *left, int *right)
- {
--	struct slot *slot = (struct slot *)pslot->private_data;
-+	struct slot *slot = pslot->private_data;
- 	
- 	*left = *right = 100;
- 	if (slot->present & SNDRV_MIXER_OSS_PRESENT_PVOLUME) {
-@@ -691,7 +691,7 @@ static int snd_mixer_oss_put_volume1(struct snd_mixer_oss_file *fmixer,
- 				     struct snd_mixer_oss_slot *pslot,
- 				     int left, int right)
- {
--	struct slot *slot = (struct slot *)pslot->private_data;
-+	struct slot *slot = pslot->private_data;
- 	
- 	if (slot->present & SNDRV_MIXER_OSS_PRESENT_PVOLUME) {
- 		snd_mixer_oss_put_volume1_vol(fmixer, pslot, slot->numid[SNDRV_MIXER_OSS_ITEM_PVOLUME], left, right);
-@@ -740,7 +740,7 @@ static int snd_mixer_oss_get_recsrc1_sw(struct snd_mixer_oss_file *fmixer,
- 					struct snd_mixer_oss_slot *pslot,
- 					int *active)
- {
--	struct slot *slot = (struct slot *)pslot->private_data;
-+	struct slot *slot = pslot->private_data;
- 	int left, right;
- 	
- 	left = right = 1;
-@@ -753,7 +753,7 @@ static int snd_mixer_oss_get_recsrc1_route(struct snd_mixer_oss_file *fmixer,
- 					   struct snd_mixer_oss_slot *pslot,
- 					   int *active)
- {
--	struct slot *slot = (struct slot *)pslot->private_data;
-+	struct slot *slot = pslot->private_data;
- 	int left, right;
- 	
- 	left = right = 1;
-@@ -766,7 +766,7 @@ static int snd_mixer_oss_put_recsrc1_sw(struct snd_mixer_oss_file *fmixer,
- 					struct snd_mixer_oss_slot *pslot,
- 					int active)
- {
--	struct slot *slot = (struct slot *)pslot->private_data;
-+	struct slot *slot = pslot->private_data;
- 	
- 	snd_mixer_oss_put_volume1_sw(fmixer, pslot, slot->numid[SNDRV_MIXER_OSS_ITEM_CSWITCH], active, active, 0);
- 	return 0;
-@@ -776,7 +776,7 @@ static int snd_mixer_oss_put_recsrc1_route(struct snd_mixer_oss_file *fmixer,
- 					   struct snd_mixer_oss_slot *pslot,
- 					   int active)
- {
--	struct slot *slot = (struct slot *)pslot->private_data;
-+	struct slot *slot = pslot->private_data;
- 	
- 	snd_mixer_oss_put_volume1_sw(fmixer, pslot, slot->numid[SNDRV_MIXER_OSS_ITEM_CROUTE], active, active, 1);
- 	return 0;
-@@ -813,7 +813,7 @@ static int snd_mixer_oss_get_recsrc2(struct snd_mixer_oss_file *fmixer, unsigned
- 		if (!(mixer->mask_recsrc & (1 << idx)))
- 			continue;
- 		pslot = &mixer->slots[idx];
--		slot = (struct slot *)pslot->private_data;
-+		slot = pslot->private_data;
- 		if (slot->signature != SNDRV_MIXER_OSS_SIGNATURE)
- 			continue;
- 		if (!(slot->present & SNDRV_MIXER_OSS_PRESENT_CAPTURE))
-@@ -861,7 +861,7 @@ static int snd_mixer_oss_put_recsrc2(struct snd_mixer_oss_file *fmixer, unsigned
- 		if (!(mixer->mask_recsrc & (1 << idx)))
- 			continue;
- 		pslot = &mixer->slots[idx];
--		slot = (struct slot *)pslot->private_data;
-+		slot = pslot->private_data;
- 		if (slot->signature != SNDRV_MIXER_OSS_SIGNATURE)
- 			continue;
- 		if (!(slot->present & SNDRV_MIXER_OSS_PRESENT_CAPTURE))
-@@ -925,7 +925,7 @@ static int snd_mixer_oss_build_test(struct snd_mixer_oss *mixer, struct slot *sl
- 
- static void snd_mixer_oss_slot_free(struct snd_mixer_oss_slot *chn)
- {
--	struct slot *p = (struct slot *)chn->private_data;
-+	struct slot *p = chn->private_data;
- 	if (p) {
- 		if (p->allocated && p->assigned) {
- 			kfree(p->assigned->name);
-diff --git a/sound/core/pcm.c b/sound/core/pcm.c
-index 204af48..88525a9 100644
---- a/sound/core/pcm.c
-+++ b/sound/core/pcm.c
-@@ -364,8 +364,7 @@ static void snd_pcm_stream_proc_info_read(struct snd_info_entry *entry,
- static void snd_pcm_substream_proc_info_read(struct snd_info_entry *entry,
- 					     struct snd_info_buffer *buffer)
- {
--	snd_pcm_proc_info_read((struct snd_pcm_substream *)entry->private_data,
--			       buffer);
-+	snd_pcm_proc_info_read(entry->private_data, buffer);
- }
- 
- static void snd_pcm_substream_proc_hw_params_read(struct snd_info_entry *entry,
-diff --git a/sound/drivers/virmidi.c b/sound/drivers/virmidi.c
-index 0e631c3..f4cd493 100644
---- a/sound/drivers/virmidi.c
-+++ b/sound/drivers/virmidi.c
-@@ -94,7 +94,7 @@ static int __devinit snd_virmidi_probe(struct platform_device *devptr)
- 			      sizeof(struct snd_card_virmidi), &card);
- 	if (err < 0)
- 		return err;
--	vmidi = (struct snd_card_virmidi *)card->private_data;
-+	vmidi = card->private_data;
- 	vmidi->card = card;
- 
- 	if (midi_devs[dev] > MAX_MIDI_DEVICES) {
-diff --git a/sound/i2c/other/ak4xxx-adda.c b/sound/i2c/other/ak4xxx-adda.c
-index 1adb8a3..ebab6c7 100644
---- a/sound/i2c/other/ak4xxx-adda.c
-+++ b/sound/i2c/other/ak4xxx-adda.c
-@@ -878,7 +878,7 @@ static int build_deemphasis(struct snd_akm4xxx *ak, int num_emphs)
- static void proc_regs_read(struct snd_info_entry *entry,
- 		struct snd_info_buffer *buffer)
- {
--	struct snd_akm4xxx *ak = (struct snd_akm4xxx *)entry->private_data;
-+	struct snd_akm4xxx *ak = entry->private_data;
- 	int reg, val, chip;
- 	for (chip = 0; chip < ak->num_chips; chip++) {
- 		for (reg = 0; reg < ak->total_regs; reg++) {
-diff --git a/sound/isa/ad1816a/ad1816a.c b/sound/isa/ad1816a/ad1816a.c
-index bbcbf92..3cb75bc 100644
---- a/sound/isa/ad1816a/ad1816a.c
-+++ b/sound/isa/ad1816a/ad1816a.c
-@@ -162,7 +162,7 @@ static int __devinit snd_card_ad1816a_probe(int dev, struct pnp_card_link *pcard
- 				sizeof(struct snd_card_ad1816a), &card);
- 	if (error < 0)
- 		return error;
--	acard = (struct snd_card_ad1816a *)card->private_data;
-+	acard = card->private_data;
- 
- 	if ((error = snd_card_ad1816a_pnp(dev, acard, pcard, pid))) {
- 		snd_card_free(card);
-diff --git a/sound/isa/azt2320.c b/sound/isa/azt2320.c
-index f7aa637..aac8dc1 100644
---- a/sound/isa/azt2320.c
-+++ b/sound/isa/azt2320.c
-@@ -188,7 +188,7 @@ static int __devinit snd_card_azt2320_probe(int dev,
- 				sizeof(struct snd_card_azt2320), &card);
- 	if (error < 0)
- 		return error;
--	acard = (struct snd_card_azt2320 *)card->private_data;
-+	acard = card->private_data;
- 
- 	if ((error = snd_card_azt2320_pnp(dev, acard, pcard, pid))) {
- 		snd_card_free(card);
-diff --git a/sound/isa/gus/gusmax.c b/sound/isa/gus/gusmax.c
-index f26eac8..3e4a58b 100644
---- a/sound/isa/gus/gusmax.c
-+++ b/sound/isa/gus/gusmax.c
-@@ -191,7 +191,7 @@ static int __devinit snd_gusmax_mixer(struct snd_wss *chip)
- 
- static void snd_gusmax_free(struct snd_card *card)
- {
--	struct snd_gusmax *maxcard = (struct snd_gusmax *)card->private_data;
-+	struct snd_gusmax *maxcard = card->private_data;
- 	
- 	if (maxcard == NULL)
- 		return;
-@@ -219,7 +219,7 @@ static int __devinit snd_gusmax_probe(struct device *pdev, unsigned int dev)
- 	if (err < 0)
- 		return err;
- 	card->private_free = snd_gusmax_free;
--	maxcard = (struct snd_gusmax *)card->private_data;
-+	maxcard = card->private_data;
- 	maxcard->card = card;
- 	maxcard->irq = -1;
- 	
-diff --git a/sound/isa/sb/sb8.c b/sound/isa/sb/sb8.c
-index 81284a8..2259e3f 100644
---- a/sound/isa/sb/sb8.c
-+++ b/sound/isa/sb/sb8.c
-@@ -72,7 +72,7 @@ static irqreturn_t snd_sb8_interrupt(int irq, void *dev_id)
- 
- static void snd_sb8_free(struct snd_card *card)
- {
--	struct snd_sb8 *acard = (struct snd_sb8 *)card->private_data;
-+	struct snd_sb8 *acard = card->private_data;
- 
- 	if (acard == NULL)
- 		return;
-diff --git a/sound/oss/au1550_ac97.c b/sound/oss/au1550_ac97.c
-index c6f2621..8a12621 100644
---- a/sound/oss/au1550_ac97.c
-+++ b/sound/oss/au1550_ac97.c
-@@ -171,7 +171,7 @@ au1550_delay(int msec)
- static u16
- rdcodec(struct ac97_codec *codec, u8 addr)
- {
--	struct au1550_state *s = (struct au1550_state *)codec->private_data;
-+	struct au1550_state *s = codec->private_data;
- 	unsigned long   flags;
- 	u32             cmd, val;
- 	u16             data;
-@@ -239,7 +239,7 @@ rdcodec(struct ac97_codec *codec, u8 addr)
- static void
- wrcodec(struct ac97_codec *codec, u8 addr, u16 data)
- {
--	struct au1550_state *s = (struct au1550_state *)codec->private_data;
-+	struct au1550_state *s = codec->private_data;
- 	unsigned long   flags;
- 	u32             cmd, val;
- 	int             i;
-@@ -820,7 +820,7 @@ mixdev_ioctl(struct ac97_codec *codec, unsigned int cmd,
- static long
- au1550_ioctl_mixdev(struct file *file, unsigned int cmd, unsigned long arg)
- {
--	struct au1550_state *s = (struct au1550_state *)file->private_data;
-+	struct au1550_state *s = file->private_data;
- 	struct ac97_codec *codec = s->codec;
- 	int ret;
- 
-@@ -1031,7 +1031,7 @@ copy_dmabuf_user(struct dmabuf *db, char* userbuf, int count, int to_user)
- static ssize_t
- au1550_read(struct file *file, char *buffer, size_t count, loff_t *ppos)
- {
--	struct au1550_state *s = (struct au1550_state *)file->private_data;
-+	struct au1550_state *s = file->private_data;
- 	struct dmabuf  *db = &s->dma_adc;
- 	DECLARE_WAITQUEUE(wait, current);
- 	ssize_t         ret;
-@@ -1111,7 +1111,7 @@ out2:
- static ssize_t
- au1550_write(struct file *file, const char *buffer, size_t count, loff_t * ppos)
- {
--	struct au1550_state *s = (struct au1550_state *)file->private_data;
-+	struct au1550_state *s = file->private_data;
- 	struct dmabuf  *db = &s->dma_dac;
- 	DECLARE_WAITQUEUE(wait, current);
- 	ssize_t         ret = 0;
-@@ -1211,7 +1211,7 @@ out2:
- static unsigned int
- au1550_poll(struct file *file, struct poll_table_struct *wait)
- {
--	struct au1550_state *s = (struct au1550_state *)file->private_data;
-+	struct au1550_state *s = file->private_data;
- 	unsigned long   flags;
- 	unsigned int    mask = 0;
- 
-@@ -1250,7 +1250,7 @@ au1550_poll(struct file *file, struct poll_table_struct *wait)
+ 	ret = ftrace_avail_open(inode, file);
+ 	if (!ret) {
+-		m = (struct seq_file *)file->private_data;
++		m = file->private_data;
+ 		iter = (struct ftrace_iterator *)m->private;
+ 		iter->flags = FTRACE_ITER_FAILURES;
+ 	}
+@@ -2356,7 +2356,7 @@ static void __init set_ftrace_early_filters(void)
  static int
- au1550_mmap(struct file *file, struct vm_area_struct *vma)
+ ftrace_regex_release(struct inode *inode, struct file *file, int enable)
  {
--	struct au1550_state *s = (struct au1550_state *)file->private_data;
-+	struct au1550_state *s = file->private_data;
- 	struct dmabuf  *db;
- 	unsigned long   size;
- 	int ret = 0;
-@@ -1342,7 +1342,7 @@ dma_count_done(struct dmabuf *db)
- static int
- au1550_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+-	struct seq_file *m = (struct seq_file *)file->private_data;
++	struct seq_file *m = file->private_data;
+ 	struct ftrace_iterator *iter;
+ 	struct trace_parser *parser;
+ 
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 9ec59f5..001bcd2 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2196,7 +2196,7 @@ int tracing_open_generic(struct inode *inode, struct file *filp)
+ 
+ static int tracing_release(struct inode *inode, struct file *file)
  {
--	struct au1550_state *s = (struct au1550_state *)file->private_data;
-+	struct au1550_state *s = file->private_data;
- 	unsigned long   flags;
- 	audio_buf_info  abinfo;
- 	count_info      cinfo;
-@@ -1868,7 +1868,7 @@ out2:
- static int
- au1550_release(struct inode *inode, struct file *file)
- {
--	struct au1550_state *s = (struct au1550_state *)file->private_data;
-+	struct au1550_state *s = file->private_data;
+-	struct seq_file *m = (struct seq_file *)file->private_data;
++	struct seq_file *m = file->private_data;
+ 	struct trace_iterator *iter;
+ 	int cpu;
  
- 	lock_kernel();
- 
-diff --git a/sound/pci/emu10k1/emumpu401.c b/sound/pci/emu10k1/emumpu401.c
-index 8578c70..bab5648 100644
---- a/sound/pci/emu10k1/emumpu401.c
-+++ b/sound/pci/emu10k1/emumpu401.c
-@@ -321,7 +321,7 @@ static struct snd_rawmidi_ops snd_emu10k1_midi_input =
- 
- static void snd_emu10k1_midi_free(struct snd_rawmidi *rmidi)
- {
--	struct snd_emu10k1_midi *midi = (struct snd_emu10k1_midi *)rmidi->private_data;
-+	struct snd_emu10k1_midi *midi = rmidi->private_data;
- 	midi->interrupt = NULL;
- 	midi->rmidi = NULL;
- }
-diff --git a/sound/pci/ice1712/pontis.c b/sound/pci/ice1712/pontis.c
-index 6bc3f91..cdb873f 100644
---- a/sound/pci/ice1712/pontis.c
-+++ b/sound/pci/ice1712/pontis.c
-@@ -638,7 +638,7 @@ static struct snd_kcontrol_new pontis_controls[] __devinitdata = {
-  */
- static void wm_proc_regs_write(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
- {
--	struct snd_ice1712 *ice = (struct snd_ice1712 *)entry->private_data;
-+	struct snd_ice1712 *ice = entry->private_data;
- 	char line[64];
- 	unsigned int reg, val;
- 	mutex_lock(&ice->gpio_mutex);
-@@ -653,7 +653,7 @@ static void wm_proc_regs_write(struct snd_info_entry *entry, struct snd_info_buf
- 
- static void wm_proc_regs_read(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
- {
--	struct snd_ice1712 *ice = (struct snd_ice1712 *)entry->private_data;
-+	struct snd_ice1712 *ice = entry->private_data;
- 	int reg, val;
- 
- 	mutex_lock(&ice->gpio_mutex);
-@@ -676,7 +676,7 @@ static void wm_proc_init(struct snd_ice1712 *ice)
- 
- static void cs_proc_regs_read(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
- {
--	struct snd_ice1712 *ice = (struct snd_ice1712 *)entry->private_data;
-+	struct snd_ice1712 *ice = entry->private_data;
- 	int reg, val;
- 
- 	mutex_lock(&ice->gpio_mutex);
-diff --git a/sound/pci/ice1712/prodigy192.c b/sound/pci/ice1712/prodigy192.c
-index 2a8e5cd..e36ddb9 100644
---- a/sound/pci/ice1712/prodigy192.c
-+++ b/sound/pci/ice1712/prodigy192.c
-@@ -654,7 +654,7 @@ static int prodigy192_ak4114_init(struct snd_ice1712 *ice)
- static void stac9460_proc_regs_read(struct snd_info_entry *entry,
- 		struct snd_info_buffer *buffer)
- {
--	struct snd_ice1712 *ice = (struct snd_ice1712 *)entry->private_data;
-+	struct snd_ice1712 *ice = entry->private_data;
- 	int reg, val;
- 	/* registers 0x0 - 0x14 */
- 	for (reg = 0; reg <= 0x15; reg++) {
-diff --git a/sound/pci/rme96.c b/sound/pci/rme96.c
-index d19dc05..d5f5b44 100644
---- a/sound/pci/rme96.c
-+++ b/sound/pci/rme96.c
-@@ -1527,14 +1527,14 @@ snd_rme96_free(void *private_data)
- static void
- snd_rme96_free_spdif_pcm(struct snd_pcm *pcm)
- {
--	struct rme96 *rme96 = (struct rme96 *) pcm->private_data;
-+	struct rme96 *rme96 = pcm->private_data;
- 	rme96->spdif_pcm = NULL;
- }
- 
- static void
- snd_rme96_free_adat_pcm(struct snd_pcm *pcm)
- {
--	struct rme96 *rme96 = (struct rme96 *) pcm->private_data;
-+	struct rme96 *rme96 = pcm->private_data;
- 	rme96->adat_pcm = NULL;
- }
- 
-@@ -1661,7 +1661,7 @@ static void
- snd_rme96_proc_read(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
- {
- 	int n;
--	struct rme96 *rme96 = (struct rme96 *)entry->private_data;
-+	struct rme96 *rme96 = entry->private_data;
- 	
- 	rme96->rcreg = readl(rme96->iobase + RME96_IO_CONTROL_REGISTER);
- 
-@@ -2348,7 +2348,7 @@ snd_rme96_probe(struct pci_dev *pci,
- 	if (err < 0)
- 		return err;
- 	card->private_free = snd_rme96_card_free;
--	rme96 = (struct rme96 *)card->private_data;	
-+	rme96 = card->private_data;
- 	rme96->card = card;
- 	rme96->pci = pci;
- 	snd_card_set_dev(card, &pci->dev);
-diff --git a/sound/pci/rme9652/hdsp.c b/sound/pci/rme9652/hdsp.c
-index b92adef..599e090 100644
---- a/sound/pci/rme9652/hdsp.c
-+++ b/sound/pci/rme9652/hdsp.c
-@@ -3284,7 +3284,7 @@ static int snd_hdsp_create_controls(struct snd_card *card, struct hdsp *hdsp)
- static void
- snd_hdsp_proc_read(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
- {
--	struct hdsp *hdsp = (struct hdsp *) entry->private_data;
-+	struct hdsp *hdsp = entry->private_data;
- 	unsigned int status;
- 	unsigned int status2;
- 	char *pref_sync_ref;
-@@ -4566,7 +4566,7 @@ static int hdsp_get_peak(struct hdsp *hdsp, struct hdsp_peak_rms __user *peak_rm
- 
- static int snd_hdsp_hwdep_ioctl(struct snd_hwdep *hw, struct file *file, unsigned int cmd, unsigned long arg)
- {
--	struct hdsp *hdsp = (struct hdsp *)hw->private_data;
-+	struct hdsp *hdsp = hw->private_data;
- 	void __user *argp = (void __user *)arg;
- 	int err;
- 
-@@ -5155,7 +5155,7 @@ static int snd_hdsp_free(struct hdsp *hdsp)
- 
- static void snd_hdsp_card_free(struct snd_card *card)
- {
--	struct hdsp *hdsp = (struct hdsp *) card->private_data;
-+	struct hdsp *hdsp = card->private_data;
- 
- 	if (hdsp)
- 		snd_hdsp_free(hdsp);
-@@ -5181,7 +5181,7 @@ static int __devinit snd_hdsp_probe(struct pci_dev *pci,
- 	if (err < 0)
- 		return err;
- 
--	hdsp = (struct hdsp *) card->private_data;
-+	hdsp = card->private_data;
- 	card->private_free = snd_hdsp_card_free;
- 	hdsp->dev = dev;
- 	hdsp->pci = pci;
 -- 
 1.7.2.19.g9a302
 
