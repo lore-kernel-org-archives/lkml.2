@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab0IEXEH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 19:04:07 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:18830 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503Ab0IEXEF (ORCPT
+	id S1754831Ab0IEXFn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 19:05:43 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:48212 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab0IEXFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 19:04:05 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=H0QSuv+7zh3fLcNDJTDXk89D19OBzkgHku+Uf1Z5SzSQiu7nj6xMse2aXLfCHd8AE
-	PQ9dWwAwwlVoWhScQFv5g==
-Date: Sun, 5 Sep 2010 16:03:52 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Neil Brown <neilb@suse.de>
-cc: Jan Kara <jack@suse.cz>, Jiri Slaby <jirislaby@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-raid@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, cluster-devel@redhat.com,
-        linux-ext4@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v2 1/5] mm: add nofail variants of kmalloc kcalloc and
- kzalloc
-In-Reply-To: <20100903071506.6e6b4d63@notabene>
-Message-ID: <alpine.DEB.2.00.1009051602130.5003@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1008240340010.18908@chino.kir.corp.google.com> <alpine.DEB.2.00.1009011757360.24694@chino.kir.corp.google.com> <4C7F5951.6040809@gmail.com> <20100902145141.GA3273@quack.suse.cz> <20100903071506.6e6b4d63@notabene>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Sun, 5 Sep 2010 19:05:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=YpG8pgbLRIa40BAqkUZrM/YvpMBO7DJWhQNg2aGY6/iWXpKI43sGkwyr1lFktkCT3j
+         fb6F2orljWNfVeoYvhTUkrrXRm169mHnLML+objNhsLP6DfxoeCgz5kF+uLZ3OAuRrU5
+         GRBy7Fwr8ITFjKP+kjM84iWpDFG4chP785gQE=
+Subject: ldd scull question about scull_device*
+From: runcoderen <runcoderzhcn@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Sep 2010 07:05:38 +0800
+Message-ID: <1283727938.1758.12.camel@bencharluo-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010, Neil Brown wrote:
+hi all:
+when I am reading ldd(3rd) book about char device driver.
+I have a question to ask:
 
-> I'm actually a bit confused about this too.
-> I thought David said he was removing a branch on the *slow* path - which make
-> sense as you wouldn't even test NOFAIL until you had a failure.
-> Why are branches on the slow-path an issue??
+I have seem the code in scull_init_module to create 4
+scull_dev(scull_dev *).
 
-They aren't necessarily an issue in the performance sense, this is a 
-cleanup series since all converted callers to using these new functions 
-(and the eventual removal of __GFP_NOFAIL entirely) are using the bit 
-unnecessarily since they all have orders that implicitly loop in the page 
-allocator forever already, with or without the flag.
+but when I browse scull_write & scull_read function, I can see the code
+only secure 1 scull_dev. and I don't know which scull_dev in scull_dev*
+created before are I am using.
+
+can anyone help me?
+
+and why the author try to create 4 scull_device in scull_init_module?
+
+					runcoderen
+
+-- 
+
+/****************************************
+http://runcoderen.wordpress.com
+****************************************/
+
