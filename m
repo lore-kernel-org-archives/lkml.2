@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab0IEBxN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 21:53:13 -0400
-Received: from mail.perches.com ([173.55.12.10]:1384 "EHLO mail.perches.com"
+	id S1754712Ab0IEBxK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 21:53:10 -0400
+Received: from mail.perches.com ([173.55.12.10]:1341 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754717Ab0IEBxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 21:53:11 -0400
+	id S1754606Ab0IEBxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 21:53:06 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+Cc: Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 11/13] net/ipv4: Remove unnecessary casts of private_data
-Date: Sat,  4 Sep 2010 18:52:52 -0700
-Message-Id: <dd5d79c3aa9f2cffbca1a8d4a9163b0d6a9492a9.1283650107.git.joe@perches.com>
+Subject: [PATCH 02/13] drivers/infiniband: Remove unnecessary casts of private_data
+Date: Sat,  4 Sep 2010 18:52:43 -0700
+Message-Id: <a13edeb14cc926b71e21daff892acbe2d76313ab.1283650107.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.2.19.g9a302
 In-Reply-To: <cover.1283650107.git.joe@perches.com>
 References: <cover.1283650107.git.joe@perches.com>
@@ -27,22 +23,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/ipv4/raw.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/infiniband/hw/qib/qib_file_ops.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
-index 1f85ef2..ea9aa9b 100644
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -985,7 +985,7 @@ int raw_seq_open(struct inode *ino, struct file *file,
- 	if (err < 0)
- 		return err;
+diff --git a/drivers/infiniband/hw/qib/qib_file_ops.c b/drivers/infiniband/hw/qib/qib_file_ops.c
+index 6b11645..cef5d67 100644
+--- a/drivers/infiniband/hw/qib/qib_file_ops.c
++++ b/drivers/infiniband/hw/qib/qib_file_ops.c
+@@ -1722,7 +1722,7 @@ static int qib_close(struct inode *in, struct file *fp)
  
--	i = raw_seq_private((struct seq_file *)file->private_data);
-+	i = raw_seq_private(file->private_data);
- 	i->h = h;
- 	return 0;
- }
+ 	mutex_lock(&qib_mutex);
+ 
+-	fd = (struct qib_filedata *) fp->private_data;
++	fd = fp->private_data;
+ 	fp->private_data = NULL;
+ 	rcd = fd->rcd;
+ 	if (!rcd) {
+@@ -1808,7 +1808,7 @@ static int qib_ctxt_info(struct file *fp, struct qib_ctxt_info __user *uinfo)
+ 	struct qib_ctxtdata *rcd = ctxt_fp(fp);
+ 	struct qib_filedata *fd;
+ 
+-	fd = (struct qib_filedata *) fp->private_data;
++	fd = fp->private_data;
+ 
+ 	info.num_active = qib_count_active_units();
+ 	info.unit = rcd->dd->unit;
 -- 
 1.7.2.19.g9a302
 
