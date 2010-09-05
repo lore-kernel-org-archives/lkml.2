@@ -1,298 +1,478 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab0IEP6I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 11:58:08 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56920 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752644Ab0IEP6G (ORCPT
+	id S1753857Ab0IEP6j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 11:58:39 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:37459 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab0IEP6i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 11:58:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=A8IVBsfoL0FsOGeeOBLpomcm2XsAk5MT34wWw8AOenD8jg8yYNo3SVjiaczdsfSSNx
-         9z6c5D1yy5YVMhaEc8XLtVBcnDVdSEIGPAHSKwEJV/yJmG83NLn0oNo930Qhmnt3rMaS
-         pIpdVHri7BRSyKgRSW+Vy3fblBaKfCFV80bfY=
-Date: Mon, 6 Sep 2010 00:57:53 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Micha?? Nazarewicz <m.nazarewicz@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Mel Gorman <mel@csn.ul.ie>, linux-media@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
-Message-ID: <20100905155753.GA3611@barrios-desktop>
-References: <20100826095857.5b821d7f.kamezawa.hiroyu@jp.fujitsu.com>
- <op.vh0wektv7p4s8u@localhost>
- <20100826115017.04f6f707.kamezawa.hiroyu@jp.fujitsu.com>
- <20100826124434.6089630d.kamezawa.hiroyu@jp.fujitsu.com>
- <AANLkTi=T1y+sQuqVTYgOkYvqrxdYB1bZmCpKafN5jPqi@mail.gmail.com>
- <20100826133028.39d731da.kamezawa.hiroyu@jp.fujitsu.com>
- <AANLkTimB+s0tO=wrODAU4qCaZnCBoLZ2A9pGjR_jheOj@mail.gmail.com>
- <20100827171639.83c8642c.kamezawa.hiroyu@jp.fujitsu.com>
- <20100902175424.5849c197.kamezawa.hiroyu@jp.fujitsu.com>
- <20100903192943.f4f74136.kamezawa.hiroyu@jp.fujitsu.com>
+	Sun, 5 Sep 2010 11:58:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100903192943.f4f74136.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [98.248.43.157]
+In-Reply-To: <AANLkTi=TU8d8tsp28qN-Rz9z0hTcH7hRE=d8W4GKhrkk@mail.gmail.com>
+References: <20100604092025.GA96690@trillian.comsick.at> <1275656014.2482.169.camel@edumazet-laptop>
+ <20100604161644.GA98048@trillian.local> <20100606095640.GA4436@trillian.comsick.at>
+ <1275820945.5238.987.camel@edumazet-laptop> <AANLkTimf5iZV2ytoymCXJ=B2Vgowr6qb6u2nBg+RtBUg@mail.gmail.com>
+ <1282769089.2681.159.camel@edumazet-laptop> <AANLkTi=TU8d8tsp28qN-Rz9z0hTcH7hRE=d8W4GKhrkk@mail.gmail.com>
+From: =?UTF-8?B?TmlraGlsIFNldGhpICjgpKjgpL/gpJbgpL/gpLIg4KS44KWH4KSg4KWAKQ==?= 
+	<nikhil@sethi.ws>
+Date: Sun, 5 Sep 2010 08:57:56 -0700
+Message-ID: <AANLkTimzJFW7dgik6S0zRwYsv4gP5g9Wmonci48dbbei@mail.gmail.com>
+Subject: Re: [2.6.35-rc1] page alloc failure order:1, mode:0x4020
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Michael Guntsche <mike@it-loops.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 07:29:43PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 2 Sep 2010 17:54:24 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > Here is a rough code for this.
-> 
-> here is a _tested_ one. 
-> If I tested correctly, I allocated 40MB of contigous pages by the new funciton.
-> I'm grad this can be some hints for people.
+This came back. Here is the dmesg output. It might be the problem only
+happens if I have wmm_enabled=1 in my hostapd.conf. That is the only
+thing that I changed yesterday, and today I saw these messages in my
+logs. I will try to conform this.
 
-Great!
+I am running 2.6.35.4 with this patch:
 
-I didn't look into the detail but the concept seems to be good.
-If someone doesn't need complex intelligent(ex, shared, private, [first|best] fit, buddy), 
-this is enough for that. So I think this will be good regardless of CMA.
+*** 225,234 ****
+  	int error = 0, i;
+  	u32 size;
 
-I will look into this more detaily and think idea to improve. 
-Thanks, Kame. :)
+!
+! 	common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
+! 				     ah->caps.rx_status_len,
+! 				     min(common->cachelsz, (u16)64));
 
-> 
-> Thanks,
-> -Kame
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> This patch as a memory allocator for contiguous memory larger than MAX_ORDER.
-> 
->   alloc_contig_pages(hint, size, list);
-> 
->   This function allocates 'size' of contigoues pages, whose physical address
->   is higher than 'hint'. size is specicied in byte unit.
+  	ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
+  				    ah->caps.rx_status_len);
+--- 225,234 ----
+  	int error = 0, i;
+  	u32 size;
 
-size is byte, hint is pfn?
+! 	size = roundup(IEEE80211_MAX_MPDU_LEN + ah->caps.rx_status_len,
+!                        min(common->cachelsz, (u16)64));
+!         common->rx_bufsize = min_t(u32, size,
+!                                    SKB_MAX_ORDER(NET_SKB_PAD +
+common->cachelsz, 0));
 
->   Allocated pages are all linked into the list and all of their page_count()
->   are set to 1. Return value is the top page. 
-> 
->  free_contig_pages(list)
->  returns all pages in the list.
-> 
-> This patch does
->   - find an area which can be ISOLATED.
->   - migrate remaining pages in the area.
+  	ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
+  				    ah->caps.rx_status_len);
 
-Migrate from there to where?
+dmesg output:
 
->   - steal chunk of pages from allocator.
-> 
-> Limitation is:
->   - retruned pages will be aligend to MAX_ORDER.
->   - returned length of page will be aligned to MAX_ORDER.
->     (so, the caller may have to return tails of pages by itself.)
+skbuff alloc of size 3872 failed
+ps: page allocation failure. order:1, mode:0x4020
+Pid: 16022, comm: ps Tainted: G        W   2.6.35.4 #1
+Call Trace:
+ [<c0243bfe>] ? __alloc_pages_nodemask+0x3e6/0x513
+ [<c025be97>] ? slob_new_pages+0xc/0x23
+ [<c025c0a1>] ? __kmalloc_node+0x39/0x72
+ [<c03338d8>] ? __alloc_skb+0x5c/0x105
+ [<d09fa01a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+ [<d0ab7109>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
+ [<c030fd49>] ? scsi_next_command+0x27/0x34
+ [<d0ab53c5>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
+ [<c02193c3>] ? tasklet_action+0x5f/0x65
+ [<c0219677>] ? __do_softirq+0x60/0xc6
+ [<c021970b>] ? do_softirq+0x2e/0x30
+ [<c02197fd>] ? irq_exit+0x53/0x55
+ [<c020392c>] ? do_IRQ+0x3a/0x72
+ [<c0202be9>] ? common_interrupt+0x29/0x30
+ [<c0247874>] ? __remove_mapping+0x4b/0x8d
+ [<c023ea9f>] ? try_to_release_page+0x20/0x30
+ [<c0247d36>] ? shrink_page_list+0x2b8/0x46c
+ [<c03158ea>] ? sd_prep_fn+0x1a5/0x92b
+ [<c024816b>] ? shrink_inactive_list+0x281/0x552
+ [<c02445d9>] ? determine_dirtyable_memory+0xc/0x12
+ [<c024462c>] ? get_dirty_limits+0x18/0x2b0
+ [<c032875e>] ? ata_bmdma_port_intr+0x21/0xcd
+ [<c0248683>] ? shrink_zone+0x247/0x38f
+ [<c021968c>] ? __do_softirq+0x75/0xc6
+ [<c0247114>] ? shrink_slab+0x13c/0x186
+ [<c0248f25>] ? try_to_free_pages+0x1ab/0x2be
+ [<c0248f25>] ? try_to_free_pages+0x1ab/0x2be
+ [<c0243acf>] ? __alloc_pages_nodemask+0x2b7/0x513
+ [<c025be97>] ? slob_new_pages+0xc/0x23
+ [<c025c038>] ? kmem_cache_alloc_node+0x23/0x53
+ [<c0264b20>] ? getname+0x19/0xae
+ [<c0266d00>] ? user_path_at+0x11/0x64
+ [<c0250949>] ? access_process_vm+0xe0/0x1e7
+ [<c0250a08>] ? access_process_vm+0x19f/0x1e7
+ [<c02603d2>] ? vfs_fstatat+0x25/0x63
+ [<c02604a9>] ? vfs_stat+0x10/0x12
+ [<c02604ba>] ? sys_stat64+0xf/0x23
+ [<c025e86b>] ? fput+0x88/0x191
+ [<c026ab3b>] ? dput+0x92/0xd4
+ [<c025e8ff>] ? fput+0x11c/0x191
+ [<c026ebec>] ? mntput_no_expire+0x13/0x60
+ [<c025c398>] ? filp_close+0x3b/0x54
+ [<c025c403>] ? sys_close+0x52/0x72
+ [<c038ad3d>] ? syscall_call+0x7/0xb
+ [<c0380000>] ? unix_dgram_sendmsg+0x258/0x3c1
+Mem-Info:
+DMA per-cpu:
+CPU    0: hi:    0, btch:   1 usd:   0
+Normal per-cpu:
+CPU    0: hi:   90, btch:  15 usd:  79
+active_anon:7578 inactive_anon:15111 isolated_anon:0
+ active_file:11157 inactive_file:20027 isolated_file:32
+ unevictable:467 dirty:1159 writeback:0 unstable:0
+ free:706 slab_reclaimable:0 slab_unreclaimable:0
+ mapped:2183 shmem:0 pagetables:278 bounce:0
+DMA free:1000kB min:124kB low:152kB high:184kB active_anon:860kB
+inactive_anon:2280kB active_file:3664kB inactive_file:4876kB
+unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
+mlocked:0kB dirty:8kB writeback:0kB mapped:1212kB shmem:0kB
+slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:32kB
+pagetables:48kB unstable:0kB bounce:0kB writeback_tmp:0kB
+pages_scanned:0 all_unreclaimable? no
+lowmem_reserve[]: 0 238 238
+Normal free:1824kB min:1908kB low:2384kB high:2860kB
+active_anon:29452kB inactive_anon:58164kB active_file:40964kB
+inactive_file:75232kB unevictable:1868kB isolated(anon):0kB
+isolated(file):128kB present:243840kB mlocked:1868kB dirty:4628kB
+writeback:0kB mapped:7520kB shmem:0kB slab_reclaimable:0kB
+slab_unreclaimable:0kB kernel_stack:1056kB pagetables:1064kB
+unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+all_unreclaimable? no
+lowmem_reserve[]: 0 0 0
+DMA: 2*4kB 0*8kB 0*16kB 1*32kB 1*64kB 1*128kB 1*256kB 1*512kB 0*1024kB
+0*2048kB 0*4096kB = 1000kB
+Normal: 366*4kB 45*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB
+0*1024kB 0*2048kB 0*4096kB = 1824kB
+35298 total pagecache pages
+3724 pages in swap cache
+Swap cache stats: add 82399, delete 78675, find 45215/53344
+Free swap  = 891536kB
+Total swap = 963896kB
+65535 pages RAM
+1236 pages reserved
+36808 pages shared
+32201 pages non-shared
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+skbuff alloc of size 3872 failed
+logdrop IN=eth0 OUT= MAC=00:00:24:cb:ca:c4:00:01:5c:32:6e:41:08:00
+SRC=219.143.125.205 DST=98.248.43.157 LEN=60 TOS=0x00 PREC=0x20 TTL=50
+ID=362 DF PROTO=TCP SPT=53976 DPT=22 WINDOW=5840 RES=0x00 SYN URGP=0
+OPT (020405640402080A1EDFFF550000000001030303)
+__alloc_pages_slowpath: 12 callbacks suppressed
+swapper: page allocation failure. order:1, mode:0x4020
+Pid: 0, comm: swapper Tainted: G        W   2.6.35.4 #1
+Call Trace:
+ [<c0243bfe>] ? __alloc_pages_nodemask+0x3e6/0x513
+ [<c025be97>] ? slob_new_pages+0xc/0x23
+ [<c025c0a1>] ? __kmalloc_node+0x39/0x72
+ [<c03338d8>] ? __alloc_skb+0x5c/0x105
+ [<d09fa01a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+ [<d0ab7109>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
+ [<d0ab53c5>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
+ [<c02193c3>] ? tasklet_action+0x5f/0x65
+ [<c0219677>] ? __do_softirq+0x60/0xc6
+ [<c021970b>] ? do_softirq+0x2e/0x30
+ [<c02197fd>] ? irq_exit+0x53/0x55
+ [<c020392c>] ? do_IRQ+0x3a/0x72
+ [<c0202be9>] ? common_interrupt+0x29/0x30
+ [<c020768e>] ? default_idle+0x25/0x38
+ [<c02017d0>] ? cpu_idle+0x2e/0x47
+ [<c042361a>] ? start_kernel+0x21a/0x21d
+Mem-Info:
+DMA per-cpu:
+CPU    0: hi:    0, btch:   1 usd:   0
+Normal per-cpu:
+CPU    0: hi:   90, btch:  15 usd:  13
+active_anon:11994 inactive_anon:12762 isolated_anon:0
+ active_file:13736 inactive_file:14175 isolated_file:0
+ unevictable:467 dirty:5803 writeback:9 unstable:0
+ free:2013 slab_reclaimable:0 slab_unreclaimable:0
+ mapped:1957 shmem:0 pagetables:281 bounce:0
+DMA free:1000kB min:124kB low:152kB high:184kB active_anon:944kB
+inactive_anon:2640kB active_file:4020kB inactive_file:4000kB
+unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
+mlocked:0kB dirty:48kB writeback:0kB mapped:452kB shmem:0kB
+slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:24kB
+pagetables:24kB unstable:0kB bounce:0kB writeback_tmp:0kB
+pages_scanned:0 all_unreclaimable? no
+lowmem_reserve[]: 0 238 238
+Normal free:7052kB min:1908kB low:2384kB high:2860kB
+active_anon:47032kB inactive_anon:48408kB active_file:50924kB
+inactive_file:52700kB unevictable:1868kB isolated(anon):0kB
+isolated(file):0kB present:243840kB mlocked:1868kB dirty:23164kB
+writeback:36kB mapped:7376kB shmem:0kB slab_reclaimable:0kB
+slab_unreclaimable:0kB kernel_stack:1040kB pagetables:1100kB
+unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+all_unreclaimable? no
+lowmem_reserve[]: 0 0 0
+DMA: 2*4kB 0*8kB 0*16kB 1*32kB 1*64kB 1*128kB 1*256kB 1*512kB 0*1024kB
+0*2048kB 0*4096kB = 1000kB
+Normal: 1673*4kB 45*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB
+0*1024kB 0*2048kB 0*4096kB = 7052kB
+32351 total pagecache pages
+4052 pages in swap cache
+Swap cache stats: add 119272, delete 115220, find 58684/72663
+Free swap  = 874472kB
+Total swap = 963896kB
+65535 pages RAM
+1236 pages reserved
+30733 pages shared
+36511 pages non-shared
+skbuff alloc of size 3872 failed
+swapper: page allocation failure. order:1, mode:0x4020
+Pid: 0, comm: swapper Tainted: G        W   2.6.35.4 #1
+Call Trace:
+ [<c0243bfe>] ? __alloc_pages_nodemask+0x3e6/0x513
+ [<c025be97>] ? slob_new_pages+0xc/0x23
+ [<c025c0a1>] ? __kmalloc_node+0x39/0x72
+ [<c03338d8>] ? __alloc_skb+0x5c/0x105
+ [<d09fa01a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+ [<d0ab7109>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
+ [<d0ab53c5>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
+ [<c02193c3>] ? tasklet_action+0x5f/0x65
+ [<c0219677>] ? __do_softirq+0x60/0xc6
+ [<c021970b>] ? do_softirq+0x2e/0x30
+ [<c02197fd>] ? irq_exit+0x53/0x55
+ [<c020392c>] ? do_IRQ+0x3a/0x72
+ [<c0202be9>] ? common_interrupt+0x29/0x30
+ [<c020768e>] ? default_idle+0x25/0x38
+ [<c02017d0>] ? cpu_idle+0x2e/0x47
+ [<c042361a>] ? start_kernel+0x21a/0x21d
+Mem-Info:
+DMA per-cpu:
+CPU    0: hi:    0, btch:   1 usd:   0
+Normal per-cpu:
+CPU    0: hi:   90, btch:  15 usd:  13
 
-What do you mean tail?
 
->   - may allocate contiguous pages which overlap node/zones.
-
-Hmm.. Do we really need this?
-
-> 
-> This is fully experimental and written as example.
-> (Maybe need more patches to make this complete.)
-
-Yes. But first impression of this patch is good to me. 
-
-> 
-> This patch moves some amount of codes from memory_hotplug.c to
-> page_isolation.c and based on page-offline technique used by
-> memory_hotplug.c 
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  include/linux/page-isolation.h |   10 +
->  mm/memory_hotplug.c            |   84 --------------
->  mm/page_alloc.c                |   32 +++++
->  mm/page_isolation.c            |  244 +++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 287 insertions(+), 83 deletions(-)
-> 
-> Index: mmotm-0827/mm/page_isolation.c
-> ===================================================================
-> --- mmotm-0827.orig/mm/page_isolation.c
-> +++ mmotm-0827/mm/page_isolation.c
-> @@ -3,8 +3,11 @@
->   */
->  
->  #include <linux/mm.h>
-> +#include <linux/swap.h>
->  #include <linux/page-isolation.h>
->  #include <linux/pageblock-flags.h>
-> +#include <linux/mm_inline.h>
-> +#include <linux/migrate.h>
->  #include "internal.h"
->  
->  static inline struct page *
-> @@ -140,3 +143,244 @@ int test_pages_isolated(unsigned long st
->  	spin_unlock_irqrestore(&zone->lock, flags);
->  	return ret ? 0 : -EBUSY;
->  }
-> +
-> +#define CONTIG_ALLOC_MIGRATION_RETRY	(5)
-> +
-> +/*
-> + * Scanning pfn is much easier than scanning lru list.
-> + * Scan pfn from start to end and Find LRU page.
-> + */
-> +unsigned long scan_lru_pages(unsigned long start, unsigned long end)
-> +{
-> +	unsigned long pfn;
-> +	struct page *page;
-> +	for (pfn = start; pfn < end; pfn++) {
-> +		if (pfn_valid(pfn)) {
-> +			page = pfn_to_page(pfn);
-> +			if (PageLRU(page))
-> +				return pfn;
-> +		}
-> +	}
-> +	return 0;
-> +}
-> +
-> +/* Migrate all LRU pages in the range to somewhere else */
-> +static struct page *
-> +hotremove_migrate_alloc(struct page *page, unsigned long private, int **x)
-> +{
-> +	/* This should be improooooved!! */
-
-Yeb. 
-
-> +	return alloc_page(GFP_HIGHUSER_MOVABLE);
-> +}
-
-<snip>
-
-> +struct page *alloc_contig_pages(unsigned long long hint,
-> +		unsigned long size, struct list_head *list)
-> +{
-> +	unsigned long base, found, end, pages, start;
-> +	struct page *ret = NULL;
-> +	int nid, retry;
-> +
-> +	if (hint)
-> +		hint = ALIGN(hint, MAX_ORDER_NR_PAGES);
-> +	/* request size should be aligned to pageblock */
-> +	size >>= PAGE_SHIFT;
-> +	pages = ALIGN(size, MAX_ORDER_NR_PAGES);
-> +	found = 0;
-> +retry:
-> +	for_each_node_state(nid, N_HIGH_MEMORY) {
-> +		unsigned long node_end;
-> +		pg_data_t *node = NODE_DATA(nid);
-> +
-> +		node_end = node->node_start_pfn + node->node_spanned_pages;
-> +		/* does this node have proper range of memory ? */
-> +		if (node_end < hint + pages)
-> +			continue;
-> +		base = hint;
-> +		if (base < node->node_start_pfn)
-> +			base = node->node_start_pfn;
-> +
-> +		base = ALIGN(base, MAX_ORDER_NR_PAGES);
-> +		found = 0;
-> +		end = node_end & ~(MAX_ORDER_NR_PAGES -1);
-> +		/* Maybe we can use this Node */
-> +		if (base + pages < end)
-> +			found = __find_contig_block(base, end, pages);
-> +		if (found) /* Found ? */
-> +			break;
-> +		base = hint;
-> +	}
-> +	if (!found)
-> +		goto out;
-> +	/*
-> +	 * Ok, here, we have contiguous pageblock marked as "isolated"
-> +	 * try migration.
-> + 	 */
-> +	retry = CONTIG_ALLOC_MIGRATION_RETRY;
-> +	end = found + pages;
-
-Hmm.. I can't understand below loop. 
-Maybe need refactoring.
-
-> +	for (start = scan_lru_pages(found, end); start < end;) {
-> +
-> +		if (do_migrate_range(found, end)) {
-> +			/* migration failure ... */
-> +			if (retry-- < 0)
-> +				break;
-> +			/* take a rest and synchronize LRU etc. */
-> +			lru_add_drain_all();
-> +			flush_scheduled_work();
-> +			cond_resched();
-> +			drain_all_pages();
-> +		}
-> +		start = scan_lru_pages(start, end);
-> +		if (!start)
-> +			break;
-> +	}
-
-<snip>
-
-> +void alloc_contig_freed_pages(unsigned long pfn,  unsigned long end,
-> +	struct list_head *list)
-> +{
-> +	struct page *page;
-> +	struct zone *zone;
-> +	int i, order;
-> +
-> +	zone = page_zone(pfn_to_page(pfn));
-> +	spin_lock_irq(&zone->lock);
-> +	while (pfn < end) {
-> +		VM_BUG_ON(!pfn_valid(pfn));
-> +		page = pfn_to_page(pfn);
-> +		VM_BUG_ON(page_count(page));
-> +		VM_BUG_ON(!PageBuddy(page));
-> +		list_del(&page->lru);
-> +		order = page_order(page);
-> +		zone->free_area[order].nr_free--;
-> +		rmv_page_order(page);
-> +		__mod_zone_page_state(zone, NR_FREE_PAGES, - (1UL << order));
-> +		for (i = 0;i < (1 << order); i++) {
-> +			struct page *x = page + i;
-> +			list_add(&x->lru, list);
-> +		}
-> +		page += 1 << order;
-                ^ pfn?
-
-> +	}
-> +	spin_unlock_irq(&zone->lock);
-> +
-> +	/*After this, pages on the list can be freed one be one */
-> +	list_for_each_entry(page, list, lru)
-> +		prep_new_page(page, 0, 0);
-> +}
-> +
->  #ifdef CONFIG_MEMORY_HOTREMOVE
->  /*
->   * All pages in the range must be isolated before calling this.
-> 
-
--- 
-Kind regards,
-Minchan Kim
+2010/8/26 Nikhil Sethi (निखिल सेठी) <nikhil@sethi.ws>
+>
+> Thanks Eric. I have not been able to reproduce this problem after
+> applying your new patch in about 12 hours of operation. Will let you
+> know if the bug re-appears.
+>
+> Thanks
+> Nikhil
+>
+> 2010/8/25 Eric Dumazet <eric.dumazet@gmail.com>:
+> > Le mercredi 25 août 2010 à 13:25 -0700, Nikhil Sethi (निखिल सेठी) a
+> > écrit :
+> >> Hello.
+> >>
+> >> I am running 2.5.35.3 with the above patch, and I still get these
+> >> failures. Though they are much less often than without the patch. A
+> >> snippet from dmesg below.
+> >>
+> >> Please let me know what other details I should provide. Thanks
+> >>
+> >> skbuff alloc of size 3872 failed
+> >> java: page allocation failure. order:1, mode:0x4020
+> >> Pid: 11464, comm: java Not tainted 2.6.35.3 #3
+> >> Call Trace:
+> >>  [<c0243d26>] ? __alloc_pages_nodemask+0x3e6/0x513
+> >>  [<c025c293>] ? __slab_alloc+0x2d7/0x2eb
+> >>  [<c025c946>] ? __kmalloc_track_caller+0x74/0x95
+> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+> >>  [<c0334097>] ? __alloc_skb+0x57/0x100
+> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+> >>  [<d0af4100>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
+> >>  [<d0cbc89f>] ? br_handle_frame+0x1b3/0x1c3 [bridge]
+> >>  [<c033d18a>] ? __netif_receive_skb+0x141/0x25f
+> >>  [<d0af23c1>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
+> >>  [<c02195bf>] ? tasklet_action+0x5f/0x65
+> >>  [<c0219873>] ? __do_softirq+0x60/0xc6
+> >>  [<c0219907>] ? do_softirq+0x2e/0x30
+> >>  [<c02199f9>] ? irq_exit+0x53/0x55
+> >>  [<c020392c>] ? do_IRQ+0x3a/0x72
+> >>  [<c0202be9>] ? common_interrupt+0x29/0x30
+> >> Mem-Info:
+> >> DMA per-cpu:
+> >> CPU    0: hi:    0, btch:   1 usd:   0
+> >> Normal per-cpu:
+> >> CPU    0: hi:   90, btch:  15 usd:  32
+> >> active_anon:6158 inactive_anon:15748 isolated_anon:0
+> >>  active_file:11477 inactive_file:22926 isolated_file:0
+> >>  unevictable:468 dirty:5788 writeback:0 unstable:0
+> >>  free:990 slab_reclaimable:3091 slab_unreclaimable:2349
+> >>  mapped:1410 shmem:5 pagetables:227 bounce:0
+> >> DMA free:1000kB min:124kB low:152kB high:184kB active_anon:1304kB
+> >> inactive_anon:2304kB active_file:2584kB inactive_file:4900kB
+> >> unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
+> >> mlocked:0kB dirty:0kB writeback:0kB mapped:284kB shmem:0kB
+> >> slab_reclaimable:648kB slab_unreclaimable:752kB kernel_stack:152kB
+> >> pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB
+> >> pages_scanned:0 all_unreclaimable? no
+> >> lowmem_reserve[]: 0 238 238
+> >> Normal free:2960kB min:1908kB low:2384kB high:2860kB
+> >> active_anon:23328kB inactive_anon:60688kB active_file:43324kB
+> >> inactive_file:86804kB unevictable:1872kB isolated(anon):0kB
+> >> isolated(file):0kB present:243840kB mlocked:1872kB dirty:23152kB
+> >> writeback:0kB mapped:5356kB shmem:20kB slab_reclaimable:11716kB
+> >> slab_unreclaimable:8644kB kernel_stack:888kB pagetables:908kB
+> >> unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+> >> all_unreclaimable? no
+> >> lowmem_reserve[]: 0 0 0
+> >> DMA: 76*4kB 29*8kB 5*16kB 0*32kB 0*64kB 1*128kB 1*256kB 0*512kB
+> >> 0*1024kB 0*2048kB 0*4096kB = 1000kB
+> >> Normal: 650*4kB 9*8kB 2*16kB 8*32kB 0*64kB 0*128kB 0*256kB 0*512kB
+> >> 0*1024kB 0*2048kB 0*4096kB = 2960kB
+> >> 37964 total pagecache pages
+> >> 3160 pages in swap cache
+> >> Swap cache stats: add 164954, delete 161794, find 97931/115609
+> >> Free swap  = 937284kB
+> >> Total swap = 963896kB
+> >> 65535 pages RAM
+> >> 1237 pages reserved
+> >> 29042 pages shared
+> >> 38802 pages non-shared
+> >> SLUB: Unable to allocate memory on node -1 (gfp=0x20)
+> >>   cache: kmalloc-8192, object size: 8192, buffer size: 8192, default
+> >> order: 3, min order: 1
+> >>   node 0: slabs: 0, objs: 0, free: 0
+> >> skbuff alloc of size 3872 failed
+> >> java: page allocation failure. order:1, mode:0x4020
+> >> Pid: 11464, comm: java Not tainted 2.6.35.3 #3
+> >> Call Trace:
+> >>  [<c0243d26>] ? __alloc_pages_nodemask+0x3e6/0x513
+> >>  [<c025c293>] ? __slab_alloc+0x2d7/0x2eb
+> >>  [<c025c946>] ? __kmalloc_track_caller+0x74/0x95
+> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+> >>  [<c0334097>] ? __alloc_skb+0x57/0x100
+> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
+> >>  [<d0af4100>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
+> >>  [<d0cbc89f>] ? br_handle_frame+0x1b3/0x1c3 [bridge]
+> >>  [<c033d18a>] ? __netif_receive_skb+0x141/0x25f
+> >>  [<d0af23c1>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
+> >>  [<c02195bf>] ? tasklet_action+0x5f/0x65
+> >>  [<c0219873>] ? __do_softirq+0x60/0xc6
+> >>  [<c0219907>] ? do_softirq+0x2e/0x30
+> >>  [<c02199f9>] ? irq_exit+0x53/0x55
+> >>  [<c020392c>] ? do_IRQ+0x3a/0x72
+> >>  [<c0202be9>] ? common_interrupt+0x29/0x30
+> >> Mem-Info:
+> >> DMA per-cpu:
+> >> CPU    0: hi:    0, btch:   1 usd:   0
+> >> Normal per-cpu:
+> >> CPU    0: hi:   90, btch:  15 usd:  32
+> >> active_anon:6158 inactive_anon:15748 isolated_anon:0
+> >>  active_file:11477 inactive_file:22926 isolated_file:0
+> >>  unevictable:468 dirty:5788 writeback:0 unstable:0
+> >>  free:990 slab_reclaimable:3091 slab_unreclaimable:2349
+> >>  mapped:1410 shmem:5 pagetables:227 bounce:0
+> >> DMA free:1000kB min:124kB low:152kB high:184kB active_anon:1304kB
+> >> inactive_anon:2304kB active_file:2584kB inactive_file:4900kB
+> >> unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
+> >> mlocked:0kB dirty:0kB writeback:0kB mapped:284kB shmem:0kB
+> >> slab_reclaimable:648kB slab_unreclaimable:752kB kernel_stack:152kB
+> >> pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB
+> >> pages_scanned:0 all_unreclaimable? no
+> >> lowmem_reserve[]: 0 238 238
+> >> Normal free:2960kB min:1908kB low:2384kB high:2860kB
+> >> active_anon:23328kB inactive_anon:60688kB active_file:43324kB
+> >> inactive_file:86804kB unevictable:1872kB isolated(anon):0kB
+> >> isolated(file):0kB present:243840kB mlocked:1872kB dirty:23152kB
+> >> writeback:0kB mapped:5356kB shmem:20kB slab_reclaimable:11716kB
+> >> slab_unreclaimable:8644kB kernel_stack:888kB pagetables:908kB
+> >> unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+> >> all_unreclaimable? no
+> >> lowmem_reserve[]: 0 0 0
+> >> DMA: 76*4kB 29*8kB 5*16kB 0*32kB 0*64kB 1*128kB 1*256kB 0*512kB
+> >> 0*1024kB 0*2048kB 0*4096kB = 1000kB
+> >> Normal: 650*4kB 9*8kB 2*16kB 8*32kB 0*64kB 0*128kB 0*256kB 0*512kB
+> >> 0*1024kB 0*2048kB 0*4096kB = 2960kB
+> >> 37964 total pagecache pages
+> >> 3160 pages in swap cache
+> >>
+> >> On Sun, Jun 6, 2010 at 3:42 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> >> >
+> >> > Le dimanche 06 juin 2010 à 11:56 +0200, Michael Guntsche a écrit :
+> >> > > On 2010.06.04 18:16:44 , Michael Guntsche wrote:
+> >> > > > I applied the patch recompiled and run it on the routerboard, trying
+> >> > > > to trigger the bug again.
+> >> > >
+> >> > > Hi Eric,
+> >> > >
+> >> > > Up to now I was not able to reproduce the bug, do you think this patch
+> >> > > can be pushed to mainline or is there a "better"/other  fix for it?
+> >> > >
+> >> > > Kind regards,
+> >> > > Michael
+> >> > >
+> >> > >
+> >> >
+> >> > Thanks Michael for testing.
+> >> >
+> >> > I'll submit ASAP an official patch, sent to all people involved in this
+> >> > driver to get their Ack (or Nack).
+> >> >
+> >> > IEEE80211_MAX_MPDU_LEN being 3840 + somebits is suspect, since it doesnt
+> >> > match 802.11 specs.
+> >> >
+> >> > It should be more close of 2304 + MAC header (32bytes) + FCS (4 bytes) ?
+> >> >
+> >> >
+> >> >
+> >> > --
+> >
+> >
+> > reading my former patch, I believe I mistakenly used a max_t() instead
+> > of a min_() macro :
+> >
+> > diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
+> > index ca6065b..0a0dc3a 100644
+> > --- a/drivers/net/wireless/ath/ath9k/recv.c
+> > +++ b/drivers/net/wireless/ath/ath9k/recv.c
+> > @@ -226,10 +226,10 @@ static int ath_rx_edma_init(struct ath_softc *sc, int nbufs)
+> >        u32 size;
+> >
+> >
+> > -       common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
+> > -                                    ah->caps.rx_status_len,
+> > -                                    min(common->cachelsz, (u16)64));
+> > -
+> > +       size = roundup(IEEE80211_MAX_MPDU_LEN + ah->caps.rx_status_len,
+> > +                      min(common->cachelsz, (u16)64));
+> > +       common->rx_bufsize = max_t(u32, size,
+> > +                                  SKB_MAX_ORDER(NET_SKB_PAD + common->cachelsz, 0));
+> >        ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
+> >                                    ah->caps.rx_status_len);
+> >
+> >
+> >
+> > Please use instead this one :
+> >
+> > diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
+> > index ca6065b..0a0dc3a 100644
+> > --- a/drivers/net/wireless/ath/ath9k/recv.c
+> > +++ b/drivers/net/wireless/ath/ath9k/recv.c
+> > @@ -226,10 +226,10 @@ static int ath_rx_edma_init(struct ath_softc *sc, int nbufs)
+> >        u32 size;
+> >
+> >
+> > -       common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
+> > -                                    ah->caps.rx_status_len,
+> > -                                    min(common->cachelsz, (u16)64));
+> > -
+> > +       size = roundup(IEEE80211_MAX_MPDU_LEN + ah->caps.rx_status_len,
+> > +                      min(common->cachelsz, (u16)64));
+> > +       common->rx_bufsize = min_t(u32, size,
+> > +                                  SKB_MAX_ORDER(NET_SKB_PAD + common->cachelsz, 0));
+> >        ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
+> >                                    ah->caps.rx_status_len);
+> >
+> >
+> >
+> >
+> >
