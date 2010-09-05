@@ -1,157 +1,471 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab0IEWbK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 18:31:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52032 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752880Ab0IEWbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 18:31:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH] vmscan: check all_unreclaimable in direct reclaim path
-Date: Mon, 6 Sep 2010 00:30:16 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, "linux-mm" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        "M. Vefa Bicakci" <bicave@superonline.com>, stable@kernel.org
-References: <1283697637-3117-1-git-send-email-minchan.kim@gmail.com>
-In-Reply-To: <1283697637-3117-1-git-send-email-minchan.kim@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009060030.16669.rjw@sisk.pl>
+	id S1754761Ab0IEWb5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 18:31:57 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4866 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab0IEWb4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 18:31:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Sun, 05 Sep 2010 15:31:46 -0700
+From: Rhyland@vger.kernel.org, Klein@vger.kernel.org
+To: cbouatmailru@gmail.com
+Cc: broonie@opensource.wolfsonmicro.com, khali@linux-fr.org, olof@lixom.net,
+        achew@nvidia.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH v3] power supply: add driver for TI BQ20Z75 gas gauge IC
+Date: Sun,  5 Sep 2010 15:31:23 -0700
+Message-Id: <1283725883-22525-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 05 Sep 2010 22:31:46.0392 (UTC) FILETIME=[1FA38580:01CB4D4A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, September 05, 2010, Minchan Kim wrote:
-> M. Vefa Bicakci reported 2.6.35 kernel hang up when hibernation on his
-> 32bit 3GB mem machine. (https://bugzilla.kernel.org/show_bug.cgi?id=16771)
-> Also he was bisected first bad commit is below
-> 
->   commit bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
->   Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->   Date:   Fri Jun 4 14:15:05 2010 -0700
-> 
->      vmscan: fix do_try_to_free_pages() return value when priority==0 reclaim failure
-> 
-> At first impression, this seemed very strange because the above commit only
-> chenged function return value and hibernate_preallocate_memory() ignore
-> return value of shrink_all_memory(). But it's related.
-> 
-> Now, page allocation from hibernation code may enter infinite loop if
-> the system has highmem. The reasons are that vmscan don't care enough 
-> OOM case when oom_killer_disabled. 
-> 
-> The problem sequence is following as. 
-> 
-> 1. hibernation
-> 2. oom_disable
-> 3. alloc_pages
-> 4. do_try_to_free_pages
->        if (scanning_global_lru(sc) && !all_unreclaimable)
->                return 1;
-> 
-> If kswapd is not freezed, it would set zone->all_unreclaimable to 1 and then
-> shrink_zones maybe return true(ie, all_unreclaimable is true). 
-> so at last, alloc_pages could go to _nopage_. If it is, it should have no problem.
-> 
-> This patch adds all_unreclaimable check to protect in direct reclaim path, too.
-> It can care of hibernation OOM case and help bailout all_unreclaimable case slightly.
-> 
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: M. Vefa Bicakci <bicave@superonline.com>
-> Cc: stable@kernel.org
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+From: Rhyland Klein <rklein@nvidia.com>
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+this driver depends on I2C and uses SMBUS for communication with the host.
 
-> ---
->  mm/vmscan.c |   33 +++++++++++++++++++++++++++------
->  1 files changed, 27 insertions(+), 6 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index f620ab3..53b23a7 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1893,12 +1893,11 @@ static void shrink_zone(int priority, struct zone *zone,
->   * If a zone is deemed to be full of pinned pages then just give it a light
->   * scan then give up on it.
->   */
-> -static bool shrink_zones(int priority, struct zonelist *zonelist,
-> +static void shrink_zones(int priority, struct zonelist *zonelist,
->  					struct scan_control *sc)
->  {
->  	struct zoneref *z;
->  	struct zone *zone;
-> -	bool all_unreclaimable = true;
->  
->  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
->  					gfp_zone(sc->gfp_mask), sc->nodemask) {
-> @@ -1916,8 +1915,31 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
->  		}
->  
->  		shrink_zone(priority, zone, sc);
-> -		all_unreclaimable = false;
->  	}
-> +}
-> +
-> +static inline bool all_unreclaimable(struct zonelist *zonelist,
-> +		struct scan_control *sc)
-> +{
-> +	struct zoneref *z;
-> +	struct zone *zone;
-> +	bool all_unreclaimable = true;
-> +
-> +	if (!scanning_global_lru(sc))
-> +		return false;
-> +
-> +	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> +			gfp_zone(sc->gfp_mask), sc->nodemask) {
-> +		if (!populated_zone(zone))
-> +			continue;
-> +		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-> +			continue;
-> +		if (zone->pages_scanned < (zone_reclaimable_pages(zone) * 6)) {
-> +			all_unreclaimable = false;
-> +			break;
-> +		}
-> +	}
-> +
->  	return all_unreclaimable;
->  }
->  
-> @@ -1941,7 +1963,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  					struct scan_control *sc)
->  {
->  	int priority;
-> -	bool all_unreclaimable;
->  	unsigned long total_scanned = 0;
->  	struct reclaim_state *reclaim_state = current->reclaim_state;
->  	struct zoneref *z;
-> @@ -1958,7 +1979,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
->  		sc->nr_scanned = 0;
->  		if (!priority)
->  			disable_swap_token();
-> -		all_unreclaimable = shrink_zones(priority, zonelist, sc);
-> +		shrink_zones(priority, zonelist, sc);
->  		/*
->  		 * Don't shrink slabs when reclaiming memory from
->  		 * over limit cgroups
-> @@ -2020,7 +2041,7 @@ out:
->  		return sc->nr_reclaimed;
->  
->  	/* top priority shrink_zones still had more to do? don't OOM, then */
-> -	if (scanning_global_lru(sc) && !all_unreclaimable)
-> +	if (!all_unreclaimable(zonelist, sc))
->  		return 1;
->  
->  	return 0;
-> 
+Addressed comments from reviews by Mark Brown and Jean Delvare.
+   * Cleaned up whitespace and alignment issues
+   * changed return codes to more appropriate values
+   * change Kconfig option name to be consistent with existing devices
+   * removed global struct and moved to device specific data
+   * changed printk to dev_dbg
+   * added reviewed-by tags for Mark and Jean.
+
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+---
+ drivers/power/Kconfig   |    7 +
+ drivers/power/Makefile  |    1 +
+ drivers/power/bq20z75.c |  385 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 393 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/bq20z75.c
+
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 8e9ba17..a1fd3c0 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -109,6 +109,13 @@ config BATTERY_WM97XX
+ 	help
+ 	  Say Y to enable support for battery measured by WM97xx aux port.
+ 
++config BATTERY_BQ20Z75
++        tristate "TI BQ20z75 gas gauge"
++        depends on I2C
++        help
++         Say Y to include support for TI BQ20z75 SBS-compliant
++         gas gauge and protection IC.
++
+ config BATTERY_BQ27x00
+ 	tristate "BQ27x00 battery driver"
+ 	depends on I2C
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index 0005080..a5006a7 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_BATTERY_OLPC)	+= olpc_battery.o
+ obj-$(CONFIG_BATTERY_TOSA)	+= tosa_battery.o
+ obj-$(CONFIG_BATTERY_COLLIE)	+= collie_battery.o
+ obj-$(CONFIG_BATTERY_WM97XX)	+= wm97xx_battery.o
++obj-$(CONFIG_BATTERY_BQ20Z75)	+= bq20z75.o
+ obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x00_battery.o
+ obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
+ obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
+diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
+new file mode 100644
+index 0000000..a1c7ae2
+--- /dev/null
++++ b/drivers/power/bq20z75.c
+@@ -0,0 +1,385 @@
++/*
++ * Gas Gauge driver for TI's BQ20Z75
++ *
++ * Copyright (c) 2010, NVIDIA Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/err.h>
++#include <linux/power_supply.h>
++#include <linux/i2c.h>
++#include <linux/slab.h>
++
++enum {
++	REG_MANUFACTURER_DATA,
++	REG_TEMPERATURE,
++	REG_VOLTAGE,
++	REG_CURRENT,
++	REG_CAPACITY,
++	REG_TIME_TO_EMPTY,
++	REG_TIME_TO_FULL,
++	REG_STATUS,
++	REG_CYCLE_COUNT,
++	REG_SERIAL_NUMBER
++};
++
++/* manufacturer access defines */
++#define MANUFACTURER_ACCESS_STATUS	0x0006
++#define MANUFACTURER_ACCESS_SLEEP	0x0011
++
++/* battery status value bits */
++#define BATTERY_CHARGING		0x40
++#define BATTERY_FULL_CHARGED		0x20
++#define BATTERY_FULL_DISCHARGED		0x10
++
++#define BQ20Z75_DATA(_psp, _addr, _min_value, _max_value) { \
++	.psp = _psp, \
++	.addr = _addr, \
++	.min_value = _min_value, \
++	.max_value = _max_value, \
++}
++
++static const struct bq20z75_device_data {
++	enum power_supply_property psp;
++	u8 addr;
++	int min_value;
++	int max_value;
++} bq20z75_data[] = {
++	[REG_MANUFACTURER_DATA] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_PRESENT, 0x00, 0, 65535),
++	[REG_TEMPERATURE] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_TEMP, 0x08, 0, 65535),
++	[REG_VOLTAGE] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_VOLTAGE_NOW, 0x09, 0, 20000),
++	[REG_CURRENT] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_CURRENT_NOW, 0x0A, -32768,
++			32767),
++	[REG_CAPACITY] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_CAPACITY, 0x0E, 0, 100),
++	[REG_TIME_TO_EMPTY] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG, 0x12, 0,
++			65535),
++	[REG_TIME_TO_FULL] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_TIME_TO_FULL_AVG, 0x13, 0,
++			65535),
++	[REG_STATUS] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_STATUS, 0x16, 0, 65535),
++	[REG_CYCLE_COUNT] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_CYCLE_COUNT, 0x17, 0, 65535),
++	[REG_SERIAL_NUMBER] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_SERIAL_NUMBER, 0x1C, 0, 65535),
++};
++
++static enum power_supply_property bq20z75_properties[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++	POWER_SUPPLY_PROP_CYCLE_COUNT,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_TEMP,
++	POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG,
++	POWER_SUPPLY_PROP_TIME_TO_FULL_AVG,
++	POWER_SUPPLY_PROP_SERIAL_NUMBER,
++};
++
++struct bq20z75_info {
++	struct i2c_client	*client;
++	struct power_supply	power_supply;
++};
++
++static int bq20z75_get_battery_presence_and_health(
++	struct i2c_client *client, enum power_supply_property psp,
++	union power_supply_propval *val)
++{
++	s32 ret;
++
++	/* Write to ManufacturerAccess with
++	 * ManufacturerAccess command and then
++	 * read the status */
++	ret = i2c_smbus_write_word_data(client,
++		bq20z75_data[REG_MANUFACTURER_DATA].addr,
++		MANUFACTURER_ACCESS_STATUS);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"%s: i2c write for battery presence failed\n",
++			__func__);
++		return -ENODEV;
++	}
++
++	ret = i2c_smbus_read_word_data(client,
++		bq20z75_data[REG_MANUFACTURER_DATA].addr);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"%s: i2c read for battery presence failed\n",
++			__func__);
++		return -EIO;
++	}
++
++	if (ret < bq20z75_data[REG_MANUFACTURER_DATA].min_value ||
++	    ret > bq20z75_data[REG_MANUFACTURER_DATA].max_value) {
++		val->intval = 0;
++		return 0;
++	}
++
++	/* Mask the upper nibble of 2nd byte and
++	 * lower byte of response then
++	 * shift the result by 8 to get status*/
++	ret &= 0x0F00;
++	ret >>= 8;
++	if (psp == POWER_SUPPLY_PROP_PRESENT) {
++		if (ret == 0x0F)
++			/* battery removed */
++			val->intval = 0;
++		else
++			val->intval = 1;
++	} else if (psp == POWER_SUPPLY_PROP_HEALTH) {
++		if (ret == 0x09)
++			val->intval = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
++		else if (ret == 0x0B)
++			val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
++		else if (ret == 0x0C)
++			val->intval = POWER_SUPPLY_HEALTH_DEAD;
++		else
++			val->intval = POWER_SUPPLY_HEALTH_GOOD;
++	}
++
++	return 0;
++}
++
++static int bq20z75_get_battery_property(struct i2c_client *client,
++	int reg_offset, enum power_supply_property psp,
++	union power_supply_propval *val)
++{
++	s32 ret;
++
++	ret = i2c_smbus_read_word_data(client,
++		bq20z75_data[reg_offset].addr);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"%s: i2c read for %d failed\n", __func__, reg_offset);
++		return -EIO;
++	}
++
++	if (ret >= bq20z75_data[reg_offset].min_value &&
++	    ret <= bq20z75_data[reg_offset].max_value) {
++		val->intval = ret;
++		if (psp == POWER_SUPPLY_PROP_STATUS) {
++			if (ret & BATTERY_CHARGING)
++				val->intval = POWER_SUPPLY_STATUS_CHARGING;
++			else if (ret & BATTERY_FULL_CHARGED)
++				val->intval = POWER_SUPPLY_STATUS_FULL;
++			else if (ret & BATTERY_FULL_DISCHARGED)
++				val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
++			else
++				val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
++		}
++		/* bq20z75 provides battery tempreture in 0.1°K
++		 * so convert it to °C */
++		else if (psp == POWER_SUPPLY_PROP_TEMP)
++			val->intval = ret - 2731;
++	} else {
++		if (psp == POWER_SUPPLY_PROP_STATUS)
++			val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
++		else
++			val->intval = 0;
++	}
++
++	return 0;
++}
++
++static int bq20z75_get_battery_capacity(struct i2c_client *client,
++	union power_supply_propval *val)
++{
++	s32 ret;
++
++	ret = i2c_smbus_read_byte_data(client, bq20z75_data[REG_CAPACITY].addr);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"%s: i2c read for %d failed\n", __func__, REG_CAPACITY);
++		return -EIO;
++	}
++
++	/* bq20z75 spec says that this can be >100 %
++	 * even if max value is 100 % */
++	val->intval = min(ret, 100);
++
++	return 0;
++}
++
++static int bq20z75_get_property(struct power_supply *psy,
++	enum power_supply_property psp,
++	union power_supply_propval *val)
++{
++	int count;
++	int ret;
++	struct bq20z75_info *bq20z75_device = container_of(psy,
++				struct bq20z75_info, power_supply);
++	struct i2c_client *client = bq20z75_device->client;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_PRESENT:
++	case POWER_SUPPLY_PROP_HEALTH:
++		ret = bq20z75_get_battery_presence_and_health(client, psp, val);
++		if (ret)
++			return ret;
++		break;
++
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
++		break;
++
++	case POWER_SUPPLY_PROP_CAPACITY:
++		ret = bq20z75_get_battery_capacity(client, val);
++		if (ret)
++			return ret;
++		break;
++
++	case POWER_SUPPLY_PROP_STATUS:
++	case POWER_SUPPLY_PROP_CYCLE_COUNT:
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++	case POWER_SUPPLY_PROP_TEMP:
++	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG:
++	case POWER_SUPPLY_PROP_TIME_TO_FULL_AVG:
++	case POWER_SUPPLY_PROP_SERIAL_NUMBER:
++		for (count = 0; count < ARRAY_SIZE(bq20z75_data); count++) {
++			if (psp == bq20z75_data[count].psp)
++				break;
++		}
++
++		ret = bq20z75_get_battery_property(client, count, psp, val);
++		if (ret)
++			return ret;
++		break;
++
++	default:
++		dev_err(&client->dev,
++			"%s: INVALID property\n", __func__);
++		return -EINVAL;
++	}
++
++	dev_dbg(&client->dev,
++		"%s: property = %d, value = %d\n", __func__, psp, val->intval);
++
++	return 0;
++}
++
++static int bq20z75_probe(struct i2c_client *client,
++	const struct i2c_device_id *id)
++{
++	struct bq20z75_info *bq20z75_device;
++	int rc;
++
++	bq20z75_device = kzalloc(sizeof(struct bq20z75_info), GFP_KERNEL);
++	if (!bq20z75_device)
++		return -ENOMEM;
++
++	bq20z75_device->client = client;
++	bq20z75_device->power_supply.name = "battery";
++	bq20z75_device->power_supply.type = POWER_SUPPLY_TYPE_BATTERY;
++	bq20z75_device->power_supply.properties = bq20z75_properties;
++	bq20z75_device->power_supply.num_properties =
++		ARRAY_SIZE(bq20z75_properties);
++	bq20z75_device->power_supply.get_property = bq20z75_get_property;
++
++	i2c_set_clientdata(client, bq20z75_device);
++
++	rc = power_supply_register(&client->dev, &bq20z75_device->power_supply);
++	if (rc) {
++		dev_err(&client->dev,
++			"%s: Failed to register power supply\n", __func__);
++		kfree(bq20z75_device);
++		return rc;
++	}
++
++	dev_info(&client->dev,
++		"%s: battery gas gauge device registered\n", client->name);
++
++	return 0;
++}
++
++static int bq20z75_remove(struct i2c_client *client)
++{
++	struct bq20z75_info *bq20z75_device = i2c_get_clientdata(client);
++
++	power_supply_unregister(&bq20z75_device->power_supply);
++	kfree(bq20z75_device);
++	bq20z75_device = NULL;
++
++	return 0;
++}
++
++#if defined CONFIG_PM
++static int bq20z75_suspend(struct i2c_client *client,
++	pm_message_t state)
++{
++	s32 ret;
++
++	/* write to manufacturer access with sleep command */
++	ret = i2c_smbus_write_word_data(client,
++		bq20z75_data[REG_MANUFACTURER_DATA].addr,
++		MANUFACTURER_ACCESS_SLEEP);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"%s: i2c write for %d failed\n",
++			__func__, MANUFACTURER_ACCESS_SLEEP);
++		return -EIO;
++	}
++
++	return 0;
++}
++#else
++#define bq20z75_suspend		NULL
++#endif
++/* any smbus transaction will wake up bq20z75 */
++#define bq20z75_resume		NULL
++
++static const struct i2c_device_id bq20z75_id[] = {
++	{ "bq20z75", 0 },
++	{}
++};
++
++static struct i2c_driver bq20z75_battery_driver = {
++	.probe		= bq20z75_probe,
++	.remove		= bq20z75_remove,
++	.suspend	= bq20z75_suspend,
++	.resume		= bq20z75_resume,
++	.id_table	= bq20z75_id,
++	.driver = {
++		.name	= "bq20z75-battery",
++	},
++};
++
++static int __init bq20z75_battery_init(void)
++{
++	return i2c_add_driver(&bq20z75_battery_driver);
++}
++module_init(bq20z75_battery_init);
++
++static void __exit bq20z75_battery_exit(void)
++{
++	i2c_del_driver(&bq20z75_battery_driver);
++}
++module_exit(bq20z75_battery_exit);
++
++MODULE_DESCRIPTION("BQ20z75 battery monitor driver");
++MODULE_LICENSE("GPL");
+-- 
+1.7.0.4
 
