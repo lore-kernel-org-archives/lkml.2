@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab0IEGe1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 02:34:27 -0400
-Received: from kroah.org ([198.145.64.141]:45286 "EHLO coco.kroah.org"
+	id S1752656Ab0IEGfB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 02:35:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38333 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177Ab0IEGeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 02:34:23 -0400
-Date: Sat, 4 Sep 2010 22:24:23 -0700
-From: Greg KH <greg@kroah.com>
-To: David Cross <david.cross@cypress.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] West Bridge Astoria Driver 2.6.35, minor block and
-	device driver updates
-Message-ID: <20100905052423.GA4396@kroah.com>
-References: <5BFACB1451C1459BA8562A5561D0A4E6@stanford.edu> <1283386101.17399.10.camel@odc-laptop> <1283467794.4378.17.camel@odc-laptop>
+	id S1751266Ab0IEGfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 02:35:00 -0400
+Date: Sat, 4 Sep 2010 23:23:53 -0700
+From: Greg KH <gregkh@suse.de>
+To: Javier Martinez Canillas <martinez.javier@gmail.com>
+Cc: Bill Pemberton <wfp5p@virginia.edu>, Arnaud Patard <apatard@mandriva.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Huang Weiyi <weiyi.huang@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] staging: xgifb: Fix compile warning
+Message-ID: <20100905062353.GA18329@suse.de>
+References: <1283641607.9641.4.camel@lenovo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283467794.4378.17.camel@odc-laptop>
+In-Reply-To: <1283641607.9641.4.camel@lenovo>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 02, 2010 at 03:49:54PM -0700, David Cross wrote:
-> This patch contains minor updates to the west bridge block and device
-> drivers, including the addition of a common lock and a minor update to
-> remove the blk_fs_request call based on a kernel update. These changes
-> could possibly be separated, but are very minor in scope and as such
-> have been submitted together.
-
-Again, one patch per logical change please.  That's the way patches for
-the kernel work.  So can you please separate these and resend them?
-
-
-> Signed-off-by: David Cross <david.cross@cypress.com>
+On Sat, Sep 04, 2010 at 07:06:47PM -0400, Javier Martinez Canillas wrote:
+> Hello, In today linux-next I got a some compile warnings with the staging/xgifb driver. This is the first of a 4 patchset that fix all the issues.
 > 
-> diff -uprN -X linux-next-vanilla/Documentation/dontdiff linux-next-vanilla/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c linux-next-incl-sdk/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
-> --- linux-next-vanilla/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c	2010-08-31 19:32:51.000000000 -0700
-> +++ linux-next-incl-sdk/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c	2010-08-25 18:29:44.000000000 -0700
-> @@ -389,7 +389,7 @@ int cyasblkdev_media_changed(struct gend
->  	struct cyasblkdev_blk_data *bd;
+> The patches are:
+> 
+> [PATCH 1/4] staging: xgifb: Fix compile warning
+> [PATCH 2/4] staging: xgifb: Add compilation conditionals
+> [PATCH 3/4] staging: xgifb: Removes unused variable
+> [PATCH 4/4] staging: xgifb: Init uninitialized variables and fix some style issues
+> 
+> Thanks a lot.
+> 
+> Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+> ---
+>  drivers/staging/xgifb/XGI_main_26.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+> index 7cd3e95..3c80191 100644
+> --- a/drivers/staging/xgifb/XGI_main_26.c
+> +++ b/drivers/staging/xgifb/XGI_main_26.c
+> @@ -3418,7 +3418,7 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
+>  		XGIfb_registered = 1;
 >  
->  	#ifndef WESTBRIDGE_NDEBUG
-> -	cy_as_hal_print_message("cyasblkdev_media_changed() is called\n");
-> +	cy_as_hal_print_message(KERN_INFO"cyasblkdev_media_changed() is called\n");
+>  		printk(KERN_INFO "XGIfb: Installed XGIFB_GET_INFO ioctl (%lx)\n",
+> -		       XGIFB_GET_INFO);
+> +		       (unsigned long)XGIFB_GET_INFO);
 
-Ick.  How about a ' ' after KERN_INFO?  And do you really always want to
-do this?  You can enable tracing to get this type of info.
+No, you should use %p instead.
 
->  	#endif
-
-The whole NDEBUG stuff should be removed from the .c files and put in
-the .h file if it's really needed.
-
-> @@ -493,7 +493,7 @@ static void cyasblkdev_issuecallback(
->  {
->  	int retry_cnt = 0;
->  	DBGPRN_FUNC_NAME;
-> -
-> +	
->  	if (status != CY_AS_ERROR_SUCCESS) {
->  		#ifndef WESTBRIDGE_NDEBUG
->  		cy_as_hal_print_message(
-
-You added a line of trailing spaces for no good reason :(
-
-
-> @@ -509,7 +509,10 @@ static void cyasblkdev_issuecallback(
->  		__func__, (unsigned int) gl_bd->queue.req, status,
->  		(unsigned int) blk_rq_sectors(gl_bd->queue.req)) ;
->  	#endif
-> -
-> +	
-> +	if(rq_data_dir(gl_bd->queue.req) != READ) {
-> +		cy_as_release_common_lock();
-> +	}
-
-No need for the extra {}, please take a look at
-Documentation/CodingStyle for how to do things for the kernel.  Also a
-space is needed after the 'if'.
-
-Please run your patches through the scripts/checkpatch.pl tool before
-sending them to me.  Yes, there's lots of checkpatch issues in the
-driver already, but don't add new ones now please.
-
-Care to redo this?
+Also, you don't spam the kernel log for assigning an ioctl function
+pointer, that's just looney...
 
 thanks,
 
