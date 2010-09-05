@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab0IEBzT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 21:55:19 -0400
-Received: from mail.perches.com ([173.55.12.10]:1346 "EHLO mail.perches.com"
+	id S1754785Ab0IEBy6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 21:54:58 -0400
+Received: from mail.perches.com ([173.55.12.10]:1351 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754644Ab0IEBxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754671Ab0IEBxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 4 Sep 2010 21:53:07 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Reinette Chatre <reinette.chatre@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 03/13] drivers/net/wireless/iwlwifi: Remove unnecessary casts of private_data
-Date: Sat,  4 Sep 2010 18:52:44 -0700
-Message-Id: <0edcdb63c6c57d0cf810e8c637cf7e8163b80962.1283650107.git.joe@perches.com>
+Subject: [PATCH 05/13] drivers/scsi: Remove unnecessary casts of private_data
+Date: Sat,  4 Sep 2010 18:52:46 -0700
+Message-Id: <ce0592fde56f01f9027bf5d1cfa83536b2aca8e4.1283650107.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.2.19.g9a302
 In-Reply-To: <cover.1283650107.git.joe@perches.com>
 References: <cover.1283650107.git.joe@perches.com>
@@ -26,45 +24,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c |    2 +-
- drivers/net/wireless/iwlwifi/iwl-debugfs.c     |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/scsi/aacraid/linit.c |    2 +-
+ drivers/scsi/sg.c            |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c b/drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c
-index d706b8a..215d29e 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c
-@@ -929,7 +929,7 @@ ssize_t iwl_ucode_bt_stats_read(struct file *file,
- 				char __user *user_buf,
- 				size_t count, loff_t *ppos)
+diff --git a/drivers/scsi/aacraid/linit.c b/drivers/scsi/aacraid/linit.c
+index cad6f9a..aa40036 100644
+--- a/drivers/scsi/aacraid/linit.c
++++ b/drivers/scsi/aacraid/linit.c
+@@ -770,7 +770,7 @@ static long aac_compat_cfg_ioctl(struct file *file, unsigned cmd, unsigned long
  {
--	struct iwl_priv *priv = (struct iwl_priv *)file->private_data;
-+	struct iwl_priv *priv = file->private_data;
- 	int pos = 0;
- 	char *buf;
- 	int bufsz = (sizeof(struct statistics_bt_activity) * 24) + 200;
-diff --git a/drivers/net/wireless/iwlwifi/iwl-debugfs.c b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-index 0ee8f51..85e5ad4 100644
---- a/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
-@@ -1528,7 +1528,7 @@ static ssize_t iwl_dbgfs_ucode_bt_stats_read(struct file *file,
- 					char __user *user_buf,
- 					size_t count, loff_t *ppos)
+ 	if (!capable(CAP_SYS_RAWIO))
+ 		return -EPERM;
+-	return aac_compat_do_ioctl((struct aac_dev *)file->private_data, cmd, arg);
++	return aac_compat_do_ioctl(file->private_data, cmd, arg);
+ }
+ #endif
+ 
+diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+index 78d6163..6efa8dd 100644
+--- a/drivers/scsi/sg.c
++++ b/drivers/scsi/sg.c
+@@ -210,7 +210,7 @@ static void sg_put_dev(Sg_device *sdp);
+ 
+ static int sg_allow_access(struct file *filp, unsigned char *cmd)
  {
--	struct iwl_priv *priv = (struct iwl_priv *)file->private_data;
-+	struct iwl_priv *priv = file->private_data;
+-	struct sg_fd *sfp = (struct sg_fd *)filp->private_data;
++	struct sg_fd *sfp = filp->private_data;
  
- 	return priv->cfg->ops->lib->debugfs_ops.bt_stats_read(file,
- 			user_buf, count, ppos);
-@@ -1566,7 +1566,7 @@ static ssize_t iwl_dbgfs_bt_traffic_read(struct file *file,
- 					char __user *user_buf,
- 					size_t count, loff_t *ppos) {
- 
--	struct iwl_priv *priv = (struct iwl_priv *)file->private_data;
-+	struct iwl_priv *priv = file->private_data;
- 	int pos = 0;
- 	char buf[200];
- 	const size_t bufsz = sizeof(buf);
+ 	if (sfp->parentdp->device->type == TYPE_SCANNER)
+ 		return 0;
 -- 
 1.7.2.19.g9a302
 
