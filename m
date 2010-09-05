@@ -1,94 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab0IEVfR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 17:35:17 -0400
-Received: from n3-vm1.bullet.mail.gq1.yahoo.com ([67.195.23.157]:45741 "HELO
-	n3-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754099Ab0IEVfQ (ORCPT
+	id S1754684Ab0IEVys (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 17:54:48 -0400
+Received: from smtp107.sbc.mail.mud.yahoo.com ([68.142.198.105]:34139 "HELO
+	smtp107.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754465Ab0IEVyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 17:35:16 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 547405.32199.bm@omp122.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=qIxCWtx5pXhlPa/UH01Rj1Rz8bHYWzqwqfXH+Taghq3AGEKNmIAnX5EL347+pWI05WRU0jGU4TmY2ez2a9KuQX2fgwjliRzopnIj2BgEB7K1A1/hwwnZoYF1pVPYQJsABwRO8v23ziqBlDx9FJYls1CS8fwkIE8tFUbu7I+5FCE=;
-Message-ID: <436709.64173.qm@web180305.mail.gq1.yahoo.com>
-X-YMail-OSG: MdBuZbAVM1lvlQ7rUl1ArDxuh7mlJ6068l2g_Zo5ZNg13f4
- 3fevWVnKKNwdXjPp9jPEVdxoSLNRtWruIm.FjCxueudVrRyuYk04q_dFpkAC
- Ik5j9Rjo82TzIVCI0Er3DzdVgmE3eiH5ir6pmjtiP8HanY7GXVpRLziOv5Nf
- eZZUzjOO1lNxIApsgDQqxJyKuGUz7WuzhOLPrNW53HfJ5zQUipw3slOZTBgZ
- 8QhNF30r55eMIIV.g4KjN4IjxVdBjxzEdlmho30PPZ7S57E5cev_qzpWmnPC
- W.Wk7O1d6FiEvKiutysXFLBByiVM2z2bySW3ndr6N3eh0N.kTNW0Xs8ZXCHE
- dyjkXDpPXaURNSaA_sZGwXPazLz0ANzqVOkrhpwOrLNHse0XL3J0hHZRY7A-
+	Sun, 5 Sep 2010 17:54:46 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: wHj_roMVM1kFpLtJ5VBAAXQ_gNRroNolmiSWHEoCY1gufCK
+ d1yC3_zcoEmCHy_L9ap0A4p3kOai_qbZDYWt.iw62pFdNcNOlzEmPLLuI7gx
+ XJ2zIIEiOD8l5TA0oNpnDp3mFcixQh.RZVbSz.XfKtwuxmkFeJjc1e1CdmE3
+ O7Pt16kjXlOmTANZuGShwPy.svjqf7SbqliMiwVnskYE9g0hxOqkkHH_lmuR
+ 8pacsROqmgQ0R.HRPBgaASZj_arVA6nx6u559sbo1ll68IghVPWse6zWyI7C
+ nrQm.6E7rStd8wLE3Qp6NUt.H5_goehpW24RLGQmIjWrJgtyA4RhsPfypZYY
  -
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Sun, 5 Sep 2010 14:35:15 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH] usbnet: allow rx_process() to ignore packets
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: David Brownell <dbrownell@users.sourceforge.net>, netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-In-Reply-To: <201009051816.12823.linux@rainbow-software.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100905201802.GC18411@core.coreip.homeip.net>
+References: <4C7421FB.2060007@vlnb.net>
+	 <1282685014.32007.51.camel@haakon2.linux-iscsi.org>
+	 <4C76CA57.3050405@vlnb.net>
+	 <1282857806.32007.175.camel@haakon2.linux-iscsi.org>
+	 <4C79484B.3090607@vlnb.net>
+	 <1283028468.32007.357.camel@haakon2.linux-iscsi.org>
+	 <4C7C18CE.5020103@vlnb.net>
+	 <1283204792.32007.448.camel@haakon2.linux-iscsi.org>
+	 <4C7FFD1A.8090509@vlnb.net>
+	 <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
+	 <20100905201802.GC18411@core.coreip.homeip.net>
+Content-Type: text/plain
+Date: Sun, 05 Sep 2010 14:50:47 -0700
+Message-Id: <1283723447.556.133.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> > > From: Ondrej Zary <linux@rainbow-software.org>
-> > > Subject: [PATCH] usbnet: allow rx_process() to
-> ignore packets
+On Sun, 2010-09-05 at 13:18 -0700, Dmitry Torokhov wrote:
+> On Thu, Sep 02, 2010 at 01:25:58PM -0700, Nicholas A. Bellinger wrote:
+> > On Thu, 2010-09-02 at 23:38 +0400, Vladislav Bolkhovitin wrote:
+> > > Nicholas A. Bellinger, on 08/31/2010 01:46 AM wrote:
+> > > >>> It is obvious to even an casual observer from watching the TCM/LIO patch
+> > > >>> series that have been flying across the linux-scsi wire the last 24
+> > > >>> months that the major features (including PR and ALUA, and new fabric
+> > > >>> module drivers) have been developed individual feature bit by feature
+> > > >>> bit using a distributed git workflow in a bisectable manner.  Each
+> > > >>> series was produced in such a manner that each patch could be reviewed
+> > > >>> individually by those interested parties.
+> > > >>
+> > > >> That's a nice, but quite meaningless LIO advertisement. SCST is using
+> > > >> the same bisectable, distributed and reviewable workflow.
+> > > >
+> > > > Actually, that is incorrect.  Your project uses a centralized
+> > > > development model, which has it's obvious limitiations in terms of
+> > > > speed, flexability, and community scale.  But really, don't take my word
+> > > > for it, you can hear it for yourself directly from the horse's mouth
+> > > > here:
+> > > >
+> > > > http://www.youtube.com/watch?v=4XpnKHJAok8
+> > > >
+> > > > I also very strongly suggest you find a transcript of this talk so you
+> > > > can really understand what Linus means here wrt to a distributed
+> > > > development workflow.
+> > > 
+> > > Well, Nicholas, are you really understanding what you are writing? We in 
+> > > our projects have fully the same distributed (or centralized, if you 
+> > > like it) development model. Have you noticed how many developers SCST 
+> > > project has? We have our responsibility areas (target drivers, 
+> > > scstadmin, etc.) and commit in them. The way how we get updates for the 
+> > > rest of the kernel doesn't matter. Git is better for such huge projects 
+> > > as the kernel, but for our relatively small and centralized by nature 
+> > > due to small size (sub)projects it doesn't matter and won't bring any value.
+> > > 
+> > 
+> > I find it hard to beleive you are actually going to agrue against a git
+> > workflow for a target mode subsystem maintainer, well considering that
+> > git was made by a linux kernel maintainer (Linus) for distributed linux
+> > kernel development (everybody else)..?
 > >
-> > It already can ... I'm already not
-> > liking this patch...
-
-You didn't explain why "ignore".  As a rule, if
-the network peer is sending garbage, that needs
-to be accounted as an error, not igored.  You seem
-to be complaining about accounting garbage as such.
-
- rx_process() knows only two cases:
-> either rx_fixup() 
-> returns 0 or a non-zero value. If I return 0,
->  the error counter is  incremented.
-
-So don't return zero, when you're not trying to
-indicate an error. ... easy.
-
-
-> If I return non-zero value, packet is
-> processed ("passed up the 
-> stack" - usbnet_skb_return() called)
-> if the skb has non-zero length,
-
-Exactly -- that's how the minidriver says that
-it stripped framing off the packet, so other
-code should pass the packet up the stack.
-
-
-Have you tried emptying the SKB (len zero) to
-indicate you've consumed all of its contents?
-(Or in your case, "ignored").  That would seem to
-be more like what you want to do ...  ISTR that the
-network stack cleanly handles empty SKBs; if not,
-maybe it should.
-
-There's no way
-> to not pass the 
-> packet up the stack without incrementing the error
-> counter.
-
-   If rx_fixup leaves a single packet in SKB, that
-gets passed up the stack. and not treated as any
-kind of error.
-
-
-
 > 
-> > You've not convinced me this is even necessary.
-> >
+> This is complete BS. Are we going to judge value of a project based on
+> what kind SCM they chose to use? I guess we should ban Greg KH from
+> kernel development and rip out USB and driver core layers from the
+> kernel because he has the audacity to use quilt for his trees.
+> 
+
+I think the difference between what Linus says and what he actually
+means in the above video could be easily misinterpreted, well especially
+for some non-english speaking folks.  But I am certainly glad to see
+that a russian translation is also available for this google git talk
+for those who really want try to understand his reasons (and technical
+requirements) for what he is saying.
+
+So as to the specifics about why git is really the only right SCM choice
+for mainline target mode maintainership, it really all comes down to
+workflow.  Does your SCM allow other people to easily and without-pain
+track your upstream subsystem tree changes and 'rebase' as necessary for
+their patch series you make improvements..?   If we are talking about
+say, a single standalone driver being developed against mainline, then
+sure using a SCM like CVS or SVN is perfectly acceptable when you push
+to someone upstream like gregkh or akpm via email patch attachments.
+
+However, if we are talking about a subsystem maintainer workflow that
+requires many different people to track your subsystem tree for their
+own drivers and new feature bits, not being able to keep local branches
+for these level developers makes their life excruciatingly painful and
+unpleasent as they attempt to pull new upstream changes, especially when
+the speed of new upstream development is moving quickly.  This rule
+applys even more when said subsystem has a greater scope within the
+source tree in question.
+
+Anyways, if we are going to compare SCM distributed vs. centralized
+workflow in terms of kernel projects, lets please at least compare
+apples to apples here.
+
+Best,
+
+--nab
+
 
 
