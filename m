@@ -1,66 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab0IEPxW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 11:53:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752430Ab0IEPxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 11:53:21 -0400
-Message-ID: <4C83BCED.6020905@redhat.com>
-Date: Sun, 05 Sep 2010 18:53:17 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1753739Ab0IEP6I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 11:58:08 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56920 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab0IEP6G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 11:58:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=A8IVBsfoL0FsOGeeOBLpomcm2XsAk5MT34wWw8AOenD8jg8yYNo3SVjiaczdsfSSNx
+         9z6c5D1yy5YVMhaEc8XLtVBcnDVdSEIGPAHSKwEJV/yJmG83NLn0oNo930Qhmnt3rMaS
+         pIpdVHri7BRSyKgRSW+Vy3fblBaKfCFV80bfY=
+Date: Mon, 6 Sep 2010 00:57:53 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Micha?? Nazarewicz <m.nazarewicz@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mel Gorman <mel@csn.ul.ie>, linux-media@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH/RFCv4 0/6] The Contiguous Memory Allocator framework
+Message-ID: <20100905155753.GA3611@barrios-desktop>
+References: <20100826095857.5b821d7f.kamezawa.hiroyu@jp.fujitsu.com>
+ <op.vh0wektv7p4s8u@localhost>
+ <20100826115017.04f6f707.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100826124434.6089630d.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTi=T1y+sQuqVTYgOkYvqrxdYB1bZmCpKafN5jPqi@mail.gmail.com>
+ <20100826133028.39d731da.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTimB+s0tO=wrODAU4qCaZnCBoLZ2A9pGjR_jheOj@mail.gmail.com>
+ <20100827171639.83c8642c.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100902175424.5849c197.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100903192943.f4f74136.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Andre Przywara <andre.przywara@amd.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] x86: Fix misnamed AMD CPUID feature bit
-References: <1283506069-1096-1-git-send-email-andre.przywara@amd.com> <1283506069-1096-2-git-send-email-andre.przywara@amd.com> <4C834FCA.4020207@redhat.com> <4C83B939.60005@amd.com>
-In-Reply-To: <4C83B939.60005@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100903192943.f4f74136.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/05/2010 06:37 PM, Andre Przywara wrote:
->>> diff --git a/arch/x86/include/asm/cpufeature.h 
->>> b/arch/x86/include/asm/cpufeature.h
->>> index 781a50b..c9c73d8 100644
->>> --- a/arch/x86/include/asm/cpufeature.h
->>> +++ b/arch/x86/include/asm/cpufeature.h
->>> @@ -152,7 +152,7 @@
->>>   #define X86_FEATURE_3DNOWPREFETCH (6*32+ 8) /* 3DNow prefetch 
->>> instructions */
->>>   #define X86_FEATURE_OSVW    (6*32+ 9) /* OS Visible Workaround */
->>>   #define X86_FEATURE_IBS        (6*32+10) /* Instruction Based 
->>> Sampling */
->>> -#define X86_FEATURE_SSE5    (6*32+11) /* SSE-5 */
->>> +#define X86_FEATURE_XOP        (6*32+11) /* extended AVX 
->>> instructions */
->>>   #define X86_FEATURE_SKINIT    (6*32+12) /* SKINIT/STGI 
->>> instructions */
->>>   #define X86_FEATURE_WDT        (6*32+13) /* Watchdog timer */
->>>   #define X86_FEATURE_NODEID_MSR    (6*32+19) /* NodeId MSR */
->>
->> Even with the -stable update, there may be distributions which have 
->> kernels with the old name.  That means userspace would need to look 
->> for both names if it wants to be sure.
->
-> CPUs having XOP will not be available before next year, and since XOP 
-> is using the same register set as AVX, it cannot be used without 
-> proper XSAVE/XRESTORE support. I am not sure when exactly XSAVE was 
-> introduced in the kernel, but I think this limits the usability of 
-> older kernels for XOP.
-> I see that there is a faint possibility of causing trouble, but I 
-> don't see any real alternative.
+On Fri, Sep 03, 2010 at 07:29:43PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 2 Sep 2010 17:54:24 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > Here is a rough code for this.
+> 
+> here is a _tested_ one. 
+> If I tested correctly, I allocated 40MB of contigous pages by the new funciton.
+> I'm grad this can be some hints for people.
 
-Perhaps it reduces trouble, since userspace can't conclude anything from 
-seeing the sse5 or xop flag.  It needs to use a cpuid osxsave; xgetbv; 
-cpuid xop to be sure it can actually use the instructions.
+Great!
 
-All that remains is user confusion, but I see no real alternative either.
+I didn't look into the detail but the concept seems to be good.
+If someone doesn't need complex intelligent(ex, shared, private, [first|best] fit, buddy), 
+this is enough for that. So I think this will be good regardless of CMA.
+
+I will look into this more detaily and think idea to improve. 
+Thanks, Kame. :)
+
+> 
+> Thanks,
+> -Kame
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> This patch as a memory allocator for contiguous memory larger than MAX_ORDER.
+> 
+>   alloc_contig_pages(hint, size, list);
+> 
+>   This function allocates 'size' of contigoues pages, whose physical address
+>   is higher than 'hint'. size is specicied in byte unit.
+
+size is byte, hint is pfn?
+
+>   Allocated pages are all linked into the list and all of their page_count()
+>   are set to 1. Return value is the top page. 
+> 
+>  free_contig_pages(list)
+>  returns all pages in the list.
+> 
+> This patch does
+>   - find an area which can be ISOLATED.
+>   - migrate remaining pages in the area.
+
+Migrate from there to where?
+
+>   - steal chunk of pages from allocator.
+> 
+> Limitation is:
+>   - retruned pages will be aligend to MAX_ORDER.
+>   - returned length of page will be aligned to MAX_ORDER.
+>     (so, the caller may have to return tails of pages by itself.)
+
+What do you mean tail?
+
+>   - may allocate contiguous pages which overlap node/zones.
+
+Hmm.. Do we really need this?
+
+> 
+> This is fully experimental and written as example.
+> (Maybe need more patches to make this complete.)
+
+Yes. But first impression of this patch is good to me. 
+
+> 
+> This patch moves some amount of codes from memory_hotplug.c to
+> page_isolation.c and based on page-offline technique used by
+> memory_hotplug.c 
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  include/linux/page-isolation.h |   10 +
+>  mm/memory_hotplug.c            |   84 --------------
+>  mm/page_alloc.c                |   32 +++++
+>  mm/page_isolation.c            |  244 +++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 287 insertions(+), 83 deletions(-)
+> 
+> Index: mmotm-0827/mm/page_isolation.c
+> ===================================================================
+> --- mmotm-0827.orig/mm/page_isolation.c
+> +++ mmotm-0827/mm/page_isolation.c
+> @@ -3,8 +3,11 @@
+>   */
+>  
+>  #include <linux/mm.h>
+> +#include <linux/swap.h>
+>  #include <linux/page-isolation.h>
+>  #include <linux/pageblock-flags.h>
+> +#include <linux/mm_inline.h>
+> +#include <linux/migrate.h>
+>  #include "internal.h"
+>  
+>  static inline struct page *
+> @@ -140,3 +143,244 @@ int test_pages_isolated(unsigned long st
+>  	spin_unlock_irqrestore(&zone->lock, flags);
+>  	return ret ? 0 : -EBUSY;
+>  }
+> +
+> +#define CONTIG_ALLOC_MIGRATION_RETRY	(5)
+> +
+> +/*
+> + * Scanning pfn is much easier than scanning lru list.
+> + * Scan pfn from start to end and Find LRU page.
+> + */
+> +unsigned long scan_lru_pages(unsigned long start, unsigned long end)
+> +{
+> +	unsigned long pfn;
+> +	struct page *page;
+> +	for (pfn = start; pfn < end; pfn++) {
+> +		if (pfn_valid(pfn)) {
+> +			page = pfn_to_page(pfn);
+> +			if (PageLRU(page))
+> +				return pfn;
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +
+> +/* Migrate all LRU pages in the range to somewhere else */
+> +static struct page *
+> +hotremove_migrate_alloc(struct page *page, unsigned long private, int **x)
+> +{
+> +	/* This should be improooooved!! */
+
+Yeb. 
+
+> +	return alloc_page(GFP_HIGHUSER_MOVABLE);
+> +}
+
+<snip>
+
+> +struct page *alloc_contig_pages(unsigned long long hint,
+> +		unsigned long size, struct list_head *list)
+> +{
+> +	unsigned long base, found, end, pages, start;
+> +	struct page *ret = NULL;
+> +	int nid, retry;
+> +
+> +	if (hint)
+> +		hint = ALIGN(hint, MAX_ORDER_NR_PAGES);
+> +	/* request size should be aligned to pageblock */
+> +	size >>= PAGE_SHIFT;
+> +	pages = ALIGN(size, MAX_ORDER_NR_PAGES);
+> +	found = 0;
+> +retry:
+> +	for_each_node_state(nid, N_HIGH_MEMORY) {
+> +		unsigned long node_end;
+> +		pg_data_t *node = NODE_DATA(nid);
+> +
+> +		node_end = node->node_start_pfn + node->node_spanned_pages;
+> +		/* does this node have proper range of memory ? */
+> +		if (node_end < hint + pages)
+> +			continue;
+> +		base = hint;
+> +		if (base < node->node_start_pfn)
+> +			base = node->node_start_pfn;
+> +
+> +		base = ALIGN(base, MAX_ORDER_NR_PAGES);
+> +		found = 0;
+> +		end = node_end & ~(MAX_ORDER_NR_PAGES -1);
+> +		/* Maybe we can use this Node */
+> +		if (base + pages < end)
+> +			found = __find_contig_block(base, end, pages);
+> +		if (found) /* Found ? */
+> +			break;
+> +		base = hint;
+> +	}
+> +	if (!found)
+> +		goto out;
+> +	/*
+> +	 * Ok, here, we have contiguous pageblock marked as "isolated"
+> +	 * try migration.
+> + 	 */
+> +	retry = CONTIG_ALLOC_MIGRATION_RETRY;
+> +	end = found + pages;
+
+Hmm.. I can't understand below loop. 
+Maybe need refactoring.
+
+> +	for (start = scan_lru_pages(found, end); start < end;) {
+> +
+> +		if (do_migrate_range(found, end)) {
+> +			/* migration failure ... */
+> +			if (retry-- < 0)
+> +				break;
+> +			/* take a rest and synchronize LRU etc. */
+> +			lru_add_drain_all();
+> +			flush_scheduled_work();
+> +			cond_resched();
+> +			drain_all_pages();
+> +		}
+> +		start = scan_lru_pages(start, end);
+> +		if (!start)
+> +			break;
+> +	}
+
+<snip>
+
+> +void alloc_contig_freed_pages(unsigned long pfn,  unsigned long end,
+> +	struct list_head *list)
+> +{
+> +	struct page *page;
+> +	struct zone *zone;
+> +	int i, order;
+> +
+> +	zone = page_zone(pfn_to_page(pfn));
+> +	spin_lock_irq(&zone->lock);
+> +	while (pfn < end) {
+> +		VM_BUG_ON(!pfn_valid(pfn));
+> +		page = pfn_to_page(pfn);
+> +		VM_BUG_ON(page_count(page));
+> +		VM_BUG_ON(!PageBuddy(page));
+> +		list_del(&page->lru);
+> +		order = page_order(page);
+> +		zone->free_area[order].nr_free--;
+> +		rmv_page_order(page);
+> +		__mod_zone_page_state(zone, NR_FREE_PAGES, - (1UL << order));
+> +		for (i = 0;i < (1 << order); i++) {
+> +			struct page *x = page + i;
+> +			list_add(&x->lru, list);
+> +		}
+> +		page += 1 << order;
+                ^ pfn?
+
+> +	}
+> +	spin_unlock_irq(&zone->lock);
+> +
+> +	/*After this, pages on the list can be freed one be one */
+> +	list_for_each_entry(page, list, lru)
+> +		prep_new_page(page, 0, 0);
+> +}
+> +
+>  #ifdef CONFIG_MEMORY_HOTREMOVE
+>  /*
+>   * All pages in the range must be isolated before calling this.
+> 
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Kind regards,
+Minchan Kim
