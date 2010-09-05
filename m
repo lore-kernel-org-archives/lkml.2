@@ -1,57 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab0IEXdY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 19:33:24 -0400
-Received: from sh.osrg.net ([192.16.179.4]:38957 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754488Ab0IEXdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 19:33:23 -0400
-Date: Mon, 6 Sep 2010 08:32:45 +0900
-To: linux@arm.linux.org.uk
-Cc: fujita.tomonori@lab.ntt.co.jp, khc@pm.waw.pl,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: fix pci_set_consistent_dma_mask for dmabounce
-	devices
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100905112513.GB558@n2100.arm.linux.org.uk>
-References: <20100901085738.GJ8142@n2100.arm.linux.org.uk>
-	<20100902114937X.fujita.tomonori@lab.ntt.co.jp>
-	<20100905112513.GB558@n2100.arm.linux.org.uk>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100906083105X.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 06 Sep 2010 08:32:47 +0900 (JST)
+	id S1754865Ab0IEXeC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 19:34:02 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:52848 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754488Ab0IEXeB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 19:34:01 -0400
+Date: Mon, 6 Sep 2010 09:33:13 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
+ direct reclaim allocation fails
+Message-ID: <20100905233313.GV7362@dastard>
+References: <20100903160026.564fdcc9.akpm@linux-foundation.org>
+ <20100904022545.GD705@dastard>
+ <20100903202101.f937b0bb.akpm@linux-foundation.org>
+ <20100904075840.GE705@dastard>
+ <20100904081414.GF705@dastard>
+ <20100905015400.GA10714@localhost>
+ <20100905021555.GG705@dastard>
+ <20100905060539.GA17450@localhost>
+ <20100905131447.GJ705@dastard>
+ <20100905134554.GA7083@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100905134554.GA7083@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Sep 2010 12:25:13 +0100
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-
-> > This restores the trick that had worked.
-> > 
-> > btw, I can't compile ARCH_IXP4XX without the following patch:
-> > 
-> > http://www.spinics.net/lists/arm-kernel/msg95933.html
-> > 
-> > =
-> > From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> > Subject: [PATCH] arm: fix arm: fix pci_set_consistent_dma_mask for dmabounce devices
-> > 
-> > This fixes the regression caused by the commit
-> > 6fee48cd330c68332f9712bc968d934a1a84a32a.
-> > 
-> > ARM needs to clip the dma coherent mask for dmabounce devices. This
-> > restores the old trick.
-> > 
-> > Note that strictly speaking, the DMA API doesn't allow architectures
-> > to do such but I'm not sure it's worth adding the new API to set the
-> > dma mask that allows architectures to clip it.
-> > 
-> > Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+On Sun, Sep 05, 2010 at 09:45:54PM +0800, Wu Fengguang wrote:
+> [restoring CC list]
 > 
-> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> On Sun, Sep 05, 2010 at 09:14:47PM +0800, Dave Chinner wrote:
+> > On Sun, Sep 05, 2010 at 02:05:39PM +0800, Wu Fengguang wrote:
+> > > On Sun, Sep 05, 2010 at 10:15:55AM +0800, Dave Chinner wrote:
+> > > > On Sun, Sep 05, 2010 at 09:54:00AM +0800, Wu Fengguang wrote:
+> > > > > Dave, could you post (publicly) the kconfig and /proc/vmstat?
+> > > > > 
+> > > > > I'd like to check if you have swap or memory compaction enabled..
+> > > > 
+> > > > Swap is enabled - it has 512MB of swap space:
+> > > > 
+> > > > $ free
+> > > >              total       used       free     shared    buffers     cached
+> > > > Mem:       4054304     100928    3953376          0       4096      43108
+> > > > -/+ buffers/cache:      53724    4000580
+> > > > Swap:       497976          0     497976
+> > > 
+> > > It looks swap is not used at all.
+> > 
+> > It isn't 30s after boot, abut I haven't checked after a livelock.
+> 
+> That's fine. I see in your fs_mark-wedge-1.png that there are no
+> read/write IO at all when CPUs are 100% busy. So there should be no
+> swap IO at "livelock" time.
+> 
+> > > > And memory compaction is not enabled:
+> > > > 
+> > > > $ grep COMPACT .config
+> > > > # CONFIG_COMPACTION is not set
+> 
+> Memory compaction is not likely the cause too. It will only kick in for
+> order > 3 allocations.
+> 
+> > > > 
+> > > > The .config is pretty much a 'make defconfig' and then enabling XFS and
+> > > > whatever debug I need (e.g. locking, memleak, etc).
+> > > 
+> > > Thanks! The problem seems hard to debug -- you cannot login at all
+> > > when it is doing lock contentions, so cannot get sysrq call traces.
+> > 
+> > Well, I don't know whether it is lock contention at all. The sets of
+> > traces I have got previously have shown backtraces on all CPUs in
+> > direct reclaim with several in draining queues, but no apparent lock
+> > contention.
+> 
+> That's interesting. Do you still have the full backtraces?
+> 
+> Maybe your system eats too much slab cache (icache/dcache) by creating
+> so many zero-sized files. The system may run into problems reclaiming
+> so many (dirty) slab pages.
 
-Should I send this to Linus? Or Can I assume that someone in ARM camp
-will do?
+Yes, that's where most of the memory pressure is coming from.
+However, it's not stuck reclaiming slab - it's pretty clear from
+another chart that I run that the slab cache contents is not
+changing aross the livelock. IOWs, it appears to get stuck before it
+gets to shrink_slab().
+
+Worth noting, though, is that XFS metadata workloads do create page
+cache pressure as well - all the metadata pages are cached on a
+separate address space, so perhaps it is getting stuck there...
+
+> > > How about enabling CONFIG_LOCK_STAT? Then you can check
+> > > /proc/lock_stat when the contentions are over.
+> > 
+> > Enabling the locking debug/stats gathering slows the workload
+> > by a factor of 3 and doesn't produce the livelock....
+> 
+> Oh sorry.. but it would still be interesting to check the top
+> contended locks for this workload without any livelocks :)
+
+I'll see what i can do.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
