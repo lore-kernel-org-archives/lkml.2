@@ -1,74 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab0IEO2l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 10:28:41 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35307 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab0IEO2j convert rfc822-to-8bit (ORCPT
+	id S1752184Ab0IEOlK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 10:41:10 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44085 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998Ab0IEOlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 10:28:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=9F1HpUyhGOp0TJdazoshKgxbFkyqWvztb5OeH@mail.gmail.com>
-References: <1283607783-29388-1-git-send-email-rydberg@euromail.se>
-	<AANLkTi=9F1HpUyhGOp0TJdazoshKgxbFkyqWvztb5OeH@mail.gmail.com>
-Date: Sun, 5 Sep 2010 09:28:38 -0500
-Message-ID: <AANLkTimMhAkdfNbju7ckFr-oSQrMcSTmX2sdstGMP_cb@mail.gmail.com>
-Subject: Re: [PATCH 0/5] input: wacom: Initial support for Bamboo (rev3)
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: Ping Cheng <pinglinux@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ping Cheng <pingc@wacom.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 5 Sep 2010 10:41:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=D0pz6Z/KQLH/tiw/1b5Jm8ObYDVBTgmre65yzetSAk9e40VWsF6BEVP1CScuyI98Di
+         aSdhrrFOAFmWV93OgUvqTYKgthMg3ToHcAFRb5Kehpdg2Ovz1B+uU36z1AIUJIbCRm35
+         G8jE6XSTaK1g9Qg0BRS0Klt0L2CFjT9GvF3M0=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "M. Vefa Bicakci" <bicave@superonline.com>, stable@kernel.org
+Subject: [PATCH] vmscan: check all_unreclaimable in direct reclaim path
+Date: Sun,  5 Sep 2010 23:40:37 +0900
+Message-Id: <1283697637-3117-1-git-send-email-minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 4, 2010 at 4:24 PM, Ping Cheng <pinglinux@gmail.com> wrote:
-> On Saturday, September 4, 2010, Henrik Rydberg <rydberg@euromail.se> wrote:
->> This the fourth iteration of the Bamboo patches. Hopefully no big
->> surprises.  The ordering has changed to allow setting the pressure_max
->> which is not parsed in the hid function. Ping's button mapping has
->> been implemented, relying on middle-button emulation instead.  The
->> lowres quirks now apply to all touch devices in the family.
->
-> Thank you Henrik for the patchset. Very much appreciated.
->
-> Acked-by: Ping Cheng < pingc@wacom.com>  for the series.
->
-> Ping
+M. Vefa Bicakci reported 2.6.35 kernel hang up when hibernation on his
+32bit 3GB mem machine. (https://bugzilla.kernel.org/show_bug.cgi?id=16771)
+Also he was bisected first bad commit is below
 
-Thanks for addressing my comments/questions.
+  commit bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
+  Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+  Date:   Fri Jun 4 14:15:05 2010 -0700
 
-Also, Thanks for placing all the hooks for future pen support as well.
- I'll be following up with a patch set for that once your finished.
-If there are any remaining pen specific issues, feel free to offload
-it on me.
+     vmscan: fix do_try_to_free_pages() return value when priority==0 reclaim failure
 
-Chris
+At first impression, this seemed very strange because the above commit only
+chenged function return value and hibernate_preallocate_memory() ignore
+return value of shrink_all_memory(). But it's related.
 
->
->> Henrik Rydberg (4):
->>   input: wacom: Add fuzz parameters to features
->>   input: wacom: Collect device quirks into single function (rev2)
->>   input: wacom: Add support for the Bamboo Touch trackpad (rev4)
->>   input: wacom: Add a quirk for lowres Bamboo devices (rev2)
->>
->> Ping Cheng (1):
->>   input: wacom: Parse the Bamboo device family
->>
->>  drivers/input/tablet/wacom.h     |    1 +
->>  drivers/input/tablet/wacom_sys.c |   57 +++++++++++++-----
->>  drivers/input/tablet/wacom_wac.c |  123 +++++++++++++++++++++++++++++++++++++-
->>  drivers/input/tablet/wacom_wac.h |   14 ++++
->>  4 files changed, 176 insertions(+), 19 deletions(-)
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-input" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
+Now, page allocation from hibernation code may enter infinite loop if
+the system has highmem. The reasons are that vmscan don't care enough 
+OOM case when oom_killer_disabled. 
+
+The problem sequence is following as. 
+
+1. hibernation
+2. oom_disable
+3. alloc_pages
+4. do_try_to_free_pages
+       if (scanning_global_lru(sc) && !all_unreclaimable)
+               return 1;
+
+If kswapd is not freezed, it would set zone->all_unreclaimable to 1 and then
+shrink_zones maybe return true(ie, all_unreclaimable is true). 
+so at last, alloc_pages could go to _nopage_. If it is, it should have no problem.
+
+This patch adds all_unreclaimable check to protect in direct reclaim path, too.
+It can care of hibernation OOM case and help bailout all_unreclaimable case slightly.
+
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: M. Vefa Bicakci <bicave@superonline.com>
+Cc: stable@kernel.org
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ mm/vmscan.c |   33 +++++++++++++++++++++++++++------
+ 1 files changed, 27 insertions(+), 6 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index f620ab3..53b23a7 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1893,12 +1893,11 @@ static void shrink_zone(int priority, struct zone *zone,
+  * If a zone is deemed to be full of pinned pages then just give it a light
+  * scan then give up on it.
+  */
+-static bool shrink_zones(int priority, struct zonelist *zonelist,
++static void shrink_zones(int priority, struct zonelist *zonelist,
+ 					struct scan_control *sc)
+ {
+ 	struct zoneref *z;
+ 	struct zone *zone;
+-	bool all_unreclaimable = true;
+ 
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
+@@ -1916,8 +1915,31 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 		}
+ 
+ 		shrink_zone(priority, zone, sc);
+-		all_unreclaimable = false;
+ 	}
++}
++
++static inline bool all_unreclaimable(struct zonelist *zonelist,
++		struct scan_control *sc)
++{
++	struct zoneref *z;
++	struct zone *zone;
++	bool all_unreclaimable = true;
++
++	if (!scanning_global_lru(sc))
++		return false;
++
++	for_each_zone_zonelist_nodemask(zone, z, zonelist,
++			gfp_zone(sc->gfp_mask), sc->nodemask) {
++		if (!populated_zone(zone))
++			continue;
++		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
++			continue;
++		if (zone->pages_scanned < (zone_reclaimable_pages(zone) * 6)) {
++			all_unreclaimable = false;
++			break;
++		}
++	}
++
+ 	return all_unreclaimable;
+ }
+ 
+@@ -1941,7 +1963,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 					struct scan_control *sc)
+ {
+ 	int priority;
+-	bool all_unreclaimable;
+ 	unsigned long total_scanned = 0;
+ 	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	struct zoneref *z;
+@@ -1958,7 +1979,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		sc->nr_scanned = 0;
+ 		if (!priority)
+ 			disable_swap_token();
+-		all_unreclaimable = shrink_zones(priority, zonelist, sc);
++		shrink_zones(priority, zonelist, sc);
+ 		/*
+ 		 * Don't shrink slabs when reclaiming memory from
+ 		 * over limit cgroups
+@@ -2020,7 +2041,7 @@ out:
+ 		return sc->nr_reclaimed;
+ 
+ 	/* top priority shrink_zones still had more to do? don't OOM, then */
+-	if (scanning_global_lru(sc) && !all_unreclaimable)
++	if (!all_unreclaimable(zonelist, sc))
+ 		return 1;
+ 
+ 	return 0;
+-- 
+1.7.0.5
+
