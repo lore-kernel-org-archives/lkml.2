@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab0IENFJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 09:05:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53126 "EHLO hera.kernel.org"
+	id S1753619Ab0IENF1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 09:05:27 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53140 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753215Ab0IENFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 09:05:07 -0400
-Date: Sun, 5 Sep 2010 13:04:37 GMT
+	id S1754041Ab0IENFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 09:05:25 -0400
+Date: Sun, 5 Sep 2010 13:04:58 GMT
 From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         fujita.tomonori@lab.ntt.co.jp, airlied@redhat.com, tglx@linutronix.de,
@@ -14,87 +14,135 @@ Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         fujita.tomonori@lab.ntt.co.jp, airlied@redhat.com, tglx@linutronix.de,
         borislav.petkov@amd.com, mingo@elte.hu
-In-Reply-To: <1283531981-7495-2-git-send-email-bp@amd64.org>
-References: <1283531981-7495-2-git-send-email-bp@amd64.org>
+In-Reply-To: <1283531981-7495-3-git-send-email-bp@amd64.org>
+References: <1283531981-7495-3-git-send-email-bp@amd64.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/iommu] x86, GART: Remove superfluous AMD64_GARTEN
-Message-ID: <tip-57ab43e33122ffdc2eebca5d6de035699f0a8c06@git.kernel.org>
-Git-Commit-ID: 57ab43e33122ffdc2eebca5d6de035699f0a8c06
+Subject: [tip:core/iommu] x86, GART: Disable GART table walk probes
+Message-ID: <tip-260133ab658bd2b80e07832a878e00405e19ff43@git.kernel.org>
+Git-Commit-ID: 260133ab658bd2b80e07832a878e00405e19ff43
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 05 Sep 2010 13:04:38 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 05 Sep 2010 13:04:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  57ab43e33122ffdc2eebca5d6de035699f0a8c06
-Gitweb:     http://git.kernel.org/tip/57ab43e33122ffdc2eebca5d6de035699f0a8c06
+Commit-ID:  260133ab658bd2b80e07832a878e00405e19ff43
+Gitweb:     http://git.kernel.org/tip/260133ab658bd2b80e07832a878e00405e19ff43
 Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Fri, 3 Sep 2010 18:39:39 +0200
+AuthorDate: Fri, 3 Sep 2010 18:39:40 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Sun, 5 Sep 2010 14:28:34 +0200
 
-x86, GART: Remove superfluous AMD64_GARTEN
+x86, GART: Disable GART table walk probes
 
-There is a GARTEN so use that and drop the duplicate.
+Current code tramples over bit F3x90[6] which can be used to
+disable GART table walk probes. However, this bit should be set
+for performance reasons (speed up GART table walks). We are
+allowed to do that since we put GART tables in UC memory later
+anyway. Make it so.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Cc: Dave Airlie <airlied@redhat.com>
 Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-LKML-Reference: <1283531981-7495-2-git-send-email-bp@amd64.org>
+LKML-Reference: <1283531981-7495-3-git-send-email-bp@amd64.org>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/gart.h   |    1 -
- arch/x86/kernel/aperture_64.c |    4 ++--
+ arch/x86/include/asm/gart.h   |   14 ++++++++++++++
+ arch/x86/kernel/aperture_64.c |   14 ++++++++------
+ arch/x86/kernel/pci-gart_64.c |    2 +-
  drivers/char/agp/amd64-agp.c  |    2 +-
- 3 files changed, 3 insertions(+), 4 deletions(-)
+ 4 files changed, 24 insertions(+), 8 deletions(-)
 
 diff --git a/arch/x86/include/asm/gart.h b/arch/x86/include/asm/gart.h
-index 4ac5b0f..fba0a72 100644
+index fba0a72..bf357f9 100644
 --- a/arch/x86/include/asm/gart.h
 +++ b/arch/x86/include/asm/gart.h
-@@ -27,7 +27,6 @@ extern int fix_aperture;
- #define AMD64_GARTAPERTUREBASE	0x94
- #define AMD64_GARTTABLEBASE	0x98
- #define AMD64_GARTCACHECTL	0x9c
--#define AMD64_GARTEN		(1<<0)
+@@ -17,6 +17,7 @@ extern int fix_aperture;
+ #define GARTEN		(1<<0)
+ #define DISGARTCPU	(1<<4)
+ #define DISGARTIO	(1<<5)
++#define DISTLBWALKPRB	(1<<6)
  
- #ifdef CONFIG_GART_IOMMU
- extern int gart_iommu_aperture;
+ /* GART cache control register bits. */
+ #define INVGART		(1<<0)
+@@ -56,6 +57,19 @@ static inline void gart_iommu_hole_init(void)
+ 
+ extern int agp_amd64_init(void);
+ 
++static inline void gart_set_size_and_enable(struct pci_dev *dev, u32 order)
++{
++	u32 ctl;
++
++	/*
++	 * Don't enable translation but enable GART IO and CPU accesses.
++	 * Also, set DISTLBWALKPRB since GART tables memory is UC.
++	 */
++	ctl = DISTLBWALKPRB | order << 1;
++
++	pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
++}
++
+ static inline void enable_gart_translation(struct pci_dev *dev, u64 addr)
+ {
+ 	u32 tmp, ctl;
 diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index a2e0caf..6fabd40 100644
+index 6fabd40..c9cb173 100644
 --- a/arch/x86/kernel/aperture_64.c
 +++ b/arch/x86/kernel/aperture_64.c
-@@ -307,7 +307,7 @@ void __init early_gart_iommu_check(void)
+@@ -505,8 +505,13 @@ out:
+ 
+ 	/* Fix up the north bridges */
+ 	for (i = 0; i < ARRAY_SIZE(bus_dev_ranges); i++) {
+-		int bus;
+-		int dev_base, dev_limit;
++		int bus, dev_base, dev_limit;
++
++		/*
++		 * Don't enable translation yet but enable GART IO and CPU
++		 * accesses and set DISTLBWALKPRB since GART table memory is UC.
++		 */
++		u32 ctl = DISTLBWALKPRB | aper_order << 1;
+ 
+ 		bus = bus_dev_ranges[i].bus;
+ 		dev_base = bus_dev_ranges[i].dev_base;
+@@ -515,10 +520,7 @@ out:
+ 			if (!early_is_k8_nb(read_pci_config(bus, slot, 3, 0x00)))
  				continue;
  
- 			ctl = read_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL);
--			aper_enabled = ctl & AMD64_GARTEN;
-+			aper_enabled = ctl & GARTEN;
- 			aper_order = (ctl >> 1) & 7;
- 			aper_size = (32 * 1024 * 1024) << aper_order;
- 			aper_base = read_pci_config(bus, slot, 3, AMD64_GARTAPERTUREBASE) & 0x7fff;
-@@ -362,7 +362,7 @@ void __init early_gart_iommu_check(void)
- 				continue;
- 
- 			ctl = read_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL);
--			ctl &= ~AMD64_GARTEN;
-+			ctl &= ~GARTEN;
- 			write_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL, ctl);
+-			/* Don't enable translation yet. That is done later.
+-			   Assume this BIOS didn't initialise the GART so
+-			   just overwrite all previous bits */
+-			write_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL, aper_order << 1);
++			write_pci_config(bus, slot, 3, AMD64_GARTAPERTURECTL, ctl);
+ 			write_pci_config(bus, slot, 3, AMD64_GARTAPERTUREBASE, aper_alloc >> 25);
  		}
  	}
-diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
-index 70312da..bfe372b 100644
---- a/drivers/char/agp/amd64-agp.c
-+++ b/drivers/char/agp/amd64-agp.c
-@@ -199,7 +199,7 @@ static void amd64_cleanup(void)
- 		struct pci_dev *dev = k8_northbridges[i];
- 		/* disable gart translation */
- 		pci_read_config_dword(dev, AMD64_GARTAPERTURECTL, &tmp);
--		tmp &= ~AMD64_GARTEN;
-+		tmp &= ~GARTEN;
- 		pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, tmp);
+diff --git a/arch/x86/kernel/pci-gart_64.c b/arch/x86/kernel/pci-gart_64.c
+index 0f7f130..6015ee1 100644
+--- a/arch/x86/kernel/pci-gart_64.c
++++ b/arch/x86/kernel/pci-gart_64.c
+@@ -601,7 +601,7 @@ static void gart_fixup_northbridges(struct sys_device *dev)
+ 		 * Don't enable translations just yet.  That is the next
+ 		 * step.  Restore the pre-suspend aperture settings.
+ 		 */
+-		pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, aperture_order << 1);
++		gart_set_size_and_enable(dev, aperture_order);
+ 		pci_write_config_dword(dev, AMD64_GARTAPERTUREBASE, aperture_alloc >> 25);
  	}
  }
+diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
+index bfe372b..564808a 100644
+--- a/drivers/char/agp/amd64-agp.c
++++ b/drivers/char/agp/amd64-agp.c
+@@ -313,7 +313,7 @@ static __devinit int fix_northbridge(struct pci_dev *nb, struct pci_dev *agp,
+ 	if (order < 0 || !agp_aperture_valid(aper, (32*1024*1024)<<order))
+ 		return -1;
+ 
+-	pci_write_config_dword(nb, AMD64_GARTAPERTURECTL, order << 1);
++	gart_set_size_and_enable(nb, order);
+ 	pci_write_config_dword(nb, AMD64_GARTAPERTUREBASE, aper >> 25);
+ 
+ 	return 0;
