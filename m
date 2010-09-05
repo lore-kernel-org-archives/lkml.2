@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab0IEBxH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 21:53:07 -0400
-Received: from mail.perches.com ([173.55.12.10]:1314 "EHLO mail.perches.com"
+	id S1754802Ab0IEByh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 21:54:37 -0400
+Received: from mail.perches.com ([173.55.12.10]:1360 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754549Ab0IEBxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 21:53:05 -0400
+	id S1754549Ab0IEBxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 21:53:08 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 01/13] drivers/gpu/drm: Remove unnecessary casts of private_data
-Date: Sat,  4 Sep 2010 18:52:42 -0700
-Message-Id: <41dc995dbe142151c89cff07db0f34277af9446e.1283650107.git.joe@perches.com>
+Subject: [PATCH 06/13] drivers/staging/lirc: Remove unnecessary casts of private_data
+Date: Sat,  4 Sep 2010 18:52:47 -0700
+Message-Id: <79fe585b980c9128383c9e41dd3a5685e4dd54b1.1283650107.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.2.19.g9a302
 In-Reply-To: <cover.1283650107.git.joe@perches.com>
 References: <cover.1283650107.git.joe@perches.com>
@@ -22,50 +22,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/gpu/drm/radeon/radeon_ttm.c      |    2 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c     |    2 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_ttm_glue.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/lirc/lirc_imon.c  |    4 ++--
+ drivers/staging/lirc/lirc_zilog.c |   10 +++++-----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
-index 84c53e4..a823d8f 100644
---- a/drivers/gpu/drm/radeon/radeon_ttm.c
-+++ b/drivers/gpu/drm/radeon/radeon_ttm.c
-@@ -631,7 +631,7 @@ int radeon_mmap(struct file *filp, struct vm_area_struct *vma)
- 		return drm_mmap(filp, vma);
- 	}
+diff --git a/drivers/staging/lirc/lirc_imon.c b/drivers/staging/lirc/lirc_imon.c
+index 818bec0..9949dfa 100644
+--- a/drivers/staging/lirc/lirc_imon.c
++++ b/drivers/staging/lirc/lirc_imon.c
+@@ -277,7 +277,7 @@ static int display_close(struct inode *inode, struct file *file)
+ 	struct imon_context *context = NULL;
+ 	int retval = 0;
  
--	file_priv = (struct drm_file *)filp->private_data;
-+	file_priv = filp->private_data;
- 	rdev = file_priv->minor->dev->dev_private;
- 	if (rdev == NULL) {
- 		return -EINVAL;
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
-index e6a1eb7..dc043c3 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
-@@ -542,7 +542,7 @@ int vmw_fifo_mmap(struct file *filp, struct vm_area_struct *vma)
- 	struct drm_file *file_priv;
- 	struct vmw_private *dev_priv;
+-	context = (struct imon_context *)file->private_data;
++	context = file->private_data;
  
--	file_priv = (struct drm_file *)filp->private_data;
-+	file_priv = filp->private_data;
- 	dev_priv = vmw_priv(file_priv->minor->dev);
+ 	if (!context) {
+ 		err("%s: no context for device", __func__);
+@@ -380,7 +380,7 @@ static ssize_t vfd_write(struct file *file, const char *buf,
+ 		0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF };
+ 	int *data_buf;
  
- 	if (vma->vm_pgoff != (dev_priv->mmio_start >> PAGE_SHIFT) ||
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_ttm_glue.c b/drivers/gpu/drm/vmwgfx/vmwgfx_ttm_glue.c
-index 8312328..1e8eedd 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_ttm_glue.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_ttm_glue.c
-@@ -39,7 +39,7 @@ int vmw_mmap(struct file *filp, struct vm_area_struct *vma)
- 		return drm_mmap(filp, vma);
- 	}
+-	context = (struct imon_context *)file->private_data;
++	context = file->private_data;
+ 	if (!context) {
+ 		err("%s: no context for device", __func__);
+ 		return -ENODEV;
+diff --git a/drivers/staging/lirc/lirc_zilog.c b/drivers/staging/lirc/lirc_zilog.c
+index 100caab..9b77552 100644
+--- a/drivers/staging/lirc/lirc_zilog.c
++++ b/drivers/staging/lirc/lirc_zilog.c
+@@ -716,7 +716,7 @@ static loff_t lseek(struct file *filep, loff_t offset, int orig)
+ /* copied from lirc_dev */
+ static ssize_t read(struct file *filep, char *outbuf, size_t n, loff_t *ppos)
+ {
+-	struct IR *ir = (struct IR *)filep->private_data;
++	struct IR *ir = filep->private_data;
+ 	unsigned char buf[ir->buf.chunk_size];
+ 	int ret = 0, written = 0;
+ 	DECLARE_WAITQUEUE(wait, current);
+@@ -898,7 +898,7 @@ done:
+ static ssize_t write(struct file *filep, const char *buf, size_t n,
+ 			  loff_t *ppos)
+ {
+-	struct IR *ir = (struct IR *)filep->private_data;
++	struct IR *ir = filep->private_data;
+ 	size_t i;
+ 	int failures = 0;
  
--	file_priv = (struct drm_file *)filp->private_data;
-+	file_priv = filp->private_data;
- 	dev_priv = vmw_priv(file_priv->minor->dev);
- 	return ttm_bo_mmap(filp, vma, &dev_priv->bdev);
- }
+@@ -972,7 +972,7 @@ static ssize_t write(struct file *filep, const char *buf, size_t n,
+ /* copied from lirc_dev */
+ static unsigned int poll(struct file *filep, poll_table *wait)
+ {
+-	struct IR *ir = (struct IR *)filep->private_data;
++	struct IR *ir = filep->private_data;
+ 	unsigned int ret;
+ 
+ 	dprintk("poll called\n");
+@@ -994,7 +994,7 @@ static unsigned int poll(struct file *filep, poll_table *wait)
+ 
+ static long ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ {
+-	struct IR *ir = (struct IR *)filep->private_data;
++	struct IR *ir = filep->private_data;
+ 	int result;
+ 	unsigned long mode, features = 0;
+ 
+@@ -1086,7 +1086,7 @@ static int open(struct inode *node, struct file *filep)
+ static int close(struct inode *node, struct file *filep)
+ {
+ 	/* find our IR struct */
+-	struct IR *ir = (struct IR *)filep->private_data;
++	struct IR *ir = filep->private_data;
+ 	if (ir == NULL) {
+ 		zilog_error("close: no private_data attached to the file!\n");
+ 		return -ENODEV;
 -- 
 1.7.2.19.g9a302
 
