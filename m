@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266Ab0IETjM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 15:39:12 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:54357 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750889Ab0IETjL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 15:39:11 -0400
-To: linux-fsdevel@vger.kernel.org
-Subject: [PATCH v2] [RFC] isofs: work-around for Rock Ridge+Joliet CDs with empty ISO root directory
-Cc: linux-kernel@vger.kernel.org
-Content-Disposition: inline
-From: Ondrej Zary <linux@rainbow-software.org>
-Date: Sun, 5 Sep 2010 21:39:04 +0200
+	id S1752020Ab0IETrw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 15:47:52 -0400
+Received: from kroah.org ([198.145.64.141]:38568 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750938Ab0IETrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 15:47:51 -0400
+Date: Sun, 5 Sep 2010 12:14:12 -0700
+From: Greg KH <greg@kroah.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Simon Arlott <simon@fire.lp0.eu>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cxacru: ignore cx82310_eth devices
+Message-ID: <20100905191412.GA10835@kroah.com>
+References: <201009032317.14954.linux@rainbow-software.org> <4C82741C.2000106@simon.arlott.org.uk> <20100905040352.GA18538@kroah.com> <201009051901.13851.linux@rainbow-software.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009052139.06313.linux@rainbow-software.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009051901.13851.linux@rainbow-software.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a CD has both Rock Ridge and Joliet extensions and the ISO root directory
-is empty, no files are visible. Disable Rock Ridge extensions in this case and
-use Joliet root directory instead.
+On Sun, Sep 05, 2010 at 07:01:11PM +0200, Ondrej Zary wrote:
+> On Sunday 05 September 2010 06:03:52 Greg KH wrote:
+> > On Sat, Sep 04, 2010 at 05:30:20PM +0100, Simon Arlott wrote:
+> > > Ignore ADSL routers, which can have the same vendor and product IDs
+> > > as ADSL modems but should be handled by the cx82310_eth driver.
+> > >
+> > > This intentionally ignores device IDs that aren't currently handled
+> > > by cx82310_eth. There may be other device IDs that perhaps shouldn't
+> > > be claimed by cxacru.
+> > >
+> > > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> > > [SA: Moved to cxacru_usb_probe, message level lowered to info]
+> > > Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
+> > > ---
+> > >  drivers/usb/atm/cxacru.c |   18 ++++++++++++++++--
+> > >  1 files changed, 16 insertions(+), 2 deletions(-)
+> > >
+> > > diff --git a/drivers/usb/atm/cxacru.c b/drivers/usb/atm/cxacru.c
+> > > index 593fc5e..96fa736 100644
+> > > --- a/drivers/usb/atm/cxacru.c
+> > > +++ b/drivers/usb/atm/cxacru.c
+> > > @@ -1324,8 +1324,22 @@ static struct usbatm_driver cxacru_driver = {
+> > >  	.tx_padding	= 11,
+> > >  };
+> > >
+> > > -static int cxacru_usb_probe(struct usb_interface *intf, const struct
+> > > usb_device_id *id) -{
+> > > +static int cxacru_usb_probe(struct usb_interface *intf,
+> > > +		const struct usb_device_id *id) {
+> > > +	struct usb_device *usb_dev = interface_to_usbdev(intf);
+> > > +	char buf[15];
+> > > +
+> > > +	/* avoid ADSL routers (cx82310_eth)
+> > > +	 * abort if bDeviceClass is 0xff and iProduct is "USB NET CARD" */
+> > > +	if (usb_dev->descriptor.bDeviceClass == 0xff
+> >
+> > vendor class?  We have a macro for that?
+> >
+> > > +			&& usb_dev->descriptor.iProduct
+> >
+> > Almost everyone has a iProduct, right?  Why even test for that?
+> >
+> > > +			&& usb_string(usb_dev,
+> > > +				usb_dev->descriptor.iProduct, buf, sizeof(buf))
+> >
+> > usb_string() should handle a 0 string, right?
+> >
+> > > +			&& !strcmp(buf, "USB NET CARD")) {
+> >
+> > Just to make it a bit easier to follow, how about you do the
+> > usb_string() call in the if statment, and then compare the string and
+> >
+> > then, if that matches you do:
+> > > +		dev_info(&intf->dev, "ignoring cx82310_eth device\n");
+> > > +		return -ENODEV;
+> 
+> Does it look that much better?:
+> 
+> 	if (usb_dev->descriptor.bDeviceClass == USB_CLASS_VENDOR_SPEC
+> 			&& usb_string(usb_dev, usb_dev->descriptor.iProduct,
+> 				buf, sizeof(buf)) > 0)
+> 		if (!strcmp(buf, "USB NET CARD")) {
+> 			dev_info(&intf->dev, "ignoring cx82310_eth device\n");
+> 			return -ENODEV;
+> 		}
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
----
-This is v2 with variable initialization.
+Yes, don't you think so?
 
---- linux-2.6.35-rc2/fs/isofs/inode.c	2010-06-06 05:43:24.000000000 +0200
-+++ linux-2.6.35-rc3/fs/isofs/inode.c	2010-08-31 23:43:46.000000000 +0200
-@@ -549,6 +549,34 @@ static unsigned int isofs_get_last_sessi
- }
- 
- /*
-+ * Check if root directory is empty (has less than 3 files).
-+ *
-+ * Used to detect broken CDs where ISO root directory is empty but Joliet root
-+ * directory is OK. If such CD has Rock Ridge extensions, they will be disabled
-+ * (and Joliet used instead) or else no files would be visible.
-+ */
-+static bool rootdir_empty(struct super_block *sb, unsigned long block)
-+{
-+	int offset = 0, files = 0, de_len;
-+	struct iso_directory_record *de;
-+	struct buffer_head *bh;
-+
-+	bh = sb_bread(sb, block);
-+	if (!bh)
-+		return true;
-+	while (files < 3) {
-+		de = (struct iso_directory_record *) (bh->b_data + offset);
-+		de_len = *(unsigned char *) de;
-+		if (de_len == 0)
-+			break;
-+		files++;
-+		offset += de_len;
-+	}
-+	brelse(bh);
-+	return files < 3;
-+}
-+
-+/*
-  * Initialize the superblock and read the root inode.
-  *
-  * Note: a check_disk_change() has been done immediately prior
-@@ -842,6 +870,18 @@ root_found:
- 		goto out_no_root;
- 
- 	/*
-+	 * Fix for broken CDs with Rock Ridge and empty ISO root directory but
-+	 * correct Joliet root directory.
-+	 */
-+	if (sbi->s_rock == 1 && joliet_level &&
-+				rootdir_empty(s, sbi->s_firstdatazone)) {
-+		printk(KERN_NOTICE
-+			"ISOFS: primary root directory is empty. "
-+			"Disabling Rock Ridge and switching to Joliet.");
-+		sbi->s_rock = 0;
-+	}
-+
-+	/*
- 	 * If this disk has both Rock Ridge and Joliet on it, then we
- 	 * want to use Rock Ridge by default.  This can be overridden
- 	 * by using the norock mount option.  There is still one other
+> I also found a bug in my first patch - usb_string() can return negative value 
+> which can cause problems when not checked for.
 
+Ah, nice catch.  Care to resend it now?
 
--- 
-Ondrej Zary
+thanks,
+
+greg k-h
