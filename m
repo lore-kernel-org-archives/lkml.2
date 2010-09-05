@@ -1,478 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857Ab0IEP6j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 11:58:39 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:37459 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430Ab0IEP6i convert rfc822-to-8bit (ORCPT
+	id S1753841Ab0IEQAQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 12:00:16 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36543 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab0IEQAO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 11:58:38 -0400
+	Sun, 5 Sep 2010 12:00:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=LgsKyHSbVhjsQ98l92zNOdw4/Ac+e75FDzDjtxXlS+eYE852uO9igp0FmMaLkXm53y
+         YCE7M+MTIjE6ys9DllE52ypgin+5NVtJAYZjbXgRZdXwtXChFmb/dM/8j2PiIFdVaEbN
+         wtEa0c8yyy+6gn0OskzmZxMvz4tJ3YNfIz7Q0=
 MIME-Version: 1.0
-X-Originating-IP: [98.248.43.157]
-In-Reply-To: <AANLkTi=TU8d8tsp28qN-Rz9z0hTcH7hRE=d8W4GKhrkk@mail.gmail.com>
-References: <20100604092025.GA96690@trillian.comsick.at> <1275656014.2482.169.camel@edumazet-laptop>
- <20100604161644.GA98048@trillian.local> <20100606095640.GA4436@trillian.comsick.at>
- <1275820945.5238.987.camel@edumazet-laptop> <AANLkTimf5iZV2ytoymCXJ=B2Vgowr6qb6u2nBg+RtBUg@mail.gmail.com>
- <1282769089.2681.159.camel@edumazet-laptop> <AANLkTi=TU8d8tsp28qN-Rz9z0hTcH7hRE=d8W4GKhrkk@mail.gmail.com>
-From: =?UTF-8?B?TmlraGlsIFNldGhpICjgpKjgpL/gpJbgpL/gpLIg4KS44KWH4KSg4KWAKQ==?= 
-	<nikhil@sethi.ws>
-Date: Sun, 5 Sep 2010 08:57:56 -0700
-Message-ID: <AANLkTimzJFW7dgik6S0zRwYsv4gP5g9Wmonci48dbbei@mail.gmail.com>
-Subject: Re: [2.6.35-rc1] page alloc failure order:1, mode:0x4020
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Michael Guntsche <mike@it-loops.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <7c720d238d9d5ba6f483cdd7303315e4@secure211.sgcpanel.com>
+References: <1283443098-15262-1-git-send-email-tom.leiming@gmail.com>
+	<ee6a42fe148f72518d475ff3838fc32a@secure211.sgcpanel.com>
+	<AANLkTimts7SjE9EKrmsSkynWsQc_VtJUVVigrFs2VtrK@mail.gmail.com>
+	<AANLkTikiFbw6xz5jbvgPR5-X5mZxDkOjLdFuc=vG10qK@mail.gmail.com>
+	<1fb6fc37cd0f017043d5c124bca4bb1a@secure211.sgcpanel.com>
+	<AANLkTi=4J5u4SEh5jSPxObceWdAom51R+H_j8oApG5PG@mail.gmail.com>
+	<7c720d238d9d5ba6f483cdd7303315e4@secure211.sgcpanel.com>
+Date: Mon, 6 Sep 2010 00:00:12 +0800
+Message-ID: <AANLkTimf2af9QBw2s93n6Ja5cgHODudfwmMqKc02GmbC@mail.gmail.com>
+Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization
+From: Ming Lei <tom.leiming@gmail.com>
+To: Felipe Balbi <me@felipebalbi.com>
+Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Felipe Balbi <felipe.balbi@nokia.com>, Anand Gadiyar <gadiyar@ti.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This came back. Here is the dmesg output. It might be the problem only
-happens if I have wmm_enabled=1 in my hostapd.conf. That is the only
-thing that I changed yesterday, and today I saw these messages in my
-logs. I will try to conform this.
-
-I am running 2.6.35.4 with this patch:
-
-*** 225,234 ****
-  	int error = 0, i;
-  	u32 size;
-
-!
-! 	common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
-! 				     ah->caps.rx_status_len,
-! 				     min(common->cachelsz, (u16)64));
-
-  	ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
-  				    ah->caps.rx_status_len);
---- 225,234 ----
-  	int error = 0, i;
-  	u32 size;
-
-! 	size = roundup(IEEE80211_MAX_MPDU_LEN + ah->caps.rx_status_len,
-!                        min(common->cachelsz, (u16)64));
-!         common->rx_bufsize = min_t(u32, size,
-!                                    SKB_MAX_ORDER(NET_SKB_PAD +
-common->cachelsz, 0));
-
-  	ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
-  				    ah->caps.rx_status_len);
-
-dmesg output:
-
-skbuff alloc of size 3872 failed
-ps: page allocation failure. order:1, mode:0x4020
-Pid: 16022, comm: ps Tainted: G        W   2.6.35.4 #1
-Call Trace:
- [<c0243bfe>] ? __alloc_pages_nodemask+0x3e6/0x513
- [<c025be97>] ? slob_new_pages+0xc/0x23
- [<c025c0a1>] ? __kmalloc_node+0x39/0x72
- [<c03338d8>] ? __alloc_skb+0x5c/0x105
- [<d09fa01a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
- [<d0ab7109>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
- [<c030fd49>] ? scsi_next_command+0x27/0x34
- [<d0ab53c5>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
- [<c02193c3>] ? tasklet_action+0x5f/0x65
- [<c0219677>] ? __do_softirq+0x60/0xc6
- [<c021970b>] ? do_softirq+0x2e/0x30
- [<c02197fd>] ? irq_exit+0x53/0x55
- [<c020392c>] ? do_IRQ+0x3a/0x72
- [<c0202be9>] ? common_interrupt+0x29/0x30
- [<c0247874>] ? __remove_mapping+0x4b/0x8d
- [<c023ea9f>] ? try_to_release_page+0x20/0x30
- [<c0247d36>] ? shrink_page_list+0x2b8/0x46c
- [<c03158ea>] ? sd_prep_fn+0x1a5/0x92b
- [<c024816b>] ? shrink_inactive_list+0x281/0x552
- [<c02445d9>] ? determine_dirtyable_memory+0xc/0x12
- [<c024462c>] ? get_dirty_limits+0x18/0x2b0
- [<c032875e>] ? ata_bmdma_port_intr+0x21/0xcd
- [<c0248683>] ? shrink_zone+0x247/0x38f
- [<c021968c>] ? __do_softirq+0x75/0xc6
- [<c0247114>] ? shrink_slab+0x13c/0x186
- [<c0248f25>] ? try_to_free_pages+0x1ab/0x2be
- [<c0248f25>] ? try_to_free_pages+0x1ab/0x2be
- [<c0243acf>] ? __alloc_pages_nodemask+0x2b7/0x513
- [<c025be97>] ? slob_new_pages+0xc/0x23
- [<c025c038>] ? kmem_cache_alloc_node+0x23/0x53
- [<c0264b20>] ? getname+0x19/0xae
- [<c0266d00>] ? user_path_at+0x11/0x64
- [<c0250949>] ? access_process_vm+0xe0/0x1e7
- [<c0250a08>] ? access_process_vm+0x19f/0x1e7
- [<c02603d2>] ? vfs_fstatat+0x25/0x63
- [<c02604a9>] ? vfs_stat+0x10/0x12
- [<c02604ba>] ? sys_stat64+0xf/0x23
- [<c025e86b>] ? fput+0x88/0x191
- [<c026ab3b>] ? dput+0x92/0xd4
- [<c025e8ff>] ? fput+0x11c/0x191
- [<c026ebec>] ? mntput_no_expire+0x13/0x60
- [<c025c398>] ? filp_close+0x3b/0x54
- [<c025c403>] ? sys_close+0x52/0x72
- [<c038ad3d>] ? syscall_call+0x7/0xb
- [<c0380000>] ? unix_dgram_sendmsg+0x258/0x3c1
-Mem-Info:
-DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-Normal per-cpu:
-CPU    0: hi:   90, btch:  15 usd:  79
-active_anon:7578 inactive_anon:15111 isolated_anon:0
- active_file:11157 inactive_file:20027 isolated_file:32
- unevictable:467 dirty:1159 writeback:0 unstable:0
- free:706 slab_reclaimable:0 slab_unreclaimable:0
- mapped:2183 shmem:0 pagetables:278 bounce:0
-DMA free:1000kB min:124kB low:152kB high:184kB active_anon:860kB
-inactive_anon:2280kB active_file:3664kB inactive_file:4876kB
-unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
-mlocked:0kB dirty:8kB writeback:0kB mapped:1212kB shmem:0kB
-slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:32kB
-pagetables:48kB unstable:0kB bounce:0kB writeback_tmp:0kB
-pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 238 238
-Normal free:1824kB min:1908kB low:2384kB high:2860kB
-active_anon:29452kB inactive_anon:58164kB active_file:40964kB
-inactive_file:75232kB unevictable:1868kB isolated(anon):0kB
-isolated(file):128kB present:243840kB mlocked:1868kB dirty:4628kB
-writeback:0kB mapped:7520kB shmem:0kB slab_reclaimable:0kB
-slab_unreclaimable:0kB kernel_stack:1056kB pagetables:1064kB
-unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
-all_unreclaimable? no
-lowmem_reserve[]: 0 0 0
-DMA: 2*4kB 0*8kB 0*16kB 1*32kB 1*64kB 1*128kB 1*256kB 1*512kB 0*1024kB
-0*2048kB 0*4096kB = 1000kB
-Normal: 366*4kB 45*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB
-0*1024kB 0*2048kB 0*4096kB = 1824kB
-35298 total pagecache pages
-3724 pages in swap cache
-Swap cache stats: add 82399, delete 78675, find 45215/53344
-Free swap  = 891536kB
-Total swap = 963896kB
-65535 pages RAM
-1236 pages reserved
-36808 pages shared
-32201 pages non-shared
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-skbuff alloc of size 3872 failed
-logdrop IN=eth0 OUT= MAC=00:00:24:cb:ca:c4:00:01:5c:32:6e:41:08:00
-SRC=219.143.125.205 DST=98.248.43.157 LEN=60 TOS=0x00 PREC=0x20 TTL=50
-ID=362 DF PROTO=TCP SPT=53976 DPT=22 WINDOW=5840 RES=0x00 SYN URGP=0
-OPT (020405640402080A1EDFFF550000000001030303)
-__alloc_pages_slowpath: 12 callbacks suppressed
-swapper: page allocation failure. order:1, mode:0x4020
-Pid: 0, comm: swapper Tainted: G        W   2.6.35.4 #1
-Call Trace:
- [<c0243bfe>] ? __alloc_pages_nodemask+0x3e6/0x513
- [<c025be97>] ? slob_new_pages+0xc/0x23
- [<c025c0a1>] ? __kmalloc_node+0x39/0x72
- [<c03338d8>] ? __alloc_skb+0x5c/0x105
- [<d09fa01a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
- [<d0ab7109>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
- [<d0ab53c5>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
- [<c02193c3>] ? tasklet_action+0x5f/0x65
- [<c0219677>] ? __do_softirq+0x60/0xc6
- [<c021970b>] ? do_softirq+0x2e/0x30
- [<c02197fd>] ? irq_exit+0x53/0x55
- [<c020392c>] ? do_IRQ+0x3a/0x72
- [<c0202be9>] ? common_interrupt+0x29/0x30
- [<c020768e>] ? default_idle+0x25/0x38
- [<c02017d0>] ? cpu_idle+0x2e/0x47
- [<c042361a>] ? start_kernel+0x21a/0x21d
-Mem-Info:
-DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-Normal per-cpu:
-CPU    0: hi:   90, btch:  15 usd:  13
-active_anon:11994 inactive_anon:12762 isolated_anon:0
- active_file:13736 inactive_file:14175 isolated_file:0
- unevictable:467 dirty:5803 writeback:9 unstable:0
- free:2013 slab_reclaimable:0 slab_unreclaimable:0
- mapped:1957 shmem:0 pagetables:281 bounce:0
-DMA free:1000kB min:124kB low:152kB high:184kB active_anon:944kB
-inactive_anon:2640kB active_file:4020kB inactive_file:4000kB
-unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
-mlocked:0kB dirty:48kB writeback:0kB mapped:452kB shmem:0kB
-slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:24kB
-pagetables:24kB unstable:0kB bounce:0kB writeback_tmp:0kB
-pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 238 238
-Normal free:7052kB min:1908kB low:2384kB high:2860kB
-active_anon:47032kB inactive_anon:48408kB active_file:50924kB
-inactive_file:52700kB unevictable:1868kB isolated(anon):0kB
-isolated(file):0kB present:243840kB mlocked:1868kB dirty:23164kB
-writeback:36kB mapped:7376kB shmem:0kB slab_reclaimable:0kB
-slab_unreclaimable:0kB kernel_stack:1040kB pagetables:1100kB
-unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
-all_unreclaimable? no
-lowmem_reserve[]: 0 0 0
-DMA: 2*4kB 0*8kB 0*16kB 1*32kB 1*64kB 1*128kB 1*256kB 1*512kB 0*1024kB
-0*2048kB 0*4096kB = 1000kB
-Normal: 1673*4kB 45*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB
-0*1024kB 0*2048kB 0*4096kB = 7052kB
-32351 total pagecache pages
-4052 pages in swap cache
-Swap cache stats: add 119272, delete 115220, find 58684/72663
-Free swap  = 874472kB
-Total swap = 963896kB
-65535 pages RAM
-1236 pages reserved
-30733 pages shared
-36511 pages non-shared
-skbuff alloc of size 3872 failed
-swapper: page allocation failure. order:1, mode:0x4020
-Pid: 0, comm: swapper Tainted: G        W   2.6.35.4 #1
-Call Trace:
- [<c0243bfe>] ? __alloc_pages_nodemask+0x3e6/0x513
- [<c025be97>] ? slob_new_pages+0xc/0x23
- [<c025c0a1>] ? __kmalloc_node+0x39/0x72
- [<c03338d8>] ? __alloc_skb+0x5c/0x105
- [<d09fa01a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
- [<d0ab7109>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
- [<d0ab53c5>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
- [<c02193c3>] ? tasklet_action+0x5f/0x65
- [<c0219677>] ? __do_softirq+0x60/0xc6
- [<c021970b>] ? do_softirq+0x2e/0x30
- [<c02197fd>] ? irq_exit+0x53/0x55
- [<c020392c>] ? do_IRQ+0x3a/0x72
- [<c0202be9>] ? common_interrupt+0x29/0x30
- [<c020768e>] ? default_idle+0x25/0x38
- [<c02017d0>] ? cpu_idle+0x2e/0x47
- [<c042361a>] ? start_kernel+0x21a/0x21d
-Mem-Info:
-DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-Normal per-cpu:
-CPU    0: hi:   90, btch:  15 usd:  13
-
-
-2010/8/26 Nikhil Sethi (निखिल सेठी) <nikhil@sethi.ws>
+2010/9/5 Felipe Balbi <me@felipebalbi.com>:
+> Hi,
 >
-> Thanks Eric. I have not been able to reproduce this problem after
-> applying your new patch in about 12 hours of operation. Will let you
-> know if the bug re-appears.
+> On Sun, 5 Sep 2010 14:42:51 +0800, Ming Lei <tom.leiming@gmail.com> wrote:
+>> issue #1:(musb device not work with cable connected with PC)
+>> � � � � -twl->asleep is set as zero in .probe since bootloader has not
+>> powerdown phy
+>> � � � � -EVENT_VBUS returned from twl4030_usb_linkstat since usb cable
+>> is connected with PC
+>> � � � � -twl4030_phy_resume is called but does nothing since
+>> twl->asleep is zero
+>> � � � � -the following are not called to initialize otg phy:
+>> � � � � � � � � �twl4030_phy_power / twl4030_i2c_access /
+>> � � � � � � � � �twl4030_usb_set_mode
+>> � � � � -so musb device mode does not work
 >
-> Thanks
-> Nikhil
+> ok, I see. So what you could do is enable regulators on probe
+> based on PHYPWR bit.
+
+This patch will enable regulators on probe based on current link state
+returned from twl4030_usb_linkstat instead of PHYPWR bit. If vbus or
+ID event detected, call __twl4030_phy_resume to enable regulators/
+phy power/set mode to make phy into work state, or else call
+__twl4030_phy_power(0) to power down otg phy.
+
+See twl4030_usb_phy_init introduced in the patch.
+
+>> No, .asleep flag is set according to the current link state,
+>> instead of the initial state of transceiver. I don't think the patch
+>> will cause break anything. If you think it will, please describe the
+>> break in detail.
 >
-> 2010/8/25 Eric Dumazet <eric.dumazet@gmail.com>:
-> > Le mercredi 25 août 2010 à 13:25 -0700, Nikhil Sethi (निखिल सेठी) a
-> > écrit :
-> >> Hello.
-> >>
-> >> I am running 2.5.35.3 with the above patch, and I still get these
-> >> failures. Though they are much less often than without the patch. A
-> >> snippet from dmesg below.
-> >>
-> >> Please let me know what other details I should provide. Thanks
-> >>
-> >> skbuff alloc of size 3872 failed
-> >> java: page allocation failure. order:1, mode:0x4020
-> >> Pid: 11464, comm: java Not tainted 2.6.35.3 #3
-> >> Call Trace:
-> >>  [<c0243d26>] ? __alloc_pages_nodemask+0x3e6/0x513
-> >>  [<c025c293>] ? __slab_alloc+0x2d7/0x2eb
-> >>  [<c025c946>] ? __kmalloc_track_caller+0x74/0x95
-> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
-> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
-> >>  [<c0334097>] ? __alloc_skb+0x57/0x100
-> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
-> >>  [<d0af4100>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
-> >>  [<d0cbc89f>] ? br_handle_frame+0x1b3/0x1c3 [bridge]
-> >>  [<c033d18a>] ? __netif_receive_skb+0x141/0x25f
-> >>  [<d0af23c1>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
-> >>  [<c02195bf>] ? tasklet_action+0x5f/0x65
-> >>  [<c0219873>] ? __do_softirq+0x60/0xc6
-> >>  [<c0219907>] ? do_softirq+0x2e/0x30
-> >>  [<c02199f9>] ? irq_exit+0x53/0x55
-> >>  [<c020392c>] ? do_IRQ+0x3a/0x72
-> >>  [<c0202be9>] ? common_interrupt+0x29/0x30
-> >> Mem-Info:
-> >> DMA per-cpu:
-> >> CPU    0: hi:    0, btch:   1 usd:   0
-> >> Normal per-cpu:
-> >> CPU    0: hi:   90, btch:  15 usd:  32
-> >> active_anon:6158 inactive_anon:15748 isolated_anon:0
-> >>  active_file:11477 inactive_file:22926 isolated_file:0
-> >>  unevictable:468 dirty:5788 writeback:0 unstable:0
-> >>  free:990 slab_reclaimable:3091 slab_unreclaimable:2349
-> >>  mapped:1410 shmem:5 pagetables:227 bounce:0
-> >> DMA free:1000kB min:124kB low:152kB high:184kB active_anon:1304kB
-> >> inactive_anon:2304kB active_file:2584kB inactive_file:4900kB
-> >> unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
-> >> mlocked:0kB dirty:0kB writeback:0kB mapped:284kB shmem:0kB
-> >> slab_reclaimable:648kB slab_unreclaimable:752kB kernel_stack:152kB
-> >> pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB
-> >> pages_scanned:0 all_unreclaimable? no
-> >> lowmem_reserve[]: 0 238 238
-> >> Normal free:2960kB min:1908kB low:2384kB high:2860kB
-> >> active_anon:23328kB inactive_anon:60688kB active_file:43324kB
-> >> inactive_file:86804kB unevictable:1872kB isolated(anon):0kB
-> >> isolated(file):0kB present:243840kB mlocked:1872kB dirty:23152kB
-> >> writeback:0kB mapped:5356kB shmem:20kB slab_reclaimable:11716kB
-> >> slab_unreclaimable:8644kB kernel_stack:888kB pagetables:908kB
-> >> unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
-> >> all_unreclaimable? no
-> >> lowmem_reserve[]: 0 0 0
-> >> DMA: 76*4kB 29*8kB 5*16kB 0*32kB 0*64kB 1*128kB 1*256kB 0*512kB
-> >> 0*1024kB 0*2048kB 0*4096kB = 1000kB
-> >> Normal: 650*4kB 9*8kB 2*16kB 8*32kB 0*64kB 0*128kB 0*256kB 0*512kB
-> >> 0*1024kB 0*2048kB 0*4096kB = 2960kB
-> >> 37964 total pagecache pages
-> >> 3160 pages in swap cache
-> >> Swap cache stats: add 164954, delete 161794, find 97931/115609
-> >> Free swap  = 937284kB
-> >> Total swap = 963896kB
-> >> 65535 pages RAM
-> >> 1237 pages reserved
-> >> 29042 pages shared
-> >> 38802 pages non-shared
-> >> SLUB: Unable to allocate memory on node -1 (gfp=0x20)
-> >>   cache: kmalloc-8192, object size: 8192, buffer size: 8192, default
-> >> order: 3, min order: 1
-> >>   node 0: slabs: 0, objs: 0, free: 0
-> >> skbuff alloc of size 3872 failed
-> >> java: page allocation failure. order:1, mode:0x4020
-> >> Pid: 11464, comm: java Not tainted 2.6.35.3 #3
-> >> Call Trace:
-> >>  [<c0243d26>] ? __alloc_pages_nodemask+0x3e6/0x513
-> >>  [<c025c293>] ? __slab_alloc+0x2d7/0x2eb
-> >>  [<c025c946>] ? __kmalloc_track_caller+0x74/0x95
-> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
-> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
-> >>  [<c0334097>] ? __alloc_skb+0x57/0x100
-> >>  [<d09e801a>] ? ath_rxbuf_alloc+0x1a/0x78 [ath]
-> >>  [<d0af4100>] ? ath_rx_tasklet+0x2fb/0x808 [ath9k]
-> >>  [<d0cbc89f>] ? br_handle_frame+0x1b3/0x1c3 [bridge]
-> >>  [<c033d18a>] ? __netif_receive_skb+0x141/0x25f
-> >>  [<d0af23c1>] ? ath9k_tasklet+0xcc/0x107 [ath9k]
-> >>  [<c02195bf>] ? tasklet_action+0x5f/0x65
-> >>  [<c0219873>] ? __do_softirq+0x60/0xc6
-> >>  [<c0219907>] ? do_softirq+0x2e/0x30
-> >>  [<c02199f9>] ? irq_exit+0x53/0x55
-> >>  [<c020392c>] ? do_IRQ+0x3a/0x72
-> >>  [<c0202be9>] ? common_interrupt+0x29/0x30
-> >> Mem-Info:
-> >> DMA per-cpu:
-> >> CPU    0: hi:    0, btch:   1 usd:   0
-> >> Normal per-cpu:
-> >> CPU    0: hi:   90, btch:  15 usd:  32
-> >> active_anon:6158 inactive_anon:15748 isolated_anon:0
-> >>  active_file:11477 inactive_file:22926 isolated_file:0
-> >>  unevictable:468 dirty:5788 writeback:0 unstable:0
-> >>  free:990 slab_reclaimable:3091 slab_unreclaimable:2349
-> >>  mapped:1410 shmem:5 pagetables:227 bounce:0
-> >> DMA free:1000kB min:124kB low:152kB high:184kB active_anon:1304kB
-> >> inactive_anon:2304kB active_file:2584kB inactive_file:4900kB
-> >> unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15864kB
-> >> mlocked:0kB dirty:0kB writeback:0kB mapped:284kB shmem:0kB
-> >> slab_reclaimable:648kB slab_unreclaimable:752kB kernel_stack:152kB
-> >> pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB
-> >> pages_scanned:0 all_unreclaimable? no
-> >> lowmem_reserve[]: 0 238 238
-> >> Normal free:2960kB min:1908kB low:2384kB high:2860kB
-> >> active_anon:23328kB inactive_anon:60688kB active_file:43324kB
-> >> inactive_file:86804kB unevictable:1872kB isolated(anon):0kB
-> >> isolated(file):0kB present:243840kB mlocked:1872kB dirty:23152kB
-> >> writeback:0kB mapped:5356kB shmem:20kB slab_reclaimable:11716kB
-> >> slab_unreclaimable:8644kB kernel_stack:888kB pagetables:908kB
-> >> unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
-> >> all_unreclaimable? no
-> >> lowmem_reserve[]: 0 0 0
-> >> DMA: 76*4kB 29*8kB 5*16kB 0*32kB 0*64kB 1*128kB 1*256kB 0*512kB
-> >> 0*1024kB 0*2048kB 0*4096kB = 1000kB
-> >> Normal: 650*4kB 9*8kB 2*16kB 8*32kB 0*64kB 0*128kB 0*256kB 0*512kB
-> >> 0*1024kB 0*2048kB 0*4096kB = 2960kB
-> >> 37964 total pagecache pages
-> >> 3160 pages in swap cache
-> >>
-> >> On Sun, Jun 6, 2010 at 3:42 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> >> >
-> >> > Le dimanche 06 juin 2010 à 11:56 +0200, Michael Guntsche a écrit :
-> >> > > On 2010.06.04 18:16:44 , Michael Guntsche wrote:
-> >> > > > I applied the patch recompiled and run it on the routerboard, trying
-> >> > > > to trigger the bug again.
-> >> > >
-> >> > > Hi Eric,
-> >> > >
-> >> > > Up to now I was not able to reproduce the bug, do you think this patch
-> >> > > can be pushed to mainline or is there a "better"/other  fix for it?
-> >> > >
-> >> > > Kind regards,
-> >> > > Michael
-> >> > >
-> >> > >
-> >> >
-> >> > Thanks Michael for testing.
-> >> >
-> >> > I'll submit ASAP an official patch, sent to all people involved in this
-> >> > driver to get their Ack (or Nack).
-> >> >
-> >> > IEEE80211_MAX_MPDU_LEN being 3840 + somebits is suspect, since it doesnt
-> >> > match 802.11 specs.
-> >> >
-> >> > It should be more close of 2304 + MAC header (32bytes) + FCS (4 bytes) ?
-> >> >
-> >> >
-> >> >
-> >> > --
-> >
-> >
-> > reading my former patch, I believe I mistakenly used a max_t() instead
-> > of a min_() macro :
-> >
-> > diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
-> > index ca6065b..0a0dc3a 100644
-> > --- a/drivers/net/wireless/ath/ath9k/recv.c
-> > +++ b/drivers/net/wireless/ath/ath9k/recv.c
-> > @@ -226,10 +226,10 @@ static int ath_rx_edma_init(struct ath_softc *sc, int nbufs)
-> >        u32 size;
-> >
-> >
-> > -       common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
-> > -                                    ah->caps.rx_status_len,
-> > -                                    min(common->cachelsz, (u16)64));
-> > -
-> > +       size = roundup(IEEE80211_MAX_MPDU_LEN + ah->caps.rx_status_len,
-> > +                      min(common->cachelsz, (u16)64));
-> > +       common->rx_bufsize = max_t(u32, size,
-> > +                                  SKB_MAX_ORDER(NET_SKB_PAD + common->cachelsz, 0));
-> >        ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
-> >                                    ah->caps.rx_status_len);
-> >
-> >
-> >
-> > Please use instead this one :
-> >
-> > diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
-> > index ca6065b..0a0dc3a 100644
-> > --- a/drivers/net/wireless/ath/ath9k/recv.c
-> > +++ b/drivers/net/wireless/ath/ath9k/recv.c
-> > @@ -226,10 +226,10 @@ static int ath_rx_edma_init(struct ath_softc *sc, int nbufs)
-> >        u32 size;
-> >
-> >
-> > -       common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
-> > -                                    ah->caps.rx_status_len,
-> > -                                    min(common->cachelsz, (u16)64));
-> > -
-> > +       size = roundup(IEEE80211_MAX_MPDU_LEN + ah->caps.rx_status_len,
-> > +                      min(common->cachelsz, (u16)64));
-> > +       common->rx_bufsize = min_t(u32, size,
-> > +                                  SKB_MAX_ORDER(NET_SKB_PAD + common->cachelsz, 0));
-> >        ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
-> >                                    ah->caps.rx_status_len);
-> >
-> >
-> >
-> >
-> >
+> if we revert that patch, you'll see that usb3v1 ldos are left on
+
+You commit before does fix one problem, which may keep phy in
+power on even no cable connected, so I do not request a simple
+revert, :-).
+
+> if we never plug/unplug usb cable. AFAIR, the reset state of those
+> LDOs is ON, so that's why we need that patch.
+
+>From Table 5-373 of TPS65950 manual[1], usb3v1 ldo is in sleep state
+after reset. But it is put into active state in twl4030_usb_ldo_init now,
+seems activating it too early.  I have verified it OK on beagle board to
+remove the early activating of usb3v1 in twl4030_usb_ldo_init. I'll merge
+it into the v2 of the patch and post it for your review.
+
+>
+> I'll try to work on it monday judging I'll have laptop and HW
+> available by then.
+
+Very good, thanks your work!
+
+[1], TPS65950 Technical Reference Manual, http://www.ti.com/litv/pdf/swcu050e
+
+
+thanks,
+-- 
+Lei Ming
