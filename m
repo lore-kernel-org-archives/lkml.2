@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab0IEVE4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 17:04:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43533 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754022Ab0IEVEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 17:04:39 -0400
-Message-ID: <4C8405E0.7060107@redhat.com>
-Date: Mon, 06 Sep 2010 00:04:32 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Jonathan Corbet <corbet@lwn.net>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-        Someone Something <fordhaivat@gmail.com>, linux-kernel@vger.kernel.org,
-        gregkh <greg@kroah.com>
-Subject: Re: LDD examples
-References: <AANLkTim7eHwkbbOHdXax7dQiMzSAktxjNYBpQjKOwTUy@mail.gmail.com>	<20100903110158.aadf7850.rdunlap@xenotime.net> <20100904114445.3f008551@bike.lwn.net>
-In-Reply-To: <20100904114445.3f008551@bike.lwn.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754215Ab0IEVUZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 17:20:25 -0400
+Received: from xenotime.net ([72.52.115.56]:33657 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751367Ab0IEVUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 17:20:24 -0400
+Date: Sun, 5 Sep 2010 14:20:20 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: runcoderen <runcoderzhcn@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: ldd scull_load question
+Message-Id: <20100905142020.5db3997d.rdunlap@xenotime.net>
+In-Reply-To: <1283648515.1741.8.camel@bencharluo-laptop>
+References: <1283160040-6636-1-git-send-email-nab@linux-iscsi.org>
+	<201009020156.53803.konrad@darnok.org>
+	<1283455187.5598.86.camel@haakon2.linux-iscsi.org>
+	<1283644390.556.74.camel@haakon2.linux-iscsi.org>
+	<1283646914.1741.3.camel@bencharluo-laptop>
+	<20100904174308.409c070e.rdunlap@xenotime.net>
+	<1283648515.1741.8.camel@bencharluo-laptop>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/04/2010 08:44 PM, Jonathan Corbet wrote:
->> The examples are certainly out of date.
-> The entire book is out of date - it's from 2.6.10!
->
-> We are (very slowly) pondering ways to update it; I hope to get
-> something going in the near future.  Stay tuned...
->
+On Sun, 05 Sep 2010 09:01:55 +0800 runcoderen wrote:
 
-Merge it into Documentation/books/, and have kbuild build all the examples?
+> yes, you do!
+> 
+> there is another question confused me.
+> I have seem the command in the scull.c:
+> int scull_major = SCULL_MAJOR;and so on.
+> 
+> module_param(scull_major, int, S_IRUGO); and so on.
+> 
+> if we don't do "./scull_load scull_major" command.
+> 
+> we just use "./scull_load"
+> 
+> it will make scull_major = SCULL_MAJOR default?
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Yes.  scull_major is initialized to SCULL_MAJOR every time
+that the module is loaded.
+The module_param() allows someone to change the value of
+scull_major.
 
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
