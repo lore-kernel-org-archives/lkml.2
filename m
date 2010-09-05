@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab0IEXPb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 19:15:31 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:42186 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754563Ab0IEXPa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 19:15:30 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: mB9eoeMVM1ksU2Uf0z93JG1WrzJPFhPsESJQqhV9.gig2aA
- ssPjbpF0dHrcE8ZN7Zoh45WBzNET5IwAtAuJNTihEJZN4nKRp2Dm1MvdHXSK
- v78ft5Nrq6ydxGq4wQbnJGT6s1xcrJNIGClKvz.UxoKw8zOIBIPDMtVJkD73
- nZAwxRT0RpdkmeCwL5YnbBbivUM8hbSC8pzDNE3xuh1nXoXqv4V9zWb7.RDv
- WTYgVsdd7epByguhaIgu4plC0kWVFoh_Ot8Oy2g--
-X-Yahoo-Newman-Property: ymail-3
-Date: Sun, 5 Sep 2010 18:15:26 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Kulikov Vasiliy <segooon@gmail.com>
-cc: kernel-janitors@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 13/14] mm: mempolicy: Check return code of check_range
-In-Reply-To: <1283711588-7628-1-git-send-email-segooon@gmail.com>
-Message-ID: <alpine.DEB.2.00.1009051815110.3480@router.home>
-References: <1283711588-7628-1-git-send-email-segooon@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754835Ab0IEXdY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 19:33:24 -0400
+Received: from sh.osrg.net ([192.16.179.4]:38957 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754488Ab0IEXdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 19:33:23 -0400
+Date: Mon, 6 Sep 2010 08:32:45 +0900
+To: linux@arm.linux.org.uk
+Cc: fujita.tomonori@lab.ntt.co.jp, khc@pm.waw.pl,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: fix pci_set_consistent_dma_mask for dmabounce
+	devices
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100905112513.GB558@n2100.arm.linux.org.uk>
+References: <20100901085738.GJ8142@n2100.arm.linux.org.uk>
+	<20100902114937X.fujita.tomonori@lab.ntt.co.jp>
+	<20100905112513.GB558@n2100.arm.linux.org.uk>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100906083105X.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 06 Sep 2010 08:32:47 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 5 Sep 2010 12:25:13 +0100
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
+> > This restores the trick that had worked.
+> > 
+> > btw, I can't compile ARCH_IXP4XX without the following patch:
+> > 
+> > http://www.spinics.net/lists/arm-kernel/msg95933.html
+> > 
+> > =
+> > From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> > Subject: [PATCH] arm: fix arm: fix pci_set_consistent_dma_mask for dmabounce devices
+> > 
+> > This fixes the regression caused by the commit
+> > 6fee48cd330c68332f9712bc968d934a1a84a32a.
+> > 
+> > ARM needs to clip the dma coherent mask for dmabounce devices. This
+> > restores the old trick.
+> > 
+> > Note that strictly speaking, the DMA API doesn't allow architectures
+> > to do such but I'm not sure it's worth adding the new API to set the
+> > dma mask that allows architectures to clip it.
+> > 
+> > Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> 
+> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
-
+Should I send this to Linus? Or Can I assume that someone in ARM camp
+will do?
