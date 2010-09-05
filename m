@@ -1,109 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab0IERBX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 13:01:23 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:41548 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753193Ab0IERBW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 13:01:22 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] cxacru: ignore cx82310_eth devices
-Date: Sun, 5 Sep 2010 19:01:11 +0200
-User-Agent: KMail/1.9.10
-Cc: Simon Arlott <simon@fire.lp0.eu>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <201009032317.14954.linux@rainbow-software.org> <4C82741C.2000106@simon.arlott.org.uk> <20100905040352.GA18538@kroah.com>
-In-Reply-To: <20100905040352.GA18538@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201009051901.13851.linux@rainbow-software.org>
+	id S1754122Ab0IERVQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 13:21:16 -0400
+Received: from mga14.intel.com ([143.182.124.37]:15336 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753848Ab0IERVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 13:21:15 -0400
+Message-Id: <89k83a$9i7dn6@azsmga001.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,321,1280732400"; 
+   d="scan'208";a="321107686"
+Date: Sun, 05 Sep 2010 18:21:10 +0100
+To: Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH] Revert "drm/i915: fix vblank wait test condition"
+Cc: Sven Joachim <svenjoac@gmx.de>, Hugh Dickins <hughd@google.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+References: <1283588234-2514-1-git-send-email-penberg@kernel.org> <89k83a$9hv9li@azsmga001.ch.intel.com> <AANLkTi=_OW5NvnS1oWzt3DW9CPPwNX_sAkPh_QOuXzhv@mail.gmail.com> <alpine.LSU.2.00.1009041244440.3044@sister.anvils> <87vd6ls0jd.fsf@turtle.gmx.de> <4C83C124.8050408@kernel.org> <8u3s8d$jg1fmi@orsmga001.jf.intel.com> <AANLkTikjBztwp5rcGKGWc_6DLkFu5CTXAbePTbjEfyML@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <AANLkTikjBztwp5rcGKGWc_6DLkFu5CTXAbePTbjEfyML@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 05 September 2010 06:03:52 Greg KH wrote:
-> On Sat, Sep 04, 2010 at 05:30:20PM +0100, Simon Arlott wrote:
-> > Ignore ADSL routers, which can have the same vendor and product IDs
-> > as ADSL modems but should be handled by the cx82310_eth driver.
-> >
-> > This intentionally ignores device IDs that aren't currently handled
-> > by cx82310_eth. There may be other device IDs that perhaps shouldn't
-> > be claimed by cxacru.
-> >
-> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> > [SA: Moved to cxacru_usb_probe, message level lowered to info]
-> > Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
-> > ---
-> >  drivers/usb/atm/cxacru.c |   18 ++++++++++++++++--
-> >  1 files changed, 16 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/usb/atm/cxacru.c b/drivers/usb/atm/cxacru.c
-> > index 593fc5e..96fa736 100644
-> > --- a/drivers/usb/atm/cxacru.c
-> > +++ b/drivers/usb/atm/cxacru.c
-> > @@ -1324,8 +1324,22 @@ static struct usbatm_driver cxacru_driver = {
-> >  	.tx_padding	= 11,
-> >  };
-> >
-> > -static int cxacru_usb_probe(struct usb_interface *intf, const struct
-> > usb_device_id *id) -{
-> > +static int cxacru_usb_probe(struct usb_interface *intf,
-> > +		const struct usb_device_id *id) {
-> > +	struct usb_device *usb_dev = interface_to_usbdev(intf);
-> > +	char buf[15];
-> > +
-> > +	/* avoid ADSL routers (cx82310_eth)
-> > +	 * abort if bDeviceClass is 0xff and iProduct is "USB NET CARD" */
-> > +	if (usb_dev->descriptor.bDeviceClass == 0xff
->
-> vendor class?  We have a macro for that?
->
-> > +			&& usb_dev->descriptor.iProduct
->
-> Almost everyone has a iProduct, right?  Why even test for that?
->
-> > +			&& usb_string(usb_dev,
-> > +				usb_dev->descriptor.iProduct, buf, sizeof(buf))
->
-> usb_string() should handle a 0 string, right?
->
-> > +			&& !strcmp(buf, "USB NET CARD")) {
->
-> Just to make it a bit easier to follow, how about you do the
-> usb_string() call in the if statment, and then compare the string and
->
-> then, if that matches you do:
-> > +		dev_info(&intf->dev, "ignoring cx82310_eth device\n");
-> > +		return -ENODEV;
+On Sun, 5 Sep 2010 19:40:06 +0300, Pekka Enberg <penberg@kernel.org> wrote:
+> The "drm-intel" branch on top of 2.6.36-rc3 works OK on my machine. I
+> do see the following errors in dmesg but they seem to be harmless:
+> 
+> [    1.004937] render error detected, EIR: 0x00000010
+> [    1.004981] page table error
+> [    1.005018]   PGTBL_ER: 0x00000102
+> [    1.005058] [drm:i915_report_and_clear_eir] *ERROR* EIR stuck:
+> 0x00000010, masking
+> [    1.005139] render error detected, EIR: 0x00000010
+> [    1.005194] page table error
+> [    1.005244]   PGTBL_ER: 0x00000102
 
-Does it look that much better?:
+Do you see this on 2.6.36-rc3 as well? I had thought we had seen the last
+of those. lspci would be useful to know precisely which chipset is
+throwing that error.
 
-	if (usb_dev->descriptor.bDeviceClass == USB_CLASS_VENDOR_SPEC
-			&& usb_string(usb_dev, usb_dev->descriptor.iProduct,
-				buf, sizeof(buf)) > 0)
-		if (!strcmp(buf, "USB NET CARD")) {
-			dev_info(&intf->dev, "ignoring cx82310_eth device\n");
-			return -ENODEV;
-		}
+> [    1.660043] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+> plane, expect flickering: entries required = 36, available = 31.
 
-I also found a bug in my first patch - usb_string() can return negative value 
-which can cause problems when not checked for.
+These are based on a pessimistic guess for the memory latency and so
+we overestimate the number of FIFO entries required to avoid underruns.
+All that has changed is that we now print out the warning and have been
+surprised by how far out our estimation has been. We first need to find
+some way of improving our estimate for the memory latency and so trim the
+watermarks. And under the circumstances where we need more entries than
+are available on one pipe, we need to adjust the FIFO configuration.
 
-> Well, actually, dev_info?  I guess so, but do you really want to see
-> this message every time?
->
-> thanks,
->
-> greg k-h
+In the short term, we will need to quieten the "harmless" error message.
 
-
-
+I've lost track of the current status for releasing the documentation for
+gen2/3. As always, it should be ready real soon now. 
 -- 
-Ondrej Zary
+Chris Wilson, Intel Open Source Technology Centre
