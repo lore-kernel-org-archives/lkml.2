@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab0IEQgT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 12:36:19 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:60912 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab0IEQgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 12:36:18 -0400
-Date: Sun, 5 Sep 2010 09:35:12 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Fenghua Yu <fenghua.yu@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        lm-sensors <lm-sensors@lm-sensors.org>, H Peter Anvin <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Subject: Re: [lm-sensors] [PATCH] therm_throt.c: Fix error handling in
- thermal_throttle_add_dev
-Message-ID: <20100905163512.GA2114@ericsson.com>
-References: <1283474726-20109-1-git-send-email-fenghua.yu@intel.com>
- <20100903093553.GA6821@elte.hu>
- <20100903213456.GA22124@fenghua-desk.sc.intel.com>
- <20100905123229.GA8254@elte.hu>
+	id S1753752Ab0IEQkJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 12:40:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47822 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533Ab0IEQkH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 12:40:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=uptdlievYsYAbK9CQGiSW1vPi+yyy/lRXqVIrJgKtZTdySRXEC07K+grCDitviiWVD
+         Aq+OM16++GiMYQP1w+Fmawy02o+AuNchuRoouhBk0TAS7JWXQTcXB0YMGArexo1zqztP
+         VOU/OM0LEH59+Czky48Mng4LuSkLIpIQfLyNk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100905123229.GA8254@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <8u3s8d$jg1fmi@orsmga001.jf.intel.com>
+References: <1283588234-2514-1-git-send-email-penberg@kernel.org>
+	<89k83a$9hv9li@azsmga001.ch.intel.com>
+	<AANLkTi=_OW5NvnS1oWzt3DW9CPPwNX_sAkPh_QOuXzhv@mail.gmail.com>
+	<alpine.LSU.2.00.1009041244440.3044@sister.anvils>
+	<87vd6ls0jd.fsf@turtle.gmx.de>
+	<4C83C124.8050408@kernel.org>
+	<8u3s8d$jg1fmi@orsmga001.jf.intel.com>
+Date: Sun, 5 Sep 2010 19:40:06 +0300
+X-Google-Sender-Auth: iay3n7xWBXXLizozYiaQsN_lLAI
+Message-ID: <AANLkTikjBztwp5rcGKGWc_6DLkFu5CTXAbePTbjEfyML@mail.gmail.com>
+Subject: Re: [PATCH] Revert "drm/i915: fix vblank wait test condition"
+From: Pekka Enberg <penberg@kernel.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Sven Joachim <svenjoac@gmx.de>, Hugh Dickins <hughd@google.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 05, 2010 at 08:32:29AM -0400, Ingo Molnar wrote:
-> 
-> * Fenghua Yu <fenghua.yu@intel.com> wrote:
-> 
-> > Or other options could be:
-> > 
-> > 1. Just calling sysfs_add_file_to_group() without collecting returned error and
-> > return 0 at the end (driver/pci/pcie/aspm.c does like this). The drawback is
-> > there is no error logged if an unlikely errorr occurs. But user can see some
-> > files are missing in sysfs.
-> >
-> > 2. Or collect errors in err1, err2, etc for each sysfs_add_file_to_group. At
-> > the end, return -ENODEV(??) if any err1, err2, etc is not 0. This option makes
-> > code unreasonable complex to handle unlikely errors.
-> 
-> Well, the usual way to handle errors is to abort the operation when it 
-> occurs, and return the error code that sysfs_add_file_to_group() gave.
-> 
-> The error is not 'fatal' but missing sysfs files sure are confusing, and 
-> might break user-land which depends on them. So we should either 
-> initialize a driver fully - or not intialize it at all.
-> 
-> Now, a sub-case is the question whether to emit something more than the 
-> return code from sysfs_add_file_to_group(). If it's exceedingly rare 
-> (and subsequently poorly tested) then adding a WARN_ON_ONCE(ret) is OK - 
-> but that error code should be returned.
-> 
-> Am i missing any detail?
-> 
-Unless I am missing something, the problem here is that if driver initialization
-code returns an error, the driver won't be installed. If device entries are retained,
-this will ultimately cause the kernel to crash.
+On Sun, 05 Sep 2010 19:11:16 +0300, Pekka Enberg <penberg@kernel.org> wrote:
+>> Is someone picking this patch up or am I supposed to send it to Linus?
 
->From my perspective, the usual handling is just fine - ie not install the driver
-at all. Everything else just causes confusion.
+On Sun, Sep 5, 2010 at 7:23 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> I have applied this patch to
+>
+> http://cgit.freedesktop.org/~ickle/drm-intel/
+>
+> Thanks.
 
-Guenter
+The "drm-intel" branch on top of 2.6.36-rc3 works OK on my machine. I
+do see the following errors in dmesg but they seem to be harmless:
+
+[    1.004937] render error detected, EIR: 0x00000010
+[    1.004981] page table error
+[    1.005018]   PGTBL_ER: 0x00000102
+[    1.005058] [drm:i915_report_and_clear_eir] *ERROR* EIR stuck:
+0x00000010, masking
+[    1.005139] render error detected, EIR: 0x00000010
+[    1.005194] page table error
+[    1.005244]   PGTBL_ER: 0x00000102
+[    1.660043] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+
+[snip]
+
+[    4.950117] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[    5.176515] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[    5.420040] usb 5-1: new full speed USB device using uhci_hcd and address 3
+[    5.570066] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[    5.776699] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[    7.830162] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[    8.036329] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[    8.412362] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[    8.616325] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[    8.992369] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[    9.196325] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[   14.250106] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[   14.456280] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[   14.852445] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[   15.054263] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[   15.432298] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[   15.636248] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[   16.560078] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+[   16.766246] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for
+plane, expect flickering: entries required = 36, available = 31.
+
+                        Pekka
