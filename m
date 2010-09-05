@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab0IETYJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 15:24:09 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:53994 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab0IETX7 (ORCPT
+	id S1751087Ab0IETiV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 15:38:21 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:49326 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750837Ab0IETiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 15:23:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lQfOPi9rxZ4azMg2xPY2tLUWPxtXQ+RbBnmy9HzhCG/20FInJulwp0fvePjGEcktBd
-         +NQzhMNIzkpkY6WzdUrBKtrHcr0zlW5aoxLQfaXboCWrYEt2b0cFD1wf1Jn0IHxYIhpZ
-         Zm++/SaBY03uHcjii3qufCtzsUZDftUdBf+eY=
-Date: Sun, 5 Sep 2010 12:23:53 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Luotao Fu <l.fu@pengutronix.de>, linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] Input: stmpe-ts - return -ENOMEM if memory
- allocation fail
-Message-ID: <20100905192353.GA18411@core.coreip.homeip.net>
-References: <1283656244.8339.3.camel@phoenix>
- <20100905052101.GA5797@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sun, 5 Sep 2010 15:38:20 -0400
+To: Antonino Daplas <adaplas@gmail.com>
+Subject: [PATCH] [resend] savagefb: fix DDC for Savage 4
+Cc: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
 Content-Disposition: inline
-In-Reply-To: <20100905052101.GA5797@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Sun, 5 Sep 2010 21:38:03 +0200
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009052138.06094.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 05, 2010 at 07:21:01AM +0200, Wolfram Sang wrote:
-> On Sun, Sep 05, 2010 at 11:10:44AM +0800, Axel Lin wrote:
-> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> 
-> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
-> 
+Hello,
 
-Applied, thank you.
+I tested savagefb on 3 different Savage 4 cards:
+Diamond Stealth III S520
+Number Nine SR9
+Datapath Horizon 2S (two savage chips on a PCI card)
+
+it worked except the DDC which did not work on any of them.
+
+Looking at the BIOS code, it does not use MMIO register 0xff20 but CRT
+register 0xa0 or 0xb1 - depending on the chip revision and something in
+register 0xa6. With this patch, DDC works fine on all 3 cards (even on the
+second head of Horizon 2S - although it does not display anything as it's
+misconfigured because of missing BIOS).
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+
+--- linux-2.6.35-rc2/drivers/video/savage/savagefb-i2c.c	2010-06-06 05:43:24.000000000 +0200
++++ linux-2.6.35-rc3/drivers/video/savage/savagefb-i2c.c	2010-08-28 23:54:10.000000000 +0200
+@@ -181,6 +181,15 @@
+ 		par->chan.algo.getscl = prosavage_gpio_getscl;
+ 		break;
+ 	case FB_ACCEL_SAVAGE4:
++		par->chan.reg = CR_SERIAL1;
++		if (par->pcidev->revision > 1 && !(VGArCR(0xa6, par) & 0x40))
++			par->chan.reg = CR_SERIAL2;
++		par->chan.ioaddr      = par->mmio.vbase;
++		par->chan.algo.setsda = prosavage_gpio_setsda;
++		par->chan.algo.setscl = prosavage_gpio_setscl;
++		par->chan.algo.getsda = prosavage_gpio_getsda;
++		par->chan.algo.getscl = prosavage_gpio_getscl;
++		break;
+ 	case FB_ACCEL_SAVAGE2000:
+ 		par->chan.reg         = 0xff20;
+ 		par->chan.ioaddr      = par->mmio.vbase;
 
 
 -- 
-Dmitry
+Ondrej Zary
