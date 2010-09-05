@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab0IEIsJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 04:48:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46526 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752693Ab0IEIsH (ORCPT
+	id S1754567Ab0IEIsR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 04:48:17 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41639 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555Ab0IEIsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 04:48:07 -0400
-Date: Sun, 5 Sep 2010 09:48:06 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Tony Lindgren <tony@atomide.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Sundar Iyer <sundar.iyer@stericsson.com>,
-        Daniel Mack <daniel@caiaq.de>, Pierre Ossman <pierre@ossman.eu>,
-        Matt Fleming <matt@console-pimps.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Cliff Brake <cbrake@bec-systems.com>,
-        Jarkko Lavinen <jarkko.lavinen@nokia.com>, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] MMC: move regulator handling closer to core v2
-Message-ID: <20100905084806.GB24817@opensource.wolfsonmicro.com>
-References: <1283268367-3525-1-git-send-email-linus.walleij@stericsson.com> <AANLkTik-uLMUz2g2znaF0K43D8CONsGdjrRqxTCqpS_X@mail.gmail.com>
+	Sun, 5 Sep 2010 04:48:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=j5OCdqV+UqTQ/RXtilNk9rOyYYv4snAR2uzoAXqNPG8JVQPhQBQgwWooTYKA4zH5Ic
+         Vk0MTMUYLBPMR2eXHq3Kaq9PwB5hLDnyP+/UtJt8aT6YweQRE/5Vm2qKCMeYldQXcNjp
+         /UgyHzaMKDzdtItMBnNSSgeQRLE+boJ9czMk8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTik-uLMUz2g2znaF0K43D8CONsGdjrRqxTCqpS_X@mail.gmail.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100905044902.GA3130@kroah.com>
+References: <1283595045-6922-1-git-send-email-pshah.mumbai@gmail.com> <20100905044902.GA3130@kroah.com>
+From: Prashant Shah <pshah.mumbai@gmail.com>
+Date: Sun, 5 Sep 2010 14:17:54 +0530
+Message-ID: <AANLkTimY86oAsYsZBseszgXgvDEOCYN=iD67r5fwG95_@mail.gmail.com>
+Subject: Re: [PATCH] Staging: xgifb: fixed many style issues in XGI_accel.c
+To: Greg KH <greg@kroah.com>
+Cc: gregkh@suse.de, wfp5p@virginia.edu, apatard@mandriva.com,
+        randy.dunlap@oracle.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 09:38:45PM +0200, Linus Walleij wrote:
+> Um, I think you forgot to build this patch, it dies a horrible death.
+>
+> Please always test your patches before sending them out.
+>
 
-> This has an Reveiwed-by from the regulator maintainer and
-> seems to address all comments, noone is objection so Andrew
-> can you pick it up?
+Missed a } on line 2134
 
-Just to clarify, I'm only one of the regulator maintainers - Liam also
-maintains the regulator API.
+Rechecked all the patches and sent a updated patch.
+
+> thanks,
+>
+> greg k-h
+>
