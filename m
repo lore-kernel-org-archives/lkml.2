@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab0IELW0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 07:22:26 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48885 "EHLO
+	id S1752287Ab0IELZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 07:25:28 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48801 "EHLO
 	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab0IELWZ (ORCPT
+	with ESMTP id S1751043Ab0IELZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 07:22:25 -0400
-Date: Sun, 5 Sep 2010 12:21:53 +0100
+	Sun, 5 Sep 2010 07:25:27 -0400
+Date: Sun, 5 Sep 2010 12:25:13 +0100
 From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Eric Miao <eric.y.miao@gmail.com>,
-        Richard Cochran <richardcochran@gmail.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, khc@pm.waw.pl,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: khc@pm.waw.pl, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] arm: fix pci_set_consistent_dma_mask for dmabounce
 	devices
-Message-ID: <20100905112152.GA558@n2100.arm.linux.org.uk>
-References: <20100819174426O.fujita.tomonori@lab.ntt.co.jp> <m3sk1yzkjw.fsf@intrepid.localdomain> <20100901085738.GJ8142@n2100.arm.linux.org.uk> <20100902114937X.fujita.tomonori@lab.ntt.co.jp> <20100902055907.GA3287@riccoc20.at.omicron.at> <AANLkTi=TfmFPSfw3iYUMzxdsCLC7keJxMbb7vZvQHoiO@mail.gmail.com>
+Message-ID: <20100905112513.GB558@n2100.arm.linux.org.uk>
+References: <20100819174426O.fujita.tomonori@lab.ntt.co.jp> <m3sk1yzkjw.fsf@intrepid.localdomain> <20100901085738.GJ8142@n2100.arm.linux.org.uk> <20100902114937X.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=TfmFPSfw3iYUMzxdsCLC7keJxMbb7vZvQHoiO@mail.gmail.com>
+In-Reply-To: <20100902114937X.fujita.tomonori@lab.ntt.co.jp>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 05, 2010 at 06:50:17PM +0800, Eric Miao wrote:
-> On Thu, Sep 2, 2010 at 1:59 PM, Richard Cochran
-> <richardcochran@gmail.com> wrote:
-> > On Thu, Sep 02, 2010 at 11:50:33AM +0900, FUJITA Tomonori wrote:
-> >> btw, I can't compile ARCH_IXP4XX without the following patch:
-> >>
-> >> http://www.spinics.net/lists/arm-kernel/msg95933.html
-> >
-> > I have the same problem. Compilation of IXP4xx was broken by
-> >
-> >    commit 4fa5518c65df7a2c4b6c58061ac53d0b01228042
-> >    Author: Eric Miao <eric.y.miao@gmail.com>
-> >    Date:   Sat Jun 5 15:16:17 2010 +0800
-> >
-> >    [ARM] pxa: remove now unnecessary dma_needs_bounce()
-> >
-> > What is the correct way to do fix this? Is the above patch the
-> > solution, or is dma_needs_bounce() perhaps also unnecessary for ixp?
-> >
+On Thu, Sep 02, 2010 at 11:50:33AM +0900, FUJITA Tomonori wrote:
+> On Wed, 1 Sep 2010 09:57:38 +0100
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 > 
-> My bad to break this. If there is no quick proper fix, I'd prefer this
-> being reverted first.
+> > On Sat, Aug 28, 2010 at 07:58:11PM +0200, Krzysztof Halasa wrote:
+> > > What's the outcome of the following?
+> > > 
+> > > Russell, are you going to apply it as is, or is a better (short-term)
+> > > fix being made?
+> > 
+> > I want to see a better solution to this first - without which we'll
+> > apply this hack and then quietly forget about the problem.
+> 
+> This restores the trick that had worked.
+> 
+> btw, I can't compile ARCH_IXP4XX without the following patch:
+> 
+> http://www.spinics.net/lists/arm-kernel/msg95933.html
+> 
+> =
+> From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Subject: [PATCH] arm: fix arm: fix pci_set_consistent_dma_mask for dmabounce devices
+> 
+> This fixes the regression caused by the commit
+> 6fee48cd330c68332f9712bc968d934a1a84a32a.
+> 
+> ARM needs to clip the dma coherent mask for dmabounce devices. This
+> restores the old trick.
+> 
+> Note that strictly speaking, the DMA API doesn't allow architectures
+> to do such but I'm not sure it's worth adding the new API to set the
+> dma mask that allows architectures to clip it.
+> 
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
-Reverted.
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Can I assume that I can commit this with:
-
-Reported-by: Richard Cochran <richardcochran@gmail.com>
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
-
-?
+Thanks.
