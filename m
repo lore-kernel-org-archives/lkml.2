@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab0IES7k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 14:59:40 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35486 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754754Ab0IES7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754801Ab0IES7i (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 5 Sep 2010 14:59:38 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35465 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754454Ab0IES7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 14:59:36 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] drivers/staging/comedi/drivers: Fix unsigned return type
-Date: Sun,  5 Sep 2010 21:00:24 +0200
-Message-Id: <1283713226-8429-7-git-send-email-julia@diku.dk>
+To: Dave Jones <davej@redhat.com>
+Cc: kernel-janitors@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/8] arch/x86/kernel/cpu/cpufreq: Fix unsigned return type
+Date: Sun,  5 Sep 2010 21:00:20 +0200
+Message-Id: <1283713226-8429-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283713226-8429-1-git-send-email-julia@diku.dk>
 References: <1283713226-8429-1-git-send-email-julia@diku.dk>
@@ -21,11 +22,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 In each case, the function has an unsigned return type, but returns a
-negative constant to indicate an error condition.  For move_block_from_dma,
-there is only one call and the return value is dropped, so it need not be
-unsigned.  For labpc_eeprom_write, there is only one call and the result is
-stored in a signed variable, so again the unsigned return type is not
-necessary.
+negative constant to indicate an error condition.  Each function is only
+called once.  For nforce2_detect_chipset, the result is only compared to 0,
+and for longrun_determine_freqs, the result is stored in a variable of type
+(signed) int.  Thus, for both functions, unsigned can be dropped from the
+return type.
 
 A sematic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -45,45 +46,34 @@ constant C;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/staging/comedi/drivers/adl_pci9118.c |    2 +-
- drivers/staging/comedi/drivers/ni_labpc.c    |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/cpufreq/cpufreq-nforce2.c |    2 +-
+ arch/x86/kernel/cpu/cpufreq/longrun.c         |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
-index a2bd4e6..cb2843d 100644
---- a/drivers/staging/comedi/drivers/adl_pci9118.c
-+++ b/drivers/staging/comedi/drivers/adl_pci9118.c
-@@ -634,7 +634,7 @@ static unsigned int defragment_dma_buffer(struct comedi_device *dev,
- /*
- ==============================================================================
- */
--static unsigned int move_block_from_dma(struct comedi_device *dev,
-+static int move_block_from_dma(struct comedi_device *dev,
- 					struct comedi_subdevice *s,
- 					short *dma_buffer,
- 					unsigned int num_samples)
-diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
-index 3acf7e6..19f79e8 100644
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -250,7 +250,7 @@ static unsigned int labpc_serial_in(struct comedi_device *dev);
- static unsigned int labpc_eeprom_read(struct comedi_device *dev,
- 				      unsigned int address);
- static unsigned int labpc_eeprom_read_status(struct comedi_device *dev);
--static unsigned int labpc_eeprom_write(struct comedi_device *dev,
-+static int labpc_eeprom_write(struct comedi_device *dev,
- 				       unsigned int address,
- 				       unsigned int value);
- static void write_caldac(struct comedi_device *dev, unsigned int channel,
-@@ -1986,8 +1986,8 @@ static unsigned int labpc_eeprom_read(struct comedi_device *dev,
- 	return value;
- }
- 
--static unsigned int labpc_eeprom_write(struct comedi_device *dev,
--				       unsigned int address, unsigned int value)
-+static int labpc_eeprom_write(struct comedi_device *dev,
-+				unsigned int address, unsigned int value)
+diff --git a/arch/x86/kernel/cpu/cpufreq/cpufreq-nforce2.c b/arch/x86/kernel/cpu/cpufreq/cpufreq-nforce2.c
+index 733093d..141abeb 100644
+--- a/arch/x86/kernel/cpu/cpufreq/cpufreq-nforce2.c
++++ b/arch/x86/kernel/cpu/cpufreq/cpufreq-nforce2.c
+@@ -393,7 +393,7 @@ static struct cpufreq_driver nforce2_driver = {
+  * Detects nForce2 A2 and C1 stepping
+  *
+  */
+-static unsigned int nforce2_detect_chipset(void)
++static int nforce2_detect_chipset(void)
  {
- 	const int write_enable_instruction = 0x6;
- 	const int write_instruction = 0x2;
+ 	nforce2_dev = pci_get_subsys(PCI_VENDOR_ID_NVIDIA,
+ 					PCI_DEVICE_ID_NVIDIA_NFORCE2,
+diff --git a/arch/x86/kernel/cpu/cpufreq/longrun.c b/arch/x86/kernel/cpu/cpufreq/longrun.c
+index fc09f14..77945bf 100644
+--- a/arch/x86/kernel/cpu/cpufreq/longrun.c
++++ b/arch/x86/kernel/cpu/cpufreq/longrun.c
+@@ -165,7 +165,7 @@ static unsigned int longrun_get(unsigned int cpu)
+  * TMTA rules:
+  * performance_pctg = (target_freq - low_freq)/(high_freq - low_freq)
+  */
+-static unsigned int __cpuinit longrun_determine_freqs(unsigned int *low_freq,
++static int __cpuinit longrun_determine_freqs(unsigned int *low_freq,
+ 						      unsigned int *high_freq)
+ {
+ 	u32 msr_lo, msr_hi;
 
