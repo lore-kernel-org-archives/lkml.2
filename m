@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab0IEByg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 21:54:36 -0400
-Received: from mail.perches.com ([173.55.12.10]:1366 "EHLO mail.perches.com"
+	id S1754816Ab0IEBzT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Sep 2010 21:55:19 -0400
+Received: from mail.perches.com ([173.55.12.10]:1346 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754692Ab0IEBxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 21:53:08 -0400
+	id S1754644Ab0IEBxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Sep 2010 21:53:07 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
-        Dustin Kirkland <kirkland@canonical.com>,
-        ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/13] fs/ecryptfs: Remove unnecessary casts of private_data
-Date: Sat,  4 Sep 2010 18:52:48 -0700
-Message-Id: <88ef435da7a6d6cb2c19c33c1eb967bf70880450.1283650107.git.joe@perches.com>
+Cc: Reinette Chatre <reinette.chatre@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 03/13] drivers/net/wireless/iwlwifi: Remove unnecessary casts of private_data
+Date: Sat,  4 Sep 2010 18:52:44 -0700
+Message-Id: <0edcdb63c6c57d0cf810e8c637cf7e8163b80962.1283650107.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.2.19.g9a302
 In-Reply-To: <cover.1283650107.git.joe@perches.com>
 References: <cover.1283650107.git.joe@perches.com>
@@ -23,22 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/ecryptfs/ecryptfs_kernel.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-debugfs.c     |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-index 0032a9f..40186b9 100644
---- a/fs/ecryptfs/ecryptfs_kernel.h
-+++ b/fs/ecryptfs/ecryptfs_kernel.h
-@@ -477,7 +477,7 @@ ecryptfs_lower_header_size(struct ecryptfs_crypt_stat *crypt_stat)
- static inline struct ecryptfs_file_info *
- ecryptfs_file_to_private(struct file *file)
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c b/drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c
+index d706b8a..215d29e 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c
+@@ -929,7 +929,7 @@ ssize_t iwl_ucode_bt_stats_read(struct file *file,
+ 				char __user *user_buf,
+ 				size_t count, loff_t *ppos)
  {
--	return (struct ecryptfs_file_info *)file->private_data;
-+	return file->private_data;
- }
+-	struct iwl_priv *priv = (struct iwl_priv *)file->private_data;
++	struct iwl_priv *priv = file->private_data;
+ 	int pos = 0;
+ 	char *buf;
+ 	int bufsz = (sizeof(struct statistics_bt_activity) * 24) + 200;
+diff --git a/drivers/net/wireless/iwlwifi/iwl-debugfs.c b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
+index 0ee8f51..85e5ad4 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-debugfs.c
++++ b/drivers/net/wireless/iwlwifi/iwl-debugfs.c
+@@ -1528,7 +1528,7 @@ static ssize_t iwl_dbgfs_ucode_bt_stats_read(struct file *file,
+ 					char __user *user_buf,
+ 					size_t count, loff_t *ppos)
+ {
+-	struct iwl_priv *priv = (struct iwl_priv *)file->private_data;
++	struct iwl_priv *priv = file->private_data;
  
- static inline void
+ 	return priv->cfg->ops->lib->debugfs_ops.bt_stats_read(file,
+ 			user_buf, count, ppos);
+@@ -1566,7 +1566,7 @@ static ssize_t iwl_dbgfs_bt_traffic_read(struct file *file,
+ 					char __user *user_buf,
+ 					size_t count, loff_t *ppos) {
+ 
+-	struct iwl_priv *priv = (struct iwl_priv *)file->private_data;
++	struct iwl_priv *priv = file->private_data;
+ 	int pos = 0;
+ 	char buf[200];
+ 	const size_t bufsz = sizeof(buf);
 -- 
 1.7.2.19.g9a302
 
