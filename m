@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003Ab0IEORh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 10:17:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29007 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab0IEORg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 10:17:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,321,1280732400"; 
-   d="scan'208";a="321079465"
-Date: Sun, 5 Sep 2010 22:17:15 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michael Rubin <mrubin@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: Re: [PATCH 3/4] writeback: nr_dirtied and nr_cleaned in
- /proc/vmstat
-Message-ID: <20100905141715.GA9024@localhost>
-References: <1282963227-31867-1-git-send-email-mrubin@google.com>
- <1282963227-31867-4-git-send-email-mrubin@google.com>
- <20100828235029.GA7071@localhost>
- <AANLkTi=KjbfqzZsD6MOQG+4i7vHj6ZEh1_nF7DpwqeLV@mail.gmail.com>
- <20100831074825.GA19358@localhost>
+	id S1752104Ab0IEO2l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 10:28:41 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:35307 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab0IEO2j convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 10:28:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100831074825.GA19358@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTi=9F1HpUyhGOp0TJdazoshKgxbFkyqWvztb5OeH@mail.gmail.com>
+References: <1283607783-29388-1-git-send-email-rydberg@euromail.se>
+	<AANLkTi=9F1HpUyhGOp0TJdazoshKgxbFkyqWvztb5OeH@mail.gmail.com>
+Date: Sun, 5 Sep 2010 09:28:38 -0500
+Message-ID: <AANLkTimMhAkdfNbju7ckFr-oSQrMcSTmX2sdstGMP_cb@mail.gmail.com>
+Subject: Re: [PATCH 0/5] input: wacom: Initial support for Bamboo (rev3)
+From: Chris Bagwell <chris@cnpbagwell.com>
+To: Ping Cheng <pinglinux@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Ping Cheng <pingc@wacom.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 03:48:25PM +0800, Wu Fengguang wrote:
-> > > The output format is quite different from /proc/vmstat.
-> > > Do we really need to "Node X", ":" and "times" decorations?
-> > 
-> > Node X is based on the meminfo file but I agree it's redundant information.
-> 
-> Thanks. In the same directory you can find a different style example
-> /sys/devices/system/node/node0/numastat :) If ever the file was named
-> vmstat! In the other hand, shall we put the numbers there? I'm confused..
+On Sat, Sep 4, 2010 at 4:24 PM, Ping Cheng <pinglinux@gmail.com> wrote:
+> On Saturday, September 4, 2010, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> This the fourth iteration of the Bamboo patches. Hopefully no big
+>> surprises.  The ordering has changed to allow setting the pressure_max
+>> which is not parsed in the hid function. Ping's button mapping has
+>> been implemented, relying on middle-button emulation instead.  The
+>> lowres quirks now apply to all touch devices in the family.
+>
+> Thank you Henrik for the patchset. Very much appreciated.
+>
+> Acked-by: Ping Cheng < pingc@wacom.com>  for the series.
+>
+> Ping
 
-With wider use of NUMA, I'm expecting more interests to put
-/proc/vmstat items into /sys/devices/system/node/node0/.
+Thanks for addressing my comments/questions.
 
-What shall we do then? There are several possible options:
-- just put the /proc/vmstat items into nodeX/numastat
-- create nodeX/vmstat and make numastat a symlink to vmstat
-- create nodeX/vmstat and remove numastat in future
+Also, Thanks for placing all the hooks for future pen support as well.
+ I'll be following up with a patch set for that once your finished.
+If there are any remaining pen specific issues, feel free to offload
+it on me.
 
-Any suggestions?
+Chris
 
-> > > And the "_PAGES" in NR_FILE_PAGES_DIRTIED looks redundant to
-> > > the "_page" in node_page_state(). It's a bit long to be a pleasant
-> > > name. NR_FILE_DIRTIED/NR_CLEANED looks nicer.
-> > 
-> > Yeah. Will fix.
-> 
-> Thanks. This is kind of nitpick, however here is another name by
-> Jan Kara: BDI_WRITTEN. BDI_WRITTEN may not be a lot better than
-> BDI_CLEANED, but here is a patch based on Jan's code. I'm cooking
-> more patches that make use of this per-bdi counter to estimate the
-> bdi's write bandwidth, and to further decide the optimal (large)
-> writeback chunk size as well as to do IO-less balance_dirty_pages().
-> 
-> Basically BDI_WRITTEN and NR_CLEANED are accounting for the same
-> thing in different dimensions. So it would be good if we can use
-> the same naming scheme to avoid confusing users: either to use
-> BDI_WRITTEN and NR_WRITTEN, or use BDI_CLEANED and NR_CLEANED.
-> What's your opinion?
-
-I tend to prefer *_WRITTEN now.
-- *_WRITTEN reminds the users about IO, *_CLEANED is less so obvious.
-- *_CLEANED seems to be paired with NR_DIRTIED, this could be
-  misleading to the users. The fact is, dirty pages may either be
-  written to disk, or dropped (by truncate).
-
-Thanks,
-Fengguang
+>
+>> Henrik Rydberg (4):
+>>   input: wacom: Add fuzz parameters to features
+>>   input: wacom: Collect device quirks into single function (rev2)
+>>   input: wacom: Add support for the Bamboo Touch trackpad (rev4)
+>>   input: wacom: Add a quirk for lowres Bamboo devices (rev2)
+>>
+>> Ping Cheng (1):
+>>   input: wacom: Parse the Bamboo device family
+>>
+>>  drivers/input/tablet/wacom.h     |    1 +
+>>  drivers/input/tablet/wacom_sys.c |   57 +++++++++++++-----
+>>  drivers/input/tablet/wacom_wac.c |  123 +++++++++++++++++++++++++++++++++++++-
+>>  drivers/input/tablet/wacom_wac.h |   14 ++++
+>>  4 files changed, 176 insertions(+), 19 deletions(-)
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
