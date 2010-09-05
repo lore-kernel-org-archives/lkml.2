@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab0IESc1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 14:32:27 -0400
+	id S1754638Ab0IESca (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 14:32:30 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:46186 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489Ab0IEScZ (ORCPT
+	with ESMTP id S1754593Ab0IESc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 14:32:25 -0400
+	Sun, 5 Sep 2010 14:32:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=sr4nhTp8ilbvRaC0o3jKAylJx+rbj64sYYA0xAVYrUlC6ohizUBjQN8/cn/OLmhV3T
-         0zOxrWU+19Q4tg+bgkjtQpvDHYgXFYGtjK0mt4CcvpOQUu+7pfmxEFkLcO6bAttxsFos
-         5Tf3Gy2rctCnMLhf22SO0TOcVjnJT8DuvCRdE=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ZooMD5SrZV/2Bsy10Zi0Kk0N180RQnRJVG7nFXIO/91Bu81PtdqCrqK4KdG9kt/Bb6
+         rSKT/DmGQcyVAPGkhFX0WVdpHF04KFK7VdF5HQrDTCX4a5tH7nYZ1plmZMnqmWGRgWmM
+         nLBPacLueK2ORq9avwIvaZeOh63NnqEIryars=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Vasiliy Kulikov <segooon@gmail.com>, Neil Brown <neilb@suse.de>,
-        Jens Axboe <jaxboe@fusionio.com>, linux-raid@vger.kernel.org,
+Cc: Vasiliy Kulikov <segooon@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] md: do not use ++ in rcu_dereference() argument
-Date: Sun,  5 Sep 2010 22:32:18 +0400
-Message-Id: <1283711539-7123-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH 02/14] char: tty_io: check return code of tty_register_device
+Date: Sun,  5 Sep 2010 22:32:22 +0400
+Message-Id: <1283711542-7164-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vasiliy Kulikov <segooon@gmail.com>
 
-rcu_dereference() is macro, so it might use its argument twice.
-Argument must not has side effects.
-
-It was found by compiler warning:
-drivers/md/raid1.c: In function ‘read_balance’:
-drivers/md/raid1.c:445: warning: operation on ‘new_disk’ may be undefined
+Function tty_register_device may return ERR_PTR(...). Check for it.
 
 Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 ---
- drivers/md/raid1.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ Probably we need another resource deallocation in err.
+ Compile tested.
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index ad83a4d..12194df 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -442,7 +442,7 @@ static int read_balance(conf_t *conf, r1bio_t *r1_bio)
- 		     r1_bio->bios[new_disk] == IO_BLOCKED ||
- 		     !rdev || !test_bit(In_sync, &rdev->flags)
- 			     || test_bit(WriteMostly, &rdev->flags);
--		     rdev = rcu_dereference(conf->mirrors[++new_disk].rdev)) {
-+		     rdev = rcu_dereference(conf->mirrors[new_disk].rdev)) {
+ drivers/char/tty_io.c |   24 ++++++++++++++++++++++--
+ 1 files changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index d6c659f..e185db3 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -3004,6 +3004,7 @@ int tty_register_driver(struct tty_driver *driver)
+ 	int i;
+ 	dev_t dev;
+ 	void **p = NULL;
++	struct device *d;
  
- 			if (rdev && test_bit(In_sync, &rdev->flags) &&
- 				r1_bio->bios[new_disk] != IO_BLOCKED)
-@@ -452,6 +452,7 @@ static int read_balance(conf_t *conf, r1bio_t *r1_bio)
- 				new_disk = wonly_disk;
- 				break;
- 			}
-+			new_disk++;
- 		}
- 		goto rb_out;
+ 	if (!(driver->flags & TTY_DRIVER_DEVPTS_MEM) && driver->num) {
+ 		p = kzalloc(driver->num * 2 * sizeof(void *), GFP_KERNEL);
+@@ -3051,12 +3052,31 @@ int tty_register_driver(struct tty_driver *driver)
+ 	mutex_unlock(&tty_mutex);
+ 
+ 	if (!(driver->flags & TTY_DRIVER_DYNAMIC_DEV)) {
+-		for (i = 0; i < driver->num; i++)
+-		    tty_register_device(driver, i, NULL);
++		for (i = 0; i < driver->num; i++) {
++			d = tty_register_device(driver, i, NULL);
++			if (IS_ERR(d)) {
++				error = PTR_ERR(d);
++				goto err;
++			}
++		}
  	}
+ 	proc_tty_register_driver(driver);
+ 	driver->flags |= TTY_DRIVER_INSTALLED;
+ 	return 0;
++
++err:
++	for (i--; i >= 0; i--)
++		tty_unregister_device(driver, i);
++
++	mutex_lock(&tty_mutex);
++	list_del(&driver->tty_drivers);
++	mutex_unlock(&tty_mutex);
++
++	unregister_chrdev_region(dev, driver->num);
++	driver->ttys = NULL;
++	driver->termios = NULL;
++	kfree(p);
++	return error;
+ }
+ 
+ EXPORT_SYMBOL(tty_register_driver);
 -- 
 1.7.0.4
 
