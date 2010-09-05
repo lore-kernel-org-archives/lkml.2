@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab0IENu2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 09:50:28 -0400
-Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:55044
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750863Ab0IENu1 (ORCPT
+	id S1751744Ab0IEOQD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 10:16:03 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:38378 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab0IEOQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 09:50:27 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Matthew Garrett <mjg@redhat.com>,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH] acpi: Provide decls for standalone compilation of video.h without ACPI (v2)
-Date: Sun,  5 Sep 2010 14:51:49 +0100
-Message-Id: <1283694709-8504-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1283693757-8199-1-git-send-email-chris@chris-wilson.co.uk>
-References: <1283693757-8199-1-git-send-email-chris@chris-wilson.co.uk>
-X-Originating-IP: 78.156.66.37
+	Sun, 5 Sep 2010 10:16:00 -0400
+Date: Sun, 5 Sep 2010 16:15:44 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: cbouatmailru@gmail.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, olof@lixom.net, achew@nvidia.com,
+        broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH v2] power supply: add driver for TI BQ20Z75 gas gauge IC
+Message-ID: <20100905161544.3a9d9e03@hyperion.delvare>
+In-Reply-To: <1283448586-14613-1-git-send-email-rklein@nvidia.com>
+References: <1283448586-14613-1-git-send-email-rklein@nvidia.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Len Brown <len.brown@intel.com>
----
- include/acpi/video.h |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+Hi Rhyland,
 
-diff --git a/include/acpi/video.h b/include/acpi/video.h
-index 551793c..0e98e67 100644
---- a/include/acpi/video.h
-+++ b/include/acpi/video.h
-@@ -1,6 +1,10 @@
- #ifndef __ACPI_VIDEO_H
- #define __ACPI_VIDEO_H
- 
-+#include <linux/errno.h> /* for ENODEV */
-+
-+struct acpi_device;
-+
- #define ACPI_VIDEO_DISPLAY_CRT  1
- #define ACPI_VIDEO_DISPLAY_TV   2
- #define ACPI_VIDEO_DISPLAY_DVI  3
-@@ -26,4 +30,3 @@ static inline int acpi_video_get_edid(struct acpi_device *device, int type,
- #endif
- 
- #endif
--
+On Thu,  2 Sep 2010 10:29:46 -0700, rklein@nvidia.com wrote:
+> From: Rhyland Klein <rklein@nvidia.com>
+> 
+> this driver depends on I2C and uses SMBUS for communication with the host.
+> 
+> Addressed comments from reviews by Mark Brown and Jean Delvare.
+>   * Cleaned up whitespace and alignment issues
+>   * changed return codes to more appropriate values
+>   * change Kconfig option name to be consistent with existing devices
+>   * removed global struct and moved to device specific data
+>   * changed printk to dev_dbg
+
+Looks much better. A few details could be ironed out:
+
+> 
+> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+> ---
+>  drivers/power/Kconfig   |    7 +
+>  drivers/power/Makefile  |    1 +
+>  drivers/power/bq20z75.c |  387 +++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 395 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/power/bq20z75.c
+> 
+> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+> index 8e9ba17..53d9cbf 100644
+> --- a/drivers/power/Kconfig
+> +++ b/drivers/power/Kconfig
+> @@ -142,4 +142,11 @@ config CHARGER_PCF50633
+>  	help
+>  	 Say Y to include support for NXP PCF50633 Main Battery Charger.
+>  
+> +config BATTERY_BQ20Z75
+> +        tristate "TI BQ20z75 gas gauge"
+> +        depends on I2C
+> +        help
+> +         Say Y to include support for TI bq20z75 SBS-compliant
+
+Please leave the BQ in capitals for consistency.
+
+> +         gas gauge and protection IC.
+> +
+>  endif # POWER_SUPPLY
+> diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+> index 0005080..cdc403d 100644
+> --- a/drivers/power/Makefile
+> +++ b/drivers/power/Makefile
+> @@ -34,3 +34,4 @@ obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
+>  obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
+>  obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
+>  obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
+> +obj-$(CONFIG_BATTERY_BQ20Z75)	+= bq20z75.o
+
+Would be nice to move this entry right before CONFIG_BATTERY_BQ27x00.
+Same for Kconfig, BTW.
+
+> diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
+> new file mode 100644
+> index 0000000..a7eeedf
+> --- /dev/null
+> +++ b/drivers/power/bq20z75.c
+> (...)
+> +static int bq20z75_get_property(struct power_supply *psy,
+> +	enum power_supply_property psp, union power_supply_propval *val);
+
+You no longer need this forward declaration.
+
+Once these small details are fixed, feel free to add:
+
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
+
 -- 
-1.7.1
-
+Jean Delvare
