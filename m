@@ -1,77 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab0IEVEd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 17:04:33 -0400
-Received: from kroah.org ([198.145.64.141]:57018 "EHLO coco.kroah.org"
+	id S1754354Ab0IEVE4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 17:04:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43533 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750897Ab0IEVEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 17:04:32 -0400
-Date: Sun, 5 Sep 2010 14:04:46 -0700
-From: Greg KH <greg@kroah.com>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Simon Arlott <simon@fire.lp0.eu>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cxacru: ignore cx82310_eth devices
-Message-ID: <20100905210446.GA4472@kroah.com>
-References: <201009032317.14954.linux@rainbow-software.org> <201009051901.13851.linux@rainbow-software.org> <20100905191412.GA10835@kroah.com> <201009052212.37015.linux@rainbow-software.org>
+	id S1754022Ab0IEVEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 17:04:39 -0400
+Message-ID: <4C8405E0.7060107@redhat.com>
+Date: Mon, 06 Sep 2010 00:04:32 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009052212.37015.linux@rainbow-software.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Jonathan Corbet <corbet@lwn.net>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+        Someone Something <fordhaivat@gmail.com>, linux-kernel@vger.kernel.org,
+        gregkh <greg@kroah.com>
+Subject: Re: LDD examples
+References: <AANLkTim7eHwkbbOHdXax7dQiMzSAktxjNYBpQjKOwTUy@mail.gmail.com>	<20100903110158.aadf7850.rdunlap@xenotime.net> <20100904114445.3f008551@bike.lwn.net>
+In-Reply-To: <20100904114445.3f008551@bike.lwn.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 05, 2010 at 10:12:33PM +0200, Ondrej Zary wrote:
-> Ignore ADSL routers, which can have the same vendor and product IDs
-> as ADSL modems but should be handled by the cx82310_eth driver.
-> 
-> This intentionally ignores device IDs that aren't currently handled
-> by cx82310_eth. There may be other device IDs that perhaps shouldn't
-> be claimed by cxacru.
-> 
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> 
-> --- linux-2.6.36-rc3-orig/drivers/usb/atm/cxacru.c	2010-08-29 17:36:04.000000000 +0200
-> +++ linux-2.6.36-rc3/drivers/usb/atm/cxacru.c	2010-09-05 18:54:56.000000000 +0200
-> @@ -1324,8 +1324,22 @@ static struct usbatm_driver cxacru_drive
->  	.tx_padding	= 11,
->  };
->  
-> -static int cxacru_usb_probe(struct usb_interface *intf, const struct usb_device_id *id)
-> -{
-> +static int cxacru_usb_probe(struct usb_interface *intf,
-> +		const struct usb_device_id *id) {
+  On 09/04/2010 08:44 PM, Jonathan Corbet wrote:
+>> The examples are certainly out of date.
+> The entire book is out of date - it's from 2.6.10!
+>
+> We are (very slowly) pondering ways to update it; I hope to get
+> something going in the near future.  Stay tuned...
+>
 
-Ick, what?
+Merge it into Documentation/books/, and have kbuild build all the examples?
 
-Did you run this patch through scripts/checkpatch.pl?
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
-As you didn't change the function arguments, just leave the long line
-alone, but even if you did change it, the '{' has to be on the next line
-by itself.  See Documentation/CodingStyle for details.
-
-> +	struct usb_device *usb_dev = interface_to_usbdev(intf);
-> +	char buf[15];
-> +
-> +	/* avoid ADSL routers (cx82310_eth)
-> +	 * abort if bDeviceClass is 0xff and iProduct is "USB NET CARD" */
-> +	if (usb_dev->descriptor.bDeviceClass == USB_CLASS_VENDOR_SPEC
-> +			&& usb_string(usb_dev, usb_dev->descriptor.iProduct,
-> +				buf, sizeof(buf)) > 0) {
-> +		if (!strcmp(buf, "USB NET CARD")) {
-> +			dev_info(&intf->dev, "ignoring cx82310_eth device\n");
-> +			return -ENODEV;
-> +		}
-> +	}
-
-In thinking about this a bit more, don't you also want to check the
-vendor and product id?  You can't always be sure about the string of any
-old device, right?
-
-thanks,
-
-greg k-h
