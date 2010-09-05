@@ -1,104 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab0IEQul (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 12:50:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751533Ab0IEQuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 12:50:40 -0400
-Message-ID: <4C83CA5A.7030404@redhat.com>
-Date: Sun, 05 Sep 2010 19:50:34 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Cam Macdonell <cam@cs.ualberta.ca>
-CC: "qemu-devel@nongnu.org Developers" <qemu-devel@nongnu.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [Qemu-devel] Guest cannot handle a PCI BAR > 1GB
-References: <AANLkTimk19OmkNYvVemxgyFfgByNDDq6R2fa6=FQ8H9L@mail.gmail.com>
-In-Reply-To: <AANLkTimk19OmkNYvVemxgyFfgByNDDq6R2fa6=FQ8H9L@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754081Ab0IEQ7q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 12:59:46 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:27630 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab0IEQ7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 12:59:44 -0400
+Date: Sun, 5 Sep 2010 18:59:21 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jin.dongming@np.css.fujitsu.com, lm-sensors@lm-sensors.org,
+        seto.hidetoshi@jp.fujitsu.com, fenghua.yu@intel.com,
+        khali@linux-fr.org, tglx@linutronix.de, hpa@linux.intel.com,
+        mingo@elte.hu, len.brown@intel.com
+Cc: jin.dongming@np.css.fujitsu.com, linux-tip-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, lm-sensors@lm-sensors.org,
+        seto.hidetoshi@jp.fujitsu.com, fenghua.yu@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com, mingo@elte.hu,
+        len.brown@intel.com
+Subject: Re: [tip:x86/debug] therm_throt.c: Trival printk message fix for a
+ unsuitable abbreviation of 'thermal'
+Message-ID: <20100905185921.13c7c3f5@hyperion.delvare>
+In-Reply-To: <tip-6981fe03b2055685fb6da40f54518bc6baf2b751@git.kernel.org>
+References: <4C7C492D.5020704@np.css.fujitsu.com>
+	<tip-6981fe03b2055685fb6da40f54518bc6baf2b751@git.kernel.org>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/04/2010 01:22 AM, Cam Macdonell wrote:
-> Hi,
->
-> I'm trying to test 2 GB (and eventually larger) BARs with ivshmem and
-> I get an error in the guest that it is able to find a mem resource for
-> a BAR larger than 1GB.  I'm using 64-bit BARs.
->
-> when running with 6GB of RAM and a 1GB BAR for ivshmem, it finds a
-> resource (and searches beyond 32-bit values to find it).  Here is a
-> log from printfs added to the loop that searches the resources from
-> find_resource() in kernel/resource.c:363.
->
+6 people and 2 mailing lists Cc'd for a one-line trivial patch??
 
-This is a kernel question, not a qemu issue.  Copying lkml.
+On Sun, 5 Sep 2010 13:06:45 GMT, tip-bot for Jin Dongming wrote:
+> Commit-ID:  6981fe03b2055685fb6da40f54518bc6baf2b751
+> Gitweb:     http://git.kernel.org/tip/6981fe03b2055685fb6da40f54518bc6baf2b751
+> Author:     Jin Dongming <jin.dongming@np.css.fujitsu.com>
+> AuthorDate: Tue, 31 Aug 2010 09:13:33 +0900
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Sun, 5 Sep 2010 14:39:15 +0200
+> 
+> therm_throt.c: Trival printk message fix for a unsuitable abbreviation of 'thermal'
 
-> trying 'tmp.start' 1000 to
->          'tmp.end' fff
-> trying 'tmp.start' 9f400 to
->          'tmp.end' 9f3ff
-> trying 'tmp.start' a0000 to
->          'tmp.end' effff
-> trying 'tmp.start' 100000 to
->          'tmp.end' fffff
-> trying 'tmp.start' dfffd000 to
->          'tmp.end' dfffcfff
-> trying 'tmp.start' e0000000 to
->          'tmp.end' efffffff
-> trying 'tmp.start' f2000000 to
->          'tmp.end' f1ffffff
-> trying 'tmp.start' f2001000 to
->          'tmp.end' f200ffff
-> trying 'tmp.start' f2020000 to
->          'tmp.end' f201ffff
-> trying 'tmp.start' f2021000 to
->          'tmp.end' f202ffff
-> trying 'tmp.start' f2040000 to
->          'tmp.end' f203ffff
-> trying 'tmp.start' f2040100 to
->          'tmp.end' febfffff
-> trying 'tmp.start' fec00400 to
->          'tmp.end' fffbffff
-> trying 'tmp.start' 100000000 to
->          'tmp.end' ffffffff
-> trying 'tmp.start' 1a0000000 to
->          'tmp.end' ffffffffffffffff
-> pci 0000:00:04.0: BAR 2: assigned [mem 0x1c0000000-0x1ffffffff 64bit]
-> pci 0000:00:04.0: BAR 2: set to [mem 0x1c0000000-0x1ffffffff 64bit]
-> (PCI address [0x1c0000000-0x1ffffffff]
->
-> and you can see the BAR is successfully assigned.
->
-> However, with a 2GB BAR (below), the search fails, but it also never
-> searches beyong 32-bits.  Again, all that's changed is the size of the
-> ivshmem region.
->
-> trying 'tmp.start' 1000 to
->          'tmp.end' fff
-> trying 'tmp.start' 9f400 to
->          'tmp.end' 9f3ff
-> trying 'tmp.start' a0000 to
->          'tmp.end' effff
-> trying 'tmp.start' 100000 to
->          'tmp.end' fffff
-> trying 'tmp.start' dfffd000 to
->          'tmp.end' dfffcfff
-> pci 0000:00:04.0: BAR 2: can't assign mem (size 0x80000000)
->
-> Is there a limit to PCI BAR sizes or resources?  Any pointers or
-> further debugging tips are greatly appreciated.
->
+Typo: trivial.
 
-What kernel version are you looking at?
+> 
+> In unexpected_thermal_interrupt(), "LVT TMR interrupt" is used
+> in error message.
+> 
+> I don't think TMR is a suitable abbreviation for thermal.
+>   1.TMR has been used in IA32 Architectures Software Developer's
+>     Manual, and is the abbreviation for Trigger Mode Register.
+>   2.There is not an standard abbreviation "TMR" defined for thermal
+>     in IA32 Architectures Software Developer's Manual.
+>   3.Though we could understand it as Thermal Monitor Register, it is
+>     easy to be misunderstood as a *TIMER* interrupt also.
+> 
+> I think this patch will fix it.
+> 
+> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+> Cc: Brown
+> Cc: Len <len.brown@intel.com>
 
-Please add printks to the loop so we can see this->start and this->end.  
-It smells like a truncation issue.
+Something's fishy here.
+
+> Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+> Cc: lm-sensors@lm-sensors.org <lm-sensors@lm-sensors.org>
+
+Mailing lists shouldn't be included in Cc headers.
+
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: Jean Delvare <khali@linux-fr.org>
+
+This should read:
+
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
+
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> LKML-Reference: <4C7C492D.5020704@np.css.fujitsu.com>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> index c2a8b26..1d0f743 100644
+> --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> @@ -348,7 +348,7 @@ static void intel_thermal_interrupt(void)
+>  
+>  static void unexpected_thermal_interrupt(void)
+>  {
+> -	printk(KERN_ERR "CPU%d: Unexpected LVT TMR interrupt!\n",
+> +	printk(KERN_ERR "CPU%d: Unexpected LVT thermal interrupt!\n",
+>  			smp_processor_id());
+>  	add_taint(TAINT_MACHINE_CHECK);
+>  }
+
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Jean Delvare
