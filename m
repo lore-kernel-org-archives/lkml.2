@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab0IEM4d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 08:56:33 -0400
-Received: from csamuel.org ([74.50.50.137]:45016 "EHLO csamuel.org"
+	id S1753962Ab0IENEV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 09:04:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53060 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753628Ab0IEM4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 08:56:31 -0400
-From: Chris Samuel <chris@csamuel.org>
-To: linux-btrfs@vger.kernel.org
-Subject: Re: [Btrfs-devel] [patch] O_DIRECT: fix the splitting up of contiguous I/O
-Date: Sun, 5 Sep 2010 22:56:08 +1000
-User-Agent: KMail/1.13.5 (Linux/2.6.32-24-generic; KDE/4.5.1; x86_64; ; )
-Cc: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
-        "btrfs-devel" <btrfs-devel@oss.oracle.com>,
-        Andrew Morton <akpm@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Josef Bacik <josef@redhat.com>
-References: <x49vd7f368c.fsf@segfault.boston.devel.redhat.com> <20100902142501.GA14932@infradead.org>
-In-Reply-To: <20100902142501.GA14932@infradead.org>
-X-Face: Wcb;^Ll1x`\6);#5&v=2":47)c~M=K)9_=0mp[Ob~p==:85h/k)fj6nBf@
- =?iso-8859-1?q?=5ESdaXtmdYGRq=0A=09=5B?=>N&^2m#i\v9ZHe:G-e=OR}-sEf`CdEL2/\).SeCBSC"Cn[(:./c*I|/3KCDO$<
- =?iso-8859-1?q?=7Bn8m=3BX=5F=0A=09g=5CY9LQ=3Dv/b5=60?=)L,WOQdI*?SqUCgiw/9`KxgdU5;z8L.3)
- =?iso-8859-1?q?F!1M3=3Dw=3Ai9MsWp=26v=3B=25usOXL=3Bw=0A=096kF=3FwAZjss=2E?=
- =?iso-8859-1?q?+y?=(78'qBu";bx]>"2dZd/S$^K)nU^N0HM\^^;s#q
+	id S1752881Ab0IENEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 09:04:20 -0400
+Date: Sun, 5 Sep 2010 13:03:53 GMT
+From: tip-bot for Francisco Jerez <currojerez@riseup.net>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        akpm@linux-foundation.org, currojerez@riseup.net, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, currojerez@riseup.net, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1283633804-11749-1-git-send-email-currojerez@riseup.net>
+References: <1283633804-11749-1-git-send-email-currojerez@riseup.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Fix the address space annotations of iomap_atomic_prot_pfn()
+Message-ID: <tip-cc1a8e523333bc3d990102140f4d12908fa83caf@git.kernel.org>
+Git-Commit-ID: cc1a8e523333bc3d990102140f4d12908fa83caf
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3814862.Uf0HDgYkgA";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009052256.12386.chris@csamuel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 05 Sep 2010 13:03:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3814862.Uf0HDgYkgA
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  cc1a8e523333bc3d990102140f4d12908fa83caf
+Gitweb:     http://git.kernel.org/tip/cc1a8e523333bc3d990102140f4d12908fa83caf
+Author:     Francisco Jerez <currojerez@riseup.net>
+AuthorDate: Sat, 4 Sep 2010 22:56:43 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 5 Sep 2010 14:26:14 +0200
 
-On Fri, 3 Sep 2010 12:25:01 am Christoph Hellwig wrote:
+x86: Fix the address space annotations of iomap_atomic_prot_pfn()
 
-> Andrew, can you please send this on to Linus and -stable ASAP?
-> It's causing massive problems for our users.
+This patch fixes the sparse warnings when the return pointer of
+iomap_atomic_prot_pfn() is used as an argument of iowrite32()
+and friends.
 
-Did this patch get dropped ?   I don't see it in Linus's git..
+Signed-off-by: Francisco Jerez <currojerez@riseup.net>
+LKML-Reference: <1283633804-11749-1-git-send-email-currojerez@riseup.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/include/asm/iomap.h |    4 ++--
+ arch/x86/mm/iomap_32.c       |    6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-https://patchwork.kernel.org/patch/119333/
-
-cheers,
-Chris
-=2D-=20
- Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
-
-This email may come with a PGP signature as a file. Do not panic.
-=46or more info see: http://en.wikipedia.org/wiki/OpenPGP
-
---nextPart3814862.Uf0HDgYkgA
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEVAwUATIOTaY1yjaOTJg85AQIdWAf+PyOtvyZrLrZ2dWaI4/gRgKeadsxp6Mb6
-Gc3wUhwUTeb/ZrVtrRQsAashDHYyLK/BNj5b+v36Z5vBMqqNps/0/+bqK+1uqpHz
-rIdqJU5OdL16b8vKKu8MKhTsGzJckec7j302houg9s+xSRBVX8B+urP4ygcHHBhU
-FonKoqMpwybtFeyJxRetOsOT3SC69LrqWP0zrd91XiwCuAoehHhn9aiyajveGn0I
-mHg+hOx236Bkmw77vp7f+XFQwaoFuZMzxH+fuf0PzLwlmGYTINlBJy5RxCLY4QQt
-mnoGj6G4Nc9wlcPwTMLRAtaHG0xD7jrYA0oXdtQnBV7z/0T8SpV3EA==
-=sTOa
------END PGP SIGNATURE-----
-
---nextPart3814862.Uf0HDgYkgA--
+diff --git a/arch/x86/include/asm/iomap.h b/arch/x86/include/asm/iomap.h
+index f35eb45..c4191b3 100644
+--- a/arch/x86/include/asm/iomap.h
++++ b/arch/x86/include/asm/iomap.h
+@@ -26,11 +26,11 @@
+ #include <asm/pgtable.h>
+ #include <asm/tlbflush.h>
+ 
+-void *
++void __iomem *
+ iomap_atomic_prot_pfn(unsigned long pfn, enum km_type type, pgprot_t prot);
+ 
+ void
+-iounmap_atomic(void *kvaddr, enum km_type type);
++iounmap_atomic(void __iomem *kvaddr, enum km_type type);
+ 
+ int
+ iomap_create_wc(resource_size_t base, unsigned long size, pgprot_t *prot);
+diff --git a/arch/x86/mm/iomap_32.c b/arch/x86/mm/iomap_32.c
+index 84e236c..72fc70c 100644
+--- a/arch/x86/mm/iomap_32.c
++++ b/arch/x86/mm/iomap_32.c
+@@ -74,7 +74,7 @@ void *kmap_atomic_prot_pfn(unsigned long pfn, enum km_type type, pgprot_t prot)
+ /*
+  * Map 'pfn' using fixed map 'type' and protections 'prot'
+  */
+-void *
++void __iomem *
+ iomap_atomic_prot_pfn(unsigned long pfn, enum km_type type, pgprot_t prot)
+ {
+ 	/*
+@@ -86,12 +86,12 @@ iomap_atomic_prot_pfn(unsigned long pfn, enum km_type type, pgprot_t prot)
+ 	if (!pat_enabled && pgprot_val(prot) == pgprot_val(PAGE_KERNEL_WC))
+ 		prot = PAGE_KERNEL_UC_MINUS;
+ 
+-	return kmap_atomic_prot_pfn(pfn, type, prot);
++	return (void __force __iomem *) kmap_atomic_prot_pfn(pfn, type, prot);
+ }
+ EXPORT_SYMBOL_GPL(iomap_atomic_prot_pfn);
+ 
+ void
+-iounmap_atomic(void *kvaddr, enum km_type type)
++iounmap_atomic(void __iomem *kvaddr, enum km_type type)
+ {
+ 	unsigned long vaddr = (unsigned long) kvaddr & PAGE_MASK;
+ 	enum fixed_addresses idx = type + KM_TYPE_NR*smp_processor_id();
