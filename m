@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab0IEICr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 04:02:47 -0400
-Received: from compulab.co.il ([67.18.134.219]:48574 "EHLO compulab.co.il"
+	id S1753900Ab0IEIH7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 04:07:59 -0400
+Received: from freeflow.nu ([178.79.134.28]:47620 "EHLO freeflow.nu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753189Ab0IEICm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 04:02:42 -0400
-Message-ID: <4C834E9B.5080505@compulab.co.il>
-Date: Sun, 05 Sep 2010 11:02:35 +0300
-From: Igor Grinberg <grinberg@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.7) Gecko/20100816 Lightning/1.0b2 Thunderbird/3.1.1
+	id S1753224Ab0IEIHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 04:07:55 -0400
+Message-ID: <4C834DB5.3070702@kernel.org>
+Date: Sun, 05 Sep 2010 10:58:45 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-To: "Mark F. Brown" <mark.brown314@gmail.com>
-CC: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH v2 4/6 RESEND] ARM: pxa27x_keypad: added wakeup event
- handler	for keypad interrupts
-References: <1283552891-13966-1-git-send-email-mark.brown314@gmail.com> <1283552891-13966-5-git-send-email-mark.brown314@gmail.com>
-In-Reply-To: <1283552891-13966-5-git-send-email-mark.brown314@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+CC: Sven Joachim <svenjoac@gmx.de>, Hugh Dickins <hughd@google.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] Revert "drm/i915: fix vblank wait test condition"
+References: <1283588234-2514-1-git-send-email-penberg@kernel.org> <89k83a$9hv9li@azsmga001.ch.intel.com> <AANLkTi=_OW5NvnS1oWzt3DW9CPPwNX_sAkPh_QOuXzhv@mail.gmail.com> <alpine.LSU.2.00.1009041244440.3044@sister.anvils> <87vd6ls0jd.fsf@turtle.gmx.de> <20100904224453.GA31664@sucs.org>
+In-Reply-To: <20100904224453.GA31664@sucs.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 09/04/10 01:28, Mark F. Brown wrote:
-> mach-mmp needs to clear wake event in order to clear the keypad interrupt
->
-> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
-> ---
->  arch/arm/plat-pxa/include/plat/pxa27x_keypad.h |    1 +
->  drivers/input/keyboard/pxa27x_keypad.c         |   10 ++++++++++
->  2 files changed, 11 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/plat-pxa/include/plat/pxa27x_keypad.h b/arch/arm/plat-pxa/include/plat/pxa27x_keypad.h
-> index 7b4eadc..73dacda 100644
-> --- a/arch/arm/plat-pxa/include/plat/pxa27x_keypad.h
-> +++ b/arch/arm/plat-pxa/include/plat/pxa27x_keypad.h
-> @@ -52,6 +52,7 @@ struct pxa27x_keypad_platform_data {
->  
->  	/* key debounce interval */
->  	unsigned int	debounce_interval;
-> +	void		(*clear_wakeup_event)(void);
+  On 5.9.2010 1.44, Sitsofe Wheeler wrote:
+> On Sat, Sep 04, 2010 at 10:42:46PM +0200, Sven Joachim wrote:
+>> On 2010-09-04 21:54 +0200, Hugh Dickins wrote:
+>>
+>>> On Sat, 4 Sep 2010, Pekka Enberg wrote:
+>>>> On Sat,  4 Sep 2010 11:17:14 +0300, Pekka Enberg<penberg@kernel.org>  wrote:
+>>>>>> This reverts commit 9559fcdbff4f93d29af04478bbc48294519424f5. The commit causes
+>>>>>> wrong screen resolution on some i915 machines such as MacBook which is a
+>>>>>> regression from 2.6.35. The issue has been reported multiple times but no fix
+>>>>>> has emerged:
+>>>> On Sat, Sep 4, 2010 at 12:21 PM, Chris Wilson<chris@chris-wilson.co.uk>  wrote:
+>>>>> NAK. You can't simply hide one bug by introducing a much bigger one.
+>>>> Dude, it's a nasty regression from 2.6.35. What exactly are you NAK'ing here?
+>>>>
+>>>>> As you have an affected machine, find which wait_for_vblank() needs to be
+>>>>> replaced with a msleep(20|50).
+>>>> The attached patch fixes things here. I'm not a drm developer so I
+>>>> don't know if it makes technical sense.
+>>> Many thanks to you, Pekka: I also don't know if it makes technical sense,
+>>> but it solves the same issue for me, so I can at last use 2.6.36-rc on
+>>> this laptop.
+>> Helps for me as well, but I cannot judge whether it makes technical
+>> sense either.  Thanks, Pekka!
+> Sadly this doesn't help my EeePC 900 with an i915 when it is booted with
+> a battery inside or after doing a suspend to ram (running
+> modetest/xrandr in these situations says VGA is connected when there
+> isn't even a cable attached).
+I haven't heard of this problem. Is it reported on LKML? Is it a 
+regression from 2.6.35?
 
-I understand, this is a bit late... but still I want to ask a question:
-As I understand, the clear_wakeup_event() function is called in interrupt context,
-wouldn't it be wiser to add a comment on this, so platform (current/future) code
-will be aware and will make no heavy stuff in it (accidentally).
-
->  };
->  
->  extern void pxa_set_keypad_info(struct pxa27x_keypad_platform_data *info);
-> diff --git a/drivers/input/keyboard/pxa27x_keypad.c b/drivers/input/keyboard/pxa27x_keypad.c
-> index 0610d10..b36d2be 100644
-> --- a/drivers/input/keyboard/pxa27x_keypad.c
-> +++ b/drivers/input/keyboard/pxa27x_keypad.c
-> @@ -330,11 +330,21 @@ static void pxa27x_keypad_scan_direct(struct pxa27x_keypad *keypad)
->  	keypad->direct_key_state = new_state;
->  }
->  
-> +static void clear_wakeup_event(struct pxa27x_keypad *keypad)
-> +{
-> +	struct pxa27x_keypad_platform_data *pdata = keypad->pdata;
-> +
-> +	if (pdata->clear_wakeup_event)
-> +		(pdata->clear_wakeup_event)();
-> +}
-> +
->  static irqreturn_t pxa27x_keypad_irq_handler(int irq, void *dev_id)
->  {
->  	struct pxa27x_keypad *keypad = dev_id;
->  	unsigned long kpc = keypad_readl(KPC);
->  
-> +	clear_wakeup_event(keypad);
-> +
->  	if (kpc & KPC_DI)
->  		pxa27x_keypad_scan_direct(keypad);
->  
-
--- 
-Regards,
-Igor.
-
+             Pekka
