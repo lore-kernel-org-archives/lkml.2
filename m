@@ -1,105 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab0IEQ7q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 12:59:46 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:27630 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153Ab0IEQ7o (ORCPT
+	id S1754043Ab0IERBX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 13:01:23 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:41548 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753193Ab0IERBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 12:59:44 -0400
-Date: Sun, 5 Sep 2010 18:59:21 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jin.dongming@np.css.fujitsu.com, lm-sensors@lm-sensors.org,
-        seto.hidetoshi@jp.fujitsu.com, fenghua.yu@intel.com,
-        khali@linux-fr.org, tglx@linutronix.de, hpa@linux.intel.com,
-        mingo@elte.hu, len.brown@intel.com
-Cc: jin.dongming@np.css.fujitsu.com, linux-tip-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, lm-sensors@lm-sensors.org,
-        seto.hidetoshi@jp.fujitsu.com, fenghua.yu@intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com, mingo@elte.hu,
-        len.brown@intel.com
-Subject: Re: [tip:x86/debug] therm_throt.c: Trival printk message fix for a
- unsuitable abbreviation of 'thermal'
-Message-ID: <20100905185921.13c7c3f5@hyperion.delvare>
-In-Reply-To: <tip-6981fe03b2055685fb6da40f54518bc6baf2b751@git.kernel.org>
-References: <4C7C492D.5020704@np.css.fujitsu.com>
-	<tip-6981fe03b2055685fb6da40f54518bc6baf2b751@git.kernel.org>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 5 Sep 2010 13:01:22 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] cxacru: ignore cx82310_eth devices
+Date: Sun, 5 Sep 2010 19:01:11 +0200
+User-Agent: KMail/1.9.10
+Cc: Simon Arlott <simon@fire.lp0.eu>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <201009032317.14954.linux@rainbow-software.org> <4C82741C.2000106@simon.arlott.org.uk> <20100905040352.GA18538@kroah.com>
+In-Reply-To: <20100905040352.GA18538@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201009051901.13851.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-6 people and 2 mailing lists Cc'd for a one-line trivial patch??
+On Sunday 05 September 2010 06:03:52 Greg KH wrote:
+> On Sat, Sep 04, 2010 at 05:30:20PM +0100, Simon Arlott wrote:
+> > Ignore ADSL routers, which can have the same vendor and product IDs
+> > as ADSL modems but should be handled by the cx82310_eth driver.
+> >
+> > This intentionally ignores device IDs that aren't currently handled
+> > by cx82310_eth. There may be other device IDs that perhaps shouldn't
+> > be claimed by cxacru.
+> >
+> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> > [SA: Moved to cxacru_usb_probe, message level lowered to info]
+> > Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
+> > ---
+> >  drivers/usb/atm/cxacru.c |   18 ++++++++++++++++--
+> >  1 files changed, 16 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/usb/atm/cxacru.c b/drivers/usb/atm/cxacru.c
+> > index 593fc5e..96fa736 100644
+> > --- a/drivers/usb/atm/cxacru.c
+> > +++ b/drivers/usb/atm/cxacru.c
+> > @@ -1324,8 +1324,22 @@ static struct usbatm_driver cxacru_driver = {
+> >  	.tx_padding	= 11,
+> >  };
+> >
+> > -static int cxacru_usb_probe(struct usb_interface *intf, const struct
+> > usb_device_id *id) -{
+> > +static int cxacru_usb_probe(struct usb_interface *intf,
+> > +		const struct usb_device_id *id) {
+> > +	struct usb_device *usb_dev = interface_to_usbdev(intf);
+> > +	char buf[15];
+> > +
+> > +	/* avoid ADSL routers (cx82310_eth)
+> > +	 * abort if bDeviceClass is 0xff and iProduct is "USB NET CARD" */
+> > +	if (usb_dev->descriptor.bDeviceClass == 0xff
+>
+> vendor class?  We have a macro for that?
+>
+> > +			&& usb_dev->descriptor.iProduct
+>
+> Almost everyone has a iProduct, right?  Why even test for that?
+>
+> > +			&& usb_string(usb_dev,
+> > +				usb_dev->descriptor.iProduct, buf, sizeof(buf))
+>
+> usb_string() should handle a 0 string, right?
+>
+> > +			&& !strcmp(buf, "USB NET CARD")) {
+>
+> Just to make it a bit easier to follow, how about you do the
+> usb_string() call in the if statment, and then compare the string and
+>
+> then, if that matches you do:
+> > +		dev_info(&intf->dev, "ignoring cx82310_eth device\n");
+> > +		return -ENODEV;
 
-On Sun, 5 Sep 2010 13:06:45 GMT, tip-bot for Jin Dongming wrote:
-> Commit-ID:  6981fe03b2055685fb6da40f54518bc6baf2b751
-> Gitweb:     http://git.kernel.org/tip/6981fe03b2055685fb6da40f54518bc6baf2b751
-> Author:     Jin Dongming <jin.dongming@np.css.fujitsu.com>
-> AuthorDate: Tue, 31 Aug 2010 09:13:33 +0900
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Sun, 5 Sep 2010 14:39:15 +0200
-> 
-> therm_throt.c: Trival printk message fix for a unsuitable abbreviation of 'thermal'
+Does it look that much better?:
 
-Typo: trivial.
+	if (usb_dev->descriptor.bDeviceClass == USB_CLASS_VENDOR_SPEC
+			&& usb_string(usb_dev, usb_dev->descriptor.iProduct,
+				buf, sizeof(buf)) > 0)
+		if (!strcmp(buf, "USB NET CARD")) {
+			dev_info(&intf->dev, "ignoring cx82310_eth device\n");
+			return -ENODEV;
+		}
 
-> 
-> In unexpected_thermal_interrupt(), "LVT TMR interrupt" is used
-> in error message.
-> 
-> I don't think TMR is a suitable abbreviation for thermal.
->   1.TMR has been used in IA32 Architectures Software Developer's
->     Manual, and is the abbreviation for Trigger Mode Register.
->   2.There is not an standard abbreviation "TMR" defined for thermal
->     in IA32 Architectures Software Developer's Manual.
->   3.Though we could understand it as Thermal Monitor Register, it is
->     easy to be misunderstood as a *TIMER* interrupt also.
-> 
-> I think this patch will fix it.
-> 
-> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-> Cc: Brown
-> Cc: Len <len.brown@intel.com>
+I also found a bug in my first patch - usb_string() can return negative value 
+which can cause problems when not checked for.
 
-Something's fishy here.
+> Well, actually, dev_info?  I guess so, but do you really want to see
+> this message every time?
+>
+> thanks,
+>
+> greg k-h
 
-> Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> Cc: lm-sensors@lm-sensors.org <lm-sensors@lm-sensors.org>
-
-Mailing lists shouldn't be included in Cc headers.
-
-> Cc: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: Jean Delvare <khali@linux-fr.org>
-
-This should read:
-
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
-
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> LKML-Reference: <4C7C492D.5020704@np.css.fujitsu.com>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> index c2a8b26..1d0f743 100644
-> --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> @@ -348,7 +348,7 @@ static void intel_thermal_interrupt(void)
->  
->  static void unexpected_thermal_interrupt(void)
->  {
-> -	printk(KERN_ERR "CPU%d: Unexpected LVT TMR interrupt!\n",
-> +	printk(KERN_ERR "CPU%d: Unexpected LVT thermal interrupt!\n",
->  			smp_processor_id());
->  	add_taint(TAINT_MACHINE_CHECK);
->  }
 
 
 -- 
-Jean Delvare
+Ondrej Zary
