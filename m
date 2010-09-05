@@ -1,59 +1,412 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab0IEIH7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 04:07:59 -0400
-Received: from freeflow.nu ([178.79.134.28]:47620 "EHLO freeflow.nu"
+	id S1754067Ab0IEIVN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 04:21:13 -0400
+Received: from mail.perches.com ([173.55.12.10]:1483 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab0IEIHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 04:07:55 -0400
-Message-ID: <4C834DB5.3070702@kernel.org>
-Date: Sun, 05 Sep 2010 10:58:45 +0300
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-CC: Sven Joachim <svenjoac@gmx.de>, Hugh Dickins <hughd@google.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] Revert "drm/i915: fix vblank wait test condition"
-References: <1283588234-2514-1-git-send-email-penberg@kernel.org> <89k83a$9hv9li@azsmga001.ch.intel.com> <AANLkTi=_OW5NvnS1oWzt3DW9CPPwNX_sAkPh_QOuXzhv@mail.gmail.com> <alpine.LSU.2.00.1009041244440.3044@sister.anvils> <87vd6ls0jd.fsf@turtle.gmx.de> <20100904224453.GA31664@sucs.org>
-In-Reply-To: <20100904224453.GA31664@sucs.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753848Ab0IEIVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 04:21:07 -0400
+Subject: [PATCH net-next] drivers/net/jme: Use pr_<level>
+From: Joe Perches <joe@perches.com>
+To: Guo-Fu Tseng <cooldavid@cooldavid.org>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 05 Sep 2010 01:21:05 -0700
+Message-ID: <1283674865.23280.42.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 5.9.2010 1.44, Sitsofe Wheeler wrote:
-> On Sat, Sep 04, 2010 at 10:42:46PM +0200, Sven Joachim wrote:
->> On 2010-09-04 21:54 +0200, Hugh Dickins wrote:
->>
->>> On Sat, 4 Sep 2010, Pekka Enberg wrote:
->>>> On Sat,  4 Sep 2010 11:17:14 +0300, Pekka Enberg<penberg@kernel.org>  wrote:
->>>>>> This reverts commit 9559fcdbff4f93d29af04478bbc48294519424f5. The commit causes
->>>>>> wrong screen resolution on some i915 machines such as MacBook which is a
->>>>>> regression from 2.6.35. The issue has been reported multiple times but no fix
->>>>>> has emerged:
->>>> On Sat, Sep 4, 2010 at 12:21 PM, Chris Wilson<chris@chris-wilson.co.uk>  wrote:
->>>>> NAK. You can't simply hide one bug by introducing a much bigger one.
->>>> Dude, it's a nasty regression from 2.6.35. What exactly are you NAK'ing here?
->>>>
->>>>> As you have an affected machine, find which wait_for_vblank() needs to be
->>>>> replaced with a msleep(20|50).
->>>> The attached patch fixes things here. I'm not a drm developer so I
->>>> don't know if it makes technical sense.
->>> Many thanks to you, Pekka: I also don't know if it makes technical sense,
->>> but it solves the same issue for me, so I can at last use 2.6.36-rc on
->>> this laptop.
->> Helps for me as well, but I cannot judge whether it makes technical
->> sense either.  Thanks, Pekka!
-> Sadly this doesn't help my EeePC 900 with an i915 when it is booted with
-> a battery inside or after doing a suspend to ram (running
-> modetest/xrandr in these situations says VGA is connected when there
-> isn't even a cable attached).
-I haven't heard of this problem. Is it reported on LKML? Is it a 
-regression from 2.6.35?
+Add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+Convert jeprintk to pr_err
+Remove jeprintk macro define
+Remove periods from end of logging messages
+Coalesce format strings
 
-             Pekka
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/jme.c |   98 ++++++++++++++++++++++++++---------------------------
+ drivers/net/jme.h |    3 --
+ 2 files changed, 48 insertions(+), 53 deletions(-)
+
+diff --git a/drivers/net/jme.c b/drivers/net/jme.c
+index 99f24f5..9075a2b 100644
+--- a/drivers/net/jme.c
++++ b/drivers/net/jme.c
+@@ -21,6 +21,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
+@@ -73,7 +75,7 @@ read_again:
+ 	}
+ 
+ 	if (i == 0) {
+-		jeprintk(jme->pdev, "phy(%d) read timeout : %d\n", phy, reg);
++		pr_err("phy(%d) read timeout : %d\n", phy, reg);
+ 		return 0;
+ 	}
+ 
+@@ -102,7 +104,7 @@ jme_mdio_write(struct net_device *netdev,
+ 	}
+ 
+ 	if (i == 0)
+-		jeprintk(jme->pdev, "phy(%d) write timeout : %d\n", phy, reg);
++		pr_err("phy(%d) write timeout : %d\n", phy, reg);
+ }
+ 
+ static inline void
+@@ -227,7 +229,7 @@ jme_reload_eeprom(struct jme_adapter *jme)
+ 		}
+ 
+ 		if (i == 0) {
+-			jeprintk(jme->pdev, "eeprom reload timeout\n");
++			pr_err("eeprom reload timeout\n");
+ 			return -EIO;
+ 		}
+ 	}
+@@ -397,8 +399,7 @@ jme_check_link(struct net_device *netdev, int testonly)
+ 					phylink = jread32(jme, JME_PHY_LINK);
+ 			}
+ 			if (!cnt)
+-				jeprintk(jme->pdev,
+-					"Waiting speed resolve timeout.\n");
++				pr_err("Waiting speed resolve timeout\n");
+ 
+ 			strcat(linkmsg, "ANed: ");
+ 		}
+@@ -480,13 +481,13 @@ jme_check_link(struct net_device *netdev, int testonly)
+ 		strcat(linkmsg, (phylink & PHY_LINK_MDI_STAT) ?
+ 					"MDI-X" :
+ 					"MDI");
+-		netif_info(jme, link, jme->dev, "Link is up at %s.\n", linkmsg);
++		netif_info(jme, link, jme->dev, "Link is up at %s\n", linkmsg);
+ 		netif_carrier_on(netdev);
+ 	} else {
+ 		if (testonly)
+ 			goto out;
+ 
+-		netif_info(jme, link, jme->dev, "Link is down.\n");
++		netif_info(jme, link, jme->dev, "Link is down\n");
+ 		jme->phylink = 0;
+ 		netif_carrier_off(netdev);
+ 	}
+@@ -648,7 +649,7 @@ jme_disable_tx_engine(struct jme_adapter *jme)
+ 	}
+ 
+ 	if (!i)
+-		jeprintk(jme->pdev, "Disable TX engine timeout.\n");
++		pr_err("Disable TX engine timeout\n");
+ }
+ 
+ static void
+@@ -867,7 +868,7 @@ jme_disable_rx_engine(struct jme_adapter *jme)
+ 	}
+ 
+ 	if (!i)
+-		jeprintk(jme->pdev, "Disable RX engine timeout.\n");
++		pr_err("Disable RX engine timeout\n");
+ 
+ }
+ 
+@@ -887,13 +888,13 @@ jme_rxsum_ok(struct jme_adapter *jme, u16 flags)
+ 	if (unlikely((flags & (RXWBFLAG_MF | RXWBFLAG_UDPON | RXWBFLAG_UDPCS))
+ 			== RXWBFLAG_UDPON)) {
+ 		if (flags & RXWBFLAG_IPV4)
+-			netif_err(jme, rx_err, jme->dev, "UDP Checksum error.\n");
++			netif_err(jme, rx_err, jme->dev, "UDP Checksum error\n");
+ 		return false;
+ 	}
+ 
+ 	if (unlikely((flags & (RXWBFLAG_IPV4 | RXWBFLAG_IPCS))
+ 			== RXWBFLAG_IPV4)) {
+-		netif_err(jme, rx_err, jme->dev, "IPv4 Checksum error.\n");
++		netif_err(jme, rx_err, jme->dev, "IPv4 Checksum error\n");
+ 		return false;
+ 	}
+ 
+@@ -1185,9 +1186,9 @@ jme_link_change_tasklet(unsigned long arg)
+ 
+ 	while (!atomic_dec_and_test(&jme->link_changing)) {
+ 		atomic_inc(&jme->link_changing);
+-		netif_info(jme, intr, jme->dev, "Get link change lock failed.\n");
++		netif_info(jme, intr, jme->dev, "Get link change lock failed\n");
+ 		while (atomic_read(&jme->link_changing) != 1)
+-			netif_info(jme, intr, jme->dev, "Waiting link change lock.\n");
++			netif_info(jme, intr, jme->dev, "Waiting link change lock\n");
+ 	}
+ 
+ 	if (jme_check_link(netdev, 1) && jme->old_mtu == netdev->mtu)
+@@ -1221,15 +1222,13 @@ jme_link_change_tasklet(unsigned long arg)
+ 	if (netif_carrier_ok(netdev)) {
+ 		rc = jme_setup_rx_resources(jme);
+ 		if (rc) {
+-			jeprintk(jme->pdev, "Allocating resources for RX error"
+-				", Device STOPPED!\n");
++			pr_err("Allocating resources for RX error, Device STOPPED!\n");
+ 			goto out_enable_tasklet;
+ 		}
+ 
+ 		rc = jme_setup_tx_resources(jme);
+ 		if (rc) {
+-			jeprintk(jme->pdev, "Allocating resources for TX error"
+-				", Device STOPPED!\n");
++			pr_err("Allocating resources for TX error, Device STOPPED!\n");
+ 			goto err_out_free_rx_resources;
+ 		}
+ 
+@@ -1324,7 +1323,7 @@ jme_wake_queue_if_stopped(struct jme_adapter *jme)
+ 	smp_wmb();
+ 	if (unlikely(netif_queue_stopped(jme->dev) &&
+ 	atomic_read(&txring->nr_free) >= (jme->tx_wake_threshold))) {
+-		netif_info(jme, tx_done, jme->dev, "TX Queue Waked.\n");
++		netif_info(jme, tx_done, jme->dev, "TX Queue Waked\n");
+ 		netif_wake_queue(jme->dev);
+ 	}
+ 
+@@ -1339,7 +1338,7 @@ jme_tx_clean_tasklet(unsigned long arg)
+ 	struct jme_buffer_info *txbi = txring->bufinf, *ctxbi, *ttxbi;
+ 	int i, j, cnt = 0, max, err, mask;
+ 
+-	tx_dbg(jme, "Into txclean.\n");
++	tx_dbg(jme, "Into txclean\n");
+ 
+ 	if (unlikely(!atomic_dec_and_test(&jme->tx_cleaning)))
+ 		goto out;
+@@ -1361,7 +1360,7 @@ jme_tx_clean_tasklet(unsigned long arg)
+ 		!(txdesc[i].descwb.flags & TXWBFLAG_OWN))) {
+ 
+ 			tx_dbg(jme, "txclean: %d+%d@%lu\n",
+-					i, ctxbi->nr_desc, jiffies);
++			       i, ctxbi->nr_desc, jiffies);
+ 
+ 			err = txdesc[i].descwb.flags & TXWBFLAG_ALLERR;
+ 
+@@ -1402,7 +1401,7 @@ jme_tx_clean_tasklet(unsigned long arg)
+ 		ctxbi->nr_desc = 0;
+ 	}
+ 
+-	tx_dbg(jme, "txclean: done %d@%lu.\n", i, jiffies);
++	tx_dbg(jme, "txclean: done %d@%lu\n", i, jiffies);
+ 	atomic_set(&txring->next_to_clean, i);
+ 	atomic_add(cnt, &txring->nr_free);
+ 
+@@ -1548,10 +1547,10 @@ jme_request_irq(struct jme_adapter *jme)
+ 	rc = request_irq(jme->pdev->irq, handler, irq_flags, netdev->name,
+ 			  netdev);
+ 	if (rc) {
+-		jeprintk(jme->pdev,
+-			"Unable to request %s interrupt (return: %d)\n",
+-			test_bit(JME_FLAG_MSI, &jme->flags) ? "MSI" : "INTx",
+-			rc);
++		netdev_err(netdev,
++			   "Unable to request %s interrupt (return: %d)\n",
++			   test_bit(JME_FLAG_MSI, &jme->flags) ? "MSI" : "INTx",
++			   rc);
+ 
+ 		if (test_bit(JME_FLAG_MSI, &jme->flags)) {
+ 			pci_disable_msi(jme->pdev);
+@@ -1834,7 +1833,7 @@ jme_tx_csum(struct jme_adapter *jme, struct sk_buff *skb, u8 *flags)
+ 			*flags |= TXFLAG_UDPCS;
+ 			break;
+ 		default:
+-			netif_err(jme, tx_err, jme->dev, "Error upper layer protocol.\n");
++			netif_err(jme, tx_err, jme->dev, "Error upper layer protocol\n");
+ 			break;
+ 		}
+ 	}
+@@ -1909,12 +1908,12 @@ jme_stop_queue_if_full(struct jme_adapter *jme)
+ 	smp_wmb();
+ 	if (unlikely(atomic_read(&txring->nr_free) < (MAX_SKB_FRAGS+2))) {
+ 		netif_stop_queue(jme->dev);
+-		netif_info(jme, tx_queued, jme->dev, "TX Queue Paused.\n");
++		netif_info(jme, tx_queued, jme->dev, "TX Queue Paused\n");
+ 		smp_wmb();
+ 		if (atomic_read(&txring->nr_free)
+ 			>= (jme->tx_wake_threshold)) {
+ 			netif_wake_queue(jme->dev);
+-			netif_info(jme, tx_queued, jme->dev, "TX Queue Fast Waked.\n");
++			netif_info(jme, tx_queued, jme->dev, "TX Queue Fast Waked\n");
+ 		}
+ 	}
+ 
+@@ -1922,7 +1921,8 @@ jme_stop_queue_if_full(struct jme_adapter *jme)
+ 			(jiffies - txbi->start_xmit) >= TX_TIMEOUT &&
+ 			txbi->skb)) {
+ 		netif_stop_queue(jme->dev);
+-		netif_info(jme, tx_queued, jme->dev, "TX Queue Stopped %d@%lu.\n", idx, jiffies);
++		netif_info(jme, tx_queued, jme->dev,
++			   "TX Queue Stopped %d@%lu\n", idx, jiffies);
+ 	}
+ }
+ 
+@@ -1945,7 +1945,8 @@ jme_start_xmit(struct sk_buff *skb, struct net_device *netdev)
+ 
+ 	if (unlikely(idx < 0)) {
+ 		netif_stop_queue(netdev);
+-		netif_err(jme, tx_err, jme->dev, "BUG! Tx ring full when queue awake!\n");
++		netif_err(jme, tx_err, jme->dev,
++			  "BUG! Tx ring full when queue awake!\n");
+ 
+ 		return NETDEV_TX_BUSY;
+ 	}
+@@ -1957,9 +1958,8 @@ jme_start_xmit(struct sk_buff *skb, struct net_device *netdev)
+ 				TXCS_QUEUE0S |
+ 				TXCS_ENABLE);
+ 
+-	tx_dbg(jme, "xmit: %d+%d@%lu\n", idx,
+-			skb_shinfo(skb)->nr_frags + 2,
+-			jiffies);
++	tx_dbg(jme, "xmit: %d+%d@%lu\n",
++	       idx, skb_shinfo(skb)->nr_frags + 2, jiffies);
+ 	jme_stop_queue_if_full(jme);
+ 
+ 	return NETDEV_TX_OK;
+@@ -2501,7 +2501,7 @@ jme_smb_read(struct jme_adapter *jme, unsigned int addr)
+ 		val = jread32(jme, JME_SMBCSR);
+ 	}
+ 	if (!to) {
+-		netif_err(jme, hw, jme->dev, "SMB Bus Busy.\n");
++		netif_err(jme, hw, jme->dev, "SMB Bus Busy\n");
+ 		return 0xFF;
+ 	}
+ 
+@@ -2517,7 +2517,7 @@ jme_smb_read(struct jme_adapter *jme, unsigned int addr)
+ 		val = jread32(jme, JME_SMBINTF);
+ 	}
+ 	if (!to) {
+-		netif_err(jme, hw, jme->dev, "SMB Bus Busy.\n");
++		netif_err(jme, hw, jme->dev, "SMB Bus Busy\n");
+ 		return 0xFF;
+ 	}
+ 
+@@ -2537,7 +2537,7 @@ jme_smb_write(struct jme_adapter *jme, unsigned int addr, u8 data)
+ 		val = jread32(jme, JME_SMBCSR);
+ 	}
+ 	if (!to) {
+-		netif_err(jme, hw, jme->dev, "SMB Bus Busy.\n");
++		netif_err(jme, hw, jme->dev, "SMB Bus Busy\n");
+ 		return;
+ 	}
+ 
+@@ -2554,7 +2554,7 @@ jme_smb_write(struct jme_adapter *jme, unsigned int addr, u8 data)
+ 		val = jread32(jme, JME_SMBINTF);
+ 	}
+ 	if (!to) {
+-		netif_err(jme, hw, jme->dev, "SMB Bus Busy.\n");
++		netif_err(jme, hw, jme->dev, "SMB Bus Busy\n");
+ 		return;
+ 	}
+ 
+@@ -2699,26 +2699,26 @@ jme_init_one(struct pci_dev *pdev,
+ 	 */
+ 	rc = pci_enable_device(pdev);
+ 	if (rc) {
+-		jeprintk(pdev, "Cannot enable PCI device.\n");
++		pr_err("Cannot enable PCI device\n");
+ 		goto err_out;
+ 	}
+ 
+ 	using_dac = jme_pci_dma64(pdev);
+ 	if (using_dac < 0) {
+-		jeprintk(pdev, "Cannot set PCI DMA Mask.\n");
++		pr_err("Cannot set PCI DMA Mask\n");
+ 		rc = -EIO;
+ 		goto err_out_disable_pdev;
+ 	}
+ 
+ 	if (!(pci_resource_flags(pdev, 0) & IORESOURCE_MEM)) {
+-		jeprintk(pdev, "No PCI resource region found.\n");
++		pr_err("No PCI resource region found\n");
+ 		rc = -ENOMEM;
+ 		goto err_out_disable_pdev;
+ 	}
+ 
+ 	rc = pci_request_regions(pdev, DRV_NAME);
+ 	if (rc) {
+-		jeprintk(pdev, "Cannot obtain PCI resource region.\n");
++		pr_err("Cannot obtain PCI resource region\n");
+ 		goto err_out_disable_pdev;
+ 	}
+ 
+@@ -2729,7 +2729,7 @@ jme_init_one(struct pci_dev *pdev,
+ 	 */
+ 	netdev = alloc_etherdev(sizeof(*jme));
+ 	if (!netdev) {
+-		jeprintk(pdev, "Cannot allocate netdev structure.\n");
++		pr_err("Cannot allocate netdev structure\n");
+ 		rc = -ENOMEM;
+ 		goto err_out_release_regions;
+ 	}
+@@ -2767,7 +2767,7 @@ jme_init_one(struct pci_dev *pdev,
+ 	jme->regs = ioremap(pci_resource_start(pdev, 0),
+ 			     pci_resource_len(pdev, 0));
+ 	if (!(jme->regs)) {
+-		jeprintk(pdev, "Mapping PCI resource region error.\n");
++		pr_err("Mapping PCI resource region error\n");
+ 		rc = -ENOMEM;
+ 		goto err_out_free_netdev;
+ 	}
+@@ -2855,8 +2855,8 @@ jme_init_one(struct pci_dev *pdev,
+ 
+ 		if (!jme->mii_if.phy_id) {
+ 			rc = -EIO;
+-			jeprintk(pdev, "Can not find phy_id.\n");
+-			 goto err_out_unmap;
++			pr_err("Can not find phy_id\n");
++			goto err_out_unmap;
+ 		}
+ 
+ 		jme->reg_ghc |= GHC_LINK_POLL;
+@@ -2883,8 +2883,7 @@ jme_init_one(struct pci_dev *pdev,
+ 	jme_reset_mac_processor(jme);
+ 	rc = jme_reload_eeprom(jme);
+ 	if (rc) {
+-		jeprintk(pdev,
+-			"Reload eeprom for reading MAC Address error.\n");
++		pr_err("Reload eeprom for reading MAC Address error\n");
+ 		goto err_out_unmap;
+ 	}
+ 	jme_load_macaddr(netdev);
+@@ -2900,7 +2899,7 @@ jme_init_one(struct pci_dev *pdev,
+ 	 */
+ 	rc = register_netdev(netdev);
+ 	if (rc) {
+-		jeprintk(pdev, "Cannot register net device.\n");
++		pr_err("Cannot register net device\n");
+ 		goto err_out_unmap;
+ 	}
+ 
+@@ -3042,8 +3041,7 @@ static struct pci_driver jme_driver = {
+ static int __init
+ jme_init_module(void)
+ {
+-	printk(KERN_INFO PFX "JMicron JMC2XX ethernet "
+-	       "driver version %s\n", DRV_VERSION);
++	pr_info("JMicron JMC2XX ethernet driver version %s\n", DRV_VERSION);
+ 	return pci_register_driver(&jme_driver);
+ }
+ 
+diff --git a/drivers/net/jme.h b/drivers/net/jme.h
+index 07ad3a4..1360f68 100644
+--- a/drivers/net/jme.h
++++ b/drivers/net/jme.h
+@@ -41,9 +41,6 @@
+ 	NETIF_MSG_TX_ERR | \
+ 	NETIF_MSG_HW)
+ 
+-#define jeprintk(pdev, fmt, args...) \
+-	printk(KERN_ERR PFX fmt, ## args)
+-
+ #ifdef TX_DEBUG
+ #define tx_dbg(priv, fmt, args...)					\
+ 	printk(KERN_DEBUG "%s: " fmt, (priv)->dev->name, ##args)
+
+
