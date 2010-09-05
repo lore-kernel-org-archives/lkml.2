@@ -1,154 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab0IESXL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 14:23:11 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:58273 "EHLO gir.skynet.ie"
+	id S1754470Ab0IESbc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 14:31:32 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49480 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753834Ab0IESXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 14:23:10 -0400
-Date: Sun, 5 Sep 2010 19:22:56 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
-	direct reclaim allocation fails
-Message-ID: <20100905182256.GH8384@csn.ul.ie>
-References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie> <1283504926-2120-4-git-send-email-mel@csn.ul.ie> <20100903160026.564fdcc9.akpm@linux-foundation.org> <20100904022545.GD705@dastard>
+	id S1754296Ab0IESbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 14:31:31 -0400
+Date: Sun, 5 Sep 2010 18:30:48 GMT
+From: tip-bot for Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        jin.dongming@np.css.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
+        fenghua.yu@intel.com, khali@linux-fr.org, tglx@linutronix.de,
+        mingo@elte.hu, len.brown@intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jin.dongming@np.css.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
+        fenghua.yu@intel.com, khali@linux-fr.org, tglx@linutronix.de,
+        mingo@elte.hu, len.brown@intel.com
+In-Reply-To: <4C7C492D.5020704@np.css.fujitsu.com>
+References: <4C7C492D.5020704@np.css.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] therm_throt.c: Trivial printk message fix for a unsuitable abbreviation of 'thermal'
+Message-ID: <tip-592091c0e21655bfbdf68741dd5a920c2ac2bbe6@git.kernel.org>
+Git-Commit-ID: 592091c0e21655bfbdf68741dd5a920c2ac2bbe6
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100904022545.GD705@dastard>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 05 Sep 2010 18:30:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 04, 2010 at 12:25:45PM +1000, Dave Chinner wrote:
-> On Fri, Sep 03, 2010 at 04:00:26PM -0700, Andrew Morton wrote:
-> > On Fri,  3 Sep 2010 10:08:46 +0100
-> > Mel Gorman <mel@csn.ul.ie> wrote:
-> > 
-> > > When under significant memory pressure, a process enters direct reclaim
-> > > and immediately afterwards tries to allocate a page. If it fails and no
-> > > further progress is made, it's possible the system will go OOM. However,
-> > > on systems with large amounts of memory, it's possible that a significant
-> > > number of pages are on per-cpu lists and inaccessible to the calling
-> > > process. This leads to a process entering direct reclaim more often than
-> > > it should increasing the pressure on the system and compounding the problem.
-> > > 
-> > > This patch notes that if direct reclaim is making progress but
-> > > allocations are still failing that the system is already under heavy
-> > > pressure. In this case, it drains the per-cpu lists and tries the
-> > > allocation a second time before continuing.
-> ....
-> > The patch looks reasonable.
-> > 
-> > But please take a look at the recent thread "mm: minute-long livelocks
-> > in memory reclaim".  There, people are pointing fingers at that
-> > drain_all_pages() call, suspecting that it's causing huge IPI storms.
-> > 
-> > Dave was going to test this theory but afaik hasn't yet done so.  It
-> > would be nice to tie these threads together if poss?
-> 
-> It's been my "next-thing-to-do" since David suggested I try it -
-> tracking down other problems has got in the way, though. I
-> just ran my test a couple of times through:
-> 
-> $ ./fs_mark -D 10000 -L 63 -S0 -n 100000 -s 0 \
-> 	-d /mnt/scratch/0 -d /mnt/scratch/1 \
-> 	-d /mnt/scratch/3 -d /mnt/scratch/2 \
-> 	-d /mnt/scratch/4 -d /mnt/scratch/5 \
-> 	-d /mnt/scratch/6 -d /mnt/scratch/7
-> 
-> To create millions of inodes in parallel on an 8p/4G RAM VM.
-> The filesystem is ~1.1TB XFS:
-> 
-> # mkfs.xfs -f -d agcount=16 /dev/vdb
-> meta-data=/dev/vdb               isize=256    agcount=16, agsize=16777216 blks
->          =                       sectsz=512   attr=2
-> data     =                       bsize=4096   blocks=268435456, imaxpct=5
->          =                       sunit=0      swidth=0 blks
-> naming   =version 2              bsize=4096   ascii-ci=0
-> log      =internal log           bsize=4096   blocks=131072, version=2
->          =                       sectsz=512   sunit=0 blks, lazy-count=1
-> realtime =none                   extsz=4096   blocks=0, rtextents=0
-> # mount -o inode64,delaylog,logbsize=262144,nobarrier /dev/vdb /mnt/scratch
-> 
+Commit-ID:  592091c0e21655bfbdf68741dd5a920c2ac2bbe6
+Gitweb:     http://git.kernel.org/tip/592091c0e21655bfbdf68741dd5a920c2ac2bbe6
+Author:     Jin Dongming <jin.dongming@np.css.fujitsu.com>
+AuthorDate: Tue, 31 Aug 2010 09:13:33 +0900
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 5 Sep 2010 20:26:50 +0200
 
-Unfortunately, I doubt I'll be able to reproduce this test. I don't have
-access to a machine with enough processors or disk. I will try on 4p/4G
-and 500M and see how that pans out.
+therm_throt.c: Trivial printk message fix for a unsuitable abbreviation of 'thermal'
 
-> Performance prior to this patch was that each iteration resulted in
-> ~65k files/s, with occassionaly peaks to 90k files/s, but drops to
-> frequently 45k files/s when reclaim ran to reclaim the inode
-> caches. This load ran permanently at 800% CPU usage.
-> 
-> Every so often (may once or twice a 50M inode create run) all 8 CPUs
-> would remain pegged but the create rate would drop to zero for a few
-> seconds to a couple of minutes. that was the livelock issues I
-> reported.
-> 
+In unexpected_thermal_interrupt(), "LVT TMR interrupt" is used
+in error message.
 
-Should be easy to spot at least.
+I don't think TMR is a suitable abbreviation for thermal.
+  1.TMR has been used in IA32 Architectures Software Developer's
+    Manual, and is the abbreviation for Trigger Mode Register.
+  2.There is not an standard abbreviation "TMR" defined for thermal
+    in IA32 Architectures Software Developer's Manual.
+  3.Though we could understand it as Thermal Monitor Register, it is
+    easy to be misunderstood as a *TIMER* interrupt also.
 
-> With this patchset, I'm seeing a per-iteration average of ~77k
-> files/s, with only a couple of iterations dropping down to ~55k
-> file/s and a significantly number above 90k/s. The runtime to 50M
-> inodes is down by ~30% and the average CPU usage across the run is
-> around 700%. IOWs, there a significant gain in performance there is
-> a significant drop in CPU usage. I've done two runs to 50m inodes,
-> and not seen any sign of a livelock, even for short periods of time.
-> 
+I think this patch will fix it.
 
-Very cool.
+Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
+Cc: Brown Len <len.brown@intel.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+LKML-Reference: <4C7C492D.5020704@np.css.fujitsu.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Ah, spoke too soon - I let the second run keep going, and at ~68M
-> inodes it's just pegged all the CPUs and is pretty much completely
-> wedged. Serial console is not responding, I can't get a new login,
-> and the only thing responding that tells me the machine is alive is
-> the remote PCP monitoring. It's been stuck for 5 minutes .... and
-> now it is back. Here's what I saw:
-> 
-> http://userweb.kernel.org/~dgc/shrinker-2.6.36/fs_mark-wedge-1.png
-> 
-> The livelock is at the right of the charts, where the top chart is
-> all red (system CPU time), and the other charts flat line to zero.
-> 
-> And according to fsmark:
-> 
->      1     66400000            0      64554.2          7705926
->      1     67200000            0      64836.1          7573013
-> <hang happened here>
->      2     68000000            0      69472.8          7941399
->      2     68800000            0      85017.5          7585203
-> 
-> it didn't record any change in performance, which means the livelock
-> probably occurred between iterations.  I couldn't get any info on
-> what caused the livelock this time so I can only assume it has the
-> same cause....
-> 
-
-Not sure where you could have gotten stuck. I thought it might have
-locked up in congestion_wait() but it wouldn't have locked up this badly
-if that was teh case. Sluggish sure but not that dead.
-
-I'll see about reproducing with your test tomorrow and see what I find.
-Thanks.
-
-> Still, given the improvements in performance from this patchset,
-> I'd say inclusion is a no-braniner....
-> 
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index c2a8b26..1d0f743 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -348,7 +348,7 @@ static void intel_thermal_interrupt(void)
+ 
+ static void unexpected_thermal_interrupt(void)
+ {
+-	printk(KERN_ERR "CPU%d: Unexpected LVT TMR interrupt!\n",
++	printk(KERN_ERR "CPU%d: Unexpected LVT thermal interrupt!\n",
+ 			smp_processor_id());
+ 	add_taint(TAINT_MACHINE_CHECK);
+ }
