@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab0IEUDe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 16:03:34 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61779 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab0IEUDc (ORCPT
+	id S1754581Ab0IEUMv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 16:12:51 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:35469 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754464Ab0IEUMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 16:03:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=abUQVaiQHwYNUIKCZiIksxB9PKOXXnBL12rC8wmDFpbewUHVPGdNdDvU9uR5OHdhvA
-         gmZT3ngD2PU8b0+R8pimmNvU/01hSKa9Iuks+lq8zvb7SWdvHjHmixAMUXIePuqAm3eq
-         7EJ/Do2P6NLgWG4ZfcFlGcF+nIPpYkJjwWe1o=
-Date: Sun, 5 Sep 2010 13:03:27 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Ping Cheng <pingc@wacom.com>, Chris Bagwell <chris@cnpbagwell.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] input: wacom: Add support for the Bamboo Touch
- trackpad (rev4)
-Message-ID: <20100905200327.GB18411@core.coreip.homeip.net>
-References: <1283607783-29388-1-git-send-email-rydberg@euromail.se>
- <1283607783-29388-5-git-send-email-rydberg@euromail.se>
- <4C836B10.4040407@euromail.se>
+	Sun, 5 Sep 2010 16:12:50 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Greg KH <greg@kroah.com>
+Subject: [PATCH] cxacru: ignore cx82310_eth devices
+Date: Sun, 5 Sep 2010 22:12:33 +0200
+User-Agent: KMail/1.9.10
+Cc: Simon Arlott <simon@fire.lp0.eu>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <201009032317.14954.linux@rainbow-software.org> <201009051901.13851.linux@rainbow-software.org> <20100905191412.GA10835@kroah.com>
+In-Reply-To: <20100905191412.GA10835@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <4C836B10.4040407@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Message-Id: <201009052212.37015.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 05, 2010 at 12:04:00PM +0200, Henrik Rydberg wrote:
-> On 09/04/2010 03:43 PM, Henrik Rydberg wrote:
-> 
-> [...]
-> 
-> >@@ -955,6 +1007,12 @@ void wacom_setup_device_quirks(struct wacom
-> > 	if (features->type == TABLETPC || features->type == TABLETPC2FG ||
-> > 	    features->type == BAMBOO_PT)
-> > 		features->quirks |= WACOM_QUIRK_MULTI_INPUT;
-> >+
-> >+	/* quirks for bamboo touch */
-> >+	if (features->type == BAMBOO_PT) {
-> 
-> This line should have "&& features->device_type == BTN_TOOL_TRIPLETAP" appended
-> to it, to only target the touch device of Pen & Touch.
-> 
+Ignore ADSL routers, which can have the same vendor and product IDs
+as ADSL modems but should be handled by the cx82310_eth driver.
 
-Adjusted and applied all 5 patches. I also pulled trkid into wacom_wac
-structure to make sure different instances of the device are independent
-of each other.
+This intentionally ignores device IDs that aren't currently handled
+by cx82310_eth. There may be other device IDs that perhaps shouldn't
+be claimed by cxacru.
 
-Thanks.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+
+--- linux-2.6.36-rc3-orig/drivers/usb/atm/cxacru.c	2010-08-29 17:36:04.000000000 +0200
++++ linux-2.6.36-rc3/drivers/usb/atm/cxacru.c	2010-09-05 18:54:56.000000000 +0200
+@@ -1324,8 +1324,22 @@ static struct usbatm_driver cxacru_drive
+ 	.tx_padding	= 11,
+ };
+ 
+-static int cxacru_usb_probe(struct usb_interface *intf, const struct usb_device_id *id)
+-{
++static int cxacru_usb_probe(struct usb_interface *intf,
++		const struct usb_device_id *id) {
++	struct usb_device *usb_dev = interface_to_usbdev(intf);
++	char buf[15];
++
++	/* avoid ADSL routers (cx82310_eth)
++	 * abort if bDeviceClass is 0xff and iProduct is "USB NET CARD" */
++	if (usb_dev->descriptor.bDeviceClass == USB_CLASS_VENDOR_SPEC
++			&& usb_string(usb_dev, usb_dev->descriptor.iProduct,
++				buf, sizeof(buf)) > 0) {
++		if (!strcmp(buf, "USB NET CARD")) {
++			dev_info(&intf->dev, "ignoring cx82310_eth device\n");
++			return -ENODEV;
++		}
++	}
++
+ 	return usbatm_usb_probe(intf, id, &cxacru_driver);
+ }
+ 
+
 
 -- 
-Dmitry
+Ondrej Zary
