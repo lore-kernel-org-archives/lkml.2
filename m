@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab0IELFc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 07:05:32 -0400
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:59728 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940Ab0IELFb (ORCPT
+	id S1752123Ab0IELW0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 07:22:26 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48885 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab0IELWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 07:05:31 -0400
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Subject: [PATCH][kernelshark] trace-graph: Fix trace_seq free-before-use
-Date: Sun,  5 Sep 2010 12:05:04 +0100
-Message-Id: <1283684704-5650-1-git-send-email-stefanha@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
+	Sun, 5 Sep 2010 07:22:25 -0400
+Date: Sun, 5 Sep 2010 12:21:53 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Eric Miao <eric.y.miao@gmail.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, khc@pm.waw.pl,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: fix pci_set_consistent_dma_mask for dmabounce
+	devices
+Message-ID: <20100905112152.GA558@n2100.arm.linux.org.uk>
+References: <20100819174426O.fujita.tomonori@lab.ntt.co.jp> <m3sk1yzkjw.fsf@intrepid.localdomain> <20100901085738.GJ8142@n2100.arm.linux.org.uk> <20100902114937X.fujita.tomonori@lab.ntt.co.jp> <20100902055907.GA3287@riccoc20.at.omicron.at> <AANLkTi=TfmFPSfw3iYUMzxdsCLC7keJxMbb7vZvQHoiO@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=TfmFPSfw3iYUMzxdsCLC7keJxMbb7vZvQHoiO@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit e892161f731e958980fa977e2d7980f3cf0819ce changed trace_seq to
-dynamically expand its buffer.  In two instances the destroy function
-was called too early, causing a freed s.buffer to be used.
+On Sun, Sep 05, 2010 at 06:50:17PM +0800, Eric Miao wrote:
+> On Thu, Sep 2, 2010 at 1:59 PM, Richard Cochran
+> <richardcochran@gmail.com> wrote:
+> > On Thu, Sep 02, 2010 at 11:50:33AM +0900, FUJITA Tomonori wrote:
+> >> btw, I can't compile ARCH_IXP4XX without the following patch:
+> >>
+> >> http://www.spinics.net/lists/arm-kernel/msg95933.html
+> >
+> > I have the same problem. Compilation of IXP4xx was broken by
+> >
+> >    commit 4fa5518c65df7a2c4b6c58061ac53d0b01228042
+> >    Author: Eric Miao <eric.y.miao@gmail.com>
+> >    Date:   Sat Jun 5 15:16:17 2010 +0800
+> >
+> >    [ARM] pxa: remove now unnecessary dma_needs_bounce()
+> >
+> > What is the correct way to do fix this? Is the above patch the
+> > solution, or is dma_needs_bounce() perhaps also unnecessary for ixp?
+> >
+> 
+> My bad to break this. If there is no quick proper fix, I'd prefer this
+> being reverted first.
 
-Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
----
- trace-graph.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+Reverted.
 
-diff --git a/trace-graph.c b/trace-graph.c
-index 44c1273..4e91fe8 100644
---- a/trace-graph.c
-+++ b/trace-graph.c
-@@ -1666,14 +1666,17 @@ static gint draw_event_label(struct graph_info *ginfo, gint i,
- 	 */
- 	ret = trace_graph_plot_display_last_event(ginfo, plot, &s,
- 						  convert_x_to_time(ginfo, p2-1));
--	trace_seq_destroy(&s);
--	if (!ret)
-+	if (!ret) {
-+		trace_seq_destroy(&s);
- 		return p2;
-+	}
- 
- 	layout = gtk_widget_create_pango_layout(ginfo->draw, s.buffer);
- 	pango_layout_set_font_description(layout, font);
- 	pango_layout_get_pixel_size(layout, &text_width, &text_height);
- 
-+	trace_seq_destroy(&s);
-+
- 	/* Lets see if we can print this info */
- 	if (p2 < text_width)
- 		start = 1;
-@@ -1967,7 +1970,6 @@ static void draw_timeline(struct graph_info *ginfo, gint width)
- 		convert_nano(time, &sec, &usec);
- 		trace_seq_init(&s);
- 		trace_seq_printf(&s, "%lu.%06lu", sec, usec);
--		trace_seq_destroy(&s);
- 
- 		gdk_draw_line(ginfo->curr_pixmap, ginfo->draw->style->black_gc,
- 			      mid, height, mid, height + 5);
-@@ -1978,6 +1980,7 @@ static void draw_timeline(struct graph_info *ginfo, gint width)
- 		gdk_draw_layout(ginfo->curr_pixmap, ginfo->draw->style->black_gc,
- 				mid - (w / 2), height+10, layout);
- 		g_object_unref(layout);
-+		trace_seq_destroy(&s);
- 	}
- }
- 
--- 
-1.7.1
+Can I assume that I can commit this with:
 
+Reported-by: Richard Cochran <richardcochran@gmail.com>
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
+
+?
