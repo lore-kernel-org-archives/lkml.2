@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab0IEIsR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 04:48:17 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41639 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754555Ab0IEIsP (ORCPT
+	id S1754620Ab0IEIsh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 04:48:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46542 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752693Ab0IEIsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 04:48:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=j5OCdqV+UqTQ/RXtilNk9rOyYYv4snAR2uzoAXqNPG8JVQPhQBQgwWooTYKA4zH5Ic
-         Vk0MTMUYLBPMR2eXHq3Kaq9PwB5hLDnyP+/UtJt8aT6YweQRE/5Vm2qKCMeYldQXcNjp
-         /UgyHzaMKDzdtItMBnNSSgeQRLE+boJ9czMk8=
+	Sun, 5 Sep 2010 04:48:36 -0400
+Date: Sun, 5 Sep 2010 09:48:34 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Sundar Iyer <sundar.iyer@stericsson.com>
+Subject: Re: [PATCH] regulator: ab8500 - fix off-by-one value range
+	checking for selector
+Message-ID: <20100905084834.GC24817@opensource.wolfsonmicro.com>
+References: <1283612801.2430.1.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <20100905044902.GA3130@kroah.com>
-References: <1283595045-6922-1-git-send-email-pshah.mumbai@gmail.com> <20100905044902.GA3130@kroah.com>
-From: Prashant Shah <pshah.mumbai@gmail.com>
-Date: Sun, 5 Sep 2010 14:17:54 +0530
-Message-ID: <AANLkTimY86oAsYsZBseszgXgvDEOCYN=iD67r5fwG95_@mail.gmail.com>
-Subject: Re: [PATCH] Staging: xgifb: fixed many style issues in XGI_accel.c
-To: Greg KH <greg@kroah.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, apatard@mandriva.com,
-        randy.dunlap@oracle.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283612801.2430.1.camel@phoenix>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Um, I think you forgot to build this patch, it dies a horrible death.
->
-> Please always test your patches before sending them out.
->
+On Sat, Sep 04, 2010 at 11:06:41PM +0800, Axel Lin wrote:
+> selector is used as array index of info->supported_voltages
+> Thus the valid value range should be 0 .. info->voltages_len -1
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Missed a } on line 2134
-
-Rechecked all the patches and sent a updated patch.
-
-> thanks,
->
-> greg k-h
->
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
