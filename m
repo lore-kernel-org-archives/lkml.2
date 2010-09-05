@@ -1,38 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab0IEWPk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 18:15:40 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47416 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753848Ab0IEWPj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 18:15:39 -0400
-Date: Sun, 5 Sep 2010 23:35:04 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jan Kandziora <jjj@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: additional serial ports on MS9830 board do not work
- (IRQ problems)
-Message-ID: <20100905233504.5000a308@lxorguk.ukuu.org.uk>
-In-Reply-To: <201009052009.09743.jjj@gmx.de>
-References: <201009052009.09743.jjj@gmx.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754660Ab0IEWbK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 18:31:10 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52032 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752880Ab0IEWbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 18:31:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH] vmscan: check all_unreclaimable in direct reclaim path
+Date: Mon, 6 Sep 2010 00:30:16 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, "linux-mm" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        "M. Vefa Bicakci" <bicave@superonline.com>, stable@kernel.org
+References: <1283697637-3117-1-git-send-email-minchan.kim@gmail.com>
+In-Reply-To: <1283697637-3117-1-git-send-email-minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009060030.16669.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I tried the suggested option "irqpoll", but then the computer just freezes 
-> when I do "od /dev/ttyS0" and touch the screen. No kernel panic, just a hard 
-> freeze. I tried "acpi=noirq", "acpi=off" and disabling the APIC in the BIOS 
-> setup, too. None of these made the serial irq work.
+On Sunday, September 05, 2010, Minchan Kim wrote:
+> M. Vefa Bicakci reported 2.6.35 kernel hang up when hibernation on his
+> 32bit 3GB mem machine. (https://bugzilla.kernel.org/show_bug.cgi?id=16771)
+> Also he was bisected first bad commit is below
+> 
+>   commit bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
+>   Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>   Date:   Fri Jun 4 14:15:05 2010 -0700
+> 
+>      vmscan: fix do_try_to_free_pages() return value when priority==0 reclaim failure
+> 
+> At first impression, this seemed very strange because the above commit only
+> chenged function return value and hibernate_preallocate_memory() ignore
+> return value of shrink_all_memory(). But it's related.
+> 
+> Now, page allocation from hibernation code may enter infinite loop if
+> the system has highmem. The reasons are that vmscan don't care enough 
+> OOM case when oom_killer_disabled. 
+> 
+> The problem sequence is following as. 
+> 
+> 1. hibernation
+> 2. oom_disable
+> 3. alloc_pages
+> 4. do_try_to_free_pages
+>        if (scanning_global_lru(sc) && !all_unreclaimable)
+>                return 1;
+> 
+> If kswapd is not freezed, it would set zone->all_unreclaimable to 1 and then
+> shrink_zones maybe return true(ie, all_unreclaimable is true). 
+> so at last, alloc_pages could go to _nopage_. If it is, it should have no problem.
+> 
+> This patch adds all_unreclaimable check to protect in direct reclaim path, too.
+> It can care of hibernation OOM case and help bailout all_unreclaimable case slightly.
+> 
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: M. Vefa Bicakci <bicave@superonline.com>
+> Cc: stable@kernel.org
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-I suspect you need a BIOS which has correct tables for IRQ routing.
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-> Can you give me any useful pointers what to try next? Kernel configuration is 
-> attached.
+> ---
+>  mm/vmscan.c |   33 +++++++++++++++++++++++++++------
+>  1 files changed, 27 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index f620ab3..53b23a7 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1893,12 +1893,11 @@ static void shrink_zone(int priority, struct zone *zone,
+>   * If a zone is deemed to be full of pinned pages then just give it a light
+>   * scan then give up on it.
+>   */
+> -static bool shrink_zones(int priority, struct zonelist *zonelist,
+> +static void shrink_zones(int priority, struct zonelist *zonelist,
+>  					struct scan_control *sc)
+>  {
+>  	struct zoneref *z;
+>  	struct zone *zone;
+> -	bool all_unreclaimable = true;
+>  
+>  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+>  					gfp_zone(sc->gfp_mask), sc->nodemask) {
+> @@ -1916,8 +1915,31 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
+>  		}
+>  
+>  		shrink_zone(priority, zone, sc);
+> -		all_unreclaimable = false;
+>  	}
+> +}
+> +
+> +static inline bool all_unreclaimable(struct zonelist *zonelist,
+> +		struct scan_control *sc)
+> +{
+> +	struct zoneref *z;
+> +	struct zone *zone;
+> +	bool all_unreclaimable = true;
+> +
+> +	if (!scanning_global_lru(sc))
+> +		return false;
+> +
+> +	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+> +			gfp_zone(sc->gfp_mask), sc->nodemask) {
+> +		if (!populated_zone(zone))
+> +			continue;
+> +		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+> +			continue;
+> +		if (zone->pages_scanned < (zone_reclaimable_pages(zone) * 6)) {
+> +			all_unreclaimable = false;
+> +			break;
+> +		}
+> +	}
+> +
+>  	return all_unreclaimable;
+>  }
+>  
+> @@ -1941,7 +1963,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+>  					struct scan_control *sc)
+>  {
+>  	int priority;
+> -	bool all_unreclaimable;
+>  	unsigned long total_scanned = 0;
+>  	struct reclaim_state *reclaim_state = current->reclaim_state;
+>  	struct zoneref *z;
+> @@ -1958,7 +1979,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+>  		sc->nr_scanned = 0;
+>  		if (!priority)
+>  			disable_swap_token();
+> -		all_unreclaimable = shrink_zones(priority, zonelist, sc);
+> +		shrink_zones(priority, zonelist, sc);
+>  		/*
+>  		 * Don't shrink slabs when reclaiming memory from
+>  		 * over limit cgroups
+> @@ -2020,7 +2041,7 @@ out:
+>  		return sc->nr_reclaimed;
+>  
+>  	/* top priority shrink_zones still had more to do? don't OOM, then */
+> -	if (scanning_global_lru(sc) && !all_unreclaimable)
+> +	if (!all_unreclaimable(zonelist, sc))
+>  		return 1;
+>  
+>  	return 0;
+> 
 
-Vendor for BIOS update would be the obvious starting point.
