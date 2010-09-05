@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab0IEUaN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 16:30:13 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46135 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab0IEUaL (ORCPT
+	id S1754748Ab0IEUjL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 16:39:11 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:50794 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754502Ab0IEUjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 16:30:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bFXa1lKOnkmnp6BFNrB6KwD8pJasJy6hOB5WZ3vTgui2LZLYxAi54nJ4U3uPzAR3sx
-         E0h++pxEkOxCycjrjub5vWcdJ+VAYPEUBPJFCnkg19WT7GHvrx6xqO2Qk999dY/Z4gej
-         eOF840lN1FTZq7ssS6lxqC+3qpitZqskM0cPs=
-Date: Sun, 5 Sep 2010 13:30:06 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
-Subject: Re: [RFC 22/22] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
- module
-Message-ID: <20100905203006.GD18411@core.coreip.homeip.net>
-References: <1283160203-6981-1-git-send-email-nab@linux-iscsi.org>
+	Sun, 5 Sep 2010 16:39:10 -0400
+Date: Sun, 5 Sep 2010 22:39:08 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] md: do not use ++ in rcu_dereference() argument
+Message-ID: <20100905203908.GA3228@merkur.ravnborg.org>
+References: <1283711539-7123-1-git-send-email-segooon@gmail.com> <20100905190139.GA3163@merkur.ravnborg.org> <20100905192335.GA8140@albatros>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1283160203-6981-1-git-send-email-nab@linux-iscsi.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100905192335.GA8140@albatros>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 02:23:23AM -0700, Nicholas A. Bellinger wrote:
-> +
-> +static void tcm_loop_primary_release(struct device *dev)
-> +{
-> +	return;
-> +}
-> +
-> +static struct device tcm_loop_primary = {
-> +	.init_name		= "tcm_loop_0",
-> +	.release		= tcm_loop_primary_release,
-> +};
-> +
+On Sun, Sep 05, 2010 at 11:23:35PM +0400, Kulikov Vasiliy wrote:
+> On Sun, Sep 05, 2010 at 21:01 +0200, Sam Ravnborg wrote:
+> > On Sun, Sep 05, 2010 at 10:32:18PM +0400, Kulikov Vasiliy wrote:
+> > > From: Vasiliy Kulikov <segooon@gmail.com>
+> > > 
+> > > rcu_dereference() is macro, so it might use its argument twice.
+> > > Argument must not has side effects.
+> > > 
+> > > It was found by compiler warning:
+> > > drivers/md/raid1.c: In function ‘read_balance’:
+> > > drivers/md/raid1.c:445: warning: operation on ‘new_disk’ may be undefined
+> > 
+> > This change looks wrong.
+> > In the original implementation new_disk is incremented and
+> > then we do the array lookup.
+> > With your implementation it looks like we increment it after
+> > the array lookup.
+> 
+> No, the original code increments new_disk and then dereferences mirrors.
+> 
+> The full code:
+> 
+> 		for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
+> 		     r1_bio->bios[new_disk] == IO_BLOCKED ||
+> 		     !rdev || !test_bit(In_sync, &rdev->flags)
+> 			     || test_bit(WriteMostly, &rdev->flags);
+> 		     rdev = rcu_dereference(conf->mirrors[++new_disk].rdev)) {
+> 
+> 			if (rdev && test_bit(In_sync, &rdev->flags) &&
+> 				r1_bio->bios[new_disk] != IO_BLOCKED)
+> 				wonly_disk = new_disk;
+> 
+> 			if (new_disk == conf->raid_disks - 1) {
+> 				new_disk = wonly_disk;
+> 				break;
+> 			}
+> 		}
+> 
+>     so,
+> 
+>     for (a; b; c = f(++g)) {
+>        ...
+>     } 
 
-No, you can not have statically allocated devices and dummy release
-functions.
+Thanks - that explains it.
+This code really screams for a helper function but thats another matter.
 
--- 
-Dmitry
+	Sam
