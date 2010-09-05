@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab0IELpF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 07:45:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44407 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043Ab0IELpD convert rfc822-to-8bit (ORCPT
+	id S1752784Ab0IEL7C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 07:59:02 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65480 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab0IEL7B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 07:45:03 -0400
-Date: Sun, 5 Sep 2010 21:44:52 +1000
-From: Neil Brown <neilb@suse.de>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vaurora@redhat.com,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 0/6] overlay filesystem prototype
-Message-ID: <20100905214452.797527a7@notabene>
-In-Reply-To: <20970.1283683030@jrobl>
-References: <20100903134116.039612691@szeredi.hu>
-	<20970.1283683030@jrobl>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 5 Sep 2010 07:59:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=CxK++dBMxcBk25aBCByOkd3tcPYZbT0bk2oKgQn0oMEKTZpmLPYW/9HL1OWzsToWJv
+         u80AEwUnZ3h04pG5PcSnUZkv+V+Tt2/N4l+S8YuBBf2SH3bLwwR+RK4dWPQ80D9hosHY
+         wV2t/fNQ7eilRX5mgU8fCLa7DVDx+Q4XayISY=
+MIME-Version: 1.0
+In-Reply-To: <20100905112152.GA558@n2100.arm.linux.org.uk>
+References: <20100819174426O.fujita.tomonori@lab.ntt.co.jp>
+ <m3sk1yzkjw.fsf@intrepid.localdomain> <20100901085738.GJ8142@n2100.arm.linux.org.uk>
+ <20100902114937X.fujita.tomonori@lab.ntt.co.jp> <20100902055907.GA3287@riccoc20.at.omicron.at>
+ <AANLkTi=TfmFPSfw3iYUMzxdsCLC7keJxMbb7vZvQHoiO@mail.gmail.com> <20100905112152.GA558@n2100.arm.linux.org.uk>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Sun, 5 Sep 2010 19:58:39 +0800
+Message-ID: <AANLkTi=K_nV+xOCD4tGT3Df74EWq2crjpkLyXtOkHsC9@mail.gmail.com>
+Subject: Re: [PATCH] arm: fix pci_set_consistent_dma_mask for dmabounce devices
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, khc@pm.waw.pl,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 05 Sep 2010 19:37:10 +0900
-"J. R. Okajima" <hooanon05@yahoo.co.jp> wrote:
+On Sun, Sep 5, 2010 at 7:21 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sun, Sep 05, 2010 at 06:50:17PM +0800, Eric Miao wrote:
+>> On Thu, Sep 2, 2010 at 1:59 PM, Richard Cochran
+>> <richardcochran@gmail.com> wrote:
+>> > On Thu, Sep 02, 2010 at 11:50:33AM +0900, FUJITA Tomonori wrote:
+>> >> btw, I can't compile ARCH_IXP4XX without the following patch:
+>> >>
+>> >> http://www.spinics.net/lists/arm-kernel/msg95933.html
+>> >
+>> > I have the same problem. Compilation of IXP4xx was broken by
+>> >
+>> >    commit 4fa5518c65df7a2c4b6c58061ac53d0b01228042
+>> >    Author: Eric Miao <eric.y.miao@gmail.com>
+>> >    Date:   Sat Jun 5 15:16:17 2010 +0800
+>> >
+>> >    [ARM] pxa: remove now unnecessary dma_needs_bounce()
+>> >
+>> > What is the correct way to do fix this? Is the above patch the
+>> > solution, or is dma_needs_bounce() perhaps also unnecessary for ixp?
+>> >
+>>
+>> My bad to break this. If there is no quick proper fix, I'd prefer this
+>> being reverted first.
+>
+> Reverted.
+>
+> Can I assume that I can commit this with:
+>
+> Reported-by: Richard Cochran <richardcochran@gmail.com>
+> Acked-by: Eric Miao <eric.y.miao@gmail.com>
+>
 
-> 
-> Miklos Szeredi:
-> > Changes since the last version:
-> 	:::
-> >  - get write ref on the upper layer on mount unless the overlay
-> >    itself is mounted read-only
-> 
-> I think it a good approach.
-> Although it may be harmless, write-ref will not be put when a user
-> executes,
-> - mount -o ro /overlay
-             ^remount,   I assume
-> - umount /overlay
-> It will be easy to fix by implementing s_op->remount().
-
-Something like this?
-
-(I have a few other patches queued up, but haven't tested anything properly
-yet).
-
-NeilBrown
-
->From 3a9e1d4f07c5d6fd18cc165537107dd31233ec1f Mon Sep 17 00:00:00 2001
-From: NeilBrown <neilb@suse.de>
-Date: Sat, 4 Sep 2010 09:17:54 +1000
-Subject: [PATCH] ovl: minimal remount support.
-
-As overlayfs reflects the 'readonly' mount status in write-access to
-the upper filesystem, we must handle remount and either drop or take
-write access when the ro status changes.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/fs/overlayfs/overlayfs.c b/fs/overlayfs/overlayfs.c
-index 0ddfeec..4e032e8 100644
---- a/fs/overlayfs/overlayfs.c
-+++ b/fs/overlayfs/overlayfs.c
-@@ -1685,8 +1685,28 @@ static void ovl_put_super(struct super_block *sb)
- 	kfree(ufs);
- }
- 
-+static int ovl_remount_fs(struct super_block *sb, int *flagsp, char *data)
-+{
-+	int flags = *flagsp;
-+	struct ovl_fs *ufs = sb->s_fs_info;
-+
-+	/* When remounting rw or ro, we need to adjust the write access to the
-+	 * upper fs.
-+	 */
-+	if (((flags ^ sb->s_flags) & MS_RDONLY) == 0)
-+		/* No change to readonly status */
-+		return 0;
-+
-+	if (flags & MS_RDONLY) {
-+		mnt_drop_write(ufs->upper_mnt);
-+		return 0;
-+	} else
-+		return mnt_want_write(ufs->upper_mnt);
-+}
-+
- static const struct super_operations ovl_super_operations = {
- 	.put_super	= ovl_put_super,
-+	.remount_fs	= ovl_remount_fs,
- };
- 
- struct ovl_config {
+Yes please.
