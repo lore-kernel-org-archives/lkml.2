@@ -1,54 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751051Ab0IENeo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 09:34:44 -0400
-Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:54068
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750728Ab0IENen (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 09:34:43 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Matthew Garrett <mjg@redhat.com>,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH] acpi: Provide decls for standalone compilation of video.h without ACPI
-Date: Sun,  5 Sep 2010 14:35:57 +0100
-Message-Id: <1283693757-8199-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.1
-X-Originating-IP: 78.156.66.37
+	id S1751145Ab0IENq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 09:46:28 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28129 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785Ab0IENq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 09:46:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,320,1280732400"; 
+   d="scan'208";a="835005624"
+Date: Sun, 5 Sep 2010 21:45:54 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
+ direct reclaim allocation fails
+Message-ID: <20100905134554.GA7083@localhost>
+References: <1283504926-2120-4-git-send-email-mel@csn.ul.ie>
+ <20100903160026.564fdcc9.akpm@linux-foundation.org>
+ <20100904022545.GD705@dastard>
+ <20100903202101.f937b0bb.akpm@linux-foundation.org>
+ <20100904075840.GE705@dastard>
+ <20100904081414.GF705@dastard>
+ <20100905015400.GA10714@localhost>
+ <20100905021555.GG705@dastard>
+ <20100905060539.GA17450@localhost>
+ <20100905131447.GJ705@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100905131447.GJ705@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Len Brown <len.brown@intel.com>
----
- include/acpi/video.h |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+[restoring CC list]
 
-diff --git a/include/acpi/video.h b/include/acpi/video.h
-index 551793c..bcb4f00 100644
---- a/include/acpi/video.h
-+++ b/include/acpi/video.h
-@@ -16,6 +16,10 @@ extern void acpi_video_unregister(void);
- extern int acpi_video_get_edid(struct acpi_device *device, int type,
- 			       int device_id, void **edid);
- #else
-+
-+#include <linux/errno.h> /* for ENODEV */
-+struct acpi_device;
-+
- static inline int acpi_video_register(void) { return 0; }
- static inline void acpi_video_unregister(void) { return; }
- static inline int acpi_video_get_edid(struct acpi_device *device, int type,
-@@ -26,4 +30,3 @@ static inline int acpi_video_get_edid(struct acpi_device *device, int type,
- #endif
- 
- #endif
--
--- 
-1.7.1
+On Sun, Sep 05, 2010 at 09:14:47PM +0800, Dave Chinner wrote:
+> On Sun, Sep 05, 2010 at 02:05:39PM +0800, Wu Fengguang wrote:
+> > On Sun, Sep 05, 2010 at 10:15:55AM +0800, Dave Chinner wrote:
+> > > On Sun, Sep 05, 2010 at 09:54:00AM +0800, Wu Fengguang wrote:
+> > > > Dave, could you post (publicly) the kconfig and /proc/vmstat?
+> > > > 
+> > > > I'd like to check if you have swap or memory compaction enabled..
+> > > 
+> > > Swap is enabled - it has 512MB of swap space:
+> > > 
+> > > $ free
+> > >              total       used       free     shared    buffers     cached
+> > > Mem:       4054304     100928    3953376          0       4096      43108
+> > > -/+ buffers/cache:      53724    4000580
+> > > Swap:       497976          0     497976
+> > 
+> > It looks swap is not used at all.
+> 
+> It isn't 30s after boot, abut I haven't checked after a livelock.
 
+That's fine. I see in your fs_mark-wedge-1.png that there are no
+read/write IO at all when CPUs are 100% busy. So there should be no
+swap IO at "livelock" time.
+
+> > > And memory compaction is not enabled:
+> > > 
+> > > $ grep COMPACT .config
+> > > # CONFIG_COMPACTION is not set
+
+Memory compaction is not likely the cause too. It will only kick in for
+order > 3 allocations.
+
+> > > 
+> > > The .config is pretty much a 'make defconfig' and then enabling XFS and
+> > > whatever debug I need (e.g. locking, memleak, etc).
+> > 
+> > Thanks! The problem seems hard to debug -- you cannot login at all
+> > when it is doing lock contentions, so cannot get sysrq call traces.
+> 
+> Well, I don't know whether it is lock contention at all. The sets of
+> traces I have got previously have shown backtraces on all CPUs in
+> direct reclaim with several in draining queues, but no apparent lock
+> contention.
+
+That's interesting. Do you still have the full backtraces?
+
+Maybe your system eats too much slab cache (icache/dcache) by creating
+so many zero-sized files. The system may run into problems reclaiming
+so many (dirty) slab pages.
+
+> > How about enabling CONFIG_LOCK_STAT? Then you can check
+> > /proc/lock_stat when the contentions are over.
+> 
+> Enabling the locking debug/stats gathering slows the workload
+> by a factor of 3 and doesn't produce the livelock....
+
+Oh sorry.. but it would still be interesting to check the top
+contended locks for this workload without any livelocks :)
+
+Thanks,
+Fengguang
