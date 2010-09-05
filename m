@@ -1,82 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab0IESEU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 14:04:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52792 "EHLO mx2.suse.de"
+	id S1754247Ab0IESGf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 14:06:35 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:38768 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752024Ab0IESET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 14:04:19 -0400
-Subject: Re: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset
- to MegaRAID SAS driver
-From: James Bottomley <James.Bottomley@suse.de>
-To: bo yang <boyang1288@gmail.com>
-Cc: bo.yang@lsi.com, linux-scsi@vger.kernel.org, akpm@osdl.org,
-        linux-kernel@vger.kernel.org, jayant.Daftardar@lsi.com
-In-Reply-To: <AANLkTiktJycDkXu+FHQanTNe-djvvTe9V=9KfSkLcXZd@mail.gmail.com>
-References: <AANLkTiktJycDkXu+FHQanTNe-djvvTe9V=9KfSkLcXZd@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 05 Sep 2010 15:04:10 -0300
-Message-ID: <1283709850.15944.1277.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1753635Ab0IESGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 14:06:34 -0400
+Date: Sun, 5 Sep 2010 19:06:20 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 1/3] mm: page allocator: Update free page counters
+	after pages are placed on the free list
+Message-ID: <20100905180619.GE8384@csn.ul.ie>
+References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie> <1283504926-2120-2-git-send-email-mel@csn.ul.ie> <20100903153859.52cd1b97.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100903153859.52cd1b97.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-11 at 16:45 -0400, bo yang wrote:
-> To add the Online Controller Reset  (OCR) support, driver need to do:
-> 		a). reset the controller chips -- Xscale and Gen2 which will change
-> the function calls and add the reset function
-> 		related to this two chips.
-> 		
-> 		b). during the reset, driver will store the pending cmds which not
-> returned by FW to driver's pending queue.  Driver
-> 		will re-issue those pending cmds again to FW after the OCR finished.
-> 		
-> 		c). In driver's timeout routine, driver will report to OS as reset.
-> Also driver's queue routine will block the
-> 		cmds until the OCR finished.
-> 		
-> 		d). in Driver's ISR routine, if driver get the FW state as state
-> change, FW in Failure status and FW support online controller
-> 		reset (OCR), driver will start to do the controller reset.
-> 		
-> 		e). In driver's IOCTL routine, the application cmds will wait for
-> the OCR to finish, then issue the cmds to FW.
+On Fri, Sep 03, 2010 at 03:38:59PM -0700, Andrew Morton wrote:
+> On Fri,  3 Sep 2010 10:08:44 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> Signed-off-by Bo Yang<bo.yang@lsi.com>
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -588,12 +588,12 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+> >  {
+> >  	int migratetype = 0;
+> >  	int batch_free = 0;
+> > +	int freed = count;
+> >  
+> >  	spin_lock(&zone->lock);
+> >  	zone->all_unreclaimable = 0;
+> >  	zone->pages_scanned = 0;
+> >  
+> > -	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
+> >  	while (count) {
+> >  		struct page *page;
+> >  		struct list_head *list;
+> > @@ -621,6 +621,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+> >  			trace_mm_page_pcpu_drain(page, 0, page_private(page));
+> >  		} while (--count && --batch_free && !list_empty(list));
+> >  	}
+> > +	__mod_zone_page_state(zone, NR_FREE_PAGES, freed);
+> >  	spin_unlock(&zone->lock);
+> >  }
+> >  
+> 
+> nit: this is why it's evil to modify the value of incoming args.  It's
+> nicer to leave them alone and treat them as const across the lifetime
+> of the callee.
+> 
 
-This patch is full of line breaks which prevent application, like this
-one:
+Ok, I can see the logic of that.
 
-> diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas
-> new/Documentation/scsi/ChangeLog.megaraid_sas
-> --- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
-> 04:58:36.000000000 -0400
-> +++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
-> 04:56:30.000000000 -0400
-> @@ -1,3 +1,36 @@
-> +1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
-> +			(emaild-id:megaraidlinux@lsi.com)
-> +			Bo Yang
-[snip]
+> Can I do this?
+> 
+> --- a/mm/page_alloc.c~mm-page-allocator-update-free-page-counters-after-pages-are-placed-on-the-free-list-fix
+> +++ a/mm/page_alloc.c
+> @@ -588,13 +588,13 @@ static void free_pcppages_bulk(struct zo
+>  {
+>  	int migratetype = 0;
+>  	int batch_free = 0;
+> -	int freed = count;
+> +	int to_free = count;
+>  
+>  	spin_lock(&zone->lock);
+>  	zone->all_unreclaimable = 0;
+>  	zone->pages_scanned = 0;
+>  
+> -	while (count) {
+> +	while (to_free) {
+>  		struct page *page;
+>  		struct list_head *list;
+>  
+> @@ -619,9 +619,9 @@ static void free_pcppages_bulk(struct zo
+>  			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+>  			__free_one_page(page, zone, 0, page_private(page));
+>  			trace_mm_page_pcpu_drain(page, 0, page_private(page));
+> -		} while (--count && --batch_free && !list_empty(list));
+> +		} while (--to_free && --batch_free && !list_empty(list));
+>  	}
+> -	__mod_zone_page_state(zone, NR_FREE_PAGES, freed);
+> +	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
+>  	spin_unlock(&zone->lock);
+>  }
 
-and this one
-> diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
-> new/drivers/scsi/megaraid/megaraid_sas.c
-> --- old/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:55:41.000000000 -0400
-> +++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:56:30.000000000 -0400
-> @@ -107,6 +107,12 @@ static void
->  megasas_complete_cmd(struct megasas_instance *instance, struct
-> megasas_cmd *cmd,
->  		     u8 alt_status);
+Yes you can. I see no problem with this alteration.
 
-Since not every long line is broken, this looks like some type of cut
-and paste error ... anyway, could you fix it up, please?
-
-Thanks,
-
-James
-
-
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
