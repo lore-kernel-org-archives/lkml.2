@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab0IEDS6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Sep 2010 23:18:58 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44803 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab0IEDS5 (ORCPT
+	id S1750833Ab0IEFBd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 01:01:33 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:49558 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750757Ab0IEFBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Sep 2010 23:18:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=boAO6Jr/AD2CWBs5cRsOFg9/MFkptGZXZE7iWBsSwkA1ak1HRE2dGkLFmj/tXvEEMC
-         pOL+gSDjMHqMSn01A81yJMf/x2+raP//b6eDbwbgJduCY9t4d5aMrKGl1KHC3xTMZ9d9
-         +SESq+IMGKu8oQNWp4ymoxnbceHpcTTM+uhEc=
-Date: Sun, 5 Sep 2010 12:21:48 +0900
-From: Adam Jiang <jiang.adam@gmail.com>
-To: runcoderen <runcoderzhcn@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: ldd scull_load question
-Message-ID: <20100905032148.GA9971@capricorn-x61>
-Mail-Followup-To: runcoderen <runcoderzhcn@gmail.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <1283160040-6636-1-git-send-email-nab@linux-iscsi.org>
- <201009020156.53803.konrad@darnok.org>
- <1283455187.5598.86.camel@haakon2.linux-iscsi.org>
- <1283644390.556.74.camel@haakon2.linux-iscsi.org>
- <1283646914.1741.3.camel@bencharluo-laptop>
+	Sun, 5 Sep 2010 01:01:32 -0400
+X-Sasl-enc: rH14QEp86yCVTebqVrR51G1PK6qOqYDPvP1SLzunF8NB 1283662891
+Date: Sun, 5 Sep 2010 02:01:28 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Shaohua Li <shaohua.li@intel.com>, Simon Trimmer <simon@urbanmyth.org>
+Subject: microcode_intel: how to test extended signature codepath?
+Message-ID: <20100905050128.GA6922@khazad-dum.debian.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283646914.1741.3.camel@bencharluo-laptop>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 05, 2010 at 08:35:14AM +0800, runcoderen wrote:
-> hi all:
-> I am reading ldd(3rd).
-> when I read the scull_load part.
-> I can't understand some special sentences in the scripts as follows:
-> 
-> /sbin/insmod ./$module.ko $* || exit 1
-> 
-> why we add $* and || exit 1 after /sbin/insmod ./$module.ko?
-> can anyone help me to understand?
+I have noticed that there is no public Intel microcode file using the Intel
+extended signature table.  This means there is some code in
+microcode_intel.c that can't be easily field-tested.  In fact, for all I
+know, it might never been tested at all or it has been left untested for
+several years and could have bitrotted.
 
-Hey,
+Does Intel have a different microcode file that has at least one extended
+signature table we could use to test the kernel driver (and enhanced
+userspace helpers)? Anyone knows how to obtain it?
 
-The '$*' means bash variables. I believe it is a question not related to
-Linux kernel. See
+I suppose I could create a hacked microcode file for testing purposes based
+on the real microcode update entry for some processors and using some
+impossible signatures so that the driver is forced to find the match though
+the first, some middle, and the last extended signatures in the cooked up
+table, but this is very sub-optimal for a large number of reasons, least of
+all the fact that AFAIK I'd be forbidden to distribute it to anyone else
+that needs to touch the code, and the fact that it would be as correct as my
+understanding of the microcode datafile spec, which doesn't mean much.
 
-http://tldp.org/LDP/abs/html/othertypesv.html
+Can anyone offer any help on this matter?
 
-/Adam
-
-> 		runcoderen
-> 
-> -- 
-> 
-> /****************************************
-> http://runcoderen.wordpress.com
-> ****************************************/
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
