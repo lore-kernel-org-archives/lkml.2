@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab0IENIk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 09:08:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38349 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752162Ab0IENIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 09:08:38 -0400
-Date: Sun, 5 Sep 2010 13:06:45 GMT
-From: tip-bot for Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        lm-sensors@lm-sensors.org, jin.dongming@np.css.fujitsu.com,
-        seto.hidetoshi@jp.fujitsu.com, fenghua.yu@intel.com,
-        khali@linux-fr.org, tglx@linutronix.de, hpa@linux.intel.com,
-        mingo@elte.hu, len.brown@intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jin.dongming@np.css.fujitsu.com, lm-sensors@lm-sensors.org,
-        seto.hidetoshi@jp.fujitsu.com, fenghua.yu@intel.com,
-        khali@linux-fr.org, tglx@linutronix.de, hpa@linux.intel.com,
-        mingo@elte.hu, len.brown@intel.com
-In-Reply-To: <4C7C492D.5020704@np.css.fujitsu.com>
-References: <4C7C492D.5020704@np.css.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/debug] therm_throt.c: Trival printk message fix for a unsuitable abbreviation of 'thermal'
-Message-ID: <tip-6981fe03b2055685fb6da40f54518bc6baf2b751@git.kernel.org>
-Git-Commit-ID: 6981fe03b2055685fb6da40f54518bc6baf2b751
-X-Mailer: tip-git-log-daemon
+	id S1750964Ab0IENZT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 09:25:19 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:57486 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab0IENZR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 09:25:17 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Paolo Ornati <ornati@gmail.com>
+Subject: Re: help with git bisecting a bug 16376: random - possibly Radeon DRM KMS related - freezes
+Date: Sun, 5 Sep 2010 15:25:03 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.33-tp42-03208-g2507c05; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, "Ted Ts'o" <tytso@mit.edu>
+References: <201008312153.45792.Martin@lichtvoll.de> <201009050953.52440.Martin@lichtvoll.de> <20100905142031.4b692ed5@gmail.com> (sfid-20100905_152124_025137_290D40F8)
+In-Reply-To: <20100905142031.4b692ed5@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 05 Sep 2010 13:06:46 +0000 (UTC)
+Content-Type: multipart/signed;
+  boundary="nextPart1668349.dJTjO32ALO";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009051525.13867.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6981fe03b2055685fb6da40f54518bc6baf2b751
-Gitweb:     http://git.kernel.org/tip/6981fe03b2055685fb6da40f54518bc6baf2b751
-Author:     Jin Dongming <jin.dongming@np.css.fujitsu.com>
-AuthorDate: Tue, 31 Aug 2010 09:13:33 +0900
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 5 Sep 2010 14:39:15 +0200
+--nextPart1668349.dJTjO32ALO
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-therm_throt.c: Trival printk message fix for a unsuitable abbreviation of 'thermal'
+Am Sonntag 05 September 2010 schrieb Paolo Ornati:
+> On Sun, 5 Sep 2010 09:53:41 +0200
+>=20
+> Martin Steigerwald <Martin@lichtvoll.de> wrote:
+> > I am also seeking help with selecting more suitable commits to test:
+> > If its a Radeon KMS related freeze and everything points at it, I
+> > think the offending commit is in the first quarter of what git
+> > commit shows to me[2]. Thus I'd  like to select one commit before
+> > those drm/kms related commits and one after it, before testing any
+> > other commits.
+>=20
+> If you "know better" than git-bisect and want to test a particular
+> commit, just do:
+>=20
+> 	git reset --hard commit_id
 
-In unexpected_thermal_interrupt(), "LVT TMR interrupt" is used
-in error message.
+That part I understood from the manpage. But I seeked help to choose=20
+exactly which commit.
 
-I don't think TMR is a suitable abbreviation for thermal.
-  1.TMR has been used in IA32 Architectures Software Developer's
-    Manual, and is the abbreviation for Trigger Mode Register.
-  2.There is not an standard abbreviation "TMR" defined for thermal
-    in IA32 Architectures Software Developer's Manual.
-  3.Though we could understand it as Thermal Monitor Register, it is
-    easy to be misunderstood as a *TIMER* interrupt also.
+Well I now go with
 
-I think this patch will fix it.
+martin@shambhala:~/Computer/Shambhala/Kernel/2.6.33-2.6.34-
+bisect/linux-2.6> git log | head     =20
+commit a27341cd5fcb7cf2d2d4726e9f324009f7162c00
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Tue Mar 2 08:36:46 2010 -0800
 
-Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: Brown
-Cc: Len <len.brown@intel.com>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: lm-sensors@lm-sensors.org <lm-sensors@lm-sensors.org>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-LKML-Reference: <4C7C492D.5020704@np.css.fujitsu.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+    Prioritize synchronous signals over 'normal' signals
+   =20
+    This makes sure that we pick the synchronous signals caused by a
+    processor fault over any pending regular asynchronous signals sent to
+    use by [t]kill().
 
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index c2a8b26..1d0f743 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -348,7 +348,7 @@ static void intel_thermal_interrupt(void)
- 
- static void unexpected_thermal_interrupt(void)
- {
--	printk(KERN_ERR "CPU%d: Unexpected LVT TMR interrupt!\n",
-+	printk(KERN_ERR "CPU%d: Unexpected LVT thermal interrupt!\n",
- 			smp_processor_id());
- 	add_taint(TAINT_MACHINE_CHECK);
- }
+When I interpret the graphical display of gitk correctly this one should=20
+be directly before the whole lot of KMS/DRM/Radeon/Intel commits being=20
+merged.
+
+Now hopefully this one boots. And is good. Then I would have skipped a=20
+whole lot of the revisions to test. But even when it just boots, but is=20
+bad, I at least know that its not in these merges.
+
+Ciao,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+
+--nextPart1668349.dJTjO32ALO
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkyDmi8ACgkQmRvqrKWZhMcVNQCfd7+JWKZKdqVfaVCs5wVFepY+
+TZoAniDQKjse7ia49ahSkrN5QxkBix0o
+=ypL5
+-----END PGP SIGNATURE-----
+
+--nextPart1668349.dJTjO32ALO--
