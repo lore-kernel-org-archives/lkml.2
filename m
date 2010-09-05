@@ -1,123 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab0IEXeC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 19:34:02 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:52848 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754488Ab0IEXeB (ORCPT
+	id S1754853Ab0IEXll (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 19:41:41 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35115 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754099Ab0IEXlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 19:34:01 -0400
-Date: Mon, 6 Sep 2010 09:33:13 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
- direct reclaim allocation fails
-Message-ID: <20100905233313.GV7362@dastard>
-References: <20100903160026.564fdcc9.akpm@linux-foundation.org>
- <20100904022545.GD705@dastard>
- <20100903202101.f937b0bb.akpm@linux-foundation.org>
- <20100904075840.GE705@dastard>
- <20100904081414.GF705@dastard>
- <20100905015400.GA10714@localhost>
- <20100905021555.GG705@dastard>
- <20100905060539.GA17450@localhost>
- <20100905131447.GJ705@dastard>
- <20100905134554.GA7083@localhost>
+	Sun, 5 Sep 2010 19:41:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Hk+Hfcdz2O1SK3p9Nq2X37C5vn4iNV3mJ8IGQqnSytY5G6M4hSj3lu7zOIYN2LPJ20
+         cNqM/+UixLh/+I2KDhJ4zSfNdOKQ0wKLduAWGfXzDFsNn4It4rI1uFhKNKrzs0Xk8rkw
+         8+NPTVbPLe/LrUBpF7IwcTqbzCsZELS6uexdw=
+Date: Sun, 5 Sep 2010 16:41:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+Message-ID: <20100905234134.GA17212@core.coreip.homeip.net>
+References: <4C76CA57.3050405@vlnb.net>
+ <1282857806.32007.175.camel@haakon2.linux-iscsi.org>
+ <4C79484B.3090607@vlnb.net>
+ <1283028468.32007.357.camel@haakon2.linux-iscsi.org>
+ <4C7C18CE.5020103@vlnb.net>
+ <1283204792.32007.448.camel@haakon2.linux-iscsi.org>
+ <4C7FFD1A.8090509@vlnb.net>
+ <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
+ <20100905201802.GC18411@core.coreip.homeip.net>
+ <1283723447.556.133.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100905134554.GA7083@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1283723447.556.133.camel@haakon2.linux-iscsi.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 05, 2010 at 09:45:54PM +0800, Wu Fengguang wrote:
-> [restoring CC list]
-> 
-> On Sun, Sep 05, 2010 at 09:14:47PM +0800, Dave Chinner wrote:
-> > On Sun, Sep 05, 2010 at 02:05:39PM +0800, Wu Fengguang wrote:
-> > > On Sun, Sep 05, 2010 at 10:15:55AM +0800, Dave Chinner wrote:
-> > > > On Sun, Sep 05, 2010 at 09:54:00AM +0800, Wu Fengguang wrote:
-> > > > > Dave, could you post (publicly) the kconfig and /proc/vmstat?
-> > > > > 
-> > > > > I'd like to check if you have swap or memory compaction enabled..
+On Sun, Sep 05, 2010 at 02:50:47PM -0700, Nicholas A. Bellinger wrote:
+> On Sun, 2010-09-05 at 13:18 -0700, Dmitry Torokhov wrote:
+> > On Thu, Sep 02, 2010 at 01:25:58PM -0700, Nicholas A. Bellinger wrote:
+> > > On Thu, 2010-09-02 at 23:38 +0400, Vladislav Bolkhovitin wrote:
+> > > > Nicholas A. Bellinger, on 08/31/2010 01:46 AM wrote:
+> > > > >>> It is obvious to even an casual observer from watching the TCM/LIO patch
+> > > > >>> series that have been flying across the linux-scsi wire the last 24
+> > > > >>> months that the major features (including PR and ALUA, and new fabric
+> > > > >>> module drivers) have been developed individual feature bit by feature
+> > > > >>> bit using a distributed git workflow in a bisectable manner.  Each
+> > > > >>> series was produced in such a manner that each patch could be reviewed
+> > > > >>> individually by those interested parties.
+> > > > >>
+> > > > >> That's a nice, but quite meaningless LIO advertisement. SCST is using
+> > > > >> the same bisectable, distributed and reviewable workflow.
+> > > > >
+> > > > > Actually, that is incorrect.  Your project uses a centralized
+> > > > > development model, which has it's obvious limitiations in terms of
+> > > > > speed, flexability, and community scale.  But really, don't take my word
+> > > > > for it, you can hear it for yourself directly from the horse's mouth
+> > > > > here:
+> > > > >
+> > > > > http://www.youtube.com/watch?v=4XpnKHJAok8
+> > > > >
+> > > > > I also very strongly suggest you find a transcript of this talk so you
+> > > > > can really understand what Linus means here wrt to a distributed
+> > > > > development workflow.
 > > > > 
-> > > > Swap is enabled - it has 512MB of swap space:
+> > > > Well, Nicholas, are you really understanding what you are writing? We in 
+> > > > our projects have fully the same distributed (or centralized, if you 
+> > > > like it) development model. Have you noticed how many developers SCST 
+> > > > project has? We have our responsibility areas (target drivers, 
+> > > > scstadmin, etc.) and commit in them. The way how we get updates for the 
+> > > > rest of the kernel doesn't matter. Git is better for such huge projects 
+> > > > as the kernel, but for our relatively small and centralized by nature 
+> > > > due to small size (sub)projects it doesn't matter and won't bring any value.
 > > > > 
-> > > > $ free
-> > > >              total       used       free     shared    buffers     cached
-> > > > Mem:       4054304     100928    3953376          0       4096      43108
-> > > > -/+ buffers/cache:      53724    4000580
-> > > > Swap:       497976          0     497976
 > > > 
-> > > It looks swap is not used at all.
+> > > I find it hard to beleive you are actually going to agrue against a git
+> > > workflow for a target mode subsystem maintainer, well considering that
+> > > git was made by a linux kernel maintainer (Linus) for distributed linux
+> > > kernel development (everybody else)..?
+> > >
 > > 
-> > It isn't 30s after boot, abut I haven't checked after a livelock.
-> 
-> That's fine. I see in your fs_mark-wedge-1.png that there are no
-> read/write IO at all when CPUs are 100% busy. So there should be no
-> swap IO at "livelock" time.
-> 
-> > > > And memory compaction is not enabled:
-> > > > 
-> > > > $ grep COMPACT .config
-> > > > # CONFIG_COMPACTION is not set
-> 
-> Memory compaction is not likely the cause too. It will only kick in for
-> order > 3 allocations.
-> 
-> > > > 
-> > > > The .config is pretty much a 'make defconfig' and then enabling XFS and
-> > > > whatever debug I need (e.g. locking, memleak, etc).
-> > > 
-> > > Thanks! The problem seems hard to debug -- you cannot login at all
-> > > when it is doing lock contentions, so cannot get sysrq call traces.
+> > This is complete BS. Are we going to judge value of a project based on
+> > what kind SCM they chose to use? I guess we should ban Greg KH from
+> > kernel development and rip out USB and driver core layers from the
+> > kernel because he has the audacity to use quilt for his trees.
 > > 
-> > Well, I don't know whether it is lock contention at all. The sets of
-> > traces I have got previously have shown backtraces on all CPUs in
-> > direct reclaim with several in draining queues, but no apparent lock
-> > contention.
 > 
-> That's interesting. Do you still have the full backtraces?
+> I think the difference between what Linus says and what he actually
+> means in the above video could be easily misinterpreted, well especially
+> for some non-english speaking folks.  But I am certainly glad to see
+> that a russian translation is also available for this google git talk
+> for those who really want try to understand his reasons (and technical
+> requirements) for what he is saying.
+
+Will you please piss off with your insinuations that we do not
+Understand English? While it may not be our first language it does not
+mean we are having trouble with it.
+
 > 
-> Maybe your system eats too much slab cache (icache/dcache) by creating
-> so many zero-sized files. The system may run into problems reclaiming
-> so many (dirty) slab pages.
-
-Yes, that's where most of the memory pressure is coming from.
-However, it's not stuck reclaiming slab - it's pretty clear from
-another chart that I run that the slab cache contents is not
-changing aross the livelock. IOWs, it appears to get stuck before it
-gets to shrink_slab().
-
-Worth noting, though, is that XFS metadata workloads do create page
-cache pressure as well - all the metadata pages are cached on a
-separate address space, so perhaps it is getting stuck there...
-
-> > > How about enabling CONFIG_LOCK_STAT? Then you can check
-> > > /proc/lock_stat when the contentions are over.
-> > 
-> > Enabling the locking debug/stats gathering slows the workload
-> > by a factor of 3 and doesn't produce the livelock....
+> So as to the specifics about why git is really the only right SCM choice
+> for mainline target mode maintainership, it really all comes down to
+> workflow.  Does your SCM allow other people to easily and without-pain
+> track your upstream subsystem tree changes and 'rebase' as necessary for
+> their patch series you make improvements..?   If we are talking about
+> say, a single standalone driver being developed against mainline, then
+> sure using a SCM like CVS or SVN is perfectly acceptable when you push
+> to someone upstream like gregkh or akpm via email patch attachments.
 > 
-> Oh sorry.. but it would still be interesting to check the top
-> contended locks for this workload without any livelocks :)
+> However, if we are talking about a subsystem maintainer workflow that
+> requires many different people to track your subsystem tree for their
+> own drivers and new feature bits, not being able to keep local branches
+> for these level developers makes their life excruciatingly painful and
+> unpleasent as they attempt to pull new upstream changes, especially when
+> the speed of new upstream development is moving quickly.
 
-I'll see what i can do.
+Haven't you noticed yet that not every maintainer uses git? USB, driver
+core, tty, staging and i2c subsystems are based on quilt queues.
+Media/DVB main tree is in mercurial. AOE is quilt. And I am pretty sure
+there are others, I just don't care about them. And if you prefer to use
+git - there are SVN and other importers - please use them.
 
-Cheers,
+>  This rule
+> applys even more when said subsystem has a greater scope within the
+> source tree in question.
+> 
 
-Dave.
+I do not think that LIO is any bigger in scope than USB, I2C and others.
+
+
+> Anyways, if we are going to compare SCM distributed vs. centralized
+> workflow in terms of kernel projects, lets please at least compare
+> apples to apples here.
+> 
+
+No, we should not be comparing SCMs at all here but rather 2 competing
+implementations based on quality of the code. You tried to bring SMC
+angle in and I am saying that it is BS.
+
 -- 
-Dave Chinner
-david@fromorbit.com
+Dmitry
