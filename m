@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab0IEWFA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 18:05:00 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:23620 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab0IEWE6 (ORCPT
+	id S1754711Ab0IEWPk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 18:15:40 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47416 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753848Ab0IEWPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 18:04:58 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=yWxzUcIADgW1lYV07Ye4RyNF/U407k9yZTZoXdAaJUBbd3NL9EALzUies63iOzvBn
-	omkXKu7rdwAi+xMgZGNQg==
-Date: Sun, 5 Sep 2010 15:04:23 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Kulikov Vasiliy <segooon@gmail.com>
-cc: kernel-janitors@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 13/14] mm: mempolicy: Check return code of check_range
-In-Reply-To: <1283711588-7628-1-git-send-email-segooon@gmail.com>
-Message-ID: <alpine.DEB.2.00.1009051503580.5003@chino.kir.corp.google.com>
-References: <1283711588-7628-1-git-send-email-segooon@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Sun, 5 Sep 2010 18:15:39 -0400
+Date: Sun, 5 Sep 2010 23:35:04 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jan Kandziora <jjj@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: additional serial ports on MS9830 board do not work
+ (IRQ problems)
+Message-ID: <20100905233504.5000a308@lxorguk.ukuu.org.uk>
+In-Reply-To: <201009052009.09743.jjj@gmx.de>
+References: <201009052009.09743.jjj@gmx.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Sep 2010, Kulikov Vasiliy wrote:
+> I tried the suggested option "irqpoll", but then the computer just freezes 
+> when I do "od /dev/ttyS0" and touch the screen. No kernel panic, just a hard 
+> freeze. I tried "acpi=noirq", "acpi=off" and disabling the APIC in the BIOS 
+> setup, too. None of these made the serial irq work.
 
-> From: Vasiliy Kulikov <segooon@gmail.com>
-> 
-> Function check_range may return ERR_PTR(...). Check for it.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+I suspect you need a BIOS which has correct tables for IRQ routing.
 
-Acked-by: David Rientjes <rientjes@google.com>
+> Can you give me any useful pointers what to try next? Kernel configuration is 
+> attached.
+
+Vendor for BIOS update would be the obvious starting point.
