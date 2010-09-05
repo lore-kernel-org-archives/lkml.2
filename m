@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750956Ab0IEGeU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 02:34:20 -0400
-Received: from kroah.org ([198.145.64.141]:45284 "EHLO coco.kroah.org"
+	id S1752249Ab0IEGet (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 02:34:49 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56678 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367Ab0IEGeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 02:34:13 -0400
-Date: Sat, 4 Sep 2010 22:20:49 -0700
-From: Greg KH <greg@kroah.com>
-To: David Cross <david.cross@cypress.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] West Bridge Astoria Driver 2.6.35, cyasgadget fixes
-	and mpage_cleardirty
-Message-ID: <20100905052049.GA4371@kroah.com>
-References: <5BFACB1451C1459BA8562A5561D0A4E6@stanford.edu> <1283386101.17399.10.camel@odc-laptop> <1283467624.4378.14.camel@odc-laptop>
+	id S1752003Ab0IEGes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 02:34:48 -0400
+Date: Sat, 4 Sep 2010 23:22:55 -0700
+From: Greg KH <gregkh@suse.de>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: CAI Qian <caiqian@redhat.com>, Dave Anderson <anderson@redhat.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: crash failure with 2.6.36-rc3 vmcore
+Message-ID: <20100905062255.GA18184@suse.de>
+References: <20100904175501.GB31733@ericsson.com> <2068181682.121641283656654395.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com> <20100905050625.GA700@ericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283467624.4378.14.camel@odc-laptop>
+In-Reply-To: <20100905050625.GA700@ericsson.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 02, 2010 at 03:47:04PM -0700, David Cross wrote:
-> This patch contains update to the gadget driver, some of which are based on feedback from the Linux community concerning the usage of fat_get_block.
-> It also contains the addition of mpage_clear_dirty, a function used to clear dirty pages from the page cache. These two patches are also interdependent
-> and difficult to separate. As such, they are included as one patch.
+On Sat, Sep 04, 2010 at 10:06:25PM -0700, Guenter Roeck wrote:
+> I browsed through the code a bit. Looks like the module owner will need to make
+> the necessary changes. The code now seems to depend on kernel internal structure
+> elements. Not sure if that is a good idea in the first place. At least for
+> the attribute owner it will have to be changed to not depend on its existence.
+> 
+> Of course, one could also argue that the field should be re-introduced in 
+> the kernel to make the utility work w/o changes. However, I don't think it
+> would be a good idea to hold the kernel hostage for such problems.
 
-Please wrap your lines at 72 columns.
+You're kidding, right?  You should have tools flexable to handle the
+fact that the internal kernel structures change all the time like this.
+If not, your tools are broken.
 
-And is this really hard to separate?  I can't take a patch that touches
-anything outside of drivers/staging/ at the moment.
-
-How about a patch here to fix up the locking issues, and the rest as a
-separate patch?
-
-Oh, you also added lines with trailing spaces and that's it, like the
-following:
-
-> @@ -1158,10 +1145,10 @@ static int cyasgadget_ioctl(
->  			cy_as_hal_print_message("%s: fhandle is OK, "
->  				"calling vfs_getattr\n", __func__);
->  			#endif
-> -
-> +			
->  			ret_stat = vfs_getattr(file_to_allocate->f_path.mnt,
->  				file_to_allocate->f_path.dentry, &stat);
-> -
-> +			
->  			#ifndef WESTBRIDGE_NDEBUG
->  			cy_as_hal_print_message("%s: returned from "
->  				"vfs_getattr() stat->blksize=0x%lx\n",
-
-Why?  I think you might want to make sure your editor doesn't do this in
-the future.
-
-Also, if you ran your patch through the scripts/checkpatch.pl script, it
-would have caught this error.
-
-Care to redo it?
-
-thanks,
+good luck,
 
 greg k-h
