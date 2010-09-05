@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab0IESiL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 14:38:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:56715 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354Ab0IESiK (ORCPT
+	id S1754490Ab0IESv5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 14:51:57 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34373 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab0IESv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 14:38:10 -0400
-Message-ID: <4C83E3C9.7050603@steinhoff.de>
-Date: Sun, 05 Sep 2010 20:39:05 +0200
-From: Armin Steinhoff <armin@steinhoff.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2 ThunderBrowse/3.3.2
+	Sun, 5 Sep 2010 14:51:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=coLI3TWz2l+3Dijom8hOxFOdzHGD0XbMHVZuDTAxTEPFZT9ccrevXZ3eHSWE8Cdvfs
+         Q4nHJjY+RO7U96M8PJNQAI3oAndBoP3czg+LJMbsuJWasQ2uJzJNKhXCTkIew+Aipmxg
+         yUXDFs6g+lVzasb1asHtLiPxQJGf6i+ojR19Q=
+Message-ID: <4C83E6C8.7030608@gmail.com>
+Date: Mon, 06 Sep 2010 02:51:52 +0800
+From: =?UTF-8?B?Ik1yLiBUZW8gRW4gTWluZyAoWmhhbmcgRW5taW5nKSDlvKDmganpuKMgbw==?=
+	 =?UTF-8?B?ZiBTaW5nYXBvcmUi?= <space.time.universe@gmail.com>
+Reply-To: space.time.universe@gmail.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PC/104 interrupt bug] Fedora 13 problem
-References: <4C7DFF2C.8070709@steinhoff.de> <ABD0E28F-0839-4C6F-A0BD-999A28A6803A@niasdigital.com> <4C7F78CA.3020506@steinhoff.de> <59079FAE-8CF7-4E2F-B5C6-77B6A6D2B8F8@niasdigital.com>
-In-Reply-To: <59079FAE-8CF7-4E2F-B5C6-77B6A6D2B8F8@niasdigital.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:ZfWQEhluUGaBQNqhW/zoL6W5AkxacpTsCDqhkOULFKp
- ingDEaZMnCjmOQ7tscM9Nn0wVVPLUTUt5C0C0lo1zPuHADwVtE
- UMsCt/aaOTaPgBOCujduPF3UDbp2TpDPDuWU7ly5+EIUHRrhYK
- q61vk9gBD0fjYCqph9E7GDbSDe3pFw+ojYrpGtYf6OT3LkmzxS
- GPJpeLed4kjRYIh1ekcyw==
+To: linux-kernel@vger.kernel.org
+CC: "space.time.universe@gmail.com" <space.time.universe@gmail.com>,
+        "teoenming@hotmail.com" <teoenming@hotmail.com>,
+        zhang_enming@lavabit.com
+Subject: What are the Xen paravirt-operations Domain 0 Features That Have
+ Been Merged into the Mainline Linux Kernel 2.6.36?
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi All,
 
-Hi,
+May I know what are the Xen pv-ops dom0 features that have been merged 
+into the mainline Linux kernel 2.6.36?
 
-I'm developing a driver for a PC/104 board and see that the flag  
-IRQF_TRIGGER_RISING has no effect with
-a request_irq() call.
+Yours sincerely,
 
-The related interrupt pin of the PIC / APIC isn't after the 
-request_irq() call reconfigured for handling of an ISA interrupt !
-The ISA interrupt is connected to a pull down resistor ... which leads 
-to a catastrophic crash when that ISA interrupt line is handled as a PCI 
-interrupt line.
+Mr. Teo En Ming (Zhang Enming)
+Citizenship: Singapore Citizen/Singaporean
+Facebook account: Teo En Ming (Zhang Enming)
+Facebook link:http://www.facebook.com/profile.php?id=100000750083982
+Facebook photos:
 
-Is this by design - that means no ISA interrupt supported -  or is it a 
-bug ?
+http://www.facebook.com/profile.php?id=100000750083982#!/profile.php?id=100000750083982&v=photos 
+<http://www.facebook.com/profile.php?id=100000750083982#%21/profile.php?id=100000750083982&v=photos> 
 
---Armin
 
+Facebook videos:
+http://www.facebook.com/profile.php?id=100000750083982&v=app_2392950137  <http://www.facebook.com/profile.php?id=100000750083982&v=app_2392950137>
+Mobile Phone (Starhub pre-paid): +65-8369-2618
+Windows Live Messenger: teoenming at hotmail.com
+Location: Bedok Reservoir Road, Singapore
+ZIP: 470103
+My Open Letter (Plea for Medical Help/Assistance) to World Leaders:-
+http://lists.mcs.anl.gov/pipermail/mpich-discuss/2010-August/007811.html
+http://mythtv.org/pipermail/mythtv-users/2010-August/295952.html
+http://archives.gentoo.org/gentoo-user/msg_f6a341d9623fda17880159b137c07335.xml
+Photo of Mr. Teo En Ming (Zhang Enming) 张恩鸣 of Singapore:http://i38.tinypic.com/2a6pp4z.jpg
 
 
