@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750962Ab0IEF4V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 01:56:21 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60827 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab0IEF4T (ORCPT
+	id S1751081Ab0IEGSD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 02:18:03 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:35272 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab0IEGSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 01:56:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=b7NdyxznXqRWz+M7uUeMpkIkhz7/+MmlfzPRxpDATMqEVlOJqGVvB8QS3f7aaH9h5J
-         Y7S/vgfmuOZHvr2DMNvo5DAEZuO5CdD/EydrM2v4k6M6vO6gjCeWFrk2TOuX9t8G0/Zt
-         USpOSUQflp1ncg/EZ9+wRKrGVrPPwNknlNPRI=
-Date: Sun, 5 Sep 2010 07:56:21 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Christian Riesch <christian.riesch@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH 0/2] [RFC] posix clock tuning
-Message-ID: <20100905055621.GA2699@riccoc20.at.omicron.at>
-References: <cover.1283504065.git.richard.cochran@omicron.at>
- <alpine.DEB.2.00.1009041221240.888@router.home>
- <4C828652.4060804@gmail.com>
- <alpine.DEB.2.00.1009042036540.9425@router.home>
+	Sun, 5 Sep 2010 02:18:00 -0400
+Date: Sun, 5 Sep 2010 08:17:58 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: linux-kbuild@vger.kernel.org, aris@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: fix oldnoconfig to do the right thing
+Message-ID: <20100905061758.GA29547@merkur.ravnborg.org>
+References: <20100901152130.GY2684@bombadil.infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1009042036540.9425@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100901152130.GY2684@bombadil.infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 04, 2010 at 08:37:22PM -0500, Christoph Lameter wrote:
-> On Sat, 4 Sep 2010, Christian Riesch wrote:
+On Wed, Sep 01, 2010 at 11:21:30AM -0400, Kyle McMartin wrote:
+> From: Kyle McMartin <kyle@redhat.com>
 > 
-> > Richard's idea is to support clock hardware for IEEE 1588 (PTP, Precision Time
-> > Protocol). Have a look at the earlier discussions:
+> Commit 861b4ea4 broke oldnoconfig when removed the oldnoconfig checks on
+>                        if (input_mode == nonint_oldconfig ||
+>                            input_mode == oldnoconfig) {
+>                                if (input_mode == nonint_oldconfig &&
+>                                    sym->name &&
+>                                     !sym_is_choice_value(sym)) {
+> to avoid oldnoconfig chugging through the else stanza.
 > 
-> Ok great. A summary of that belongs into the intro of the patchset.
+> Fix that to restore expected behaviour (which I've confirmed in the
+> Fedora kernel build that the configs end up looking the same.)
 
-I left off all mention of PTP, since Alan Cox said that all this talk
-of PTP is not helpful. I think that the idea is introduce a method to
-tune a clock referenced by its clockid_t. In other words, a patch for
-tuning posix clocks, just as the subject lines indicate.
+I played aroud with this.
+I looks like the only difference I got was that before
+your patch oldnoconfig produced a lot of output to stdout.
+With your patch is was silent.
 
-Richard
+The resulting config was the same.
 
+We obviously want the silent variant.
+
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
