@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab0IEJiI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 05:38:08 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:57545 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231Ab0IEJiG (ORCPT
+	id S1754709Ab0IEJqD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 05:46:03 -0400
+Received: from mail.makeevka.com ([193.109.160.2]:40202 "EHLO
+	mail.makeevka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab0IEJqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 05:38:06 -0400
-Date: Sun, 5 Sep 2010 10:37:59 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Sven Joachim <svenjoac@gmx.de>, Hugh Dickins <hughd@google.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] Revert "drm/i915: fix vblank wait test condition"
-Message-ID: <20100905093758.GB23589@sucs.org>
-References: <1283588234-2514-1-git-send-email-penberg@kernel.org> <89k83a$9hv9li@azsmga001.ch.intel.com> <AANLkTi=_OW5NvnS1oWzt3DW9CPPwNX_sAkPh_QOuXzhv@mail.gmail.com> <alpine.LSU.2.00.1009041244440.3044@sister.anvils> <87vd6ls0jd.fsf@turtle.gmx.de> <20100904224453.GA31664@sucs.org> <4C834DB5.3070702@kernel.org>
+	Sun, 5 Sep 2010 05:46:00 -0400
+X-Greylist: delayed 1883 seconds by postgrey-1.27 at vger.kernel.org; Sun, 05 Sep 2010 05:46:00 EDT
+Message-ID: <4518970dbb56f8617ccecb8d9f283cc9.squirrel@mail.makeevka.com>
+Date: Sun, 5 Sep 2010 12:14:06 +0300 (EEST)
+Subject: Re: Western Union Payment MTCN to you
+From: "WESTERN UNION PAYMENT" <westernuniontransfer807@yahoo.com.hk>
+Reply-To: westernuniontransfer807@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C834DB5.3070702@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 05, 2010 at 10:58:45AM +0300, Pekka Enberg wrote:
->
-> I haven't heard of this problem. Is it reported on LKML? Is it a  
-> regression from 2.6.35?
 
-Yes I did report it on the LKML (the initial report is
-http://lkml.org/lkml/2010/8/23/432 ) but I've being trying to track
-other reports mentioning similar symptoms too (e.g. I mentioned the
-previous link to you in http://lkml.org/lkml/2010/8/29/52 ) but it seems
-like they might different. The Intel guys spent a good while doing
-investigations and having me try patches which is what led to a half fix
-( http://marc.info/?l=linux-kernel&m=128267471015593&w=2 ) but there are
-still situations which show problems (e.g. after suspend to ram).  I've
-also created a bug on the xorg bugzilla (
-http://bugs.freedesktop.org/show_bug.cgi?id=29857 ) which has more
-debugging information. The problem is there are so many symptoms but
-worse, the triggers are weird/marginal so it's hard to tell if it has
-been fixed.
 
-Yes it is a regression from 2.6.35 see
-http://lkml.org/lkml/2010/8/24/132 where I bisected it down to commit
-9d0498a2bf7455159b317f19531a3e5db2ecc9c4 .
 
--- 
-Sitsofe | http://sucs.org/~sits/
+
+Western Union Money Transfer
+Phone: +2348184364371
+Email: westernuniontransfer809@yahoo.com.hk
+
+Attention :
+
+We have just send the first US$5000,00 to you right now due to your
+inability to receive the total funds from bank to bank transfer. Down here
+is the payment information except Question and answer.
+
+Sender's Name:......... Amechi Obeluo
+Control-MTCN:........... 0752470490
+Amount sent:........ $5000.00
+
+But the directors of this payment says that you will have to update/renew
+your file for the payment before we will give you the full information to
+pickup the money , The total money on your name here is US$600,000,00  .We
+will be sending $5000.00 to you everyday untill the payment is completed.
+The update /renewal of your file here will cost you $160.00 only .
+
+Please You are advice to adhere to this directive so that we can meet up
+with the time scheduled for the sending $5000,00 to you everyday untill
+you receive the total US$600,000.00,Please don't go for pickup untill I
+give you the question and answer .
+
+Get back to me so I can give you the name you will send the $160.00 to
+.You can call me for more details :
+
+Sincerely Regards
+MR.PAUL TURNER.
+Western Union Payment Officer
+Phone: +2348184364371
+
