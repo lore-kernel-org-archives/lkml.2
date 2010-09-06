@@ -1,108 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab0IFNQz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 09:16:55 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:28043 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab0IFNQy (ORCPT
+	id S1754407Ab0IFNR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 09:17:28 -0400
+Received: from smtprelay0189.hostedemail.com ([216.40.44.189]:34817 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752462Ab0IFNR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 09:16:54 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        bn@niasdigital.com, ryan@bluewatersys.com, david-b@pacbell.net
-Cc: avictor.za@gmail.com, plagnioj@jcrosoft.com,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2] AT91: pio: add gpio_is_valid() function
-Date: Mon,  6 Sep 2010 16:21:04 +0200
-Message-Id: <1283782864-10567-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <4C73807F.4090007@atmel.com>
-References: <4C73807F.4090007@atmel.com>
+	Mon, 6 Sep 2010 09:17:27 -0400
+X-Panda: scanned!
+X-Session-Marker: 726F737465647440676F6F646D69732E6F7267
+X-Filterd-Recvd-Size: 2709
+X-User-Agent: K-9 Mail for Android
+References: <4C84B088.5050003@redhat.com> <1283772256.1930.303.camel@laptop> <4C84D1CE.3070205@redhat.com> <1283774045.1930.341.camel@laptop> <4C84D77B.6040600@redhat.com> <1283776189.1930.380.camel@laptop> <20100906124046.GA20777@elte.hu>
+In-Reply-To: <20100906124046.GA20777@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: disabling group leader perf_event
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Mon, 06 Sep 2010 09:16:27 -0400
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Message-ID: <1de72fcf-91c7-4357-a6ac-27704ac1ba0b@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a simple gpio_is_valid() function to overload
-the standard one. It takes into account the AT91
-pio numbering to check if a proper value is used.
-The upper limit keeps room for IO expanders above
-regular on-chip GPIO numbers.
+Sorry for top post, sending via my android phone. Today's a US holiday.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
----
-Changes since v1:
-	define ARCH_NR_GPIOS for AT91 keeping room for IO expanders
-	now use an upper limit to conform with gpiolib
 
- arch/arm/mach-at91/include/mach/gpio.h |   14 ++++++++++++++
- include/asm-generic/gpio.h             |    4 ++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
+We can filter before the work, if we expose the parameters. Currently we filter what goes into the buffer and there are several cases where we don't know the result before the work.
 
-diff --git a/arch/arm/mach-at91/include/mach/gpio.h b/arch/arm/mach-at91/include/mach/gpio.h
-index bfdd8ab..55828ad 100644
---- a/arch/arm/mach-at91/include/mach/gpio.h
-+++ b/arch/arm/mach-at91/include/mach/gpio.h
-@@ -21,6 +21,10 @@
- #define MAX_GPIO_BANKS		5
- #define NR_BUILTIN_GPIO		(PIN_BASE + (MAX_GPIO_BANKS * 32))
- 
-+/* keep room for a couple of GPIO expanders */
-+#define NR_EXTRA_GPIO		64
-+#define ARCH_NR_GPIOS		(NR_BUILTIN_GPIO + NR_EXTRA_GPIO)
-+
- /* these pin numbers double as IRQ numbers, like AT91xxx_ID_* values */
- 
- #define	AT91_PIN_PA0	(PIN_BASE + 0x00 + 0)
-@@ -189,6 +193,16 @@
- #define	AT91_PIN_PE31	(PIN_BASE + 0x80 + 31)
- 
- #ifndef __ASSEMBLY__
-+static inline int gpio_is_valid(int number)
-+{
-+	if (number >= PIN_BASE &&
-+	    number <= ARCH_NR_GPIOS)
-+		return 1;
-+	return 0;
-+}
-+#define __HAVE_ARCH_GPIO_IS_VALID 1
-+
-+
- /* setup setup routines, called from board init or driver probe() */
- extern int __init_or_module at91_set_GPIO_periph(unsigned pin, int use_pullup);
- extern int __init_or_module at91_set_A_periph(unsigned pin, int use_pullup);
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index c7376bf..264e701 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -22,11 +22,13 @@
- #define ARCH_NR_GPIOS		256
- #endif
- 
-+#ifndef __HAVE_ARCH_GPIO_IS_VALID
- static inline int gpio_is_valid(int number)
- {
- 	/* only some non-negative numbers are valid */
- 	return ((unsigned)number) < ARCH_NR_GPIOS;
- }
-+#endif
- 
- struct device;
- struct seq_file;
-@@ -200,11 +202,13 @@ extern void gpio_unexport(unsigned gpio);
- 
- #else	/* !CONFIG_HAVE_GPIO_LIB */
- 
-+#ifndef __HAVE_ARCH_GPIO_IS_VALID
- static inline int gpio_is_valid(int number)
- {
- 	/* only non-negative numbers are valid */
- 	return number >= 0;
- }
-+#endif
- 
- /* platforms that don't directly support access to GPIOs through I2C, SPI,
-  * or other blocking infrastructure can use these wrappers.
+If we also expose the parameters of a TRACE_EVENT, then we can filter on them before the work.
+
+-- Steve
+
+"Ingo Molnar" <mingo@elte.hu> wrote:
+
+>
+>* Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> On Mon, 2010-09-06 at 14:58 +0300, Avi Kivity wrote:
+>> > On 09/06/2010 02:54 PM, Peter Zijlstra wrote:
+>> > >
+>> > >> Basically, to read() all events in one go.  I have many of them.
+>> > >>
+>> > >> My current problem is that I have an event (kvm_exit) which I want to
+>> > >> drill down by looking at a field (exit_reason).  So I create lots of
+>> > >> separate perf_events with a filter for each reason:
+>> > >> kvm_exit(exit_reason==0), kvm_exit(exit_reason==1), etc.  But filters
+>> > >> are fairly slow (can have ~60 such events on AMD), so I want to make
+>> > >> this drill-down optional.
+>> > > Yeah, filters suck.
+>> > 
+>> > Any idea why?  I saw nothing obvious in the code, except that there 
+>> > is lots of it.
+>> 
+>> It filters after it does all the hard work of creating the trace 
+>> event, instead of before.
+>
+>Btw., that's an implementational property of filters that would be nice 
+>to fix.
+>
+>If it's not doable within CPP then outside of it.
+>
+>	Ingo
+
 -- 
-1.5.6.5
-
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
