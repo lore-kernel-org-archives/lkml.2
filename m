@@ -1,113 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab0IFBqX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 21:46:23 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37001 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754963Ab0IFBqV (ORCPT
+	id S1755132Ab0IFCJG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 22:09:06 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52542 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754864Ab0IFCJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 21:46:21 -0400
+	Sun, 5 Sep 2010 22:09:05 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C8447E4.6050606@jp.fujitsu.com>
-Date: Mon, 06 Sep 2010 10:46:12 +0900
-From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causeshibernation to hang
+Cc: kosaki.motohiro@jp.fujitsu.com, "M. Vefa Bicakci" <bicave@superonline.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org,
+        Minchan Kim <minchan.kim@gmail.com>
+In-Reply-To: <201009040344.42342.rjw@sisk.pl>
+References: <20100903105216.B65C.A69D9226@jp.fujitsu.com> <201009040344.42342.rjw@sisk.pl>
+Message-Id: <20100906090528.C8A9.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
-        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com,
-        eric.dumazet@gmail.com, mathieu.desnoyers@polymtl.ca
-Subject: Re: [PATCH v4 1/5] irq: add tracepoint to softirq_raise
-References: <4C72422C.5070102@jp.fujitsu.com> <4C724298.4050509@jp.fujitsu.com> <20100903152909.GA5352@nowhere> <1283528592.2356.439.camel@gandalf.stny.rr.com> <20100903155008.GC5352@nowhere>
-In-Reply-To: <20100903155008.GC5352@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon,  6 Sep 2010 11:08:57 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/09/04 0:50), Frederic Weisbecker wrote:
-> On Fri, Sep 03, 2010 at 11:43:12AM -0400, Steven Rostedt wrote:
->> On Fri, 2010-09-03 at 17:29 +0200, Frederic Weisbecker wrote:
->>
->>>>  /*
->>>>   * These correspond to the IORESOURCE_IRQ_* defines in
->>>> @@ -407,7 +408,12 @@ asmlinkage void do_softirq(void);
->>>>  asmlinkage void __do_softirq(void);
->>>>  extern void open_softirq(int nr, void (*action)(struct softirq_action *));
->>>>  extern void softirq_init(void);
->>>> -#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
->>>> +static inline void __raise_softirq_irqoff(unsigned int nr)
->>>> +{
->>>> +	trace_softirq_raise((struct softirq_action *)&nr, NULL);
->>
->> Perhaps doing:
->>
->> 	trace_softirq_raise((struct softirq_action *)((unsigend long)nr),
->> 				NULL);
->>
->> and ...
->>
->>>> +	or_softirq_pending(1UL << nr);
->>>> +}
->>>> +
->>>>  extern void raise_softirq_irqoff(unsigned int nr);
->>>>  extern void raise_softirq(unsigned int nr);
->>>>  extern void wakeup_softirqd(void);
->>>> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
->>>> index 0e4cfb6..3ddda02 100644
->>>> --- a/include/trace/events/irq.h
->>>> +++ b/include/trace/events/irq.h
->>>> @@ -5,7 +5,9 @@
->>>>  #define _TRACE_IRQ_H
->>>>  
->>>>  #include <linux/tracepoint.h>
->>>> -#include <linux/interrupt.h>
->>>> +
->>>> +struct irqaction;
->>>> +struct softirq_action;
->>>>  
->>>>  #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
->>>>  #define show_softirq_name(val)				\
->>>> @@ -93,7 +95,10 @@ DECLARE_EVENT_CLASS(softirq,
->>>>  	),
->>>>  
->>>>  	TP_fast_assign(
->>>> -		__entry->vec = (int)(h - vec);
->>>> +		if (vec)
->>>> +			__entry->vec = (int)(h - vec);
->>>> +		else
->>>> +			__entry->vec = *((int *)h);
->>
->> 			__entry->vec = (int)h;
->>
->> would be better.
->>
->>
->>>>  	),
->>>
->>>
->>>
->>> It seems that this will break softirq_entry/exit tracepoints.
->>> __entry->vec will deref vec->action() for these two, which is not
->>> what we want.
->>>
->>> If you can't have the same tracepoint signature for the three, just
->>> split the new one in a seperate TRACE_EVENT().
->>
->> Doing the above will at least be a bit safer.
-> 
-> 
-> Agreed, I'm going to change that in the patch.
+> > ok, thanks. probably I've catched your point. please feel free to use my reviewed-by
+> > for your fix.
 > 
 > Thanks.
 > 
+> In the meantime, though, I prepared a patch that should address the issue
+> entirely.  The patch is appended and if it looks good to you, I'd rather use it
+> instead of the previous one (it is still untested).
 
-I agree.
+Yeah, this one looks nicer to me :)
 
-Thanks,
-Koki Sanagi.
+Thanks, rafael!
+
+
 
