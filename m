@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab0IFOhW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 10:37:22 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33655 "EHLO
+	id S1754640Ab0IFOhj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 10:37:39 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33684 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754750Ab0IFOhH (ORCPT
+	by vger.kernel.org with ESMTP id S1754803Ab0IFOhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 10:37:07 -0400
-Date: Mon, 6 Sep 2010 16:37:05 +0200
+	Mon, 6 Sep 2010 10:37:14 -0400
+Date: Mon, 6 Sep 2010 16:37:12 +0200
 From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+To: Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Josh Triplett <josh@joshtriplett.org>,
+        Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 13/14] kernel/: Removing undead ifdef CONFIG_SMP
-Message-ID: <7a3a39ef3f765a4473cb026b1f204059568a7098.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
+Subject: [PATCH 14/14] kernel/: Removing undead ifdef
+ CONFIG_DEBUG_LOCK_ALLOC
+Message-ID: <dc92672f508081ee95b603244e992d2f3119c451.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
 References: <cover.1283782698.git.qy03fugy@stud.informatik.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,37 +28,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_SMP ifdef isn't necessary at this point, because it is
+The CONFIG_DEBUG_LOCK_ALLOC ifdef isn't necessary at this point, because it is
 checked in an outer ifdef level already and has no effect here.
 
 Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
 ---
- kernel/sched.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ kernel/srcu.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 09b574e..8eef8e5 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -426,9 +426,7 @@ struct root_domain {
- 	 */
- 	cpumask_var_t rto_mask;
- 	atomic_t rto_count;
--#ifdef CONFIG_SMP
- 	struct cpupri cpupri;
--#endif
- };
- 
- /*
-@@ -437,7 +435,7 @@ struct root_domain {
-  */
- static struct root_domain def_root_domain;
- 
--#endif
-+#endif /* CONFIG_SMP */
- 
- /*
-  * This is the main, per-CPU runqueue data structure.
+diff --git a/kernel/srcu.c b/kernel/srcu.c
+index 2980da3..c71e075 100644
+--- a/kernel/srcu.c
++++ b/kernel/srcu.c
+@@ -46,11 +46,9 @@ static int init_srcu_struct_fields(struct srcu_struct *sp)
+ int __init_srcu_struct(struct srcu_struct *sp, const char *name,
+ 		       struct lock_class_key *key)
+ {
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	/* Don't re-initialize a lock while it is held. */
+ 	debug_check_no_locks_freed((void *)sp, sizeof(*sp));
+ 	lockdep_init_map(&sp->dep_map, name, key, 0);
+-#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 	return init_srcu_struct_fields(sp);
+ }
+ EXPORT_SYMBOL_GPL(__init_srcu_struct);
 -- 
 1.7.0.4
 
