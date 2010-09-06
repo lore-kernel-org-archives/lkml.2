@@ -1,110 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab0IFHvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 03:51:31 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:26450 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab0IFHvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 03:51:23 -0400
-Message-ID: <4C849D78.9040202@bfs.de>
-Date: Mon, 06 Sep 2010 09:51:20 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
-MIME-Version: 1.0
-To: Kulikov Vasiliy <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        David Cross <david.cross@cypress.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/14] staging: westbridge: improve error path
-References: <1283711573-7460-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1283711573-7460-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751471Ab0IFHx1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 03:53:27 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:37726 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab0IFHx0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 03:53:26 -0400
+Date: Mon, 6 Sep 2010 09:53:19 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 4/15]  4: uprobes: x86 specific
+ functions for user space breakpointing.
+Message-ID: <20100906095319.7c2fa9b0@basil.nowhere.org>
+In-Reply-To: <20100903174832.GB14891@linux.vnet.ibm.com>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+	<20100825134210.5447.10126.sendpatchset@localhost6.localdomain6>
+	<87pqwvm8cl.fsf@basil.nowhere.org>
+	<20100903174832.GB14891@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 3 Sep 2010 23:18:32 +0530
+Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 
+[cutting down cc list]
 
-Kulikov Vasiliy schrieb:
-> From: Vasiliy Kulikov <segooon@gmail.com>
+> > 
+> > One general comment here: since with uprobes the instruction
+> > decoder becomes security critical did you do any fuzz tests
+> > on it (e.g. like using it on crashme or on code that has 
+> > been corrupted with a few bitflips) ?
 > 
-> kmalloc() may fail, check for it.
-> Allocated memory is not freed.
-> Use IS_ERR() instead of strict checking.
+> I havent tried any fuzz tests with the instruction decoder. But I am
+> not sure if Masami has tried that out some of these. 
+> One question: Do you want to test uprobes with crashme or test
+> instruction decoder with crashme.
+
+Ideally both, but as a minimum the part that is exposed
+to user space, that is uprobes.
+
+BTW if you test it I would test it both with real crashme
+and varying legal code that just has a few bits flipped.
+
+> > > +#ifdef CONFIG_X86_32
+> > > +#define is_32bit_app(tsk) 1
+> > > +#else
+> > > +#define is_32bit_app(tsk) (test_tsk_thread_flag(tsk, TIF_IA32))
+> > > +#endif
+> > 
+> > This probably should be elsewhere.
 > 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  I couldn't compile this driver at all, so it is not tested.
+> Would this fit in x86 Instruction decoder?
+
+compat.h probably. 
+
+
+> Okay, I can move the printk to the caller, I will try to shorten the
+> message, Would something like "uprobes: no support for 2-byte
+> opcode 0x0f 0x%2" look fine?
+
+Yes that's fine. Optionally you could supply a short
+script like scripts/decodecode that feeds it through objdump -d
+This might need dumping a few more bytes.
+
+
+> > This check is not fully correct because it's valid to have
+> > 32bit code in 64bit programs and vice versa.  The only good
+> > way to check that is to look at the code segment at runtime
+> > though (and it gets complicated if you want to handle LDTs,
+> > but that could be optional). May be difficult to do though.
 > 
->  .../staging/westbridge/astoria/gadget/cyasgadget.c |   10 +++++++++-
->  1 files changed, 9 insertions(+), 1 deletions(-)
+> validate_insn_32bit is able to identify all valid instructions in a 32
+> bit app and validate_insn_64bits is a superset of
+> validate_insn_32bits; i.e it considers valid 32 bit codes as valid
+> too.
+
+How can this be? e.g. 32bit has 1 byte INC/DEC but on 64bit
+these are REX prefixes and can be in front of nearly anything.
+So a super set cannot be correct. It has to be either / or.
+
 > 
-> diff --git a/drivers/staging/westbridge/astoria/gadget/cyasgadget.c b/drivers/staging/westbridge/astoria/gadget/cyasgadget.c
-> index ced239d..48080b3 100644
-> --- a/drivers/staging/westbridge/astoria/gadget/cyasgadget.c
-> +++ b/drivers/staging/westbridge/astoria/gadget/cyasgadget.c
-> @@ -1123,6 +1123,8 @@ static int cyasgadget_ioctl(
->  
->  		/* better use fixed size buff*/
->  		alloc_filename = kmalloc(k_d.name_length + 1, GFP_KERNEL);
-> +		if (alloc_filename == NULL)
-> +			return -ENOMEM;
->  
->  		/* get the filename */
->  		if (copy_from_user(alloc_filename, k_d.file_name,
-> @@ -1132,12 +1134,13 @@ static int cyasgadget_ioctl(
->  				"copy file name from user space failed\n",
->  				__func__);
->  			#endif
-> +			kfree(alloc_filename);
->  			return -EFAULT;
->  		}
->  
->  		file_to_allocate = filp_open(alloc_filename, O_RDWR, 0);
->  
-> -		if ((int)file_to_allocate != 0xfffffffe) {
-> +		if (!IS_ERR(file_to_allocate)) {
->  
->  			struct address_space *mapping =
->  				file_to_allocate->f_mapping;
-> @@ -1379,6 +1382,7 @@ static int cyasgadget_ioctl(
->  				__func__, alloc_filename);
->  		} /* end if (file_to_allocate)*/
->  		#endif
-> +		kfree(alloc_filename);
->  initsoj_safe_exit:
->  			ret_stat = 0;
->  			retval = __put_user(ret_stat,
-> @@ -1410,12 +1414,15 @@ initsoj_safe_exit:
->  				return -EFAULT;
->  
->  		map_filename = kmalloc(k_d.name_length + 1, GFP_KERNEL);
-> +		if (map_filename == NULL)
-> +			return -ENOMEM;
->  		if (copy_from_user(map_filename, k_d.file_name,
->  			k_d.name_length + 1)) {
->  			#ifndef WESTBRIDGE_NDEBUG
->  			cy_as_hal_print_message("%s: copy file name from "
->  				"user space failed\n", __func__);
->  			#endif
-> +			kfree(map_filename);
->  			return -EFAULT;
->  		}
+> Did you get a chance to look at
+> validate_insn_32bit/validate_insn_64bits? If you feel that
+> validate_insn_32bit/validate_insn_64bits? are unable to detect
+> valid codes, then I will certainly rework.
 
-the indention should be fixed also.
+I don't think you can do a 100% solution because for 100%
+you would need to know the code segment the CPU is going
+to use later, and that's not possible in advance.
 
-re,
- wh
+A heuristic is reasonable (and leave out applications
+that generate 64bit code from 32bit executables or vice versa)
+but you need to test the right personality bits for that.
 
+ 
+> > Also the compat bit is not necessarily set if no system call is
+> > executing. You would rather need to check the exec_domain.
+> 
+> Okay, I shall check and revert on this.
 
+Hmm actually I double checked and this is a separate bit.
+So scratch that, TIF_32BIT is ok to test.
 
-> @@ -1561,6 +1568,7 @@ initsoj_safe_exit:
->  					__func__, map_filename);
->  		}
->  		#endif
-> +		kfree(map_filename);
->  
->  		ret_stat = 0;
->  		retval = __put_user(ret_stat, (uint32_t __user *)
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
