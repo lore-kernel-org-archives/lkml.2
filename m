@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279Ab0IFL7L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 07:59:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55710 "EHLO mx1.redhat.com"
+	id S1752494Ab0IFMAL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 08:00:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49405 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175Ab0IFL7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 07:59:09 -0400
-Message-ID: <4C84D77B.6040600@redhat.com>
-Date: Mon, 06 Sep 2010 14:58:51 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1751219Ab0IFMAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 08:00:09 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Jean Pihet <jean.pihet@newoldbits.com>
+Subject: Re: [PATCH] tracing, perf: add more power related events
+Date: Mon, 6 Sep 2010 14:00:05 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: discuss@lesswatts.org, linux-pm@lists.linux-foundation.org,
+        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
+        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org
+References: <AANLkTikvbn3+JPc7pnGZk-H4B71MHTu+-vjuzfJw_7PC@mail.gmail.com> <201009061243.00479.trenn@suse.de> <AANLkTik8_ixOcFy=c4hPZknyUqPYB+2hzQTNK9wVok4q@mail.gmail.com>
+In-Reply-To: <AANLkTik8_ixOcFy=c4hPZknyUqPYB+2hzQTNK9wVok4q@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-perf-users@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: disabling group leader perf_event
-References: <4C84B088.5050003@redhat.com> <1283772256.1930.303.camel@laptop>	 <4C84D1CE.3070205@redhat.com> <1283774045.1930.341.camel@laptop>
-In-Reply-To: <1283774045.1930.341.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009061400.05637.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/06/2010 02:54 PM, Peter Zijlstra wrote:
->
->> Basically, to read() all events in one go.  I have many of them.
->>
->> My current problem is that I have an event (kvm_exit) which I want to
->> drill down by looking at a field (exit_reason).  So I create lots of
->> separate perf_events with a filter for each reason:
->> kvm_exit(exit_reason==0), kvm_exit(exit_reason==1), etc.  But filters
->> are fairly slow (can have ~60 such events on AMD), so I want to make
->> this drill-down optional.
-> Yeah, filters suck.
+On Monday 06 September 2010 13:27:13 Jean Pihet wrote:
+> On Mon, Sep 6, 2010 at 12:42 PM, Thomas Renninger <trenn@suse.de> wrote:
+...
+> In order to reach an efficient low power mode you
+> need to ensure that all clocks in a clock domain are idled or cut off
+> (automatically by the HW or with the intervention of SW drivers).
+> 
+> The HW complexity requires the tracing of all those clocks/power
+> states, that is why new events are proposed.
+Hm, but if the HW can switch clocks behind your back, how do you
+realize that to throw a perf clock power event then?
+Theoretically you need to poll to keep track of HW switching the
+clocks?
 
-Any idea why?  I saw nothing obvious in the code, except that there is 
-lots of it.
-
-> So what you're basically trying to do is create some histogram of
-> exit_reason?
-
-Yes, exactly.
-
-> Being able to make histograms in-kernel has been on the todo list for a
-> long while, its just that I never could come up with a sane
-> interface.. :/
-
-Interesting, I thought it was just me.
-
-One option is to keep the existing filter interface, but recognize those 
-cases and optimize the implementation.  Sort of like a compiler can 
-optimize a large dense switch statement to a jump table.
-
->> Current plan is to have a group for the basic events and another group
->> for the drilldown events (each per-cpu), and activate the drilldown
->> group on user request.  perf will be able to schedule both groups
->> concurrently since they only contain tracepoints, yes?
-> More or less, yeah (the scheduling of software and hardware events isn't
-> properly separated atm -- am working on that). Software events have no
-> scheduling constraints and should always get scheduled.
-
-Great, thanks.
-
-(one other issue - right now I'm using cpu events.  If I switch to task 
-events, I lose events generated by workqueues, yes?)
-
--- 
-error compiling committee.c: too many arguments to function
-
+    Thomas
