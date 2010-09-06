@@ -1,306 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab0IFVuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 17:50:18 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:35544 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752196Ab0IFVuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 17:50:15 -0400
-Message-ID: <4C856211.7080802@free.fr>
-Date: Mon, 06 Sep 2010 23:50:09 +0200
-From: matthieu castet <castet.matthieu@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-next@vger.kernel.org
-CC: Arjan van de Ven <arjan@infradead.org>, James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>
-Subject: [PATCH 2/3 V8] [tip:x86/mm] NX protection for kernel data
-Content-Type: multipart/mixed;
- boundary="------------060602000500000308040901"
+	id S1755913Ab0IFVub (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 17:50:31 -0400
+Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:47586 "HELO
+	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752661Ab0IFVuY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 17:50:24 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: IPkAS1oVM1laqaFLK3VOHcDWihvEEmJt4Zr9I.RepaCXSFa
+ Bzb4Dl2MfgO9lB7R3JBAIXMj1lTGlBlIycDUjqz9.z8p4VPeNtrELZRAER6N
+ 69n.rPjnka5K9ShLS.MuFG3ljHThpVRRIequa1kQoNXhRvt.p6Uik7weV28R
+ FmacifMuIR.OwlRp_5V74pKqUPXUYzN1WBZX_pQC5UuJ2cMfG3HAZ2u432GF
+ zcUPbbeF40O3gjkavFjmO.WGcGqnjm1ze01BbpwgJX40iloCeFn1WLGmrG9A
+ HOJr58f488HeCKd7x0zO8YnuZo_cZjZXwYvtUcNypD08sVo_IvrXWyA--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 2/6] tcm: Add support for struct
+	target_core_fabric_ops->task_sg_chaining
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Richard Sharpe <realrichardsharpe@gmail.com>
+In-Reply-To: <1283809029-13661-1-git-send-email-nab@linux-iscsi.org>
+References: <1283809029-13661-1-git-send-email-nab@linux-iscsi.org>
+Content-Type: text/plain
+Date: Mon, 06 Sep 2010 14:46:21 -0700
+Message-Id: <1283809581.556.229.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060602000500000308040901
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+On Mon, 2010-09-06 at 14:37 -0700, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> This patch adds support for struct target_core_fabric_ops->task_sg_chaining=1,
+> which allows a single struct se_cmd descriptor to use include/linux/scatterlist.h
+> SGL chaining logic and link contigious struct se_task->task_sg[] arrays together
+> into a single walkable scatterlist chain for HW target mode drivers that require
+> this for pci_map_sg().
+> 
+> This also includes a transport_do_task_sg_chain() helper which does the sg_chain()
+> calls, and other necessary struct scatterlist->page_link termination bit twiddling to
+> create a linked SGL from struct se_task->task_sg[] created in transport_calc_sg_num()
+> 
+> Inside of transport_calc_sg_num(), this patch when running in TFI->task_sg_chaining=1
+> mode will alloc an extra trailing padding struct scatterlist entry to the primary
+> struct se_task->task_sg[] allocation.  The call to transport_do_task_sg_chain()
+> will then use these extra trailing SGL for the sg_chain() call.
+> 
 
-    Note: this patch depends on "Correct improper large page preservation" patch
-    
-    This patch expands functionality of CONFIG_DEBUG_RODATA to set main
-    (static) kernel data area as NX.
-    The following steps are taken to achieve this:
-    1. Linker script is adjusted so .text always starts and ends on a page bound
-    2. Linker script is adjusted so .rodata always start and
-    end on a page boundary
-    3. NX is set for all pages from _etext through _end in mark_rodata_ro.
-    4. free_init_pages() sets released memory NX in arch/x86/mm/init.c
-    5. bios rom is set to x when pcibios is used.
-    
-    The results of patch application may be observed in the diff of kernel page
-    table dumps.
-    pcibios :
-    --- data_nx_pt_before.txt       2009-10-13 07:48:59.000000000 -0400
-    +++ data_nx_pt_after.txt        2009-10-13 07:26:46.000000000 -0400
-    @@ -2,8 +2,9 @@
-     0x00000000-0xc0000000           3G                           pmd
-     ---[ Kernel Mapping ]---
-    -0xc0000000-0xc0100000           1M     RW             GLB x  pte
-    +0xc0000000-0xc00a0000         640K     RW             GLB NX pte
-    +0xc00a0000-0xc0100000         384K     RW             GLB x  pte
-    -0xc0100000-0xc03d7000        2908K     ro             GLB x  pte
-    +0xc0100000-0xc0318000        2144K     ro             GLB x  pte
-    +0xc0318000-0xc03d7000         764K     ro             GLB NX pte
-    -0xc03d7000-0xc0600000        2212K     RW             GLB x  pte
-    +0xc03d7000-0xc0600000        2212K     RW             GLB NX pte
-     0xc0600000-0xf7a00000         884M     RW         PSE GLB NX pmd
-     0xf7a00000-0xf7bfe000        2040K     RW             GLB NX pte
-     0xf7bfe000-0xf7c00000           8K                           pte
-    
-    no pcibios :
-    --- data_nx_pt_before.txt       2009-10-13 07:48:59.000000000 -0400
-    +++ data_nx_pt_after.txt        2009-10-13 07:26:46.000000000 -0400
-    @@ -2,8 +2,9 @@
-     0x00000000-0xc0000000           3G                           pmd
-     ---[ Kernel Mapping ]---
-    -0xc0000000-0xc0100000           1M     RW             GLB x  pte
-    +0xc0000000-0xc0100000           1M     RW             GLB NX pte
-    -0xc0100000-0xc03d7000        2908K     ro             GLB x  pte
-    +0xc0100000-0xc0318000        2144K     ro             GLB x  pte
-    +0xc0318000-0xc03d7000         764K     ro             GLB NX pte
-    -0xc03d7000-0xc0600000        2212K     RW             GLB x  pte
-    +0xc03d7000-0xc0600000        2212K     RW             GLB NX pte
-     0xc0600000-0xf7a00000         884M     RW         PSE GLB NX pmd
-     0xf7a00000-0xf7bfe000        2040K     RW             GLB NX pte
-     0xf7bfe000-0xf7c00000           8K                           pte
-    
-    The patch have been developed for Linux 2.6.34-rc2 x86 by Siarhei Liakh
-    <sliakh.lkml@gmail.com> and Xuxian Jiang <jiang@cs.ncsu.edu>.
-    
-    V1:  initial patch for 2.6.30
-    V2:  patch for 2.6.31-rc7
-    V3:  moved all code into arch/x86, adjusted credits
-    V4:  fixed ifdef, removed credits from CREDITS
-    V5:  fixed an address calculation bug in mark_nxdata_nx()
-    V6:  added acked-by and PT dump diff to commit log
-    V7:  minor adjustments for -tip
-    V8:  rework with the merge of "Set first MB as RW+NX"
-    
-    Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
-    Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
-    Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
+Hi Jens and Co,
 
---------------060602000500000308040901
-Content-Type: text/x-diff;
- name="x86_nx_kernel_data.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="x86_nx_kernel_data.diff"
+When you have a moment, please have a look at this patch, namely the
+transport_do_task_sg_chain() logic which uses
+include/linux/scatterlist.h:sg_chain() to create a struct se_cmd wide
+SGL chain of the individual contigiously allocated struct
+se_task->task_sg[].  I am currently testing this logic with TCM HW
+fabric modules that expect to use pci_map_sg() and pci_unmap_sg() for
+mapping SCSI data payload into PCIe memory, but there are other folks
+who's modules will be depending on this logic as well.
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index 404a880..d5cecf3 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -62,6 +62,7 @@ extern unsigned long pci_mem_start;
- 
- #define PCIBIOS_MIN_CARDBUS_IO	0x4000
- 
-+extern int pcibios_enabled;
- void pcibios_config_init(void);
- struct pci_bus *pcibios_scan_root(int bus);
- 
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index d0bb522..958ac45 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -69,7 +69,7 @@ jiffies_64 = jiffies;
- 
- PHDRS {
- 	text PT_LOAD FLAGS(5);          /* R_E */
--	data PT_LOAD FLAGS(7);          /* RWE */
-+	data PT_LOAD FLAGS(6);          /* RW_ */
- #ifdef CONFIG_X86_64
- 	user PT_LOAD FLAGS(5);          /* R_E */
- #ifdef CONFIG_SMP
-@@ -116,6 +116,10 @@ SECTIONS
- 
- 	EXCEPTION_TABLE(16) :text = 0x9090
- 
-+#if defined(CONFIG_DEBUG_RODATA)
-+	/* .text should occupy whole number of pages */
-+	. = ALIGN(PAGE_SIZE);
-+#endif
- 	X64_ALIGN_DEBUG_RODATA_BEGIN
- 	RO_DATA(PAGE_SIZE)
- 	X64_ALIGN_DEBUG_RODATA_END
-@@ -307,7 +311,7 @@ SECTIONS
- 		__bss_start = .;
- 		*(.bss..page_aligned)
- 		*(.bss)
--		. = ALIGN(4);
-+		. = ALIGN(PAGE_SIZE);
- 		__bss_stop = .;
- 	}
- 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index b278535..bfacdbe 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -362,8 +362,9 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
- 	/*
- 	 * We just marked the kernel text read only above, now that
- 	 * we are going to free part of that, we need to make that
--	 * writeable first.
-+	 * writeable and non-executable first.
- 	 */
-+	set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
- 	set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
- 
- 	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index bca7909..85a1a75 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -225,7 +225,7 @@ page_table_range_init(unsigned long start, unsigned long end, pgd_t *pgd_base)
- 
- static inline int is_kernel_text(unsigned long addr)
- {
--	if (addr >= PAGE_OFFSET && addr <= (unsigned long)__init_end)
-+	if (addr >= (unsigned long)_text && addr <= (unsigned long)__init_end)
- 		return 1;
- 	return 0;
- }
-@@ -1033,6 +1033,22 @@ void set_kernel_text_ro(void)
- 	set_pages_ro(virt_to_page(start), size >> PAGE_SHIFT);
- }
- 
-+static void mark_nxdata_nx(void)
-+{
-+	/*
-+	 * When this called, init has already been executed and released,
-+	 * so everything past _etext sould be NX.
-+	 */
-+	unsigned long start = PFN_ALIGN(_etext);
-+	/* this comes from is_kernel_text upper limit. Also HPAGE where used */
-+	unsigned long size = (((unsigned long)__init_end + HPAGE_SIZE) & HPAGE_MASK)- start;
-+
-+	if (__supported_pte_mask & _PAGE_NX)
-+		printk(KERN_INFO "NX-protecting the kernel data: %luk\n",
-+			size >> 10);
-+	set_pages_nx(virt_to_page(start), size >> PAGE_SHIFT);
-+}
-+
- void mark_rodata_ro(void)
- {
- 	unsigned long start = PFN_ALIGN(_text);
-@@ -1067,6 +1083,7 @@ void mark_rodata_ro(void)
- 	printk(KERN_INFO "Testing CPA: write protecting again\n");
- 	set_pages_ro(virt_to_page(start), size >> PAGE_SHIFT);
- #endif
-+	mark_nxdata_nx();
- }
- #endif
- 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 9a66746..6dfacec 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -762,6 +762,7 @@ void mark_rodata_ro(void)
- 	unsigned long rodata_start =
- 		((unsigned long)__start_rodata + PAGE_SIZE - 1) & PAGE_MASK;
- 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
-+	unsigned long kernel_end = (((unsigned long)&__init_end + HPAGE_SIZE) & HPAGE_MASK);
- 	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
- 	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
- 	unsigned long data_start = (unsigned long) &_sdata;
-@@ -776,7 +777,7 @@ void mark_rodata_ro(void)
- 	 * The rodata section (but not the kernel text!) should also be
- 	 * not-executable.
- 	 */
--	set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
-+	set_memory_nx(rodata_start, (kernel_end - rodata_start) >> PAGE_SHIFT);
- 
- 	rodata_test();
- 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index 91ce756..ab01c6d 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -13,6 +13,7 @@
- #include <linux/pfn.h>
- #include <linux/percpu.h>
- #include <linux/gfp.h>
-+#include <linux/pci.h>
- 
- #include <asm/e820.h>
- #include <asm/processor.h>
-@@ -261,8 +262,11 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- 	 * The BIOS area between 640k and 1Mb needs to be executable for
- 	 * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
- 	 */
--	if (within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
-+#ifdef CONFIG_PCI_BIOS
-+	if (pcibios_enabled &&
-+			within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
- 		pgprot_val(forbidden) |= _PAGE_NX;
-+#endif
- 
- 	/*
- 	 * The kernel text needs to be executable for obvious reasons
-diff --git a/arch/x86/pci/pcbios.c b/arch/x86/pci/pcbios.c
-index 2492d16..e1f08b5 100644
---- a/arch/x86/pci/pcbios.c
-+++ b/arch/x86/pci/pcbios.c
-@@ -9,6 +9,7 @@
- #include <linux/uaccess.h>
- #include <asm/pci_x86.h>
- #include <asm/pci-functions.h>
-+#include <asm/cacheflush.h>
- 
- /* BIOS32 signature: "_32_" */
- #define BIOS32_SIGNATURE	(('_' << 0) + ('3' << 8) + ('2' << 16) + ('_' << 24))
-@@ -25,6 +26,28 @@
- #define PCIBIOS_HW_TYPE1_SPEC		0x10
- #define PCIBIOS_HW_TYPE2_SPEC		0x20
- 
-+int pcibios_enabled;
-+
-+/* according some bios specification 
-+ * http://members.datafast.net.au/dft0802/specs/bios21.pdf, we could 
-+ * restrict the x zone to some pages and make it ro. But this may be
-+ * broken on some bios, complex to handle with static_protections.
-+ * We could make the 0xe0000-0x100000 range rox, but this can break
-+ * some ISA mapping.
-+ *
-+ * So we let's an rw and x hole when pcibios is used. This shouldn't
-+ * happen for modern system with mmconfig, and if you don't want it
-+ * you could disable pcibios...
-+ */
-+static inline void set_bios_x(void)
-+{
-+	pcibios_enabled = 1;
-+	set_memory_x(PAGE_OFFSET + BIOS_BEGIN, (BIOS_END - BIOS_BEGIN) >> PAGE_SHIFT);
-+	if (__supported_pte_mask & _PAGE_NX)
-+		printk(KERN_INFO "PCI : PCI BIOS aera is rw and x. "
-+				"Use pci=nobios if you want it NX.\n");
-+}
-+
- /*
-  * This is the standard structure used to identify the entry point
-  * to the BIOS32 Service Directory, as documented in
-@@ -332,6 +355,7 @@ static struct pci_raw_ops * __devinit pci_find_bios(void)
- 			DBG("PCI: BIOS32 Service Directory entry at 0x%lx\n",
- 					bios32_entry);
- 			bios32_indirect.address = bios32_entry + PAGE_OFFSET;
-+			set_bios_x();
- 			if (check_pcibios())
- 				return &pci_bios_access;
- 		}
+Thanks!
 
---------------060602000500000308040901--
+--nab
+
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> ---
+>  drivers/target/target_core_transport.c  |  127 +++++++++++++++++++++++++++++-
+>  include/target/target_core_base.h       |    4 +
+>  include/target/target_core_fabric_ops.h |    6 ++
+>  include/target/target_core_transport.h  |    1 +
+>  4 files changed, 133 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> index 5be102c..602b2d8 100644
+> --- a/drivers/target/target_core_transport.c
+> +++ b/drivers/target/target_core_transport.c
+> @@ -6736,7 +6736,8 @@ extern u32 transport_calc_sg_num(
+>  {
+>  	struct se_cmd *se_cmd = task->task_se_cmd;
+>  	struct se_mem *se_mem = in_se_mem;
+> -	u32 sg_length, task_size = task->task_size;
+> +	struct target_core_fabric_ops *tfo = CMD_TFO(se_cmd);
+> +	u32 sg_length, task_size = task->task_size, task_sg_num_padded;
+>  
+>  	while (task_size != 0) {
+>  		DEBUG_SC("se_mem->se_page(%p) se_mem->se_len(%u)"
+> @@ -6786,8 +6787,19 @@ next:
+>  
+>  		task->task_sg_num++;
+>  	}
+> +	/*
+> +	 * Check if the fabric module driver is requesting that all
+> +	 * struct se_task->task_sg[] be chained together..  If so,
+> +	 * then allocate an extra padding SG entry for linking and
+> +	 * marking the end of the chained SGL.
+> +	 */
+> +	if (tfo->task_sg_chaining) {
+> +		task_sg_num_padded = (task->task_sg_num + 1);
+> +		task->task_padded_sg = 1;
+> +	} else
+> +		task_sg_num_padded = task->task_sg_num;
+>  
+> -	task->task_sg = kzalloc(task->task_sg_num *
+> +	task->task_sg = kzalloc(task_sg_num_padded *
+>  			sizeof(struct scatterlist), GFP_KERNEL);
+>  	if (!(task->task_sg)) {
+>  		printk(KERN_ERR "Unable to allocate memory for"
+> @@ -6795,10 +6807,18 @@ next:
+>  		return 0;
+>  	}
+>  
+> -	sg_init_table(&task->task_sg[0], task->task_sg_num);
+> +	sg_init_table(&task->task_sg[0], task_sg_num_padded);
+> +	/*
+> +	 * For the chaining case, setup the proper end of SGL for the
+> +	 * initial submission struct task into struct se_subsystem_api.
+> +	 * This will be cleared later by transport_do_task_sg_chain()
+> +	 */
+> +	if (task->task_padded_sg)
+> +		sg_mark_end(&task->task_sg[task->task_sg_num - 1]);
+>  
+> -	DEBUG_SC("Successfully allocated task->task_sg_num(%u)\n",
+> -			task->task_sg_num);
+> +	DEBUG_SC("Successfully allocated task->task_sg_num(%u),"
+> +		" task_sg_num_padded(%u)\n", task->task_sg_num,
+> +		task_sg_num_padded);
+>  
+>  	return task->task_sg_num;
+>  }
+> @@ -7021,6 +7041,103 @@ next:
+>  	return 0;
+>  }
+>  
+> +/*
+> + * This function can be used by HW target mode drivers to create a linked
+> + * scatterlist from all contiguously allocated struct se_task->task_sg[].
+> + * This is intended to be called during the completion path by TCM Core
+> + * when struct target_core_fabric_ops->check_task_sg_chaining is enabled.
+> + */
+> +void transport_do_task_sg_chain(struct se_cmd *cmd)
+> +{
+> +	struct scatterlist *sg_head = NULL, *sg_link = NULL, *sg_first = NULL;
+> +	struct scatterlist *sg_head_cur = NULL, *sg_link_cur = NULL;
+> +	struct scatterlist *sg, *sg_end = NULL, *sg_end_cur = NULL;
+> +	struct se_task *task;
+> +	struct target_core_fabric_ops *tfo = CMD_TFO(cmd);
+> +	u32 task_sg_num = 0, sg_count = 0;
+> +	int i;
+> +
+> +	if (tfo->task_sg_chaining == 0) {
+> +		printk(KERN_ERR "task_sg_chaining is diabled for fabric module:"
+> +				" %s\n", tfo->get_fabric_name());
+> +		dump_stack();
+> +		return;
+> +	}
+> +	/*
+> +	 * Walk the struct se_task list and setup scatterlist chains
+> +	 * for each contiguosly allocated struct se_task->task_sg[].
+> +	 */
+> +	list_for_each_entry(task, &T_TASK(cmd)->t_task_list, t_list) {
+> +		if (!(task->task_sg) || !(task->task_padded_sg))
+> +			continue;
+> +
+> +		if (sg_head && sg_link) {
+> +			sg_head_cur = &task->task_sg[0];
+> +			sg_link_cur = &task->task_sg[task->task_sg_num];
+> +			/*
+> +			 * Either add chain or mark end of scatterlist
+> +			 */
+> +			if (!(list_is_last(&task->t_list,
+> +					&T_TASK(cmd)->t_task_list))) {
+> +				/*
+> +				 * Clear existing SGL termination bit set in
+> +				 * transport_calc_sg_num(), see sg_mark_end()
+> +				 */
+> +				sg_end_cur = &task->task_sg[task->task_sg_num - 1];
+> +				sg_end_cur->page_link &= ~0x02;
+> +
+> +				sg_chain(sg_head, task_sg_num, sg_head_cur);
+> +				sg_count += (task->task_sg_num + 1);
+> +			} else
+> +				sg_count += task->task_sg_num;
+> +
+> +			sg_head = sg_head_cur;
+> +			sg_link = sg_link_cur;
+> +			task_sg_num = task->task_sg_num;
+> +			continue;
+> +		}
+> +		sg_head = sg_first = &task->task_sg[0];
+> +		sg_link = &task->task_sg[task->task_sg_num];
+> +		task_sg_num = task->task_sg_num;
+> +		/*
+> +		 * Check for single task..
+> +		 */
+> +		if (!(list_is_last(&task->t_list, &T_TASK(cmd)->t_task_list))) {
+> +			/*
+> +			 * Clear existing SGL termination bit set in
+> +			 * transport_calc_sg_num(), see sg_mark_end()
+> +			 */
+> +			sg_end = &task->task_sg[task->task_sg_num - 1];
+> +			sg_end->page_link &= ~0x02;
+> +			sg_count += (task->task_sg_num + 1);
+> +		} else
+> +			sg_count += task->task_sg_num;
+> +	}
+> +	/*
+> +	 * Setup the starting pointer and total t_tasks_sg_linked_no including
+> +	 * padding SGs for linking and to mark the end.
+> +	 */
+> +	T_TASK(cmd)->t_tasks_sg_chained = sg_first;
+> +	T_TASK(cmd)->t_tasks_sg_chained_no = sg_count;
+> +
+> +	printk("Setup T_TASK(cmd)->t_tasks_sg_chained: %p and"
+> +		" t_tasks_sg_chained_no: %u\n", T_TASK(cmd)->t_tasks_sg_chained,
+> +		T_TASK(cmd)->t_tasks_sg_chained_no);
+> +
+> +	for_each_sg(T_TASK(cmd)->t_tasks_sg_chained, sg,
+> +			T_TASK(cmd)->t_tasks_sg_chained_no, i) {
+> +
+> +		printk("SG: %p page: %p length: %d offset: %d\n",
+> +			sg, sg_page(sg), sg->length, sg->offset);
+> +		if (sg_is_chain(sg))
+> +			printk("SG: %p sg_is_chain=1\n", sg);
+> +		if (sg_is_last(sg))
+> +			printk("SG: %p sg_is_last=1\n", sg);
+> +	}
+> +
+> +}
+> +EXPORT_SYMBOL(transport_do_task_sg_chain);
+> +
+>  static int transport_do_se_mem_map(
+>  	struct se_device *dev,
+>  	struct se_task *task,
+> diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
+> index 0833612..dbcc04a 100644
+> --- a/include/target/target_core_base.h
+> +++ b/include/target/target_core_base.h
+> @@ -439,6 +439,7 @@ struct se_transport_task {
+>  	u32			t_tasks_no;
+>  	u32			t_tasks_sectors;
+>  	u32			t_tasks_se_num;
+> +	u32			t_tasks_sg_chained_no;
+>  	atomic_t		t_fe_count;
+>  	atomic_t		t_se_count;
+>  	atomic_t		t_task_cdbs_left;
+> @@ -462,6 +463,8 @@ struct se_transport_task {
+>  	struct completion	t_transport_passthrough_wcomp;
+>  	struct completion	transport_lun_fe_stop_comp;
+>  	struct completion	transport_lun_stop_comp;
+> +	struct scatterlist	*t_tasks_sg_chained;
+> +	struct scatterlist	t_tasks_sg_bounce;
+>  	void			*t_task_buf;
+>  	void			*t_task_pt_buf;
+>  	struct list_head	t_task_list;
+> @@ -476,6 +479,7 @@ struct se_task {
+>  	u8		task_flags;
+>  	int		task_error_status;
+>  	int		task_state_flags;
+> +	int		task_padded_sg:1;
+>  	unsigned long long	task_lba;
+>  	u32		task_no;
+>  	u32		task_sectors;
+> diff --git a/include/target/target_core_fabric_ops.h b/include/target/target_core_fabric_ops.h
+> index e620eda..5dd61a9 100644
+> --- a/include/target/target_core_fabric_ops.h
+> +++ b/include/target/target_core_fabric_ops.h
+> @@ -3,6 +3,12 @@ struct target_fabric_configfs;
+>  
+>  struct target_core_fabric_ops {
+>  	struct configfs_subsystem *tf_subsys;
+> +	/*
+> +	 * Optional to signal struct se_task->task_sg[] padding entries
+> +	 * for scatterlist chaining using transport_do_task_sg_link(),
+> +	 * disabled by default
+> +	 */
+> +	int task_sg_chaining:1;
+>  	char *(*get_fabric_name)(void);
+>  	u8 (*get_fabric_proto_ident)(struct se_portal_group *);
+>  	char *(*tpg_get_wwn)(struct se_portal_group *);
+> diff --git a/include/target/target_core_transport.h b/include/target/target_core_transport.h
+> index 711ec71..2eee898 100644
+> --- a/include/target/target_core_transport.h
+> +++ b/include/target/target_core_transport.h
+> @@ -263,6 +263,7 @@ extern int transport_map_sg_to_mem(struct se_cmd *, struct list_head *,
+>  extern int transport_map_mem_to_sg(struct se_task *, struct list_head *,
+>  					void *, struct se_mem *,
+>  					struct se_mem **, u32 *, u32 *);
+> +extern void transport_do_task_sg_chain(struct se_cmd *);
+>  extern u32 transport_generic_get_cdb_count(struct se_cmd *,
+>  					struct se_transform_info *,
+>  					unsigned long long, u32, struct se_mem *,
+
