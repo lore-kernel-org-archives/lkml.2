@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab0IFPFY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:05:24 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:5546 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693Ab0IFPCw (ORCPT
+	id S1755224Ab0IFPFm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:05:42 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:20610 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754655Ab0IFPCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Sep 2010 11:02:52 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz4015Lzz1202hzz8275dhz32i87h2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h43h64h)
+X-Spam-TCS-SCL: 3:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8BZ2N-01-ANU-02
+X-WSS-ID: 0L8BZ2O-01-ANZ-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: "http://kvm.qumranet.com"@osrc.amd.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/27] Nested Paging Virtualization for KVM v3
-Date: Mon, 6 Sep 2010 17:01:35 +0200
-Message-ID: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
+CC: <"http://kvm.qumranet.com"@osrc.amd.com>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 04/27] KVM: X86: Introduce a tdp_set_cr3 function
+Date: Mon, 6 Sep 2010 17:01:39 +0200
+Message-ID: <1283785322-26898-5-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
+References: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Reverse-DNS: unknown
@@ -27,69 +30,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Avi, Marcelo,
+This patch introduces a special set_tdp_cr3 function pointer
+in kvm_x86_ops which is only used for tpd enabled mmu
+contexts. This allows to remove some hacks from svm code.
 
-here is finally the third round of my NPT virtualization patches for KVM. It
-took a while to get everything running (including KVM itself) on 32 bit again
-to actually test it. But testing on 32 bit host and with a 32 bit hypervisor
-was a very good idea. I found some serious bugs and shortcomings in my code
-that are fixed now in v3.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/include/asm/kvm_host.h |    2 ++
+ arch/x86/kvm/mmu.c              |    2 +-
+ arch/x86/kvm/svm.c              |   23 ++++++++++++++---------
+ arch/x86/kvm/vmx.c              |    2 ++
+ 4 files changed, 19 insertions(+), 10 deletions(-)
 
-The patchset was tested in a number of combinations:
-
-	host(64|32e)
-		->kvm(shadow|npt)
-			->guest(64|32e|32)
-				->test(boot|kbuild)
-
-	host(64|32e)
-		->kvm(npt)
-			->guest(64|32e|32)
-				->kvm(shadow|kvm)
-					->guest(64|32e|32)
-						->test(boot|kbuild)
-
-Only the valid combinations where tested of course, so no 64 bit on 32 bit
-combinations were tested. Except for that I tested all of the above
-combinations and all worked without any regressions.
-
-Other changes since v2 are:
-
-	* Addressed the review comments from v2:
-		- Rebased everything to latest upstream code
-		- renamed nested_mmu to walk_mmu to make its
-		  meaning more clear
-		- the gva_to_gpa functions are not longer swapped
-		  between the two mmu states which makes it more
-		  consistent
-		- Moved struct vcpu page fault data into seperate
-		  sub-struct for better readability
-		- Other minor stuff (coding style, typos)
-		- Renamed the kvm_*_page_x86 functions to kvm_*_page_mmu so
-		  that they can be made more generic later.
-	* Made everything work on 32 bit
-		- Introduced mmu->lm_root pointer to let the softmmu shadow 32
-		  bit page tables with a long-mode page table. The lm_root
-		  page-table root always just points to the mmu.pae_root, so
-		  this builds entirely on the pae-shadow code.
-		- Split mmu_alloc_roots into a shadow and direct_map version to
-		  simplify the code and to not break the direct_map paths anymore
-		  when changing something in that function.
-	* Probably other changes I forgot about
-
-This patchset applies on todays avi/master + the three patches I sent end of
-last week. These patches are necessary for some of the tests above to run.
-
-For the curious and impatient user I put everything in a branch on kernel.org.
-If you want to test it you can pull the tree from
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/joro/linux-2.6-kvm.git npt-virt-v3
-
-Please review and/or apply these patches if considered good enough. Otherwise I
-appreciate your feedback.
-
-Thanks,
-
-	Joerg
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 43c8db0..aeeea9c 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -526,6 +526,8 @@ struct kvm_x86_ops {
+ 	bool (*rdtscp_supported)(void);
+ 	void (*adjust_tsc_offset)(struct kvm_vcpu *vcpu, s64 adjustment);
+ 
++	void (*set_tdp_cr3)(struct kvm_vcpu *vcpu, unsigned long cr3);
++
+ 	void (*set_supported_cpuid)(u32 func, struct kvm_cpuid_entry2 *entry);
+ 
+ 	bool (*has_wbinvd_exit)(void);
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 2ac3851..543ec74 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2711,7 +2711,7 @@ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+ 	context->shadow_root_level = kvm_x86_ops->get_tdp_level();
+ 	context->root_hpa = INVALID_PAGE;
+ 	context->direct_map = true;
+-	context->set_cr3 = kvm_x86_ops->set_cr3;
++	context->set_cr3 = kvm_x86_ops->set_tdp_cr3;
+ 
+ 	if (!is_paging(vcpu)) {
+ 		context->gva_to_gpa = nonpaging_gva_to_gpa;
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 6808f64..094df31 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3216,9 +3216,6 @@ static void svm_vcpu_run(struct kvm_vcpu *vcpu)
+ 	gs_selector = kvm_read_gs();
+ 	ldt_selector = kvm_read_ldt();
+ 	svm->vmcb->save.cr2 = vcpu->arch.cr2;
+-	/* required for live migration with NPT */
+-	if (npt_enabled)
+-		svm->vmcb->save.cr3 = vcpu->arch.cr3;
+ 
+ 	clgi();
+ 
+@@ -3335,16 +3332,22 @@ static void svm_set_cr3(struct kvm_vcpu *vcpu, unsigned long root)
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 
+-	if (npt_enabled) {
+-		svm->vmcb->control.nested_cr3 = root;
+-		force_new_asid(vcpu);
+-		return;
+-	}
+-
+ 	svm->vmcb->save.cr3 = root;
+ 	force_new_asid(vcpu);
+ }
+ 
++static void set_tdp_cr3(struct kvm_vcpu *vcpu, unsigned long root)
++{
++	struct vcpu_svm *svm = to_svm(vcpu);
++
++	svm->vmcb->control.nested_cr3 = root;
++
++	/* Also sync guest cr3 here in case we live migrate */
++	svm->vmcb->save.cr3 = vcpu->arch.cr3;
++
++	force_new_asid(vcpu);
++}
++
+ static int is_disabled(void)
+ {
+ 	u64 vm_cr;
+@@ -3571,6 +3574,8 @@ static struct kvm_x86_ops svm_x86_ops = {
+ 
+ 	.write_tsc_offset = svm_write_tsc_offset,
+ 	.adjust_tsc_offset = svm_adjust_tsc_offset,
++
++	.set_tdp_cr3 = set_tdp_cr3,
+ };
+ 
+ static int __init svm_init(void)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 676555c..0e62d8a 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4347,6 +4347,8 @@ static struct kvm_x86_ops vmx_x86_ops = {
+ 
+ 	.write_tsc_offset = vmx_write_tsc_offset,
+ 	.adjust_tsc_offset = vmx_adjust_tsc_offset,
++
++	.set_tdp_cr3 = vmx_set_cr3,
+ };
+ 
+ static int __init vmx_init(void)
+-- 
+1.7.0.4
 
 
