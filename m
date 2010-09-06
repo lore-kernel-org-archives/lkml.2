@@ -1,303 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab0IFVub (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 17:50:31 -0400
-Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:47586 "HELO
-	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752661Ab0IFVuY (ORCPT
+	id S1755896Ab0IFVvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 17:51:21 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:58638 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752196Ab0IFVvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 17:50:24 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: IPkAS1oVM1laqaFLK3VOHcDWihvEEmJt4Zr9I.RepaCXSFa
- Bzb4Dl2MfgO9lB7R3JBAIXMj1lTGlBlIycDUjqz9.z8p4VPeNtrELZRAER6N
- 69n.rPjnka5K9ShLS.MuFG3ljHThpVRRIequa1kQoNXhRvt.p6Uik7weV28R
- FmacifMuIR.OwlRp_5V74pKqUPXUYzN1WBZX_pQC5UuJ2cMfG3HAZ2u432GF
- zcUPbbeF40O3gjkavFjmO.WGcGqnjm1ze01BbpwgJX40iloCeFn1WLGmrG9A
- HOJr58f488HeCKd7x0zO8YnuZo_cZjZXwYvtUcNypD08sVo_IvrXWyA--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH 2/6] tcm: Add support for struct
-	target_core_fabric_ops->task_sg_chaining
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>
-In-Reply-To: <1283809029-13661-1-git-send-email-nab@linux-iscsi.org>
-References: <1283809029-13661-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain
-Date: Mon, 06 Sep 2010 14:46:21 -0700
-Message-Id: <1283809581.556.229.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Sep 2010 17:51:18 -0400
+Date: Tue, 7 Sep 2010 07:50:23 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
+ direct reclaim allocation fails
+Message-ID: <20100906215023.GC7362@dastard>
+References: <20100903202101.f937b0bb.akpm@linux-foundation.org>
+ <20100904075840.GE705@dastard>
+ <20100904081414.GF705@dastard>
+ <20100905015400.GA10714@localhost>
+ <20100905021555.GG705@dastard>
+ <20100905060539.GA17450@localhost>
+ <20100905131447.GJ705@dastard>
+ <20100905134554.GA7083@localhost>
+ <20100906040243.GA7362@dastard>
+ <20100906084015.GJ8384@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100906084015.GJ8384@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-06 at 14:37 -0700, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Mon, Sep 06, 2010 at 09:40:15AM +0100, Mel Gorman wrote:
+> On Mon, Sep 06, 2010 at 02:02:43PM +1000, Dave Chinner wrote:
+> > however, here are the fs_mark processes:
+> > 
+> > [  596.628086] fs_mark       R  running task        0  2373   2163 0x00000008
+> > [  596.628086]  0000000000000000 ffffffff81bb8610 00000000000008fc 0000000000000002
+> > [  596.628086]  0000000000000000 0000000000000296 0000000000000297 ffffffffffffff10
+> > [  596.628086]  ffffffff810b48c2 0000000000000010 0000000000000202 ffff880116b61798
+> > [  596.628086] Call Trace:
+> > [  596.628086]  [<ffffffff810b48c2>] ? smp_call_function_many+0x1a2/0x210
+> > [  596.628086]  [<ffffffff810b48a5>] ? smp_call_function_many+0x185/0x210
+> > [  596.628086]  [<ffffffff81109ff0>] ? drain_local_pages+0x0/0x20
+> > [  596.628086]  [<ffffffff810b4952>] ? smp_call_function+0x22/0x30
+> > [  596.628086]  [<ffffffff81084934>] ? on_each_cpu+0x24/0x50
+> > [  596.628086]  [<ffffffff81108a8c>] ? drain_all_pages+0x1c/0x20
+> > [  596.628086]  [<ffffffff81108fad>] ? __alloc_pages_nodemask+0x42d/0x700
+> > [  596.628086]  [<ffffffff8113d0f2>] ? kmem_getpages+0x62/0x160
+> > [  596.628086]  [<ffffffff8113dce6>] ? fallback_alloc+0x196/0x240
+> > [  596.628086]  [<ffffffff8113da68>] ? ____cache_alloc_node+0x98/0x180
+> > [  596.628086]  [<ffffffff8113e643>] ? __kmalloc+0x193/0x230
+> > [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
+> > [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
+> > [  596.628086]  [<ffffffff8131092e>] ? kmem_zalloc+0x1e/0x50
+> > [  596.628086]  [<ffffffff812fac80>] ? xfs_log_commit_cil+0x500/0x590
+> > [  596.628086]  [<ffffffff81310943>] ? kmem_zalloc+0x33/0x50
 > 
-> This patch adds support for struct target_core_fabric_ops->task_sg_chaining=1,
-> which allows a single struct se_cmd descriptor to use include/linux/scatterlist.h
-> SGL chaining logic and link contigious struct se_task->task_sg[] arrays together
-> into a single walkable scatterlist chain for HW target mode drivers that require
-> this for pci_map_sg().
+> This looks like an order-0 allocation. The "Drain per-cpu lists after
+> direct reclaim allocation fails" avoids calling drain_all_pages() for a
+> number of cases but introduces a case where it's called for order-0
+> pages. The intention was to avoid allocations failing just because of
+> the lists but maybe it's happening too often.
+
+Yes, that should be an order-0 allocation. Possibly an order-1
+allocation. but unlikely.
+
+> I include a patch at the very end of this mail that might relieve this.
+
+Ok, I'll try it later today.
+
+> > I just went to grab the CAL counters, and found the system in
+> > another livelock.  This time I managed to start the sysrq-trigger
+> > dump while the livelock was in progress - I bas??cally got one shot
+> > at a command before everything stopped responding. Now I'm waiting
+> > for the livelock to pass.... 5min.... the fs_mark workload
+> > has stopped (ctrl-c finally responded), still livelocked....
+> > 10min.... 15min.... 20min.... OK, back now.
+> > 
+> > Interesting - all the fs_mark processes are in D state waiting on IO
+> > completion processing.
 > 
-> This also includes a transport_do_task_sg_chain() helper which does the sg_chain()
-> calls, and other necessary struct scatterlist->page_link termination bit twiddling to
-> create a linked SGL from struct se_task->task_sg[] created in transport_calc_sg_num()
+> Very interesting, maybe they are all stuck in congestion_wait() this
+> time? There are a few sources where that is possible.
+
+No, they are waiting on log IO completion, not doing allocation or
+in the VM at all.  They stuck in xlog_get_iclog_state() waiting for
+all the log IO buffers to be processed which are stuck behind the
+inode buffer IO completions in th kworker threads that I posted. 
+
+This potentially is caused by the kworker thread consolidation - log
+IO completion processing used to be in a separate workqueue for
+processing latency and deadlock prevention reasons - the data and
+metadata IO completion can block, whereas we need the log IO
+completion to occur as quickly as possible. I've seen one deadlock
+that the separate work queues solved w.r.t. loop devices, and I
+suspect that part of the problem here is that transaction completion
+cannot occur (and free the memory it and the CIL holds) because log IO
+completion processing is being delayed significantly by metadata IO
+completion...
+
+> > A second set of
+> > traces I got during the livelock also showed this:
+....
+> > 
+> > Because I tried to ctrl-c the fs_mark workload. All those lock
+> > traces on the stack aren't related to XFS, so I'm wondering exactly
+> > where they have come from....
+> > 
+> > Finally, /proc/interrupts shows:
+> > 
+> > CAL:      12156      12039      12676      12478      12919    12177      12767      12460   Function call interrupts
+> > 
+> > Which shows that this wasn't an IPI storm that caused this
+> > particular livelock.
 > 
-> Inside of transport_calc_sg_num(), this patch when running in TFI->task_sg_chaining=1
-> mode will alloc an extra trailing padding struct scatterlist entry to the primary
-> struct se_task->task_sg[] allocation.  The call to transport_do_task_sg_chain()
-> will then use these extra trailing SGL for the sg_chain() call.
-> 
+> No, but it's possible we got stuck somewhere like too_many_isolated() or
+> in congestion_wait. One thing at a time though, would you mind testing
+> the following patch? I haven't tested this *at all* but it should reduce
+> the number of times drain_all_pages() are called further while not
+> eliminating them entirely.
 
-Hi Jens and Co,
+Ok, I'll try it later today, but first I think I need to do some
+deeper investigation on the kworker thread behaviour....
 
-When you have a moment, please have a look at this patch, namely the
-transport_do_task_sg_chain() logic which uses
-include/linux/scatterlist.h:sg_chain() to create a struct se_cmd wide
-SGL chain of the individual contigiously allocated struct
-se_task->task_sg[].  I am currently testing this logic with TCM HW
-fabric modules that expect to use pci_map_sg() and pci_unmap_sg() for
-mapping SCSI data payload into PCIe memory, but there are other folks
-who's modules will be depending on this logic as well.
+Cheers,
 
-Thanks!
-
---nab
-
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> ---
->  drivers/target/target_core_transport.c  |  127 +++++++++++++++++++++++++++++-
->  include/target/target_core_base.h       |    4 +
->  include/target/target_core_fabric_ops.h |    6 ++
->  include/target/target_core_transport.h  |    1 +
->  4 files changed, 133 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-> index 5be102c..602b2d8 100644
-> --- a/drivers/target/target_core_transport.c
-> +++ b/drivers/target/target_core_transport.c
-> @@ -6736,7 +6736,8 @@ extern u32 transport_calc_sg_num(
->  {
->  	struct se_cmd *se_cmd = task->task_se_cmd;
->  	struct se_mem *se_mem = in_se_mem;
-> -	u32 sg_length, task_size = task->task_size;
-> +	struct target_core_fabric_ops *tfo = CMD_TFO(se_cmd);
-> +	u32 sg_length, task_size = task->task_size, task_sg_num_padded;
->  
->  	while (task_size != 0) {
->  		DEBUG_SC("se_mem->se_page(%p) se_mem->se_len(%u)"
-> @@ -6786,8 +6787,19 @@ next:
->  
->  		task->task_sg_num++;
->  	}
-> +	/*
-> +	 * Check if the fabric module driver is requesting that all
-> +	 * struct se_task->task_sg[] be chained together..  If so,
-> +	 * then allocate an extra padding SG entry for linking and
-> +	 * marking the end of the chained SGL.
-> +	 */
-> +	if (tfo->task_sg_chaining) {
-> +		task_sg_num_padded = (task->task_sg_num + 1);
-> +		task->task_padded_sg = 1;
-> +	} else
-> +		task_sg_num_padded = task->task_sg_num;
->  
-> -	task->task_sg = kzalloc(task->task_sg_num *
-> +	task->task_sg = kzalloc(task_sg_num_padded *
->  			sizeof(struct scatterlist), GFP_KERNEL);
->  	if (!(task->task_sg)) {
->  		printk(KERN_ERR "Unable to allocate memory for"
-> @@ -6795,10 +6807,18 @@ next:
->  		return 0;
->  	}
->  
-> -	sg_init_table(&task->task_sg[0], task->task_sg_num);
-> +	sg_init_table(&task->task_sg[0], task_sg_num_padded);
-> +	/*
-> +	 * For the chaining case, setup the proper end of SGL for the
-> +	 * initial submission struct task into struct se_subsystem_api.
-> +	 * This will be cleared later by transport_do_task_sg_chain()
-> +	 */
-> +	if (task->task_padded_sg)
-> +		sg_mark_end(&task->task_sg[task->task_sg_num - 1]);
->  
-> -	DEBUG_SC("Successfully allocated task->task_sg_num(%u)\n",
-> -			task->task_sg_num);
-> +	DEBUG_SC("Successfully allocated task->task_sg_num(%u),"
-> +		" task_sg_num_padded(%u)\n", task->task_sg_num,
-> +		task_sg_num_padded);
->  
->  	return task->task_sg_num;
->  }
-> @@ -7021,6 +7041,103 @@ next:
->  	return 0;
->  }
->  
-> +/*
-> + * This function can be used by HW target mode drivers to create a linked
-> + * scatterlist from all contiguously allocated struct se_task->task_sg[].
-> + * This is intended to be called during the completion path by TCM Core
-> + * when struct target_core_fabric_ops->check_task_sg_chaining is enabled.
-> + */
-> +void transport_do_task_sg_chain(struct se_cmd *cmd)
-> +{
-> +	struct scatterlist *sg_head = NULL, *sg_link = NULL, *sg_first = NULL;
-> +	struct scatterlist *sg_head_cur = NULL, *sg_link_cur = NULL;
-> +	struct scatterlist *sg, *sg_end = NULL, *sg_end_cur = NULL;
-> +	struct se_task *task;
-> +	struct target_core_fabric_ops *tfo = CMD_TFO(cmd);
-> +	u32 task_sg_num = 0, sg_count = 0;
-> +	int i;
-> +
-> +	if (tfo->task_sg_chaining == 0) {
-> +		printk(KERN_ERR "task_sg_chaining is diabled for fabric module:"
-> +				" %s\n", tfo->get_fabric_name());
-> +		dump_stack();
-> +		return;
-> +	}
-> +	/*
-> +	 * Walk the struct se_task list and setup scatterlist chains
-> +	 * for each contiguosly allocated struct se_task->task_sg[].
-> +	 */
-> +	list_for_each_entry(task, &T_TASK(cmd)->t_task_list, t_list) {
-> +		if (!(task->task_sg) || !(task->task_padded_sg))
-> +			continue;
-> +
-> +		if (sg_head && sg_link) {
-> +			sg_head_cur = &task->task_sg[0];
-> +			sg_link_cur = &task->task_sg[task->task_sg_num];
-> +			/*
-> +			 * Either add chain or mark end of scatterlist
-> +			 */
-> +			if (!(list_is_last(&task->t_list,
-> +					&T_TASK(cmd)->t_task_list))) {
-> +				/*
-> +				 * Clear existing SGL termination bit set in
-> +				 * transport_calc_sg_num(), see sg_mark_end()
-> +				 */
-> +				sg_end_cur = &task->task_sg[task->task_sg_num - 1];
-> +				sg_end_cur->page_link &= ~0x02;
-> +
-> +				sg_chain(sg_head, task_sg_num, sg_head_cur);
-> +				sg_count += (task->task_sg_num + 1);
-> +			} else
-> +				sg_count += task->task_sg_num;
-> +
-> +			sg_head = sg_head_cur;
-> +			sg_link = sg_link_cur;
-> +			task_sg_num = task->task_sg_num;
-> +			continue;
-> +		}
-> +		sg_head = sg_first = &task->task_sg[0];
-> +		sg_link = &task->task_sg[task->task_sg_num];
-> +		task_sg_num = task->task_sg_num;
-> +		/*
-> +		 * Check for single task..
-> +		 */
-> +		if (!(list_is_last(&task->t_list, &T_TASK(cmd)->t_task_list))) {
-> +			/*
-> +			 * Clear existing SGL termination bit set in
-> +			 * transport_calc_sg_num(), see sg_mark_end()
-> +			 */
-> +			sg_end = &task->task_sg[task->task_sg_num - 1];
-> +			sg_end->page_link &= ~0x02;
-> +			sg_count += (task->task_sg_num + 1);
-> +		} else
-> +			sg_count += task->task_sg_num;
-> +	}
-> +	/*
-> +	 * Setup the starting pointer and total t_tasks_sg_linked_no including
-> +	 * padding SGs for linking and to mark the end.
-> +	 */
-> +	T_TASK(cmd)->t_tasks_sg_chained = sg_first;
-> +	T_TASK(cmd)->t_tasks_sg_chained_no = sg_count;
-> +
-> +	printk("Setup T_TASK(cmd)->t_tasks_sg_chained: %p and"
-> +		" t_tasks_sg_chained_no: %u\n", T_TASK(cmd)->t_tasks_sg_chained,
-> +		T_TASK(cmd)->t_tasks_sg_chained_no);
-> +
-> +	for_each_sg(T_TASK(cmd)->t_tasks_sg_chained, sg,
-> +			T_TASK(cmd)->t_tasks_sg_chained_no, i) {
-> +
-> +		printk("SG: %p page: %p length: %d offset: %d\n",
-> +			sg, sg_page(sg), sg->length, sg->offset);
-> +		if (sg_is_chain(sg))
-> +			printk("SG: %p sg_is_chain=1\n", sg);
-> +		if (sg_is_last(sg))
-> +			printk("SG: %p sg_is_last=1\n", sg);
-> +	}
-> +
-> +}
-> +EXPORT_SYMBOL(transport_do_task_sg_chain);
-> +
->  static int transport_do_se_mem_map(
->  	struct se_device *dev,
->  	struct se_task *task,
-> diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-> index 0833612..dbcc04a 100644
-> --- a/include/target/target_core_base.h
-> +++ b/include/target/target_core_base.h
-> @@ -439,6 +439,7 @@ struct se_transport_task {
->  	u32			t_tasks_no;
->  	u32			t_tasks_sectors;
->  	u32			t_tasks_se_num;
-> +	u32			t_tasks_sg_chained_no;
->  	atomic_t		t_fe_count;
->  	atomic_t		t_se_count;
->  	atomic_t		t_task_cdbs_left;
-> @@ -462,6 +463,8 @@ struct se_transport_task {
->  	struct completion	t_transport_passthrough_wcomp;
->  	struct completion	transport_lun_fe_stop_comp;
->  	struct completion	transport_lun_stop_comp;
-> +	struct scatterlist	*t_tasks_sg_chained;
-> +	struct scatterlist	t_tasks_sg_bounce;
->  	void			*t_task_buf;
->  	void			*t_task_pt_buf;
->  	struct list_head	t_task_list;
-> @@ -476,6 +479,7 @@ struct se_task {
->  	u8		task_flags;
->  	int		task_error_status;
->  	int		task_state_flags;
-> +	int		task_padded_sg:1;
->  	unsigned long long	task_lba;
->  	u32		task_no;
->  	u32		task_sectors;
-> diff --git a/include/target/target_core_fabric_ops.h b/include/target/target_core_fabric_ops.h
-> index e620eda..5dd61a9 100644
-> --- a/include/target/target_core_fabric_ops.h
-> +++ b/include/target/target_core_fabric_ops.h
-> @@ -3,6 +3,12 @@ struct target_fabric_configfs;
->  
->  struct target_core_fabric_ops {
->  	struct configfs_subsystem *tf_subsys;
-> +	/*
-> +	 * Optional to signal struct se_task->task_sg[] padding entries
-> +	 * for scatterlist chaining using transport_do_task_sg_link(),
-> +	 * disabled by default
-> +	 */
-> +	int task_sg_chaining:1;
->  	char *(*get_fabric_name)(void);
->  	u8 (*get_fabric_proto_ident)(struct se_portal_group *);
->  	char *(*tpg_get_wwn)(struct se_portal_group *);
-> diff --git a/include/target/target_core_transport.h b/include/target/target_core_transport.h
-> index 711ec71..2eee898 100644
-> --- a/include/target/target_core_transport.h
-> +++ b/include/target/target_core_transport.h
-> @@ -263,6 +263,7 @@ extern int transport_map_sg_to_mem(struct se_cmd *, struct list_head *,
->  extern int transport_map_mem_to_sg(struct se_task *, struct list_head *,
->  					void *, struct se_mem *,
->  					struct se_mem **, u32 *, u32 *);
-> +extern void transport_do_task_sg_chain(struct se_cmd *);
->  extern u32 transport_generic_get_cdb_count(struct se_cmd *,
->  					struct se_transform_info *,
->  					unsigned long long, u32, struct se_mem *,
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
