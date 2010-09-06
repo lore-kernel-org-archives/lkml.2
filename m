@@ -1,84 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab0IFVsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 17:48:35 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53392 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755473Ab0IFVs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 17:48:29 -0400
-Message-ID: <4C85617E.2080603@vlnb.net>
-Date: Tue, 07 Sep 2010 01:47:42 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	id S1755865Ab0IFVuS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 17:50:18 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:35544 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752196Ab0IFVuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 17:50:15 -0400
+Message-ID: <4C856211.7080802@free.fr>
+Date: Mon, 06 Sep 2010 23:50:09 +0200
+From: matthieu castet <castet.matthieu@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-References: <4C76CA57.3050405@vlnb.net>	 <1282857806.32007.175.camel@haakon2.linux-iscsi.org>	 <4C79484B.3090607@vlnb.net>	 <1283028468.32007.357.camel@haakon2.linux-iscsi.org>	 <4C7C18CE.5020103@vlnb.net>	 <1283204792.32007.448.camel@haakon2.linux-iscsi.org>	 <4C7FFD1A.8090509@vlnb.net>	 <1283459158.5598.143.camel@haakon2.linux-iscsi.org>	 <20100905201802.GC18411@core.coreip.homeip.net>	 <1283723447.556.133.camel@haakon2.linux-iscsi.org>	 <20100905234134.GA17212@core.coreip.homeip.net>	 <1283731194.556.147.camel@haakon2.linux-iscsi.org> <1283769578.15944.1293.camel@mulgrave.site>
-In-Reply-To: <1283769578.15944.1293.camel@mulgrave.site>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:26AwNQxaDQkKnInuAQAHCYmhBSsENIwnZVaxFCezCA0
- b4ncTLhOY7gKie14BJXnvqI6wsoMjr/r5gOZfQr/NqSkE0VVPU
- 0jJXZ9fPkf1tgZ/o5+iQv0Wn79ZTl237JMXmDF17SmFe2zV9xb
- aVTr0JWGFdEMs53xMP8girVQgQd2zHPeAJKP+NQcfo7UUUjVGu
- c21X1LgHAe7DWeCK+75TQ==
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-next@vger.kernel.org
+CC: Arjan van de Ven <arjan@infradead.org>, James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>
+Subject: [PATCH 2/3 V8] [tip:x86/mm] NX protection for kernel data
+Content-Type: multipart/mixed;
+ boundary="------------060602000500000308040901"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley, on 09/06/2010 02:39 PM wrote:
->>>> Anyways, if we are going to compare SCM distributed vs. centralized
->>>> workflow in terms of kernel projects, lets please at least compare
->>>> apples to apples here.
->>>
->>> No, we should not be comparing SCMs at all here but rather 2 competing
->>> implementations based on quality of the code. You tried to bring SMC
->>> angle in and I am saying that it is BS.
->>
->> Again, without getting into another pointless flamewar,  I think the
->> main point here is that a open source project using a distributed
->> workflow (like git) has major advantages when it comes to working with a
->> larger group of developers than a centralized model (like SVN) does.
->>
->> Because being a subsystem maintainer typically involves this type of
->> complex workflow involving lots of different parties, git is a tool that
->> was created (originally) expressely for a kernel workflow, and for those
->> types of people it works really, really well.
->
-> Oh, for god's sake children.  Why does every LIO vs SCST discussion turn
-> into a pointless flameware over stuff no-one really cares about?  If
-> none of you has anything substantive to say: don't say it.
+This is a multi-part message in MIME format.
+--------------060602000500000308040901
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-James, sorry, but you can't blame us. I keep asking for clear rules and 
-don't receive much. So, there are speculations and pseudo-rules, which 
-sometimes go to the absurd, as in this SVN vs Git case. No surprise 
-then, that people have risen against this absurd (thanks a lot to them 
-for support!).
+    Note: this patch depends on "Correct improper large page preservation" patch
+    
+    This patch expands functionality of CONFIG_DEBUG_RODATA to set main
+    (static) kernel data area as NX.
+    The following steps are taken to achieve this:
+    1. Linker script is adjusted so .text always starts and ends on a page bound
+    2. Linker script is adjusted so .rodata always start and
+    end on a page boundary
+    3. NX is set for all pages from _etext through _end in mark_rodata_ro.
+    4. free_init_pages() sets released memory NX in arch/x86/mm/init.c
+    5. bios rom is set to x when pcibios is used.
+    
+    The results of patch application may be observed in the diff of kernel page
+    table dumps.
+    pcibios :
+    --- data_nx_pt_before.txt       2009-10-13 07:48:59.000000000 -0400
+    +++ data_nx_pt_after.txt        2009-10-13 07:26:46.000000000 -0400
+    @@ -2,8 +2,9 @@
+     0x00000000-0xc0000000           3G                           pmd
+     ---[ Kernel Mapping ]---
+    -0xc0000000-0xc0100000           1M     RW             GLB x  pte
+    +0xc0000000-0xc00a0000         640K     RW             GLB NX pte
+    +0xc00a0000-0xc0100000         384K     RW             GLB x  pte
+    -0xc0100000-0xc03d7000        2908K     ro             GLB x  pte
+    +0xc0100000-0xc0318000        2144K     ro             GLB x  pte
+    +0xc0318000-0xc03d7000         764K     ro             GLB NX pte
+    -0xc03d7000-0xc0600000        2212K     RW             GLB x  pte
+    +0xc03d7000-0xc0600000        2212K     RW             GLB NX pte
+     0xc0600000-0xf7a00000         884M     RW         PSE GLB NX pmd
+     0xf7a00000-0xf7bfe000        2040K     RW             GLB NX pte
+     0xf7bfe000-0xf7c00000           8K                           pte
+    
+    no pcibios :
+    --- data_nx_pt_before.txt       2009-10-13 07:48:59.000000000 -0400
+    +++ data_nx_pt_after.txt        2009-10-13 07:26:46.000000000 -0400
+    @@ -2,8 +2,9 @@
+     0x00000000-0xc0000000           3G                           pmd
+     ---[ Kernel Mapping ]---
+    -0xc0000000-0xc0100000           1M     RW             GLB x  pte
+    +0xc0000000-0xc0100000           1M     RW             GLB NX pte
+    -0xc0100000-0xc03d7000        2908K     ro             GLB x  pte
+    +0xc0100000-0xc0318000        2144K     ro             GLB x  pte
+    +0xc0318000-0xc03d7000         764K     ro             GLB NX pte
+    -0xc03d7000-0xc0600000        2212K     RW             GLB x  pte
+    +0xc03d7000-0xc0600000        2212K     RW             GLB NX pte
+     0xc0600000-0xf7a00000         884M     RW         PSE GLB NX pmd
+     0xf7a00000-0xf7bfe000        2040K     RW             GLB NX pte
+     0xf7bfe000-0xf7c00000           8K                           pte
+    
+    The patch have been developed for Linux 2.6.34-rc2 x86 by Siarhei Liakh
+    <sliakh.lkml@gmail.com> and Xuxian Jiang <jiang@cs.ncsu.edu>.
+    
+    V1:  initial patch for 2.6.30
+    V2:  patch for 2.6.31-rc7
+    V3:  moved all code into arch/x86, adjusted credits
+    V4:  fixed ifdef, removed credits from CREDITS
+    V5:  fixed an address calculation bug in mark_nxdata_nx()
+    V6:  added acked-by and PT dump diff to commit log
+    V7:  minor adjustments for -tip
+    V8:  rework with the merge of "Set first MB as RW+NX"
+    
+    Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
+    Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
+    Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
 
-Frankly, in all the situation around Linux SCSI targets I for quite a 
-long time feeling myself as a hero of a Kafka novel. Supposed to be 
-goals are to have the best code doing its job the best, but on practice 
-nobody cares about technical arguments and figuring out which subsystem 
-is the best. Instead, everything lives it own incomprehensible life, 
-where doesn't matter what you are doing, all already long ago decided 
-behind your back and you will never be told why. All accurate statements 
-not heard or, at best, called "handwaving", but dirty public opinion 
-manipulations based on half- and less-than-half- truth have very warn 
-welcome. This atmosphere is unhealthy, really.
+--------------060602000500000308040901
+Content-Type: text/x-diff;
+ name="x86_nx_kernel_data.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="x86_nx_kernel_data.diff"
 
-> Since patches into SCSI go over the mailing list for review and
-> integration (and running checkpatch.pl on ... this would be a hint), I
-> don't really give a toss how they're generated.
+diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+index 404a880..d5cecf3 100644
+--- a/arch/x86/include/asm/pci.h
++++ b/arch/x86/include/asm/pci.h
+@@ -62,6 +62,7 @@ extern unsigned long pci_mem_start;
+ 
+ #define PCIBIOS_MIN_CARDBUS_IO	0x4000
+ 
++extern int pcibios_enabled;
+ void pcibios_config_init(void);
+ struct pci_bus *pcibios_scan_root(int bus);
+ 
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index d0bb522..958ac45 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -69,7 +69,7 @@ jiffies_64 = jiffies;
+ 
+ PHDRS {
+ 	text PT_LOAD FLAGS(5);          /* R_E */
+-	data PT_LOAD FLAGS(7);          /* RWE */
++	data PT_LOAD FLAGS(6);          /* RW_ */
+ #ifdef CONFIG_X86_64
+ 	user PT_LOAD FLAGS(5);          /* R_E */
+ #ifdef CONFIG_SMP
+@@ -116,6 +116,10 @@ SECTIONS
+ 
+ 	EXCEPTION_TABLE(16) :text = 0x9090
+ 
++#if defined(CONFIG_DEBUG_RODATA)
++	/* .text should occupy whole number of pages */
++	. = ALIGN(PAGE_SIZE);
++#endif
+ 	X64_ALIGN_DEBUG_RODATA_BEGIN
+ 	RO_DATA(PAGE_SIZE)
+ 	X64_ALIGN_DEBUG_RODATA_END
+@@ -307,7 +311,7 @@ SECTIONS
+ 		__bss_start = .;
+ 		*(.bss..page_aligned)
+ 		*(.bss)
+-		. = ALIGN(4);
++		. = ALIGN(PAGE_SIZE);
+ 		__bss_stop = .;
+ 	}
+ 
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index b278535..bfacdbe 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -362,8 +362,9 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ 	/*
+ 	 * We just marked the kernel text read only above, now that
+ 	 * we are going to free part of that, we need to make that
+-	 * writeable first.
++	 * writeable and non-executable first.
+ 	 */
++	set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
+ 	set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
+ 
+ 	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index bca7909..85a1a75 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -225,7 +225,7 @@ page_table_range_init(unsigned long start, unsigned long end, pgd_t *pgd_base)
+ 
+ static inline int is_kernel_text(unsigned long addr)
+ {
+-	if (addr >= PAGE_OFFSET && addr <= (unsigned long)__init_end)
++	if (addr >= (unsigned long)_text && addr <= (unsigned long)__init_end)
+ 		return 1;
+ 	return 0;
+ }
+@@ -1033,6 +1033,22 @@ void set_kernel_text_ro(void)
+ 	set_pages_ro(virt_to_page(start), size >> PAGE_SHIFT);
+ }
+ 
++static void mark_nxdata_nx(void)
++{
++	/*
++	 * When this called, init has already been executed and released,
++	 * so everything past _etext sould be NX.
++	 */
++	unsigned long start = PFN_ALIGN(_etext);
++	/* this comes from is_kernel_text upper limit. Also HPAGE where used */
++	unsigned long size = (((unsigned long)__init_end + HPAGE_SIZE) & HPAGE_MASK)- start;
++
++	if (__supported_pte_mask & _PAGE_NX)
++		printk(KERN_INFO "NX-protecting the kernel data: %luk\n",
++			size >> 10);
++	set_pages_nx(virt_to_page(start), size >> PAGE_SHIFT);
++}
++
+ void mark_rodata_ro(void)
+ {
+ 	unsigned long start = PFN_ALIGN(_text);
+@@ -1067,6 +1083,7 @@ void mark_rodata_ro(void)
+ 	printk(KERN_INFO "Testing CPA: write protecting again\n");
+ 	set_pages_ro(virt_to_page(start), size >> PAGE_SHIFT);
+ #endif
++	mark_nxdata_nx();
+ }
+ #endif
+ 
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 9a66746..6dfacec 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -762,6 +762,7 @@ void mark_rodata_ro(void)
+ 	unsigned long rodata_start =
+ 		((unsigned long)__start_rodata + PAGE_SIZE - 1) & PAGE_MASK;
+ 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
++	unsigned long kernel_end = (((unsigned long)&__init_end + HPAGE_SIZE) & HPAGE_MASK);
+ 	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
+ 	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
+ 	unsigned long data_start = (unsigned long) &_sdata;
+@@ -776,7 +777,7 @@ void mark_rodata_ro(void)
+ 	 * The rodata section (but not the kernel text!) should also be
+ 	 * not-executable.
+ 	 */
+-	set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
++	set_memory_nx(rodata_start, (kernel_end - rodata_start) >> PAGE_SHIFT);
+ 
+ 	rodata_test();
+ 
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 91ce756..ab01c6d 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -13,6 +13,7 @@
+ #include <linux/pfn.h>
+ #include <linux/percpu.h>
+ #include <linux/gfp.h>
++#include <linux/pci.h>
+ 
+ #include <asm/e820.h>
+ #include <asm/processor.h>
+@@ -261,8 +262,11 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 	 * The BIOS area between 640k and 1Mb needs to be executable for
+ 	 * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
+ 	 */
+-	if (within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
++#ifdef CONFIG_PCI_BIOS
++	if (pcibios_enabled &&
++			within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
+ 		pgprot_val(forbidden) |= _PAGE_NX;
++#endif
+ 
+ 	/*
+ 	 * The kernel text needs to be executable for obvious reasons
+diff --git a/arch/x86/pci/pcbios.c b/arch/x86/pci/pcbios.c
+index 2492d16..e1f08b5 100644
+--- a/arch/x86/pci/pcbios.c
++++ b/arch/x86/pci/pcbios.c
+@@ -9,6 +9,7 @@
+ #include <linux/uaccess.h>
+ #include <asm/pci_x86.h>
+ #include <asm/pci-functions.h>
++#include <asm/cacheflush.h>
+ 
+ /* BIOS32 signature: "_32_" */
+ #define BIOS32_SIGNATURE	(('_' << 0) + ('3' << 8) + ('2' << 16) + ('_' << 24))
+@@ -25,6 +26,28 @@
+ #define PCIBIOS_HW_TYPE1_SPEC		0x10
+ #define PCIBIOS_HW_TYPE2_SPEC		0x20
+ 
++int pcibios_enabled;
++
++/* according some bios specification 
++ * http://members.datafast.net.au/dft0802/specs/bios21.pdf, we could 
++ * restrict the x zone to some pages and make it ro. But this may be
++ * broken on some bios, complex to handle with static_protections.
++ * We could make the 0xe0000-0x100000 range rox, but this can break
++ * some ISA mapping.
++ *
++ * So we let's an rw and x hole when pcibios is used. This shouldn't
++ * happen for modern system with mmconfig, and if you don't want it
++ * you could disable pcibios...
++ */
++static inline void set_bios_x(void)
++{
++	pcibios_enabled = 1;
++	set_memory_x(PAGE_OFFSET + BIOS_BEGIN, (BIOS_END - BIOS_BEGIN) >> PAGE_SHIFT);
++	if (__supported_pte_mask & _PAGE_NX)
++		printk(KERN_INFO "PCI : PCI BIOS aera is rw and x. "
++				"Use pci=nobios if you want it NX.\n");
++}
++
+ /*
+  * This is the standard structure used to identify the entry point
+  * to the BIOS32 Service Directory, as documented in
+@@ -332,6 +355,7 @@ static struct pci_raw_ops * __devinit pci_find_bios(void)
+ 			DBG("PCI: BIOS32 Service Directory entry at 0x%lx\n",
+ 					bios32_entry);
+ 			bios32_indirect.address = bios32_entry + PAGE_OFFSET;
++			set_bios_x();
+ 			if (check_pcibios())
+ 				return &pci_bios_access;
+ 		}
 
-Great to hear that! Thanks!
-
-Vlad
+--------------060602000500000308040901--
