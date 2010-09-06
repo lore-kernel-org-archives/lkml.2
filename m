@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab0IFP6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:58:18 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:45379
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754454Ab0IFP53 (ORCPT
+	id S1755367Ab0IFP60 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:58:26 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:48336
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754770Ab0IFP5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:57:29 -0400
-X-SpamScore: 8
-X-BigFish: VS8(z1039ozzz1202hzz8275bhz32i2a8h87h61h)
+	Mon, 6 Sep 2010 11:57:38 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h61h)
 X-Spam-TCS-SCL: 0:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8C1L8-01-D1C-02
+X-WSS-ID: 0L8C1LA-01-D1K-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: Alexander Graf <agraf@suse.de>, <joro@8bytes.org>, <kvm@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 09/27] KVM: MMU: Introduce generic walk_addr function
-Date: Mon, 6 Sep 2010 17:55:48 +0200
-Message-ID: <1283788566-29186-10-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 21/27] KVM: MMU: Introduce kvm_pdptr_read_mmu
+Date: Mon, 6 Sep 2010 17:56:00 +0200
+Message-ID: <1283788566-29186-22-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
 References: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
@@ -30,83 +30,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the first patch in the series towards a generic
-walk_addr implementation which could walk two-dimensional
-page tables in the end. In this first step the walk_addr
-function is renamed into walk_addr_generic which takes a
-mmu context as an additional parameter.
+This function is implemented to load the pdptr pointers of
+the currently running guest (l1 or l2 guest). Therefore it
+takes care about the current paging mode and can read pdptrs
+out of l2 guest physical memory.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/kvm/paging_tmpl.h |   26 ++++++++++++++++++--------
- 1 files changed, 18 insertions(+), 8 deletions(-)
+ arch/x86/kvm/kvm_cache_regs.h |    7 +++++++
+ arch/x86/kvm/mmu.c            |    2 +-
+ arch/x86/kvm/paging_tmpl.h    |    2 +-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 68ee1b7..f26fee9 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -114,9 +114,10 @@ static unsigned FNAME(gpte_access)(struct kvm_vcpu *vcpu, pt_element_t gpte)
- /*
-  * Fetch a guest pte for a guest virtual address
-  */
--static int FNAME(walk_addr)(struct guest_walker *walker,
--			    struct kvm_vcpu *vcpu, gva_t addr,
--			    int write_fault, int user_fault, int fetch_fault)
-+static int FNAME(walk_addr_generic)(struct guest_walker *walker,
-+				    struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
-+				    gva_t addr, int write_fault,
-+				    int user_fault, int fetch_fault)
- {
- 	pt_element_t pte;
- 	gfn_t table_gfn;
-@@ -129,10 +130,11 @@ static int FNAME(walk_addr)(struct guest_walker *walker,
- walk:
- 	present = true;
- 	eperm = rsvd_fault = false;
--	walker->level = vcpu->arch.mmu.root_level;
--	pte = vcpu->arch.mmu.get_cr3(vcpu);
-+	walker->level = mmu->root_level;
-+	pte           = mmu->get_cr3(vcpu);
-+
- #if PTTYPE == 64
--	if (vcpu->arch.mmu.root_level == PT32E_ROOT_LEVEL) {
-+	if (walker->level == PT32E_ROOT_LEVEL) {
- 		pte = kvm_pdptr_read(vcpu, (addr >> 30) & 3);
- 		trace_kvm_mmu_paging_element(pte, walker->level);
- 		if (!is_present_gpte(pte)) {
-@@ -143,7 +145,7 @@ walk:
- 	}
- #endif
- 	ASSERT((!is_long_mode(vcpu) && is_pae(vcpu)) ||
--	       (vcpu->arch.mmu.get_cr3(vcpu) & CR3_NONPAE_RESERVED_BITS) == 0);
-+	       (mmu->get_cr3(vcpu) & CR3_NONPAE_RESERVED_BITS) == 0);
- 
- 	pt_access = ACC_ALL;
- 
-@@ -205,7 +207,7 @@ walk:
- 				(PTTYPE == 64 || is_pse(vcpu))) ||
- 		    ((walker->level == PT_PDPE_LEVEL) &&
- 				is_large_pte(pte) &&
--				vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL)) {
-+				mmu->root_level == PT64_ROOT_LEVEL)) {
- 			int lvl = walker->level;
- 
- 			walker->gfn = gpte_to_gfn_lvl(pte, lvl);
-@@ -262,6 +264,14 @@ error:
- 	return 0;
+diff --git a/arch/x86/kvm/kvm_cache_regs.h b/arch/x86/kvm/kvm_cache_regs.h
+index a37abe2..975bb45 100644
+--- a/arch/x86/kvm/kvm_cache_regs.h
++++ b/arch/x86/kvm/kvm_cache_regs.h
+@@ -45,6 +45,13 @@ static inline u64 kvm_pdptr_read(struct kvm_vcpu *vcpu, int index)
+ 	return vcpu->arch.walk_mmu->pdptrs[index];
  }
  
-+static int FNAME(walk_addr)(struct guest_walker *walker,
-+			    struct kvm_vcpu *vcpu, gva_t addr,
-+			    int write_fault, int user_fault, int fetch_fault)
++static inline u64 kvm_pdptr_read_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu, int index)
 +{
-+	return FNAME(walk_addr_generic)(walker, vcpu, &vcpu->arch.mmu, addr,
-+					write_fault, user_fault, fetch_fault);
++	load_pdptrs(vcpu, mmu, mmu->get_cr3(vcpu));
++
++	return mmu->pdptrs[index];
 +}
 +
- static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 			      u64 *spte, const void *pte)
+ static inline ulong kvm_read_cr0_bits(struct kvm_vcpu *vcpu, ulong mask)
  {
+ 	ulong tmask = mask & KVM_POSSIBLE_CR0_GUEST_BITS;
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 7bc8d67..3663d1c 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2398,7 +2398,7 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
+ 
+ 		ASSERT(!VALID_PAGE(root));
+ 		if (vcpu->arch.mmu.root_level == PT32E_ROOT_LEVEL) {
+-			pdptr = kvm_pdptr_read(vcpu, i);
++			pdptr = kvm_pdptr_read_mmu(vcpu, &vcpu->arch.mmu, i);
+ 			if (!is_present_gpte(pdptr)) {
+ 				vcpu->arch.mmu.pae_root[i] = 0;
+ 				continue;
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 20fc815..c0aac98 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -137,7 +137,7 @@ walk:
+ 
+ #if PTTYPE == 64
+ 	if (walker->level == PT32E_ROOT_LEVEL) {
+-		pte = kvm_pdptr_read(vcpu, (addr >> 30) & 3);
++		pte = kvm_pdptr_read_mmu(vcpu, mmu, (addr >> 30) & 3);
+ 		trace_kvm_mmu_paging_element(pte, walker->level);
+ 		if (!is_present_gpte(pte)) {
+ 			present = false;
 -- 
 1.7.0.4
 
