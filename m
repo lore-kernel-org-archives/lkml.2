@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab0IFMoc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 08:44:32 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:36393 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab0IFMob convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 08:44:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sGlAzb3YZK5gI5fGYfbf4hsdsNBB322wjJIm8g/hyHgyUrGqFUfGDVQZ8WRIGloasm
-         cLBhxEI1dIPCrxhu7evXVkyKFgbFNHTu5147oDHnNMg2gJGpyUmAgfW/re9LTVm8AFys
-         2Sh4dssrgv8XvC540yV59p7oj9lVfBJk8TXeU=
+	id S1753579Ab0IFMps (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 08:45:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23149 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751417Ab0IFMpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 08:45:47 -0400
+Message-ID: <4C84E265.1020402@redhat.com>
+Date: Mon, 06 Sep 2010 15:45:25 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <4C8111A5.4050204@goop.org>
-References: <AANLkTi=O6Tpiz8TRFFknEpW7MMTGBAtqCpr7zH3abO67@mail.gmail.com>
-	<20100903122253.GL2804@reaktio.net>
-	<4C8111A5.4050204@goop.org>
-Date: Mon, 6 Sep 2010 13:44:29 +0100
-Message-ID: <AANLkTi=wchjShvRd9vP6o0NSw1UEqmYENqkjL=+8kasi@mail.gmail.com>
-Subject: Re: I/O scheduler deadlocks on Xen virtual block devices
-From: Doug Neal <dneallkml@gmail.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: =?ISO-8859-1?Q?Pasi_K=E4rkk=E4inen?= <pasik@iki.fi>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@elte.hu>
+CC: Tom Zanussi <tzanussi@gmail.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisb?= =?ISO-8859-1?Q?ecker?= 
+	<fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: disabling group leader perf_event
+References: <4C84B088.5050003@redhat.com> <1283772256.1930.303.camel@laptop> <4C84D1CE.3070205@redhat.com> <1283774045.1930.341.camel@laptop> <4C84D77B.6040600@redhat.com> <20100906124330.GA22314@elte.hu>
+In-Reply-To: <20100906124330.GA22314@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 3, 2010 at 4:17 PM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
->  On 09/03/2010 05:22 AM, Pasi Kärkkäinen wrote:
->> On Wed, Sep 01, 2010 at 03:17:25PM +0100, Doug Neal wrote:
->>> Hello all,
->>>
->>> I believe I have found a bug in the I/O scheduler which results in
->>> access to a block device being blocked indefinitely.
->>>
->>> The setup:
->>>  * Xen dom0 version 3.4.2.
->>>  * domU: Ubuntu 10.04, x86_64, with kernel 2.6.32.15+drm33.5.
->>>  * Paravirtual disks and network interfaces.
->>>  * Root filesystem on /dev/xvdb1
->>>  * A scratch filesystem for the purposes of my tests on /dev/xvda
->>> mounted on /mnt
->>>  * Both filesystems are ext3, formatted and mounted with defaults
->>>  * XVBDs are backed by LVM on top of an iSCSI SAN in the dom0.
->>>
->> Hmm.. recently there was some patches to the Xen block device frontend driver
->> (sent to lkml). Maybe you should try if those make a difference?
->>
->> Jeremy: What do you think?
+  On 09/06/2010 03:43 PM, Ingo Molnar wrote:
+> Yes. The filter engine is a safe, in-kernel interpreted language in the
+> making. The C syntax was chosen because it's close to the heart of every
+> kernel developer.
 >
-> I think this is more likely to be related to the lost interrupt bug
-> which I sent fixes up for last week ("xen: use percpu interrupts for
-> IPIs and VIRQs" and "xen: handle events as edge-triggered").
->
-> Doug, as a workaround, try disabling irqbalanced.
->
-> Thanks,
->    J
+> It might make sense to bring this concept a few steps further. Looks
+> rather complex but also rather cool ...
 
-Jeremy,
+Is this a roundabout way of saying "jit"?
 
-That seems to be doing the trick - thanks! Will see about trying the
-patches as well.
+If so, I'm all for it.  I could use one myself.
 
-Doug
+-- 
+error compiling committee.c: too many arguments to function
+
