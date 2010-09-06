@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab0IFViI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 17:38:08 -0400
-Received: from smtp101.sbc.mail.re3.yahoo.com ([66.196.96.84]:41460 "HELO
-	smtp101.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755873Ab0IFVhv (ORCPT
+	id S1755861Ab0IFVho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 17:37:44 -0400
+Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:40557 "HELO
+	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755805Ab0IFVhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 17:37:51 -0400
+	Mon, 6 Sep 2010 17:37:23 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: LpOA6YsVM1m2WFAI_bThwfhDleiofWbY49ZaSmdXhdqV9K9
- WvIr1MJaEQsYengQmiQSEUIFnGo9Y.9WpzKWnt6OLBHDt2GFCgHVfZ31V90o
- v8g8L9eQhvhxMY.hiFjuk6MBr3NBouwl2zWe02a_rLxJyrCM8OBg.8cRIKZn
- lu6QFidhaA31EZwYaFjtKgyRe21ogIZVtUf9ed5gmkHl0fgJ8QGPugtFVHH6
- q6nyECXqWXnMBWD0VLRaMSHBHn9CAbuuk.uIoCTGNiSV187emlxhK8czV6lo
- 614XyavbhfSUg6D_QOD3Oi7omkQ4aX149cvLxuSQZtpgZkpUKOE1qAjqLZAr
- cyhMY06tszXLp8I0rsB6Z8RyjH41pboRRqJpLCGfJf9q1hcf0UBIswf3xbX4
- ZBZDxcmyY4A3WjNsW16uo9aP42f6LH6p8x9HRHZcE7X4RC7j_GHw-
+X-YMail-OSG: O1.eRx4VM1kfIKRn0kuGIjrLY5ivrupM3.qUNHXhP9nbc.J
+ xhNPWizODq_pFIuYzvVAKVHrcgU5A.Pigr.RLgUAbL3YvVYKgyASnNBceE14
+ hkAC8x4wRFKjD70gnwtu4rTz8cDhUobDyTs0V9_PGdrI_fkGvfw.ofF6qPQX
+ zUAaH5FJmlEf.7GBVHQ.0HZMTz0VW038yLB5FEK0gVRDxiV1TJKn9zoPyOFr
+ Vnd3XZJRdeImY2IEa8YhF.CpqwDVRCB5fGXG9CvAm7_t8.e.t5Neu894dJ0A
+ tiv06ZLJrBNOaEoXlzuIxjt2vjp.92CDWITz2Pg1aujodHKo6b8OtEh7vwvR
+ DtroSPZY89qY4.XUPrw--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -28,9 +27,9 @@ Cc: Christoph Hellwig <hch@lst.de>,
         Boaz Harrosh <bharrosh@panasas.com>,
         Richard Sharpe <realrichardsharpe@gmail.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 6/6] tcm_loop: Convert to use new optimized TFO->new_cmd_map() caller
-Date: Mon,  6 Sep 2010 14:37:45 -0700
-Message-Id: <1283809065-13745-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 3/6] tcm/ramdisk: Add special case for TFO->task_sg_chaining=1 with RAMDISK_DR
+Date: Mon,  6 Sep 2010 14:37:20 -0700
+Message-Id: <1283809040-13682-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,385 +37,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch converts the TCM_Loop virtual SCSI LLD fabric module to use
-the new struct target_core_fabrics_ops->new_cmd_map() caller added in
-commit f3b8d9dfe00.  This allows TCM_Loop to do second stage setup of new
-struct se_cmd descriptors directly within TCM processing thread context,
-and allows us to drop it's internal per struct tcm_loop_hba->tl_hba_qobj and
-->tl_kthread members.
+This patch adds a special case for RAMDISK_DR using the TFO->task_sg_chaining
+presented in commit a552ae31039ca8, which is required as RAMDISK_DR is used in
+READ-ONLY mode for our virtual LUN0.  This is done in order to setup
+struct se_task->task_sg[] for the RAMDISK_DR struct se_task I/O descriptor,
+and map internal ramdisk memory into SGLs used by transport_do_task_sg_chain().
 
-This means that tcm_loop_processing_thread() processing of seperate
-TCM_Loop HBA queue in kthreads now goes away, and the original
-tcm_loop_execute_core_cmd() now becomes the TFO->new_cmd_map() caller at
-tcm_loop_new_cmd_map().  This function is called directly from TCM backstore
-processing thread context after se_cmd->transport_add_cmd_to_queue(se_cmd,
-TRANSPORT_NEW_CMD_MAP) is invoked by tcm_loop_queuecommand() from within
-interrupt context.
-
-This has been tested so far in KVM guest v2.6.36-rc3 with TCM/FILEIO backstores
+Also note this patch currently prevents SCF_SCSI_DATA_SG_IO_CDB WRITE to
+RAMDISK_DR backstores to prevent potentially multiple pci_map_sg() WRITE
+calls to the same internally mapped RAMDISK_DR struct scatterlist memory.
+This limitiation only effects RAMDISK_DR, and does not effect RAMDISK_MCP.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/tcm_loop/tcm_loop_configfs.c    |   35 +-------
- drivers/target/tcm_loop/tcm_loop_core.h        |    2 -
- drivers/target/tcm_loop/tcm_loop_fabric.c      |   61 --------------
- drivers/target/tcm_loop/tcm_loop_fabric.h      |    2 -
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |  100 +++++++-----------------
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.h |    2 +-
- 6 files changed, 34 insertions(+), 168 deletions(-)
+ drivers/target/target_core_rd.c |   45 +++++++++++++++++++++++++++++++++++---
+ 1 files changed, 41 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/target/tcm_loop/tcm_loop_configfs.c b/drivers/target/tcm_loop/tcm_loop_configfs.c
-index fa4d82a..dd60cbf 100644
---- a/drivers/target/tcm_loop/tcm_loop_configfs.c
-+++ b/drivers/target/tcm_loop/tcm_loop_configfs.c
-@@ -449,17 +449,6 @@ check_len:
- 	snprintf(&tl_hba->tl_wwn_address[0], TL_WWN_ADDR_LEN, "%s", &name[off]);
+diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
+index c66fb77..dbf3b4c 100644
+--- a/drivers/target/target_core_rd.c
++++ b/drivers/target/target_core_rd.c
+@@ -40,6 +40,7 @@
+ #include <target/target_core_base.h>
+ #include <target/target_core_device.h>
+ #include <target/target_core_transport.h>
++#include <target/target_core_fabric_ops.h>
  
- 	/*
--	 * Setup the tl_hba->tl_hba_qobj
--	 */
--	tl_hba->tl_hba_qobj = kzalloc(sizeof(struct se_queue_obj), GFP_KERNEL);
--	if (!(tl_hba->tl_hba_qobj)) {
--		kfree(tl_hba);
--		printk("Unable to allocate tl_hba->tl_hba_qobj\n");
--		return ERR_PTR(-ENOMEM);
--	}
--	transport_init_queue_obj(tl_hba->tl_hba_qobj);
--
--	/*
- 	 * Call device_register(tl_hba->dev) to register the emulated
- 	 * Linux/SCSI LLD of type struct Scsi_Host at tl_hba->sh after
- 	 * device_register() callbacks in tcm_loop_driver_probe()
-@@ -469,19 +458,6 @@ check_len:
- 		goto out;
+ #include "target_core_rd.h"
  
- 	sh = tl_hba->sh;
--	/*
--	 * Start up the per struct Scsi_Host tcm_loop processing thread
--	 */
--	tl_hba->tl_kthread = kthread_run(tcm_loop_processing_thread,
--			(void *)tl_hba, "tcm_loop_%d", sh->host_no);
--	if (IS_ERR(tl_hba->tl_kthread)) {
--		printk(KERN_ERR "Unable to start tcm_loop kthread\n");
--		device_unregister(&tl_hba->dev);
--		ret = -ENOMEM;
--		goto out;
--	}
--	wait_for_completion(&tl_hba->tl_hba_qobj->thread_create_comp);
--
- 	tcm_loop_hba_no_cnt++;
- 	printk(KERN_INFO "TCM_Loop_ConfigFS: Allocated emulated Target"
- 		" %s Address: %s at Linux/SCSI Host ID: %d\n",
-@@ -489,7 +465,6 @@ check_len:
- 
- 	return &tl_hba->tl_hba_wwn;
- out:
--	kfree(tl_hba->tl_hba_qobj);
- 	kfree(tl_hba);
- 	return ERR_PTR(ret);
- }
-@@ -500,12 +475,6 @@ void tcm_loop_drop_scsi_hba(
- 	struct tcm_loop_hba *tl_hba = container_of(wwn,
- 				struct tcm_loop_hba, tl_hba_wwn);
- 	int host_no = tl_hba->sh->host_no;
--
--	/*
--	 * Shutdown the per HBA tcm_loop processing kthread
--	 */
--	kthread_stop(tl_hba->tl_kthread);
--	wait_for_completion(&tl_hba->tl_hba_qobj->thread_done_comp);
- 	/*
- 	 * Call device_unregister() on the original tl_hba->dev.
- 	 * tcm_loop_fabric_scsi.c:tcm_loop_release_adapter() will
-@@ -590,6 +559,10 @@ int tcm_loop_register_configfs(void)
- 	 * virtual memory address mappings
- 	 */
- 	fabric->tf_ops.alloc_cmd_iovecs = NULL;
-+	/*
-+	 * Used for setting up remaining TCM resources in process context
-+	 */
-+	fabric->tf_ops.new_cmd_map = &tcm_loop_new_cmd_map;
- 	fabric->tf_ops.check_stop_free = &tcm_loop_check_stop_free;
- 	fabric->tf_ops.release_cmd_to_pool = &tcm_loop_deallocate_core_cmd;
- 	fabric->tf_ops.release_cmd_direct = &tcm_loop_deallocate_core_cmd;
-diff --git a/drivers/target/tcm_loop/tcm_loop_core.h b/drivers/target/tcm_loop/tcm_loop_core.h
-index eaebe89..69906b7 100644
---- a/drivers/target/tcm_loop/tcm_loop_core.h
-+++ b/drivers/target/tcm_loop/tcm_loop_core.h
-@@ -69,8 +69,6 @@ struct tcm_loop_hba {
- 	struct se_lun *tl_hba_lun;
- 	struct se_port *tl_hba_lun_sep;
- 	struct se_device_s *se_dev_hba_ptr;
--	struct se_queue_obj *tl_hba_qobj;
--	struct task_struct *tl_kthread;
- 	struct tcm_loop_nexus *tl_nexus;
- 	struct device dev;
- 	struct Scsi_Host *sh;
-diff --git a/drivers/target/tcm_loop/tcm_loop_fabric.c b/drivers/target/tcm_loop/tcm_loop_fabric.c
-index ef23f07..abd643d 100644
---- a/drivers/target/tcm_loop/tcm_loop_fabric.c
-+++ b/drivers/target/tcm_loop/tcm_loop_fabric.c
-@@ -455,67 +455,6 @@ u64 tcm_loop_pack_lun(unsigned int lun)
- 	return cpu_to_le64(result);
- }
- 
--static struct se_queue_req *tcm_loop_get_qr_from_queue(struct se_queue_obj *qobj)
--{
--	struct se_queue_req *qr;
--	unsigned long flags;
--
--	spin_lock_irqsave(&qobj->cmd_queue_lock, flags);
--	if (list_empty(&qobj->qobj_list)) {
--		spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
--		return NULL;
--	}
--
--	qr = list_first_entry(&qobj->qobj_list, struct se_queue_req, qr_list);
--	list_del(&qr->qr_list);
--	atomic_dec(&qobj->queue_cnt);
--	spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
--
--	return qr;
--}
--
--int tcm_loop_processing_thread(void *p)
--{
--	struct scsi_cmnd *sc;
--	struct tcm_loop_cmd *tl_cmd;
--	struct tcm_loop_hba *tl_hba = (struct tcm_loop_hba *)p;
--	struct se_queue_obj *qobj = tl_hba->tl_hba_qobj;
--	struct se_queue_req *qr;
--	int ret;
--
--	current->policy = SCHED_NORMAL;
--	set_user_nice(current, -20);
--	spin_lock_irq(&current->sighand->siglock);
--	siginitsetinv(&current->blocked, SHUTDOWN_SIGS);
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
--
--	complete(&qobj->thread_create_comp);
--
--	while (!(kthread_should_stop())) {
--		ret = wait_event_interruptible(qobj->thread_wq,
--			atomic_read(&qobj->queue_cnt) || kthread_should_stop());
--		if (ret < 0)
--			goto out;
--
--		qr = tcm_loop_get_qr_from_queue(qobj);
--		if (!(qr))
--			continue;
--
--		tl_cmd = (struct tcm_loop_cmd *)qr->cmd;
--		sc = tl_cmd->sc;
--		kfree(qr);
--
--		TL_CDB_DEBUG("processing_thread, calling tcm_loop_execute"
--			"_core_cmd() for tl_cmd: %p, sc: %p\n", tl_cmd, sc);
--		tcm_loop_execute_core_cmd(tl_cmd, sc);
--	}
--
--out:
--	complete(&qobj->thread_done_comp);
--	return 0;
--}
--
- static int __init tcm_loop_fabric_init(void)
+@@ -1007,9 +1008,11 @@ static int rd_DIRECT_do_se_mem_map(
+ 	struct se_mem *in_se_mem,
+ 	struct se_mem **out_se_mem,
+ 	u32 *se_mem_cnt,
+-	u32 *task_offset)
++	u32 *task_offset_in)
  {
++	struct se_cmd *cmd = task->task_se_cmd;
+ 	struct rd_request *req = (struct rd_request *) task->transport_req;
++	u32 task_offset = *task_offset_in;
  	int ret;
-diff --git a/drivers/target/tcm_loop/tcm_loop_fabric.h b/drivers/target/tcm_loop/tcm_loop_fabric.h
-index dde23c5..eef5165 100644
---- a/drivers/target/tcm_loop/tcm_loop_fabric.h
-+++ b/drivers/target/tcm_loop/tcm_loop_fabric.h
-@@ -41,5 +41,3 @@ extern int tcm_loop_queue_tm_rsp(struct se_cmd *);
- extern u16 tcm_loop_set_fabric_sense_len(struct se_cmd *, u32);
- extern u16 tcm_loop_get_fabric_sense_len(void);
- extern u64 tcm_loop_pack_lun(unsigned int);
--
--extern int tcm_loop_processing_thread(void *);
-diff --git a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-index 126f311..78476bc 100644
---- a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-+++ b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-@@ -54,12 +54,13 @@
-  *
-  * Can be called from interrupt context in tcm_loop_queuecommand() below
-  */
--static struct tcm_loop_cmd *tcm_loop_allocate_core_cmd(
-+static struct se_cmd *tcm_loop_allocate_core_cmd(
- 	struct tcm_loop_hba *tl_hba,
- 	struct se_portal_group *se_tpg,
- 	struct scsi_cmnd *sc,
- 	int data_direction)
- {
-+	struct se_cmd *se_cmd;
- 	struct se_session *se_sess;
- 	struct tcm_loop_nexus *tl_nexus = tl_hba->tl_nexus;
- 	struct tcm_loop_cmd *tl_cmd;
-@@ -109,62 +110,37 @@ static struct tcm_loop_cmd *tcm_loop_allocate_core_cmd(
- 		kmem_cache_free(tcm_loop_cmd_cache, tl_cmd);
- 		return NULL;
- 	}
--			
--	return tl_cmd;
--}
--
--/*
-- * Queue up the newly allocated struct tcm_loop_cmd to be processed by
-- * tcm_loop_fabri.c:tcm_loop_processing_thread()
-- *
-- * Can be called from interrupt context in tcm_loop_queuecommand() below
-- */
--static int tcm_loop_queue_core_cmd(
--	struct se_queue_obj *qobj,
--	struct tcm_loop_cmd *tl_cmd)
--{
--	struct se_queue_req *qr;
--	unsigned long flags;
--
--	qr = kzalloc(sizeof(struct se_queue_req), GFP_ATOMIC);
--	if (!(qr)) {
--		printk(KERN_ERR "Unable to allocate memory for"
--				" struct se_queue_req\n");
--		return -1;	
-+	se_cmd = tl_cmd->tl_se_cmd;
-+	/*
-+	 * Locate the struct se_lun pointer and attach it to struct se_cmd
-+	 */
-+	if (transport_get_lun_for_cmd(se_cmd, NULL,
-+				tl_cmd->sc->device->lun) < 0) {
-+		/* NON_EXISTENT_LUN */
-+		transport_send_check_condition_and_sense(se_cmd,
-+				se_cmd->scsi_sense_reason, 0);
-+		return 0;
- 	}
--	INIT_LIST_HEAD(&qr->qr_list);
--
--	qr->cmd = (void *)tl_cmd;
--	spin_lock_irqsave(&qobj->cmd_queue_lock, flags);
--	list_add_tail(&qr->qr_list, &qobj->qobj_list);
--	spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
-+	/*
-+	 * Make early call to setup se_cmd->transport_add_cmd_to_queue() pointer
-+	 */
-+	transport_device_setup_cmd(se_cmd);
  
--	atomic_inc(&qobj->queue_cnt);
--	wake_up_interruptible(&qobj->thread_wq);
--	return 0;
-+	return se_cmd;
- }
+ 	req->rd_lba = task->task_lba;
+@@ -1023,12 +1026,46 @@ static int rd_DIRECT_do_se_mem_map(
  
- /*
-- * Called by tcm_loop_processing_thread() in tcm_loop_fabric.c
-+ * Called by struct target_core_fabric_ops->new_cmd_map()
-  *
-  * Always called in process context
-  */
--int tcm_loop_execute_core_cmd(struct tcm_loop_cmd *tl_cmd, struct scsi_cmnd *sc)
-+int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
- {
--	struct se_cmd *se_cmd = tl_cmd->tl_se_cmd;
-+	struct tcm_loop_cmd *tl_cmd = se_cmd->se_fabric_cmd_ptr;
-+	struct scsi_cmnd *sc = tl_cmd->sc;
- 	void *mem_ptr;
- 	int ret;
- 	/*
--	 * Locate the struct se_lun pointer and attach it to struct se_cmd
--	 */
--	if (transport_get_lun_for_cmd(se_cmd, NULL,
--				tl_cmd->sc->device->lun) < 0) {
--		/* NON_EXISTENT_LUN */
--		transport_send_check_condition_and_sense(se_cmd,
--				se_cmd->scsi_sense_reason, 0);
--		return 0;
--	}
--	/*
- 	 * Allocate the necessary tasks to complete the received CDB+data
- 	 */
- 	ret = transport_generic_allocate_tasks(se_cmd, tl_cmd->sc->cmnd);
-@@ -213,11 +189,8 @@ int tcm_loop_execute_core_cmd(struct tcm_loop_cmd *tl_cmd, struct scsi_cmnd *sc)
- 				TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE, 0);
- 		return 0;
- 	}
--	/*
--	 * Queue up the struct se_cmd + tasks to be processed by the
--	 * TCM storage object.
--	 */
--	return transport_generic_handle_cdb(se_cmd);
+ 	if (req->rd_offset)
+ 		ret = rd_DIRECT_with_offset(task, se_mem_list, se_mem_cnt,
+-				task_offset);
++				task_offset_in);
+ 	else
+ 		ret = rd_DIRECT_without_offset(task, se_mem_list, se_mem_cnt,
+-				task_offset);
++				task_offset_in);
 +
-+	return 0;
++	if (ret < 0)
++		return ret;
+ 
+-	return ret;
++	if (CMD_TFO(cmd)->task_sg_chaining == 0)
++		return 0;
++	/*
++	 * Currently prevent writers from multiple HW fabrics doing
++	 * pci_map_sg() to RD_DR's internal scatterlist memory.
++	 */
++	if (cmd->data_direction == SE_DIRECTION_WRITE) {
++		printk(KERN_ERR "SE_DIRECTION_WRITE not supported for"
++				" RAMDISK_DR with task_sg_chaining=1\n");
++		return -1;
++	}
++	/*
++	 * Special case for if task_sg_chaining is enabled, then
++	 * we setup struct se_task->task_sg[], as it will be used by
++	 * transport_do_task_sg_chain() for creating chainged SGLs
++	 * across multiple struct se_task->task_sg[].
++	 *
++	 * Note that kfree(task->task_sg); does not need to be called
++	 * in rd_DIRECT_free_DMA(), because transport_free_dev_tasks()
++	 * will already be taking care of this for all TCM subsystem
++	 * plugins.
++	 */
++	if (!(transport_calc_sg_num(task,
++			list_entry(T_TASK(cmd)->t_mem_list->next,
++				   struct se_mem, se_list),
++			task_offset)))
++		return -1;	
++
++	return transport_map_mem_to_sg(task, se_mem_list, task->task_sg,
++			list_entry(T_TASK(cmd)->t_mem_list->next,
++				   struct se_mem, se_list),
++			out_se_mem, se_mem_cnt, task_offset_in);
  }
  
- /*
-@@ -333,9 +306,9 @@ static int tcm_loop_queuecommand(
- 	struct scsi_cmnd *sc,
- 	void (*done)(struct scsi_cmnd *))
- {
-+	struct se_cmd *se_cmd;
- 	struct se_portal_group *se_tpg;
- 	struct Scsi_Host *host = sc->device->host;
--	struct tcm_loop_cmd *tl_cmd;
- 	struct tcm_loop_hba *tl_hba;
- 	struct tcm_loop_tpg *tl_tpg;
- 	int data_direction;
-@@ -380,31 +353,17 @@ static int tcm_loop_queuecommand(
- 	 * Determine the SAM Task Attribute and allocate tl_cmd and
- 	 * tl_cmd->tl_se_cmd from TCM infrastructure
- 	 */
--	tl_cmd = tcm_loop_allocate_core_cmd(tl_hba, se_tpg, sc, data_direction);
--	if (!(tl_cmd)) {
-+	se_cmd = tcm_loop_allocate_core_cmd(tl_hba, se_tpg, sc, data_direction);
-+	if (!(se_cmd)) {
- 		spin_lock_irq(host->host_lock);
- 		sc->result = host_byte(DID_ERROR);
- 		(*done)(sc);
- 		return 0;
- 	}
- 	/*
--	 * Queue the tl_cmd to be executed in process context by the
--	 * tcm_loop kernel thread
--	 */
--	if (tcm_loop_queue_core_cmd(tl_hba->tl_hba_qobj, tl_cmd) < 0) {
--		/*
--		 * Will free both struct tcm_loop_cmd and struct se_cmd
--		 */
--		transport_release_cmd_to_pool(tl_cmd->tl_se_cmd);
--		/*
--		 * Reaquire the struct scsi_host->host_lock, and
--		 * complete the struct scsi_cmnd
--		 */
--		spin_lock_irq(host->host_lock);
--		sc->result = host_byte(DID_ERROR);
--		(*done)(sc);
--		return 0;
--	}
-+	 * Queue up the newly allocated to be processed in TCM thread context.
-+	*/
-+	se_cmd->transport_add_cmd_to_queue(se_cmd, TRANSPORT_NEW_CMD_MAP);
- 	/*
- 	 * Reaquire the the struct scsi_host->host_lock before returning
- 	 */
-@@ -585,7 +544,6 @@ static void tcm_loop_release_adapter(struct device *dev)
- {
- 	struct tcm_loop_hba *tl_hba = to_tcm_loop_hba(dev);
- 
--	kfree(tl_hba->tl_hba_qobj);
- 	kfree(tl_hba);
- }
- 
-diff --git a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.h b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.h
-index c93e610..bcba89b 100644
---- a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.h
-+++ b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.h
-@@ -1,6 +1,6 @@
- extern struct kmem_cache *tcm_loop_cmd_cache;
- 
--extern int tcm_loop_execute_core_cmd(struct tcm_loop_cmd *, struct scsi_cmnd *);
-+extern int tcm_loop_new_cmd_map(struct se_cmd *);
- extern void tcm_loop_check_stop_free(struct se_cmd *);
- extern void tcm_loop_deallocate_core_cmd(struct se_cmd *);
- extern void tcm_loop_scsi_forget_host(struct Scsi_Host *);
+ /*	rd_DIRECT_free_DMA():
 -- 
 1.5.6.5
 
