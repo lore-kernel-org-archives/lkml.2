@@ -1,596 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab0IFVic (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 17:38:32 -0400
-Received: from smtp104.sbc.mail.ne1.yahoo.com ([98.138.84.215]:32104 "HELO
-	smtp104.sbc.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755811Ab0IFVhc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 17:37:32 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: V7HgG8wVM1nST0nKeEfn1WAsdvvqauOu2gREHZ1pOl7.NoD
- 2qfitA877HzHiF17ovw7cV9mbtuELNovcnbbawff6MLGufKGRgA7UerDhTde
- .VYg750e_6KFW9J7y.X3ZVvD0QLEenBAqoJ6ooLmhn4ufsH07Z7Ukji.D1EC
- twcAY7R.imGtmvU1p.mUo.R0zBhEQ61FtAH_cYFVvDD_tTOLsI9SyoIgLEyS
- IPrT7DOnF3qqLKTbzqjccrSaIOPD4kpWOsrtpm5wnDvzl8g938O0jTI7YRhc
- 0s5AG4LnR981hBJ06znOpegsn2F8kB0fWd3cVmtuNznva13a3Coc-
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 4/6] tcm: Convert struct se_node_acl->device_list_lock to spin_*lock_irq()
-Date: Mon,  6 Sep 2010 14:37:28 -0700
-Message-Id: <1283809048-13703-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	id S1755849Ab0IFVjb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 17:39:31 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:40032 "EHLO
+	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755705Ab0IFVj1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 17:39:27 -0400
+Date: Mon, 6 Sep 2010 17:39:21 -0400 (EDT)
+From: Miloslav Trmac <mitr@redhat.com>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Message-ID: <609705216.1019541283809161307.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <1586512982.1019221283808142288.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+Subject: Re: [PATCH 01/19] User-space API definition
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+----- "Kyle Moffett" <kyle@moffetthome.net> wrote:
+> On Mon, Sep 6, 2010 at 11:50, Miloslav Trmac <mitr@redhat.com> wrote:
+> > ----- "Herbert Xu" <herbert@gondor.hengli.com.au> wrote:
+> >> On Mon, Aug 23, 2010 at 11:37:40AM -0400, Miloslav Trmac wrote:
+> >> > I have seriously considered the keyring API, and this is what I
+> came
+> >> up with - but I'd love to be shown a better way.
+> >>
+> >> FWIW adding a second key management system to the kernel is
+> >> totally out of the question.
+> >>
+> >> If the existing system doesn't work for you, find a way to build
+> >> on it so that it does.  Adding a second system that pretty much
+> >> does the same thing is unacceptable.
+> > It does _not_ do the same thing, same as ramfs and file descriptors
+> do not do the same thing although they are both related to files.
+> >
+> > The kernel keyring service is basically a system-wide data storage
+> service.  /dev/crypto needs a quick way to refer to short-lived,
+> usually process-local, kernel-space data structures from userspace.
+> 
+> The problem with the approach you're proposing is that we then have
+> two entirely separate classes of keys. 
+"We have two entirely separate classes of files: inodes and file descriptors".
 
-This patch converts the lock/unlock usage of struct se_node_acl->device_list_lock to use
-spin_*lock_irq() instead of spin_*lock_bh() so that drivers/target/target_core_device.c:
-transport_get_lun_for_cmd() may be called for initial struct se_cmd <-> struct se_lun
-association from within interrupt context for HW target mode fabric modules.
+Isn't that only a problem if there is actual duplicate functionality?  And is copy_from_user() really enough reason to share the interface?
 
-This includes converting a number of cases outside of transport_get_lun_for_cmd(),
-all of which are called from which process context.  There are two special cases in the
-MIBs code at scsi_auth_intr_seq_show() and scsi_att_intr_port_seq_show() that require
-dropping an existing lock before calling spin_lock_irq(&se_nacl->device_list_lock).
-In order to safetly do this, an atomic count at struct se_node_acl->mib_ref_count and
-struct se_session->mib_ref_count has been added, which are checked in
-core_tpg_wait_for_mib_ref() and transport_deregister_session() respectively.
+Like in the inodes/file descriptors case, the fact that you can read contents of both does not automatically mean that a single interface for both is the best option.  The naming does suggest that this should be the case here, but the differences are AFAICS much larger than the commonalities.
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_device.c          |   54 +++++++++++++-------------
- drivers/target/target_core_fabric_configfs.c |    8 ++--
- drivers/target/target_core_mib.c             |   28 +++++++++++--
- drivers/target/target_core_tpg.c             |   18 ++++++--
- drivers/target/target_core_transport.c       |    8 ++++
- drivers/target/target_core_ua.c              |   20 +++++-----
- include/target/target_core_base.h            |    4 ++
- include/target/target_core_tpg.h             |    1 +
- 8 files changed, 91 insertions(+), 50 deletions(-)
 
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index cf14785..7c357a5 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -197,7 +197,7 @@ extern int __transport_get_lun_for_cmd(
- 	unsigned long flags;
- 	int read_only = 0;
- 
--	spin_lock_bh(&SE_NODE_ACL(se_sess)->device_list_lock);
-+	spin_lock_irq(&SE_NODE_ACL(se_sess)->device_list_lock);
- 	deve = se_cmd->se_deve =
- 			&SE_NODE_ACL(se_sess)->device_list[unpacked_lun];
- 	if (deve->lun_flags & TRANSPORT_LUNFLAGS_INITIATOR_ACCESS) {
-@@ -226,7 +226,7 @@ extern int __transport_get_lun_for_cmd(
- 		se_cmd->se_cmd_flags |= SCF_SE_LUN_CMD;
- 	}
- out:
--	spin_unlock_bh(&SE_NODE_ACL(se_sess)->device_list_lock);
-+	spin_unlock_irq(&SE_NODE_ACL(se_sess)->device_list_lock);
- 
- 	if (!se_lun) {
- 		if (read_only) {
-@@ -318,7 +318,7 @@ extern int transport_get_lun_for_tmr(
- 	struct se_session *se_sess = SE_SESS(se_cmd);
- 	struct se_tmr_req *se_tmr = se_cmd->se_tmr_req;
- 
--	spin_lock_bh(&SE_NODE_ACL(se_sess)->device_list_lock);
-+	spin_lock_irq(&SE_NODE_ACL(se_sess)->device_list_lock);
- 	deve = se_cmd->se_deve =
- 			&SE_NODE_ACL(se_sess)->device_list[unpacked_lun];
- 	if (deve->lun_flags & TRANSPORT_LUNFLAGS_INITIATOR_ACCESS) {
-@@ -329,7 +329,7 @@ extern int transport_get_lun_for_tmr(
- 		se_cmd->se_orig_obj_ptr = SE_LUN(se_cmd)->lun_se_dev;
- /*		se_cmd->se_cmd_flags |= SCF_SE_LUN_CMD; */
- 	}
--	spin_unlock_bh(&SE_NODE_ACL(se_sess)->device_list_lock);
-+	spin_unlock_irq(&SE_NODE_ACL(se_sess)->device_list_lock);
- 
- 	if (!se_lun) {
- 		printk(KERN_INFO "TARGET_CORE[%s]: Detected NON_EXISTENT_LUN"
-@@ -371,7 +371,7 @@ struct se_dev_entry *core_get_se_deve_from_rtpi(
- 	struct se_portal_group *tpg = nacl->se_tpg;
- 	u32 i;
- 
--	spin_lock_bh(&nacl->device_list_lock);
-+	spin_lock_irq(&nacl->device_list_lock);
- 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
- 		deve = &nacl->device_list[i];
- 
-@@ -397,11 +397,11 @@ struct se_dev_entry *core_get_se_deve_from_rtpi(
- 		
- 		atomic_inc(&deve->pr_ref_count);
- 		smp_mb__after_atomic_inc();
--		spin_unlock_bh(&nacl->device_list_lock);
-+		spin_unlock_irq(&nacl->device_list_lock);
- 
- 		return deve;
- 	}
--	spin_unlock_bh(&nacl->device_list_lock);
-+	spin_unlock_irq(&nacl->device_list_lock);
- 
- 	return NULL;
- }
-@@ -417,7 +417,7 @@ int core_free_device_list_for_node(
- 	if (!nacl->device_list)
- 		return 0;
- 
--	spin_lock_bh(&nacl->device_list_lock);
-+	spin_lock_irq(&nacl->device_list_lock);
- 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
- 		deve = &nacl->device_list[i];
- 
-@@ -432,12 +432,12 @@ int core_free_device_list_for_node(
- 		}
- 		lun = deve->se_lun;
- 
--		spin_unlock_bh(&nacl->device_list_lock);
-+		spin_unlock_irq(&nacl->device_list_lock);
- 		core_update_device_list_for_node(lun, NULL, deve->mapped_lun,
- 			TRANSPORT_LUNFLAGS_NO_ACCESS, nacl, tpg, 0);
--		spin_lock_bh(&nacl->device_list_lock);
-+		spin_lock_irq(&nacl->device_list_lock);
- 	}
--	spin_unlock_bh(&nacl->device_list_lock);
-+	spin_unlock_irq(&nacl->device_list_lock);
- 
- 	kfree(nacl->device_list);
- 	nacl->device_list = NULL;
-@@ -449,10 +449,10 @@ void core_dec_lacl_count(struct se_node_acl *se_nacl, struct se_cmd *se_cmd)
- {
- 	struct se_dev_entry *deve;
- 
--	spin_lock_bh(&se_nacl->device_list_lock);
-+	spin_lock_irq(&se_nacl->device_list_lock);
- 	deve = &se_nacl->device_list[se_cmd->orig_fe_lun];
- 	deve->deve_cmds--;
--	spin_unlock_bh(&se_nacl->device_list_lock);
-+	spin_unlock_irq(&se_nacl->device_list_lock);
- 
- 	return;
- }
-@@ -464,7 +464,7 @@ void core_update_device_list_access(
- {
- 	struct se_dev_entry *deve;
- 
--	spin_lock_bh(&nacl->device_list_lock);
-+	spin_lock_irq(&nacl->device_list_lock);
- 	deve = &nacl->device_list[mapped_lun];
- 	if (lun_access & TRANSPORT_LUNFLAGS_READ_WRITE) {
- 		deve->lun_flags &= ~TRANSPORT_LUNFLAGS_READ_ONLY;
-@@ -473,7 +473,7 @@ void core_update_device_list_access(
- 		deve->lun_flags &= ~TRANSPORT_LUNFLAGS_READ_WRITE;
- 		deve->lun_flags |= TRANSPORT_LUNFLAGS_READ_ONLY;
- 	}
--	spin_unlock_bh(&nacl->device_list_lock);
-+	spin_unlock_irq(&nacl->device_list_lock);
- 
- 	return;
- }
-@@ -507,7 +507,7 @@ int core_update_device_list_for_node(
- 		spin_unlock_bh(&port->sep_alua_lock);
- 	}
- 
--	spin_lock_bh(&nacl->device_list_lock);
-+	spin_lock_irq(&nacl->device_list_lock);
- 	if (enable) {
- 		/*
- 		 * Check if the call is handling demo mode -> explict LUN ACL
-@@ -545,12 +545,12 @@ int core_update_device_list_for_node(
- 		}
- 
- 		if (trans) {	
--			spin_unlock_bh(&nacl->device_list_lock);
-+			spin_unlock_irq(&nacl->device_list_lock);
- 			return 0;
- 		}
- 		deve->creation_time = get_jiffies_64();
- 		deve->attach_count++;
--		spin_unlock_bh(&nacl->device_list_lock);
-+		spin_unlock_irq(&nacl->device_list_lock);
- 
- 		spin_lock_bh(&port->sep_alua_lock);
- 		list_add_tail(&deve->alua_port_list, &port->sep_alua_list);
-@@ -562,10 +562,10 @@ int core_update_device_list_for_node(
- 	 * Wait for any in process SPEC_I_PT=1 or REGISTER_AND_MOVE
- 	 * PR operation to complete.
- 	 */
--	spin_unlock_bh(&nacl->device_list_lock);
-+	spin_unlock_irq(&nacl->device_list_lock);
- 	while (atomic_read(&deve->pr_ref_count) != 0)
- 		msleep(100);
--	spin_lock_bh(&nacl->device_list_lock);
-+	spin_lock_irq(&nacl->device_list_lock);
- 	/*
- 	 * Disable struct se_dev_entry LUN ACL mapping
- 	 */
-@@ -575,7 +575,7 @@ int core_update_device_list_for_node(
- 	deve->lun_flags = 0;
- 	deve->creation_time = 0;
- 	deve->attach_count--;
--	spin_unlock_bh(&nacl->device_list_lock);
-+	spin_unlock_irq(&nacl->device_list_lock);
- 
- 	core_scsi3_free_pr_reg_from_nacl(lun->lun_se_dev, nacl);
- 	return 0;
-@@ -595,20 +595,20 @@ void core_clear_lun_from_tpg(struct se_lun *lun, struct se_portal_group *tpg)
- 	list_for_each_entry(nacl, &tpg->acl_node_list, acl_list) {
- 		spin_unlock_bh(&tpg->acl_node_lock);
- 
--		spin_lock_bh(&nacl->device_list_lock);
-+		spin_lock_irq(&nacl->device_list_lock);
- 		for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
- 			deve = &nacl->device_list[i];
- 			if (lun != deve->se_lun)
- 				continue;
--			spin_unlock_bh(&nacl->device_list_lock);
-+			spin_unlock_irq(&nacl->device_list_lock);
- 
- 			core_update_device_list_for_node(lun, NULL,
- 				deve->mapped_lun, TRANSPORT_LUNFLAGS_NO_ACCESS,
- 				nacl, tpg, 0);
- 
--			spin_lock_bh(&nacl->device_list_lock);
-+			spin_lock_irq(&nacl->device_list_lock);
- 		}
--		spin_unlock_bh(&nacl->device_list_lock);
-+		spin_unlock_irq(&nacl->device_list_lock);
- 
- 		spin_lock_bh(&tpg->acl_node_lock);
- 	}
-@@ -810,7 +810,7 @@ int transport_core_report_lun_response(struct se_cmd *se_cmd)
- 		goto done;
- 	}
- 
--	spin_lock_bh(&SE_NODE_ACL(se_sess)->device_list_lock);
-+	spin_lock_irq(&SE_NODE_ACL(se_sess)->device_list_lock);
- 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
- 		deve = &SE_NODE_ACL(se_sess)->device_list[i];
- 		if (!(deve->lun_flags & TRANSPORT_LUNFLAGS_INITIATOR_ACCESS))
-@@ -836,7 +836,7 @@ int transport_core_report_lun_response(struct se_cmd *se_cmd)
- 		buf[offset++] = (lun & 0xff);
- 		cdb_offset += 8;
- 	}
--	spin_unlock_bh(&SE_NODE_ACL(se_sess)->device_list_lock);
-+	spin_unlock_irq(&SE_NODE_ACL(se_sess)->device_list_lock);
- 
- 	/*
- 	 * See SPC3 r07, page 159.
-diff --git a/drivers/target/target_core_fabric_configfs.c b/drivers/target/target_core_fabric_configfs.c
-index e1a64eb..58da51a 100644
---- a/drivers/target/target_core_fabric_configfs.c
-+++ b/drivers/target/target_core_fabric_configfs.c
-@@ -111,7 +111,7 @@ static int target_fabric_mappedlun_link(
- 	 * which be will write protected (READ-ONLY) when
- 	 * tpg_1/attrib/demo_mode_write_protect=1
- 	 */
--	spin_lock_bh(&lacl->se_lun_nacl->device_list_lock);
-+	spin_lock_irq(&lacl->se_lun_nacl->device_list_lock);
- 	deve = &lacl->se_lun_nacl->device_list[lacl->mapped_lun];
- 	if (deve->lun_flags & TRANSPORT_LUNFLAGS_INITIATOR_ACCESS)
- 		lun_access = deve->lun_flags;
-@@ -120,7 +120,7 @@ static int target_fabric_mappedlun_link(
- 			(TPG_TFO(se_tpg)->tpg_check_prod_mode_write_protect(
- 				se_tpg)) ? TRANSPORT_LUNFLAGS_READ_ONLY :
- 					   TRANSPORT_LUNFLAGS_READ_WRITE;
--	spin_unlock_bh(&lacl->se_lun_nacl->device_list_lock);
-+	spin_unlock_irq(&lacl->se_lun_nacl->device_list_lock);
- 	/*
- 	 * Determine the actual mapped LUN value user wants..
- 	 *
-@@ -162,12 +162,12 @@ static ssize_t target_fabric_mappedlun_show_write_protect(
- 	struct se_dev_entry *deve;
- 	ssize_t len;
- 
--	spin_lock_bh(&se_nacl->device_list_lock);
-+	spin_lock_irq(&se_nacl->device_list_lock);
- 	deve = &se_nacl->device_list[lacl->mapped_lun];
- 	len = sprintf(page, "%d\n",
- 			(deve->lun_flags & TRANSPORT_LUNFLAGS_READ_ONLY) ?
- 			1 : 0);
--	spin_unlock_bh(&se_nacl->device_list_lock);
-+	spin_unlock_irq(&se_nacl->device_list_lock);
- 
- 	return len;
- }
-diff --git a/drivers/target/target_core_mib.c b/drivers/target/target_core_mib.c
-index 4453bbd..78abf49 100644
---- a/drivers/target/target_core_mib.c
-+++ b/drivers/target/target_core_mib.c
-@@ -614,7 +614,12 @@ static int scsi_auth_intr_seq_show(struct seq_file *seq, void *v)
- 
- 	spin_lock(&se_tpg->acl_node_lock);
- 	list_for_each_entry(se_nacl, &se_tpg->acl_node_list, acl_list) {
--		spin_lock(&se_nacl->device_list_lock);
-+
-+		atomic_inc(&se_nacl->mib_ref_count);
-+		smp_mb__after_atomic_inc();
-+		spin_unlock(&se_tpg->acl_node_lock);
-+
-+		spin_lock_irq(&se_nacl->device_list_lock);
- 		for (j = 0; j < TRANSPORT_MAX_LUNS_PER_TPG; j++) {
- 			deve = &se_nacl->device_list[j];
- 			if (!(deve->lun_flags &
-@@ -660,7 +665,11 @@ static int scsi_auth_intr_seq_show(struct seq_file *seq, void *v)
- 				/* FIXME: scsiAuthIntrRowStatus */
- 				"Ready");
- 		}
--		spin_unlock(&se_nacl->device_list_lock);
-+		spin_unlock_irq(&se_nacl->device_list_lock);
-+
-+		spin_lock(&se_tpg->acl_node_lock);
-+		atomic_dec(&se_nacl->mib_ref_count);
-+		smp_mb__after_atomic_dec();
- 	}
- 	spin_unlock(&se_tpg->acl_node_lock);
- 
-@@ -736,9 +745,14 @@ static int scsi_att_intr_port_seq_show(struct seq_file *seq, void *v)
- 		    (!se_sess->se_node_acl->device_list))
- 			continue;
- 
-+		atomic_inc(&se_sess->mib_ref_count);
-+		smp_mb__after_atomic_inc();
- 		se_nacl = se_sess->se_node_acl;
-+		atomic_inc(&se_nacl->mib_ref_count);
-+		smp_mb__after_atomic_inc();
-+		spin_unlock(&se_tpg->session_lock);
- 
--		spin_lock(&se_nacl->device_list_lock);
-+		spin_lock_irq(&se_nacl->device_list_lock);
- 		for (j = 0; j < TRANSPORT_MAX_LUNS_PER_TPG; j++) {
- 			deve = &se_nacl->device_list[j];
- 			if (!(deve->lun_flags &
-@@ -776,7 +790,13 @@ static int scsi_att_intr_port_seq_show(struct seq_file *seq, void *v)
- 				/* scsiAttIntrPortIdentifier */
- 				buf);
- 		}
--		spin_unlock(&se_nacl->device_list_lock);
-+		spin_unlock_irq(&se_nacl->device_list_lock);
-+
-+		spin_lock(&se_tpg->session_lock);
-+		atomic_dec(&se_nacl->mib_ref_count);
-+		smp_mb__after_atomic_dec();
-+		atomic_dec(&se_sess->mib_ref_count);
-+		smp_mb__after_atomic_dec();
- 	}
- 	spin_unlock(&se_tpg->session_lock);
- 
-diff --git a/drivers/target/target_core_tpg.c b/drivers/target/target_core_tpg.c
-index 24dceb6..75c3900 100644
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -59,7 +59,7 @@ static void core_clear_initiator_node_from_tpg(
- 	struct se_lun *lun;
- 	struct se_lun_acl *acl, *acl_tmp;
- 
--	spin_lock_bh(&nacl->device_list_lock);
-+	spin_lock_irq(&nacl->device_list_lock);
- 	for (i = 0; i < TRANSPORT_MAX_LUNS_PER_TPG; i++) {
- 		deve = &nacl->device_list[i];
- 
-@@ -74,7 +74,7 @@ static void core_clear_initiator_node_from_tpg(
- 		}
- 
- 		lun = deve->se_lun;
--		spin_unlock_bh(&nacl->device_list_lock);
-+		spin_unlock_irq(&nacl->device_list_lock);
- 		core_update_device_list_for_node(lun, NULL, deve->mapped_lun,
- 			TRANSPORT_LUNFLAGS_NO_ACCESS, nacl, tpg, 0);
- 
-@@ -92,17 +92,17 @@ static void core_clear_initiator_node_from_tpg(
- 				" mapped_lun: %u\n", nacl->initiatorname,
- 				deve->mapped_lun);
- 			spin_unlock(&lun->lun_acl_lock);
--			spin_lock_bh(&nacl->device_list_lock);
-+			spin_lock_irq(&nacl->device_list_lock);
- 			continue;
- 		}
- 
- 		list_del(&acl->lacl_list);
- 		spin_unlock(&lun->lun_acl_lock);
- 
--		spin_lock_bh(&nacl->device_list_lock);
-+		spin_lock_irq(&nacl->device_list_lock);
- 		kfree(acl);
- 	}
--	spin_unlock_bh(&nacl->device_list_lock);
-+	spin_unlock_irq(&nacl->device_list_lock);
- }
- 
- /*	__core_tpg_get_initiator_node_acl():
-@@ -275,6 +275,7 @@ struct se_node_acl *core_tpg_check_initiator_node_acl(
- 	spin_lock_init(&acl->device_list_lock);
- 	spin_lock_init(&acl->nacl_sess_lock);
- 	atomic_set(&acl->acl_pr_ref_count, 0);
-+	atomic_set(&acl->mib_ref_count, 0);
- 	acl->queue_depth = TPG_TFO(tpg)->tpg_get_default_depth(tpg);
- 	snprintf(acl->initiatorname, TRANSPORT_IQN_LEN, "%s", initiatorname);
- 	acl->se_tpg = tpg;
-@@ -317,6 +318,12 @@ void core_tpg_wait_for_nacl_pr_ref(struct se_node_acl *nacl)
- 		msleep(100);
- }
- 
-+void core_tpg_wait_for_mib_ref(struct se_node_acl *nacl)
-+{
-+	while (atomic_read(&nacl->mib_ref_count) != 0)
-+		msleep(100);
-+}
-+
- void core_tpg_clear_object_luns(struct se_portal_group *tpg)
- {
- 	int i, ret;
-@@ -473,6 +480,7 @@ int core_tpg_del_initiator_node_acl(
- 	spin_unlock_bh(&tpg->session_lock);
- 
- 	core_tpg_wait_for_nacl_pr_ref(acl);
-+	core_tpg_wait_for_mib_ref(acl);
- 	core_clear_initiator_node_from_tpg(acl, tpg);
- 	core_free_device_list_for_node(acl, tpg);
- 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 602b2d8..56ed466 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -636,6 +636,7 @@ struct se_session *transport_init_session(void)
- 	}
- 	INIT_LIST_HEAD(&se_sess->sess_list);
- 	INIT_LIST_HEAD(&se_sess->sess_acl_list);
-+	atomic_set(&se_sess->mib_ref_count, 0);
- 
- 	return se_sess;
- }
-@@ -744,6 +745,12 @@ void transport_deregister_session(struct se_session *se_sess)
- 		transport_free_session(se_sess);
- 		return;
- 	}
-+	/*
-+	 * Wait for possible reference in drivers/target/target_core_mib.c:
-+	 * scsi_att_intr_port_seq_show()
-+	 */
-+	while (atomic_read(&se_sess->mib_ref_count) != 0)
-+		msleep(100);
- 
- 	spin_lock_bh(&se_tpg->session_lock);
- 	list_del(&se_sess->sess_list);
-@@ -766,6 +773,7 @@ void transport_deregister_session(struct se_session *se_sess)
- 				spin_unlock_bh(&se_tpg->acl_node_lock);
- 
- 				core_tpg_wait_for_nacl_pr_ref(se_nacl);
-+				core_tpg_wait_for_mib_ref(se_nacl);
- 				core_free_device_list_for_node(se_nacl, se_tpg);
- 				TPG_TFO(se_tpg)->tpg_release_fabric_acl(se_tpg,
- 						se_nacl);
-diff --git a/drivers/target/target_core_ua.c b/drivers/target/target_core_ua.c
-index 2de23bd..a2ef346 100644
---- a/drivers/target/target_core_ua.c
-+++ b/drivers/target/target_core_ua.c
-@@ -112,7 +112,7 @@ int core_scsi3_ua_allocate(
- 	ua->ua_asc = asc;
- 	ua->ua_ascq = ascq;
- 
--	spin_lock(&nacl->device_list_lock);
-+	spin_lock_irq(&nacl->device_list_lock);
- 	deve = &nacl->device_list[unpacked_lun];
- 
- 	spin_lock(&deve->ua_lock);
-@@ -122,7 +122,7 @@ int core_scsi3_ua_allocate(
- 		 */
- 		if ((ua_p->ua_asc == asc) && (ua_p->ua_ascq == ascq)) {
- 			spin_unlock(&deve->ua_lock);
--			spin_unlock(&nacl->device_list_lock);
-+			spin_unlock_irq(&nacl->device_list_lock);
- 			kmem_cache_free(se_ua_cache, ua);
- 			return 0;
- 		}
-@@ -167,7 +167,7 @@ int core_scsi3_ua_allocate(
- 			list_add_tail(&ua->ua_nacl_list,
- 				&deve->ua_list);
- 		spin_unlock(&deve->ua_lock);
--		spin_unlock(&nacl->device_list_lock);
-+		spin_unlock_irq(&nacl->device_list_lock);
- 
- 		atomic_inc(&deve->ua_count);
- 		smp_mb__after_atomic_inc();
-@@ -175,7 +175,7 @@ int core_scsi3_ua_allocate(
- 	}
- 	list_add_tail(&ua->ua_nacl_list, &deve->ua_list);
- 	spin_unlock(&deve->ua_lock);
--	spin_unlock(&nacl->device_list_lock);
-+	spin_unlock_irq(&nacl->device_list_lock);
- 
- 	printk(KERN_INFO "[%s]: Allocated UNIT ATTENTION, mapped LUN: %u, ASC:"
- 		" 0x%02x, ASCQ: 0x%02x\n",
-@@ -222,10 +222,10 @@ void core_scsi3_ua_for_check_condition(
- 	if (!(nacl))
- 		return;
- 
--	spin_lock(&nacl->device_list_lock);
-+	spin_lock_irq(&nacl->device_list_lock);
- 	deve = &nacl->device_list[cmd->orig_fe_lun];
- 	if (!(atomic_read(&deve->ua_count))) {
--		spin_unlock(&nacl->device_list_lock);
-+		spin_unlock_irq(&nacl->device_list_lock);
- 		return;
- 	}
- 	/*
-@@ -262,7 +262,7 @@ void core_scsi3_ua_for_check_condition(
- 		smp_mb__after_atomic_dec();
- 	}
- 	spin_unlock(&deve->ua_lock);
--	spin_unlock(&nacl->device_list_lock);
-+	spin_unlock_irq(&nacl->device_list_lock);
- 
- 	printk(KERN_INFO "[%s]: %s UNIT ATTENTION condition with"
- 		" INTLCK_CTRL: %d, mapped LUN: %u, got CDB: 0x%02x"
-@@ -291,10 +291,10 @@ int core_scsi3_ua_clear_for_request_sense(
- 	if (!(nacl))
- 		return -1;
- 
--	spin_lock(&nacl->device_list_lock);
-+	spin_lock_irq(&nacl->device_list_lock);
- 	deve = &nacl->device_list[cmd->orig_fe_lun];
- 	if (!(atomic_read(&deve->ua_count))) {
--		spin_unlock(&nacl->device_list_lock);
-+		spin_unlock_irq(&nacl->device_list_lock);
- 		return -1;
- 	}
- 	/*
-@@ -321,7 +321,7 @@ int core_scsi3_ua_clear_for_request_sense(
- 		smp_mb__after_atomic_dec();
- 	}
- 	spin_unlock(&deve->ua_lock);
--	spin_unlock(&nacl->device_list_lock);
-+	spin_unlock_irq(&nacl->device_list_lock);
- 
- 	printk(KERN_INFO "[%s]: Released UNIT ATTENTION condition, mapped"
- 		" LUN: %u, got REQUEST_SENSE reported ASC: 0x%02x,"
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index dbcc04a..c078f5a 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -668,6 +668,8 @@ struct se_node_acl {
- 	spinlock_t		stats_lock;
- 	/* Used for PR SPEC_I_PT=1 and REGISTER_AND_MOVE */
- 	atomic_t		acl_pr_ref_count;
-+	/* Used for MIB access */
-+	atomic_t		mib_ref_count;
- 	struct se_dev_entry	*device_list;
- 	struct se_session	*nacl_sess;
- 	struct se_portal_group *se_tpg;
-@@ -683,6 +685,8 @@ struct se_node_acl {
- } ____cacheline_aligned;
- 
- struct se_session {
-+	/* Used for MIB access */
-+	atomic_t		mib_ref_count;
- 	u64			sess_bin_isid;
- 	struct se_node_acl	*se_node_acl;
- 	struct se_portal_group *se_tpg;
-diff --git a/include/target/target_core_tpg.h b/include/target/target_core_tpg.h
-index d211fef..90b097b 100644
---- a/include/target/target_core_tpg.h
-+++ b/include/target/target_core_tpg.h
-@@ -13,6 +13,7 @@ extern struct se_node_acl *core_tpg_check_initiator_node_acl(
- 						struct se_portal_group *,
- 						unsigned char *);
- extern void core_tpg_wait_for_nacl_pr_ref(struct se_node_acl *);
-+extern void core_tpg_wait_for_mib_ref(struct se_node_acl *);
- extern void core_tpg_clear_object_luns(struct se_portal_group *);
- extern struct se_node_acl *core_tpg_add_initiator_node_acl(
- 					struct se_portal_group *,
--- 
-1.5.6.5
+> Another potential issue is that keys are never actually "unnamed", in
+> that sense.
+They are perhaps not "unnamed" from a global point of view, or from the point of view of a few functions that directly manipulate the key, but they are quite anonymous from the process' point of view.
 
+> If encryption keys truly were "anonymous" then you would
+> find it impossible to reliably decrypt the data on the other end.  For
+> example, every RSA private key should be indexed either by the X.509
+> DN or for bare SSH keys by the public modulus information.
+Why would that be useful?  The SSH private key should be only available to sshd.  sshd has loaded the key from a file (_that_ is the key's "name", as far as the system administrator is concerned), and then the key is used only privately within the sshd process.  There is no more reason to have a name attached to the loaded private key object than there is a reason to have a name attached to the file descriptor used to read /etc/ssh/sshd_config - the key is an application-internal object and its user-space identifier is merely a "safe pointer into the kernel".
+
+Actually, in a modularly-designed program, only one component of the program works with the key, the rest should not even be aware of the existence of the key, and having a process-wide (or even more general) name for the key can lead to unintended conflicts.  Imagine having the option to give an every file descriptor a name, automatically replacing earlier file descriptors with the same name.
+
+Having a well-known name for the sshd host private key is perhaps useful as an "attack this" sign :)
+
+Same for public keys - when an application does
+   public_key = import_from_certificate();
+   encrypt_data_using(public_key)
+it is not interested in sharing the public key object with other processes - after all, what if another process loaded a different key under the indented name?  Creating a meaningful identifier is about as costly as just importing the key, anyway.
+
+>  Even transient SSL session keys are always put into an SSL session cache by
+> apache or whatever to allow them to be reused across multiple TCP
+> streams!
+The SSL session cache is a quite unusual case.
+
+Also, there is one SSL private key per server DNS name, and one SSL session cache entry per client-server pair, but there are at least four temporary keys, for each connection, and there is absolutely no need to name these.
+
+> So my recommendation would be to create some new operations of the
+> existing keyring code:
+
+> (2) Add cryptoapi hooks to automatically register keyring key types
+> based on the loaded cryptoapi modules.
+Hm, using a different key type for each cipher would at least allow reusing add_key()/KEYCTL_{READ,UPDATE}; I didn't think even these could be useful.
+
+So it's better than absolutely hopeless now :)
+
+Thank you,
+    Mirek
