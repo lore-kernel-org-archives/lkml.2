@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab0IFTK2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 15:10:28 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:47248 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab0IFTKW (ORCPT
+	id S1753913Ab0IFTMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 15:12:08 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36762 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab0IFTMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 15:10:22 -0400
-To: NeilBrown <neilb@suse.de>
-CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org, haveblue@us.ibm.com,
-        linux-kernel@vger.kernel.org
-In-reply-to: <20100906005029.20775.70918.stgit@localhost.localdomain> (message
-	from NeilBrown on Mon, 06 Sep 2010 10:50:29 +1000)
-Subject: Re: [PATCH 09/10] VFS: Remove read-only checks from dentry_permission
-References: <20100906004829.20775.68828.stgit@localhost.localdomain> <20100906005029.20775.70918.stgit@localhost.localdomain>
-Message-Id: <E1Osh50-0005s0-V7@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Mon, 06 Sep 2010 21:10:10 +0200
+	Mon, 6 Sep 2010 15:12:05 -0400
+Date: Mon, 6 Sep 2010 15:12:04 -0400
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Islam Amer <pharon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, akpm@linux-foundation.org,
+        stable@kernel.org
+Subject: Re: Dell Studio 1555 eject key does not work ( small patch to fix
+ included )
+Message-ID: <20100906191204.GL2684@bombadil.infradead.org>
+References: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 Sep 2010, NeilBrown wrote:
-> It is not sufficient to depend on the the "filesystem is readonly"
-> tests in dentry_permission as it does not check if the vfsmnt is
-> readonly.
-> All call sites already call mnt_want_write or __mnt_is_readonly which
-> includes the test on MS_RDONLY.
+On Thu, Jun 03, 2010 at 01:14:09AM +0400, Islam Amer wrote:
+> I had submitted this as
+> https://bugzilla.kernel.org/show_bug.cgi?id=16075 but repeating the
+> information and patch
+> here as per Andrew Morton's suggestion.
+> 
 
-Last time I checked I found some holes (in nfsd IIRC).  That was a
-long time ago and things may have changed.
+Thanks for sending this fix in, Islam. Adding stable@ to the Cc.
 
-That check could be replaced with a
+Greg, could you apply this to the stable tree as well? Should apply a
+few releases back. We applied it to .34 and .35 in Fedora, at least.
 
-		if (IS_RDONLY(inode) &&
-		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
-			BUG();
+The upstream commit id was d5164dbf1f651d1e955b158fb70a9c844cc91cd1.
 
-which would catch these cases but only if the superblock was marked
-r/o.  Otherwise it's basically impossible to make sure the callers of
-the VFS play by the rules.  That was one reason I advocated a
-path_... interface for the VFS instead of the current dentry based
-one, but Al didn't like it.
+regards, Kyle
 
-Thanks,
-Miklos
+
