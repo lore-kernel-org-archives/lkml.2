@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab0IFMdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 08:33:44 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:34211 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab0IFMdn convert rfc822-to-8bit (ORCPT
+	id S1753738Ab0IFMd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 08:33:57 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35288 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561Ab0IFMdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 08:33:43 -0400
+	Mon, 6 Sep 2010 08:33:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ENhuuZ/1P4EdBFgyPJ2tu0iwGPJmcOLIX0NNlF3BRBadWLIHOsGxpK4s+rZojAx2TP
-         09sAdzceJqcfzCoqR5tTv/Wa5vNWeGw6/tLkKSEstQOsKGB2Yyt5bg6fRR3t7rzobToF
-         Z7zbtMxuVEUGIMKWguY3t9ByAtRPDtyUKfLJ0=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=fybDj+RJ4hme4Wze/TPMBVGiYaMHwB9SRBe/7CJq/6cK9A45HtHYxBkuH5GtJiLfji
+         30I8XqVBWMU/NFcsFDQ/gLaxTzIGoCVCClrfCb17PcPv/b4BLelZMIMB8vhVc9is+z2P
+         oDda6+lv+dcjimkqVLa32fvcglBzPdQ+AeAeo=
+Message-ID: <4C84DFB0.1050206@gmail.com>
+Date: Mon, 06 Sep 2010 14:33:52 +0200
+From: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=xaTdjrb3ZO5dU+bY_GpaBE4F2-0gFmN=SykD5@mail.gmail.com>
-References: <AANLkTimSsj5eW1Vy3g7S0XCKRcZ0fZ0jQ6_9VpjVMYcj@mail.gmail.com>
-	<20100903140041.GA16223@kroah.com>
-	<AANLkTi=xaTdjrb3ZO5dU+bY_GpaBE4F2-0gFmN=SykD5@mail.gmail.com>
-Date: Mon, 6 Sep 2010 14:33:42 +0200
-Message-ID: <AANLkTi=f0Am-iMZM=xU5_Hqw4ni1effrqhUxpKE9opFj@mail.gmail.com>
-Subject: Re: Crash on reducing the kernel mem.
-From: Martin Fuzzey <mfuzzey@gmail.com>
-To: Prabhu Chawandi <prabhu.chavandi@gmail.com>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, kernelnewbies@nl.linux.org
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: Miloslav Trmac <mitr@redhat.com>, Kyle Moffett <kyle@moffetthome.net>,
+        linux-crypto@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 01/19] User-space API definition
+References: <1278368294.1123931282577639823.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com> <1269957386.1124701282577860651.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com> <20100906121708.GA26354@gondor.apana.org.au>
+In-Reply-To: <20100906121708.GA26354@gondor.apana.org.au>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 6, 2010 at 12:47 PM, Prabhu Chawandi
-<prabhu.chavandi@gmail.com> wrote:
-> Hi Greg,
->
->  I am specifying the memory as part of command line parameter "mem=".
-> I know only that what ever amount specify against "mem=" will be a
-> kernel memory and rest is used for the drivers.
->
-No it doesn't work like that.
+On 09/06/2010 02:17 PM, Herbert Xu wrote:
+> On Mon, Aug 23, 2010 at 11:37:40AM -0400, Miloslav Trmac wrote:
+>>
+>> I can see almost no overlap between the two sets of requirements.  Probably the only common use case is handling session keys (e.g. keys used in a kerberos ticket), which should be stored in the kernel for the duration of the session, made available to each process in the session, and available as keys for kernel crypto.  Such keys will be in the minority, though, and it seems to me the best approach for handling these is to allow key export/import from/to keyring keys in addition to export/import from/to data in userspace: the long-term storage would be handled by the existing keyring API, which stores the key as unformatted binary data, and import into the crypto context would convert the key into the internal representation more suitable for crypto.
+>>
+>> I have seriously considered the keyring API, and this is what I came up with - but I'd love to be shown a better way.
+> 
+> FWIW adding a second key management system to the kernel is
+> totally out of the question.
+> 
+> If the existing system doesn't work for you, find a way to build
+> on it so that it does.  Adding a second system that pretty much
+> does the same thing is unacceptable.
+> 
+> Also, the key management for secret keys that you've added should
+> not be the only mode offered to the user.  Most people do not need
+> the separation between key setting and encryption/decryption.
 
-Setting mem= will reduce the total amount of memory used.
-If your system has 256M and you specify mem=128M the result
-is that the other 128M is unused.
+I think this is a misunderstanding. The NCR does not have a keyring. The
+only common thing it has with a keyring is the word "key". The fact that
+it holds a reference to the key being used for encryption doesn't really
+make it a keyring. The kernel Keyring can be used with NCR to store keys
+as well as any other keyring.
 
-The kernel makes no separation between "kernel" and "drivers".
-Drivers are part of the kernel (ie they live in the same address
-space and can touch any memory).
-
-There is a separation between kernel and userspace (ie
-userspace processes cannot touch each others memory nor kernel
-memory). However even the "userspace memory" comes from
-the same "pool" reduced by mem=.
-
-So when you changed mem=128M to mem=110M (intending
-to give more memory to "drivers") what you actually did was
-to reduce the memory available to the system. If that causes
-a crash its likely just not enough memory available, probably
-nothing specific to USB just that's where it happens to run out.
-
-Why are you reducing memory in this way?
-Normally the bootloader knows / detects how much memory
-is available and informs the kernel. Reducing it is generally
-only done for testing purposes (such as the case where you
-have a development board that has more memory than the
-production unit will so you artificially reduce the available
-memory to see how it will behave on a production board).
-
-Hope this helps,
-
-Regards,
-Martin
+regards,
+Nikos
