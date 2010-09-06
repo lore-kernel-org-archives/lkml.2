@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755032Ab0IFA6r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 20:58:47 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59488 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557Ab0IFA6q convert rfc822-to-8bit (ORCPT
+	id S1755006Ab0IFBAm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 21:00:42 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35820 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab0IFBAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 20:58:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=hOAJpJJmefIvP45u4XrDReHqLGaFyDCJzae98SfYpvoUSfVhuT/uRsO32cgkZbbKvc
-         dbCda/lZ3/NPo1LMb1wwa83Et2EuRcSAgm/uo8zC3QmV9SDVtsYVc61UkG2xaVmH0sSV
-         QGZDHulIMTHrD4/+5g3BaQq8txsKyr7uJF1Wo=
+	Sun, 5 Sep 2010 21:00:40 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH 3/4] writeback: nr_dirtied and nr_cleaned in /proc/vmstat
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Michael Rubin <mrubin@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
+        "axboe@kernel.dk" <axboe@kernel.dk>
+In-Reply-To: <20100905141715.GA9024@localhost>
+References: <20100831074825.GA19358@localhost> <20100905141715.GA9024@localhost>
+Message-Id: <20100906095414.C8BE.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1283731939.556.159.camel@haakon2.linux-iscsi.org>
-References: <4C7421FB.2060007@vlnb.net> <1282685014.32007.51.camel@haakon2.linux-iscsi.org>
- <4C76CA57.3050405@vlnb.net> <1282857806.32007.175.camel@haakon2.linux-iscsi.org>
- <4C79484B.3090607@vlnb.net> <1283028468.32007.357.camel@haakon2.linux-iscsi.org>
- <4C7C18CE.5020103@vlnb.net> <1283204792.32007.448.camel@haakon2.linux-iscsi.org>
- <4C7FFD1A.8090509@vlnb.net> <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
- <20100905201802.GC18411@core.coreip.homeip.net> <1283723447.556.133.camel@haakon2.linux-iscsi.org>
- <AANLkTimdHotxVS8ZJJhg0D08FUiw4scSMTb2dryqJ_vQ@mail.gmail.com> <1283731939.556.159.camel@haakon2.linux-iscsi.org>
-From: Mark Deneen <mdeneen@gmail.com>
-Date: Sun, 5 Sep 2010 20:58:23 -0400
-Message-ID: <AANLkTikOgc+YbkzmOpJv=s4Oxj9S9LYQ5qf5jDbT0ycg@mail.gmail.com>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>, linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        James Bottomley <James.Bottomley@suse.de>,
-        scst-devel <scst-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon,  6 Sep 2010 10:00:35 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Mark,
->
-> I will always be advocating using the best tool for the job in any given
-> situation.  So absoulutely, I would have picked bitkeeper over tarballs
-> any day of the week 7 years ago, or over SVN if it had existed back
-> then.
+> On Tue, Aug 31, 2010 at 03:48:25PM +0800, Wu Fengguang wrote:
+> > > > The output format is quite different from /proc/vmstat.
+> > > > Do we really need to "Node X", ":" and "times" decorations?
+> > > 
+> > > Node X is based on the meminfo file but I agree it's redundant information.
+> > 
+> > Thanks. In the same directory you can find a different style example
+> > /sys/devices/system/node/node0/numastat :) If ever the file was named
+> > vmstat! In the other hand, shall we put the numbers there? I'm confused..
+> 
+> With wider use of NUMA, I'm expecting more interests to put
+> /proc/vmstat items into /sys/devices/system/node/node0/.
 
-I can't say that I agree with this.  SVN existed, along with many
-other open source choices -- the choice of BitKeeper was a mistake.
+I prefer to create /sys/devices/system/node/node0/zones/zone-DMA32/vmstat
+because the VM is managing pages as per-zones.
+but /sys/devices/system/node/node0/vmstat is also useful.
 
-> But again, I think it's an important point that git is a tool that was
-> made explictly for the linux kernel workflow.  Why would a new subsystem
-> maintainer is participates in the kernel workflow ever use anything
-> besides git at this point..?
 
-Look, I'm not saying that I dislike git.  I use it as my SCM here.
-However, git was in its infancy (or not even around) when SCST was
-started.  It's not like they had a proprietary vendor go cold turkey
-on them, forcing everyone to another solution.
+> 
+> What shall we do then? There are several possible options:
+> - just put the /proc/vmstat items into nodeX/numastat
+> - create nodeX/vmstat and make numastat a symlink to vmstat
+> - create nodeX/vmstat and remove numastat in future
+> 
+> Any suggestions?
 
-> And sorry, but considering the obvious advantages in terms of workflow
-> speed and flexibility that git brings to the table for a subsystem
-> maintainer, calling the choise of SCM a nit-pick item demonstrates a
-> level certain level of inexperience wrt to mainline kernel workflow.
-> Which is perfectly OK, but if you really want to understand the issues
-> at hand in a distributed vs. centrailized SCM model, I strongly suggest
-> you watch Linus's talk as well.
->
-> Best,
->
-> --nab
 
-I'm still calling it a nit-pick.  Vlad could switch to git in a short
-amount of time if he felt so compelled.  This is like saying that the
-quality of a car is based on the style of garage it is parked in.
+I like 3rd option :)
+In addition, I doubt we really need to remove numastat. It's not
+so harmful.
 
-Kind Regards,
-Mark Deneen
+
+
+> 
+> > > > And the "_PAGES" in NR_FILE_PAGES_DIRTIED looks redundant to
+> > > > the "_page" in node_page_state(). It's a bit long to be a pleasant
+> > > > name. NR_FILE_DIRTIED/NR_CLEANED looks nicer.
+> > > 
+> > > Yeah. Will fix.
+> > 
+> > Thanks. This is kind of nitpick, however here is another name by
+> > Jan Kara: BDI_WRITTEN. BDI_WRITTEN may not be a lot better than
+> > BDI_CLEANED, but here is a patch based on Jan's code. I'm cooking
+> > more patches that make use of this per-bdi counter to estimate the
+> > bdi's write bandwidth, and to further decide the optimal (large)
+> > writeback chunk size as well as to do IO-less balance_dirty_pages().
+> > 
+> > Basically BDI_WRITTEN and NR_CLEANED are accounting for the same
+> > thing in different dimensions. So it would be good if we can use
+> > the same naming scheme to avoid confusing users: either to use
+> > BDI_WRITTEN and NR_WRITTEN, or use BDI_CLEANED and NR_CLEANED.
+> > What's your opinion?
+> 
+> I tend to prefer *_WRITTEN now.
+> - *_WRITTEN reminds the users about IO, *_CLEANED is less so obvious.
+> - *_CLEANED seems to be paired with NR_DIRTIED, this could be
+>   misleading to the users. The fact is, dirty pages may either be
+>   written to disk, or dropped (by truncate).
+
+Umm...
+If my understanding is correct, Michael really need *_CLEANED because
+he want to compare NR_DIRTIED and *_CLEANED. That said, we need to
+change counter implementation itself instead a name?
+
+
+
