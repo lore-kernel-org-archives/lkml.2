@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751648Ab0IFLyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 07:54:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43900 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab0IFLyR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 07:54:17 -0400
-Subject: Re: disabling group leader perf_event
-From: Peter Zijlstra <peterz@infradead.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-perf-users@vger.kernel.org,
+	id S1752279Ab0IFL7L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 07:59:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55710 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175Ab0IFL7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 07:59:09 -0400
+Message-ID: <4C84D77B.6040600@redhat.com>
+Date: Mon, 06 Sep 2010 14:58:51 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-perf-users@vger.kernel.org,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <4C84D1CE.3070205@redhat.com>
-References: <4C84B088.5050003@redhat.com> <1283772256.1930.303.camel@laptop>
-	 <4C84D1CE.3070205@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 06 Sep 2010 13:54:05 +0200
-Message-ID: <1283774045.1930.341.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Subject: Re: disabling group leader perf_event
+References: <4C84B088.5050003@redhat.com> <1283772256.1930.303.camel@laptop>	 <4C84D1CE.3070205@redhat.com> <1283774045.1930.341.camel@laptop>
+In-Reply-To: <1283774045.1930.341.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-06 at 14:34 +0300, Avi Kivity wrote:
-> On 09/06/2010 02:24 PM, Peter Zijlstra wrote:
-> > On Mon, 2010-09-06 at 12:12 +0300, Avi Kivity wrote:
-> >> If I read the code correctly, disabling a group leader perf_event will
-> >> disable the entire group.
-> >>
-> >> Is this correct?
-> > Yeah, pretty much.
-> 
-> Well, I never liked group_leader style APIs.  I like different types for 
-> the container and the contained.  But such is not unix.
-> 
-> >> If so, how can I disable just the event itself?  Can I allocate a dummy
-> >> invent for the group leader so I can enable and disable each perf_event
-> >> in the group individually?
-> > Which makes me wonder why you use groups in the first place.
-> 
-> Basically, to read() all events in one go.  I have many of them.
-> 
-> My current problem is that I have an event (kvm_exit) which I want to 
-> drill down by looking at a field (exit_reason).  So I create lots of 
-> separate perf_events with a filter for each reason: 
-> kvm_exit(exit_reason==0), kvm_exit(exit_reason==1), etc.  But filters 
-> are fairly slow (can have ~60 such events on AMD), so I want to make 
-> this drill-down optional.
+  On 09/06/2010 02:54 PM, Peter Zijlstra wrote:
+>
+>> Basically, to read() all events in one go.  I have many of them.
+>>
+>> My current problem is that I have an event (kvm_exit) which I want to
+>> drill down by looking at a field (exit_reason).  So I create lots of
+>> separate perf_events with a filter for each reason:
+>> kvm_exit(exit_reason==0), kvm_exit(exit_reason==1), etc.  But filters
+>> are fairly slow (can have ~60 such events on AMD), so I want to make
+>> this drill-down optional.
+> Yeah, filters suck.
 
-Yeah, filters suck.
+Any idea why?  I saw nothing obvious in the code, except that there is 
+lots of it.
 
-So what you're basically trying to do is create some histogram of
-exit_reason?
+> So what you're basically trying to do is create some histogram of
+> exit_reason?
 
-Being able to make histograms in-kernel has been on the todo list for a
-long while, its just that I never could come up with a sane
-interface.. :/
+Yes, exactly.
 
-> Current plan is to have a group for the basic events and another group 
-> for the drilldown events (each per-cpu), and activate the drilldown 
-> group on user request.  perf will be able to schedule both groups 
-> concurrently since they only contain tracepoints, yes?
+> Being able to make histograms in-kernel has been on the todo list for a
+> long while, its just that I never could come up with a sane
+> interface.. :/
 
-More or less, yeah (the scheduling of software and hardware events isn't
-properly separated atm -- am working on that). Software events have no
-scheduling constraints and should always get scheduled.
+Interesting, I thought it was just me.
 
+One option is to keep the existing filter interface, but recognize those 
+cases and optimize the implementation.  Sort of like a compiler can 
+optimize a large dense switch statement to a jump table.
+
+>> Current plan is to have a group for the basic events and another group
+>> for the drilldown events (each per-cpu), and activate the drilldown
+>> group on user request.  perf will be able to schedule both groups
+>> concurrently since they only contain tracepoints, yes?
+> More or less, yeah (the scheduling of software and hardware events isn't
+> properly separated atm -- am working on that). Software events have no
+> scheduling constraints and should always get scheduled.
+
+Great, thanks.
+
+(one other issue - right now I'm using cpu events.  If I switch to task 
+events, I lose events generated by workqueues, yes?)
+
+-- 
+error compiling committee.c: too many arguments to function
 
