@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab0IFCdH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 22:33:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34704 "EHLO mx2.suse.de"
+	id S1755191Ab0IFDCU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 23:02:20 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56043 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754563Ab0IFCdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 22:33:05 -0400
-Date: Mon, 6 Sep 2010 12:32:55 +1000
-From: Neil Brown <neilb@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
+	id S1755159Ab0IFDCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 23:02:19 -0400
+Date: Mon, 6 Sep 2010 13:02:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Neil Brown <neilb@suse.de>
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: linux-next: build warning after merge of the rcu tree
-Message-ID: <20100906123255.3eef4311@notabene>
-In-Reply-To: <20100906121408.33946fbe.sfr@canb.auug.org.au>
+Message-Id: <20100906130210.67e0427b.sfr@canb.auug.org.au>
+In-Reply-To: <20100906123255.3eef4311@notabene>
 References: <20100906121408.33946fbe.sfr@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	<20100906123255.3eef4311@notabene>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__6_Sep_2010_13_02_10_+1000_/TQ/Sz2jSstJDCJY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Sep 2010 12:14:08 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+--Signature=_Mon__6_Sep_2010_13_02_10_+1000_/TQ/Sz2jSstJDCJY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hi Paul,
-> 
-> After merging the rcu tree, today's linux-next build
-> (powerpc ppc64_defconfig) produced this warning:
-> 
-> drivers/md/raid1.c: In function 'read_balance':
-> drivers/md/raid1.c:445: warning: operation on 'new_disk' may be undefined
-> 
-> I am picking on the rcu tree because the line above has not changed since
-> 2005.  The line is:
-> 
->                 for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
->                      r1_bio->bios[new_disk] == IO_BLOCKED ||
->                      !rdev || !test_bit(In_sync, &rdev->flags)
->                              || test_bit(WriteMostly, &rdev->flags);
->                      rdev = rcu_dereference(conf->mirrors[++new_disk].rdev)) {
-> 
-> Where new_disk is being updated in the parameter to the last
-> rcu_dereference.
-> 
+Hi Neil,
 
-Hi Stephen,
 
- There is a patch in linux-kernel
-    "PATCH] md: do not use ++ in rcu_dereference() argument"
+On Mon, 6 Sep 2010 12:32:55 +1000 Neil Brown <neilb@suse.de> wrote:
+>
+>  There is a patch in linux-kernel
+>     "PATCH] md: do not use ++ in rcu_dereference() argument"
+>=20
+>  that addresses this - it is a problem in md: I guess rcu as become more
+>  helpful in finding these problems.
+>=20
+>  I'll probably fix it a little differently, but I'll have something in my
+>  for-next for tomorrow.
 
- that addresses this - it is a problem in md: I guess rcu as become more
- helpful in finding these problems.
+Ah, ok.  Thanks.
 
- I'll probably fix it a little differently, but I'll have something in my
- for-next for tomorrow.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Thanks,
-NeilBrown
+--Signature=_Mon__6_Sep_2010_13_02_10_+1000_/TQ/Sz2jSstJDCJY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMhFmyAAoJEDMEi1NhKgbsUu8H/1ibetx5Y+E4t4FD7dG1vXVt
++UmfIj3BbPu7FYCee2v8lBeWom91/Hc4ATOCQaEmnIxI4BmocTUBKva+/qk53ElL
+ZvtxM7O8w6ruh99weksX8BWBv5AsOs/5G8t72UgbR/gecHarv3dT9B+Kk1MPFHIK
+6UyMayRQq3j1tAKJbcflVVe+cCXk4qhWjTzHdIESJuYFyC714c7bTotNPCz5V048
+yebb3v4byFPa9bhAraRVl3Lfscj8eMP0Xs8rXQ9Vusne1Lgp2MMLMw8ueypE+ORC
+EcxIR9JCBx+HTx+vy2GFojghHpU3zXZqOiGZY/HZ7VXPL/uiL+86BdEd0hSM7/o=
+=yBlV
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__6_Sep_2010_13_02_10_+1000_/TQ/Sz2jSstJDCJY--
