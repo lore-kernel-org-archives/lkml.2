@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab0IFMO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 08:14:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817Ab0IFMO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 08:14:27 -0400
-Message-ID: <4C84DB1E.1040503@redhat.com>
-Date: Mon, 06 Sep 2010 15:14:22 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1753095Ab0IFMRQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 08:17:16 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:52337 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911Ab0IFMRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 08:17:15 -0400
+Date: Mon, 6 Sep 2010 20:17:08 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Miloslav Trmac <mitr@redhat.com>
+Cc: Kyle Moffett <kyle@moffetthome.net>, linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 01/19] User-space API definition
+Message-ID: <20100906121708.GA26354@gondor.apana.org.au>
+References: <1278368294.1123931282577639823.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com> <1269957386.1124701282577860651.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
 MIME-Version: 1.0
-To: Andre Przywara <andre.przywara@amd.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] x86: Fix allowed CPUID bits for KVM guests
-References: <1283506069-1096-1-git-send-email-andre.przywara@amd.com> <1283506069-1096-4-git-send-email-andre.przywara@amd.com> <4C8350C5.7050302@redhat.com> <4C84D903.6010104@amd.com>
-In-Reply-To: <4C84D903.6010104@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269957386.1124701282577860651.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/06/2010 03:05 PM, Andre Przywara wrote:
+On Mon, Aug 23, 2010 at 11:37:40AM -0400, Miloslav Trmac wrote:
 >
->>
->> Did we really enable "sse5" before xsave?  That looks broken, but I 
->> guess no real harm if xsave itself is not enabled.
-> Yes. It somehow slipped through when you introduced the other feature 
-> flags to KVM. I also think this is not a serious problem.
-> BTW: I realized that AES is currently denied. Reading the manual I see 
-> that it operates on SSE registers, so it should be safe to be passed 
-> through. The only drawback is that it would change the visible CPUID 
-> on CPUs that already have AES, whereas earlier KVM versions did hide it.
+> I can see almost no overlap between the two sets of requirements.  Probably the only common use case is handling session keys (e.g. keys used in a kerberos ticket), which should be stored in the kernel for the duration of the session, made available to each process in the session, and available as keys for kernel crypto.  Such keys will be in the minority, though, and it seems to me the best approach for handling these is to allow key export/import from/to keyring keys in addition to export/import from/to data in userspace: the long-term storage would be handled by the existing keyring API, which stores the key as unformatted binary data, and import into the crypto context would convert the key into the internal representation more suitable for crypto.
+> 
+> I have seriously considered the keyring API, and this is what I came up with - but I'd love to be shown a better way.
 
-This code doesn't directly affect a guest's cpuid, it merely tells host 
-userspace which cpuid bits are supported by kvm.  It's perfectly fine to 
-add bits as we add support, in fact this interface is what makes 
-migration work across cpus with different capabilities.
+FWIW adding a second key management system to the kernel is
+totally out of the question.
 
-> This could become a problem with migration. But if you agree, I'd 
-> integrate this flag in the v2 series.
+If the existing system doesn't work for you, find a way to build
+on it so that it does.  Adding a second system that pretty much
+does the same thing is unacceptable.
 
-Shouldn't be a problem - please do.
+Also, the key management for secret keys that you've added should
+not be the only mode offered to the user.  Most people do not need
+the separation between key setting and encryption/decryption.
 
+Cheers,
 -- 
-error compiling committee.c: too many arguments to function
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
