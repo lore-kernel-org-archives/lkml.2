@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab0IFFpf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 01:45:35 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59239 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab0IFFpd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 01:45:33 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 6 Sep 2010 14:40:19 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, fengguang.wu@intel.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, andi.kleen@intel.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [PATCH 0/3] memory hotplug: updates and bugfix for is_removable
-Message-Id: <20100906144019.946d3c49.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752403Ab0IFFqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 01:46:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12044 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751982Ab0IFFqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 01:46:20 -0400
+Message-ID: <4C84801F.9060803@redhat.com>
+Date: Mon, 06 Sep 2010 08:46:07 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>, Alexander Graf <agraf@suse.de>
+Subject: Re: [PATCH] KVM: don't sent IPI if the vcpu is not online
+References: <4C807593.1050903@cn.fujitsu.com> <4C83445B.4020103@redhat.com> <4C844887.9090802@cn.fujitsu.com>
+In-Reply-To: <4C844887.9090802@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  On 09/06/2010 04:48 AM, Xiao Guangrong wrote:
+> On 09/05/2010 03:18 PM, Avi Kivity wrote:
+>>   On 09/03/2010 07:12 AM, Xiao Guangrong wrote:
+>>> It's no need sent IPI to the vcpu which is schedule out
+>>>
+>>>
+>>> @@ -86,6 +86,7 @@ struct kvm_vcpu {
+>>>        unsigned long requests;
+>>>        unsigned long guest_debug;
+>>>        int srcu_idx;
+>>> +    bool online;
+>> Why not check for guest_mode instead?
+>>
+> Oh, i forget it...but 'vcpu->guest_mode' is only used in x86 platform,
+> and make_all_cpus_request() is a common function.
 
-Problem:
+We can have a function kvm_vcpu_guest_mode() that is defined differently 
+for x86 and the other.
 
-/sys/devices/system/memory/memoryX/removable file shows whether the section
-can be offlined or not. Returns "1" if it seems removable.
+> So, maybe it's better use 'vcpu->online' here, and move 'guest_mode' into
+> 'vcpu->arch' ?
 
-Now, the file uses a similar logic to one offline_pages() uses.
-Problem here is.
- 
-  - removable detection logics of is_removable() and offline_pages() is
-    different from each other.
-  - The logic, which check MIGRATE_TYPE, tend to be incorrect once fragmented.
-    MIGRATE_TYPE of a pageblock is just a hint, no guarantee.
+I think guest_mode makes sense for the other archs for reducing IPIs, so 
+let's leave it common and recommend that they implement it.  Alex, if 
+you're ever bored.
 
-Then, this patch set does.
-
-  - use the same logic between is_removable() and offline_pages().
-  - don't use MIGRATE_TYPE, check the memmap itself directly rather than hint.
-
-Brief patch description:
- 1. bugfix for is_removable() check. I think this should be back ported.
- 2. bugfix for callback at counting immobile pages.
-    I think the old logic rarely hits this bug..so, not necessary to backport.
- 3. the unified new logic for is_remobable.
-
-Only patch1 is CCed to stable for now and the patch series itself is onto
-mmotm-08-27.
-
-Thanks,
--Kame
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
