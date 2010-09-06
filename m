@@ -1,47 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab0IFG35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 02:29:57 -0400
-Received: from csamuel.org ([74.50.50.137]:53391 "EHLO csamuel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752441Ab0IFG34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 02:29:56 -0400
-Message-ID: <4C848A4E.9040103@csamuel.org>
-Date: Mon, 06 Sep 2010 16:29:34 +1000
-From: Chris Samuel <chris@csamuel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Lightning/1.0b2 Thunderbird/3.1.1
+	id S1752798Ab0IFGda (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 02:33:30 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50410 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396Ab0IFGd2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 02:33:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=e1pC1gF2GIB18a2yBQbzdfir9Lv227hOKujqd9Ah7LPNNOhgwEmGyLH9fTE4MGAl3X
+         pSclBUHiBCfoZJoIY40BO1HzYM/Q0Q+05RC69Fedpogd1xzcH7XxpHNcIaAWHumd+N0x
+         VqtWMOFdrYnj26R3NTEjOzUAdLGCh5gHx5pcI=
+Date: Mon, 6 Sep 2010 08:33:27 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
+        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+Message-ID: <20100906063327.GA4549@riccoc20.at.omicron.at>
+References: <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
+ <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
+ <20100817085324.GB3330@riccoc20.at.omicron.at>
+ <1282090963.1734.97.camel@localhost>
+ <20100818071942.GA4096@riccoc20.at.omicron.at>
+ <1282176776.2865.100.camel@localhost.localdomain>
+ <20100819055518.GA4084@riccoc20.at.omicron.at>
+ <1282594125.3111.344.camel@localhost.localdomain>
+ <20100827123849.GC11657@riccoc20.at.omicron.at>
+ <1282948239.2268.155.camel@jstultz-laptop>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-btrfs@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Jeff Moyer <jmoyer@redhat.com>,
-        btrfs-devel <btrfs-devel@oss.oracle.com>,
-        Andrew Morton <akpm@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Josef Bacik <josef@redhat.com>
-Subject: Re: [Btrfs-devel] [patch] O_DIRECT: fix the splitting up of contiguous
- I/O
-References: <x49vd7f368c.fsf@segfault.boston.devel.redhat.com>	<20100902142501.GA14932@infradead.org>	<201009052256.12386.chris@csamuel.org> <20100905093620.d2eeb539.akpm@linux-foundation.org>
-In-Reply-To: <20100905093620.d2eeb539.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282948239.2268.155.camel@jstultz-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/10 02:36, Andrew Morton wrote:
-
-> On Sun, 5 Sep 2010 22:56:08 +1000 Chris Samuel <chris@csamuel.org> wrote:
+On Fri, Aug 27, 2010 at 03:30:39PM -0700, John Stultz wrote:
+> On Fri, 2010-08-27 at 14:38 +0200, Richard Cochran wrote:
+> > We have not introduced new PPS interface. We use existing PPS subsystem.
 > 
->> > Did this patch get dropped ? 
->
-> Nope.  I have it queued for 2.6.36 and -stable, will send it in soon. 
-> Everything is a bit lagged at present due to conferences, summer,
-> encroaching senility, etc.
+> Doesn't the pps subsystem have its own way to control the pps signal
+> interrupt? I'm not totally sure here, but given your point above that
+> having multiple pps events it seems like they should be selectable. It
+> seems something that we'd want to control via the global pps interface,
+> rather then having a pps-enable flag on every random bit of hardware
+> that can support it.
 
-Mea culpa - I mixed up the date of the original email with the
-date of Christoph's email and so thought he'd sent that back
-in August.  Looks like I'm the one with senility issues.. ;-)
+The PPS subsystem offers no way to disable PPS interrupts. 
 
-cheers,
-Chris
--- 
- Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
+> > > Same for the timestamps and periodic output (ie: and how do they differ
+> > > from reading or setting a timer on CLOCK_PTP?)
+> > 
+> > The posix timer calls won't work:
+> > 
+> > I have a PTP hardware clocks with multiple external timestamp
+> > channels. Using timer_gettime, how can I specify (or decode) the
+> > channel of interest to me?
+> 
+> I guess I'm not following you here. Again, I'm not super familiar with
+> the hardware involved. Could you clarify a bit more? What do you mean by
+> external timestamp? Is this what is used on the packet timestamping? 
+
+No, the packet timestamp occurs in the PHY, MAC, or on the MII bus and
+is an essential feature to support the PTP.
+
+An external timestamp is just a wire going into the clock and is an
+optional feature to make the clock more useful. The clock can latch
+the current time value when an edge is dectected on the wire. Using
+external timestamps, you correlate real world events with the absolute
+time in the clock.
+
+Typically, a clock offers two or more such input channels (wires), but
+timer_gettime does not offer a way to differentiate between them, and
+thus is not suitable.
+
+> The posix clock id interface is frustrating because the flat static
+> enumeration is really limiting.
+> 
+> I wonder if a dynamic enumeration for posix clocks would be possibly a
+> way to go?
+
+I am perfectly happy with this.
+
+> In other words, a driver registers a clock with the system, and the
+> system reserves a clock_id for it from the designated available pool and
+> assigns it back. Then userland could query the driver via something like
+> sysfs to get the clockid for the hardware. 
+> 
+> Would that maybe work? 
+
+I have now posted a sample implementation of this idea. Do you like it?
+
+> > The sysfs will include one class device for each PTP clock. Each clock
+> > has a sysfs attribute with the corresponding clock id.
+> 
+> Do you mean the clock_id # in the posix clocks namespace?
+
+Yes.
+
+> > I would also be happy with the character device idea already
+> > posted. Just pick one of the two, and I'll resubmit the patch set...
+> 
+> Personally, with regard to exposing the ptp clock to userland I'm more
+> comfortable via the chardev. However, the posix clocks/timer api is
+> really close to what you need, so I'm not totally set against it. And
+> maybe the dynamic enumeration would resolve my main problems with it?
+
+Okay, I have posted a draft of the dynamic idea. Can you support it?
+
+> That said, with the chardev method, I don't like the idea of duplicating
+> the existing time apis via a systemtime device. Dropping that from your
+> earlier patch would ease the majority of my objections.
+
+Well, the clock interface needs to offer basic services:
+
+1. Set time
+2. Get time
+3. Jump offset
+4. Adjust frequency
+
+This is similar to what the posix clock and ntp API offer. Using a
+chardev, should I make the ioctls really different, just for the
+purpose of being different?
+
+To me, it makes more sense to offer a familiar interface.
+
+I was perfectly happy with the chardev idea. In fact, that is the way
+I first implemented it. Now, I have also gone ahead and implemented
+the dynamic posix clock idea, too.
+
+> > At this point I would just like to go forward with one of the two
+> > proposed APIs. I had modelled the character device on the posix clock
+> > calls in order to make it immediately familar, and I think it is a
+> > viable approach. After the lkml discussion, I think it is even cleaner
+> > and nicer to just offer a new clock id.
+
+I would like to repeat the sentiment in this last paragraph! I already
+implemented and would be content with either form for the new clock
+control API:
+
+1. Character device
+2. POSIX clock with dynamic ids
+
+Please, just take your pick ;^)
+
+Thanks,
+Richard
