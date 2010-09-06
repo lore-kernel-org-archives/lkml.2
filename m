@@ -1,218 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695Ab0IFFw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 01:52:29 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47885 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab0IFFw2 (ORCPT
+	id S1751693Ab0IFGBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 02:01:50 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51410 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab0IFGBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 01:52:28 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 6 Sep 2010 14:47:16 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, fengguang.wu@intel.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, andi.kleen@intel.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [PATCH 3/3] memory hotplug: use unified logic for is_removable and
- offline_pages
-Message-Id: <20100906144716.dfd6d536.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100906144019.946d3c49.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100906144019.946d3c49.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Mon, 6 Sep 2010 02:01:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=rAFSebtxhN89xGEncPywdOHRuhiSDfqqVOCG8z1pJv7Lgwh2LPRja2GI1pWl3V7y6u
+         x/DGN8TD39TXxUbOUHBjMvMQiMhUaZGMipNpza5VHnHQ/dMvJ7B8eGhHn39Pd2p+5sGp
+         ukhCE3FFWQoAO8eDfcQgguu08H14pfiHlzjI4=
+Subject: [PATCH] regulator: wm8350-regulator - fix the logic of checking
+	REGULATOR_MODE_STANDBY mode
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Content-Type: text/plain
+Date: Mon, 06 Sep 2010 14:06:07 +0800
+Message-Id: <1283753167.19378.1.camel@mola>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In wm8350_dcdc_set_mode(), we set DCx_SLEEP bit of WM8350_DCDC_SLEEP_OPTIONS
+register for REGULATOR_MODE_STANDBY mode.
+( DCx_SLEEP bits: 0: Normal DC-DC operation 1: Select LDO mode )
 
-Now, sysfs interface of memory hotplug shows whether the section is
-removable or not. But it checks only migrateype of pages and doesn't
-check details of cluster of pages.
+In wm8350_dcdc_get_mode(), current logic to determinate
+REGULATOR_MODE_STANDBY mode is just reverse.
+( sleep is set should mean REGULATOR_MODE_STANDBY mode. )
 
-Next, memory hotplug's set_migratetype_isolate() has the same kind
-of check, too. But the migrate-type is just a "hint" and the pageblock
-can contain several types of pages if fragmentation is very heavy.
-
-To get precise information, we need to check
- - the pageblock only contains free pages or LRU pages.
-
-This patch adds the function __count_unmovable_pages() and makes
-above 2 checks to use the same logic. This will improve user experience
-of memory hotplug because sysfs interface tells accurate information.
-
-Note:
-it may be better to check MIGRATE_UNMOVABLE for making failure case quick.
-
-Changelog: 2010/09/06
- - added comments.
- - removed zone->lock.
- - changed the name of the function to be is_pageblock_removable_async().
-   because I removed the zone->lock.
-
-Reported-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- include/linux/memory_hotplug.h |    1 
- mm/memory_hotplug.c            |   15 -------
- mm/page_alloc.c                |   77 ++++++++++++++++++++++++++++++-----------
- 3 files changed, 60 insertions(+), 33 deletions(-)
+ drivers/regulator/wm8350-regulator.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Index: kametest/mm/page_alloc.c
-===================================================================
---- kametest.orig/mm/page_alloc.c
-+++ kametest/mm/page_alloc.c
-@@ -5274,11 +5274,61 @@ void set_pageblock_flags_group(struct pa
-  * page allocater never alloc memory from ISOLATE block.
-  */
+diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
+index 0e6ed7d..fe4b8a8 100644
+--- a/drivers/regulator/wm8350-regulator.c
++++ b/drivers/regulator/wm8350-regulator.c
+@@ -1129,7 +1129,7 @@ static unsigned int wm8350_dcdc_get_mode(struct regulator_dev *rdev)
+ 			mode = REGULATOR_MODE_NORMAL;
+ 	} else if (!active && !sleep)
+ 		mode = REGULATOR_MODE_IDLE;
+-	else if (!sleep)
++	else if (sleep)
+ 		mode = REGULATOR_MODE_STANDBY;
  
-+static int __count_immobile_pages(struct zone *zone, struct page *page)
-+{
-+	unsigned long pfn, iter, found;
-+	/*
-+	 * For avoiding noise data, lru_add_drain_all() should be called
-+ 	 * If ZONE_MOVABLE, the zone never contains immobile pages
-+ 	 */
-+	if (zone_idx(zone) == ZONE_MOVABLE)
-+		return 0;
-+
-+	pfn = page_to_pfn(page);
-+	for (found = 0, iter = 0; iter < pageblock_nr_pages; iter++) {
-+		unsigned long check = pfn + iter;
-+
-+		if (!pfn_valid_within(check)) {
-+			iter++;
-+			continue;
-+		}
-+		page = pfn_to_page(check);
-+		if (!page_count(page)) {
-+			if (PageBuddy(page))
-+				iter += (1 << page_order(page)) - 1;
-+			continue;
-+		}
-+		if (!PageLRU(page))
-+			found++;
-+		/*
-+		 * If the page is not RAM, page_count()should be 0.
-+		 * we don't need more check. This is an _used_ not-movable page.
-+		 *
-+		 * The problematic thing here is PG_reserved pages. PG_reserved
-+		 * is set to both of a memory hole page and a _used_ kernel
-+		 * page at boot.
-+		 */
-+	}
-+	return found;
-+}
-+
-+bool is_pageblock_removable_async(struct page *page)
-+{
-+	struct zone *zone = page_zone(page);
-+	unsigned long flags;
-+	int num;
-+	/* Don't take zone->lock interntionally. */
-+	num = __count_immobile_pages(zone, page);
-+
-+	if (num)
-+		return false;
-+	return true;
-+}
-+
- int set_migratetype_isolate(struct page *page)
- {
- 	struct zone *zone;
--	struct page *curr_page;
--	unsigned long flags, pfn, iter;
-+	unsigned long flags, pfn;
- 	unsigned long immobile = 0;
- 	struct memory_isolate_notify arg;
- 	int notifier_ret;
-@@ -5289,11 +5339,6 @@ int set_migratetype_isolate(struct page 
- 	zone_idx = zone_idx(zone);
- 
- 	spin_lock_irqsave(&zone->lock, flags);
--	if (get_pageblock_migratetype(page) == MIGRATE_MOVABLE ||
--	    zone_idx == ZONE_MOVABLE) {
--		ret = 0;
--		goto out;
--	}
- 
- 	pfn = page_to_pfn(page);
- 	arg.start_pfn = pfn;
-@@ -5315,19 +5360,13 @@ int set_migratetype_isolate(struct page 
- 	notifier_ret = notifier_to_errno(notifier_ret);
- 	if (notifier_ret)
- 		goto out;
-+	immobile = __count_immobile_pages(zone ,page);
- 
--	for (iter = pfn; iter < (pfn + pageblock_nr_pages); iter++) {
--		if (!pfn_valid_within(pfn))
--			continue;
--
--		curr_page = pfn_to_page(iter);
--		if (!page_count(curr_page) || PageLRU(curr_page))
--			continue;
--
--		immobile++;
--	}
--
--	if (arg.pages_found == immobile)
-+	/*
-+	 * immobile means "not-on-lru" paes. If immobile is larger than
-+	 * removable-by-driver pages reported by notifier, we'll fail.
-+	 */
-+	if (!immobile || arg.pages_found >= immobile)
- 		ret = 0;
- 
- out:
-Index: kametest/mm/memory_hotplug.c
-===================================================================
---- kametest.orig/mm/memory_hotplug.c
-+++ kametest/mm/memory_hotplug.c
-@@ -602,27 +602,14 @@ static struct page *next_active_pagebloc
- /* Checks if this range of memory is likely to be hot-removable. */
- int is_mem_section_removable(unsigned long start_pfn, unsigned long nr_pages)
- {
--	int type;
- 	struct page *page = pfn_to_page(start_pfn);
- 	struct page *end_page = page + nr_pages;
- 
- 	/* Check the starting page of each pageblock within the range */
- 	for (; page < end_page; page = next_active_pageblock(page)) {
--		type = get_pageblock_migratetype(page);
--
--		/*
--		 * A pageblock containing MOVABLE or free pages is considered
--		 * removable
--		 */
--		if (type != MIGRATE_MOVABLE && !pageblock_free(page))
-+		if (!is_pageblock_removable_async(page))
- 			return 0;
- 
--		/*
--		 * A pageblock starting with a PageReserved page is not
--		 * considered removable.
--		 */
--		if (PageReserved(page))
--			return 0;
- 	}
- 
- 	/* All pageblocks in the memory block are likely to be hot-removable */
-Index: kametest/include/linux/memory_hotplug.h
-===================================================================
---- kametest.orig/include/linux/memory_hotplug.h
-+++ kametest/include/linux/memory_hotplug.h
-@@ -69,6 +69,7 @@ extern void online_page(struct page *pag
- /* VM interface that may be used by firmware interface */
- extern int online_pages(unsigned long, unsigned long);
- extern void __offline_isolated_pages(unsigned long, unsigned long);
-+extern bool is_pageblock_removable_async(struct page *page);
- 
- /* reasonably generic interface to expand the physical pages in a zone  */
- extern int __add_pages(int nid, struct zone *zone, unsigned long start_pfn,
+ 	return mode;
+-- 
+1.7.2
+
+
 
