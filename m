@@ -1,286 +1,425 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751180Ab0IFHnj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 03:43:39 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:50794 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750749Ab0IFHni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 03:43:38 -0400
-Message-ID: <4C849BA4.1080106@bfs.de>
-Date: Mon, 06 Sep 2010 09:43:32 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
+	id S1751315Ab0IFHvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 03:51:09 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60868 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab0IFHvH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 03:51:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=bfNQ7kXCd6U8S/krNTLjhGEFIzB1Wvw7WjUhWrj1dWrjJYk61X7gSmpJcl8ql8Wjuy
+         vi5Wf0FecO4Yjm4BAr9E3zY4pqj3xFHlCCvaiFQcB26W1nGRol04iA/gnmVJ7IJbJngO
+         cPr1fvuZE7kcT/SexoLRAMQrYFzHw5Gx/e+so=
 MIME-Version: 1.0
-To: Neil Brown <neilb@suse.de>
-CC: Sam Ravnborg <sam@ravnborg.org>, Kulikov Vasiliy <segooon@gmail.com>,
-        kernel-janitors@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] md: do not use ++ in rcu_dereference() argument
-References: <1283711539-7123-1-git-send-email-segooon@gmail.com>	<20100905190139.GA3163@merkur.ravnborg.org>	<20100905192335.GA8140@albatros>	<20100905203908.GA3228@merkur.ravnborg.org> <20100906152931.1d4a1d07@notabene>
-In-Reply-To: <20100906152931.1d4a1d07@notabene>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=+hB8w8U1dFr-Uy_r+Y7sxao1SGgnWEYvykSUY@mail.gmail.com>
+References: <AANLkTimjO7sBzR55XkPB7dmZvxXqc8PS4UDsgptXVt90@mail.gmail.com>
+ <1283504768.2100.43.camel@steven> <AANLkTik=0wMHh9fg8_vK_Aor40J43mNojvfHadhHObKA@mail.gmail.com>
+ <1283590584.1685.39.camel@steven> <AANLkTimYgMotZBbGTvPGSzfo3jjZ_-TeXftVQ6bBzHrT@mail.gmail.com>
+ <1283592366.1685.50.camel@steven> <AANLkTim5_vf9Tg1g13HAmiO7zAjPzR6QaJ3k2edQzkCv@mail.gmail.com>
+ <1283616109.1685.98.camel@steven> <AANLkTikpuWov=ee2g4B60HOvCd1ZYcnGhH8jT=ANqHNe@mail.gmail.com>
+ <1283618879.1685.110.camel@steven> <AANLkTi=+hB8w8U1dFr-Uy_r+Y7sxao1SGgnWEYvykSUY@mail.gmail.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Mon, 6 Sep 2010 15:50:46 +0800
+Message-ID: <AANLkTi=kVNC4oXzwYrPgiHkZ9V3wCTC5WcdPoQFZKQ6T@mail.gmail.com>
+Subject: Re: Linux Kernel GDB tracepoint module 2010-8-30 release
+To: Steven <mqyoung@gmail.com>
+Cc: "gdb@sourceware.org" <gdb@sourceware.org>, linux-kernel@vger.kernel.org,
+        Michael Snyder <msnyder@vmware.com>,
+        Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+cat /sys/module/hello/sections/.bss
+0xf81b92ec
+add-symbol-file ~/kernel/tmp/h/hello.ko 0xf81b9000 -s .bss 0xf81b92ec
+
+(gdb) tstart
+(gdb) tstatus
+Trace is running on the target.
+Collected 0 trace frames.
+Trace buffer has 86255744 bytes of 86255744 bytes free (0% full).
+Trace will stop if GDB disconnects.
+Not looking at any trace frame.
+(gdb) tstop
+(gdb) tfind
+Found trace frame 0, tracepoint 1
+#0  0xf81b9068 in test_thread (data=<value optimized out>) at
+/home/teawater/kernel/tmp/h/hello.c:22
+22	               cnt++;
+(gdb) p cnt
+$1 = 106
+(gdb) p tv
+$2 = {tv_sec = 1283760246, tv_usec = 784020}
+(gdb) p year
+$3 = 2010
+(gdb)
+
+Looks I need update HOWTO now.
 
 
-Neil Brown schrieb:
-> On Sun, 5 Sep 2010 22:39:08 +0200
-> Sam Ravnborg <sam@ravnborg.org> wrote:
-> 
->> On Sun, Sep 05, 2010 at 11:23:35PM +0400, Kulikov Vasiliy wrote:
->>> On Sun, Sep 05, 2010 at 21:01 +0200, Sam Ravnborg wrote:
->>>> On Sun, Sep 05, 2010 at 10:32:18PM +0400, Kulikov Vasiliy wrote:
->>>>> From: Vasiliy Kulikov <segooon@gmail.com>
->>>>>
->>>>> rcu_dereference() is macro, so it might use its argument twice.
->>>>> Argument must not has side effects.
->>>>>
->>>>> It was found by compiler warning:
->>>>> drivers/md/raid1.c: In function â€˜read_balanceâ€™:
->>>>> drivers/md/raid1.c:445: warning: operation on â€˜new_diskâ€™ may be undefined
->>>> This change looks wrong.
->>>> In the original implementation new_disk is incremented and
->>>> then we do the array lookup.
->>>> With your implementation it looks like we increment it after
->>>> the array lookup.
->>> No, the original code increments new_disk and then dereferences mirrors.
->>>
->>> The full code:
->>>
->>> 		for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
->>> 		     r1_bio->bios[new_disk] == IO_BLOCKED ||
->>> 		     !rdev || !test_bit(In_sync, &rdev->flags)
->>> 			     || test_bit(WriteMostly, &rdev->flags);
->>> 		     rdev = rcu_dereference(conf->mirrors[++new_disk].rdev)) {
->>>
->>> 			if (rdev && test_bit(In_sync, &rdev->flags) &&
->>> 				r1_bio->bios[new_disk] != IO_BLOCKED)
->>> 				wonly_disk = new_disk;
->>>
->>> 			if (new_disk == conf->raid_disks - 1) {
->>> 				new_disk = wonly_disk;
->>> 				break;
->>> 			}
->>> 		}
->>>
->>>     so,
->>>
->>>     for (a; b; c = f(++g)) {
->>>        ...
->>>     } 
->> Thanks - that explains it.
->> This code really screams for a helper function but thats another matter.
-> 
-> Not an uncommon complaint about my code as it happens......
-> 
-> I've taken the opportunity to substantially re-write that code.
-> 
-> Comments?
-> 
+To get all the module message with hand is uncool.
+I will make it more automated when I have time.
+
+Thanks,
+Hui
+
+On Mon, Sep 6, 2010 at 15:21, Hui Zhu <teawater@gmail.com> wrote:
+> Sep  6 15:17:06 teawater kernel: [514552.780031] gtp_kp_pre_handler:
+> tracepoint 1
+> Sep  6 15:17:06 teawater kernel: [514552.780034] gtp_parse_x: cmd 23
+> Sep  6 15:17:06 teawater kernel: [514552.780035] gtp_parse_x: cmd 22
+> Sep  6 15:17:06 teawater kernel: [514552.780037] gtp_parse_x: cmd c
+> Sep  6 15:17:06 teawater kernel: [514552.780039]
+> gtp_action_memory_read: id:1 0000054c 8
+> Sep  6 15:17:06 teawater kernel: [514552.780043]
+> gtp_action_memory_read: id:1 read 0000054c 8 get error.
+> Sep  6 15:17:06 teawater kernel: [514552.780048] gtp_kp_pre_handler:
+> tracepoint 1 stop.
+> Sep  6 15:17:06 teawater kernel: [514552.780051] tv_sec: 1283757426 - 2010
+> Sep  6 15:17:06 teawater kernel: [514552.780053] gtp_kp_pre_handler:
+> tracepoint 2
+> Sep  6 15:17:06 teawater kernel: [514552.780055] gtp_parse_x: cmd 23
+> Sep  6 15:17:06 teawater kernel: [514552.780056] gtp_parse_x: cmd 22
+> Sep  6 15:17:06 teawater kernel: [514552.780057] gtp_parse_x: cmd c
+> Sep  6 15:17:06 teawater kernel: [514552.780058]
+> gtp_action_memory_read: id:2 0000054c 8
+> Sep  6 15:17:06 teawater kernel: [514552.780061]
+> gtp_action_memory_read: id:2 read 0000054c 8 get error.
+> Sep  6 15:17:06 teawater kernel: [514552.780063] gtp_kp_pre_handler:
+> tracepoint 2 stop.
+> Sep  6 15:17:06 teawater kernel: [514552.780068] gtp_stop: tracepoint 1
+> Sep  6 15:17:06 teawater kernel: [514552.792059] gtp_stop: tracepoint 2
+>
+> (gdb) add-symbol-file ~/kernel/tmp/h/hello.ko 0xf81b9000
+> add symbol table from file "/home/teawater/kernel/tmp/h/hello.ko" at
+>        .text_addr = 0xf81b9000
+> (y or n) y
+> Reading symbols from /home/teawater/kernel/tmp/h/hello.ko...done.
+> (gdb) p year
+> Cannot access memory at address 0x554
+> (gdb) p tv
+> Cannot access memory at address 0x54c
+>
+> Looks GDB didn't get the right address of this val.
+>
+> Export them maybe handle this issue.
+>
 > Thanks,
-> NeilBrown
-> 
-> commit e4062735c8f7233923df5858ed20f1278f3ee669
-> Author: NeilBrown <neilb@suse.de>
-> Date:   Mon Sep 6 14:10:08 2010 +1000
-> 
->     md: tidy up device searches in read_balance.
->     
->     We have a pre-increment side-effect in the arg to a macro:
->       rcu_dereference
->     
->     This is poor form and triggers a warning.  Rather than just fix that,
->     take the opportunity to re-write the code it make it more readable.
->     
->     Reported-by: Kulikov Vasiliy <segooon@gmail.com>
->     Signed-off-by: NeilBrown <neilb@suse.de>
-> 
-> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-> index ad83a4d..e29e13f 100644
-> --- a/drivers/md/raid1.c
-> +++ b/drivers/md/raid1.c
-> @@ -420,11 +420,13 @@ static void raid1_end_write_request(struct bio *bio, int error)
->  static int read_balance(conf_t *conf, r1bio_t *r1_bio)
->  {
->  	const sector_t this_sector = r1_bio->sector;
-> -	int new_disk = conf->last_used, disk = new_disk;
-> -	int wonly_disk = -1;
-> +	int new_disk = -1;
-> +	int start_disk;
-> +	int i;
->  	const int sectors = r1_bio->sectors;
->  	sector_t new_distance, current_distance;
->  	mdk_rdev_t *rdev;
-> +	int choose_first;
->  
->  	rcu_read_lock();
->  	/*
-> @@ -435,54 +437,35 @@ static int read_balance(conf_t *conf, r1bio_t *r1_bio)
->   retry:
->  	if (conf->mddev->recovery_cp < MaxSector &&
->  	    (this_sector + sectors >= conf->next_resync)) {
-> -		/* Choose the first operational device, for consistancy */
-> -		new_disk = 0;
-> -
-> -		for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
-> -		     r1_bio->bios[new_disk] == IO_BLOCKED ||
-> -		     !rdev || !test_bit(In_sync, &rdev->flags)
-> -			     || test_bit(WriteMostly, &rdev->flags);
-> -		     rdev = rcu_dereference(conf->mirrors[++new_disk].rdev)) {
-> -
-> -			if (rdev && test_bit(In_sync, &rdev->flags) &&
-> -				r1_bio->bios[new_disk] != IO_BLOCKED)
-> -				wonly_disk = new_disk;
-> -
-> -			if (new_disk == conf->raid_disks - 1) {
-> -				new_disk = wonly_disk;
-> -				break;
-> -			}
-> -		}
-> -		goto rb_out;
-> +		choose_first = 1;
-> +		start_disk = 0;
-> +	} else {
-> +		choose_first = 0;
-> +		start_disk = conf->last_used;
->  	}
->  
-
-
-perhaps you can drop the else when you init with
-choose_first = 0;
-start_disk = conf->last_used;
-
-
-
-> -
->  	/* make sure the disk is operational */
-> -	for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
-> -	     r1_bio->bios[new_disk] == IO_BLOCKED ||
-> -	     !rdev || !test_bit(In_sync, &rdev->flags) ||
-> -		     test_bit(WriteMostly, &rdev->flags);
-> -	     rdev = rcu_dereference(conf->mirrors[new_disk].rdev)) {
-> -
-> -		if (rdev && test_bit(In_sync, &rdev->flags) &&
-> -		    r1_bio->bios[new_disk] != IO_BLOCKED)
-> -			wonly_disk = new_disk;
-> -
-> -		if (new_disk <= 0)
-> -			new_disk = conf->raid_disks;
-> -		new_disk--;
-> -		if (new_disk == disk) {
-> -			new_disk = wonly_disk;
-> -			break;
-> +	for (i = 0 ; i < conf->raid_disks ; i++) {
-> +		int disk = start_disk + i;
-> +		if (disk >= conf->raid_disks)
-> +			disk -= conf->raid_disks;
-> +
-> +		if (r1_bio->bios[disk] == IO_BLOCKED
-> +		    || !(rdev = rcu_dereference(conf->mirrors[disk].rdev))
-> +		    || !test_bit(In_sync, &rdev->flags))
-> +			continue;
-
-i think it is more readable to use:
-
-  rdev = rcu_dereference(conf->mirrors[disk].rdev);
-  if ()
-
-
-
-> +		if (test_bit(WriteMostly, &rdev->flags)) {
-> +			new_disk = disk;
-> +			continue;
->  		}
-> +		new_disk = disk;
-> +		break;
->  	}
-
-to improve readability:
-
-	new_disk = disk;
-	if ( ! test_bit(WriteMostly, &rdev->flags) )
-		break;
-
-
-> -	if (new_disk < 0)
-> +	if (new_disk < 0 || choose_first)
->  		goto rb_out;
->  
-> -	disk = new_disk;
-> -	/* now disk == new_disk == starting point for search */
-> -
->  	/*
->  	 * Don't change to another disk for sequential reads:
->  	 */
-> @@ -491,20 +474,20 @@ static int read_balance(conf_t *conf, r1bio_t *r1_bio)
->  	if (this_sector == conf->mirrors[new_disk].head_position)
->  		goto rb_out;
->  
-> -	current_distance = abs(this_sector - conf->mirrors[disk].head_position);
-> +	current_distance = abs(this_sector 
-> +			       - conf->mirrors[new_disk].head_position);
->  
-> -	/* Find the disk whose head is closest */
-> +	/* look for a better disk - i.e. head is closer */
-> +	start_disk = new_disk;
-> +	for (i = 1; i < conf->raid_disks; i++) {
-> +		int disk = start_disk + 1;
-> +		if (disk >= conf->raid_disks)
-> +			disk -= conf->raid_disks;
->  
-> -	do {
-> -		if (disk <= 0)
-> -			disk = conf->raid_disks;
-> -		disk--;
-> -
-> -		rdev = rcu_dereference(conf->mirrors[disk].rdev);
-> -
-> -		if (!rdev || r1_bio->bios[disk] == IO_BLOCKED ||
-> -		    !test_bit(In_sync, &rdev->flags) ||
-> -		    test_bit(WriteMostly, &rdev->flags))
-
-> +		if (r1_bio->bios[disk] == IO_BLOCKED
-> +		    || !(rdev = rcu_dereference(conf->mirrors[disk].rdev))
-> +		    || !test_bit(In_sync, &rdev->flags)
-> +		    || test_bit(WriteMostly, &rdev->flags))
->  			continue;
-
-again i would set
- rdev=rcu_dereference(conf->mirrors[disk].rdev));
-before if() like it was in the original the statement is complex
-anything that reduces the complexity is good.
-
-
->  
->  		if (!atomic_read(&rdev->nr_pending)) {
-> @@ -516,11 +499,9 @@ static int read_balance(conf_t *conf, r1bio_t *r1_bio)
->  			current_distance = new_distance;
->  			new_disk = disk;
->  		}
-> -	} while (disk != conf->last_used);
-> +	}
->  
->   rb_out:
-> -
-> -
->  	if (new_disk >= 0) {
->  		rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
->  		if (!rdev)
-> 
-
-
-just my 2 cents,
-re,
- wh
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+> Hui
+>
+>
+>
+> On Sun, Sep 5, 2010 at 00:47, Steven <mqyoung@gmail.com> wrote:
+>> On Sun, 2010-09-05 at 00:42 +0800, Hui Zhu wrote:
+>>> Could you post the other part of this code?  Then I can try to reproduce on it.
+>>
+>> hello.c
+>> ------------------------------------------------
+>> #include <linux/kthread.h>
+>> #include <linux/module.h>
+>> #include <linux/init.h>
+>>
+>> static struct task_struct *test_task;
+>> volatile struct timeval tv;
+>> int year;
+>>
+>> int test_thread(void *data)
+>> {
+>>        volatile int cnt = 0;
+>>        set_current_state(TASK_INTERRUPTIBLE);
+>>        schedule_timeout(1 * HZ); /* wait for the terminal ready */
+>>
+>>        while(1){
+>>                set_current_state(TASK_INTERRUPTIBLE); /* this is
+>> required, or thread never sleep*/
+>>                if(kthread_should_stop()) break;
+>>
+>>                year = 2010;
+>>                do_gettimeofday (&tv);
+>>                printk("\ntv_sec: %d - %d\n", (int)tv.tv_sec, cnt);
+>>                cnt++;
+>>
+>>                do_gettimeofday (&tv);
+>>                printk("tv_sec: %d - %d\n", (int)tv.tv_sec, year);
+>>                cnt++;
+>>
+>>                //reschedule after 5 seconds(approximately)
+>>                schedule_timeout(60 * HZ);
+>>        }
+>>
+>>        return 0;
+>> }
+>>
+>> static int __init mt_init(void)
+>> {
+>>        int err;
+>>        test_task = kthread_create(test_thread, NULL, "test_task");
+>>        if(IS_ERR(test_task)){
+>>                printk("Unable to start kernel thread.\n");
+>>                printk("Unable to start kernel thread.\n");
+>>                err = PTR_ERR(test_task);
+>>                test_task = NULL;
+>>                return err;
+>>        }
+>>        wake_up_process(test_task);
+>>        return 0;
+>> }
+>>
+>>
+>> static void __exit mt_cleanup(void)
+>> {
+>>        if(test_task){
+>>                kthread_stop(test_task);
+>>                test_task = NULL;
+>>        }
+>> }
+>>
+>> module_init(mt_init);
+>> module_exit(mt_cleanup);
+>>
+>> MODULE_LICENSE("GPL");
+>> ------------------------------------------------
+>>
+>>
+>> Makefile
+>> ------------------------------------------------
+>> obj-m := hello.o
+>>
+>> KERNELBUILD := /lib/modules/`uname -r`/build
+>>
+>> default:
+>>        make -C $(KERNELBUILD) M=$(shell pwd) modules
+>>
+>> clean:
+>>        rm -rf *.o *.cmd *.ko *.mod.c .tmp-versions *.symvers
+>> ------------------------------------------------
+>>
+>>
+>>
+>>> Thanks,
+>>> Hui
+>>>
+>>> On Sun, Sep 5, 2010 at 00:01, Steven <mqyoung@gmail.com> wrote:
+>>> > Dear All,
+>>> >
+>>> > As I mentioned before, I could collect the variables of kernel function
+>>> > such as vfs_readdir(ext3 is built in kernel not module). And I tried I
+>>> > could collect variables of kernel's module(such as my ethernet card
+>>> > driver 3c59x.ko). I will collect these info later.
+>>> >
+>>> > BUT, I can not collect the value of my testing module, neither global
+>>> > nor local. I think there is some thing wrong with my compile option or
+>>> > Makefile, any one know it? Thanks very much.
+>>> >
+>>> > Program:
+>>> > -------------------------------------------------
+>>> >  6 volatile struct timeval tv;
+>>> >  7 int year;
+>>> >  8
+>>> >  9 int test_thread(void *data)
+>>> >  10 {
+>>> >  11         volatile int cnt = 0;
+>>> >  12         set_current_state(TASK_INTERRUPTIBLE);
+>>> >  13         schedule_timeout(1 * HZ); /* wait for the terminal ready */
+>>> >  14
+>>> >  15         while(1){
+>>> >  16                 set_current_state(TASK_INTERRUPTIBLE);
+>>> >  17                 if(kthread_should_stop()) break;
+>>> >  18
+>>> >  19                 year = 2010;
+>>> >  20                 do_gettimeofday (&tv);
+>>> >  21                 printk("\ntv_sec: %d - %d\n", (int)tv.tv_sec, cnt);
+>>> >  22                 cnt++;
+>>> >  23
+>>> >  24                 do_gettimeofday (&tv);
+>>> >  25                 printk("tv_sec: %d - %d\n", (int)tv.tv_sec, year);
+>>> >  26                 cnt++;
+>>> >  27
+>>> >  28                 //reschedule after 5 seconds(approximately)
+>>> >  29                 schedule_timeout(60 * HZ);
+>>> >  30         }
+>>> >  31
+>>> >  32         return 0;
+>>> >  33 }
+>>> > -------------------------------------------------
+>>> >
+>>> > Makefile
+>>> > -------------------------------------------------
+>>> > obj-m := hello.o
+>>> >
+>>> > KERNELBUILD := /lib/modules/`uname -r`/build
+>>> >
+>>> > default:
+>>> >        make -C $(KERNELBUILD) M=$(shell pwd) modules
+>>> > -------------------------------------------------
+>>> >
+>>> >
+>>> > Screen log
+>>> > -------------------------------------------------
+>>> > debian:/home/linux-2.6.33.6# /usr/local/bin/gdb vmlinux
+>>> > GNU gdb (GDB) 7.2
+>>> > Copyright (C) 2010 Free Software Foundation, Inc.
+>>> > License GPLv3+: GNU GPL version 3 or later
+>>> > <http://gnu.org/licenses/gpl.html>
+>>> > This is free software: you are free to change and redistribute it.
+>>> > There is NO WARRANTY, to the extent permitted by law.  Type "show
+>>> > copying"
+>>> > and "show warranty" for details.
+>>> > This GDB was configured as "i686-pc-linux-gnu".
+>>> > For bug reporting instructions, please see:
+>>> > <http://www.gnu.org/software/gdb/bugs/>...
+>>> > Reading symbols from /home/linux-2.6.33.6/vmlinux...[ 3909.310118]
+>>> > [ 3909.310124] tv_sec: 1283648666 - 16
+>>> > [ 3909.315385] tv_sec: 1283648666 - 2010
+>>> > done.
+>>> > (gdb) target remote /proc/gtp
+>>> > Remote debugging using /proc/gtp
+>>> > 0x00000000 in ?? ()
+>>> > (gdb) add-symbol-file /home/steven/hello/hello.ko 0xc8b2b000
+>>> > add symbol table from file "/home/steven/hello/hello.ko" at
+>>> >        .text_addr = 0xc8b2b000
+>>> > (y or n) y
+>>> > Reading symbols from /home/steven/hello/hello.ko...done.
+>>> > (gdb) trace /home/steven/hello/hello.c:22
+>>> > Tracepoint 1 at 0xc8b2b094: file /home/steven/hello/hello.c, line 22.
+>>> > (gdb) trace /home/steven/hello/hello.c:26
+>>> > Tracepoint 2 at 0xc8b2b0c1: file /home/steven/hello/hello.c, line 26.
+>>> > (gdb) actions 1
+>>> > Enter actions for tracepoint 1, one per line.
+>>> > End with a line saying just "end".
+>>> >>
+>>> >>collect tv, year, cnt
+>>> >>end
+>>> > (gdb) actions 2
+>>> > Enter actions for tracepoint 2, one per line.
+>>> > End with a line saying just "end".
+>>> >>collect tv, year, cnt
+>>> >>end
+>>> > (gdb) tstart
+>>> > [ 4029.328129]
+>>> > [ 4029.328136] tv_sec: 1283648786 - 20
+>>> > [ 4029.333456] tv_sec: 1283648786 - 2010
+>>> > tstop
+>>> > (gdb) tfind
+>>> > Found trace frame 0, tracepoint 1
+>>> > #0  0xc8b2b095 in test_thread (data=0x0)
+>>> > at /home/steven/hello/hello.c:22
+>>> > 22                      cnt++;
+>>> > (gdb) p tv
+>>> > $1 = {tv_sec = 0, tv_usec = 0}
+>>> > (gdb) p cnt
+>>> > $2 = 0
+>>> > (gdb) p year
+>>> > $3 = 0
+>>> > (gdb) tfind
+>>> > Found trace frame 1, tracepoint 2
+>>> > 0xc8b2b0c2      26                      cnt++;
+>>> > (gdb) p cnt
+>>> > $4 = 0
+>>> > (gdb) p tv
+>>> > $5 = {tv_sec = 0, tv_usec = 0}
+>>> > (gdb) p year
+>>> > $6 = 0
+>>> > -------------------------------------------------
+>>> >
+>>> > Thanks,
+>>> > Steven
+>>> >
+>>> > On Sat, 2010-09-04 at 22:58 +0800, Hui Zhu wrote:
+>>> >> On Sat, Sep 4, 2010 at 17:26, Steven <mqyoung@gmail.com> wrote:
+>>> >> > On Sat, 2010-09-04 at 17:17 +0800, Hui Zhu wrote:
+>>> >> >> On Sat, Sep 4, 2010 at 16:56, Steven <mqyoung@gmail.com> wrote:
+>>> >> >> > On Sat, 2010-09-04 at 11:41 +0800, Hui Zhu wrote:
+>>> >> >> >> BTW, looks GCC and GDB don't want handle the optimization debug
+>>> >> >> >> trouble (all they want is rewrite the GCC in C++ :P).
+>>> >> >> >> So I think make linux kernel can close optimization is better idea, do
+>>> >> >> >> you know some way or some patch to do it?
+>>> >> >> >>
+>>> >> >> >
+>>> >> >> > Just disable CONFIG_CC_OPTIMIZE_FOR_SIZE and modify the Makefile of
+>>> >> >> > kernel:
+>>> >> >> > KBUILD_CFLAGS   += -O2
+>>> >> >> > to
+>>> >> >> > KBUILD_CFLAGS   += -O0
+>>> >> >>
+>>> >> >> Cool,  :)
+>>> >> >>
+>>> >> >> I try just change the compile option of readdir.c to without -O2, it
+>>> >> >> works OK.  I think maybe it's a GDB bug too.
+>>> >> >> Could you try the second issue with gdb 7.2?
+>>> >> >
+>>> >> > I have covered the two issues in the previous mail that I could collect
+>>> >> > both global variables and locals(-O0 kernel + gdb7.2):
+>>> >> >
+>>> >> >        --------
+>>> >> >        (gdb) trace vfs_readdir
+>>> >> >        Tracepoint 3 at 0xc11756a0: file fs/readdir.c, line 24.
+>>> >> >        (gdb) actions
+>>> >> >        Enter actions for tracepoint 3, one per line.
+>>> >> >        End with a line saying just "end".
+>>> >> >        >collect *file
+>>> >> >        >end
+>>> >> >        (gdb) trace fs/readdir.c:29
+>>> >> >        Tracepoint 4 at 0xc11756ca: file fs/readdir.c, line 29.
+>>> >> >        (gdb) actions
+>>> >> >        Enter actions for tracepoint 4, one per line.
+>>> >> >        End with a line saying just "end".
+>>> >> >        >collect res
+>>> >> >        >end
+>>> >> >        (gdb) tstart
+>>> >> >        (gdb) tstop
+>>> >> >        (gdb) tfind
+>>> >> >        Found trace frame 0, tracepoint 3
+>>> >> >        #0  0xc11756a1 in vfs_readdir (file=0xc7b2cf00, filler=0,
+>>> >> >        buf=0x0)
+>>> >> >            at fs/readdir.c:24
+>>> >> >        24              struct inode *inode =
+>>> >> >        file->f_path.dentry->d_inode;
+>>> >> >        (gdb) p *file
+>>> >> >        $4 = {f_u = {fu_list = {next = 0xc6dca500, prev = 0xc7ade480},
+>>> >> >        fu_rcuhead = {
+>>> >> >              next = 0xc6dca500, func = 0xc7ade480}}, f_path = {mnt =
+>>> >> >        0xc6c05300,
+>>> >> >            dentry = 0xc761d440}, f_op = 0xc1709a20, f_lock = {{rlock =
+>>> >> >        {raw_lock = {
+>>> >> >                  slock = 0}}}}, f_count = {counter = 2}, f_flags =
+>>> >> >        624640,
+>>> >> >          f_mode = 29, f_pos = 0, f_owner = {lock = {raw_lock = {lock =
+>>> >> >        16777216}},
+>>> >> >           = 0start = 0, size = 0, async_size = 0,
+>>> >> >            ra_pages = 32, mmap_miss = 0, prev_pos = -1}, f_version =
+>>> >> >        0,
+>>> >> >          f_security = 0xc7b30120, private_data = 0x0, f_ep_links = {
+>>> >> >            next = 0xc7b2cf74, prev = 0xc7b2cf74}, f_mapping =
+>>> >> >        0xc761c74c}
+>>> >> >        (gdb) p res
+>>> >> >        $5 = 0
+>>> >> >        (gdb) tfind
+>>> >> >        Found trace frame 1, tracepoint 4
+>>> >> >        0xc11756cb      29              res =
+>>> >> >        security_file_permission(file, MAY_READ);
+>>> >> >        (gdb) p res
+>>> >> >        $6 = -20
+>>> >> >        --------
+>>> >> >
+>>> >> >
+>>> >> >
+>>> >>
+>>> >> Great.  :)
+>>> >>
+>>> >> Hui
+>>> >
+>>> >
+>>
+>>
+>>
+>
