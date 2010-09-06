@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab0IFQAw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 12:00:52 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:51536 "EHLO
-	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311Ab0IFP6L (ORCPT
+	id S1755193Ab0IFQBf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 12:01:35 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:18530
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754976Ab0IFP5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:58:11 -0400
+	Mon, 6 Sep 2010 11:57:45 -0400
 X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h43h61h)
+X-BigFish: VS1(zzzz1202hzz8275bhz32i2a8h87h43h61h)
 X-Spam-TCS-SCL: 0:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8C1L9-02-7A5-02
+X-WSS-ID: 0L8C1LA-01-D1N-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: Alexander Graf <agraf@suse.de>, <joro@8bytes.org>, <kvm@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 23/27] KVM: MMU: Allow long mode shadows for legacy page tables
-Date: Mon, 6 Sep 2010 17:56:02 +0200
-Message-ID: <1283788566-29186-24-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 20/27] KVM: MMU: Add kvm_mmu parameter to load_pdptrs function
+Date: Mon, 6 Sep 2010 17:55:59 +0200
+Message-ID: <1283788566-29186-21-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
 References: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
@@ -30,149 +30,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the KVM softmmu implementation can not shadow a 32
-bit legacy or PAE page table with a long mode page table.
-This is a required feature for nested paging emulation
-because the nested page table must alway be in host format.
-So this patch implements the missing pieces to allow long
-mode page tables for page table types.
+This function need to be able to load the pdptrs from any
+mmu context currently in use. So change this function to
+take an kvm_mmu parameter to fit these needs.
+As a side effect this patch also moves the cached pdptrs
+from vcpu_arch into the kvm_mmu struct.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/mmu.c              |   60 +++++++++++++++++++++++++++++++++-----
- 2 files changed, 53 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    5 +++--
+ arch/x86/kvm/kvm_cache_regs.h   |    2 +-
+ arch/x86/kvm/svm.c              |    2 +-
+ arch/x86/kvm/vmx.c              |   16 ++++++++--------
+ arch/x86/kvm/x86.c              |   26 ++++++++++++++------------
+ 5 files changed, 27 insertions(+), 24 deletions(-)
 
 diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 1080c0f..475fc70 100644
+index 173834b..1080c0f 100644
 --- a/arch/x86/include/asm/kvm_host.h
 +++ b/arch/x86/include/asm/kvm_host.h
-@@ -258,6 +258,7 @@ struct kvm_mmu {
- 	bool direct_map;
+@@ -259,6 +259,8 @@ struct kvm_mmu {
  
  	u64 *pae_root;
-+	u64 *lm_root;
  	u64 rsvd_bits_mask[2][4];
++
++	u64 pdptrs[4]; /* pae */
+ };
  
- 	u64 pdptrs[4]; /* pae */
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index e7e5527..ea8ed8b 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1504,6 +1504,12 @@ static void shadow_walk_init(struct kvm_shadow_walk_iterator *iterator,
- 	iterator->addr = addr;
- 	iterator->shadow_addr = vcpu->arch.mmu.root_hpa;
- 	iterator->level = vcpu->arch.mmu.shadow_root_level;
-+
-+	if (iterator->level == PT64_ROOT_LEVEL &&
-+	    vcpu->arch.mmu.root_level < PT64_ROOT_LEVEL &&
-+	    !vcpu->arch.mmu.direct_map)
-+		--iterator->level;
-+
- 	if (iterator->level == PT32E_ROOT_LEVEL) {
- 		iterator->shadow_addr
- 			= vcpu->arch.mmu.pae_root[(addr >> 30) & 3];
-@@ -2314,7 +2320,9 @@ static void mmu_free_roots(struct kvm_vcpu *vcpu)
- 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
+ struct kvm_vcpu_arch {
+@@ -278,7 +280,6 @@ struct kvm_vcpu_arch {
+ 	unsigned long cr4_guest_owned_bits;
+ 	unsigned long cr8;
+ 	u32 hflags;
+-	u64 pdptrs[4]; /* pae */
+ 	u64 efer;
+ 	u64 apic_base;
+ 	struct kvm_lapic *apic;    /* kernel irqchip context */
+@@ -594,7 +595,7 @@ void kvm_mmu_zap_all(struct kvm *kvm);
+ unsigned int kvm_mmu_calculate_mmu_pages(struct kvm *kvm);
+ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages);
+ 
+-int load_pdptrs(struct kvm_vcpu *vcpu, unsigned long cr3);
++int load_pdptrs(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu, unsigned long cr3);
+ 
+ int emulator_write_phys(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 			  const void *val, int bytes);
+diff --git a/arch/x86/kvm/kvm_cache_regs.h b/arch/x86/kvm/kvm_cache_regs.h
+index 6491ac8..a37abe2 100644
+--- a/arch/x86/kvm/kvm_cache_regs.h
++++ b/arch/x86/kvm/kvm_cache_regs.h
+@@ -42,7 +42,7 @@ static inline u64 kvm_pdptr_read(struct kvm_vcpu *vcpu, int index)
+ 		      (unsigned long *)&vcpu->arch.regs_avail))
+ 		kvm_x86_ops->cache_reg(vcpu, VCPU_EXREG_PDPTR);
+ 
+-	return vcpu->arch.pdptrs[index];
++	return vcpu->arch.walk_mmu->pdptrs[index];
+ }
+ 
+ static inline ulong kvm_read_cr0_bits(struct kvm_vcpu *vcpu, ulong mask)
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 094df31..a98ac52 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -1010,7 +1010,7 @@ static void svm_cache_reg(struct kvm_vcpu *vcpu, enum kvm_reg reg)
+ 	switch (reg) {
+ 	case VCPU_EXREG_PDPTR:
+ 		BUG_ON(!npt_enabled);
+-		load_pdptrs(vcpu, vcpu->arch.cr3);
++		load_pdptrs(vcpu, vcpu->arch.walk_mmu, vcpu->arch.cr3);
+ 		break;
+ 	default:
+ 		BUG();
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 0e62d8a..0a70194 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1848,20 +1848,20 @@ static void ept_load_pdptrs(struct kvm_vcpu *vcpu)
  		return;
- 	spin_lock(&vcpu->kvm->mmu_lock);
--	if (vcpu->arch.mmu.shadow_root_level == PT64_ROOT_LEVEL) {
-+	if (vcpu->arch.mmu.shadow_root_level == PT64_ROOT_LEVEL &&
-+	    (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL ||
-+	     vcpu->arch.mmu.direct_map)) {
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
  
- 		sp = page_header(root);
-@@ -2394,10 +2402,10 @@ static int mmu_alloc_direct_roots(struct kvm_vcpu *vcpu)
- 
- static int mmu_alloc_shadow_roots(struct kvm_vcpu *vcpu)
- {
--	int i;
--	gfn_t root_gfn;
- 	struct kvm_mmu_page *sp;
--	u64 pdptr;
-+	u64 pdptr, pm_mask;
-+	gfn_t root_gfn;
-+	int i;
- 
- 	root_gfn = vcpu->arch.mmu.get_cr3(vcpu) >> PAGE_SHIFT;
- 
-@@ -2426,8 +2434,13 @@ static int mmu_alloc_shadow_roots(struct kvm_vcpu *vcpu)
- 
- 	/*
- 	 * We shadow a 32 bit page table. This may be a legacy 2-level
--	 * or a PAE 3-level page table.
-+	 * or a PAE 3-level page table. In either case we need to be aware that
-+	 * the shadow page table may be a PAE or a long mode page table.
- 	 */
-+	pm_mask = PT_PRESENT_MASK;
-+	if (vcpu->arch.mmu.shadow_root_level == PT64_ROOT_LEVEL)
-+		pm_mask |= PT_ACCESSED_MASK | PT_WRITABLE_MASK | PT_USER_MASK;
-+
- 	for (i = 0; i < 4; ++i) {
- 		hpa_t root = vcpu->arch.mmu.pae_root[i];
- 
-@@ -2451,9 +2464,35 @@ static int mmu_alloc_shadow_roots(struct kvm_vcpu *vcpu)
- 		++sp->root_count;
- 		spin_unlock(&vcpu->kvm->mmu_lock);
- 
--		vcpu->arch.mmu.pae_root[i] = root | PT_PRESENT_MASK;
-+		vcpu->arch.mmu.pae_root[i] = root | pm_mask;
-+		vcpu->arch.mmu.root_hpa = __pa(vcpu->arch.mmu.pae_root);
+ 	if (is_paging(vcpu) && is_pae(vcpu) && !is_long_mode(vcpu)) {
+-		vmcs_write64(GUEST_PDPTR0, vcpu->arch.pdptrs[0]);
+-		vmcs_write64(GUEST_PDPTR1, vcpu->arch.pdptrs[1]);
+-		vmcs_write64(GUEST_PDPTR2, vcpu->arch.pdptrs[2]);
+-		vmcs_write64(GUEST_PDPTR3, vcpu->arch.pdptrs[3]);
++		vmcs_write64(GUEST_PDPTR0, vcpu->arch.mmu.pdptrs[0]);
++		vmcs_write64(GUEST_PDPTR1, vcpu->arch.mmu.pdptrs[1]);
++		vmcs_write64(GUEST_PDPTR2, vcpu->arch.mmu.pdptrs[2]);
++		vmcs_write64(GUEST_PDPTR3, vcpu->arch.mmu.pdptrs[3]);
  	}
--	vcpu->arch.mmu.root_hpa = __pa(vcpu->arch.mmu.pae_root);
-+
-+	/*
-+	 * If we shadow a 32 bit page table with a long mode page
-+	 * table we enter this path.
-+	 */
-+	if (vcpu->arch.mmu.shadow_root_level == PT64_ROOT_LEVEL) {
-+		if (vcpu->arch.mmu.lm_root == NULL) {
-+			/*
-+			 * The additional page necessary for this is only
-+			 * allocated on demand.
-+			 */
-+
-+			u64 *lm_root;
-+
-+			lm_root = (void*)get_zeroed_page(GFP_KERNEL);
-+			if (lm_root == NULL)
-+				return 1;
-+
-+			lm_root[0] = __pa(vcpu->arch.mmu.pae_root) | pm_mask;
-+
-+			vcpu->arch.mmu.lm_root = lm_root;
-+		}
-+
-+		vcpu->arch.mmu.root_hpa = __pa(vcpu->arch.mmu.lm_root);
-+	}
-+
- 	return 0;
  }
  
-@@ -2470,9 +2509,12 @@ static void mmu_sync_roots(struct kvm_vcpu *vcpu)
- 	int i;
- 	struct kvm_mmu_page *sp;
- 
-+	if (vcpu->arch.mmu.direct_map)
-+		return;
-+
- 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
- 		return;
--	if (vcpu->arch.mmu.shadow_root_level == PT64_ROOT_LEVEL) {
-+	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
- 		sp = page_header(root);
- 		mmu_sync_children(vcpu, sp);
-@@ -3250,6 +3292,8 @@ EXPORT_SYMBOL_GPL(kvm_disable_tdp);
- static void free_mmu_pages(struct kvm_vcpu *vcpu)
+ static void ept_save_pdptrs(struct kvm_vcpu *vcpu)
  {
- 	free_page((unsigned long)vcpu->arch.mmu.pae_root);
-+	if (vcpu->arch.mmu.lm_root != NULL)
-+		free_page((unsigned long)vcpu->arch.mmu.lm_root);
- }
+ 	if (is_paging(vcpu) && is_pae(vcpu) && !is_long_mode(vcpu)) {
+-		vcpu->arch.pdptrs[0] = vmcs_read64(GUEST_PDPTR0);
+-		vcpu->arch.pdptrs[1] = vmcs_read64(GUEST_PDPTR1);
+-		vcpu->arch.pdptrs[2] = vmcs_read64(GUEST_PDPTR2);
+-		vcpu->arch.pdptrs[3] = vmcs_read64(GUEST_PDPTR3);
++		vcpu->arch.mmu.pdptrs[0] = vmcs_read64(GUEST_PDPTR0);
++		vcpu->arch.mmu.pdptrs[1] = vmcs_read64(GUEST_PDPTR1);
++		vcpu->arch.mmu.pdptrs[2] = vmcs_read64(GUEST_PDPTR2);
++		vcpu->arch.mmu.pdptrs[3] = vmcs_read64(GUEST_PDPTR3);
+ 	}
  
- static int alloc_mmu_pages(struct kvm_vcpu *vcpu)
+ 	__set_bit(VCPU_EXREG_PDPTR,
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index ca69dcc..337f59f 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -418,17 +418,17 @@ int kvm_read_nested_guest_page(struct kvm_vcpu *vcpu, gfn_t gfn,
+ /*
+  * Load the pae pdptrs.  Return true is they are all valid.
+  */
+-int load_pdptrs(struct kvm_vcpu *vcpu, unsigned long cr3)
++int load_pdptrs(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu, unsigned long cr3)
+ {
+ 	gfn_t pdpt_gfn = cr3 >> PAGE_SHIFT;
+ 	unsigned offset = ((cr3 & (PAGE_SIZE-1)) >> 5) << 2;
+ 	int i, error;
+ 	int ret;
+-	u64 pdpte[ARRAY_SIZE(vcpu->arch.pdptrs)];
++	u64 pdpte[ARRAY_SIZE(mmu->pdptrs)];
+ 
+-	ret = kvm_read_nested_guest_page(vcpu, pdpt_gfn, pdpte,
+-					 offset * sizeof(u64),
+-					 sizeof(pdpte), &error);
++	ret = kvm_read_guest_page_mmu(vcpu, mmu, pdpt_gfn, pdpte,
++				      offset * sizeof(u64),
++				      sizeof(pdpte), &error);
+ 	if (ret < 0) {
+ 		ret = 0;
+ 		goto out;
+@@ -442,7 +442,7 @@ int load_pdptrs(struct kvm_vcpu *vcpu, unsigned long cr3)
+ 	}
+ 	ret = 1;
+ 
+-	memcpy(vcpu->arch.pdptrs, pdpte, sizeof(vcpu->arch.pdptrs));
++	memcpy(mmu->pdptrs, pdpte, sizeof(mmu->pdptrs));
+ 	__set_bit(VCPU_EXREG_PDPTR,
+ 		  (unsigned long *)&vcpu->arch.regs_avail);
+ 	__set_bit(VCPU_EXREG_PDPTR,
+@@ -455,7 +455,7 @@ EXPORT_SYMBOL_GPL(load_pdptrs);
+ 
+ static bool pdptrs_changed(struct kvm_vcpu *vcpu)
+ {
+-	u64 pdpte[ARRAY_SIZE(vcpu->arch.pdptrs)];
++	u64 pdpte[ARRAY_SIZE(vcpu->arch.walk_mmu->pdptrs)];
+ 	bool changed = true;
+ 	int offset;
+ 	u32 error;
+@@ -475,7 +475,7 @@ static bool pdptrs_changed(struct kvm_vcpu *vcpu)
+ 				       sizeof(pdpte), &error);
+ 	if (r < 0)
+ 		goto out;
+-	changed = memcmp(pdpte, vcpu->arch.pdptrs, sizeof(pdpte)) != 0;
++	changed = memcmp(pdpte, vcpu->arch.walk_mmu->pdptrs, sizeof(pdpte)) != 0;
+ out:
+ 
+ 	return changed;
+@@ -514,7 +514,8 @@ int kvm_set_cr0(struct kvm_vcpu *vcpu, unsigned long cr0)
+ 				return 1;
+ 		} else
+ #endif
+-		if (is_pae(vcpu) && !load_pdptrs(vcpu, vcpu->arch.cr3))
++		if (is_pae(vcpu) && !load_pdptrs(vcpu, vcpu->arch.walk_mmu,
++						 vcpu->arch.cr3))
+ 			return 1;
+ 	}
+ 
+@@ -603,7 +604,7 @@ int kvm_set_cr4(struct kvm_vcpu *vcpu, unsigned long cr4)
+ 			return 1;
+ 	} else if (is_paging(vcpu) && (cr4 & X86_CR4_PAE)
+ 		   && ((cr4 ^ old_cr4) & pdptr_bits)
+-		   && !load_pdptrs(vcpu, vcpu->arch.cr3))
++		   && !load_pdptrs(vcpu, vcpu->arch.walk_mmu, vcpu->arch.cr3))
+ 		return 1;
+ 
+ 	if (cr4 & X86_CR4_VMXE)
+@@ -636,7 +637,8 @@ int kvm_set_cr3(struct kvm_vcpu *vcpu, unsigned long cr3)
+ 		if (is_pae(vcpu)) {
+ 			if (cr3 & CR3_PAE_RESERVED_BITS)
+ 				return 1;
+-			if (is_paging(vcpu) && !load_pdptrs(vcpu, cr3))
++			if (is_paging(vcpu) &&
++			    !load_pdptrs(vcpu, vcpu->arch.walk_mmu, cr3))
+ 				return 1;
+ 		}
+ 		/*
+@@ -5412,7 +5414,7 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+ 	mmu_reset_needed |= kvm_read_cr4(vcpu) != sregs->cr4;
+ 	kvm_x86_ops->set_cr4(vcpu, sregs->cr4);
+ 	if (!is_long_mode(vcpu) && is_pae(vcpu)) {
+-		load_pdptrs(vcpu, vcpu->arch.cr3);
++		load_pdptrs(vcpu, vcpu->arch.walk_mmu, vcpu->arch.cr3);
+ 		mmu_reset_needed = 1;
+ 	}
+ 
 -- 
 1.7.0.4
 
