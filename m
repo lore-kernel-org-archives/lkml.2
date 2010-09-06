@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439Ab0IFJTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 05:19:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33483 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829Ab0IFJTS convert rfc822-to-8bit (ORCPT
+	id S1752224Ab0IFJXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 05:23:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41578 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750829Ab0IFJXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 05:19:18 -0400
-Subject: Re: [PATCH] KVM: don't sent IPI if the vcpu is not online
-Mime-Version: 1.0 (Apple Message framework v1081)
+	Mon, 6 Sep 2010 05:23:08 -0400
+Date: Mon, 6 Sep 2010 10:23:06 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH] regulator: wm8350-regulator - fix the logic of
+ checking REGULATOR_MODE_STANDBY mode
+Message-ID: <20100906092305.GA10367@rakim.wolfsonmicro.main>
+References: <1283753167.19378.1.camel@mola>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <4C84B103.7020603@redhat.com>
-Date: Mon, 6 Sep 2010 11:19:16 +0200
-Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4D59CC65-7577-4F47-869E-80C87E1C28FE@suse.de>
-References: <4C807593.1050903@cn.fujitsu.com> <4C83445B.4020103@redhat.com> <4C844887.9090802@cn.fujitsu.com> <4C84801F.9060803@redhat.com> <DCCDD62D-CE92-453A-BB3C-DF878D893C3F@suse.de> <4C84AC6B.4090306@redhat.com> <633F01D5-D6AD-40F3-8864-C3AE4D314E30@suse.de> <4C84AEF5.2070309@redhat.com> <F83E94AF-6BB0-4653-A81F-7D9F7D0B9E12@suse.de> <4C84B103.7020603@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-X-Mailer: Apple Mail (2.1081)
+Content-Disposition: inline
+In-Reply-To: <1283753167.19378.1.camel@mola>
+X-Cookie: Welcome to the Zoo!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 06, 2010 at 02:06:07PM +0800, Axel Lin wrote:
+> In wm8350_dcdc_set_mode(), we set DCx_SLEEP bit of WM8350_DCDC_SLEEP_OPTIONS
+> register for REGULATOR_MODE_STANDBY mode.
+> ( DCx_SLEEP bits: 0: Normal DC-DC operation 1: Select LDO mode )
 
-On 06.09.2010, at 11:14, Avi Kivity wrote:
-
-> On 09/06/2010 12:09 PM, Alexander Graf wrote:
->> 
->>> It can also be running host kernel or user code.
->> In that case it's the same as running guest code, no? We'll pass by the vcpu entry check asap.
+> In wm8350_dcdc_get_mode(), current logic to determinate
+> REGULATOR_MODE_STANDBY mode is just reverse.
+> ( sleep is set should mean REGULATOR_MODE_STANDBY mode. )
 > 
-> Sure, but the IPI is wasted.  If you spend 10% of your time in host code, you can avoid 10% of the IPIs.
-> 
-> (actually less, since the atomic part of the guest switch has guest_mode enabled)
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Oh. My bad. I had a thinko here :).
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Sure, sounds like a good idea.
-
-
-Alex
-
+but *please* do try to make your commit messages clearer, it's difficult
+to follow what you're sayin here, mostly because you don't explain how
+you determined what change to make.
