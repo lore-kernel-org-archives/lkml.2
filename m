@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab0IFVhR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 17:37:17 -0400
-Received: from smtp103.sbc.mail.re3.yahoo.com ([66.196.96.86]:42878 "HELO
-	smtp103.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755180Ab0IFVhA (ORCPT
+	id S1755847Ab0IFVhk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 17:37:40 -0400
+Received: from smtp105.sbc.mail.ne1.yahoo.com ([98.138.84.183]:21721 "HELO
+	smtp105.sbc.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755758Ab0IFVhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 17:37:00 -0400
+	Mon, 6 Sep 2010 17:37:15 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: t_lvk.MVM1l9t5M4cQwZ9AJI3IUaUTMuAhgytqyXkyGVaTb
- MThicabLB2pNBKU4bHYt8Eo2JBGvYsO6BH33HmzmElXOqfub9esigJZObPGa
- qnwQ5vaqESfZA3UI3BvTkM5VX7O.Yby2TRDeOpUXsjgl01J6lc.4lm1PPZyC
- EfAMsjQGjhH.6L8ifFPlz6n4L_Y8VyYf6p0m5ozsVMjFjs..feaMS13LmYWx
- _jo51Um6KyTlznVTH6OdkmOZVtrAMCvxMTIm1Cnfyiln.QDgQC_Q6V3yhgh3
- 8dmpWen4XIM7Eo_n.VO56upHTvsLLJqoIfHZH.NM60DZdeg4gCJ0kXn51n2R
- U6N8Sj_avapM8k6eyoNfmzIAXQop4U0bu9MQnDGW2B8OUrcvb6xwWb3hkHHm
- 5ljcpdLR.byo99uRgUpLFT7XszinEQ8Xha8uAnRy8nYeJGNgoW6OGgD4XLXP
- u2Ms8RgTQQQ8.
+X-YMail-OSG: JtBlrjYVM1k5l1163cI6Hi8liuV61Zene8sezRj15N4NIeX
+ hPtHvK5M3ffaqVgGKNxXno8bv4JHcDqJnhtNqEEsSI9TLEnyHQiFBv7glGjb
+ dIWtcrUq2b8QJB0PYCLPJfPU2Al4q5jlVdWvpzEg8tCPalbiYbBF5JAD.ueT
+ .NHoOU.fTMaaXvCkbfHEkjfT.mKMOHfeYWfH0EUuyC1x25Y54MK4Qw7UaPIO
+ _8um_kklleBF02ZuAhG1u.dOiMq3JSOh.R6Zf1iVYR0vDw0Ijv8UmE.FCUsT
+ O9NPVCvRLSeLEuvLxp5Uj5KZSUnx6VrTHf2UMpjC7jJLBTrAP6vmbeg--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -29,9 +26,9 @@ Cc: Christoph Hellwig <hch@lst.de>,
         Boaz Harrosh <bharrosh@panasas.com>,
         Richard Sharpe <realrichardsharpe@gmail.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 0/6] tcm: Add TFO->new_cmd_map() and TFO->task_sg_chaining=1
-Date: Mon,  6 Sep 2010 14:36:50 -0700
-Message-Id: <1283809010-13619-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 2/6] tcm: Add support for struct target_core_fabric_ops->task_sg_chaining
+Date: Mon,  6 Sep 2010 14:37:09 -0700
+Message-Id: <1283809029-13661-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -39,65 +36,248 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Greetings all,
+This patch adds support for struct target_core_fabric_ops->task_sg_chaining=1,
+which allows a single struct se_cmd descriptor to use include/linux/scatterlist.h
+SGL chaining logic and link contigious struct se_task->task_sg[] arrays together
+into a single walkable scatterlist chain for HW target mode drivers that require
+this for pci_map_sg().
 
-This patch series adds two new features to the TCM v4 data I/O path that
-will be included in v4.0.0-rc4 for TCM_Loop (included below in patch #5)
-and other WIP HW target mode drivers.
+This also includes a transport_do_task_sg_chain() helper which does the sg_chain()
+calls, and other necessary struct scatterlist->page_link termination bit twiddling to
+create a linked SGL from struct se_task->task_sg[] created in transport_calc_sg_num()
 
-The first patch adds support for TFO->new_cmd_map() / TRANSPORT_NEW_CMD_MAP
-which allows fabric modules to use a callback in TCM backstore processing
-thread context when doing the second stage setup of a new struct se_cmd
-descriptor.
-
-The second patch adds support for greating a struct se_cmd wide
-SGL array chain using include/linux/scatterlist.h:sg_chain() from
-contigiously allocated struct se_task->task_sg[] arrays.  This includes
-the use of a trailing padding SGL within struct se_task->task_sg[] to hold
-the SGL link to the next struct se_task->task_sg[].
-
-The third and forth patches involve the conversion of two spinlocks 
-which now may used in interrupt context from __transport_get_lun_for_cmd(),
-and makes them use spin_lock_irq() and spin_unlock_irq() and handles a
-couple of special cases in target_core_mib.c for reference counting.
-
-And finally the fifth path converts the TCM_Loop virtual SCSI LLD
-module to use the new TFO->new_cmd_map() / TRANSPORT_NEW_CMD_MAP, and
-removes the original per struct tcm_loop_hba->tl_hba_qobj.  This will give
-us a nice reduction in context-switches per TCM_Loop I/O now that this
-patch removes the original per HBA tcm_loop_processing_thread() overhead
-in TCM_Loop v4 code!
-
-Comments are welcome,
+Inside of transport_calc_sg_num(), this patch when running in TFI->task_sg_chaining=1
+mode will alloc an extra trailing padding struct scatterlist entry to the primary
+struct se_task->task_sg[] allocation.  The call to transport_do_task_sg_chain()
+will then use these extra trailing SGL for the sg_chain() call.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/target_core_transport.c  |  127 +++++++++++++++++++++++++++++-
+ include/target/target_core_base.h       |    4 +
+ include/target/target_core_fabric_ops.h |    6 ++
+ include/target/target_core_transport.h  |    1 +
+ 4 files changed, 133 insertions(+), 5 deletions(-)
 
-Nicholas Bellinger (6):
-  tcm: Add support for TRANSPORT_NEW_CMD_MAP
-  tcm: Add support for struct target_core_fabric_ops->task_sg_chaining
-  tcm/ramdisk: Add special case for TFO->task_sg_chaining=1 with
-    RAMDISK_DR
-  tcm: Convert struct se_node_acl->device_list_lock to spin_*lock_irq()
-  tcm: Convert struct se_device->dev_status_lock to spin_*lock_irq()
-  tcm_loop: Convert to use new optimized TFO->new_cmd_map() caller
-
- drivers/target/target_core_device.c            |   94 +++++---------
- drivers/target/target_core_fabric_configfs.c   |    8 +-
- drivers/target/target_core_mib.c               |   28 ++++-
- drivers/target/target_core_rd.c                |   45 ++++++-
- drivers/target/target_core_tpg.c               |   18 ++-
- drivers/target/target_core_transport.c         |  160 ++++++++++++++++++++++--
- drivers/target/target_core_ua.c                |   20 ++--
- drivers/target/tcm_loop/tcm_loop_configfs.c    |   35 +-----
- drivers/target/tcm_loop/tcm_loop_core.h        |    2 -
- drivers/target/tcm_loop/tcm_loop_fabric.c      |   61 ---------
- drivers/target/tcm_loop/tcm_loop_fabric.h      |    2 -
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |  100 +++++-----------
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.h |    2 +-
- include/target/target_core_base.h              |   11 ++-
- include/target/target_core_device.h            |    1 -
- include/target/target_core_fabric_ops.h        |   12 ++
- include/target/target_core_tpg.h               |    1 +
- include/target/target_core_transport.h         |    3 +-
- 18 files changed, 332 insertions(+), 271 deletions(-)
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 5be102c..602b2d8 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -6736,7 +6736,8 @@ extern u32 transport_calc_sg_num(
+ {
+ 	struct se_cmd *se_cmd = task->task_se_cmd;
+ 	struct se_mem *se_mem = in_se_mem;
+-	u32 sg_length, task_size = task->task_size;
++	struct target_core_fabric_ops *tfo = CMD_TFO(se_cmd);
++	u32 sg_length, task_size = task->task_size, task_sg_num_padded;
+ 
+ 	while (task_size != 0) {
+ 		DEBUG_SC("se_mem->se_page(%p) se_mem->se_len(%u)"
+@@ -6786,8 +6787,19 @@ next:
+ 
+ 		task->task_sg_num++;
+ 	}
++	/*
++	 * Check if the fabric module driver is requesting that all
++	 * struct se_task->task_sg[] be chained together..  If so,
++	 * then allocate an extra padding SG entry for linking and
++	 * marking the end of the chained SGL.
++	 */
++	if (tfo->task_sg_chaining) {
++		task_sg_num_padded = (task->task_sg_num + 1);
++		task->task_padded_sg = 1;
++	} else
++		task_sg_num_padded = task->task_sg_num;
+ 
+-	task->task_sg = kzalloc(task->task_sg_num *
++	task->task_sg = kzalloc(task_sg_num_padded *
+ 			sizeof(struct scatterlist), GFP_KERNEL);
+ 	if (!(task->task_sg)) {
+ 		printk(KERN_ERR "Unable to allocate memory for"
+@@ -6795,10 +6807,18 @@ next:
+ 		return 0;
+ 	}
+ 
+-	sg_init_table(&task->task_sg[0], task->task_sg_num);
++	sg_init_table(&task->task_sg[0], task_sg_num_padded);
++	/*
++	 * For the chaining case, setup the proper end of SGL for the
++	 * initial submission struct task into struct se_subsystem_api.
++	 * This will be cleared later by transport_do_task_sg_chain()
++	 */
++	if (task->task_padded_sg)
++		sg_mark_end(&task->task_sg[task->task_sg_num - 1]);
+ 
+-	DEBUG_SC("Successfully allocated task->task_sg_num(%u)\n",
+-			task->task_sg_num);
++	DEBUG_SC("Successfully allocated task->task_sg_num(%u),"
++		" task_sg_num_padded(%u)\n", task->task_sg_num,
++		task_sg_num_padded);
+ 
+ 	return task->task_sg_num;
+ }
+@@ -7021,6 +7041,103 @@ next:
+ 	return 0;
+ }
+ 
++/*
++ * This function can be used by HW target mode drivers to create a linked
++ * scatterlist from all contiguously allocated struct se_task->task_sg[].
++ * This is intended to be called during the completion path by TCM Core
++ * when struct target_core_fabric_ops->check_task_sg_chaining is enabled.
++ */
++void transport_do_task_sg_chain(struct se_cmd *cmd)
++{
++	struct scatterlist *sg_head = NULL, *sg_link = NULL, *sg_first = NULL;
++	struct scatterlist *sg_head_cur = NULL, *sg_link_cur = NULL;
++	struct scatterlist *sg, *sg_end = NULL, *sg_end_cur = NULL;
++	struct se_task *task;
++	struct target_core_fabric_ops *tfo = CMD_TFO(cmd);
++	u32 task_sg_num = 0, sg_count = 0;
++	int i;
++
++	if (tfo->task_sg_chaining == 0) {
++		printk(KERN_ERR "task_sg_chaining is diabled for fabric module:"
++				" %s\n", tfo->get_fabric_name());
++		dump_stack();
++		return;
++	}
++	/*
++	 * Walk the struct se_task list and setup scatterlist chains
++	 * for each contiguosly allocated struct se_task->task_sg[].
++	 */
++	list_for_each_entry(task, &T_TASK(cmd)->t_task_list, t_list) {
++		if (!(task->task_sg) || !(task->task_padded_sg))
++			continue;
++
++		if (sg_head && sg_link) {
++			sg_head_cur = &task->task_sg[0];
++			sg_link_cur = &task->task_sg[task->task_sg_num];
++			/*
++			 * Either add chain or mark end of scatterlist
++			 */
++			if (!(list_is_last(&task->t_list,
++					&T_TASK(cmd)->t_task_list))) {
++				/*
++				 * Clear existing SGL termination bit set in
++				 * transport_calc_sg_num(), see sg_mark_end()
++				 */
++				sg_end_cur = &task->task_sg[task->task_sg_num - 1];
++				sg_end_cur->page_link &= ~0x02;
++
++				sg_chain(sg_head, task_sg_num, sg_head_cur);
++				sg_count += (task->task_sg_num + 1);
++			} else
++				sg_count += task->task_sg_num;
++
++			sg_head = sg_head_cur;
++			sg_link = sg_link_cur;
++			task_sg_num = task->task_sg_num;
++			continue;
++		}
++		sg_head = sg_first = &task->task_sg[0];
++		sg_link = &task->task_sg[task->task_sg_num];
++		task_sg_num = task->task_sg_num;
++		/*
++		 * Check for single task..
++		 */
++		if (!(list_is_last(&task->t_list, &T_TASK(cmd)->t_task_list))) {
++			/*
++			 * Clear existing SGL termination bit set in
++			 * transport_calc_sg_num(), see sg_mark_end()
++			 */
++			sg_end = &task->task_sg[task->task_sg_num - 1];
++			sg_end->page_link &= ~0x02;
++			sg_count += (task->task_sg_num + 1);
++		} else
++			sg_count += task->task_sg_num;
++	}
++	/*
++	 * Setup the starting pointer and total t_tasks_sg_linked_no including
++	 * padding SGs for linking and to mark the end.
++	 */
++	T_TASK(cmd)->t_tasks_sg_chained = sg_first;
++	T_TASK(cmd)->t_tasks_sg_chained_no = sg_count;
++
++	printk("Setup T_TASK(cmd)->t_tasks_sg_chained: %p and"
++		" t_tasks_sg_chained_no: %u\n", T_TASK(cmd)->t_tasks_sg_chained,
++		T_TASK(cmd)->t_tasks_sg_chained_no);
++
++	for_each_sg(T_TASK(cmd)->t_tasks_sg_chained, sg,
++			T_TASK(cmd)->t_tasks_sg_chained_no, i) {
++
++		printk("SG: %p page: %p length: %d offset: %d\n",
++			sg, sg_page(sg), sg->length, sg->offset);
++		if (sg_is_chain(sg))
++			printk("SG: %p sg_is_chain=1\n", sg);
++		if (sg_is_last(sg))
++			printk("SG: %p sg_is_last=1\n", sg);
++	}
++
++}
++EXPORT_SYMBOL(transport_do_task_sg_chain);
++
+ static int transport_do_se_mem_map(
+ 	struct se_device *dev,
+ 	struct se_task *task,
+diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
+index 0833612..dbcc04a 100644
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -439,6 +439,7 @@ struct se_transport_task {
+ 	u32			t_tasks_no;
+ 	u32			t_tasks_sectors;
+ 	u32			t_tasks_se_num;
++	u32			t_tasks_sg_chained_no;
+ 	atomic_t		t_fe_count;
+ 	atomic_t		t_se_count;
+ 	atomic_t		t_task_cdbs_left;
+@@ -462,6 +463,8 @@ struct se_transport_task {
+ 	struct completion	t_transport_passthrough_wcomp;
+ 	struct completion	transport_lun_fe_stop_comp;
+ 	struct completion	transport_lun_stop_comp;
++	struct scatterlist	*t_tasks_sg_chained;
++	struct scatterlist	t_tasks_sg_bounce;
+ 	void			*t_task_buf;
+ 	void			*t_task_pt_buf;
+ 	struct list_head	t_task_list;
+@@ -476,6 +479,7 @@ struct se_task {
+ 	u8		task_flags;
+ 	int		task_error_status;
+ 	int		task_state_flags;
++	int		task_padded_sg:1;
+ 	unsigned long long	task_lba;
+ 	u32		task_no;
+ 	u32		task_sectors;
+diff --git a/include/target/target_core_fabric_ops.h b/include/target/target_core_fabric_ops.h
+index e620eda..5dd61a9 100644
+--- a/include/target/target_core_fabric_ops.h
++++ b/include/target/target_core_fabric_ops.h
+@@ -3,6 +3,12 @@ struct target_fabric_configfs;
+ 
+ struct target_core_fabric_ops {
+ 	struct configfs_subsystem *tf_subsys;
++	/*
++	 * Optional to signal struct se_task->task_sg[] padding entries
++	 * for scatterlist chaining using transport_do_task_sg_link(),
++	 * disabled by default
++	 */
++	int task_sg_chaining:1;
+ 	char *(*get_fabric_name)(void);
+ 	u8 (*get_fabric_proto_ident)(struct se_portal_group *);
+ 	char *(*tpg_get_wwn)(struct se_portal_group *);
+diff --git a/include/target/target_core_transport.h b/include/target/target_core_transport.h
+index 711ec71..2eee898 100644
+--- a/include/target/target_core_transport.h
++++ b/include/target/target_core_transport.h
+@@ -263,6 +263,7 @@ extern int transport_map_sg_to_mem(struct se_cmd *, struct list_head *,
+ extern int transport_map_mem_to_sg(struct se_task *, struct list_head *,
+ 					void *, struct se_mem *,
+ 					struct se_mem **, u32 *, u32 *);
++extern void transport_do_task_sg_chain(struct se_cmd *);
+ extern u32 transport_generic_get_cdb_count(struct se_cmd *,
+ 					struct se_transform_info *,
+ 					unsigned long long, u32, struct se_mem *,
+-- 
+1.5.6.5
 
