@@ -1,99 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab0IFQB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 12:01:57 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:25433
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754937Ab0IFP5n (ORCPT
+	id S1755576Ab0IFQCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 12:02:09 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:38449
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754909Ab0IFP5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:57:43 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz4015Lzz1202hzz8275dhz32i87h2a8h61h)
+	Mon, 6 Sep 2010 11:57:42 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h43h61h)
 X-Spam-TCS-SCL: 0:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8C1L6-02-79S-02
+X-WSS-ID: 0L8C1L6-02-79R-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: Alexander Graf <agraf@suse.de>, joro@8bytes.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/27] Nested Paging Virtualization for KVM v3 (now with fixed Cc-List)
-Date: Mon, 6 Sep 2010 17:55:39 +0200
-Message-ID: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
+CC: Alexander Graf <agraf@suse.de>, <joro@8bytes.org>, <kvm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 08/27] KVM: MMU: Let is_rsvd_bits_set take mmu context instead of vcpu
+Date: Mon, 6 Sep 2010 17:55:47 +0200
+Message-ID: <1283788566-29186-9-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
+References: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Now with correct Cc-list. I accidentially copied the wrong line from
- MAINTAINERS in the first post of this. Sorry for the double-post)
+This patch changes is_rsvd_bits_set() function prototype to
+take only a kvm_mmu context instead of a full vcpu.
 
-Hi Avi, Marcelo,
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/kvm/mmu.c         |    6 +++---
+ arch/x86/kvm/paging_tmpl.h |    7 ++++---
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-here is finally the third round of my NPT virtualization patches for KVM. It
-took a while to get everything running (including KVM itself) on 32 bit again
-to actually test it. But testing on 32 bit host and with a 32 bit hypervisor
-was a very good idea. I found some serious bugs and shortcomings in my code
-that are fixed now in v3.
-
-The patchset was tested in a number of combinations:
-
-	host(64|32e)
-		->kvm(shadow|npt)
-			->guest(64|32e|32)
-				->test(boot|kbuild)
-
-	host(64|32e)
-		->kvm(npt)
-			->guest(64|32e|32)
-				->kvm(shadow|kvm)
-					->guest(64|32e|32)
-						->test(boot|kbuild)
-
-Only the valid combinations where tested of course, so no 64 bit on 32 bit
-combinations were tested. Except for that I tested all of the above
-combinations and all worked without any regressions.
-
-Other changes since v2 are:
-
-	* Addressed the review comments from v2:
-		- Rebased everything to latest upstream code
-		- renamed nested_mmu to walk_mmu to make its
-		  meaning more clear
-		- the gva_to_gpa functions are not longer swapped
-		  between the two mmu states which makes it more
-		  consistent
-		- Moved struct vcpu page fault data into seperate
-		  sub-struct for better readability
-		- Other minor stuff (coding style, typos)
-		- Renamed the kvm_*_page_x86 functions to kvm_*_page_mmu so
-		  that they can be made more generic later.
-	* Made everything work on 32 bit
-		- Introduced mmu->lm_root pointer to let the softmmu shadow 32
-		  bit page tables with a long-mode page table. The lm_root
-		  page-table root always just points to the mmu.pae_root, so
-		  this builds entirely on the pae-shadow code.
-		- Split mmu_alloc_roots into a shadow and direct_map version to
-		  simplify the code and to not break the direct_map paths anymore
-		  when changing something in that function.
-	* Probably other changes I forgot about
-
-This patchset applies on todays avi/master + the three patches I sent end of
-last week. These patches are necessary for some of the tests above to run.
-
-For the curious and impatient user I put everything in a branch on kernel.org.
-If you want to test it you can pull the tree from
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/joro/linux-2.6-kvm.git npt-virt-v3
-
-Please review and/or apply these patches if considered good enough. Otherwise I
-appreciate your feedback.
-
-Thanks,
-
-	Joerg
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 787540d..9668f91 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2577,12 +2577,12 @@ static void paging_free(struct kvm_vcpu *vcpu)
+ 	nonpaging_free(vcpu);
+ }
+ 
+-static bool is_rsvd_bits_set(struct kvm_vcpu *vcpu, u64 gpte, int level)
++static bool is_rsvd_bits_set(struct kvm_mmu *mmu, u64 gpte, int level)
+ {
+ 	int bit7;
+ 
+ 	bit7 = (gpte >> 7) & 1;
+-	return (gpte & vcpu->arch.mmu.rsvd_bits_mask[bit7][level-1]) != 0;
++	return (gpte & mmu->rsvd_bits_mask[bit7][level-1]) != 0;
+ }
+ 
+ #define PTTYPE 64
+@@ -2857,7 +2857,7 @@ static void mmu_pte_write_new_pte(struct kvm_vcpu *vcpu,
+ 		return;
+         }
+ 
+-	if (is_rsvd_bits_set(vcpu, *(u64 *)new, PT_PAGE_TABLE_LEVEL))
++	if (is_rsvd_bits_set(&vcpu->arch.mmu, *(u64 *)new, PT_PAGE_TABLE_LEVEL))
+ 		return;
+ 
+ 	++vcpu->kvm->stat.mmu_pte_updated;
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 13d0c06..68ee1b7 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -168,7 +168,7 @@ walk:
+ 			break;
+ 		}
+ 
+-		if (is_rsvd_bits_set(vcpu, pte, walker->level)) {
++		if (is_rsvd_bits_set(&vcpu->arch.mmu, pte, walker->level)) {
+ 			rsvd_fault = true;
+ 			break;
+ 		}
+@@ -327,6 +327,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ 				u64 *sptep)
+ {
+ 	struct kvm_mmu_page *sp;
++	struct kvm_mmu *mmu = &vcpu->arch.mmu;
+ 	pt_element_t *gptep = gw->prefetch_ptes;
+ 	u64 *spte;
+ 	int i;
+@@ -358,7 +359,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ 		gpte = gptep[i];
+ 
+ 		if (!is_present_gpte(gpte) ||
+-		      is_rsvd_bits_set(vcpu, gpte, PT_PAGE_TABLE_LEVEL)) {
++		      is_rsvd_bits_set(mmu, gpte, PT_PAGE_TABLE_LEVEL)) {
+ 			if (!sp->unsync)
+ 				__set_spte(spte, shadow_notrap_nonpresent_pte);
+ 			continue;
+@@ -713,7 +714,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 			return -EINVAL;
+ 
+ 		gfn = gpte_to_gfn(gpte);
+-		if (is_rsvd_bits_set(vcpu, gpte, PT_PAGE_TABLE_LEVEL)
++		if (is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL)
+ 		      || gfn != sp->gfns[i] || !is_present_gpte(gpte)
+ 		      || !(gpte & PT_ACCESSED_MASK)) {
+ 			u64 nonpresent;
+-- 
+1.7.0.4
 
 
