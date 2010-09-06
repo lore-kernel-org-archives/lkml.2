@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751170Ab0IFPFL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:05:11 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:42794 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732Ab0IFPCz (ORCPT
+	id S1755256Ab0IFPFR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:05:17 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:46017 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754707Ab0IFPCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:02:55 -0400
+	Mon, 6 Sep 2010 11:02:54 -0400
 X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz32i2a8h87h61h)
-X-Spam-TCS-SCL: 0:0
+X-BigFish: VS1(zzzz1202hzz8275bhz32i2a8h87h62h)
+X-Spam-TCS-SCL: 1:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8BZ2P-02-4WX-02
+X-WSS-ID: 0L8BZ2P-02-4WR-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: <"http://kvm.qumranet.com"@osrc.amd.com>, <linux-kernel@vger.kernel.org>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 19/27] KVM: X86: Propagate fetch faults
-Date: Mon, 6 Sep 2010 17:01:54 +0200
-Message-ID: <1283785322-26898-20-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 11/27] KVM: X86: Introduce pointer to mmu context used for gva_to_gpa
+Date: Mon, 6 Sep 2010 17:01:46 +0200
+Message-ID: <1283785322-26898-12-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
 References: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
@@ -30,52 +30,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KVM currently ignores fetch faults in the instruction
-emulator. With nested-npt we could have such faults. This
-patch adds the code to handle these.
+This patch introduces the walk_mmu pointer which points to
+the mmu-context currently used for gva_to_gpa translations.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/kvm/emulate.c |    3 +++
- arch/x86/kvm/x86.c     |    4 ++++
- 2 files changed, 7 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/kvm_host.h |   14 ++++++++++++++
+ arch/x86/kvm/mmu.c              |   10 +++++-----
+ arch/x86/kvm/x86.c              |   17 ++++++++++-------
+ 3 files changed, 29 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 2b08b78..aead72e 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1198,6 +1198,9 @@ static int emulate_popf(struct x86_emulate_ctxt *ctxt,
- 	*(unsigned long *)dest =
- 		(ctxt->eflags & ~change_mask) | (val & change_mask);
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index af8cce3..d797746 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -288,7 +288,21 @@ struct kvm_vcpu_arch {
+ 	u64 ia32_misc_enable_msr;
+ 	bool tpr_access_reporting;
  
-+	if (rc == X86EMUL_PROPAGATE_FAULT)
-+		emulate_pf(ctxt);
++	/*
++	 * Paging state of the vcpu
++	 *
++	 * If the vcpu runs in guest mode with two level paging this still saves
++	 * the paging mode of the l1 guest. This context is always used to
++	 * handle faults.
++	 */
+ 	struct kvm_mmu mmu;
 +
- 	return rc;
- }
++	/*
++	 * Pointer to the mmu context currently used for
++	 * gva_to_gpa translations.
++	 */
++	struct kvm_mmu *walk_mmu;
++
+ 	/* only needed in kvm_pv_mmu_op() path, but it's hot so
+ 	 * put it here to avoid allocation */
+ 	struct kvm_pv_mmu_op_buffer mmu_op_buffer;
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 9668f91..a2cd2ce 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2707,7 +2707,7 @@ static int paging32E_init_context(struct kvm_vcpu *vcpu,
  
+ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+ {
+-	struct kvm_mmu *context = &vcpu->arch.mmu;
++	struct kvm_mmu *context = vcpu->arch.walk_mmu;
+ 
+ 	context->new_cr3 = nonpaging_new_cr3;
+ 	context->page_fault = tdp_page_fault;
+@@ -2767,11 +2767,11 @@ EXPORT_SYMBOL_GPL(kvm_init_shadow_mmu);
+ 
+ static int init_kvm_softmmu(struct kvm_vcpu *vcpu)
+ {
+-	int r = kvm_init_shadow_mmu(vcpu, &vcpu->arch.mmu);
++	int r = kvm_init_shadow_mmu(vcpu, vcpu->arch.walk_mmu);
+ 
+-	vcpu->arch.mmu.set_cr3           = kvm_x86_ops->set_cr3;
+-	vcpu->arch.mmu.get_cr3           = get_cr3;
+-	vcpu->arch.mmu.inject_page_fault = kvm_inject_page_fault;
++	vcpu->arch.walk_mmu->set_cr3           = kvm_x86_ops->set_cr3;
++	vcpu->arch.walk_mmu->get_cr3           = get_cr3;
++	vcpu->arch.walk_mmu->inject_page_fault = kvm_inject_page_fault;
+ 
+ 	return r;
+ }
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 65b00f0..ca69dcc 100644
+index 829efb0..e5dcf7f 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -4237,6 +4237,9 @@ int emulate_instruction(struct kvm_vcpu *vcpu,
- 		vcpu->arch.emulate_ctxt.perm_ok = false;
+@@ -3441,27 +3441,27 @@ static gpa_t translate_gpa(struct kvm_vcpu *vcpu, gpa_t gpa, u32 *error)
+ gpa_t kvm_mmu_gva_to_gpa_read(struct kvm_vcpu *vcpu, gva_t gva, u32 *error)
+ {
+ 	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
+-	return vcpu->arch.mmu.gva_to_gpa(vcpu, gva, access, error);
++	return vcpu->arch.walk_mmu->gva_to_gpa(vcpu, gva, access, error);
+ }
  
- 		r = x86_decode_insn(&vcpu->arch.emulate_ctxt);
-+		if (r == X86EMUL_PROPAGATE_FAULT)
-+			goto done;
-+
- 		trace_kvm_emulate_insn_start(vcpu);
+  gpa_t kvm_mmu_gva_to_gpa_fetch(struct kvm_vcpu *vcpu, gva_t gva, u32 *error)
+ {
+ 	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
+ 	access |= PFERR_FETCH_MASK;
+-	return vcpu->arch.mmu.gva_to_gpa(vcpu, gva, access, error);
++	return vcpu->arch.walk_mmu->gva_to_gpa(vcpu, gva, access, error);
+ }
  
- 		/* Only allow emulation of specific instructions on #UD
-@@ -4295,6 +4298,7 @@ restart:
- 		return handle_emulation_failure(vcpu);
- 	}
+ gpa_t kvm_mmu_gva_to_gpa_write(struct kvm_vcpu *vcpu, gva_t gva, u32 *error)
+ {
+ 	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
+ 	access |= PFERR_WRITE_MASK;
+-	return vcpu->arch.mmu.gva_to_gpa(vcpu, gva, access, error);
++	return vcpu->arch.walk_mmu->gva_to_gpa(vcpu, gva, access, error);
+ }
  
-+done:
- 	if (vcpu->arch.emulate_ctxt.exception >= 0) {
- 		inject_emulated_exception(vcpu);
- 		r = EMULATE_DONE;
+ /* uses this to access any guest's mapped memory without checking CPL */
+ gpa_t kvm_mmu_gva_to_gpa_system(struct kvm_vcpu *vcpu, gva_t gva, u32 *error)
+ {
+-	return vcpu->arch.mmu.gva_to_gpa(vcpu, gva, 0, error);
++	return vcpu->arch.walk_mmu->gva_to_gpa(vcpu, gva, 0, error);
+ }
+ 
+ static int kvm_read_guest_virt_helper(gva_t addr, void *val, unsigned int bytes,
+@@ -3472,7 +3472,8 @@ static int kvm_read_guest_virt_helper(gva_t addr, void *val, unsigned int bytes,
+ 	int r = X86EMUL_CONTINUE;
+ 
+ 	while (bytes) {
+-		gpa_t gpa = vcpu->arch.mmu.gva_to_gpa(vcpu, addr, access, error);
++		gpa_t gpa = vcpu->arch.walk_mmu->gva_to_gpa(vcpu, addr, access,
++							    error);
+ 		unsigned offset = addr & (PAGE_SIZE-1);
+ 		unsigned toread = min(bytes, (unsigned)PAGE_SIZE - offset);
+ 		int ret;
+@@ -3527,8 +3528,9 @@ static int kvm_write_guest_virt_system(gva_t addr, void *val,
+ 	int r = X86EMUL_CONTINUE;
+ 
+ 	while (bytes) {
+-		gpa_t gpa =  vcpu->arch.mmu.gva_to_gpa(vcpu, addr,
+-						       PFERR_WRITE_MASK, error);
++		gpa_t gpa =  vcpu->arch.walk_mmu->gva_to_gpa(vcpu, addr,
++							     PFERR_WRITE_MASK,
++							     error);
+ 		unsigned offset = addr & (PAGE_SIZE-1);
+ 		unsigned towrite = min(bytes, (unsigned)PAGE_SIZE - offset);
+ 		int ret;
+@@ -5648,6 +5650,7 @@ int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
+ 	kvm = vcpu->kvm;
+ 
+ 	vcpu->arch.emulate_ctxt.ops = &emulate_ops;
++	vcpu->arch.walk_mmu = &vcpu->arch.mmu;
+ 	vcpu->arch.mmu.root_hpa = INVALID_PAGE;
+ 	vcpu->arch.mmu.translate_gpa = translate_gpa;
+ 	if (!irqchip_in_kernel(kvm) || kvm_vcpu_is_bsp(vcpu))
 -- 
 1.7.0.4
 
