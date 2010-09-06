@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab0IFUFW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 16:05:22 -0400
-Received: from v055943.home.net.pl ([79.96.20.63]:54748 "HELO
-	v055943.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754091Ab0IFUFS (ORCPT
+	id S1755324Ab0IFULO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 16:11:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61446 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894Ab0IFULI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 16:05:18 -0400
-X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Sep 2010 16:05:17 EDT
-Message-ID: <4C853C78.70705@ideadruk.pl>
-Date: Mon, 06 Sep 2010 21:09:44 +0200
-From: Idea Druk - mailing <mailing@ideadruk.pl>
-User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
+	Mon, 6 Sep 2010 16:11:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kulikov Vasiliy <segooon@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] md: do not use ++ in rcu_dereference() argument
+Date: Mon, 6 Sep 2010 22:10:55 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3; KDE/4.5.1; x86_64; ; )
+Cc: kernel-janitors@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1283711539-7123-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1283711539-7123-1-git-send-email-segooon@gmail.com>
 MIME-Version: 1.0
-To: biuro@idea-druk.pl
-Subject: Zapytanie.
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8bit
+Message-Id: <201009062210.56824.arnd@arndb.de>
+X-Provags-ID: V02:K0:aBZBb8txuTNmRWCTNh1rBJC/EikPflajfiwJAm304He
+ 5rZj1xqLBdOzRHfjmFuKsewkWvuI5PbVRiMoXEvSxVlD5zPK45
+ 7A4hj+g+6Yu69EfwJ3eX/BNqmWqoRJr4Crt/4sSaypksesfKFM
+ wygrDJiygiQxwR/8vDt5Hign6dREAlQjwbyX+e3i8ch2aES4A/
+ tFpehkTcw8zQKZigj/GuQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Szanowni Pañstwo,
+On Sunday 05 September 2010 20:32:18 Kulikov Vasiliy wrote:
+> From: Vasiliy Kulikov <segooon@gmail.com>
+> 
+> rcu_dereference() is macro, so it might use its argument twice.
+> Argument must not has side effects.
+> 
+> It was found by compiler warning:
+> drivers/md/raid1.c: In function â€˜read_balanceâ€™:
+> drivers/md/raid1.c:445: warning: operation on â€˜new_diskâ€™ may be undefined
 
-Jeste¶my firm± zajmuj±c± siê us³ugami poligraficznymi (druki ulotek,
-wizytówek, plakatów, teczek ofertowych, przygotowywanie projektów
-graficznych itp.).
+I think the rcu_dereference macro should really not evaluate its argument
+twice, and I don't see where it does.
+As a general rule, we try to write macros in Linux such that they behave
+like functions and don't have surprising side-effects.
 
-Szanuj±c Pañstwa prywatno¶æ i zarazem przestrzegaj±c obowi±zuj±cych
-przepisów*, zwracamy siê z pro¶b± o wyra¿enie zgody na przys³anie Pañstwu
-(jednorazowo) naszej oferty.
+Which kernel and gcc version do you see the warning with?
 
-Je¶li s± Pañstwo zainteresowani otrzymaniem naszej oferty prosimy
-o odpowied¼ na niniejszego maila w TYTULE odpowiedzi wpisuj±c s³owo "TAK".
-
-Je¿eli nie s± Pañstwo zainteresowani nasz± ofert± serdecznie przepraszamy.
-
-Pozdrawiamy.
-
-
-
-
-_____________________________________________________________
-
-*zgodnie z Ustaw± o ¶wiadczeniu us³ug drog± elektroniczn± oraz dyrektyw± 
-UOKiK:
-"dopuszczalne jest przes³anie na adres e-mail pytania, czy adresat 
-zgadza siê na otrzymywanie drog± elektroniczn± informacji handlowej" - 
-materia³y z konferencji nt. Bezpieczeñstwa w sieci Internet, Warszawa 14 
-marca 2006
-
-Niniejsza wiadomo¶æ nie jest informacj± handlow±, a jedynie zapytaniem o 
-zgodê na przesy³anie informacji handlowych drog± elektroniczn± zgodnie z 
-art. 10 ustawy z dnia 18 lipca 2002r. o ¶wiadczeniu us³ug drog± 
-elektroniczn± (Dz.U. z 2002r. Nr 144, poz 1204 z pó¼n. zm.)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	Arnd
