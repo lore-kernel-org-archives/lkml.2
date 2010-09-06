@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab0IFWVc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 18:21:32 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:37298 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab0IFWV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 18:21:28 -0400
-Date: Mon, 6 Sep 2010 23:21:14 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1009062319170.4265@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755727Ab0IFWW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 18:22:26 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:36266 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab0IFWWT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 18:22:19 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6097"; a="53431600"
+Subject: Re: [PATCH 03/24] arm: mm: add proc info for ScorpionMP
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Jeff Ohlstein <johlstei@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+In-Reply-To: <20100904143231.GB16462@n2100.arm.linux.org.uk>
+References: <1282922978.5075.13.camel@m0nster>
+	 <1282925072.26355.61.camel@e102109-lin.cambridge.arm.com>
+	 <1282926826.5075.21.camel@m0nster>
+	 <20100904143231.GB16462@n2100.arm.linux.org.uk>
+Content-Type: text/plain
+Date: Mon, 06 Sep 2010 15:22:14 -0700
+Message-Id: <1283811734.16225.240.camel@desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2010-09-04 at 15:32 +0100, Russell King - ARM Linux wrote:
+> On Fri, Aug 27, 2010 at 09:33:46AM -0700, Daniel Walker wrote:
+> > So your saying it makes more sense to change the msm entry into the
+> > default entry, and make the current default into the
+> > ARM11MPCore/Cortex-A9 entry?
+> > 
+> > There's 4 or 5 other cpu's that have SMP but none have had to jump over
+> > those bits AFAIK ..
+> 
+> What CPUs (CPU not SoC) are you referring to?
+> 
+> CPUs is the core that runs the code.  SoC is the CPU with the peripherals.
+> OMAP is not a CPU.  OMAP is a SoC.
 
-I sent a pull req last week you can ignore in favour of this one.
+I guess I'm referring to the SoC then (in this case all SMP SoC's) .. 
 
-radeon + nouveau + a couple of core fixes. Important radeon evergreen fix, 
-which allows accel to run without locking up the gpu, also a fix for 
-r700 AGP, and a couple of bkl removal fixes for nouveau.
+Daniel
 
-Dave.
-
-
-The following changes since commit 2bfc96a127bc1cc94d26bfaa40159966064f9c8c:
-
-  Linux 2.6.36-rc3 (2010-08-29 08:36:04 -0700)
-
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Alex Deucher (9):
-      drm/radeon/kms: use tracked values for sclk and mclk
-      drm/radeon/kms: fix a regression on r7xx AGP due to the HDP flush fix
-      drm/radeon/kms: remove useless clock code
-      drm/radeon/kms: force legacy pll algo for RV515 LVDS
-      drm/radeon/kms: fix tv module parameter
-      drm/radeon/kms: properly set crtc high base on r7xx
-      drm/radeon/kms/evergreen: work around bad data in some i2c tables
-      drm/radeon/kms/evergreen: fix gpu hangs in userspace accel code
-      drm/radeon/kms: fix tv-out on avivo asics
-
-Chris Wilson (2):
-      drm/kms: Add a module parameter to disable polling
-      drm: Do not force 1024x768 modes on unknown connectors
-
-Dave Airlie (1):
-      Merge remote branch 'nouveau/for-airlied' of /ssd/git/drm-nouveau-next into drm-fixes
-
-Francisco Jerez (2):
-      drm/nouveau: Take fence spinlock before reading the last sequence.
-      drm/nouveau: Don't take struct_mutex around the pushbuf IOCTL.
-
-Marcin Slusarz (1):
-      drm/nv50: initialize ramht_refs list for faked 0 channel
-
- drivers/gpu/drm/drm_crtc_helper.c          |   24 ++++++--
- drivers/gpu/drm/nouveau/nouveau_fence.c    |    6 ++-
- drivers/gpu/drm/nouveau/nouveau_gem.c      |    7 +--
- drivers/gpu/drm/nouveau/nv50_instmem.c     |    2 +
- drivers/gpu/drm/radeon/atombios_crtc.c     |   48 +++++++++++++++---
- drivers/gpu/drm/radeon/evergreen.c         |   48 +++++++++++++----
- drivers/gpu/drm/radeon/r600.c              |   16 +-----
- drivers/gpu/drm/radeon/radeon.h            |    8 ++-
- drivers/gpu/drm/radeon/radeon_asic.c       |   18 ------
- drivers/gpu/drm/radeon/radeon_atombios.c   |   27 ++++++++++
- drivers/gpu/drm/radeon/radeon_clocks.c     |   58 +++------------------
- drivers/gpu/drm/radeon/radeon_connectors.c |   78 +++++++++++++++------------
- drivers/gpu/drm/radeon/radeon_device.c     |   28 +++-------
- drivers/gpu/drm/radeon/radeon_i2c.c        |    2 +-
- drivers/gpu/drm/radeon/radeon_mode.h       |    1 -
- drivers/gpu/drm/radeon/rv770.c             |   61 ++++++++++++++++++---
- 16 files changed, 253 insertions(+), 179 deletions(-)
