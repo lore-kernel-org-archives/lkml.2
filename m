@@ -1,31 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab0IFI7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 04:59:44 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:9570 "EHLO
+	id S1753577Ab0IFJCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 05:02:35 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:10897 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422Ab0IFI7m (ORCPT
+	with ESMTP id S1753104Ab0IFJCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 04:59:42 -0400
+	Mon, 6 Sep 2010 05:02:34 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
 	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=IGWczBBI10TiUcD7s9pSVSBzmqhF/yhTXMlxMOGOHUWPKv1M+N6IjqJ+mV4FcJJFK
-	DO2bBHMtAsHPbFib440oQ==
-Date: Mon, 6 Sep 2010 01:59:34 -0700 (PDT)
+	b=sctwRDxY2wBkJ29zpE6LHLTI/lWaAu/WXwnifVf1Vx0jhpdI34B78ftSw0z/IKI/l
+	zSP34q+9sRmaFUK4v04VA==
+Date: Mon, 6 Sep 2010 02:02:27 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 cc: Kulikov Vasiliy <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 14/14] mm: oom_kill: use IS_ERR() instead of strict
- checking
-In-Reply-To: <20100906094555.C8BB.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1009060155250.10552@chino.kir.corp.google.com>
-References: <1283711592-7669-1-git-send-email-segooon@gmail.com> <20100906094555.C8BB.A69D9226@jp.fujitsu.com>
+Subject: Re: [PATCH 13/14] mm: mempolicy: Check return code of check_range
+In-Reply-To: <20100906093610.C8B5.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1009060201000.10552@chino.kir.corp.google.com>
+References: <1283711588-7628-1-git-send-email-segooon@gmail.com> <20100906093610.C8B5.A69D9226@jp.fujitsu.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -38,23 +37,18 @@ On Mon, 6 Sep 2010, KOSAKI Motohiro wrote:
 
 > > From: Vasiliy Kulikov <segooon@gmail.com>
 > > 
-> > Use IS_ERR() instead of strict checking.
+> > Function check_range may return ERR_PTR(...). Check for it.
 > 
-> Umm...
+> When happen this issue?
 > 
-> I don't like this. IS_ERR() imply an argument is error code. but in
-> this case, we don't use error code. -1 mean oom special purpose meaning
-> value.
+> afaik, check_range return error when following condition.
+>  1) mm->mmap->vm_start argument is incorrect
+>  2) don't have neigher MPOL_MF_STATS, MPOL_MF_MOVE and MPOL_MF_MOVE_ALL
 > 
-
-You could make the same argument by saying the current use of PTR_ERR() 
-implies an error code.  We've simply hijacked -1UL for simplicity in this 
-case and because select_bad_process() can only return one other value 
-besides a pointer to a process or NULL.
-
-> So, if we take this direction, It would be better to use EAGAIN or something
-> instead -1.
+> I think both case is not happen in real. Am I overlooking anything?
 > 
 
-I agree it would probably better to return ERR_PTR(-EAGAIN) instead of 
-using -1UL.
+There's no reason not to check the return value of a function when the 
+implementation of either could change at any time.  migrate_to_node() is 
+certainly not in any fastpath where we can't sacrifice a branch for more 
+robust code.
