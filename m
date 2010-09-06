@@ -1,317 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab0IFP1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:27:40 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:32770 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab0IFP1e (ORCPT
+	id S1754834Ab0IFPaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:30:13 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59154 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750929Ab0IFPaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:27:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ji1aY17Y+e9r7SBQDBr54wTthDA5cBLP4tC1tSwUE7RUTqINgGbM8vPZXRCcqThD35
-         /FGwIB47FNPZuooVRbRLzIdCE+H19fZdZ1V+durgZMy5Ul0ZKok5Dqpv+tGyFbFQh50t
-         L992Z8DGwE67/x/1xAIOxcfJjyd20y11gVxrE=
-From: tom.leiming@gmail.com
-To: greg@kroah.com
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Subject: [PATCH] USB: otg: twl4030: fix phy initialization(v1)
-Date: Mon,  6 Sep 2010 23:27:09 +0800
-Message-Id: <1283786829-3564-1-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.6.2.5
+	Mon, 6 Sep 2010 11:30:09 -0400
+Date: Mon, 6 Sep 2010 16:48:24 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        =?ISO-8859-14?B?RnLpZOlyaWM=?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: disabling group leader perf_event
+Message-ID: <20100906164824.339cd82e@lxorguk.ukuu.org.uk>
+In-Reply-To: <4C8506B5.1040808@redhat.com>
+References: <4C84B088.5050003@redhat.com>
+	<1283772256.1930.303.camel@laptop>
+	<4C84D1CE.3070205@redhat.com>
+	<1283774045.1930.341.camel@laptop>
+	<4C84D77B.6040600@redhat.com>
+	<20100906124330.GA22314@elte.hu>
+	<4C84E265.1020402@redhat.com>
+	<20100906125905.GA25414@elte.hu>
+	<4C850147.8010908@redhat.com>
+	<20100906163041.3677fd66@lxorguk.ukuu.org.uk>
+	<4C8506B5.1040808@redhat.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ming Lei <tom.leiming@gmail.com>
+> No, I want the ability to terminate the code at any time and clean up 
+> any resources used.  We have exactly the same requirements for ordinary 
+> userspace.
 
-Commit 461c317705eca5cac09a360f488715927fd0a927(into 2.6.36-v3)
-is put forward to power down phy if no usb cable is connected,
-but does introduce the two issues below:
+So you intend to prevent its use at any point where we have a kernel only
+resource held in any way manner or form ? Remember we don't hold locks or
+many kinds of kernel resource across syscalls. Likewise I'm interested
+how you will keep it compatible with real time ?
 
-1), phy is not into work state if usb cable is connected
-with PC during poweron, so musb device mode is not usable
-in such case, follows the reasons:
-	-twl4030_phy_resume is not called, so
-		regulators are not enabled
-		i2c access are not enabled
-		usb mode not configurated
+> > - bounded memory use
+> > - trustable behaviour for access
+> 
+> Right.
+> 
+> > and usually minimal side effects since you want to optimise very
+> > heavily and side effects stop that (which is also why Fortran still kicks
+> > C's backside for crunching)
+> >
+> > Not sure you need/want to do the conversion in kernel.
+> 
+> I prefer bytecode as well.
+> 
+> > I'd have thought a
+> > sane way to handle it would have been to throw stuff at the kernel in
+> > some kind of semi-sane byte code that can be interpreted by a noddy
+> > interpreter but firstly when you get it have the kernel try and run a
+> > helper to compile it.
+> 
+> So you do want to jit?
 
-2), The kernel warings[1] of regulators 'unbalanced disables'
-is caused if poweron without usb cable connected
-with PC or b-device.
-
-This patch fixes the two issues above:
-	-power down phy only if no usb cable is connected with PC
-and b-device
-	-do phy initialization(via __twl4030_phy_resume) if usb cable
-is connected with PC(vbus event) or another b-device(ID event) in
-twl4030_usb_probe.
-
-This patch also doesn't put VUSB3V1 LDO into active mode in
-twl4030_usb_ldo_init until VBUS/ID change detected, so we can
-save more power consumption than before.
-
-This patch is verified OK on Beagle board either connected with
-usb cable or not when poweron.
-
-[1]. warnings of 'unbalanced disables' of regulators.
-[root@OMAP3EVM /]# dmesg
-------------[ cut here ]------------
-WARNING: at drivers/regulator/core.c:1357 _regulator_disable+0x38/0x128()
-unbalanced disables for VUSB1V8
-Modules linked in:
-Backtrace:
-[<c0030c48>] (dump_backtrace+0x0/0x110) from [<c034f5a8>] (dump_stack+0x18/0x1c)
- r7:c78179d8 r6:c01ed6b8 r5:c0410822 r4:0000054d
-[<c034f590>] (dump_stack+0x0/0x1c) from [<c0057da8>] (warn_slowpath_common+0x54/0x6c)
-[<c0057d54>] (warn_slowpath_common+0x0/0x6c) from [<c0057e64>] (warn_slowpath_fmt+0x38/0x40)
- r9:00000000 r8:00000000 r7:c78e6608 r6:00000000 r5:fffffffb
-r4:c78e6c00
-[<c0057e2c>] (warn_slowpath_fmt+0x0/0x40) from [<c01ed6b8>] (_regulator_disable+0x38/0x128)
- r3:c0410e53 r2:c0410ad5
-[<c01ed680>] (_regulator_disable+0x0/0x128) from [<c01ed87c>] (regulator_disable+0x24/0x38)
- r7:c78e6608 r6:00000000 r5:c78e6c40 r4:c78e6c00
-[<c01ed858>] (regulator_disable+0x0/0x38) from [<c02382dc>] (twl4030_phy_power+0x15c/0x17c)
- r5:c78595c0 r4:00000000
-[<c0238180>] (twl4030_phy_power+0x0/0x17c) from [<c023831c>] (twl4030_phy_suspend+0x20/0x2c)
- r6:00000000 r5:c78595c0 r4:c78595c0
-[<c02382fc>] (twl4030_phy_suspend+0x0/0x2c) from [<c0238638>] (twl4030_usb_irq+0x11c/0x16c)
- r5:c78595c0 r4:00000040
-[<c023851c>] (twl4030_usb_irq+0x0/0x16c) from [<c034ec18>] (twl4030_usb_probe+0x2c4/0x32c)
- r6:00000000 r5:00000000 r4:c78595c0
-[<c034e954>] (twl4030_usb_probe+0x0/0x32c) from [<c02152a0>] (platform_drv_probe+0x20/0x24)
- r7:00000000 r6:c047d49c r5:c78e6608 r4:c047d49c
-[<c0215280>] (platform_drv_probe+0x0/0x24) from [<c0214244>] (driver_probe_device+0xd0/0x190)
-[<c0214174>] (driver_probe_device+0x0/0x190) from [<c02143d4>] (__device_attach+0x44/0x48)
- r7:00000000 r6:c78e6608 r5:c78e6608 r4:c047d49c
-[<c0214390>] (__device_attach+0x0/0x48) from [<c0213694>] (bus_for_each_drv+0x50/0x90)
- r5:c0214390 r4:00000000
-[<c0213644>] (bus_for_each_drv+0x0/0x90) from [<c0214474>] (device_attach+0x70/0x94)
- r6:c78e663c r5:c78e6608 r4:c78e6608
-[<c0214404>] (device_attach+0x0/0x94) from [<c02134fc>] (bus_probe_device+0x2c/0x48)
- r7:00000000 r6:00000002 r5:c78e6608 r4:c78e6600
-[<c02134d0>] (bus_probe_device+0x0/0x48) from [<c0211e48>] (device_add+0x340/0x4b4)
-[<c0211b08>] (device_add+0x0/0x4b4) from [<c021597c>] (platform_device_add+0x110/0x16c)
-[<c021586c>] (platform_device_add+0x0/0x16c) from [<c0220cb0>] (add_numbered_child+0xd8/0x118)
- r7:00000000 r6:c045f15c r5:c78e6600 r4:00000000
-[<c0220bd8>] (add_numbered_child+0x0/0x118) from [<c001c618>] (twl_probe+0x3a4/0x72c)
-[<c001c274>] (twl_probe+0x0/0x72c) from [<c02601ac>] (i2c_device_probe+0x7c/0xa4)
-[<c0260130>] (i2c_device_probe+0x0/0xa4) from [<c0214244>] (driver_probe_device+0xd0/0x190)
- r5:c7856e20 r4:c047c860
-[<c0214174>] (driver_probe_device+0x0/0x190) from [<c02143d4>] (__device_attach+0x44/0x48)
- r7:c7856e04 r6:c7856e20 r5:c7856e20 r4:c047c860
-[<c0214390>] (__device_attach+0x0/0x48) from [<c0213694>] (bus_for_each_drv+0x50/0x90)
- r5:c0214390 r4:00000000
-[<c0213644>] (bus_for_each_drv+0x0/0x90) from [<c0214474>] (device_attach+0x70/0x94)
- r6:c7856e54 r5:c7856e20 r4:c7856e20
-[<c0214404>] (device_attach+0x0/0x94) from [<c02134fc>] (bus_probe_device+0x2c/0x48)
- r7:c7856e04 r6:c78fd048 r5:c7856e20 r4:c7856e20
-[<c02134d0>] (bus_probe_device+0x0/0x48) from [<c0211e48>] (device_add+0x340/0x4b4)
-[<c0211b08>] (device_add+0x0/0x4b4) from [<c0211fd8>] (device_register+0x1c/0x20)
-[<c0211fbc>] (device_register+0x0/0x20) from [<c0260aa8>] (i2c_new_device+0xec/0x150)
- r5:c7856e00 r4:c7856e20
-[<c02609bc>] (i2c_new_device+0x0/0x150) from [<c0260dc0>] (i2c_register_adapter+0xa0/0x1c4)
- r7:00000000 r6:c78fd078 r5:c78fd048 r4:c781d5c0
-[<c0260d20>] (i2c_register_adapter+0x0/0x1c4) from [<c0260f80>] (i2c_add_numbered_adapter+0x9c/0xb4)
- r7:00000a28 r6:c04600a8 r5:c78fd048 r4:00000000
-[<c0260ee4>] (i2c_add_numbered_adapter+0x0/0xb4) from [<c034efa4>] (omap_i2c_probe+0x324/0x3e8)
- r5:00000000 r4:c78fd000
-[<c034ec80>] (omap_i2c_probe+0x0/0x3e8) from [<c02152a0>] (platform_drv_probe+0x20/0x24)
-[<c0215280>] (platform_drv_probe+0x0/0x24) from [<c0214244>] (driver_probe_device+0xd0/0x190)
-[<c0214174>] (driver_probe_device+0x0/0x190) from [<c021436c>] (__driver_attach+0x68/0x8c)
- r7:c78b2140 r6:c047e214 r5:c04600e4 r4:c04600b0
-[<c0214304>] (__driver_attach+0x0/0x8c) from [<c021399c>] (bus_for_each_dev+0x50/0x84)
- r7:c78b2140 r6:c047e214 r5:c0214304 r4:00000000
-[<c021394c>] (bus_for_each_dev+0x0/0x84) from [<c0214068>] (driver_attach+0x20/0x28)
- r6:c047e214 r5:c047e214 r4:c00270d0
-[<c0214048>] (driver_attach+0x0/0x28) from [<c0213274>] (bus_add_driver+0xa8/0x228)
-[<c02131cc>] (bus_add_driver+0x0/0x228) from [<c02146a4>] (driver_register+0xb0/0x13c)
-[<c02145f4>] (driver_register+0x0/0x13c) from [<c0215744>] (platform_driver_register+0x4c/0x60)
- r9:00000000 r8:c001f688 r7:00000013 r6:c005b6fc r5:c00083dc
-r4:c00270d0
-[<c02156f8>] (platform_driver_register+0x0/0x60) from [<c001f69c>] (omap_i2c_init_driver+0x14/0x1c)
-[<c001f688>] (omap_i2c_init_driver+0x0/0x1c) from [<c002c460>] (do_one_initcall+0xd0/0x1a4)
-[<c002c390>] (do_one_initcall+0x0/0x1a4) from [<c0008478>] (kernel_init+0x9c/0x154)
-[<c00083dc>] (kernel_init+0x0/0x154) from [<c005b6fc>] (do_exit+0x0/0x688)
- r5:c00083dc r4:00000000
----[ end trace 1b75b31a2719ed1d ]---
-
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>
-Cc: Felipe Balbi <me@felipebalbi.com>
-Cc: Anand Gadiyar <gadiyar@ti.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
----
-v1:
-	-Keep VUSB3V1 LDO in sleep state until VBUS/ID change detected
-	-remove old_pwr local varibles in __twl4030_phy_power on Felipe's
-	suggestion 
----
- drivers/usb/otg/twl4030-usb.c |   78 ++++++++++++++++++++++++++--------------
- 1 files changed, 51 insertions(+), 27 deletions(-)
-
-diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
-index 05aaac1..0bc9769 100644
---- a/drivers/usb/otg/twl4030-usb.c
-+++ b/drivers/usb/otg/twl4030-usb.c
-@@ -347,11 +347,20 @@ static void twl4030_i2c_access(struct twl4030_usb *twl, int on)
- 	}
- }
- 
--static void twl4030_phy_power(struct twl4030_usb *twl, int on)
-+static void __twl4030_phy_power(struct twl4030_usb *twl, int on)
- {
--	u8 pwr;
-+	u8 pwr = twl4030_usb_read(twl, PHY_PWR_CTRL);
-+
-+	if (on)
-+		pwr &= ~PHY_PWR_PHYPWD;
-+	else
-+		pwr |= PHY_PWR_PHYPWD;
- 
--	pwr = twl4030_usb_read(twl, PHY_PWR_CTRL);
-+	WARN_ON(twl4030_usb_write_verify(twl, PHY_PWR_CTRL, pwr) < 0);
-+}
-+
-+static void twl4030_phy_power(struct twl4030_usb *twl, int on)
-+{
- 	if (on) {
- 		regulator_enable(twl->usb3v1);
- 		regulator_enable(twl->usb1v8);
-@@ -365,15 +374,13 @@ static void twl4030_phy_power(struct twl4030_usb *twl, int on)
- 		twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0,
- 							VUSB_DEDICATED2);
- 		regulator_enable(twl->usb1v5);
--		pwr &= ~PHY_PWR_PHYPWD;
--		WARN_ON(twl4030_usb_write_verify(twl, PHY_PWR_CTRL, pwr) < 0);
-+		__twl4030_phy_power(twl, 1);
- 		twl4030_usb_write(twl, PHY_CLK_CTRL,
- 				  twl4030_usb_read(twl, PHY_CLK_CTRL) |
- 					(PHY_CLK_CTRL_CLOCKGATING_EN |
- 						PHY_CLK_CTRL_CLK32K_EN));
--	} else  {
--		pwr |= PHY_PWR_PHYPWD;
--		WARN_ON(twl4030_usb_write_verify(twl, PHY_PWR_CTRL, pwr) < 0);
-+	} else {
-+		__twl4030_phy_power(twl, 0);
- 		regulator_disable(twl->usb1v5);
- 		regulator_disable(twl->usb1v8);
- 		regulator_disable(twl->usb3v1);
-@@ -387,19 +394,25 @@ static void twl4030_phy_suspend(struct twl4030_usb *twl, int controller_off)
- 
- 	twl4030_phy_power(twl, 0);
- 	twl->asleep = 1;
-+	dev_dbg(twl->dev, "%s\n", __func__);
- }
- 
--static void twl4030_phy_resume(struct twl4030_usb *twl)
-+static void __twl4030_phy_resume(struct twl4030_usb *twl)
- {
--	if (!twl->asleep)
--		return;
--
- 	twl4030_phy_power(twl, 1);
- 	twl4030_i2c_access(twl, 1);
- 	twl4030_usb_set_mode(twl, twl->usb_mode);
- 	if (twl->usb_mode == T2_USB_MODE_ULPI)
- 		twl4030_i2c_access(twl, 0);
-+}
-+
-+static void twl4030_phy_resume(struct twl4030_usb *twl)
-+{
-+	if (!twl->asleep)
-+		return;
-+	__twl4030_phy_resume(twl);
- 	twl->asleep = 0;
-+	dev_dbg(twl->dev, "%s\n", __func__);
- }
- 
- static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
-@@ -408,8 +421,8 @@ static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
- 	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0xC0, PROTECT_KEY);
- 	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0x0C, PROTECT_KEY);
- 
--	/* put VUSB3V1 LDO in active state */
--	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);
-+	/* Keep VUSB3V1 LDO in sleep state until VBUS/ID change detected*/
-+	/*twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);*/
- 
- 	/* input to VUSB3V1 LDO is from VBAT, not VBUS */
- 	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x14, VUSB_DEDICATED1);
-@@ -502,6 +515,26 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
- 	return IRQ_HANDLED;
- }
- 
-+static void twl4030_usb_phy_init(struct twl4030_usb *twl)
-+{
-+	int status;
-+
-+	status = twl4030_usb_linkstat(twl);
-+	if (status >= 0) {
-+		if (status == USB_EVENT_NONE) {
-+			__twl4030_phy_power(twl, 0);
-+			twl->asleep = 1;
-+		} else {
-+			__twl4030_phy_resume(twl);
-+			twl->asleep = 0;
-+		}
-+
-+		blocking_notifier_call_chain(&twl->otg.notifier, status,
-+				twl->otg.gadget);
-+	}
-+	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
-+}
-+
- static int twl4030_set_suspend(struct otg_transceiver *x, int suspend)
- {
- 	struct twl4030_usb *twl = xceiv_to_twl(x);
-@@ -550,7 +583,6 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
- 	struct twl4030_usb_data *pdata = pdev->dev.platform_data;
- 	struct twl4030_usb	*twl;
- 	int			status, err;
--	u8			pwr;
- 
- 	if (!pdata) {
- 		dev_dbg(&pdev->dev, "platform_data not available\n");
-@@ -569,10 +601,7 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
- 	twl->otg.set_peripheral	= twl4030_set_peripheral;
- 	twl->otg.set_suspend	= twl4030_set_suspend;
- 	twl->usb_mode		= pdata->usb_mode;
--
--	pwr = twl4030_usb_read(twl, PHY_PWR_CTRL);
--
--	twl->asleep		= (pwr & PHY_PWR_PHYPWD);
-+	twl->asleep = 1;
- 
- 	/* init spinlock for workqueue */
- 	spin_lock_init(&twl->lock);
-@@ -610,15 +639,10 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
- 		return status;
- 	}
- 
--	/* The IRQ handler just handles changes from the previous states
--	 * of the ID and VBUS pins ... in probe() we must initialize that
--	 * previous state.  The easy way:  fake an IRQ.
--	 *
--	 * REVISIT:  a real IRQ might have happened already, if PREEMPT is
--	 * enabled.  Else the IRQ may not yet be configured or enabled,
--	 * because of scheduling delays.
-+	/* Power down phy or make it work according to
-+	 * current link state.
- 	 */
--	twl4030_usb_irq(twl->irq, twl);
-+	twl4030_usb_phy_init(twl);
- 
- 	dev_info(&pdev->dev, "Initialized TWL4030 USB module\n");
- 	return 0;
--- 
-1.6.2.5
-
+Depends what you mean by jit. JIT normally implies compiling/recompiling
+as you go. Do we want to compile it once at load time - probably,
+assuming the tool is present.
