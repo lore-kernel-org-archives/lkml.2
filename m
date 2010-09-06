@@ -1,131 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344Ab0IFHJv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 03:09:51 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43856 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab0IFHJt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 03:09:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JilM1hEwo4R5h8AQn9PhjFwNR9D6qrYERhTJCoLM8krz6pXFeSNXD6zZC/WpNFgGl6
-         JVZMt2dEZwrFLNTo6lw0mUxyaqq09PZ89ArxrHxIq2HerM8kXvp6E/mctvdcQs5lhSLC
-         TfUbZnZjA81DBB1ZQPuKc6XeatGEclxWQWP/U=
-Date: Mon, 6 Sep 2010 09:09:51 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Christian Riesch <christian.riesch@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        john stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH 0/2] [RFC] posix clock tuning
-Message-ID: <20100906070951.GB4549@riccoc20.at.omicron.at>
-References: <cover.1283504065.git.richard.cochran@omicron.at>
- <alpine.DEB.2.00.1009041221240.888@router.home>
- <4C828652.4060804@gmail.com>
- <alpine.DEB.2.00.1009042042130.9425@router.home>
- <20100905062240.GB2699@riccoc20.at.omicron.at>
- <20100905072041.GA2928@riccoc20.at.omicron.at>
- <alpine.DEB.2.00.1009051759100.3480@router.home>
+	id S1751378Ab0IFHUT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 03:20:19 -0400
+Received: from compulab.co.il ([67.18.134.219]:55568 "EHLO compulab.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750794Ab0IFHUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 03:20:18 -0400
+Message-ID: <4C8495E3.8040904@compulab.co.il>
+Date: Mon, 06 Sep 2010 10:18:59 +0300
+From: Mike Rapoport <mike@compulab.co.il>
+User-Agent: Thunderbird 2.0.0.23 (X11/20100106)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1009051759100.3480@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arun Murthy <arun.murthy@stericsson.com>
+CC: sameo@linux.intel.com, riku.voipio@iki.fi, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com
+Subject: Re: [PATCHv3 1/1] u8500: ab8500-pwm: Add pwm driver
+References: <1283756092-31473-1-git-send-email-arun.murthy@stericsson.com> <1283756092-31473-2-git-send-email-arun.murthy@stericsson.com>
+In-Reply-To: <1283756092-31473-2-git-send-email-arun.murthy@stericsson.com>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Taking John Stultz on CC.)
-
-On Sun, Sep 05, 2010 at 06:13:33PM -0500, Christoph Lameter wrote:
-> On Sun, 5 Sep 2010, Richard Cochran wrote:
-> > When I get some more time, I'll try to put together an executive
-> > summary of PTP and of all the discussions that have taken place over
-> > the last few months on linux-netdev and the lkml.
+Arun Murthy wrote:
+> This patch adds a Pulse Width Modulation driver for Analog Baseband
+> Chip AB8500.
 > 
-> I know PTP,
+> Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
 
-Ah, thats good.
+Acked-by: Mike Rapoport <mike@compulab.co.il>
 
-> I just dont know why you would need to extend the existing
-> apis for support. Maybe you could just simply write a PTP clock driver? If
-
-That is what I already did in this patch set:
-
-   http://lkml.org/lkml/2010/8/16/90
-
-However, people asked, why not just use the posix clock API?  And so,
-I implemented that idea, too. Now the question is, which API is the
-better choice. I like the posix clock idea, but I am also fine with
-the character device. That was my original approach.
-
-> you follow the way hpet is implemented then you dont even need a clock id.
-> See drivers/char/hpet.c. I cannot imagine why someone would want to set
-> PTP to a different time and speed (vs. realtime not the hardware
-> configuration) than the standard clock. The API you proposed so far is
-> not needed as far as I can tell.
-
-No one wants to set a different time, but the fact remains that we
-have two separate clocks. The two clocks need to be synchronized, but
-how do you do this?
-
-My idea was this. Simply use the PPS subsystem to synchronize the
-Linux system time to the PTP time in the PTP hardware clock. That is
-just like using a GPS or radio clock. The only requirement is that the
-hardware clocks provides one interrupt.
-
-It will happen that some hardware will be build without any interrupt
-between the PTP hardware clock and the CPU. Even so, such a setup can
-still be useful, for example in an embedded control application. The
-userland software can simply ignore the wrong system time. I think the
-PTP hardware clock infrastructure should be rich enough to support
-this situation.
-
-> I really would like a PTP clock as soon as possible. Very very important
-> for time sync via the network.
-
-Good, me too!
- 
-> Then there is CLOCK_SGI_CYCLE. Another hw clock that can be set and gotten
-> already with the standard posix interface. See drivers/char/mmtimer.c. The
-> main benefit from CLOCK_SGI_CYCLE is that you can set it manually (maybe
-> you want an offset to realtime? But I do not know of any usecase for
-> setting the clock) and that the clock can cause hardware IRQ events
-> to cause timer timers in user space (would be great to know if PTP needs
-> this?).
-
-Some PTP hardware clocks provide interrupts to the main CPU. These can
-used to implement a PPS input, user alarms, and user timers.
-
-> I would not think that PTP needs any of this specialized functionality.
-
-Well, to make the super-synchronized time in the PTP hardware clock
-really useful, there needs to be some extra functionality, like
-timestamping external signals or producing periodic or one-shot output
-signals.
-
-If you don't have or need such functionality, then running PTP with
-plain old software timestamping (no special PTP hardware clock) should
-be good enough for most purposes.
-
-> John point about not wanting to proliferate different APIs and useless
-> clock ids is valid. An intial implementation using hpet style stuff would
-> be satisfactory and as far as I can tell would be rather trivial to do.
+> ---
+>  drivers/mfd/ab8500-core.c |   13 +++-
+>  drivers/misc/Kconfig      |    9 +++
+>  drivers/misc/Makefile     |    1 +
+>  drivers/misc/ab8500-pwm.c |  168 +++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 190 insertions(+), 1 deletions(-)
+>  create mode 100644 drivers/misc/ab8500-pwm.c
 > 
-> Standardizing the ioctls between the different clock drivers would be
-> useful so that they can all be controlled with some common API. But it
-> would be great to first have a release of a clock_ptp listing all the
-> needed ioctl so that we can see what the common subset is.
+> diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+> index 6548f50..13a5be9 100644
+> --- a/drivers/mfd/ab8500-core.c
+> +++ b/drivers/mfd/ab8500-core.c
+> @@ -394,10 +394,21 @@ static struct mfd_cell ab8500_devs[] = {
+>  		.num_resources = ARRAY_SIZE(ab8500_rtc_resources),
+>  		.resources = ab8500_rtc_resources,
+>  	},
+> +	{
+> +		.name = "ab8500-pwm",
+> +		.id = 1,
+> +	},
+> +	{
+> +		.name = "ab8500-pwm",
+> +		.id = 2,
+> +	},
+> +	{
+> +		.name = "ab8500-pwm",
+> +		.id = 3,
+> +	},
+>  	{ .name = "ab8500-charger", },
+>  	{ .name = "ab8500-audio", },
+>  	{ .name = "ab8500-usb", },
+> -	{ .name = "ab8500-pwm", },
+>  	{ .name = "ab8500-regulator", },
+>  };
+>  
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index 9df5b75..3d36492 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -62,6 +62,15 @@ config ATMEL_PWM
+>  	  purposes including software controlled power-efficient backlights
+>  	  on LCD displays, motor control, and waveform generation.
+>  
+> +config AB8500_PWM
+> +	bool "AB8500 PWM support"
+> +	depends on AB8500_CORE
+> +	select HAVE_PWM
+> +	help
+> +	  This driver exports functions to enable/disble/config/free Pulse
+> +	  Width Modulation in the Analog Baseband Chip AB8500.
+> +	  It is used by led and backlight driver to control the intensity.
+> +
+>  config ATMEL_TCLIB
+>  	bool "Atmel AT32/AT91 Timer/Counter Library"
+>  	depends on (AVR32 || ARCH_AT91)
+> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+> index 255a80d..33bc441 100644
+> --- a/drivers/misc/Makefile
+> +++ b/drivers/misc/Makefile
+> @@ -35,3 +35,4 @@ obj-y				+= eeprom/
+>  obj-y				+= cb710/
+>  obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
+>  obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
+> +obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
+> diff --git a/drivers/misc/ab8500-pwm.c b/drivers/misc/ab8500-pwm.c
+> new file mode 100644
+> index 0000000..54e3d05
+> --- /dev/null
+> +++ b/drivers/misc/ab8500-pwm.c
+> @@ -0,0 +1,168 @@
+> +/*
+> + * Copyright (C) ST-Ericsson SA 2010
+> + *
+> + * Author: Arun R Murthy <arun.murthy@stericsson.com>
+> + * License terms: GNU General Public License (GPL) version 2
+> + */
+> +#include <linux/err.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/pwm.h>
+> +#include <linux/mfd/ab8500.h>
+> +#include <linux/mfd/abx500.h>
+> +
+> +/*
+> + * PWM Out generators
+> + * Bank: 0x10
+> + */
+> +#define AB8500_PWM_OUT_CTRL1_REG	0x60
+> +#define AB8500_PWM_OUT_CTRL2_REG	0x61
+> +#define AB8500_PWM_OUT_CTRL7_REG	0x66
+> +
+> +/* backlight driver constants */
+> +#define ENABLE_PWM			1
+> +#define DISABLE_PWM			0
+> +
+> +struct pwm_device {
+> +	struct device *dev;
+> +	struct list_head node;
+> +	const char *label;
+> +	unsigned int pwm_id;
+> +};
+> +
+> +static LIST_HEAD(pwm_list);
+> +
+> +int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
+> +{
+> +	int ret = 0;
+> +	unsigned int higher_val, lower_val;
+> +	u8 reg;
+> +
+> +	/*
+> +	 * get the first 8 bits that are be written to
+> +	 * AB8500_PWM_OUT_CTRL1_REG[0:7]
+> +	 */
+> +	lower_val = duty_ns & 0x00FF;
+> +	/*
+> +	 * get bits [9:10] that are to be written to
+> +	 * AB8500_PWM_OUT_CTRL2_REG[0:1]
+> +	 */
+> +	higher_val = ((duty_ns & 0x0300) >> 8);
+> +
+> +	reg = AB8500_PWM_OUT_CTRL1_REG + ((pwm->pwm_id - 1) * 2);
+> +
+> +	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
+> +			reg, (u8)lower_val);
+> +	if (ret < 0)
+> +		return ret;
+> +	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
+> +			(reg + 1), (u8)higher_val);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(pwm_config);
+> +
+> +int pwm_enable(struct pwm_device *pwm)
+> +{
+> +	int ret;
+> +
+> +	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
+> +				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
+> +				1 << (pwm->pwm_id-1), ENABLE_PWM);
+> +	if (ret < 0)
+> +		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
+> +							pwm->label, ret);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(pwm_enable);
+> +
+> +void pwm_disable(struct pwm_device *pwm)
+> +{
+> +	int ret;
+> +
+> +	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
+> +				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
+> +				1 << (pwm->pwm_id-1), DISABLE_PWM);
+> +	if (ret < 0)
+> +		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
+> +							pwm->label, ret);
+> +	return;
+> +}
+> +EXPORT_SYMBOL(pwm_disable);
+> +
+> +struct pwm_device *pwm_request(int pwm_id, const char *label)
+> +{
+> +	struct pwm_device *pwm;
+> +
+> +	list_for_each_entry(pwm, &pwm_list, node) {
+> +		if (pwm->pwm_id == pwm_id) {
+> +			pwm->label = label;
+> +			pwm->pwm_id = pwm_id;
+> +			return pwm;
+> +		}
+> +	}
+> +
+> +	return ERR_PTR(-ENOENT);
+> +}
+> +EXPORT_SYMBOL(pwm_request);
+> +
+> +void pwm_free(struct pwm_device *pwm)
+> +{
+> +	pwm_disable(pwm);
+> +}
+> +EXPORT_SYMBOL(pwm_free);
+> +
+> +static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
+> +{
+> +	struct pwm_device *pwm;
+> +	/*
+> +	 * Nothing to be done in probe, this is required to get the
+> +	 * device which is required for ab8500 read and write
+> +	 */
+> +	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
+> +	if (pwm == NULL) {
+> +		dev_err(&pdev->dev, "failed to allocate memory\n");
+> +		return -ENOMEM;
+> +	}
+> +	pwm->dev = &pdev->dev;
+> +	pwm->pwm_id = pdev->id;
+> +	list_add_tail(&pwm->node, &pwm_list);
+> +	platform_set_drvdata(pdev, pwm);
+> +	dev_dbg(pwm->dev, "pwm probe successful\n");
+> +	return 0;
+> +}
+> +
+> +static int __devexit ab8500_pwm_remove(struct platform_device *pdev)
+> +{
+> +	struct pwm_device *pwm = platform_get_drvdata(pdev);
+> +	list_del(&pwm->node);
+> +	dev_dbg(&pdev->dev, "pwm driver removed\n");
+> +	kfree(pwm);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver ab8500_pwm_driver = {
+> +	.driver = {
+> +		.name = "ab8500-pwm",
+> +		.owner = THIS_MODULE,
+> +	},
+> +	.probe = ab8500_pwm_probe,
+> +	.remove = __devexit_p(ab8500_pwm_remove),
+> +};
+> +
+> +static int __init ab8500_pwm_init(void)
+> +{
+> +	return platform_driver_register(&ab8500_pwm_driver);
+> +}
+> +
+> +static void __exit ab8500_pwm_exit(void)
+> +{
+> +	platform_driver_unregister(&ab8500_pwm_driver);
+> +}
+> +
+> +subsys_initcall(ab8500_pwm_init);
+> +module_exit(ab8500_pwm_exit);
+> +MODULE_AUTHOR("Arun MURTHY <arun.murthy@stericsson.com>");
+> +MODULE_DESCRIPTION("AB8500 Pulse Width Modulation Driver");
+> +MODULE_ALIAS("AB8500 PWM driver");
+> +MODULE_LICENSE("GPL v2");
 
-Okay, I think I have already done that in the above patch set. Would
-you care to comment on it?
 
-As I said before, I prefer the posix clock idea, but the character
-device implementation is fine, too. Heck, we can offer both
-avenues. My goal is to support PTP hardware clocks in the kernel.
-
-Thanks,
-Richard
+-- 
+Sincerely yours,
+Mike.
