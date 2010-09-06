@@ -1,108 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701Ab0IFPZM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:25:12 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3306 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab0IFPZI convert rfc822-to-8bit (ORCPT
+	id S1754633Ab0IFP1A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:27:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:60932 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885Ab0IFP04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:25:08 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-From: "Michael Chan" <mchan@broadcom.com>
-To: "'Michael S. Tsirkin'" <mst@redhat.com>,
-        "Yaniv Rosner" <yaniv.rosner@broadcom.com>
-cc: "'netdev@vger.kernel.org'" <netdev@vger.kernel.org>,
-        "Eilon Greenstein" <eilong@broadcom.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Mon, 6 Sep 2010 08:25:00 -0700
-Subject: Re: bnx2: link drops when idle on 2.6.36-rc3
-Thread-Topic: bnx2: link drops when idle on 2.6.36-rc3
-Thread-Index: ActNrIT/BqH0SgVMQWSQxWm+4KaxjwAKp2dw
-Message-ID: <C27F8246C663564A84BB7AB3439772421B9134BA22@IRVEXCHCCR01.corp.ad.broadcom.com>
-References: <20100906100932.GA15029@redhat.com>
-In-Reply-To: <20100906100932.GA15029@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Mon, 6 Sep 2010 11:26:56 -0400
+Message-ID: <4C850822.1080403@vlnb.net>
+Date: Mon, 06 Sep 2010 19:26:26 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-X-WSS-ID: 609BD84437O85477187-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Bart Van Assche <bvanassche@acm.org>, Mike Christie <michaelc@cs.wisc.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-scsi@vger.kernel.org, Chetan Loke <chetanloke@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        scst-devel <scst-devel@lists.sourceforge.net>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+References: <4C76CA57.3050405@vlnb.net>	 <1282857806.32007.175.camel@haakon2.linux-iscsi.org>	 <4C79484B.3090607@vlnb.net>	 <1283028468.32007.357.camel@haakon2.linux-iscsi.org>	 <4C7C18CE.5020103@vlnb.net>	 <1283204792.32007.448.camel@haakon2.linux-iscsi.org>	 <4C7FFD1A.8090509@vlnb.net>	 <1283459158.5598.143.camel@haakon2.linux-iscsi.org>	 <20100905201802.GC18411@core.coreip.homeip.net>	 <1283723447.556.133.camel@haakon2.linux-iscsi.org>	 <20100905234134.GA17212@core.coreip.homeip.net>	 <1283731194.556.147.camel@haakon2.linux-iscsi.org>	 <1283769578.15944.1293.camel@mulgrave.site>	 <AANLkTikaE=7++X1VQj36Np93msyCViLs40_ti_2=ybqn@mail.gmail.com> <1283772443.15944.1320.camel@mulgrave.site>
+In-Reply-To: <1283772443.15944.1320.camel@mulgrave.site>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:HI+/l91Jmiv+LLxopGijhOiwYNkPkw+zUVo95MdzWfg
+ F+kPwTi61mTpMdWgMWZWXl4z3ThytQzSGpHqsJ+TYUm80vJD+2
+ 66dzpaMaDGAQjgjWD9dEFtyNbPIe2KJ3whDRFOP4hVuHHIaQkw
+ 6xPyKlzcNMhE0CVXXnYsc8BGVRCFFQZgsUqbhHZBP0umvuPZJP
+ NPAlkotOzz3HE6KyJ3QXA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael S. Tsirkin wrote:
+James Bottomley, on 09/06/2010 03:27 PM wrote:
+> On Mon, 2010-09-06 at 13:02 +0200, Bart Van Assche wrote:
+>> On Mon, Sep 6, 2010 at 12:39 PM, James Bottomley
+>> <James.Bottomley@suse.de>  wrote:
+>>>
+>>> [ ... ]
+>>>
+>>>> So, please understand that code and project workflow is only one of the
+>>>> reasons why TCM/LIO v4 was selected over SCST.
+>>>
+>>> It isn't yet ... your code still has to be reviewed properly.  My
+>>> preferred reviewer is currently honing his skills on a diet of raw beef
+>>> in Argentina, but hopefully he'll get around to it shortly.
+>>
+>> The SCST developers and the SCST users will definitely appreciate it
+>> if review efforts will be spread evenly over both projects.
+>
+> SCST isn't at the starting gate yet, so there's nothing currently to
+> review.
 
-> I have an IBM server which after switching to 2.6.36-rc3, started
-> experiencing
-> link drops, where link would go down apparently at random. The link can
-> be
-> brought back up without issues.
-> I started seing this after switching to 2.6.36-rc3.
-> net-2.6 (0b5d404e349c0236b11466c0a4785520c0be6982) also has this issue,
-> 2.6.34 seems to work fine. Did not try bisecting or testing 2.6.35 yet.
-> Even log in hardware monitor shows e.g.
-> 
-> 	SERVPROC 	 05/17/01, 20:13:28 	LAN: Ethernet[0] interface is
-> now active
-> 	SERVPROC 	 05/17/01, 20:09:10 	LAN: Ethernet[0] interface is
-> no longer active
-> 	SERVPROC 	 05/17/01, 19:40:06 	LAN: Ethernet[0] interface is
-> now active
-> 	SERVPROC 	 05/17/01, 19:36:42 	LAN: Ethernet[0] interface is
-> no longer active
-> 
-> The server is mostly idle when this happens.  lspci output for the
-> device is below.  There appears nothing interesting in dmesg.
+Hmm, there are patches for review for several months 
+(http://lkml.org/lkml/2010/4/13/146). Nothing major changed since that time.
 
-dmesg should print a linkdown message when link goes down.  Please check.
-Please also provide mii-tool -vvv output when the link is up and when the
-link is down.  Thanks.
+But we are going to send patches for the latest code this week anyway.
 
-> I can open a bugzilla at kernel.org if needed, just need to test
-> 2.6.35 first.
-> 
-> 
-> 04:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5708
-> Gigabit Ethernet (rev 12)
-> 	Subsystem: IBM Device 0342
-> 	Control: I/O- Mem+ BusMaster+ SpecCycle+ MemWINV+ VGASnoop-
-> ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-> 	Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort-
-> <TAbort- <MAbort- >SERR- <PERR- INTx-
-> 	Latency: 64 (16000ns min), Cache Line Size: 64 bytes
-> 	Interrupt: pin A routed to IRQ 51
-> 	Region 0: Memory at c8000000 (64-bit, non-prefetchable)
-> [size=32M]
-> 	Capabilities: [40] PCI-X non-bridge device
-> 		Command: DPERE- ERO- RBC=512 OST=4
-> 		Status: Dev=04:00.0 64bit+ 133MHz+ SCD- USC- DC=simple
-> DMMRBC=512 DMOST=8 DMCRS=32 RSCEM- 266MHz- 533MHz-
-> 	Capabilities: [48] Power Management version 2
-> 		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-
-> ,D3hot+,D3cold+)
-> 		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
-> 	Capabilities: [50] Vital Product Data
-> 		Product Name: Broadcom NetXtreme II Ethernet Controller
-> 		Read-only fields:
-> 			[PN] Part number: BCM95706A0
-> 			[EC] Engineering changes: 220197-2
-> 			[SN] Serial number: 0123456789
-> 			[MN] Manufacture ID: 31 34 65 34
-> 			[RV] Reserved: checksum bad, 30 byte(s) reserved
-> 		End
-> 	Capabilities: [58] MSI: Enable+ Count=1/1 Maskable- 64bit+
-> 		Address: 00000000fee0800c  Data: 41c9
-> 	Kernel driver in use: bnx2
-> 	Kernel modules: bnx2
-> 
-> Thanks!
-> 
-> --
-> MST
-
-
+Vlad
