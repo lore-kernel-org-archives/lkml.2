@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394Ab0IFL17 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 07:27:59 -0400
-Received: from t03.superonline.com ([92.45.6.173]:26844 "EHLO
-	smtpout1.superonline.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751911Ab0IFL15 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 07:27:57 -0400
-Message-ID: <4C84D02A.7070508@superonline.com>
-Date: Mon, 06 Sep 2010 07:27:38 -0400
-From: "M. Vefa Bicakci" <bicave@superonline.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100821 Icedove/3.1.2
+	id S1754363Ab0IFLcj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 07:32:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48244 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751007Ab0IFLci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 07:32:38 -0400
+Message-ID: <4C84D154.7070303@suse.cz>
+Date: Mon, 06 Sep 2010 13:32:36 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org,
-        Minchan Kim <minchan.kim@gmail.com>, minchan.kim@gmail.com
-Subject: Important news regarding the two different patches
-References: <20100903105216.B65C.A69D9226@jp.fujitsu.com> <201009040344.42342.rjw@sisk.pl> <20100906090528.C8A9.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100906090528.C8A9.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xconfig: Change the titlebar if using Qt3
+References: <1283355997-6900-1-git-send-email-mmarek@suse.cz> <201009021852.40023.alexander.stein@informatik.tu-chemnitz.de>
+In-Reply-To: <201009021852.40023.alexander.stein@informatik.tu-chemnitz.de>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
-X-SurGATE-Result: Clean (Content eval: -26.00 points)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/09/10 10:08 PM, KOSAKI Motohiro wrote:
->>> ok, thanks. probably I've catched your point. please feel free to use my reviewed-by
->>> for your fix.
->>
->> Thanks.
->>
->> In the meantime, though, I prepared a patch that should address the issue
->> entirely.  The patch is appended and if it looks good to you, I'd rather use it
->> instead of the previous one (it is still untested).
+On 2.9.2010 18:52, Alexander Stein wrote:
+> Hello Marek,
 > 
-> Yeah, this one looks nicer to me :)
+> On Wednesday 01 September 2010 17:46:37 Michal Marek wrote:
+>> Qt4 is now used by default and will get more testing. In case someone
+>> still uses Qt3 and reports a bug, make it easy to recognize that this is
+>> Qt3.
+>>
+>> Cc: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
+>> Signed-off-by: Michal Marek <mmarek@suse.cz>
+>> ---
+>>  scripts/kconfig/qconf.cc |   10 ++++++++--
+>>  1 files changed, 8 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
+>> index 88d3874..a04e451 100644
+>> --- a/scripts/kconfig/qconf.cc
+>> +++ b/scripts/kconfig/qconf.cc
+>> @@ -1274,8 +1274,14 @@ ConfigMainWindow::ConfigMainWindow(void)
+>>  	char title[256];
+>>
+>>  	QDesktopWidget *d = configApp->desktop();
+>> -	snprintf(title, sizeof(title), _("Linux Kernel v%s Configuration"),
+>> -		getenv("KERNELVERSION"));
+>> +	snprintf(title, sizeof(title), _("Linux Kernel v%s Configuration%s"),
+>> +		getenv("KERNELVERSION"),
+>> +#if QT_VERSION < 0x040000
+>> +		" (Qt3)"
+>> +#else
+>> +		""
+>> +#endif
+>> +		);
+>>  	setCaption(title);
+>>
+>>  	width = configSettings->readNumEntry("/window width", d->width() - 64);
 > 
-> Thanks, rafael!
+> Looks fine to me.
 
-Dear Rafael Wysocki, Kosaki Motohiro and Minchan Kim,
+OK, I committed it with "Acked-by: <you>"
 
-Upon Kosaki Motohiro's kind request via an off-list e-mail,
-I tested the following two patches separately with a vanilla
-2.6.35.4 kernel:
-
-Patch 1:
-	http://lkml.org/lkml/2010/9/5/86
-
-Patch 2:
-	http://kerneltrap.org/mailarchive/linux-kernel/2010/9/4/4615426
-
-The first of these was prepared by Minchan Kim, and it fixes
-the issue; i.e. no hangs during hibernation with a full tmpfs.
-
-However, the second patch, prepared by Rafael Wysocki, does *not*
-fix the problem. I still experience hangs with a full tmpfs upon
-hibernation.
-
-As always, I am willing to test newer patches and help in debugging
-this issue.
-
-I really appreciate all of your help,
-
-M. Vefa Bicakci
+thanks,
+Michal
