@@ -1,187 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab0IFRY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 13:24:56 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53892 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685Ab0IFRYw convert rfc822-to-8bit (ORCPT
+	id S1755303Ab0IFR3B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 13:29:01 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49083 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754685Ab0IFR24 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 13:24:52 -0400
+	Mon, 6 Sep 2010 13:28:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=f++FlWMtqlc4JvMUJL0guEDkxsEKmnIDZMI+BHsfoyP3JkHhcl4+gKkaZu5Qm9Z6+j
+         l8rtQbgwygIB/2Cm4NI4dcpJJWGMTKMnt0muzjmyeZLB8GD8AcD8+/rVen+1SVRC1V1v
+         bpYufPqViG7jDqJFzOs0yZ7Ox+DFbqJXNdx6I=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimtATH7JvBRXBbnr0hJ5bFrtOa_3vsZRe4a_rfR@mail.gmail.com>
-References: <AANLkTimk19OmkNYvVemxgyFfgByNDDq6R2fa6=FQ8H9L@mail.gmail.com>
-	<4C83CA5A.7030404@redhat.com>
-	<AANLkTimtATH7JvBRXBbnr0hJ5bFrtOa_3vsZRe4a_rfR@mail.gmail.com>
-Date: Mon, 6 Sep 2010 11:24:51 -0600
-X-Google-Sender-Auth: wQLAbiK1fjQcGXYAp3MXFf-fzow
-Message-ID: <AANLkTim9EOUVuSq6Z3q6-j-x2w+JDD8F-_xH614uDFi8@mail.gmail.com>
-Subject: Re: [Qemu-devel] Guest cannot handle a PCI BAR > 1GB
-From: Cam Macdonell <cam@cs.ualberta.ca>
-To: Avi Kivity <avi@redhat.com>
-Cc: "qemu-devel@nongnu.org Developers" <qemu-devel@nongnu.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
+	<1282144271.3035.31.camel@mulgrave.site>
+	<AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
+	<1282148296.3035.49.camel@mulgrave.site>
+	<4C6C1D70.7020502@vlnb.net>
+	<41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
+	<8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
+	<1282256949.30453.278.camel@haakon2.linux-iscsi.org>
+	<4C701E08.2020005@vlnb.net>
+	<1282423398.3015.39.camel@mulgrave.site>
+	<4C73DA15.2010207@vlnb.net>
+	<1282661876.2993.20.camel@mulgrave.site>
+	<4C7421FB.2060007@vlnb.net>
+	<1282685014.32007.51.camel@haakon2.linux-iscsi.org>
+	<4C76CA57.3050405@vlnb.net>
+	<1282857806.32007.175.camel@haakon2.linux-iscsi.org>
+	<4C79484B.3090607@vlnb.net>
+	<1283028468.32007.357.camel@haakon2.linux-iscsi.org>
+	<4C7C18CE.5020103@vlnb.net>
+	<1283204792.32007.448.camel@haakon2.linux-iscsi.org>
+	<4C7FFD1A.8090509@vlnb.net>
+	<1283459158.5598.143.camel@haakon2.linux-iscsi.org>
+Date: Mon, 6 Sep 2010 13:28:53 -0400
+Message-ID: <AANLkTindeFbbcp4kkQ6R8K594h4r8RcjpYWDvmTWg0DM@mail.gmail.com>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: Chetan Loke <chetanloke@gmail.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 6, 2010 at 10:37 AM, Cam Macdonell <cam@cs.ualberta.ca> wrote:
+On Thu, Sep 2, 2010 at 4:25 PM, Nicholas A. Bellinger
+<nab@linux-iscsi.org> wrote:
+> I really have no idea what you are talking about 'behind closed doors'..
 >
+> Have you not been watching the amount of TCM/LIO patches on the
+> linux-scsi list for the last 18 months..?
 >
-> On Sun, Sep 5, 2010 at 10:50 AM, Avi Kivity <avi@redhat.com> wrote:
->>
->>  On 09/04/2010 01:22 AM, Cam Macdonell wrote:
->>>
->>> Hi,
->>>
->>> I'm trying to test 2 GB (and eventually larger) BARs with ivshmem and
->>> I get an error in the guest that it is able to find a mem resource for
->>> a BAR larger than 1GB.  I'm using 64-bit BARs.
->>>
->>> when running with 6GB of RAM and a 1GB BAR for ivshmem, it finds a
->>> resource (and searches beyond 32-bit values to find it).  Here is a
->>> log from printfs added to the loop that searches the resources from
->>> find_resource() in kernel/resource.c:363.
->>>
->>
->> This is a kernel question, not a qemu issue.  Copying lkml.
->>
->>> trying 'tmp.start' 1000 to
->>>         'tmp.end' fff
->>> trying 'tmp.start' 9f400 to
->>>         'tmp.end' 9f3ff
->>> trying 'tmp.start' a0000 to
->>>         'tmp.end' effff
->>> trying 'tmp.start' 100000 to
->>>         'tmp.end' fffff
->>> trying 'tmp.start' dfffd000 to
->>>         'tmp.end' dfffcfff
->>> trying 'tmp.start' e0000000 to
->>>         'tmp.end' efffffff
->>> trying 'tmp.start' f2000000 to
->>>         'tmp.end' f1ffffff
->>> trying 'tmp.start' f2001000 to
->>>         'tmp.end' f200ffff
->>> trying 'tmp.start' f2020000 to
->>>         'tmp.end' f201ffff
->>> trying 'tmp.start' f2021000 to
->>>         'tmp.end' f202ffff
->>> trying 'tmp.start' f2040000 to
->>>         'tmp.end' f203ffff
->>> trying 'tmp.start' f2040100 to
->>>         'tmp.end' febfffff
->>> trying 'tmp.start' fec00400 to
->>>         'tmp.end' fffbffff
->>> trying 'tmp.start' 100000000 to
->>>         'tmp.end' ffffffff
->>> trying 'tmp.start' 1a0000000 to
->>>         'tmp.end' ffffffffffffffff
->>> pci 0000:00:04.0: BAR 2: assigned [mem 0x1c0000000-0x1ffffffff 64bit]
->>> pci 0000:00:04.0: BAR 2: set to [mem 0x1c0000000-0x1ffffffff 64bit]
->>> (PCI address [0x1c0000000-0x1ffffffff]
->>>
->>> and you can see the BAR is successfully assigned.
->>>
->>> However, with a 2GB BAR (below), the search fails, but it also never
->>> searches beyong 32-bits.  Again, all that's changed is the size of the
->>> ivshmem region.
->>>
->>> trying 'tmp.start' 1000 to
->>>         'tmp.end' fff
->>> trying 'tmp.start' 9f400 to
->>>         'tmp.end' 9f3ff
->>> trying 'tmp.start' a0000 to
->>>         'tmp.end' effff
->>> trying 'tmp.start' 100000 to
->>>         'tmp.end' fffff
->>> trying 'tmp.start' dfffd000 to
->>>         'tmp.end' dfffcfff
->>> pci 0000:00:04.0: BAR 2: can't assign mem (size 0x80000000)
->>>
->>> Is there a limit to PCI BAR sizes or resources?  Any pointers or
->>> further debugging tips are greatly appreciated.
->>>
->>
->> What kernel version are you looking at?
->
-> latest kvm git, 2.6.36-rc2+
->
->>
->> Please add printks to the loop so we can see this->start and this->end.  It smells like a truncation issue.
->
-> Success with a 1GB BAR
-> this->start 1000, this->end 9f3ff
-> this->start 9f400, this->end 9ffff
-> this->start f0000, this->end fffff
-> this->start 100000, this->end dfffcfff
-> this->start dfffd000, this->end dfffffff
-> this->start f0000000, this->end f1ffffff
-> this->start f2000000, this->end f2000fff
-> this->start f2010000, this->end f201ffff
-> this->start f2020000, this->end f2020fff
-> this->start f2030000, this->end f203ffff
-> this->start f2040000, this->end f20400ff
-> this->start fec00000, this->end fec003ff
-> this->start fffc0000, this->end ffffffff
-> this->start 100000000, this->end 11fffffff
-> tmp.start 120000000, tmp.end ffffffffffffffff
-> pci 0000:00:04.0: BAR 2: assigned [mem 0x140000000-0x17fffffff 64bit]
-> and when it fails with a 2GB BAR, the following is printed
-> this->start 1000, this->end 9f3ff
-> this->start 9f400, this->end 9ffff
-> this->start f0000, this->end fffff
-> this->start 100000, this->end dfffcfff
-> this->start dfffd000, this->end dfffffff
-> pci 0000:00:04.0: BAR 2: can't assign mem (size 0x80000000)
-> I added a few more debug statements and found that in the failure case, the function returns that it found a region (the last one printed before the error).  I've added printfs for the two tests in the if that determine when a region is found:
->        if (tmp.start < tmp.end && tmp.end - tmp.start >= size - 1) {
->             new->start = tmp.start;
->             new->end = tmp.start + size - 1;
->             printk(KERN_INFO "returning 0\n");
->             return 0;
->         }
-> this->start 1000, this->end 9f3ff
-> tmp.start 80000000, tmp.end fff
->     true: ffffffff80000fff >= 7fffffff
-> this->start 9f400, this->end 9ffff
-> tmp.start 80000000, tmp.end 9f3ff
->     true: ffffffff8009f3ff >= 7fffffff
-> this->start f0000, this->end fffff
-> tmp.start 80000000, tmp.end effff
->     true: ffffffff800effff >= 7fffffff
-> this->start 100000, this->end dfffcfff
-> tmp.start 80000000, tmp.end fffff
->     true: ffffffff800fffff >= 7fffffff
-> this->start dfffd000, this->end dfffffff
-> tmp.start 100000, tmp.end dfffcfff
->     true: 100000 < dfffcfff
->     true: dfefcfff >= 7fffffff
-> returning 0
-> pci 0000:00:04.0: BAR 2: can't assign mem (size 0x80000000)
 
-Further to this, it seems tmp.start is getting set to zero by the ALIGN macro
+Please don't make me go public. I'm trying to keep my mouth shut
+purely out of NDA. Inspite of that I've mentioned it publicly in my
+last emails that the decision was made ~9 months ago? Someone told me
+'LIO will be merged eventually and NOT scst'. This ain't open-source
+development as we know it.
 
-2GB BAR:
-this->start dfffd000, this->end dfffffff
-tmp.start dfffd000
-tmp.start 0
-tmp.start 100000, tmp.end dfffcfff
+Also there are exactly 'ZERO' users/developers yelling 'NOT' to
+include scst. So please stop your PR about LIO. Since no target
+subsystems were ever chosen, I would think that LIO's list should have
+some meat, no?And by now, the whole community knows that you have near
+to zero meaningful/technical conversations on LIO's mailing list.  So
+I'm not sure when you talk about your git workflow and your patches,
+what you are actually talking about.
 
-1GB BAR:
-this->start dfffd000, this->end dfffffff
-tmp.start dfffd000
-tmp.start 100000000
-tmp.start 100000000, tmp.end dfffcfff
 
-I'll dig into the ALIGN macro.
+>> >>> It is obvious to even an casual observer from watching the TCM/LIO patch
+>> >>> series that have been flying across the linux-scsi wire the last 24
+>> >>> months that the major features (including PR and ALUA, and new fabric
+>> >>> module drivers) have been developed individual feature bit by feature
+>> >>> bit using a distributed git workflow in a bisectable manner. Â Each
+>> >>> series was produced in such a manner that each patch could be reviewed
+>> >>> individually by those interested parties.
 
+Nothing needs to bisected. Just go to scst's svn repo and see the
+checkin-flow over there if you want to satisfy your thirst. There are
+no rules defined whatsoever that says that the patches need to follow
+git-workflow. Since you are not an official kernel subsystem
+maintainer no need to send you patches to get a buy-in.
+Patches will be sent to James B and the scsi/kernel mailing list.
+
+
+> Again, I suggest you watch the Russian translation of that talk on
+> youtube and really understand what he means, aside from the insults to
+> subversion users.
 >
+
+svn is more than capable for what it is supposed to do. So no need to
+tutor us on the source-control.
+
+
+> 1) a userspace library in intrepted languages and 2) create high level
+> applications using said userspace libraries that allow compatiblity to
+> be contained in the lib below.
 >
+
+An average user doesn't implement storage blobs. So I don't want to
+worry about what they would think.This is your useless LIO PR and not
+a missing feature in scst.
+
+
+> Uhhh, I don't think so. Â Aside from your obvious project workflow
+> issues, the fact that SCST completly lacks a proper user-space driven
+> representation of parent / child relationships between kernel level data
+> structures in a fabric independent manner, while still allow for fabric
+> dependent groups and attributes is a most definately show-stopper for
+> me.
 >
->
->>
->> --
->> error compiling committee.c: too many arguments to function
->>
->
+
+Show stopper for you? Sorry but you seem to be self-proclaimed
+judge/maintainer pushing/speaking your vendor's/customer's agenda.
+
+Ever noticed how screwed up the fc representations were? Take NPIV for
+instance. No one laid down rules at that time? And just because your
+so called vendor's/customer's may now be used to your LIO-way of doing
+things, doesn't mean the whole community should be forced to do that.
+
+
+> --nab
+
+Chetan Loke
+<English ain't my first language. I don't need any translation because
+I speak one language - It's, Linux! The language and choice of the GNU
+generation>
