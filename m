@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab0IFPCl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:02:41 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:30730 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab0IFPCe (ORCPT
+	id S1754343Ab0IFPCs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:02:48 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:42099 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab0IFPCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:02:34 -0400
-X-SpamScore: 8
-X-BigFish: VS8(z1039ozzz1202hzz8275bhz32i2a8h87h61h)
+	Mon, 6 Sep 2010 11:02:35 -0400
+X-SpamScore: 9
+X-BigFish: VS9(zz78fbpzz1202hzz8275bhz32i2a8h87h61h)
 X-Spam-TCS-SCL: 0:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8BZ2N-02-4WI-02
+X-WSS-ID: 0L8BZ2N-02-4WL-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: <"http://kvm.qumranet.com"@osrc.amd.com>, <linux-kernel@vger.kernel.org>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 09/27] KVM: MMU: Introduce generic walk_addr function
-Date: Mon, 6 Sep 2010 17:01:44 +0200
-Message-ID: <1283785322-26898-10-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 02/27] KVM: MMU: Make tdp_enabled a mmu-context parameter
+Date: Mon, 6 Sep 2010 17:01:37 +0200
+Message-ID: <1283785322-26898-3-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
 References: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
@@ -30,83 +30,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the first patch in the series towards a generic
-walk_addr implementation which could walk two-dimensional
-page tables in the end. In this first step the walk_addr
-function is renamed into walk_addr_generic which takes a
-mmu context as an additional parameter.
+This patch changes the tdp_enabled flag from its global
+meaning to the mmu-context and renames it to direct_map
+there. This is necessary for Nested SVM with emulation of
+Nested Paging where we need an extra MMU context to shadow
+the Nested Nested Page Table.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/kvm/paging_tmpl.h |   26 ++++++++++++++++++--------
- 1 files changed, 18 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/mmu.c              |   20 ++++++++++++--------
+ 2 files changed, 13 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 68ee1b7..f26fee9 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -114,9 +114,10 @@ static unsigned FNAME(gpte_access)(struct kvm_vcpu *vcpu, pt_element_t gpte)
- /*
-  * Fetch a guest pte for a guest virtual address
-  */
--static int FNAME(walk_addr)(struct guest_walker *walker,
--			    struct kvm_vcpu *vcpu, gva_t addr,
--			    int write_fault, int user_fault, int fetch_fault)
-+static int FNAME(walk_addr_generic)(struct guest_walker *walker,
-+				    struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
-+				    gva_t addr, int write_fault,
-+				    int user_fault, int fetch_fault)
- {
- 	pt_element_t pte;
- 	gfn_t table_gfn;
-@@ -129,10 +130,11 @@ static int FNAME(walk_addr)(struct guest_walker *walker,
- walk:
- 	present = true;
- 	eperm = rsvd_fault = false;
--	walker->level = vcpu->arch.mmu.root_level;
--	pte = vcpu->arch.mmu.get_cr3(vcpu);
-+	walker->level = mmu->root_level;
-+	pte           = mmu->get_cr3(vcpu);
-+
- #if PTTYPE == 64
--	if (vcpu->arch.mmu.root_level == PT32E_ROOT_LEVEL) {
-+	if (walker->level == PT32E_ROOT_LEVEL) {
- 		pte = kvm_pdptr_read(vcpu, (addr >> 30) & 3);
- 		trace_kvm_mmu_paging_element(pte, walker->level);
- 		if (!is_present_gpte(pte)) {
-@@ -143,7 +145,7 @@ walk:
- 	}
- #endif
- 	ASSERT((!is_long_mode(vcpu) && is_pae(vcpu)) ||
--	       (vcpu->arch.mmu.get_cr3(vcpu) & CR3_NONPAE_RESERVED_BITS) == 0);
-+	       (mmu->get_cr3(vcpu) & CR3_NONPAE_RESERVED_BITS) == 0);
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 9b30285..53cdf39 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -249,6 +249,7 @@ struct kvm_mmu {
+ 	int root_level;
+ 	int shadow_root_level;
+ 	union kvm_mmu_page_role base_role;
++	bool direct_map;
  
- 	pt_access = ACC_ALL;
+ 	u64 *pae_root;
+ 	u64 rsvd_bits_mask[2][4];
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index b2136f9..bfb3f23 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1448,7 +1448,8 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 	if (role.direct)
+ 		role.cr4_pae = 0;
+ 	role.access = access;
+-	if (!tdp_enabled && vcpu->arch.mmu.root_level <= PT32_ROOT_LEVEL) {
++	if (!vcpu->arch.mmu.direct_map
++	    && vcpu->arch.mmu.root_level <= PT32_ROOT_LEVEL) {
+ 		quadrant = gaddr >> (PAGE_SHIFT + (PT64_PT_BITS * level));
+ 		quadrant &= (1 << ((PT32_PT_BITS - PT64_PT_BITS) * level)) - 1;
+ 		role.quadrant = quadrant;
+@@ -1973,7 +1974,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		spte |= shadow_user_mask;
+ 	if (level > PT_PAGE_TABLE_LEVEL)
+ 		spte |= PT_PAGE_SIZE_MASK;
+-	if (tdp_enabled)
++	if (vcpu->arch.mmu.direct_map)
+ 		spte |= kvm_x86_ops->get_mt_mask(vcpu, gfn,
+ 			kvm_is_mmio_pfn(pfn));
  
-@@ -205,7 +207,7 @@ walk:
- 				(PTTYPE == 64 || is_pse(vcpu))) ||
- 		    ((walker->level == PT_PDPE_LEVEL) &&
- 				is_large_pte(pte) &&
--				vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL)) {
-+				mmu->root_level == PT64_ROOT_LEVEL)) {
- 			int lvl = walker->level;
+@@ -1983,8 +1984,8 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 	spte |= (u64)pfn << PAGE_SHIFT;
  
- 			walker->gfn = gpte_to_gfn_lvl(pte, lvl);
-@@ -262,6 +264,14 @@ error:
- 	return 0;
+ 	if ((pte_access & ACC_WRITE_MASK)
+-	    || (!tdp_enabled && write_fault && !is_write_protection(vcpu)
+-		&& !user_fault)) {
++	    || (!vcpu->arch.mmu.direct_map && write_fault
++		&& !is_write_protection(vcpu) && !user_fault)) {
+ 
+ 		if (level > PT_PAGE_TABLE_LEVEL &&
+ 		    has_wrprotected_page(vcpu->kvm, gfn, level)) {
+@@ -1995,7 +1996,8 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 
+ 		spte |= PT_WRITABLE_MASK;
+ 
+-		if (!tdp_enabled && !(pte_access & ACC_WRITE_MASK))
++		if (!vcpu->arch.mmu.direct_map
++		    && !(pte_access & ACC_WRITE_MASK))
+ 			spte &= ~PT_USER_MASK;
+ 
+ 		/*
+@@ -2371,7 +2373,7 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
+ 		ASSERT(!VALID_PAGE(root));
+ 		if (mmu_check_root(vcpu, root_gfn))
+ 			return 1;
+-		if (tdp_enabled) {
++		if (vcpu->arch.mmu.direct_map) {
+ 			direct = 1;
+ 			root_gfn = 0;
+ 		}
+@@ -2406,7 +2408,7 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
+ 				return 1;
+ 		} else if (vcpu->arch.mmu.root_level == 0)
+ 			root_gfn = 0;
+-		if (tdp_enabled) {
++		if (vcpu->arch.mmu.direct_map) {
+ 			direct = 1;
+ 			root_gfn = i << 30;
+ 		}
+@@ -2708,6 +2710,7 @@ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+ 	context->invlpg = nonpaging_invlpg;
+ 	context->shadow_root_level = kvm_x86_ops->get_tdp_level();
+ 	context->root_hpa = INVALID_PAGE;
++	context->direct_map = true;
+ 
+ 	if (!is_paging(vcpu)) {
+ 		context->gva_to_gpa = nonpaging_gva_to_gpa;
+@@ -2747,6 +2750,7 @@ static int init_kvm_softmmu(struct kvm_vcpu *vcpu)
+ 
+ 	vcpu->arch.mmu.base_role.cr4_pae = !!is_pae(vcpu);
+ 	vcpu->arch.mmu.base_role.cr0_wp = is_write_protection(vcpu);
++	vcpu->arch.mmu.direct_map        = false;
+ 
+ 	return r;
  }
+@@ -3060,7 +3064,7 @@ int kvm_mmu_unprotect_page_virt(struct kvm_vcpu *vcpu, gva_t gva)
+ 	gpa_t gpa;
+ 	int r;
  
-+static int FNAME(walk_addr)(struct guest_walker *walker,
-+			    struct kvm_vcpu *vcpu, gva_t addr,
-+			    int write_fault, int user_fault, int fetch_fault)
-+{
-+	return FNAME(walk_addr_generic)(walker, vcpu, &vcpu->arch.mmu, addr,
-+					write_fault, user_fault, fetch_fault);
-+}
-+
- static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 			      u64 *spte, const void *pte)
- {
+-	if (tdp_enabled)
++	if (vcpu->arch.mmu.direct_map)
+ 		return 0;
+ 
+ 	gpa = kvm_mmu_gva_to_gpa_read(vcpu, gva, NULL);
 -- 
 1.7.0.4
 
