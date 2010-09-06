@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab0IFIwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 04:52:23 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:49873 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737Ab0IFIwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 04:52:22 -0400
-X-Greylist: delayed 2414 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Sep 2010 04:52:21 EDT
-From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-To: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Hunter Adrian <adrian.hunter@nokia.com>, Chris Ball <cjb@laptop.org>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Subject: [PATCHv5 1/3] mmc_test: use API to check card type
-Date: Mon,  6 Sep 2010 11:12:17 +0300
-Message-Id: <3fa57fe7152b608279ec56dcfe969a42b672a197.1283760476.git.ext-andriy.shevchenko@nokia.com>
-X-Mailer: git-send-email 1.6.3.3
-X-Nokia-AV: Clean
+	id S1753131Ab0IFIyo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 04:54:44 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.31.37]:45112 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752669Ab0IFIyo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 04:54:44 -0400
+Message-ID: <4C84AC6B.8000702@ladisch.de>
+Date: Mon, 06 Sep 2010 10:55:07 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+CC: "Venkatesh Pallipadi (Venki)" <venki@google.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] HPET: Supporting info for hpet_example
+References: <AANLkTimFNum+dPcb6+UWFSm-Urr9mYnVMypOQahCfnhg@mail.gmail.com>
+In-Reply-To: <AANLkTimFNum+dPcb6+UWFSm-Urr9mYnVMypOQahCfnhg@mail.gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are methods to check card type. Let's use them instead of direct checking
-type bits.
+Jaswinder Singh Rajput wrote:
+> $./hpet_example info /dev/hpet
+> -hpet: executing info
+> hpet_info: hi_irqfreq 0x0 hi_flags 0x0 hi_hpet 0 hi_timer 2
 
-Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
----
- drivers/mmc/card/mmc_test.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The interrupt frequency is always zero before the application has set
+it, so it doesn't make much sense to show it in this function.
 
-diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
-index b992725..cd8edf4 100644
---- a/drivers/mmc/card/mmc_test.c
-+++ b/drivers/mmc/card/mmc_test.c
-@@ -1977,7 +1977,7 @@ static int mmc_test_probe(struct mmc_card *card)
- {
- 	int ret;
- 
--	if ((card->type != MMC_TYPE_MMC) && (card->type != MMC_TYPE_SD))
-+	if (!mmc_card_mmc(card) && !mmc_card_sd(card))
- 		return -ENODEV;
- 
- 	ret = device_create_file(&card->dev, &dev_attr_test);
--- 
-1.6.3.3
 
+Regards,
+Clemens
