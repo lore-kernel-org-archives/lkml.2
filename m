@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab0IFOgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 10:36:04 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33492 "EHLO
+	id S1753251Ab0IFOgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 10:36:14 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33502 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751755Ab0IFOf7 (ORCPT
+	by vger.kernel.org with ESMTP id S1752462Ab0IFOgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 10:35:59 -0400
-Date: Mon, 6 Sep 2010 16:35:54 +0200
+	Mon, 6 Sep 2010 10:36:03 -0400
+Date: Mon, 6 Sep 2010 16:36:00 +0200
 From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-To: Lennert Buytenhek <kernel@wantstofly.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+To: Yoshinori Sato <ysato@users.sourceforge.jp>, linux-kernel@vger.kernel.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 01/14] arch/arm: Removing undead ifdef __ASSEMBLY__
-Message-ID: <e09809579db119258c1cd1c7dd9bd95859aa9894.1283782700.git.qy03fugy@stud.informatik.uni-erlangen.de>
+Subject: [PATCH 02/14] arch/h8300: Removing dead ifdef __H8300_TLB_H__
+Message-ID: <c085d587a5fe2ae05ab431c746b96a0abb9fa876.1283782700.git.qy03fugy@stud.informatik.uni-erlangen.de>
 References: <cover.1283782698.git.qy03fugy@stud.informatik.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,33 +23,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __ASSEMBLY__ ifdef isn't necessary at this point, because it is
-checked in an outer ifdef level already and has no effect here.
+The nested __H8300_TLB_H__ include guard isn't necessary at this point,
+because the symbol is always defined at this point and the block
+content will always be removed.
 
 Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
 ---
- arch/arm/mach-ixp23xx/include/mach/platform.h |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ arch/h8300/include/asm/tlb.h |   13 -------------
+ 1 files changed, 0 insertions(+), 13 deletions(-)
 
-diff --git a/arch/arm/mach-ixp23xx/include/mach/platform.h b/arch/arm/mach-ixp23xx/include/mach/platform.h
-index db9d941..9f05ea4 100644
---- a/arch/arm/mach-ixp23xx/include/mach/platform.h
-+++ b/arch/arm/mach-ixp23xx/include/mach/platform.h
-@@ -43,7 +43,6 @@ extern struct sys_timer ixp23xx_timer;
+diff --git a/arch/h8300/include/asm/tlb.h b/arch/h8300/include/asm/tlb.h
+index 3dea80a..6339a02 100644
+--- a/arch/h8300/include/asm/tlb.h
++++ b/arch/h8300/include/asm/tlb.h
+@@ -7,17 +7,4 @@
  
- #define IXP23XX_UART_XTAL		14745600
+ #define tlb_flush(tlb)	do { } while(0)
  
--#ifndef __ASSEMBLY__
- /*
-  * Is system memory on the XSI or CPP bus?
-  */
-@@ -51,7 +50,5 @@ static inline unsigned ixp23xx_cpp_boot(void)
- {
- 	return (*IXP23XX_EXP_CFG0 & IXP23XX_EXP_CFG0_XSI_NOT_PRES);
- }
+-/* 
+-  include/asm-h8300/tlb.h 
+-*/
+-
+-#ifndef __H8300_TLB_H__
+-#define __H8300_TLB_H__
+-
+-#define tlb_flush(tlb)	do { } while(0)
+-
+-#include <asm-generic/tlb.h>
+-
 -#endif
 -
- 
  #endif
 -- 
 1.7.0.4
