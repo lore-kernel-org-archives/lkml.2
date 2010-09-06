@@ -1,81 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab0IFP5b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:57:31 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:37973
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751105Ab0IFP5Z (ORCPT
+	id S1755064Ab0IFP5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:57:48 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:41784
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754156Ab0IFP51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:57:25 -0400
+	Mon, 6 Sep 2010 11:57:27 -0400
 X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
+X-BigFish: VS1(zzzz1202hzz8275bhz32i2a8h87h62h)
+X-Spam-TCS-SCL: 1:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8C1L8-02-7A3-02
+X-WSS-ID: 0L8C1L9-01-D1I-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: Alexander Graf <agraf@suse.de>, <joro@8bytes.org>, <kvm@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 19/27] KVM: X86: Propagate fetch faults
-Date: Mon, 6 Sep 2010 17:55:58 +0200
-Message-ID: <1283788566-29186-20-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 14/27] KVM: MMU: Make walk_addr_generic capable for two-level walking
+Date: Mon, 6 Sep 2010 17:55:53 +0200
+Message-ID: <1283788566-29186-15-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
 References: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Reverse-DNS: unknown
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KVM currently ignores fetch faults in the instruction
-emulator. With nested-npt we could have such faults. This
-patch adds the code to handle these.
+This patch uses kvm_read_guest_page_tdp to make the
+walk_addr_generic functions suitable for two-level page
+table walking.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/kvm/emulate.c |    3 +++
- arch/x86/kvm/x86.c     |    4 ++++
- 2 files changed, 7 insertions(+), 0 deletions(-)
+ arch/x86/kvm/paging_tmpl.h |   27 ++++++++++++++++++++-------
+ 1 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 2b08b78..aead72e 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1198,6 +1198,9 @@ static int emulate_popf(struct x86_emulate_ctxt *ctxt,
- 	*(unsigned long *)dest =
- 		(ctxt->eflags & ~change_mask) | (val & change_mask);
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index cd59af1..a5b5759 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -124,6 +124,8 @@ static int FNAME(walk_addr_generic)(struct guest_walker *walker,
+ 	unsigned index, pt_access, uninitialized_var(pte_access);
+ 	gpa_t pte_gpa;
+ 	bool eperm, present, rsvd_fault;
++	int offset;
++	u32 error = 0;
  
-+	if (rc == X86EMUL_PROPAGATE_FAULT)
-+		emulate_pf(ctxt);
+ 	trace_kvm_mmu_pagetable_walk(addr, write_fault, user_fault,
+ 				     fetch_fault);
+@@ -153,12 +155,13 @@ walk:
+ 		index = PT_INDEX(addr, walker->level);
+ 
+ 		table_gfn = gpte_to_gfn(pte);
+-		pte_gpa = gfn_to_gpa(table_gfn);
+-		pte_gpa += index * sizeof(pt_element_t);
++		offset    = index * sizeof(pt_element_t);
++		pte_gpa   = gfn_to_gpa(table_gfn) + offset;
+ 		walker->table_gfn[walker->level - 1] = table_gfn;
+ 		walker->pte_gpa[walker->level - 1] = pte_gpa;
+ 
+-		if (kvm_read_guest(vcpu->kvm, pte_gpa, &pte, sizeof(pte))) {
++		if (kvm_read_guest_page_mmu(vcpu, mmu, table_gfn, &pte, offset,
++					    sizeof(pte), &error)) {
+ 			present = false;
+ 			break;
+ 		}
+@@ -209,15 +212,25 @@ walk:
+ 				is_large_pte(pte) &&
+ 				mmu->root_level == PT64_ROOT_LEVEL)) {
+ 			int lvl = walker->level;
++			gpa_t real_gpa;
++			gfn_t gfn;
+ 
+-			walker->gfn = gpte_to_gfn_lvl(pte, lvl);
+-			walker->gfn += (addr & PT_LVL_OFFSET_MASK(lvl))
+-					>> PAGE_SHIFT;
++			gfn = gpte_to_gfn_lvl(pte, lvl);
++			gfn += (addr & PT_LVL_OFFSET_MASK(lvl)) >> PAGE_SHIFT;
+ 
+ 			if (PTTYPE == 32 &&
+ 			    walker->level == PT_DIRECTORY_LEVEL &&
+ 			    is_cpuid_PSE36())
+-				walker->gfn += pse36_gfn_delta(pte);
++				gfn += pse36_gfn_delta(pte);
 +
- 	return rc;
- }
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 65b00f0..ca69dcc 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4237,6 +4237,9 @@ int emulate_instruction(struct kvm_vcpu *vcpu,
- 		vcpu->arch.emulate_ctxt.perm_ok = false;
- 
- 		r = x86_decode_insn(&vcpu->arch.emulate_ctxt);
-+		if (r == X86EMUL_PROPAGATE_FAULT)
-+			goto done;
++			real_gpa = mmu->translate_gpa(vcpu, gfn_to_gpa(gfn),
++						      &error);
++			if (real_gpa == UNMAPPED_GVA) {
++				walker->error_code = error;
++				return 0;
++			}
 +
- 		trace_kvm_emulate_insn_start(vcpu);
++			walker->gfn = real_gpa >> PAGE_SHIFT;
  
- 		/* Only allow emulation of specific instructions on #UD
-@@ -4295,6 +4298,7 @@ restart:
- 		return handle_emulation_failure(vcpu);
- 	}
- 
-+done:
- 	if (vcpu->arch.emulate_ctxt.exception >= 0) {
- 		inject_emulated_exception(vcpu);
- 		r = EMULATE_DONE;
+ 			break;
+ 		}
 -- 
 1.7.0.4
 
