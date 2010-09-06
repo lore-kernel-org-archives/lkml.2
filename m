@@ -1,63 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693Ab0IFGBu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 02:01:50 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51410 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab0IFGBt (ORCPT
+	id S1752361Ab0IFGEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 02:04:40 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:43186 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751317Ab0IFGEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 02:01:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=rAFSebtxhN89xGEncPywdOHRuhiSDfqqVOCG8z1pJv7Lgwh2LPRja2GI1pWl3V7y6u
-         x/DGN8TD39TXxUbOUHBjMvMQiMhUaZGMipNpza5VHnHQ/dMvJ7B8eGhHn39Pd2p+5sGp
-         ukhCE3FFWQoAO8eDfcQgguu08H14pfiHlzjI4=
-Subject: [PATCH] regulator: wm8350-regulator - fix the logic of checking
-	REGULATOR_MODE_STANDBY mode
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
+	Mon, 6 Sep 2010 02:04:38 -0400
+From: Arun Murthy <arun.murthy@stericsson.com>
+To: <sameo@linux.intel.com>, <riku.voipio@iki.fi>, <mike@compulab.co.il>
+Cc: <linux-kernel@vger.kernel.org>, <STEricsson_nomadik_linux@list.st.com>,
+        <arun.murthy@stericsson.com>
+Subject: [PATCHv2 1/1] u8500: ab8500-pwm: Add pwm driver
+Date: Mon, 6 Sep 2010 11:34:07 +0530
+Message-ID: <1283753047-14550-2-git-send-email-arun.murthy@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
+In-Reply-To: <1283753047-14550-1-git-send-email-arun.murthy@stericsson.com>
+References: <1283753047-14550-1-git-send-email-arun.murthy@stericsson.com>
+MIME-Version: 1.0
 Content-Type: text/plain
-Date: Mon, 06 Sep 2010 14:06:07 +0800
-Message-Id: <1283753167.19378.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In wm8350_dcdc_set_mode(), we set DCx_SLEEP bit of WM8350_DCDC_SLEEP_OPTIONS
-register for REGULATOR_MODE_STANDBY mode.
-( DCx_SLEEP bits: 0: Normal DC-DC operation 1: Select LDO mode )
+This patch adds a Pulse Width Modulation driver for Analog Baseband
+Chip AB8500.
 
-In wm8350_dcdc_get_mode(), current logic to determinate
-REGULATOR_MODE_STANDBY mode is just reverse.
-( sleep is set should mean REGULATOR_MODE_STANDBY mode. )
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/regulator/wm8350-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mfd/ab8500-core.c |   13 +++-
+ drivers/misc/Kconfig      |    9 +++
+ drivers/misc/Makefile     |    1 +
+ drivers/misc/ab8500-pwm.c |  174 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 196 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/misc/ab8500-pwm.c
 
-diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
-index 0e6ed7d..fe4b8a8 100644
---- a/drivers/regulator/wm8350-regulator.c
-+++ b/drivers/regulator/wm8350-regulator.c
-@@ -1129,7 +1129,7 @@ static unsigned int wm8350_dcdc_get_mode(struct regulator_dev *rdev)
- 			mode = REGULATOR_MODE_NORMAL;
- 	} else if (!active && !sleep)
- 		mode = REGULATOR_MODE_IDLE;
--	else if (!sleep)
-+	else if (sleep)
- 		mode = REGULATOR_MODE_STANDBY;
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index 6548f50..67d7361 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -397,7 +397,18 @@ static struct mfd_cell ab8500_devs[] = {
+ 	{ .name = "ab8500-charger", },
+ 	{ .name = "ab8500-audio", },
+ 	{ .name = "ab8500-usb", },
+-	{ .name = "ab8500-pwm", },
++	{
++		.name = "ab8500-pwm",
++		.id = 1,
++	},
++	{
++		.name = "ab8500-pwm",
++		.id = 2,
++	},
++	{
++		.name = "ab8500-pwm",
++		.id = 3,
++	},
+ 	{ .name = "ab8500-regulator", },
+ };
  
- 	return mode;
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 9df5b75..fcf2e7f 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -62,6 +62,15 @@ config ATMEL_PWM
+ 	  purposes including software controlled power-efficient backlights
+ 	  on LCD displays, motor control, and waveform generation.
+ 
++config AB8500_PWM
++	bool "AB8500 PWM support"
++	depends on AB8500_CORE
++	select HAVE_PWM
++	help
++	  This driver exports functions to enable/disble/config/free Pulse
++	  Width Modulation in the Ananlog Baseband Chip AB8500.
++	  It is used by led and backlight driver to control the intensity.
++
+ config ATMEL_TCLIB
+ 	bool "Atmel AT32/AT91 Timer/Counter Library"
+ 	depends on (AVR32 || ARCH_AT91)
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 255a80d..33bc441 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -35,3 +35,4 @@ obj-y				+= eeprom/
+ obj-y				+= cb710/
+ obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
+ obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
++obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
+diff --git a/drivers/misc/ab8500-pwm.c b/drivers/misc/ab8500-pwm.c
+new file mode 100644
+index 0000000..e25c575
+--- /dev/null
++++ b/drivers/misc/ab8500-pwm.c
+@@ -0,0 +1,174 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2010
++ *
++ * Author: Arun R Murthy <arun.murthy@stericsson.com>
++ * License terms: GNU General Public License (GPL) version 2
++ */
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/pwm.h>
++#include <linux/mfd/ab8500.h>
++#include <linux/mfd/abx500.h>
++
++/*
++ * PWM Out generators
++ * Bank: 0x10
++ */
++#define AB8500_PWM_OUT_CTRL1_REG	0x60
++#define AB8500_PWM_OUT_CTRL2_REG	0x61
++#define AB8500_PWM_OUT_CTRL7_REG	0x66
++
++/* backlight driver constants */
++#define ENABLE_PWM			1
++#define DISABLE_PWM			0
++
++struct pwm_device {
++	struct device *dev;
++	struct list_head node;
++	const char *label;
++	unsigned int pwm_id;
++};
++
++static LIST_HEAD(pwm_list);
++
++int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
++{
++	int ret = 0;
++	unsigned int higher_val, lower_val;
++	u8 reg;
++
++	/*
++	 * get the first 8 bits that are be written to
++	 * AB8500_PWM_OUT_CTRL1_REG[0:7]
++	 */
++	lower_val = duty_ns & 0x00FF;
++	/*
++	 * get bits [9:10] that are to be written to
++	 * AB8500_PWM_OUT_CTRL2_REG[0:1]
++	 */
++	higher_val = ((duty_ns & 0x0300) >> 8);
++
++	reg = AB8500_PWM_OUT_CTRL1_REG + ((pwm->pwm_id - 1) * 2);
++
++	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
++			reg, (u8)lower_val);
++	if (ret < 0)
++		return ret;
++	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
++			(reg + 1), (u8)higher_val);
++
++	return ret;
++}
++EXPORT_SYMBOL(pwm_config);
++
++int pwm_enable(struct pwm_device *pwm)
++{
++	int ret;
++
++	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
++				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
++				1 << (pwm->pwm_id-1), ENABLE_PWM);
++	if (ret < 0)
++		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
++							pwm->label, ret);
++	return ret;
++}
++EXPORT_SYMBOL(pwm_enable);
++
++void pwm_disable(struct pwm_device *pwm)
++{
++	int ret;
++
++	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
++				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
++				1 << (pwm->pwm_id-1), DISABLE_PWM);
++	if (ret < 0)
++		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
++							pwm->label, ret);
++	return;
++}
++EXPORT_SYMBOL(pwm_disable);
++
++struct pwm_device *pwm_request(int pwm_id, const char *label)
++{
++	struct pwm_device *pwm;
++	int found = 0;
++
++	list_for_each_entry(pwm, &pwm_list, node) {
++		if (pwm->pwm_id == pwm_id) {
++			found = 1;
++			break;
++		}
++	}
++
++	if (found) {
++		pwm->label = label;
++		pwm->pwm_id = pwm_id;
++	} else
++		pwm = ERR_PTR(-ENOENT);
++
++	return pwm;
++}
++EXPORT_SYMBOL(pwm_request);
++
++void pwm_free(struct pwm_device *pwm)
++{
++	pwm_disable(pwm);
++}
++EXPORT_SYMBOL(pwm_free);
++
++static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
++{
++	struct pwm_device *pwm;
++	/*
++	 * Nothing to be done in probe, this is required to get the
++	 * device which is required for ab8500 read and write
++	 */
++	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
++	if (pwm == NULL) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
++	}
++	pwm->dev = &pdev->dev;
++	pwm->pwm_id = pdev->id;
++	list_add_tail(&pwm->node, &pwm_list);
++	platform_set_drvdata(pdev, pwm);
++	dev_dbg(pwm->dev, "pwm probe successful\n");
++	return 0;
++}
++
++static int __devexit ab8500_pwm_remove(struct platform_device *pdev)
++{
++	struct pwm_device *pwm = platform_get_drvdata(pdev);
++	list_del(&pwm->node);
++	dev_dbg(&pdev->dev, "pwm driver removed\n");
++	kfree(pwm);
++	return 0;
++}
++
++static struct platform_driver ab8500_pwm_driver = {
++	.driver = {
++		.name = "ab8500-pwm",
++		.owner = THIS_MODULE,
++	},
++	.probe = ab8500_pwm_probe,
++	.remove = __devexit_p(ab8500_pwm_remove),
++};
++
++static int __init ab8500_pwm_init(void)
++{
++	return platform_driver_register(&ab8500_pwm_driver);
++}
++
++static void __exit ab8500_pwm_exit(void)
++{
++	platform_driver_unregister(&ab8500_pwm_driver);
++}
++
++subsys_initcall(ab8500_pwm_init);
++module_exit(ab8500_pwm_exit);
++MODULE_AUTHOR("Arun MURTHY <arun.murthy@stericsson.com>");
++MODULE_DESCRIPTION("AB8500 Pulse Width Modulation Driver");
++MODULE_ALIAS("AB8500 PWM driver");
++MODULE_LICENSE("GPL v2");
 -- 
-1.7.2
-
-
+1.7.2.dirty
 
