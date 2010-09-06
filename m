@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab0IFSSG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 14:18:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26383 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754707Ab0IFSSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 14:18:03 -0400
-Message-ID: <4C853051.7080706@redhat.com>
-Date: Mon, 06 Sep 2010 21:17:53 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
-        joro@8bytes.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 17/27] KVM: MMU: Track page fault data in struct vcpu
-References: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com> <1283788566-29186-18-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1283788566-29186-18-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755526Ab0IFSUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 14:20:44 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:33217 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115Ab0IFSUk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 14:20:40 -0400
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 3/15]  3: uprobes: Slot allocation
+ for Execution out of line(XOL)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+In-Reply-To: <20100906175957.GH14891@linux.vnet.ibm.com>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+	 <20100825134156.5447.43216.sendpatchset@localhost6.localdomain6>
+	 <1283415812.2059.1825.camel@laptop>
+	 <20100902174712.GA14891@linux.vnet.ibm.com>
+	 <1283498777.1783.45.camel@laptop>
+	 <20100906175957.GH14891@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 06 Sep 2010 20:20:24 +0200
+Message-ID: <1283797224.1930.745.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/06/2010 06:55 PM, Joerg Roedel wrote:
-> This patch introduces a struct with two new fields in
-> vcpu_arch for x86:
->
-> 	* fault.address
-> 	* fault.error_code
->
-> This will be used to correctly propagate page faults back
-> into the guest when we could have either an ordinary page
-> fault or a nested page fault. In the case of a nested page
-> fault the fault-address is different from the original
-> address that should be walked. So we need to keep track
-> about the real fault-address.
->
->
->
-> -static void emulate_pf(struct x86_emulate_ctxt *ctxt, unsigned long addr,
-> -		       int err)
-> +static void emulate_pf(struct x86_emulate_ctxt *ctxt)
->   {
-> -	ctxt->cr2 = addr;
-> -	emulate_exception(ctxt, PF_VECTOR, err, true);
-> +	emulate_exception(ctxt, PF_VECTOR, 0, true);
->   }
+On Mon, 2010-09-06 at 23:29 +0530, Srikar Dronamraju wrote:
+> 
+> Lets say the thread while singlestepping the process gets
+> pre-empted. Eventually the cpu might run some other thread of the same
+> process before picking the first run thread. Or the first run
+> thread could after migration due to load balancing or whatever end up
+> running on  a different thread?  How do we handle these cases? 
 
-What happened to the error code?
+So assuming we're preempted while the IP is inside the slot:
 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index b2fe9e7..38d482d 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -4130,7 +4130,8 @@ static void inject_emulated_exception(struct kvm_vcpu *vcpu)
->   {
->   	struct x86_emulate_ctxt *ctxt =&vcpu->arch.emulate_ctxt;
->   	if (ctxt->exception == PF_VECTOR)
-> -		kvm_inject_page_fault(vcpu, ctxt->cr2, ctxt->error_code);
-> +		kvm_inject_page_fault(vcpu, vcpu->arch.fault.address,
-> +					    vcpu->arch.fault.error_code);
->   	else if (ctxt->error_code_valid)
->   		kvm_queue_exception_e(vcpu, ctxt->exception, ctxt->error_code);
->   	else
+On the preempt-out we store the slot relative ip (ip - start_of_slot),
+on preempt-in we write the replacement instructions in our cpu slot
+(could be the same cpu, could be another) and re-position the ip to
+point to the same relative position inside that slot, then go!
 
-Ah.  Not lovely, but it was ugly before as well.
-
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+It really doesn't matter what happens in between.
