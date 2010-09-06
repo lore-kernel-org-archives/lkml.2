@@ -1,36 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab0IFSsC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 14:48:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38170 "EHLO mx1.redhat.com"
+	id S1755604Ab0IFSsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 14:48:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32374 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753745Ab0IFSr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 14:47:58 -0400
-Message-ID: <4C853747.9020401@redhat.com>
-Date: Mon, 06 Sep 2010 21:47:35 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	id S1753401Ab0IFSsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 14:48:45 -0400
+Date: Mon, 6 Sep 2010 15:26:51 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] KVM fixes and cleanups
+Message-ID: <20100906182651.GA30915@amt.cnet>
+References: <1283441387-7378-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-To: Andre Przywara <andre.przywara@amd.com>
-CC: hpa@zytor.com, tglx@linutronix.de, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 3/4] x86: Fix allowed CPUID bits for KVM guests
-References: <1283778860-26843-1-git-send-email-andre.przywara@amd.com> <1283778860-26843-4-git-send-email-andre.przywara@amd.com>
-In-Reply-To: <1283778860-26843-4-git-send-email-andre.przywara@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283441387-7378-1-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/06/2010 04:14 PM, Andre Przywara wrote:
-> The AMD extensions to AVX (FMA4, XOP) work on the same YMM register set
-> as AVX, so they are safe for guests to use, as long as AVX itself
-> is allowed. Add F16C and AES on the way for the same reasons.
+On Thu, Sep 02, 2010 at 05:29:44PM +0200, Joerg Roedel wrote:
+> Hi Avi, Marcelo,
+> 
+> here are 3 patches which came up during the final testing of the
+> nested-npt patch set. This patch set fixes two issues I found and the
+> last patch contains a minor cleanup which does not fix any real bug.
+> Please have a look at them and feel free to apply them (only if no
+> objections, of course ;-) )
+> For the bug that patch 2 fixes I will write a unit-test and submit it
+> separatly.
+> 
+> Thanks,
+> 	Joerg
+> 
+> Shortlog:
+> 
+> Joerg Roedel (3):
+>       KVM: MMU: Fix 32 bit legacy paging with NPT
+>       KVM: SVM: Restore correct registers after sel_cr0 intercept emulation
+>       KVM: SVM: Clean up rip handling in vmrun emulation
+> 
+> Diffstat:
+> 
+>  arch/x86/kvm/mmu.c |    8 ++++++--
+>  arch/x86/kvm/svm.c |   39 ++++++++++++++++++++++++++++++++++-----
+>  2 files changed, 40 insertions(+), 7 deletions(-)
 
-Acked-by: Avi Kivity <avi@redhat.com>
-
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Applied, thanks.
 
