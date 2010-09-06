@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab0IFLst (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 07:48:49 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39538 "EHLO mx1.suse.de"
+	id S1754766Ab0IFLtH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 07:49:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48870 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754671Ab0IFLsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 07:48:47 -0400
+	id S1751573Ab0IFLtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 07:49:04 -0400
 From: Michal Marek <mmarek@suse.cz>
 To: linux-kbuild@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] kbuild: Really don't clean bounds.h and asm-offsets.h
-Date: Mon,  6 Sep 2010 13:48:14 +0200
-Message-Id: <1283773696-3911-2-git-send-email-mmarek@suse.cz>
+Subject: [PATCH 3/3] kbuild: Use a single clean rule for kernel and external modules
+Date: Mon,  6 Sep 2010 13:48:16 +0200
+Message-Id: <1283773696-3911-4-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283773696-3911-1-git-send-email-mmarek@suse.cz>
 References: <1283773696-3911-1-git-send-email-mmarek@suse.cz>
@@ -19,61 +19,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 7d3cc8b tried to keep bounds.h and asm-offsets.h during make
-clean by filtering these out of $(clean-files), but they are listed in
-$(targets) and $(always) and thus removed automatically. Introduce a new
-$(no-clean-files) variable to really skip such files in Makefile.clean.
+The list of patterns for the external modules case was constantly
+lagging behind.
 
 Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- Documentation/kbuild/makefiles.txt |    7 +++++++
- Kbuild                             |    4 ++--
- scripts/Makefile.clean             |    2 ++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ Makefile |   31 ++++++++++++-------------------
+ 1 files changed, 12 insertions(+), 19 deletions(-)
 
-diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-index 0135155..fcd1a98 100644
---- a/Documentation/kbuild/makefiles.txt
-+++ b/Documentation/kbuild/makefiles.txt
-@@ -779,6 +779,13 @@ This will delete the directory debian, including all subdirectories.
- Kbuild will assume the directories to be in the same relative path as the
- Makefile if no absolute path is specified (path does not start with '/').
+diff --git a/Makefile b/Makefile
+index d71bfde..414a646 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1186,15 +1186,7 @@ PHONY += $(clean-dirs) clean archclean
+ $(clean-dirs):
+ 	$(Q)$(MAKE) $(clean)=$(patsubst _clean_%,%,$@)
  
-+To exclude certain files from make clean, use the $(no-clean-files) variable.
-+This is only a special case used in the top level Kbuild file:
+-clean: archclean $(clean-dirs)
+-	$(call cmd,rmdirs)
+-	$(call cmd,rmfiles)
+-	@find . $(RCS_FIND_IGNORE) \
+-		\( -name '*.[oas]' -o -name '*.ko' -o -name '.*.cmd' \
+-		-o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \
+-		-o -name '*.symtypes' -o -name 'modules.order' \
+-		-o -name modules.builtin -o -name '.tmp_*.o.*' \
+-		-o -name '*.gcno' \) -type f -print | xargs rm -f
++clean: archclean
+ 
+ # mrproper - Delete all generated files, including .config
+ #
+@@ -1392,16 +1384,7 @@ $(clean-dirs):
+ 	$(Q)$(MAKE) $(clean)=$(patsubst _clean_%,%,$@)
+ 
+ clean:	rm-dirs := $(MODVERDIR)
+-clean: rm-files := $(KBUILD_EXTMOD)/Module.symvers \
+-                   $(KBUILD_EXTMOD)/modules.order \
+-                   $(KBUILD_EXTMOD)/modules.builtin
+-clean: $(clean-dirs)
+-	$(call cmd,rmdirs)
+-	$(call cmd,rmfiles)
+-	@find $(KBUILD_EXTMOD) $(RCS_FIND_IGNORE) \
+-		\( -name '*.[oas]' -o -name '*.ko' -o -name '.*.cmd' \
+-		-o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \
+-		-o -name '*.gcno' \) -type f -print | xargs rm -f
++clean: rm-files := $(KBUILD_EXTMOD)/Module.symvers
+ 
+ help:
+ 	@echo  '  Building external modules.'
+@@ -1418,6 +1401,16 @@ prepare: ;
+ scripts: ;
+ endif # KBUILD_EXTMOD
+ 
++clean: $(clean-dirs)
++	$(call cmd,rmdirs)
++	$(call cmd,rmfiles)
++	@find $(or $(KBUILD_EXTMOD), .) $(RCS_FIND_IGNORE) \
++		\( -name '*.[oas]' -o -name '*.ko' -o -name '.*.cmd' \
++		-o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \
++		-o -name '*.symtypes' -o -name 'modules.order' \
++		-o -name modules.builtin -o -name '.tmp_*.o.*' \
++		-o -name '*.gcno' \) -type f -print | xargs rm -f
 +
-+	Example:
-+		#Kbuild
-+		no-clean-files := $(bounds-file) $(offsets-file)
-+
- Usually kbuild descends down in subdirectories due to "obj-* := dir/",
- but in the architecture makefiles where the kbuild infrastructure
- is not sufficient this sometimes needs to be explicit.
-diff --git a/Kbuild b/Kbuild
-index e3737ad..18a8bfb 100644
---- a/Kbuild
-+++ b/Kbuild
-@@ -94,5 +94,5 @@ PHONY += missing-syscalls
- missing-syscalls: scripts/checksyscalls.sh FORCE
- 	$(call cmd,syscalls)
- 
--# Delete all targets during make clean
--clean-files := $(addprefix $(objtree)/,$(filter-out $(bounds-file) $(offsets-file),$(targets)))
-+# Keep these two files during make clean
-+no-clean-files := $(bounds-file) $(offsets-file)
-diff --git a/scripts/Makefile.clean b/scripts/Makefile.clean
-index 6f89fbb..686cb0d 100644
---- a/scripts/Makefile.clean
-+++ b/scripts/Makefile.clean
-@@ -45,6 +45,8 @@ __clean-files	:= $(extra-y) $(always)                  \
- 		   $(host-progs)                         \
- 		   $(hostprogs-y) $(hostprogs-m) $(hostprogs-)
- 
-+__clean-files   := $(filter-out $(no-clean-files), $(__clean-files))
-+
- # as clean-files is given relative to the current directory, this adds
- # a $(obj) prefix, except for absolute paths
- 
+ # Generate tags for editors
+ # ---------------------------------------------------------------------------
+ quiet_cmd_tags = GEN     $@
 -- 
 1.7.1
 
