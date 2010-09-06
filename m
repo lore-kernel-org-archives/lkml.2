@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab0IFU1O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 16:27:14 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:35376 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051Ab0IFU1I (ORCPT
+	id S1755280Ab0IFUbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 16:31:14 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58083 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137Ab0IFUbE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 16:27:08 -0400
-To: Damien Wyart <damien.wyart@free.fr>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.35.*: horrible (exponential? >linear) slowdown to unusability (ACPI idle?)
-References: <87zkvx2ese.fsf@spindle.srvr.nix>
-	<20100906053255.GA23340@brouette>
-From: Nix <nix@esperi.org.uk>
-Emacs: or perhaps you'd prefer Russian Roulette, after all?
-Date: Mon, 06 Sep 2010 21:27:04 +0100
-In-Reply-To: <20100906053255.GA23340@brouette> (Damien Wyart's message of "Mon, 6 Sep 2010 07:32:55 +0200")
-Message-ID: <87aanu39ev.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
+	Mon, 6 Sep 2010 16:31:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=skM7FgWLx3smpSVqcIfyRG6t5oAW1OQ/0BNO2lYZqmvFnDZT0aHLVg1RPhL0R4jcev
+         Rc0DS5hRN8JulQKpUrHmU1JZi18LGwtUsUgCYO6hSP4FcTrm01j4cpRP9VlbHqKIW9Vz
+         hDZbBBnchvjkCotMPBoUbaV+l8ty3EmBm6yi0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-DCC-URT-Metrics: spindle 1060; Body=2 Fuz1=2 Fuz2=2
+In-Reply-To: <20100906154737.GA4332@elte.hu>
+References: <4C84B088.5050003@redhat.com>
+	<1283772256.1930.303.camel@laptop>
+	<4C84D1CE.3070205@redhat.com>
+	<1283774045.1930.341.camel@laptop>
+	<4C84D77B.6040600@redhat.com>
+	<20100906124330.GA22314@elte.hu>
+	<4C84E265.1020402@redhat.com>
+	<20100906125905.GA25414@elte.hu>
+	<4C850147.8010908@redhat.com>
+	<20100906154737.GA4332@elte.hu>
+Date: Mon, 6 Sep 2010 23:31:03 +0300
+X-Google-Sender-Auth: qJ0Gyk8GI_NHhw5bpcQE4euc4q4
+Message-ID: <AANLkTikQk0S-mR2Ow2NgdzqAMB0DD05Vd1Th99gNRy8h@mail.gmail.com>
+Subject: Re: disabling group leader perf_event
+From: Pekka Enberg <penberg@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 Sep 2010, Damien Wyart told this:
-> I think this is related to what has been discussed in this thread:
-> http://lkml.org/lkml/2010/7/14/11
+Hi Ingo,
 
-Quite possibly :/ though I'm on x86-64, not x86, and certainly don't
-have kmemleak turne don.
+On Mon, Sep 6, 2010 at 6:47 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>> The actual language doesn't really matter.
+>
+> There are 3 basic categories:
+>
+>  1- Most (least abstract) specific code: a block of bytecode in the form
+>    of a simplified, executable, kernel-checked x86 machine code block -
+>    this is also the fastest form. [yes, this is actually possible.]
+>
+>  2- Least specific (most abstract) code: A subset/sideset of C - as it's
+>    the most kernel-developer-trustable/debuggable form.
+>
+>  3- Everything else little more than a dot on the spectrum between the
+>    first two points.
+>
+> I lean towards #2 - but #1 looks interesting too. #3 is distinctly
+> uninteresting as it cannot be as fast as #1 and cannot be as convenient
+> as #2.
 
-> I've not seen the problem with 2.6.35.4 yet, and only once with
-> 2.6.35.3. Zeno said it disappeared for him when he started to use
-> 2.6.35-stable.
+It's a question where you want to push the complexity of parsing the
+language and verifying the executed code. I'd image it's easier to
+evolve an ABI if we use an intermediate form ("bytecode") on the
+kernel side. Supporting multiple versions of a C-like language is
+probably going to be painful. You also probably don't want to put
+heavy-weight compiler optimization passes in the kernel so with an
+intermediate form, you can do much of that in user-space.
 
-Argh.
+I'm guessing this thing is expected to work on all architectures? If
+that's true, I'd forget about JIT'ing for the time being and write an
+interpreter first because it's much easier to port. There are
+techniques in making an interpreter pretty fast too. Google for
+"inlining interpreter" if you're interested.
 
-> So if you can reproduce it quite easily, I guess bisection (even
-> painful) will be the best way to get (hopefuly) an idea of where the
-> problem might come from...
+As for the intermediate form, you might want to take a look at Dalvik:
 
-'Quite easily' is not quite true. It does not show up in qemu -kernel.
-It does not show up if you boot straight to an emergency boot shell
-in the initramfs (I was trying to avoid activating the RAID arrays).
+http://www.netmite.com/android/mydroid/dalvik/docs/dalvik-bytecode.html
 
-So I guess it's a full-blown boot each time, which is made pointlessly
-difficult by the fact that the rpc.mountd on my NFS server is acting up,
-giving me -ESTALE half the time for an initial mount (??!!!) and thus
-totally buggering up my client system whenever I reboot. So I may have
-to debug *that* first. What fun.
+and probably ParrotVM bytecode too. The thing to avoid is stack-based
+instructions like in Java bytecode because although it's easy to write
+interpreters for them, it makes JIT'ing harder (which needs to convert
+stack-based representation to register-based) and probably doesn't
+lend itself well to stack-constrained kernel code.
 
-But I'll get around to it.
+                        Pekka
