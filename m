@@ -1,398 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab0IFR6A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 13:58:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53446 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217Ab0IFR5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 13:57:55 -0400
-Date: Mon, 6 Sep 2010 19:57:50 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] trace: add graph output support for wakeup tracer
-Message-ID: <20100906175750.GB16304@jolsa.brq.redhat.com>
-References: <1281020247-5756-1-git-send-email-jolsa@redhat.com>
+	id S1754935Ab0IFSBQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 14:01:16 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:57631 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217Ab0IFSBJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 14:01:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281020247-5756-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <169108422.1009631283788251084.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+References: <272391166.1009231283787434910.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+ <169108422.1009631283788251084.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Mon, 6 Sep 2010 14:00:47 -0400
+Message-ID: <AANLkTim=nf7VVs0zDshivjrdFFYeWaoWYqAA6PCs3c4k@mail.gmail.com>
+Subject: Re: [PATCH 01/19] User-space API definition
+To: Miloslav Trmac <mitr@redhat.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-any feedback? thanks,
-jirka
+On Mon, Sep 6, 2010 at 11:50, Miloslav Trmac <mitr@redhat.com> wrote:
+> ----- "Herbert Xu" <herbert@gondor.hengli.com.au> wrote:
+>> On Mon, Aug 23, 2010 at 11:37:40AM -0400, Miloslav Trmac wrote:
+>> > I have seriously considered the keyring API, and this is what I came
+>> up with - but I'd love to be shown a better way.
+>>
+>> FWIW adding a second key management system to the kernel is
+>> totally out of the question.
+>>
+>> If the existing system doesn't work for you, find a way to build
+>> on it so that it does.  Adding a second system that pretty much
+>> does the same thing is unacceptable.
+> It does _not_ do the same thing, same as ramfs and file descriptors do not do the same thing although they are both related to files.
+>
+> The kernel keyring service is basically a system-wide data storage service.  /dev/crypto needs a quick way to refer to short-lived, usually process-local, kernel-space data structures from userspace.
 
-On Thu, Aug 05, 2010 at 04:57:27PM +0200, Jiri Olsa wrote:
-> hi,
-> 
-> adding function graph output to irqsoff tracer.
-> The graph output is enabled by setting new 'display-graph' trace option.
-> 
-> wbr,
-> jirka
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  kernel/trace/trace_sched_wakeup.c |  274 +++++++++++++++++++++++++++++++++++--
->  1 files changed, 264 insertions(+), 10 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-> index 4086eae..b576141 100644
-> --- a/kernel/trace/trace_sched_wakeup.c
-> +++ b/kernel/trace/trace_sched_wakeup.c
-> @@ -31,13 +31,33 @@ static int			wakeup_rt;
->  static arch_spinlock_t wakeup_lock =
->  	(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
->  
-> +static void wakeup_reset(struct trace_array *tr);
->  static void __wakeup_reset(struct trace_array *tr);
-> +static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
-> +static void wakeup_graph_return(struct ftrace_graph_ret *trace);
->  
->  static int save_lat_flag;
->  
-> +#define TRACE_DISPLAY_GRAPH     1
-> +
-> +static struct tracer_opt trace_opts[] = {
-> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-> +	/* display latency trace as call graph */
-> +	{ TRACER_OPT(display-graph, TRACE_DISPLAY_GRAPH) },
-> +#endif
-> +	{ } /* Empty entry */
-> +};
-> +
-> +static struct tracer_flags tracer_flags = {
-> +	.val  = 0,
-> +	.opts = trace_opts,
-> +};
-> +
-> +#define is_graph() (tracer_flags.val & TRACE_DISPLAY_GRAPH)
-> +
->  #ifdef CONFIG_FUNCTION_TRACER
->  /*
-> - * irqsoff uses its own tracer function to keep the overhead down:
-> + * wakeup uses its own tracer function to keep the overhead down:
->   */
->  static void
->  wakeup_tracer_call(unsigned long ip, unsigned long parent_ip)
-> @@ -80,8 +100,234 @@ static struct ftrace_ops trace_ops __read_mostly =
->  {
->  	.func = wakeup_tracer_call,
->  };
-> +
-> +static int start_func_tracer(int graph)
-> +{
-> +	int ret;
-> +
-> +	if (!graph)
-> +		ret = register_ftrace_function(&trace_ops);
-> +	else
-> +		ret = register_ftrace_graph(&wakeup_graph_return,
-> +					    &wakeup_graph_entry);
-> +
-> +	if (!ret && tracing_is_enabled())
-> +		tracer_enabled = 1;
-> +	else
-> +		tracer_enabled = 0;
-> +
-> +	return ret;
-> +}
-> +
-> +static void stop_func_tracer(int graph)
-> +{
-> +	tracer_enabled = 0;
-> +
-> +	if (!graph)
-> +		unregister_ftrace_function(&trace_ops);
-> +	else
-> +		unregister_ftrace_graph();
-> +}
-> +
->  #endif /* CONFIG_FUNCTION_TRACER */
->  
-> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-> +static int wakeup_set_flag(u32 old_flags, u32 bit, int set)
-> +{
-> +
-> +	if (!(bit & TRACE_DISPLAY_GRAPH))
-> +		return -EINVAL;
-> +
-> +	if (!(is_graph() ^ set))
-> +		return 0;
-> +
-> +	stop_func_tracer(!set);
-> +	wakeup_reset(wakeup_trace);
-> +
-> +	return start_func_tracer(set);
-> +}
-> +
-> +static int wakeup_graph_entry(struct ftrace_graph_ent *trace)
-> +{
-> +	struct trace_array *tr = wakeup_trace;
-> +	struct trace_array_cpu *data;
-> +	unsigned long flags;
-> +	long disabled;
-> +	int cpu, pc, ret = 0;
-> +
-> +	if (likely(!wakeup_task))
-> +		return 0;
-> +
-> +	pc = preempt_count();
-> +	preempt_disable_notrace();
-> +
-> +	cpu = raw_smp_processor_id();
-> +	if (cpu != wakeup_current_cpu)
-> +		goto out_enable;
-> +
-> +	data = tr->data[cpu];
-> +	disabled = atomic_inc_return(&data->disabled);
-> +	if (unlikely(disabled != 1))
-> +		goto out;
-> +
-> +	local_irq_save(flags);
-> +	ret = __trace_graph_entry(tr, trace, flags, pc);
-> +	local_irq_restore(flags);
-> +
-> + out:
-> +	atomic_dec(&data->disabled);
-> +
-> + out_enable:
-> +	preempt_enable_notrace();
-> +	return ret;
-> +}
-> +
-> +static void wakeup_graph_return(struct ftrace_graph_ret *trace)
-> +{
-> +	struct trace_array *tr = wakeup_trace;
-> +	struct trace_array_cpu *data;
-> +	unsigned long flags;
-> +	long disabled;
-> +	int cpu, pc;
-> +
-> +	if (likely(!wakeup_task))
-> +		return;
-> +
-> +	pc = preempt_count();
-> +	preempt_disable_notrace();
-> +
-> +	cpu = raw_smp_processor_id();
-> +	if (cpu != wakeup_current_cpu)
-> +		goto out_enable;
-> +
-> +	data = tr->data[cpu];
-> +	disabled = atomic_inc_return(&data->disabled);
-> +	if (unlikely(disabled != 1))
-> +		goto out;
-> +
-> +	local_irq_save(flags);
-> +	__trace_graph_return(tr, trace, flags, pc);
-> +	local_irq_restore(flags);
-> +
-> + out:
-> +	atomic_dec(&data->disabled);
-> +
-> + out_enable:
-> +	preempt_enable_notrace();
-> +	return;
-> +}
-> +
-> +static void wakeup_trace_open(struct trace_iterator *iter)
-> +{
-> +	if (is_graph())
-> +		graph_trace_open(iter);
-> +}
-> +
-> +static void wakeup_trace_close(struct trace_iterator *iter)
-> +{
-> +	if (iter->private)
-> +		graph_trace_close(iter);
-> +}
-> +
-> +#define GRAPH_TRACER_FLAGS (TRACE_GRAPH_PRINT_PROC)
-> +
-> +static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
-> +{
-> +	u32 flags = GRAPH_TRACER_FLAGS;
-> +
-> +	if (trace_flags & TRACE_ITER_LATENCY_FMT)
-> +		flags |= TRACE_GRAPH_PRINT_DURATION;
-> +	else
-> +		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
-> +
-> +	/*
-> +	 * In graph mode call the graph tracer output function,
-> +	 * otherwise go with the TRACE_FN event handler
-> +	 */
-> +	if (is_graph())
-> +		return print_graph_function_flags(iter, flags);
-> +
-> +	return TRACE_TYPE_UNHANDLED;
-> +}
-> +
-> +static void wakeup_print_header(struct seq_file *s)
-> +{
-> +	if (is_graph()) {
-> +		struct trace_iterator *iter = s->private;
-> +		u32 flags = GRAPH_TRACER_FLAGS;
-> +
-> +		if (trace_flags & TRACE_ITER_LATENCY_FMT) {
-> +			/* print nothing if the buffers are empty */
-> +			if (trace_empty(iter))
-> +				return;
-> +
-> +			print_trace_header(s, iter);
-> +			flags |= TRACE_GRAPH_PRINT_DURATION;
-> +		} else
-> +			flags |= TRACE_GRAPH_PRINT_ABS_TIME;
-> +
-> +		print_graph_headers_flags(s, flags);
-> +	} else
-> +		trace_default_header(s);
-> +}
-> +
-> +static void
-> +trace_graph_function(struct trace_array *tr,
-> +		 unsigned long ip, unsigned long flags, int pc)
-> +{
-> +	u64 time = trace_clock_local();
-> +	struct ftrace_graph_ent ent = {
-> +		.func  = ip,
-> +		.depth = 0,
-> +	};
-> +	struct ftrace_graph_ret ret = {
-> +		.func     = ip,
-> +		.depth    = 0,
-> +		.calltime = time,
-> +		.rettime  = time,
-> +	};
-> +
-> +	__trace_graph_entry(tr, &ent, flags, pc);
-> +	__trace_graph_return(tr, &ret, flags, pc);
-> +}
-> +
-> +static void
-> +__trace_function(struct trace_array *tr,
-> +		 unsigned long ip, unsigned long parent_ip,
-> +		 unsigned long flags, int pc)
-> +{
-> +	if (!is_graph())
-> +		trace_function(tr, ip, parent_ip, flags, pc);
-> +	else {
-> +		trace_graph_function(tr, parent_ip, flags, pc);
-> +		trace_graph_function(tr, ip, flags, pc);
-> +	}
-> +}
-> +
-> +#else
-> +#define __trace_function trace_function
-> +
-> +static int wakeup_set_flag(u32 old_flags, u32 bit, int set)
-> +{
-> +	return -EINVAL;
-> +}
-> +
-> +static int wakeup_graph_entry(struct ftrace_graph_ent *trace)
-> +{
-> +	return -1;
-> +}
-> +
-> +static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
-> +{
-> +	return TRACE_TYPE_UNHANDLED;
-> +}
-> +
-> +static void wakeup_graph_return(struct ftrace_graph_ret *trace) { }
-> +static void wakeup_print_header(struct seq_file *s) { }
-> +static void wakeup_trace_open(struct trace_iterator *iter) { }
-> +static void wakeup_trace_close(struct trace_iterator *iter) { }
-> +#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-> +
->  /*
->   * Should this new latency be reported/recorded?
->   */
-> @@ -152,7 +398,7 @@ probe_wakeup_sched_switch(void *ignore,
->  	/* The task we are waiting for is waking up */
->  	data = wakeup_trace->data[wakeup_cpu];
->  
-> -	trace_function(wakeup_trace, CALLER_ADDR0, CALLER_ADDR1, flags, pc);
-> +	__trace_function(wakeup_trace, CALLER_ADDR0, CALLER_ADDR1, flags, pc);
->  	tracing_sched_switch_trace(wakeup_trace, prev, next, flags, pc);
->  
->  	T0 = data->preempt_timestamp;
-> @@ -252,7 +498,7 @@ probe_wakeup(void *ignore, struct task_struct *p, int success)
->  	 * is not called by an assembly function  (where as schedule is)
->  	 * it should be safe to use it here.
->  	 */
-> -	trace_function(wakeup_trace, CALLER_ADDR1, CALLER_ADDR2, flags, pc);
-> +	__trace_function(wakeup_trace, CALLER_ADDR1, CALLER_ADDR2, flags, pc);
->  
->  out_locked:
->  	arch_spin_unlock(&wakeup_lock);
-> @@ -303,12 +549,8 @@ static void start_wakeup_tracer(struct trace_array *tr)
->  	 */
->  	smp_wmb();
->  
-> -	register_ftrace_function(&trace_ops);
-> -
-> -	if (tracing_is_enabled())
-> -		tracer_enabled = 1;
-> -	else
-> -		tracer_enabled = 0;
-> +	if (start_func_tracer(is_graph()))
-> +		printk(KERN_ERR "failed to start wakeup tracer\n");
->  
->  	return;
->  fail_deprobe_wake_new:
-> @@ -320,7 +562,7 @@ fail_deprobe:
->  static void stop_wakeup_tracer(struct trace_array *tr)
->  {
->  	tracer_enabled = 0;
-> -	unregister_ftrace_function(&trace_ops);
-> +	stop_func_tracer(is_graph());
->  	unregister_trace_sched_switch(probe_wakeup_sched_switch, NULL);
->  	unregister_trace_sched_wakeup_new(probe_wakeup, NULL);
->  	unregister_trace_sched_wakeup(probe_wakeup, NULL);
-> @@ -379,9 +621,15 @@ static struct tracer wakeup_tracer __read_mostly =
->  	.start		= wakeup_tracer_start,
->  	.stop		= wakeup_tracer_stop,
->  	.print_max	= 1,
-> +	.print_header	= wakeup_print_header,
-> +	.print_line	= wakeup_print_line,
-> +	.flags		= &tracer_flags,
-> +	.set_flag	= wakeup_set_flag,
->  #ifdef CONFIG_FTRACE_SELFTEST
->  	.selftest    = trace_selftest_startup_wakeup,
->  #endif
-> +	.open		= wakeup_trace_open,
-> +	.close		= wakeup_trace_close,
->  	.use_max_tr	= 1,
->  };
->  
-> @@ -394,9 +642,15 @@ static struct tracer wakeup_rt_tracer __read_mostly =
->  	.stop		= wakeup_tracer_stop,
->  	.wait_pipe	= poll_wait_pipe,
->  	.print_max	= 1,
-> +	.print_header	= wakeup_print_header,
-> +	.print_line	= wakeup_print_line,
-> +	.flags		= &tracer_flags,
-> +	.set_flag	= wakeup_set_flag,
->  #ifdef CONFIG_FTRACE_SELFTEST
->  	.selftest    = trace_selftest_startup_wakeup,
->  #endif
-> +	.open		= wakeup_trace_open,
-> +	.close		= wakeup_trace_close,
->  	.use_max_tr	= 1,
->  };
->  
-> -- 
-> 1.7.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The problem with the approach you're proposing is that we then have
+two entirely separate classes of keys.  First we have the existing
+keyring class, which can be securely and revokably passed between
+different processes with limited rights, but cannot be handed up to
+the kernel's cryptoapi.  Then we have your new class, which are
+anonymous keys with a brand new security model (which doesn't even
+have LSM hooks yet) and which cannot be referenced by name.
+
+Another potential issue is that keys are never actually "unnamed", in
+that sense.  If encryption keys truly were "anonymous" then you would
+find it impossible to reliably decrypt the data on the other end.  For
+example, every RSA private key should be indexed either by the X.509
+DN or for bare SSH keys by the public modulus information.  Even
+transient SSL session keys are always put into an SSL session cache by
+apache or whatever to allow them to be reused across multiple TCP
+streams!  So I would argue that an SSL implementation that uses this
+should actually create or use a keyring specifically as an SSL session
+cache (with keys indexed by SSL session ID).
+
+It then becomes trivial to share an SSL session cache between 3
+independent HTTPS server programs from different vendors, such that
+the compromise of *any* of the processes would not in any way
+compromise the security of the session keys.  This would be especially
+true if the session keys are actually generated by a keyring+cryptoapi
+operation in the kernel.
+
+So my recommendation would be to create some new operations of the
+existing keyring code:
+
+(1) If you *really* care about anonymous transient keys that are not
+identified by an SSL session ID or similar, then add a keyring
+operation for "create an anonymous key in keyring X, where the kernel
+creates a proper temporary name".  An SSL implementation would default
+to using the process-local keyring, which means that everything would
+automatically go away on process exit.
+
+(2) Add cryptoapi hooks to automatically register keyring key types
+based on the loaded cryptoapi modules.
+
+(3) Add any necessary keyring operations for efficiently performing
+zero-copy cryptoapi calls using those key types.
+
+Cheers,
+Kyle Moffett
