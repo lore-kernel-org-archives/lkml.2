@@ -1,85 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab0IFOq1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 10:46:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55090 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab0IFOqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 10:46:21 -0400
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-To: Tony Luck <tony.luck@gmail.com>
-Subject: Re: Serious problem with ticket spinlocks on ia64
-Date: Mon, 6 Sep 2010 16:47:01 +0200
-User-Agent: KMail/1.9.10
-Cc: "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <201008271537.35709.ptesarik@suse.cz> <201009031652.56476.ptesarik@suse.cz> <AANLkTikZRiQ5jCpgp42LxtXb_S52sSUy7KP_=vZ3z4Tf@mail.gmail.com>
-In-Reply-To: <AANLkTikZRiQ5jCpgp42LxtXb_S52sSUy7KP_=vZ3z4Tf@mail.gmail.com>
+	id S1753575Ab0IFOsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 10:48:25 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40532 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab0IFOsV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 10:48:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=EP92KuN5IWCq5yVkhg5nX8/ObpdiRQ4IGGhPxlFWTjE+VyE/gS83YNy9zWZVXZILx9
+         zxUfnra/1u6jwyI5sqXDYUq9D4j64Nuwe/BSRHOGMB1FPNGmyohCawu6Jdhwg1UCzRwC
+         wR4+y6FhKcmqMYGQOACqdILMpWCcDRfO2bKGw=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201009061647.02345.ptesarik@suse.cz>
+In-Reply-To: <20100906062625.GI17212@core.coreip.homeip.net>
+References: <1283160203-6981-1-git-send-email-nab@linux-iscsi.org>
+	<20100905203006.GD18411@core.coreip.homeip.net>
+	<1283723479.556.135.camel@haakon2.linux-iscsi.org>
+	<20100906050816.GD17212@core.coreip.homeip.net>
+	<20100906051703.GA2891@suse.de>
+	<1283750480.556.196.camel@haakon2.linux-iscsi.org>
+	<20100906053845.GG17212@core.coreip.homeip.net>
+	<1283752861.556.200.camel@haakon2.linux-iscsi.org>
+	<20100906062625.GI17212@core.coreip.homeip.net>
+Date: Mon, 6 Sep 2010 07:48:20 -0700
+Message-ID: <AANLkTimhHt78GFbxxjy1tosmebMVg-vKCNoJuqVa+iLH@mail.gmail.com>
+Subject: Re: [RFC 22/22] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric module
+From: Richard Sharpe <realrichardsharpe@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>, Greg KH <gregkh@suse.de>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 of September 2010 17:50:53 Tony Luck wrote:
-> On Fri, Sep 3, 2010 at 7:52 AM, Petr Tesarik <ptesarik@suse.cz> wrote:
-> > Anyway, if a global TLB flush is necessary to trigger the bug, it would
-> > also explain why we couldn't reproduce it in user-space.
+On Sun, Sep 5, 2010 at 11:26 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Sun, Sep 05, 2010 at 11:01:01PM -0700, Nicholas A. Bellinger wrote:
+>> On Sun, 2010-09-05 at 22:38 -0700, Dmitry Torokhov wrote:
+>> > On Sun, Sep 05, 2010 at 10:21:20PM -0700, Nicholas A. Bellinger wrote:
+>> > > On Sun, 2010-09-05 at 22:17 -0700, Greg KH wrote:
+>> > > > On Sun, Sep 05, 2010 at 10:08:16PM -0700, Dmitry Torokhov wrote:
+>> > > > > On Sun, Sep 05, 2010 at 02:51:19PM -0700, Nicholas A. Bellinger wrote:
+>> > > > > > On Sun, 2010-09-05 at 13:30 -0700, Dmitry Torokhov wrote:
+>> > > > > > > On Mon, Aug 30, 2010 at 02:23:23AM -0700, Nicholas A. Bellinger wrote:
+>> > > > > > > > +
+>> > > > > > > > +static void tcm_loop_primary_release(struct device *dev)
+>> > > > > > > > +{
+>> > > > > > > > +       return;
+>> > > > > > > > +}
+>> > > > > > > > +
+>> > > > > > > > +static struct device tcm_loop_primary = {
+>> > > > > > > > +       .init_name              = "tcm_loop_0",
+>> > > > > > > > +       .release                = tcm_loop_primary_release,
+>> > > > > > > > +};
+>> > > > > > > > +
+>> > > > > > >
+>> > > > > > > No, you can not have statically allocated devices and dummy release
+>> > > > > > > functions.
+>> > > > > > >
+>> > > > > >
+>> > > > > > Last time I checked this is still what mainline
+>> > > > > > drivers/scsi/scsi_debug.c is doing for struct device pseudo_primary:
+>> > > > > >
+>> > > > > > static void pseudo_0_release(struct device *dev)
+>> > > > > > {
+>> > > > > >         if (SCSI_DEBUG_OPT_NOISE & scsi_debug_opts)
+>> > > > > >                 printk(KERN_INFO "scsi_debug: pseudo_0_release() called\n");
+>> > > > > > }
+>> > > > > >
+>> > > > > > static struct device pseudo_primary = {
+>> > > > > >         .init_name      = "pseudo_0",
+>> > > > > >         .release        = pseudo_0_release,
+>> > > > > > };
+>> > > > > >
+>> > > > > > so for these type of things in TCM_Loop I tend to follow what scsi_debug does,
+>> > > > > >  so I don't exactly see a issue here atm.  Anybody else have comments..?
+>> > > > >
+>> > > > > The kobject embedded in the device structure is refcounted and it's
+>> > > > > lifetime may be different from lifetime of your module. If somebody
+>> > > > > happen to hold reference to the driver while your module is being
+>> > > > > unloaded bad things will happen.
+>> > > > >
+>> > > > > I am sure Greg has something on this topic ready for cut-and-paste.
+>> > > >
+>> > > > Documentation/kobject.txt :)
+>> > >
+>> > > I still don't get it..?  Does this mean that scsi_debug and TCM_Loop are
+>> > > currently broken wrt to this item or not..?
+>> > >
+>> >
+>> > Yes they are broken.
+>>
+>> Hi Dmitry and Greg,
+>>
+>> Would you mind giving a bit more specific idea as to what a patch to fix
+>> this issue would involve for an emulated struct device usage..?  I would
+>> be happy to generate patches for scsi_debug and TCM_loop to resolve this
+>> issue, but I need a bit more information what I should be looking at.
+>>
 >
-> Perhaps ... I did explore the TLB in one variant of my user mode test I
-> added a pointer-chasing routine that looked at enough pages to clear out
-> the TLB. Not quite the same as a flush - but close.  It didn't help at all.
+> I think what you need is root_device_create() which will allocate a
+> device structure and assign ->release() that is implemented outside of
+> your module. This way your module may be unloaded even if there are
+> outstanding references to tcm_loop_primary device.
 
-Hi Tony,
+I am embarrassed to admit that scst_local (or whatever its new name
+will be) probably has the same fault, as it too was based on
+scsi_debug ...
 
-I experimented a lot with the code, trying to find a solution, but all in 
-vain. I also tried to add a "dep %0=0,%0,15,2" instruction in the cmpxchg4 
-loop in __ticket_spin_lock but it still failed when the wrapped around to 
-zero (but now the high word was not even touched).
+However, I did a search of the 2.6.24.1 source tree and could not find
+any instances of root_device_create() being called nor defined. I just
+double and triple checked the spelling.
 
-Replacing the "st2.rel" instruction with a similar cmpxchg4 loop in 
-__ticket_spin_unlock did not help either (so we no longer have two accesses 
-with different sizes).
+Ahhh, I see why. A slightly different search suggests that it is
+root_device_register(const char *name).
 
-What I've seen quite often lately is that the spinlock value is read as "0" by 
-the ld4.acq in __ticket_spin_lock(), then as "1" by ld4.acq inside the debug 
-fault handler, and then as "0" again by the "cmpxchg4" instruction, i.e. the 
-spin lock was actually acquired correctly, but the debug code triggered a 
-panic. This made me think that I had an error in my debug code, so I tried 
-running that test kernel without the probe, just waiting whether the kernel 
-hangs. It did hang within 10 minutes (with 6 parallel test case loops and a 
-module load/unload loop on another terminal) and produced a crash dump that 
-was very similar all the others.
+>From include/linux/device.h:
 
-To sum it up:
+static inline struct device *root_device_register(const char *name)
+{
+	return __root_device_register(name, THIS_MODULE);
+}
 
-1. The ld4.acq and fetchadd.acq instructions fail to give us a coherent view 
-of the spinlock memory location.
-2. So far, the problem has been observed only after the spinlock value changes 
-to zero.
-3. It cannot be a random memory scribble, because I employed the DBR registers 
-to catch all writes to that memory location.
-4. We haven't been able to reproduce the problem in user-space.
+Was that the one you were thinking of?
 
-Frankly, I think that the processor does not follow the IPF specification, 
-hence it is a CPU bug.
+> The rest of devices you create needs to increment module counter or
+> otherwise ensure that their methods stay available until they are
+> cleaned up (->release() is called).
 
-But let's be extremely cautious here and re-read the specification once more, 
-very carefully. We can still miss some writes to the siglock memory location:
+OK, I need to check out how this is done.
 
-1. if the same physical address is accessible with another virtual address
-2. if the siglock location is written by a non-mandatory RSE-spill
+> Hope this helps.
 
-Option 2 seems extremely unlikely to me. Option 1 is more plausible, but  
-given that I never saw any siglock corruption with a value other than zero, 
-it still sounds less likely than a pure CPU bug.
+Sure does.
 
-Tony, could you please ask around in Intel if there is any way to debug the 
-CPU that would help us spot the real cause?
-
-Petr Tesarik
+-- 
+Regards,
+Richard Sharpe
