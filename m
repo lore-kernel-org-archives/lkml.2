@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab0IFOh7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 10:37:59 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52412 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754541Ab0IFOhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 10:37:52 -0400
-From: "Gadiyar, Anand" <gadiyar@ti.com>
-To: Maxim Osipov <maxim.osipov@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 6 Sep 2010 20:07:31 +0530
-Subject: RE: [PATCH] USB: Fix kernel oops with g_ether and Windows
-Thread-Topic: [PATCH] USB: Fix kernel oops with g_ether and Windows
-Thread-Index: ActBH1AMMX6AEuXHTLW3bd6g9hPfuQMsXc2w
-Message-ID: <5A47E75E594F054BAF48C5E4FC4B92AB03291AE03E@dbde02.ent.ti.com>
-References: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com>
-In-Reply-To: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1754702Ab0IFOiY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 10:38:24 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33576 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754004Ab0IFOgc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 10:36:32 -0400
+Date: Mon, 6 Sep 2010 16:36:30 +0200
+From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+To: "Juergen E. Fischer" <fischer@norbit.de>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Tejun Heo <tj@kernel.org>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: vamos-dev@i4.informatik.uni-erlangen.de
+Subject: [PATCH 07/14] drivers/scsi: Removing undead ifdef __ISAPNP__
+Message-ID: <1dc9bb1263c30b452523faea097f016c9706d3ab.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
+References: <cover.1283782698.git.qy03fugy@stud.informatik.uni-erlangen.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1283782698.git.qy03fugy@stud.informatik.uni-erlangen.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o86Ecjcm001936
 
-Maxim Osipov wrote:
-> Hello,
-> 
-> Please find attached patch for
-> https://bugzilla.kernel.org/show_bug.cgi?id=16023 problem.
-> 
+The __ISAPNP__ ifdef isn't necessary at this point, because it is
+checked in an outer ifdef level already and has no effect here.
 
-Looks like this is already in greg's tree, but the patch has
-checkpatch errors.
+Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+---
+ drivers/scsi/aha152x.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-(Caught by an autobuild tool we're playing with).
+diff --git a/drivers/scsi/aha152x.c b/drivers/scsi/aha152x.c
+index 8eab858..08f59da 100644
+--- a/drivers/scsi/aha152x.c
++++ b/drivers/scsi/aha152x.c
+@@ -3806,9 +3806,7 @@ static int __init aha152x_init(void)
+ #if defined(AHA152X_DEBUG)
+ 			setup[setup_count].debug       = DEBUG_DEFAULT;
+ #endif
+-#if defined(__ISAPNP__)
+ 			pnpdev[setup_count]            = dev;
+-#endif
+ 			printk (KERN_INFO
+ 				"aha152x: found ISAPnP adapter at io=0x%03x, irq=%d\n",
+ 				setup[setup_count].io_port, setup[setup_count].irq);
+-- 
+1.7.0.4
 
-@Greg,
-Would you like an updated patch fixing them?
-
-- Anand
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
