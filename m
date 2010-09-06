@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab0IFL1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 07:27:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48067 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754491Ab0IFL13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 07:27:29 -0400
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-From: James Bottomley <James.Bottomley@suse.de>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Mike Christie <michaelc@cs.wisc.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>, linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        scst-devel <scst-devel@lists.sourceforge.net>
-In-Reply-To: <AANLkTikaE=7++X1VQj36Np93msyCViLs40_ti_2=ybqn@mail.gmail.com>
-References: <4C76CA57.3050405@vlnb.net>
-	 <1282857806.32007.175.camel@haakon2.linux-iscsi.org>
-	 <4C79484B.3090607@vlnb.net>
-	 <1283028468.32007.357.camel@haakon2.linux-iscsi.org>
-	 <4C7C18CE.5020103@vlnb.net>
-	 <1283204792.32007.448.camel@haakon2.linux-iscsi.org>
-	 <4C7FFD1A.8090509@vlnb.net>
-	 <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
-	 <20100905201802.GC18411@core.coreip.homeip.net>
-	 <1283723447.556.133.camel@haakon2.linux-iscsi.org>
-	 <20100905234134.GA17212@core.coreip.homeip.net>
-	 <1283731194.556.147.camel@haakon2.linux-iscsi.org>
-	 <1283769578.15944.1293.camel@mulgrave.site>
-	 <AANLkTikaE=7++X1VQj36Np93msyCViLs40_ti_2=ybqn@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Sep 2010 07:27:23 -0400
-Message-ID: <1283772443.15944.1320.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1754394Ab0IFL17 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 07:27:59 -0400
+Received: from t03.superonline.com ([92.45.6.173]:26844 "EHLO
+	smtpout1.superonline.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751911Ab0IFL15 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 07:27:57 -0400
+Message-ID: <4C84D02A.7070508@superonline.com>
+Date: Mon, 06 Sep 2010 07:27:38 -0400
+From: "M. Vefa Bicakci" <bicave@superonline.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100821 Icedove/3.1.2
+MIME-Version: 1.0
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org,
+        Minchan Kim <minchan.kim@gmail.com>, minchan.kim@gmail.com
+Subject: Important news regarding the two different patches
+References: <20100903105216.B65C.A69D9226@jp.fujitsu.com> <201009040344.42342.rjw@sisk.pl> <20100906090528.C8A9.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20100906090528.C8A9.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
+X-SurGATE-Result: Clean (Content eval: -26.00 points)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-06 at 13:02 +0200, Bart Van Assche wrote:
-> On Mon, Sep 6, 2010 at 12:39 PM, James Bottomley
-> <James.Bottomley@suse.de> wrote:
-> >
-> > [ ... ]
-> >
-> > > So, please understand that code and project workflow is only one of the
-> > > reasons why TCM/LIO v4 was selected over SCST.
-> >
-> > It isn't yet ... your code still has to be reviewed properly.  My
-> > preferred reviewer is currently honing his skills on a diet of raw beef
-> > in Argentina, but hopefully he'll get around to it shortly.
+On 05/09/10 10:08 PM, KOSAKI Motohiro wrote:
+>>> ok, thanks. probably I've catched your point. please feel free to use my reviewed-by
+>>> for your fix.
+>>
+>> Thanks.
+>>
+>> In the meantime, though, I prepared a patch that should address the issue
+>> entirely.  The patch is appended and if it looks good to you, I'd rather use it
+>> instead of the previous one (it is still untested).
 > 
-> The SCST developers and the SCST users will definitely appreciate it
-> if review efforts will be spread evenly over both projects.
+> Yeah, this one looks nicer to me :)
+> 
+> Thanks, rafael!
 
-SCST isn't at the starting gate yet, so there's nothing currently to
-review.
+Dear Rafael Wysocki, Kosaki Motohiro and Minchan Kim,
 
-James
+Upon Kosaki Motohiro's kind request via an off-list e-mail,
+I tested the following two patches separately with a vanilla
+2.6.35.4 kernel:
 
+Patch 1:
+	http://lkml.org/lkml/2010/9/5/86
 
+Patch 2:
+	http://kerneltrap.org/mailarchive/linux-kernel/2010/9/4/4615426
+
+The first of these was prepared by Minchan Kim, and it fixes
+the issue; i.e. no hangs during hibernation with a full tmpfs.
+
+However, the second patch, prepared by Rafael Wysocki, does *not*
+fix the problem. I still experience hangs with a full tmpfs upon
+hibernation.
+
+As always, I am willing to test newer patches and help in debugging
+this issue.
+
+I really appreciate all of your help,
+
+M. Vefa Bicakci
