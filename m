@@ -1,123 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424Ab0IFFE6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 01:04:58 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37241 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab0IFFE5 (ORCPT
+	id S1751475Ab0IFFIX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 01:08:23 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46106 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab0IFFIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 01:04:57 -0400
+	Mon, 6 Sep 2010 01:08:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=HoK4jPjTTqn0jmVaQRRxgqq48fGyaVQ5cQ2w8uEaOzil3dDGKVGzgr9e22D+oLE3RN
-         SXh9XZwz2FP9pFlJW7FEjDs7gD9oIIUMuabdaJze0LspiAAwuCf5TWKEhtxe+I7WAG3K
-         z9/07hOBnpq3PsUr4jCtfd4XlCbze+hqRy/Po=
-Date: Sun, 5 Sep 2010 22:04:52 -0700
+        b=U3gamPywlydPOsgjKaDYgrPqtgGTrPATRd0q0+wB3Yi7vBOje2YnRZHnWkSBm0PeQa
+         0HnGmT0gScig0JrfjVJ3mbihC1sKk8orsc6B56rvy3mOxBmOzCJipL4eWAjJ7ozoVMIc
+         ++90eaf2CuUKfMJUKxbe4MqLnIxNu5O5NuDEU=
+Date: Sun, 5 Sep 2010 22:08:16 -0700
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Mark Deneen <mdeneen@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>,
-        Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>, linux-kernel@vger.kernel.org,
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
         FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
         James Bottomley <James.Bottomley@suse.de>,
-        scst-devel <scst-devel@lists.sourceforge.net>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-Message-ID: <20100906050452.GC17212@core.coreip.homeip.net>
-References: <4C79484B.3090607@vlnb.net>
- <1283028468.32007.357.camel@haakon2.linux-iscsi.org>
- <4C7C18CE.5020103@vlnb.net>
- <1283204792.32007.448.camel@haakon2.linux-iscsi.org>
- <4C7FFD1A.8090509@vlnb.net>
- <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
- <20100905201802.GC18411@core.coreip.homeip.net>
- <1283723447.556.133.camel@haakon2.linux-iscsi.org>
- <AANLkTimdHotxVS8ZJJhg0D08FUiw4scSMTb2dryqJ_vQ@mail.gmail.com>
- <1283731939.556.159.camel@haakon2.linux-iscsi.org>
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: [RFC 22/22] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
+ module
+Message-ID: <20100906050816.GD17212@core.coreip.homeip.net>
+References: <1283160203-6981-1-git-send-email-nab@linux-iscsi.org>
+ <20100905203006.GD18411@core.coreip.homeip.net>
+ <1283723479.556.135.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283731939.556.159.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1283723479.556.135.camel@haakon2.linux-iscsi.org>
 User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 05, 2010 at 05:12:19PM -0700, Nicholas A. Bellinger wrote:
-> On Sun, 2010-09-05 at 19:13 -0400, Mark Deneen wrote:
-> > On Sun, Sep 5, 2010 at 5:50 PM, Nicholas A. Bellinger
-> > <nab@linux-iscsi.org> wrote:
-> > >
-> > > I think the difference between what Linus says and what he actually
-> > > means in the above video could be easily misinterpreted, well especially
-> > > for some non-english speaking folks.  But I am certainly glad to see
-> > > that a russian translation is also available for this google git talk
-> > > for those who really want try to understand his reasons (and technical
-> > > requirements) for what he is saying.
-> > >
-> > > So as to the specifics about why git is really the only right SCM choice
-> > > for mainline target mode maintainership, it really all comes down to
-> > > workflow.  Does your SCM allow other people to easily and without-pain
-> > > track your upstream subsystem tree changes and 'rebase' as necessary for
-> > > their patch series you make improvements..?   If we are talking about
-> > > say, a single standalone driver being developed against mainline, then
-> > > sure using a SCM like CVS or SVN is perfectly acceptable when you push
-> > > to someone upstream like gregkh or akpm via email patch attachments.
-> > >
-> > > However, if we are talking about a subsystem maintainer workflow that
-> > > requires many different people to track your subsystem tree for their
-> > > own drivers and new feature bits, not being able to keep local branches
-> > > for these level developers makes their life excruciatingly painful and
-> > > unpleasent as they attempt to pull new upstream changes, especially when
-> > > the speed of new upstream development is moving quickly.  This rule
-> > > applys even more when said subsystem has a greater scope within the
-> > > source tree in question.
-> > >
-> > > Anyways, if we are going to compare SCM distributed vs. centralized
-> > > workflow in terms of kernel projects, lets please at least compare
-> > > apples to apples here.
-> > >
-> > > Best,
-> > >
-> > > --nab
+On Sun, Sep 05, 2010 at 02:51:19PM -0700, Nicholas A. Bellinger wrote:
+> On Sun, 2010-09-05 at 13:30 -0700, Dmitry Torokhov wrote:
+> > On Mon, Aug 30, 2010 at 02:23:23AM -0700, Nicholas A. Bellinger wrote:
+> > > +
+> > > +static void tcm_loop_primary_release(struct device *dev)
+> > > +{
+> > > +	return;
+> > > +}
+> > > +
+> > > +static struct device tcm_loop_primary = {
+> > > +	.init_name		= "tcm_loop_0",
+> > > +	.release		= tcm_loop_primary_release,
+> > > +};
+> > > +
 > > 
-> > I've been trying to keep my 2 cents out of this, as I am merely an
-> > SCST user.  Both of you have valid criticisms; the choice of SCM is
-> > not one of them.  It is nit-picking at best, especially when SCST
-> > could switch to git easily if they so desired.
-> > 
-> > Seven years ago, would you be pushing BitKeeper?
+> > No, you can not have statically allocated devices and dummy release
+> > functions.
 > > 
 > 
-> Hi Mark,
+> Last time I checked this is still what mainline
+> drivers/scsi/scsi_debug.c is doing for struct device pseudo_primary:
 > 
-> I will always be advocating using the best tool for the job in any given
-> situation.  So absoulutely, I would have picked bitkeeper over tarballs
-> any day of the week 7 years ago, or over SVN if it had existed back
-> then.
+> static void pseudo_0_release(struct device *dev)
+> {
+>         if (SCSI_DEBUG_OPT_NOISE & scsi_debug_opts)
+>                 printk(KERN_INFO "scsi_debug: pseudo_0_release() called\n");
+> }
 > 
-> But again, I think it's an important point that git is a tool that was
-> made explictly for the linux kernel workflow.  Why would a new subsystem
-> maintainer is participates in the kernel workflow ever use anything
-> besides git at this point..?
+> static struct device pseudo_primary = {
+>         .init_name      = "pseudo_0",
+>         .release        = pseudo_0_release,
+> };
 > 
-> And sorry, but considering the obvious advantages in terms of workflow
-> speed and flexibility that git brings to the table for a subsystem
-> maintainer, calling the choise of SCM a nit-pick item demonstrates a
-> level certain level of inexperience wrt to mainline kernel workflow.
+> so for these type of things in TCM_Loop I tend to follow what scsi_debug does,
+>  so I don't exactly see a issue here atm.  Anybody else have comments..?
 
-Will you please stop being condescending? Yes, it is nit-picking. Many
-subsystems and features are being developed using patch series stored
-not in git but somewhere else. Have you noticed that akpm uses his own
-patch utils because git is not the best tool _for him_. Git is perfect
-for Linus's and DaveM workflows (as they in turn do pulls), whereas
-maintainers that prefer patch-based submissions may or may not use git,
-depending on their preferences.
+The kobject embedded in the device structure is refcounted and it's
+lifetime may be different from lifetime of your module. If somebody
+happen to hold reference to the driver while your module is being
+unloaded bad things will happen.
 
-The choice between 2 implementations should be based purely on design and
-code quality (with maintainer being reasonable and flexible enough for
-additional points).
+I am sure Greg has something on this topic ready for cut-and-paste.
 
 -- 
 Dmitry
