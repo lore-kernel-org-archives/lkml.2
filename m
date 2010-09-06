@@ -1,139 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab0IFR3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 13:29:01 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49083 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685Ab0IFR24 convert rfc822-to-8bit (ORCPT
+	id S1755392Ab0IFR31 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 13:29:27 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:50806 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754685Ab0IFR3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 13:28:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=f++FlWMtqlc4JvMUJL0guEDkxsEKmnIDZMI+BHsfoyP3JkHhcl4+gKkaZu5Qm9Z6+j
-         l8rtQbgwygIB/2Cm4NI4dcpJJWGMTKMnt0muzjmyeZLB8GD8AcD8+/rVen+1SVRC1V1v
-         bpYufPqViG7jDqJFzOs0yZ7Ox+DFbqJXNdx6I=
+	Mon, 6 Sep 2010 13:29:23 -0400
+Date: Mon, 6 Sep 2010 13:29:20 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [ANNOUNCEMENT] LTTng tracer re-packaged as stand-alone modules
+Message-ID: <20100906172920.GA18220@Krystal>
+References: <20100903131213.GA3230@Krystal> <20100903164742.087da8f4@basil.nowhere.org>
 MIME-Version: 1.0
-In-Reply-To: <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
-	<1282144271.3035.31.camel@mulgrave.site>
-	<AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
-	<1282148296.3035.49.camel@mulgrave.site>
-	<4C6C1D70.7020502@vlnb.net>
-	<41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>
-	<8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>
-	<1282256949.30453.278.camel@haakon2.linux-iscsi.org>
-	<4C701E08.2020005@vlnb.net>
-	<1282423398.3015.39.camel@mulgrave.site>
-	<4C73DA15.2010207@vlnb.net>
-	<1282661876.2993.20.camel@mulgrave.site>
-	<4C7421FB.2060007@vlnb.net>
-	<1282685014.32007.51.camel@haakon2.linux-iscsi.org>
-	<4C76CA57.3050405@vlnb.net>
-	<1282857806.32007.175.camel@haakon2.linux-iscsi.org>
-	<4C79484B.3090607@vlnb.net>
-	<1283028468.32007.357.camel@haakon2.linux-iscsi.org>
-	<4C7C18CE.5020103@vlnb.net>
-	<1283204792.32007.448.camel@haakon2.linux-iscsi.org>
-	<4C7FFD1A.8090509@vlnb.net>
-	<1283459158.5598.143.camel@haakon2.linux-iscsi.org>
-Date: Mon, 6 Sep 2010 13:28:53 -0400
-Message-ID: <AANLkTindeFbbcp4kkQ6R8K594h4r8RcjpYWDvmTWg0DM@mail.gmail.com>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-From: Chetan Loke <chetanloke@gmail.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100903164742.087da8f4@basil.nowhere.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:42:47 up 226 days, 18:19,  3 users,  load average: 0.02, 0.05,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 2, 2010 at 4:25 PM, Nicholas A. Bellinger
-<nab@linux-iscsi.org> wrote:
-> I really have no idea what you are talking about 'behind closed doors'..
->
-> Have you not been watching the amount of TCM/LIO patches on the
-> linux-scsi list for the last 18 months..?
->
+* Andi Kleen (andi@firstfloor.org) wrote:
+> On Fri, 3 Sep 2010 09:12:13 -0400
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> 
+> > Here is a news that should please Linux distributions which have been
+> > overwhelmed by the size of the LTTng patchset. I have extracted the
+> > LTTng tracer patches from the LTTng kernel tree and repackaged it
+> > into a new "lttng-modules" package. There is still a dependency on
+> > the LTTng kernel tree at the moment, but the objective is to
+> > gradually reduce the size of this 5 years long mainline fork.
+> 
+> Efforts to get rid of forks are always good.
+> 
+> Could you perhaps elaborate a bit what changes you need
+> in mainline (ideally separated in "essential" and "nice to
+> have") and how big the left over patches are?
 
-Please don't make me go public. I'm trying to keep my mouth shut
-purely out of NDA. Inspite of that I've mentioned it publicly in my
-last emails that the decision was made ~9 months ago? Someone told me
-'LIO will be merged eventually and NOT scst'. This ain't open-source
-development as we know it.
+Sure. Here is the detail of the pieces that still have to be kept in the LTTng
+tree:
 
-Also there are exactly 'ZERO' users/developers yelling 'NOT' to
-include scst. So please stop your PR about LIO. Since no target
-subsystems were ever chosen, I would think that LIO's list should have
-some meat, no?And by now, the whole community knows that you have near
-to zero meaningful/technical conversations on LIO's mailing list.  So
-I'm not sure when you talk about your git workflow and your patches,
-what you are actually talking about.
+* Essential:
 
+- Adding interfaces to dynamic kprobes and tracepoints to list the currently
+  available instrumentation as well as notifiers to let LTTng know about events
+  appearing while tracing runs (e.g. module loaded, new dynamic probe added).
+- Export the splice_to_pipe symbol (and probably some more I do not recall at
+  the moment).
+- Add ability to read the module list coherently in multiple reads when racing
+  with module load/unload.
+- Either add the ability to fault in NMI handlers, or add call to
+  vmalloc_sync_all() each time a module is loaded, or export vmalloc_sync_all()
+  to GPL modules so they can ensure that the fault-in memory after using
+  vmalloc but before the memory is used by the tracer.
 
->> >>> It is obvious to even an casual observer from watching the TCM/LIO patch
->> >>> series that have been flying across the linux-scsi wire the last 24
->> >>> months that the major features (including PR and ALUA, and new fabric
->> >>> module drivers) have been developed individual feature bit by feature
->> >>> bit using a distributed git workflow in a bisectable manner.  Each
->> >>> series was produced in such a manner that each patch could be reviewed
->> >>> individually by those interested parties.
-
-Nothing needs to bisected. Just go to scst's svn repo and see the
-checkin-flow over there if you want to satisfy your thirst. There are
-no rules defined whatsoever that says that the patches need to follow
-git-workflow. Since you are not an official kernel subsystem
-maintainer no need to send you patches to get a buy-in.
-Patches will be sent to James B and the scsi/kernel mailing list.
+These essential patches are very small.
 
 
-> Again, I suggest you watch the Russian translation of that talk on
-> youtube and really understand what he means, aside from the insults to
-> subversion users.
->
+* Nice to have:
 
-svn is more than capable for what it is supposed to do. So no need to
-tutor us on the source-control.
+- Support for the LTTng statedump, which saves the initial kernel state into the
+  trace at trace start:
+  - EXPORT_SYMBOL_GPL() for tasklist_lock, irq_desc, ...
+  - Add per-arch iterators to dump the list of system calls and IDT into the
+    trace.
+- Generic Ring Buffer Library.
+  - Generic alignment API.
+  - Mark atomic notifier call chain "notrace".
+  - CPU idle notifier notifiers (for trace streaming with deferrable timers).
+  - Poll wait exclusive (to address thundering herd problem in poll()).
+  - prio_heap.c new remove_maximum(), replace() and cherrypick().
+  - Inline memcpy().
+- Trace clock
+  - Faster trace clock implementation.
+  - Export the faster trace clock to userspace for UST through a vDSO.
+- Jump based on asm goto, which will minimize the impact of disabled
+  tracepoints. (the patchset is being proposed by Jason Baron)
+- Kernel OOPS "lttng_nesting" level printout.
 
+These "nice to have" patches are a bit larger.
 
-> 1) a userspace library in intrepted languages and 2) create high level
-> applications using said userspace libraries that allow compatiblity to
-> be contained in the lib below.
->
-
-An average user doesn't implement storage blobs. So I don't want to
-worry about what they would think.This is your useless LIO PR and not
-a missing feature in scst.
-
-
-> Uhhh, I don't think so.  Aside from your obvious project workflow
-> issues, the fact that SCST completly lacks a proper user-space driven
-> representation of parent / child relationships between kernel level data
-> structures in a fabric independent manner, while still allow for fabric
-> dependent groups and attributes is a most definately show-stopper for
-> me.
->
-
-Show stopper for you? Sorry but you seem to be self-proclaimed
-judge/maintainer pushing/speaking your vendor's/customer's agenda.
-
-Ever noticed how screwed up the fc representations were? Take NPIV for
-instance. No one laid down rules at that time? And just because your
-so called vendor's/customer's may now be used to your LIO-way of doing
-things, doesn't mean the whole community should be forced to do that.
+The other patches in the LTTng tree can either wait or are planned for
+deprecation. The instrumentation patches can be considered for mainlining later
+on. Replacing the "Kernel Markers" infrastructure still being used in LTTng by
+TRACE_EVENT() will shorten the LTTng tree considerably.
 
 
-> --nab
+> Or rather how difficult would it be to simply run
+> the LTT userland on top of the tracing code that is
+> in mainline, even at loss of some functionality?
 
-Chetan Loke
-<English ain't my first language. I don't need any translation because
-I speak one language - It's, Linux! The language and choice of the GNU
-generation>
+Moving LTT userland to these tools would require a large rewrite of the code
+that reads the trace format, and still, my users needs would not be fulfilled.
+By moving the LTT userland code to the less efficient schemes used in Perf and
+Ftrace, my users would just be to lose in terms of performance, features, and
+information accuracy.
+
+The problem here is that the tracing tools in mainline are not suitable for my
+user's needs. Amongst them, Perf lacks the flight recorder mode, is painfully
+slow and generates huge amount of useless event header data. Ftrace event header
+size is slightly better than Perf, but its handling of time-stamps with respect
+to concurrency can lead users to wrong results in terms of irq and softirq
+handler duration. LTTng event headers, IMHO, are by far superior to those of
+Perf and Ftrace, and this is what lets LTTng have a lower overhead while keeping
+less complex, yet more generic, event headers, and provide more accurate
+information.
+
+I am currently working on a trace format converter to/from a common trace format
+(for which I'm at round 3 of the requirements RFC document:
+http://lkml.indiana.edu/hypermail/linux/kernel/1009.0/00116.html), so at least
+we can start sharing the userland tools. However, given the missing pieces in
+Perf and Ftrace, LTTng still fulfills a pressing user need that's overlooked by
+the other tracers.
+
+Thanks,
+
+Mathieu
+
+
+> 
+> Thanks,
+> 
+> -Andi
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
