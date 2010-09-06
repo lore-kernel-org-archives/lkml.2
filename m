@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab0IFOhR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 10:37:17 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33640 "EHLO
+	id S1754405Ab0IFOgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 10:36:42 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33562 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754205Ab0IFOhB (ORCPT
+	by vger.kernel.org with ESMTP id S1753927Ab0IFOg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 10:37:01 -0400
-Date: Mon, 6 Sep 2010 16:36:59 +0200
+	Mon, 6 Sep 2010 10:36:27 -0400
+Date: Mon, 6 Sep 2010 16:36:25 +0200
 From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-To: "David S. Miller" <davem@davemloft.net>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org
+To: "David S. Miller" <davem@davemloft.net>, Roland Dreier <rolandd@cisco.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Joe Perches <joe@perches.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 12/14] include/linux: Removing undead ifdef __KERNEL__
-Message-ID: <982ff35c4e79349b4bc4a224a6134e1c5ec38431.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
+Subject: [PATCH 06/14] drivers/net: Removing undead ifdef CHELSIO_T1_1G
+Message-ID: <fd089f3e72b01fc29faf8113606354f6c423f141.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
 References: <cover.1283782698.git.qy03fugy@stud.informatik.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,47 +25,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __KERNEL__ ifdef isn't necessary at this point, because it is
+The CHELSIO_T1_1G ifdef isn't necessary at this point, because it is
 checked in an outer ifdef level already and has no effect here.
 
 Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
 ---
- include/linux/socket.h |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+ drivers/net/chelsio/subr.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/socket.h b/include/linux/socket.h
-index a2fada9..09753f5 100644
---- a/include/linux/socket.h
-+++ b/include/linux/socket.h
-@@ -30,12 +30,10 @@ struct cred;
- #define __sockaddr_check_size(size)	\
- 	BUILD_BUG_ON(((size) > sizeof(struct __kernel_sockaddr_storage)))
+diff --git a/drivers/net/chelsio/subr.c b/drivers/net/chelsio/subr.c
+index 599d178..63ebf76 100644
+--- a/drivers/net/chelsio/subr.c
++++ b/drivers/net/chelsio/subr.c
+@@ -314,14 +314,12 @@ static int mi1_mdio_write(struct net_device *dev, int phy_addr, int mmd_addr,
+ 	return 0;
+ }
  
--#ifdef __KERNEL__
- # ifdef CONFIG_PROC_FS
- struct seq_file;
- extern void socket_seq_show(struct seq_file *seq);
- # endif
--#endif /* __KERNEL__ */
- 
- typedef unsigned short	sa_family_t;
- 
-@@ -311,7 +309,6 @@ struct ucred {
- /* IPX options */
- #define IPX_TYPE	1
- 
--#ifdef __KERNEL__
- extern void cred_to_ucred(struct pid *pid, const struct cred *cred, struct ucred *ucred);
- 
- extern int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
-@@ -334,6 +331,5 @@ struct timespec;
- 
- extern int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
- 			  unsigned int flags, struct timespec *timeout);
+-#if defined(CONFIG_CHELSIO_T1_1G)
+ static const struct mdio_ops mi1_mdio_ops = {
+ 	.init = mi1_mdio_init,
+ 	.read = mi1_mdio_read,
+ 	.write = mi1_mdio_write,
+ 	.mode_support = MDIO_SUPPORTS_C22
+ };
 -#endif
--#endif /* not kernel and not glibc */
-+#endif /* __KERNEL__ */
- #endif /* _LINUX_SOCKET_H */
+ 
+ #endif
+ 
 -- 
 1.7.0.4
 
