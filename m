@@ -1,125 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab0IFGfA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 02:35:00 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42391 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab0IFGe6 convert rfc822-to-8bit (ORCPT
+	id S1754704Ab0IFGfK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 02:35:10 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:21432 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab0IFGfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 02:34:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dR99sJdEPXdbaybDBUxIU7XMteSedG3xX/TpCnsEFhGAeY0FhyTYvzHYHS2C6tSlAM
-         xvTH+BGzv+GeL5KOmXriM+ASXKCfii5bPMP/Bt0TLlYL5oDE8rH1jvbT2emwymBBg4LN
-         349m2Bk4VavDdCXyMuJ1qPVzejmKUg+liR5pw=
-MIME-Version: 1.0
-In-Reply-To: <1281365803.5390.2.camel@localhost.localdomain>
-References: <AANLkTinNr28LM6NfsmbbmmV28mCzUugTTSI_Bq6N9-8C@mail.gmail.com>
-	<1281002322.1923.1708.camel@laptop>
-	<AANLkTi=Tyh2cBtffOthiYcu=+ZHWW8FfSeFwLUq84Q3y@mail.gmail.com>
-	<1281365803.5390.2.camel@localhost.localdomain>
-Date: Mon, 6 Sep 2010 12:04:55 +0530
-Message-ID: <AANLkTimH45_46HiKWOudAS0zxTHjHyrsuxWoyFF1cdFv@mail.gmail.com>
-Subject: Re: clock drift in set_task_cpu()
-From: Jack Daniel <wanders.thirst@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, pjohn@mvista.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 6 Sep 2010 02:35:05 -0400
+Date: Mon, 06 Sep 2010 08:33:56 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [RFCv5 6/9] ARM: cma: Added CMA to Aquila,
+ Goni and c210 universal boards
+In-reply-to: <cover.1283749231.git.mina86@mina86.com>
+To: linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>, linux-kernel@vger.kernel.org
+Message-id: <75d7a03247944cc210dbdd100a7ff57ac582ba4e.1283749231.git.mina86@mina86.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <cover.1283749231.git.mina86@mina86.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+This commit adds CMA memory reservation code to Aquila, Goni and c210
+universal boards.
 
-On Mon, Aug 9, 2010 at 8:26 PM, Philby John <pjohn@mvista.com> wrote:
-> On Mon, 2010-08-09 at 18:47 +0530, Jack Daniel wrote:
->> On Thu, Aug 5, 2010 at 3:28 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Wed, 2010-07-21 at 17:10 +0530, Jack Daniel wrote:
->> >> On a Xeon 55xx with 8 CPU's, I found out the new_rq->clock value is
->> >> sometimes larger than old_rq->clock and so clock_offset tends to warp
->> >> around leading to incorrect values.
->> >
->> > What values get incorrect, do you observe vruntime funnies or only the
->> > schedstat values?
->>
->> Just the schedstat values, did not observe anything wrong with vruntime.
->>
->> >
->> >>  You have very correctly noted in
->> >> the commit header that all functions that access set_task_cpu() must
->> >> do so after a call to sched_clock_remote(), in this case the function
->> >> is sched_fork(). I validated by adding update_rq_clock(old_rq); into
->> >> set_task_cpu() and that seems to fix the issue.
->> >
->> > Ah, so the problem is that task_fork_fair() does the task placement
->> > without updated rq clocks? In which case I think we should at least do
->> > an update_rq_clock(rq) in there (see the below patch).
->>
->> Yes, this is indeed the problem and your patch seems to fix the issue.
->>
->> >
->> >> But I noticed that
->> >> since CONFIG_HAVE_UNSTABLE_SCHED_CLOCK is already set, if
->> >> (sched_clock_stable)  in sched_clock_cpu() will yield to true and the
->> >> flow never gets to sched_clock_remote() or sched_clock_local().
->> >
->> > sched_clock_stable being true implies the clock is stable across cores
->> > and thus it shouldn't matter. Or are you saying you're seeing it being
->> > set and still have issues?
->> >
->>
->> Please ignore these comments, initial debugging set me on the wrong
->> foot, to suggest that TSC is unstable.
->>
->> > diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
->> > index 9910e1b..f816e74 100644
->> > --- a/kernel/sched_fair.c
->> > +++ b/kernel/sched_fair.c
->> > @@ -3751,6 +3751,8 @@ static void task_fork_fair(struct task_struct *p)
->> >
->> >        raw_spin_lock_irqsave(&rq->lock, flags);
->> >
->> > +       update_rq_clock(rq);
->>
->> As you rightly pointed out above, updating the clocks in
->> task_fork_fair() will rightly fix the issue. Can get rid of rest of
->> the update_rq_clock() functions as they (like you said), are expensive
->> and I tested commenting them out.
->
-> >From 1bc695bc2ac6c941724953b29f6c18196a474b8f Mon Sep 17 00:00:00 2001
-> From: Philby John <pjohn@mvista.com>
-> Date: Mon, 9 Aug 2010 18:19:08 +0530
-> Subject: [PATCH] sched: ensure rq->clock get sync'ed when migrating tasks
->
-> In sched_fork() when we do task placement in ->task_fork_fair()
-> ensure we update_rq_clock() so we work with current time. This has
-> been noted and verified on an Intel Greencity (Xeon 55xx)
->
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Philby John <pjohn@mvista.com>
-> ---
->  kernel/sched_fair.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 806d1b2..48bc31c 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -3751,7 +3751,7 @@ static void task_fork_fair(struct task_struct *p)
->        unsigned long flags;
->
->        raw_spin_lock_irqsave(&rq->lock, flags);
-> -
-> +       update_rq_clock(rq);
->        if (unlikely(task_cpu(p) != this_cpu))
->                __set_task_cpu(p, this_cpu);
->
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/mach-s5pv210/mach-aquila.c         |   31 +++++++++++++++++++++++++++
+ arch/arm/mach-s5pv210/mach-goni.c           |   31 +++++++++++++++++++++++++++
+ arch/arm/mach-s5pv310/mach-universal_c210.c |   23 ++++++++++++++++++++
+ 3 files changed, 85 insertions(+), 0 deletions(-)
 
-Any chance that you will be pulling in this fix ?
+diff --git a/arch/arm/mach-s5pv210/mach-aquila.c b/arch/arm/mach-s5pv210/mach-aquila.c
+index bf772de..ff89534 100644
+--- a/arch/arm/mach-s5pv210/mach-aquila.c
++++ b/arch/arm/mach-s5pv210/mach-aquila.c
+@@ -19,6 +19,7 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/input.h>
+ #include <linux/gpio.h>
++#include <linux/cma.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -486,6 +487,35 @@ static struct platform_device *aquila_devices[] __initdata = {
+ 	&s5p_device_fimc2,
+ };
+ 
++static void __init aquila_reserve(void)
++{
++	static struct cma_region regions[] = {
++		{
++			.name		= "fw",
++			.size		=   1 << 20,
++			{ .alignment	= 128 << 10 },
++			.start		= 0x32000000,
++		},
++		{
++			.name		= "b1",
++			.size		=  32 << 20,
++			.start		= 0x33000000,
++		},
++		{
++			.name		= "b2",
++			.size		=  16 << 20,
++			.start		= 0x44000000,
++		},
++		{ }
++	};
++
++	static const char map[] __initconst =
++		"s5p-mfc5/f=fw;s5p-mfc5/a=b1;s5p-mfc5/b=b2;*=b1,b2";
++
++	cma_set_defaults(regions, map);
++	cma_early_regions_reserve(NULL);
++}
++
+ static void __init aquila_map_io(void)
+ {
+ 	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
+@@ -523,4 +553,5 @@ MACHINE_START(AQUILA, "Aquila")
+ 	.map_io		= aquila_map_io,
+ 	.init_machine	= aquila_machine_init,
+ 	.timer		= &s3c24xx_timer,
++	.reserve	= aquila_reserve,
+ MACHINE_END
+diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
+index fdc5cca..10dc2b9 100644
+--- a/arch/arm/mach-s5pv210/mach-goni.c
++++ b/arch/arm/mach-s5pv210/mach-goni.c
+@@ -19,6 +19,7 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/input.h>
+ #include <linux/gpio.h>
++#include <linux/cma.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -467,6 +468,35 @@ static struct platform_device *goni_devices[] __initdata = {
+ 	&s3c_device_hsmmc2,
+ };
+ 
++static void __init goni_reserve(void)
++{
++	static struct cma_region regions[] = {
++		{
++			.name		= "fw",
++			.size		=   1 << 20,
++			{ .alignment	= 128 << 10 },
++			.start		= 0x32000000,
++		},
++		{
++			.name		= "b1",
++			.size		=  32 << 20,
++			.start		= 0x33000000,
++		},
++		{
++			.name		= "b2",
++			.size		=  16 << 20,
++			.start		= 0x44000000,
++		},
++		{ }
++	};
++
++	static const char map[] __initconst =
++		"s5p-mfc5/f=fw;s5p-mfc5/a=b1;s5p-mfc5/b=b2;*=b1,b2";
++
++	cma_set_defaults(regions, map);
++	cma_early_regions_reserve(NULL);
++}
++
+ static void __init goni_map_io(void)
+ {
+ 	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
+@@ -498,4 +528,5 @@ MACHINE_START(GONI, "GONI")
+ 	.map_io		= goni_map_io,
+ 	.init_machine	= goni_machine_init,
+ 	.timer		= &s3c24xx_timer,
++	.reserve	= goni_reserve,
+ MACHINE_END
+diff --git a/arch/arm/mach-s5pv310/mach-universal_c210.c b/arch/arm/mach-s5pv310/mach-universal_c210.c
+index b57efae..f735c52 100644
+--- a/arch/arm/mach-s5pv310/mach-universal_c210.c
++++ b/arch/arm/mach-s5pv310/mach-universal_c210.c
+@@ -12,6 +12,7 @@
+ #include <linux/input.h>
+ #include <linux/gpio_keys.h>
+ #include <linux/gpio.h>
++#include <linux/cma.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach-types.h>
+@@ -126,6 +127,27 @@ static void __init universal_map_io(void)
+ 	s3c24xx_init_uarts(universal_uartcfgs, ARRAY_SIZE(universal_uartcfgs));
+ }
+ 
++static void __init universal_reserve(void)
++{
++	static struct cma_region regions[] = {
++		{
++			.name		= "r",
++			.size		=  64 << 20,
++		},
++		{
++			.name		= "fw",
++			.size		=   1 << 20,
++		},
++		{ }
++	};
++
++	static const char map[] __initconst =
++		"s3c-mfc5/f=fw;*=r";
++
++	cma_set_defaults(regions, map);
++	cma_early_regions_reserve(NULL);
++}
++
+ static void __init universal_machine_init(void)
+ {
+ #ifdef CONFIG_CACHE_L2X0
+@@ -143,6 +165,7 @@ MACHINE_START(UNIVERSAL_C210, "UNIVERSAL_C210")
+ 	.boot_params	= S5P_PA_SDRAM + 0x100,
+ 	.init_irq	= s5pv310_init_irq,
+ 	.map_io		= universal_map_io,
++	.reserve	= universal_reserve,
+ 	.init_machine	= universal_machine_init,
+ 	.timer		= &s5pv310_timer,
+ MACHINE_END
+-- 
+1.7.1
 
-Regards,
-Jack
