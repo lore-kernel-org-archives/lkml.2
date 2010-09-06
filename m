@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab0IFOgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 10:36:42 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:33562 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753927Ab0IFOg1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 10:36:27 -0400
-Date: Mon, 6 Sep 2010 16:36:25 +0200
-From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-To: "David S. Miller" <davem@davemloft.net>, Roland Dreier <rolandd@cisco.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Joe Perches <joe@perches.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 06/14] drivers/net: Removing undead ifdef CHELSIO_T1_1G
-Message-ID: <fd089f3e72b01fc29faf8113606354f6c423f141.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
-References: <cover.1283782698.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	id S1754866Ab0IFOh7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 10:37:59 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52412 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754541Ab0IFOhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 10:37:52 -0400
+From: "Gadiyar, Anand" <gadiyar@ti.com>
+To: Maxim Osipov <maxim.osipov@gmail.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 6 Sep 2010 20:07:31 +0530
+Subject: RE: [PATCH] USB: Fix kernel oops with g_ether and Windows
+Thread-Topic: [PATCH] USB: Fix kernel oops with g_ether and Windows
+Thread-Index: ActBH1AMMX6AEuXHTLW3bd6g9hPfuQMsXc2w
+Message-ID: <5A47E75E594F054BAF48C5E4FC4B92AB03291AE03E@dbde02.ent.ti.com>
+References: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com>
+In-Reply-To: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1283782698.git.qy03fugy@stud.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o86Ecjcm001936
 
-The CHELSIO_T1_1G ifdef isn't necessary at this point, because it is
-checked in an outer ifdef level already and has no effect here.
+Maxim Osipov wrote:
+> Hello,
+> 
+> Please find attached patch for
+> https://bugzilla.kernel.org/show_bug.cgi?id=16023 problem.
+> 
 
-Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
----
- drivers/net/chelsio/subr.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Looks like this is already in greg's tree, but the patch has
+checkpatch errors.
 
-diff --git a/drivers/net/chelsio/subr.c b/drivers/net/chelsio/subr.c
-index 599d178..63ebf76 100644
---- a/drivers/net/chelsio/subr.c
-+++ b/drivers/net/chelsio/subr.c
-@@ -314,14 +314,12 @@ static int mi1_mdio_write(struct net_device *dev, int phy_addr, int mmd_addr,
- 	return 0;
- }
- 
--#if defined(CONFIG_CHELSIO_T1_1G)
- static const struct mdio_ops mi1_mdio_ops = {
- 	.init = mi1_mdio_init,
- 	.read = mi1_mdio_read,
- 	.write = mi1_mdio_write,
- 	.mode_support = MDIO_SUPPORTS_C22
- };
--#endif
- 
- #endif
- 
--- 
-1.7.0.4
+(Caught by an autobuild tool we're playing with).
 
+@Greg,
+Would you like an updated patch fixing them?
+
+- Anand
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
