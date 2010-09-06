@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab0IFSKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 14:10:37 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64398 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754908Ab0IFSKb (ORCPT
+	id S1755496Ab0IFSPp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 14:15:45 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:44700 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754957Ab0IFSPk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 14:10:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=GgbFt20ggc3iQqo4o63tPbGbmlKWrjYAjUqehftAunXjQyZtc3ECTrTF87OfTARhzp
-         nbN1vabzymiJqUCskyIvyMYqasgftRc9JUCXMEx3Js/hx/udDk7uJ5BqI/fLmRWoyAww
-         ZndROlcNT0EHk18Dlzu4myEKXvCiz7P0MOv8c=
-MIME-Version: 1.0
-Date: Tue, 7 Sep 2010 03:10:30 +0900
-Message-ID: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
-Subject: [PATCH] USB: otg: twl4030: fix phy initialization(v1)
-From: venki kaps <venkiece2005@gmail.com>
-To: tom.leiming@gmail.com, greg@kroah.com
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>,
-        venkiece2005@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Sep 2010 14:15:40 -0400
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 5/15]  5: uprobes: Uprobes
+ (un)registration and exception handling.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+In-Reply-To: <20100906174642.GG14891@linux.vnet.ibm.com>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+	 <20100825134224.5447.89998.sendpatchset@localhost6.localdomain6>
+	 <1283377414.2059.1729.camel@laptop>
+	 <20100903164219.GB1904@linux.vnet.ibm.com>
+	 <1283534349.2050.297.camel@laptop>
+	 <20100906174642.GG14891@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 06 Sep 2010 20:15:21 +0200
+Message-ID: <1283796921.1930.735.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear USB experts,
+On Mon, 2010-09-06 at 23:16 +0530, Srikar Dronamraju wrote:
+> > > Unlike kernel probing, uprobes has a disadvantage.
+> > > Lets assume that the request for removing a probepoint when some of the
+> > > threads have actually hit the probe. Because the handlers in uprobes can
+> > > sleep, we cant remove the probepoint at the same time as the request for
+> > > the removing the probe. This is where refcount steps in and helps us to
+> > > decide when we can remove the probepoint. Even inoode based
+> > > tracing or file based tracing would need it.
+> > 
+> > Stick the refcount in the actual struct uprobe instead?
+> 
+> What if the called does something like this when one or more
+> threads are processing the breakpoint.
+> unregister_uprobe(u);
+> kfree(u);
 
-  Is the same fix valid for omap3430 + 2.6.32 Kernel?
-
-  I have been facing mp3 playback idle current consumption 20mA more
-after booting without USB cable connected
-  but If USB cable detach and attach happen, then able to hit proper
-values otherwise irrespective of cold/warm reset
-  the current values increases to 20mA.
-
-  with cable,
-      OTG_SYSCONFIG standby mode of operation - SMART idle
-      HSOTGUSB_STANDBY - SMART standby
-
-  without cable,
-        OTG_SYSCONFIG standby mode of operation - SMART idle
-        HSOTGUSB_STANDBY - Active
-
-  Even i have applied  patch but still the same issue.
-
-  If i use __twl4030_phy_power(twl, 0) at the end of USB LDO initialization,
-  then able to hit proper values but USB ADC values are getting in correct
-  with Travel adapter (Charger power supply) which means temperature
-  shows 84 instead of 26~30 degrees.
-
-  Queries,
-  -----------
-   - Is Errata 1.164 fix : OTG idle will work on 3430?
-   - USBOTG_SUSPEND is enabled in Kernel 32, will it give any impact?
-   - Is there anything missed from Power management idle path (or)
-    USB OTG controller/Transreceiver driver part?
-
-  Could you please provide the best approach to solve my issue?
-
-  Best Regards,
-  Venkappa
+That's what atomic_inc_unless_zero() and RCU are for.
