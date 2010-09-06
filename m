@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab0IFQOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 12:14:10 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:44875 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752114Ab0IFQOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 12:14:02 -0400
-Date: Mon, 6 Sep 2010 09:13:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	id S1755189Ab0IFQQY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 12:16:24 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:65437 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754677Ab0IFQQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 12:16:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DpYf3ABRjniyWYpNb3J252t/jYSR2Gh4iegJFq/QCMeYF1A0VO2cQJTsdoCKW2KhDy
+         7o6lAHZ9QccYR3jfhSd8dgshWR1QAwWxudmtebSDvI7VSrzEyZito0eTUFOETOklsPgj
+         w693MMJ2yzRdKXVGeOv9MeeN1KAOTVDYdCI9g=
+Date: Mon, 6 Sep 2010 20:16:15 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
 To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Josh Triplett <josh@joshtriplett.org>, Tejun Heo <tj@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
         vamos-dev@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 14/14] kernel/: Removing undead ifdef
- CONFIG_DEBUG_LOCK_ALLOC
-Message-ID: <20100906161355.GE2463@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <cover.1283782698.git.qy03fugy@stud.informatik.uni-erlangen.de>
- <dc92672f508081ee95b603244e992d2f3119c451.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
+Subject: Re: [PATCH 12/14] include/linux: Removing undead ifdef __KERNEL__
+Message-ID: <20100906161615.GB6431@lenovo>
+References: <cover.1283782698.git.qy03fugy@stud.informatik.uni-erlangen.de> <982ff35c4e79349b4bc4a224a6134e1c5ec38431.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <dc92672f508081ee95b603244e992d2f3119c451.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <982ff35c4e79349b4bc4a224a6134e1c5ec38431.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 04:37:12PM +0200, Christian Dietrich wrote:
-> The CONFIG_DEBUG_LOCK_ALLOC ifdef isn't necessary at this point, because it is
+On Mon, Sep 06, 2010 at 04:36:59PM +0200, Christian Dietrich wrote:
+> The __KERNEL__ ifdef isn't necessary at this point, because it is
 > checked in an outer ifdef level already and has no effect here.
-
-Good catch, queued!
-
-							Thanx, Paul
-
+> 
 > Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
 > ---
->  kernel/srcu.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/srcu.c b/kernel/srcu.c
-> index 2980da3..c71e075 100644
-> --- a/kernel/srcu.c
-> +++ b/kernel/srcu.c
-> @@ -46,11 +46,9 @@ static int init_srcu_struct_fields(struct srcu_struct *sp)
->  int __init_srcu_struct(struct srcu_struct *sp, const char *name,
->  		       struct lock_class_key *key)
->  {
-> -#ifdef CONFIG_DEBUG_LOCK_ALLOC
->  	/* Don't re-initialize a lock while it is held. */
->  	debug_check_no_locks_freed((void *)sp, sizeof(*sp));
->  	lockdep_init_map(&sp->dep_map, name, key, 0);
-> -#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
->  	return init_srcu_struct_fields(sp);
->  }
->  EXPORT_SYMBOL_GPL(__init_srcu_struct);
-> -- 
-> 1.7.0.4
-> 
+
+The origin looks weird indeed. So I presume it's here for historical reasons.
+Well, from git log it shows a lot of glibc tricks were here. And the former
+top __KERNEL__ is by commit 9c501935a3cdcf6b1d35aaee3aa11c7a7051a305 so
+
+Reviewed-by: Cyrill Gorcunov <gorcunov@gmail.com>
+
+Thanks Christian
+
+	-- Cyrill
