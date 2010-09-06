@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab0IFKPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 06:15:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750766Ab0IFKPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 06:15:53 -0400
-Date: Mon, 6 Sep 2010 13:09:53 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Yaniv Rosner <yaniv.rosner@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>
-Cc: netdev@vger.kernel.org, eilong@broadcom.com, linux-kernel@vger.kernel.org
-Subject: bnx2: link drops when idle on 2.6.36-rc3
-Message-ID: <20100906100932.GA15029@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752721Ab0IFKSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 06:18:09 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:58258 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab0IFKSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 06:18:08 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, avictor.za@gmail.com,
+        Fabian Godehardt <fg@emlix.com>
+Subject: [PATCH] AT91: SAM9G45 - add a separate clock entry for every single TC block
+Date: Mon,  6 Sep 2010 13:23:21 +0200
+Message-Id: <1283772201-15453-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <201009060548.18521.fg@emlix.com>
+References: <201009060548.18521.fg@emlix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have an IBM server which after switching to 2.6.36-rc3, started experiencing
-link drops, where link would go down apparently at random. The link can be
-brought back up without issues.
-I started seing this after switching to 2.6.36-rc3.
-net-2.6 (0b5d404e349c0236b11466c0a4785520c0be6982) also has this issue,
-2.6.34 seems to work fine. Did not try bisecting or testing 2.6.35 yet.
-Even log in hardware monitor shows e.g.
-  
-	SERVPROC 	 05/17/01, 20:13:28 	LAN: Ethernet[0] interface is now active
-	SERVPROC 	 05/17/01, 20:09:10 	LAN: Ethernet[0] interface is no longer active
-	SERVPROC 	 05/17/01, 19:40:06 	LAN: Ethernet[0] interface is now active
-	SERVPROC 	 05/17/01, 19:36:42 	LAN: Ethernet[0] interface is no longer active
+From: Fabian Godehardt <fg@emlix.com>
 
-The server is mostly idle when this happens.  lspci output for the
-device is below.  There appears nothing interesting in dmesg.
-I can open a bugzilla at kernel.org if needed, just need to test
-2.6.35 first.
+Without this patch you will not be able to register the first block
+because of the second association call on at91_add_device_tc().
 
+Signed-off-by: Fabian Godehardt <fg@emlix.com>
+[nicolas.ferre@atmel.com: change tcb1_clk to fake child clock of tcb0_clk]
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/at91sam9g45.c         |   15 ++++++++++++---
+ arch/arm/mach-at91/at91sam9g45_devices.c |    4 ++--
+ 2 files changed, 14 insertions(+), 5 deletions(-)
 
-04:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5708 Gigabit Ethernet (rev 12)
-	Subsystem: IBM Device 0342
-	Control: I/O- Mem+ BusMaster+ SpecCycle+ MemWINV+ VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 64 (16000ns min), Cache Line Size: 64 bytes
-	Interrupt: pin A routed to IRQ 51
-	Region 0: Memory at c8000000 (64-bit, non-prefetchable) [size=32M]
-	Capabilities: [40] PCI-X non-bridge device
-		Command: DPERE- ERO- RBC=512 OST=4
-		Status: Dev=04:00.0 64bit+ 133MHz+ SCD- USC- DC=simple DMMRBC=512 DMOST=8 DMCRS=32 RSCEM- 266MHz- 533MHz-
-	Capabilities: [48] Power Management version 2
-		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot+,D3cold+)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
-	Capabilities: [50] Vital Product Data
-		Product Name: Broadcom NetXtreme II Ethernet Controller
-		Read-only fields:
-			[PN] Part number: BCM95706A0
-			[EC] Engineering changes: 220197-2
-			[SN] Serial number: 0123456789
-			[MN] Manufacture ID: 31 34 65 34
-			[RV] Reserved: checksum bad, 30 byte(s) reserved
-		End
-	Capabilities: [58] MSI: Enable+ Count=1/1 Maskable- 64bit+
-		Address: 00000000fee0800c  Data: 41c9
-	Kernel driver in use: bnx2
-	Kernel modules: bnx2
-
-Thanks!
-
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 753c0d3..c67b47f 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -121,8 +121,8 @@ static struct clk ssc1_clk = {
+ 	.pmc_mask	= 1 << AT91SAM9G45_ID_SSC1,
+ 	.type		= CLK_TYPE_PERIPHERAL,
+ };
+-static struct clk tcb_clk = {
+-	.name		= "tcb_clk",
++static struct clk tcb0_clk = {
++	.name		= "tcb0_clk",
+ 	.pmc_mask	= 1 << AT91SAM9G45_ID_TCB,
+ 	.type		= CLK_TYPE_PERIPHERAL,
+ };
+@@ -192,6 +192,14 @@ static struct clk ohci_clk = {
+ 	.parent		= &uhphs_clk,
+ };
+ 
++/* One additional fake clock for second TC block */
++static struct clk tcb1_clk = {
++	.name		= "tcb1_clk",
++	.pmc_mask	= 0,
++	.type		= CLK_TYPE_PERIPHERAL,
++	.parent		= &tcb0_clk,
++};
++
+ static struct clk *periph_clocks[] __initdata = {
+ 	&pioA_clk,
+ 	&pioB_clk,
+@@ -208,7 +216,7 @@ static struct clk *periph_clocks[] __initdata = {
+ 	&spi1_clk,
+ 	&ssc0_clk,
+ 	&ssc1_clk,
+-	&tcb_clk,
++	&tcb0_clk,
+ 	&pwm_clk,
+ 	&tsc_clk,
+ 	&dma_clk,
+@@ -221,6 +229,7 @@ static struct clk *periph_clocks[] __initdata = {
+ 	&mmc1_clk,
+ 	// irq0
+ 	&ohci_clk,
++	&tcb1_clk,
+ };
+ 
+ /*
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 809114d..4822019 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -835,9 +835,9 @@ static struct platform_device at91sam9g45_tcb1_device = {
+ static void __init at91_add_device_tc(void)
+ {
+ 	/* this chip has one clock and irq for all six TC channels */
+-	at91_clock_associate("tcb_clk", &at91sam9g45_tcb0_device.dev, "t0_clk");
++	at91_clock_associate("tcb0_clk", &at91sam9g45_tcb0_device.dev, "t0_clk");
+ 	platform_device_register(&at91sam9g45_tcb0_device);
+-	at91_clock_associate("tcb_clk", &at91sam9g45_tcb1_device.dev, "t0_clk");
++	at91_clock_associate("tcb1_clk", &at91sam9g45_tcb1_device.dev, "t0_clk");
+ 	platform_device_register(&at91sam9g45_tcb1_device);
+ }
+ #else
 -- 
-MST
+1.5.6.5
+
