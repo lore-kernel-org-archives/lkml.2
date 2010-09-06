@@ -1,65 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab0IFTpm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 15:45:42 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50283 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883Ab0IFTpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 15:45:38 -0400
-Message-ID: <4C854502.8040009@kernel.org>
-Date: Mon, 06 Sep 2010 21:46:10 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1754276Ab0IFTsv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 15:48:51 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44922 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab0IFTso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 15:48:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=heVZIUjJi6Y9cWPLl//AtORVi8nohoJvVFRjirXgqugBwoyfId6iQ5vhdT9Hq4slkC
+         Rw78WJoZlgosTTl9wSdIXSOuepTxORkIZRQyG6oeA4lK8J8UTgbg6RstRDhTI08GGkqz
+         4Z93nnroEMTHLJfiE1pZXci2Zv3jKa89kld9k=
+Date: Mon, 6 Sep 2010 12:48:38 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Rafi Rubin <rafi@seas.upenn.edu>
+Cc: jkosina@suse.cz, linux-input@vger.kernel.org, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org, micki@n-trig.com, rydberg@euromail.se,
+        chatty@enac.fr
+Subject: Re: [PATCH] identify firmware version
+Message-ID: <20100906194838.GB31384@core.coreip.homeip.net>
+References: <4C7EB3A3.7050402@gmail.com>
+ <1283791362-27780-1-git-send-email-rafi@seas.upenn.edu>
 MIME-Version: 1.0
-To: Kyle McMartin <kyle@mcmartin.ca>
-CC: jgarzik@redhat.com, linux-ata@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: libata acpi issue on gateway laptop
-References: <20100906193501.GM2684@bombadil.infradead.org>
-In-Reply-To: <20100906193501.GM2684@bombadil.infradead.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Sep 2010 19:45:23 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283791362-27780-1-git-send-email-rafi@seas.upenn.edu>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2010 09:35 PM, Kyle McMartin wrote:
-> Hi Jeff,
-> 
-> A user is reporting an issue with 2.6.34.6 on a Gateway laptop that
-> booting with libata.noacpi=1 resolves.
-> 
-> Symptom is that their device dumps a lot of messages like this:
-> 
-> ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> ata1.00: ACPI cmd 00/00:00:00:00:00:a0 (NOP) rejected by device
-> (Stat=0x51 Err=0x04)
-> ata1.00: ACPI cmd ef/10:01:00:00:00:a0 (SET FEATURES) succeeded
-> ata1.00: ACPI cmd ef/10:02:00:00:00:a0 (SET FEATURES) succeeded
-> ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
-> ata1.00: ACPI cmd ef/10:04:00:00:00:a0 (SET FEATURES) succeeded
-> ata1.00: ACPI cmd ef/10:05:00:00:00:a0 (SET FEATURES) rejected by device
-> (Stat=0x51 Err=0x04)
-> ata1.00: ATA-8: Hitachi HTS545050B9A300, PB4OC60F, max UDMA/133
-> ata1.00: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32), AA
-> ata1.00: ACPI cmd 00/00:00:00:00:00:a0 (NOP) rejected by device
-> (Stat=0x51 Err=0x04)
-> ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
-> ata1.00: ACPI cmd ef/10:05:00:00:00:a0 (SET FEATURES) rejected by device
-> (Stat=0x51 Err=0x04)
-> ata1.00: configured for UDMA/133
-> 
-> on boot and resume from suspend.
-> 
-> Dmesg is at https://bugzilla.redhat.com/attachment.cgi?id=442529 and the
-> full bug report at https://bugzilla.redhat.com/show_bug.cgi?id=629315.
-> 
-> Any ideas? They say the issue exists all the way back to 2.6.31, so it
-> seems like a pretty long-lived bug.
+Hi Rafi,
 
-These are debug/info messages.  Just ignore them.
+On Mon, Sep 06, 2010 at 12:42:42PM -0400, Rafi Rubin wrote:
+> This adds firmware version polling to the end of probe and reports the
+> version both in the raw form and proccessed to match the formatting used
+> by N-Trig.
+> 
+> Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
+> ---
+>  drivers/hid/hid-ntrig.c |   56 +++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 56 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
+> index 43e95de..3472b3b 100644
+> --- a/drivers/hid/hid-ntrig.c
+> +++ b/drivers/hid/hid-ntrig.c
+> @@ -90,6 +90,26 @@ struct ntrig_data {
+>  };
+>  
+>  
+> +/*
+> + * This function converts the 4 byte raw firmware code into
+> + * a string containing 5 comma separated numbers.
+> + */
+> +static int ntrig_version_string(unsigned char *raw, char *buf)
+> +{
+> +	__u8 a =  (raw[1] & 0x0e) >> 1;
+> +	__u8 b =  (raw[0] & 0x3c) >> 2;
+> +	__u8 c = ((raw[0] & 0x03) << 3) | ((raw[3] & 0xe0) >> 5);
+> +	__u8 d = ((raw[3] & 0x07) << 3) | ((raw[2] & 0xe0) >> 5);
+> +	__u8 e =   raw[2] & 0x07;
+> +
+> +	/*
+> +	 * As yet unmapped bits:
+> +	 * 0b11000000 0b11110001 0b00011000 0b00011000
+> +	 */
+> +
+> +	return sprintf(buf, "%u.%u.%u.%u.%u", a, b, c, d, e);
+> +}
+> +
+>  static ssize_t show_phys_width(struct device *dev,
+>  			       struct device_attribute *attr,
+>  			       char *buf)
+> @@ -776,6 +796,9 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	struct hid_input *hidinput;
+>  	struct input_dev *input;
+>  	struct hid_report *report;
+> +	unsigned char *data;
+> +	struct usb_device *usb_dev = hid_to_usb_dev(hdev);
+> +	char *buf;
+>  
+>  	if (id->driver_data)
+>  		hdev->quirks |= HID_QUIRK_MULTI_INPUT;
+> @@ -848,10 +871,43 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	if (report)
+>  		usbhid_submit_report(hdev, report, USB_DIR_OUT);
+>  
+> +	data = kmalloc(8, GFP_KERNEL);
+> +	if (!data) {
+> +		ret = -ENOMEM;
+> +		goto err_free;
+> +	}
+> +
+> +	ret = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
+> +			      USB_REQ_CLEAR_FEATURE,
+> +			      USB_TYPE_CLASS | USB_RECIP_INTERFACE |
+> +			      USB_DIR_IN,
+> +			      0x30c, 1, data, 8,
+> +			      USB_CTRL_SET_TIMEOUT);
+> +
+> +	if (ret == 8) {
+> +		buf = kmalloc(20, GFP_KERNEL);
+> +		if (!buf) {
+> +			ret = -ENOMEM;
+> +			goto err_free_data;
+> +		}
+
+Why do you allocate this from heap? Surely we can spare 20 bytes on
+stack (you aren't doing DMA into it).
+
+I'd also split all this code into ntrig_report_version() to simplifu
+error handling here.
+
+> +
+> +		ret = ntrig_version_string(&data[2], buf);
+> +
+> +		dev_info(&hdev->dev,
+> +			 "Firmware version: %s (%02x%02x %02x%02x)\n",
+> +			 buf, data[2], data[3], data[4], data[5]);
+> +
+> +		kfree(buff);
+> +	}
+> +
+>  	ret = sysfs_create_group(&hdev->dev.kobj,
+>  			&ntrig_attribute_group);
+>  
+> +	kfree(data);
+> +
+>  	return 0;
+> +err_free_data:
+> +	kfree(data);
+>  err_free:
+>  	kfree(nd);
+>  	return ret;
+> -- 
+> 1.7.1
+> 
 
 -- 
-tejun
+Dmitry
