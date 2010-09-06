@@ -1,103 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab0IFKSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 06:18:09 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:58258 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963Ab0IFKSI (ORCPT
+	id S1752517Ab0IFKXE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 06:23:04 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50142 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab0IFKXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 06:18:08 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, avictor.za@gmail.com,
-        Fabian Godehardt <fg@emlix.com>
-Subject: [PATCH] AT91: SAM9G45 - add a separate clock entry for every single TC block
-Date: Mon,  6 Sep 2010 13:23:21 +0200
-Message-Id: <1283772201-15453-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <201009060548.18521.fg@emlix.com>
-References: <201009060548.18521.fg@emlix.com>
+	Mon, 6 Sep 2010 06:23:03 -0400
+Subject: Re: [PATCH] regulator: wm8350-regulator - fix the logic of
+ checking REGULATOR_MODE_STANDBY mode
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100906092305.GA10367@rakim.wolfsonmicro.main>
+References: <1283753167.19378.1.camel@mola>
+	 <20100906092305.GA10367@rakim.wolfsonmicro.main>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Sep 2010 11:22:57 +0100
+Message-ID: <1283768577.3078.13.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabian Godehardt <fg@emlix.com>
+On Mon, 2010-09-06 at 10:23 +0100, Mark Brown wrote:
+> On Mon, Sep 06, 2010 at 02:06:07PM +0800, Axel Lin wrote:
+> > In wm8350_dcdc_set_mode(), we set DCx_SLEEP bit of WM8350_DCDC_SLEEP_OPTIONS
+> > register for REGULATOR_MODE_STANDBY mode.
+> > ( DCx_SLEEP bits: 0: Normal DC-DC operation 1: Select LDO mode )
+> 
+> > In wm8350_dcdc_get_mode(), current logic to determinate
+> > REGULATOR_MODE_STANDBY mode is just reverse.
+> > ( sleep is set should mean REGULATOR_MODE_STANDBY mode. )
+> > 
+> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> 
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Without this patch you will not be able to register the first block
-because of the second association call on at91_add_device_tc().
+All applied (last 4 regulator patches from Axel).
 
-Signed-off-by: Fabian Godehardt <fg@emlix.com>
-[nicolas.ferre@atmel.com: change tcb1_clk to fake child clock of tcb0_clk]
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/at91sam9g45.c         |   15 ++++++++++++---
- arch/arm/mach-at91/at91sam9g45_devices.c |    4 ++--
- 2 files changed, 14 insertions(+), 5 deletions(-)
+Thanks
 
-diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-index 753c0d3..c67b47f 100644
---- a/arch/arm/mach-at91/at91sam9g45.c
-+++ b/arch/arm/mach-at91/at91sam9g45.c
-@@ -121,8 +121,8 @@ static struct clk ssc1_clk = {
- 	.pmc_mask	= 1 << AT91SAM9G45_ID_SSC1,
- 	.type		= CLK_TYPE_PERIPHERAL,
- };
--static struct clk tcb_clk = {
--	.name		= "tcb_clk",
-+static struct clk tcb0_clk = {
-+	.name		= "tcb0_clk",
- 	.pmc_mask	= 1 << AT91SAM9G45_ID_TCB,
- 	.type		= CLK_TYPE_PERIPHERAL,
- };
-@@ -192,6 +192,14 @@ static struct clk ohci_clk = {
- 	.parent		= &uhphs_clk,
- };
- 
-+/* One additional fake clock for second TC block */
-+static struct clk tcb1_clk = {
-+	.name		= "tcb1_clk",
-+	.pmc_mask	= 0,
-+	.type		= CLK_TYPE_PERIPHERAL,
-+	.parent		= &tcb0_clk,
-+};
-+
- static struct clk *periph_clocks[] __initdata = {
- 	&pioA_clk,
- 	&pioB_clk,
-@@ -208,7 +216,7 @@ static struct clk *periph_clocks[] __initdata = {
- 	&spi1_clk,
- 	&ssc0_clk,
- 	&ssc1_clk,
--	&tcb_clk,
-+	&tcb0_clk,
- 	&pwm_clk,
- 	&tsc_clk,
- 	&dma_clk,
-@@ -221,6 +229,7 @@ static struct clk *periph_clocks[] __initdata = {
- 	&mmc1_clk,
- 	// irq0
- 	&ohci_clk,
-+	&tcb1_clk,
- };
- 
- /*
-diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-index 809114d..4822019 100644
---- a/arch/arm/mach-at91/at91sam9g45_devices.c
-+++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-@@ -835,9 +835,9 @@ static struct platform_device at91sam9g45_tcb1_device = {
- static void __init at91_add_device_tc(void)
- {
- 	/* this chip has one clock and irq for all six TC channels */
--	at91_clock_associate("tcb_clk", &at91sam9g45_tcb0_device.dev, "t0_clk");
-+	at91_clock_associate("tcb0_clk", &at91sam9g45_tcb0_device.dev, "t0_clk");
- 	platform_device_register(&at91sam9g45_tcb0_device);
--	at91_clock_associate("tcb_clk", &at91sam9g45_tcb1_device.dev, "t0_clk");
-+	at91_clock_associate("tcb1_clk", &at91sam9g45_tcb1_device.dev, "t0_clk");
- 	platform_device_register(&at91sam9g45_tcb1_device);
- }
- #else
+Liam
 -- 
-1.5.6.5
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
