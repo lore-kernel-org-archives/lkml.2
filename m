@@ -1,85 +1,424 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab0IFVxG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 17:53:06 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59853 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab0IFVxA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 17:53:00 -0400
-Message-ID: <4C85629D.90101@vlnb.net>
-Date: Tue, 07 Sep 2010 01:52:29 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	id S1755939Ab0IFVyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 17:54:04 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:34879 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752196Ab0IFVyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 17:54:01 -0400
+Message-ID: <4C8562F0.3070400@free.fr>
+Date: Mon, 06 Sep 2010 23:53:52 +0200
+From: matthieu castet <castet.matthieu@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: James Bottomley <James.Bottomley@suse.de>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>	 <1282144271.3035.31.camel@mulgrave.site>	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>	 <1282148296.3035.49.camel@mulgrave.site> <4C6C1D70.7020502@vlnb.net>	 <41A1E2691BBB412BADCDE5F515CD8EDA@usish.com.cn>	 <8A96806D-6CD7-44AD-8A9D-143C098C95A4@uni-paderborn.de>	 <1282256949.30453.278.camel@haakon2.linux-iscsi.org>	 <4C701E08.2020005@vlnb.net> <1282423398.3015.39.camel@mulgrave.site>	 <4C73DA15.2010207@vlnb.net> <1282661876.2993.20.camel@mulgrave.site>	 <4C7421FB.2060007@vlnb.net>	 <1282685014.32007.51.camel@haakon2.linux-iscsi.org>	 <4C76CA57.3050405@vlnb.net>	 <1282857806.32007.175.camel@haakon2.linux-iscsi.org>	 <4C79484B.3090607@vlnb.net>	 <1283028468.32007.357.camel@haakon2.linux-iscsi.org>	 <4C7C18CE.5020103@vlnb.net>	 <1283204792.32007.448.camel@haakon2.linux-iscsi.org>	 <4C7FFD1A.8090509@vlnb.net> <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:xBz7W1APtBxYO6X09QaN2JUHUwUdW0ty/VcLzhgc8Wa
- /cZlgmXpklCwq2flxVEMfZM8SjZFe7enqMiotZzCghcmrcLN11
- OmoQOR/Or+kb/nCQlIQjB8oHE7oWAkvb5rXisI86f+utvw0UXz
- 05zEv8MNaynOI+7t+VzOa53nRKiB9BY+efUVw8OKSzfzsNoflU
- 2j8gjzwuXldTaKF5MUfCw==
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-next@vger.kernel.org
+CC: Arjan van de Ven <arjan@infradead.org>, James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>
+Subject: [PATCH 4/4 V12] [tip:x86/mm] RO/NX protection for loadable kernel
+Content-Type: multipart/mixed;
+ boundary="------------070707080105070709060606"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicholas A. Bellinger, on 09/03/2010 12:25 AM wrote:
->>> Again, I still have no idea what you are trying to conjour up.  The
->>> passthrough for STGT compatibility with TCM_Loop via SG_IO and BSG has
->>> already been merged by Tomo-san into tgt.git.  Futhermore, we are using
->>> the same TCM_Loop high level multi-fabric WWPN emulation together with
->>> new (and old) QEMU HBA emulation into KVM guest using SG_IO and BSG as
->>> well.
->>
->> The patches were good, but don't mislead people about that. For sake of
->> clearness, what you called "the passthrough for STGT compatibility with
->> TCM_Loop via SG_IO and BSG" has nothing with LIO/TCM_Loop. What merged
->> fixed problems STGT had in the pass-through implementation. It at the
->> same time fixed problems with SCST's scst_local, so similarly can be
->> called "the passthrough for STGT compatibility with scst_local via SG_IO
->> and BSG".
->>
->
-> Uh, I don't think TCM_Loop and scst_local are exactly comparable at this
-> point.  TCM_Loop supports high level multi-fabric WWPN emulation that
-> allows it to work transparently with inter-nexus SPC-4 PR operation.
-> Therefore, using TCM_Loop, STGT userspace fabrics now support both PR
-> and ALUA emulation from TCM_Loop LUNs.  This is done at struct
-> config_group_ops->make_group() time to report $PROTO_IDENT and the
-> necessary WWPN info to TCM Core logic.  TCM_Loop also uses the fabric
-> indepent configfs handlers for pretty much all of it's control plane
-> code.
+This is a multi-part message in MIME format.
+--------------070707080105070709060606
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-TCM_Loop and scst_local are exactly comparable and do absolutely the 
-same thing. If you see any difference, please be precise. Internal 
-implementation doesn't matter as soon as it doesn't affect the 
-functionality STGT uses.
+This patch is a logical extension of the protection provided by
+CONFIG_DEBUG_RODATA to LKMs. The protection is provided by splitting
+module_core and module_init into three logical parts each and setting
+appropriate page access permissions for each individual section:
 
->> I have no doubts in benefits to TCM. But I have asked about benefits
->> _for an average user_. STGT already can do what you listed above.
->>
->
-> Again, from above how it benefits users:
->
-> 1) a userspace library in intrepted languages and 2) create high level
-> applications using said userspace libraries that allow compatiblity to
-> be contained in the lib below.
->
-> 2) create high level applications using said userspace libraries that
-> allow compatiblity to be contained in the lib.
+ 1. Code: RO+X
+ 2. RO data: RO+NX
+ 3. RW data: RW+NX
 
-All those can be done for STGT. LIO isn't needed for that. So, value for 
-STGT users still not questionable to me.
+In order to achieve proper protection, layout_sections() have been
+modified to align each of the three parts mentioned above onto page
+boundary. Next, the corresponding page access permissions are set
+right before successful exit from load_module(). Further, free_module()
+and sys_init_module have been modified to set module_core and
+module_init as RW+NX right before calling module_free().
 
-Vlad
+By default, the original section layout and access flags are preserved.
+When compiled with CONFIG_DEBUG_SET_MODULE_RONX=y, the patch
+will page-align each group of sections to ensure that each page contains
+only one type of content and will enforce RO/NX for each group of pages.
+
+V1: Initial proof-of-concept patch.
+V2: The patch have been re-written to reduce the number of #ifdefs and
+to make it architecture-agnostic. Code formatting have been corrected also.
+V3: Opportunistic RO/NX protectiuon is now unconditional. Section
+page-alignment is enabled when CONFIG_DEBUG_RODATA=y.
+V4: Removed most macros and improved coding style.
+V5: Changed page-alignment and RO/NX section size calculation
+V6: Fixed comments. Restricted RO/NX enforcement to x86 only
+V7: Introduced CONFIG_DEBUG_SET_MODULE_RONX, added calls to
+set_all_modules_text_rw() and set_all_modules_text_ro() in ftrace
+V8: updated for compatibility with linux 2.6.33-rc5
+V9: coding style fixes
+V10: more coding style fixes
+V11: minor adjutments for -tip
+V12: minor adjutments for v2.6.35-rc2-tip
+
+Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
+Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+Reviewed-by: James Morris <jmorris@namei.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+
+--------------070707080105070709060606
+Content-Type: text/x-diff;
+ name="x86_nx_module_data.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="x86_nx_module_data.diff"
+
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index 7508508..4fdbe88 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -113,6 +113,17 @@ config DEBUG_RODATA_TEST
+ 	  feature as well as for the change_page_attr() infrastructure.
+ 	  If in doubt, say "N"
+ 
++config DEBUG_SET_MODULE_RONX
++	bool "Set loadable kernel module data as NX and text as RO"
++	default n
++	depends on X86 && MODULES
++	---help---
++	  This option helps to catch unintended modifications to loadable
++	  kernel module's text and read-only data. It also prevents execution
++	  of LKM's data. Such protection may interfere with run-time code
++	  patching and dynamic kernel tracing.
++	  If in doubt, say "N".
++
+ config DEBUG_NX_TEST
+ 	tristate "Testcase for the NX non-executable stack feature"
+ 	depends on DEBUG_KERNEL && m
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index cd37469..fa9f170 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -19,6 +19,7 @@
+ #include <linux/sched.h>
+ #include <linux/init.h>
+ #include <linux/list.h>
++#include <linux/module.h>
+ 
+ #include <trace/syscall.h>
+ 
+@@ -49,6 +50,7 @@ static DEFINE_PER_CPU(int, save_modifying_code);
+ int ftrace_arch_code_modify_prepare(void)
+ {
+ 	set_kernel_text_rw();
++	set_all_modules_text_rw();
+ 	modifying_code = 1;
+ 	return 0;
+ }
+@@ -56,6 +58,7 @@ int ftrace_arch_code_modify_prepare(void)
+ int ftrace_arch_code_modify_post_process(void)
+ {
+ 	modifying_code = 0;
++	set_all_modules_text_ro();
+ 	set_kernel_text_ro();
+ 	return 0;
+ }
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 8a6b9fd..89094de 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -308,6 +308,9 @@ struct module
+ 	/* The size of the executable code in each section.  */
+ 	unsigned int init_text_size, core_text_size;
+ 
++	/* Size of RO sections of the module (text+rodata) */
++	unsigned int init_ro_size, core_ro_size;
++
+ 	/* Arch-specific module values */
+ 	struct mod_arch_specific arch;
+ 
+@@ -545,6 +548,9 @@ extern void print_modules(void);
+ extern void module_update_tracepoints(void);
+ extern int module_get_iter_tracepoints(struct tracepoint_iter *iter);
+ 
++void set_all_modules_text_rw(void);
++void set_all_modules_text_ro(void);
++
+ #else /* !CONFIG_MODULES... */
+ #define EXPORT_SYMBOL(sym)
+ #define EXPORT_SYMBOL_GPL(sym)
+@@ -670,6 +676,13 @@ static inline int module_get_iter_tracepoints(struct tracepoint_iter *iter)
+ 	return 0;
+ }
+ 
++static inline void set_all_modules_text_rw(void)
++{
++}
++
++static inline void set_all_modules_text_ro(void)
++{
++}
+ #endif /* CONFIG_MODULES */
+ 
+ #ifdef CONFIG_SYSFS
+diff --git a/kernel/module.c b/kernel/module.c
+index d0b5f8d..e39d477 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -55,6 +55,7 @@
+ #include <linux/async.h>
+ #include <linux/percpu.h>
+ #include <linux/kmemleak.h>
++#include <linux/pfn.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/module.h>
+@@ -69,6 +70,26 @@
+ #define ARCH_SHF_SMALL 0
+ #endif
+ 
++/*
++ * Modules' sections will be aligned on page boundaries
++ * to ensure complete separation of code and data, but
++ * only when CONFIG_DEBUG_SET_MODULE_RONX=y
++ */
++#ifdef CONFIG_DEBUG_SET_MODULE_RONX
++#define debug_align(X) ALIGN(X, PAGE_SIZE)
++#else
++#define debug_align(X) (X)
++#endif
++
++/*
++ * Given BASE and SIZE this macro calculates the number of pages the
++ * memory regions occupies
++ */
++#define NUMBER_OF_PAGES(BASE, SIZE) (((SIZE) > 0) ?		\
++		(PFN_DOWN((unsigned long)(BASE) + (SIZE) - 1) -	\
++			 PFN_DOWN((unsigned long)BASE) + 1)	\
++		: (0UL))
++
+ /* If this is set, the section belongs in the init part of the module */
+ #define INIT_OFFSET_MASK (1UL << (BITS_PER_LONG-1))
+ 
+@@ -1540,6 +1561,126 @@ static int __unlink_module(void *_mod)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_DEBUG_SET_MODULE_RONX
++/*
++ * LKM RO/NX protection: protect module's text/ro-data
++ * from modification and any data from execution.
++ */
++void set_page_attributes(void *start, void *end,
++		int (*set)(unsigned long start, int num_pages))
++{
++	unsigned long begin_pfn = PFN_DOWN((unsigned long)start);
++	unsigned long end_pfn = PFN_DOWN((unsigned long)end);
++	if (end_pfn > begin_pfn)
++		set(begin_pfn << PAGE_SHIFT, end_pfn - begin_pfn);
++}
++
++static void set_section_ro_nx(void *base,
++			unsigned long text_size,
++			unsigned long ro_size,
++			unsigned long total_size)
++{
++	/* begin and end PFNs of the current subsection */
++	unsigned long begin_pfn;
++	unsigned long end_pfn;
++
++	/*
++	 * Set RO for module text and RO-data:
++	 * - Always protect first page.
++	 * - Do not protect last partial page.
++	 */
++	if (ro_size > 0)
++		set_page_attributes(base, base + ro_size, set_memory_ro);
++
++	/*
++	 * Set NX permissions for module data:
++	 * - Do not protect first partial page.
++	 * - Always protect last page.
++	 */
++	if (total_size > text_size) {
++		begin_pfn = PFN_UP((unsigned long)base + text_size);
++		end_pfn = PFN_UP((unsigned long)base + total_size);
++		if (end_pfn > begin_pfn)
++			set_memory_nx(begin_pfn << PAGE_SHIFT,
++						end_pfn - begin_pfn);
++	}
++}
++
++/* Setting memory back to RW+NX before releasing it */
++void unset_section_ro_nx(struct module *mod, void *module_region)
++{
++	unsigned long total_pages;
++
++	if (mod->module_core == module_region) {
++		/* Set core as NX+RW */
++		total_pages = NUMBER_OF_PAGES(mod->module_core, mod->core_size);
++		set_memory_nx((unsigned long)mod->module_core, total_pages);
++		set_memory_rw((unsigned long)mod->module_core, total_pages);
++
++	} else if (mod->module_init == module_region) {
++		/* Set init as NX+RW */
++		total_pages = NUMBER_OF_PAGES(mod->module_init, mod->init_size);
++		set_memory_nx((unsigned long)mod->module_init, total_pages);
++		set_memory_rw((unsigned long)mod->module_init, total_pages);
++	}
++}
++
++/* Iterate through all modules and set each module's text as RW */
++void set_all_modules_text_rw()
++{
++	struct module *mod;
++
++	mutex_lock(&module_mutex);
++	list_for_each_entry_rcu(mod, &modules, list) {
++		if ((mod->module_core) && (mod->core_text_size)) {
++			set_page_attributes(mod->module_core,
++						mod->module_core
++							+ mod->core_text_size,
++						set_memory_rw);
++		}
++		if ((mod->module_init) && (mod->init_text_size)) {
++			set_page_attributes(mod->module_init,
++						mod->module_init
++							+ mod->init_text_size,
++						set_memory_rw);
++		}
++	}
++	mutex_unlock(&module_mutex);
++}
++
++/* Iterate through all modules and set each module's text as RO */
++void set_all_modules_text_ro()
++{
++	struct module *mod;
++
++	mutex_lock(&module_mutex);
++	list_for_each_entry_rcu(mod, &modules, list) {
++		if ((mod->module_core) && (mod->core_text_size)) {
++			set_page_attributes(mod->module_core,
++						mod->module_core
++							+ mod->core_text_size,
++						set_memory_ro);
++		}
++		if ((mod->module_init) && (mod->init_text_size)) {
++			set_page_attributes(mod->module_init,
++						mod->module_init
++							+ mod->init_text_size,
++						set_memory_ro);
++		}
++	}
++	mutex_unlock(&module_mutex);
++}
++#else
++static void set_section_ro_nx(void *base,
++			unsigned long text_size,
++			unsigned long ro_size,
++			unsigned long total_size) { }
++
++void unset_section_ro_nx(struct module *mod, void *module_region) { }
++void set_all_modules_text_rw() { }
++void set_all_modules_text_ro() { }
++#endif
++
+ /* Free a module, remove from lists, etc. */
+ static void free_module(struct module *mod)
+ {
+@@ -1564,6 +1705,7 @@ static void free_module(struct module *mod)
+ 	destroy_params(mod->kp, mod->num_kp);
+ 
+ 	/* This may be NULL, but that's OK */
++	unset_section_ro_nx(mod, mod->module_init);
+ 	module_free(mod, mod->module_init);
+ 	kfree(mod->args);
+ 	percpu_modfree(mod);
+@@ -1572,6 +1714,7 @@ static void free_module(struct module *mod)
+ 	lockdep_free_key_range(mod->module_core, mod->core_size);
+ 
+ 	/* Finally, free the core (containing the module structure) */
++	unset_section_ro_nx(mod, mod->module_core);
+ 	module_free(mod, mod->module_core);
+ 
+ #ifdef CONFIG_MPU
+@@ -1775,8 +1918,19 @@ static void layout_sections(struct module *mod, struct load_info *info)
+ 			s->sh_entsize = get_offset(mod, &mod->core_size, s, i);
+ 			DEBUGP("\t%s\n", name);
+ 		}
+-		if (m == 0)
++		switch (m) {
++		case 0: /* executable */
++			mod->core_size = debug_align(mod->core_size);
+ 			mod->core_text_size = mod->core_size;
++			break;
++		case 1: /* RO: text and ro-data */
++			mod->core_size = debug_align(mod->core_size);
++			mod->core_ro_size = mod->core_size;
++			break;
++		case 3: /* whole core */
++			mod->core_size = debug_align(mod->core_size);
++			break;
++		}
+ 	}
+ 
+ 	DEBUGP("Init section allocation order:\n");
+@@ -1794,8 +1948,19 @@ static void layout_sections(struct module *mod, struct load_info *info)
+ 					 | INIT_OFFSET_MASK);
+ 			DEBUGP("\t%s\n", sname);
+ 		}
+-		if (m == 0)
++		switch (m) {
++		case 0: /* executable */
++			mod->init_size = debug_align(mod->init_size);
+ 			mod->init_text_size = mod->init_size;
++			break;
++		case 1: /* RO: text and ro-data */
++			mod->init_size = debug_align(mod->init_size);
++			mod->init_ro_size = mod->init_size;
++			break;
++		case 3: /* whole init */
++			mod->init_size = debug_align(mod->init_size);
++			break;
++		}
+ 	}
+ }
+ 
+@@ -2642,6 +2807,18 @@ static struct module *load_module(void __user *umod,
+ 	kfree(info.strmap);
+ 	free_copy(&info);
+ 
++	/* Set RO and NX regions for core */
++	set_section_ro_nx(mod->module_core,
++				mod->core_text_size,
++				mod->core_ro_size,
++				mod->core_size);
++
++	/* Set RO and NX regions for init */
++	set_section_ro_nx(mod->module_init,
++				mod->init_text_size,
++				mod->init_ro_size,
++				mod->init_size);
++
+ 	/* Done! */
+ 	trace_module_load(mod);
+ 	return mod;
+@@ -2743,6 +2920,7 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+ 	mod->symtab = mod->core_symtab;
+ 	mod->strtab = mod->core_strtab;
+ #endif
++	unset_section_ro_nx(mod, mod->module_init);
+ 	module_free(mod, mod->module_init);
+ 	mod->module_init = NULL;
+ 	mod->init_size = 0;
+
+--------------070707080105070709060606--
