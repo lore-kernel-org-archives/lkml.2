@@ -1,77 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab0IFM7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 08:59:40 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54177 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab0IFM7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 08:59:39 -0400
-Date: Mon, 6 Sep 2010 14:59:05 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Tom Zanussi <tzanussi@gmail.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-perf-users@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: disabling group leader perf_event
-Message-ID: <20100906125905.GA25414@elte.hu>
-References: <4C84B088.5050003@redhat.com>
- <1283772256.1930.303.camel@laptop>
- <4C84D1CE.3070205@redhat.com>
- <1283774045.1930.341.camel@laptop>
- <4C84D77B.6040600@redhat.com>
- <20100906124330.GA22314@elte.hu>
- <4C84E265.1020402@redhat.com>
+	id S1754251Ab0IFNBi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 09:01:38 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:53119 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751573Ab0IFNBh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 09:01:37 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "Simon Arlott" <simon@fire.lp0.eu>
+Subject: Re: [PATCH] cxacru: ignore cx82310_eth devices
+Date: Mon, 6 Sep 2010 15:01:26 +0200
+User-Agent: KMail/1.9.10
+Cc: "Greg KH" <greg@kroah.com>,
+        "David Brownell" <dbrownell@users.sourceforge.net>,
+        netdev@vger.kernel.org,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
+References: <201009032317.14954.linux@rainbow-software.org> <20100905210446.GA4472@kroah.com> <cc069c0375a79353917235d6bf5890821f075cad@8b5064a13e22126c1b9329f0dc35b8915774b7c3.invalid>
+In-Reply-To: <cc069c0375a79353917235d6bf5890821f075cad@8b5064a13e22126c1b9329f0dc35b8915774b7c3.invalid>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <4C84E265.1020402@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0280]
+Message-Id: <201009061501.28037.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 06 September 2010, Simon Arlott wrote:
+> On Sun, September 5, 2010 22:04, Greg KH wrote:
+> > On Sun, Sep 05, 2010 at 10:12:33PM +0200, Ondrej Zary wrote:
+> >> Ignore ADSL routers, which can have the same vendor and product IDs
+> >> as ADSL modems but should be handled by the cx82310_eth driver.
+> >>
+> >> This intentionally ignores device IDs that aren't currently handled
+> >> by cx82310_eth. There may be other device IDs that perhaps shouldn't
+> >> be claimed by cxacru.
+> >>
+> >> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+>
+> Missing Signed-off-by: you're modifying my changes.
 
-* Avi Kivity <avi@redhat.com> wrote:
+Oops, sorry for that. I wanted to remove only the line between the 
+signed-offs...
 
->  On 09/06/2010 03:43 PM, Ingo Molnar wrote:
+> >> --- linux-2.6.36-rc3-orig/drivers/usb/atm/cxacru.c	2010-08-29
+> >> 17:36:04.000000000 +0200 +++
+> >> linux-2.6.36-rc3/drivers/usb/atm/cxacru.c	2010-09-05 18:54:56.000000000
+> >> +0200 @@ -1324,8 +1324,22 @@ static struct usbatm_driver cxacru_drive
+> >> .tx_padding	= 11,
+> >>  };
+> >>
+> >> -static int cxacru_usb_probe(struct usb_interface *intf, const struct
+> >> usb_device_id *id) -{
+> >> +static int cxacru_usb_probe(struct usb_interface *intf,
+> >> +		const struct usb_device_id *id) {
 > >
-> > Yes. The filter engine is a safe, in-kernel interpreted language in 
-> > the making. The C syntax was chosen because it's close to the heart 
-> > of every kernel developer.
+> > Ick, what?
+>
+> Sorry, this was my fault. I wasn't thinking when I changed it.
+>
+> >> +	struct usb_device *usb_dev = interface_to_usbdev(intf);
+> >> +	char buf[15];
+> >> +
+> >> +	/* avoid ADSL routers (cx82310_eth)
+> >> +	 * abort if bDeviceClass is 0xff and iProduct is "USB NET CARD" */
+> >> +	if (usb_dev->descriptor.bDeviceClass == USB_CLASS_VENDOR_SPEC
+> >> +			&& usb_string(usb_dev, usb_dev->descriptor.iProduct,
+> >> +				buf, sizeof(buf)) > 0) {
+> >> +		if (!strcmp(buf, "USB NET CARD")) {
+> >> +			dev_info(&intf->dev, "ignoring cx82310_eth device\n");
+> >> +			return -ENODEV;
+> >> +		}
+> >> +	}
 > >
-> > It might make sense to bring this concept a few steps further. Looks 
-> > rather complex but also rather cool ...
-> 
-> Is this a roundabout way of saying "jit"?
+> > In thinking about this a bit more, don't you also want to check the
+> > vendor and product id?  You can't always be sure about the string of any
+> > old device, right?
+>
+> This is already checked using the driver's id_table.
+>
+> I don't know if the vendor and product IDs for the cx82310_eth device
+> should be claimed by cxacru or not. Either Conexant are sharing IDs between
+> devices, or someone added it without confirming it works. There's no
+> comment in the code from 2003 explaining what device it's supposed to be.
+> For this reason I'd prefer to ignore all cxacru-claimed devices that appear
+> to be an "USB NET CARD", and log that it did so.
 
-Partly. I'm not sure we want to actually upload programs in bytecode 
-form. ASCII is just fine - just like a .gz Javascript is fine for web 
-apps. (and in most cases compresses down better than the bytecode 
-equivalent)
+Yes, these "USB NET CARD" devices will not work with cxacru either. We don't 
+lose anything even if they are ignored by cxacru but not claimed by 
+cx82310_eth. If someone has such device, (s)he can report the IDs to be added 
+to cx82310_eth.
 
-So a clear language (the simpler initially the better) plus an in-kernel 
-compiler.
+> The 3 variants of the hardware I have all use an iProduct of "ADSL USB
+> MODEM", but I don't want to restrict cxacru to just that in case some
+> devices have different values.
 
-This could be used for far more than just instrumentation: IMO security 
-policies could be expressed in such a way. (Simplified, they are quite 
-similar to filters installed on syscall entry/exit, with the ability of 
-the filter to influence whether the syscall is performed.)
-
-> If so, I'm all for it.  I could use one myself.
-
-Good ;-)
-
-Thanks,
-
-	Ingo
+-- 
+Ondrej Zary
