@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab0IFIzT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 04:55:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3062 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752669Ab0IFIzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 04:55:18 -0400
-Message-ID: <4C84AC6B.4090306@redhat.com>
-Date: Mon, 06 Sep 2010 11:55:07 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1753515Ab0IFI4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 04:56:52 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:64559 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157Ab0IFI4v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 04:56:51 -0400
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: don't sent IPI if the vcpu is not online
-References: <4C807593.1050903@cn.fujitsu.com> <4C83445B.4020103@redhat.com> <4C844887.9090802@cn.fujitsu.com> <4C84801F.9060803@redhat.com> <DCCDD62D-CE92-453A-BB3C-DF878D893C3F@suse.de>
-In-Reply-To: <DCCDD62D-CE92-453A-BB3C-DF878D893C3F@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [81.243.35.243]
+In-Reply-To: <20100904081801.GA19876@elte.hu>
+References: <AANLkTikvbn3+JPc7pnGZk-H4B71MHTu+-vjuzfJw_7PC@mail.gmail.com>
+	<201009032005.08268.trenn@suse.de>
+	<20100903195555.GA1663@elte.hu>
+	<201009032210.08524.trenn@suse.de>
+	<4C817D0E.6020702@linux.intel.com>
+	<20100904081801.GA19876@elte.hu>
+Date: Mon, 6 Sep 2010 10:56:50 +0200
+Message-ID: <AANLkTinrRoi6y1fKUevu2O-Diac5B2r8RftTWUigQZOh@mail.gmail.com>
+Subject: Re: [PATCH] tracing, perf: add more power related events
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, Thomas Renninger <trenn@suse.de>,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
+        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/06/2010 11:51 AM, Alexander Graf wrote:
+Hi,
+
+Thanks for the feedback!
+
+> On Friday 03 September 2010 21:55:55 Ingo Molnar wrote:
+>Well, the patch that got posted:
 >
->> I think guest_mode makes sense for the other archs for reducing IPIs, so let's leave it common and recommend that they implement it.  Alex, if you're ever bored.
-> What does the bit do? Do we have documentation on it ;)? No seriously, what's the intent of the field?
+> [PATCH] tracing, perf: add more power related events
 >
+>Only adds tracepoints to power.h, but doesnt actually use them anywhere
+>...
+>
+>Is there a companion patch i missed?
+I will re-start a thread with the full patch and with both lkml and
+linux-omap in Cc.
 
-It indicates that the vcpu is currently executing guest code.  Which in 
-turn is important if you need to force it out of guest mode in order to 
-inject an interrupt or flush the tlb.
+>Also, it would be nice to add it to x86 and to OMAP at once, and
+>synchronize up all the power events - and check how existing tools like
+>powertop make use of such events - and sync it all up. We dont want to
+>have inconsistent, architecture-dependent events in the end, for obvious
+>reasons.
+Indeed that is the idea to sync up all power events. Other new events
+will follow shortly, e.g. low power transitions latency profiling etc.
 
-The procedure is:
+Wrt the tools, I would be glad to contribute to the tools. I already
+have local patches to pytimechart. Other tools like powertop,
+cpufrequtils can be patched as well.
 
-remote:
-- queue a request in vcpu->requests
-- IPI vcpu->cpu (new: only if in guest_mode)
-
-vcpu:
-- set guest_mode
-- dequeue and execute requests in vcpu->requests
-- enter guest
-- clear guest_mode
-
--- 
-error compiling committee.c: too many arguments to function
-
+Thanks,
+Jean
