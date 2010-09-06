@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab0IFPaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:30:13 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59154 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750929Ab0IFPaJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:30:09 -0400
-Date: Mon, 6 Sep 2010 16:48:24 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+	id S1754008Ab0IFPsK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:48:10 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34943 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753721Ab0IFPsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 11:48:05 -0400
+Date: Mon, 6 Sep 2010 17:47:37 +0200
+From: Ingo Molnar <mingo@elte.hu>
 To: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        =?ISO-8859-14?B?RnLpZOlyaWM=?= Weisbecker <fweisbec@gmail.com>,
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Tom Zanussi <tzanussi@gmail.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         linux-perf-users@vger.kernel.org,
         linux-kernel <linux-kernel@vger.kernel.org>
 Subject: Re: disabling group leader perf_event
-Message-ID: <20100906164824.339cd82e@lxorguk.ukuu.org.uk>
-In-Reply-To: <4C8506B5.1040808@redhat.com>
+Message-ID: <20100906154737.GA4332@elte.hu>
 References: <4C84B088.5050003@redhat.com>
-	<1283772256.1930.303.camel@laptop>
-	<4C84D1CE.3070205@redhat.com>
-	<1283774045.1930.341.camel@laptop>
-	<4C84D77B.6040600@redhat.com>
-	<20100906124330.GA22314@elte.hu>
-	<4C84E265.1020402@redhat.com>
-	<20100906125905.GA25414@elte.hu>
-	<4C850147.8010908@redhat.com>
-	<20100906163041.3677fd66@lxorguk.ukuu.org.uk>
-	<4C8506B5.1040808@redhat.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+ <1283772256.1930.303.camel@laptop>
+ <4C84D1CE.3070205@redhat.com>
+ <1283774045.1930.341.camel@laptop>
+ <4C84D77B.6040600@redhat.com>
+ <20100906124330.GA22314@elte.hu>
+ <4C84E265.1020402@redhat.com>
+ <20100906125905.GA25414@elte.hu>
+ <4C850147.8010908@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C850147.8010908@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0004]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> No, I want the ability to terminate the code at any time and clean up 
-> any resources used.  We have exactly the same requirements for ordinary 
-> userspace.
 
-So you intend to prevent its use at any point where we have a kernel only
-resource held in any way manner or form ? Remember we don't hold locks or
-many kinds of kernel resource across syscalls. Likewise I'm interested
-how you will keep it compatible with real time ?
+* Avi Kivity <avi@redhat.com> wrote:
 
-> > - bounded memory use
-> > - trustable behaviour for access
-> 
-> Right.
-> 
-> > and usually minimal side effects since you want to optimise very
-> > heavily and side effects stop that (which is also why Fortran still kicks
-> > C's backside for crunching)
+>  On 09/06/2010 03:59 PM, Ingo Molnar wrote:
 > >
-> > Not sure you need/want to do the conversion in kernel.
+> >>Is this a roundabout way of saying "jit"?
+> >Partly. I'm not sure we want to actually upload programs in bytecode
+> >form. ASCII is just fine - just like a .gz Javascript is fine for web
+> >apps. (and in most cases compresses down better than the bytecode
+> >equivalent)
+> >
+> >So a clear language (the simpler initially the better) plus an in-kernel
+> >compiler.
+> >
+> >This could be used for far more than just instrumentation: IMO security
+> >policies could be expressed in such a way. (Simplified, they are quite
+> >similar to filters installed on syscall entry/exit, with the ability of
+> >the filter to influence whether the syscall is performed.)
 > 
-> I prefer bytecode as well.
-> 
-> > I'd have thought a
-> > sane way to handle it would have been to throw stuff at the kernel in
-> > some kind of semi-sane byte code that can be interpreted by a noddy
-> > interpreter but firstly when you get it have the kernel try and run a
-> > helper to compile it.
-> 
-> So you do want to jit?
+> For me the requirements are:
+> - turing complete (more than just filters)
 
-Depends what you mean by jit. JIT normally implies compiling/recompiling
-as you go. Do we want to compile it once at load time - probably,
-assuming the tool is present.
+Yep. Filters are obviously just basically expressions.
+
+Conditions and variables can be added. Maybe loops too in simpler forms 
+- as long as we can prove halting - or maybe with a runtime abort 
+mechanism.
+
+> - easy interface to kernel APIs (like hrtimers)
+> - safe to use by untrusted users
+
+Yep.
+
+> The actual language doesn't really matter.
+
+There are 3 basic categories:
+
+ 1- Most (least abstract) specific code: a block of bytecode in the form 
+    of a simplified, executable, kernel-checked x86 machine code block - 
+    this is also the fastest form. [yes, this is actually possible.]
+
+ 2- Least specific (most abstract) code: A subset/sideset of C - as it's 
+    the most kernel-developer-trustable/debuggable form.
+
+ 3- Everything else little more than a dot on the spectrum between the
+    first two points.
+
+I lean towards #2 - but #1 looks interesting too. #3 is distinctly 
+uninteresting as it cannot be as fast as #1 and cannot be as convenient 
+as #2.
+
+Thanks,
+
+	Ingo
