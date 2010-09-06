@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab0IFLAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 07:00:17 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:48148 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885Ab0IFLAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 07:00:15 -0400
-Date: Mon, 6 Sep 2010 13:00:13 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Doug Nazar <nazard.lkml@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        David Miller <davem@davemloft.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: [Bug #17131] WARN with 3c905 boomerang NIC
-Message-ID: <20100906130013.226b6471@schatten.dmk.lab>
-In-Reply-To: <4C84C2CE.4080905@gmail.com>
-References: <4LwrqITm-eJ.A.r8G.eFueMB@chimera>
-	<4AUWBNzTkbD.A.V3H.2FueMB@chimera>
-	<20100906075007.5797f524@schatten.dmk.lab>
-	<4C84C2CE.4080905@gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753982Ab0IFLCy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 07:02:54 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46051 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab0IFLCw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 07:02:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=bWiQ6W5RPpGYfaVj1heUQoKwjKa2pm8hmjJkpsCGFq26tdV/fm/f3uDybE1Eb8Xw29
+         NPOONUEz+Fa57W4jOeYFOQjPYUVb/v7nU7ZAh74ak4SM6cR6rSBPjrUjCfgpcm+Y68kF
+         Lw6yRS8JPDlzUJ8OoWiSeYp7QeHCez2nu+AOw=
+MIME-Version: 1.0
+In-Reply-To: <1283769578.15944.1293.camel@mulgrave.site>
+References: <4C76CA57.3050405@vlnb.net>
+	<1282857806.32007.175.camel@haakon2.linux-iscsi.org>
+	<4C79484B.3090607@vlnb.net>
+	<1283028468.32007.357.camel@haakon2.linux-iscsi.org>
+	<4C7C18CE.5020103@vlnb.net>
+	<1283204792.32007.448.camel@haakon2.linux-iscsi.org>
+	<4C7FFD1A.8090509@vlnb.net>
+	<1283459158.5598.143.camel@haakon2.linux-iscsi.org>
+	<20100905201802.GC18411@core.coreip.homeip.net>
+	<1283723447.556.133.camel@haakon2.linux-iscsi.org>
+	<20100905234134.GA17212@core.coreip.homeip.net>
+	<1283731194.556.147.camel@haakon2.linux-iscsi.org>
+	<1283769578.15944.1293.camel@mulgrave.site>
+Date: Mon, 6 Sep 2010 13:02:51 +0200
+X-Google-Sender-Auth: bUT-kaY5hfpK9jVlHfAkhqGKoAg
+Message-ID: <AANLkTikaE=7++X1VQj36Np93msyCViLs40_ti_2=ybqn@mail.gmail.com>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: Bart Van Assche <bvanassche@acm.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Mike Christie <michaelc@cs.wisc.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>, linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        scst-devel <scst-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 Sep 2010 06:30:38 -0400
-Doug Nazar <nazard.lkml@gmail.com> wrote:
+On Mon, Sep 6, 2010 at 12:39 PM, James Bottomley
+<James.Bottomley@suse.de> wrote:
+>
+> [ ... ]
+>
+> > So, please understand that code and project workflow is only one of the
+> > reasons why TCM/LIO v4 was selected over SCST.
+>
+> It isn't yet ... your code still has to be reviewed properly.  My
+> preferred reviewer is currently honing his skills on a diet of raw beef
+> in Argentina, but hopefully he'll get around to it shortly.
 
->   On 2010-09-06 1:50 AM, Florian Mickler wrote:
-> >
-> > Paul provided a patch at
-> > https://bugzilla.kernel.org/attachment.cgi?id=28832 .
-> >
-> > Has he pinged you already about it? You are not subscribed to the bug
-> > and I didn't see anything on the netdev mailinglist or lkml.
-> >
-> 
-> Sorry, kinda ignored this one once David said it was being worked on. 
-> I've been busy trying to track down why my wireless isn't working.
-> 
-> For the record, neither Paul's patch (095d05: softirq: adjust error 
-> check) or Ben's (24cd80: 
-> 3c59x: Remove incorrect locking; correct documented lock hierarchy) 
-> which is sitting in the net-2.6 fix the issue. Tested atop 2bfc96a 
-> (Linux 2.6.36-rc3)
-> 
-> It seems to be an init issue as it only happens once during boot and 
-> doesn't impact functionality.
-> 
-> Doug
-> 
+The SCST developers and the SCST users will definitely appreciate it
+if review efforts will be spread evenly over both projects.
 
-Thanks for the update. 
-
-Cheers,
-Flo
+Bart.
