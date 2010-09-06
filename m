@@ -1,155 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843Ab0IFVr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 17:47:27 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:33222 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755201Ab0IFVrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 17:47:23 -0400
-Message-ID: <4C856161.5040806@free.fr>
-Date: Mon, 06 Sep 2010 23:47:13 +0200
-From: matthieu castet <castet.matthieu@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
+	id S1755876Ab0IFVsf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 17:48:35 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53392 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755473Ab0IFVs3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 17:48:29 -0400
+Message-ID: <4C85617E.2080603@vlnb.net>
+Date: Tue, 07 Sep 2010 01:47:42 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-next@vger.kernel.org
-CC: Arjan van de Ven <arjan@infradead.org>, James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>
-Subject: [PATCH 1/3 V2] [tip:x86/mm] Correcting improper large page preservation
-Content-Type: multipart/mixed;
- boundary="------------080804020503030101040106"
+To: James Bottomley <James.Bottomley@suse.de>
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+References: <4C76CA57.3050405@vlnb.net>	 <1282857806.32007.175.camel@haakon2.linux-iscsi.org>	 <4C79484B.3090607@vlnb.net>	 <1283028468.32007.357.camel@haakon2.linux-iscsi.org>	 <4C7C18CE.5020103@vlnb.net>	 <1283204792.32007.448.camel@haakon2.linux-iscsi.org>	 <4C7FFD1A.8090509@vlnb.net>	 <1283459158.5598.143.camel@haakon2.linux-iscsi.org>	 <20100905201802.GC18411@core.coreip.homeip.net>	 <1283723447.556.133.camel@haakon2.linux-iscsi.org>	 <20100905234134.GA17212@core.coreip.homeip.net>	 <1283731194.556.147.camel@haakon2.linux-iscsi.org> <1283769578.15944.1293.camel@mulgrave.site>
+In-Reply-To: <1283769578.15944.1293.camel@mulgrave.site>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:26AwNQxaDQkKnInuAQAHCYmhBSsENIwnZVaxFCezCA0
+ b4ncTLhOY7gKie14BJXnvqI6wsoMjr/r5gOZfQr/NqSkE0VVPU
+ 0jJXZ9fPkf1tgZ/o5+iQv0Wn79ZTl237JMXmDF17SmFe2zV9xb
+ aVTr0JWGFdEMs53xMP8girVQgQd2zHPeAJKP+NQcfo7UUUjVGu
+ c21X1LgHAe7DWeCK+75TQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080804020503030101040106
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+James Bottomley, on 09/06/2010 02:39 PM wrote:
+>>>> Anyways, if we are going to compare SCM distributed vs. centralized
+>>>> workflow in terms of kernel projects, lets please at least compare
+>>>> apples to apples here.
+>>>
+>>> No, we should not be comparing SCMs at all here but rather 2 competing
+>>> implementations based on quality of the code. You tried to bring SMC
+>>> angle in and I am saying that it is BS.
+>>
+>> Again, without getting into another pointless flamewar,  I think the
+>> main point here is that a open source project using a distributed
+>> workflow (like git) has major advantages when it comes to working with a
+>> larger group of developers than a centralized model (like SVN) does.
+>>
+>> Because being a subsystem maintainer typically involves this type of
+>> complex workflow involving lots of different parties, git is a tool that
+>> was created (originally) expressely for a kernel workflow, and for those
+>> types of people it works really, really well.
+>
+> Oh, for god's sake children.  Why does every LIO vs SCST discussion turn
+> into a pointless flameware over stuff no-one really cares about?  If
+> none of you has anything substantive to say: don't say it.
 
-This patch fixes a bug in try_preserve_large_page() which may result
-in improper large page preservation and improper application of page
-attributes to the memory area outside of the original change request.
-More specifically, the problem manifests itself when set_memory_*() is
-called for several pages at the beginning of the large page and
-try_preserve_large_page() erroneously concludes that the change can be
-applied to whole large page.
-The fix consists of 3 parts:
-1. addition of "required" protection attributes in
-static_protections(), so .data and .bss can be guaranteed to stay "RW"
-2. static_protections() is now called for every small page within
-large page to determine compatibility of new protection attributes
-(instead of just small pages within the requested range).
-3. large page can be preserved only if attribute change is
-large-page-aligned and covers whole large page.
+James, sorry, but you can't blame us. I keep asking for clear rules and 
+don't receive much. So, there are speculations and pseudo-rules, which 
+sometimes go to the absurd, as in this SVN vs Git case. No surprise 
+then, that people have risen against this absurd (thanks a lot to them 
+for support!).
 
-V1:  try_preserve_large_page() patch for Linux 2.6.34-rc2
-V2:  replaced pfn check with address check for kernel rw-data
+Frankly, in all the situation around Linux SCSI targets I for quite a 
+long time feeling myself as a hero of a Kafka novel. Supposed to be 
+goals are to have the best code doing its job the best, but on practice 
+nobody cares about technical arguments and figuring out which subsystem 
+is the best. Instead, everything lives it own incomprehensible life, 
+where doesn't matter what you are doing, all already long ago decided 
+behind your back and you will never be told why. All accurate statements 
+not heard or, at best, called "handwaving", but dirty public opinion 
+manipulations based on half- and less-than-half- truth have very warn 
+welcome. This atmosphere is unhealthy, really.
 
-Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
-Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
-Reviewed-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Since patches into SCSI go over the mailing list for review and
+> integration (and running checkpatch.pl on ... this would be a hint), I
+> don't really give a toss how they're generated.
 
---------------080804020503030101040106
-Content-Type: text/x-diff;
- name="x86_page_preservation_fix.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="x86_page_preservation_fix.diff"
+Great to hear that! Thanks!
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index 532e793..91ce756 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -255,6 +255,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- 				   unsigned long pfn)
- {
- 	pgprot_t forbidden = __pgprot(0);
-+	pgprot_t required = __pgprot(0);
- 
- 	/*
- 	 * The BIOS area between 640k and 1Mb needs to be executable for
-@@ -278,6 +279,13 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- 	if (within(pfn, __pa((unsigned long)__start_rodata) >> PAGE_SHIFT,
- 		   __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
- 		pgprot_val(forbidden) |= _PAGE_RW;
-+	/*
-+	 * .data and .bss should always be writable.
-+	 */
-+	if (within(address, (unsigned long)_sdata, (unsigned long)_edata) ||
-+	    within(address, (unsigned long)__bss_start,
-+			(unsigned long)__bss_stop))
-+		pgprot_val(required) |= _PAGE_RW;
- 
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
- 	/*
-@@ -317,6 +325,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- #endif
- 
- 	prot = __pgprot(pgprot_val(prot) & ~pgprot_val(forbidden));
-+	prot = __pgprot(pgprot_val(prot) | pgprot_val(required));
- 
- 	return prot;
- }
-@@ -393,7 +402,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- {
- 	unsigned long nextpage_addr, numpages, pmask, psize, flags, addr, pfn;
- 	pte_t new_pte, old_pte, *tmp;
--	pgprot_t old_prot, new_prot;
-+	pgprot_t old_prot, new_prot, req_prot;
- 	int i, do_split = 1;
- 	unsigned int level;
- 
-@@ -438,10 +447,10 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * We are safe now. Check whether the new pgprot is the same:
- 	 */
- 	old_pte = *kpte;
--	old_prot = new_prot = pte_pgprot(old_pte);
-+	old_prot = new_prot = req_prot = pte_pgprot(old_pte);
- 
--	pgprot_val(new_prot) &= ~pgprot_val(cpa->mask_clr);
--	pgprot_val(new_prot) |= pgprot_val(cpa->mask_set);
-+	pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
-+	pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
- 
- 	/*
- 	 * old_pte points to the large page base address. So we need
-@@ -450,17 +459,17 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	pfn = pte_pfn(old_pte) + ((address & (psize - 1)) >> PAGE_SHIFT);
- 	cpa->pfn = pfn;
- 
--	new_prot = static_protections(new_prot, address, pfn);
-+	new_prot = static_protections(req_prot, address, pfn);
- 
- 	/*
- 	 * We need to check the full range, whether
- 	 * static_protection() requires a different pgprot for one of
- 	 * the pages in the range we try to preserve:
- 	 */
--	addr = address + PAGE_SIZE;
--	pfn++;
--	for (i = 1; i < cpa->numpages; i++, addr += PAGE_SIZE, pfn++) {
--		pgprot_t chk_prot = static_protections(new_prot, addr, pfn);
-+	addr = address & pmask;
-+	pfn = pte_pfn(old_pte);
-+	for (i = 0; i < (psize >> PAGE_SHIFT); i++, addr += PAGE_SIZE, pfn++) {
-+		pgprot_t chk_prot = static_protections(req_prot, addr, pfn);
- 
- 		if (pgprot_val(chk_prot) != pgprot_val(new_prot))
- 			goto out_unlock;
-@@ -483,7 +492,8 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * that we limited the number of possible pages already to
- 	 * the number of pages in the large page.
- 	 */
--	if (address == (nextpage_addr - psize) && cpa->numpages == numpages) {
-+	if (address == (address & pmask) &&
-+		cpa->numpages == (psize >> PAGE_SHIFT)) {
- 		/*
- 		 * The address is aligned and the number of pages
- 		 * covers the full page.
-
---------------080804020503030101040106--
+Vlad
