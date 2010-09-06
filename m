@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab0IFVMs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 17:12:48 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60271 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab0IFVMm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 17:12:42 -0400
-Date: Mon, 6 Sep 2010 17:12:17 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: Re: [PATCHv11 2.6.36-rc2-tip 5/15]  5: uprobes: Uprobes
- (un)registration and exception handling.
-Message-ID: <20100906211217.GA3962@infradead.org>
-References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
- <20100825134224.5447.89998.sendpatchset@localhost6.localdomain6>
- <1283377414.2059.1729.camel@laptop>
- <20100903164219.GB1904@linux.vnet.ibm.com>
- <1283534349.2050.297.camel@laptop>
- <20100906174642.GG14891@linux.vnet.ibm.com>
- <20100906204042.GA19815@infradead.org>
- <1283807168.1930.919.camel@laptop>
+	id S1755700Ab0IFVQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 17:16:57 -0400
+Received: from kroah.org ([198.145.64.141]:57495 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755386Ab0IFVQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 17:16:34 -0400
+Date: Mon, 6 Sep 2010 14:09:05 -0700
+From: Greg KH <greg@kroah.com>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFCv5 0/9] CMA + VCMM integration
+Message-ID: <20100906210905.GB5863@kroah.com>
+References: <cover.1283749231.git.mina86@mina86.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283807168.1930.919.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <cover.1283749231.git.mina86@mina86.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 11:06:08PM +0200, Peter Zijlstra wrote:
-> > The other things is that perf currently only supports per-kernel pid
-> > recording, while we'd really need per Posix process, which may contain
-> > multiple threads for useful tracing of complex userspace applications.
-> > I also suspect that this will fit the uprobes model much better given
-> > that the probes will be in any given address space.
+On Mon, Sep 06, 2010 at 08:33:50AM +0200, Michal Nazarewicz wrote:
+> Hello everyone,
 > 
-> perf does report both:
-> 
->          *      { u32                   pid, tid; } && PERF_SAMPLE_TID
-> 
-> the pid is the process id (thread group leader like) and tid is the
-> task/thread id.
+> This patchset introduces a draft of a redesign of Zach Pfeffer's
+> VCMM.
 
-It records both, but I haven't found a way to only record samples
-or trace things in a Posix Process.
+What is a VCMM?
 
-E.g. perf record -p seems to be only per-thread, not per-process.
-If that has changes recently everything is fine of course.
+What is a CMA?
 
+> Not all of the functionality of the original VCMM has been
+> ported into this patchset.  This is mostly meant as RFC.  Moreover,
+> the code for VCMM implementation in this RFC has not been tested.
+
+If you haven't even tested it, why should we review it?
+
+thanks,
+
+greg k-h
