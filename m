@@ -1,44 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab0IFBor (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 21:44:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51546 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751573Ab0IFBoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 21:44:46 -0400
-Message-ID: <4C844887.9090802@cn.fujitsu.com>
-Date: Mon, 06 Sep 2010 09:48:55 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1755116Ab0IFBqX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 21:46:23 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37001 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963Ab0IFBqV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 21:46:21 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C8447E4.6050606@jp.fujitsu.com>
+Date: Mon, 06 Sep 2010 10:46:12 +0900
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: don't sent IPI if the vcpu is not online
-References: <4C807593.1050903@cn.fujitsu.com> <4C83445B.4020103@redhat.com>
-In-Reply-To: <4C83445B.4020103@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com,
+        eric.dumazet@gmail.com, mathieu.desnoyers@polymtl.ca
+Subject: Re: [PATCH v4 1/5] irq: add tracepoint to softirq_raise
+References: <4C72422C.5070102@jp.fujitsu.com> <4C724298.4050509@jp.fujitsu.com> <20100903152909.GA5352@nowhere> <1283528592.2356.439.camel@gandalf.stny.rr.com> <20100903155008.GC5352@nowhere>
+In-Reply-To: <20100903155008.GC5352@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2010 03:18 PM, Avi Kivity wrote:
->  On 09/03/2010 07:12 AM, Xiao Guangrong wrote:
->> It's no need sent IPI to the vcpu which is schedule out
+(2010/09/04 0:50), Frederic Weisbecker wrote:
+> On Fri, Sep 03, 2010 at 11:43:12AM -0400, Steven Rostedt wrote:
+>> On Fri, 2010-09-03 at 17:29 +0200, Frederic Weisbecker wrote:
+>>
+>>>>  /*
+>>>>   * These correspond to the IORESOURCE_IRQ_* defines in
+>>>> @@ -407,7 +408,12 @@ asmlinkage void do_softirq(void);
+>>>>  asmlinkage void __do_softirq(void);
+>>>>  extern void open_softirq(int nr, void (*action)(struct softirq_action *));
+>>>>  extern void softirq_init(void);
+>>>> -#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
+>>>> +static inline void __raise_softirq_irqoff(unsigned int nr)
+>>>> +{
+>>>> +	trace_softirq_raise((struct softirq_action *)&nr, NULL);
+>>
+>> Perhaps doing:
+>>
+>> 	trace_softirq_raise((struct softirq_action *)((unsigend long)nr),
+>> 				NULL);
+>>
+>> and ...
+>>
+>>>> +	or_softirq_pending(1UL << nr);
+>>>> +}
+>>>> +
+>>>>  extern void raise_softirq_irqoff(unsigned int nr);
+>>>>  extern void raise_softirq(unsigned int nr);
+>>>>  extern void wakeup_softirqd(void);
+>>>> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+>>>> index 0e4cfb6..3ddda02 100644
+>>>> --- a/include/trace/events/irq.h
+>>>> +++ b/include/trace/events/irq.h
+>>>> @@ -5,7 +5,9 @@
+>>>>  #define _TRACE_IRQ_H
+>>>>  
+>>>>  #include <linux/tracepoint.h>
+>>>> -#include <linux/interrupt.h>
+>>>> +
+>>>> +struct irqaction;
+>>>> +struct softirq_action;
+>>>>  
+>>>>  #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
+>>>>  #define show_softirq_name(val)				\
+>>>> @@ -93,7 +95,10 @@ DECLARE_EVENT_CLASS(softirq,
+>>>>  	),
+>>>>  
+>>>>  	TP_fast_assign(
+>>>> -		__entry->vec = (int)(h - vec);
+>>>> +		if (vec)
+>>>> +			__entry->vec = (int)(h - vec);
+>>>> +		else
+>>>> +			__entry->vec = *((int *)h);
+>>
+>> 			__entry->vec = (int)h;
+>>
+>> would be better.
 >>
 >>
->> @@ -86,6 +86,7 @@ struct kvm_vcpu {
->>       unsigned long requests;
->>       unsigned long guest_debug;
->>       int srcu_idx;
->> +    bool online;
+>>>>  	),
+>>>
+>>>
+>>>
+>>> It seems that this will break softirq_entry/exit tracepoints.
+>>> __entry->vec will deref vec->action() for these two, which is not
+>>> what we want.
+>>>
+>>> If you can't have the same tracepoint signature for the three, just
+>>> split the new one in a seperate TRACE_EVENT().
+>>
+>> Doing the above will at least be a bit safer.
 > 
-> Why not check for guest_mode instead?
+> 
+> Agreed, I'm going to change that in the patch.
+> 
+> Thanks.
 > 
 
-Oh, i forget it...but 'vcpu->guest_mode' is only used in x86 platform,
-and make_all_cpus_request() is a common function.
+I agree.
 
-So, maybe it's better use 'vcpu->online' here, and move 'guest_mode' into
-'vcpu->arch' ?
+Thanks,
+Koki Sanagi.
+
