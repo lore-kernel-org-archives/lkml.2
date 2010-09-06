@@ -1,94 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab0IFREc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 13:04:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56577 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752118Ab0IFREZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 13:04:25 -0400
-Date: Mon, 6 Sep 2010 19:04:21 +0200
-From: Frank Becker <fb@alien8.de>
-To: Jens Taprogge <jens.taprogge@taprogge.org>, Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@vger.kernel.org, bp@alien8.de
-Subject: commit 7b2bfdb broke sound card detection on my Lenovo T400s
-Message-ID: <20100906170421.GA2957@alien8.de>
+	id S1754751Ab0IFRKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 13:10:30 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:47603 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753754Ab0IFRKY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 13:10:24 -0400
+Message-ID: <4C85207C.8040003@canonical.com>
+Date: Mon, 06 Sep 2010 10:10:20 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qxx1br4bt0+wmkIi"
-Content-Disposition: inline
-Organisation: private
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 2/4] AppArmor: Fix security_task_setrlimit logic for 2.6.36
+ changes
+References: <1282959209-5431-1-git-send-email-john.johansen@canonical.com> <1282959209-5431-3-git-send-email-john.johansen@canonical.com> <4C794310.1020801@canonical.com> <4C795242.80402@gmail.com> <4C797315.7030204@canonical.com> <4C797627.6080708@gmail.com> <4C7BE205.40202@canonical.com> <4C7C238D.2070505@gmail.com>
+In-Reply-To: <4C7C238D.2070505@gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/30/2010 02:33 PM, Jiri Slaby wrote:
+> On 08/30/2010 06:53 PM, John Johansen wrote:
+>> /* TODO: extend resource control to handle other (non current) processes.
+>>  * AppArmor rules currently have the implicit assumption that the task
+>>  * is setting the resource of the current process
+>>  */
+> 
+> Makes sense(TM) now.
+> 
+This is the patch updated with the only comment changed to what was
+discussed with Jiri above.
 
---Qxx1br4bt0+wmkIi
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+thanks again
+john
 
-Hi,
+---
+AppArmor: Fix security_task_setrlimit logic for 2.6.36 changes
 
-Please always CC me since I'm not subscribed to the mailing lists.
+2.6.36 introduced the abilitiy to specify the task that is having its
+rlimits set.  Update mediation to ensure that confined tasks can only
+set their own group_leader as expected by current policy.
 
-I have a problem since commit id 7b2bfdb (about 2.6.35-rc2) up to the
-latest HEAD on my Lenovo T400s laptop. Just found out while testing Ubuntu
-10.10.
+Add TODO note about extending policy to support setting other tasks
+rlimits.
 
-Problem is: Headphones don't work any more, internal Microphone doesn't
-work any more. However, if I load snd-hda-intel with the option
-model=3Dideapad the mic and the headphones work perfectly well again. For n=
-ow
-that is an acceptable work around. However, before the aforementioned
-commit I didn't have to provide any module parameters.
+Signed-off-by: John Johansen <john.johansen@canonical.com>
+---
+ security/apparmor/include/resource.h |    4 ++--
+ security/apparmor/lsm.c              |    2 +-
+ security/apparmor/resource.c         |   20 ++++++++++++--------
+ 3 files changed, 15 insertions(+), 11 deletions(-)
 
-Before rev 7b2bfdb I had:
-=E2=94=94[a8@t4]-~=E2=86=92find /proc/asound/card* -type f | grep codec | x=
-args grep \
-    "^Codec\|^Vendor Id\|^Subsystem Id\|^Revision Id"
-Codec: Conexant ID 5069
-Vendor Id: 0x14f15069
-Subsystem Id: 0x17aa2132
-Revision Id: 0x100300
-
-Starting with rev 7b2bfdb I get:
-=E2=94=94[a8@t4]-~=E2=86=92find /proc/asound/card* -type f | grep codec | x=
-args grep \
-    "^Codec\|^Vendor Id\|^Subsystem Id\|^Revision Id"
-Codec: Conexant CX20585
-Vendor Id: 0x14f15069
-Subsystem Id: 0x17aa2132
-Revision Id: 0x100300
-
-BTW, all the bisecting is done out of the linus.git tree.
-
-Thank you for looking into that. I'm happy to provide more information or t=
-est
-patches.
-
-Thanks,
-
-    Frank
-
-
---=20
-Frank Becker <fb@alien8.de> (jabber|mail) | http://twitter.com/41i3n8
-GnuPG: 0xADC29ECD | F01B 5E9C 1D09 981B 5B40 50D3 C80F 7459 ADC2 9ECD
-SILC-Net: a8 | Home: http://www.alien8.de | <<</>> http://www.c3d2.de
-"> Freedom is just chaos, with better lighting. <"  Alan Dean  Foster
-
---Qxx1br4bt0+wmkIi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkyFHxEACgkQyA90Wa3Cns0h7ACggYWl5IadRhl+zAoA1EaxEn+u
-RSAAniMc5MRCb9TXc1YrT084Hwm0Gepr
-=HwLg
------END PGP SIGNATURE-----
-
---Qxx1br4bt0+wmkIi--
+diff --git a/security/apparmor/include/resource.h b/security/apparmor/include/resource.h
+index 3c88be9..02baec7 100644
+--- a/security/apparmor/include/resource.h
++++ b/security/apparmor/include/resource.h
+@@ -33,8 +33,8 @@ struct aa_rlimit {
+ };
+ 
+ int aa_map_resource(int resource);
+-int aa_task_setrlimit(struct aa_profile *profile, unsigned int resource,
+-		      struct rlimit *new_rlim);
++int aa_task_setrlimit(struct aa_profile *profile, struct task_struct *,
++		      unsigned int resource, struct rlimit *new_rlim);
+ 
+ void __aa_transition_rlimits(struct aa_profile *old, struct aa_profile *new);
+ 
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+index f73e2c2..cf1de44 100644
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -614,7 +614,7 @@ static int apparmor_task_setrlimit(struct task_struct *task,
+ 	int error = 0;
+ 
+ 	if (!unconfined(profile))
+-		error = aa_task_setrlimit(profile, resource, new_rlim);
++		error = aa_task_setrlimit(profile, task, resource, new_rlim);
+ 
+ 	return error;
+ }
+diff --git a/security/apparmor/resource.c b/security/apparmor/resource.c
+index 4a368f1..a4136c1 100644
+--- a/security/apparmor/resource.c
++++ b/security/apparmor/resource.c
+@@ -72,6 +72,7 @@ int aa_map_resource(int resource)
+ /**
+  * aa_task_setrlimit - test permission to set an rlimit
+  * @profile - profile confining the task  (NOT NULL)
++ * @task - task the resource is being set on
+  * @resource - the resource being set
+  * @new_rlim - the new resource limit  (NOT NULL)
+  *
+@@ -79,18 +80,21 @@ int aa_map_resource(int resource)
+  *
+  * Returns: 0 or error code if setting resource failed
+  */
+-int aa_task_setrlimit(struct aa_profile *profile, unsigned int resource,
+-		      struct rlimit *new_rlim)
++int aa_task_setrlimit(struct aa_profile *profile, struct task_struct *task,
++		      unsigned int resource, struct rlimit *new_rlim)
+ {
+ 	int error = 0;
+ 
+-	if (profile->rlimits.mask & (1 << resource) &&
+-	    new_rlim->rlim_max > profile->rlimits.limits[resource].rlim_max)
+-
+-		error = audit_resource(profile, resource, new_rlim->rlim_max,
+-			-EACCES);
++	/* TODO: extend resource control to handle other (non current)
++	 * processes.  AppArmor rules currently have the implicit assumption
++	 * that the task is setting the resource of the current process
++	 */
++	if ((task != current->group_leader) ||
++	    (profile->rlimits.mask & (1 << resource) &&
++	     new_rlim->rlim_max > profile->rlimits.limits[resource].rlim_max))
++		error = -EACCES;
+ 
+-	return error;
++	return audit_resource(profile, resource, new_rlim->rlim_max, error);
+ }
+ 
+ /**
+-- 
+1.7.0.4
