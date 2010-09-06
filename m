@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab0IFAvu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 20:51:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32855 "EHLO mx2.suse.de"
+	id S1755284Ab0IFAwP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 20:52:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32863 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755065Ab0IFAvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 20:51:48 -0400
+	id S1755251Ab0IFAwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 20:52:13 -0400
 From: NeilBrown <neilb@suse.de>
 To: Miklos Szeredi <miklos@szeredi.hu>
 Date: Mon, 06 Sep 2010 10:50:29 +1000
-Subject: [PATCH 06/10] ovl: rename ovl_fill_cache to ovl_dir_read
+Subject: [PATCH 10/10] ovl: Assorted updates to
+	Documentation/filesystems/overlayfs.txt
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20100906005029.20775.41664.stgit@localhost.localdomain>
+Message-ID: <20100906005029.20775.74294.stgit@localhost.localdomain>
 In-Reply-To: <20100906004829.20775.68828.stgit@localhost.localdomain>
 References: <20100906004829.20775.68828.stgit@localhost.localdomain>
 User-Agent: StGit/0.15
@@ -22,132 +23,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ovl_fill_cache isn't only used for filling the cache - it is also used
-to remove all whiteout files.  This can be a bit confusing.
-So rename it to a more generic "ovl_dir_read" and rename the data
-structure that is passed to it to "ovl_readdir_data".
-
 Signed-off-by: NeilBrown <neilb@suse.de>
 ---
- fs/overlayfs/overlayfs.c |   28 ++++++++++++++--------------
- 1 files changed, 14 insertions(+), 14 deletions(-)
+ Documentation/filesystems/overlayfs.txt |   41 ++++++++++++++++---------------
+ 1 files changed, 21 insertions(+), 20 deletions(-)
 
-diff --git a/fs/overlayfs/overlayfs.c b/fs/overlayfs/overlayfs.c
-index f9eea96..656cad7 100644
---- a/fs/overlayfs/overlayfs.c
-+++ b/fs/overlayfs/overlayfs.c
-@@ -88,7 +88,7 @@ struct ovl_cache_entry {
- 	bool is_whiteout;
- };
+diff --git a/Documentation/filesystems/overlayfs.txt b/Documentation/filesystems/overlayfs.txt
+index 02af2d6..4e5f972 100644
+--- a/Documentation/filesystems/overlayfs.txt
++++ b/Documentation/filesystems/overlayfs.txt
+@@ -4,32 +4,33 @@ Overlay Filesystem
+ ==================
  
--struct ovl_cache_callback {
-+struct ovl_readdir_data {
- 	struct ovl_cache_entry *list;
- 	struct ovl_cache_entry **endp;
- 	struct path path;
-@@ -102,7 +102,7 @@ struct ovl_dir_file {
- 	struct file *realfile;
- };
+ This document describes a prototype for a new approach to providing
+-union-filesystem functionality in Linux.  A union-filesystem tries to
+-present the union of two different filesystems as though it were a
+-single filesystem.  The result will inevitably fail to look exactly
+-like a normal filesystem for various technical reasons.  The
+-expectation is that many use cases will be able to ignore these
+-differences.
++overlay-filesystem functionality in Linux (sometimes referred to as
++union-filesystems).  An overlay-filesystem tries to present a
++filesystem which is the result over overlaying one filesystem on top
++of the other.
++
++The result will inevitably fail to look exactly like a normal
++filesystem for various technical reasons.  The expectation is that
++many use cases will be able to ignore these differences.
  
--static int ovl_cache_add_entry(struct ovl_cache_callback *cb,
-+static int ovl_cache_add_entry(struct ovl_readdir_data *cb,
- 				 const char *name, int namelen, u64 ino,
- 				 unsigned int d_type, bool is_whiteout)
- {
-@@ -161,7 +161,7 @@ static int ovl_cache_find_entry(struct ovl_cache_entry *start,
- static int ovl_fill_lower(void *buf, const char *name, int namlen,
- 			    loff_t offset, u64 ino, unsigned int d_type)
- {
--	struct ovl_cache_callback *cb = buf;
-+	struct ovl_readdir_data *cb = buf;
+ This approach is 'hybrid' because the objects that appear in the
+ filesystem do not all appear to belong to that filesystem.  In many
+ case an object accessed in the union will be indistinguishable
+ from accessing the corresponding object from the original filesystem.
+ This is most obvious from the 'st_dev' field returned by stat(2).
+-Some objects will report an st_dev from one original filesystem, some
+-from the other, directories will report an st_dev from the union
+-itself.  Similarly st_ino will only be unique when combined with
+-st_dev, and both of these can change over the lifetime of a
+-non-directory object.  Many applications and tools ignore these values
+-and will not be affected.
++
++While directories will report an st_dev for the overlay-filesystem,
++all non-directory objects will report an st_dev whichever of the
++'lower' or 'upper' filesystem that is providing the object.  Similarly
++st_ino will only be unique when combined with st_dev, and both of
++these can change over the lifetime of a non-directory object.  Many
++applications and tools ignore these values and will not be affected.
  
- 	cb->count++;
- 	if (!ovl_cache_find_entry(cb->list, name, namlen))
-@@ -173,7 +173,7 @@ static int ovl_fill_lower(void *buf, const char *name, int namlen,
- static int ovl_fill_upper(void *buf, const char *name, int namlen,
- 			  loff_t offset, u64 ino, unsigned int d_type)
- {
--	struct ovl_cache_callback *cb = buf;
-+	struct ovl_readdir_data *cb = buf;
- 	bool is_whiteout = false;
+ Upper and Lower
+ ---------------
  
- 	cb->count++;
-@@ -195,7 +195,7 @@ out:
- 	return cb->err;
- }
+ An overlay filesystem combines two filesystems - an 'upper' filesystem
+-and a 'lower' filesystem.  Note that while in set theory, 'union' is a
+-commutative operation, in filesystems it is not - the two filesystems
+-are treated differently.  When a name exists in both filesystems, the
++and a 'lower' filesystem.  When a name exists in both filesystems, the
+ object in the 'upper' filesystem is visible while the object in the
+ 'lower' filesystem is either hidden or, in the case of directories,
+ merged with the 'upper' object.
+@@ -48,14 +49,14 @@ trusted.* extended attributes, and must provide valid d_type in
+ readdir responses, at least for symbolic links - so NFS is not
+ suitable.
  
--static int ovl_fill_cache(struct path *realpath, struct ovl_cache_callback *cb,
-+static int ovl_dir_read(struct path *realpath, struct ovl_readdir_data *cb,
- 			  filldir_t filler)
- {
- 	const struct cred *old_cred;
-@@ -270,15 +270,15 @@ static int ovl_readdir(struct file *file, void *buf, filldir_t filler)
- 	}
+-A read-only union of two read-only filesystems may use any filesystem
+-type.
++A read-only overlay of two read-only filesystems may use any
++filesystem type.
  
- 	if (!od->cache) {
--		struct ovl_cache_callback cb = {
-+		struct ovl_readdir_data cb = {
- 			.list = NULL,
- 			.endp = &cb.list,
- 			.path = ue->upperpath,
- 		};
+ Directories
+ -----------
  
--		res = ovl_fill_cache(&ue->upperpath, &cb, ovl_fill_upper);
-+		res = ovl_dir_read(&ue->upperpath, &cb, ovl_fill_upper);
- 		if (!res) {
--			res = ovl_fill_cache(&ue->lowerpath, &cb,
-+			res = ovl_dir_read(&ue->lowerpath, &cb,
- 					     ovl_fill_lower);
- 		}
- 		if (res)
-@@ -1292,18 +1292,18 @@ static int ovl_check_empty_dir(struct dentry *dentry)
- 	int err;
- 	struct ovl_entry *ue = dentry->d_fsdata;
- 	struct ovl_cache_entry *p;
--	struct ovl_cache_callback cb = {
-+	struct ovl_readdir_data cb = {
- 		.list = NULL,
- 		.endp = &cb.list,
- 		.path = ue->upperpath,
- 	};
+-Unioning mainly involved directories.  If a given name appears in both
+-upper ad lower filesystems and refers to a non-directory in either,
++Overlaying mainly involved directories.  If a given name appears in both
++upper and lower filesystems and refers to a non-directory in either,
+ then the lower object is hidden - the name refers only to the upper
+ object.
  
- 	if (ue->upperpath.dentry) {
--		err = ovl_fill_cache(&ue->upperpath, &cb, ovl_fill_upper);
-+		err = ovl_dir_read(&ue->upperpath, &cb, ovl_fill_upper);
- 		if (err)
- 			return err;
- 	}
--	err = ovl_fill_cache(&ue->lowerpath, &cb, ovl_fill_lower);
-+	err = ovl_dir_read(&ue->lowerpath, &cb, ovl_fill_lower);
- 	if (err)
- 		return err;
+@@ -67,7 +68,7 @@ into a merged directory.  Then whenever a lookup is requested in such
+ a merged directory, the lookup is performed in each actual directory
+ and the combined result is cached in the dentry belonging to the overlay
+ filesystem.  If both actual lookups find directories, both are stored
+-and a merged directory is create, otherwise only one is stored: the
++and a merged directory is created, otherwise only one is stored: the
+ upper if it exists, else the lower.
  
-@@ -1330,7 +1330,7 @@ static int ovl_check_empty_dir(struct dentry *dentry)
- static int ovl_unlink_whiteout(void *buf, const char *name, int namlen,
- 				 loff_t offset, u64 ino, unsigned int d_type)
- {
--	struct ovl_cache_callback *cb = buf;
-+	struct ovl_readdir_data *cb = buf;
- 
- 	cb->count++;
- 	/* check d_type to filter out "." and ".." */
-@@ -1352,7 +1352,7 @@ static int ovl_unlink_whiteout(void *buf, const char *name, int namlen,
- static int ovl_remove_whiteouts(struct dentry *dentry)
- {
- 	struct ovl_entry *ue = dentry->d_fsdata;
--	struct ovl_cache_callback cb = {
-+	struct ovl_readdir_data cb = {
- 		.list = NULL,
- 		.path = ue->upperpath,
- 	};
-@@ -1360,7 +1360,7 @@ static int ovl_remove_whiteouts(struct dentry *dentry)
- 	if (!ue->upperpath.dentry)
- 		return 0;
- 
--	return ovl_fill_cache(&ue->upperpath, &cb, ovl_unlink_whiteout);
-+	return ovl_dir_read(&ue->upperpath, &cb, ovl_unlink_whiteout);
- }
- 
- static int ovl_rmdir(struct inode *dir, struct dentry *dentry)
+ Only the lists of names from directories are merged.  Other content
 
 
