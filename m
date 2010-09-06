@@ -1,138 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab0IFPFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:05:42 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:20610 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab0IFPCw (ORCPT
+	id S1754926Ab0IFPFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:05:47 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:49630 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab0IFPCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:02:52 -0400
+	Mon, 6 Sep 2010 11:02:51 -0400
 X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h43h64h)
-X-Spam-TCS-SCL: 3:0
+X-BigFish: VS1(zzzz1202hzz8275bhz32i2a8h87h61h)
+X-Spam-TCS-SCL: 0:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8BZ2O-01-ANZ-02
+X-WSS-ID: 0L8BZ2N-02-4WJ-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: <"http://kvm.qumranet.com"@osrc.amd.com>, <linux-kernel@vger.kernel.org>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 04/27] KVM: X86: Introduce a tdp_set_cr3 function
-Date: Mon, 6 Sep 2010 17:01:39 +0200
-Message-ID: <1283785322-26898-5-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 14/27] KVM: MMU: Make walk_addr_generic capable for two-level walking
+Date: Mon, 6 Sep 2010 17:01:49 +0200
+Message-ID: <1283785322-26898-15-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
 References: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Reverse-DNS: unknown
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a special set_tdp_cr3 function pointer
-in kvm_x86_ops which is only used for tpd enabled mmu
-contexts. This allows to remove some hacks from svm code.
+This patch uses kvm_read_guest_page_tdp to make the
+walk_addr_generic functions suitable for two-level page
+table walking.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/kvm_host.h |    2 ++
- arch/x86/kvm/mmu.c              |    2 +-
- arch/x86/kvm/svm.c              |   23 ++++++++++++++---------
- arch/x86/kvm/vmx.c              |    2 ++
- 4 files changed, 19 insertions(+), 10 deletions(-)
+ arch/x86/kvm/paging_tmpl.h |   27 ++++++++++++++++++++-------
+ 1 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 43c8db0..aeeea9c 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -526,6 +526,8 @@ struct kvm_x86_ops {
- 	bool (*rdtscp_supported)(void);
- 	void (*adjust_tsc_offset)(struct kvm_vcpu *vcpu, s64 adjustment);
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index cd59af1..a5b5759 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -124,6 +124,8 @@ static int FNAME(walk_addr_generic)(struct guest_walker *walker,
+ 	unsigned index, pt_access, uninitialized_var(pte_access);
+ 	gpa_t pte_gpa;
+ 	bool eperm, present, rsvd_fault;
++	int offset;
++	u32 error = 0;
  
-+	void (*set_tdp_cr3)(struct kvm_vcpu *vcpu, unsigned long cr3);
+ 	trace_kvm_mmu_pagetable_walk(addr, write_fault, user_fault,
+ 				     fetch_fault);
+@@ -153,12 +155,13 @@ walk:
+ 		index = PT_INDEX(addr, walker->level);
+ 
+ 		table_gfn = gpte_to_gfn(pte);
+-		pte_gpa = gfn_to_gpa(table_gfn);
+-		pte_gpa += index * sizeof(pt_element_t);
++		offset    = index * sizeof(pt_element_t);
++		pte_gpa   = gfn_to_gpa(table_gfn) + offset;
+ 		walker->table_gfn[walker->level - 1] = table_gfn;
+ 		walker->pte_gpa[walker->level - 1] = pte_gpa;
+ 
+-		if (kvm_read_guest(vcpu->kvm, pte_gpa, &pte, sizeof(pte))) {
++		if (kvm_read_guest_page_mmu(vcpu, mmu, table_gfn, &pte, offset,
++					    sizeof(pte), &error)) {
+ 			present = false;
+ 			break;
+ 		}
+@@ -209,15 +212,25 @@ walk:
+ 				is_large_pte(pte) &&
+ 				mmu->root_level == PT64_ROOT_LEVEL)) {
+ 			int lvl = walker->level;
++			gpa_t real_gpa;
++			gfn_t gfn;
+ 
+-			walker->gfn = gpte_to_gfn_lvl(pte, lvl);
+-			walker->gfn += (addr & PT_LVL_OFFSET_MASK(lvl))
+-					>> PAGE_SHIFT;
++			gfn = gpte_to_gfn_lvl(pte, lvl);
++			gfn += (addr & PT_LVL_OFFSET_MASK(lvl)) >> PAGE_SHIFT;
+ 
+ 			if (PTTYPE == 32 &&
+ 			    walker->level == PT_DIRECTORY_LEVEL &&
+ 			    is_cpuid_PSE36())
+-				walker->gfn += pse36_gfn_delta(pte);
++				gfn += pse36_gfn_delta(pte);
 +
- 	void (*set_supported_cpuid)(u32 func, struct kvm_cpuid_entry2 *entry);
- 
- 	bool (*has_wbinvd_exit)(void);
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 2ac3851..543ec74 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2711,7 +2711,7 @@ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
- 	context->shadow_root_level = kvm_x86_ops->get_tdp_level();
- 	context->root_hpa = INVALID_PAGE;
- 	context->direct_map = true;
--	context->set_cr3 = kvm_x86_ops->set_cr3;
-+	context->set_cr3 = kvm_x86_ops->set_tdp_cr3;
- 
- 	if (!is_paging(vcpu)) {
- 		context->gva_to_gpa = nonpaging_gva_to_gpa;
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 6808f64..094df31 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -3216,9 +3216,6 @@ static void svm_vcpu_run(struct kvm_vcpu *vcpu)
- 	gs_selector = kvm_read_gs();
- 	ldt_selector = kvm_read_ldt();
- 	svm->vmcb->save.cr2 = vcpu->arch.cr2;
--	/* required for live migration with NPT */
--	if (npt_enabled)
--		svm->vmcb->save.cr3 = vcpu->arch.cr3;
- 
- 	clgi();
- 
-@@ -3335,16 +3332,22 @@ static void svm_set_cr3(struct kvm_vcpu *vcpu, unsigned long root)
- {
- 	struct vcpu_svm *svm = to_svm(vcpu);
- 
--	if (npt_enabled) {
--		svm->vmcb->control.nested_cr3 = root;
--		force_new_asid(vcpu);
--		return;
--	}
--
- 	svm->vmcb->save.cr3 = root;
- 	force_new_asid(vcpu);
- }
- 
-+static void set_tdp_cr3(struct kvm_vcpu *vcpu, unsigned long root)
-+{
-+	struct vcpu_svm *svm = to_svm(vcpu);
++			real_gpa = mmu->translate_gpa(vcpu, gfn_to_gpa(gfn),
++						      &error);
++			if (real_gpa == UNMAPPED_GVA) {
++				walker->error_code = error;
++				return 0;
++			}
 +
-+	svm->vmcb->control.nested_cr3 = root;
-+
-+	/* Also sync guest cr3 here in case we live migrate */
-+	svm->vmcb->save.cr3 = vcpu->arch.cr3;
-+
-+	force_new_asid(vcpu);
-+}
-+
- static int is_disabled(void)
- {
- 	u64 vm_cr;
-@@ -3571,6 +3574,8 @@ static struct kvm_x86_ops svm_x86_ops = {
++			walker->gfn = real_gpa >> PAGE_SHIFT;
  
- 	.write_tsc_offset = svm_write_tsc_offset,
- 	.adjust_tsc_offset = svm_adjust_tsc_offset,
-+
-+	.set_tdp_cr3 = set_tdp_cr3,
- };
- 
- static int __init svm_init(void)
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 676555c..0e62d8a 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -4347,6 +4347,8 @@ static struct kvm_x86_ops vmx_x86_ops = {
- 
- 	.write_tsc_offset = vmx_write_tsc_offset,
- 	.adjust_tsc_offset = vmx_adjust_tsc_offset,
-+
-+	.set_tdp_cr3 = vmx_set_cr3,
- };
- 
- static int __init vmx_init(void)
+ 			break;
+ 		}
 -- 
 1.7.0.4
 
