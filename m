@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab0IFAv1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 20:51:27 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50948 "EHLO mx1.suse.de"
+	id S1755120Ab0IFAvd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 20:51:33 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50950 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755065Ab0IFAvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 20:51:25 -0400
+	id S1755008Ab0IFAva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 20:51:30 -0400
 From: NeilBrown <neilb@suse.de>
 To: Miklos Szeredi <miklos@szeredi.hu>
 Date: Mon, 06 Sep 2010 10:50:28 +1000
-Subject: [PATCH 02/10] ovl: minimal remount support.
+Subject: [PATCH 03/10] ovl: use correct seek function for directories.
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20100906005028.20775.41803.stgit@localhost.localdomain>
+Message-ID: <20100906005028.20775.30276.stgit@localhost.localdomain>
 In-Reply-To: <20100906004829.20775.68828.stgit@localhost.localdomain>
 References: <20100906004829.20775.68828.stgit@localhost.localdomain>
 User-Agent: StGit/0.15
@@ -22,47 +22,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As overlayfs reflects the 'readonly' mount status in write-access to
-the upper filesystem, we must handle remount and either drop or take
-write access when the ro status changes.
+It is incorrect to call generic_llseek_file on a file from a different
+filesystem.  For that we must use the seek function that the
+filesystem defines, which is called by vfs_llseek.
+
+Also, we only want to seek the realfile when is_real is true.
+Otherwise we just want to update our own f_pos pointer, so use
+generic_llseek_file for that.
 
 Signed-off-by: NeilBrown <neilb@suse.de>
 ---
- fs/overlayfs/overlayfs.c |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
+ fs/overlayfs/overlayfs.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/fs/overlayfs/overlayfs.c b/fs/overlayfs/overlayfs.c
-index 0ddfeec..4e032e8 100644
+index 4e032e8..306de45 100644
 --- a/fs/overlayfs/overlayfs.c
 +++ b/fs/overlayfs/overlayfs.c
-@@ -1685,8 +1685,28 @@ static void ovl_put_super(struct super_block *sb)
- 	kfree(ufs);
- }
+@@ -307,8 +307,11 @@ static loff_t ovl_dir_llseek(struct file *file, loff_t offset, int origin)
+ 	loff_t res;
+ 	struct ovl_dir_file *od = file->private_data;
  
-+static int ovl_remount_fs(struct super_block *sb, int *flagsp, char *data)
-+{
-+	int flags = *flagsp;
-+	struct ovl_fs *ufs = sb->s_fs_info;
-+
-+	/* When remounting rw or ro, we need to adjust the write access to the
-+	 * upper fs.
-+	 */
-+	if (((flags ^ sb->s_flags) & MS_RDONLY) == 0)
-+		/* No change to readonly status */
-+		return 0;
-+
-+	if (flags & MS_RDONLY) {
-+		mnt_drop_write(ufs->upper_mnt);
-+		return 0;
+-	res = generic_file_llseek(od->realfile, offset, origin);
+-	file->f_pos = od->realfile->f_pos;
++	if (od->is_real) {
++		res = vfs_llseek(od->realfile, offset, origin);
++		file->f_pos = od->realfile->f_pos;
 +	} else
-+		return mnt_want_write(ufs->upper_mnt);
-+}
-+
- static const struct super_operations ovl_super_operations = {
- 	.put_super	= ovl_put_super,
-+	.remount_fs	= ovl_remount_fs,
- };
++		res = generic_file_llseek(file, offset, origin);
  
- struct ovl_config {
+ 	return res;
+ }
 
 
