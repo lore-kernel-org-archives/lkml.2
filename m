@@ -1,301 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412Ab0IFGSx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 02:18:53 -0400
-Received: from compulab.co.il ([67.18.134.219]:55119 "EHLO compulab.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751653Ab0IFGSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 02:18:52 -0400
-Message-ID: <4C84877F.8000108@compulab.co.il>
-Date: Mon, 06 Sep 2010 09:17:35 +0300
-From: Mike Rapoport <mike@compulab.co.il>
-User-Agent: Thunderbird 2.0.0.23 (X11/20100106)
-MIME-Version: 1.0
-To: Arun Murthy <arun.murthy@stericsson.com>
-CC: sameo@linux.intel.com, riku.voipio@iki.fi, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com,
-        Mike Rapoport <mike@compulab.co.il>
-Subject: Re: [PATCHv2 1/1] u8500: ab8500-pwm: Add pwm driver
-References: <1283753047-14550-1-git-send-email-arun.murthy@stericsson.com> <1283753047-14550-2-git-send-email-arun.murthy@stericsson.com>
-In-Reply-To: <1283753047-14550-2-git-send-email-arun.murthy@stericsson.com>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1752538Ab0IFGTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 02:19:46 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:18328 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752107Ab0IFGTp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 02:19:45 -0400
+Message-ID: <000d01cb4d8b$7f6d1800$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Grant Likely" <grant.likely@secretlab.ca>
+Cc: <meego-dev@meego.com>, "LKML" <linux-kernel@vger.kernel.org>,
+        "David Brownell" <dbrownell@users.sourceforge.net>,
+        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
+        <gregkh@suse.de>, "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>
+References: <4C80E2D5.1020104@dsn.okisemi.com> <AANLkTinYypWdty1eLH1LTyOEZPt-k=cEDGu_coyWVa2t@mail.gmail.com>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+Date: Mon, 6 Sep 2010 15:19:40 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arun Murthy wrote:
-> This patch adds a Pulse Width Modulation driver for Analog Baseband
-> Chip AB8500.
-> 
-> Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
-> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Hi Grant,
 
-Overall looks good to me. Just some nitpicking comments below.
+Thank you for your comments.
+We will modify for your comments.
 
-> ---
->  drivers/mfd/ab8500-core.c |   13 +++-
->  drivers/misc/Kconfig      |    9 +++
->  drivers/misc/Makefile     |    1 +
->  drivers/misc/ab8500-pwm.c |  174 +++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 196 insertions(+), 1 deletions(-)
->  create mode 100644 drivers/misc/ab8500-pwm.c
-> 
-> diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
-> index 6548f50..67d7361 100644
-> --- a/drivers/mfd/ab8500-core.c
-> +++ b/drivers/mfd/ab8500-core.c
-> @@ -397,7 +397,18 @@ static struct mfd_cell ab8500_devs[] = {
->  	{ .name = "ab8500-charger", },
->  	{ .name = "ab8500-audio", },
->  	{ .name = "ab8500-usb", },
-> -	{ .name = "ab8500-pwm", },
-> +	{
-> +		.name = "ab8500-pwm",
-> +		.id = 1,
-> +	},
-> +	{
-> +		.name = "ab8500-pwm",
-> +		.id = 2,
-> +	},
-> +	{
-> +		.name = "ab8500-pwm",
-> +		.id = 3,
-> +	},
->  	{ .name = "ab8500-regulator", },
+> The email client you're currently using is posting the
+> patches in HTML format, and is mangling them.  git send-email can help
+> you here.
+In our network environment, we cannot use send-email command.
+We  have used Thunderbird with according to Documentation/email-clients.txt
+It may be the reason we are use Thunderbird with pre-format mode.
+Can't we use Thunderbird with pre-format mode ?
 
-I'd move pwm cells after the regulator to make the code nicer. Feel free, 
-though, to discard this comment.
+Thanks, Ohtake(OKISemi)
 
->  };
->  
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 9df5b75..fcf2e7f 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -62,6 +62,15 @@ config ATMEL_PWM
->  	  purposes including software controlled power-efficient backlights
->  	  on LCD displays, motor control, and waveform generation.
->  
-> +config AB8500_PWM
-> +	bool "AB8500 PWM support"
-> +	depends on AB8500_CORE
-> +	select HAVE_PWM
-> +	help
-> +	  This driver exports functions to enable/disble/config/free Pulse
-> +	  Width Modulation in the Ananlog Baseband Chip AB8500.
-> +	  It is used by led and backlight driver to control the intensity.
-> +
->  config ATMEL_TCLIB
->  	bool "Atmel AT32/AT91 Timer/Counter Library"
->  	depends on (AVR32 || ARCH_AT91)
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 255a80d..33bc441 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -35,3 +35,4 @@ obj-y				+= eeprom/
->  obj-y				+= cb710/
->  obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
->  obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
-> +obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
-> diff --git a/drivers/misc/ab8500-pwm.c b/drivers/misc/ab8500-pwm.c
-> new file mode 100644
-> index 0000000..e25c575
-> --- /dev/null
-> +++ b/drivers/misc/ab8500-pwm.c
-> @@ -0,0 +1,174 @@
-> +/*
-> + * Copyright (C) ST-Ericsson SA 2010
-> + *
-> + * Author: Arun R Murthy <arun.murthy@stericsson.com>
-> + * License terms: GNU General Public License (GPL) version 2
-> + */
-> +#include <linux/err.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/slab.h>
-> +#include <linux/pwm.h>
-> +#include <linux/mfd/ab8500.h>
-> +#include <linux/mfd/abx500.h>
-> +
-> +/*
-> + * PWM Out generators
-> + * Bank: 0x10
-> + */
-> +#define AB8500_PWM_OUT_CTRL1_REG	0x60
-> +#define AB8500_PWM_OUT_CTRL2_REG	0x61
-> +#define AB8500_PWM_OUT_CTRL7_REG	0x66
-> +
-> +/* backlight driver constants */
-> +#define ENABLE_PWM			1
-> +#define DISABLE_PWM			0
-> +
-> +struct pwm_device {
-> +	struct device *dev;
-> +	struct list_head node;
-> +	const char *label;
-> +	unsigned int pwm_id;
-> +};
-> +
-> +static LIST_HEAD(pwm_list);
-> +
-> +int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-> +{
-> +	int ret = 0;
-> +	unsigned int higher_val, lower_val;
-> +	u8 reg;
-> +
-> +	/*
-> +	 * get the first 8 bits that are be written to
-> +	 * AB8500_PWM_OUT_CTRL1_REG[0:7]
-> +	 */
-> +	lower_val = duty_ns & 0x00FF;
-> +	/*
-> +	 * get bits [9:10] that are to be written to
-> +	 * AB8500_PWM_OUT_CTRL2_REG[0:1]
-> +	 */
-> +	higher_val = ((duty_ns & 0x0300) >> 8);
-> +
-> +	reg = AB8500_PWM_OUT_CTRL1_REG + ((pwm->pwm_id - 1) * 2);
-> +
-> +	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
-> +			reg, (u8)lower_val);
-> +	if (ret < 0)
-> +		return ret;
-> +	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
-> +			(reg + 1), (u8)higher_val);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(pwm_config);
-> +
-> +int pwm_enable(struct pwm_device *pwm)
-> +{
-> +	int ret;
-> +
-> +	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
-> +				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
-> +				1 << (pwm->pwm_id-1), ENABLE_PWM);
-> +	if (ret < 0)
-> +		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
-> +							pwm->label, ret);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(pwm_enable);
-> +
-> +void pwm_disable(struct pwm_device *pwm)
-> +{
-> +	int ret;
-> +
-> +	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
-> +				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
-> +				1 << (pwm->pwm_id-1), DISABLE_PWM);
-> +	if (ret < 0)
-> +		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
-> +							pwm->label, ret);
-> +	return;
-> +}
-> +EXPORT_SYMBOL(pwm_disable);
-> +
-> +struct pwm_device *pwm_request(int pwm_id, const char *label)
-> +{
-> +	struct pwm_device *pwm;
-> +	int found = 0;
-> +
-> +	list_for_each_entry(pwm, &pwm_list, node) {
-> +		if (pwm->pwm_id == pwm_id) {
-> +			found = 1;
-> +			break;
-> +		}
-> +	}
-> +
-> +	if (found) {
-> +		pwm->label = label;
-> +		pwm->pwm_id = pwm_id;
-> +	} else
-> +		pwm = ERR_PTR(-ENOENT);
-> +
-
-Braces are required for else clause (see CodingStyle). Besides, if you move pwm
-fields initialization into the for_each loop you can just abandon the 'if
-(found)' statement.
-
-> +	return pwm;
-> +}
-> +EXPORT_SYMBOL(pwm_request);
-> +
-> +void pwm_free(struct pwm_device *pwm)
-> +{
-> +	pwm_disable(pwm);
-> +}
-> +EXPORT_SYMBOL(pwm_free);
-> +
-> +static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
-> +{
-> +	struct pwm_device *pwm;
-> +	/*
-> +	 * Nothing to be done in probe, this is required to get the
-> +	 * device which is required for ab8500 read and write
-> +	 */
-> +	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
-> +	if (pwm == NULL) {
-> +		dev_err(&pdev->dev, "failed to allocate memory\n");
-> +		return -ENOMEM;
-> +	}
-> +	pwm->dev = &pdev->dev;
-> +	pwm->pwm_id = pdev->id;
-> +	list_add_tail(&pwm->node, &pwm_list);
-> +	platform_set_drvdata(pdev, pwm);
-> +	dev_dbg(pwm->dev, "pwm probe successful\n");
-> +	return 0;
-> +}
-> +
-> +static int __devexit ab8500_pwm_remove(struct platform_device *pdev)
-> +{
-> +	struct pwm_device *pwm = platform_get_drvdata(pdev);
-> +	list_del(&pwm->node);
-> +	dev_dbg(&pdev->dev, "pwm driver removed\n");
-> +	kfree(pwm);
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver ab8500_pwm_driver = {
-> +	.driver = {
-> +		.name = "ab8500-pwm",
-> +		.owner = THIS_MODULE,
-> +	},
-> +	.probe = ab8500_pwm_probe,
-> +	.remove = __devexit_p(ab8500_pwm_remove),
-> +};
-> +
-> +static int __init ab8500_pwm_init(void)
-> +{
-> +	return platform_driver_register(&ab8500_pwm_driver);
-> +}
-> +
-> +static void __exit ab8500_pwm_exit(void)
-> +{
-> +	platform_driver_unregister(&ab8500_pwm_driver);
-> +}
-> +
-> +subsys_initcall(ab8500_pwm_init);
-> +module_exit(ab8500_pwm_exit);
-> +MODULE_AUTHOR("Arun MURTHY <arun.murthy@stericsson.com>");
-> +MODULE_DESCRIPTION("AB8500 Pulse Width Modulation Driver");
-> +MODULE_ALIAS("AB8500 PWM driver");
-> +MODULE_LICENSE("GPL v2");
+----- Original Message ----- 
+From: "Grant Likely" <grant.likely@secretlab.ca>
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Cc: <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "David Brownell" <dbrownell@users.sourceforge.net>;
+<qi.wang@intel.com>; <yong.y.wang@intel.com>; <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>;
+<gregkh@suse.de>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>
+Sent: Friday, September 03, 2010 11:46 PM
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
 
 
--- 
-Sincerely yours,
-Mike.
+> 2010/9/3 Masayuki Ohtak <masa-korg@dsn.okisemi.com>:
+> > SPI driver of Topcliff PCH
+> >
+> > Topcliff PCH is the platform controller hub that is going to be used in
+> > Intel's upcoming general embedded platform. All IO peripherals in
+> > Topcliff PCH are actually devices sitting on AMBA bus.
+> > Topcliff PCH has SPI I/F. Using this I/F, it is able to access system
+> > devices connected to SPI.
+> >
+> > Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+>
+> Hi Ohtak-san
+>
+> Comments below.  Also, please also fix the method that you're using to
+> post patches.  The email client you're currently using is posting the
+> patches in HTML format, and is mangling them.  git send-email can help
+> you here.
+>
+> > ---
+> >  drivers/spi/Kconfig   |   19 +
+> >  drivers/spi/Makefile  |    1 +
+> >  drivers/spi/spi_pch.c | 1813
+> > +++++++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 1833 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/spi/spi_pch.c
+> >
+> > diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+> > index 91c2f4f..2c93667 100644
+> > --- a/drivers/spi/Kconfig
+> > +++ b/drivers/spi/Kconfig
+> > @@ -53,6 +53,25 @@ if SPI_MASTER
+> >
+> >  comment "SPI Master Controller Drivers"
+> >
+> > +config PCH_SPI
+> > +# tristate "PCH SPI Controller"
+> > + boolean "PCH SPI Controller"
+> > + depends on PCI
+> > + help
+> > +   This driver is for PCH(Platform controller Hub) SPI of Topcliff which
+> > +   is an IOH(Input/Output Hub) for x86 embedded processor.
+> > +   This driver can access PCH SPI bus device.
+> > +
+> > +config PCH_SPI_PLATFORM_DEVICE_COUNT
+> > + int "PCH SPI Bus count"
+> > + range 1 2
+> > + depends on PCH_SPI
+> > + help
+> > +   This driver is for PCH(Platform controller Hub) SPI of Topcliff which
+> > +   is an IOH(Input/Output Hub) for x86 embedded processor.
+> > +   The number of SPI buses/channels supported by the PCH SPI controller.
+> > +   PCH SPI of Topcliff supports only one channel.
+> > +
+>
+> As previously discussed, PCH_SPI_PLATFORM_DEVICE_COUNT needs to be
+> removed (see below).
+>
+> [...]
+>
+> > +static int pch_spi_probe(struct pci_dev *pdev, const struct pci_device_id
+> > *id)
+> > +{
+> > +
+> > + struct spi_master *master[PCH_MAX_DEV];
+> > +
+> > + struct pch_spi_board_data *board_dat;
+> > + int retval, i;
+> > + int spi_alloc_num, master_num;
+> > +
+> > + dev_dbg(&pdev->dev, "%s ENTRY\n", __func__);
+> > +
+> > + /* allocate memory for private data */
+> > + board_dat = kzalloc(sizeof(struct pch_spi_board_data), GFP_KERNEL);
+> > +
+> > + if (board_dat == NULL) {
+> > + dev_err(&pdev->dev,
+> > + " %s memory allocation for private data failed\n",
+> > + __func__);
+> > + retval = -ENOMEM;
+> > + goto err_kmalloc;
+> > + }
+> > +
+> > + dev_dbg(&pdev->dev,
+> > + "%s memory allocation for private data success\n", __func__);
+> > +
+> > + /* enable PCI device */
+> > + retval = pci_enable_device(pdev);
+> > + if (retval != 0) {
+> > + dev_err(&pdev->dev, "%s pci_enable_device FAILED\n", __func__);
+> > +
+> > + goto err_pci_en_device;
+> > + }
+> > +
+> > + dev_dbg(&pdev->dev, "%s pci_enable_device returned=%d\n",
+> > + __func__, retval);
+> > +
+> > + board_dat->pdev = pdev;
+> > +
+> > + /* alllocate memory for SPI master */
+> > + for (i = 0, spi_alloc_num = 0; i < PCH_MAX_DEV; i++, spi_alloc_num++) {
+> > + master[i] = spi_alloc_master(&pdev->dev,
+> > +      sizeof(struct pch_spi_data));
+> > +
+> > + if (master[i] == NULL) {
+> > + retval = -ENOMEM;
+> > + dev_err(&pdev->dev, "%s [ch=%d]Fail.\n", __func__, i);
+> > + goto err_spi_alloc_master;
+> > + }
+> > + }
+> > +
+> > + dev_dbg(&pdev->dev,
+> > + "%s spi_alloc_master returned non NULL\n", __func__);
+> > +
+> > + /* initialize members of SPI master */
+> > + for (i = 0, master_num = 0; i < PCH_MAX_DEV;
+> > + i++, master_num++) {
+> > + master[i]->bus_num = i;
+>
+> This is not okay.  The driver cannot assume that it provides the only
+> SPI busses in the system.  The bus number should either be set to -1
+> so that it gets auto-assigned, or the bus number should be passed in
+> by board-specific setup code.
+>
+> > + master[i]->num_chipselect = PCH_MAX_CS;
+> > + master[i]->setup = pch_spi_setup;
+> > + dev_dbg(&pdev->dev,
+> > + "%s setup member of SPI master initialized\n",
+> > + __func__);
+> > + master[i]->transfer = pch_spi_transfer;
+> > + dev_dbg(&pdev->dev,
+> > + "%s transfer member of SPI master initialized\n",
+> > + __func__);
+> > +
+> > + board_dat->data[i] = spi_master_get_devdata(master[i]);
+> > +
+> > + board_dat->data[i]->master = master[i];
+> > + board_dat->data[i]->n_curnt_chip = 255;
+> > + board_dat->data[i]->current_chip = NULL;
+> > + board_dat->data[i]->transfer_complete = false;
+> > + board_dat->data[i]->pkt_tx_buff = NULL;
+> > + board_dat->data[i]->pkt_rx_buff = NULL;
+> > + board_dat->data[i]->tx_index = 0;
+> > + board_dat->data[i]->rx_index = 0;
+> > + board_dat->data[i]->transfer_active = false;
+> > + board_dat->data[i]->board_dat = board_dat;
+> > + board_dat->suspend_sts = false;
+> > +
+> > + mutex_init(&board_dat->data[i]->mutex);
+> > + }
+> > +
+> > +
+> > + /* allocate resources for PCH SPI */
+> > + retval = pch_spi_get_resources(board_dat);
+> > + if (retval != 0) {
+> > + dev_err(&pdev->dev, "%s fail(retval=%d)\n",
+> > + __func__, retval);
+> > + goto err_spi_get_resources;
+> > + }
+> > +
+> > + dev_dbg(&pdev->dev, "%s pch_spi_get_resources returned=%d\n",
+> > + __func__, retval);
+> > +
+> > + /* save private data in dev */
+> > + pci_set_drvdata(pdev, (void *)board_dat);
+> > + dev_dbg(&pdev->dev, "%s invoked pci_set_drvdata\n", __func__);
+> > +
+> > + /* set master mode */
+> > + for (i = 0; i < PCH_MAX_DEV; i++) {
+> > + pch_spi_set_master_mode(master[i]);
+> > + dev_dbg(&pdev->dev,
+> > + "%s invoked pch_spi_set_master_mode\n", __func__);
+> > + }
+> > +
+> > + /* Register the controller with the SPI core. */
+> > + for (i = 0, master_num = 0; i < PCH_MAX_DEV; i++, master_num++) {
+> > + retval = spi_register_master(master[i]);
+> > + if (retval != 0) {
+> > + dev_err(&pdev->dev,
+> > + "%s spi_register_master FAILED\n", __func__);
+> > + goto err_spi_reg_master;
+> > + }
+> > + }
+>
+> I *finally* understand what you're trying to do here.  It looks like
+> you have a single PCI device that has multiple independent SPI busses.
+>  It also appears that this driver attempts to handle all of the
+> instances within a single context.
+>
+> Doing it this way overcomplicates the driver because you need to have
+> for() loops all over the driver to deal with the multiple instances.
+>
+> Instead, the majority of the code should be structured to handle one
+> and only one spi bus instance.  Only at the top level pci probe,
+> remove and PM code should there be for() loops for setting up or
+> tearing down each spi bus instance one at a time.
+>
+> In fact, it may be better for the pci_probe() hook to simply register
+> one or more platform_devices; one for each instance of the SPI bus,
+> and then have a separate platform_driver that binds to each instance.
+>
+> > +static int __init pch_spi_init(void)
+> > +{
+> > +#ifdef PCH_SPIDEV_REG_OLD
+> > + int retval;
+> > +
+> > + retval = spi_register_board_info
+> > + (pch_spi_slaves, ARRAY_SIZE(pch_spi_slaves));
+> > + if (retval)
+> > + return retval;
+> > +#endif
+>
+> As we discussed previously, this driver must *not* register child spi
+> devices with static code like this.  Remove the above lines and the
+> pch_spi_slaves array.
+>
+> > + return pci_register_driver(&pch_spi_pcidev);
+> > +}
+> > +
+> > +
+> > +static void __exit pch_spi_exit(void)
+> > +{
+> > + pci_unregister_driver(&pch_spi_pcidev);
+> > +}
+> > +
+> > +MODULE_LICENSE("GPL");
+> > +MODULE_DESCRIPTION("PCH SPI PCI Driver");
+> > +module_init(pch_spi_init);
+> > +module_exit(pch_spi_exit);
+>
+> module_init() and modules_exit() should appear immediately after the
+> functions they register as init and exit hooks.
+>
+> -- 
+> Grant Likely, B.Sc., P.Eng.
+> Secret Lab Technologies Ltd.
+>
+
 
