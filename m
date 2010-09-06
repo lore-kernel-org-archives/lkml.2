@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab0IFMaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 08:30:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49149 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab0IFMaC convert rfc822-to-8bit (ORCPT
+	id S1752788Ab0IFMdo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 08:33:44 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:34211 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab0IFMdn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 08:30:02 -0400
-Subject: Re: disabling group leader perf_event
-From: Peter Zijlstra <peterz@infradead.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-perf-users@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <4C84D77B.6040600@redhat.com>
-References: <4C84B088.5050003@redhat.com> <1283772256.1930.303.camel@laptop>
-	 <4C84D1CE.3070205@redhat.com> <1283774045.1930.341.camel@laptop>
-	 <4C84D77B.6040600@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 6 Sep 2010 08:33:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ENhuuZ/1P4EdBFgyPJ2tu0iwGPJmcOLIX0NNlF3BRBadWLIHOsGxpK4s+rZojAx2TP
+         09sAdzceJqcfzCoqR5tTv/Wa5vNWeGw6/tLkKSEstQOsKGB2Yyt5bg6fRR3t7rzobToF
+         Z7zbtMxuVEUGIMKWguY3t9ByAtRPDtyUKfLJ0=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=xaTdjrb3ZO5dU+bY_GpaBE4F2-0gFmN=SykD5@mail.gmail.com>
+References: <AANLkTimSsj5eW1Vy3g7S0XCKRcZ0fZ0jQ6_9VpjVMYcj@mail.gmail.com>
+	<20100903140041.GA16223@kroah.com>
+	<AANLkTi=xaTdjrb3ZO5dU+bY_GpaBE4F2-0gFmN=SykD5@mail.gmail.com>
+Date: Mon, 6 Sep 2010 14:33:42 +0200
+Message-ID: <AANLkTi=f0Am-iMZM=xU5_Hqw4ni1effrqhUxpKE9opFj@mail.gmail.com>
+Subject: Re: Crash on reducing the kernel mem.
+From: Martin Fuzzey <mfuzzey@gmail.com>
+To: Prabhu Chawandi <prabhu.chavandi@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, kernelnewbies@nl.linux.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 06 Sep 2010 14:29:49 +0200
-Message-ID: <1283776189.1930.380.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-06 at 14:58 +0300, Avi Kivity wrote:
-> On 09/06/2010 02:54 PM, Peter Zijlstra wrote:
-> >
-> >> Basically, to read() all events in one go.  I have many of them.
-> >>
-> >> My current problem is that I have an event (kvm_exit) which I want to
-> >> drill down by looking at a field (exit_reason).  So I create lots of
-> >> separate perf_events with a filter for each reason:
-> >> kvm_exit(exit_reason==0), kvm_exit(exit_reason==1), etc.  But filters
-> >> are fairly slow (can have ~60 such events on AMD), so I want to make
-> >> this drill-down optional.
-> > Yeah, filters suck.
-> 
-> Any idea why?  I saw nothing obvious in the code, except that there is 
-> lots of it.
+On Mon, Sep 6, 2010 at 12:47 PM, Prabhu Chawandi
+<prabhu.chavandi@gmail.com> wrote:
+> Hi Greg,
+>
+>  I am specifying the memory as part of command line parameter "mem=".
+> I know only that what ever amount specify against "mem=" will be a
+> kernel memory and rest is used for the drivers.
+>
+No it doesn't work like that.
 
-It filters after it does all the hard work of creating the trace event,
-instead of before.
+Setting mem= will reduce the total amount of memory used.
+If your system has 256M and you specify mem=128M the result
+is that the other 128M is unused.
 
-> > So what you're basically trying to do is create some histogram of
-> > exit_reason?
-> 
-> Yes, exactly.
+The kernel makes no separation between "kernel" and "drivers".
+Drivers are part of the kernel (ie they live in the same address
+space and can touch any memory).
 
-One thing I thought of, you can use the unfiltered kvm_exit event as
-leader, that will give you the total number of events, which, esp. when
-you create partial histograms, is useful to figure out how much you
-missed.
+There is a separation between kernel and userspace (ie
+userspace processes cannot touch each others memory nor kernel
+memory). However even the "userspace memory" comes from
+the same "pool" reduced by mem=.
 
-You can individually disable/enable !leader siblings.
+So when you changed mem=128M to mem=110M (intending
+to give more memory to "drivers") what you actually did was
+to reduce the memory available to the system. If that causes
+a crash its likely just not enough memory available, probably
+nothing specific to USB just that's where it happens to run out.
 
-> (one other issue - right now I'm using cpu events.  If I switch to task 
-> events, I lose events generated by workqueues, yes?)
+Why are you reducing memory in this way?
+Normally the bootloader knows / detects how much memory
+is available and informs the kernel. Reducing it is generally
+only done for testing purposes (such as the case where you
+have a development board that has more memory than the
+production unit will so you artificially reduce the available
+memory to see how it will behave on a production board).
 
-Right, those have their own tasks.
+Hope this helps,
+
+Regards,
+Martin
