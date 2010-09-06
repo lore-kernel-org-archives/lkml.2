@@ -1,107 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab0IFQm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 12:42:27 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:35297 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab0IFQmV (ORCPT
+	id S1755275Ab0IFQnd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 12:43:33 -0400
+Received: from talbot.seas.upenn.edu ([158.130.67.217]:53759 "EHLO
+	talbot.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223Ab0IFQn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 12:42:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=flvY9rYR+80GwiJTISpUj5Qeeuyd/avORWvP/RzlpcdP6gso428IUY+RFA3w/o4T6O
-         p/Gfp1X1bjpX6Ug84m+XbuRQxQpkV4iE0dLPlUs8EQKQENVOkAWHq7BmbGfkj1rpjRat
-         tF7xBSff4CJxbVC/ThHquSQhkYqlg6owBXcPY=
-Subject: Re: disabling group leader perf_event
-From: Tom Zanussi <tzanussi@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Avi Kivity <avi@redhat.com>, linux-perf-users@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1de72fcf-91c7-4357-a6ac-27704ac1ba0b@email.android.com>
-References: <4C84B088.5050003@redhat.com> <1283772256.1930.303.camel@laptop>
-	 <4C84D1CE.3070205@redhat.com> <1283774045.1930.341.camel@laptop>
-	 <4C84D77B.6040600@redhat.com> <1283776189.1930.380.camel@laptop>
-	 <20100906124046.GA20777@elte.hu>
-	 <1de72fcf-91c7-4357-a6ac-27704ac1ba0b@email.android.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 06 Sep 2010 11:42:11 -0500
-Message-ID: <1283791331.3594.27.camel@elnicho32>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Sep 2010 12:43:27 -0400
+From: Rafi Rubin <rafi@seas.upenn.edu>
+To: dmitry.torokhov@gmail.com, jkosina@suse.cz, linux-input@vger.kernel.org,
+        jirislaby@gmail.com
+Cc: linux-kernel@vger.kernel.org, micki@n-trig.com, rydberg@euromail.se,
+        chatty@enac.fr, Rafi Rubin <rafi@seas.upenn.edu>
+Subject: [PATCH] identify firmware version
+Date: Mon,  6 Sep 2010 12:42:42 -0400
+Message-Id: <1283791362-27780-1-git-send-email-rafi@seas.upenn.edu>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <4C7EB3A3.7050402@gmail.com>
+References: <4C7EB3A3.7050402@gmail.com>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000
+ definitions=2010-09-06_10:2010-09-06,2010-09-06,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
+ bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1005130000 definitions=main-1009060114
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This adds firmware version polling to the end of probe and reports the
+version both in the raw form and proccessed to match the formatting used
+by N-Trig.
 
-On Mon, 2010-09-06 at 09:16 -0400, Steven Rostedt wrote:
-> Sorry for top post, sending via my android phone. Today's a US holiday.
->  
-> 
-> We can filter before the work, if we expose the parameters. Currently we filter what goes into the buffer and there are several cases where we don't know the result before the work.
-> 
-> If we also expose the parameters of a TRACE_EVENT, then we can filter on them before the work.
+Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
+---
+ drivers/hid/hid-ntrig.c |   56 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 56 insertions(+), 0 deletions(-)
 
-I'm not sure exactly what you mean by exposing the parameters, but yeah,
-in general it should be possible to filter on any field you can get the
-address of, before you ever allocate space for the event or assign the
-field to it.
-
-In the cases where you don't know the result until you do the work, such
-as for example this from kvm_age_page tracepoint:
-
-        TP_fast_assign(
-                __entry->hva            = hva;
-                __entry->gfn            =
-                  slot->base_gfn + ((hva - slot->userspace_addr) >>
-PAGE_SHIFT);
-                __entry->referenced     = ref;
-        ),
-
-I guess you'd want the macro to assign the result to a temporary in
-order to be able to participate in the filtering, or did you have
-something else in mind?
-
-Tom
-
-> -- Steve
-> 
-> "Ingo Molnar" <mingo@elte.hu> wrote:
-> 
-> >
-> >* Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> >> On Mon, 2010-09-06 at 14:58 +0300, Avi Kivity wrote:
-> >> > On 09/06/2010 02:54 PM, Peter Zijlstra wrote:
-> >> > >
-> >> > >> Basically, to read() all events in one go.  I have many of them.
-> >> > >>
-> >> > >> My current problem is that I have an event (kvm_exit) which I want to
-> >> > >> drill down by looking at a field (exit_reason).  So I create lots of
-> >> > >> separate perf_events with a filter for each reason:
-> >> > >> kvm_exit(exit_reason==0), kvm_exit(exit_reason==1), etc.  But filters
-> >> > >> are fairly slow (can have ~60 such events on AMD), so I want to make
-> >> > >> this drill-down optional.
-> >> > > Yeah, filters suck.
-> >> > 
-> >> > Any idea why?  I saw nothing obvious in the code, except that there 
-> >> > is lots of it.
-> >> 
-> >> It filters after it does all the hard work of creating the trace 
-> >> event, instead of before.
-> >
-> >Btw., that's an implementational property of filters that would be nice 
-> >to fix.
-> >
-> >If it's not doable within CPP then outside of it.
-> >
-> >	Ingo
-> 
-
+diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
+index 43e95de..3472b3b 100644
+--- a/drivers/hid/hid-ntrig.c
++++ b/drivers/hid/hid-ntrig.c
+@@ -90,6 +90,26 @@ struct ntrig_data {
+ };
+ 
+ 
++/*
++ * This function converts the 4 byte raw firmware code into
++ * a string containing 5 comma separated numbers.
++ */
++static int ntrig_version_string(unsigned char *raw, char *buf)
++{
++	__u8 a =  (raw[1] & 0x0e) >> 1;
++	__u8 b =  (raw[0] & 0x3c) >> 2;
++	__u8 c = ((raw[0] & 0x03) << 3) | ((raw[3] & 0xe0) >> 5);
++	__u8 d = ((raw[3] & 0x07) << 3) | ((raw[2] & 0xe0) >> 5);
++	__u8 e =   raw[2] & 0x07;
++
++	/*
++	 * As yet unmapped bits:
++	 * 0b11000000 0b11110001 0b00011000 0b00011000
++	 */
++
++	return sprintf(buf, "%u.%u.%u.%u.%u", a, b, c, d, e);
++}
++
+ static ssize_t show_phys_width(struct device *dev,
+ 			       struct device_attribute *attr,
+ 			       char *buf)
+@@ -776,6 +796,9 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	struct hid_input *hidinput;
+ 	struct input_dev *input;
+ 	struct hid_report *report;
++	unsigned char *data;
++	struct usb_device *usb_dev = hid_to_usb_dev(hdev);
++	char *buf;
+ 
+ 	if (id->driver_data)
+ 		hdev->quirks |= HID_QUIRK_MULTI_INPUT;
+@@ -848,10 +871,43 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	if (report)
+ 		usbhid_submit_report(hdev, report, USB_DIR_OUT);
+ 
++	data = kmalloc(8, GFP_KERNEL);
++	if (!data) {
++		ret = -ENOMEM;
++		goto err_free;
++	}
++
++	ret = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
++			      USB_REQ_CLEAR_FEATURE,
++			      USB_TYPE_CLASS | USB_RECIP_INTERFACE |
++			      USB_DIR_IN,
++			      0x30c, 1, data, 8,
++			      USB_CTRL_SET_TIMEOUT);
++
++	if (ret == 8) {
++		buf = kmalloc(20, GFP_KERNEL);
++		if (!buf) {
++			ret = -ENOMEM;
++			goto err_free_data;
++		}
++
++		ret = ntrig_version_string(&data[2], buf);
++
++		dev_info(&hdev->dev,
++			 "Firmware version: %s (%02x%02x %02x%02x)\n",
++			 buf, data[2], data[3], data[4], data[5]);
++
++		kfree(buff);
++	}
++
+ 	ret = sysfs_create_group(&hdev->dev.kobj,
+ 			&ntrig_attribute_group);
+ 
++	kfree(data);
++
+ 	return 0;
++err_free_data:
++	kfree(data);
+ err_free:
+ 	kfree(nd);
+ 	return ret;
+-- 
+1.7.1
 
