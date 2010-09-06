@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab0IFI4w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 04:56:52 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:64559 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab0IFI4v (ORCPT
+	id S1753548Ab0IFI7I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 04:59:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42424 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753104Ab0IFI7G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 04:56:51 -0400
-MIME-Version: 1.0
-X-Originating-IP: [81.243.35.243]
-In-Reply-To: <20100904081801.GA19876@elte.hu>
-References: <AANLkTikvbn3+JPc7pnGZk-H4B71MHTu+-vjuzfJw_7PC@mail.gmail.com>
-	<201009032005.08268.trenn@suse.de>
-	<20100903195555.GA1663@elte.hu>
-	<201009032210.08524.trenn@suse.de>
-	<4C817D0E.6020702@linux.intel.com>
-	<20100904081801.GA19876@elte.hu>
-Date: Mon, 6 Sep 2010 10:56:50 +0200
-Message-ID: <AANLkTinrRoi6y1fKUevu2O-Diac5B2r8RftTWUigQZOh@mail.gmail.com>
-Subject: Re: [PATCH] tracing, perf: add more power related events
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, Thomas Renninger <trenn@suse.de>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 6 Sep 2010 04:59:06 -0400
+Subject: Re: [PATCH] KVM: don't sent IPI if the vcpu is not online
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <4C84AC6B.4090306@redhat.com>
+Date: Mon, 6 Sep 2010 10:59:03 +0200
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <633F01D5-D6AD-40F3-8864-C3AE4D314E30@suse.de>
+References: <4C807593.1050903@cn.fujitsu.com> <4C83445B.4020103@redhat.com> <4C844887.9090802@cn.fujitsu.com> <4C84801F.9060803@redhat.com> <DCCDD62D-CE92-453A-BB3C-DF878D893C3F@suse.de> <4C84AC6B.4090306@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Thanks for the feedback!
+On 06.09.2010, at 10:55, Avi Kivity wrote:
 
-> On Friday 03 September 2010 21:55:55 Ingo Molnar wrote:
->Well, the patch that got posted:
->
-> [PATCH] tracing, perf: add more power related events
->
->Only adds tracepoints to power.h, but doesnt actually use them anywhere
->...
->
->Is there a companion patch i missed?
-I will re-start a thread with the full patch and with both lkml and
-linux-omap in Cc.
+> On 09/06/2010 11:51 AM, Alexander Graf wrote:
+>> 
+>>> I think guest_mode makes sense for the other archs for reducing IPIs, so let's leave it common and recommend that they implement it.  Alex, if you're ever bored.
+>> What does the bit do? Do we have documentation on it ;)? No seriously, what's the intent of the field?
+>> 
+> 
+> It indicates that the vcpu is currently executing guest code.  Which in turn is important if you need to force it out of guest mode in order to inject an interrupt or flush the tlb.
 
->Also, it would be nice to add it to x86 and to OMAP at once, and
->synchronize up all the power events - and check how existing tools like
->powertop make use of such events - and sync it all up. We dont want to
->have inconsistent, architecture-dependent events in the end, for obvious
->reasons.
-Indeed that is the idea to sync up all power events. Other new events
-will follow shortly, e.g. low power transitions latency profiling etc.
+Well, a vcpu is either offline in halt state or in guest mode, no? So we can conclude that guest_mode == !offline && !halt_state.
 
-Wrt the tools, I would be glad to contribute to the tools. I already
-have local patches to pytimechart. Other tools like powertop,
-cpufrequtils can be patched as well.
+When in halt state, we are active on the wakeup waitqueue:
 
-Thanks,
-Jean
+static void kvmppc_decrementer_func(unsigned long data)
+{
+        struct kvm_vcpu *vcpu = (struct kvm_vcpu *)data;
+
+        kvmppc_core_queue_dec(vcpu);
+
+        if (waitqueue_active(&vcpu->wq)) {
+                wake_up_interruptible(&vcpu->wq);
+                vcpu->stat.halt_wakeup++;
+        }
+}
+
+Shouldn't that be enough information already?
+
+
+Alex
+
