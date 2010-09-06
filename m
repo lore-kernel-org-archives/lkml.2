@@ -1,155 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab0IFGda (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 02:33:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50410 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab0IFGd2 (ORCPT
+	id S1753475Ab0IFGeW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 02:34:22 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:24864 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab0IFGeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 02:33:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=e1pC1gF2GIB18a2yBQbzdfir9Lv227hOKujqd9Ah7LPNNOhgwEmGyLH9fTE4MGAl3X
-         pSclBUHiBCfoZJoIY40BO1HzYM/Q0Q+05RC69Fedpogd1xzcH7XxpHNcIaAWHumd+N0x
-         VqtWMOFdrYnj26R3NTEjOzUAdLGCh5gHx5pcI=
-Date: Mon, 6 Sep 2010 08:33:27 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <johnstul@us.ibm.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-Message-ID: <20100906063327.GA4549@riccoc20.at.omicron.at>
-References: <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
- <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
- <20100817085324.GB3330@riccoc20.at.omicron.at>
- <1282090963.1734.97.camel@localhost>
- <20100818071942.GA4096@riccoc20.at.omicron.at>
- <1282176776.2865.100.camel@localhost.localdomain>
- <20100819055518.GA4084@riccoc20.at.omicron.at>
- <1282594125.3111.344.camel@localhost.localdomain>
- <20100827123849.GC11657@riccoc20.at.omicron.at>
- <1282948239.2268.155.camel@jstultz-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282948239.2268.155.camel@jstultz-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 6 Sep 2010 02:34:21 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Mon, 06 Sep 2010 08:33:50 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [RFCv5 0/9] CMA + VCMM integration
+To: linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>, linux-kernel@vger.kernel.org
+Message-id: <cover.1283749231.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 03:30:39PM -0700, John Stultz wrote:
-> On Fri, 2010-08-27 at 14:38 +0200, Richard Cochran wrote:
-> > We have not introduced new PPS interface. We use existing PPS subsystem.
-> 
-> Doesn't the pps subsystem have its own way to control the pps signal
-> interrupt? I'm not totally sure here, but given your point above that
-> having multiple pps events it seems like they should be selectable. It
-> seems something that we'd want to control via the global pps interface,
-> rather then having a pps-enable flag on every random bit of hardware
-> that can support it.
+Hello everyone,
 
-The PPS subsystem offers no way to disable PPS interrupts. 
+This patchset introduces a draft of a redesign of Zach Pfeffer's
+VCMM.  Not all of the functionality of the original VCMM has been
+ported into this patchset.  This is mostly meant as RFC.  Moreover,
+the code for VCMM implementation in this RFC has not been tested.
 
-> > > Same for the timestamps and periodic output (ie: and how do they differ
-> > > from reading or setting a timer on CLOCK_PTP?)
-> > 
-> > The posix timer calls won't work:
-> > 
-> > I have a PTP hardware clocks with multiple external timestamp
-> > channels. Using timer_gettime, how can I specify (or decode) the
-> > channel of interest to me?
-> 
-> I guess I'm not following you here. Again, I'm not super familiar with
-> the hardware involved. Could you clarify a bit more? What do you mean by
-> external timestamp? Is this what is used on the packet timestamping? 
+CMA has not been changed compared to the previous CMA versions so no
+aspects discussed on the list have been addressed yet.
 
-No, the packet timestamp occurs in the PHY, MAC, or on the MII bus and
-is an essential feature to support the PTP.
+The redesigned VCMM now uses notion of drivers -- a VCM context is
+created for each MMU on the platform and each such context is handled
+by a VCM driver.  A context (or may contexts) for One-to-One mappings
+is created as well and handled with a One-to-One VCM driver.
 
-An external timestamp is just a wire going into the clock and is an
-optional feature to make the clock more useful. The clock can latch
-the current time value when an edge is dectected on the wire. Using
-external timestamps, you correlate real world events with the absolute
-time in the clock.
+The patchset introduces a sample (or a template if you will) VCM MMU
+driver as well as a VCM CMA One-to-One driver so it is shown by
+example how VCM drivers are written.
 
-Typically, a clock offers two or more such input channels (wires), but
-timer_gettime does not offer a way to differentiate between them, and
-thus is not suitable.
+The VCMM framework proposed by this patchset also introduces
+a vcm_make_binding() call which allocates physical memory, creates
+virtual address reservation and binds the two together.  This makes
+life easier for One-to-One mappings and if device drivers limit their
+use of VCM API to a subset of functionality the can work on systems
+with or without MMU with no modifications (only the VCM context would
+need to change).
 
-> The posix clock id interface is frustrating because the flat static
-> enumeration is really limiting.
-> 
-> I wonder if a dynamic enumeration for posix clocks would be possibly a
-> way to go?
+Please refer to documentation in the second and seventh patch for more
+information regarding CMA and VCMM respectively.
 
-I am perfectly happy with this.
+Michal Nazarewicz (9):
+  lib: rbtree: rb_root_init() function added
+  mm: cma: Contiguous Memory Allocator added
+  mm: cma: Added SysFS support
+  mm: cma: Added command line parameters support
+  mm: cma: Test device and application added
+  ARM: cma: Added CMA to Aquila, Goni and c210 universal boards
+  mm: vcm: Virtual Contiguous Memory framework added
+  mm: vcm: Sample driver added
+  mm: vcm: vcm-cma: VCM CMA driver added
 
-> In other words, a driver registers a clock with the system, and the
-> system reserves a clock_id for it from the designated available pool and
-> assigns it back. Then userland could query the driver via something like
-> sysfs to get the clockid for the hardware. 
-> 
-> Would that maybe work? 
+ Documentation/00-INDEX                             |    4 +
+ .../ABI/testing/sysfs-kernel-mm-contiguous         |   53 +
+ Documentation/contiguous-memory.txt                |  623 +++++++++
+ Documentation/kernel-parameters.txt                |    7 +
+ Documentation/virtual-contiguous-memory.txt        |  866 ++++++++++++
+ arch/arm/mach-s5pv210/mach-aquila.c                |   31 +
+ arch/arm/mach-s5pv210/mach-goni.c                  |   31 +
+ arch/arm/mach-s5pv310/mach-universal_c210.c        |   23 +
+ drivers/misc/Kconfig                               |    8 +
+ drivers/misc/Makefile                              |    1 +
+ drivers/misc/cma-dev.c                             |  202 +++
+ include/linux/cma.h                                |  479 +++++++
+ include/linux/rbtree.h                             |   11 +
+ include/linux/vcm-cma.h                            |   38 +
+ include/linux/vcm-drv.h                            |  299 +++++
+ include/linux/vcm-sample.h                         |   30 +
+ include/linux/vcm.h                                |  275 ++++
+ mm/Kconfig                                         |  123 ++
+ mm/Makefile                                        |    5 +
+ mm/cma-best-fit.c                                  |  407 ++++++
+ mm/cma.c                                           | 1377 ++++++++++++++++++++
+ mm/vcm-cma.c                                       |   84 ++
+ mm/vcm-sample.c                                    |  120 ++
+ mm/vcm.c                                           |  932 +++++++++++++
+ tools/cma/cma-test.c                               |  386 ++++++
+ 25 files changed, 6415 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-kernel-mm-contiguous
+ create mode 100644 Documentation/contiguous-memory.txt
+ create mode 100644 Documentation/virtual-contiguous-memory.txt
+ create mode 100644 drivers/misc/cma-dev.c
+ create mode 100644 include/linux/cma.h
+ create mode 100644 include/linux/vcm-cma.h
+ create mode 100644 include/linux/vcm-drv.h
+ create mode 100644 include/linux/vcm-sample.h
+ create mode 100644 include/linux/vcm.h
+ create mode 100644 mm/cma-best-fit.c
+ create mode 100644 mm/cma.c
+ create mode 100644 mm/vcm-cma.c
+ create mode 100644 mm/vcm-sample.c
+ create mode 100644 mm/vcm.c
+ create mode 100644 tools/cma/cma-test.c
 
-I have now posted a sample implementation of this idea. Do you like it?
-
-> > The sysfs will include one class device for each PTP clock. Each clock
-> > has a sysfs attribute with the corresponding clock id.
-> 
-> Do you mean the clock_id # in the posix clocks namespace?
-
-Yes.
-
-> > I would also be happy with the character device idea already
-> > posted. Just pick one of the two, and I'll resubmit the patch set...
-> 
-> Personally, with regard to exposing the ptp clock to userland I'm more
-> comfortable via the chardev. However, the posix clocks/timer api is
-> really close to what you need, so I'm not totally set against it. And
-> maybe the dynamic enumeration would resolve my main problems with it?
-
-Okay, I have posted a draft of the dynamic idea. Can you support it?
-
-> That said, with the chardev method, I don't like the idea of duplicating
-> the existing time apis via a systemtime device. Dropping that from your
-> earlier patch would ease the majority of my objections.
-
-Well, the clock interface needs to offer basic services:
-
-1. Set time
-2. Get time
-3. Jump offset
-4. Adjust frequency
-
-This is similar to what the posix clock and ntp API offer. Using a
-chardev, should I make the ioctls really different, just for the
-purpose of being different?
-
-To me, it makes more sense to offer a familiar interface.
-
-I was perfectly happy with the chardev idea. In fact, that is the way
-I first implemented it. Now, I have also gone ahead and implemented
-the dynamic posix clock idea, too.
-
-> > At this point I would just like to go forward with one of the two
-> > proposed APIs. I had modelled the character device on the posix clock
-> > calls in order to make it immediately familar, and I think it is a
-> > viable approach. After the lkml discussion, I think it is even cleaner
-> > and nicer to just offer a new clock id.
-
-I would like to repeat the sentiment in this last paragraph! I already
-implemented and would be content with either form for the new clock
-control API:
-
-1. Character device
-2. POSIX clock with dynamic ids
-
-Please, just take your pick ;^)
-
-Thanks,
-Richard
