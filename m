@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab0IFTpA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 15:45:00 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:52190 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab0IFTow (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 15:44:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=k4sGfl3QHeBtT9Q1MAck11yEp8DMaefaoRLDwISoHyad/Vdcbgbbx1hjK3k19oZbhA
-         pPBRNgfE5Cm+mwPdyYccjEIesDhmyLYaGcHnJfOKWDUqFxoFWBSVCldaAXHPB95p0ELW
-         CEPdoduavm61uLNzkYT47/HVEc+a5p/8+qbJM=
-Date: Mon, 6 Sep 2010 12:44:46 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Richard Sharpe <realrichardsharpe@gmail.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>, Greg KH <gregkh@suse.de>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
-Subject: Re: [RFC 22/22] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
- module
-Message-ID: <20100906194446.GA31384@core.coreip.homeip.net>
-References: <1283160203-6981-1-git-send-email-nab@linux-iscsi.org>
- <20100905203006.GD18411@core.coreip.homeip.net>
- <1283723479.556.135.camel@haakon2.linux-iscsi.org>
- <20100906050816.GD17212@core.coreip.homeip.net>
- <20100906051703.GA2891@suse.de>
- <1283750480.556.196.camel@haakon2.linux-iscsi.org>
- <20100906053845.GG17212@core.coreip.homeip.net>
- <1283752861.556.200.camel@haakon2.linux-iscsi.org>
- <20100906062625.GI17212@core.coreip.homeip.net>
- <AANLkTimhHt78GFbxxjy1tosmebMVg-vKCNoJuqVa+iLH@mail.gmail.com>
+	id S1754593Ab0IFTpm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 15:45:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50283 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883Ab0IFTpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 15:45:38 -0400
+Message-ID: <4C854502.8040009@kernel.org>
+Date: Mon, 06 Sep 2010 21:46:10 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimhHt78GFbxxjy1tosmebMVg-vKCNoJuqVa+iLH@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Kyle McMartin <kyle@mcmartin.ca>
+CC: jgarzik@redhat.com, linux-ata@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: libata acpi issue on gateway laptop
+References: <20100906193501.GM2684@bombadil.infradead.org>
+In-Reply-To: <20100906193501.GM2684@bombadil.infradead.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Sep 2010 19:45:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 07:48:20AM -0700, Richard Sharpe wrote:
-> On Sun, Sep 5, 2010 at 11:26 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> >
-> > I think what you need is root_device_create() which will allocate a
-> > device structure and assign ->release() that is implemented outside of
-> > your module. This way your module may be unloaded even if there are
-> > outstanding references to tcm_loop_primary device.
+On 09/06/2010 09:35 PM, Kyle McMartin wrote:
+> Hi Jeff,
 > 
-> I am embarrassed to admit that scst_local (or whatever its new name
-> will be) probably has the same fault, as it too was based on
-> scsi_debug ...
+> A user is reporting an issue with 2.6.34.6 on a Gateway laptop that
+> booting with libata.noacpi=1 resolves.
 > 
-> However, I did a search of the 2.6.24.1 source tree and could not find
-> any instances of root_device_create() being called nor defined. I just
-> double and triple checked the spelling.
+> Symptom is that their device dumps a lot of messages like this:
 > 
-> Ahhh, I see why. A slightly different search suggests that it is
-> root_device_register(const char *name).
+> ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> ata1.00: ACPI cmd 00/00:00:00:00:00:a0 (NOP) rejected by device
+> (Stat=0x51 Err=0x04)
+> ata1.00: ACPI cmd ef/10:01:00:00:00:a0 (SET FEATURES) succeeded
+> ata1.00: ACPI cmd ef/10:02:00:00:00:a0 (SET FEATURES) succeeded
+> ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
+> ata1.00: ACPI cmd ef/10:04:00:00:00:a0 (SET FEATURES) succeeded
+> ata1.00: ACPI cmd ef/10:05:00:00:00:a0 (SET FEATURES) rejected by device
+> (Stat=0x51 Err=0x04)
+> ata1.00: ATA-8: Hitachi HTS545050B9A300, PB4OC60F, max UDMA/133
+> ata1.00: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32), AA
+> ata1.00: ACPI cmd 00/00:00:00:00:00:a0 (NOP) rejected by device
+> (Stat=0x51 Err=0x04)
+> ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
+> ata1.00: ACPI cmd ef/10:05:00:00:00:a0 (SET FEATURES) rejected by device
+> (Stat=0x51 Err=0x04)
+> ata1.00: configured for UDMA/133
 > 
-> From include/linux/device.h:
+> on boot and resume from suspend.
 > 
-> static inline struct device *root_device_register(const char *name)
-> {
-> 	return __root_device_register(name, THIS_MODULE);
-> }
+> Dmesg is at https://bugzilla.redhat.com/attachment.cgi?id=442529 and the
+> full bug report at https://bugzilla.redhat.com/show_bug.cgi?id=629315.
 > 
-> Was that the one you were thinking of?
-> 
+> Any ideas? They say the issue exists all the way back to 2.6.31, so it
+> seems like a pretty long-lived bug.
 
-Yes, that is the one. I'll blame Greg for inconsistent naming that
-caused this error :) - we usually have xxx_register() for objects that
-we already have on hand and xxx_create() (as in device_create) when we
-want the object to be allocated for us.
-
-Thanks.
+These are debug/info messages.  Just ignore them.
 
 -- 
-Dmitry
+tejun
