@@ -1,104 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab0IFPFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:05:47 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:49630 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab0IFPCv (ORCPT
+	id S1755317Ab0IFPFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:05:54 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:6759 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab0IFPD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:02:51 -0400
+	Mon, 6 Sep 2010 11:03:28 -0400
 X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz32i2a8h87h61h)
+X-BigFish: VS1(zzzz1202hzz8275bhz32i2a8h87h43h61h)
 X-Spam-TCS-SCL: 0:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8BZ2N-02-4WJ-02
+X-WSS-ID: 0L8BZ2M-02-4WE-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: <"http://kvm.qumranet.com"@osrc.amd.com>, <linux-kernel@vger.kernel.org>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 14/27] KVM: MMU: Make walk_addr_generic capable for two-level walking
-Date: Mon, 6 Sep 2010 17:01:49 +0200
-Message-ID: <1283785322-26898-15-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 08/27] KVM: MMU: Let is_rsvd_bits_set take mmu context instead of vcpu
+Date: Mon, 6 Sep 2010 17:01:43 +0200
+Message-ID: <1283785322-26898-9-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
 References: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses kvm_read_guest_page_tdp to make the
-walk_addr_generic functions suitable for two-level page
-table walking.
+This patch changes is_rsvd_bits_set() function prototype to
+take only a kvm_mmu context instead of a full vcpu.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/kvm/paging_tmpl.h |   27 ++++++++++++++++++++-------
- 1 files changed, 20 insertions(+), 7 deletions(-)
+ arch/x86/kvm/mmu.c         |    6 +++---
+ arch/x86/kvm/paging_tmpl.h |    7 ++++---
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 787540d..9668f91 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2577,12 +2577,12 @@ static void paging_free(struct kvm_vcpu *vcpu)
+ 	nonpaging_free(vcpu);
+ }
+ 
+-static bool is_rsvd_bits_set(struct kvm_vcpu *vcpu, u64 gpte, int level)
++static bool is_rsvd_bits_set(struct kvm_mmu *mmu, u64 gpte, int level)
+ {
+ 	int bit7;
+ 
+ 	bit7 = (gpte >> 7) & 1;
+-	return (gpte & vcpu->arch.mmu.rsvd_bits_mask[bit7][level-1]) != 0;
++	return (gpte & mmu->rsvd_bits_mask[bit7][level-1]) != 0;
+ }
+ 
+ #define PTTYPE 64
+@@ -2857,7 +2857,7 @@ static void mmu_pte_write_new_pte(struct kvm_vcpu *vcpu,
+ 		return;
+         }
+ 
+-	if (is_rsvd_bits_set(vcpu, *(u64 *)new, PT_PAGE_TABLE_LEVEL))
++	if (is_rsvd_bits_set(&vcpu->arch.mmu, *(u64 *)new, PT_PAGE_TABLE_LEVEL))
+ 		return;
+ 
+ 	++vcpu->kvm->stat.mmu_pte_updated;
 diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index cd59af1..a5b5759 100644
+index 13d0c06..68ee1b7 100644
 --- a/arch/x86/kvm/paging_tmpl.h
 +++ b/arch/x86/kvm/paging_tmpl.h
-@@ -124,6 +124,8 @@ static int FNAME(walk_addr_generic)(struct guest_walker *walker,
- 	unsigned index, pt_access, uninitialized_var(pte_access);
- 	gpa_t pte_gpa;
- 	bool eperm, present, rsvd_fault;
-+	int offset;
-+	u32 error = 0;
- 
- 	trace_kvm_mmu_pagetable_walk(addr, write_fault, user_fault,
- 				     fetch_fault);
-@@ -153,12 +155,13 @@ walk:
- 		index = PT_INDEX(addr, walker->level);
- 
- 		table_gfn = gpte_to_gfn(pte);
--		pte_gpa = gfn_to_gpa(table_gfn);
--		pte_gpa += index * sizeof(pt_element_t);
-+		offset    = index * sizeof(pt_element_t);
-+		pte_gpa   = gfn_to_gpa(table_gfn) + offset;
- 		walker->table_gfn[walker->level - 1] = table_gfn;
- 		walker->pte_gpa[walker->level - 1] = pte_gpa;
- 
--		if (kvm_read_guest(vcpu->kvm, pte_gpa, &pte, sizeof(pte))) {
-+		if (kvm_read_guest_page_mmu(vcpu, mmu, table_gfn, &pte, offset,
-+					    sizeof(pte), &error)) {
- 			present = false;
+@@ -168,7 +168,7 @@ walk:
  			break;
  		}
-@@ -209,15 +212,25 @@ walk:
- 				is_large_pte(pte) &&
- 				mmu->root_level == PT64_ROOT_LEVEL)) {
- 			int lvl = walker->level;
-+			gpa_t real_gpa;
-+			gfn_t gfn;
  
--			walker->gfn = gpte_to_gfn_lvl(pte, lvl);
--			walker->gfn += (addr & PT_LVL_OFFSET_MASK(lvl))
--					>> PAGE_SHIFT;
-+			gfn = gpte_to_gfn_lvl(pte, lvl);
-+			gfn += (addr & PT_LVL_OFFSET_MASK(lvl)) >> PAGE_SHIFT;
- 
- 			if (PTTYPE == 32 &&
- 			    walker->level == PT_DIRECTORY_LEVEL &&
- 			    is_cpuid_PSE36())
--				walker->gfn += pse36_gfn_delta(pte);
-+				gfn += pse36_gfn_delta(pte);
-+
-+			real_gpa = mmu->translate_gpa(vcpu, gfn_to_gpa(gfn),
-+						      &error);
-+			if (real_gpa == UNMAPPED_GVA) {
-+				walker->error_code = error;
-+				return 0;
-+			}
-+
-+			walker->gfn = real_gpa >> PAGE_SHIFT;
- 
+-		if (is_rsvd_bits_set(vcpu, pte, walker->level)) {
++		if (is_rsvd_bits_set(&vcpu->arch.mmu, pte, walker->level)) {
+ 			rsvd_fault = true;
  			break;
  		}
+@@ -327,6 +327,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ 				u64 *sptep)
+ {
+ 	struct kvm_mmu_page *sp;
++	struct kvm_mmu *mmu = &vcpu->arch.mmu;
+ 	pt_element_t *gptep = gw->prefetch_ptes;
+ 	u64 *spte;
+ 	int i;
+@@ -358,7 +359,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ 		gpte = gptep[i];
+ 
+ 		if (!is_present_gpte(gpte) ||
+-		      is_rsvd_bits_set(vcpu, gpte, PT_PAGE_TABLE_LEVEL)) {
++		      is_rsvd_bits_set(mmu, gpte, PT_PAGE_TABLE_LEVEL)) {
+ 			if (!sp->unsync)
+ 				__set_spte(spte, shadow_notrap_nonpresent_pte);
+ 			continue;
+@@ -713,7 +714,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 			return -EINVAL;
+ 
+ 		gfn = gpte_to_gfn(gpte);
+-		if (is_rsvd_bits_set(vcpu, gpte, PT_PAGE_TABLE_LEVEL)
++		if (is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL)
+ 		      || gfn != sp->gfns[i] || !is_present_gpte(gpte)
+ 		      || !(gpte & PT_ACCESSED_MASK)) {
+ 			u64 nonpresent;
 -- 
 1.7.0.4
 
