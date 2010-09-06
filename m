@@ -1,91 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab0IFP60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:58:26 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:48336
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754770Ab0IFP5i (ORCPT
+	id S1755400Ab0IFP6i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:58:38 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:38449
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754877Ab0IFP5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:57:38 -0400
+	Mon, 6 Sep 2010 11:57:42 -0400
 X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h61h)
-X-Spam-TCS-SCL: 0:0
+X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h43h65h)
+X-Spam-TCS-SCL: 4:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8C1LA-01-D1K-02
+X-WSS-ID: 0L8C1L6-01-D1B-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: Alexander Graf <agraf@suse.de>, <joro@8bytes.org>, <kvm@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 21/27] KVM: MMU: Introduce kvm_pdptr_read_mmu
-Date: Mon, 6 Sep 2010 17:56:00 +0200
-Message-ID: <1283788566-29186-22-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 04/27] KVM: X86: Introduce a tdp_set_cr3 function
+Date: Mon, 6 Sep 2010 17:55:43 +0200
+Message-ID: <1283788566-29186-5-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
 References: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is implemented to load the pdptr pointers of
-the currently running guest (l1 or l2 guest). Therefore it
-takes care about the current paging mode and can read pdptrs
-out of l2 guest physical memory.
+This patch introduces a special set_tdp_cr3 function pointer
+in kvm_x86_ops which is only used for tpd enabled mmu
+contexts. This allows to remove some hacks from svm code.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/kvm/kvm_cache_regs.h |    7 +++++++
- arch/x86/kvm/mmu.c            |    2 +-
- arch/x86/kvm/paging_tmpl.h    |    2 +-
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    2 ++
+ arch/x86/kvm/mmu.c              |    2 +-
+ arch/x86/kvm/svm.c              |   23 ++++++++++++++---------
+ arch/x86/kvm/vmx.c              |    2 ++
+ 4 files changed, 19 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kvm/kvm_cache_regs.h b/arch/x86/kvm/kvm_cache_regs.h
-index a37abe2..975bb45 100644
---- a/arch/x86/kvm/kvm_cache_regs.h
-+++ b/arch/x86/kvm/kvm_cache_regs.h
-@@ -45,6 +45,13 @@ static inline u64 kvm_pdptr_read(struct kvm_vcpu *vcpu, int index)
- 	return vcpu->arch.walk_mmu->pdptrs[index];
- }
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 43c8db0..aeeea9c 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -526,6 +526,8 @@ struct kvm_x86_ops {
+ 	bool (*rdtscp_supported)(void);
+ 	void (*adjust_tsc_offset)(struct kvm_vcpu *vcpu, s64 adjustment);
  
-+static inline u64 kvm_pdptr_read_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu, int index)
-+{
-+	load_pdptrs(vcpu, mmu, mmu->get_cr3(vcpu));
++	void (*set_tdp_cr3)(struct kvm_vcpu *vcpu, unsigned long cr3);
 +
-+	return mmu->pdptrs[index];
-+}
-+
- static inline ulong kvm_read_cr0_bits(struct kvm_vcpu *vcpu, ulong mask)
- {
- 	ulong tmask = mask & KVM_POSSIBLE_CR0_GUEST_BITS;
+ 	void (*set_supported_cpuid)(u32 func, struct kvm_cpuid_entry2 *entry);
+ 
+ 	bool (*has_wbinvd_exit)(void);
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 7bc8d67..3663d1c 100644
+index 2ac3851..543ec74 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -2398,7 +2398,7 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
+@@ -2711,7 +2711,7 @@ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+ 	context->shadow_root_level = kvm_x86_ops->get_tdp_level();
+ 	context->root_hpa = INVALID_PAGE;
+ 	context->direct_map = true;
+-	context->set_cr3 = kvm_x86_ops->set_cr3;
++	context->set_cr3 = kvm_x86_ops->set_tdp_cr3;
  
- 		ASSERT(!VALID_PAGE(root));
- 		if (vcpu->arch.mmu.root_level == PT32E_ROOT_LEVEL) {
--			pdptr = kvm_pdptr_read(vcpu, i);
-+			pdptr = kvm_pdptr_read_mmu(vcpu, &vcpu->arch.mmu, i);
- 			if (!is_present_gpte(pdptr)) {
- 				vcpu->arch.mmu.pae_root[i] = 0;
- 				continue;
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 20fc815..c0aac98 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -137,7 +137,7 @@ walk:
+ 	if (!is_paging(vcpu)) {
+ 		context->gva_to_gpa = nonpaging_gva_to_gpa;
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 6808f64..094df31 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3216,9 +3216,6 @@ static void svm_vcpu_run(struct kvm_vcpu *vcpu)
+ 	gs_selector = kvm_read_gs();
+ 	ldt_selector = kvm_read_ldt();
+ 	svm->vmcb->save.cr2 = vcpu->arch.cr2;
+-	/* required for live migration with NPT */
+-	if (npt_enabled)
+-		svm->vmcb->save.cr3 = vcpu->arch.cr3;
  
- #if PTTYPE == 64
- 	if (walker->level == PT32E_ROOT_LEVEL) {
--		pte = kvm_pdptr_read(vcpu, (addr >> 30) & 3);
-+		pte = kvm_pdptr_read_mmu(vcpu, mmu, (addr >> 30) & 3);
- 		trace_kvm_mmu_paging_element(pte, walker->level);
- 		if (!is_present_gpte(pte)) {
- 			present = false;
+ 	clgi();
+ 
+@@ -3335,16 +3332,22 @@ static void svm_set_cr3(struct kvm_vcpu *vcpu, unsigned long root)
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+ 
+-	if (npt_enabled) {
+-		svm->vmcb->control.nested_cr3 = root;
+-		force_new_asid(vcpu);
+-		return;
+-	}
+-
+ 	svm->vmcb->save.cr3 = root;
+ 	force_new_asid(vcpu);
+ }
+ 
++static void set_tdp_cr3(struct kvm_vcpu *vcpu, unsigned long root)
++{
++	struct vcpu_svm *svm = to_svm(vcpu);
++
++	svm->vmcb->control.nested_cr3 = root;
++
++	/* Also sync guest cr3 here in case we live migrate */
++	svm->vmcb->save.cr3 = vcpu->arch.cr3;
++
++	force_new_asid(vcpu);
++}
++
+ static int is_disabled(void)
+ {
+ 	u64 vm_cr;
+@@ -3571,6 +3574,8 @@ static struct kvm_x86_ops svm_x86_ops = {
+ 
+ 	.write_tsc_offset = svm_write_tsc_offset,
+ 	.adjust_tsc_offset = svm_adjust_tsc_offset,
++
++	.set_tdp_cr3 = set_tdp_cr3,
+ };
+ 
+ static int __init svm_init(void)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 676555c..0e62d8a 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4347,6 +4347,8 @@ static struct kvm_x86_ops vmx_x86_ops = {
+ 
+ 	.write_tsc_offset = vmx_write_tsc_offset,
+ 	.adjust_tsc_offset = vmx_adjust_tsc_offset,
++
++	.set_tdp_cr3 = vmx_set_cr3,
+ };
+ 
+ static int __init vmx_init(void)
 -- 
 1.7.0.4
 
