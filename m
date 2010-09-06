@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab0IFAoS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 20:44:18 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11517 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754323Ab0IFAoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 20:44:17 -0400
-Message-ID: <000a01cb4d5c$a1bcb520$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-Cc: "Jean Delvare \(PC drivers, core\)" <khali@linux-fr.org>,
-        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
-        "Crane Cai" <crane.cai@amd.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Linus Walleij" <linus.walleij@stericsson.com>,
-        "Ralf Baechle" <ralf@linux-mips.org>,
-        "srinidhi kasagar" <srinidhi.kasagar@stericsson.com>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <joe@perches.com>, <yong.y.wang@intel.com>, <qi.wang@intel.com>,
-        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
-        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
-        "Arnd Bergmann" <arnd@arndb.de>
-References: <4C80CBC0.5050908@dsn.okisemi.com> <20100903133613.1c519c49@lxorguk.ukuu.org.uk>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
-Date: Mon, 6 Sep 2010 09:43:08 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	id S1754971Ab0IFArX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 20:47:23 -0400
+Received: from web37602.mail.mud.yahoo.com ([209.191.87.85]:29302 "HELO
+	web37602.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753992Ab0IFArW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 20:47:22 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=hlf/8U87/g/wzDrqZmKhYmgYA8W7oB/d6Ww5J5FEE/b8kvGnzDtOoQ48Te4E74FObc3JOVuGl7fdQ/fWF6kpxIuSJgSIhtUPrmt/6YZcS7iyvZbGylL9KpWdzdBM/8IIy3ZJ4a8RkQGLRv1GcPnjD8JugU+9AKlSTIRJXlebVIw=;
+Message-ID: <788039.87322.qm@web37602.mail.mud.yahoo.com>
+X-YMail-OSG: oBRFbpcVM1nXxbqNterfmsNyKrpK0CDpPvpBTtwOqp0gUDb
+ yvjjExwsgpF72IuBlaqgdCoXtuHCgefKcJ6vUQazsCFRW11N5E2gpHLdULOR
+ hjUnC4tllyFWF2N80Pu45A8zoR5gq1TjKSC6MSUe4xKw.GjcWSOxzKA6Lmpg
+ 2IfcPFxNHkN7m2VkbWbQiKwqEP0l7YvmdUmz34KrawGvKdmD5rUBb237SGDJ
+ ZAAzPN3PVXrH1Y96IUHVVdkG0Ym.AQxcp5rAchzNQrQs5Jg4ZQCizHsuZfVa
+ p2wwlsurIJkAa2DW9eHsfkfAgOtAi1LSokfGwi8jHPEVkvBHI1AomRQ--
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Sun, 5 Sep 2010 17:47:21 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Subject: Re: [PATCH 0/3 RESEND] My work on MemoryStick system
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1283643397.12470.1.camel@maxim-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+> Maxim Levitsky wrote: 
+> > Hi,
+> > 
+> > This is a resend of my patches for memorystick
+> subsystem.
+> > I mostly get positive feedback on this from the
+> users.
+> > (Only one user said that initialy card wasn't
+> recognised,
+> > but he can't reproduce that)
+> > 
+> > Please review this.
+> 
+> Alex?
+> Anybody?
+> 
+> Any comments?
+> 
 
-Thank you for your comments.
-We will update and resubmit soon.
-
-Thanks, Ohtake(OKISemi)
------ Original Message ----- 
-From: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>; "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>;
-"Crane Cai" <crane.cai@amd.com>; "Samuel Ortiz" <sameo@linux.intel.com>; "Linus Walleij" <linus.walleij@stericsson.com>;
-"Ralf Baechle" <ralf@linux-mips.org>; "srinidhi kasagar" <srinidhi.kasagar@stericsson.com>; <linux-i2c@vger.kernel.org>;
-<linux-kernel@vger.kernel.org>; <joe@perches.com>; <yong.y.wang@intel.com>; <qi.wang@intel.com>;
-<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>; "Arnd
-Bergmann" <arnd@arndb.de>
-Sent: Friday, September 03, 2010 9:36 PM
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
-
-
-> > +config PCH_I2C_CH_COUNT
-> > + int "PCH I2C the number of channel count"
-> > + range 1 2
-> > + depends on PCH_I2C
-> > + help
-> > +   This driver is for PCH(Platform controller Hub) I2C of Topcliff which
-> > +   is an IOH(Input/Output Hub) for x86 embedded processor.
-> > +   The number of I2C buses/channels supported by the PCH I2C controller.
-> > +   PCH I2C of Topcliff supports only one channel.
->
-> These sort of settings need to be runtime so one kernel can be built for
-> many platform variants. In this case if I understand correctly the
-> current device only has one channel so the define could just be moved
-> into the driver for now and made a variable later as/when/if new hardware
-> with more channels appears.
->
->
->
-> > +static s32 pch_wait_for_xfer_complete(struct i2c_algo_pch_data *adap)
-> > +{
-> > + s32 ret;
-> > + ret = wait_event_interruptible_timeout(pch_event,
-> > + (adap->pch_event_flag != 0), msecs_to_jiffies(50));
-> > + if (ret < 0) {
-> > + pch_err(adap, "timeout: %x\n", adap->pch_event_flag);
-> > + return ret;
-> > + }
->
-> You are reporting a timeout when _interruptible can also be woken by a
-> signal to the process (eg the user hitting ^C)
->
->
+It looks OK to me.
 
 
+
+
+      
