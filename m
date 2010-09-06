@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab0IFL1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 07:27:15 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:35328 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab0IFL1O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 07:27:14 -0400
-MIME-Version: 1.0
-X-Originating-IP: [81.243.35.243]
-In-Reply-To: <201009061243.00479.trenn@suse.de>
-References: <AANLkTikvbn3+JPc7pnGZk-H4B71MHTu+-vjuzfJw_7PC@mail.gmail.com>
-	<20100904081801.GA19876@elte.hu>
-	<AANLkTinrRoi6y1fKUevu2O-Diac5B2r8RftTWUigQZOh@mail.gmail.com>
-	<201009061243.00479.trenn@suse.de>
-Date: Mon, 6 Sep 2010 13:27:13 +0200
-Message-ID: <AANLkTik8_ixOcFy=c4hPZknyUqPYB+2hzQTNK9wVok4q@mail.gmail.com>
-Subject: Re: [PATCH] tracing, perf: add more power related events
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: discuss@lesswatts.org, linux-pm@lists.linux-foundation.org,
-        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754588Ab0IFL1b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 07:27:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48067 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754491Ab0IFL13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 07:27:29 -0400
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: James Bottomley <James.Bottomley@suse.de>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Mike Christie <michaelc@cs.wisc.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>, linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        scst-devel <scst-devel@lists.sourceforge.net>
+In-Reply-To: <AANLkTikaE=7++X1VQj36Np93msyCViLs40_ti_2=ybqn@mail.gmail.com>
+References: <4C76CA57.3050405@vlnb.net>
+	 <1282857806.32007.175.camel@haakon2.linux-iscsi.org>
+	 <4C79484B.3090607@vlnb.net>
+	 <1283028468.32007.357.camel@haakon2.linux-iscsi.org>
+	 <4C7C18CE.5020103@vlnb.net>
+	 <1283204792.32007.448.camel@haakon2.linux-iscsi.org>
+	 <4C7FFD1A.8090509@vlnb.net>
+	 <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
+	 <20100905201802.GC18411@core.coreip.homeip.net>
+	 <1283723447.556.133.camel@haakon2.linux-iscsi.org>
+	 <20100905234134.GA17212@core.coreip.homeip.net>
+	 <1283731194.556.147.camel@haakon2.linux-iscsi.org>
+	 <1283769578.15944.1293.camel@mulgrave.site>
+	 <AANLkTikaE=7++X1VQj36Np93msyCViLs40_ti_2=ybqn@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Sep 2010 07:27:23 -0400
+Message-ID: <1283772443.15944.1320.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 6, 2010 at 12:42 PM, Thomas Renninger <trenn@suse.de> wrote:
-...
->> I will re-start a thread with the full patch and with both lkml and
->> linux-omap in Cc.
-> discuss@lesswatts.org and linux-pm@lists.linux-foundation.org
-> are also lists where people could be interested in such stuff.
->
-> Could you explain a bit what these ARM specific power domains are then, please.
-Sure. This is OMAP specific but could easily be used on all platforms.
-To make it short, the OMAP chip is organized in power domains (16 in
-OMAP3) where you can adjust the power supply voltage. In each power
-domain you have different clocks that you can enable, disable or
-change the rate of. In order to reach an efficient low power mode you
-need to ensure that all clocks in a clock domain are idled or cut off
-(automatically by the HW or with the intervention of SW drivers).
+On Mon, 2010-09-06 at 13:02 +0200, Bart Van Assche wrote:
+> On Mon, Sep 6, 2010 at 12:39 PM, James Bottomley
+> <James.Bottomley@suse.de> wrote:
+> >
+> > [ ... ]
+> >
+> > > So, please understand that code and project workflow is only one of the
+> > > reasons why TCM/LIO v4 was selected over SCST.
+> >
+> > It isn't yet ... your code still has to be reviewed properly.  My
+> > preferred reviewer is currently honing his skills on a diet of raw beef
+> > in Argentina, but hopefully he'll get around to it shortly.
+> 
+> The SCST developers and the SCST users will definitely appreciate it
+> if review efforts will be spread evenly over both projects.
 
-The HW complexity requires the tracing of all those clocks/power
-states, that is why new events are proposed.
+SCST isn't at the starting gate yet, so there's nothing currently to
+review.
 
-> One idea I had after seeing these:
-> Would it make sense to additionally add one or several device power perf event(s)?
-> bluetooth, wireless, usb, cameras, whatever, could register it by name,
-> like you've done it with the power domains.
-> E.g. I had a problem with 2.6.31 where bluetooth was powered up/activated at
-> boot time, while it got activated ondemand before. Cost me some Watts and quite
-> some time to find that out.
-> Showing perf power events when bluetooth gets activated and put into lower power
-> states again (and the same for other devices), sounds like a good idea?
-That makes sense. The proposed clock/power events can be used by any
-device, might it be chipset internal or external. Of course a proper
-API or naming convention is needed.
+James
 
->
->     Thomas
->
 
-Hope this helps,
-Jean
