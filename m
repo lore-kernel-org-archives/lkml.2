@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab0IFLcj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 07:32:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48244 "EHLO mx2.suse.de"
+	id S1754555Ab0IFLfB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 07:35:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54314 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007Ab0IFLci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 07:32:38 -0400
-Message-ID: <4C84D154.7070303@suse.cz>
-Date: Mon, 06 Sep 2010 13:32:36 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
+	id S1753568Ab0IFLfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 07:35:00 -0400
+Message-ID: <4C84D1CE.3070205@redhat.com>
+Date: Mon, 06 Sep 2010 14:34:38 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-To: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xconfig: Change the titlebar if using Qt3
-References: <1283355997-6900-1-git-send-email-mmarek@suse.cz> <201009021852.40023.alexander.stein@informatik.tu-chemnitz.de>
-In-Reply-To: <201009021852.40023.alexander.stein@informatik.tu-chemnitz.de>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: disabling group leader perf_event
+References: <4C84B088.5050003@redhat.com> <1283772256.1930.303.camel@laptop>
+In-Reply-To: <1283772256.1930.303.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2.9.2010 18:52, Alexander Stein wrote:
-> Hello Marek,
-> 
-> On Wednesday 01 September 2010 17:46:37 Michal Marek wrote:
->> Qt4 is now used by default and will get more testing. In case someone
->> still uses Qt3 and reports a bug, make it easy to recognize that this is
->> Qt3.
+  On 09/06/2010 02:24 PM, Peter Zijlstra wrote:
+> On Mon, 2010-09-06 at 12:12 +0300, Avi Kivity wrote:
+>> If I read the code correctly, disabling a group leader perf_event will
+>> disable the entire group.
 >>
->> Cc: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
->> Signed-off-by: Michal Marek <mmarek@suse.cz>
->> ---
->>  scripts/kconfig/qconf.cc |   10 ++++++++--
->>  1 files changed, 8 insertions(+), 2 deletions(-)
->>
->> diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
->> index 88d3874..a04e451 100644
->> --- a/scripts/kconfig/qconf.cc
->> +++ b/scripts/kconfig/qconf.cc
->> @@ -1274,8 +1274,14 @@ ConfigMainWindow::ConfigMainWindow(void)
->>  	char title[256];
->>
->>  	QDesktopWidget *d = configApp->desktop();
->> -	snprintf(title, sizeof(title), _("Linux Kernel v%s Configuration"),
->> -		getenv("KERNELVERSION"));
->> +	snprintf(title, sizeof(title), _("Linux Kernel v%s Configuration%s"),
->> +		getenv("KERNELVERSION"),
->> +#if QT_VERSION < 0x040000
->> +		" (Qt3)"
->> +#else
->> +		""
->> +#endif
->> +		);
->>  	setCaption(title);
->>
->>  	width = configSettings->readNumEntry("/window width", d->width() - 64);
-> 
-> Looks fine to me.
+>> Is this correct?
+> Yeah, pretty much.
 
-OK, I committed it with "Acked-by: <you>"
+Well, I never liked group_leader style APIs.  I like different types for 
+the container and the contained.  But such is not unix.
 
-thanks,
-Michal
+>> If so, how can I disable just the event itself?  Can I allocate a dummy
+>> invent for the group leader so I can enable and disable each perf_event
+>> in the group individually?
+> Which makes me wonder why you use groups in the first place.
+
+Basically, to read() all events in one go.  I have many of them.
+
+My current problem is that I have an event (kvm_exit) which I want to 
+drill down by looking at a field (exit_reason).  So I create lots of 
+separate perf_events with a filter for each reason: 
+kvm_exit(exit_reason==0), kvm_exit(exit_reason==1), etc.  But filters 
+are fairly slow (can have ~60 such events on AMD), so I want to make 
+this drill-down optional.
+
+Current plan is to have a group for the basic events and another group 
+for the drilldown events (each per-cpu), and activate the drilldown 
+group on user request.  perf will be able to schedule both groups 
+concurrently since they only contain tracepoints, yes?
+
+-- 
+error compiling committee.c: too many arguments to function
+
