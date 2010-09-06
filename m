@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab0IFUFH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 16:05:07 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54795 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752274Ab0IFUFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 16:05:01 -0400
-Message-ID: <4C854987.6070406@kernel.org>
-Date: Mon, 06 Sep 2010 22:05:27 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1755301Ab0IFUFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 16:05:22 -0400
+Received: from v055943.home.net.pl ([79.96.20.63]:54748 "HELO
+	v055943.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754091Ab0IFUFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 16:05:18 -0400
+X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Sep 2010 16:05:17 EDT
+Message-ID: <4C853C78.70705@ideadruk.pl>
+Date: Mon, 06 Sep 2010 21:09:44 +0200
+From: Idea Druk - mailing <mailing@ideadruk.pl>
+User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
 MIME-Version: 1.0
-To: Kyle McMartin <kyle@mcmartin.ca>
-CC: jgarzik@redhat.com, linux-kernel@vger.kernel.org,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: libata acpi issue on gateway laptop
-References: <20100906193501.GM2684@bombadil.infradead.org> <4C854502.8040009@kernel.org> <20100906195108.GN2684@bombadil.infradead.org>
-In-Reply-To: <20100906195108.GN2684@bombadil.infradead.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 06 Sep 2010 20:04:45 +0000 (UTC)
+To: biuro@idea-druk.pl
+Subject: Zapytanie.
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Szanowni Pañstwo,
 
-On 09/06/2010 09:51 PM, Kyle McMartin wrote:
-> On Mon, Sep 06, 2010 at 09:46:10PM +0200, Tejun Heo wrote:
->> These are debug/info messages.  Just ignore them.
->>
-> 
-> The user claims they are causing long delays waiting for the timeouts to
-> occur that go away if booting with noacpi...
+Jeste¶my firm± zajmuj±c± siê us³ugami poligraficznymi (druki ulotek,
+wizytówek, plakatów, teczek ofertowych, przygotowywanie projektów
+graficznych itp.).
 
-Hmm... I don't see any timeout in the log you posted.  Ah, okay, the
-interesting part is in the full log, the ACPI GTF sequence itself is
-finishing fine but the next NCQ READ command is timing out.  The BIOS
-is enabling non-zero buffer offsets and DMA setup FIS auto-activate.
-It's likely that the controller isn't being configured correctly
-leading to mismatch between the behavior expected by the controller
-and the actual drive behavior.  Hmm.... I'll look further into it
-tomorrow.  For the record, can you please attach the full log, lspci
--nn output and dmidecode output here?
+Szanuj±c Pañstwa prywatno¶æ i zarazem przestrzegaj±c obowi±zuj±cych
+przepisów*, zwracamy siê z pro¶b± o wyra¿enie zgody na przys³anie Pañstwu
+(jednorazowo) naszej oferty.
 
-Thanks.
+Je¶li s± Pañstwo zainteresowani otrzymaniem naszej oferty prosimy
+o odpowied¼ na niniejszego maila w TYTULE odpowiedzi wpisuj±c s³owo "TAK".
 
--- 
-tejun
+Je¿eli nie s± Pañstwo zainteresowani nasz± ofert± serdecznie przepraszamy.
+
+Pozdrawiamy.
+
+
+
+
+_____________________________________________________________
+
+*zgodnie z Ustaw± o ¶wiadczeniu us³ug drog± elektroniczn± oraz dyrektyw± 
+UOKiK:
+"dopuszczalne jest przes³anie na adres e-mail pytania, czy adresat 
+zgadza siê na otrzymywanie drog± elektroniczn± informacji handlowej" - 
+materia³y z konferencji nt. Bezpieczeñstwa w sieci Internet, Warszawa 14 
+marca 2006
+
+Niniejsza wiadomo¶æ nie jest informacj± handlow±, a jedynie zapytaniem o 
+zgodê na przesy³anie informacji handlowych drog± elektroniczn± zgodnie z 
+art. 10 ustawy z dnia 18 lipca 2002r. o ¶wiadczeniu us³ug drog± 
+elektroniczn± (Dz.U. z 2002r. Nr 144, poz 1204 z pó¼n. zm.)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
