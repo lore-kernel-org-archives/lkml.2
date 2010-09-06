@@ -1,602 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab0IFIkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 04:40:37 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:41539 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752760Ab0IFIka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 04:40:30 -0400
-Date: Mon, 6 Sep 2010 09:40:15 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
-	direct reclaim allocation fails
-Message-ID: <20100906084015.GJ8384@csn.ul.ie>
-References: <20100904022545.GD705@dastard> <20100903202101.f937b0bb.akpm@linux-foundation.org> <20100904075840.GE705@dastard> <20100904081414.GF705@dastard> <20100905015400.GA10714@localhost> <20100905021555.GG705@dastard> <20100905060539.GA17450@localhost> <20100905131447.GJ705@dastard> <20100905134554.GA7083@localhost> <20100906040243.GA7362@dastard>
+	id S1752850Ab0IFIlt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 04:41:49 -0400
+Received: from relay02-haj2.antispameurope.com ([83.246.65.52]:50893 "EHLO
+	relay02-haj2.antispameurope.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752554Ab0IFIls (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 04:41:48 -0400
+Message-ID: <4C84A93B.2050507@iis.fraunhofer.de>
+Date: Mon, 06 Sep 2010 10:41:31 +0200
+From: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.8) Gecko/20100802 Lightning/1.0b2 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100906040243.GA7362@dastard>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: LKML <linux-kernel@vger.kernel.org>
+CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: [IIO] Proposal for sysfs attributes
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms070709020307020009040802"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 02:02:43PM +1000, Dave Chinner wrote:
-> On Sun, Sep 05, 2010 at 09:45:54PM +0800, Wu Fengguang wrote:
-> > [restoring CC list]
-> > 
-> > On Sun, Sep 05, 2010 at 09:14:47PM +0800, Dave Chinner wrote:
-> > > On Sun, Sep 05, 2010 at 02:05:39PM +0800, Wu Fengguang wrote:
-> > > > On Sun, Sep 05, 2010 at 10:15:55AM +0800, Dave Chinner wrote:
-> > > > > On Sun, Sep 05, 2010 at 09:54:00AM +0800, Wu Fengguang wrote:
-> > > > > > Dave, could you post (publicly) the kconfig and /proc/vmstat?
-> > > > > > 
-> > > > > > I'd like to check if you have swap or memory compaction enabled..
-> > > > > 
-> > > > > Swap is enabled - it has 512MB of swap space:
-> > > > > 
-> > > > > $ free
-> > > > >              total       used       free     shared    buffers     cached
-> > > > > Mem:       4054304     100928    3953376          0       4096      43108
-> > > > > -/+ buffers/cache:      53724    4000580
-> > > > > Swap:       497976          0     497976
-> > > > 
-> > > > It looks swap is not used at all.
-> > > 
-> > > It isn't 30s after boot, abut I haven't checked after a livelock.
-> > 
-> > That's fine. I see in your fs_mark-wedge-1.png that there are no
-> > read/write IO at all when CPUs are 100% busy. So there should be no
-> > swap IO at "livelock" time.
-> > 
-> > > > > And memory compaction is not enabled:
-> > > > > 
-> > > > > $ grep COMPACT .config
-> > > > > # CONFIG_COMPACTION is not set
-> > 
-> > Memory compaction is not likely the cause too. It will only kick in for
-> > order > 3 allocations.
-> > 
-> > > > > 
-> > > > > The .config is pretty much a 'make defconfig' and then enabling XFS and
-> > > > > whatever debug I need (e.g. locking, memleak, etc).
-> > > > 
-> > > > Thanks! The problem seems hard to debug -- you cannot login at all
-> > > > when it is doing lock contentions, so cannot get sysrq call traces.
-> > > 
-> > > Well, I don't know whether it is lock contention at all. The sets of
-> > > traces I have got previously have shown backtraces on all CPUs in
-> > > direct reclaim with several in draining queues, but no apparent lock
-> > > contention.
-> > 
-> > That's interesting. Do you still have the full backtraces?
-> 
-> Just saw one when testing some new code with CONFIG_XFS_DEBUG
-> enabled. The act of running 'echo t > /proc/sysrq-trigger' seems to
-> have got the machine unstuck, so I'm not sure if the traces are
-> completely representative of the livelock state.
+This is a cryptographically signed message in MIME format.
 
-sysrq-trigger would alter the timing of at least one of the direct
-reclaimers. It's vaguely possible this was enough of a backoff to allow
-further progress.
+--------------ms070709020307020009040802
+Content-Type: multipart/mixed;
+ boundary="------------010807060400000800070702"
 
-> however, here are the fs_mark processes:
-> 
-> [  596.628086] fs_mark       R  running task        0  2373   2163 0x00000008
-> [  596.628086]  0000000000000000 ffffffff81bb8610 00000000000008fc 0000000000000002
-> [  596.628086]  0000000000000000 0000000000000296 0000000000000297 ffffffffffffff10
-> [  596.628086]  ffffffff810b48c2 0000000000000010 0000000000000202 ffff880116b61798
-> [  596.628086] Call Trace:
-> [  596.628086]  [<ffffffff810b48c2>] ? smp_call_function_many+0x1a2/0x210
-> [  596.628086]  [<ffffffff810b48a5>] ? smp_call_function_many+0x185/0x210
-> [  596.628086]  [<ffffffff81109ff0>] ? drain_local_pages+0x0/0x20
-> [  596.628086]  [<ffffffff810b4952>] ? smp_call_function+0x22/0x30
-> [  596.628086]  [<ffffffff81084934>] ? on_each_cpu+0x24/0x50
-> [  596.628086]  [<ffffffff81108a8c>] ? drain_all_pages+0x1c/0x20
-> [  596.628086]  [<ffffffff81108fad>] ? __alloc_pages_nodemask+0x42d/0x700
-> [  596.628086]  [<ffffffff8113d0f2>] ? kmem_getpages+0x62/0x160
-> [  596.628086]  [<ffffffff8113dce6>] ? fallback_alloc+0x196/0x240
-> [  596.628086]  [<ffffffff8113da68>] ? ____cache_alloc_node+0x98/0x180
-> [  596.628086]  [<ffffffff8113e643>] ? __kmalloc+0x193/0x230
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131092e>] ? kmem_zalloc+0x1e/0x50
-> [  596.628086]  [<ffffffff812fac80>] ? xfs_log_commit_cil+0x500/0x590
-> [  596.628086]  [<ffffffff81310943>] ? kmem_zalloc+0x33/0x50
+This is a multi-part message in MIME format.
+--------------010807060400000800070702
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-This looks like an order-0 allocation. The "Drain per-cpu lists after
-direct reclaim allocation fails" avoids calling drain_all_pages() for a
-number of cases but introduces a case where it's called for order-0
-pages. The intention was to avoid allocations failing just because of
-the lists but maybe it's happening too often.
+Hi all,
 
-I include a patch at the very end of this mail that might relieve this.
+there were some sysfs userspace questions on linux-iio where we would=20
+like to get some more comments on.
 
-> [  596.628086]  [<ffffffff813082d6>] ? _xfs_trans_commit+0x156/0x2f0
-> [  596.628086]  [<ffffffff8130d50e>] ? xfs_create+0x58e/0x700
-> [  596.628086]  [<ffffffff8131c587>] ? xfs_vn_mknod+0xa7/0x1c0
-> [  596.628086]  [<ffffffff8131c6d0>] ? xfs_vn_create+0x10/0x20
-> [  596.628086]  [<ffffffff81151f48>] ? vfs_create+0xb8/0xf0
-> [  596.628086]  [<ffffffff8115273c>] ? do_last+0x4dc/0x5d0
-> [  596.628086]  [<ffffffff81154937>] ? do_filp_open+0x207/0x5e0
-> [  596.628086]  [<ffffffff8115b7bc>] ? d_lookup+0x3c/0x60
-> [  596.628086]  [<ffffffff8105fc58>] ? pvclock_clocksource_read+0x58/0xd0
-> [  596.628086]  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
-> [  596.628086]  [<ffffffff8115f8fa>] ? alloc_fd+0xfa/0x140
-> [  596.628086]  [<ffffffff811448a5>] ? do_sys_open+0x65/0x130
-> [  596.628086]  [<ffffffff811449b0>] ? sys_open+0x20/0x30
-> [  596.628086]  [<ffffffff81036032>] ? system_call_fastpath+0x16/0x1b
-> [  596.628086] fs_mark       R  running task        0  2374   2163 0x00000000
-> [  596.628086]  0000000000000000 0000000000000002 ffff88011ad619b0 ffff88011fc050c0
-> [  596.628086]  ffff88011ad619e8 ffffffff8113dce6 ffff88011fc028c0 ffff88011fc02900
-> [  596.628086]  ffff88011ad619e8 0000025000000000 ffff880100001c08 0000001000000000
-> [  596.628086] Call Trace:
-> [  596.628086]  [<ffffffff8113dce6>] ? fallback_alloc+0x196/0x240
-> [  596.628086]  [<ffffffff8113da68>] ? ____cache_alloc_node+0x98/0x180
-> [  596.628086]  [<ffffffff8113e643>] ? __kmalloc+0x193/0x230
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131092e>] ? kmem_zalloc+0x1e/0x50
-> [  596.628086]  [<ffffffff812fac80>] ? xfs_log_commit_cil+0x500/0x590
-> [  596.628086]  [<ffffffff81310943>] ? kmem_zalloc+0x33/0x50
-> [  596.628086]  [<ffffffff813082d6>] ? _xfs_trans_commit+0x156/0x2f0
-> [  596.628086]  [<ffffffff8130d50e>] ? xfs_create+0x58e/0x700
-> [  596.628086]  [<ffffffff8131c587>] ? xfs_vn_mknod+0xa7/0x1c0
-> [  596.628086]  [<ffffffff8131c6d0>] ? xfs_vn_create+0x10/0x20
-> [  596.628086]  [<ffffffff81151f48>] ? vfs_create+0xb8/0xf0
-> [  596.628086]  [<ffffffff8115273c>] ? do_last+0x4dc/0x5d0
-> [  596.628086]  [<ffffffff81154937>] ? do_filp_open+0x207/0x5e0
-> [  596.628086]  [<ffffffff8115b7bc>] ? d_lookup+0x3c/0x60
-> [  596.628086]  [<ffffffff8105fc58>] ? pvclock_clocksource_read+0x58/0xd0
-> [  596.628086]  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
-> [  596.628086]  [<ffffffff8115f8fa>] ? alloc_fd+0xfa/0x140
-> [  596.628086]  [<ffffffff811448a5>] ? do_sys_open+0x65/0x130
-> [  596.628086]  [<ffffffff811449b0>] ? sys_open+0x20/0x30
-> [  596.628086]  [<ffffffff81036032>] ? system_call_fastpath+0x16/0x1b
-> [  596.628086] fs_mark       R  running task        0  2375   2163 0x00000000
-> [  596.628086]  ffff8801198f96f8 ffff880100000000 0000000000000001 0000000000000002
-> [  596.628086]  ffff8801198f9708 ffffffff8110758a 0000000001320122 0000000000000002
-> [  596.628086]  ffff8801198f8000 ffff880100000000 0000000000000007 0000000000000250
-> [  596.628086] Call Trace:
-> [  596.628086]  [<ffffffff8110758a>] ? zone_watermark_ok+0x2a/0xf0
-> [  596.628086]  [<ffffffff8103694e>] ? apic_timer_interrupt+0xe/0x20
-> [  596.628086]  [<ffffffff810b48c6>] ? smp_call_function_many+0x1a6/0x210
-> [  596.628086]  [<ffffffff810b48a5>] ? smp_call_function_many+0x185/0x210
-> [  596.628086]  [<ffffffff81109ff0>] ? drain_local_pages+0x0/0x20
-> [  596.628086]  [<ffffffff810b4952>] ? smp_call_function+0x22/0x30
-> [  596.628086]  [<ffffffff81084934>] ? on_each_cpu+0x24/0x50
-> [  596.628086]  [<ffffffff81108a8c>] ? drain_all_pages+0x1c/0x20
-> [  596.628086]  [<ffffffff81108fad>] ? __alloc_pages_nodemask+0x42d/0x700
-> [  596.628086]  [<ffffffff8113d0f2>] ? kmem_getpages+0x62/0x160
-> [  596.628086]  [<ffffffff8113dce6>] ? fallback_alloc+0x196/0x240
-> [  596.628086]  [<ffffffff8113da68>] ? ____cache_alloc_node+0x98/0x180
-> [  596.628086]  [<ffffffff8113e643>] ? __kmalloc+0x193/0x230
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131092e>] ? kmem_zalloc+0x1e/0x50
-> [  596.628086]  [<ffffffff812fac80>] ? xfs_log_commit_cil+0x500/0x590
-> [  596.628086]  [<ffffffff81310943>] ? kmem_zalloc+0x33/0x50
-> [  596.628086]  [<ffffffff813082d6>] ? _xfs_trans_commit+0x156/0x2f0
-> [  596.628086]  [<ffffffff8130d50e>] ? xfs_create+0x58e/0x700
-> [  596.628086]  [<ffffffff8131c587>] ? xfs_vn_mknod+0xa7/0x1c0
-> [  596.628086]  [<ffffffff8131c6d0>] ? xfs_vn_create+0x10/0x20
-> [  596.628086]  [<ffffffff81151f48>] ? vfs_create+0xb8/0xf0
-> [  596.628086]  [<ffffffff8115273c>] ? do_last+0x4dc/0x5d0
-> [  596.628086]  [<ffffffff81154937>] ? do_filp_open+0x207/0x5e0
-> [  596.628086]  [<ffffffff8115b7bc>] ? d_lookup+0x3c/0x60
-> [  596.628086]  [<ffffffff8105fc58>] ? pvclock_clocksource_read+0x58/0xd0
-> [  596.628086]  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
-> [  596.628086]  [<ffffffff8115f8fa>] ? alloc_fd+0xfa/0x140
-> [  596.628086]  [<ffffffff811448a5>] ? do_sys_open+0x65/0x130
-> [  596.628086]  [<ffffffff811449b0>] ? sys_open+0x20/0x30
-> [  596.628086]  [<ffffffff81036032>] ? system_call_fastpath+0x16/0x1b
-> [  596.628086] fs_mark       R  running task        0  2376   2163 0x00000000
-> [  596.628086]  ffff88011d303708 ffffffff8110758a 0000000001320122 0000000000000002
-> [  596.628086]  ffff88011d302000 ffff880100000000 0000000000000007 0000000000000250
-> [  596.628086]  ffffffff8103694e ffff88011d3037d8 ffff88011c9808f8 0000000000000001
-> [  596.628086] Call Trace:
-> [  596.628086]  [<ffffffff8110758a>] ? zone_watermark_ok+0x2a/0xf0
-> [  596.628086]  [<ffffffff8103694e>] ? apic_timer_interrupt+0xe/0x20
-> [  596.628086]  [<ffffffff810b48c2>] ? smp_call_function_many+0x1a2/0x210
-> [  596.628086]  [<ffffffff810b48a5>] ? smp_call_function_many+0x185/0x210
-> [  596.628086]  [<ffffffff81109ff0>] ? drain_local_pages+0x0/0x20
-> [  596.628086]  [<ffffffff810b4952>] ? smp_call_function+0x22/0x30
-> [  596.628086]  [<ffffffff81084934>] ? on_each_cpu+0x24/0x50
-> [  596.628086]  [<ffffffff81108a8c>] ? drain_all_pages+0x1c/0x20
-> [  596.628086]  [<ffffffff81108fad>] ? __alloc_pages_nodemask+0x42d/0x700
-> [  596.628086]  [<ffffffff8113d0f2>] ? kmem_getpages+0x62/0x160
-> [  596.628086]  [<ffffffff8113dce6>] ? fallback_alloc+0x196/0x240
-> [  596.628086]  [<ffffffff8113da68>] ? ____cache_alloc_node+0x98/0x180
-> [  596.628086]  [<ffffffff8113e643>] ? __kmalloc+0x193/0x230
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131092e>] ? kmem_zalloc+0x1e/0x50
-> [  596.628086]  [<ffffffff812fac80>] ? xfs_log_commit_cil+0x500/0x590
-> [  596.628086]  [<ffffffff81310943>] ? kmem_zalloc+0x33/0x50
-> [  596.628086]  [<ffffffff813082d6>] ? _xfs_trans_commit+0x156/0x2f0
-> [  596.628086]  [<ffffffff8130d50e>] ? xfs_create+0x58e/0x700
-> [  596.628086]  [<ffffffff8131c587>] ? xfs_vn_mknod+0xa7/0x1c0
-> [  596.628086]  [<ffffffff8131c6d0>] ? xfs_vn_create+0x10/0x20
-> [  596.628086]  [<ffffffff81151f48>] ? vfs_create+0xb8/0xf0
-> [  596.628086]  [<ffffffff8115273c>] ? do_last+0x4dc/0x5d0
-> [  596.628086]  [<ffffffff81154937>] ? do_filp_open+0x207/0x5e0
-> [  596.628086]  [<ffffffff8115b7bc>] ? d_lookup+0x3c/0x60
-> [  596.628086]  [<ffffffff8105fc58>] ? pvclock_clocksource_read+0x58/0xd0
-> [  596.628086]  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
-> [  596.628086]  [<ffffffff8115f8fa>] ? alloc_fd+0xfa/0x140
-> [  596.628086]  [<ffffffff811448a5>] ? do_sys_open+0x65/0x130
-> [  596.628086]  [<ffffffff811449b0>] ? sys_open+0x20/0x30
-> [  596.628086]  [<ffffffff81036032>] ? system_call_fastpath+0x16/0x1b
-> [  596.628086] fs_mark       R  running task        0  2377   2163 0x00000008
-> [  596.628086]  0000000000000000 ffff880103dd9528 ffffffff813f2deb 000000000000003f
-> [  596.628086]  ffff88011c9806e0 ffff880103dd95a4 ffff880103dd9518 ffffffff813fd98e
-> [  596.628086]  ffff880103dd95a4 ffff88011ce51800 ffff880103dd9528 ffffffff8180722e
-> [  596.628086] Call Trace:
-> [  596.628086]  [<ffffffff813f2deb>] ? radix_tree_gang_lookup_tag+0x8b/0x100
-> [  596.628086]  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
-> [  596.628086]  [<ffffffff8180722e>] ? _raw_spin_unlock+0xe/0x10
-> [  596.628086]  [<ffffffff8131f318>] ? xfs_inode_ag_iter_next_pag+0x108/0x110
-> [  596.628086]  [<ffffffff8132018c>] ? xfs_reclaim_inode_shrink+0x4c/0x90
-> [  596.628086]  [<ffffffff81119d02>] ? zone_nr_free_pages+0xa2/0xc0
-> [  596.628086]  [<ffffffff8110758a>] ? zone_watermark_ok+0x2a/0xf0
-> [  596.628086]  [<ffffffff8103694e>] ? apic_timer_interrupt+0xe/0x20
-> [  596.628086]  [<ffffffff810b48c2>] ? smp_call_function_many+0x1a2/0x210
-> [  596.628086]  [<ffffffff810b48a5>] ? smp_call_function_many+0x185/0x210
-> [  596.628086]  [<ffffffff81109ff0>] ? drain_local_pages+0x0/0x20
-> [  596.628086]  [<ffffffff810b4952>] ? smp_call_function+0x22/0x30
-> [  596.628086]  [<ffffffff81084934>] ? on_each_cpu+0x24/0x50
-> [  596.628086]  [<ffffffff81108a8c>] ? drain_all_pages+0x1c/0x20
-> [  596.628086]  [<ffffffff81108fad>] ? __alloc_pages_nodemask+0x42d/0x700
-> [  596.628086]  [<ffffffff8113d0f2>] ? kmem_getpages+0x62/0x160
-> [  596.628086]  [<ffffffff8113dce6>] ? fallback_alloc+0x196/0x240
-> [  596.628086]  [<ffffffff8113da68>] ? ____cache_alloc_node+0x98/0x180
-> [  596.628086]  [<ffffffff8113e643>] ? __kmalloc+0x193/0x230
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131092e>] ? kmem_zalloc+0x1e/0x50
-> [  596.628086]  [<ffffffff812fac80>] ? xfs_log_commit_cil+0x500/0x590
-> [  596.628086]  [<ffffffff81310943>] ? kmem_zalloc+0x33/0x50
-> [  596.628086]  [<ffffffff813082d6>] ? _xfs_trans_commit+0x156/0x2f0
-> [  596.628086]  [<ffffffff8130b2f9>] ? xfs_dir_ialloc+0x139/0x340
-> [  596.628086]  [<ffffffff812f9cc7>] ? xfs_log_reserve+0x167/0x1e0
-> [  596.628086]  [<ffffffff8130d35c>] ? xfs_create+0x3dc/0x700
-> [  596.628086]  [<ffffffff8131c587>] ? xfs_vn_mknod+0xa7/0x1c0
-> [  596.628086]  [<ffffffff8131c6d0>] ? xfs_vn_create+0x10/0x20
-> [  596.628086]  [<ffffffff81151f48>] ? vfs_create+0xb8/0xf0
-> [  596.628086]  [<ffffffff8115273c>] ? do_last+0x4dc/0x5d0
-> [  596.628086]  [<ffffffff81154937>] ? do_filp_open+0x207/0x5e0
-> [  596.628086]  [<ffffffff8115b7bc>] ? d_lookup+0x3c/0x60
-> [  596.628086]  [<ffffffff8105fc58>] ? pvclock_clocksource_read+0x58/0xd0
-> [  596.628086]  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
-> [  596.628086]  [<ffffffff8115f8fa>] ? alloc_fd+0xfa/0x140
-> [  596.628086]  [<ffffffff811448a5>] ? do_sys_open+0x65/0x130
-> [  596.628086]  [<ffffffff811449b0>] ? sys_open+0x20/0x30
-> [  596.628086]  [<ffffffff81036032>] ? system_call_fastpath+0x16/0x1b
-> [  596.628086] fs_mark       R  running task        0  2378   2163 0x00000000
-> [  596.628086]  ffff880103d53a78 0000000000000086 ffff8800a3fc6cc0 0000000000000caf
-> [  596.628086]  ffff880103d53a18 00000000000135c0 ffff88011f119040 00000000000135c0
-> [  596.628086]  ffff88011f1193a8 ffff880103d53fd8 ffff88011f1193b0 ffff880103d53fd8
-> [  596.628086] Call Trace8f/0xe0
-> [  596.628086]  [<ffffffff810773ca>] __cond_resched+0x2a/0x40
-> [  596.628086]  [<ffffffff8113e4f8>] ? __kmalloc+0x48/0x230
-> [  596.628086]  [<ffffffff81804d90>] _cond_resched+0x30/0x40
-> [  596.628086]  [<ffffffff8113e5e1>] __kmalloc+0x131/0x230
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131083f>] kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131092e>] kmem_zalloc+0x1e/0x50
-> [  596.628086]  [<ffffffff81306b75>] xfs_trans_alloc_log_vecs+0xa5/0xe0
-> [  596.628086]  [<ffffffff813082b8>] _xfs_trans_commit+0x138/0x2f0
-> [  596.628086]  [<ffffffff8130d50e>] xfs_create+0x58e/0x700
-> [  596.628086]  [<ffffffff8131c587>] xfs_vn_mknod+0xa7/0x1c0
-> [  596.628086]  [<ffffffff8131c6d0>] xfs_vn_create+0x10/0x20
-> [  596.628086]  [<ffffffff81151f48>] vfs_create+0xb8/0xf0
-> [  596.628086]  [<ffffffff8115273c>] do_last+0x4dc/0x5d0
-> [  596.628086]  [<ffffffff81154937>] do_filp_open+0x207/0x5e0
-> [  596.628086]  [<ffffffff8115b7bc>] ? d_lookup+0x3c/0x60
-> [  596.628086]  [<ffffffff8105fc58>] ? pvclock_clocksource_read+0x58/0xd0
-> [  596.628086]  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
-> [  596.628086]  [<ffffffff8115f8fa>] ? alloc_fd+0xfa/0x140
-> [  596.628086]  [<ffffffff811448a5>] do_sys_open+0x65/0x130
-> [  596.628086]  [<ffffffff811449b0>] sys_open+0x20/0x30
-> [  596.628086]  [<ffffffff81036032>] system_call_fastpath+0x16/0x1b
-> [  596.628086] fs_mark       R  running task        0  2379   2163 0x00000000
-> [  596.628086]  ffff88011f0ddd80 ffff880103da5eb8 000001b600008243 ffff88008652ca80
-> [  596.628086]  ffffffff8115f8fa 00007fff71ba9370 ffff880000000005 ffff88011e35cb80
-> [  596.628086]  ffff880076835ed0 ffff880103da5f18 0000000000000005 ffff88006d30b000
-> [  596.628086] Call Trace:
-> [  596.628086]  [<ffffffff8115f8fa>] ? alloc_fd+0xfa/0x140
-> [  596.628086]  [<ffffffff811448a5>] ? do_sys_open+0x65/0x130
-> [  596.628086]  [<ffffffff811449b0>] ? sys_open+0x20/0x30
-> [  596.628086]  [<ffffffff81036032>] ? system_call_fastpath+0x16/0x1b
-> [  596.628086] fs_mark       R  running task        0  2380   2163 0x00000000
-> [  596.628086]  00000000000008fc 0000000000000001 0000000000000000 0000000000000296
-> [  596.628086]  0000000000000293 ffffffffffffff10 ffffffff810b48c2 0000000000000010
-> [  596.628086]  0000000000000202 ffff880103c05798 0000000000000018 ffffffff810b48a5
-> [  596.628086] Call Trace:
-> [  596.628086]  [<ffffffff810b48c2>] ? smp_call_function_many+0x1a2/0x210
-> [  596.628086]  [<ffffffff810b48a5>] ? smp_call_function_many+0x185/0x210
-> [  596.628086]  [<ffffffff81109ff0>] ? drain_local_pages+0x0/0x20
-> [  596.628086]  [<ffffffff810b4952>] ? smp_call_function+0x22/0x30
-> [  596.628086]  [<ffffffff81084934>] ? on_each_cpu+0x24/0x50
-> [  596.628086]  [<ffffffff81108a8c>] ? drain_all_pages+0x1c/0x20
-> [  596.628086]  [<ffffffff81108fad>] ? __alloc_pages_nodemask+0x42d/0x700
-> [  596.628086]  [<ffffffff8113d0f2>] ? kmem_getpages+0x62/0x160
-> [  596.628086]  [<ffffffff8113dce6>] ? fallback_alloc+0x196/0x240
-> [  596.628086]  [<ffffffff8113da68>] ? ____cache_alloc_node+0x98/0x180
-> [  596.628086]  [<ffffffff8113e643>] ? __kmalloc+0x193/0x230
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131083f>] ? kmem_alloc+0x8f/0xe0
-> [  596.628086]  [<ffffffff8131092e>] ? kmem_zalloc+0x1e/0x50
-> [  596.628086]  [<ffffffff812fac80>] ? xfs_log_commit_cil+0x500/0x590
-> [  596.628086]  [<ffffffff81310943>] ? kmem_zalloc+0x33/0x50
-> [  596.628086]  [<ffffffff813082d6>] ? _xfs_trans_commit+0x156/0x2f0
-> [  596.628086]  [<ffffffff8130d50e>] ? xfs_create+0x58e/0x700
-> [  596.628086]  [<ffffffff8131c587>] ? xfs_vn_mknod+0xa7/0x1c0
-> [  596.628086]  [<ffffffff8131c6d0>] ? xfs_vn_create+0x10/0x20
-> [  596.628086]  [<ffffffff81151f48>] ? vfs_create+0xb8/0xf0
-> [  596.628086]  [<ffffffff8115273c>] ? do_last+0x4dc/0x5d0
-> [  596.628086]  [<ffffffff81154937>] ? do_filp_open+0x207/0x5e0
-> [  596.628086]  [<ffffffff8115b7bc>] ? d_lookup+0x3c/0x60
-> [  596.628086]  [<ffffffff8105fc58>] ? pvclock_clocksource_read+0x58/0xd0
-> [  596.628086]  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
-> [  596.628086]  [<ffffffff8115f8fa>] ? alloc_fd+0xfa/0x140
-> [  596.628086]  [<ffffffff811448a5>] ? do_sys_open+0x65/0x130
-> [  596.628086]  [<ffffffff811449b0>] ? sys_open+0x20/0x30
-> [  596.628086]  [<ffffffff81036032>] ? system_call_fastpath+0x16/0x1b
-> 
+First thing, there are some attributes describing the layout of a ring=20
+buffer that can be read out via a char device. The buffer contains=20
+several entries with each containing so called scan elements. All=20
+entries have the same layout. It is described in a directory=20
+scan_elements (see below) that contains three attributes per scan element=
+=2E
 
-Many do seem to either be calling drain_all_pages or have done it
-recently enough to see sharpnel from it in the backtrace.
+> OK, no packed buffers for now, but we should implement variable
+ > sample sizes for standard types. Indeed we already have this for
+ > the timestamp, which is always 64 bit.
+>
+> To be compatible with future extensions we could have:
+>    |- /sys/bus/iio/device0/buffer0/scan_elements/
+>       |- accel_x_en    (0 or 1)
+>       |- accel_x_type  (i.e. s14/16, see *)
+>       |- accel_x_index (position inside the buffer entry)
+>
+> * s14/16 means signed 14 bits, stored in 16 bits, right aligned.
+ >   If it's left aligned we can just modify the scale attribute and
+ >   give the 16 bit interpretation in <channel>_raw.
 
-> and the kswapd thread:
-> 
-> [  596.628086] kswapd0       R  running task        0   547      2 0x00000000
-> [  596.628086]  ffff88011e78fbc0 0000000000000046 0000000000000000 ffffffff8103694e
-> [  596.628086]  ffff88011e78fbf0 00000000000135c0 ffff88011f17c040 00000000000135c0
-> [  596.628086]  ffff88011f17c3a8 ffff88011e78ffd8 ffff88011f17c3b0 ffff88011e78ffd8
-> [  596.628086] Call Trace:
-> [  596.628086]  [<ffffffff8103694e>] ? apic_timer_interrupt+0xe/0x20
-> [  596.628086]  [<ffffffff8103694e>] ? apic_timer_interrupt+0xe/0x20
-> [  596.628086]  [<ffffffff810773ca>] __cond_resched+0x2a/0x40
-> [  596.628086]  [<ffffffff81077422>] __cond_resched_lock+0x42/0x60
-> [  596.628086]  [<ffffffff811593a0>] __shrink_dcache_sb+0xf0/0x380
-> [  596.628086]  [<ffffffff811597c6>] shrink_dcache_memory+0x176/0x200
-> [  596.628086]  [<ffffffff81110bf4>] shrink_slab+0x124/0x180
-> [  596.628086]  [<ffffffff811125d2>] balance_pgdat+0x2e2/0x540
-> [  596.628086]  [<ffffffff8111295d>] kswapd+0x12d/0x390
-> [  596.628086]  [<ffffffff8109e8c0>] ? autoremove_wake_function+0x0/0x40
-> [  596.628086]  [<ffffffff81112830>] ? kswapd+0x0/0x390
-> [  596.628086]  [<ffffffff8109e396>] kthread+0x96/0xa0
-> [  596.628086]  [<ffffffff81036da4>] kernel_thread_helper+0x4/0x10
-> [  596.628086]  [<ffffffff8109e300>] ? kthread+0x0/0xa0
-> [  596.628086]  [<ffffffff81036da0>] ? kernel_thread_helper+0x0/0x10
-> 
-> I just went to grab the CAL counters, and found the system in
-> another livelock.  This time I managed to start the sysrq-trigger
-> dump while the livelock was in progress - I bas??cally got one shot
-> at a command before everything stopped responding. Now I'm waiting
-> for the livelock to pass.... 5min.... the fs_mark workload
-> has stopped (ctrl-c finally responded), still livelocked....
-> 10min.... 15min.... 20min.... OK, back now.
-> 
-> Interesting - all the fs_mark processes are in D state waiting on IO
-> completion processing.
+Is the 's14/16' self explaining or should we use some other format?
+Is 'type' a good postfix for the attribute?
 
-Very interesting, maybe they are all stuck in congestion_wait() this
-time? There are a few sources where that is possible.
 
-> And the only running processes are the
-> kworker threads, which are all processing either vmstat updates
-> (3 CPUs):
-> 
->  kworker/6:1   R  running task        0   376      2 0x00000000
->   ffff88011f255cf0 0000000000000046 ffff88011f255c90 ffffffff813fda34
->   ffff88003c969588 00000000000135c0 ffff88011f27c7f0 00000000000135c0
->   ffff88011f27cb58 ffff88011f255fd8 ffff88011f27cb60 ffff88011f255fd8
->  Call Trace:
->   [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->   [<ffffffff810773ca>] __cond_resched+0x2a/0x40
->   [<ffffffff81804d90>] _cond_resched+0x30/0x40
->   [<ffffffff8111ab12>] refresh_cpu_vm_stats+0xc2/0x160
->   [<ffffffff8111abb0>] ? vmstat_update+0x0/0x40
->   [<ffffffff8111abc6>] vmstat_update+0x16/0x40
->   [<ffffffff810978a0>] process_one_work+0x130/0x470
->   [<ffffffff81099e72>] worker_thread+0x172/0x3f0
->   [<ffffffff81099d00>] ? worker_thread+0x0/0x3f0
->   [<ffffffff8109e396>] kthread+0x96/0xa0
->   [<ffffffff81036da4>] kernel_thread_helper+0x4/0x10
->   [<ffffffff8109e300>] ? kthread+0x0/0xa0
->   [<ffffffff81036da0>] ? kernel_thread_helper+0x0/0x10
-> 
-> Or doing inode IO completion processing:
-> 
->  kworker/7:1   R  running task        0   377      2 0x00000000
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  ffffffffffffff10 0000000000000001 ffffffffffffff10 ffffffff813f8062
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  0000000000000010 0000000000000202 ffff88011f0ffc80 ffffffff813f8067
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  00000000000ac613 ffff88011ba08280 00000000871803d0 0000000000000001
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017] Call Trace:
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff813f8062>] ? delay_tsc+0x22/0x80
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff813f808a>] ? delay_tsc+0x4a/0x80
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff813f7fdf>] ? __delay+0xf/0x20
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff813fdb03>] ? do_raw_spin_lock+0x123/0x160
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff818072be>] ? _raw_spin_lock+0xe/0x10
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff812f0244>] ? xfs_iflush_done+0x84/0xb0
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff813157c0>] ? xfs_buf_iodone_work+0x0/0x100
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff812cee54>] ? xfs_buf_do_callbacks+0x54/0x70
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff812cf0c0>] ? xfs_buf_iodone_callbacks+0x1a0/0x2a0
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff813157c0>] ? xfs_buf_iodone_work+0x0/0x100
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff81315805>] ? xfs_buf_iodone_work+0x45/0x100
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff813157c0>] ? xfs_buf_iodone_work+0x0/0x100
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff810978a0>] ? process_one_work+0x130/0x470
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff81099e72>] ? worker_thread+0x172/0x3f0
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff81099d00>] ? worker_thread+0x0/0x3f0
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff8109e396>] ? kthread+0x96/0xa0
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff81036da4>] ? kernel_thread_helper+0x4/0x10
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff8109e300>] ? kthread+0x0/0xa0
->  Sep  6 13:20:47 test-4 kernel: [ 2114.056017]  [<ffffffff81036da0>] ? kernel_thread_helper+0x0/0x10
-> 
-> It looks like there is spinlock contention occurring here on the xfs
-> AIL lock, so I'll need to look into this further. A second set of
-> traces I got during the livelock also showed this:
-> 
-> fs_mark       R  running task        0  2713      1 0x00000004
->  ffff88011851b518 ffffffff81804669 ffff88011851b4d8 ffff880100000700
->  0000000000000000 00000000000135c0 ffff88011f05b7f0 00000000000135c0
->  ffff88011f05bb58 ffff88011851bfd8 ffff88011f05bb60 ffff88011851bfd8
-> Call Trace:
->  [<ffffffff81804669>] ? schedule+0x3c9/0x9f0
->  [<ffffffff81805235>] schedule_timeout+0x1d5/0x2a0
->  [<ffffffff81119d02>] ? zone_nr_free_pages+0xa2/0xc0
->  [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->  [<ffffffff8110758a>] ? zone_watermark_ok+0x2a/0xf0
->  [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->  [<ffffffff81807275>] ? _raw_spin_lock_irq+0x15/0x20
->  [<ffffffff81806638>] __down+0x78/0xb0
->  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
->  [<ffffffff8180722e>] ? _raw_spin_unlock+0xe/0x10
->  [<ffffffff8113d8e6>] cache_alloc_refill+0x1c6/0x2b0
->  [<ffffffff813fda34>] do_raw_spin_lock+0x54/0x160
->  [<ffffffff812e9672>] ? xfs_iext_bno_to_irec+0xb2/0x100
->  [<ffffffff811022ce>] ? find_get_page+0x1e/0xa0
->  [<ffffffff81103dd7>] ? find_lock_page+0x37/0x80
->  [<ffffffff8110438f>] ? find_or_create_page+0x3f/0xb0
->  [<ffffffff811025e7>] ? unlock_page+0x27/0x30
->  [<ffffffff81315167>] ? _xfs_buf_lookup_pages+0x297/0x370
->  [<ffffffff813f808a>] ? delay_tsc+0x4a/0x80
->  [<ffffffff813f7fdf>] ? __delay+0xf/0x20
->  [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
->  [<ffffffff8180722e>] ? _raw_spin_unlock+0xe/0x10
->  [<ffffffff81109e69>] ? free_pcppages_bulk+0x369/0x400
->  [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
->  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
->  [<ffffffff8180722e>] ? _raw_spin_unlock+0xe/0x10
->  [<ffffffff81109e69>] ? free_pcppages_bulk+0x369/0x400
->  [<ffffffff8110a508>] ? __pagevec_free+0x58/0xb0
->  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
->  [<ffffffff810af53c>] ? debug_mutex_add_waiter+0x2c/0x70
->  [<ffffffff81805d70>] ? __mutex_lock_slowpath+0x1e0/0x280
->  [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->  [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->  [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->  [<ffffffff8180722e>] ? _raw_spin_unlock+0xe/0x10
->  [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->  [<ffffffff810fdac2>] ? perf_event_exit_task+0x32/0x160
->  [<ffffffff813fd772>] ? do_raw_write_lock+0x42/0xa0
->  [<ffffffff81807015>] ? _raw_write_lock_irq+0x15/0x20
->  [<ffffffff81082315>] ? do_exit+0x195/0x7c0
->  [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->  [<ffffffff81082991>] ? do_group_exit+0x51/0xc0
->  [<ffffffff81092d8c>] ? get_signal_to_deliver+0x27c/0x430
->  [<ffffffff810352b5>] ? do_signal+0x75/0x7c0
->  [<ffffffff8105fc58>] ? pvclock_clocksource_read+0x58/0xd0
->  [<ffffffff813fda34>] ? do_raw_spin_lock+0x54/0x160
->  [<ffffffff813fd98e>] ? do_raw_spin_unlock+0x5e/0xb0
->  [<ffffffff8180722e>] ? _raw_spin_unlock+0xe/0x10
->  [<ffffffff81035a65>] ? do_notify_resume+0x65/0x90
->  [<ffffffff81036283>] ? int_signal+0x12/0x17
-> 
-> Because I tried to ctrl-c the fs_mark workload. All those lock
-> traces on the stack aren't related to XFS, so I'm wondering exactly
-> where they have come from....
-> 
-> Finally, /proc/interrupts shows:
-> 
-> CAL:      12156      12039      12676      12478      12919    12177      12767      12460   Function call interrupts
-> 
-> Which shows that this wasn't an IPI storm that caused this
-> particular livelock.
-> 
+Next question: how strictly we want to resamble the hwmon ABI?
 
-No, but it's possible we got stuck somewhere like too_many_isolated() or
-in congestion_wait. One thing at a time though, would you mind testing
-the following patch? I haven't tested this *at all* but it should reduce
-the number of times drain_all_pages() are called further while not
-eliminating them entirely.
+To sum up the discussion:
+Hwmon has files with the postfix _input to read values scaled to
+reasonable units for fixed point representation. So the units are
+sometimes scaled down to 'millis' e.g. millivolt, millidegree Celsius.
+We agreed that we want to keep this, whenever we use the _input postfix.
+For IIO there is also the postfix triple _raw, _scale and _offset,
+where the final value is calculated by (_raw + _offset) * _scale.
+Floating point values are allowed for any of these files.
 
-I expect to make a start soon on trying to reproduce the problem with fs_mark
-but I'm waiting on a machine to free up so it could be a while.
+The question in place was:
+Do we want to resamble the 'milli' units or should we stick to
+standard SI units (radians, kelvin, etc.) as floating point math is
+necessary anyway.
 
-==== CUT HERE ====
-mm: page allocator: Reduce the instances where drain_all_pages() is called
+Regards,
+--=20
+Dipl.-Inf. Manuel Stahl
+Fraunhofer-Institut f=C3=BCr Integrierte Schaltungen IIS
+- Leistungsoptimierte Systeme -
+Nordostpark 93                Telefon  +49 (0)911/58061-6419
+90411 N=C3=BCrnberg                Fax      +49 (0)911/58061-6398
+http://www.iis.fraunhofer.de  manuel.stahl@iis.fraunhofer.de
 
-When a page allocation fails after direct reclaim, the per-cpu lists are
-drained and another attempt made to allocate. On very large systems,
-this can cause IPI storms. This patch restores old behaviour to call
-drain_all_pages() after direct reclaim fails only for high-order
-allocations. It's still the case that an allocation can fail because the
-necessary pages are pinned in the per-cpu list. After this patch, the
-lists are only drained as a last-resort before calling the OOM killer.
+--------------010807060400000800070702
+Content-Type: text/x-vcard; charset=utf-8;
+ name="manuel_stahl.vcf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="manuel_stahl.vcf"
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/page_alloc.c |   21 ++++++++++++++++++---
- 1 files changed, 18 insertions(+), 3 deletions(-)
+YmVnaW46dmNhcmQNCmZuOk1hbnVlbCBTdGFobA0KbjpTdGFobDtNYW51ZWwNCmVtYWlsO2lu
+dGVybmV0Om1hbnVlbC5zdGFobEBpaXMuZnJhdW5ob2Zlci5kZQ0KdGVsO3dvcms6KzQ5IDkx
+MSA1ODA2MS02NDE5DQp4LW1vemlsbGEtaHRtbDpGQUxTRQ0KdmVyc2lvbjoyLjENCmVuZDp2
+Y2FyZA0KDQo=
+--------------010807060400000800070702--
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 750e1dc..0599cf7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1737,6 +1737,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	int migratetype)
- {
- 	struct page *page;
-+	bool drained = false;
- 
- 	/* Acquire the OOM killer lock for the zones in zonelist */
- 	if (!try_set_zonelist_oom(zonelist, gfp_mask)) {
-@@ -1744,6 +1745,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 		return NULL;
- 	}
- 
-+retry:
- 	/*
- 	 * Go through the zonelist yet one more time, keep very high watermark
- 	 * here, this is only to catch a parallel oom killing, we must fail if
-@@ -1773,6 +1775,18 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 		if (gfp_mask & __GFP_THISNODE)
- 			goto out;
- 	}
-+
-+	/*
-+	 * If an allocation failed, it could be because pages are pinned on
-+	 * the per-cpu lists. Before resorting to the OOM killer, try
-+	 * draining 
-+	 */
-+	if (!drained) {
-+		drain_all_pages();
-+		drained = true;
-+		goto retry;
-+	}
-+
- 	/* Exhausted what can be done so it's blamo time */
- 	out_of_memory(zonelist, gfp_mask, order, nodemask);
- 
-@@ -1876,10 +1890,11 @@ retry:
- 					migratetype);
- 
- 	/*
--	 * If an allocation failed after direct reclaim, it could be because
--	 * pages are pinned on the per-cpu lists. Drain them and try again
-+	 * If a high-order allocation failed after direct reclaim, it could
-+	 * be because pages are pinned on the per-cpu lists. Drain them once
-+	 * and try again
- 	 */
--	if (!page && !drained) {
-+	if (!page && !drained && order != 0) {
- 		drain_all_pages();
- 		drained = true;
- 		goto retry;
+--------------ms070709020307020009040802
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUWDCC
+BC4wggMWoAMCAQICAgEMMA0GCSqGSIb3DQEBBQUAMHExCzAJBgNVBAYTAkRFMRwwGgYDVQQK
+ExNEZXV0c2NoZSBUZWxla29tIEFHMR8wHQYDVQQLExZULVRlbGVTZWMgVHJ1c3QgQ2VudGVy
+MSMwIQYDVQQDExpEZXV0c2NoZSBUZWxla29tIFJvb3QgQ0EgMjAeFw0wNzEyMDUxNTE4NTha
+Fw0xOTA2MzAyMzU5NTlaMGcxCzAJBgNVBAYTAkRFMRMwEQYDVQQKEwpGcmF1bmhvZmVyMSEw
+HwYDVQQLExhGcmF1bmhvZmVyIENvcnBvcmF0ZSBQS0kxIDAeBgNVBAMTF0ZyYXVuaG9mZXIg
+Um9vdCBDQSAyMDA3MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwz0eyWWNW4g3
+9z7BIbZU3rA6VxsaHO6YCHQBWm+13zZXK0RFzvNGE2V2lZhUx6iFFW4SpBfoC+EhpzE9Kd3/
+o9ZP0rSJ/WNK2qtT71kFtE/iOyqRmcDLZVeBozCTkA7Jvf0VMjIIpEh8VgXyuzaJ4kjCb0uS
+DCVFvq0+1McB7bHIErQwCG6nb396IKe7tOU1gFQsGY/ZS8Adq0P4YRSU+7AdXbeR7GLAkdFe
+3acLsy0fZjkYPK4EFOXSfTbZss2nE7DMRZ1WBFFxMzZcL11RE55PSJAOl1pLcNu5edmh1pTI
+ktCl+2C/La2ecQAXhsD9SGadFEwFTkzRcUQL0HoPsQIDAQABo4HZMIHWMB8GA1UdIwQYMBaA
+FDHDeRu69VPXF+CJei0XbAqzK50zMA4GA1UdDwEB/wQEAwIBBjAdBgNVHQ4EFgQUL0VCHjEF
+gNVw2PgdV8tbetU9nPcwEgYDVR0TAQH/BAgwBgEB/wIBATBwBgNVHR8EaTBnMGWgY6Bhhl9o
+dHRwOi8vcGtpLnRlbGVzZWMuZGUvY2dpLWJpbi9zZXJ2aWNlL2FmX0Rvd25sb2FkQVJMLmNy
+bD8tY3JsX2Zvcm1hdD1YXzUwOSYtaXNzdWVyPURUX1JPT1RfQ0FfMjANBgkqhkiG9w0BAQUF
+AAOCAQEAGrdMejzl3cJjst6GJU5FYkz08o9fXdfljc4O1/WU4YuTMTanmiPnZ+FSwVoY1pnh
+gGQ4D0o1M11meijcOH83cs1SdW4Qjmx9jPcp63fCuRkF1Lc9YbroBRLUUGJT7yJUYvxNAcNe
+1A2DdGlR1TyerNukK3xthJbTcU3P1S1xo5LEP1XPmz0jdwdX6cjOHZe2M/uRl2CWD/f23m8l
+kBKrGUfVRCOuwZI1KL8qQ14P6gdd0kTQhYLjErxH6iyt+PBBUn02uiKfeqAy70u8+ToHtinG
+fThfNVV+OPI/fLPuLW4heF+5E8/v3mWAyCX1Zi1USq3O2S4OMM+AM6eLGXLqQTCCBMYwggOu
+oAMCAQICCmEdMxkAAAAAAAMwDQYJKoZIhvcNAQEFBQAwZzELMAkGA1UEBhMCREUxEzARBgNV
+BAoTCkZyYXVuaG9mZXIxITAfBgNVBAsTGEZyYXVuaG9mZXIgQ29ycG9yYXRlIFBLSTEgMB4G
+A1UEAxMXRnJhdW5ob2ZlciBSb290IENBIDIwMDcwHhcNMDcxMjEyMTQ0OTM1WhcNMTkwNjMw
+MjM1OTU5WjBnMQswCQYDVQQGEwJERTETMBEGA1UEChMKRnJhdW5ob2ZlcjEhMB8GA1UECxMY
+RnJhdW5ob2ZlciBDb3Jwb3JhdGUgUEtJMSAwHgYDVQQDExdGcmF1bmhvZmVyIFVzZXIgQ0Eg
+MjAwNzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMJ0EFHLddGB8Ss1nVqCOq+S
+rs0C/K7I+yB3Dv9oEhWQSadnfGgkX/oOJhplPkqeCQrTh08zEYprVaJLTaVPVhvjx3h5+KML
+3lVGZIfajA89TolhLwk+ml29VbqV5nLhNrSwdZy157b6dCu5JffxvpO5wXCn95Z/TLyLdeux
+gVHs/MnhczvmBbBRS+Ow9UoKn+PZvyYmUEdOHg8cA5PGFaRP9q88q734VnlI+W4+y7BoN5wt
+uqVrqWbbpOQ2sHYo9riv3b+x5WdsMrVieKGApQ/dNvgB5vuuAchRnsANZHgpAiPCzP7/QFYY
+qk2undcxEXwPgo72oifB3uQZ3xHOV/cCAwEAAaOCAXIwggFuMBIGA1UdEwEB/wQIMAYBAf8C
+AQAwHQYDVR0OBBYEFE8dr4jKbbiqHAn5xdER7Vm0k/oLMA4GA1UdDwEB/wQEAwIBBjAfBgNV
+HSMEGDAWgBQvRUIeMQWA1XDY+B1Xy1t61T2c9zB1BgNVHR8EbjBsMGqgaKBmhjFodHRwOi8v
+Y3JsLnBraS5mcmF1bmhvZmVyLmRlL2ZoZy1yb290LWNhLTIwMDcuY3JshjFodHRwOi8vY3Js
+LmZyYXVuaG9mZXItcGtpLmRlL2ZoZy1yb290LWNhLTIwMDcuY3JsMIGQBggrBgEFBQcBAQSB
+gzCBgDA+BggrBgEFBQcwAoYyaHR0cDovL2NlcnQucGtpLmZyYXVuaG9mZXIuZGUvZmhnLXJv
+b3QtY2EtMjAwNy5jZXIwPgYIKwYBBQUHMAKGMmh0dHA6Ly9jZXJ0LmZyYXVuaG9mZXItcGtp
+LmRlL2ZoZy1yb290LWNhLTIwMDcuY2VyMA0GCSqGSIb3DQEBBQUAA4IBAQAAd2yMM/nuVwQl
+ysuIOeZOTKTOwpZLGYZNuERXwpWpEDfsMFUxX/Wetbu1a1qhd+x6SyXY4V1CzcFDOGF3wA7b
+yIV/6dyC53I9luZTjy9zjUsjLZucD4jeNja3QEu39sQsYsuE3MTfFFJgr/NeAFMHVkkHGx3l
+VXb+F3J3+9xeXHk/wB/yIKd/RIiMMTT4+a+ra2MTCsYAe4kgJ0vz2TXYGN8tujjCgsUUbwfJ
+C9wrOiCJMNJM1i7sUVqVKIoswW7h5QpWUNu1E4RAsDEz7depXCYaAIwPprEIkr0dE63zqHhm
+M4egS7iGmBfNQohUO6jJOWNcJ9dIxqc0c/4WUHg8MIIFpDCCBIygAwIBAgIKXts1tgAAAACh
+VTANBgkqhkiG9w0BAQUFADBnMQswCQYDVQQGEwJERTETMBEGA1UEChMKRnJhdW5ob2ZlcjEh
+MB8GA1UECxMYRnJhdW5ob2ZlciBDb3Jwb3JhdGUgUEtJMSAwHgYDVQQDExdGcmF1bmhvZmVy
+IFVzZXIgQ0EgMjAwNzAeFw0wOTEyMDkxNDQ3MTlaFw0xNTEyMDgxNDQ3MTlaMFgxCzAJBgNV
+BAYTAkRFMRMwEQYDVQQKEwpGcmF1bmhvZmVyMQwwCgYDVQQLEwNJSVMxDzANBgNVBAsTBlBl
+b3BsZTEVMBMGA1UEAxMMTWFudWVsIFN0YWhsMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+CgKCAQEAyc3xmHk19YZAmko+jIM52UsU0keIMlZuSsQvl7HCAGEzifKcfmrR6EX1lYPUKVZJ
+BpqMSG3jyA4GW6gR/7cwz0IbnwFPC40KHPODRVIWDIJbZrP6zl+hF+G6/ZTe7ttPahSNhfeq
+wkhQZJYQwoxEPoaODFpgQ8St+WRRkgfi3jvjuUIddgWV4NyVAm6m5fmF9a6iv20e+ZSW0As7
+brNVf4Xvl5+y58MWniD3hjryz2OsqH1+NrFk8dxPjR4z3tWfty4x4J5af1z25tKX3xnJtx6Q
+l61FI1UlSUqR3DHxkmLY7RRCccxtpwOES2YgmBBpJzrxCJ+cYwVJIVHR7I/3qwIDAQABo4IC
+XzCCAlswDgYDVR0PAQH/BAQDAgbAMCkGA1UdEQQiMCCBHm1hbnVlbC5zdGFobEBpaXMuZnJh
+dW5ob2Zlci5kZTAdBgNVHQ4EFgQUbNwp94oWTogPsGGtBT3dcKtNhXUwHwYDVR0jBBgwFoAU
+Tx2viMptuKocCfnF0RHtWbST+gswdQYDVR0fBG4wbDBqoGigZoYxaHR0cDovL2NybC5wa2ku
+ZnJhdW5ob2Zlci5kZS9maGctdXNlci1jYS0yMDA3LmNybIYxaHR0cDovL2NybC5mcmF1bmhv
+ZmVyLXBraS5kZS9maGctdXNlci1jYS0yMDA3LmNybDCCAQoGCCsGAQUFBwEBBIH9MIH6MD4G
+CCsGAQUFBzAChjJodHRwOi8vY2VydC5wa2kuZnJhdW5ob2Zlci5kZS9maGctdXNlci1jYS0y
+MDA3LmNlcjA+BggrBgEFBQcwAoYyaHR0cDovL2NlcnQuZnJhdW5ob2Zlci1wa2kuZGUvZmhn
+LXVzZXItY2EtMjAwNy5jZXIwOwYIKwYBBQUHMAGGL2h0dHA6Ly9maGctdXNlci1jYS0yMDA3
+Lm9jc3AucGtpLmZyYXVuaG9mZXIuZGUvMDsGCCsGAQUFBzABhi9odHRwOi8vZmhnLXVzZXIt
+Y2EtMjAwNy5vY3NwLmZyYXVuaG9mZXItcGtpLmRlLzATBgNVHSUEDDAKBggrBgEFBQcDBDBE
+BgNVHSAEPTA7MDkGCysGAQQBhgpQAwEBMCowKAYIKwYBBQUHAgEWHGh0dHA6Ly9wa2kuZnJh
+dW5ob2Zlci5kZS9jcC8wDQYJKoZIhvcNAQEFBQADggEBACWdlXdPPIhNtjC0aYQgGYQ9+e0N
+XHqtaQsxgzZ2D4Rp34VeuZPWkF/YMDXgxB9sarzCO4WcBxz0QWjWiQOtAYzPc+2U3C3Pyw6Y
+Mc0yxSpg6R602Hy/O1aNn7XZ50gujpIjuwo0fAFhg8OI63uolkgKAYyoUcTRHc4Z4kwb8bgg
++5a56lKIqBwTweqd2VaNnW0FCfk5bJsaw2j3bHnWkS2D9BWt0U+t+/zCqMYT9E38vTP57kho
+vpb44u+8m6Xaaorn3bCK2WzHH5HZp/mVEZ6TZw+mJ+Ltjrcnz+9JAFYZxtpSpZN/k1zRM0P6
+6CKxV9JfFqwQJnso0LtpcfLFGuMwggWwMIIEmKADAgECAgpe2zMWAAAAAKFUMA0GCSqGSIb3
+DQEBBQUAMGcxCzAJBgNVBAYTAkRFMRMwEQYDVQQKEwpGcmF1bmhvZmVyMSEwHwYDVQQLExhG
+cmF1bmhvZmVyIENvcnBvcmF0ZSBQS0kxIDAeBgNVBAMTF0ZyYXVuaG9mZXIgVXNlciBDQSAy
+MDA3MB4XDTA5MTIwOTE0NDcxOVoXDTE1MTIwODE0NDcxOVowWDELMAkGA1UEBhMCREUxEzAR
+BgNVBAoTCkZyYXVuaG9mZXIxDDAKBgNVBAsTA0lJUzEPMA0GA1UECxMGUGVvcGxlMRUwEwYD
+VQQDEwxNYW51ZWwgU3RhaGwwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC18idY
+1AthSSVhkq1AFUnVfm5pzin5dEuixfJs+PaEQah9OWHYqSCxvXYL/58MtfpCsMl8HpIUsnuh
+O4GPDjdxawgLSItU/LCF5/cmdc6swyi2efJC5QviHJ/aB/MbD3TKl9aGQXE0K85/iS4KQT2c
+GM8uvWhF3yNNJIuauJ8BMX55vyelXT1rsldiGsBwKQ2PRcoM24jdtw/4DigsImSAkV6rxgg7
+CeV92wE1trfx7OOoK9PPgAE9D95oiZz25f2MH7NnD4Wzo+73chdoQnhPZHNBojcxdyg+Rf3O
+PCuKfXLYdTgEzEFGNFIwojaKoJ2ws1t2z3O62h7Tye0EMBtTAgMBAAGjggJrMIICZzAOBgNV
+HQ8BAf8EBAMCBDAwKQYDVR0RBCIwIIEebWFudWVsLnN0YWhsQGlpcy5mcmF1bmhvZmVyLmRl
+MB0GA1UdDgQWBBR3QN2wMBSsk+rxgVGtX5Plvb9tNzAfBgNVHSMEGDAWgBRPHa+Iym24qhwJ
++cXREe1ZtJP6CzB1BgNVHR8EbjBsMGqgaKBmhjFodHRwOi8vY3JsLnBraS5mcmF1bmhvZmVy
+LmRlL2ZoZy11c2VyLWNhLTIwMDcuY3JshjFodHRwOi8vY3JsLmZyYXVuaG9mZXItcGtpLmRl
+L2ZoZy11c2VyLWNhLTIwMDcuY3JsMIIBCgYIKwYBBQUHAQEEgf0wgfowPgYIKwYBBQUHMAKG
+Mmh0dHA6Ly9jZXJ0LnBraS5mcmF1bmhvZmVyLmRlL2ZoZy11c2VyLWNhLTIwMDcuY2VyMD4G
+CCsGAQUFBzAChjJodHRwOi8vY2VydC5mcmF1bmhvZmVyLXBraS5kZS9maGctdXNlci1jYS0y
+MDA3LmNlcjA7BggrBgEFBQcwAYYvaHR0cDovL2ZoZy11c2VyLWNhLTIwMDcub2NzcC5wa2ku
+ZnJhdW5ob2Zlci5kZS8wOwYIKwYBBQUHMAGGL2h0dHA6Ly9maGctdXNlci1jYS0yMDA3Lm9j
+c3AuZnJhdW5ob2Zlci1wa2kuZGUvMB8GA1UdJQQYMBYGCisGAQQBgjcKAwQGCCsGAQUFBwME
+MEQGA1UdIAQ9MDswOQYLKwYBBAGGClADAQEwKjAoBggrBgEFBQcCARYcaHR0cDovL3BraS5m
+cmF1bmhvZmVyLmRlL2NwLzANBgkqhkiG9w0BAQUFAAOCAQEAIny6T0ZtZyrpF4dLpcM6G07I
+HDC4cdGFLqfnqRLfMLwgdgxACPkYB8VbApcGKiSxcXaZEaz8CLLMrdwXkta1o+ZA6dz90Y1T
+dYlvHvdsuhGeIkNwlJoGwlf4Ts4+7pi2d7sbYX3GFSzD3KcBn6DJp71pl4+MEcvkwVVaBKCw
++ohHssiRmG40fYAmdxBqPmjGyer4PftJdkvZQqmhqVDFp1NTJU9k/CQaIB24iSnuXfjHi1+z
+Lz4flTgIGuN6lNAKGGt51kBl+WGy8olUDuyMwFAP7f1WIK4OWKWK0SbmMeDZtdN/aEpRRQ6l
+0QATNFeFf1cK8auS+lRgG7lj74w/KzGCA24wggNqAgEBMHUwZzELMAkGA1UEBhMCREUxEzAR
+BgNVBAoTCkZyYXVuaG9mZXIxITAfBgNVBAsTGEZyYXVuaG9mZXIgQ29ycG9yYXRlIFBLSTEg
+MB4GA1UEAxMXRnJhdW5ob2ZlciBVc2VyIENBIDIwMDcCCl7bNbYAAAAAoVUwCQYFKw4DAhoF
+AKCCAc4wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTAwOTA2
+MDg0MTMxWjAjBgkqhkiG9w0BCQQxFgQU4RpYBSTVQtW4tP+2+wdvxyEYf7YwXwYJKoZIhvcN
+AQkPMVIwUDALBglghkgBZQMEAQIwCgYIKoZIhvcNAwcwDgYIKoZIhvcNAwICAgCAMA0GCCqG
+SIb3DQMCAgFAMAcGBSsOAwIHMA0GCCqGSIb3DQMCAgEoMIGEBgkrBgEEAYI3EAQxdzB1MGcx
+CzAJBgNVBAYTAkRFMRMwEQYDVQQKEwpGcmF1bmhvZmVyMSEwHwYDVQQLExhGcmF1bmhvZmVy
+IENvcnBvcmF0ZSBQS0kxIDAeBgNVBAMTF0ZyYXVuaG9mZXIgVXNlciBDQSAyMDA3Agpe2zMW
+AAAAAKFUMIGGBgsqhkiG9w0BCRACCzF3oHUwZzELMAkGA1UEBhMCREUxEzARBgNVBAoTCkZy
+YXVuaG9mZXIxITAfBgNVBAsTGEZyYXVuaG9mZXIgQ29ycG9yYXRlIFBLSTEgMB4GA1UEAxMX
+RnJhdW5ob2ZlciBVc2VyIENBIDIwMDcCCl7bMxYAAAAAoVQwDQYJKoZIhvcNAQEBBQAEggEA
+EmlAPDO3iHAYI3JfQL16R6T2f7DZ5jS4FQfLCHj36/3Dkl/Q2f1LFwfW/T4/VShMAq0GKrFa
+00LHAu+75Bz6qLQWeVxIDDhfaDOBSJa1s3/y8U6BNQZClZ8nMVVBeRbDxXcsvofEQYbIzPt9
+lssCQxcrheAZpJy7z/FFEpiBmZx2phqL6NKKxjDxkdL4SSrC8+7/Ywg+dVBRIjYmYiEXvM6m
+zkityG+U1s+BBnI95x+j2E64Q2c1Lel/PTm7wRzZDlgXxcmpE+H8i1YMykMstr22XXGL503e
+k8lh1WqZ8V3QIr7yk9xOCnagVA3GoiQbcbomURWYl5ONyyCaKxPNPgAAAAAAAA==
+--------------ms070709020307020009040802--
