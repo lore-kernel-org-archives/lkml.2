@@ -1,95 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab0IFVjb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 17:39:31 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:40032 "EHLO
-	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755705Ab0IFVj1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 17:39:27 -0400
-Date: Mon, 6 Sep 2010 17:39:21 -0400 (EDT)
-From: Miloslav Trmac <mitr@redhat.com>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
-        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
-        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Message-ID: <609705216.1019541283809161307.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1586512982.1019221283808142288.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-Subject: Re: [PATCH 01/19] User-space API definition
+	id S1755843Ab0IFVr1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 17:47:27 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:33222 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755201Ab0IFVrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 17:47:23 -0400
+Message-ID: <4C856161.5040806@free.fr>
+Date: Mon, 06 Sep 2010 23:47:13 +0200
+From: matthieu castet <castet.matthieu@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.5.5.72]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-next@vger.kernel.org
+CC: Arjan van de Ven <arjan@infradead.org>, James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>
+Subject: [PATCH 1/3 V2] [tip:x86/mm] Correcting improper large page preservation
+Content-Type: multipart/mixed;
+ boundary="------------080804020503030101040106"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ "Kyle Moffett" <kyle@moffetthome.net> wrote:
-> On Mon, Sep 6, 2010 at 11:50, Miloslav Trmac <mitr@redhat.com> wrote:
-> > ----- "Herbert Xu" <herbert@gondor.hengli.com.au> wrote:
-> >> On Mon, Aug 23, 2010 at 11:37:40AM -0400, Miloslav Trmac wrote:
-> >> > I have seriously considered the keyring API, and this is what I
-> came
-> >> up with - but I'd love to be shown a better way.
-> >>
-> >> FWIW adding a second key management system to the kernel is
-> >> totally out of the question.
-> >>
-> >> If the existing system doesn't work for you, find a way to build
-> >> on it so that it does.  Adding a second system that pretty much
-> >> does the same thing is unacceptable.
-> > It does _not_ do the same thing, same as ramfs and file descriptors
-> do not do the same thing although they are both related to files.
-> >
-> > The kernel keyring service is basically a system-wide data storage
-> service.  /dev/crypto needs a quick way to refer to short-lived,
-> usually process-local, kernel-space data structures from userspace.
-> 
-> The problem with the approach you're proposing is that we then have
-> two entirely separate classes of keys. 
-"We have two entirely separate classes of files: inodes and file descriptors".
+This is a multi-part message in MIME format.
+--------------080804020503030101040106
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Isn't that only a problem if there is actual duplicate functionality?  And is copy_from_user() really enough reason to share the interface?
+This patch fixes a bug in try_preserve_large_page() which may result
+in improper large page preservation and improper application of page
+attributes to the memory area outside of the original change request.
+More specifically, the problem manifests itself when set_memory_*() is
+called for several pages at the beginning of the large page and
+try_preserve_large_page() erroneously concludes that the change can be
+applied to whole large page.
+The fix consists of 3 parts:
+1. addition of "required" protection attributes in
+static_protections(), so .data and .bss can be guaranteed to stay "RW"
+2. static_protections() is now called for every small page within
+large page to determine compatibility of new protection attributes
+(instead of just small pages within the requested range).
+3. large page can be preserved only if attribute change is
+large-page-aligned and covers whole large page.
 
-Like in the inodes/file descriptors case, the fact that you can read contents of both does not automatically mean that a single interface for both is the best option.  The naming does suggest that this should be the case here, but the differences are AFAICS much larger than the commonalities.
+V1:  try_preserve_large_page() patch for Linux 2.6.34-rc2
+V2:  replaced pfn check with address check for kernel rw-data
 
+Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
+Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
+Reviewed-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-> Another potential issue is that keys are never actually "unnamed", in
-> that sense.
-They are perhaps not "unnamed" from a global point of view, or from the point of view of a few functions that directly manipulate the key, but they are quite anonymous from the process' point of view.
+--------------080804020503030101040106
+Content-Type: text/x-diff;
+ name="x86_page_preservation_fix.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="x86_page_preservation_fix.diff"
 
-> If encryption keys truly were "anonymous" then you would
-> find it impossible to reliably decrypt the data on the other end.  For
-> example, every RSA private key should be indexed either by the X.509
-> DN or for bare SSH keys by the public modulus information.
-Why would that be useful?  The SSH private key should be only available to sshd.  sshd has loaded the key from a file (_that_ is the key's "name", as far as the system administrator is concerned), and then the key is used only privately within the sshd process.  There is no more reason to have a name attached to the loaded private key object than there is a reason to have a name attached to the file descriptor used to read /etc/ssh/sshd_config - the key is an application-internal object and its user-space identifier is merely a "safe pointer into the kernel".
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 532e793..91ce756 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -255,6 +255,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 				   unsigned long pfn)
+ {
+ 	pgprot_t forbidden = __pgprot(0);
++	pgprot_t required = __pgprot(0);
+ 
+ 	/*
+ 	 * The BIOS area between 640k and 1Mb needs to be executable for
+@@ -278,6 +279,13 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 	if (within(pfn, __pa((unsigned long)__start_rodata) >> PAGE_SHIFT,
+ 		   __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
+ 		pgprot_val(forbidden) |= _PAGE_RW;
++	/*
++	 * .data and .bss should always be writable.
++	 */
++	if (within(address, (unsigned long)_sdata, (unsigned long)_edata) ||
++	    within(address, (unsigned long)__bss_start,
++			(unsigned long)__bss_stop))
++		pgprot_val(required) |= _PAGE_RW;
+ 
+ #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
+ 	/*
+@@ -317,6 +325,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ #endif
+ 
+ 	prot = __pgprot(pgprot_val(prot) & ~pgprot_val(forbidden));
++	prot = __pgprot(pgprot_val(prot) | pgprot_val(required));
+ 
+ 	return prot;
+ }
+@@ -393,7 +402,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ {
+ 	unsigned long nextpage_addr, numpages, pmask, psize, flags, addr, pfn;
+ 	pte_t new_pte, old_pte, *tmp;
+-	pgprot_t old_prot, new_prot;
++	pgprot_t old_prot, new_prot, req_prot;
+ 	int i, do_split = 1;
+ 	unsigned int level;
+ 
+@@ -438,10 +447,10 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ 	 * We are safe now. Check whether the new pgprot is the same:
+ 	 */
+ 	old_pte = *kpte;
+-	old_prot = new_prot = pte_pgprot(old_pte);
++	old_prot = new_prot = req_prot = pte_pgprot(old_pte);
+ 
+-	pgprot_val(new_prot) &= ~pgprot_val(cpa->mask_clr);
+-	pgprot_val(new_prot) |= pgprot_val(cpa->mask_set);
++	pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
++	pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
+ 
+ 	/*
+ 	 * old_pte points to the large page base address. So we need
+@@ -450,17 +459,17 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ 	pfn = pte_pfn(old_pte) + ((address & (psize - 1)) >> PAGE_SHIFT);
+ 	cpa->pfn = pfn;
+ 
+-	new_prot = static_protections(new_prot, address, pfn);
++	new_prot = static_protections(req_prot, address, pfn);
+ 
+ 	/*
+ 	 * We need to check the full range, whether
+ 	 * static_protection() requires a different pgprot for one of
+ 	 * the pages in the range we try to preserve:
+ 	 */
+-	addr = address + PAGE_SIZE;
+-	pfn++;
+-	for (i = 1; i < cpa->numpages; i++, addr += PAGE_SIZE, pfn++) {
+-		pgprot_t chk_prot = static_protections(new_prot, addr, pfn);
++	addr = address & pmask;
++	pfn = pte_pfn(old_pte);
++	for (i = 0; i < (psize >> PAGE_SHIFT); i++, addr += PAGE_SIZE, pfn++) {
++		pgprot_t chk_prot = static_protections(req_prot, addr, pfn);
+ 
+ 		if (pgprot_val(chk_prot) != pgprot_val(new_prot))
+ 			goto out_unlock;
+@@ -483,7 +492,8 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ 	 * that we limited the number of possible pages already to
+ 	 * the number of pages in the large page.
+ 	 */
+-	if (address == (nextpage_addr - psize) && cpa->numpages == numpages) {
++	if (address == (address & pmask) &&
++		cpa->numpages == (psize >> PAGE_SHIFT)) {
+ 		/*
+ 		 * The address is aligned and the number of pages
+ 		 * covers the full page.
 
-Actually, in a modularly-designed program, only one component of the program works with the key, the rest should not even be aware of the existence of the key, and having a process-wide (or even more general) name for the key can lead to unintended conflicts.  Imagine having the option to give an every file descriptor a name, automatically replacing earlier file descriptors with the same name.
-
-Having a well-known name for the sshd host private key is perhaps useful as an "attack this" sign :)
-
-Same for public keys - when an application does
-   public_key = import_from_certificate();
-   encrypt_data_using(public_key)
-it is not interested in sharing the public key object with other processes - after all, what if another process loaded a different key under the indented name?  Creating a meaningful identifier is about as costly as just importing the key, anyway.
-
->  Even transient SSL session keys are always put into an SSL session cache by
-> apache or whatever to allow them to be reused across multiple TCP
-> streams!
-The SSL session cache is a quite unusual case.
-
-Also, there is one SSL private key per server DNS name, and one SSL session cache entry per client-server pair, but there are at least four temporary keys, for each connection, and there is absolutely no need to name these.
-
-> So my recommendation would be to create some new operations of the
-> existing keyring code:
-
-> (2) Add cryptoapi hooks to automatically register keyring key types
-> based on the loaded cryptoapi modules.
-Hm, using a different key type for each cipher would at least allow reusing add_key()/KEYCTL_{READ,UPDATE}; I didn't think even these could be useful.
-
-So it's better than absolutely hopeless now :)
-
-Thank you,
-    Mirek
+--------------080804020503030101040106--
