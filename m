@@ -1,99 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab0IFPsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:48:10 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34943 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753721Ab0IFPsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:48:05 -0400
-Date: Mon, 6 Sep 2010 17:47:37 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Tom Zanussi <tzanussi@gmail.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-perf-users@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: disabling group leader perf_event
-Message-ID: <20100906154737.GA4332@elte.hu>
-References: <4C84B088.5050003@redhat.com>
- <1283772256.1930.303.camel@laptop>
- <4C84D1CE.3070205@redhat.com>
- <1283774045.1930.341.camel@laptop>
- <4C84D77B.6040600@redhat.com>
- <20100906124330.GA22314@elte.hu>
- <4C84E265.1020402@redhat.com>
- <20100906125905.GA25414@elte.hu>
- <4C850147.8010908@redhat.com>
+	id S1754262Ab0IFPvD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:51:03 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:49520 "EHLO
+	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753568Ab0IFPu6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 11:50:58 -0400
+Date: Mon, 6 Sep 2010 11:50:51 -0400 (EDT)
+From: Miloslav Trmac <mitr@redhat.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Kyle Moffett <kyle@moffetthome.net>, linux-crypto@vger.kernel.org,
+        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
+        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Message-ID: <169108422.1009631283788251084.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <272391166.1009231283787434910.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+Subject: Re: [PATCH 01/19] User-space API definition
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C850147.8010908@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0004]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Avi Kivity <avi@redhat.com> wrote:
-
->  On 09/06/2010 03:59 PM, Ingo Molnar wrote:
+----- "Herbert Xu" <herbert@gondor.hengli.com.au> wrote:
+> On Mon, Aug 23, 2010 at 11:37:40AM -0400, Miloslav Trmac wrote:
 > >
-> >>Is this a roundabout way of saying "jit"?
-> >Partly. I'm not sure we want to actually upload programs in bytecode
-> >form. ASCII is just fine - just like a .gz Javascript is fine for web
-> >apps. (and in most cases compresses down better than the bytecode
-> >equivalent)
-> >
-> >So a clear language (the simpler initially the better) plus an in-kernel
-> >compiler.
-> >
-> >This could be used for far more than just instrumentation: IMO security
-> >policies could be expressed in such a way. (Simplified, they are quite
-> >similar to filters installed on syscall entry/exit, with the ability of
-> >the filter to influence whether the syscall is performed.)
+> > I can see almost no overlap between the two sets of requirements. 
+> Probably the only common use case is handling session keys (e.g. keys
+> used in a kerberos ticket), which should be stored in the kernel for
+> the duration of the session, made available to each process in the
+> session, and available as keys for kernel crypto.  Such keys will be
+> in the minority, though, and it seems to me the best approach for
+> handling these is to allow key export/import from/to keyring keys in
+> addition to export/import from/to data in userspace: the long-term
+> storage would be handled by the existing keyring API, which stores the
+> key as unformatted binary data, and import into the crypto context
+> would convert the key into the internal representation more suitable
+> for crypto.
+> > 
+> > I have seriously considered the keyring API, and this is what I came
+> up with - but I'd love to be shown a better way.
 > 
-> For me the requirements are:
-> - turing complete (more than just filters)
+> FWIW adding a second key management system to the kernel is
+> totally out of the question.
+> 
+> If the existing system doesn't work for you, find a way to build
+> on it so that it does.  Adding a second system that pretty much
+> does the same thing is unacceptable.
+It does _not_ do the same thing, same as ramfs and file descriptors do not do the same thing although they are both related to files.
 
-Yep. Filters are obviously just basically expressions.
+The kernel keyring service is basically a system-wide data storage service.  /dev/crypto needs a quick way to refer to short-lived, usually process-local, kernel-space data structures from userspace.
 
-Conditions and variables can be added. Maybe loops too in simpler forms 
-- as long as we can prove halting - or maybe with a runtime abort 
-mechanism.
+Imagine that instead of
+    thread = clone(..., CLONE_THREAD);
+you needed to do
+    thread_fd = mkstemp("/proc/XXX");
+    fork(thread_fd);
+That's how "just using the existing keyring" would look like.
 
-> - easy interface to kernel APIs (like hrtimers)
-> - safe to use by untrusted users
+Adapting the existing keyring to match the /dev/crypto use case better would make the keyring API at least 25% larger, and introduce completely different key identification and lifetime semantics for a set of keys.
 
-Yep.
-
-> The actual language doesn't really matter.
-
-There are 3 basic categories:
-
- 1- Most (least abstract) specific code: a block of bytecode in the form 
-    of a simplified, executable, kernel-checked x86 machine code block - 
-    this is also the fastest form. [yes, this is actually possible.]
-
- 2- Least specific (most abstract) code: A subset/sideset of C - as it's 
-    the most kernel-developer-trustable/debuggable form.
-
- 3- Everything else little more than a dot on the spectrum between the
-    first two points.
-
-I lean towards #2 - but #1 looks interesting too. #3 is distinctly 
-uninteresting as it cannot be as fast as #1 and cannot be as convenient 
-as #2.
-
-Thanks,
-
-	Ingo
+If you can see a way the two can be cleanly integrated, please don't just tell us that we have to do it, tell us how.
+ 
+> Also, the key management for secret keys that you've added should
+> not be the only mode offered to the user.  Most people do not need
+> the separation between key setting and encryption/decryption.
+The "key ID" is not embedded into encryption operation requests (it uses a struct nlattr), so it would be quite possible to supply the raw key instead.
+    Mirek
