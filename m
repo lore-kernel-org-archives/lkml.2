@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab0IFJuE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 05:50:04 -0400
-Received: from mga03.intel.com ([143.182.124.21]:22034 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751049Ab0IFJuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 05:50:01 -0400
-Message-Id: <89k83a$9icvuq@azsmga001.ch.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,324,1280732400"; 
-   d="scan'208";a="321290202"
-Date: Mon, 06 Sep 2010 10:49:56 +0100
-To: Sven Joachim <svenjoac@gmx.de>
-Subject: Re: [git pull] i915
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+	id S1752253Ab0IFKNu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 06:13:50 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52135 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab0IFKNt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 06:13:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=o5P/7TdRjn1td38Wocn50WVpKKGO49CPGf6pblFm600igNVL7MUTmxWF/AtaGqWuJJ
+         /+/Yrez8gpAdG4yu5so+HFuwu+zxLa1tCHNyHxjDONiEpjPAtNWkkf+04IYuO9yPUz+r
+         asTAbNxFPvOwoornYorXEhs+q4mTA580s7TtQ=
+Date: Mon, 6 Sep 2010 12:11:38 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Julia Lawall <julia@diku.dk>, Ben Hutchings <ben@decadent.org.uk>,
+        Mike Gilks <mike.kernel@gilksonline.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-References: <89kc63$i063ms@fmsmga002.fm.intel.com> <8739tnw7ax.fsf@turtle.gmx.de>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <8739tnw7ax.fsf@turtle.gmx.de>
+Subject: Re: [PATCH 06/14] staging: rtl8192u: improve error path
+Message-ID: <20100906101138.GA31249@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Kulikov Vasiliy <segooon@gmail.com>,
+	kernel-janitors@vger.kernel.org,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Mauro Carvalho Chehab <mchehab@redhat.com>,
+	Julia Lawall <julia@diku.dk>, Ben Hutchings <ben@decadent.org.uk>,
+	Mike Gilks <mike.kernel@gilksonline.com>,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1283711561-7332-1-git-send-email-segooon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283711561-7332-1-git-send-email-segooon@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 Sep 2010 11:27:34 +0200, Sven Joachim <svenjoac@gmx.de> wrote:
-> Sadly, these still do not include a fix for the build failure¹ that
-> occurs if CONFIG_DEBUG_FS is not set:
-> 
-> ,----
-> |   CC [M]  drivers/gpu/drm/i915/intel_overlay.o
-> | drivers/gpu/drm/i915/intel_overlay.c: In function 'intel_overlay_print_error_state':
-> | drivers/gpu/drm/i915/intel_overlay.c:1467: error: implicit declaration of function 'seq_printf'
-> | make[4]: *** [drivers/gpu/drm/i915/intel_overlay.o] Error 1
+On Sun, Sep 05, 2010 at 10:32:41PM +0400, Kulikov Vasiliy wrote:
+> +fail2:
+> +	rtl8192_down(dev);
+> +	if (priv->pFirmware) {
+> +		kfree(priv->pFirmware);
+> +		priv->pFirmware = NULL;
+> +	}
+> +	rtl8192_usb_deleteendpoints(dev);
+> +	destroy_workqueue(priv->priv_wq);
+> +	mdelay(10);
 
-Andrew Morton picked up a patch to fix that, hence why I left it out.
--- 
-Chris Wilson, Intel Open Source Technology Centre
+What's this delay for?
+
+regards,
+dan carpenter
+
+>  fail:
+>  	free_ieee80211(dev);
+
