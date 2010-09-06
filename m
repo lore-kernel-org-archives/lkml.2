@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab0IFFht (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 01:37:49 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:52428 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750877Ab0IFFhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 01:37:47 -0400
-Date: Sun, 5 Sep 2010 22:37:43 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Neil Brown <neilb@suse.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the rcu tree
-Message-ID: <20100906053743.GD2463@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100906121408.33946fbe.sfr@canb.auug.org.au>
- <20100906123255.3eef4311@notabene>
+	id S1751899Ab0IFFiw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 01:38:52 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55951 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab0IFFiu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 01:38:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WenmJaVXJA/bC9yk5s0pf8CAUmtrYRKD2knU6EQdJ50ejTjGBD6Qb2A9RUOkAm/+iS
+         7D40x5XRenNCdQLfmejIsR1TMpvw6u0rBEXgSW825kIY/HyT8k+GKiDwmkGs1Qv3e7I7
+         6uC+n+hNaE3WL/N9ARk3pP11UIkHUsnjGi39o=
+Date: Sun, 5 Sep 2010 22:38:46 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Greg KH <gregkh@suse.de>, linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
+Subject: Re: [RFC 22/22] tcm_loop: Add multi-fabric Linux/SCSI LLD fabric
+ module
+Message-ID: <20100906053845.GG17212@core.coreip.homeip.net>
+References: <1283160203-6981-1-git-send-email-nab@linux-iscsi.org>
+ <20100905203006.GD18411@core.coreip.homeip.net>
+ <1283723479.556.135.camel@haakon2.linux-iscsi.org>
+ <20100906050816.GD17212@core.coreip.homeip.net>
+ <20100906051703.GA2891@suse.de>
+ <1283750480.556.196.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100906123255.3eef4311@notabene>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1283750480.556.196.camel@haakon2.linux-iscsi.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 12:32:55PM +1000, Neil Brown wrote:
-> On Mon, 6 Sep 2010 12:14:08 +1000
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Sun, Sep 05, 2010 at 10:21:20PM -0700, Nicholas A. Bellinger wrote:
+> On Sun, 2010-09-05 at 22:17 -0700, Greg KH wrote:
+> > On Sun, Sep 05, 2010 at 10:08:16PM -0700, Dmitry Torokhov wrote:
+> > > On Sun, Sep 05, 2010 at 02:51:19PM -0700, Nicholas A. Bellinger wrote:
+> > > > On Sun, 2010-09-05 at 13:30 -0700, Dmitry Torokhov wrote:
+> > > > > On Mon, Aug 30, 2010 at 02:23:23AM -0700, Nicholas A. Bellinger wrote:
+> > > > > > +
+> > > > > > +static void tcm_loop_primary_release(struct device *dev)
+> > > > > > +{
+> > > > > > +	return;
+> > > > > > +}
+> > > > > > +
+> > > > > > +static struct device tcm_loop_primary = {
+> > > > > > +	.init_name		= "tcm_loop_0",
+> > > > > > +	.release		= tcm_loop_primary_release,
+> > > > > > +};
+> > > > > > +
+> > > > > 
+> > > > > No, you can not have statically allocated devices and dummy release
+> > > > > functions.
+> > > > > 
+> > > > 
+> > > > Last time I checked this is still what mainline
+> > > > drivers/scsi/scsi_debug.c is doing for struct device pseudo_primary:
+> > > > 
+> > > > static void pseudo_0_release(struct device *dev)
+> > > > {
+> > > >         if (SCSI_DEBUG_OPT_NOISE & scsi_debug_opts)
+> > > >                 printk(KERN_INFO "scsi_debug: pseudo_0_release() called\n");
+> > > > }
+> > > > 
+> > > > static struct device pseudo_primary = {
+> > > >         .init_name      = "pseudo_0",
+> > > >         .release        = pseudo_0_release,
+> > > > };
+> > > > 
+> > > > so for these type of things in TCM_Loop I tend to follow what scsi_debug does,
+> > > >  so I don't exactly see a issue here atm.  Anybody else have comments..?
+> > > 
+> > > The kobject embedded in the device structure is refcounted and it's
+> > > lifetime may be different from lifetime of your module. If somebody
+> > > happen to hold reference to the driver while your module is being
+> > > unloaded bad things will happen.
+> > > 
+> > > I am sure Greg has something on this topic ready for cut-and-paste.
+> > 
+> > Documentation/kobject.txt :)
 > 
-> > Hi Paul,
-> > 
-> > After merging the rcu tree, today's linux-next build
-> > (powerpc ppc64_defconfig) produced this warning:
-> > 
-> > drivers/md/raid1.c: In function 'read_balance':
-> > drivers/md/raid1.c:445: warning: operation on 'new_disk' may be undefined
-> > 
-> > I am picking on the rcu tree because the line above has not changed since
-> > 2005.  The line is:
-> > 
-> >                 for (rdev = rcu_dereference(conf->mirrors[new_disk].rdev);
-> >                      r1_bio->bios[new_disk] == IO_BLOCKED ||
-> >                      !rdev || !test_bit(In_sync, &rdev->flags)
-> >                              || test_bit(WriteMostly, &rdev->flags);
-> >                      rdev = rcu_dereference(conf->mirrors[++new_disk].rdev)) {
-> > 
-> > Where new_disk is being updated in the parameter to the last
-> > rcu_dereference.
-> > 
+> I still don't get it..?  Does this mean that scsi_debug and TCM_Loop are
+> currently broken wrt to this item or not..?
 > 
-> Hi Stephen,
-> 
->  There is a patch in linux-kernel
->     "PATCH] md: do not use ++ in rcu_dereference() argument"
-> 
->  that addresses this - it is a problem in md: I guess rcu as become more
->  helpful in finding these problems.
 
-Indeed, the sparse-based checking is a bit more picky about things,
-even when you are not using sparse...
+Yes they are broken.
 
-							Thanx, Paul
-
->  I'll probably fix it a little differently, but I'll have something in my
->  for-next for tomorrow.
-> 
-> Thanks,
-> NeilBrown
+-- 
+Dmitry
