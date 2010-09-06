@@ -1,113 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab0IFAwP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Sep 2010 20:52:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32863 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755251Ab0IFAwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Sep 2010 20:52:13 -0400
-From: NeilBrown <neilb@suse.de>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Date: Mon, 06 Sep 2010 10:50:29 +1000
-Subject: [PATCH 10/10] ovl: Assorted updates to
-	Documentation/filesystems/overlayfs.txt
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20100906005029.20775.74294.stgit@localhost.localdomain>
-In-Reply-To: <20100906004829.20775.68828.stgit@localhost.localdomain>
-References: <20100906004829.20775.68828.stgit@localhost.localdomain>
-User-Agent: StGit/0.15
+	id S1755032Ab0IFA6r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Sep 2010 20:58:47 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59488 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754557Ab0IFA6q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Sep 2010 20:58:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hOAJpJJmefIvP45u4XrDReHqLGaFyDCJzae98SfYpvoUSfVhuT/uRsO32cgkZbbKvc
+         dbCda/lZ3/NPo1LMb1wwa83Et2EuRcSAgm/uo8zC3QmV9SDVtsYVc61UkG2xaVmH0sSV
+         QGZDHulIMTHrD4/+5g3BaQq8txsKyr7uJF1Wo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1283731939.556.159.camel@haakon2.linux-iscsi.org>
+References: <4C7421FB.2060007@vlnb.net> <1282685014.32007.51.camel@haakon2.linux-iscsi.org>
+ <4C76CA57.3050405@vlnb.net> <1282857806.32007.175.camel@haakon2.linux-iscsi.org>
+ <4C79484B.3090607@vlnb.net> <1283028468.32007.357.camel@haakon2.linux-iscsi.org>
+ <4C7C18CE.5020103@vlnb.net> <1283204792.32007.448.camel@haakon2.linux-iscsi.org>
+ <4C7FFD1A.8090509@vlnb.net> <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
+ <20100905201802.GC18411@core.coreip.homeip.net> <1283723447.556.133.camel@haakon2.linux-iscsi.org>
+ <AANLkTimdHotxVS8ZJJhg0D08FUiw4scSMTb2dryqJ_vQ@mail.gmail.com> <1283731939.556.159.camel@haakon2.linux-iscsi.org>
+From: Mark Deneen <mdeneen@gmail.com>
+Date: Sun, 5 Sep 2010 20:58:23 -0400
+Message-ID: <AANLkTikOgc+YbkzmOpJv=s4Oxj9S9LYQ5qf5jDbT0ycg@mail.gmail.com>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>, linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        James Bottomley <James.Bottomley@suse.de>,
+        scst-devel <scst-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- Documentation/filesystems/overlayfs.txt |   41 ++++++++++++++++---------------
- 1 files changed, 21 insertions(+), 20 deletions(-)
+> Hi Mark,
+>
+> I will always be advocating using the best tool for the job in any given
+> situation.  So absoulutely, I would have picked bitkeeper over tarballs
+> any day of the week 7 years ago, or over SVN if it had existed back
+> then.
 
-diff --git a/Documentation/filesystems/overlayfs.txt b/Documentation/filesystems/overlayfs.txt
-index 02af2d6..4e5f972 100644
---- a/Documentation/filesystems/overlayfs.txt
-+++ b/Documentation/filesystems/overlayfs.txt
-@@ -4,32 +4,33 @@ Overlay Filesystem
- ==================
- 
- This document describes a prototype for a new approach to providing
--union-filesystem functionality in Linux.  A union-filesystem tries to
--present the union of two different filesystems as though it were a
--single filesystem.  The result will inevitably fail to look exactly
--like a normal filesystem for various technical reasons.  The
--expectation is that many use cases will be able to ignore these
--differences.
-+overlay-filesystem functionality in Linux (sometimes referred to as
-+union-filesystems).  An overlay-filesystem tries to present a
-+filesystem which is the result over overlaying one filesystem on top
-+of the other.
-+
-+The result will inevitably fail to look exactly like a normal
-+filesystem for various technical reasons.  The expectation is that
-+many use cases will be able to ignore these differences.
- 
- This approach is 'hybrid' because the objects that appear in the
- filesystem do not all appear to belong to that filesystem.  In many
- case an object accessed in the union will be indistinguishable
- from accessing the corresponding object from the original filesystem.
- This is most obvious from the 'st_dev' field returned by stat(2).
--Some objects will report an st_dev from one original filesystem, some
--from the other, directories will report an st_dev from the union
--itself.  Similarly st_ino will only be unique when combined with
--st_dev, and both of these can change over the lifetime of a
--non-directory object.  Many applications and tools ignore these values
--and will not be affected.
-+
-+While directories will report an st_dev for the overlay-filesystem,
-+all non-directory objects will report an st_dev whichever of the
-+'lower' or 'upper' filesystem that is providing the object.  Similarly
-+st_ino will only be unique when combined with st_dev, and both of
-+these can change over the lifetime of a non-directory object.  Many
-+applications and tools ignore these values and will not be affected.
- 
- Upper and Lower
- ---------------
- 
- An overlay filesystem combines two filesystems - an 'upper' filesystem
--and a 'lower' filesystem.  Note that while in set theory, 'union' is a
--commutative operation, in filesystems it is not - the two filesystems
--are treated differently.  When a name exists in both filesystems, the
-+and a 'lower' filesystem.  When a name exists in both filesystems, the
- object in the 'upper' filesystem is visible while the object in the
- 'lower' filesystem is either hidden or, in the case of directories,
- merged with the 'upper' object.
-@@ -48,14 +49,14 @@ trusted.* extended attributes, and must provide valid d_type in
- readdir responses, at least for symbolic links - so NFS is not
- suitable.
- 
--A read-only union of two read-only filesystems may use any filesystem
--type.
-+A read-only overlay of two read-only filesystems may use any
-+filesystem type.
- 
- Directories
- -----------
- 
--Unioning mainly involved directories.  If a given name appears in both
--upper ad lower filesystems and refers to a non-directory in either,
-+Overlaying mainly involved directories.  If a given name appears in both
-+upper and lower filesystems and refers to a non-directory in either,
- then the lower object is hidden - the name refers only to the upper
- object.
- 
-@@ -67,7 +68,7 @@ into a merged directory.  Then whenever a lookup is requested in such
- a merged directory, the lookup is performed in each actual directory
- and the combined result is cached in the dentry belonging to the overlay
- filesystem.  If both actual lookups find directories, both are stored
--and a merged directory is create, otherwise only one is stored: the
-+and a merged directory is created, otherwise only one is stored: the
- upper if it exists, else the lower.
- 
- Only the lists of names from directories are merged.  Other content
+I can't say that I agree with this.  SVN existed, along with many
+other open source choices -- the choice of BitKeeper was a mistake.
 
+> But again, I think it's an important point that git is a tool that was
+> made explictly for the linux kernel workflow.  Why would a new subsystem
+> maintainer is participates in the kernel workflow ever use anything
+> besides git at this point..?
 
+Look, I'm not saying that I dislike git.  I use it as my SCM here.
+However, git was in its infancy (or not even around) when SCST was
+started.  It's not like they had a proprietary vendor go cold turkey
+on them, forcing everyone to another solution.
+
+> And sorry, but considering the obvious advantages in terms of workflow
+> speed and flexibility that git brings to the table for a subsystem
+> maintainer, calling the choise of SCM a nit-pick item demonstrates a
+> level certain level of inexperience wrt to mainline kernel workflow.
+> Which is perfectly OK, but if you really want to understand the issues
+> at hand in a distributed vs. centrailized SCM model, I strongly suggest
+> you watch Linus's talk as well.
+>
+> Best,
+>
+> --nab
+
+I'm still calling it a nit-pick.  Vlad could switch to git in a short
+amount of time if he felt so compelled.  This is like saying that the
+quality of a car is based on the style of garage it is parked in.
+
+Kind Regards,
+Mark Deneen
