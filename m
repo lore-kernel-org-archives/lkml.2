@@ -1,166 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab0IFPFR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 11:05:17 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:46017 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707Ab0IFPCy (ORCPT
+	id S1755290Ab0IFPFe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 11:05:34 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:31256 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab0IFPCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:02:54 -0400
+	Mon, 6 Sep 2010 11:02:52 -0400
 X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz32i2a8h87h62h)
+X-BigFish: VS1(zzzz1202hzz8275bhz32i2a8h87h43h62h)
 X-Spam-TCS-SCL: 1:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8BZ2P-02-4WR-02
+X-WSS-ID: 0L8BZ2M-02-4WB-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: <"http://kvm.qumranet.com"@osrc.amd.com>, <linux-kernel@vger.kernel.org>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 11/27] KVM: X86: Introduce pointer to mmu context used for gva_to_gpa
-Date: Mon, 6 Sep 2010 17:01:46 +0200
-Message-ID: <1283785322-26898-12-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 06/27] KVM: MMU: Introduce inject_page_fault function pointer
+Date: Mon, 6 Sep 2010 17:01:41 +0200
+Message-ID: <1283785322-26898-7-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
 References: <1283785322-26898-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the walk_mmu pointer which points to
-the mmu-context currently used for gva_to_gpa translations.
+This patch introduces an inject_page_fault function pointer
+into struct kvm_mmu which will be used to inject a page
+fault. This will be used later when Nested Nested Paging is
+implemented.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/kvm_host.h |   14 ++++++++++++++
- arch/x86/kvm/mmu.c              |   10 +++++-----
- arch/x86/kvm/x86.c              |   17 ++++++++++-------
- 3 files changed, 29 insertions(+), 12 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    3 +++
+ arch/x86/kvm/mmu.c              |    4 +++-
+ 2 files changed, 6 insertions(+), 1 deletions(-)
 
 diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index af8cce3..d797746 100644
+index ab708ee..3fefcd8 100644
 --- a/arch/x86/include/asm/kvm_host.h
 +++ b/arch/x86/include/asm/kvm_host.h
-@@ -288,7 +288,21 @@ struct kvm_vcpu_arch {
- 	u64 ia32_misc_enable_msr;
- 	bool tpr_access_reporting;
- 
-+	/*
-+	 * Paging state of the vcpu
-+	 *
-+	 * If the vcpu runs in guest mode with two level paging this still saves
-+	 * the paging mode of the l1 guest. This context is always used to
-+	 * handle faults.
-+	 */
- 	struct kvm_mmu mmu;
-+
-+	/*
-+	 * Pointer to the mmu context currently used for
-+	 * gva_to_gpa translations.
-+	 */
-+	struct kvm_mmu *walk_mmu;
-+
- 	/* only needed in kvm_pv_mmu_op() path, but it's hot so
- 	 * put it here to avoid allocation */
- 	struct kvm_pv_mmu_op_buffer mmu_op_buffer;
+@@ -239,6 +239,9 @@ struct kvm_mmu {
+ 	void (*set_cr3)(struct kvm_vcpu *vcpu, unsigned long root);
+ 	unsigned long (*get_cr3)(struct kvm_vcpu *vcpu);
+ 	int (*page_fault)(struct kvm_vcpu *vcpu, gva_t gva, u32 err);
++	void (*inject_page_fault)(struct kvm_vcpu *vcpu,
++				  unsigned long addr,
++				  u32 error_code);
+ 	void (*free)(struct kvm_vcpu *vcpu);
+ 	gpa_t (*gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t gva, u32 access,
+ 			    u32 *error);
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 9668f91..a2cd2ce 100644
+index d2213fa..5b55451 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -2707,7 +2707,7 @@ static int paging32E_init_context(struct kvm_vcpu *vcpu,
- 
- static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+@@ -2570,7 +2570,7 @@ static void inject_page_fault(struct kvm_vcpu *vcpu,
+ 			      u64 addr,
+ 			      u32 err_code)
  {
--	struct kvm_mmu *context = &vcpu->arch.mmu;
-+	struct kvm_mmu *context = vcpu->arch.walk_mmu;
+-	kvm_inject_page_fault(vcpu, addr, err_code);
++	vcpu->arch.mmu.inject_page_fault(vcpu, addr, err_code);
+ }
  
- 	context->new_cr3 = nonpaging_new_cr3;
- 	context->page_fault = tdp_page_fault;
-@@ -2767,11 +2767,11 @@ EXPORT_SYMBOL_GPL(kvm_init_shadow_mmu);
+ static void paging_free(struct kvm_vcpu *vcpu)
+@@ -2718,6 +2718,7 @@ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+ 	context->direct_map = true;
+ 	context->set_cr3 = kvm_x86_ops->set_tdp_cr3;
+ 	context->get_cr3 = get_cr3;
++	context->inject_page_fault = kvm_inject_page_fault;
  
- static int init_kvm_softmmu(struct kvm_vcpu *vcpu)
- {
--	int r = kvm_init_shadow_mmu(vcpu, &vcpu->arch.mmu);
-+	int r = kvm_init_shadow_mmu(vcpu, vcpu->arch.walk_mmu);
- 
--	vcpu->arch.mmu.set_cr3           = kvm_x86_ops->set_cr3;
--	vcpu->arch.mmu.get_cr3           = get_cr3;
--	vcpu->arch.mmu.inject_page_fault = kvm_inject_page_fault;
-+	vcpu->arch.walk_mmu->set_cr3           = kvm_x86_ops->set_cr3;
-+	vcpu->arch.walk_mmu->get_cr3           = get_cr3;
-+	vcpu->arch.walk_mmu->inject_page_fault = kvm_inject_page_fault;
+ 	if (!is_paging(vcpu)) {
+ 		context->gva_to_gpa = nonpaging_gva_to_gpa;
+@@ -2760,6 +2761,7 @@ static int init_kvm_softmmu(struct kvm_vcpu *vcpu)
+ 	vcpu->arch.mmu.direct_map        = false;
+ 	vcpu->arch.mmu.set_cr3           = kvm_x86_ops->set_cr3;
+ 	vcpu->arch.mmu.get_cr3           = get_cr3;
++	vcpu->arch.mmu.inject_page_fault = kvm_inject_page_fault;
  
  	return r;
  }
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 829efb0..e5dcf7f 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3441,27 +3441,27 @@ static gpa_t translate_gpa(struct kvm_vcpu *vcpu, gpa_t gpa, u32 *error)
- gpa_t kvm_mmu_gva_to_gpa_read(struct kvm_vcpu *vcpu, gva_t gva, u32 *error)
- {
- 	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
--	return vcpu->arch.mmu.gva_to_gpa(vcpu, gva, access, error);
-+	return vcpu->arch.walk_mmu->gva_to_gpa(vcpu, gva, access, error);
- }
- 
-  gpa_t kvm_mmu_gva_to_gpa_fetch(struct kvm_vcpu *vcpu, gva_t gva, u32 *error)
- {
- 	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
- 	access |= PFERR_FETCH_MASK;
--	return vcpu->arch.mmu.gva_to_gpa(vcpu, gva, access, error);
-+	return vcpu->arch.walk_mmu->gva_to_gpa(vcpu, gva, access, error);
- }
- 
- gpa_t kvm_mmu_gva_to_gpa_write(struct kvm_vcpu *vcpu, gva_t gva, u32 *error)
- {
- 	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
- 	access |= PFERR_WRITE_MASK;
--	return vcpu->arch.mmu.gva_to_gpa(vcpu, gva, access, error);
-+	return vcpu->arch.walk_mmu->gva_to_gpa(vcpu, gva, access, error);
- }
- 
- /* uses this to access any guest's mapped memory without checking CPL */
- gpa_t kvm_mmu_gva_to_gpa_system(struct kvm_vcpu *vcpu, gva_t gva, u32 *error)
- {
--	return vcpu->arch.mmu.gva_to_gpa(vcpu, gva, 0, error);
-+	return vcpu->arch.walk_mmu->gva_to_gpa(vcpu, gva, 0, error);
- }
- 
- static int kvm_read_guest_virt_helper(gva_t addr, void *val, unsigned int bytes,
-@@ -3472,7 +3472,8 @@ static int kvm_read_guest_virt_helper(gva_t addr, void *val, unsigned int bytes,
- 	int r = X86EMUL_CONTINUE;
- 
- 	while (bytes) {
--		gpa_t gpa = vcpu->arch.mmu.gva_to_gpa(vcpu, addr, access, error);
-+		gpa_t gpa = vcpu->arch.walk_mmu->gva_to_gpa(vcpu, addr, access,
-+							    error);
- 		unsigned offset = addr & (PAGE_SIZE-1);
- 		unsigned toread = min(bytes, (unsigned)PAGE_SIZE - offset);
- 		int ret;
-@@ -3527,8 +3528,9 @@ static int kvm_write_guest_virt_system(gva_t addr, void *val,
- 	int r = X86EMUL_CONTINUE;
- 
- 	while (bytes) {
--		gpa_t gpa =  vcpu->arch.mmu.gva_to_gpa(vcpu, addr,
--						       PFERR_WRITE_MASK, error);
-+		gpa_t gpa =  vcpu->arch.walk_mmu->gva_to_gpa(vcpu, addr,
-+							     PFERR_WRITE_MASK,
-+							     error);
- 		unsigned offset = addr & (PAGE_SIZE-1);
- 		unsigned towrite = min(bytes, (unsigned)PAGE_SIZE - offset);
- 		int ret;
-@@ -5648,6 +5650,7 @@ int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
- 	kvm = vcpu->kvm;
- 
- 	vcpu->arch.emulate_ctxt.ops = &emulate_ops;
-+	vcpu->arch.walk_mmu = &vcpu->arch.mmu;
- 	vcpu->arch.mmu.root_hpa = INVALID_PAGE;
- 	vcpu->arch.mmu.translate_gpa = translate_gpa;
- 	if (!irqchip_in_kernel(kvm) || kvm_vcpu_is_bsp(vcpu))
 -- 
 1.7.0.4
 
