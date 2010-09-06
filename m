@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab0IFMRQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 08:17:16 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:52337 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab0IFMRP (ORCPT
+	id S1753476Ab0IFMaE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 08:30:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49149 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155Ab0IFMaC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 08:17:15 -0400
-Date: Mon, 6 Sep 2010 20:17:08 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Miloslav Trmac <mitr@redhat.com>
-Cc: Kyle Moffett <kyle@moffetthome.net>, linux-crypto@vger.kernel.org,
-        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
-        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 01/19] User-space API definition
-Message-ID: <20100906121708.GA26354@gondor.apana.org.au>
-References: <1278368294.1123931282577639823.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com> <1269957386.1124701282577860651.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269957386.1124701282577860651.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 6 Sep 2010 08:30:02 -0400
+Subject: Re: disabling group leader perf_event
+From: Peter Zijlstra <peterz@infradead.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <4C84D77B.6040600@redhat.com>
+References: <4C84B088.5050003@redhat.com> <1283772256.1930.303.camel@laptop>
+	 <4C84D1CE.3070205@redhat.com> <1283774045.1930.341.camel@laptop>
+	 <4C84D77B.6040600@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 06 Sep 2010 14:29:49 +0200
+Message-ID: <1283776189.1930.380.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 11:37:40AM -0400, Miloslav Trmac wrote:
->
-> I can see almost no overlap between the two sets of requirements.  Probably the only common use case is handling session keys (e.g. keys used in a kerberos ticket), which should be stored in the kernel for the duration of the session, made available to each process in the session, and available as keys for kernel crypto.  Such keys will be in the minority, though, and it seems to me the best approach for handling these is to allow key export/import from/to keyring keys in addition to export/import from/to data in userspace: the long-term storage would be handled by the existing keyring API, which stores the key as unformatted binary data, and import into the crypto context would convert the key into the internal representation more suitable for crypto.
+On Mon, 2010-09-06 at 14:58 +0300, Avi Kivity wrote:
+> On 09/06/2010 02:54 PM, Peter Zijlstra wrote:
+> >
+> >> Basically, to read() all events in one go.  I have many of them.
+> >>
+> >> My current problem is that I have an event (kvm_exit) which I want to
+> >> drill down by looking at a field (exit_reason).  So I create lots of
+> >> separate perf_events with a filter for each reason:
+> >> kvm_exit(exit_reason==0), kvm_exit(exit_reason==1), etc.  But filters
+> >> are fairly slow (can have ~60 such events on AMD), so I want to make
+> >> this drill-down optional.
+> > Yeah, filters suck.
 > 
-> I have seriously considered the keyring API, and this is what I came up with - but I'd love to be shown a better way.
+> Any idea why?  I saw nothing obvious in the code, except that there is 
+> lots of it.
 
-FWIW adding a second key management system to the kernel is
-totally out of the question.
+It filters after it does all the hard work of creating the trace event,
+instead of before.
 
-If the existing system doesn't work for you, find a way to build
-on it so that it does.  Adding a second system that pretty much
-does the same thing is unacceptable.
+> > So what you're basically trying to do is create some histogram of
+> > exit_reason?
+> 
+> Yes, exactly.
 
-Also, the key management for secret keys that you've added should
-not be the only mode offered to the user.  Most people do not need
-the separation between key setting and encryption/decryption.
+One thing I thought of, you can use the unfiltered kvm_exit event as
+leader, that will give you the total number of events, which, esp. when
+you create partial histograms, is useful to figure out how much you
+missed.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+You can individually disable/enable !leader siblings.
+
+> (one other issue - right now I'm using cpu events.  If I switch to task 
+> events, I lose events generated by workqueues, yes?)
+
+Right, those have their own tasks.
