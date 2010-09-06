@@ -1,76 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab0IFNNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 09:13:48 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34683 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751002Ab0IFNNq (ORCPT
+	id S1753670Ab0IFNQz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 09:16:55 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:28043 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab0IFNQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 09:13:46 -0400
-Date: Mon, 6 Sep 2010 14:32:56 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-Cc: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Jean Delvare <khali@linux-fr.org>, Greg KH <greg@kroah.com>,
-        Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [IIO] Proposal for sysfs attributes
-Message-ID: <20100906143256.6b49825d@lxorguk.ukuu.org.uk>
-In-Reply-To: <4C84E64D.4040600@jic23.retrosnub.co.uk>
-References: <4C84A93B.2050507@iis.fraunhofer.de>
-	<4C84E64D.4040600@jic23.retrosnub.co.uk>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Sep 2010 09:16:54 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bn@niasdigital.com, ryan@bluewatersys.com, david-b@pacbell.net
+Cc: avictor.za@gmail.com, plagnioj@jcrosoft.com,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2] AT91: pio: add gpio_is_valid() function
+Date: Mon,  6 Sep 2010 16:21:04 +0200
+Message-Id: <1283782864-10567-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <4C73807F.4090007@atmel.com>
+References: <4C73807F.4090007@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Do we want to resemble the 'milli' units or should we stick to
-> > standard SI units (radians, kelvin, etc.) as floating point math is
-> > necessary anyway.
-> I've cc'd a few people who have contributed to previous abi discussions
-> for IIO in ways that make me think they may have opinions on this.
+Add a simple gpio_is_valid() function to overload
+the standard one. It takes into account the AT91
+pio numbering to check if a proper value is used.
+The upper limit keeps room for IO expanders above
+regular on-chip GPIO numbers.
 
-FP isn't needed you can let the drivers do fixed point quite happily -
-the Intel compass driver intentionally does this.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+---
+Changes since v1:
+	define ARCH_NR_GPIOS for AT91 keeping room for IO expanders
+	now use an upper limit to conform with gpiolib
 
-Using milli is asking for problems. There are lots of units where "milli"
-is actually quite big (millifarad, millihenry) and others where its
-stupendously small (eV for example). It works for hwmon because hwmon
-covers such a narrow range of devices and units.
+ arch/arm/mach-at91/include/mach/gpio.h |   14 ++++++++++++++
+ include/asm-generic/gpio.h             |    4 ++++
+ 2 files changed, 18 insertions(+), 0 deletions(-)
 
-So I'd favour FP because I think there are three choices
+diff --git a/arch/arm/mach-at91/include/mach/gpio.h b/arch/arm/mach-at91/include/mach/gpio.h
+index bfdd8ab..55828ad 100644
+--- a/arch/arm/mach-at91/include/mach/gpio.h
++++ b/arch/arm/mach-at91/include/mach/gpio.h
+@@ -21,6 +21,10 @@
+ #define MAX_GPIO_BANKS		5
+ #define NR_BUILTIN_GPIO		(PIN_BASE + (MAX_GPIO_BANKS * 32))
+ 
++/* keep room for a couple of GPIO expanders */
++#define NR_EXTRA_GPIO		64
++#define ARCH_NR_GPIOS		(NR_BUILTIN_GPIO + NR_EXTRA_GPIO)
++
+ /* these pin numbers double as IRQ numbers, like AT91xxx_ID_* values */
+ 
+ #define	AT91_PIN_PA0	(PIN_BASE + 0x00 + 0)
+@@ -189,6 +193,16 @@
+ #define	AT91_PIN_PE31	(PIN_BASE + 0x80 + 31)
+ 
+ #ifndef __ASSEMBLY__
++static inline int gpio_is_valid(int number)
++{
++	if (number >= PIN_BASE &&
++	    number <= ARCH_NR_GPIOS)
++		return 1;
++	return 0;
++}
++#define __HAVE_ARCH_GPIO_IS_VALID 1
++
++
+ /* setup setup routines, called from board init or driver probe() */
+ extern int __init_or_module at91_set_GPIO_periph(unsigned pin, int use_pullup);
+ extern int __init_or_module at91_set_A_periph(unsigned pin, int use_pullup);
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index c7376bf..264e701 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -22,11 +22,13 @@
+ #define ARCH_NR_GPIOS		256
+ #endif
+ 
++#ifndef __HAVE_ARCH_GPIO_IS_VALID
+ static inline int gpio_is_valid(int number)
+ {
+ 	/* only some non-negative numbers are valid */
+ 	return ((unsigned)number) < ARCH_NR_GPIOS;
+ }
++#endif
+ 
+ struct device;
+ struct seq_file;
+@@ -200,11 +202,13 @@ extern void gpio_unexport(unsigned gpio);
+ 
+ #else	/* !CONFIG_HAVE_GPIO_LIB */
+ 
++#ifndef __HAVE_ARCH_GPIO_IS_VALID
+ static inline int gpio_is_valid(int number)
+ {
+ 	/* only non-negative numbers are valid */
+ 	return number >= 0;
+ }
++#endif
+ 
+ /* platforms that don't directly support access to GPIOs through I2C, SPI,
+  * or other blocking infrastructure can use these wrappers.
+-- 
+1.5.6.5
 
-1.	Encode the value, define the scaling factor in the ABI (not
-	future proof)
-
-2.	Encode the value and scaling factor as two fields in the ABI
-	(more future proof)
-
-3.	As 2 but use the normal encoding for this which involves
-	putting a "." in the right place and using one field (ie FP)
-
-Drivers are simply going to end up doing this with sysfs values
-
-	snprintf(buf, sizeof(buf), "%d.%02d", v/100, v%100);
-
-or similar - or in many cases
-
-	snprintf(buf, sizeof(buf), "%d0000000000", v);
-
-neither of which is a big cost.
-
-For a ring buffer you probably need to encode the scaling factor and
-field width in some sort of interface description query and the values in
-the bitstream.
-
-Which raises an interesting question. The natural way to deal with sysfs
-is decimal fixed point internally. If drivers are going to do both
-sysfs and rings then really you want to be able to encode powers of 10
-shifts not just bitshifts.
-
-Alan
