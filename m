@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab0IFSBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 14:01:16 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:57631 "EHLO
+	id S1755372Ab0IFSDg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 14:03:36 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:59515 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab0IFSBJ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754134Ab0IFSD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 14:01:09 -0400
+	Mon, 6 Sep 2010 14:03:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=J6X0sT+lNdDa48PpSgya6M7HGimIJ6R1BzMJAjSnSiMbZ1/Uy/zp0juOXGotsb8XjM
+         lyWB03QdNLOD29Me+eKWi/RXJIVD4vZ0RdAVE78z2AEJ3US4Y6MeAec6wRyieEUQyGfX
+         /umqGl3EtieO0mvQyLKeSKWFnfZyRXWm6b0B0=
+Date: Mon, 6 Sep 2010 20:02:40 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Julia Lawall <julia@diku.dk>, Ben Hutchings <ben@decadent.org.uk>,
+        Mike Gilks <mike.kernel@gilksonline.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/14] staging: rtl8192u: improve error path
+Message-ID: <20100906180240.GC2764@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Kulikov Vasiliy <segooon@gmail.com>,
+	kernel-janitors@vger.kernel.org,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Mauro Carvalho Chehab <mchehab@redhat.com>,
+	Julia Lawall <julia@diku.dk>, Ben Hutchings <ben@decadent.org.uk>,
+	Mike Gilks <mike.kernel@gilksonline.com>,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1283711561-7332-1-git-send-email-segooon@gmail.com> <20100906101138.GA31249@bicker> <20100906135055.GA9632@albatros>
 MIME-Version: 1.0
-In-Reply-To: <169108422.1009631283788251084.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-References: <272391166.1009231283787434910.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
- <169108422.1009631283788251084.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Mon, 6 Sep 2010 14:00:47 -0400
-Message-ID: <AANLkTim=nf7VVs0zDshivjrdFFYeWaoWYqAA6PCs3c4k@mail.gmail.com>
-Subject: Re: [PATCH 01/19] User-space API definition
-To: Miloslav Trmac <mitr@redhat.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-crypto@vger.kernel.org,
-        Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>,
-        Neil Horman <nhorman@redhat.com>, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100906135055.GA9632@albatros>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 6, 2010 at 11:50, Miloslav Trmac <mitr@redhat.com> wrote:
-> ----- "Herbert Xu" <herbert@gondor.hengli.com.au> wrote:
->> On Mon, Aug 23, 2010 at 11:37:40AM -0400, Miloslav Trmac wrote:
->> > I have seriously considered the keyring API, and this is what I came
->> up with - but I'd love to be shown a better way.
->>
->> FWIW adding a second key management system to the kernel is
->> totally out of the question.
->>
->> If the existing system doesn't work for you, find a way to build
->> on it so that it does.  Adding a second system that pretty much
->> does the same thing is unacceptable.
-> It does _not_ do the same thing, same as ramfs and file descriptors do not do the same thing although they are both related to files.
->
-> The kernel keyring service is basically a system-wide data storage service.  /dev/crypto needs a quick way to refer to short-lived, usually process-local, kernel-space data structures from userspace.
+On Mon, Sep 06, 2010 at 05:50:56PM +0400, Kulikov Vasiliy wrote:
+> On Mon, Sep 06, 2010 at 12:11 +0200, Dan Carpenter wrote:
+> > On Sun, Sep 05, 2010 at 10:32:41PM +0400, Kulikov Vasiliy wrote:
+> > > +fail2:
+> > > +	rtl8192_down(dev);
+> > > +	if (priv->pFirmware) {
+> > > +		kfree(priv->pFirmware);
+> > > +		priv->pFirmware = NULL;
+> > > +	}
+> > > +	rtl8192_usb_deleteendpoints(dev);
+> > > +	destroy_workqueue(priv->priv_wq);
+> > > +	mdelay(10);
+> > 
+> > What's this delay for?
+> 
+> It was copied from rtl8192_usb_disconnect(), I don't know why it has
+> mdelay(10). But it's better to keep the old deallocation code, it should
+> have the same problems (if original code has any).
+> 
 
-The problem with the approach you're proposing is that we then have
-two entirely separate classes of keys.  First we have the existing
-keyring class, which can be securely and revokably passed between
-different processes with limited rights, but cannot be handed up to
-the kernel's cryptoapi.  Then we have your new class, which are
-anonymous keys with a brand new security model (which doesn't even
-have LSM hooks yet) and which cannot be referenced by name.
+I think the delay in rtl8192_usb_disconnect() is because we reset the
+device.  (Of course, in that case, it would have been better to move the
+delay into rtl8192_reset().  And also the reset code has been commented
+out.)
 
-Another potential issue is that keys are never actually "unnamed", in
-that sense.  If encryption keys truly were "anonymous" then you would
-find it impossible to reliably decrypt the data on the other end.  For
-example, every RSA private key should be indexed either by the X.509
-DN or for bare SSH keys by the public modulus information.  Even
-transient SSL session keys are always put into an SSL session cache by
-apache or whatever to allow them to be reused across multiple TCP
-streams!  So I would argue that an SSL implementation that uses this
-should actually create or use a keyring specifically as an SSL session
-cache (with keys indexed by SSL session ID).
+In this case here, the delay is serves no purpose and should be removed.
 
-It then becomes trivial to share an SSL session cache between 3
-independent HTTPS server programs from different vendors, such that
-the compromise of *any* of the processes would not in any way
-compromise the security of the session keys.  This would be especially
-true if the session keys are actually generated by a keyring+cryptoapi
-operation in the kernel.
-
-So my recommendation would be to create some new operations of the
-existing keyring code:
-
-(1) If you *really* care about anonymous transient keys that are not
-identified by an SSL session ID or similar, then add a keyring
-operation for "create an anonymous key in keyring X, where the kernel
-creates a proper temporary name".  An SSL implementation would default
-to using the process-local keyring, which means that everything would
-automatically go away on process exit.
-
-(2) Add cryptoapi hooks to automatically register keyring key types
-based on the loaded cryptoapi modules.
-
-(3) Add any necessary keyring operations for efficiently performing
-zero-copy cryptoapi calls using those key types.
-
-Cheers,
-Kyle Moffett
+regards,
+dan carpenter
