@@ -1,178 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab0IFQBZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 12:01:25 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:38449
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754969Ab0IFP5p (ORCPT
+	id S1755472Ab0IFQCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 12:02:22 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:25433
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754890Ab0IFP5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 11:57:45 -0400
+	Mon, 6 Sep 2010 11:57:42 -0400
 X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h43h61h)
+X-BigFish: VS1(zzzz1202hzz8275bhz32i2a8h87h61h)
 X-Spam-TCS-SCL: 0:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8C1LA-01-D1M-02
+X-WSS-ID: 0L8C1L7-02-79Y-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: Alexander Graf <agraf@suse.de>, <joro@8bytes.org>, <kvm@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 22/27] KVM: MMU: Refactor mmu_alloc_roots function
-Date: Mon, 6 Sep 2010 17:56:01 +0200
-Message-ID: <1283788566-29186-23-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 15/27] KVM: MMU: Introduce kvm_read_guest_page_x86()
+Date: Mon, 6 Sep 2010 17:55:54 +0200
+Message-ID: <1283788566-29186-16-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
 References: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Reverse-DNS: unknown
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch factors out the direct-mapping paths of the
-mmu_alloc_roots function into a seperate function. This
-makes it a lot easier to avoid all the unnecessary checks
-done in the shadow path which may break when running direct.
-In fact, this patch already fixes a problem when running PAE
-guests on a PAE shadow page table.
+This patch introduces the kvm_read_guest_page_x86 function
+which reads from the physical memory of the guest. If the
+guest is running in guest-mode itself with nested paging
+enabled it will read from the guest's guest physical memory
+instead.
+The patch also changes changes the code to use this function
+where it is necessary.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/kvm/mmu.c |   82 ++++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 60 insertions(+), 22 deletions(-)
+ arch/x86/kvm/x86.c |   22 ++++++++++++++++++----
+ 1 files changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 3663d1c..e7e5527 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2357,42 +2357,77 @@ static int mmu_check_root(struct kvm_vcpu *vcpu, gfn_t root_gfn)
- 	return ret;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index f1bdf4e..1f5db75 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -392,6 +392,13 @@ int kvm_read_guest_page_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
  }
+ EXPORT_SYMBOL_GPL(kvm_read_guest_page_mmu);
  
--static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
-+static int mmu_alloc_direct_roots(struct kvm_vcpu *vcpu)
++int kvm_read_nested_guest_page(struct kvm_vcpu *vcpu, gfn_t gfn,
++			       void *data, int offset, int len, u32 *error)
 +{
-+	struct kvm_mmu_page *sp;
-+	int i;
-+
-+	if (vcpu->arch.mmu.shadow_root_level == PT64_ROOT_LEVEL) {
-+		spin_lock(&vcpu->kvm->mmu_lock);
-+		kvm_mmu_free_some_pages(vcpu);
-+		sp = kvm_mmu_get_page(vcpu, 0, 0, PT64_ROOT_LEVEL,
-+				      1, ACC_ALL, NULL);
-+		++sp->root_count;
-+		spin_unlock(&vcpu->kvm->mmu_lock);
-+		vcpu->arch.mmu.root_hpa = __pa(sp->spt);
-+	} else if (vcpu->arch.mmu.shadow_root_level == PT32E_ROOT_LEVEL) {
-+		for (i = 0; i < 4; ++i) {
-+			hpa_t root = vcpu->arch.mmu.pae_root[i];
-+
-+			ASSERT(!VALID_PAGE(root));
-+			spin_lock(&vcpu->kvm->mmu_lock);
-+			kvm_mmu_free_some_pages(vcpu);
-+			sp = kvm_mmu_get_page(vcpu, i << 30, i << 30,
-+					      PT32_ROOT_LEVEL, 1, ACC_ALL,
-+					      NULL);
-+			root = __pa(sp->spt);
-+			++sp->root_count;
-+			spin_unlock(&vcpu->kvm->mmu_lock);
-+			vcpu->arch.mmu.pae_root[i] = root | PT_PRESENT_MASK;
-+			vcpu->arch.mmu.root_hpa = __pa(vcpu->arch.mmu.pae_root);
-+		}
-+	} else
-+		BUG();
-+
-+	return 0;
++	return kvm_read_guest_page_mmu(vcpu, vcpu->arch.walk_mmu, gfn,
++				       data, offset, len, error);
 +}
 +
-+static int mmu_alloc_shadow_roots(struct kvm_vcpu *vcpu)
+ /*
+  * Load the pae pdptrs.  Return true is they are all valid.
+  */
+@@ -399,12 +406,13 @@ int load_pdptrs(struct kvm_vcpu *vcpu, unsigned long cr3)
  {
- 	int i;
- 	gfn_t root_gfn;
- 	struct kvm_mmu_page *sp;
--	int direct = 0;
- 	u64 pdptr;
+ 	gfn_t pdpt_gfn = cr3 >> PAGE_SHIFT;
+ 	unsigned offset = ((cr3 & (PAGE_SIZE-1)) >> 5) << 2;
+-	int i;
++	int i, error;
+ 	int ret;
+ 	u64 pdpte[ARRAY_SIZE(vcpu->arch.pdptrs)];
  
- 	root_gfn = vcpu->arch.mmu.get_cr3(vcpu) >> PAGE_SHIFT;
- 
--	if (vcpu->arch.mmu.shadow_root_level == PT64_ROOT_LEVEL) {
-+	if (mmu_check_root(vcpu, root_gfn))
-+		return 1;
-+
-+	/*
-+	 * Do we shadow a long mode page table? If so we need to
-+	 * write-protect the guests page table root.
-+	 */
-+	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
- 
- 		ASSERT(!VALID_PAGE(root));
--		if (mmu_check_root(vcpu, root_gfn))
--			return 1;
--		if (vcpu->arch.mmu.direct_map) {
--			direct = 1;
--			root_gfn = 0;
--		}
-+
- 		spin_lock(&vcpu->kvm->mmu_lock);
- 		kvm_mmu_free_some_pages(vcpu);
--		sp = kvm_mmu_get_page(vcpu, root_gfn, 0,
--				      PT64_ROOT_LEVEL, direct,
--				      ACC_ALL, NULL);
-+		sp = kvm_mmu_get_page(vcpu, root_gfn, 0, PT64_ROOT_LEVEL,
-+				      0, ACC_ALL, NULL);
- 		root = __pa(sp->spt);
- 		++sp->root_count;
- 		spin_unlock(&vcpu->kvm->mmu_lock);
- 		vcpu->arch.mmu.root_hpa = root;
- 		return 0;
- 	}
--	direct = !is_paging(vcpu);
--
--	if (mmu_check_root(vcpu, root_gfn))
--		return 1;
- 
-+	/*
-+	 * We shadow a 32 bit page table. This may be a legacy 2-level
-+	 * or a PAE 3-level page table.
-+	 */
- 	for (i = 0; i < 4; ++i) {
- 		hpa_t root = vcpu->arch.mmu.pae_root[i];
- 
-@@ -2406,16 +2441,11 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
- 			root_gfn = pdptr >> PAGE_SHIFT;
- 			if (mmu_check_root(vcpu, root_gfn))
- 				return 1;
--		} else if (vcpu->arch.mmu.root_level == 0)
--			root_gfn = 0;
--		if (vcpu->arch.mmu.direct_map) {
--			direct = 1;
--			root_gfn = i << 30;
- 		}
- 		spin_lock(&vcpu->kvm->mmu_lock);
- 		kvm_mmu_free_some_pages(vcpu);
- 		sp = kvm_mmu_get_page(vcpu, root_gfn, i << 30,
--				      PT32_ROOT_LEVEL, direct,
-+				      PT32_ROOT_LEVEL, 0,
- 				      ACC_ALL, NULL);
- 		root = __pa(sp->spt);
- 		++sp->root_count;
-@@ -2427,6 +2457,14 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
- 	return 0;
- }
- 
-+static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
-+{
-+	if (vcpu->arch.mmu.direct_map)
-+		return mmu_alloc_direct_roots(vcpu);
-+	else
-+		return mmu_alloc_shadow_roots(vcpu);
-+}
-+
- static void mmu_sync_roots(struct kvm_vcpu *vcpu)
+-	ret = kvm_read_guest_page(vcpu->kvm, pdpt_gfn, pdpte,
+-				  offset * sizeof(u64), sizeof(pdpte));
++	ret = kvm_read_nested_guest_page(vcpu, pdpt_gfn, pdpte,
++					 offset * sizeof(u64),
++					 sizeof(pdpte), &error);
+ 	if (ret < 0) {
+ 		ret = 0;
+ 		goto out;
+@@ -433,6 +441,9 @@ static bool pdptrs_changed(struct kvm_vcpu *vcpu)
  {
- 	int i;
+ 	u64 pdpte[ARRAY_SIZE(vcpu->arch.pdptrs)];
+ 	bool changed = true;
++	int offset;
++	u32 error;
++	gfn_t gfn;
+ 	int r;
+ 
+ 	if (is_long_mode(vcpu) || !is_pae(vcpu))
+@@ -442,7 +453,10 @@ static bool pdptrs_changed(struct kvm_vcpu *vcpu)
+ 		      (unsigned long *)&vcpu->arch.regs_avail))
+ 		return true;
+ 
+-	r = kvm_read_guest(vcpu->kvm, vcpu->arch.cr3 & ~31u, pdpte, sizeof(pdpte));
++	gfn = (vcpu->arch.cr3 & ~31u) >> PAGE_SHIFT;
++	offset = (vcpu->arch.cr3 & ~31u) & (PAGE_SIZE - 1);
++	r = kvm_read_nested_guest_page(vcpu, gfn, pdpte, offset,
++				       sizeof(pdpte), &error);
+ 	if (r < 0)
+ 		goto out;
+ 	changed = memcmp(pdpte, vcpu->arch.pdptrs, sizeof(pdpte)) != 0;
 -- 
 1.7.0.4
 
