@@ -1,44 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab0IFJXJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 05:23:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41578 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750829Ab0IFJXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 05:23:08 -0400
-Date: Mon, 6 Sep 2010 10:23:06 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH] regulator: wm8350-regulator - fix the logic of
- checking REGULATOR_MODE_STANDBY mode
-Message-ID: <20100906092305.GA10367@rakim.wolfsonmicro.main>
-References: <1283753167.19378.1.camel@mola>
+	id S1752956Ab0IFJXT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 05:23:19 -0400
+Received: from bd2.citechco.net ([203.191.33.53]:50547 "EHLO bd2.citechco.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752631Ab0IFJXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 05:23:16 -0400
+Date: Mon, 6 Sep 2010 16:17:35 +0700 (BDST)
+From: Vittorio Foundazion <supertex@citechco.net>
+Reply-To: Vittorio Foundazion <vittorioclaimsdirector231@yahoo.com.hk>
+Message-ID: <23437979.14688.1283764655737.JavaMail.root@pop3>
+Subject: Attn:
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283753167.19378.1.camel@mola>
-X-Cookie: Welcome to the Zoo!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.203.64.246]
+X-Mailer: Zimbra 6.0.6_GA_2330.DEBIAN4.0 (zclient/6.0.6_GA_2330.DEBIAN4.0)
+To: undisclosed-recipients:;
+X-MailScanner: Found to be clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 02:06:07PM +0800, Axel Lin wrote:
-> In wm8350_dcdc_set_mode(), we set DCx_SLEEP bit of WM8350_DCDC_SLEEP_OPTIONS
-> register for REGULATOR_MODE_STANDBY mode.
-> ( DCx_SLEEP bits: 0: Normal DC-DC operation 1: Select LDO mode )
+Your Email Has Won $600,000.00 in the Vittorio Foundazion ITALY.send down 
 
-> In wm8350_dcdc_get_mode(), current logic to determinate
-> REGULATOR_MODE_STANDBY mode is just reverse.
-> ( sleep is set should mean REGULATOR_MODE_STANDBY mode. )
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+your full name,country, and Occupation: to Mr:Claudio Giovanni
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-but *please* do try to make your commit messages clearer, it's difficult
-to follow what you're sayin here, mostly because you don't explain how
-you determined what change to make.
+Email:vittorioclaimsdirector231@yahoo.com.hk
+Verifications/ Logistic Department
