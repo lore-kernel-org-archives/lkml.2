@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab0IFVQp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 17:16:45 -0400
-Received: from kroah.org ([198.145.64.141]:57518 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754541Ab0IFVQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 17:16:39 -0400
-Date: Mon, 6 Sep 2010 14:16:03 -0700
-From: Greg KH <greg@kroah.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Vladislav Bolkhovitin <vst@vlnb.net>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-Message-ID: <20100906211603.GD5863@kroah.com>
-References: <4C76CA57.3050405@vlnb.net> <1282857806.32007.175.camel@haakon2.linux-iscsi.org> <4C79484B.3090607@vlnb.net> <1283028468.32007.357.camel@haakon2.linux-iscsi.org> <4C7C18CE.5020103@vlnb.net> <1283204792.32007.448.camel@haakon2.linux-iscsi.org> <4C7FFD1A.8090509@vlnb.net> <1283459158.5598.143.camel@haakon2.linux-iscsi.org> <20100905201802.GC18411@core.coreip.homeip.net> <1283723447.556.133.camel@haakon2.linux-iscsi.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283723447.556.133.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755608Ab0IFVSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 17:18:37 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41706 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755369Ab0IFVSb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 17:18:31 -0400
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 5/15]  5: uprobes: Uprobes
+ (un)registration and exception handling.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+In-Reply-To: <20100906211217.GA3962@infradead.org>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+	 <20100825134224.5447.89998.sendpatchset@localhost6.localdomain6>
+	 <1283377414.2059.1729.camel@laptop>
+	 <20100903164219.GB1904@linux.vnet.ibm.com>
+	 <1283534349.2050.297.camel@laptop>
+	 <20100906174642.GG14891@linux.vnet.ibm.com>
+	 <20100906204042.GA19815@infradead.org> <1283807168.1930.919.camel@laptop>
+	 <20100906211217.GA3962@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 06 Sep 2010 23:18:19 +0200
+Message-ID: <1283807899.1930.932.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 05, 2010 at 02:50:47PM -0700, Nicholas A. Bellinger wrote:
-> So as to the specifics about why git is really the only right SCM choice
-> for mainline target mode maintainership, it really all comes down to
-> workflow.  Does your SCM allow other people to easily and without-pain
-> track your upstream subsystem tree changes and 'rebase' as necessary for
-> their patch series you make improvements..?   If we are talking about
-> say, a single standalone driver being developed against mainline, then
-> sure using a SCM like CVS or SVN is perfectly acceptable when you push
-> to someone upstream like gregkh or akpm via email patch attachments.
+On Mon, 2010-09-06 at 17:12 -0400, Christoph Hellwig wrote:
+> On Mon, Sep 06, 2010 at 11:06:08PM +0200, Peter Zijlstra wrote:
+> > > The other things is that perf currently only supports per-kernel pid
+> > > recording, while we'd really need per Posix process, which may contain
+> > > multiple threads for useful tracing of complex userspace applications.
+> > > I also suspect that this will fit the uprobes model much better given
+> > > that the probes will be in any given address space.
+> > 
+> > perf does report both:
+> > 
+> >          *      { u32                   pid, tid; } && PERF_SAMPLE_TID
+> > 
+> > the pid is the process id (thread group leader like) and tid is the
+> > task/thread id.
+> 
+> It records both, but I haven't found a way to only record samples
+> or trace things in a Posix Process.
+> 
+> E.g. perf record -p seems to be only per-thread, not per-process.
+> If that has changes recently everything is fine of course.
 
-I actually use git to manage my quilt patch tree so that others can work
-with me.  Don't confuse a scm with a patch management tool, they are two
-vastly different things and have no relation to each other here.
+Hrm, the record code seems to look up all threads for -p and use only a
+single thread for -t, didn't actually try it though so it could be
+borken.
 
-And this sub-topic has NOTHING to do with the main issue here, so I
-don't know why you are arguing over it.  Please take it elsewhere.
 
-thanks,
-
-greg k-h
