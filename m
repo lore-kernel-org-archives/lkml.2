@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab0IGIBl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 04:01:41 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43912 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab0IGIBg (ORCPT
+	id S1755689Ab0IGIDY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 04:03:24 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:38410 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755199Ab0IGIDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 04:01:36 -0400
-MIME-Version: 1.0
-X-Originating-IP: [81.243.35.243]
-In-Reply-To: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
-References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
-Date: Tue, 7 Sep 2010 10:01:35 +0200
-Message-ID: <AANLkTi=PKARrwQhiFuXnMgNpJHUe=zS4GeXVMxfOcNOR@mail.gmail.com>
-Subject: Re: [PATCH] tracing, perf: add more power related events
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org
-Cc: discuss@lesswatts.org, linux-pm@lists.linux-foundation.org,
-        linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Sep 2010 04:03:14 -0400
+Date: Tue, 7 Sep 2010 10:03:03 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [lm-sensors] [PATCH] x86/hwmon: fix configuration and 
+ initialization of coretemp and pkgtemp
+Message-ID: <20100907100303.2f45f227@hyperion.delvare>
+In-Reply-To: <20100902212505.GA31811@fenghua-desk.sc.intel.com>
+References: <4C7FB8370200007800013F40@vpn.id2.novell.com>
+	<20100902212505.GA31811@fenghua-desk.sc.intel.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is some more information about the patch:
+On Thu, 2 Sep 2010 14:25:05 -0700, Fenghua Yu wrote:
+> On Thu, Sep 02, 2010 at 05:44:07AM -0700, Jan Beulich wrote:
+> > - using cpuid_eax() to determine feature availability on other than
+> >   the current CPU is invalid
+> > - feature availability shopuld also be check in the hotplug code path
+> > - pkgtemp doesn't depend on PCI altogether (apparently just inherited
+> >   from coretemp)
+> > - coretemp really only needs PCI for Atom support
+> > 
+> 
+> Could you split the patch into small patches since it handles a few different
+> things?
 
-Initial discussion on LKML: cf.
-http://marc.info/?l=linux-kernel&m=128195697205096&w=4,
-PM debug and profiling wiki page with rationale, todo, patches, tools
-screenshots ...:
-http://omappedia.org/wiki/Power_Management_Debug_and_Profiling
+I can only second this request. This should be split into per-driver
+patches or per-bug patches, or even both.
 
-On Tue, Sep 7, 2010 at 9:21 AM, Jean Pihet <jean.pihet@newoldbits.com> wrote:
-> Hi,
->
-> Here is a patch proposal for adding new trace events for power management.
-> Note: thread restarted after the initial discussions on LKML.
-Sorry the thread did not get restarted because I am using the same
-e-mail subject.
+Jan, can you please send updated patches? I can't apply that one as is.
+Thanks.
 
-Jean
+-- 
+Jean Delvare
