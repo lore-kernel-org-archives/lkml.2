@@ -1,1069 +1,1067 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758357Ab0IGXyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 19:54:11 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37389 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757913Ab0IGXyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 19:54:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=ahgmK9WCvAnITUhClf4BO83l64JumASIJ3pCW1Lp3xlQQQQLu55NHRKUUQOZgm86C1
-         xHH5JOukqXuaOT+MMQCnjgeGQBXbe8qwe91MrCX/Zwn/tMzDqjFZd0d14evqL4ExEZel
-         YRgFcmxGr10ZnU0m6A2yr9RU28+kopaZotdwQ=
-From: Mihai =?utf-8?q?Don=C8=9Bu?= <mihai.dontu@gmail.com>
-Organization: Home
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [PATCH] USB: Fix kernel oops with g_ether and Windows
-Date: Wed, 8 Sep 2010 02:54:02 +0300
-Cc: "Gadiyar, Anand" <gadiyar@ti.com>, Maxim Osipov <maxim.osipov@gmail.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com> <5A47E75E594F054BAF48C5E4FC4B92AB03293269CD@dbde02.ent.ti.com> <20100907212915.GB6798@suse.de>
-In-Reply-To: <20100907212915.GB6798@suse.de>
+	id S1758337Ab0IGX4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 19:56:33 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:33895 "EHLO trinity.fluff.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751657Ab0IGX4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 19:56:30 -0400
+Date: Wed, 8 Sep 2010 00:55:52 +0100
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Crane Cai <crane.cai@amd.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        joe@perches.com, yong.y.wang@intel.com, qi.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, arjan@linux.intel.com,
+        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_I2C driver to 2.6.35
+Message-ID: <20100907235552.GB5638@trinity.fluff.org>
+References: <4C80CBC0.5050908@dsn.okisemi.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009080254.03070.mihai.dontu@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C80CBC0.5050908@dsn.okisemi.com>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 September 2010 00:29:15 Greg KH wrote:
-> On Tue, Sep 07, 2010 at 04:18:23PM +0530, Gadiyar, Anand wrote:
-> > Since Greg has already sent a pull request, I won't touch the file
-> > now; maybe a trivial patch later on to fix up the coding style.
+On Fri, Sep 03, 2010 at 07:19:44PM +0900, Masayuki Ohtak wrote:
+> I2C driver of Topcliff PCH
 > 
-> That would be fine to have, I'd gladly accept it.
+> Topcliff PCH is the platform controller hub that is going to be used in
+> Intel's upcoming general embedded platform. All IO peripherals in
+> Topcliff PCH are actually devices sitting on AMBA bus. 
+> Topcliff PCH has I2C I/F. Using this I/F, it is able to access system
+> devices connected to I2C.
+> 
+> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+> Reviewed-by: Linus Walleij <linus.walleij@stericsson.com>
+> ---
+>  drivers/i2c/busses/Kconfig   |   18 +
+>  drivers/i2c/busses/Makefile  |    1 +
+>  drivers/i2c/busses/i2c-pch.c |  944 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 963 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/i2c/busses/i2c-pch.c
+> 
+> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+> index bceafbf..c5db1e7 100644
+> --- a/drivers/i2c/busses/Kconfig
+> +++ b/drivers/i2c/busses/Kconfig
+> @@ -613,6 +613,24 @@ config I2C_XILINX
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called xilinx_i2c.
+>  
+> +config PCH_I2C
+> +	tristate "PCH I2C of Intel Topcliff"
+> +	depends on PCI
+> +	help
+> +	  This driver is for PCH(Platform controller Hub) I2C of Topcliff which
+> +	  is an IOH(Input/Output Hub) for x86 embedded processor.
+> +	  This driver can access PCH I2C bus device.
+> +
+> +config PCH_I2C_CH_COUNT
+> +	int "PCH I2C the number of channel count"
+> +	range 1 2
+> +	depends on PCH_I2C
+> +	help
+> +	  This driver is for PCH(Platform controller Hub) I2C of Topcliff which
+> +	  is an IOH(Input/Output Hub) for x86 embedded processor.
+> +	  The number of I2C buses/channels supported by the PCH I2C controller.
+> +	  PCH I2C of Topcliff supports only one channel.
+> +
+>  comment "External I2C/SMBus adapter drivers"
+>  
+>  config I2C_PARPORT
+> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+> index 936880b..aa04135 100644
+> --- a/drivers/i2c/busses/Makefile
+> +++ b/drivers/i2c/busses/Makefile
+> @@ -59,6 +59,7 @@ obj-$(CONFIG_I2C_STU300)	+= i2c-stu300.o
+>  obj-$(CONFIG_I2C_VERSATILE)	+= i2c-versatile.o
+>  obj-$(CONFIG_I2C_OCTEON)	+= i2c-octeon.o
+>  obj-$(CONFIG_I2C_XILINX)	+= i2c-xiic.o
+> +obj-$(CONFIG_PCH_I2C)		+= i2c-pch.o
+>  
+>  # External I2C/SMBus adapter drivers
+>  obj-$(CONFIG_I2C_PARPORT)	+= i2c-parport.o
+> diff --git a/drivers/i2c/busses/i2c-pch.c b/drivers/i2c/busses/i2c-pch.c
+> new file mode 100644
+> index 0000000..ae55a83
+> --- /dev/null
+> +++ b/drivers/i2c/busses/i2c-pch.c
+> @@ -0,0 +1,944 @@
+> +/*
+> + * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/delay.h>
+> +#include <linux/init.h>
+> +#include <linux/errno.h>
+> +#include <linux/i2c.h>
+> +#include <linux/fs.h>
+> +#include <linux/io.h>
+> +#include <linux/types.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/jiffies.h>
+> +#include <linux/pci.h>
+> +#include <linux/mutex.h>
+> +#include <linux/ktime.h>
+> +
+> +#define PCH_MAX_CHN	CONFIG_PCH_I2C_CH_COUNT	/* Maximum I2C channels
+> +						   available */
+> +#define PCH_EVENT_SET	0	/* I2C Interrupt Event Set Status */
+> +#define PCH_EVENT_NONE	1	/* I2C Interrupt Event Clear Status */
+> +#define PCH_MAX_CLK		100000	/* Maximum Clock speed in MHz */
+> +#define PCH_BUFFER_MODE_ENABLE	0x0002	/* flag for Buffer mode enable */
+> +#define PCH_EEPROM_SW_RST_MODE_ENABLE	0x0008	/* EEPROM SW RST enable flag */
+> +
+> +#define PCH_I2CSADR	0x00	/* I2C slave address register */
+> +#define PCH_I2CCTL	0x04	/* I2C control register */
+> +#define PCH_I2CSR	0x08	/* I2C status register */
+> +#define PCH_I2CDR	0x0C	/* I2C data register */
+> +#define PCH_I2CMON	0x10	/* I2C bus monitor register */
+> +#define PCH_I2CBC	0x14	/* I2C bus transfer rate setup counter */
+> +#define PCH_I2CMOD	0x18	/* I2C mode register */
+> +#define PCH_I2CBUFSLV	0x1C	/* I2C buffer mode slave address register */
+> +#define PCH_I2CBUFSUB	0x20	/* I2C buffer mode subaddress register */
+> +#define PCH_I2CBUFFOR	0x24	/* I2C buffer mode format register */
+> +#define PCH_I2CBUFCTL	0x28	/* I2C buffer mode control register */
+> +#define PCH_I2CBUFMSK	0x2C	/* I2C buffer mode interrupt mask register */
+> +#define PCH_I2CBUFSTA	0x30	/* I2C buffer mode status register */
+> +#define PCH_I2CBUFLEV	0x34	/* I2C buffer mode level register */
+> +#define PCH_I2CESRFOR	0x38	/* EEPROM software reset mode format register */
+> +#define PCH_I2CESRCTL	0x3C	/* EEPROM software reset mode ctrl register */
+> +#define PCH_I2CESRMSK	0x40	/* EEPROM software reset mode */
+> +#define PCH_I2CESRSTA	0x44	/* EEPROM software reset mode status register */
+> +#define PCH_I2CTMR	0x48	/* I2C timer register */
+> +#define PCH_I2CSRST	0xFC	/* I2C reset register */
+> +#define PCH_I2CNF	0xF8	/* I2C noise filter register */
+> +
+> +#define BUS_IDLE_TIMEOUT	20
+> +#define PCH_I2CCTL_I2CMEN	0x0080
+> +#define TEN_BIT_ADDR_DEFAULT	0xF000
+> +#define TEN_BIT_ADDR_MASK	0xF0
+> +#define PCH_START		0x0020
+> +#define PCH_ESR_START		0x0001
+> +#define PCH_BUFF_START		0x1
+> +#define PCH_REPSTART		0x0004
+> +#define PCH_ACK			0x0008
+> +#define PCH_GETACK		0x0001
+> +#define CLR_REG			0x0
+> +#define I2C_RD			0x1
+> +#define I2CMCF_BIT		0x0080
+> +#define I2CMIF_BIT		0x0002
+> +#define I2CMAL_BIT		0x0010
+> +#define I2CBMFI_BIT		0x0001
+> +#define I2CBMAL_BIT		0x0002
+> +#define I2CBMNA_BIT		0x0004
+> +#define I2CBMTO_BIT		0x0008
+> +#define I2CBMIS_BIT		0x0010
+> +#define I2CESRFI_BIT		0X0001
+> +#define I2CESRTO_BIT		0x0002
+> +#define I2CESRFIIE_BIT		0x1
+> +#define I2CESRTOIE_BIT		0x2
+> +#define I2CBMDZ_BIT		0x0040
+> +#define I2CBMAG_BIT		0x0020
+> +#define I2CMBB_BIT		0x0020
+> +#define BUFFER_MODE_MASK	(I2CBMFI_BIT | I2CBMAL_BIT | I2CBMNA_BIT | \
+> +				I2CBMTO_BIT | I2CBMIS_BIT)
+> +#define I2C_ADDR_MSK		0xFF
+> +#define I2C_MSB_2B_MSK		0x300
+> +#define FAST_MODE_CLK		400
+> +#define FAST_MODE_EN		0x0001
+> +#define SUB_ADDR_LEN_MAX	4
+> +#define BUF_LEN_MAX		32
+> +#define PCH_BUFFER_MODE		0x1
+> +#define EEPROM_SW_RST_MODE	0x0002
+> +#define NORMAL_INTR_ENBL	0x0300
+> +#define EEPROM_RST_INTR_ENBL	(I2CESRFIIE_BIT | I2CESRTOIE_BIT)
+> +#define EEPROM_RST_INTR_DISBL	0x0
+> +#define BUFFER_MODE_INTR_ENBL	0x001F
+> +#define BUFFER_MODE_INTR_DISBL	0x0
+> +#define NORMAL_MODE		0x0
+> +#define BUFFER_MODE		0x1
+> +#define EEPROM_SR_MODE		0x2
+> +#define I2C_TX_MODE		0x0010
+> +#define PCH_BUF_TX		0xFFF7
+> +#define PCH_BUF_RD		0x0008
+> +#define I2C_ERROR_MASK	(I2CESRTO_EVENT | I2CBMIS_EVENT | I2CBMTO_EVENT | \
+> +			I2CBMNA_EVENT | I2CBMAL_EVENT | I2CMAL_EVENT)
+> +#define I2CMAL_EVENT		0x0001
+> +#define I2CMCF_EVENT		0x0002
+> +#define I2CBMFI_EVENT		0x0004
+> +#define I2CBMAL_EVENT		0x0008
+> +#define I2CBMNA_EVENT		0x0010
+> +#define I2CBMTO_EVENT		0x0020
+> +#define I2CBMIS_EVENT		0x0040
+> +#define I2CESRFI_EVENT		0x0080
+> +#define I2CESRTO_EVENT		0x0100
+> +#define PCI_DEVICE_ID_PCH_I2C	0x8817
+> +
+> +#define pch_dbg(adap, fmt, arg...)  \
+> +	dev_dbg(adap->pch_adapter.dev.parent, "%s :" fmt, __func__, ##arg)
+> +
+> +#define pch_err(adap, fmt, arg...)  \
+> +	dev_err(adap->pch_adapter.dev.parent, "%s :" fmt, __func__, ##arg)
+> +
+> +#define pch_pci_err(pdev, fmt, arg...)  \
+> +	dev_err(&pdev->dev, "%s :" fmt, __func__, ##arg)
+> +
+> +#define pch_pci_dbg(pdev, fmt, arg...)  \
+> +	dev_dbg(&pdev->dev, "%s :" fmt, __func__, ##arg)
+> +
+> +/**
+> + * struct i2c_algo_pch_data - for I2C driver functionalities
+> + * @p_adapter_info:		stores the reference to adapter_info structure
+> + * @pch_adapter:		stores the reference to i2c_adapter structure
+> + * @pch_base_address:		specifies the remapped base address
+> + * @pch_buff_mode_en:		specifies if buffer mode is enabled
+> + * @pch_event_flag:		specifies occurrence of interrupt events
+> + * @pch_xfer_in_progress:	specifies whether the transfer is completed
+> + */
+> +struct i2c_algo_pch_data {
+> +	struct adapter_info *p_adapter_info;
+> +	struct i2c_adapter pch_adapter;
+> +	void __iomem *pch_base_address;
+> +	int pch_buff_mode_en;
+> +	u32 pch_event_flag;
+> +	bool pch_xfer_in_progress;
+> +};
+> +
+> +/**
+> + * struct adapter_info - This structure holds the adapter information for the
+> +			 PCH i2c controller
+> + * @pch_data:		stores a list of i2c_algo_pch_data
+> + * @pch_suspended:	specifies whether the system is suspended or not
+> + *			perhaps with more lines and words.
+> + *
+> + * pch_data has as many elements as maximum I2C channels
+> + */
+> +struct adapter_info {
+> +	struct i2c_algo_pch_data pch_data[PCH_MAX_CHN];
+> +	bool pch_suspended;
+> +};
+> +
+> +
+> +static int pch_i2c_speed = 100; /* I2C bus speed in Kbps */
+> +static int pch_clk = 50000;	/* specifies I2C clock speed in KHz */
+> +static wait_queue_head_t pch_event;
+> +static DEFINE_MUTEX(pch_mutex);
+> +
+> +static struct pci_device_id __devinitdata pch_pcidev_id[] = {
+> +	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_PCH_I2C)},
+> +	{0,}
+> +};
+> +
+> +static irqreturn_t pch_handler_ch0(int irq, void *pData);
+> +static irqreturn_t(*pch_handler_list[PCH_MAX_CHN]) (int irq, void *pData) = {
+> +	pch_handler_ch0,
+> +};
+> +
+> +static inline void pch_setbit(void __iomem *addr, u32 offset, u32 bitmask)
+> +{
+> +	u32 val;
+> +	val = ioread32(addr + offset);
+> +	val |= bitmask;
+> +	iowrite32(val, addr + offset);
+> +}
+> +
+> +static inline void pch_clrbit(void __iomem *addr, u32 offset, u32 bitmask)
+> +{
+> +	u32 val;
+> +	val = ioread32(addr + offset);
+> +	val &= (~bitmask);
+> +	iowrite32(val, addr + offset);
+> +}
+> +
+> +/**
+> + * pch_init() - hardware initialization of I2C module
+> + * @adap:	Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_init(struct i2c_algo_pch_data *adap)
+> +{
+> +	u32 pch_i2cbc;
+> +	u32 pch_i2ctmr;
+> +	u32 reg_value;
+> +	void __iomem *p = adap->pch_base_address;
 
-Would something like the following do? It's against:
-git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6.git
+my personal preference is to put the larger items at the top of the list.
 
-Corrected the coding style.
+> +	/* reset I2C controller */
+> +	iowrite32(0x01, p + PCH_I2CSRST);
+> +	iowrite32(0x0, p + PCH_I2CSRST);
+> +	/* Initialize I2C registers */
+> +	iowrite32(CLR_REG, p + PCH_I2CCTL);
+> +	iowrite32(CLR_REG, p + PCH_I2CMOD);
+> +	iowrite32(CLR_REG, p + PCH_I2CBUFFOR);
+> +	iowrite32(CLR_REG, p + PCH_I2CBUFSLV);
+> +	iowrite32(CLR_REG, p + PCH_I2CBUFSUB);
+> +	iowrite32(CLR_REG, p + PCH_I2CBUFMSK);
+> +	iowrite32(CLR_REG, p + PCH_I2CESRFOR);
+> +	iowrite32(CLR_REG, p + PCH_I2CESRMSK);
+> +	iowrite32(0x21, p + PCH_I2CNF);
+> +
+> +	reg_value = PCH_I2CCTL_I2CMEN;
+> +	pch_setbit((adap->pch_base_address), PCH_I2CCTL,
+> +			  PCH_I2CCTL_I2CMEN);
+> +
+> +	if (pch_i2c_speed != 400)
+> +		pch_i2c_speed = 100;
+> +
+> +	if (pch_i2c_speed == FAST_MODE_CLK) {
+> +		reg_value |= FAST_MODE_EN;
+> +		pch_dbg(adap, "Fast mode enabled\n");
+> +	}
+> +
+> +	if (pch_clk <= 0 || pch_clk > PCH_MAX_CLK)
+> +		pch_clk = 62500;
+> +
+> +	pch_i2cbc = ((pch_clk) + (pch_i2c_speed * 4)) / (pch_i2c_speed * 8);
 
-Signed-off-by: Mihai Dontu <mihai.dontu@gmail.com>
----
- drivers/usb/gadget/rndis.c |  492 ++++++++++++++++++++++----------------------
- 1 files changed, 244 insertions(+), 248 deletions(-)
+do you really need the () around pch_clk? there seems to be quite a few
+of these around. you also don't need them around pch_i2c_speed * 4. I would
+like to see these gone.
 
-diff --git a/drivers/usb/gadget/rndis.c b/drivers/usb/gadget/rndis.c
-index 972d5dd..6a7dd91 100644
---- a/drivers/usb/gadget/rndis.c
-+++ b/drivers/usb/gadget/rndis.c
-@@ -61,17 +61,17 @@ MODULE_PARM_DESC (rndis_debug, "enable debugging");
- #define RNDIS_MAX_CONFIGS	1
- 
- 
--static rndis_params rndis_per_dev_params [RNDIS_MAX_CONFIGS];
-+static rndis_params rndis_per_dev_params[RNDIS_MAX_CONFIGS];
- 
- /* Driver Version */
--static const __le32 rndis_driver_version = cpu_to_le32 (1);
-+static const __le32 rndis_driver_version = cpu_to_le32(1);
- 
- /* Function Prototypes */
--static rndis_resp_t *rndis_add_response (int configNr, u32 length);
-+static rndis_resp_t *rndis_add_response(int configNr, u32 length);
- 
- 
- /* supported OIDs */
--static const u32 oid_supported_list [] =
-+static const u32 oid_supported_list[] =
- {
- 	/* the general stuff */
- 	OID_GEN_SUPPORTED_LIST,
-@@ -161,21 +161,20 @@ static const u32 oid_supported_list [] =
- 
- 
- /* NDIS Functions */
--static int
--gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
--		rndis_resp_t *r)
-+static int gen_ndis_query_resp(int configNr, u32 OID, u8 *buf,
-+			       unsigned buf_len, rndis_resp_t *r)
- {
--	int			retval = -ENOTSUPP;
--	u32			length = 4;	/* usually */
--	__le32			*outbuf;
--	int			i, count;
--	rndis_query_cmplt_type	*resp;
--	struct net_device	*net;
-+	int retval = -ENOTSUPP;
-+	u32 length = 4;	/* usually */
-+	__le32 *outbuf;
-+	int i, count;
-+	rndis_query_cmplt_type *resp;
-+	struct net_device *net;
- 	struct rtnl_link_stats64 temp;
- 	const struct rtnl_link_stats64 *stats;
- 
- 	if (!r) return -ENOMEM;
--	resp = (rndis_query_cmplt_type *) r->buf;
-+	resp = (rndis_query_cmplt_type *)r->buf;
- 
- 	if (!resp) return -ENOMEM;
- 
-@@ -191,8 +190,8 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	}
- 
- 	/* response goes here, right after the header */
--	outbuf = (__le32 *) &resp[1];
--	resp->InformationBufferOffset = cpu_to_le32 (16);
-+	outbuf = (__le32 *)&resp[1];
-+	resp->InformationBufferOffset = cpu_to_le32(16);
- 
- 	net = rndis_per_dev_params[configNr].dev;
- 	stats = dev_get_stats(net, &temp);
-@@ -204,10 +203,10 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	/* mandatory */
- 	case OID_GEN_SUPPORTED_LIST:
- 		pr_debug("%s: OID_GEN_SUPPORTED_LIST\n", __func__);
--		length = sizeof (oid_supported_list);
--		count  = length / sizeof (u32);
-+		length = sizeof(oid_supported_list);
-+		count  = length / sizeof(u32);
- 		for (i = 0; i < count; i++)
--			outbuf[i] = cpu_to_le32 (oid_supported_list[i]);
-+			outbuf[i] = cpu_to_le32(oid_supported_list[i]);
- 		retval = 0;
- 		break;
- 
-@@ -220,14 +219,14 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 		 * reddite ergo quae sunt Caesaris Caesari
- 		 * et quae sunt Dei Deo!
- 		 */
--		*outbuf = cpu_to_le32 (0);
-+		*outbuf = cpu_to_le32(0);
- 		retval = 0;
- 		break;
- 
- 	/* mandatory */
- 	case OID_GEN_MEDIA_SUPPORTED:
- 		pr_debug("%s: OID_GEN_MEDIA_SUPPORTED\n", __func__);
--		*outbuf = cpu_to_le32 (rndis_per_dev_params [configNr].medium);
-+		*outbuf = cpu_to_le32(rndis_per_dev_params[configNr].medium);
- 		retval = 0;
- 		break;
- 
-@@ -235,16 +234,16 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	case OID_GEN_MEDIA_IN_USE:
- 		pr_debug("%s: OID_GEN_MEDIA_IN_USE\n", __func__);
- 		/* one medium, one transport... (maybe you do it better) */
--		*outbuf = cpu_to_le32 (rndis_per_dev_params [configNr].medium);
-+		*outbuf = cpu_to_le32(rndis_per_dev_params[configNr].medium);
- 		retval = 0;
- 		break;
- 
- 	/* mandatory */
- 	case OID_GEN_MAXIMUM_FRAME_SIZE:
- 		pr_debug("%s: OID_GEN_MAXIMUM_FRAME_SIZE\n", __func__);
--		if (rndis_per_dev_params [configNr].dev) {
--			*outbuf = cpu_to_le32 (
--				rndis_per_dev_params [configNr].dev->mtu);
-+		if (rndis_per_dev_params[configNr].dev) {
-+			*outbuf = cpu_to_le32(
-+				rndis_per_dev_params[configNr].dev->mtu);
- 			retval = 0;
- 		}
- 		break;
-@@ -253,21 +252,21 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	case OID_GEN_LINK_SPEED:
- 		if (rndis_debug > 1)
- 			pr_debug("%s: OID_GEN_LINK_SPEED\n", __func__);
--		if (rndis_per_dev_params [configNr].media_state
-+		if (rndis_per_dev_params[configNr].media_state
- 				== NDIS_MEDIA_STATE_DISCONNECTED)
--			*outbuf = cpu_to_le32 (0);
-+			*outbuf = cpu_to_le32(0);
- 		else
--			*outbuf = cpu_to_le32 (
--				rndis_per_dev_params [configNr].speed);
-+			*outbuf = cpu_to_le32(
-+				rndis_per_dev_params[configNr].speed);
- 		retval = 0;
- 		break;
- 
- 	/* mandatory */
- 	case OID_GEN_TRANSMIT_BLOCK_SIZE:
- 		pr_debug("%s: OID_GEN_TRANSMIT_BLOCK_SIZE\n", __func__);
--		if (rndis_per_dev_params [configNr].dev) {
--			*outbuf = cpu_to_le32 (
--				rndis_per_dev_params [configNr].dev->mtu);
-+		if (rndis_per_dev_params[configNr].dev) {
-+			*outbuf = cpu_to_le32(
-+				rndis_per_dev_params[configNr].dev->mtu);
- 			retval = 0;
- 		}
- 		break;
-@@ -275,9 +274,9 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	/* mandatory */
- 	case OID_GEN_RECEIVE_BLOCK_SIZE:
- 		pr_debug("%s: OID_GEN_RECEIVE_BLOCK_SIZE\n", __func__);
--		if (rndis_per_dev_params [configNr].dev) {
--			*outbuf = cpu_to_le32 (
--				rndis_per_dev_params [configNr].dev->mtu);
-+		if (rndis_per_dev_params[configNr].dev) {
-+			*outbuf = cpu_to_le32(
-+				rndis_per_dev_params[configNr].dev->mtu);
- 			retval = 0;
- 		}
- 		break;
-@@ -285,18 +284,20 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	/* mandatory */
- 	case OID_GEN_VENDOR_ID:
- 		pr_debug("%s: OID_GEN_VENDOR_ID\n", __func__);
--		*outbuf = cpu_to_le32 (
--			rndis_per_dev_params [configNr].vendorID);
-+		*outbuf = cpu_to_le32(
-+			rndis_per_dev_params[configNr].vendorID);
- 		retval = 0;
- 		break;
- 
- 	/* mandatory */
- 	case OID_GEN_VENDOR_DESCRIPTION:
- 		pr_debug("%s: OID_GEN_VENDOR_DESCRIPTION\n", __func__);
--		if ( rndis_per_dev_params [configNr].vendorDescr ) {
--			length = strlen (rndis_per_dev_params [configNr].vendorDescr);
--			memcpy (outbuf,
--				rndis_per_dev_params [configNr].vendorDescr, length);
-+		if (rndis_per_dev_params[configNr].vendorDescr) {
-+			length = strlen(rndis_per_dev_params[configNr].
-+					vendorDescr);
-+			memcpy(outbuf,
-+				rndis_per_dev_params[configNr].vendorDescr,
-+				length);
- 		} else {
- 			outbuf[0] = 0;
- 		}
-@@ -313,7 +314,7 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	/* mandatory */
- 	case OID_GEN_CURRENT_PACKET_FILTER:
- 		pr_debug("%s: OID_GEN_CURRENT_PACKET_FILTER\n", __func__);
--		*outbuf = cpu_to_le32 (*rndis_per_dev_params[configNr].filter);
-+		*outbuf = cpu_to_le32(*rndis_per_dev_params[configNr].filter);
- 		retval = 0;
- 		break;
- 
-@@ -328,14 +329,14 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	case OID_GEN_MEDIA_CONNECT_STATUS:
- 		if (rndis_debug > 1)
- 			pr_debug("%s: OID_GEN_MEDIA_CONNECT_STATUS\n", __func__);
--		*outbuf = cpu_to_le32 (rndis_per_dev_params [configNr]
-+		*outbuf = cpu_to_le32(rndis_per_dev_params[configNr]
- 						.media_state);
- 		retval = 0;
- 		break;
- 
- 	case OID_GEN_PHYSICAL_MEDIUM:
- 		pr_debug("%s: OID_GEN_PHYSICAL_MEDIUM\n", __func__);
--		*outbuf = cpu_to_le32 (0);
-+		*outbuf = cpu_to_le32(0);
- 		retval = 0;
- 		break;
- 
-@@ -409,10 +410,10 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	/* mandatory */
- 	case OID_802_3_PERMANENT_ADDRESS:
- 		pr_debug("%s: OID_802_3_PERMANENT_ADDRESS\n", __func__);
--		if (rndis_per_dev_params [configNr].dev) {
-+		if (rndis_per_dev_params[configNr].dev) {
- 			length = ETH_ALEN;
--			memcpy (outbuf,
--				rndis_per_dev_params [configNr].host_mac,
-+			memcpy(outbuf,
-+				rndis_per_dev_params[configNr].host_mac,
- 				length);
- 			retval = 0;
- 		}
-@@ -421,9 +422,9 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	/* mandatory */
- 	case OID_802_3_CURRENT_ADDRESS:
- 		pr_debug("%s: OID_802_3_CURRENT_ADDRESS\n", __func__);
--		if (rndis_per_dev_params [configNr].dev) {
-+		if (rndis_per_dev_params[configNr].dev) {
- 			length = ETH_ALEN;
--			memcpy (outbuf,
-+			memcpy(outbuf,
- 				rndis_per_dev_params [configNr].host_mac,
- 				length);
- 			retval = 0;
-@@ -434,7 +435,7 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	case OID_802_3_MULTICAST_LIST:
- 		pr_debug("%s: OID_802_3_MULTICAST_LIST\n", __func__);
- 		/* Multicast base address only */
--		*outbuf = cpu_to_le32 (0xE0000000);
-+		*outbuf = cpu_to_le32(0xE0000000);
- 		retval = 0;
- 		break;
- 
-@@ -442,7 +443,7 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	case OID_802_3_MAXIMUM_LIST_SIZE:
- 		pr_debug("%s: OID_802_3_MAXIMUM_LIST_SIZE\n", __func__);
- 		/* Multicast base address only */
--		*outbuf = cpu_to_le32 (1);
-+		*outbuf = cpu_to_le32(1);
- 		retval = 0;
- 		break;
- 
-@@ -466,14 +467,14 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	/* mandatory */
- 	case OID_802_3_XMIT_ONE_COLLISION:
- 		pr_debug("%s: OID_802_3_XMIT_ONE_COLLISION\n", __func__);
--		*outbuf = cpu_to_le32 (0);
-+		*outbuf = cpu_to_le32(0);
- 		retval = 0;
- 		break;
- 
- 	/* mandatory */
- 	case OID_802_3_XMIT_MORE_COLLISIONS:
- 		pr_debug("%s: OID_802_3_XMIT_MORE_COLLISIONS\n", __func__);
--		*outbuf = cpu_to_le32 (0);
-+		*outbuf = cpu_to_le32(0);
- 		retval = 0;
- 		break;
- 
-@@ -484,22 +485,22 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	if (retval < 0)
- 		length = 0;
- 
--	resp->InformationBufferLength = cpu_to_le32 (length);
--	r->length = length + sizeof *resp;
--	resp->MessageLength = cpu_to_le32 (r->length);
-+	resp->InformationBufferLength = cpu_to_le32(length);
-+	r->length = length + sizeof(*resp);
-+	resp->MessageLength = cpu_to_le32(r->length);
- 	return retval;
- }
- 
--static int gen_ndis_set_resp (u8 configNr, u32 OID, u8 *buf, u32 buf_len,
--			rndis_resp_t *r)
-+static int gen_ndis_set_resp(u8 configNr, u32 OID, u8 *buf, u32 buf_len,
-+			     rndis_resp_t *r)
- {
--	rndis_set_cmplt_type		*resp;
--	int				i, retval = -ENOTSUPP;
--	struct rndis_params		*params;
-+	rndis_set_cmplt_type *resp;
-+	int i, retval = -ENOTSUPP;
-+	struct rndis_params *params;
- 
- 	if (!r)
- 		return -ENOMEM;
--	resp = (rndis_set_cmplt_type *) r->buf;
-+	resp = (rndis_set_cmplt_type *)r->buf;
- 	if (!resp)
- 		return -ENOMEM;
- 
-@@ -514,7 +515,7 @@ static int gen_ndis_set_resp (u8 configNr, u32 OID, u8 *buf, u32 buf_len,
- 		}
- 	}
- 
--	params = &rndis_per_dev_params [configNr];
-+	params = &rndis_per_dev_params[configNr];
- 	switch (OID) {
- 	case OID_GEN_CURRENT_PACKET_FILTER:
- 
-@@ -537,11 +538,11 @@ static int gen_ndis_set_resp (u8 configNr, u32 OID, u8 *buf, u32 buf_len,
- 			params->state = RNDIS_DATA_INITIALIZED;
- 			netif_carrier_on(params->dev);
- 			if (netif_running(params->dev))
--				netif_wake_queue (params->dev);
-+				netif_wake_queue(params->dev);
- 		} else {
- 			params->state = RNDIS_INITIALIZED;
--			netif_carrier_off (params->dev);
--			netif_stop_queue (params->dev);
-+			netif_carrier_off(params->dev);
-+			netif_stop_queue(params->dev);
- 		}
- 		break;
- 
-@@ -563,48 +564,47 @@ static int gen_ndis_set_resp (u8 configNr, u32 OID, u8 *buf, u32 buf_len,
-  * Response Functions
-  */
- 
--static int rndis_init_response (int configNr, rndis_init_msg_type *buf)
-+static int rndis_init_response(int configNr, rndis_init_msg_type *buf)
- {
--	rndis_init_cmplt_type	*resp;
--	rndis_resp_t            *r;
--	struct rndis_params	*params = rndis_per_dev_params + configNr;
-+	rndis_init_cmplt_type *resp;
-+	rndis_resp_t *r;
-+	struct rndis_params *params = rndis_per_dev_params + configNr;
- 
- 	if (!params->dev)
- 		return -ENOTSUPP;
- 
--	r = rndis_add_response (configNr, sizeof (rndis_init_cmplt_type));
-+	r = rndis_add_response(configNr, sizeof(rndis_init_cmplt_type));
- 	if (!r)
- 		return -ENOMEM;
--	resp = (rndis_init_cmplt_type *) r->buf;
-+	resp = (rndis_init_cmplt_type *)r->buf;
- 
--	resp->MessageType = cpu_to_le32 (
--			REMOTE_NDIS_INITIALIZE_CMPLT);
--	resp->MessageLength = cpu_to_le32 (52);
-+	resp->MessageType = cpu_to_le32(REMOTE_NDIS_INITIALIZE_CMPLT);
-+	resp->MessageLength = cpu_to_le32(52);
- 	resp->RequestID = buf->RequestID; /* Still LE in msg buffer */
--	resp->Status = cpu_to_le32 (RNDIS_STATUS_SUCCESS);
--	resp->MajorVersion = cpu_to_le32 (RNDIS_MAJOR_VERSION);
--	resp->MinorVersion = cpu_to_le32 (RNDIS_MINOR_VERSION);
--	resp->DeviceFlags = cpu_to_le32 (RNDIS_DF_CONNECTIONLESS);
--	resp->Medium = cpu_to_le32 (RNDIS_MEDIUM_802_3);
--	resp->MaxPacketsPerTransfer = cpu_to_le32 (1);
--	resp->MaxTransferSize = cpu_to_le32 (
-+	resp->Status = cpu_to_le32(RNDIS_STATUS_SUCCESS);
-+	resp->MajorVersion = cpu_to_le32(RNDIS_MAJOR_VERSION);
-+	resp->MinorVersion = cpu_to_le32(RNDIS_MINOR_VERSION);
-+	resp->DeviceFlags = cpu_to_le32(RNDIS_DF_CONNECTIONLESS);
-+	resp->Medium = cpu_to_le32(RNDIS_MEDIUM_802_3);
-+	resp->MaxPacketsPerTransfer = cpu_to_le32(1);
-+	resp->MaxTransferSize = cpu_to_le32(
- 		  params->dev->mtu
--		+ sizeof (struct ethhdr)
--		+ sizeof (struct rndis_packet_msg_type)
-+		+ sizeof(struct ethhdr)
-+		+ sizeof(struct rndis_packet_msg_type)
- 		+ 22);
--	resp->PacketAlignmentFactor = cpu_to_le32 (0);
--	resp->AFListOffset = cpu_to_le32 (0);
--	resp->AFListSize = cpu_to_le32 (0);
-+	resp->PacketAlignmentFactor = cpu_to_le32(0);
-+	resp->AFListOffset = cpu_to_le32(0);
-+	resp->AFListSize = cpu_to_le32(0);
- 
- 	params->resp_avail(params->v);
- 	return 0;
- }
- 
--static int rndis_query_response (int configNr, rndis_query_msg_type *buf)
-+static int rndis_query_response(int configNr, rndis_query_msg_type *buf)
- {
- 	rndis_query_cmplt_type *resp;
--	rndis_resp_t            *r;
--	struct rndis_params	*params = rndis_per_dev_params + configNr;
-+	rndis_resp_t *r;
-+	struct rndis_params *params = rndis_per_dev_params + configNr;
- 
- 	/* pr_debug("%s: OID = %08X\n", __func__, cpu_to_le32(buf->OID)); */
- 	if (!params->dev)
-@@ -616,47 +616,46 @@ static int rndis_query_response (int configNr, rndis_query_msg_type *buf)
- 	 * rndis_query_cmplt_type followed by data.
- 	 * oid_supported_list is the largest data reply
- 	 */
--	r = rndis_add_response (configNr,
--		sizeof (oid_supported_list) + sizeof(rndis_query_cmplt_type));
-+	r = rndis_add_response(configNr,
-+		sizeof(oid_supported_list) + sizeof(rndis_query_cmplt_type));
- 	if (!r)
- 		return -ENOMEM;
--	resp = (rndis_query_cmplt_type *) r->buf;
-+	resp = (rndis_query_cmplt_type *)r->buf;
- 
--	resp->MessageType = cpu_to_le32 (REMOTE_NDIS_QUERY_CMPLT);
-+	resp->MessageType = cpu_to_le32(REMOTE_NDIS_QUERY_CMPLT);
- 	resp->RequestID = buf->RequestID; /* Still LE in msg buffer */
- 
--	if (gen_ndis_query_resp (configNr, le32_to_cpu (buf->OID),
-+	if (gen_ndis_query_resp(configNr, le32_to_cpu(buf->OID),
- 			le32_to_cpu(buf->InformationBufferOffset)
--					+ 8 + (u8 *) buf,
-+					+ 8 + (u8 *)buf,
- 			le32_to_cpu(buf->InformationBufferLength),
- 			r)) {
- 		/* OID not supported */
--		resp->Status = cpu_to_le32 (
--				RNDIS_STATUS_NOT_SUPPORTED);
--		resp->MessageLength = cpu_to_le32 (sizeof *resp);
--		resp->InformationBufferLength = cpu_to_le32 (0);
--		resp->InformationBufferOffset = cpu_to_le32 (0);
-+		resp->Status = cpu_to_le32(RNDIS_STATUS_NOT_SUPPORTED);
-+		resp->MessageLength = cpu_to_le32(sizeof *resp);
-+		resp->InformationBufferLength = cpu_to_le32(0);
-+		resp->InformationBufferOffset = cpu_to_le32(0);
- 	} else
--		resp->Status = cpu_to_le32 (RNDIS_STATUS_SUCCESS);
-+		resp->Status = cpu_to_le32(RNDIS_STATUS_SUCCESS);
- 
- 	params->resp_avail(params->v);
- 	return 0;
- }
- 
--static int rndis_set_response (int configNr, rndis_set_msg_type *buf)
-+static int rndis_set_response(int configNr, rndis_set_msg_type *buf)
- {
--	u32			BufLength, BufOffset;
--	rndis_set_cmplt_type	*resp;
--	rndis_resp_t		*r;
--	struct rndis_params	*params = rndis_per_dev_params + configNr;
-+	u32 BufLength, BufOffset;
-+	rndis_set_cmplt_type *resp;
-+	rndis_resp_t *r;
-+	struct rndis_params *params = rndis_per_dev_params + configNr;
- 
--	r = rndis_add_response (configNr, sizeof (rndis_set_cmplt_type));
-+	r = rndis_add_response(configNr, sizeof(rndis_set_cmplt_type));
- 	if (!r)
- 		return -ENOMEM;
--	resp = (rndis_set_cmplt_type *) r->buf;
-+	resp = (rndis_set_cmplt_type *)r->buf;
- 
--	BufLength = le32_to_cpu (buf->InformationBufferLength);
--	BufOffset = le32_to_cpu (buf->InformationBufferOffset);
-+	BufLength = le32_to_cpu(buf->InformationBufferLength);
-+	BufOffset = le32_to_cpu(buf->InformationBufferOffset);
- 
- #ifdef	VERBOSE_DEBUG
- 	pr_debug("%s: Length: %d\n", __func__, BufLength);
-@@ -670,59 +669,59 @@ static int rndis_set_response (int configNr, rndis_set_msg_type *buf)
- 	pr_debug("\n");
- #endif
- 
--	resp->MessageType = cpu_to_le32 (REMOTE_NDIS_SET_CMPLT);
--	resp->MessageLength = cpu_to_le32 (16);
-+	resp->MessageType = cpu_to_le32(REMOTE_NDIS_SET_CMPLT);
-+	resp->MessageLength = cpu_to_le32(16);
- 	resp->RequestID = buf->RequestID; /* Still LE in msg buffer */
--	if (gen_ndis_set_resp (configNr, le32_to_cpu (buf->OID),
--			((u8 *) buf) + 8 + BufOffset, BufLength, r))
--		resp->Status = cpu_to_le32 (RNDIS_STATUS_NOT_SUPPORTED);
-+	if (gen_ndis_set_resp(configNr, le32_to_cpu(buf->OID),
-+			((u8 *)buf) + 8 + BufOffset, BufLength, r))
-+		resp->Status = cpu_to_le32(RNDIS_STATUS_NOT_SUPPORTED);
- 	else
--		resp->Status = cpu_to_le32 (RNDIS_STATUS_SUCCESS);
-+		resp->Status = cpu_to_le32(RNDIS_STATUS_SUCCESS);
- 
- 	params->resp_avail(params->v);
- 	return 0;
- }
- 
--static int rndis_reset_response (int configNr, rndis_reset_msg_type *buf)
-+static int rndis_reset_response(int configNr, rndis_reset_msg_type *buf)
- {
--	rndis_reset_cmplt_type	*resp;
--	rndis_resp_t		*r;
--	struct rndis_params	*params = rndis_per_dev_params + configNr;
-+	rndis_reset_cmplt_type *resp;
-+	rndis_resp_t *r;
-+	struct rndis_params *params = rndis_per_dev_params + configNr;
- 
--	r = rndis_add_response (configNr, sizeof (rndis_reset_cmplt_type));
-+	r = rndis_add_response(configNr, sizeof(rndis_reset_cmplt_type));
- 	if (!r)
- 		return -ENOMEM;
--	resp = (rndis_reset_cmplt_type *) r->buf;
-+	resp = (rndis_reset_cmplt_type *)r->buf;
- 
--	resp->MessageType = cpu_to_le32 (REMOTE_NDIS_RESET_CMPLT);
--	resp->MessageLength = cpu_to_le32 (16);
--	resp->Status = cpu_to_le32 (RNDIS_STATUS_SUCCESS);
-+	resp->MessageType = cpu_to_le32(REMOTE_NDIS_RESET_CMPLT);
-+	resp->MessageLength = cpu_to_le32(16);
-+	resp->Status = cpu_to_le32(RNDIS_STATUS_SUCCESS);
- 	/* resent information */
--	resp->AddressingReset = cpu_to_le32 (1);
-+	resp->AddressingReset = cpu_to_le32(1);
- 
- 	params->resp_avail(params->v);
- 	return 0;
- }
- 
--static int rndis_keepalive_response (int configNr,
--				rndis_keepalive_msg_type *buf)
-+static int rndis_keepalive_response(int configNr,
-+				    rndis_keepalive_msg_type *buf)
- {
--	rndis_keepalive_cmplt_type	*resp;
--	rndis_resp_t			*r;
--	struct rndis_params	*params = rndis_per_dev_params + configNr;
-+	rndis_keepalive_cmplt_type *resp;
-+	rndis_resp_t *r;
-+	struct rndis_params *params = rndis_per_dev_params + configNr;
- 
- 	/* host "should" check only in RNDIS_DATA_INITIALIZED state */
- 
--	r = rndis_add_response (configNr, sizeof (rndis_keepalive_cmplt_type));
-+	r = rndis_add_response(configNr, sizeof(rndis_keepalive_cmplt_type));
- 	if (!r)
- 		return -ENOMEM;
--	resp = (rndis_keepalive_cmplt_type *) r->buf;
-+	resp = (rndis_keepalive_cmplt_type *)r->buf;
- 
--	resp->MessageType = cpu_to_le32 (
-+	resp->MessageType = cpu_to_le32(
- 			REMOTE_NDIS_KEEPALIVE_CMPLT);
--	resp->MessageLength = cpu_to_le32 (16);
-+	resp->MessageLength = cpu_to_le32(16);
- 	resp->RequestID = buf->RequestID; /* Still LE in msg buffer */
--	resp->Status = cpu_to_le32 (RNDIS_STATUS_SUCCESS);
-+	resp->Status = cpu_to_le32(RNDIS_STATUS_SUCCESS);
- 
- 	params->resp_avail(params->v);
- 	return 0;
-@@ -732,86 +731,85 @@ static int rndis_keepalive_response (int configNr,
- /*
-  * Device to Host Comunication
-  */
--static int rndis_indicate_status_msg (int configNr, u32 status)
-+static int rndis_indicate_status_msg(int configNr, u32 status)
- {
--	rndis_indicate_status_msg_type	*resp;
--	rndis_resp_t			*r;
--	struct rndis_params	*params = rndis_per_dev_params + configNr;
-+	rndis_indicate_status_msg_type *resp;
-+	rndis_resp_t *r;
-+	struct rndis_params *params = rndis_per_dev_params + configNr;
- 
- 	if (params->state == RNDIS_UNINITIALIZED)
- 		return -ENOTSUPP;
- 
--	r = rndis_add_response (configNr,
--				sizeof (rndis_indicate_status_msg_type));
-+	r = rndis_add_response(configNr,
-+				sizeof(rndis_indicate_status_msg_type));
- 	if (!r)
- 		return -ENOMEM;
--	resp = (rndis_indicate_status_msg_type *) r->buf;
-+	resp = (rndis_indicate_status_msg_type *)r->buf;
- 
--	resp->MessageType = cpu_to_le32 (
--			REMOTE_NDIS_INDICATE_STATUS_MSG);
--	resp->MessageLength = cpu_to_le32 (20);
--	resp->Status = cpu_to_le32 (status);
--	resp->StatusBufferLength = cpu_to_le32 (0);
--	resp->StatusBufferOffset = cpu_to_le32 (0);
-+	resp->MessageType = cpu_to_le32(REMOTE_NDIS_INDICATE_STATUS_MSG);
-+	resp->MessageLength = cpu_to_le32(20);
-+	resp->Status = cpu_to_le32(status);
-+	resp->StatusBufferLength = cpu_to_le32(0);
-+	resp->StatusBufferOffset = cpu_to_le32(0);
- 
- 	params->resp_avail(params->v);
- 	return 0;
- }
- 
--int rndis_signal_connect (int configNr)
-+int rndis_signal_connect(int configNr)
- {
--	rndis_per_dev_params [configNr].media_state
-+	rndis_per_dev_params[configNr].media_state
- 			= NDIS_MEDIA_STATE_CONNECTED;
--	return rndis_indicate_status_msg (configNr,
-+	return rndis_indicate_status_msg(configNr,
- 					  RNDIS_STATUS_MEDIA_CONNECT);
- }
- 
--int rndis_signal_disconnect (int configNr)
-+int rndis_signal_disconnect(int configNr)
- {
--	rndis_per_dev_params [configNr].media_state
-+	rndis_per_dev_params[configNr].media_state
- 			= NDIS_MEDIA_STATE_DISCONNECTED;
--	return rndis_indicate_status_msg (configNr,
-+	return rndis_indicate_status_msg(configNr,
- 					  RNDIS_STATUS_MEDIA_DISCONNECT);
- }
- 
--void rndis_uninit (int configNr)
-+void rndis_uninit(int configNr)
- {
- 	u8 *buf;
- 	u32 length;
- 
- 	if (configNr >= RNDIS_MAX_CONFIGS)
- 		return;
--	rndis_per_dev_params [configNr].state = RNDIS_UNINITIALIZED;
-+	rndis_per_dev_params[configNr].state = RNDIS_UNINITIALIZED;
- 
- 	/* drain the response queue */
- 	while ((buf = rndis_get_next_response(configNr, &length)))
- 		rndis_free_response(configNr, buf);
- }
- 
--void rndis_set_host_mac (int configNr, const u8 *addr)
-+void rndis_set_host_mac(int configNr, const u8 *addr)
- {
--	rndis_per_dev_params [configNr].host_mac = addr;
-+	rndis_per_dev_params[configNr].host_mac = addr;
- }
- 
- /*
-  * Message Parser
-  */
--int rndis_msg_parser (u8 configNr, u8 *buf)
-+int rndis_msg_parser(u8 configNr, u8 *buf)
- {
- 	u32 MsgType, MsgLength;
- 	__le32 *tmp;
--	struct rndis_params		*params;
-+	struct rndis_params *params;
- 
- 	if (!buf)
- 		return -ENOMEM;
- 
--	tmp = (__le32 *) buf;
-+	tmp = (__le32 *)buf;
- 	MsgType   = get_unaligned_le32(tmp++);
- 	MsgLength = get_unaligned_le32(tmp++);
- 
- 	if (configNr >= RNDIS_MAX_CONFIGS)
- 		return -ENOTSUPP;
--	params = &rndis_per_dev_params [configNr];
-+	params = &rndis_per_dev_params[configNr];
- 
- 	/* NOTE: RNDIS is *EXTREMELY* chatty ... Windows constantly polls for
- 	 * rx/tx statistics and link status, in addition to KEEPALIVE traffic
-@@ -822,41 +820,41 @@ int rndis_msg_parser (u8 configNr, u8 *buf)
- 	switch (MsgType) {
- 	case REMOTE_NDIS_INITIALIZE_MSG:
- 		pr_debug("%s: REMOTE_NDIS_INITIALIZE_MSG\n",
--			__func__ );
-+			__func__);
- 		params->state = RNDIS_INITIALIZED;
--		return  rndis_init_response (configNr,
--					(rndis_init_msg_type *) buf);
-+		return rndis_init_response(configNr,
-+					(rndis_init_msg_type *)buf);
- 
- 	case REMOTE_NDIS_HALT_MSG:
- 		pr_debug("%s: REMOTE_NDIS_HALT_MSG\n",
--			__func__ );
-+			__func__);
- 		params->state = RNDIS_UNINITIALIZED;
- 		if (params->dev) {
--			netif_carrier_off (params->dev);
--			netif_stop_queue (params->dev);
-+			netif_carrier_off(params->dev);
-+			netif_stop_queue(params->dev);
- 		}
- 		return 0;
- 
- 	case REMOTE_NDIS_QUERY_MSG:
--		return rndis_query_response (configNr,
--					(rndis_query_msg_type *) buf);
-+		return rndis_query_response(configNr,
-+					(rndis_query_msg_type *)buf);
- 
- 	case REMOTE_NDIS_SET_MSG:
--		return rndis_set_response (configNr,
--					(rndis_set_msg_type *) buf);
-+		return rndis_set_response(configNr,
-+					(rndis_set_msg_type *)buf);
- 
- 	case REMOTE_NDIS_RESET_MSG:
- 		pr_debug("%s: REMOTE_NDIS_RESET_MSG\n",
--			__func__ );
--		return rndis_reset_response (configNr,
--					(rndis_reset_msg_type *) buf);
-+			__func__);
-+		return rndis_reset_response(configNr,
-+					(rndis_reset_msg_type *)buf);
- 
- 	case REMOTE_NDIS_KEEPALIVE_MSG:
- 		/* For USB: host does this every 5 seconds */
- 		if (rndis_debug > 1)
- 			pr_debug("%s: REMOTE_NDIS_KEEPALIVE_MSG\n",
--				__func__ );
--		return rndis_keepalive_response (configNr,
-+				__func__);
-+		return rndis_keepalive_response(configNr,
- 						 (rndis_keepalive_msg_type *)
- 						 buf);
- 
-@@ -866,7 +864,7 @@ int rndis_msg_parser (u8 configNr, u8 *buf)
- 		 * suspending itself.
- 		 */
- 		pr_warning("%s: unknown RNDIS message 0x%08X len %d\n",
--			__func__ , MsgType, MsgLength);
-+			__func__, MsgType, MsgLength);
- 		{
- 			unsigned i;
- 			for (i = 0; i < MsgLength; i += 16) {
-@@ -901,10 +899,10 @@ int rndis_register(void (*resp_avail)(void *v), void *v)
- 		return -EINVAL;
- 
- 	for (i = 0; i < RNDIS_MAX_CONFIGS; i++) {
--		if (!rndis_per_dev_params [i].used) {
--			rndis_per_dev_params [i].used = 1;
--			rndis_per_dev_params [i].resp_avail = resp_avail;
--			rndis_per_dev_params [i].v = v;
-+		if (!rndis_per_dev_params[i].used) {
-+			rndis_per_dev_params[i].used = 1;
-+			rndis_per_dev_params[i].resp_avail = resp_avail;
-+			rndis_per_dev_params[i].v = v;
- 			pr_debug("%s: configNr = %d\n", __func__, i);
- 			return i;
- 		}
-@@ -914,12 +912,12 @@ int rndis_register(void (*resp_avail)(void *v), void *v)
- 	return -ENODEV;
- }
- 
--void rndis_deregister (int configNr)
-+void rndis_deregister(int configNr)
- {
--	pr_debug("%s: \n", __func__);
-+	pr_debug("%s:\n", __func__);
- 
- 	if (configNr >= RNDIS_MAX_CONFIGS) return;
--	rndis_per_dev_params [configNr].used = 0;
-+	rndis_per_dev_params[configNr].used = 0;
- 
- 	return;
- }
-@@ -931,76 +929,76 @@ int rndis_set_param_dev(u8 configNr, struct net_device *dev, u16 *cdc_filter)
- 		return -EINVAL;
- 	if (configNr >= RNDIS_MAX_CONFIGS) return -1;
- 
--	rndis_per_dev_params [configNr].dev = dev;
--	rndis_per_dev_params [configNr].filter = cdc_filter;
-+	rndis_per_dev_params[configNr].dev = dev;
-+	rndis_per_dev_params[configNr].filter = cdc_filter;
- 
- 	return 0;
- }
- 
--int rndis_set_param_vendor (u8 configNr, u32 vendorID, const char *vendorDescr)
-+int rndis_set_param_vendor(u8 configNr, u32 vendorID, const char *vendorDescr)
- {
- 	pr_debug("%s:\n", __func__);
- 	if (!vendorDescr) return -1;
- 	if (configNr >= RNDIS_MAX_CONFIGS) return -1;
- 
--	rndis_per_dev_params [configNr].vendorID = vendorID;
--	rndis_per_dev_params [configNr].vendorDescr = vendorDescr;
-+	rndis_per_dev_params[configNr].vendorID = vendorID;
-+	rndis_per_dev_params[configNr].vendorDescr = vendorDescr;
- 
- 	return 0;
- }
- 
--int rndis_set_param_medium (u8 configNr, u32 medium, u32 speed)
-+int rndis_set_param_medium(u8 configNr, u32 medium, u32 speed)
- {
- 	pr_debug("%s: %u %u\n", __func__, medium, speed);
- 	if (configNr >= RNDIS_MAX_CONFIGS) return -1;
- 
--	rndis_per_dev_params [configNr].medium = medium;
--	rndis_per_dev_params [configNr].speed = speed;
-+	rndis_per_dev_params[configNr].medium = medium;
-+	rndis_per_dev_params[configNr].speed = speed;
- 
- 	return 0;
- }
- 
--void rndis_add_hdr (struct sk_buff *skb)
-+void rndis_add_hdr(struct sk_buff *skb)
- {
--	struct rndis_packet_msg_type	*header;
-+	struct rndis_packet_msg_type *header;
- 
- 	if (!skb)
- 		return;
--	header = (void *) skb_push (skb, sizeof *header);
--	memset (header, 0, sizeof *header);
-+	header = (void *)skb_push(skb, sizeof(*header));
-+	memset(header, 0, sizeof *header);
- 	header->MessageType = cpu_to_le32(REMOTE_NDIS_PACKET_MSG);
- 	header->MessageLength = cpu_to_le32(skb->len);
--	header->DataOffset = cpu_to_le32 (36);
--	header->DataLength = cpu_to_le32(skb->len - sizeof *header);
-+	header->DataOffset = cpu_to_le32(36);
-+	header->DataLength = cpu_to_le32(skb->len - sizeof(*header));
- }
- 
--void rndis_free_response (int configNr, u8 *buf)
-+void rndis_free_response(int configNr, u8 *buf)
- {
--	rndis_resp_t		*r;
--	struct list_head	*act, *tmp;
-+	rndis_resp_t *r;
-+	struct list_head *act, *tmp;
- 
--	list_for_each_safe (act, tmp,
--			&(rndis_per_dev_params [configNr].resp_queue))
-+	list_for_each_safe(act, tmp,
-+			&(rndis_per_dev_params[configNr].resp_queue))
- 	{
--		r = list_entry (act, rndis_resp_t, list);
-+		r = list_entry(act, rndis_resp_t, list);
- 		if (r && r->buf == buf) {
--			list_del (&r->list);
--			kfree (r);
-+			list_del(&r->list);
-+			kfree(r);
- 		}
- 	}
- }
- 
--u8 *rndis_get_next_response (int configNr, u32 *length)
-+u8 *rndis_get_next_response(int configNr, u32 *length)
- {
--	rndis_resp_t		*r;
--	struct list_head	*act, *tmp;
-+	rndis_resp_t *r;
-+	struct list_head *act, *tmp;
- 
- 	if (!length) return NULL;
- 
--	list_for_each_safe (act, tmp,
--			&(rndis_per_dev_params [configNr].resp_queue))
-+	list_for_each_safe(act, tmp,
-+			&(rndis_per_dev_params[configNr].resp_queue))
- 	{
--		r = list_entry (act, rndis_resp_t, list);
-+		r = list_entry(act, rndis_resp_t, list);
- 		if (!r->send) {
- 			r->send = 1;
- 			*length = r->length;
-@@ -1011,20 +1009,20 @@ u8 *rndis_get_next_response (int configNr, u32 *length)
- 	return NULL;
- }
- 
--static rndis_resp_t *rndis_add_response (int configNr, u32 length)
-+static rndis_resp_t *rndis_add_response(int configNr, u32 length)
- {
--	rndis_resp_t	*r;
-+	rndis_resp_t *r;
- 
--	/* NOTE:  this gets copied into ether.c USB_BUFSIZ bytes ... */
--	r = kmalloc (sizeof (rndis_resp_t) + length, GFP_ATOMIC);
-+	/* NOTE: this gets copied into ether.c USB_BUFSIZ bytes ... */
-+	r = kmalloc(sizeof(rndis_resp_t) + length, GFP_ATOMIC);
- 	if (!r) return NULL;
- 
--	r->buf = (u8 *) (r + 1);
-+	r->buf = (u8 *)(r + 1);
- 	r->length = length;
- 	r->send = 0;
- 
--	list_add_tail (&r->list,
--		&(rndis_per_dev_params [configNr].resp_queue));
-+	list_add_tail(&r->list,
-+		&(rndis_per_dev_params[configNr].resp_queue));
- 	return r;
- }
- 
-@@ -1033,7 +1031,7 @@ int rndis_rm_hdr(struct gether *port,
- 			struct sk_buff_head *list)
- {
- 	/* tmp points to a struct rndis_packet_msg_type */
--	__le32		*tmp = (void *) skb->data;
-+	__le32 *tmp = (void *)skb->data;
- 
- 	/* MessageType, MessageLength */
- 	if (cpu_to_le32(REMOTE_NDIS_PACKET_MSG)
-@@ -1054,7 +1052,7 @@ int rndis_rm_hdr(struct gether *port,
- 	return 0;
- }
- 
--#ifdef	CONFIG_USB_GADGET_DEBUG_FILES
-+#ifdef CONFIG_USB_GADGET_DEBUG_FILES
- 
- static int rndis_proc_show(struct seq_file *m, void *v)
- {
-@@ -1087,7 +1085,7 @@ static int rndis_proc_show(struct seq_file *m, void *v)
- }
- 
- static ssize_t rndis_proc_write(struct file *file, const char __user *buffer,
--		size_t count, loff_t *ppos)
-+				size_t count, loff_t *ppos)
- {
- 	rndis_params *p = PDE(file->f_path.dentry->d_inode)->data;
- 	u32 speed = 0;
-@@ -1109,11 +1107,11 @@ static ssize_t rndis_proc_write(struct file *file, const char __user *buffer,
- 		case '8':
- 		case '9':
- 			fl_speed = 1;
--			speed = speed*10 + c - '0';
-+			speed = speed * 10 + c - '0';
- 			break;
- 		case 'C':
- 		case 'c':
--			rndis_signal_connect (p->confignr);
-+			rndis_signal_connect(p->confignr);
- 			break;
- 		case 'D':
- 		case 'd':
-@@ -1145,11 +1143,11 @@ static const struct file_operations rndis_proc_fops = {
- 	.write		= rndis_proc_write,
- };
- 
--#define	NAME_TEMPLATE	"driver/rndis-%03d"
-+#define	NAME_TEMPLATE "driver/rndis-%03d"
- 
- static struct proc_dir_entry *rndis_connect_state [RNDIS_MAX_CONFIGS];
- 
--#endif	/* CONFIG_USB_GADGET_DEBUG_FILES */
-+#endif /* CONFIG_USB_GADGET_DEBUG_FILES */
- 
- 
- int rndis_init(void)
-@@ -1160,42 +1158,40 @@ int rndis_init(void)
- #ifdef	CONFIG_USB_GADGET_DEBUG_FILES
- 		char name [20];
- 
--		sprintf (name, NAME_TEMPLATE, i);
--		if (!(rndis_connect_state [i]
--				= proc_create_data(name, 0660, NULL,
-+		sprintf(name, NAME_TEMPLATE, i);
-+		rndis_connect_state[i] = proc_create_data(name, 0660, NULL,
- 					&rndis_proc_fops,
--					(void *)(rndis_per_dev_params + i))))
--		{
--			pr_debug("%s :remove entries", __func__);
-+					(void *)(rndis_per_dev_params + i))
-+		if (!rndis_connect_state[i]) {
-+			pr_debug("%s: remove entries", __func__);
- 			while (i) {
--				sprintf (name, NAME_TEMPLATE, --i);
--				remove_proc_entry (name, NULL);
-+				sprintf(name, NAME_TEMPLATE, --i);
-+				remove_proc_entry(name, NULL);
- 			}
- 			pr_debug("\n");
- 			return -EIO;
- 		}
- #endif
--		rndis_per_dev_params [i].confignr = i;
--		rndis_per_dev_params [i].used = 0;
--		rndis_per_dev_params [i].state = RNDIS_UNINITIALIZED;
--		rndis_per_dev_params [i].media_state
-+		rndis_per_dev_params[i].confignr = i;
-+		rndis_per_dev_params[i].used = 0;
-+		rndis_per_dev_params[i].state = RNDIS_UNINITIALIZED;
-+		rndis_per_dev_params[i].media_state
- 				= NDIS_MEDIA_STATE_DISCONNECTED;
--		INIT_LIST_HEAD (&(rndis_per_dev_params [i].resp_queue));
-+		INIT_LIST_HEAD(&(rndis_per_dev_params[i].resp_queue));
- 	}
- 
- 	return 0;
- }
- 
--void rndis_exit (void)
-+void rndis_exit(void)
- {
--#ifdef	CONFIG_USB_GADGET_DEBUG_FILES
-+#ifdef CONFIG_USB_GADGET_DEBUG_FILES
- 	u8 i;
--	char name [20];
-+	char name[20];
- 
- 	for (i = 0; i < RNDIS_MAX_CONFIGS; i++) {
--		sprintf (name, NAME_TEMPLATE, i);
--		remove_proc_entry (name, NULL);
-+		sprintf(name, NAME_TEMPLATE, i);
-+		remove_proc_entry(name, NULL);
- 	}
- #endif
- }
--
+> +	/* Set transfer speed in I2CBC */
+> +	iowrite32(pch_i2cbc, p + PCH_I2CBC);
+> +
+> +	pch_i2ctmr = (pch_clk) / 8;
+> +	iowrite32(pch_i2ctmr, p + PCH_I2CTMR);
+> +
+> +	reg_value |= NORMAL_INTR_ENBL;	/* Enable interrupts in normal mode */
+> +	iowrite32(reg_value, p + PCH_I2CCTL);
+> +
+> +	pch_dbg(adap,
+> +		"I2CCTL=%x pch_i2cbc=%x pch_i2ctmr=%x Enable interrupts\n",
+> +		ioread32(p + PCH_I2CCTL), pch_i2cbc, pch_i2ctmr);
+> +
+> +	init_waitqueue_head(&pch_event);
+> +}
+> +
+> +static inline int ktime_lt(const ktime_t cmp1, const ktime_t cmp2)
+> +{
+> +	return cmp1.tv64 < cmp2.tv64;
+> +}
+
+surely this should be with the ktime headers?
+
+> +/**
+> + * pch_wait_for_bus_idle() - check the status of bus.
+> + * @adap:	Pointer to struct i2c_algo_pch_data.
+> + * @timeout:	waiting time counter (us).
+> + */
+> +static s32 pch_wait_for_bus_idle(struct i2c_algo_pch_data *adap,
+> +				 s32 timeout)
+> +{
+> +	void __iomem *p = adap->pch_base_address;
+> +
+> +	/* MAX timeout value is timeout*1000*1000nsec */
+> +	ktime_t ns_val = ktime_add_ns(ktime_get(), timeout*1000*1000);
+> +	do {
+> +		if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
+> +			break;
+> +		msleep(1);
+> +	} while (ktime_lt(ktime_get(), ns_val));
+> +
+> +	pch_dbg(adap, "I2CSR = %x\n", ioread32(p + PCH_I2CSR));
+> +
+> +	if (timeout == 0) {
+> +		pch_err(adap, "return%d\n", -ETIME);
+
+how about just printing timedout? would be easier to work out what
+happened.
+
+> +		return -ETIME;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * pch_start() - Generate I2C start condition in normal mode.
+> + * @adap:	Pointer to struct i2c_algo_pch_data.
+> + *
+> + * Generate I2C start condition in normal mode by setting I2CCTL.I2CMSTA to 1.
+> + */
+> +static void pch_start(struct i2c_algo_pch_data *adap)
+> +{
+> +	void __iomem *p = adap->pch_base_address;
+> +	pch_dbg(adap, "I2CCTL = %x\n", ioread32(p + PCH_I2CCTL));
+> +	pch_setbit((adap->pch_base_address), PCH_I2CCTL, PCH_START);
+
+again with the ()s.
+
+> +static s32 pch_getack(struct i2c_algo_pch_data *adap)
+> +{
+> +	u32 reg_val;
+> +	void __iomem *p = adap->pch_base_address;
+> +	reg_val = ioread32(p + PCH_I2CSR) & PCH_GETACK;
+> +
+> +	if (reg_val != 0) {
+> +		pch_err(adap, "return%d\n", -EPROTO);
+> +		return -EPROTO;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * pch_stop() - generate stop condition in normal mode.
+> + * @adap:	Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_stop(struct i2c_algo_pch_data *adap)
+> +{
+> +	void __iomem *p = adap->pch_base_address;
+> +	pch_dbg(adap, "I2CCTL = %x\n", ioread32(p + PCH_I2CCTL));
+> +	/* clear the start bit */
+> +	pch_clrbit((adap->pch_base_address), PCH_I2CCTL, PCH_START);
+> +}
+> +
+> +/**
+> + * pch_repstart() - generate repeated start condition in normal mode
+> + * @adap:	Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_repstart(struct i2c_algo_pch_data *adap)
+> +{
+> +	void __iomem *p = adap->pch_base_address;
+> +	pch_dbg(adap, "I2CCTL = %x\n", ioread32(p + PCH_I2CCTL));
+> +	pch_setbit((adap->pch_base_address), PCH_I2CCTL, PCH_REPSTART);
+> +}
+> +
+> +/**
+> + * pch_writebytes() - write data to I2C bus in normal mode
+> + * @i2c_adap:	Pointer to the struct i2c_adapter.
+> + * @last:	specifies whether last message or not.
+> + *		In the case of compound mode it will be 1 for last message,
+> + *		otherwise 0.
+> + * @first:	specifies whether first message or not.
+> + *		1 for first message otherwise 0.
+> + */
+> +static s32 pch_writebytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+> +			  u32 last, u32 first)
+> +{
+> +	struct i2c_algo_pch_data *adap = i2c_adap->algo_data;
+> +	u8 *buf;
+> +	u32 length;
+> +	u32 addr;
+> +	u32 addr_2_msb;
+> +	u32 addr_8_lsb;
+> +	s32 wrcount;
+> +	void __iomem *p = adap->pch_base_address;
+> +	length = msgs->len;
+> +	buf = msgs->buf;
+> +	addr = msgs->addr;
+
+blank line between decls and code please.
+
+> +	/* enable master tx */
+> +	pch_setbit((adap->pch_base_address), PCH_I2CCTL, I2C_TX_MODE);
+
+this is the last warning on ()s...
+
+> +	pch_dbg(adap, "I2CCTL = %x msgs->len = %d\n", ioread32(p + PCH_I2CCTL),
+> +		length);
+> +
+> +	if (first) {
+> +		if (pch_wait_for_bus_idle(adap, BUS_IDLE_TIMEOUT) == -ETIME)
+> +			return -ETIME;
+> +	}
+
+hmm, -ETIME versus -ETIMEDOUT elsewhere?
+
+> +	if (msgs->flags & I2C_M_TEN) {
+> +		addr_2_msb = ((addr & I2C_MSB_2B_MSK) >> 7);
+> +		iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
+> +		if (first)
+> +			pch_start(adap);
+> +		if ((pch_wait_for_xfer_complete(adap) == 0) &&
+> +		    (pch_getack(adap) == 0)) {
+
+and no need for most of the ()s here...
+
+> +			addr_8_lsb = (addr & I2C_ADDR_MSK);
+> +			iowrite32(addr_8_lsb, p + PCH_I2CDR);
+> +		} else {
+> +			pch_stop(adap);
+> +			return -ETIME;
+> +		}
+> +	} else {
+> +		/* set 7 bit slave address and R/W bit as 0 */
+> +		iowrite32(addr << 1, p + PCH_I2CDR);
+> +		if (first)
+> +			pch_start(adap);
+> +	}
+> +
+> +	if ((pch_wait_for_xfer_complete(adap) == 0) &&
+> +	    (pch_getack(adap) == 0)) {
+> +		for (wrcount = 0; wrcount < length; ++wrcount) {
+> +			/* write buffer value to I2C data register */
+> +			iowrite32(buf[wrcount], p + PCH_I2CDR);
+> +			pch_dbg(adap, "writing %x to Data register\n",
+> +				buf[wrcount]);
+> +
+> +			if (pch_wait_for_xfer_complete(adap) != 0)
+> +				return -ETIME;
+> +
+> +			if (pch_getack(adap))
+> +				return -ETIME;
+
+you sure it isn't -EIO here if ack problem?
+
+> +		}
+> +
+> +		/* check if this is the last message */
+> +		if (last)
+> +			pch_stop(adap);
+> +		else
+> +			pch_repstart(adap);
+> +	} else {
+> +		pch_stop(adap);
+> +		return -EIO;
+> +	}
+> +
+> +	pch_dbg(adap, "return=%d\n", wrcount);
+> +
+> +	return wrcount;
+> +}
+> +
+> +/**
+> + * pch_sendack() - send ACK
+> + * @adap:	Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_sendack(struct i2c_algo_pch_data *adap)
+> +{
+> +	void __iomem *p = adap->pch_base_address;
+> +	pch_dbg(adap, "I2CCTL = %x\n", ioread32(p + PCH_I2CCTL));
+> +	pch_clrbit((adap->pch_base_address), PCH_I2CCTL, PCH_ACK);
+> +}
+> +
+> +/**
+> + * pch_sendnack() - send NACK
+> + * @adap:	Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_sendnack(struct i2c_algo_pch_data *adap)
+> +{
+> +	void __iomem *p = adap->pch_base_address;
+> +	pch_dbg(adap, "I2CCTL = %x\n", ioread32(p + PCH_I2CCTL));
+> +	pch_setbit((adap->pch_base_address), PCH_I2CCTL, PCH_ACK);
+> +}
+> +
+> +/**
+> + * pch_readbytes() - read data  from I2C bus in normal mode.
+> + * @i2c_adap:	Pointer to the struct i2c_adapter.
+> + * @msgs:	Pointer to i2c_msg structure.
+> + * @last:	specifies whether last message or not.
+> + * @first:	specifies whether first message or not.
+> + */
+> +s32 pch_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+> +		  u32 last, u32 first)
+> +{
+> +	struct i2c_algo_pch_data *adap = i2c_adap->algo_data;
+> +
+> +	u8 *buf;
+> +	u32 count;
+> +	u32 length;
+> +	u32 addr;
+> +	u32 addr_2_msb;
+> +	void __iomem *p = adap->pch_base_address;
+> +	length = msgs->len;
+> +	buf = msgs->buf;
+> +	addr = msgs->addr;
+> +
+> +	/* enable master reception */
+> +	pch_clrbit((adap->pch_base_address), PCH_I2CCTL, I2C_TX_MODE);
+> +
+> +	if (first) {
+> +		if (pch_wait_for_bus_idle(adap, BUS_IDLE_TIMEOUT) == -ETIME)
+> +			return -ETIME;
+> +	}
+> +
+> +	if (msgs->flags & I2C_M_TEN) {
+> +		addr_2_msb = (((addr & I2C_MSB_2B_MSK) >> 7) | (I2C_RD));
+> +		iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
+> +
+> +	} else {
+> +		/* 7 address bits + R/W bit */
+> +		addr = (((addr) << 1) | (I2C_RD));
+> +		iowrite32(addr, p + PCH_I2CDR);
+> +	}
+> +
+> +	/* check if it is the first message */
+> +	if (first)
+> +		pch_start(adap);
+> +
+> +	if ((pch_wait_for_xfer_complete(adap) == 0) &&
+> +	    (pch_getack(adap) == 0)) {
+> +		pch_dbg(adap, "return %d\n", 0);
+> +
+> +		if (length == 0) {
+> +			pch_stop(adap);
+> +			ioread32(p + PCH_I2CDR); /* Dummy read needs */
+> +
+> +			count = length;
+> +		} else {
+> +			int read_index;
+> +			int loop;
+> +			pch_sendack(adap);
+> +
+> +			/* Dummy read */
+> +			for (loop = 1, read_index = 0; loop < length; loop++) {
+> +				buf[read_index] = ioread32(p + PCH_I2CDR);
+> +
+> +				if (loop != 1)
+> +					read_index++;
+> +
+> +				if (pch_wait_for_xfer_complete(adap) != 0) {
+> +					pch_stop(adap);
+> +					return -ETIME;
+> +				}
+> +			}	/* end for */
+> +
+> +			pch_sendnack(adap);
+> +
+> +			buf[read_index] = ioread32(p + PCH_I2CDR);
+> +
+> +			if (length != 1)
+> +				read_index++;
+> +
+> +			if (pch_wait_for_xfer_complete(adap) == 0) {
+> +				if (last)
+> +					pch_stop(adap);
+> +				else
+> +					pch_repstart(adap);
+> +
+> +				buf[read_index++] = ioread32(p + PCH_I2CDR);
+> +				count = read_index;
+> +			} else {
+> +				count = -ETIME;
+> +			}
+> +
+> +		}
+> +	} else {
+> +		count = -ETIME;
+> +		pch_stop(adap);
+> +	}
+> +
+> +	return count;
+> +}
+> +
+> +/**
+> + * pch_cb_ch0() - Interrupt handler Call back function
+> + * @adap:	Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_cb_ch0(struct i2c_algo_pch_data *adap)
+> +{
+> +	u32 sts;
+> +	void __iomem *p = adap->pch_base_address;
+> +
+> +	sts = ioread32(p + PCH_I2CSR);
+> +	sts &= (I2CMAL_BIT | I2CMCF_BIT | I2CMIF_BIT);
+> +	if (I2CMAL_BIT & sts)
+> +		adap->pch_event_flag |= I2CMAL_EVENT;
+> +
+> +	if (I2CMCF_BIT & sts)
+> +		adap->pch_event_flag |= I2CMCF_EVENT;
+> +
+> +	/* clear the applicable bits */
+> +	pch_clrbit((adap->pch_base_address), PCH_I2CSR, sts);
+> +
+> +	pch_dbg(adap, "PCH_I2CSR = %x\n", ioread32(p + PCH_I2CSR));
+> +
+> +	wake_up_interruptible(&pch_event);
+> +}
+> +
+> +/**
+> + * pch_handler_ch0() - interrupt handler for the PCH I2C controller
+> + * @irq:	irq number.
+> + * @pData:	cookie passed back to the handler function.
+> + */
+> +static irqreturn_t pch_handler_ch0(int irq, void *pData)
+> +{
+> +	s32 reg_val;
+> +
+> +	struct i2c_algo_pch_data *adap_data = (struct i2c_algo_pch_data *)pData;
+> +	void __iomem *p = adap_data->pch_base_address;
+> +	u32 mode = ioread32(p + PCH_I2CMOD) & (BUFFER_MODE | EEPROM_SR_MODE);
+> +
+> +	if (mode != NORMAL_MODE) {
+> +		pch_err(adap_data, "I2C mode is not supported\n");
+> +		return IRQ_NONE;
+> +	}
+> +
+> +	reg_val = ioread32(p + PCH_I2CSR);
+> +	if (reg_val & (I2CMAL_BIT | I2CMCF_BIT | I2CMIF_BIT))
+> +		pch_cb_ch0(adap_data);
+> +	else
+> +		return IRQ_NONE;
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +#if 0
+> +	if (mode == NORMAL_MODE) {
+> +		reg_val = ioread32(p + PCH_I2CSR);
+> +		if (reg_val & (I2CMAL_BIT | I2CMCF_BIT | I2CMIF_BIT))
+> +			pch_cb_ch0(adap_data);
+> +		else
+> +			goto err_out;
+> +	} else {
+> +		pch_err(adap_data, "I2C mode is not supported\n");
+> +		goto err_out;
+> +	}
+> +	return IRQ_HANDLED;
+> +
+> +err_out:
+> +	return IRQ_NONE;
+> +}
+> +#endif
+
+please, no #if 0. either remove completely or do something with it.
+
+> +/**
+> + * pch_xfer() - Reading adnd writing data through I2C bus
+> + * @i2c_adap:	Pointer to the struct i2c_adapter.
+> + * @msgs:	Pointer to i2c_msg structure.
+> + * @num:	number of messages.
+> + */
+> +static s32 pch_xfer(struct i2c_adapter *i2c_adap,
+> +		    struct i2c_msg *msgs, s32 num)
+> +{
+> +	struct i2c_msg *pmsg;
+> +	u32 i;
+> +	u32 status;
+> +	u32 msglen;
+> +	u32 subaddrlen;
+> +	s32 ret;
+> +
+> +	struct i2c_algo_pch_data *adap = i2c_adap->algo_data;
+> +
+> +	ret = mutex_lock_interruptible(&pch_mutex);
+> +	if (ret)
+> +		return -ERESTARTSYS;
+> +
+> +	if (adap->p_adapter_info->pch_suspended) {
+> +		mutex_unlock(&pch_mutex);
+> +		return -EBUSY;
+> +	}
+> +
+> +	pch_dbg(adap, "adap->p_adapter_info->pch_suspended is %d\n",
+> +		adap->p_adapter_info->pch_suspended);
+> +	/* transfer not completed */
+> +	adap->pch_xfer_in_progress = true;
+> +
+> +	for (i = 0; i < num; i++) {
+> +		pmsg = &msgs[i];
+> +		pmsg->flags |= adap->pch_buff_mode_en;
+> +		status = pmsg->flags;
+> +		pch_dbg(adap,
+> +			"After invoking I2C_MODE_SEL :flag= 0x%x\n", status);
+> +		/* calculate sub address length and message length */
+> +		/* these are applicable only for buffer mode */
+> +		subaddrlen = pmsg->buf[0];
+> +		/* calculate actual message length excluding
+> +		 * the sub address fields */
+> +		msglen = (pmsg->len) - (subaddrlen + 1);
+> +		if (status & (I2C_M_RD)) {
+> +			pch_dbg(adap, "invoking pch_readbytes\n");
+> +			ret = pch_readbytes(i2c_adap, pmsg, (i + 1 == num),
+> +					   (i == 0));
+> +		} else {
+> +			pch_dbg(adap, "invoking pch_writebytes\n");
+> +			ret = pch_writebytes(i2c_adap, pmsg, (i + 1 == num),
+> +					    (i == 0));
+> +		}
+> +
+> +	}
+> +
+> +	adap->pch_xfer_in_progress = false;	/* transfer completed */
+> +
+> +	mutex_unlock(&pch_mutex);
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+> + * pch_func() - return the functionality of the I2C driver
+> + * @adap:	Pointer to struct i2c_algo_pch_data.
+> + */
+> +static u32 pch_func(struct i2c_adapter *adap)
+> +{
+> +	u32 ret;
+> +	ret = I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | I2C_FUNC_10BIT_ADDR;
+> +	return ret;
+> +}
+
+how about just return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | I2C_FUNC_10BIT_ADDR;
+
+> +static struct i2c_algorithm pch_algorithm = {
+> +	.master_xfer = pch_xfer,
+> +	.functionality = pch_func
+> +};
+> +
+> +/**
+> + * pch_disbl_int() - Disable PCH I2C interrupts
+> + * @adap:	Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_disbl_int(struct i2c_algo_pch_data *adap)
+> +{
+> +	void __iomem *p = adap->pch_base_address;
+> +
+> +	pch_clrbit((adap->pch_base_address), PCH_I2CCTL,
+> +			  NORMAL_INTR_ENBL);
+> +
+> +	iowrite32(EEPROM_RST_INTR_DISBL, p + PCH_I2CESRMSK);
+> +
+> +	iowrite32(BUFFER_MODE_INTR_DISBL, p + PCH_I2CBUFMSK);
+> +}
+> +
+> +static int __devinit pch_probe(struct pci_dev *pdev,
+> +			       const struct pci_device_id *id)
+> +{
+> +	int i;
+> +	void __iomem *base_addr;
+> +	s32 ret;
+> +	struct adapter_info *adap_info =
+> +			kzalloc((sizeof(struct adapter_info)), GFP_KERNEL);
+
+this would be a good case to putting the kzalloc() on a different line
+from the decleration.
+
+> +	pch_pci_dbg(pdev, "Entered.\n");
+> +
+> +	if (adap_info == NULL) {
+> +		pch_pci_err(pdev, "Memory allocation FAILED\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	ret = pci_enable_device(pdev);
+> +	if (ret) {
+> +		pch_pci_err(pdev, "pci_enable_device FAILED\n");
+> +		goto err_pci_enable;
+> +	}
+
+do you really need to put FAILED in capitals here?
+
+> +	ret = pci_request_regions(pdev, KBUILD_MODNAME);
+> +	if (ret) {
+> +		pch_pci_err(pdev, "pci_request_regions FAILED\n");
+> +		goto err_pci_req;
+> +	}
+> +
+> +	base_addr = pci_iomap(pdev, 1, 0);
+> +
+> +	if (base_addr == 0) {
+
+surley that would be == NULL?
+
+> +		pch_pci_err(pdev, "pci_iomap FAILED\n");
+> +		ret = -ENOMEM;
+> +		goto err_pci_iomap;
+> +	}
+> +
+> +	adap_info->pch_suspended = false;
+> +
+> +	for (i = 0; i < PCH_MAX_CHN; i++) {
+> +		adap_info->pch_data[i].p_adapter_info = adap_info;
+
+looks like a pointer to adap_info->pch_data[i] would make the source
+smaller and a bit easier to read.
+
+> +		adap_info->pch_data[i].pch_adapter.owner = THIS_MODULE;
+> +		adap_info->pch_data[i].pch_adapter.class = I2C_CLASS_HWMON;
+> +		strcpy(adap_info->pch_data[i].pch_adapter.name, KBUILD_MODNAME);
+> +		adap_info->pch_data[i].pch_adapter.algo = &pch_algorithm;
+> +		adap_info->pch_data[i].pch_adapter.algo_data =
+> +							&adap_info->pch_data[i];
+> +
+> +		/* (i * 0x80) + base_addr; */
+> +		adap_info->pch_data[i].pch_base_address = base_addr;
+> +
+> +		adap_info->pch_data[i].pch_adapter.dev.parent = &pdev->dev;
+> +
+> +		ret = i2c_add_adapter(&(adap_info->pch_data[i].pch_adapter));
+> +
+> +		if (ret) {
+> +			pch_pci_err(pdev, "i2c_add_adapter FAILED\n");
+> +			goto err_i2c_add_adapter;
+> +		}
+> +
+> +		pch_init(&adap_info->pch_data[i]);
+> +		ret = request_irq(pdev->irq, pch_handler_list[i], IRQF_SHARED,
+> +			  KBUILD_MODNAME, &adap_info->pch_data[i]);
+> +		if (ret) {
+> +			pch_pci_err(pdev, "request_irq FAILED\n");
+> +			goto err_request_irq;
+> +		}
+> +	}
+> +
+> +	pci_set_drvdata(pdev, adap_info);
+> +	pch_pci_dbg(pdev, "returns %d.\n", ret);
+> +	return 0;
+> +
+> +err_request_irq:
+> +	for (i = 0; i < PCH_MAX_CHN; i++)
+> +		i2c_del_adapter(&(adap_info->pch_data[i].pch_adapter));
+> +err_i2c_add_adapter:
+> +	pci_iounmap(pdev, base_addr);
+> +err_pci_iomap:
+> +	pci_release_regions(pdev);
+> +err_pci_req:
+> +	pci_disable_device(pdev);
+> +err_pci_enable:
+> +	kfree(adap_info);
+> +	return ret;
+> +}
+> +
+> +static void __devexit pch_remove(struct pci_dev *pdev)
+> +{
+> +	int i;
+> +
+> +	struct adapter_info *adap_info = pci_get_drvdata(pdev);
+
+no need for the blank line.
+
+> +
+> +
+> +	for (i = 0; i < PCH_MAX_CHN; i++) {
+> +		pch_disbl_int(&adap_info->pch_data[i]);
+> +		free_irq(pdev->irq, &adap_info->pch_data[i]);
+> +		i2c_del_adapter(&(adap_info->pch_data[i].pch_adapter));
+> +	}
+> +
+> +	if (adap_info->pch_data[0].pch_base_address) {
+> +		pci_iounmap(pdev, adap_info->pch_data[0].pch_base_address);
+> +		adap_info->pch_data[0].pch_base_address = 0;
+> +	}
+> +
+> +	pci_set_drvdata(pdev, NULL);
+> +
+> +	pci_release_regions(pdev);
+> +
+> +	pci_disable_device(pdev);
+> +	kfree(adap_info);
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +static int pch_suspend(struct pci_dev *pdev, pm_message_t state)
+> +{
+> +	int i;
+> +	int ret;
+> +
+> +	struct adapter_info *adap_info = pci_get_drvdata(pdev);
+> +	void __iomem *p = adap_info->pch_data[0].pch_base_address;
+>
+again, blank line, also see notes on ordering.
+
+> +	adap_info->pch_suspended = true;
+> +
+> +	for (i = 0; i < PCH_MAX_CHN; i++) {
+> +		while ((adap_info->pch_data[i].pch_xfer_in_progress)) {
+> +			/* Wait until all channel transfers are completed */
+> +			msleep(1);
+> +		}
+> +		/* Disable the i2c interrupts */
+> +		pch_disbl_int(&adap_info->pch_data[i]);
+> +	}
+> +
+> +	pch_pci_dbg(pdev, "I2CSR = %x I2CBUFSTA = %x I2CESRSTA = %x "
+> +		"invoked function pch_disbl_int successfully\n",
+> +		ioread32(p + 0x08), ioread32(p + 0x30), ioread32(p + 0x44));
+
+magic numbers being used to ioread32?
+
+> +	ret = pci_save_state(pdev);
+> +
+> +	if (ret) {
+> +		pch_pci_err(pdev, "pci_save_state\n");
+> +		return ret;
+> +	}
+> +
+> +	pci_enable_wake(pdev, PCI_D3hot, 0);
+> +	pci_disable_device(pdev);
+> +	pci_set_power_state(pdev, pci_choose_state(pdev, state));
+> +
+> +	return 0;
+> +}
+> +
+> +static int pch_resume(struct pci_dev *pdev)
+> +{
+> +	struct adapter_info *adap_info = pci_get_drvdata(pdev);
+> +	int i;
+> +
+> +	pci_set_power_state(pdev, PCI_D0);
+> +	pci_restore_state(pdev);
+> +
+> +	if (pci_enable_device(pdev) < 0) {
+> +		pch_pci_err(pdev, "pci_enable_device FAILED in pch_resume\n");
+> +		return -EIO;
+> +	}
+> +
+> +	pci_enable_wake(pdev, PCI_D3hot, 0);
+> +
+> +	for (i = 0; i < PCH_MAX_CHN; i++)
+> +		pch_init(&adap_info->pch_data[i]);
+> +
+> +	adap_info->pch_suspended = false;
+> +
+> +	return 0;
+> +}
+> +#else
+> +#define pch_suspend NULL
+> +#define pch_resume NULL
+> +#endif
+> +
+> +static struct pci_driver pch_pcidriver = {
+> +	.name = KBUILD_MODNAME,
+> +	.id_table = pch_pcidev_id,
+> +	.probe = pch_probe,
+> +	.remove = __devexit_p(pch_remove),
+> +	.suspend = pch_suspend,
+> +	.resume = pch_resume
+> +};
+> +
+> +static int __init pch_pci_init(void)
+> +{
+> +	return pci_register_driver(&pch_pcidriver);
+> +}
+> +
+> +static void __exit pch_pci_exit(void)
+> +{
+> +	pci_unregister_driver(&pch_pcidriver);
+> +}
+> +
+> +MODULE_DESCRIPTION("PCH I2C PCI Driver");
+> +MODULE_LICENSE("GPL");
+
+no MODULE_AUTHOR?
+
+> +module_init(pch_pci_init);
+> +module_exit(pch_pci_exit);
+> +module_param(pch_i2c_speed, int, (S_IRUSR | S_IWUSR));
+> +module_param(pch_clk, int, (S_IRUSR | S_IWUSR));
