@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab0IGQ2b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 12:28:31 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54956
+	id S1757919Ab0IGQ2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 12:28:25 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54949
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757925Ab0IGQ23 (ORCPT
+	by vger.kernel.org with ESMTP id S1757908Ab0IGQ2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 12:28:29 -0400
-Date: Tue, 07 Sep 2010 09:28:46 -0700 (PDT)
-Message-Id: <20100907.092846.71120430.davem@davemloft.net>
+	Tue, 7 Sep 2010 12:28:22 -0400
+Date: Tue, 07 Sep 2010 09:28:39 -0700 (PDT)
+Message-Id: <20100907.092839.226767808.davem@davemloft.net>
 To: tglx@linutronix.de
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu,
         peterz@infradead.org, hch@infradead.org, netdev@vger.kernel.org
-Subject: Re: [patch 07/30] hamradio: mkiss: semaphore cleanup
+Subject: Re: [patch 06/30] hamradio: 6pack: semaphore cleanup
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100907125055.368389976@linutronix.de>
+In-Reply-To: <20100907125055.269142443@linutronix.de>
 References: <20100907124636.880953480@linutronix.de>
-	<20100907125055.368389976@linutronix.de>
+	<20100907125055.269142443@linutronix.de>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -26,7 +26,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 07 Sep 2010 14:32:18 -0000
+Date: Tue, 07 Sep 2010 14:32:14 -0000
 
 > Get rid of init_MUTEX[_LOCKED]() and use sema_init() instead.
 > 
