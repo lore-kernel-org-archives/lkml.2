@@ -1,57 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758210Ab0IGUEi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 16:04:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42250 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754645Ab0IGUEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 16:04:36 -0400
-Message-ID: <4C869AA3.6000103@zytor.com>
-Date: Tue, 07 Sep 2010 13:03:47 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	id S1758222Ab0IGUKC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 16:10:02 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:37241 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758137Ab0IGUJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 16:09:59 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Tue, 7 Sep 2010 12:59:15 -0700
+Subject: [PATCH v2 5/5] MIPS: Move FIXADDR_TOP into spaces.h
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Atsushi Nemoto <anemo@mba.ocn.ne.jp>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>
+Message-Id: <55645e13fcf442f6641b3eb187cab302@localhost>
+User-Agent: vim 7.2
 MIME-Version: 1.0
-To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
-References: <20100901213318.19353.54619.stgit@localhost.localdomain>	 <20100902065731.GB29972@elte.hu> <20100902100308.GA17167@basil.fritz.box>	 <20100903063934.GA25863@elte.hu> <1283888337.18468.9.camel@pjaxe>
-In-Reply-To: <1283888337.18468.9.camel@pjaxe>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2010 12:38 PM, Peter P Waskiewicz Jr wrote:
-> 
-> It's one SKU of a Nehalem-EX system.  The BIOS for that SKU has an issue
-> with resolving SRAT hotplug enumeration, and screws up the table.  Other
-> SKU's of this same platform do not have the issue.  Efforts are underway
-> to get this BIOS fixed, but in the meantime, there's nothing for users
-> to work around the bug (aside from disabling memory hotplug in the
-> BIOS).  Another platform almost shipped with the same symptoms, but
-> caught it and had it fixed before it shipped (didn't catch it early
-> because Windows wasn't failing, and most of the testing on that platform
-> was done under Windows).
-> 
-> I agree with Andi that adding DMI strings would be overkill and would
-> leave clutter once the BIOS is fixed.  I look at this patch as a
-> stop-gap measure for people to fall back on until a newer BIOS is
-> available to correct the NUMA enumeration issues.  Without it, we have
-> nothing to point users to when they run into this, waiting for a new
-> BIOS.
-> 
+Memory maps and addressing quirks are normally defined in <spaces.h>.
+There are already three targets that need to override FIXADDR_TOP, and
+others exist.  This will be a cleaner approach than adding lots of
+ifdefs in fixmap.h .
 
-No, this is exactly the kind of stuff for which a DMI match is ideal.  A
-specific system with bounded propagation of the problem.  Thus, the DMI
-match acts as a whitelist -- "we know this system and it is safe to
-activate this hack on it."  This is a very good thing.
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+---
+ arch/mips/include/asm/fixmap.h              |   10 +---------
+ arch/mips/include/asm/mach-bcm63xx/spaces.h |   17 +++++++++++++++++
+ arch/mips/include/asm/mach-generic/spaces.h |    4 ++++
+ arch/mips/include/asm/mach-tx39xx/spaces.h  |   17 +++++++++++++++++
+ arch/mips/include/asm/mach-tx49xx/spaces.h  |   17 +++++++++++++++++
+ 5 files changed, 56 insertions(+), 9 deletions(-)
+ create mode 100644 arch/mips/include/asm/mach-bcm63xx/spaces.h
+ create mode 100644 arch/mips/include/asm/mach-tx39xx/spaces.h
+ create mode 100644 arch/mips/include/asm/mach-tx49xx/spaces.h
 
-If this is a production BIOS it should have this information.
+diff --git a/arch/mips/include/asm/fixmap.h b/arch/mips/include/asm/fixmap.h
+index 0b89b83..98bcc98 100644
+--- a/arch/mips/include/asm/fixmap.h
++++ b/arch/mips/include/asm/fixmap.h
+@@ -14,6 +14,7 @@
+ #define _ASM_FIXMAP_H
+ 
+ #include <asm/page.h>
++#include <spaces.h>
+ #ifdef CONFIG_HIGHMEM
+ #include <linux/threads.h>
+ #include <asm/kmap_types.h>
+@@ -67,15 +68,6 @@ enum fixed_addresses {
+  * the start of the fixmap, and leave one page empty
+  * at the top of mem..
+  */
+-#ifdef CONFIG_BCM63XX
+-#define FIXADDR_TOP     ((unsigned long)(long)(int)0xff000000)
+-#else
+-#if defined(CONFIG_CPU_TX39XX) || defined(CONFIG_CPU_TX49XX)
+-#define FIXADDR_TOP	((unsigned long)(long)(int)(0xff000000 - 0x20000))
+-#else
+-#define FIXADDR_TOP	((unsigned long)(long)(int)0xfffe0000)
+-#endif
+-#endif
+ #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
+ #define FIXADDR_START	(FIXADDR_TOP - FIXADDR_SIZE)
+ 
+diff --git a/arch/mips/include/asm/mach-bcm63xx/spaces.h b/arch/mips/include/asm/mach-bcm63xx/spaces.h
+new file mode 100644
+index 0000000..61e750f
+--- /dev/null
++++ b/arch/mips/include/asm/mach-bcm63xx/spaces.h
+@@ -0,0 +1,17 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
++ * Copyright (C) 2000, 2002  Maciej W. Rozycki
++ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
++ */
++#ifndef _ASM_BCM63XX_SPACES_H
++#define _ASM_BCM63XX_SPACES_H
++
++#define FIXADDR_TOP		((unsigned long)(long)(int)0xff000000)
++
++#include <asm/mach-generic/spaces.h>
++
++#endif /* __ASM_BCM63XX_SPACES_H */
+diff --git a/arch/mips/include/asm/mach-generic/spaces.h b/arch/mips/include/asm/mach-generic/spaces.h
+index c9fa4b1..d7a9efd 100644
+--- a/arch/mips/include/asm/mach-generic/spaces.h
++++ b/arch/mips/include/asm/mach-generic/spaces.h
+@@ -82,4 +82,8 @@
+ #define PAGE_OFFSET		(CAC_BASE + PHYS_OFFSET)
+ #endif
+ 
++#ifndef FIXADDR_TOP
++#define FIXADDR_TOP		((unsigned long)(long)(int)0xfffe0000)
++#endif
++
+ #endif /* __ASM_MACH_GENERIC_SPACES_H */
+diff --git a/arch/mips/include/asm/mach-tx39xx/spaces.h b/arch/mips/include/asm/mach-tx39xx/spaces.h
+new file mode 100644
+index 0000000..151fe7a
+--- /dev/null
++++ b/arch/mips/include/asm/mach-tx39xx/spaces.h
+@@ -0,0 +1,17 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
++ * Copyright (C) 2000, 2002  Maciej W. Rozycki
++ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
++ */
++#ifndef _ASM_TX39XX_SPACES_H
++#define _ASM_TX39XX_SPACES_H
++
++#define FIXADDR_TOP		((unsigned long)(long)(int)0xfefe0000)
++
++#include <asm/mach-generic/spaces.h>
++
++#endif /* __ASM_TX39XX_SPACES_H */
+diff --git a/arch/mips/include/asm/mach-tx49xx/spaces.h b/arch/mips/include/asm/mach-tx49xx/spaces.h
+new file mode 100644
+index 0000000..0cb10a6
+--- /dev/null
++++ b/arch/mips/include/asm/mach-tx49xx/spaces.h
+@@ -0,0 +1,17 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
++ * Copyright (C) 2000, 2002  Maciej W. Rozycki
++ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
++ */
++#ifndef _ASM_TX49XX_SPACES_H
++#define _ASM_TX49XX_SPACES_H
++
++#define FIXADDR_TOP		((unsigned long)(long)(int)0xfefe0000)
++
++#include <asm/mach-generic/spaces.h>
++
++#endif /* __ASM_TX49XX_SPACES_H */
+-- 
+1.7.0.4
 
-	-hpa
