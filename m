@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab0IGVRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 17:17:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55572 "EHLO mx1.redhat.com"
+	id S1757165Ab0IGVZS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 17:25:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:28209 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755519Ab0IGVRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 17:17:49 -0400
-Date: Tue, 7 Sep 2010 17:17:24 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Milan Broz <mbroz@redhat.com>
-Cc: device-mapper development <dm-devel@redhat.com>, Tejun Heo <tj@kernel.org>,
-        jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        konishi.ryusuke@lab.ntt.co.jp, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com, vst@vlnb.net,
-        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
-        rusty@rustcorp.com.au, mst@redhat.com, k-ueda@ct.jp.nec.com,
-        mpatocka@redhat.com
-Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
- dm
-Message-ID: <20100907211724.GA22525@redhat.com>
-References: <1283509796-1510-1-git-send-email-tj@kernel.org>
- <1283509796-1510-24-git-send-email-tj@kernel.org>
- <4C84CD18.6060906@redhat.com>
+	id S1756451Ab0IGVZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 17:25:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,330,1280732400"; 
+   d="scan'208";a="321909641"
+Message-ID: <4C86ADB9.8030401@linux.intel.com>
+Date: Tue, 07 Sep 2010 14:25:13 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C84CD18.6060906@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Michal Marek <mmarek@suse.cz>
+CC: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
+        vda.linux@googlemail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        schwidefsky@de.ibm.com
+Subject: Re: [PATCH 0/2] initramfs: Cleanup and fix initramfs size calculation
+References: <20100831082307.064687027@linux.vnet.ibm.com> <4C7D0CDB.6030903@suse.cz>
+In-Reply-To: <4C7D0CDB.6030903@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06 2010 at  7:14am -0400,
-Milan Broz <mbroz@redhat.com> wrote:
+On 08/31/2010 07:08 AM, Michal Marek wrote:
+> On 31.8.2010 10:23, Hendrik Brueckner wrote:
+>> Hello Michal, Sam,
+>>
+>> I did not see any further comments on the patch series about the
+>> initramfs cleanup and new size calculation.
+> 
+> Sorry about that, I don't always have as much time for kbuild as I would
+> like to have :(.
+> 
+> 
+>> This is a resend and now I am asking you for your review and ack.
+>> Please let me know if you have questions or comments.
+> 
+> I like the cleanup patch and the thing still survives (very basic)
+> testing, so
+> Acked-by: Michal Marek <mmarek@suse.cz>
+> 
+> I'm wondering which tree should these patches go through... Peter, will
+> you apply them to some branch of tip.git or should I apply them to
+> kbuild-2.6.git?
+> 
 
-> On 09/03/2010 12:29 PM, Tejun Heo wrote:
-> 
-> > +++ b/drivers/md/dm-crypt.c
-> > @@ -1278,7 +1278,7 @@ static int crypt_map(struct dm_target *ti, struct bio *bio,
-> >  	struct dm_crypt_io *io;
-> >  	struct crypt_config *cc;
-> >  
-> > -	if (unlikely(bio_empty_barrier(bio))) {
-> > +	if (bio->bi_rw & REQ_FLUSH) {
-> >  		cc = ti->private;
-> >  		bio->bi_bdev = cc->dev->bdev;
-> >  		return DM_MAPIO_REMAPPED;
-> 
-> ...
-> 
-> > +++ b/drivers/md/dm.c
-> > @@ -1400,14 +1391,22 @@ static void __split_and_process_bio(struct mapped_device *md, struct bio *bio)
-> >  	ci.io->md = md;
-> >  	spin_lock_init(&ci.io->endio_lock);
-> >  	ci.sector = bio->bi_sector;
-> > -	ci.sector_count = bio_sectors(bio);
-> > -	if (unlikely(bio_empty_barrier(bio)))
-> > +	if (!(bio->bi_rw & REQ_FLUSH))
-> > +		ci.sector_count = bio_sectors(bio);
-> > +	else {
-> > +		/* all FLUSH bio's reaching here should be empty */
-> > +		WARN_ON_ONCE(bio_has_data(bio));
-> >  		ci.sector_count = 1;
-> > +	}
-> 
-> 
-> I would add BUG_ON(bio_has_data(bio)) either to dm-crypt target or directly to DM core
-> in this path.
+[Sorry for late reply, I have been away]
 
-I agree, that WARN_ON_ONCE should be changed to BUG_ON.  This is a
-guarantee that the block layer now provides so it seems correct to have
-the DM core bug if that guarantee isn't actually provided.
- 
-> Note that empty barrier request bypass encryption layer now in dm-crypt, so if some bio
-> with data payload reach it after the change, it causes data corruption
-> (moreover plain data reach the disk directly).
+It's up to you, but I'm happy to apply them to a tip branch with your ack.
 
-Given the consequences, it wouldn't hurt to BUG_ON() in dm-crypt too.
-It's redundant if the DM core will also BUG_ON() but it serves as a
-dm-crypt safety-net/documentation.
-
-Mike
+	-hpa
