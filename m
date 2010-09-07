@@ -1,153 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758222Ab0IGUKC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 16:10:02 -0400
-Received: from [69.28.251.93] ([69.28.251.93]:37241 "EHLO b32.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758137Ab0IGUJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 16:09:59 -0400
-From: Kevin Cernekee <cernekee@gmail.com>
-Date: Tue, 7 Sep 2010 12:59:15 -0700
-Subject: [PATCH v2 5/5] MIPS: Move FIXADDR_TOP into spaces.h
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Atsushi Nemoto <anemo@mba.ocn.ne.jp>, <linux-mips@linux-mips.org>,
-        <linux-kernel@vger.kernel.org>
-Message-Id: <55645e13fcf442f6641b3eb187cab302@localhost>
-User-Agent: vim 7.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1758233Ab0IGULW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 16:11:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13846 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757890Ab0IGULS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 16:11:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,330,1280732400"; 
+   d="p7s'?scan'208";a="604742813"
+Subject: Re: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+In-Reply-To: <4C869AA3.6000103@zytor.com>
+References: <20100901213318.19353.54619.stgit@localhost.localdomain>
+	 <20100902065731.GB29972@elte.hu> <20100902100308.GA17167@basil.fritz.box>
+	 <20100903063934.GA25863@elte.hu> <1283888337.18468.9.camel@pjaxe>
+	 <4C869AA3.6000103@zytor.com>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-KzagmC3GXa+F/HUmQPr0"
+Date: Tue, 07 Sep 2010 13:16:55 -0700
+Message-ID: <1283890615.18468.11.camel@pjaxe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory maps and addressing quirks are normally defined in <spaces.h>.
-There are already three targets that need to override FIXADDR_TOP, and
-others exist.  This will be a cleaner approach than adding lots of
-ifdefs in fixmap.h .
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- arch/mips/include/asm/fixmap.h              |   10 +---------
- arch/mips/include/asm/mach-bcm63xx/spaces.h |   17 +++++++++++++++++
- arch/mips/include/asm/mach-generic/spaces.h |    4 ++++
- arch/mips/include/asm/mach-tx39xx/spaces.h  |   17 +++++++++++++++++
- arch/mips/include/asm/mach-tx49xx/spaces.h  |   17 +++++++++++++++++
- 5 files changed, 56 insertions(+), 9 deletions(-)
- create mode 100644 arch/mips/include/asm/mach-bcm63xx/spaces.h
- create mode 100644 arch/mips/include/asm/mach-tx39xx/spaces.h
- create mode 100644 arch/mips/include/asm/mach-tx49xx/spaces.h
+--=-KzagmC3GXa+F/HUmQPr0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/mips/include/asm/fixmap.h b/arch/mips/include/asm/fixmap.h
-index 0b89b83..98bcc98 100644
---- a/arch/mips/include/asm/fixmap.h
-+++ b/arch/mips/include/asm/fixmap.h
-@@ -14,6 +14,7 @@
- #define _ASM_FIXMAP_H
- 
- #include <asm/page.h>
-+#include <spaces.h>
- #ifdef CONFIG_HIGHMEM
- #include <linux/threads.h>
- #include <asm/kmap_types.h>
-@@ -67,15 +68,6 @@ enum fixed_addresses {
-  * the start of the fixmap, and leave one page empty
-  * at the top of mem..
-  */
--#ifdef CONFIG_BCM63XX
--#define FIXADDR_TOP     ((unsigned long)(long)(int)0xff000000)
--#else
--#if defined(CONFIG_CPU_TX39XX) || defined(CONFIG_CPU_TX49XX)
--#define FIXADDR_TOP	((unsigned long)(long)(int)(0xff000000 - 0x20000))
--#else
--#define FIXADDR_TOP	((unsigned long)(long)(int)0xfffe0000)
--#endif
--#endif
- #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
- #define FIXADDR_START	(FIXADDR_TOP - FIXADDR_SIZE)
- 
-diff --git a/arch/mips/include/asm/mach-bcm63xx/spaces.h b/arch/mips/include/asm/mach-bcm63xx/spaces.h
-new file mode 100644
-index 0000000..61e750f
---- /dev/null
-+++ b/arch/mips/include/asm/mach-bcm63xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_BCM63XX_SPACES_H
-+#define _ASM_BCM63XX_SPACES_H
-+
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xff000000)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_BCM63XX_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-generic/spaces.h b/arch/mips/include/asm/mach-generic/spaces.h
-index c9fa4b1..d7a9efd 100644
---- a/arch/mips/include/asm/mach-generic/spaces.h
-+++ b/arch/mips/include/asm/mach-generic/spaces.h
-@@ -82,4 +82,8 @@
- #define PAGE_OFFSET		(CAC_BASE + PHYS_OFFSET)
- #endif
- 
-+#ifndef FIXADDR_TOP
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfffe0000)
-+#endif
-+
- #endif /* __ASM_MACH_GENERIC_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-tx39xx/spaces.h b/arch/mips/include/asm/mach-tx39xx/spaces.h
-new file mode 100644
-index 0000000..151fe7a
---- /dev/null
-+++ b/arch/mips/include/asm/mach-tx39xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_TX39XX_SPACES_H
-+#define _ASM_TX39XX_SPACES_H
-+
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfefe0000)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_TX39XX_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-tx49xx/spaces.h b/arch/mips/include/asm/mach-tx49xx/spaces.h
-new file mode 100644
-index 0000000..0cb10a6
---- /dev/null
-+++ b/arch/mips/include/asm/mach-tx49xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_TX49XX_SPACES_H
-+#define _ASM_TX49XX_SPACES_H
-+
-+#define FIXADDR_TOP		((unsigned long)(long)(int)0xfefe0000)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_TX49XX_SPACES_H */
--- 
-1.7.0.4
+On Tue, 2010-09-07 at 13:03 -0700, H. Peter Anvin wrote:
+> On 09/07/2010 12:38 PM, Peter P Waskiewicz Jr wrote:
+> >=20
+> > It's one SKU of a Nehalem-EX system.  The BIOS for that SKU has an issu=
+e
+> > with resolving SRAT hotplug enumeration, and screws up the table.  Othe=
+r
+> > SKU's of this same platform do not have the issue.  Efforts are underwa=
+y
+> > to get this BIOS fixed, but in the meantime, there's nothing for users
+> > to work around the bug (aside from disabling memory hotplug in the
+> > BIOS).  Another platform almost shipped with the same symptoms, but
+> > caught it and had it fixed before it shipped (didn't catch it early
+> > because Windows wasn't failing, and most of the testing on that platfor=
+m
+> > was done under Windows).
+> >=20
+> > I agree with Andi that adding DMI strings would be overkill and would
+> > leave clutter once the BIOS is fixed.  I look at this patch as a
+> > stop-gap measure for people to fall back on until a newer BIOS is
+> > available to correct the NUMA enumeration issues.  Without it, we have
+> > nothing to point users to when they run into this, waiting for a new
+> > BIOS.
+> >=20
+>=20
+> No, this is exactly the kind of stuff for which a DMI match is ideal.  A
+> specific system with bounded propagation of the problem.  Thus, the DMI
+> match acts as a whitelist -- "we know this system and it is safe to
+> activate this hack on it."  This is a very good thing.
+>=20
+> If this is a production BIOS it should have this information.
+
+Responding for both your and Ingo's last email, I'll work on getting a
+DMI match for this system.
+
+Thanks,
+-PJ
+
+--=-KzagmC3GXa+F/HUmQPr0
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIPAjCCAz0w
+ggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UEChMHRXF1
+aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5MB4XDTA2
+MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoTEUludGVs
+IENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kgQ0EwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATDIsV2xDyt
+30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUjZzTZFq2N
+4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZvuSQ0E11y
+YL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4lz36wOdN
+Zn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+iC1HawJd
+AgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0Vgaj7TdU
+DDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3NlY3VyZWNh
+LmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTADAQH/MA0G
+CSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69tOkIP4Sg
+DJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3jMfr900fX
+ZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFijCCBHKgAwIBAgIKYSCKYgAAAAAACDAN
+BgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24x
+JzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUxOTI3MjZa
+Fw0xNTA1MTUxOTM3MjZaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlv
+bjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQjCCASIwDQYJKoZI
+hvcNAQEBBQADggEPADCCAQoCggEBAKQEM1Wn9TU9vc9C+/Tc7KB+eiYElmrcEWE32WUdHvWG+IcQ
+HVQsikTmMyKKojNLw2B5s6Iekc8ivDo/wCfjZzX9JyftMnc+AArc0la87Olybzm8K9jXEfTBvTnU
+SFSiI9ZYefITdiUgqlAFuljFZEHYKYtLuhrRacpmQfP4mV63NKdc2bT804HRf6YptZFa4k6YN94z
+lrGNrBuQQ74WFzz/jLBusbUpEkro6Mu/ZYFOFWQrV9lBhF9Ruk8yN+3N6n9fUo/qBigiF2kEn9xV
+h1ykl7SCGL2jBUkXx4qgV27a6Si8lRRdgrHGtN/HWnSWlLXTH5l575H4Lq++77OFv38CAwEAAaOC
+AlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFA7GKvdZsggQkCVvw939imYxMCvFMAsG
+A1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBQ5oFY2ekKQ/5Kt
+im+VdMeSWb4QWTAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQaxgxKxEdv
+qNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3LmludGVsLmNv
+bS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3klMjBDQS5j
+cmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIw
+RXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYwgdMwYwYI
+KwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0lu
+dGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcwAoZgaHR0
+cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwl
+MjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUAA4IBAQCx
+tQEHchVQhXyjEqtMVUMe6gkmPsIczHxSeqNbo9dsD+6xbT65JT+oYgpIAtfEsYXeUJu1cChqpb22
+U5bMAz7eaQcW5bzefufWvA6lg2048B8oczBj/q+5P5NpYrUO8jOmN4jTjfJq3ElZ7yFWpy7rB3Vm
+/aN6ATYqWfMbS/xfh+JCxmH3droUmMJI0/aZJHsLtjbjFnNsHDNrJZX1vxlM78Lb1hjskTENPmhb
+VbfTj5i/ZGnhv4tmI8QZPCNtcegXJrfhRl2D9bWpdTOPrWiLDUqzy1Z6KL7TcOS/PCl8RHCJXkPa
+u/thTQCpIoDa2+c+3XA++gRTfAQ4svTO260NMIIGLzCCBRegAwIBAgIKf0es/QABAABRFTANBgkq
+hkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzAp
+BgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0IwHhcNMTAwNDA5MDgyNzMw
+WhcNMTMwMzI0MDgyNzMwWjBRMR8wHQYDVQQDExZXYXNraWV3aWN6IEpyLCBQZXRlciBQMS4wLAYJ
+KoZIhvcNAQkBFh9wZXRlci5wLndhc2tpZXdpY3ouanJAaW50ZWwuY29tMIIBIjANBgkqhkiG9w0B
+AQEFAAOCAQ8AMIIBCgKCAQEAxNvzDG+qS7UFSaYiqMqQr7exXHirCVe1tapLZoFlJZLPfqZsBsAA
+UqARnY+v3RQj3WDmoIOtTMHxtnmo4pd5UXrsk+PraedGAilso9tkfp5ZjRjZo9LL06AZzjiBVfAx
+gvyxMPsoKhdfFijzqSJRpc12kB662PAJWfyJO+f6lg5+Cd4KgRVGrpGI4bvBKEVGMeOqwD+kcVti
+wRcqNygx35GqdcpJCCJqOSAJsLI3DR7tDvATeNzsasweaHgWonaK4D6qaHkoGx4VHknC6uNn/FK/
+wXtFbXkeOrnRGJIzaZNsOBVhTou9w3NYU1EjuK75hZJ4Fd4/r1gHafxWD+VzrwIDAQABo4IDAjCC
+Av4wCwYDVR0PBAQDAgeAMDwGCSsGAQQBgjcVBwQvMC0GJSsGAQQBgjcVCIbDjHWEmeVRg/2BKIWO
+n1OCkcAJZ4HevTmV8EMCAWQCAQgwHQYDVR0OBBYEFLtB44dRTSgY1071RY+nMiKRkn1PMB8GA1Ud
+IwQYMBaAFA7GKvdZsggQkCVvw939imYxMCvFMIHPBgNVHR8EgccwgcQwgcGggb6ggbuGV2h0dHA6
+Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUy
+MElzc3VpbmclMjBDQSUyMDNCKDEpLmNybIZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20v
+cmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIw
+M0IoMSkuY3JsMIH1BggrBgEFBQcBAQSB6DCB5TBsBggrBgEFBQcwAoZgaHR0cDovL3d3dy5pbnRl
+bC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIw
+SXNzdWluZyUyMENBJTIwM0IoMSkuY3J0MHUGCCsGAQUFBzAChmlodHRwOi8vY2VydGlmaWNhdGVz
+LmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFz
+aWMlMjBJc3N1aW5nJTIwQ0ElMjAzQigxKS5jcnQwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQB
+gjcKAwwwKQYJKwYBBAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMMMFsGA1UdEQRU
+MFKgLwYKKwYBBAGCNxQCA6AhDB9wZXRlci5wLndhc2tpZXdpY3ouanJAaW50ZWwuY29tgR9wZXRl
+ci5wLndhc2tpZXdpY3ouanJAaW50ZWwuY29tMA0GCSqGSIb3DQEBBQUAA4IBAQBYea1KThIl9gNf
+1uIob1trWtsthhWAXsdUu1V+gl10RBChuM4okZccJf1JXItFA2z7J2UR4cu/tRZBRFartVPhGBjK
+ntLofxsaW7wwzfsinbNy30gHGShG83XDADdGUteL8PmupDcDf/MtbRIlfjEknLiuOnrM25WVajtB
+3fB1pOA2jmLaaNmasza9ordaD3afJD3IWr/Zj+aevMu4zrKzwdOZqBZW1J1Qc7uog8Mn+mm+wRMm
+EY0z7VFdjsZjJH9EQA0UbF1aYcshv0a/M2deKN9TdYuJ1eTKRSZdzSiRG5w75xujFMYZgo4ETlu1
+Behgey1jvJiyWdOsPt7at08QMYIB6jCCAeYCAQEwZDBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMR
+SW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3Vpbmcg
+Q0EgM0ICCn9HrP0AAQAAURUwCQYFKw4DAhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEw
+HAYJKoZIhvcNAQkFMQ8XDTEwMDkwNzIwMTY1NVowIwYJKoZIhvcNAQkEMRYEFMrXr3px3inBX2/m
+xKva9c2OzDCdMA0GCSqGSIb3DQEBAQUABIIBABdR5ZmwugWEVMDIIIz8Z+rukXT4An6Hkv9QpJHn
+I12p0aQJScyNB7LELZ2+l6HJAEd2FsmUNhVAD3HybMDzllft+vMcjbx4DSDUM2bnkg54iNkmE3TZ
+ckriT5l+HjX/1ZMlm7+TA2sLhfDXNnJphD21eaAQXyd+O+YrN7OMYNRGMs3iS5JpYxjh3i75UD3q
+D7SDWZxLd6CWzrxyDAgRMtbcYYdZC6PHO/Ura5DCNYuF6ofMonl8K7jvOrICwoIMAJfRIvjTRoDp
+cX32+15YZPdad2cfn0hZOv7qGdR9ixSCF+jDmCx10zBJQJo8yIWIWuL6xJxOcZGfXD7EYxvetxsA
+AAAAAAA=
+
+
+--=-KzagmC3GXa+F/HUmQPr0--
 
