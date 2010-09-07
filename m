@@ -1,127 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab0IGAog (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 20:44:36 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64281 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968Ab0IGAo3 (ORCPT
+	id S1755411Ab0IGAvk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 20:51:40 -0400
+Received: from smtp103.sbc.mail.ac4.yahoo.com ([76.13.13.242]:35466 "HELO
+	smtp103.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752968Ab0IGAve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 20:44:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Iz1TjkEdw6E1rvpC0/n81XH6cYyide5avgdWCRraOypVaojjNxazPVDGMewjPcqbH4
-         HdLBfFtUwdzP1nXwr8WPDjvuRaUi8L955XCqfZ2Q6Lu+I7BQU8vTn6QS6jiRGBr4/gqs
-         1RM1WtHD4qjBLbsaBoZHAsB9jDj04coMqB2b4=
-Date: Mon, 6 Sep 2010 17:44:24 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-Message-ID: <20100907004424.GB21430@core.coreip.homeip.net>
-References: <1283204792.32007.448.camel@haakon2.linux-iscsi.org>
- <4C7FFD1A.8090509@vlnb.net>
- <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
- <20100905201802.GC18411@core.coreip.homeip.net>
- <1283723447.556.133.camel@haakon2.linux-iscsi.org>
- <20100905234134.GA17212@core.coreip.homeip.net>
- <1283731194.556.147.camel@haakon2.linux-iscsi.org>
- <1283769578.15944.1293.camel@mulgrave.site>
- <4C85617E.2080603@vlnb.net>
- <1283810135.556.238.camel@haakon2.linux-iscsi.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283810135.556.238.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Mon, 6 Sep 2010 20:51:34 -0400
+X-Greylist: delayed 1600 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Sep 2010 20:51:33 EDT
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: LvKVh9YVM1k7.H.sRMl8zJmOGnUJPjFJtSlgGASKiR8UcOq
+ zkDrp8cNW1KNa1TJaY0l35T3zV6v_1vGw.9oFYiyyEMaU9BpfzMmdTU2i8d_
+ z45xQfxIk3ZJTQOR6IyICdwQq3V4L3BJ_UV8ToJKRXXcfhaYu7KjgIvVxe_H
+ 6CdbG8z5tQ3gYaP.MuUSf9YE6VJUVAIFJhWvfs6uhIJXezs.c7V6xJ79cS5a
+ .1sUtPLCGTWRZGM80ZDgkHQ8xopE7hbrIdrQ5SPV_8.88arC_Egm5in6x.22
+ ZUM0X.6cpfNNq777BRE5kC5X9im6YlsHdCLjXbcnSEkoX.r34smmnfNm2CY8
+ pXVxX735Fm9CZRZ4hLQ--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH v2] scsi_debug: Convert to use root_device_register()
+	and root_device_unregister()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>, Greg KH <greg@kroah.com>
+In-Reply-To: <20100907001342.GB20882@core.coreip.homeip.net>
+References: <1283817551-23380-1-git-send-email-nab@linux-iscsi.org>
+	 <20100907001342.GB20882@core.coreip.homeip.net>
+Content-Type: text/plain
+Date: Mon, 06 Sep 2010 17:20:53 -0700
+Message-Id: <1283818853.556.253.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 02:55:35PM -0700, Nicholas A. Bellinger wrote:
-> On Tue, 2010-09-07 at 01:47 +0400, Vladislav Bolkhovitin wrote:
-> > James Bottomley, on 09/06/2010 02:39 PM wrote:
-> > >>>> Anyways, if we are going to compare SCM distributed vs. centralized
-> > >>>> workflow in terms of kernel projects, lets please at least compare
-> > >>>> apples to apples here.
-> > >>>
-> > >>> No, we should not be comparing SCMs at all here but rather 2 competing
-> > >>> implementations based on quality of the code. You tried to bring SMC
-> > >>> angle in and I am saying that it is BS.
-> > >>
-> > >> Again, without getting into another pointless flamewar,  I think the
-> > >> main point here is that a open source project using a distributed
-> > >> workflow (like git) has major advantages when it comes to working with a
-> > >> larger group of developers than a centralized model (like SVN) does.
-> > >>
-> > >> Because being a subsystem maintainer typically involves this type of
-> > >> complex workflow involving lots of different parties, git is a tool that
-> > >> was created (originally) expressely for a kernel workflow, and for those
-> > >> types of people it works really, really well.
-> > >
-> > > Oh, for god's sake children.  Why does every LIO vs SCST discussion turn
-> > > into a pointless flameware over stuff no-one really cares about?  If
-> > > none of you has anything substantive to say: don't say it.
+On Mon, 2010-09-06 at 17:13 -0700, Dmitry Torokhov wrote:
+> On Mon, Sep 06, 2010 at 04:59:11PM -0700, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
 > > 
-> > James, sorry, but you can't blame us. I keep asking for clear rules and 
-> > don't receive much. So, there are speculations and pseudo-rules, which 
-> > sometimes go to the absurd, as in this SVN vs Git case. No surprise 
-> > then, that people have risen against this absurd (thanks a lot to them 
-> > for support!).
+> > Hi Dough and Co,
 > > 
-> > Frankly, in all the situation around Linux SCSI targets I for quite a 
-> > long time feeling myself as a hero of a Kafka novel. Supposed to be 
-> > goals are to have the best code doing its job the best, but on practice 
-> > nobody cares about technical arguments and figuring out which subsystem 
-> > is the best. Instead, everything lives it own incomprehensible life, 
-> > where doesn't matter what you are doing, all already long ago decided 
-> > behind your back and you will never be told why. All accurate statements 
-> > not heard or, at best, called "handwaving", but dirty public opinion 
-> > manipulations based on half- and less-than-half- truth have very warn 
-> > welcome. This atmosphere is unhealthy, really.
+> > This patch updates the scsi_debug virtual LLD to use root_device_register()
+> > and root_device_unregister() from include/linux/device.h instead of device_register()
+> > and device_unregister() respectively within scsi_debug_init() and scsi_debug_exit()
+> > This simply involved converting the static struct device pseudo_primary into a
+> > pointer that is setup by the call to root_device_register().
+> > 
+> > This patch also contains the correct IS_ERR() conditional check of
+> > root_device_register() from within scsi_debug_init().
+> > 
+> > Thanks to Richard Sharpe and Dmitry Torokhov for their help with this item.
+> > 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > ---
+> >  drivers/scsi/scsi_debug.c |   27 +++++++++------------------
+> >  1 files changed, 9 insertions(+), 18 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+> > index b02bdc6..86d483e 100644
+> > --- a/drivers/scsi/scsi_debug.c
+> > +++ b/drivers/scsi/scsi_debug.c
+> > @@ -3207,23 +3207,14 @@ static void do_remove_driverfs_files(void)
+> >  	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_add_host);
+> >  }
+> >  
+> > -static void pseudo_0_release(struct device *dev)
+> > -{
+> > -	if (SCSI_DEBUG_OPT_NOISE & scsi_debug_opts)
+> > -		printk(KERN_INFO "scsi_debug: pseudo_0_release() called\n");
+> > -}
+> > -
+> > -static struct device pseudo_primary = {
+> > -	.init_name	= "pseudo_0",
+> > -	.release	= pseudo_0_release,
+> > -};
+> > +struct device *pseudo_primary;
+> >  
+> >  static int __init scsi_debug_init(void)
+> >  {
+> >  	unsigned long sz;
+> >  	int host_to_add;
+> >  	int k;
+> > -	int ret;
+> > +	int ret = 0;
 > 
-> Sorry Vlad, but this is simply not the truth.  You have had ample time
-> to comment on the hundreds of TCM/LIO patches posted to linux-scsi and
-> lkml over the last years, but you have chosen never to comment on a
-> *single* one then, or even on a single one now of the dozens that have
-> been posted in the last 3 weeks while this thread has been lumbering
-> forward..
-> 
-> So at this point, I will once again to refrain from any non technical
-> interaction with yourself.  If you have geninue concerns about any of
-> the TCM/LIO v4 code, then I suggest that you and your devels make them
-> known from within threads containing [PATCH] and [RFC] tags, because I
-> will not be bothering with anything that does not contain comments on
-> creating new or improving existing design and code.
-> 
+> Please drop this chunk, it is not needed and is dangerous WRT future
+> changes to the file as I explained earlier.
 
-I think this is somewhat backwards...
+As you wish..
 
-Vlad appears to be asserting that SCST is more feature-complete that LIO
-at this point. It also seems that LIO is somewhat younger than SCST. So
-at this point it might be interesting to see:
+Best,
 
-1. What are the shortcomings of SCST design compared to LIO and why LIO
-developers chose to come with their own solution instead of
-collaborating with SCST folks?
+--nab
 
-2. What features are missing from SCST that are currently available in
-LIO?
-
-Once this is sorted out and [most] everyone agrees that LIO is indeed
-technically superior (even if maybe not as mature yet) solution, then it
-would make sense to request SCST developers to go to file/line depth of
-the review.
-
-Thanks.
-
--- 
-Dmitry
