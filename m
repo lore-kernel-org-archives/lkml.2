@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab0IGB3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 21:29:23 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50276
+	id S1755866Ab0IGB3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 21:29:34 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50285
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755753Ab0IGB3S (ORCPT
+	by vger.kernel.org with ESMTP id S1755690Ab0IGB3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 21:29:18 -0400
-Date: Mon, 06 Sep 2010 18:29:35 -0700 (PDT)
-Message-Id: <20100906.182935.212701145.davem@davemloft.net>
-To: julia@diku.dk
-Cc: pantelis.antoniou@gmail.com, kernel-janitors@vger.kernel.org,
-        vbordug@ru.mvista.com, grant.likely@secretlab.ca,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/2] drivers/net/fs_enet/fs_enet-main.c: Add
- of_node_put to avoid memory leak
+	Mon, 6 Sep 2010 21:29:30 -0400
+Date: Mon, 06 Sep 2010 18:29:47 -0700 (PDT)
+Message-Id: <20100906.182947.258128485.davem@davemloft.net>
+To: jslaby@suse.cz
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com, netdev@vger.kernel.org,
+        ddutt@brocade.com, rmody@brocade.com
+Subject: Re: [PATCH 1/1] NET: bna, fix lock imbalance
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1283595164-29146-1-git-send-email-julia@diku.dk>
-References: <1283595164-29146-1-git-send-email-julia@diku.dk>
+In-Reply-To: <1283602121-11443-1-git-send-email-jslaby@suse.cz>
+References: <1283602121-11443-1-git-send-email-jslaby@suse.cz>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -27,16 +24,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
-Date: Sat,  4 Sep 2010 12:12:43 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+Date: Sat,  4 Sep 2010 14:08:41 +0200
 
-> In this case, a device_node structure is stored in another structure that
-> is then freed without first decrementing the reference count of the
-> device_node structure.
+> bnad_set_rx_mode omit to unlock bna_lock on one fail path. Fix that.
 > 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-...
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 
 Applied.
