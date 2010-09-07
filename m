@@ -1,126 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757804Ab0IHGSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 02:18:24 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34740 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757336Ab0IHGSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 02:18:20 -0400
-Message-ID: <61206.10.24.255.18.1283926699.squirrel@dbdmail.itg.ti.com>
-Date: Wed, 8 Sep 2010 11:48:19 +0530 (IST)
-Subject: [PATCH V3 2/2] omap4: platform changes for CMA3000
-From: "Hemanth V" <hemanthv@ti.com>
-To: linux-omap@vger.kernel.org
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
+	id S1757905Ab0IHGSx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 02:18:53 -0400
+Received: from shamrock.taprogge.org ([213.146.117.139]:49977 "EHLO
+	shamrock.taprogge.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548Ab0IHGSv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 02:18:51 -0400
+Date: Tue, 7 Sep 2010 20:59:29 +0200
+From: Jens Taprogge <jens.taprogge@taprogge.org>
+To: Frank Becker <fb@alien8.de>
+Cc: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        alsa-devel@vger.kernel.org, bp@alien8.de
+Subject: Re: commit 7b2bfdb broke sound card detection on my Lenovo T400s
+Message-ID: <20100907185929.GA32126@taprogge.org>
+References: <20100906170421.GA2957@alien8.de>
+ <20100906224548.GA27279@taprogge.org>
+ <s5hlj7ew0ph.wl%tiwai@suse.de>
+ <20100907090220.GA3204@alien8.de>
+ <s5h7hixap1c.wl%tiwai@suse.de>
+ <20100907094041.GA2815@alien8.de>
+ <s5h1v95anxg.wl%tiwai@suse.de>
+ <20100907095300.GB2815@alien8.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100907095300.GB2815@alien8.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-Score: -2.5 (--)
+X-Spam-Report: Spam detection software, running on the system "shamrock.taprogge.org", has
+	identified this incoming email as possible spam.  The original message
+	has been attached to this so you can view it (if it isn't spam) or label
+	similar future email.  If you have any questions, see
+	the administrator of that system for details.
+	Content preview:  On Tue, Sep 07, 2010 at 11:53:00AM +0200, Frank Becker wrote:
+	> Takashi Iwai [2010-09-07, 11:44 +0200]: > > At Tue, 7 Sep 2010 11:40:41
+	+0200, > > Frank Becker wrote: > > > > > > Takashi Iwai [2010-09-07, 11:20
+	+0200]: > > > > At Tue, 7 Sep 2010 11:02:20 +0200, > > > > Frank Becker wrote:
+	> > > > > > > > > > Takashi Iwai [2010-09-07, 08:17 +0200]: > > > > > > At
+	Tue, 7 Sep 2010 00:45:48 +0200, > > > > > > Jens Taprogge wrote: > > > >
+	> > > > > > > > > > On Mon, Sep 06, 2010 at 07:04:21PM +0200, Frank Becker
+	wrote: > > Hi, > > [...] > > Oh, one forgotten question is whether your machine
+	can have a docking > > station. If yes, model=thinkpad is the right choice.
+	If not, > > model=ideapad would work more or less same. > Yes[0]. With that
+	model (T400s [1]) Lenovo introduced a new series of docking > stations that
+	are not backward compatible with older Lenovo/ThinkPads. > > I just don't
+	happen to have one available. > > [0] http://shop.lenovo.com/SEUILibrary/controller/e/web/LenovoPortal/en_US/catalog.workflow:show-category-with-items?category-id=34851FD360E5473EB9DFEB639312E18E
+	> > [1] http://shop.lenovo.com/SEUILibrary/controller/e/web/LenovoPortal/en_US/catalog.workflow:category.details?current-catalog-id=12F0696583E04D86B9B79B0FEC01C087&current-category-id=AEA4BB4495A04C098DBEA8EBB87059AC
+	[...] 
+	Content analysis details:   (-2.5 points, 10.0 required)
+	pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	-1.8 ALL_TRUSTED            Passed through trusted hosts only via SMTP
+	1.9 TVD_RCVD_IP            TVD_RCVD_IP
+	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 8082870cc704d901d98cf0d6af90e45860927ceb Mon Sep 17 00:00:00 2001
-From: Hemanth V <hemanthv@ti.com>
-Date: Thu, 26 Aug 2010 17:49:12 +0530
-Subject: [PATCH] Platform changes for CMA3000 Accelerometer driver
+On Tue, Sep 07, 2010 at 11:53:00AM +0200, Frank Becker wrote:
+> Takashi Iwai [2010-09-07, 11:44 +0200]:
+> > At Tue, 7 Sep 2010 11:40:41 +0200,
+> > Frank Becker wrote:
+> > > 
+> > > Takashi Iwai [2010-09-07, 11:20 +0200]:
+> > > > At Tue, 7 Sep 2010 11:02:20 +0200,
+> > > > Frank Becker wrote:
+> > > > > 
+> > > > > Takashi Iwai [2010-09-07, 08:17 +0200]:
+> > > > > > At Tue, 7 Sep 2010 00:45:48 +0200,
+> > > > > > Jens Taprogge wrote:
+> > > > > > > 
+> > > > > > > On Mon, Sep 06, 2010 at 07:04:21PM +0200, Frank Becker wrote:
+> 
+> Hi,
+> 
+> [...]
+> > Oh, one forgotten question is whether your machine can have a docking
+> > station.  If yes, model=thinkpad is the right choice.  If not,
+> > model=ideapad would work more or less same.
+> Yes[0]. With that model (T400s [1]) Lenovo introduced a new series of docking
+> stations that are not backward compatible with older Lenovo/ThinkPads.
+> 
+> I just don't happen to have one available.
+> 
+> [0] http://shop.lenovo.com/SEUILibrary/controller/e/web/LenovoPortal/en_US/catalog.workflow:show-category-with-items?category-id=34851FD360E5473EB9DFEB639312E18E
+> 
+> [1] http://shop.lenovo.com/SEUILibrary/controller/e/web/LenovoPortal/en_US/catalog.workflow:category.details?current-catalog-id=12F0696583E04D86B9B79B0FEC01C087&current-category-id=AEA4BB4495A04C098DBEA8EBB87059AC
 
-Update 4430 SDP board file with platform data for accelerometer driver
-and select the driver in kconfig
+Hello Frank.
 
-Signed-off-by: Hemanth V <hemanthv@ti.com>
----
- arch/arm/mach-omap2/Kconfig         |    2 ++
- arch/arm/mach-omap2/board-4430sdp.c |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+), 0 deletions(-)
+That is the docking station I have developed the patch with.  So
+hopefully after adding your PCI IDs it should work with your Thinkpad as
+well.
 
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index a928fd6..e87c049 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -255,6 +255,8 @@ config MACH_OMAP_4430SDP
- 	depends on ARCH_OMAP4
- 	select INPUT_TOUCHSCREEN
- 	select TOUCHSCREEN_SYNTM12XX
-+	select INPUT_MISC
-+ 	select INPUT_CMA3000_I2C
-
- config MACH_OMAP4_PANDA
- 	bool "OMAP4 Panda Board"
-diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-index ed78cdb..8b94f1f 100644
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -23,6 +23,8 @@
- #include <linux/gpio_keys.h>
- #include <linux/regulator/machine.h>
- #include <linux/leds.h>
-+#include <linux/i2c/cma3000.h>
-+#include <linux/interrupt.h>
-
- #include <mach/hardware.h>
- #include <mach/omap4-common.h>
-@@ -44,6 +46,7 @@
- #define ETH_KS8851_QUART		138
- #define OMAP4SDP_MDM_PWR_EN_GPIO	157
- #define OMAP4_SFH7741_SENSOR_OUTPUT_GPIO	184
-+#define OMAP4_CMA3000ACCL_GPIO		186
- #define OMAP4_SFH7741_ENABLE_GPIO	188
-
- static struct gpio_led sdp4430_gpio_leds[] = {
-@@ -485,6 +488,27 @@ static struct twl4030_platform_data sdp4430_twldata = {
- 	.vaux3		= &sdp4430_vaux3,
- };
-
-+static struct cma3000_platform_data cma3000_platform_data = {
-+	.fuzz_x = 25,
-+	.fuzz_y = 25,
-+	.fuzz_z = 25,
-+	.g_range = CMARANGE_8G,
-+	.mode = CMAMODE_MOTDET,
-+	.mdthr = 0x8,
-+	.mdfftmr = 0x33,
-+	.ffthr = 0x8,
-+	.irqflags = IRQF_TRIGGER_HIGH,
-+};
-+
-+static void omap_cma3000accl_init(void)
-+{
-+	if (gpio_request(OMAP4_CMA3000ACCL_GPIO, "Accelerometer") < 0) {
-+		pr_err("Accelerometer GPIO request failed\n");
-+		return;
-+	}
-+	gpio_direction_input(OMAP4_CMA3000ACCL_GPIO);
-+}
-+
- static struct i2c_board_info __initdata sdp4430_i2c_boardinfo[] = {
- 	{
- 		I2C_BOARD_INFO("twl6030", 0x48),
-@@ -518,6 +542,11 @@ static struct i2c_board_info __initdata sdp4430_i2c_4_boardinfo[] = {
- 	{
- 		I2C_BOARD_INFO("hmc5843", 0x1e),
- 	},
-+	{
-+		I2C_BOARD_INFO("cma3000_accl", 0x1c),
-+		.platform_data = &cma3000_platform_data,
-+		.irq = OMAP_GPIO_IRQ(OMAP4_CMA3000ACCL_GPIO),
-+	},
- };
-
- static const struct ehci_hcd_omap_platform_data ehci_pdata __initconst = {
-@@ -570,6 +599,7 @@ static void __init omap_sfh7741prox_init(void)
- 			 __func__, OMAP4_SFH7741_ENABLE_GPIO, error);
- 		gpio_free(OMAP4_SFH7741_ENABLE_GPIO);
- 	}
-+	omap_cma3000accl_init();
- }
-
- static void __init omap_4430sdp_init(void)
--- 
-1.5.4.3
-
-
+Best Regards
+Jens
 
