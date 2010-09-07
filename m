@@ -1,38 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab0IGBae (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 21:30:34 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50314
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755753Ab0IGBa1 (ORCPT
+	id S1755957Ab0IGBdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 21:33:23 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49170 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755502Ab0IGBdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 21:30:27 -0400
-Date: Mon, 06 Sep 2010 18:30:44 -0700 (PDT)
-Message-Id: <20100906.183044.27790719.davem@davemloft.net>
-To: joe@perches.com
-Cc: cooldavid@cooldavid.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] drivers/net/jme: Use pr_<level>
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1283674865.23280.42.camel@Joe-Laptop>
-References: <1283674865.23280.42.camel@Joe-Laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 6 Sep 2010 21:33:18 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 7 Sep 2010 10:28:13 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, fengguang.wu@intel.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, andi.kleen@intel.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: [PATCH 0/3] memory hotplug: updates and bugfix for is_removable v3
+Message-Id: <20100907102813.d633b8ef.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100906144019.946d3c49.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100906144019.946d3c49.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Sun, 05 Sep 2010 01:21:05 -0700
 
-> Add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> Convert jeprintk to pr_err
-> Remove jeprintk macro define
-> Remove periods from end of logging messages
-> Coalesce format strings
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+Thank you for review and comments. totally updated.
 
-Applied.
+Problem:
+
+/sys/devices/system/memory/memoryX/removable file shows whether the section
+can be offlined or not. Returns "1" if it seems removable.
+ 
+Now, the file uses a similar logic to one offline_pages() uses.
+Then, it's better to use unified logic.
+
+The biggest change from previous one is this patch just unifies is_removable()
+and offline code's logic. No functional change in offline() code.
+(is_removable code is updated to be better.)
+
+
+Brief patch description:
+1. bugfix for is_removable() check. I think this should be back ported. (updated)
+2. bugfix for callback at counting immobile pages. (no change)
+3. the unified new logic for is_remobable. (updated)
+
+Because I'm moving house, my response may be delayd.
+
+Thanks,
+-Kame
+
