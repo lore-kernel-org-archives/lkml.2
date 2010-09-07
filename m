@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab0IGWOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 18:14:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64424 "EHLO mx1.redhat.com"
+	id S932082Ab0IGWQL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 18:16:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59620 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756049Ab0IGWOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 18:14:42 -0400
-Message-ID: <4C86B948.9050000@redhat.com>
-Date: Tue, 07 Sep 2010 12:14:32 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1756295Ab0IGWQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 18:16:08 -0400
+Date: Tue, 7 Sep 2010 18:15:43 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Milan Broz <mbroz@redhat.com>
+Cc: jack@suse.cz, mst@redhat.com, linux-ide@vger.kernel.org,
+        device-mapper development <dm-devel@redhat.com>,
+        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp, hch@lst.de,
+        k-ueda@ct.jp.nec.com, vst@vlnb.net, linux-scsi@vger.kernel.org,
+        rusty@rustcorp.com.au, linux-raid@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, mpatocka@redhat.com, swhiteho@redhat.com,
+        chris.mason@oracle.com, tytso@mit.edu, jaxboe@fusionio.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        rwheeler@redhat.com
+Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
+ dm
+Message-ID: <20100907221543.GB22525@redhat.com>
+References: <1283509796-1510-1-git-send-email-tj@kernel.org>
+ <1283509796-1510-24-git-send-email-tj@kernel.org>
+ <4C84CD18.6060906@redhat.com>
+ <20100907211724.GA22525@redhat.com>
 MIME-Version: 1.0
-To: "Dong, Eddie" <eddie.dong@intel.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [KVM timekeeping 26/35] Catchup slower TSC to guest rate
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-27-git-send-email-zamsden@redhat.com> <1A42CE6F5F474C41B63392A5F80372B22A8253C5@shsmsx501.ccr.corp.intel.com>
-In-Reply-To: <1A42CE6F5F474C41B63392A5F80372B22A8253C5@shsmsx501.ccr.corp.intel.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100907211724.GA22525@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2010 05:44 PM, Dong, Eddie wrote:
-> Zachary:
-> 	Will you extend the logic to cover the situation when the guest runs at higher than the guest rate but the PCPU is over committed. In that case, likely we can use the time spent when the VCPU is scheduled out to catch up as well. Of course if the VCPU scheduled out time is not enough to compensate the cycles caused by fast host TSC (exceeding a threahold), we will eventually have to fall back to trap and emulation mode.
->   
+On Tue, Sep 07 2010 at  5:17pm -0400,
+Mike Snitzer <snitzer@redhat.com> wrote:
 
-It is possible to do this, but it is rather dangerous. We can't let the
-guest clock accelerate without bounds. We could put a limit on the
-maximum overrun the TSC is allowed to reach, and then switch into
-trapping mode, but this pre-supposes we will actually get an interrupt
-in time. A CPU heavy guest with little host activity could easily
-overrun much further than we would like unless we have a way to reliably
-trigger interrupts near the time of maximum allowed overrun.
+> On Mon, Sep 06 2010 at  7:14am -0400,
+> Milan Broz <mbroz@redhat.com> wrote:
+> 
+> > On 09/03/2010 12:29 PM, Tejun Heo wrote:
+> > 
+> > > +++ b/drivers/md/dm-crypt.c
+> > > @@ -1278,7 +1278,7 @@ static int crypt_map(struct dm_target *ti, struct bio *bio,
+> > >  	struct dm_crypt_io *io;
+> > >  	struct crypt_config *cc;
+> > >  
+> > > -	if (unlikely(bio_empty_barrier(bio))) {
+> > > +	if (bio->bi_rw & REQ_FLUSH) {
+> > >  		cc = ti->private;
+> > >  		bio->bi_bdev = cc->dev->bdev;
+> > >  		return DM_MAPIO_REMAPPED;
+> > 
+> > ...
+> > 
+> > > +++ b/drivers/md/dm.c
+> > > @@ -1400,14 +1391,22 @@ static void __split_and_process_bio(struct mapped_device *md, struct bio *bio)
+> > >  	ci.io->md = md;
+> > >  	spin_lock_init(&ci.io->endio_lock);
+> > >  	ci.sector = bio->bi_sector;
+> > > -	ci.sector_count = bio_sectors(bio);
+> > > -	if (unlikely(bio_empty_barrier(bio)))
+> > > +	if (!(bio->bi_rw & REQ_FLUSH))
+> > > +		ci.sector_count = bio_sectors(bio);
+> > > +	else {
+> > > +		/* all FLUSH bio's reaching here should be empty */
+> > > +		WARN_ON_ONCE(bio_has_data(bio));
+> > >  		ci.sector_count = 1;
+> > > +	}
+> > 
+> > 
+> > I would add BUG_ON(bio_has_data(bio)) either to dm-crypt target or directly to DM core
+> > in this path.
+> 
+> I agree, that WARN_ON_ONCE should be changed to BUG_ON.  This is a
+> guarantee that the block layer now provides so it seems correct to have
+> the DM core bug if that guarantee isn't actually provided.
 
-So, first, we must have a way to get such interrupts; this is needed
-anyway, for the catchup case, we have a similar problem with underrun
-which must be addressed. It's quite possible to add the mode you
-describe once that feature is in, but it also adds even more complexity
-to an already intricate clock system (which is one of the problem with
-the latter part of this patch series).
+I was mistaken, DM enforces that guarantee... ;)
 
-Second, this mode of operation is incompatible with SMP guests under all
-circumstances. SMP guests with mismatched clock speeds must always run
-in trapping mode, as it is not possible to synchronize the catchup /
-trap switching without extremely heavyweight measures (use IPI wakeup).
-Those mechanisms will not only cost more than the trapping overhead
-(future, faster systems, and larger, more parallel systems), but they
-will also damage host performance (unneeded wakeups when other VCPUs are
-not scheduled). Unless, of course, we gang-schedule... but that is a
-difficult change and a very different mode of operation. Getting rid of
-TSC trap overhead on systems with non-constant TSC isn't a sufficient
-motivation for that kind of design change.
+(but block layer will also enforce empty flush for request-based)
 
-Zach
+But it wasn't clear until Christoph and I looked closer.  The point
+stands though; we should BUG_ON rather than WARN_ON_ONCE.
+
+I'll send a follow-on patch to help clean this code up a bit more (based
+on Christoph's suggestions).  Mainly just making the flush paths a bit
+more distinct and adding some comments.
+
+Mike
