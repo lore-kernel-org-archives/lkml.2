@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab0IGPVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:21:53 -0400
-Received: from 64.mail-out.ovh.net ([91.121.185.65]:47825 "HELO
-	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755558Ab0IGPVt (ORCPT
+	id S1757516Ab0IGPX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:23:57 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49779 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757432Ab0IGPXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 11:21:49 -0400
-Message-ID: <4C865888.4070706@example.com>
-Date: Tue, 07 Sep 2010 17:21:44 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: What's up with Linus?
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 6379911823658479896
-X-Ovh-Remote: 83.24.108.179 (doa179.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Tue, 7 Sep 2010 11:23:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=GV3OyDdeSJQGy1qt85Rq69O3eTBk3fSVpYgSzQqHjeGrv3NPopfebs9c6ttOUPhedL
+         B0uj37Wdcr4F3wMGP6aPYFr4PkO8vwi9LtKUWTCRBMSTrEiRrMoCBdqRCBLWARzYHcHf
+         XM4y8G5QvKDHNL/S2ImrJT8BRja+2XGdGBon8=
+From: tom.leiming@gmail.com
+To: greg@kroah.com
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RESEND/PATCH 0/6] USB: musb-gadget: bug fix 
+Date: Tue,  7 Sep 2010 23:23:28 +0800
+Message-Id: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
+X-Mailer: git-send-email 1.6.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch set fixes two kinds of musb-gadget bug:
 
-I guess that Linus should be already back from the conference in Brasil. 
-Am I right? I am tremendously missing fresh Linux kernels to build.
+	-fix kernel panic if using out ep with FIFO_TXRX style
 
-Regards,
+	-make double buffer mode usable, fix infinate hangs and buffer
+	corrupt bug when using double buffer mode to do data transfer;
+	now we can use musb double buffer reliably, so bootst performance
+	about 30% compared with single buffer mode.
+	
+		[RESEND/PATCH 1/6] USB: musb-gadget: fix kernel panic if using out ep with FIFO_TXRX style(v1)
+		[RESEND/PATCH 2/6] USB: musb-gadget: fix bulk IN infinite hangs in double buffer case
+		[RESEND/PATCH 3/6] USB: musb-gadget: enable autoclear for OUT transfer in both DMA 0 and DMA 1
+		[RESEND/PATCH 4/6] USB: musb-gadget: fix DMA length for OUT transfer
+		[RESEND/PATCH 5/6] USB: musb-gadget: complete request only if data is transfered over
+		[RESEND/PATCH 6/6] USB: musb-gadget: fix dma length in txstate
 
-Piotr Hosowicz
+thanks,
+Lei Ming
 
--- 
-Z Allegro: PRZEDMIOTEM AUKCJI JEST NOKIA 6210, ODDA£EM JA SPEC-
-JALISCIE DO WGRANIA JAKIEGOS SOFTU Z NOWYMI BAJERAMI, NO I MAM
-BAJER NA WY¦WIETLACZU W POSTACI NAPISU "CONTACT SERVICE".
-NP: Pat Metheny, Dave Holland & Roy Haynes - Never too far away
-NB: 2.6.36-rc3-20100831-1507-pz+
