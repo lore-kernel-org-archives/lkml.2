@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab0IGM3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 08:29:54 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:35494 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756256Ab0IGM3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 08:29:49 -0400
-Message-ID: <4C86303A.90601@fusionio.com>
-Date: Tue, 07 Sep 2010 14:29:46 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Christoph Hellwig <hch@lst.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET] backing-dev: replace private thread pool with  workqueue
-References: <1283777182-11426-1-git-send-email-tj@kernel.org> <20100907121608.GA26597@lst.de> <4C862DDC.6010702@kernel.org>
-In-Reply-To: <4C862DDC.6010702@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756673Ab0IGMfj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 08:35:39 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36683 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263Ab0IGMfe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 08:35:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=lm6l65K64jmTxKEobWn1uUm+UKb4qEs698rCRkx71Ilsb8Qb4pOFDZi1J4xEAeN9Cy
+         qP+bay2Qt+fgr55joVeWbKvetwx04ylgSCweqKUPB/Cudv+jOWXs2ilFiBCdd53uwKNH
+         TJ939HAFxuXC4nnqcp6mXk8aveQHEl6G0btPM=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] exit: add lock context annotation on find_new_reaper()
+Date: Tue,  7 Sep 2010 21:35:26 +0900
+Message-Id: <1283862926-17406-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-07 14:19, Tejun Heo wrote:
-> Hello,
-> 
-> On 09/07/2010 02:16 PM, Christoph Hellwig wrote:
->> What does this conversion buy us?
->>
->> Having explicit per-bdi threads makes the model very simple and safe,
->> while I don't quite trust the now extremly complex work queues yet.
-> 
-> Well, the whole idea behind the new workqueue is unifying all those
-> dedicated pools of threads.  If the conversion is too early given the
-> new workqueue implementation, we can postpone bdi conversion by one
-> more release cycle, but in the long run there is no point in keeping
-> these private thread pools.
+find_new_reaper() releases and regrabs tasklist_lock but was missing
+proper annotations. Add it. This remove following sparse warning:
 
-I agree (with both of you). It's definitely too early to convert it
-over, but if we can in the longer run, it never hurts to get rid of
-code. The writeback threads aren't a typical threadpool, in that the
-threads stick around and only go away when idle for too long. If they
-stick around, you get the same process hammering IO at your device. So
-converting that over to the generic cwq may or may not be at a
-performance cost, it'll definitely have to be tested.
+ warning: context imbalance in 'find_new_reaper' - unexpected unlock
 
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ kernel/exit.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 0312022..d31385b 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -702,6 +702,8 @@ static void exit_mm(struct task_struct * tsk)
+  * space.
+  */
+ static struct task_struct *find_new_reaper(struct task_struct *father)
++	__releases(&tasklist_lock)
++	__acquires(&tasklist_lock)
+ {
+ 	struct pid_namespace *pid_ns = task_active_pid_ns(father);
+ 	struct task_struct *thread;
 -- 
-Jens Axboe
+1.7.2.2
 
