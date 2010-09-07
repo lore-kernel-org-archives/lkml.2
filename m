@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab0IGT06 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 15:26:58 -0400
-Received: from ns2.cypress.com ([157.95.67.5]:40691 "EHLO ns2.cypress.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758074Ab0IGT0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 15:26:55 -0400
-Subject: Re: [PATCH] gpmc, EXPORT_SYMBOLS, west bridge related
-From: David Cross <david.cross@cypress.com>
-Reply-To: david.cross@cypress.com
-To: tony@atomide.com
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Content-Type: text/plain
-Organization: Cypress
-Date: Tue, 07 Sep 2010 12:26:47 -0700
-Message-Id: <1283887607.7250.10.camel@odc-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
+	id S1758166Ab0IGTaw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 15:30:52 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:54566 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756652Ab0IGTat (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 15:30:49 -0400
+Message-ID: <4C8692DE.1020202@bluewatersys.com>
+Date: Wed, 08 Sep 2010 07:30:38 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: "avictor.za@gmail.com" <avictor.za@gmail.com>
+CC: David Brownell <david-b@pacbell.net>, Eric Miao <eric.y.miao@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        bn@niasdigital.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
+References: <4C85BEFD.402@bluewatersys.com>	<569801.35222.qm@web180310.mail.gq1.yahoo.com> <AANLkTinq98+ryOOKx1o1o21x9VnHz3nRCHh=5Wwixn4o@mail.gmail.com>
+In-Reply-To: <AANLkTinq98+ryOOKx1o1o21x9VnHz3nRCHh=5Wwixn4o@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch exports some of the gpmc driver functions in OMAP3. The purpose behind this patch 
-is to allow device drivers compiled as loadable modules to be interfaced to the GPMC. I am
-hoping that Tony is the correct maintainer and willing to ACK this change. Please let me know 
-if there are any issues or concerns with this patch.
-Thanks,
-David
+avictor.za@gmail.com wrote:
+> hi,
+> 
+>> NAK still.  You're trying to abuse gpio_is_valid(),
+>> which I see no need to support.
+>>
+>> In terms of GPIO framework architecture, zero is
+>> the first GPIO in all cases, and is always
+>> a valid GPIO number, even if it's not
+>> requestable/swritable/readable on a given board.
+>>
+>> Whether it's usable on a given platform depends
+>> on whether a GPIO controller is registered which
+>> claims numbers 0..N ... (assuming gpiolib in use).
+> 
+> How should the following be done in a driver then?
+> 
+>    if (gpio_is_valid(device->output_pin)) {
+>          if (gpio_request(device->output_pin, "driverX") != 0)
+>              goto error_handling;
+> 
+>          /* continue with gpio setup */
+>     }
+>     else {
+>         /* there is no vcc_pin, so don't do any gpio setup */
 
-Signed-off-by: David Cross <david.cross@cypress.com>
+Adding:
 
-diff -uprN -X linux-next-vanilla/Documentation/dontdiff linux-next-vanilla/arch/arm/mach-omap2/gpmc.c linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c
---- linux-next-vanilla/arch/arm/mach-omap2/gpmc.c	2010-08-31 19:32:51.000000000 -0700
-+++ linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c	2010-09-01 16:10:21.000000000 -0700
-@@ -133,6 +133,7 @@ void gpmc_cs_write_reg(int cs, int idx, 
- 	reg_addr = gpmc_base + GPMC_CS0_OFFSET + (cs * GPMC_CS_SIZE) + idx;
- 	__raw_writel(val, reg_addr);
- }
-+EXPORT_SYMBOL(gpmc_cs_write_reg);
- 
- u32 gpmc_cs_read_reg(int cs, int idx)
- {
-@@ -141,6 +142,7 @@ u32 gpmc_cs_read_reg(int cs, int idx)
- 	reg_addr = gpmc_base + GPMC_CS0_OFFSET + (cs * GPMC_CS_SIZE) + idx;
- 	return __raw_readl(reg_addr);
- }
-+EXPORT_SYMBOL(gpmc_cs_read_reg);
- 
- /* TODO: Add support for gpmc_fck to clock framework and use it */
- unsigned long gpmc_get_fclk_period(void)
-@@ -294,6 +296,7 @@ int gpmc_cs_set_timings(int cs, const st
- 
- 	return 0;
- }
-+EXPORT_SYMBOL(gpmc_cs_set_timings);
- 
- static void gpmc_cs_enable_mem(int cs, u32 base, u32 size)
- {
+	 device->output_pin = -EINVAL;
 
+Will force the gpio to be invalid here, so that subsequent uses of
+gpio_is_valid will behave as expected in the case where
+device->output_pin >= 0, but doesn't map to a useable gpio.
 
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
+>     }
+> 
+>     ....
+> 
+>    if (gpio_is_valid(device->output_pin)) {
+>        /* set value high */
+>    }
 
+~Ryan
