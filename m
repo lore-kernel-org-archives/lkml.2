@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab0IGGcN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 02:32:13 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50590 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab0IGGcG (ORCPT
+	id S1754430Ab0IGGdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 02:33:49 -0400
+Received: from n2-vm1.bullet.mail.gq1.yahoo.com ([67.195.23.155]:36417 "HELO
+	n2-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751066Ab0IGGdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 02:32:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Uqzhnq3Ed68CiS+9Gq1a/SkFMfRUR86BlDo4B87R356CVE/icwvtOnnzvIe0p1Etdr
-         cv4/TOP95MEAboQxyJ/eltn8ELjr8CXoARe7SyRXzjsFVIHKbUnYw2o4N/aP/ZvgmUjW
-         ztsySEUkiFNip09o+RWtcNqj0SqEApO7EDa9E=
+	Tue, 7 Sep 2010 02:33:45 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 356684.11233.bm@omp131.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=H1uACB3aT4LEwdPq6ENfOkshojYuZWhn/vaBb8DIkVvlM0UmOccrEuOlk+ZHCGS/XEq826m6oMMykHnPYMcaBvIffV5uWvOk8MQJSzKO8YEqm3UqUIErf664JHTGFd74WSpXpEN+1s+NfW+xGsmQcSbGC2tp9/20/cngqomWD3s=;
+Message-ID: <159882.19856.qm@web180315.mail.gq1.yahoo.com>
+X-YMail-OSG: huhCBmwVM1lEHdNs1WHvmsQ8lg.hlIzdx7CASakkE1fmd25
+ 4E2JJcvImuPKF4upVz9OlX__FUX1UuEwuBLaKZJKXZzVm1BU641oPbaxKlvK
+ fMGAtsgC6askJtBJJIVEqakGsoX7CogQ6a7FHn5lmgivQgf8Ek.BzScMRaAc
+ hIpSWvFLjChMf6VgEwSPBAQk_eRkzwmPlsgi4MG0XWnFNqoqcPXsWPtNB.BX
+ AF6v0Ypg2rLRhBIa0Wl8rVM4xN8eHqcYfIxQqcVR05RzSjnUNS0AOet0y7oS
+ 1zQ1.TcvnbAqQ_qexeYOZMCWIp3l5D1un2BoaiVEQumorXV41b8l_9Pa16dh
+ pdfJK0pQ2vyItMVTK9lBQpYnaPjscdq5yyhM-
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Mon, 6 Sep 2010 23:33:43 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bn@niasdigital.com, avictor.za@gmail.com
+In-Reply-To: <4C85A71F.3010402@bluewatersys.com>
 MIME-Version: 1.0
-Date: Tue, 7 Sep 2010 12:02:04 +0530
-Message-ID: <AANLkTiktFQWvz-TzewKYEd1wtEbe3cVFjFca4dFtUTCV@mail.gmail.com>
-Subject: Hungry for hardware timers
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-I am investigating how many hardware timers are available for kernel,
-system applications and user applications for x86 platforms.
-Is there any help available for it so that systems developers can use
-a hook up an interrupt and use any hardware timer.
 
-In APIC timer, but each core is having only one timer and it is
-already utilized by Linux :
-... APIC TMICT: 00002078
-... APIC TMCCT: 00000b5f
-... APIC TDCR: 00000003
+--- On Mon, 9/6/10, Ryan Mallon <ryan@bluewatersys.com> wrote:
 
-HPET have 3 timers :
-[    0.328157] hpet: ID: 0x8086a201, PERIOD: 0x429b17f
-[    0.328315] hpet: CFG: 0x3, STATUS: 0x0
-[    0.328472] hpet: COUNTER_l: 0x6ff120, COUNTER_h: 0x0
-[    0.329006] hpet: T0: CFG_l: 0x138, CFG_h: 0xf00000
-[    0.329165] hpet: T0: CMP_l: 0x701baa, CMP_h: 0x0
-[    0.329324] hpet: T0 ROUTE_l: 0x0, ROUTE_h: 0x0
-[    0.329483] hpet: T1: CFG_l: 0x0, CFG_h: 0xf00000
-[    0.330006] hpet: T1: CMP_l: 0xffffffff, CMP_h: 0x0
-[    0.330166] hpet: T1 ROUTE_l: 0x0, ROUTE_h: 0x0
-[    0.331005] hpet: T2: CFG_l: 0x0, CFG_h: 0xf00800
-[    0.331168] hpet: T2: CMP_l: 0xdf751c, CMP_h: 0x0
-[    0.331328] hpet: T2 ROUTE_l: 0x0, ROUTE_h: 0x0
 
-T0 and T2 is already used by Linux and T1 is used for RTC
+> How about this approach instead?
 
-System 8254 timer have 3 timers but it seems it is also used by Linux :
-[ 4923.510233] 0: 83ae 1: 1102 2: 37f2
-[ 4923.510251] 0: 8382 1: d10 2: 37dc
+Still don't like it, sorry.  gpio_is_valid()
+is not intended as a fine-grained call, there is
+a call which is fine grained; use that instead.
 
-So I am curious why Linux kernel is consuming so many timers. And how
-can I get spare hardware timers.
+> ----
+> On some architectures gpio numbering does not start from zero.
 
-Thanks,
---
-Jaswinder Singh.
+But on all of them, zero is a valid GPIO number.
+It could get dynamically allocated someday...
+
+ Allow for
+> correct behaviour of gpio_is_valid
+
+I'd say it's already correct ... what's not
+correct is expecting to validate the *active* set
+of GPIOs (some dynamically allocated) through
+that, instead of one of the GPIO setup calls
+like gpio_request, which have explicit guarantees
+of reporting errors for GPIO numbers which are
+not usable on the target board.
+
+
+ on values below the
+> first gpio by
+> adding the architecture overrideable ARCH_FIRST_GPIO.
+
+What are you (?) doing that it even matters
+to a driver  which GPIOs are built into the SOC
+versus external?  Caring about arch-specific
+stuff at this level is a big thought-bug...
+
+And  I'd ask why you're ignoring or bypassing
+the error reporting from gpio_request() ...
+
+That is, just what are you doing that makes
+you want gpio_is_valid() to include error checks
+you are supposed to get via gpio_request as part
+of GPIO configuration?
+
