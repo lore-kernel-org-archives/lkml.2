@@ -1,316 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab0IGHVk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 03:21:40 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:54693 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab0IGHVg (ORCPT
+	id S1755353Ab0IGHWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 03:22:53 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35141 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844Ab0IGHWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 03:21:36 -0400
-MIME-Version: 1.0
-X-Originating-IP: [81.243.35.243]
-Date: Tue, 7 Sep 2010 09:21:32 +0200
-Message-ID: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
-Subject: [PATCH] tracing, perf: add more power related events
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org
-Cc: discuss@lesswatts.org, linux-pm@lists.linux-foundation.org,
-        linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Sep 2010 03:22:46 -0400
+Date: Tue, 7 Sep 2010 09:22:40 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [ANNOUNCEMENT] LTTng tracer re-packaged as stand-alone modules
+Message-ID: <20100907092240.7f4b3a68@basil.nowhere.org>
+In-Reply-To: <20100906172920.GA18220@Krystal>
+References: <20100903131213.GA3230@Krystal>
+	<20100903164742.087da8f4@basil.nowhere.org>
+	<20100906172920.GA18220@Krystal>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 6 Sep 2010 13:29:20 -0400
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 
-Here is a patch proposal for adding new trace events for power management.
-Note: thread restarted after the initial discussions on LKML.
+Mathieu,
 
-Jean
+One experience I have with closely looking at other long term
+forked patchkits is that over time they tend to accumulate
+stuff that is not really needed and various things which
+are very easy to integrate. It sounds like you have some 
+candidates like this here.
 
->From 6768b88e8133129fa847dd7a95dc6dd17c0662d2 Mon Sep 17 00:00:00 2001
-From: Jean Pihet <jean.pihet@newoldbits.com>
-Date: Tue, 7 Sep 2010 09:12:48 +0200
-Subject: [PATCH] [PATCH] tracing, perf: add more power related events
+> - Adding interfaces to dynamic kprobes and tracepoints to list the
+> currently available instrumentation as well as notifiers to let LTTng
+> know about events appearing while tracing runs (e.g. module loaded,
+> new dynamic probe added).
 
-This patch adds new generic events for dynamic power management
-tracing:
-- clock events class: used for clock enable/disable and for
-  clock rate change,
-- power_domain events class: used for power domains transitions.
+That sounds trivial.
 
-The OMAP architecture is using the new events for PM debugging, however
-the new events are made generic enough to be used by all platforms.
+> - Export the splice_to_pipe symbol (and probably some more I do not
+> recall at the moment).
 
-Signed-off-by: Jean Pihet <j-pihet@ti.com>
----
- arch/arm/mach-omap2/cpuidle34xx.c |    2 +
- arch/arm/mach-omap2/pm34xx.c      |    4 ++
- arch/arm/mach-omap2/powerdomain.c |    3 +
- arch/arm/plat-omap/clock.c        |   13 ++++-
- arch/arm/plat-omap/cpu-omap.c     |    5 ++-
- include/trace/events/power.h      |   90 +++++++++++++++++++++++++++++++++++-
- 6 files changed, 110 insertions(+), 7 deletions(-)
+Dito.
 
-diff --git a/arch/arm/mach-omap2/cpuidle34xx.c
-b/arch/arm/mach-omap2/cpuidle34xx.c
-index 3d3d035..6113bd9 100644
---- a/arch/arm/mach-omap2/cpuidle34xx.c
-+++ b/arch/arm/mach-omap2/cpuidle34xx.c
-@@ -24,6 +24,7 @@
+> - Add ability to read the module list coherently in multiple reads
+> when racing with module load/unload.
 
- #include <linux/sched.h>
- #include <linux/cpuidle.h>
-+#include <trace/events/power.h>
+Can't you just take the module_mutex?
 
- #include <plat/prcm.h>
- #include <plat/irqs.h>
-@@ -130,6 +131,7 @@ static int omap3_enter_idle(struct cpuidle_device *dev,
- 	local_irq_disable();
- 	local_fiq_disable();
+> - Either add the ability to fault in NMI handlers, or add call to
+>   vmalloc_sync_all() each time a module is loaded, or export
+> vmalloc_sync_all() to GPL modules so they can ensure that the
+> fault-in memory after using vmalloc but before the memory is used by
+> the tracer.
 
-+	trace_power_start(POWER_CSTATE, cx->type, smp_processor_id());
- 	pwrdm_set_next_pwrst(mpu_pd, mpu_state);
- 	pwrdm_set_next_pwrst(core_pd, core_state);
+I thought Linus had fixed that in the page fault handler?
 
-diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
-index f25bc3d..7bf8a87 100644
---- a/arch/arm/mach-omap2/pm34xx.c
-+++ b/arch/arm/mach-omap2/pm34xx.c
-@@ -28,6 +28,7 @@
- #include <linux/clk.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-+#include <trace/events/power.h>
+It's a generic problem hit by other code, so it needs to be fixed
+in mainline in any case.
 
- #include <plat/sram.h>
- #include <plat/clockdomain.h>
-@@ -588,6 +589,7 @@ static void omap3_pm_idle(void)
- 	if (omap_irq_pending() || need_resched())
- 		goto out;
+>   - CPU idle notifier notifiers (for trace streaming with deferrable
+> timers).
 
-+	trace_power_start(POWER_CSTATE, 1, smp_processor_id());
- 	omap_sram_idle();
+x86 has them already, otherwise i7300_idle et.al. wouldn't work.
+What do you need what they don't do?
 
- out:
-@@ -628,6 +630,8 @@ static int omap3_pm_suspend(void)
- 		omap2_pm_wakeup_on_timer(wakeup_timer_seconds,
- 					 wakeup_timer_milliseconds);
+>   - Poll wait exclusive (to address thundering herd problem in
+> poll()).
 
-+	trace_power_start(POWER_SSTATE, 1, smp_processor_id());
-+
- 	/* Read current next_pwrsts */
- 	list_for_each_entry(pwrst, &pwrst_list, node)
- 		pwrst->saved_state = pwrdm_read_next_pwrst(pwrst->pwrdm);
-diff --git a/arch/arm/mach-omap2/powerdomain.c
-b/arch/arm/mach-omap2/powerdomain.c
-index 6527ec3..73cbe9a 100644
---- a/arch/arm/mach-omap2/powerdomain.c
-+++ b/arch/arm/mach-omap2/powerdomain.c
-@@ -23,6 +23,7 @@
- #include <linux/errno.h>
- #include <linux/err.h>
- #include <linux/io.h>
-+#include <trace/events/power.h>
+How does that work? Wouldn't that break poll semantics?
+If not it sounds like a general improvement.
 
- #include <asm/atomic.h>
+I assume epoll already does it?
 
-@@ -440,6 +441,8 @@ int pwrdm_set_next_pwrst(struct powerdomain
-*pwrdm, u8 pwrst)
- 	pr_debug("powerdomain: setting next powerstate for %s to %0x\n",
- 		 pwrdm->name, pwrst);
+>   - prio_heap.c new remove_maximum(), replace() and cherrypick().
+>   - Inline memcpy().
 
-+	trace_power_domain_target(pwrdm->name, pwrst, smp_processor_id());
-+
- 	prm_rmw_mod_reg_bits(OMAP_POWERSTATE_MASK,
- 			     (pwrst << OMAP_POWERSTATE_SHIFT),
- 			     pwrdm->prcm_offs, pwrstctrl_reg_offs);
-diff --git a/arch/arm/plat-omap/clock.c b/arch/arm/plat-omap/clock.c
-index 7190cbd..d6518f5 100644
---- a/arch/arm/plat-omap/clock.c
-+++ b/arch/arm/plat-omap/clock.c
-@@ -21,6 +21,7 @@
- #include <linux/cpufreq.h>
- #include <linux/debugfs.h>
- #include <linux/io.h>
-+#include <trace/events/power.h>
+What's that? gcc does inline memcpy
 
- #include <plat/clock.h>
+> - Trace clock
+>   - Faster trace clock implementation.
 
-@@ -43,8 +44,10 @@ int clk_enable(struct clk *clk)
- 		return -EINVAL;
+What's the problem here? If it's faster it should be integrated.
 
- 	spin_lock_irqsave(&clockfw_lock, flags);
--	if (arch_clock->clk_enable)
-+	if (arch_clock->clk_enable) {
-+		trace_clock_enable(clk->name, 1, smp_processor_id());
- 		ret = arch_clock->clk_enable(clk);
-+	}
- 	spin_unlock_irqrestore(&clockfw_lock, flags);
+I know that the old sched_clock did some horrible things
+that could be improved.
 
- 	return ret;
-@@ -66,8 +69,10 @@ void clk_disable(struct clk *clk)
- 		goto out;
- 	}
+>   - Export the faster trace clock to userspace for UST through a vDSO.
 
--	if (arch_clock->clk_disable)
-+	if (arch_clock->clk_disable) {
-+		trace_clock_disable(clk->name, 0, smp_processor_id());
- 		arch_clock->clk_disable(clk);
-+	}
+A new vDSO? This should be just a register_posix_clock and some
+glue in x86 vdso/ Makes sense to have, although I would prefer
+a per thread clock than a per CPU clock I think. But per CPU
+should be also fine.
 
- out:
- 	spin_unlock_irqrestore(&clockfw_lock, flags);
-@@ -120,8 +125,10 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
- 		return ret;
+> - Jump based on asm goto, which will minimize the impact of disabled
+>   tracepoints. (the patchset is being proposed by Jason Baron)
 
- 	spin_lock_irqsave(&clockfw_lock, flags);
--	if (arch_clock->clk_set_rate)
-+	if (arch_clock->clk_set_rate) {
-+		trace_clock_set_rate(clk->name, rate, smp_processor_id());
- 		ret = arch_clock->clk_set_rate(clk, rate);
-+	}
- 	if (ret == 0) {
- 		if (clk->recalc)
- 			clk->rate = clk->recalc(clk);
-diff --git a/arch/arm/plat-omap/cpu-omap.c b/arch/arm/plat-omap/cpu-omap.c
-index df08829..cc4e41f 100644
---- a/arch/arm/plat-omap/cpu-omap.c
-+++ b/arch/arm/plat-omap/cpu-omap.c
-@@ -25,6 +25,7 @@
- #include <linux/err.h>
- #include <linux/clk.h>
- #include <linux/io.h>
-+#include <trace/events/power.h>
+I think that is in progress.
 
- #include <mach/hardware.h>
- #include <plat/clock.h>
-@@ -116,8 +117,10 @@ static int omap_target(struct cpufreq_policy *policy,
- 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
- #elif defined(CONFIG_ARCH_OMAP3) && !defined(CONFIG_OMAP_PM_NONE)
- 	freq = target_freq * 1000;
--	if (opp_find_freq_ceil(mpu_dev, &freq))
-+	if (opp_find_freq_ceil(mpu_dev, &freq)) {
-+		trace_power_frequency(POWER_PSTATE, freq, smp_processor_id());
- 		omap_pm_cpu_set_freq(freq);
-+	}
- #endif
- 	return ret;
- }
-diff --git a/include/trace/events/power.h b/include/trace/events/power.h
-index 35a2a6e..286784d 100644
---- a/include/trace/events/power.h
-+++ b/include/trace/events/power.h
-@@ -10,12 +10,17 @@
- #ifndef _TRACE_POWER_ENUM_
- #define _TRACE_POWER_ENUM_
- enum {
--	POWER_NONE = 0,
--	POWER_CSTATE = 1,
--	POWER_PSTATE = 2,
-+	POWER_NONE	= 0,
-+	POWER_CSTATE	= 1,	/* C-State */
-+	POWER_PSTATE	= 2,	/* Fequency change or DVFS */
-+	POWER_SSTATE	= 3,	/* Suspend */
- };
- #endif
+BTW I'm still hoping that the old "self modifying booleans"
+patchkit will make it back at some point. I liked it as a general
+facility.
 
-+/*
-+ * The power events are used for cpuidle & suspend (power_start, power_end)
-+ *  and for cpufreq (power_frequency)
-+ */
- DECLARE_EVENT_CLASS(power,
+> - Kernel OOPS "lttng_nesting" level printout.
 
- 	TP_PROTO(unsigned int type, unsigned int state, unsigned int cpu_id),
-@@ -70,6 +75,85 @@ TRACE_EVENT(power_end,
+This sounds very optional.
 
- );
 
-+/*
-+ * The clock events are used for clock enable/disable and for
-+ *  clock rate change
-+ */
-+DECLARE_EVENT_CLASS(clock,
-+
-+	TP_PROTO(const char *name, unsigned int state, unsigned int cpu_id),
-+
-+	TP_ARGS(name, state, cpu_id),
-+
-+	TP_STRUCT__entry(
-+		__string(       name,           name            )
-+		__field(        u64,            state           )
-+		__field(        u64,            cpu_id          )
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(name, name);
-+		__entry->state = state;
-+		__entry->cpu_id = cpu_id;
-+	),
-+
-+	TP_printk("%s state=%lu cpu_id=%lu", __get_str(name),
-+		(unsigned long)__entry->state, (unsigned long)__entry->cpu_id)
-+);
-+
-+DEFINE_EVENT(clock, clock_enable,
-+
-+	TP_PROTO(const char *name, unsigned int state, unsigned int cpu_id),
-+
-+	TP_ARGS(name, state, cpu_id)
-+);
-+
-+DEFINE_EVENT(clock, clock_disable,
-+
-+	TP_PROTO(const char *name, unsigned int state, unsigned int cpu_id),
-+
-+	TP_ARGS(name, state, cpu_id)
-+);
-+
-+DEFINE_EVENT(clock, clock_set_rate,
-+
-+	TP_PROTO(const char *name, unsigned int state, unsigned int cpu_id),
-+
-+	TP_ARGS(name, state, cpu_id)
-+);
-+
-+/*
-+ * The power domain events are used for power domains transitions
-+ */
-+DECLARE_EVENT_CLASS(power_domain,
-+
-+	TP_PROTO(const char *name, unsigned int state, unsigned int cpu_id),
-+
-+	TP_ARGS(name, state, cpu_id),
-+
-+	TP_STRUCT__entry(
-+		__string(       name,           name            )
-+		__field(        u64,            state           )
-+		__field(        u64,            cpu_id          )
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(name, name);
-+		__entry->state = state;
-+		__entry->cpu_id = cpu_id;
-+),
-+
-+	TP_printk("%s state=%lu cpu_id=%lu", __get_str(name),
-+		(unsigned long)__entry->state, (unsigned long)__entry->cpu_id)
-+);
-+
-+DEFINE_EVENT(power_domain, power_domain_target,
-+
-+	TP_PROTO(const char *name, unsigned int state, unsigned int cpu_id),
-+
-+	TP_ARGS(name, state, cpu_id)
-+);
-+
- #endif /* _TRACE_POWER_H */
+> Ftrace event header size is slightly better than
+> Perf, but its handling of time-stamps with respect to concurrency can
+> lead users to wrong results in terms of irq and softirq handler
+> duration. 
 
- /* This part must be outside protection */
+What is the problem with ftrace time stamps? They should 
+be all just per CPU? 
+
+-Andi
+
 -- 
-1.7.1
+ak@linux.intel.com -- Speaking for myself only.
