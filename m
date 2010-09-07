@@ -1,69 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758254Ab0IGUPe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 16:15:34 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61428 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758232Ab0IGUPa (ORCPT
+	id S1758252Ab0IGUWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 16:22:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35278 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757890Ab0IGUV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 16:15:30 -0400
-Message-ID: <4C869D2E.5060505@vlnb.net>
-Date: Wed, 08 Sep 2010 00:14:38 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <chetanloke@gmail.com>,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-References: <1283204792.32007.448.camel@haakon2.linux-iscsi.org> <4C7FFD1A.8090509@vlnb.net> <1283459158.5598.143.camel@haakon2.linux-iscsi.org> <20100905201802.GC18411@core.coreip.homeip.net> <1283723447.556.133.camel@haakon2.linux-iscsi.org> <20100905234134.GA17212@core.coreip.homeip.net> <1283731194.556.147.camel@haakon2.linux-iscsi.org> <1283769578.15944.1293.camel@mulgrave.site> <4C85617E.2080603@vlnb.net> <1283810135.556.238.camel@haakon2.linux-iscsi.org> <20100907004424.GB21430@core.coreip.homeip.net>
-In-Reply-To: <20100907004424.GB21430@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 7 Sep 2010 16:21:59 -0400
+Date: Tue, 7 Sep 2010 13:20:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Andrea Gelmini <andrea.gelmini@gmail.com>,
+        Balbir Singh <balbir@in.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Nigel Cunningham <nigel@tuxonice.net>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH 2/4] swap: prevent reuse during hibernation
+Message-Id: <20100907132036.03428c47.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LSU.2.00.1009060111220.13600@sister.anvils>
+References: <alpine.LSU.2.00.1009060104410.13600@sister.anvils>
+	<alpine.LSU.2.00.1009060111220.13600@sister.anvils>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:KXTkF0nic36fa5mOR0IYFflj/cwe0vGLT80c2JAxJvj
- CSYUpVVxw1yJ3+lhtPP6iNdFkurLSh5lKnlzXyuXoqShCXNUxo
- XTlXgLFGqPRjB5mpbVzXyZ5gQeBzxKvYucFHRqp2PtgiLHbbhk
- SMaZO39shB4wNNBj5REc4ncacG+vLLAAquuVQBFplpHJBa75Dy
- GXB4LP9kkBxdIx2b5y0fA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov, on 09/07/2010 04:44 AM wrote:
->> So at this point, I will once again to refrain from any non technical
->> interaction with yourself.  If you have geninue concerns about any of
->> the TCM/LIO v4 code, then I suggest that you and your devels make them
->> known from within threads containing [PATCH] and [RFC] tags, because I
->> will not be bothering with anything that does not contain comments on
->> creating new or improving existing design and code.
->>
->
-> I think this is somewhat backwards...
->
-> Vlad appears to be asserting that SCST is more feature-complete that LIO
-> at this point. It also seems that LIO is somewhat younger than SCST. So
-> at this point it might be interesting to see:
->
-> 1. What are the shortcomings of SCST design compared to LIO and why LIO
-> developers chose to come with their own solution instead of
-> collaborating with SCST folks?
->
-> 2. What features are missing from SCST that are currently available in
-> LIO?
->
-> Once this is sorted out and [most] everyone agrees that LIO is indeed
-> technically superior (even if maybe not as mature yet) solution, then it
-> would make sense to request SCST developers to go to file/line depth of
-> the review.
+On Mon, 6 Sep 2010 01:12:38 -0700 (PDT)
+Hugh Dickins <hughd@google.com> wrote:
 
-Those are exactly the questions trying to hear answers on which I'm 
-hitting the wall in past time.
+> Move the hibernation check from scan_swap_map() into try_to_free_swap():
 
-Thanks!
-Vlad
+Well, it doesn't really "move" anything.  It removes one test (usage ==
+SWAP_HAS_CACHE) and adds a quite different one (gfp_allowed_mask &
+__GFP_IO).
+
+> to catch not only the common case when hibernation's allocation itself
+> triggers swap reuse, but also the less likely case when concurrent page
+> reclaim (shrink_page_list) might happen to try_to_free_swap from a page.
+> 
+> Hibernation already clears __GFP_IO from the gfp_allowed_mask, to stop
+> reclaim from going to swap: check that to prevent swap reuse too.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Ondrej Zary <linux@rainbow-software.org>
+> Cc: Andrea Gelmini <andrea.gelmini@gmail.com>
+> Cc: Balbir Singh <balbir@in.ibm.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Nigel Cunningham <nigel@tuxonice.net>
+> Cc: stable@kernel.org
+> ---
+> 
+>  mm/swapfile.c |   24 ++++++++++++++++++++----
+>  1 file changed, 20 insertions(+), 4 deletions(-)
+> 
+> --- swap1/mm/swapfile.c	2010-09-05 22:37:07.000000000 -0700
+> +++ swap2/mm/swapfile.c	2010-09-05 22:45:54.000000000 -0700
+> @@ -318,10 +318,8 @@ checks:
+>  	if (offset > si->highest_bit)
+>  		scan_base = offset = si->lowest_bit;
+>  
+> -	/* reuse swap entry of cache-only swap if not hibernation. */
+> -	if (vm_swap_full()
+> -		&& usage == SWAP_HAS_CACHE
+> -		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
+> +	/* reuse swap entry of cache-only swap if not busy. */
+> +	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+>  		int swap_was_freed;
+>  		spin_unlock(&swap_lock);
+>  		swap_was_freed = __try_to_reclaim_swap(si, offset);
+
+This hunk is already present in 2.6.35.
+
+> @@ -688,6 +686,24 @@ int try_to_free_swap(struct page *page)
+>  	if (page_swapcount(page))
+>  		return 0;
+>  
+> +	/*
+> +	 * Once hibernation has begun to create its image of memory,
+> +	 * there's a danger that one of the calls to try_to_free_swap()
+> +	 * - most probably a call from __try_to_reclaim_swap() while
+> +	 * hibernation is allocating its own swap pages for the image,
+> +	 * but conceivably even a call from memory reclaim - will free
+> +	 * the swap from a page which has already been recorded in the
+> +	 * image as a clean swapcache page, and then reuse its swap for
+> +	 * another page of the image.  On waking from hibernation, the
+> +	 * original page might be freed under memory pressure, then
+> +	 * later read back in from swap, now with the wrong data.
+> +	 *
+> +	 * Hibernation clears bits from gfp_allowed_mask to prevent
+> +	 * memory reclaim from writing to disk, so check that here.
+> +	 */
+> +	if (!(gfp_allowed_mask & __GFP_IO))
+> +		return 0;
+> +
+>  	delete_from_swap_cache(page);
+>  	SetPageDirty(page);
+>  	return 1;
+
+This is the good bit.  I guess the (unCc:ed!) -stable guys would like a
+standalone patch.
+
+Also, are patches [3/4] and [4/4] really -stable material??
