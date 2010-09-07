@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758145Ab0IGQ5A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 12:57:00 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:32874 "EHLO
+	id S1758164Ab0IGQ5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 12:57:08 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:32886 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758109Ab0IGQ4y (ORCPT
+	with ESMTP id S1758148Ab0IGQ5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 12:56:54 -0400
-Message-Id: <20100907165011.831212702@chello.nl>
+	Tue, 7 Sep 2010 12:57:03 -0400
+Message-Id: <20100907165012.106841273@chello.nl>
 User-Agent: quilt/0.47-1
-Date: Tue, 07 Sep 2010 18:46:44 +0200
+Date: Tue, 07 Sep 2010 18:46:49 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
         Robert Richter <robert.richter@amd.com>,
@@ -20,220 +20,122 @@ To: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
         Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
         David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [RFC][PATCH 11/19] perf: Separate find_get_context() from event initialization
+Subject: [RFC][PATCH 16/19] perf: Clean up perf_event_context allocation
 References: <20100907164633.879932949@chello.nl>
-Content-Disposition: inline; filename=perf-pmu-context.patch
+Content-Disposition: inline; filename=perf-pmu-context-8.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate find_get_context() from the event allocation and initialization
-so that we may make find_get_context() depend on the event pmu in a later
-patch.
+Unify the two perf_event_context allocation sites.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/perf_event.c |   73 ++++++++++++++++++++++++----------------------------
- 1 file changed, 35 insertions(+), 38 deletions(-)
+ kernel/perf_event.c |   41 ++++++++++++++++++++++++++---------------
+ 1 file changed, 26 insertions(+), 15 deletions(-)
 
 Index: linux-2.6/kernel/perf_event.c
 ===================================================================
 --- linux-2.6.orig/kernel/perf_event.c
 +++ linux-2.6/kernel/perf_event.c
-@@ -827,6 +827,8 @@ perf_install_in_context(struct perf_even
- {
- 	struct task_struct *task = ctx->task;
- 
-+	event->ctx = ctx;
-+
- 	if (!task) {
- 		/*
- 		 * Per cpu events are installed via an smp call and
-@@ -5037,20 +5039,17 @@ struct pmu *perf_init_event(struct perf_
-  * Allocate and initialize a event structure
+@@ -1936,9 +1936,7 @@ static struct perf_callchain_entry *perf
+ /*
+  * Initialize the perf_event context in a task_struct:
   */
- static struct perf_event *
--perf_event_alloc(struct perf_event_attr *attr,
--		   int cpu,
--		   struct perf_event_context *ctx,
-+perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 		   struct perf_event *group_leader,
- 		   struct perf_event *parent_event,
--		   perf_overflow_handler_t overflow_handler,
--		   gfp_t gfpflags)
-+		   perf_overflow_handler_t overflow_handler)
+-static void
+-__perf_event_init_context(struct perf_event_context *ctx,
+-			    struct task_struct *task)
++static void __perf_event_init_context(struct perf_event_context *ctx)
  {
- 	struct pmu *pmu;
- 	struct perf_event *event;
- 	struct hw_perf_event *hwc;
- 	long err;
- 
--	event = kzalloc(sizeof(*event), gfpflags);
-+	event = kzalloc(sizeof(*event), GFP_KERNEL);
- 	if (!event)
- 		return ERR_PTR(-ENOMEM);
- 
-@@ -5075,7 +5074,6 @@ perf_event_alloc(struct perf_event_attr 
- 	event->attr		= *attr;
- 	event->group_leader	= group_leader;
- 	event->pmu		= NULL;
--	event->ctx		= ctx;
- 	event->oncpu		= -1;
- 
- 	event->parent		= parent_event;
-@@ -5320,20 +5318,26 @@ SYSCALL_DEFINE5(perf_event_open,
- 	if (event_fd < 0)
- 		return event_fd;
- 
-+	event = perf_event_alloc(&attr, cpu, group_leader, NULL, NULL);
-+	if (IS_ERR(event)) {
-+		err = PTR_ERR(event);
-+		goto err_fd;
-+	}
+ 	raw_spin_lock_init(&ctx->lock);
+ 	mutex_init(&ctx->mutex);
+@@ -1946,7 +1944,25 @@ __perf_event_init_context(struct perf_ev
+ 	INIT_LIST_HEAD(&ctx->flexible_groups);
+ 	INIT_LIST_HEAD(&ctx->event_list);
+ 	atomic_set(&ctx->refcount, 1);
+-	ctx->task = task;
++}
 +
- 	/*
- 	 * Get the target context (task or percpu):
- 	 */
- 	ctx = find_get_context(pid, cpu);
- 	if (IS_ERR(ctx)) {
- 		err = PTR_ERR(ctx);
--		goto err_fd;
-+		goto err_alloc;
- 	}
- 
- 	if (group_fd != -1) {
- 		group_leader = perf_fget_light(group_fd, &fput_needed);
- 		if (IS_ERR(group_leader)) {
- 			err = PTR_ERR(group_leader);
--			goto err_put_context;
-+			goto err_context;
- 		}
- 		group_file = group_leader->filp;
- 		if (flags & PERF_FLAG_FD_OUTPUT)
-@@ -5353,37 +5357,30 @@ SYSCALL_DEFINE5(perf_event_open,
- 		 * becoming part of another group-sibling):
- 		 */
- 		if (group_leader->group_leader != group_leader)
--			goto err_put_context;
-+			goto err_context;
- 		/*
- 		 * Do not allow to attach to a group in a different
- 		 * task or CPU context:
- 		 */
- 		if (group_leader->ctx != ctx)
--			goto err_put_context;
-+			goto err_context;
- 		/*
- 		 * Only a group leader can be exclusive or pinned
- 		 */
- 		if (attr.exclusive || attr.pinned)
--			goto err_put_context;
--	}
--
--	event = perf_event_alloc(&attr, cpu, ctx, group_leader,
--				     NULL, NULL, GFP_KERNEL);
--	if (IS_ERR(event)) {
--		err = PTR_ERR(event);
--		goto err_put_context;
-+			goto err_context;
- 	}
- 
- 	if (output_event) {
- 		err = perf_event_set_output(event, output_event);
- 		if (err)
--			goto err_free_put_context;
-+			goto err_context;
- 	}
- 
- 	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event, O_RDWR);
- 	if (IS_ERR(event_file)) {
- 		err = PTR_ERR(event_file);
--		goto err_free_put_context;
-+		goto err_context;
- 	}
- 
- 	event->filp = event_file;
-@@ -5409,11 +5406,11 @@ SYSCALL_DEFINE5(perf_event_open,
- 	fd_install(event_fd, event_file);
- 	return event_fd;
- 
--err_free_put_context:
--	free_event(event);
--err_put_context:
-+err_context:
- 	fput_light(group_file, fput_needed);
- 	put_ctx(ctx);
-+err_alloc:
-+	free_event(event);
- err_fd:
- 	put_unused_fd(event_fd);
- 	return err;
-@@ -5431,25 +5428,24 @@ perf_event_create_kernel_counter(struct 
- 				 pid_t pid,
- 				 perf_overflow_handler_t overflow_handler)
- {
--	struct perf_event *event;
- 	struct perf_event_context *ctx;
-+	struct perf_event *event;
- 	int err;
- 
- 	/*
- 	 * Get the target context (task or percpu):
- 	 */
- 
-+	event = perf_event_alloc(attr, cpu, NULL, NULL, overflow_handler);
-+	if (IS_ERR(event)) {
-+		err = PTR_ERR(event);
-+		goto err;
-+	}
++static struct perf_event_context *
++alloc_perf_context(struct pmu *pmu, struct task_struct *task)
++{
++	struct perf_event_context *ctx;
 +
- 	ctx = find_get_context(pid, cpu);
- 	if (IS_ERR(ctx)) {
- 		err = PTR_ERR(ctx);
--		goto err_exit;
--	}
--
--	event = perf_event_alloc(attr, cpu, ctx, NULL,
--				 NULL, overflow_handler, GFP_KERNEL);
--	if (IS_ERR(event)) {
--		err = PTR_ERR(event);
--		goto err_put_context;
-+		goto err_free;
- 	}
- 
- 	event->filp = NULL;
-@@ -5467,9 +5463,9 @@ perf_event_create_kernel_counter(struct 
- 
- 	return event;
- 
-- err_put_context:
--	put_ctx(ctx);
-- err_exit:
-+err_free:
-+	free_event(event);
-+err:
- 	return ERR_PTR(err);
++	ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
++	if (!ctx)
++		return NULL;
++
++	__perf_event_init_context(ctx);
++	if (task) {
++		ctx->task = task;
++		get_task_struct(task);
++	}
++	ctx->pmu = pmu;
++
++	return ctx;
  }
- EXPORT_SYMBOL_GPL(perf_event_create_kernel_counter);
-@@ -5497,9 +5493,9 @@ inherit_event(struct perf_event *parent_
- 		parent_event = parent_event->parent;
  
- 	child_event = perf_event_alloc(&parent_event->attr,
--					   parent_event->cpu, child_ctx,
-+					   parent_event->cpu,
- 					   group_leader, parent_event,
--					   NULL, GFP_KERNEL);
-+					   NULL);
- 	if (IS_ERR(child_event))
- 		return child_event;
- 	get_ctx(child_ctx);
-@@ -5524,6 +5520,7 @@ inherit_event(struct perf_event *parent_
- 		local64_set(&hwc->period_left, sample_period);
+ static struct perf_event_context *
+@@ -2013,22 +2029,22 @@ find_get_default_context(struct pmu *pmu
  	}
  
-+	child_event->ctx = child_ctx;
- 	child_event->overflow_handler = parent_event->overflow_handler;
+ 	if (!ctx) {
+-		ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
++		ctx = alloc_perf_context(pmu, task);
+ 		err = -ENOMEM;
+ 		if (!ctx)
+ 			goto errout;
+-		__perf_event_init_context(ctx, task);
+-		ctx->pmu = pmu;
++
+ 		get_ctx(ctx);
++
+ 		if (cmpxchg(&task->perf_event_ctxp, NULL, ctx)) {
+ 			/*
+ 			 * We raced with some other task; use
+ 			 * the context they set.
+ 			 */
++			put_task_struct(task);
+ 			kfree(ctx);
+ 			goto retry;
+ 		}
+-		get_task_struct(task);
+ 	}
  
- 	/*
+ 	put_task_struct(task);
+@@ -5021,7 +5037,7 @@ int perf_pmu_register(struct pmu *pmu)
+ 		struct perf_cpu_context *cpuctx;
+ 
+ 		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
+-		__perf_event_init_context(&cpuctx->ctx, NULL);
++		__perf_event_init_context(&cpuctx->ctx);
+ 		cpuctx->ctx.pmu = pmu;
+ 		cpuctx->timer_interval = TICK_NSEC;
+ 		hrtimer_init(&cpuctx->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+@@ -5848,15 +5864,11 @@ inherit_task_group(struct perf_event *ev
+ 		 * child.
+ 		 */
+ 
+-		child_ctx = kzalloc(sizeof(struct perf_event_context),
+-				    GFP_KERNEL);
++		child_ctx = alloc_perf_context(event->pmu, child);
+ 		if (!child_ctx)
+ 			return -ENOMEM;
+ 
+-		__perf_event_init_context(child_ctx, child);
+-		child_ctx->pmu = event->pmu;
+ 		child->perf_event_ctxp = child_ctx;
+-		get_task_struct(child);
+ 	}
+ 
+ 	ret = inherit_group(event, parent, parent_ctx,
+@@ -5868,7 +5880,6 @@ inherit_task_group(struct perf_event *ev
+ 	return ret;
+ }
+ 
+-
+ /*
+  * Initialize the perf_event context in task_struct
+  */
 
 
