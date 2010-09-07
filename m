@@ -1,104 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab0IGNdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 09:33:21 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40168 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab0IGNdO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 09:33:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KeIJYPbhXRLKGdS+G8SS96mzHQc9HUMyjyhpIxlezIRdvo+9DDxSXZkQUvbJH+QCmS
-         1gY+6RCqIf/g3Jp65vA6K9yaMsJTbOkWmxA75hR4sGjKlI6/CCT3YhLhKCv9vYPdg2bt
-         Uvgh2oUUcAVNnWLqYjD9MKUv1avr9EhCDH8gA=
+	id S1756734Ab0IGNek (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 09:34:40 -0400
+Received: from bar.sig21.net ([80.81.252.164]:60787 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754132Ab0IGNee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 09:34:34 -0400
+Date: Tue, 7 Sep 2010 15:34:29 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: block cache replacement strategy?
+Message-ID: <20100907133429.GB3430@sig21.net>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
-References: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
-Date: Tue, 7 Sep 2010 21:24:44 +0800
-Message-ID: <AANLkTiksb1AudCzs8-TWdXb11T-QcPx1G_qu6eUtJ74C@mail.gmail.com>
-Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization(v1)
-From: Ming Lei <tom.leiming@gmail.com>
-To: venki kaps <venkiece2005@gmail.com>
-Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.8 (---)
+X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.610,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/7 venki kaps <venkiece2005@gmail.com>:
-> Dear USB experts,
->
->  Is the same fix valid for omap3430 + 2.6.32 Kernel?
->
->  I have been facing mp3 playback idle current consumption 20mA more
-> after booting without USB cable connected
->  but If USB cable detach and attach happen, then able to hit proper
-> values otherwise irrespective of cold/warm reset
->  the current values increases to 20mA.
->
->  with cable,
->      OTG_SYSCONFIG standby mode of operation - SMART idle
->      HSOTGUSB_STANDBY - SMART standby
->
->  without cable,
->        OTG_SYSCONFIG standby mode of operation - SMART idle
->        HSOTGUSB_STANDBY - Active
->
->  Even i have applied  patch but still the same issue.
+Hi,
 
-Are you applying the patch below?
+during some simple disk read throughput testing I observed
+caching behaviour that doesn't seem right.  The machine
+has 2G of RAM and AMD Athlon 4850e, x86_64 kernel but 32bit
+userspace, Linux 2.6.35.4.  It seems that contents of the
+block cache are not evicted to make room for other blocks.
+(Or something like that, I have no real clue about this.)
 
-         http://marc.info/?l=linux-omap&m=128378686221264&w=2
-
-The patch(USB: otg: twl4030: fix phy initialization(v1)) above is against
-2.6.36-rc3, I don't think you can apply it directly on 2.6.32. And the patch
-is introduced to fix the problems caused by
-
-          commit 461c317705eca5cac09a360f488715927fd0a927.
-
-which change is committed into mainline 2.6.36-rc3.
-
->
->  If i use __twl4030_phy_power(twl, 0) at the end of USB LDO initialization,
-
-If you apply this patch against 2.6.36-rc3, you will find
-__twl4030_phy_power(twl, 0)  is always called from .probe
-if you don't connect musb with PC via cable when powering on.
-
->  then able to hit proper values but USB ADC values are getting in correct
->  with Travel adapter (Charger power supply) which means temperature
->  shows 84 instead of 26~30 degrees.
->
->  Queries,
->  -----------
->   - Is Errata 1.164 fix : OTG idle will work on 3430?
-
-No such errata found in ti wetsite, could you give a link?
-
->   - USBOTG_SUSPEND is enabled in Kernel 32, will it give any impact?
-
-Kernel does not have USBOTG_SUSPEND config option. Do you
-mean USB_SUSPEND? If so, it is nothing to do with your issue since
-it is only valid for host driver. Also for your case, musb works at
-b-idle state.
-
->   - Is there anything missed from Power management idle path (or)
->    USB OTG controller/Transreceiver driver part?
-
-Maybe with transreceiver part, musb doesn't support runtime pm now.
-
->
->  Could you please provide the best approach to solve my issue?
-
-Sorry, this patch is not for your issue, as said above.
+Since this is a rather artificial test I'm not too worried,
+but it looks strange to me so I thought I better report it.
 
 
--- 
-Lei Ming
+zzz:~# echo 3 >/proc/sys/vm/drop_caches 
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 13.9454 s, 75.2 MB/s
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 0.92799 s, 1.1 GB/s
+
+OK, seems like the blocks are cached. But:
+
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 13.8375 s, 75.8 MB/s
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 13.8429 s, 75.7 MB/s
+
+Even if I let 15min pass and repeat the dd command
+several times, I cannot see any caching effects, it
+stays at ~75 MB/s.
+
+zzz:~# cat /proc/meminfo 
+MemTotal:        1793272 kB
+MemFree:           15216 kB
+Buffers:         1378820 kB
+Cached:            20080 kB
+SwapCached:            0 kB
+Active:           792720 kB
+Inactive:         758832 kB
+Active(anon):      91716 kB
+Inactive(anon):    64652 kB
+Active(file):     701004 kB
+Inactive(file):   694180 kB
+
+But then:
+
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 5.23983 s, 200 MB/s
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 0.908284 s, 1.2 GB/s
+
+zzz:~# cat /proc/meminfo 
+MemTotal:        1793272 kB
+MemFree:           16168 kB
+Buffers:         1377308 kB
+Cached:            20660 kB
+SwapCached:            0 kB
+Active:          1140384 kB
+Inactive:         410236 kB
+Active(anon):      91716 kB
+Inactive(anon):    64652 kB
+Active(file):    1048668 kB
+Inactive(file):   345584 kB
+
+
+And finally:
+
+zzz:~# echo 3 >/proc/sys/vm/drop_caches
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 13.948 s, 75.2 MB/s
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 0.985031 s, 1.1 GB/s
+
+
+Now these blocks get cached but then the others don't:
+
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 13.9394 s, 75.2 MB/s
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 13.9403 s, 75.2 MB/s
+
+
+Best Regards,
+Johannes
