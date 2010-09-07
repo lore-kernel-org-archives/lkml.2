@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab0IGH3D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 03:29:03 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:42753 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab0IGH25 convert rfc822-to-8bit (ORCPT
+	id S1755433Ab0IGH33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 03:29:29 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:45545 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755429Ab0IGH3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 03:28:57 -0400
+	Tue, 7 Sep 2010 03:29:23 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minchan.kim\@gmail.com" <minchan.kim@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        "kosaki.motohiro\@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC][PATCH] big continuous memory allocator v2
+References: <20100907114505.fc40ea3d.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 07 Sep 2010 09:29:21 +0200
+In-Reply-To: <20100907114505.fc40ea3d.kamezawa.hiroyu@jp.fujitsu.com>
+	(KAMEZAWA Hiroyuki's message of "Tue, 7 Sep 2010 11:45:05 +0900")
+Message-ID: <87occa9fla.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-X-Originating-IP: [81.243.35.243]
-In-Reply-To: <201009061400.05637.trenn@suse.de>
-References: <AANLkTikvbn3+JPc7pnGZk-H4B71MHTu+-vjuzfJw_7PC@mail.gmail.com>
-	<201009061243.00479.trenn@suse.de>
-	<AANLkTik8_ixOcFy=c4hPZknyUqPYB+2hzQTNK9wVok4q@mail.gmail.com>
-	<201009061400.05637.trenn@suse.de>
-Date: Tue, 7 Sep 2010 09:28:56 +0200
-Message-ID: <AANLkTik08ezo2ui-P7mSqSt4VR6wzWYH0hAyNTZALbi0@mail.gmail.com>
-Subject: Re: [PATCH] tracing, perf: add more power related events
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: discuss@lesswatts.org, linux-pm@lists.linux-foundation.org,
-        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-On Mon, Sep 6, 2010 at 2:00 PM, Thomas Renninger <trenn@suse.de> wrote:
-> On Monday 06 September 2010 13:27:13 Jean Pihet wrote:
->> On Mon, Sep 6, 2010 at 12:42 PM, Thomas Renninger <trenn@suse.de> wrote:
-> ...
->> In order to reach an efficient low power mode you
->> need to ensure that all clocks in a clock domain are idled or cut off
->> (automatically by the HW or with the intervention of SW drivers).
->>
->> The HW complexity requires the tracing of all those clocks/power
->> states, that is why new events are proposed.
-> Hm, but if the HW can switch clocks behind your back, how do you
-> realize that to throw a perf clock power event then?
-Such clocks are automatically shut off when there is no activity on
-the module, this allows the system to reach a lower power state. All
-that is needed is to ensure the modules are correctly configured to
-shut off unneeded clocks automatically.
+> This is a page allcoator based on memory migration/hotplug code.
+> passed some small tests, and maybe easier to read than previous one.
 
-> Theoretically you need to poll to keep track of HW switching the
-> clocks?
-No. I would not poll hundreds of clocks.
-Furthermore there is no event to be thrown away, in the case the
-reached power mode is not 'deep' enough you need a trace point showing
-what blocked the transition. There is still work to do to achieve
-that, it is coming soon.
+Maybe I'm missing context here, but what is the use case for this?
 
->
->    Thomas
->
+If this works well enough the 1GB page code for x86, which currently
+only supports allocating at boot time due to the MAX_ORDER problem,
+could be moved over to runtime allocation. This would make
+GB pages a lot nicer to use.
 
-Note: a re-spin of the patch has been sent on a new thread.
+I think it would still need declaring a large moveable
+area at boot right? (but moveable area is better than
+prereserved memory)
 
-Jean
+On the other hand I'm not sure the VM is really up to speed
+in managing such large areas.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
