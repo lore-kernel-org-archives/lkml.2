@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab0IGB3e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 21:29:34 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50285
+	id S1755969Ab0IGBaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 21:30:24 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50304
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755690Ab0IGB3a (ORCPT
+	by vger.kernel.org with ESMTP id S1755690Ab0IGBaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 21:29:30 -0400
-Date: Mon, 06 Sep 2010 18:29:47 -0700 (PDT)
-Message-Id: <20100906.182947.258128485.davem@davemloft.net>
-To: jslaby@suse.cz
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com, netdev@vger.kernel.org,
-        ddutt@brocade.com, rmody@brocade.com
-Subject: Re: [PATCH 1/1] NET: bna, fix lock imbalance
+	Mon, 6 Sep 2010 21:30:19 -0400
+Date: Mon, 06 Sep 2010 18:30:36 -0700 (PDT)
+Message-Id: <20100906.183036.68150190.davem@davemloft.net>
+To: joe@perches.com
+Cc: trivial@kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/13] net/ipv4: Remove unnecessary casts of
+ private_data
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1283602121-11443-1-git-send-email-jslaby@suse.cz>
-References: <1283602121-11443-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <dd5d79c3aa9f2cffbca1a8d4a9163b0d6a9492a9.1283650107.git.joe@perches.com>
+References: <cover.1283650107.git.joe@perches.com>
+	<dd5d79c3aa9f2cffbca1a8d4a9163b0d6a9492a9.1283650107.git.joe@perches.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -24,11 +27,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jslaby@suse.cz>
-Date: Sat,  4 Sep 2010 14:08:41 +0200
+From: Joe Perches <joe@perches.com>
+Date: Sat,  4 Sep 2010 18:52:52 -0700
 
-> bnad_set_rx_mode omit to unlock bna_lock on one fail path. Fix that.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
 Applied.
