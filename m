@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442Ab0IGDGX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 23:06:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58118 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab0IGDGQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 23:06:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <4C8558FD.2010107@gmail.com>
-References: <272391166.1009231283787434910.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
- <169108422.1009631283788251084.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
- <AANLkTim=nf7VVs0zDshivjrdFFYeWaoWYqAA6PCs3c4k@mail.gmail.com>
- <4C853D69.2080108@gmail.com> <AANLkTi=kF880O_DuemgRPajvs3diyuvK8s4Ap04+kPzL@mail.gmail.com>
- <4C8558FD.2010107@gmail.com>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Mon, 6 Sep 2010 23:05:54 -0400
-Message-ID: <AANLkTimmue10v8TRSXSL51CdHibF-tUVpGmrFJj5JHuv@mail.gmail.com>
-Subject: Re: [PATCH 01/19] User-space API definition
-To: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
-Cc: Miloslav Trmac <mitr@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-crypto@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755000Ab0IGDWq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 23:22:46 -0400
+Received: from sh.osrg.net ([192.16.179.4]:52834 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751584Ab0IGDWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 23:22:40 -0400
+Date: Tue, 7 Sep 2010 12:21:44 +0900
+To: masa-korg@dsn.okisemi.com
+Cc: fujita.tomonori@lab.ntt.co.jp, shemminger@vyatta.com, sam@ravnborg.org,
+        joe@perches.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        gregory.v.rose@intel.com, mbizon@freebox.fr, kristoffer@gaisler.com,
+        ralf@linux-mips.org, john.linn@xilinx.com, randy.dunlap@oracle.com,
+        davem@davemloft.net, meego-dev@meego.com, qi.wang@intel.com,
+        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, margie.foster@intel.com,
+        okada533@dsn.okisemi.com, morinaga526@dsn.okisemi.com,
+        shimizu394@dsn.okisemi.com
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <001a01cb4e2a$5f870bf0$66f8800a@maildom.okisemi.com>
+References: <4C7D0E7A.5060309@dsn.okisemi.com>
+	<20100903112248Q.fujita.tomonori@lab.ntt.co.jp>
+	<001a01cb4e2a$5f870bf0$66f8800a@maildom.okisemi.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100907122012O.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 07 Sep 2010 12:21:50 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 6, 2010 at 17:11, Nikos Mavrogiannopoulos
-<n.mavrogiannopoulos@gmail.com> wrote:
-> I suppose you mean the reference to the internal representation of the
-> key. This might be valid for few seconds until the required operation is
-> over.
->
-> This is not really what I would call storage. The storage and retrieval
-> of keys is being done using two ioctl() the STORAGE_WRAP and STORAGE_UNWRAP.
->
-> An example of how NCR works:
-> 1. A Process generates an RSA key pair
-> 2. Stores the (encrypted) pair using the STORAGE_WRAP to a file.
->
-> 3. Another process loads the file, unwraps it using STORAGE_UNWRAP and
-> gets a reference to the key
-> 4. Does an RSA decryption using the key
-> 5. Discards the reference to the key
->
-> Consider the reference as a file descriptor after you have opened a file
-> (a wrapped key).
->
-> How do you see keyring being involved in a setup like this?
+On Tue, 7 Sep 2010 10:13:22 +0900
+"Masayuki Ohtake" <masa-korg@dsn.okisemi.com> wrote:
 
-Fundamentally the operations you described are *EXACTLY* the kind of
-things that I believe the keyring API should support.  It does not
-support them now, but that API is where the described functionality
-really belongs.  Please consider just extending the keyring API to
-support what you need.
+> > Probably, this trick doesn't work because zero could be a valid DMA
+> > address on some architctures.
+> >
+> 
+> The flag which shows mapped will be added.
+> And it is used instead of "if (buffer_info->dma) ".
 
-For example, assuming that we automatically register 1 keyring key
-type per algo it should be pretty straightforward.
+Sounds fine. That's what other drivers do.
 
-You would want to write a "request_key()" handler for those key types
-which can use whatever hardware support is available to automatically
-generate a new random key or alternatively pass the operation off to
-the /sbin/request-key process to generate and load one from userspace.
- The call might take a *long* time to complete, depending on the key
-type and whether or not there is hardware support.
 
-That would allow you to perform the "generate an RSA key" step in
-either a trusted "request-key" process or directly in a piece of
-hardware, helping to avoid accidental key material leaks from the
-unprivileged process.
+> > > + /*-- Set Buffer infomation --*/
+> > > + buffer_info->length = skb->len;
+> > > + buffer_info->dma =
+> > > +     pci_map_single(adapter->pdev, skb->data, buffer_info->length,
+> > > +    PCI_DMA_TODEVICE);
+> >
+> > Needs to handle mapping failure (dma_mapping_errro)?
+> 
+> Error process will be added.
 
-Then, you would want "KEYCTL_DECRYPT_KEY", and "KEYCTL_ENCRYPT_KEY"
-which would use one key to encrypt another into a user buffer (or
-decrypt a key from a user buffer).  These would probably need new LSM
-hooks and maybe key DAC permission bits.
+Nice.
 
-This would implement the "STORAGE_WRAP" and "STORAGE_UNWRAP"
-functionality you want, but it would be extensible to much more than
-just what NCR needs.  I could see this being very useful as an
-extension to the existing Kerberos or NFS keyring usage.  Other
-potential applications include very secure replacements for the SSH or
-GPG agent programs.
 
-For the final step of actually performing encryption/decryption of
-user data you would then want generic keyctl() ops for
-"KEYCTL_ENCRYPT" and "KEYCTL_DECRYPT", which would simply call
-CryptoAPI with the user-provided input and output buffers.  Again,
-you'd need new LSM hooks, etc.  These are very obviously extensible to
-other applications.
+> > Can you use dma_map_* API instead of pci_map_*? Please read:
+> >
+> 
+> This DMA of device is not standard.  Personal use of Gigabit Ethernet device.
+> So, I guess that I do not need to use DMA-API.
 
-It's getting a bit late here, so I apologize if anything I've written
-above makes particularly little sense, but hopefully I've gotten the
-gist across.
+Sorry, I'm not sure what you mean. If a driver does DMA, it must use
+the DMA API. Your driver already uses the DMA API (pci_dma_*),
+however, pci_map_* API is obsolete so please use dma_map_* API
+instead.
 
-Cheers,
-Kyle Moffett
+Thanks,
