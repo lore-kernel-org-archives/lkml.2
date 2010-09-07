@@ -1,114 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab0IGMFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 08:05:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49971 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756464Ab0IGMFg (ORCPT
+	id S1756584Ab0IGMJT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 08:09:19 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:60779 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756515Ab0IGMJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 08:05:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=SVuHUtvcDssClv/Pu+AJErMzgLNFFnVCVhJFjS3VTKwYQWONQDx0tYCO+XQk+e5DDr
-         pGn6/ZaTSAUDY9I96h5q4hzwIHqr0cvnkqB7VRkBPYFXmdm+fAHAmlkvBTTaNwzpQ/mh
-         uAr3+6nwrsNHt7yVl21bpeiUI8ahn+Bt2OJIs=
-Message-ID: <4C862A8B.3000506@gmail.com>
-Date: Tue, 07 Sep 2010 14:05:31 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	Tue, 7 Sep 2010 08:09:14 -0400
+Date: Tue, 7 Sep 2010 17:32:58 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 5/15]  5: uprobes: Uprobes
+ (un)registration and exception handling.
+Message-ID: <20100907120258.GK14891@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6>
+ <20100825134224.5447.89998.sendpatchset@localhost6.localdomain6>
+ <1283377414.2059.1729.camel@laptop>
+ <20100903164219.GB1904@linux.vnet.ibm.com>
+ <1283534349.2050.297.camel@laptop>
+ <20100906174642.GG14891@linux.vnet.ibm.com>
+ <20100906204042.GA19815@infradead.org>
 MIME-Version: 1.0
-To: Jeff Garzik <jeff@garzik.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
-        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>,
-        stable@kernel.org
-Subject: [PATCH #upstream-fixes] libata: skip EH autopsy and recovery during
- suspend
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C7376BE.5040006@gmail.com> <201008242239.43249.rjw@sisk.pl> <201008270109.36687.rjw@sisk.pl> <4C7F6931.4050707@gmail.com>
-In-Reply-To: <4C7F6931.4050707@gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100906204042.GA19815@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For some mysterious reason, certain hardware reacts badly to usual EH
-actions while the system is going for suspend.  As the devices won't
-be needed until the system is resumed, ask EH to skip usual autopsy
-and recovery and proceed directly to suspend.
+> On Mon, Sep 06, 2010 at 11:16:42PM +0530, Srikar Dronamraju wrote:
+> > > You don't have to, but you can. The problem I have with this stuff is
+> > > that it makes the pid thing a primary interface, whereas it should be
+> > > one of many filter possibilities.
+> > 
+> > I think the otherway, 
+> > Why instrument a process and filter it out, if we are not interested in it.
+> > While instrumenting kernel, we dont have this flexibility. So
+> > having a pid based filter is the right thing to do for kernel
+> > based tracing.
+> > 
+> > If we can get the per process based tracing right, we can build
+> > higher lever stuff including the file based tracing easily.
+> > 
+> > All tools/debuggers in the past have all worked with process based
+> > tracing.
+> 
+> I have the feeling that you guys are at least partially talking past
+> each other.
+> 
+> For the "perf probe --add" interface the only sane interface is one by
+> filename and then symbol / liner number / etc.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Tested-by: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Cc: stable@kernel.org
----
- drivers/ata/libata-core.c |   14 +++++++++++++-
- drivers/ata/libata-eh.c   |    4 ++++
- include/linux/libata.h    |    1 +
- 3 files changed, 18 insertions(+), 1 deletion(-)
+Agree, probing by file name is a requirement and I am working
+towards that end.
+> 
+> But that is just the interface - these probes don't nessecarily have to
+> be armed and cause global overhead once they are define.  If the
+> implenmentation is smart enough it will defer arming the probe until
+> we actually use it, and that will be per-process quite often.
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 9ceb493..92cd5f3 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -5427,6 +5427,7 @@ static int ata_host_request_pm(struct ata_host *host, pm_message_t mesg,
-  */
- int ata_host_suspend(struct ata_host *host, pm_message_t mesg)
- {
-+	unsigned int ehi_flags = ATA_EHI_QUIET;
- 	int rc;
+Agree, That why I am trying to build file-based probing on
+pid-based probing.
 
- 	/*
-@@ -5435,7 +5436,18 @@ int ata_host_suspend(struct ata_host *host, pm_message_t mesg)
- 	 */
- 	ata_lpm_enable(host);
+> 
+> Which btw, brings up two more issues, one in uprobes and one in perf.
+> For one even in userspace I think the dynamic probes will really just
+> be the tip of the iceberg and we'll get more bang for the buck from
+> static traces, which is something that's no supported in uprobes yet.
+> As a start supporting the dtrace-style sdt.h header would be a great
+> help, and then we can decide if we need somthing even better on top.
 
--	rc = ata_host_request_pm(host, mesg, 0, ATA_EHI_QUIET, 1);
-+	/*
-+	 * On some hardware, device fails to respond after spun down
-+	 * for suspend.  As the device won't be used before being
-+	 * resumed, we don't need to touch the device.  Ask EH to skip
-+	 * the usual stuff and proceed directly to suspend.
-+	 *
-+	 * http://thread.gmane.org/gmane.linux.ide/46764
-+	 */
-+	if (mesg.event == PM_EVENT_SUSPEND)
-+		ehi_flags |= ATA_EHI_NO_AUTOPSY | ATA_EHI_NO_RECOVERY;
-+
-+	rc = ata_host_request_pm(host, mesg, 0, ehi_flags, 1);
- 	if (rc == 0)
- 		host->dev->power.power_state = mesg;
- 	return rc;
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index 0108731..95838b3 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -3242,6 +3242,10 @@ static int ata_eh_skip_recovery(struct ata_link *link)
- 	if (link->flags & ATA_LFLAG_DISABLED)
- 		return 1;
+Yes, Static tracing using dtrace style sdt.h is a cool thing to do.
+Already SystemTap has this facility. However I think its probably
+better done at perf user interface level.
 
-+	/* skip if explicitly requested */
-+	if (ehc->i.flags & ATA_EHI_NO_RECOVERY)
-+		return 1;
-+
- 	/* thaw frozen port and recover failed devices */
- 	if ((ap->pflags & ATA_PFLAG_FROZEN) || ata_link_nr_enabled(link))
- 		return 0;
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index 89115f8..d1ef41b 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -335,6 +335,7 @@ enum {
- 	ATA_EHI_HOTPLUGGED	= (1 << 0),  /* could have been hotplugged */
- 	ATA_EHI_NO_AUTOPSY	= (1 << 2),  /* no autopsy */
- 	ATA_EHI_QUIET		= (1 << 3),  /* be quiet */
-+	ATA_EHI_NO_RECOVERY	= (1 << 4),  /* no recovery */
+The way I look at it is perf probe decodes the static markers and asks
+uprobes to place probepoints over there.
+Do you see a different approach? If yes can you tell what you were
+looking at?
 
- 	ATA_EHI_DID_SOFTRESET	= (1 << 16), /* already soft-reset this port */
- 	ATA_EHI_DID_HARDRESET	= (1 << 17), /* already soft-reset this port */
+
+--
+Thanks and Regards
+Srikar
