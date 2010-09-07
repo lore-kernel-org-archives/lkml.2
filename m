@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab0IGLg5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 07:36:57 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:56335 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab0IGLgv (ORCPT
+	id S1756529Ab0IGLle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 07:41:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64336 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab0IGLl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 07:36:51 -0400
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-        corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
-        hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu,
-        linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-In-reply-to: <m31v95zweh.fsf@linux.vnet.ibm.com>
-	(aneesh.kumar@linux.vnet.ibm.com)
-Subject: Re: [PATCH -V19 00/15] Generic name to handle and open by handle syscalls
-References: <1282906982-26918-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <m31v95zweh.fsf@linux.vnet.ibm.com>
-Message-Id: <E1OswT5-000709-U9@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Tue, 07 Sep 2010 13:36:03 +0200
+	Tue, 7 Sep 2010 07:41:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=KeEsnnOnXSMp1I2PAc+lbx/8OFrI2MiClrn46C4H0dUfHp9Y8FSc3C3KMxWcW7p9Sa
+         Y7jTbo+go6XwGO/QU4YK/6oblsnNr4LYe+ro2NGAl18uUsOM4pywu9Fz8rargzGtJ5Gl
+         RuqaMCUgSFxnDtk4LrbRUO2Cr8TCkXk+3mbMo=
+From: Brian Gerst <brgerst@gmail.com>
+To: tj@kernel.org
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: PATCH [0/2] percpu: Local cpu pointer optimizations
+Date: Tue,  7 Sep 2010 07:41:08 -0400
+Message-Id: <1283859670-6687-1-git-send-email-brgerst@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 07 Sep 2010, Aneesh Kumar K. V wrote:
-> Any update on this. Are you ok with syscall approach which is limitted to
-> CAP_DAC_READ_SEARCH  ?
+This patch set allows arches to provide an optimized way of shifting
+a per-cpu pointer for the current cpu.
 
-My gut reaction is: "not another bunch of xattr syscalls!".  It
-doesn't feel right, this interface is too specialized to warrant a
-full set of filesystem syscalls.
+On an x86-32 defconfig build, these patches save 1304 bytes of text.
 
-Al Viro is right that there are problems with symlinks.  What we
-really want here is a sort of symlink that doesn't get followed.  One
-way to provide that is to create a kernel internal "handle" filesystem
-and direct open_by_handle() to that for anything not a directory or a
-regular file.
+  text    data     bss     dec     hex filename
+7298335  717480 1374104 9389919  8f475f vmlinux.orig
+7297283  717480 1374104 9388867  8f4343 vmlinux.1
+7297031  717480 1374104 9388615  8f4247 vmlinux.2
 
-Thanks,
-Miklos
+[PATCH 1/2] x86, percpu: Optimize this_cpu_ptr
+[PATCH 2/2] percpu: Optimize __get_cpu_var()
+
+ arch/x86/include/asm/percpu.h |   11 +++++++++++
+ include/asm-generic/percpu.h  |   14 +++++++++-----
+ 2 files changed, 20 insertions(+), 5 deletions(-)
+
+v2: Added comments
