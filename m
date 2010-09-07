@@ -1,438 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab0IGVLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 17:11:16 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50374 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab0IGVLO (ORCPT
+	id S1758277Ab0IGVSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 17:18:10 -0400
+Received: from mail.atheros.com ([12.19.149.2]:56450 "EHLO mail.atheros.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757168Ab0IGVSF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 17:11:14 -0400
-Date: Tue, 7 Sep 2010 14:09:20 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: david.cross@cypress.com
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] west bridge, block driver fixes
-Message-Id: <20100907140920.452907b0.randy.dunlap@oracle.com>
-In-Reply-To: <1283888253.7250.21.camel@odc-laptop>
-References: <1283888253.7250.21.camel@odc-laptop>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Sep 2010 17:18:05 -0400
+From: Vipin Mehta <Vipin.Mehta@Atheros.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Date: Tue, 7 Sep 2010 14:18:02 -0700
+Subject: RE: [PATCH 2/2] staging: ath6kl: use native methods from kernel
+ library
+Thread-Topic: [PATCH 2/2] staging: ath6kl: use native methods from kernel
+ library
+Thread-Index: ActOoIB9bs3/vG1mQT6ziwhOIi0KyAAL/wEQ
+Message-ID: <35B17FE5076C7040809188FBE7913F983F23479F74@SC1EXMB-MBCL.global.atheros.com>
+References: <09b7da2e5462e0b855617ff5308ed6efb4fc9cab.1283872748.git.andy.shevchenko@gmail.com>
+ <8b251244717765e795b92a1f7335f8af98e5706f.1283872748.git.andy.shevchenko@gmail.com>
+In-Reply-To: <8b251244717765e795b92a1f7335f8af98e5706f.1283872748.git.andy.shevchenko@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 07 Sep 2010 12:37:33 -0700 David Cross wrote:
+Andy,
+   Thanks for the patch. Although the driver supports Linux but it has been architected to support other OSes if desired. The code is, therefore, organized into generic and OS specific components with the latter part of the code captured into the os/linux directory. As such, the patch will be more useful if we can move out the inclusion of linux specific header files <linux/kernel.h> and <linux/ctype.h> into a header file in os/linux/include directory. You can refer to os/linux/include/osapi_linux.h for example. A macro could be defined which would use linux specific APIs for Linux and keep the original definitions for any other OS.
 
-> This patch makes minor fixes to the block driver for locking issues,
-> printk statements and minor change for a kernel update to 2.6.36.
-> Please let me know if there are issues or concerns with this patch.
-> Thanks,
-> David
+I'll update the documentation on the ath6kl wiki to make it more informative.
+
+Regards,
+Vipin
+
+
+> -----Original Message-----
+> From: devel-bounces@linuxdriverproject.org [mailto:devel-
+> bounces@linuxdriverproject.org] On Behalf Of Andy Shevchenko
+> Sent: Tuesday, September 07, 2010 8:20 AM
+> To: linux-kernel@vger.kernel.org; Greg Kroah-Hartman;
+> devel@driverdev.osuosl.org
+> Cc: Andy Shevchenko
+> Subject: [PATCH 2/2] staging: ath6kl: use native methods from kernel
+> library
 > 
-> Signed-off-by: David Cross <david.cross@cypress.com>
-
-Missing "---" line after S-O-B line and before the first diff.
-
-It's a good idea (but not required) to include a diffstat, like so:
-
-> diffstat -p1 -w70 wb-block-drvr.patch 
- drivers/staging/westbridge/astoria/block/cyasblkdev_block.c |  188 +++++-----
- drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c |   12 
- drivers/staging/westbridge/astoria/block/cyasblkdev_queue.h |    2 
- 3 files changed, 105 insertions(+), 97 deletions(-)
-
-
-See Documentation/SubmittingPatches for info on both of these.
-
-
+> There are already implemented methods such hex_to_bin() or isxdigit() in
+> the kernel. Let's use them.
 > 
-> diff -uprN -X linux-next-vanilla/Documentation/dontdiff linux-next-vanilla/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c linux-next-incl-sdk/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
-> --- linux-next-vanilla/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c	2010-08-31 19:32:51.000000000 -0700
-> +++ linux-next-incl-sdk/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c	2010-09-07 11:28:49.000000000 -0700
-> @@ -202,7 +202,7 @@ static struct cyasblkdev_blk_data *cyasb
->  	if (bd) {
->  		bd->usage++;
->  		#ifndef NBDEBUG
-> -		cy_as_hal_print_message(
-> +		printk(KERN_INFO
->  			"cyasblkdev_blk_get: usage = %d\n", bd->usage) ;
-
-No space before ';'.
-Better to use __func__ for the function name, especially when it's long.
-
-What usage is this telling about?
-(This is what I thought should have been in userspace, but I was reading
-this as telling someone about usage syntax and I now see that it's not
-doing that at all.)
-
-
->  		#endif
->  	}
-> @@ -222,12 +222,12 @@ static void cyasblkdev_blk_put(
->  	if (bd) {
->  		bd->usage--;
->  		#ifndef WESTBRIDGE_NDEBUG
-> -		cy_as_hal_print_message(
-> +		printk(KERN_INFO
->  			" cyasblkdev_blk_put , bd->usage= %d\n", bd->usage);
-
-same question here.
-
->  		#endif
->  	} else  {
->  		#ifndef WESTBRIDGE_NDEBUG
-> -		cy_as_hal_print_message(
-> +		printk(KERN_INFO
->  			"cyasblkdev: blk_put(bd) on bd = NULL!: usage = %d\n",
->  			bd->usage);
-
-This appears to be a debugging message, not user info.
-
->  		#endif
-> @@ -244,7 +244,7 @@ static void cyasblkdev_blk_put(
->  		if (CY_AS_ERROR_SUCCESS !=
->  			cy_as_storage_release(bd->dev_handle, 0, 0, 0, 0)) {
->  			#ifndef WESTBRIDGE_NDEBUG
-> -			cy_as_hal_print_message(
-> +			printk(KERN_INFO
->  				"cyasblkdev: cannot release bus 0\n") ;
-
-Ditto.
-And no space before ';'.
-
->  			#endif
->  		}
-> @@ -252,7 +252,7 @@ static void cyasblkdev_blk_put(
->  		if (CY_AS_ERROR_SUCCESS !=
->  			cy_as_storage_release(bd->dev_handle, 1, 0, 0, 0)) {
->  			#ifndef WESTBRIDGE_NDEBUG
-> -			cy_as_hal_print_message(
-> +			printk(KERN_INFO
->  				"cyasblkdev: cannot release bus 1\n") ;
-
-Ditto.
-
->  			#endif
->  		}
-> @@ -260,7 +260,7 @@ static void cyasblkdev_blk_put(
->  		if (CY_AS_ERROR_SUCCESS !=
->  			cy_as_storage_stop(bd->dev_handle, 0, 0)) {
->  			#ifndef WESTBRIDGE_NDEBUG
-> -			cy_as_hal_print_message(
-> +			printk(KERN_INFO
->  				"cyasblkdev: cannot stop storage stack\n") ;
-
-Ditto.
-
->  			#endif
->  		}
-> @@ -278,7 +278,7 @@ static void cyasblkdev_blk_put(
->  	}
->  
->  	#ifndef WESTBRIDGE_NDEBUG
-> -	cy_as_hal_print_message(
-> +	printk(KERN_INFO
->  		"cyasblkdev (blk_put): usage = %d\n",
->  		bd->usage) ;
->  	#endif
-> @@ -304,7 +304,7 @@ static int cyasblkdev_blk_open(
->  		if (bdev->bd_disk == bd->user_disk_0) {
->  			if ((mode & FMODE_WRITE) && bd->user_disk_0_read_only) {
->  				#ifndef WESTBRIDGE_NDEBUG
-> -				cy_as_hal_print_message(
-> +				printk(KERN_INFO
->  					"device marked as readonly "
->  					"and write requested\n");
-
-More debugging code.
-
->  				#endif
-> @@ -315,7 +315,7 @@ static int cyasblkdev_blk_open(
->  		} else if (bdev->bd_disk == bd->user_disk_1) {
->  			if ((mode & FMODE_WRITE) && bd->user_disk_1_read_only) {
->  				#ifndef WESTBRIDGE_NDEBUG
-> -				cy_as_hal_print_message(
-> +				printk(KERN_INFO
->  					"device marked as readonly "
->  					"and write requested\n");
->  				#endif
-> @@ -326,7 +326,7 @@ static int cyasblkdev_blk_open(
->  		} else if (bdev->bd_disk == bd->system_disk) {
->  			if ((mode & FMODE_WRITE) && bd->system_disk_read_only) {
->  				#ifndef WESTBRIDGE_NDEBUG
-> -				cy_as_hal_print_message(
-> +				printk(KERN_INFO
->  					"device marked as readonly "
->  					"and write requested\n");
->  				#endif
-...
-> @@ -452,7 +452,7 @@ static int cyasblkdev_blk_prep_rq(
->  	/* If we have no device, we haven't finished initialising. */
->  	if (!bd || !bd->dev_handle) {
->  		#ifndef WESTBRIDGE_NDEBUG
-> -		cy_as_hal_print_message(KERN_ERR
-> +		printk(KERN_ERR
->  			"cyasblkdev %s: killing request - no device/host\n",
-
-ditto.
-
->  			req->rq_disk->disk_name);
->  		#endif
-> @@ -466,7 +466,7 @@ static int cyasblkdev_blk_prep_rq(
->  
->  	/* Check for excessive requests.*/
->  	if (blk_rq_pos(req) + blk_rq_sectors(req) > get_capacity(req->rq_disk)) {
-> -		cy_as_hal_print_message("cyasblkdev: bad request address\n");
-> +		printk(KERN_INFO "cyasblkdev: bad request address\n");
-
-ditto.
-
->  		stat = BLKPREP_KILL;
->  	}
->  
-> @@ -496,20 +496,23 @@ static void cyasblkdev_issuecallback(
->  
->  	if (status != CY_AS_ERROR_SUCCESS) {
->  		#ifndef WESTBRIDGE_NDEBUG
-> -		cy_as_hal_print_message(
-> +		printk(KERN_INFO
->  		  "%s: async r/w: op:%d failed with error %d at address %d\n",
->  			__func__, op, status, block_number) ;
->  		#endif
->  	}
->  
->  	#ifndef WESTBRIDGE_NDEBUG
-> -	cy_as_hal_print_message(
-> +	printk(KERN_INFO
->  		"%s calling blk_end_request from issue_callback "
->  		"req=0x%x, status=0x%x, nr_sectors=0x%x\n",
->  		__func__, (unsigned int) gl_bd->queue.req, status,
->  		(unsigned int) blk_rq_sectors(gl_bd->queue.req)) ;
-
-ditto.
-
->  	#endif
->  
-> +	if (rq_data_dir(gl_bd->queue.req) != READ)
-> +		cy_as_release_common_lock();
+> Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+> ---
+>  .../staging/ath6kl/miscdrv/ar3kps/ar3kpsparser.c   |   31 ++++++---------
+> ----
+>  drivers/staging/ath6kl/os/linux/eeprom.c           |   32 +++++++++------
+> ----
+>  2 files changed, 25 insertions(+), 38 deletions(-)
+> 
+> diff --git a/drivers/staging/ath6kl/miscdrv/ar3kps/ar3kpsparser.c
+> b/drivers/staging/ath6kl/miscdrv/ar3kps/ar3kpsparser.c
+> index 5eed8ac..8dce054 100644
+> --- a/drivers/staging/ath6kl/miscdrv/ar3kps/ar3kpsparser.c
+> +++ b/drivers/staging/ath6kl/miscdrv/ar3kps/ar3kpsparser.c
+> @@ -27,6 +27,9 @@
+> 
+>  #include "ar3kpsparser.h"
+> 
+> +#include <linux/ctype.h>
+> +#include <linux/kernel.h>
 > +
->  	/* note: blk_end_request w/o __ prefix should
->  	 * not require spinlocks on the queue*/
->  	while (blk_end_request(gl_bd->queue.req,
-> @@ -533,7 +536,7 @@ static void cyasblkdev_issuecallback(
->  		/* queue is not plugged */
->  		gl_bd->queue.req = blk_fetch_request(gl_bd->queue.queue);
->  		#ifndef WESTBRIDGE_NDEBUG
-> -		cy_as_hal_print_message("%s blkdev_callback: "
-> +		printk(KERN_INFO "%s blkdev_callback: "
->  		"blk_fetch_request():%p\n",
-
-Line above should be indented same as the line below.
-
->  			__func__, gl_bd->queue.req);
->  		#endif
-> @@ -543,7 +546,7 @@ static void cyasblkdev_issuecallback(
->  		spin_unlock_irq(&gl_bd->lock);
->  
->  		#ifndef WESTBRIDGE_NDEBUG
-> -		cy_as_hal_print_message("%s blkdev_callback: about to "
-> +		printk(KERN_INFO "%s blkdev_callback: about to "
->  		"call issue_fn:%p\n", __func__, gl_bd->queue.req);
-
-Indent line above more.
-
->  		#endif
->  
-...
-> @@ -651,13 +654,14 @@ static int cyasblkdev_blk_issue_rq(
->  			bq->req = NULL ;
->  		}
->  	} else {
-> +		cy_as_acquire_common_lock();
->  		ret = cy_as_storage_write_async(bd->dev_handle, bus_num, 0,
->  			lcl_unit_no, req_sector, bd->sg, req_nr_sectors,
->  			(cy_as_storage_callback)cyasblkdev_issuecallback);
->  
->  		if (ret != CY_AS_ERROR_SUCCESS) {
->  			#ifndef WESTBRIDGE_NDEBUG
-> -			cy_as_hal_print_message("%s: write failed with "
-> +			printk(KERN_INFO "%s: write failed with "
-
-indentation
-
->  			"error %d at address %ld, unit no %d\n",
->  			__func__, ret, blk_rq_pos(req), lcl_unit_no);
->  			#endif
-> @@ -690,7 +694,7 @@ static void cyasblkdev_storage_callback(
->  					)
+>  #define BD_ADDR_SIZE            6
+>  #define WRITE_PATCH             8
+>  #define ENABLE_PATCH            11
+> @@ -61,20 +64,6 @@
+>  #define MAX_BYTE_LENGTH                   244
+> 
+>  #define SKIP_BLANKS(str) while (*str == ' ') str++
+> -#define MIN(x, y) (((x) <= (y))? (x):(y))
+> -#define MAX(x, y) (((x) >= (y))? (x):(y))
+> -
+> -#define UNUSED(x) (x=x)
+> -
+> -#define IS_BETWEEN(x, lower, upper) (((lower) <= (x)) && ((x) <=
+> (upper)))
+> -#define IS_DIGIT(c) (IS_BETWEEN((c), '0', '9'))
+> -#define IS_HEX(c)   (IS_BETWEEN((c), '0', '9') || IS_BETWEEN((c), 'a',
+> 'f') || IS_BETWEEN((c), 'A', 'F'))
+> -#define TO_LOWER(c) (IS_BETWEEN((c), 'A', 'Z') ? ((c) - 'A' + 'a') : (c))
+> -#define IS_BLANK(c) ((c) == ' ')
+> -#define CONV_DEC_DIGIT_TO_VALUE(c) ((c) - '0')
+> -#define CONV_HEX_DIGIT_TO_VALUE(c) (IS_DIGIT(c) ? ((c) - '0') :
+> (IS_BETWEEN((c), 'A', 'Z') ? ((c) - 'A' + 10) : ((c) - 'a' + 10)))
+> -#define CONV_VALUE_TO_HEX(v) ((A_UINT8)( ((v & 0x0F) <= 9) ? ((v & 0x0F)
+> + '0') : ((v & 0x0F) - 10 + 'A') ) )
+> -
+> 
+>  enum MinBootFileFormatE
 >  {
->  	#ifndef WESTBRIDGE_NDEBUG
-> -	cy_as_hal_print_message("%s: bus:%d, device:%d, evtype:%d, "
-> +	printk(KERN_INFO "%s: bus:%d, device:%d, evtype:%d, "
-
-indentation
-
->  	"evdata:%p\n ", __func__, bus, device, evtype, evdata);
->  	#endif
->  
-...
-> @@ -821,7 +825,7 @@ static int cyasblkdev_add_disks(int bus_
->  	cy_as_storage_query_unit_data unit_data = {0} ;
->  
->  	#ifndef WESTBRIDGE_NDEBUG
-> -		cy_as_hal_print_message("%s:query device: "
-> +		printk(KERN_INFO "%s:query device: "
-
-indentation
-
->  		"type:%d, removable:%d, writable:%d, "
->  		"blksize %d, units:%d, locked:%d, "
->  		"erase_sz:%d\n",
-> @@ -876,7 +880,7 @@ static int cyasblkdev_add_disks(int bus_
->  			if ((ret != CY_AS_ERROR_SUCCESS) &&
->  			(ret != CY_AS_ERROR_ALREADY_PARTITIONED)) {
->  			#ifndef WESTBRIDGE_NDEBUG
-> -				cy_as_hal_print_message("%s: cy_as_storage_"
-> +				printk(KERN_INFO "%s: cy_as_storage_"
-
-indentation.
-But it shouldn't be here at all, unless it's in a debugging form.
-(i.e., not like this)
-
->  				"create_p_partition after size > 0 check "
->  				"failed with error code %d\n",
->  				__func__, ret);
-> @@ -888,7 +892,7 @@ static int cyasblkdev_add_disks(int bus_
->  
->  			} else if (ret == CY_AS_ERROR_ALREADY_PARTITIONED) {
->  				#ifndef WESTBRIDGE_NDEBUG
-> -				cy_as_hal_print_message(
-> +				printk(KERN_INFO
-
-indentation
-
->  				"%s: cy_as_storage_create_p_partition "
->  				"indicates memory already partitioned\n",
->  				__func__);
-> @@ -911,7 +915,7 @@ static int cyasblkdev_add_disks(int bus_
->  							unit_data.unit = 1 ;
->  						} else {
->  							#ifndef WESTBRIDGE_NDEBUG
-> -							cy_as_hal_print_message(
-> +							printk(KERN_INFO
-
-indentation
-
->  							"%s: cy_as_storage_create_p_partition "
->  							"after removal unexpectedly failed "
->  							"with error %d\n", __func__, ret) ;
-> @@ -932,7 +936,7 @@ static int cyasblkdev_add_disks(int bus_
->  						&unit_data, 0, 0) ;
->  						if (ret != CY_AS_ERROR_SUCCESS) {
->  							#ifndef WESTBRIDGE_NDEBUG
-> -							cy_as_hal_print_message(
-> +							printk(KERN_INFO
-
-same
-
->  							"%s: cannot query %d "
->  							"device unit - reason code %d\n",
->  							__func__, bus_num, ret) ;
-> @@ -946,7 +950,7 @@ static int cyasblkdev_add_disks(int bus_
->  						}
->  					} else {
->  					#ifndef WESTBRIDGE_NDEBUG
-> -					cy_as_hal_print_message(
-> +					printk(KERN_INFO
-
-same
-
->  					"%s: cy_as_storage_remove_p_partition "
->  					"failed with error %d\n",
->  					__func__, ret);
-> @@ -960,7 +964,7 @@ static int cyasblkdev_add_disks(int bus_
->  							bd->dev_handle, &unit_data, 0, 0) ;
->  						if (ret != CY_AS_ERROR_SUCCESS) {
->  						#ifndef WESTBRIDGE_NDEBUG
-> -							cy_as_hal_print_message(
-> +							printk(KERN_INFO
-
-same
-
->  							"%s: cannot query %d "
->  							"device unit - reason "
->  							"code %d\n", __func__,
-> @@ -1006,7 +1010,7 @@ static int cyasblkdev_add_disks(int bus_
->  				}
->  			} else {
->  				#ifndef WESTBRIDGE_NDEBUG
-> -				cy_as_hal_print_message(
-> +				printk(KERN_INFO
-
-same
-
->  				"%s: cy_as_storage_create_p_partition "
->  				"created successfully\n", __func__);
->  				#endif
-> @@ -1020,7 +1024,7 @@ static int cyasblkdev_add_disks(int bus_
->  		}
->  		#ifndef WESTBRIDGE_NDEBUG
->  		else {
-> -			cy_as_hal_print_message(
-> +			printk(KERN_INFO
-
-same
-
->  			"%s: invalid partition_size%d\n", __func__,
->  			private_partition_size);
->  
-...
-> @@ -1224,7 +1229,7 @@ static int cyasblkdev_add_disks(int bus_
->  			blk_queue_logical_block_size(bd->queue.queue,
->  				bd->user_disk_0_blk_size);
->  			#ifndef WESTBRIDGE_NDEBUG
-> -			cy_as_hal_print_message(
-> +			printk(KERN_INFO
-
-indentation
-
->  			"%s: set hard sect_sz:%d\n",
->  			__func__,
->  			bd->user_disk_0_blk_size);
-> @@ -1233,7 +1238,7 @@ static int cyasblkdev_add_disks(int bus_
->  			blk_queue_logical_block_size(bd->queue.queue,
->  				bd->user_disk_1_blk_size);
->  			#ifndef WESTBRIDGE_NDEBUG
-> -			cy_as_hal_print_message(
-> +			printk(KERN_INFO
-
-same
-
->  			"%s: set hard sect_sz:%d\n",
->  			__func__,
->  			bd->user_disk_1_blk_size);
-...
-> diff -uprN -X linux-next-vanilla/Documentation/dontdiff linux-next-vanilla/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c linux-next-incl-sdk/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c
-> --- linux-next-vanilla/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c	2010-09-01 15:56:46.000000000 -0700
-> +++ linux-next-incl-sdk/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c	2010-09-07 11:51:23.000000000 -0700
-...
-> @@ -192,7 +192,7 @@ static int cyasblkdev_queue_thread(void 
->  				"thread_sem->count=%d\n",
->  				__func__, bq->thread_sem.count);
->  			if (spin_is_locked(q->queue_lock)) {
-> -				cy_as_hal_print_message("%s: queue_lock "
-> +				printk(KERN_INFO "%s: queue_lock "
-
-indentation
-
->  				"is locked, need to release\n", __func__);
->  				spin_unlock(q->queue_lock);
->  
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> @@ -483,12 +472,12 @@ A_STATUS AthParseFilesUnified(A_UCHAR
+> *srcbuffer,A_UINT32 srclen, int FileFormat
+>                      if((stPS_DataFormat.eDataType == eHex) &&
+> stPS_DataFormat.bIsArray == true) {
+>                         while(uReadCount > 0) {
+> 
+> PsTagEntry[TagCount].TagData[stReadStatus.uByteCount] =
+> -
+> (A_UINT8)(CONV_HEX_DIGIT_TO_VALUE(pCharLine[stReadStatus.uCharCount]) <<
+> 4)
+> -                                                     |
+> (A_UINT8)(CONV_HEX_DIGIT_TO_VALUE(pCharLine[stReadStatus.uCharCount +
+> 1]));
+> +
+> (A_UINT8)(hex_to_bin(pCharLine[stReadStatus.uCharCount]) << 4)
+> +                                                     |
+> (A_UINT8)(hex_to_bin(pCharLine[stReadStatus.uCharCount + 1]));
+> 
+> 
+> PsTagEntry[TagCount].TagData[stReadStatus.uByteCount+1] =
+> -
+> (A_UINT8)(CONV_HEX_DIGIT_TO_VALUE(pCharLine[stReadStatus.uCharCount + 3])
+> << 4)
+> -                                                     |
+> (A_UINT8)(CONV_HEX_DIGIT_TO_VALUE(pCharLine[stReadStatus.uCharCount +
+> 4]));
+> +
+> (A_UINT8)(hex_to_bin(pCharLine[stReadStatus.uCharCount + 3]) << 4)
+> +                                                     |
+> (A_UINT8)(hex_to_bin(pCharLine[stReadStatus.uCharCount + 4]));
+> 
+>                             stReadStatus.uCharCount += 6; // read two
+> bytes, plus a space;
+>                             stReadStatus.uByteCount += 2;
+> @@ -574,14 +563,14 @@ A_STATUS GetNextTwoChar(A_UCHAR *srcbuffer,A_UINT32
+> len, A_UINT32 *pos, char * b
+>      unsigned char ch;
+> 
+>      ch = AthReadChar(srcbuffer,len,pos);
+> -    if(ch != '\0' && IS_HEX(ch)) {
+> +    if(ch != '\0' && isxdigit(ch)) {
+>          buffer[0] =  ch;
+>      } else
+>      {
+>          return A_ERROR;
+>      }
+>      ch = AthReadChar(srcbuffer,len,pos);
+> -    if(ch != '\0' && IS_HEX(ch)) {
+> +    if(ch != '\0' && isxdigit(ch)) {
+>          buffer[1] =  ch;
+>      } else
+>      {
+> @@ -606,7 +595,7 @@ A_STATUS AthDoParsePatch(A_UCHAR *patchbuffer,
+> A_UINT32 patchlen)
+>      Patch_Count = 0;
+> 
+>      while(NULL !=
+> AthGetLine(Line,MAX_BYTE_LENGTH,patchbuffer,patchlen,&filepos)) {
+> -        if(strlen(Line) <= 1 || !IS_HEX(Line[0])) {
+> +        if(strlen(Line) <= 1 || !isxdigit(Line[0])) {
+>              continue;
+>          } else {
+>              break;
+> diff --git a/drivers/staging/ath6kl/os/linux/eeprom.c
+> b/drivers/staging/ath6kl/os/linux/eeprom.c
+> index 8dd130a..be77fb8 100644
+> --- a/drivers/staging/ath6kl/os/linux/eeprom.c
+> +++ b/drivers/staging/ath6kl/os/linux/eeprom.c
+> @@ -71,24 +71,22 @@ wmic_ether_aton(const char *orig, A_UINT8 *eth)
+>    i = 0;
+>    for(bufp = orig; *bufp != '\0'; ++bufp) {
+>      unsigned int val;
+> -    unsigned char c = *bufp++;
+> -    if (c >= '0' && c <= '9') val = c - '0';
+> -    else if (c >= 'a' && c <= 'f') val = c - 'a' + 10;
+> -    else if (c >= 'A' && c <= 'F') val = c - 'A' + 10;
+> -    else {
+> -        printk("%s: MAC value is invalid\n", __FUNCTION__);
+> -        break;
+> -    }
+> +	int h, l;
+> 
+> -    val <<= 4;
+> -    c = *bufp++;
+> -    if (c >= '0' && c <= '9') val |= c - '0';
+> -    else if (c >= 'a' && c <= 'f') val |= c - 'a' + 10;
+> -    else if (c >= 'A' && c <= 'F') val |= c - 'A' + 10;
+> -    else {
+> -        printk("%s: MAC value is invalid\n", __FUNCTION__);
+> -        break;
+> -    }
+> +	h = hex_to_bin(*bufp++);
+> +
+> +	if (h < 0) {
+> +		printk("%s: MAC value is invalid\n", __FUNCTION__);
+> +		break;
+> +	}
+> +
+> +	l = hex_to_bin(*bufp++);
+> +	if (l < 0) {
+> +		printk("%s: MAC value is invalid\n", __FUNCTION__);
+> +		break;
+> +	}
+> +
+> +	val = (h << 4) | l;
+> 
+>      eth[i] = (unsigned char) (val & 0377);
+>      if(++i == ATH_MAC_LEN) {
+> --
+> 1.7.2.2
+> 
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
