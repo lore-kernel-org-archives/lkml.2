@@ -1,301 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937Ab0IGOSp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 10:18:45 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37819 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647Ab0IGOSl (ORCPT
+	id S1756973Ab0IGOX6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 10:23:58 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:30793 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751152Ab0IGOXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 10:18:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=flZdlZr7MBgZmGqQUVK8HHBTE/aSRRjIdeFTlezgLBAQxWOjKn4KlXKy7TjdCW0Hnq
-         fSXlfApwmJH0BNACSL12n+LSOXuPAyVMp6E5iM4xVgZ5wSIkOJo34/j+apMgyLzxUPWo
-         SFaNtOY8eOkujVENSZZFcEWjo3hOfsx7Gp8EU=
-Date: Tue, 7 Sep 2010 16:18:47 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] trace: add graph output support for wakeup tracer
-Message-ID: <20100907141846.GC5375@nowhere>
-References: <1281020247-5756-1-git-send-email-jolsa@redhat.com>
+	Tue, 7 Sep 2010 10:23:53 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: Hrc_3PYVM1lW4LsQMjDQqnEbxUMf3e.A595KKJ5hn0Og6M2
+ _e2ekFJjq70qHexQ7jOEn9k.4kpubAMBm.iZDv0dPC1_GInZTWliqyUlpVbf
+ RgdCNTMpEeeKJbfQkvDS0H_x2HARbKTiNA6acWBvb62WqCi1124ML8E2Oont
+ GzMpRjkUTSY9SmAD88.WhJEle_XGLJy_cUV9tkTxa0elpKdq5dkjKcrjn60g
+ x
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 7 Sep 2010 09:23:48 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Dave Chinner <david@fromorbit.com>
+cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after direct
+ reclaim allocation fails
+In-Reply-To: <20100906040243.GA7362@dastard>
+Message-ID: <alpine.DEB.2.00.1009070918030.14634@router.home>
+References: <20100903160026.564fdcc9.akpm@linux-foundation.org> <20100904022545.GD705@dastard> <20100903202101.f937b0bb.akpm@linux-foundation.org> <20100904075840.GE705@dastard> <20100904081414.GF705@dastard> <20100905015400.GA10714@localhost>
+ <20100905021555.GG705@dastard> <20100905060539.GA17450@localhost> <20100905131447.GJ705@dastard> <20100905134554.GA7083@localhost> <20100906040243.GA7362@dastard>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281020247-5756-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 04:57:27PM +0200, Jiri Olsa wrote:
-> hi,
-> 
-> adding function graph output to irqsoff tracer.
-> The graph output is enabled by setting new 'display-graph' trace option.
-> 
-> wbr,
-> jirka
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  kernel/trace/trace_sched_wakeup.c |  274 +++++++++++++++++++++++++++++++++++--
->  1 files changed, 264 insertions(+), 10 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-> index 4086eae..b576141 100644
-> --- a/kernel/trace/trace_sched_wakeup.c
-> +++ b/kernel/trace/trace_sched_wakeup.c
-> @@ -31,13 +31,33 @@ static int			wakeup_rt;
->  static arch_spinlock_t wakeup_lock =
->  	(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
->  
-> +static void wakeup_reset(struct trace_array *tr);
->  static void __wakeup_reset(struct trace_array *tr);
-> +static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
-> +static void wakeup_graph_return(struct ftrace_graph_ret *trace);
->  
->  static int save_lat_flag;
->  
-> +#define TRACE_DISPLAY_GRAPH     1
-> +
-> +static struct tracer_opt trace_opts[] = {
-> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-> +	/* display latency trace as call graph */
-> +	{ TRACER_OPT(display-graph, TRACE_DISPLAY_GRAPH) },
-> +#endif
-> +	{ } /* Empty entry */
-> +};
-> +
-> +static struct tracer_flags tracer_flags = {
-> +	.val  = 0,
-> +	.opts = trace_opts,
-> +};
-> +
-> +#define is_graph() (tracer_flags.val & TRACE_DISPLAY_GRAPH)
-> +
->  #ifdef CONFIG_FUNCTION_TRACER
->  /*
-> - * irqsoff uses its own tracer function to keep the overhead down:
-> + * wakeup uses its own tracer function to keep the overhead down:
->   */
->  static void
->  wakeup_tracer_call(unsigned long ip, unsigned long parent_ip)
-> @@ -80,8 +100,234 @@ static struct ftrace_ops trace_ops __read_mostly =
->  {
->  	.func = wakeup_tracer_call,
->  };
-> +
-> +static int start_func_tracer(int graph)
-> +{
-> +	int ret;
-> +
-> +	if (!graph)
-> +		ret = register_ftrace_function(&trace_ops);
-> +	else
-> +		ret = register_ftrace_graph(&wakeup_graph_return,
-> +					    &wakeup_graph_entry);
-> +
-> +	if (!ret && tracing_is_enabled())
-> +		tracer_enabled = 1;
-> +	else
-> +		tracer_enabled = 0;
-> +
-> +	return ret;
-> +}
-> +
-> +static void stop_func_tracer(int graph)
-> +{
-> +	tracer_enabled = 0;
-> +
-> +	if (!graph)
-> +		unregister_ftrace_function(&trace_ops);
-> +	else
-> +		unregister_ftrace_graph();
-> +}
-> +
->  #endif /* CONFIG_FUNCTION_TRACER */
->  
-> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-> +static int wakeup_set_flag(u32 old_flags, u32 bit, int set)
-> +{
-> +
-> +	if (!(bit & TRACE_DISPLAY_GRAPH))
-> +		return -EINVAL;
-> +
-> +	if (!(is_graph() ^ set))
-> +		return 0;
-> +
-> +	stop_func_tracer(!set);
-> +	wakeup_reset(wakeup_trace);
-> +
-> +	return start_func_tracer(set);
-> +}
-> +
-> +static int wakeup_graph_entry(struct ftrace_graph_ent *trace)
-> +{
-> +	struct trace_array *tr = wakeup_trace;
-> +	struct trace_array_cpu *data;
-> +	unsigned long flags;
-> +	long disabled;
-> +	int cpu, pc, ret = 0;
-> +
-> +	if (likely(!wakeup_task))
-> +		return 0;
-> +
-> +	pc = preempt_count();
-> +	preempt_disable_notrace();
-> +
-> +	cpu = raw_smp_processor_id();
-> +	if (cpu != wakeup_current_cpu)
-> +		goto out_enable;
-> +
-> +	data = tr->data[cpu];
-> +	disabled = atomic_inc_return(&data->disabled);
-> +	if (unlikely(disabled != 1))
-> +		goto out;
-> +
-> +	local_irq_save(flags);
-> +	ret = __trace_graph_entry(tr, trace, flags, pc);
-> +	local_irq_restore(flags);
-> +
-> + out:
-> +	atomic_dec(&data->disabled);
-> +
-> + out_enable:
-> +	preempt_enable_notrace();
-> +	return ret;
-> +}
-> +
-> +static void wakeup_graph_return(struct ftrace_graph_ret *trace)
-> +{
-> +	struct trace_array *tr = wakeup_trace;
-> +	struct trace_array_cpu *data;
-> +	unsigned long flags;
-> +	long disabled;
-> +	int cpu, pc;
-> +
-> +	if (likely(!wakeup_task))
-> +		return;
-> +
-> +	pc = preempt_count();
-> +	preempt_disable_notrace();
-> +
-> +	cpu = raw_smp_processor_id();
-> +	if (cpu != wakeup_current_cpu)
-> +		goto out_enable;
-> +
-> +	data = tr->data[cpu];
-> +	disabled = atomic_inc_return(&data->disabled);
-> +	if (unlikely(disabled != 1))
-> +		goto out;
-> +
-> +	local_irq_save(flags);
-> +	__trace_graph_return(tr, trace, flags, pc);
-> +	local_irq_restore(flags);
+On Mon, 6 Sep 2010, Dave Chinner wrote:
 
+> [  596.628086]  [<ffffffff81108a8c>] ? drain_all_pages+0x1c/0x20
+> [  596.628086]  [<ffffffff81108fad>] ? __alloc_pages_nodemask+0x42d/0x700
+> [  596.628086]  [<ffffffff8113d0f2>] ? kmem_getpages+0x62/0x160
+> [  596.628086]  [<ffffffff8113dce6>] ? fallback_alloc+0x196/0x240
 
+fallback_alloc() showing up here means that one page allocator call from
+SLAB has already failed. SLAB then did an expensive search through all
+object caches on all nodes to find some available object. There were no
+objects in queues at all therefore SLAB called the page allocator again
+(kmem_getpages()).
 
-Do you disable irqs to avoid losing traces? If so there is a race
-window between the recursion barrier in data->disabled and the
-time you disable irqs.
-
-If you don't want to lose anything (except NMIs), you need to
-replace the preempt_disable by the local_irq_save, ie disable
-irqs before the recursion protection.
-
-
-
-> +
-> + out:
-> +	atomic_dec(&data->disabled);
-> +
-> + out_enable:
-> +	preempt_enable_notrace();
-> +	return;
-> +}
-> +
-> +static void wakeup_trace_open(struct trace_iterator *iter)
-> +{
-> +	if (is_graph())
-> +		graph_trace_open(iter);
-> +}
-> +
-> +static void wakeup_trace_close(struct trace_iterator *iter)
-> +{
-> +	if (iter->private)
-> +		graph_trace_close(iter);
-> +}
-> +
-> +#define GRAPH_TRACER_FLAGS (TRACE_GRAPH_PRINT_PROC)
-> +
-> +static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
-> +{
-> +	u32 flags = GRAPH_TRACER_FLAGS;
-> +
-> +	if (trace_flags & TRACE_ITER_LATENCY_FMT)
-> +		flags |= TRACE_GRAPH_PRINT_DURATION;
-> +	else
-> +		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
-> +
-> +	/*
-> +	 * In graph mode call the graph tracer output function,
-> +	 * otherwise go with the TRACE_FN event handler
-> +	 */
-> +	if (is_graph())
-> +		return print_graph_function_flags(iter, flags);
-> +
-> +	return TRACE_TYPE_UNHANDLED;
-> +}
-> +
-> +static void wakeup_print_header(struct seq_file *s)
-> +{
-> +	if (is_graph()) {
-> +		struct trace_iterator *iter = s->private;
-> +		u32 flags = GRAPH_TRACER_FLAGS;
-> +
-> +		if (trace_flags & TRACE_ITER_LATENCY_FMT) {
-> +			/* print nothing if the buffers are empty */
-> +			if (trace_empty(iter))
-> +				return;
-> +
-> +			print_trace_header(s, iter);
-> +			flags |= TRACE_GRAPH_PRINT_DURATION;
-> +		} else
-> +			flags |= TRACE_GRAPH_PRINT_ABS_TIME;
-> +
-> +		print_graph_headers_flags(s, flags);
-> +	} else
-> +		trace_default_header(s);
-> +}
-> +
-> +static void
-> +trace_graph_function(struct trace_array *tr,
-> +		 unsigned long ip, unsigned long flags, int pc)
-> +{
-> +	u64 time = trace_clock_local();
-> +	struct ftrace_graph_ent ent = {
-> +		.func  = ip,
-> +		.depth = 0,
-> +	};
-> +	struct ftrace_graph_ret ret = {
-> +		.func     = ip,
-> +		.depth    = 0,
-> +		.calltime = time,
-> +		.rettime  = time,
-> +	};
-> +
-> +	__trace_graph_entry(tr, &ent, flags, pc);
-> +	__trace_graph_return(tr, &ret, flags, pc);
-> +}
-
-
-
-Please reuse the existing one in trace_irqsoff.c, you can
-librarize it in the graph tracer file.
-
-Thnaks.
+As soon as memory is available (on any node or any cpu, they are all
+empty) SLAB will repopulate its queues(!).
 
