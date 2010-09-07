@@ -1,173 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab0IGKB3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 06:01:29 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:52308 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756249Ab0IGKBX (ORCPT
+	id S1756317Ab0IGKEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 06:04:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36039 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756221Ab0IGKEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 06:01:23 -0400
-Date: Tue, 7 Sep 2010 20:01:08 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [2.6.36-rc3] Workqueues, XFS, dependencies and deadlocks
-Message-ID: <20100907100108.GN705@dastard>
-References: <20100907072954.GM705@dastard>
- <4C86003B.6090706@kernel.org>
+	Tue, 7 Sep 2010 06:04:44 -0400
+Date: Tue, 7 Sep 2010 11:04:43 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, lrg@slimlogic.co.uk,
+        Changhwan Youn <chaos.youn@samsung.com>
+Subject: Re: [PATCH v2] regulators: add support max8952 regulator
+Message-ID: <20100907100442.GD7886@rakim.wolfsonmicro.main>
+References: <1283844202-4158-1-git-send-email-kgene.kim@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C86003B.6090706@kernel.org>
+In-Reply-To: <1283844202-4158-1-git-send-email-kgene.kim@samsung.com>
+X-Cookie: To make an enemy, do someone a favor.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 11:04:59AM +0200, Tejun Heo wrote:
-> Hello,
+On Tue, Sep 07, 2010 at 04:23:22PM +0900, Kukjin Kim wrote:
+> From: Changhwan Youn <chaos.youn@samsung.com>
 > 
-> On 09/07/2010 09:29 AM, Dave Chinner wrote:
-> > 1. I have had xfstests deadlock twice via #3, once on 2.6.36-rc2,
-> > and once on 2.6.36-rc3. This is clearly a regression, but it is not
-> > caused by any XFS changes since 2.6.35.  From what I can tell from
-> > the backtraces I saw was that it appears that the delaying of the
-> > data IO completion processing by requeuing does not allow the
-> > workqueue to move off the kworker thread. As a result, any work that
-> > is still queued on that kworker queue appears to be starved, and
-> > hence we never get the log workqueue processed that would allow data
-> > IO completion processing to make progress.
+> The operation of max8952 is almost similar to max8649 except
+> the output voltage range. This patch adds support the max8952
+> regulator using current max8649 implementation.
 > 
-> This is puzzling.  Queueing order shouldn't have changed.  Maybe I
-> screwed up queueing order handling of delayed works.  Which workqueue
-> is this?
+> Signed-off-by: Changhwan Youn <chaos.youn@samsung.com>
+> Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-The three workqueues are initialised in
-fs/xfs/linux-2.6/xfs_buf.c::xfs_buf_init().
+This is OK but it should also include removal of the separate max8952
+driver since the functionality is now merged into this driver.  With
+that
 
-They do not use delayed works, the requeuing of interest here
-occurs in .../xfs_aops.c::xfs_end_io via
-.../xfs_aops.c:xfs_finish_ioend() onto the xfsdatad_workqueue.
-
-> Or better, can you give me a small test case which
-> reproduces the problem?
-
-I've seen it twice in about 100 xfstests runs in the past week.
-I can't remember the test that tripped over it - 078 I think did
-once, and it was a different test the first time - only some tests
-use the loopback device. We've never had a reliable reproducer
-because of the complexity of the race condition that leads to
-the deadlock....
-
-> > 2. I have circumstantial evidence that #4 is contributing to
-> > several minute long livelocks. This is intertwined with memory
-> > reclaim and lock contention, but fundamentally log IO completion
-> > processing is being blocked for extremely long periods of time
-> > waiting for a kworker thread to start processing them.  In this
-> > case, I'm creating close to 100,000 inodes every second, and they
-> > are getting written to disk. There is a burst of log IO every 3s or
-> > so, so the log Io completion is getting queued behind at least tens
-> > of thousands of inode IO completion work items. These work
-> > completion items are generating lock contention which slows down
-> > processing even further. The transaciton subsystem stalls completely
-> > while it waits for log IO completion to be processed. AFAICT, this
-> > did not happen on 2.6.35.
-> 
-> Creating the workqueue for log completion w/ WQ_HIGHPRI should solve
-> this.
-
-So what you are saying is that we need to change the workqueue
-creation interface to use alloc_workqueue() with some special set of
-flags to make the workqueue behave as we want, and that each
-workqueue will require a different configuration?  Where can I find
-the interface documentation that describes how the different flags
-affect the workqueue behaviour?
-
-> > XFS has used workqueues for these "separate processing threads"
-> > because they were a simple primitve that provided the separation and
-> > isolation guarantees that XFS IO completion processing required.
-> > That is, work deferred from one processing queue to another would
-> > not block the original queue, and queues can be blocked
-> > independently of the processing of other queues.
-> 
-> Semantically, that property is (or should be) preserved.  The
-> scheduling properties change tho and if the code has been depending on
-> more subtile aspects of work scheduling, it will definitely need to be
-> adjusted.
-
-Which means?
-
-> >>From what I can tell of the new kworker thread based implementation,
-> > I cannot see how it provides the same work queue separation,
-> > blocking and isolation guarantees. If we block during work
-> > processing, then anything on the queue for that thread appears to be
-> > blocked from processing until the work is unblocked.
-> 
-> I fail to follow here.  Can you elaborate a bit?
-
-Here's what the work function does:
-
- -> run @work
-	-> trylock returned EAGAIN
-	-> queue_work(@work)
-	-> delay(1); // to stop workqueue spinning chewing up CPU
-
-So basically I'm seeing a kworker thread blocked in delay(1) - it's
-appears to be making progress by processing the same work item over and over
-again with delay(1) calls between them. The queued log IO completion
-is not being processed, even though it is sitting in a queue
-waiting...
-
-> > Hence my main concern is that the new work queue implementation does
-> > not provide the same semantics as the old workqueues, and as such
-> > re-introduces a class of problems that will cause random hangs and
-> > other bad behaviours on XFS filesystems under heavy load.
-> 
-> I don't think it has that level of fundamental design flaw.
-> 
-> > Hence, I'd like to know if my reading of the new workqueue code is
-> > correct and:
-> 
-> Probably not.
-> 
-> > 	a) if not, understand why the workqueues are deadlocking;
-> 
-> Yeah, let's track this one down.
-> 
-> > 	c) understand how we can prioritise log IO completion
-> > 	processing over data, metadata and unwritten extent IO
-> > 	completion processing; and
-> 
-> As I wrote above, WQ_HIGHPRI is there for you.
-> 
-> > 	d) what can be done before 2.6.36 releases.
-> 
-> To preserve the original behavior, create_workqueue() and friends
-> create workqueues with @max_active of 1, which is pretty silly and bad
-> for latency.  Aside from fixing the above problems, it would be nice
-> to find out better values for @max_active for xfs workqueues.  For
-
-Um, call me clueless, but WTF does max_active actually do? It's not
-described anywhere, it's clamped to magic numbers ("I really like
-512"), etc. AFAICT, it determines whether the work is queued as
-delayed work or whether it is put on an active worklist straight
-away. However, the lack of documentation describing the behaviour of
-the workqueues and why I might want to set a value other than 1 or
-the default makes it pretty hard to work out anything for sure...
-
-> most users, using the pretty high default value is okay as they
-> usually have much stricter constraint elsewhere (like limited number
-> of work_struct), but last time I tried xfs allocated work_structs and
-> fired them as fast as it could, so it looked like it definitely needed
-> some kind of resasonable capping value.
-
-What part of XFS fired work structures as fast as it could? Queuing
-rates are determined completely by the IO completion rates...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
