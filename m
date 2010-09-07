@@ -1,109 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab0IGA4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 20:56:23 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:37809 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717Ab0IGA4T (ORCPT
+	id S1755328Ab0IGBDd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 21:03:33 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54241 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab0IGBD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 20:56:19 -0400
-X-AuditID: b753bd60-a7533ba000000226-48-4c858daf2d97
-Message-ID: <4C858DA8.3060600@hitachi.com>
-Date: Tue, 07 Sep 2010 09:56:08 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	Mon, 6 Sep 2010 21:03:29 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 2/4] swap: prevent reuse during hibernation
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Andrea Gelmini <andrea.gelmini@gmail.com>,
+        Balbir Singh <balbir@in.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Nigel Cunningham <nigel@tuxonice.net>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LSU.2.00.1009060111220.13600@sister.anvils>
+References: <alpine.LSU.2.00.1009060104410.13600@sister.anvils> <alpine.LSU.2.00.1009060111220.13600@sister.anvils>
+Message-Id: <20100907100154.C8DA.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Jim Keniston <jkenisto@us.ibm.com>
-Subject: Re: [PATCHv11 2.6.36-rc2-tip 4/15]  4: uprobes: x86 specific functions
- for user space breakpointing.
-References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6> <20100825134210.5447.10126.sendpatchset@localhost6.localdomain6> <87pqwvm8cl.fsf@basil.nowhere.org> <20100903174832.GB14891@linux.vnet.ibm.com> <20100906095319.7c2fa9b0@basil.nowhere.org> <20100906134407.GF14891@linux.vnet.ibm.com>
-In-Reply-To: <20100906134407.GF14891@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue,  7 Sep 2010 10:03:26 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/09/06 22:44), Srikar Dronamraju wrote:
-> [adding Masami and Jim to the copy list] 
+> Move the hibernation check from scan_swap_map() into try_to_free_swap():
+> to catch not only the common case when hibernation's allocation itself
+> triggers swap reuse, but also the less likely case when concurrent page
+> reclaim (shrink_page_list) might happen to try_to_free_swap from a page.
 > 
->>> I havent tried any fuzz tests with the instruction decoder. But I am
->>> not sure if Masami has tried that out some of these. 
->>> One question: Do you want to test uprobes with crashme or test
->>> instruction decoder with crashme.
+> Hibernation already clears __GFP_IO from the gfp_allowed_mask, to stop
+> reclaim from going to swap: check that to prevent swap reuse too.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Ondrej Zary <linux@rainbow-software.org>
+> Cc: Andrea Gelmini <andrea.gelmini@gmail.com>
+> Cc: Balbir Singh <balbir@in.ibm.com>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Nigel Cunningham <nigel@tuxonice.net>
+> Cc: stable@kernel.org
+> ---
+> 
+>  mm/swapfile.c |   24 ++++++++++++++++++++----
+>  1 file changed, 20 insertions(+), 4 deletions(-)
+> 
+> --- swap1/mm/swapfile.c	2010-09-05 22:37:07.000000000 -0700
+> +++ swap2/mm/swapfile.c	2010-09-05 22:45:54.000000000 -0700
+> @@ -318,10 +318,8 @@ checks:
+>  	if (offset > si->highest_bit)
+>  		scan_base = offset = si->lowest_bit;
+>  
+> -	/* reuse swap entry of cache-only swap if not hibernation. */
+> -	if (vm_swap_full()
+> -		&& usage == SWAP_HAS_CACHE
+> -		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
+> +	/* reuse swap entry of cache-only swap if not busy. */
+> +	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+>  		int swap_was_freed;
+>  		spin_unlock(&swap_lock);
+>  		swap_was_freed = __try_to_reclaim_swap(si, offset);
+> @@ -688,6 +686,24 @@ int try_to_free_swap(struct page *page)
+>  	if (page_swapcount(page))
+>  		return 0;
+>  
+> +	/*
+> +	 * Once hibernation has begun to create its image of memory,
+> +	 * there's a danger that one of the calls to try_to_free_swap()
+> +	 * - most probably a call from __try_to_reclaim_swap() while
+> +	 * hibernation is allocating its own swap pages for the image,
+> +	 * but conceivably even a call from memory reclaim - will free
+> +	 * the swap from a page which has already been recorded in the
+> +	 * image as a clean swapcache page, and then reuse its swap for
+> +	 * another page of the image.  On waking from hibernation, the
+> +	 * original page might be freed under memory pressure, then
+> +	 * later read back in from swap, now with the wrong data.
+> +	 *
+> +	 * Hibernation clears bits from gfp_allowed_mask to prevent
+> +	 * memory reclaim from writing to disk, so check that here.
+> +	 */
+> +	if (!(gfp_allowed_mask & __GFP_IO))
+> +		return 0;
+> +
 
-As you can see in kernel tree, x86 insn decoder has a test
-which decodes vmlinux and compares results with objdump.
-Similar tests had been done for glibc etc. by Jim.
-But crashme looks better. :)
+I like this one.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
->> Ideally both, but as a minimum the part that is exposed
->> to user space, that is uprobes.
-> 
-> Okay, I will test uprobes with crashme.
-> 
->>
->>>
->>> validate_insn_32bit is able to identify all valid instructions in a 32
->>> bit app and validate_insn_64bits is a superset of
->>> validate_insn_32bits; i.e it considers valid 32 bit codes as valid
->>> too.
->>
->> How can this be? e.g. 32bit has 1 byte INC/DEC but on 64bit
->> these are REX prefixes and can be in front of nearly anything.
->> So a super set cannot be correct. It has to be either / or.
->>
-> 
-> You are right, the validate_insn_32bits refers to good_insns_32 and
-> validate_insn_64bits refers to good_insns_64 to decode 1 byte
-> instructions. Some instructions like 0x06 and 0x0e seem to be valid in
-> good_insns_32 but not in good_insns_64. 
 
-Hmm, if you need to validate all instructions, you'd better to
-enhance x86 decoder for checking bad instructions.
-I think it can be done mostly by adding inat bitflags.
 
-Thank you,
 
->>> Did you get a chance to look at
->>> validate_insn_32bit/validate_insn_64bits? If you feel that
->>> validate_insn_32bit/validate_insn_64bits? are unable to detect
->>> valid codes, then I will certainly rework.
->>
->> I don't think you can do a 100% solution because for 100%
->> you would need to know the code segment the CPU is going
->> to use later, and that's not possible in advance.
->>
-> 
-> I think you are referring to RIP related instructions, this how we
-> handle them. 
-> Please correct us if we are wrong, but here is what we do 
-> - While analyzing the instruction, take into account which register acts
->   as the code segment register.
-> 
-> - When interrupted (but before singlestep), copy the contents of the
->   register which we think acts as code segment register in our
->   above analysis into per-task scratch variable.
-> 
-> - After singlestepping we retrieve the saved per-task scratch
->   variable into the corresponding register.
-> 
->> A heuristic is reasonable (and leave out applications
->> that generate 64bit code from 32bit executables or vice versa)
->> but you need to test the right personality bits for that.
->>
->>
->>>> Also the compat bit is not necessarily set if no system call is
->>>> executing. You would rather need to check the exec_domain.
->>>
->>> Okay, I shall check and revert on this.
->>
->> Hmm actually I double checked and this is a separate bit.
->> So scratch that, TIF_32BIT is ok to test.
-> 
-> Okay, Thanks for confirming this.
