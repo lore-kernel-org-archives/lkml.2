@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757802Ab0IGP0b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:26:31 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38053 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757539Ab0IGP0Z (ORCPT
+	id S1757627Ab0IGP2x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:28:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58590 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757349Ab0IGP2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 11:26:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=F8gAbHG02QvFp1Au6sxHgbSxM6KzgMU0eNPlQV6fddLrJbyTawsya3yfzAhubk++gM
-         fX8/23iva+WZqTL+3hp4LDKs2JvhPzZAl92euqSaRgvOvt7r3GyWmVVc39Y4W0temk9W
-         ptxzCl821OXEN+C4bRFLc9S+z6JirIFt+OG0U=
-Date: Wed, 8 Sep 2010 00:26:14 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 04/10] vmscan: Synchronous lumpy reclaim should not
- call congestion_wait()
-Message-ID: <20100907152614.GC4620@barrios-desktop>
-References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
- <1283770053-18833-5-git-send-email-mel@csn.ul.ie>
+	Tue, 7 Sep 2010 11:28:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patch 00/30] semaphore cleanup
+Date: Tue, 7 Sep 2010 17:27:54 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>
+References: <20100907124636.880953480@linutronix.de>
+In-Reply-To: <20100907124636.880953480@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283770053-18833-5-git-send-email-mel@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009071727.55023.arnd@arndb.de>
+X-Provags-ID: V02:K0:uQ9E+Vi/GyUjeJ1HJ1p2MFtC8onk8A6BWAyL7NvOXaC
+ 9YYFFr/n+5kNT0plrNNQysLN4mhZvmSSpvNURU3Z+aR7mD6vRe
+ RmRuBscANP8pOsUL/x/DkxSgR3kDfu2Qku8M5oIw+J8NlFnZcU
+ I2oYj9Fz+AFWT/0EZ4UhXDUyArMPER5t4E8ND0cWo6OIJgbUZD
+ 1JRQQY07u18UBiyblWZrw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 11:47:27AM +0100, Mel Gorman wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> congestion_wait() mean "waiting queue congestion is cleared".  However,
-> synchronous lumpy reclaim does not need this congestion_wait() as
-> shrink_page_list(PAGEOUT_IO_SYNC) uses wait_on_page_writeback()
-> and it provides the necessary waiting.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Tuesday 07 September 2010, Thomas Gleixner wrote:
+> init_MUTEX[_LOCKED] and DECLARE_MUTEX are deprecated for quite some
+> time. Cleanup the remaining users and remove the cruft.
 
--- 
-Kind regards,
-Minchan Kim
+How many of these really need to be semaphores and can't be converted
+to mutex or completion? I thought that we wanted to send the classic
+semaphore the same way as the BKL eventually.
+
+	Arnd
