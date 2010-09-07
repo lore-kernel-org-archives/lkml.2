@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab0IGIqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 04:46:36 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49695 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab0IGIqb (ORCPT
+	id S1755664Ab0IGIqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 04:46:48 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:60928 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755062Ab0IGIqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 04:46:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=pIIS3tojRNCfb3rGQ5O1WytWHZckCAG57VfRS8At7ckEMlZYPWaFVmwh0tqFvaGHko
-         ZSvMwmwPQqHfCgsEhPmaeQvIZb8+LjtRlhsCG59f5joPyWMfNGDnkN7qxRMibnqWtJzZ
-         bIAZJ8YLn4IMx60QDWBkftHRvYQunZZfKyVxA=
-Message-ID: <4C85FBE3.4000605@gmail.com>
-Date: Tue, 07 Sep 2010 10:46:27 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Bill Pemberton <wfp5p@virginia.edu>,
-        Arnaud Patard <apatard@mandriva.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] staging: xgifb: Initialize uninitialized variables
-References: <1283837645.6302.10.camel@lenovo>
-In-Reply-To: <1283837645.6302.10.camel@lenovo>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Sep 2010 04:46:43 -0400
+Date: Tue, 7 Sep 2010 10:46:35 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minchan.kim\@gmail.com" <minchan.kim@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        "kosaki.motohiro\@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC][PATCH] big continuous memory allocator v2
+Message-ID: <20100907104635.2a02a1ca@basil.nowhere.org>
+In-Reply-To: <20100907172559.496554d8.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100907114505.fc40ea3d.kamezawa.hiroyu@jp.fujitsu.com>
+	<87occa9fla.fsf@basil.nowhere.org>
+	<20100907172559.496554d8.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2010 07:34 AM, Javier Martinez Canillas wrote:
-> Current patch solves compilation warnings in staging/xgifb for using possibly uninitialized variables.
+On Tue, 7 Sep 2010 17:25:59 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
+> On Tue, 07 Sep 2010 09:29:21 +0200
+> Andi Kleen <andi@firstfloor.org> wrote:
 > 
-> Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
-> ---
->  drivers/staging/xgifb/vb_setmode.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+> > 
+> > > This is a page allcoator based on memory migration/hotplug code.
+> > > passed some small tests, and maybe easier to read than previous
+> > > one.
+> > 
+> > Maybe I'm missing context here, but what is the use case for this?
+> > 
 > 
-> diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-> index c4db2fc..720a592 100644
-> --- a/drivers/staging/xgifb/vb_setmode.c
-> +++ b/drivers/staging/xgifb/vb_setmode.c
-> @@ -376,7 +376,7 @@ void InitTo330Pointer(unsigned char ChipType, struct vb_device_info *pVBInfo)
->  unsigned char XGISetModeNew(struct xgi_hw_device_info *HwDeviceExtension,
->  			unsigned short ModeNo)
->  {
-> -	unsigned short ModeIdIndex;
-> +	unsigned short ModeIdIndex = 0;
->  	/* unsigned char *pVBInfo->FBAddr = HwDeviceExtension->pjVideoMemoryAddress; */
->  	struct vb_device_info VBINF;
->  	struct vb_device_info *pVBInfo = &VBINF;
+> I hear some drivers want to allocate xxMB of continuous area.(camera?)
+> Maybe embeded guys can answer the question.
 
-No, please don't. This is a compiler bug.
+Ok what I wanted to say -- assuming you can make this work
+nicely, and the delays (swap storms?) likely caused by this are not
+too severe, it would be interesting for improving the 1GB pages on x86.
 
-The first use in that function is:
-XGI_SearchModeID( ModeNo , &ModeIdIndex, pVBInfo );
+This would be a major use case and probably be enough
+to keep the code around.
 
-and that function contains:
-if (XYZ) {
-  for( *ModeIdIndex = 0 ; ; ( *ModeIdIndex )++ )
-    ...
-} else {
-  for( *ModeIdIndex = 0 ; ; ( *ModeIdIndex )++ )
-    ...
-}
+But it depends on how well it works.
 
-So your compiler is foolish if that emits a warning.
+e.g. when the zone is already fully filled how long
+does the allocation of 1GB take?
 
-> @@ -3834,7 +3834,7 @@ unsigned char XGI_SetCRT2Group301(unsigned short ModeNo,
->  		struct xgi_hw_device_info *HwDeviceExtension,
->  		struct vb_device_info *pVBInfo)
->  {
-> -	unsigned short tempbx, ModeIdIndex, RefreshRateTableIndex;
-> +	unsigned short tempbx, ModeIdIndex = 0, RefreshRateTableIndex;
->  
->  	tempbx = pVBInfo->VBInfo;
->  	pVBInfo->SetFlag |= ProgrammingCRT2;
+How about when parallel programs are allocating/freeing
+in it too?
 
-The same here.
+What's the worst case delay under stress?
 
-regards,
+Does it cause swap storms?
+
+One issue is also that it would be good to be able to decide
+in advance if the OOM killer is likely triggered (and if yes
+reject the allocation in the first place). 
+
+-Andi
+
 -- 
-js
+ak@linux.intel.com -- Speaking for myself only.
