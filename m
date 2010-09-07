@@ -1,97 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab0IGDtL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 23:49:11 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48041 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751959Ab0IGDtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 23:49:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,327,1280732400"; 
-   d="scan'208";a="604432815"
-From: "Dong, Eddie" <eddie.dong@intel.com>
-To: Zachary Amsden <zamsden@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Dong, Eddie" <eddie.dong@intel.com>
-Date: Tue, 7 Sep 2010 11:44:01 +0800
-Subject: RE: [KVM timekeeping 26/35] Catchup slower TSC to guest rate
-Thread-Topic: [KVM timekeeping 26/35] Catchup slower TSC to guest rate
-Thread-Index: ActAP9mW0WIJCTe9Q36EYxd+qnlo/AN/nY/A
-Message-ID: <1A42CE6F5F474C41B63392A5F80372B22A8253C5@shsmsx501.ccr.corp.intel.com>
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com>
- <1282291669-25709-27-git-send-email-zamsden@redhat.com>
-In-Reply-To: <1282291669-25709-27-git-send-email-zamsden@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	id S1755678Ab0IGDyb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 23:54:31 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59732 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab0IGDy1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 23:54:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=xbgmozmTNU/8nUJY3++U3JhXUaqFnAJJnQv2/ZeWOGPWvI1yTT2/RKXm9P/P08gTeu
+         YLtTbEbIwnwnFPFHLUNbnUhbodPsLcYjw7pjkbb8Oh/g3YrPyX+zn5JAQKEXmbgfsxrD
+         VzQgXgAKD/xc5SaDY8+wyxyQ2QtARyIqTn5/o=
 MIME-Version: 1.0
+In-Reply-To: <4C85A71F.3010402@bluewatersys.com>
+References: <280328.53116.qm@web180311.mail.gq1.yahoo.com> <4C85A71F.3010402@bluewatersys.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Tue, 7 Sep 2010 11:54:06 +0800
+Message-ID: <AANLkTi=B7O9jDB_pzHS6feWTxHQTfDZ-QLx7jOKaA2vN@mail.gmail.com>
+Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: David Brownell <david-b@pacbell.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        avictor.za@gmail.com, bn@niasdigital.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o873nSnD004788
 
-Zachary:
-	Will you extend the logic to cover the situation when the guest runs at higher than the guest rate but the PCPU is over committed. In that case, likely we can use the time spent when the VCPU is scheduled out to catch up as well. Of course if the VCPU scheduled out time is not enough to compensate the cycles caused by fast host TSC (exceeding a threahold), we will eventually have to fall back to trap and emulation mode.
+On Tue, Sep 7, 2010 at 10:44 AM, Ryan Mallon <ryan@bluewatersys.com> wrote:
+> On 09/07/2010 02:23 PM, David Brownell wrote:
+>> Still not liking or accepting this proposed
+>> change to the GPIO framework.
+>>
+>> For the AT91 case (where integers 0..N are
+>> IRQs, but N..max are GPIOs)
+>>
+>> A simpler solution is just to use a bit in
+>> the integer to indicate IRQ vs GPIO. Â Like
+>> maybe the sign bit.. which is never set on
+>> valid GPIO numbers, but platforms could let
+>> be set on IRQs.
+>>
+> How about this approach instead?
+>
 
-Thx, Eddie
+This doesn't solve the problem with more complicated settings, e.g.
+some GPIOs within are not valid, not just the begining ones.
 
------Original Message-----
-From: kvm-owner@vger.kernel.org [mailto:kvm-owner@vger.kernel.org] On Behalf Of Zachary Amsden
-Sent: 2010Äê8ÔÂ20ÈÕ 16:08
-To: kvm@vger.kernel.org
-Cc: Zachary Amsden; Avi Kivity; Marcelo Tosatti; Glauber Costa; Thomas Gleixner; John Stultz; linux-kernel@vger.kernel.org
-Subject: [KVM timekeeping 26/35] Catchup slower TSC to guest rate
+So the real question here is the semantics of gpio_is_valid(). I'd
+personally incline it reads as if a GPIO _number_ is valid generally,
+(e.g. like -1 is not a valid GPIO number), instead of that specific
+GPIO is valid on that specific platform. The latter can be judged
+with gpio_request().
 
-Use the catchup code to continue adjusting the TSC when
-running at lower than the guest rate
-
-Signed-off-by: Zachary Amsden <zamsden@redhat.com>
----
- arch/x86/kvm/x86.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index a4215d7..086d56a 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1013,8 +1013,11 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
- 			kvm_x86_ops->adjust_tsc_offset(v, tsc-tsc_timestamp);
- 	}
- 	local_irq_restore(flags);
--	if (catchup)
-+	if (catchup) {
-+		if (this_tsc_khz < v->kvm->arch.virtual_tsc_khz)
-+			vcpu->tsc_rebase = 1;
- 		return 0;
-+	}
- 
- 	/*
- 	 * Time as measured by the TSC may go backwards when resetting the base
-@@ -5022,6 +5025,10 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 
- 	kvm_guest_exit();
- 
-+	/* Running on slower TSC without kvmclock, we must bump TSC */
-+	if (vcpu->arch.tsc_rebase)
-+		kvm_request_clock_update(vcpu);
-+
- 	preempt_enable();
- 
- 	vcpu->srcu_idx = srcu_read_lock(&vcpu->kvm->srcu);
--- 
-1.7.1
-
---
-To unsubscribe from this list: send the line "unsubscribe kvm" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> ----
+> On some architectures gpio numbering does not start from zero. Allow for
+> correct behaviour of gpio_is_valid on values below the first gpio by
+> adding the architecture overrideable ARCH_FIRST_GPIO.
+>
+> Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
+> ----
+>
+> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+> index c7376bf..01aab1f 100644
+> --- a/include/asm-generic/gpio.h
+> +++ b/include/asm-generic/gpio.h
+> @@ -22,10 +22,15 @@
+> Â #define ARCH_NR_GPIOS Â  Â  Â  Â  Â 256
+> Â #endif
+>
+> +#ifndef ARCH_FIRST_GPIO
+> +#define ARCH_FIRST_GPIO Â  Â  Â  Â  Â  Â  Â  Â 0
+> +#endif
+> +
+> Â static inline int gpio_is_valid(int number)
+> Â {
+> Â  Â  Â  Â /* only some non-negative numbers are valid */
+> - Â  Â  Â  return ((unsigned)number) < ARCH_NR_GPIOS;
+> + Â  Â  Â  return (number >= ARCH_FIRST_GPIO &&
+> + Â  Â  Â  Â  Â  Â  Â  (unsigned)number < ARCH_NR_GPIOS;
+> Â }
+>
+> Â struct device;
+>
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
