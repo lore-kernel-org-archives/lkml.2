@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967Ab0IGSKT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 14:10:19 -0400
-Received: from n78.bullet.mail.sp1.yahoo.com ([98.136.44.42]:46819 "HELO
-	n78.bullet.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756933Ab0IGSKP (ORCPT
+	id S1758045Ab0IGSKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 14:10:34 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38600 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757994Ab0IGSKb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 14:10:15 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 678262.34264.bm@omp120.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=WuyIrimc2wLGT0F8DdDQUY3Br3NgLGrROik1M4x8ZT84ET0YarZxN1hHvJw0AzIwET6J4wvh0qJaA7pc+BXIpGRZaW7r6YT8QiehzvDkZQObUwuwuYNN3ITq/za/lDkyAz8KNNTCfmDzgLPJI4bbf3cZBuYVRAzmGpkhuEIiy00=;
-Message-ID: <569801.35222.qm@web180310.mail.gq1.yahoo.com>
-X-YMail-OSG: hLMcrhQVM1mGpvuVqlx49LaOS5gJkFBzk0idNZ87PqohGVd
- EJ6IJkMRhGf5V2OCZOo82L2ttJiJwrVxJW6TZAis8XgFr3A41cG0nuLo0xfH
- V8qFTKKp7SqUcQ6MY3nCwYKtAcxWF4Z4wO.pUtw58Zt2spn8auAIZ1oHRIjQ
- q2WhP1pCEVh4aepw.Wo2BKYPWnQxDv6YpfjZqwFwioc1fhz.dTamYNkQ4twa
- IDfKMxWw4JzGM3gwQkQaH7_PQpjRnZ_5QaukYkQMmBVc4wqfIbSZ6QYhZYAy
- NGfV0GfYn8cxSNOrnvAcOI9B3bmf_OCVFxYSuF5do0rVv3s0NXX63748kLAH
- mcDBlzv4TCgMvYRC1Uk.7EfSb85ZdIn6V7Ls-
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Tue, 7 Sep 2010 11:10:14 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
-To: Eric Miao <eric.y.miao@gmail.com>, Ryan Mallon <ryan@bluewatersys.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        avictor.za@gmail.com, bn@niasdigital.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <4C85BEFD.402@bluewatersys.com>
+	Tue, 7 Sep 2010 14:10:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ht8AD9wK4t5YHI1//3FKcOEl+HbWdRDS79wNgyXz5FD3eOmg6GKr00sfLGiL44noJh
+         PMGA4HPfgrN7iPSJVTIBcddkBwFl3zqD6q+Fre3dx+hQO2EADOE8NyPUqf0kE9eiM1gJ
+         pm4SBhTItMxk/0hsAcUlIM2lD5QBAEKwE7MhE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1282845485-8991-10-git-send-email-konrad.wilk@oracle.com>
+References: <1282845485-8991-1-git-send-email-konrad.wilk@oracle.com>
+	<1282845485-8991-10-git-send-email-konrad.wilk@oracle.com>
+Date: Tue, 7 Sep 2010 11:10:30 -0700
+X-Google-Sender-Auth: 2W3Lr8xuX4ST13p4KzV9HWFOLyk
+Message-ID: <AANLkTikcdyNP8x28u3-m0oNcOqSek=xwUn3wW-=3sqnY@mail.gmail.com>
+Subject: Re: [PATCH 09/10] x86/VT-d: Make Intel VT-d IOMMU use IOMMU_INIT_* macros.
+From: Tony Luck <tony.luck@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: hpa@zytor.com, fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Len Brown <len.brown@intel.com>, Chris Wright <chrisw@sous-sol.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 26, 2010 at 10:58 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> We utilize the IOMMU_INIT macros to create this dependency:
+...
+>  drivers/pci/dmar.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
+> index 5fa64ea..4ef56a0 100644
+> --- a/drivers/pci/dmar.c
+> +++ b/drivers/pci/dmar.c
+> @@ -36,6 +36,7 @@
+>  #include <linux/tboot.h>
+>  #include <linux/dmi.h>
+>  #include <linux/slab.h>
+> +#include <asm/iommu_table.h>
 
+This breaks ia64 - since you didn't make an asm/iommu_table.h for it :-(
 
---- On Mon, 9/6/10, Ryan Mallon <ryan@bluewatersys.com> wrote:
+Just copying the x86 one led to complaints about pci_swiotlb_detect_4gb()
+not being declared ... so I think I need a bit more of the same infrastructure
+you made of x86.
 
-> >  The intent of my patch was to keep gpio_is_valid
-> simple, but add
-> a simple check for architectures where the base gpio is not
-> zero. Will
-> wait and see what David has to say.
+Pointers & hints please?
 
-NAK still.  You're trying to abuse gpio_is_valid(),
-which I see no need to support.
-
-
-In terms of GPIO framework architecture, zero is
-the first GPIO in all cases, and is always
-a valid GPIO number, even if it's not
-requestable/swritable/readable on a given board.
-
-Whether it's usable on a given platform depends
-on whether a GPIO controller is registered which
-claims numbers 0..N ... (assuming gpiolib in use).
-
-
+-Tony
