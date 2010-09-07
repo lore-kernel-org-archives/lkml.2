@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758181Ab0IGXdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 19:33:15 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40140
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755645Ab0IGXdO (ORCPT
+	id S1758205Ab0IGXjI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 19:39:08 -0400
+Received: from 217.59.140-88.rev.gaoland.net ([88.140.59.217]:52479 "EHLO
+	electric-eye.fr.zoreil.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756557Ab0IGXjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 19:33:14 -0400
-Date: Tue, 07 Sep 2010 16:33:31 -0700 (PDT)
-Message-Id: <20100907.163331.260082741.davem@davemloft.net>
-To: matt.causey@gmail.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+	Tue, 7 Sep 2010 19:39:05 -0400
+X-Greylist: delayed 506 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Sep 2010 19:39:05 EDT
+Date: Wed, 8 Sep 2010 01:29:57 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Matt Causey <matt.causey@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Simon Kagstrom <simon.kagstrom@netinsight.net>
 Subject: Re: Is via-velocity broken in 2.6.34?
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTinK4VywsJ86jaC8wQjbXjzvP-z44JD3XbZbMM2a@mail.gmail.com>
+Message-ID: <20100907232957.GA11595@electric-eye.fr.zoreil.com>
 References: <AANLkTinK4VywsJ86jaC8wQjbXjzvP-z44JD3XbZbMM2a@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinK4VywsJ86jaC8wQjbXjzvP-z44JD3XbZbMM2a@mail.gmail.com>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please Cc: netdev@vger.kernel.org
 
-Please always CC: netdev@vger.kernel.org for networking reports.
+Matt Causey <matt.causey@gmail.com> :
+[2.6.29 -> 2.6.34 regression]
+> Attached is debug.tar.  It contains dmesg, config.gz, ethtool,
+> ifconfig, and lspci output.  I'm not sure what else to do at this
+> point.  Is there some debugging I can enable in the kernel to give
+> more clues as to what's gone wrong?
 
-Give this patch a try:
+Any chance you could bisect the regression or narrow it down a bit ?
 
---------------------
-via-velocity: Turn scatter-gather support back off.
+Otherwise may I assume that there is no difference in the
+userspace tools (just in case) ?
 
-It causes all kinds of DMA API debugging assertions and
-all straight-forward attempts to fix it have failed.
-
-So turn off SG, and we'll tackle making this work
-properly in net-next-2.6
-
-Reported-by: Dave Jones <davej@redhat.com>
-Tested-by: Dave Jones <davej@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/net/via-velocity.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/via-velocity.c b/drivers/net/via-velocity.c
-index fd69095..f534123 100644
---- a/drivers/net/via-velocity.c
-+++ b/drivers/net/via-velocity.c
-@@ -2824,7 +2824,7 @@ static int __devinit velocity_found1(struct pci_dev *pdev, const struct pci_devi
- 	netif_napi_add(dev, &vptr->napi, velocity_poll, VELOCITY_NAPI_WEIGHT);
- 
- 	dev->features |= NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_FILTER |
--		NETIF_F_HW_VLAN_RX | NETIF_F_IP_CSUM | NETIF_F_SG;
-+		NETIF_F_HW_VLAN_RX | NETIF_F_IP_CSUM;
- 
- 	ret = register_netdev(dev);
- 	if (ret < 0)
 -- 
-1.7.2.2
-
+Ueimor
