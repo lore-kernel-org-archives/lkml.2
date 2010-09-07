@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab0IGPHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:07:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:62294 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab0IGPHr (ORCPT
+	id S1757332Ab0IGPIM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:08:12 -0400
+Received: from mx1.sophos.com ([195.166.81.52]:42736 "EHLO mx1.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757270Ab0IGPIG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 11:07:47 -0400
-X-Authority-Analysis: v=1.1 cv=kSl6L8luU05z5mpL051isgeeLpAUfowbwuc/WIqEapw= c=1 sm=0 a=DRyNg-0iXyMA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Vrj5tWq_V90gqbJsK74A:9 a=9vXcHVeHisQs9QUhhKwA:7 a=NVKMYTLVVI2qXOqIVOY1m6EQrlkA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] trace: add graph output support for wakeup tracer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100907141846.GC5375@nowhere>
-References: <1281020247-5756-1-git-send-email-jolsa@redhat.com>
-	 <20100907141846.GC5375@nowhere>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 07 Sep 2010 11:07:45 -0400
-Message-ID: <1283872065.5133.116.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Sep 2010 11:08:06 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Eric Paris <eparis@redhat.com>
+Subject: [BUG][PATCH][2.6.36-rc3] fanotify: Do not ignore result of permission decisions
+Date: Tue, 7 Sep 2010 16:08:01 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+MIME-Version: 1.0
+Message-ID: <201009071608.02290.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 07/09/2010 16:08:03,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 07/09/2010 16:08:04,
+	Serialize complete at 07/09/2010 16:08:04
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-07 at 16:18 +0200, Frederic Weisbecker wrote:
-> On Thu, Aug 05, 2010 at 04:57:27PM +0200, Jiri Olsa wrote:
 
-> > +static void wakeup_graph_return(struct ftrace_graph_ret *trace)
-> > +{
-> > +	struct trace_array *tr = wakeup_trace;
-> > +	struct trace_array_cpu *data;
-> > +	unsigned long flags;
-> > +	long disabled;
-> > +	int cpu, pc;
-> > +
-> > +	if (likely(!wakeup_task))
-> > +		return;
-> > +
-> > +	pc = preempt_count();
-> > +	preempt_disable_notrace();
-> > +
-> > +	cpu = raw_smp_processor_id();
-> > +	if (cpu != wakeup_current_cpu)
-> > +		goto out_enable;
-> > +
-> > +	data = tr->data[cpu];
-> > +	disabled = atomic_inc_return(&data->disabled);
-> > +	if (unlikely(disabled != 1))
-> > +		goto out;
-> > +
-> > +	local_irq_save(flags);
-> > +	__trace_graph_return(tr, trace, flags, pc);
-> > +	local_irq_restore(flags);
-> 
-> 
-> 
-> Do you disable irqs to avoid losing traces? If so there is a race
-> window between the recursion barrier in data->disabled and the
-> time you disable irqs.
-> 
-> If you don't want to lose anything (except NMIs), you need to
-> replace the preempt_disable by the local_irq_save, ie disable
-> irqs before the recursion protection.
-> 
+Current code ignores access replies to permission decisions so
+fix it in a way which will allow all listeners to still receive
+non permission events.
 
+Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+---
+ fs/notify/fsnotify.c             |   25 +++++++++++++++++--------
+ include/linux/fsnotify_backend.h |    4 ++++
+ 2 files changed, 21 insertions(+), 8 deletions(-)
 
-Or is it just to get the flags variable? If so then use
-local_save_flags() instead.
+diff --git a/fs/notify/fsnotify.c b/fs/notify/fsnotify.c
+index 3680242..37fd072 100644
+--- a/fs/notify/fsnotify.c
++++ b/fs/notify/fsnotify.c
+@@ -224,7 +224,7 @@ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
+        struct fsnotify_group *inode_group, *vfsmount_group;
+        struct fsnotify_event *event = NULL;
+        struct vfsmount *mnt;
+-       int idx, ret = 0;
++       int idx, ret = 0, res;
+        /* global tests shouldn't care about events on child only the specific event */
+        __u32 test_mask = (mask & ~FS_EVENT_ON_CHILD);
 
--- Steve
+@@ -275,18 +275,27 @@ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
 
+                if (inode_group > vfsmount_group) {
+                        /* handle inode */
+-                       send_to_group(to_tell, NULL, inode_mark, NULL, mask, data,
+-                                     data_is, cookie, file_name, &event);
++                       res = send_to_group(to_tell, NULL, inode_mark, NULL, mask, data,
++                                           data_is, cookie, file_name, &event);
+                        /* we didn't use the vfsmount_mark */
+                        vfsmount_group = NULL;
+                } else if (vfsmount_group > inode_group) {
+-                       send_to_group(to_tell, mnt, NULL, vfsmount_mark, mask, data,
+-                                     data_is, cookie, file_name, &event);
++                       res = send_to_group(to_tell, mnt, NULL, vfsmount_mark, mask, data,
++                                           data_is, cookie, file_name, &event);
+                        inode_group = NULL;
+                } else {
+-                       send_to_group(to_tell, mnt, inode_mark, vfsmount_mark,
+-                                     mask, data, data_is, cookie, file_name,
+-                                     &event);
++                       res = send_to_group(to_tell, mnt, inode_mark, vfsmount_mark,
++                                           mask, data, data_is, cookie, file_name,
++                                           &event);
++               }
++
++               /* If a listener denied on a permission hook we will remember the reason
++                  and run the rest with a non-permission mask only. This allows other
++                  listeners to receive non-permission notifications but we do not care
++                  about further permission checks. */
++               if (unlikely((res == -EPERM) && (mask & FS_ALL_PERM_EVENTS))) {
++                       mask &= ~FS_ALL_PERM_EVENTS;
++                       ret = res;
+                }
 
+                if (inode_group)
+diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
+index e40190d..c8aea03 100644
+--- a/include/linux/fsnotify_backend.h
++++ b/include/linux/fsnotify_backend.h
+@@ -64,6 +64,10 @@
+
+ #define FS_MOVE                        (FS_MOVED_FROM | FS_MOVED_TO)
+
++/* All events which require a permission response from userspace */
++#define FS_ALL_PERM_EVENTS (FS_OPEN_PERM |\
++                           FS_ACCESS_PERM)
++
+ #define ALL_FSNOTIFY_EVENTS (FS_ACCESS | FS_MODIFY | FS_ATTRIB | \
+                             FS_CLOSE_WRITE | FS_CLOSE_NOWRITE | FS_OPEN | \
+                             FS_MOVED_FROM | FS_MOVED_TO | FS_CREATE | \
+
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
