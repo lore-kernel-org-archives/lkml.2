@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab0IGOYb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 10:24:31 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41946 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756983Ab0IGOY2 (ORCPT
+	id S1757000Ab0IGO2P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 10:28:15 -0400
+Received: from forward7.mail.yandex.net ([77.88.61.37]:39342 "EHLO
+	forward7.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903Ab0IGO2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 10:24:28 -0400
-Date: Tue, 7 Sep 2010 10:24:27 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: RFC: Crypto API User-interface
-Message-ID: <20100907142427.GA14207@infradead.org>
-References: <20100907084213.GA4610@gondor.apana.org.au>
- <20100907140646.GA31921@infradead.org>
- <20100907141112.GB6903@gondor.apana.org.au>
+	Tue, 7 Sep 2010 10:28:07 -0400
+X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Sep 2010 10:28:06 EDT
+X-Yandex-Spam: 0
+X-Yandex-Front: web92.yandex.ru 
+X-Yandex-TimeMark: 1283869328 
+From: Tkhai Kirill <tkhai@yandex.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH]RT-Patch: Fixed sparc's anon_rwsem_is_locked() and page_address_init() define
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100907141112.GB6903@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Message-Id: <7791283869327@web92.yandex.ru>
+Date: Tue, 07 Sep 2010 18:22:07 +0400
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 10:11:12PM +0800, Herbert Xu wrote:
-> FWIW I don't care about user-space using kernel software crypto at
-> all.  It's the security people that do.
+RT-Patch: Fixed sparc's anon_rwsem_is_locked() and page_address_init() define
+Signed-off-by: Tkhai Kirill <tkhai@yandex.ru>
+---
 
-And since when did we care about their crack pipe dreams?
+Fixed compilation errors. Kernel version 2.6.33.7-rt29.
 
-> The purpose of the user-space API is to export the hardware crypto
-> devices to user-space.  This means PCI devices mostly, as things
-> like aesni-intel can already be used without kernel help.
-
-I don't think they matter in practice.  We have less than a handfull
-of drivers for them, and with CPUs gaining proper instructions they
-are even less useful.  In addition any sane PCI card should just
-allow userspace mapping of their descriptors.
-
-> Now as a side-effect if this means that we can shut the security
-> people up about adding another interface then all the better.  But
-> I will certainly not go out of the way to add more crap to the
-> kernel for that purpose.
-
-So what is the real use case for this?  In addition to kernel bloat
-the real fear I have is that the security wankers will just configure
-the userspace crypto libraries to always use the kernel interface
-just in case, and once that happens we will have to deal with the whole
-mess.  Especially for RHEL and Fedora where the inmantes now run the
-asylum in that respect.
-
+diff -uprN a/arch/sparc/include/asm/rwsem.h b/arch/sparc/include/asm/rwsem.h
+--- a/arch/sparc/include/asm/rwsem.h	2010-09-07 17:44:51.727914479 +0400
++++ b/arch/sparc/include/asm/rwsem.h	2010-09-07 17:35:40.423917446 +0400
+@@ -75,7 +75,7 @@ static inline void rwsem_atomic_add(int 
+ 	atomic_add(delta, (atomic_t *)(&sem->count));
+ }
+ 
+-static inline int anon_rwsem_is_locked(struct rw_semaphore *sem)
++static inline int anon_rwsem_is_locked(struct rw_anon_semaphore *sem)
+ {
+ 	return (sem->count != 0);
+ }
+diff -uprN a/mm/highmem.c b/mm/highmem.c
+--- a/mm/highmem.c	2010-09-07 17:44:58.003917532 +0400
++++ b/mm/highmem.c	2010-09-07 17:39:43.970912094 +0400
+@@ -590,7 +590,7 @@ static int __set_page_address(struct pag
+ 
+ #endif	/* defined(CONFIG_HIGHMEM) && !defined(WANT_PAGE_VIRTUAL) */
+ 
+-#if defined(CONFIG_HIGHMEM) || defined(HASHED_PAGE_VIRTUAL)
++#if defined(WANT_PAGE_VIRTUAL) || defined(HASHED_PAGE_VIRTUAL)
+ 
+ void __init page_address_init(void)
+ {
