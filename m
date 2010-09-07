@@ -1,150 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932249Ab0IGQtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 12:49:14 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47445 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758008Ab0IGQsI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 12:48:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=RKzh5wDMcrSQKAaXCivhVrtTheev7XtGdx6dMVbIgl35cTcxW+Jllu0G35aNRj+sEN
-         Pbae2DtamfoFTdJQqbToAMc2QPEAONHMiBY92ZPDz386a/o6nIS1oWcnDafzjFyzQ4yH
-         3n5N/ezTXETlEKkVI8PZnJJQjKtV5mqVQiaz8=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        David Miller <davem@davemloft.net>,
-        Kaneshige Kenji <kaneshige.kenji@jp.fujitsu.com>,
-        Izumo Taku <izumi.taku@jp.fujitsu.com>,
-        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Scott Mcmillan <scott.a.mcmillan@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 1/5] irq: Add tracepoint to softirq_raise
-Date: Tue,  7 Sep 2010 18:48:07 +0200
-Message-Id: <1283878091-5751-2-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1283878091-5751-1-git-send-regression-fweisbec@gmail.com>
-References: <1283878091-5751-1-git-send-regression-fweisbec@gmail.com>
+	id S1757977Ab0IGQxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 12:53:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42698 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757943Ab0IGQxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 12:53:09 -0400
+Date: Tue, 7 Sep 2010 18:53:05 +0200
+From: "Dr. Werner Fink" <werner@suse.de>
+To: Greg KH <gregkh@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: [PATCH] tty: Add a new file /proc/tty/consoles
+Message-ID: <20100907165305.GA18757@boole.suse.de>
+Mail-Followup-To: Greg KH <gregkh@suse.de>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+	linux-api@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+ Add a new file /proc/tty/consoles to be able to
+ determine the registered system console lines.
+ If the reading process holds /dev/console open at
+ the regular standard input stream the active device
+ will be marked by an asterisk.
 
-Add a tracepoint for tracing when softirq action is raised.
-
-This and the existing tracepoints complete softirq's tracepoints:
-softirq_raise, softirq_entry and softirq_exit.
-
-And when this tracepoint is used in combination with
-the softirq_entry tracepoint we can determine
-the softirq raise latency.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: David Miller <davem@davemloft.net>
-Cc: Kaneshige Kenji <kaneshige.kenji@jp.fujitsu.com>
-Cc: Izumo Taku <izumi.taku@jp.fujitsu.com>
-Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Scott Mcmillan <scott.a.mcmillan@intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-LKML-Reference: <4C724298.4050509@jp.fujitsu.com>
-[ factorize softirq events with DECLARE_EVENT_CLASS ]
-Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Werner Fink <werner@suse.de>
 ---
- include/linux/interrupt.h  |    8 +++++++-
- include/trace/events/irq.h |   26 ++++++++++++++++++++++++--
- 2 files changed, 31 insertions(+), 3 deletions(-)
+ Documentation/filesystems/proc.txt |   16 ++++
+ fs/proc/proc_tty.c                 |  138 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 154 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index a0384a4..531495d 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -18,6 +18,7 @@
- #include <asm/atomic.h>
- #include <asm/ptrace.h>
- #include <asm/system.h>
-+#include <trace/events/irq.h>
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index 9fb6cbe..a5b6dd5 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -1074,6 +1074,7 @@ Table 1-11: Files in /proc/tty
+  drivers       list of drivers and their usage                
+  ldiscs        registered line disciplines                    
+  driver/serial usage statistic and status of single tty lines 
++ consoles      registered system console lines
+ ..............................................................................
+ 
+ To see  which  tty's  are  currently in use, you can simply look into the file
+@@ -1092,6 +1093,21 @@ To see  which  tty's  are  currently in use, you can simply look into the file
+   /dev/tty             /dev/tty        5       0 system:/dev/tty 
+   unknown              /dev/tty        4    1-63 console 
+ 
++To see which character device lines are currently used for the system console
++/dev/console, you may simply look into the file /proc/tty/consoles:
++
++  > cat /proc/tty/consoles
++  tty0                 4:7
++  ttyS0                4:64
++
++If the reading process holds /dev/console open at the regular standard input
++stream the active device will be marked by an asterisk:
++
++  > cat /proc/tty/consoles < /dev/console
++  *tty0                4:7
++  > tty
++  /dev/pts/3
++
+ 
+ 1.8 Miscellaneous kernel statistics in /proc/stat
+ -------------------------------------------------
+diff --git a/fs/proc/proc_tty.c b/fs/proc/proc_tty.c
+index 83adcc8..f717e84 100644
+--- a/fs/proc/proc_tty.c
++++ b/fs/proc/proc_tty.c
+@@ -12,7 +12,10 @@
+ #include <linux/proc_fs.h>
+ #include <linux/stat.h>
+ #include <linux/tty.h>
++#include <linux/tty_driver.h>
++#include <linux/console.h>
+ #include <linux/seq_file.h>
++#include <linux/fdtable.h>
+ #include <linux/bitops.h>
  
  /*
-  * These correspond to the IORESOURCE_IRQ_* defines in
-@@ -407,7 +408,12 @@ asmlinkage void do_softirq(void);
- asmlinkage void __do_softirq(void);
- extern void open_softirq(int nr, void (*action)(struct softirq_action *));
- extern void softirq_init(void);
--#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
-+static inline void __raise_softirq_irqoff(unsigned int nr)
+@@ -137,6 +140,140 @@ static const struct file_operations proc_tty_drivers_operations = {
+ };
+ 
+ /*
++ * The device ID of file descriptor 0 of the current reading
++ * task if a character device...
++ */
++static dev_t current_dev;
++
++/*
++ * This is the handler for /proc/tty/consoles
++ */
++static int show_console_dev(struct seq_file *m, void *v)
 +{
-+	trace_softirq_raise((struct softirq_action *)(unsigned long)nr, NULL);
-+	or_softirq_pending(1UL << nr);
++	const struct tty_driver * driver;
++	struct console * con;
++	int index, len;
++	dev_t dev;
++
++	if (v == SEQ_START_TOKEN)
++		return 0;
++	con = (struct console *)v;
++	if (!con)
++		return 0;
++	driver = con->device(con, &index);
++	if (!driver)
++		return 0;
++
++	dev = MKDEV(driver->major, driver->minor_start) + index;
++
++	seq_printf(m, "%s%s%d%n", (current_dev == dev) ? "*" : "",
++			con->name, con->index, &len);
++	len = 19 - len;
++	if (len < 1)
++		len = 1;
++	seq_printf(m, "%*c%d:%d\n", len, ' ', MAJOR(dev), MINOR(dev));
++
++	return 0;
 +}
 +
- extern void raise_softirq_irqoff(unsigned int nr);
- extern void raise_softirq(unsigned int nr);
- extern void wakeup_softirqd(void);
-diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-index 0e4cfb6..6fa7cba 100644
---- a/include/trace/events/irq.h
-+++ b/include/trace/events/irq.h
-@@ -5,7 +5,9 @@
- #define _TRACE_IRQ_H
- 
- #include <linux/tracepoint.h>
--#include <linux/interrupt.h>
++/* iterator for consoles */
++static void *c_start(struct seq_file *m, loff_t *pos)
++{
++	struct console * con;
++	loff_t off = 0;
 +
-+struct irqaction;
-+struct softirq_action;
- 
- #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
- #define show_softirq_name(val)				\
-@@ -93,7 +95,10 @@ DECLARE_EVENT_CLASS(softirq,
- 	),
- 
- 	TP_fast_assign(
--		__entry->vec = (int)(h - vec);
-+		if (vec)
-+			__entry->vec = (int)(h - vec);
-+		else
-+			__entry->vec = (int)(long)h;
- 	),
- 
- 	TP_printk("vec=%d [action=%s]", __entry->vec,
-@@ -136,6 +141,23 @@ DEFINE_EVENT(softirq, softirq_exit,
- 	TP_ARGS(h, vec)
- );
- 
-+/**
-+ * softirq_raise - called immediately when a softirq is raised
-+ * @h: pointer to struct softirq_action
-+ * @vec: pointer to first struct softirq_action in softirq_vec array
-+ *
-+ * The @h parameter contains a pointer to the softirq vector number which is
-+ * raised. @vec is NULL and it means @h includes vector number not
-+ * softirq_action. When used in combination with the softirq_entry tracepoint
-+ * we can determine the softirq raise latency.
-+ */
-+DEFINE_EVENT(softirq, softirq_raise,
++	if (*pos == 0)
++		return SEQ_START_TOKEN;
 +
-+	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
++	acquire_console_sem();
++	for (con = console_drivers; con; con = con->next) {
++		if (!con->device)
++			continue;
++		if (!con->write)
++			continue;
++		if ((con->flags & CON_ENABLED) == 0)
++			continue;
++		if (++off == *pos)
++			break;
++	}
++	release_console_sem();
 +
-+	TP_ARGS(h, vec)
-+);
++	return con;
++}
 +
- #endif /*  _TRACE_IRQ_H */
- 
- /* This part must be outside protection */
++static void *c_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	struct console * con;
++
++	acquire_console_sem();
++ 	if (v == SEQ_START_TOKEN)
++		con = console_drivers;
++	else
++		con = ((struct console *)v)->next;
++	for (; con; con = con->next) {
++		if (!con->device)
++			continue;
++		if (!con->write)
++			continue;
++		if ((con->flags & CON_ENABLED) == 0)
++			continue;
++		++*pos;
++		break;
++	}
++	release_console_sem();
++
++	return con;
++}
++
++static void c_stop(struct seq_file *m, void *v)
++{
++}
++
++static const struct seq_operations tty_consoles_op = {
++	.start	= c_start,
++	.next	= c_next,
++	.stop	= c_stop,
++	.show	= show_console_dev
++};
++
++static int tty_consoles_open(struct inode *inode, struct file *file)
++{
++	struct files_struct * curfiles;
++
++	current_dev = 0;
++	curfiles = get_files_struct(current);
++	if (curfiles) {
++		const struct file * curfp;
++		spin_lock(&curfiles->file_lock);
++		curfp = fcheck_files(curfiles, 0);
++		if (curfp && curfp->private_data) {
++			const struct inode * inode;
++			dget(curfp->f_dentry);
++			inode = curfp->f_dentry->d_inode;
++			if (S_ISCHR(inode->i_mode)) {
++				struct tty_struct * tty;
++				tty = (struct tty_struct *)curfp->private_data;
++				if (tty && tty->magic == TTY_MAGIC) {
++					tty = tty_pair_get_tty(tty);
++					current_dev = tty_devnum(tty);
++				}
++			}
++			dput(curfp->f_dentry);
++		}
++		spin_unlock(&curfiles->file_lock);
++		put_files_struct(curfiles);
++	}
++	return seq_open(file, &tty_consoles_op);
++}
++
++static const struct file_operations proc_tty_consoles_operations = {
++	.open		= tty_consoles_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= seq_release,
++};
++
++/*
+  * This function is called by tty_register_driver() to handle
+  * registering the driver's /proc handler into /proc/tty/driver/<foo>
+  */
+@@ -186,4 +323,5 @@ void __init proc_tty_init(void)
+ 	proc_tty_driver = proc_mkdir_mode("tty/driver", S_IRUSR|S_IXUSR, NULL);
+ 	proc_create("tty/ldiscs", 0, NULL, &tty_ldiscs_proc_fops);
+ 	proc_create("tty/drivers", 0, NULL, &proc_tty_drivers_operations);
++	proc_create("tty/consoles", 0, NULL, &proc_tty_consoles_operations);
+ }
 -- 
-1.6.2.3
+1.6.0.2
 
