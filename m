@@ -1,1155 +1,1069 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303Ab0IGXwx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 19:52:53 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59065 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757617Ab0IGXwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 19:52:51 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: [RFC][PATCH] PM / Wakeup: Introduce wakeup source objects and event statistics (was: Re: Wakeup-events implementation)
-Date: Wed, 8 Sep 2010 01:51:42 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1008201051490.1716-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1008201051490.1716-100000@iolanthe.rowland.org>
+	id S1758357Ab0IGXyL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 19:54:11 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37389 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757913Ab0IGXyJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 19:54:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=ahgmK9WCvAnITUhClf4BO83l64JumASIJ3pCW1Lp3xlQQQQLu55NHRKUUQOZgm86C1
+         xHH5JOukqXuaOT+MMQCnjgeGQBXbe8qwe91MrCX/Zwn/tMzDqjFZd0d14evqL4ExEZel
+         YRgFcmxGr10ZnU0m6A2yr9RU28+kopaZotdwQ=
+From: Mihai =?utf-8?q?Don=C8=9Bu?= <mihai.dontu@gmail.com>
+Organization: Home
+To: Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH] USB: Fix kernel oops with g_ether and Windows
+Date: Wed, 8 Sep 2010 02:54:02 +0300
+Cc: "Gadiyar, Anand" <gadiyar@ti.com>, Maxim Osipov <maxim.osipov@gmail.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com> <5A47E75E594F054BAF48C5E4FC4B92AB03293269CD@dbde02.ent.ti.com> <20100907212915.GB6798@suse.de>
+In-Reply-To: <20100907212915.GB6798@suse.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009080151.43047.rjw@sisk.pl>
+Message-Id: <201009080254.03070.mihai.dontu@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wednesday 08 September 2010 00:29:15 Greg KH wrote:
+> On Tue, Sep 07, 2010 at 04:18:23PM +0530, Gadiyar, Anand wrote:
+> > Since Greg has already sent a pull request, I won't touch the file
+> > now; maybe a trivial patch later on to fix up the coding style.
+> 
+> That would be fine to have, I'd gladly accept it.
 
-Below is a patch that adds some statistics to the previously merged
-pm_wakeup_event()/pm_stay_awake()/pm_relax() code.  It also makes it possible
-to use wakeup sources that are not directly associated with devices.
+Would something like the following do? It's against:
+git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6.git
 
-It adds functions for manipulating wakeup source objects and reworks the
-device wakeup enabling/disabling to use the new functions.  The list of wakeup
-sources is only used for updating the "hit count" statistics for now (this is
-the number of times the wakeup source was active when the PM core checked), but
-I'm planning to add a /proc file listing all wakeup sources, including the ones
-that are not attached to device objects.
+Corrected the coding style.
 
-It appears to work with the PCI wakeup code added previously, but that's only
-one case.  I'm also not sure if it builds withoug CONFIG_PM_SLEEP.  [BTW, I'm
-not sure it atomic_inc() and atomic_dec() imply a memory barrier in general.
-That seems to be the case on x86, but I don't know about other architectures.]
-
-Please have a look and let me know what you think.
-
-Thanks,
-Rafael
-
-
+Signed-off-by: Mihai Dontu <mihai.dontu@gmail.com>
 ---
- drivers/base/power/main.c    |    3 
- drivers/base/power/power.h   |    1 
- drivers/base/power/runtime.c |    2 
- drivers/base/power/sysfs.c   |  121 +++++++++
- drivers/base/power/wakeup.c  |  532 ++++++++++++++++++++++++++++++++++++-------
- include/linux/pm.h           |   16 -
- include/linux/pm_wakeup.h    |  114 +++++++--
- include/linux/suspend.h      |    4 
- kernel/power/main.c          |    8 
- 9 files changed, 673 insertions(+), 128 deletions(-)
+ drivers/usb/gadget/rndis.c |  492 ++++++++++++++++++++++----------------------
+ 1 files changed, 244 insertions(+), 248 deletions(-)
 
-Index: linux-2.6/include/linux/pm_wakeup.h
-===================================================================
---- linux-2.6.orig/include/linux/pm_wakeup.h
-+++ linux-2.6/include/linux/pm_wakeup.h
-@@ -2,6 +2,7 @@
-  *  pm_wakeup.h - Power management wakeup interface
-  *
-  *  Copyright (C) 2008 Alan Stern
-+ *  Copyright (C) 2010 Rafael J. Wysocki, Novell Inc.
-  *
-  *  This program is free software; you can redistribute it and/or modify
-  *  it under the terms of the GNU General Public License as published by
-@@ -27,18 +28,27 @@
+diff --git a/drivers/usb/gadget/rndis.c b/drivers/usb/gadget/rndis.c
+index 972d5dd..6a7dd91 100644
+--- a/drivers/usb/gadget/rndis.c
++++ b/drivers/usb/gadget/rndis.c
+@@ -61,17 +61,17 @@ MODULE_PARM_DESC (rndis_debug, "enable debugging");
+ #define RNDIS_MAX_CONFIGS	1
  
- #include <linux/types.h>
  
--#ifdef CONFIG_PM
-+struct wakeup_source {
-+	char 			*name;
-+	struct list_head	entry;
-+	spinlock_t		lock;
-+	struct timer_list	timer;
-+	unsigned long		timer_expires;
-+	ktime_t total_time;
-+	ktime_t max_time;
-+	ktime_t last_time;
-+	unsigned long		event_count;
-+	unsigned long		active_count;
-+	unsigned long		relax_count;
-+	unsigned long		hit_count;
-+	unsigned int		active:1;
-+};
+-static rndis_params rndis_per_dev_params [RNDIS_MAX_CONFIGS];
++static rndis_params rndis_per_dev_params[RNDIS_MAX_CONFIGS];
  
--/* Changes to device_may_wakeup take effect on the next pm state change.
-- *
-- * By default, most devices should leave wakeup disabled.  The exceptions
-- * are devices that everyone expects to be wakeup sources: keyboards,
-- * power buttons, possibly network interfaces, etc.
-+#ifdef CONFIG_PM_SLEEP
-+
-+/*
-+ * Changes to device_may_wakeup take effect on the next pm state change.
+ /* Driver Version */
+-static const __le32 rndis_driver_version = cpu_to_le32 (1);
++static const __le32 rndis_driver_version = cpu_to_le32(1);
+ 
+ /* Function Prototypes */
+-static rndis_resp_t *rndis_add_response (int configNr, u32 length);
++static rndis_resp_t *rndis_add_response(int configNr, u32 length);
+ 
+ 
+ /* supported OIDs */
+-static const u32 oid_supported_list [] =
++static const u32 oid_supported_list[] =
+ {
+ 	/* the general stuff */
+ 	OID_GEN_SUPPORTED_LIST,
+@@ -161,21 +161,20 @@ static const u32 oid_supported_list [] =
+ 
+ 
+ /* NDIS Functions */
+-static int
+-gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+-		rndis_resp_t *r)
++static int gen_ndis_query_resp(int configNr, u32 OID, u8 *buf,
++			       unsigned buf_len, rndis_resp_t *r)
+ {
+-	int			retval = -ENOTSUPP;
+-	u32			length = 4;	/* usually */
+-	__le32			*outbuf;
+-	int			i, count;
+-	rndis_query_cmplt_type	*resp;
+-	struct net_device	*net;
++	int retval = -ENOTSUPP;
++	u32 length = 4;	/* usually */
++	__le32 *outbuf;
++	int i, count;
++	rndis_query_cmplt_type *resp;
++	struct net_device *net;
+ 	struct rtnl_link_stats64 temp;
+ 	const struct rtnl_link_stats64 *stats;
+ 
+ 	if (!r) return -ENOMEM;
+-	resp = (rndis_query_cmplt_type *) r->buf;
++	resp = (rndis_query_cmplt_type *)r->buf;
+ 
+ 	if (!resp) return -ENOMEM;
+ 
+@@ -191,8 +190,8 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	}
+ 
+ 	/* response goes here, right after the header */
+-	outbuf = (__le32 *) &resp[1];
+-	resp->InformationBufferOffset = cpu_to_le32 (16);
++	outbuf = (__le32 *)&resp[1];
++	resp->InformationBufferOffset = cpu_to_le32(16);
+ 
+ 	net = rndis_per_dev_params[configNr].dev;
+ 	stats = dev_get_stats(net, &temp);
+@@ -204,10 +203,10 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_GEN_SUPPORTED_LIST:
+ 		pr_debug("%s: OID_GEN_SUPPORTED_LIST\n", __func__);
+-		length = sizeof (oid_supported_list);
+-		count  = length / sizeof (u32);
++		length = sizeof(oid_supported_list);
++		count  = length / sizeof(u32);
+ 		for (i = 0; i < count; i++)
+-			outbuf[i] = cpu_to_le32 (oid_supported_list[i]);
++			outbuf[i] = cpu_to_le32(oid_supported_list[i]);
+ 		retval = 0;
+ 		break;
+ 
+@@ -220,14 +219,14 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 		 * reddite ergo quae sunt Caesaris Caesari
+ 		 * et quae sunt Dei Deo!
+ 		 */
+-		*outbuf = cpu_to_le32 (0);
++		*outbuf = cpu_to_le32(0);
+ 		retval = 0;
+ 		break;
+ 
+ 	/* mandatory */
+ 	case OID_GEN_MEDIA_SUPPORTED:
+ 		pr_debug("%s: OID_GEN_MEDIA_SUPPORTED\n", __func__);
+-		*outbuf = cpu_to_le32 (rndis_per_dev_params [configNr].medium);
++		*outbuf = cpu_to_le32(rndis_per_dev_params[configNr].medium);
+ 		retval = 0;
+ 		break;
+ 
+@@ -235,16 +234,16 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	case OID_GEN_MEDIA_IN_USE:
+ 		pr_debug("%s: OID_GEN_MEDIA_IN_USE\n", __func__);
+ 		/* one medium, one transport... (maybe you do it better) */
+-		*outbuf = cpu_to_le32 (rndis_per_dev_params [configNr].medium);
++		*outbuf = cpu_to_le32(rndis_per_dev_params[configNr].medium);
+ 		retval = 0;
+ 		break;
+ 
+ 	/* mandatory */
+ 	case OID_GEN_MAXIMUM_FRAME_SIZE:
+ 		pr_debug("%s: OID_GEN_MAXIMUM_FRAME_SIZE\n", __func__);
+-		if (rndis_per_dev_params [configNr].dev) {
+-			*outbuf = cpu_to_le32 (
+-				rndis_per_dev_params [configNr].dev->mtu);
++		if (rndis_per_dev_params[configNr].dev) {
++			*outbuf = cpu_to_le32(
++				rndis_per_dev_params[configNr].dev->mtu);
+ 			retval = 0;
+ 		}
+ 		break;
+@@ -253,21 +252,21 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	case OID_GEN_LINK_SPEED:
+ 		if (rndis_debug > 1)
+ 			pr_debug("%s: OID_GEN_LINK_SPEED\n", __func__);
+-		if (rndis_per_dev_params [configNr].media_state
++		if (rndis_per_dev_params[configNr].media_state
+ 				== NDIS_MEDIA_STATE_DISCONNECTED)
+-			*outbuf = cpu_to_le32 (0);
++			*outbuf = cpu_to_le32(0);
+ 		else
+-			*outbuf = cpu_to_le32 (
+-				rndis_per_dev_params [configNr].speed);
++			*outbuf = cpu_to_le32(
++				rndis_per_dev_params[configNr].speed);
+ 		retval = 0;
+ 		break;
+ 
+ 	/* mandatory */
+ 	case OID_GEN_TRANSMIT_BLOCK_SIZE:
+ 		pr_debug("%s: OID_GEN_TRANSMIT_BLOCK_SIZE\n", __func__);
+-		if (rndis_per_dev_params [configNr].dev) {
+-			*outbuf = cpu_to_le32 (
+-				rndis_per_dev_params [configNr].dev->mtu);
++		if (rndis_per_dev_params[configNr].dev) {
++			*outbuf = cpu_to_le32(
++				rndis_per_dev_params[configNr].dev->mtu);
+ 			retval = 0;
+ 		}
+ 		break;
+@@ -275,9 +274,9 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_GEN_RECEIVE_BLOCK_SIZE:
+ 		pr_debug("%s: OID_GEN_RECEIVE_BLOCK_SIZE\n", __func__);
+-		if (rndis_per_dev_params [configNr].dev) {
+-			*outbuf = cpu_to_le32 (
+-				rndis_per_dev_params [configNr].dev->mtu);
++		if (rndis_per_dev_params[configNr].dev) {
++			*outbuf = cpu_to_le32(
++				rndis_per_dev_params[configNr].dev->mtu);
+ 			retval = 0;
+ 		}
+ 		break;
+@@ -285,18 +284,20 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_GEN_VENDOR_ID:
+ 		pr_debug("%s: OID_GEN_VENDOR_ID\n", __func__);
+-		*outbuf = cpu_to_le32 (
+-			rndis_per_dev_params [configNr].vendorID);
++		*outbuf = cpu_to_le32(
++			rndis_per_dev_params[configNr].vendorID);
+ 		retval = 0;
+ 		break;
+ 
+ 	/* mandatory */
+ 	case OID_GEN_VENDOR_DESCRIPTION:
+ 		pr_debug("%s: OID_GEN_VENDOR_DESCRIPTION\n", __func__);
+-		if ( rndis_per_dev_params [configNr].vendorDescr ) {
+-			length = strlen (rndis_per_dev_params [configNr].vendorDescr);
+-			memcpy (outbuf,
+-				rndis_per_dev_params [configNr].vendorDescr, length);
++		if (rndis_per_dev_params[configNr].vendorDescr) {
++			length = strlen(rndis_per_dev_params[configNr].
++					vendorDescr);
++			memcpy(outbuf,
++				rndis_per_dev_params[configNr].vendorDescr,
++				length);
+ 		} else {
+ 			outbuf[0] = 0;
+ 		}
+@@ -313,7 +314,7 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_GEN_CURRENT_PACKET_FILTER:
+ 		pr_debug("%s: OID_GEN_CURRENT_PACKET_FILTER\n", __func__);
+-		*outbuf = cpu_to_le32 (*rndis_per_dev_params[configNr].filter);
++		*outbuf = cpu_to_le32(*rndis_per_dev_params[configNr].filter);
+ 		retval = 0;
+ 		break;
+ 
+@@ -328,14 +329,14 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	case OID_GEN_MEDIA_CONNECT_STATUS:
+ 		if (rndis_debug > 1)
+ 			pr_debug("%s: OID_GEN_MEDIA_CONNECT_STATUS\n", __func__);
+-		*outbuf = cpu_to_le32 (rndis_per_dev_params [configNr]
++		*outbuf = cpu_to_le32(rndis_per_dev_params[configNr]
+ 						.media_state);
+ 		retval = 0;
+ 		break;
+ 
+ 	case OID_GEN_PHYSICAL_MEDIUM:
+ 		pr_debug("%s: OID_GEN_PHYSICAL_MEDIUM\n", __func__);
+-		*outbuf = cpu_to_le32 (0);
++		*outbuf = cpu_to_le32(0);
+ 		retval = 0;
+ 		break;
+ 
+@@ -409,10 +410,10 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_802_3_PERMANENT_ADDRESS:
+ 		pr_debug("%s: OID_802_3_PERMANENT_ADDRESS\n", __func__);
+-		if (rndis_per_dev_params [configNr].dev) {
++		if (rndis_per_dev_params[configNr].dev) {
+ 			length = ETH_ALEN;
+-			memcpy (outbuf,
+-				rndis_per_dev_params [configNr].host_mac,
++			memcpy(outbuf,
++				rndis_per_dev_params[configNr].host_mac,
+ 				length);
+ 			retval = 0;
+ 		}
+@@ -421,9 +422,9 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_802_3_CURRENT_ADDRESS:
+ 		pr_debug("%s: OID_802_3_CURRENT_ADDRESS\n", __func__);
+-		if (rndis_per_dev_params [configNr].dev) {
++		if (rndis_per_dev_params[configNr].dev) {
+ 			length = ETH_ALEN;
+-			memcpy (outbuf,
++			memcpy(outbuf,
+ 				rndis_per_dev_params [configNr].host_mac,
+ 				length);
+ 			retval = 0;
+@@ -434,7 +435,7 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	case OID_802_3_MULTICAST_LIST:
+ 		pr_debug("%s: OID_802_3_MULTICAST_LIST\n", __func__);
+ 		/* Multicast base address only */
+-		*outbuf = cpu_to_le32 (0xE0000000);
++		*outbuf = cpu_to_le32(0xE0000000);
+ 		retval = 0;
+ 		break;
+ 
+@@ -442,7 +443,7 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	case OID_802_3_MAXIMUM_LIST_SIZE:
+ 		pr_debug("%s: OID_802_3_MAXIMUM_LIST_SIZE\n", __func__);
+ 		/* Multicast base address only */
+-		*outbuf = cpu_to_le32 (1);
++		*outbuf = cpu_to_le32(1);
+ 		retval = 0;
+ 		break;
+ 
+@@ -466,14 +467,14 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	/* mandatory */
+ 	case OID_802_3_XMIT_ONE_COLLISION:
+ 		pr_debug("%s: OID_802_3_XMIT_ONE_COLLISION\n", __func__);
+-		*outbuf = cpu_to_le32 (0);
++		*outbuf = cpu_to_le32(0);
+ 		retval = 0;
+ 		break;
+ 
+ 	/* mandatory */
+ 	case OID_802_3_XMIT_MORE_COLLISIONS:
+ 		pr_debug("%s: OID_802_3_XMIT_MORE_COLLISIONS\n", __func__);
+-		*outbuf = cpu_to_le32 (0);
++		*outbuf = cpu_to_le32(0);
+ 		retval = 0;
+ 		break;
+ 
+@@ -484,22 +485,22 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
+ 	if (retval < 0)
+ 		length = 0;
+ 
+-	resp->InformationBufferLength = cpu_to_le32 (length);
+-	r->length = length + sizeof *resp;
+-	resp->MessageLength = cpu_to_le32 (r->length);
++	resp->InformationBufferLength = cpu_to_le32(length);
++	r->length = length + sizeof(*resp);
++	resp->MessageLength = cpu_to_le32(r->length);
+ 	return retval;
+ }
+ 
+-static int gen_ndis_set_resp (u8 configNr, u32 OID, u8 *buf, u32 buf_len,
+-			rndis_resp_t *r)
++static int gen_ndis_set_resp(u8 configNr, u32 OID, u8 *buf, u32 buf_len,
++			     rndis_resp_t *r)
+ {
+-	rndis_set_cmplt_type		*resp;
+-	int				i, retval = -ENOTSUPP;
+-	struct rndis_params		*params;
++	rndis_set_cmplt_type *resp;
++	int i, retval = -ENOTSUPP;
++	struct rndis_params *params;
+ 
+ 	if (!r)
+ 		return -ENOMEM;
+-	resp = (rndis_set_cmplt_type *) r->buf;
++	resp = (rndis_set_cmplt_type *)r->buf;
+ 	if (!resp)
+ 		return -ENOMEM;
+ 
+@@ -514,7 +515,7 @@ static int gen_ndis_set_resp (u8 configNr, u32 OID, u8 *buf, u32 buf_len,
+ 		}
+ 	}
+ 
+-	params = &rndis_per_dev_params [configNr];
++	params = &rndis_per_dev_params[configNr];
+ 	switch (OID) {
+ 	case OID_GEN_CURRENT_PACKET_FILTER:
+ 
+@@ -537,11 +538,11 @@ static int gen_ndis_set_resp (u8 configNr, u32 OID, u8 *buf, u32 buf_len,
+ 			params->state = RNDIS_DATA_INITIALIZED;
+ 			netif_carrier_on(params->dev);
+ 			if (netif_running(params->dev))
+-				netif_wake_queue (params->dev);
++				netif_wake_queue(params->dev);
+ 		} else {
+ 			params->state = RNDIS_INITIALIZED;
+-			netif_carrier_off (params->dev);
+-			netif_stop_queue (params->dev);
++			netif_carrier_off(params->dev);
++			netif_stop_queue(params->dev);
+ 		}
+ 		break;
+ 
+@@ -563,48 +564,47 @@ static int gen_ndis_set_resp (u8 configNr, u32 OID, u8 *buf, u32 buf_len,
+  * Response Functions
   */
--static inline void device_init_wakeup(struct device *dev, bool val)
--{
--	dev->power.can_wakeup = dev->power.should_wakeup = val;
--}
  
- static inline void device_set_wakeup_capable(struct device *dev, bool capable)
+-static int rndis_init_response (int configNr, rndis_init_msg_type *buf)
++static int rndis_init_response(int configNr, rndis_init_msg_type *buf)
  {
-@@ -50,23 +60,32 @@ static inline bool device_can_wakeup(str
- 	return dev->power.can_wakeup;
+-	rndis_init_cmplt_type	*resp;
+-	rndis_resp_t            *r;
+-	struct rndis_params	*params = rndis_per_dev_params + configNr;
++	rndis_init_cmplt_type *resp;
++	rndis_resp_t *r;
++	struct rndis_params *params = rndis_per_dev_params + configNr;
+ 
+ 	if (!params->dev)
+ 		return -ENOTSUPP;
+ 
+-	r = rndis_add_response (configNr, sizeof (rndis_init_cmplt_type));
++	r = rndis_add_response(configNr, sizeof(rndis_init_cmplt_type));
+ 	if (!r)
+ 		return -ENOMEM;
+-	resp = (rndis_init_cmplt_type *) r->buf;
++	resp = (rndis_init_cmplt_type *)r->buf;
+ 
+-	resp->MessageType = cpu_to_le32 (
+-			REMOTE_NDIS_INITIALIZE_CMPLT);
+-	resp->MessageLength = cpu_to_le32 (52);
++	resp->MessageType = cpu_to_le32(REMOTE_NDIS_INITIALIZE_CMPLT);
++	resp->MessageLength = cpu_to_le32(52);
+ 	resp->RequestID = buf->RequestID; /* Still LE in msg buffer */
+-	resp->Status = cpu_to_le32 (RNDIS_STATUS_SUCCESS);
+-	resp->MajorVersion = cpu_to_le32 (RNDIS_MAJOR_VERSION);
+-	resp->MinorVersion = cpu_to_le32 (RNDIS_MINOR_VERSION);
+-	resp->DeviceFlags = cpu_to_le32 (RNDIS_DF_CONNECTIONLESS);
+-	resp->Medium = cpu_to_le32 (RNDIS_MEDIUM_802_3);
+-	resp->MaxPacketsPerTransfer = cpu_to_le32 (1);
+-	resp->MaxTransferSize = cpu_to_le32 (
++	resp->Status = cpu_to_le32(RNDIS_STATUS_SUCCESS);
++	resp->MajorVersion = cpu_to_le32(RNDIS_MAJOR_VERSION);
++	resp->MinorVersion = cpu_to_le32(RNDIS_MINOR_VERSION);
++	resp->DeviceFlags = cpu_to_le32(RNDIS_DF_CONNECTIONLESS);
++	resp->Medium = cpu_to_le32(RNDIS_MEDIUM_802_3);
++	resp->MaxPacketsPerTransfer = cpu_to_le32(1);
++	resp->MaxTransferSize = cpu_to_le32(
+ 		  params->dev->mtu
+-		+ sizeof (struct ethhdr)
+-		+ sizeof (struct rndis_packet_msg_type)
++		+ sizeof(struct ethhdr)
++		+ sizeof(struct rndis_packet_msg_type)
+ 		+ 22);
+-	resp->PacketAlignmentFactor = cpu_to_le32 (0);
+-	resp->AFListOffset = cpu_to_le32 (0);
+-	resp->AFListSize = cpu_to_le32 (0);
++	resp->PacketAlignmentFactor = cpu_to_le32(0);
++	resp->AFListOffset = cpu_to_le32(0);
++	resp->AFListSize = cpu_to_le32(0);
+ 
+ 	params->resp_avail(params->v);
+ 	return 0;
  }
  
--static inline void device_set_wakeup_enable(struct device *dev, bool enable)
--{
--	dev->power.should_wakeup = enable;
--}
-+
- 
- static inline bool device_may_wakeup(struct device *dev)
+-static int rndis_query_response (int configNr, rndis_query_msg_type *buf)
++static int rndis_query_response(int configNr, rndis_query_msg_type *buf)
  {
--	return dev->power.can_wakeup && dev->power.should_wakeup;
-+	return dev->power.can_wakeup && !!dev->power.wakeup;
+ 	rndis_query_cmplt_type *resp;
+-	rndis_resp_t            *r;
+-	struct rndis_params	*params = rndis_per_dev_params + configNr;
++	rndis_resp_t *r;
++	struct rndis_params *params = rndis_per_dev_params + configNr;
+ 
+ 	/* pr_debug("%s: OID = %08X\n", __func__, cpu_to_le32(buf->OID)); */
+ 	if (!params->dev)
+@@ -616,47 +616,46 @@ static int rndis_query_response (int configNr, rndis_query_msg_type *buf)
+ 	 * rndis_query_cmplt_type followed by data.
+ 	 * oid_supported_list is the largest data reply
+ 	 */
+-	r = rndis_add_response (configNr,
+-		sizeof (oid_supported_list) + sizeof(rndis_query_cmplt_type));
++	r = rndis_add_response(configNr,
++		sizeof(oid_supported_list) + sizeof(rndis_query_cmplt_type));
+ 	if (!r)
+ 		return -ENOMEM;
+-	resp = (rndis_query_cmplt_type *) r->buf;
++	resp = (rndis_query_cmplt_type *)r->buf;
+ 
+-	resp->MessageType = cpu_to_le32 (REMOTE_NDIS_QUERY_CMPLT);
++	resp->MessageType = cpu_to_le32(REMOTE_NDIS_QUERY_CMPLT);
+ 	resp->RequestID = buf->RequestID; /* Still LE in msg buffer */
+ 
+-	if (gen_ndis_query_resp (configNr, le32_to_cpu (buf->OID),
++	if (gen_ndis_query_resp(configNr, le32_to_cpu(buf->OID),
+ 			le32_to_cpu(buf->InformationBufferOffset)
+-					+ 8 + (u8 *) buf,
++					+ 8 + (u8 *)buf,
+ 			le32_to_cpu(buf->InformationBufferLength),
+ 			r)) {
+ 		/* OID not supported */
+-		resp->Status = cpu_to_le32 (
+-				RNDIS_STATUS_NOT_SUPPORTED);
+-		resp->MessageLength = cpu_to_le32 (sizeof *resp);
+-		resp->InformationBufferLength = cpu_to_le32 (0);
+-		resp->InformationBufferOffset = cpu_to_le32 (0);
++		resp->Status = cpu_to_le32(RNDIS_STATUS_NOT_SUPPORTED);
++		resp->MessageLength = cpu_to_le32(sizeof *resp);
++		resp->InformationBufferLength = cpu_to_le32(0);
++		resp->InformationBufferOffset = cpu_to_le32(0);
+ 	} else
+-		resp->Status = cpu_to_le32 (RNDIS_STATUS_SUCCESS);
++		resp->Status = cpu_to_le32(RNDIS_STATUS_SUCCESS);
+ 
+ 	params->resp_avail(params->v);
+ 	return 0;
  }
  
--#else /* !CONFIG_PM */
-+/* drivers/base/power/wakeup.c */
-+extern struct wakeup_source *wakeup_source_create(const char *name);
-+extern void wakeup_source_destroy(struct wakeup_source *ws);
-+extern void wakeup_source_register(struct wakeup_source *ws);
-+extern void wakeup_source_unregister(struct wakeup_source *ws);
-+extern struct wakeup_source *wakeup_source_add(const char *name);
-+extern void wakeup_source_remove(struct wakeup_source *ws);
-+extern int device_wakeup_enable(struct device *dev);
-+extern int device_wakeup_disable(struct device *dev);
-+extern int device_init_wakeup(struct device *dev, bool val);
-+extern int device_set_wakeup_enable(struct device *dev, bool enable);
-+extern void __pm_stay_awake(struct wakeup_source *ws);
-+extern void pm_stay_awake(struct device *dev);
-+extern void __pm_relax(struct wakeup_source *ws);
-+extern void pm_relax(struct device *dev);
-+extern void __pm_wakeup_event(struct wakeup_source *ws, unsigned int msec);
-+extern void pm_wakeup_event(struct device *dev, unsigned int msec);
- 
--/* For some reason the following routines work even without CONFIG_PM */
--static inline void device_init_wakeup(struct device *dev, bool val)
--{
--	dev->power.can_wakeup = val;
--}
-+#else /* !CONFIG_PM_SLEEP */
- 
- static inline void device_set_wakeup_capable(struct device *dev, bool capable)
+-static int rndis_set_response (int configNr, rndis_set_msg_type *buf)
++static int rndis_set_response(int configNr, rndis_set_msg_type *buf)
  {
-@@ -78,15 +97,60 @@ static inline bool device_can_wakeup(str
- 	return dev->power.can_wakeup;
+-	u32			BufLength, BufOffset;
+-	rndis_set_cmplt_type	*resp;
+-	rndis_resp_t		*r;
+-	struct rndis_params	*params = rndis_per_dev_params + configNr;
++	u32 BufLength, BufOffset;
++	rndis_set_cmplt_type *resp;
++	rndis_resp_t *r;
++	struct rndis_params *params = rndis_per_dev_params + configNr;
+ 
+-	r = rndis_add_response (configNr, sizeof (rndis_set_cmplt_type));
++	r = rndis_add_response(configNr, sizeof(rndis_set_cmplt_type));
+ 	if (!r)
+ 		return -ENOMEM;
+-	resp = (rndis_set_cmplt_type *) r->buf;
++	resp = (rndis_set_cmplt_type *)r->buf;
+ 
+-	BufLength = le32_to_cpu (buf->InformationBufferLength);
+-	BufOffset = le32_to_cpu (buf->InformationBufferOffset);
++	BufLength = le32_to_cpu(buf->InformationBufferLength);
++	BufOffset = le32_to_cpu(buf->InformationBufferOffset);
+ 
+ #ifdef	VERBOSE_DEBUG
+ 	pr_debug("%s: Length: %d\n", __func__, BufLength);
+@@ -670,59 +669,59 @@ static int rndis_set_response (int configNr, rndis_set_msg_type *buf)
+ 	pr_debug("\n");
+ #endif
+ 
+-	resp->MessageType = cpu_to_le32 (REMOTE_NDIS_SET_CMPLT);
+-	resp->MessageLength = cpu_to_le32 (16);
++	resp->MessageType = cpu_to_le32(REMOTE_NDIS_SET_CMPLT);
++	resp->MessageLength = cpu_to_le32(16);
+ 	resp->RequestID = buf->RequestID; /* Still LE in msg buffer */
+-	if (gen_ndis_set_resp (configNr, le32_to_cpu (buf->OID),
+-			((u8 *) buf) + 8 + BufOffset, BufLength, r))
+-		resp->Status = cpu_to_le32 (RNDIS_STATUS_NOT_SUPPORTED);
++	if (gen_ndis_set_resp(configNr, le32_to_cpu(buf->OID),
++			((u8 *)buf) + 8 + BufOffset, BufLength, r))
++		resp->Status = cpu_to_le32(RNDIS_STATUS_NOT_SUPPORTED);
+ 	else
+-		resp->Status = cpu_to_le32 (RNDIS_STATUS_SUCCESS);
++		resp->Status = cpu_to_le32(RNDIS_STATUS_SUCCESS);
+ 
+ 	params->resp_avail(params->v);
+ 	return 0;
  }
  
--static inline void device_set_wakeup_enable(struct device *dev, bool enable)
-+static inline bool device_may_wakeup(struct device *dev)
+-static int rndis_reset_response (int configNr, rndis_reset_msg_type *buf)
++static int rndis_reset_response(int configNr, rndis_reset_msg_type *buf)
  {
-+	return false;
+-	rndis_reset_cmplt_type	*resp;
+-	rndis_resp_t		*r;
+-	struct rndis_params	*params = rndis_per_dev_params + configNr;
++	rndis_reset_cmplt_type *resp;
++	rndis_resp_t *r;
++	struct rndis_params *params = rndis_per_dev_params + configNr;
+ 
+-	r = rndis_add_response (configNr, sizeof (rndis_reset_cmplt_type));
++	r = rndis_add_response(configNr, sizeof(rndis_reset_cmplt_type));
+ 	if (!r)
+ 		return -ENOMEM;
+-	resp = (rndis_reset_cmplt_type *) r->buf;
++	resp = (rndis_reset_cmplt_type *)r->buf;
+ 
+-	resp->MessageType = cpu_to_le32 (REMOTE_NDIS_RESET_CMPLT);
+-	resp->MessageLength = cpu_to_le32 (16);
+-	resp->Status = cpu_to_le32 (RNDIS_STATUS_SUCCESS);
++	resp->MessageType = cpu_to_le32(REMOTE_NDIS_RESET_CMPLT);
++	resp->MessageLength = cpu_to_le32(16);
++	resp->Status = cpu_to_le32(RNDIS_STATUS_SUCCESS);
+ 	/* resent information */
+-	resp->AddressingReset = cpu_to_le32 (1);
++	resp->AddressingReset = cpu_to_le32(1);
+ 
+ 	params->resp_avail(params->v);
+ 	return 0;
  }
  
--static inline bool device_may_wakeup(struct device *dev)
-+static inline struct wakeup_source *wakeup_source_create(char *name)
+-static int rndis_keepalive_response (int configNr,
+-				rndis_keepalive_msg_type *buf)
++static int rndis_keepalive_response(int configNr,
++				    rndis_keepalive_msg_type *buf)
  {
--	return false;
-+	return NULL;
-+}
-+
-+static inline void wakeup_source_destroy(struct wakeup_source *ws) {}
-+
-+static inline void wakeup_source_register(struct wakeup_source *ws) {}
-+
-+static inline void wakeup_source_unregister(struct wakeup_source *ws) {}
-+
-+static inline struct wakeup_source *wakeup_source_add(char *name)
-+{
-+	return NULL;
+-	rndis_keepalive_cmplt_type	*resp;
+-	rndis_resp_t			*r;
+-	struct rndis_params	*params = rndis_per_dev_params + configNr;
++	rndis_keepalive_cmplt_type *resp;
++	rndis_resp_t *r;
++	struct rndis_params *params = rndis_per_dev_params + configNr;
+ 
+ 	/* host "should" check only in RNDIS_DATA_INITIALIZED state */
+ 
+-	r = rndis_add_response (configNr, sizeof (rndis_keepalive_cmplt_type));
++	r = rndis_add_response(configNr, sizeof(rndis_keepalive_cmplt_type));
+ 	if (!r)
+ 		return -ENOMEM;
+-	resp = (rndis_keepalive_cmplt_type *) r->buf;
++	resp = (rndis_keepalive_cmplt_type *)r->buf;
+ 
+-	resp->MessageType = cpu_to_le32 (
++	resp->MessageType = cpu_to_le32(
+ 			REMOTE_NDIS_KEEPALIVE_CMPLT);
+-	resp->MessageLength = cpu_to_le32 (16);
++	resp->MessageLength = cpu_to_le32(16);
+ 	resp->RequestID = buf->RequestID; /* Still LE in msg buffer */
+-	resp->Status = cpu_to_le32 (RNDIS_STATUS_SUCCESS);
++	resp->Status = cpu_to_le32(RNDIS_STATUS_SUCCESS);
+ 
+ 	params->resp_avail(params->v);
+ 	return 0;
+@@ -732,86 +731,85 @@ static int rndis_keepalive_response (int configNr,
+ /*
+  * Device to Host Comunication
+  */
+-static int rndis_indicate_status_msg (int configNr, u32 status)
++static int rndis_indicate_status_msg(int configNr, u32 status)
+ {
+-	rndis_indicate_status_msg_type	*resp;
+-	rndis_resp_t			*r;
+-	struct rndis_params	*params = rndis_per_dev_params + configNr;
++	rndis_indicate_status_msg_type *resp;
++	rndis_resp_t *r;
++	struct rndis_params *params = rndis_per_dev_params + configNr;
+ 
+ 	if (params->state == RNDIS_UNINITIALIZED)
+ 		return -ENOTSUPP;
+ 
+-	r = rndis_add_response (configNr,
+-				sizeof (rndis_indicate_status_msg_type));
++	r = rndis_add_response(configNr,
++				sizeof(rndis_indicate_status_msg_type));
+ 	if (!r)
+ 		return -ENOMEM;
+-	resp = (rndis_indicate_status_msg_type *) r->buf;
++	resp = (rndis_indicate_status_msg_type *)r->buf;
+ 
+-	resp->MessageType = cpu_to_le32 (
+-			REMOTE_NDIS_INDICATE_STATUS_MSG);
+-	resp->MessageLength = cpu_to_le32 (20);
+-	resp->Status = cpu_to_le32 (status);
+-	resp->StatusBufferLength = cpu_to_le32 (0);
+-	resp->StatusBufferOffset = cpu_to_le32 (0);
++	resp->MessageType = cpu_to_le32(REMOTE_NDIS_INDICATE_STATUS_MSG);
++	resp->MessageLength = cpu_to_le32(20);
++	resp->Status = cpu_to_le32(status);
++	resp->StatusBufferLength = cpu_to_le32(0);
++	resp->StatusBufferOffset = cpu_to_le32(0);
+ 
+ 	params->resp_avail(params->v);
+ 	return 0;
  }
  
--#endif /* !CONFIG_PM */
-+static inline void wakeup_source_remove(struct wakeup_source *ws) {}
-+
-+static inline int device_wakeup_enable(struct device *dev)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline int device_wakeup_disable(struct device *dev) {}
-+
-+static inline int device_init_wakeup(struct device *dev, bool val)
-+{
-+	dev->power.can_wakeup = val;
-+	return val ? -EINVAL : 0;
-+}
-+
-+
-+static inline int device_set_wakeup_enable(struct device *dev, bool enable)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline void __pm_stay_awake(struct wakeup_source *ws) {}
-+
-+static inline void pm_stay_awake(struct device *dev) {}
-+
-+static inline void __pm_relax(struct wakeup_source *ws) {}
-+
-+static inline void pm_relax(struct device *dev) {}
-+
-+static inline void __pm_wakeup_event(struct wakeup_source *ws, unsigned int msec) {}
-+
-+static inline void pm_wakeup_event(struct device *dev, unsigned int msec) {}
-+
-+#endif /* !CONFIG_PM_SLEEP */
+-int rndis_signal_connect (int configNr)
++int rndis_signal_connect(int configNr)
+ {
+-	rndis_per_dev_params [configNr].media_state
++	rndis_per_dev_params[configNr].media_state
+ 			= NDIS_MEDIA_STATE_CONNECTED;
+-	return rndis_indicate_status_msg (configNr,
++	return rndis_indicate_status_msg(configNr,
+ 					  RNDIS_STATUS_MEDIA_CONNECT);
+ }
  
- #endif /* _LINUX_PM_WAKEUP_H */
-Index: linux-2.6/include/linux/pm.h
-===================================================================
---- linux-2.6.orig/include/linux/pm.h
-+++ linux-2.6/include/linux/pm.h
-@@ -448,23 +448,24 @@ enum rpm_request {
- 	RPM_REQ_RESUME,
+-int rndis_signal_disconnect (int configNr)
++int rndis_signal_disconnect(int configNr)
+ {
+-	rndis_per_dev_params [configNr].media_state
++	rndis_per_dev_params[configNr].media_state
+ 			= NDIS_MEDIA_STATE_DISCONNECTED;
+-	return rndis_indicate_status_msg (configNr,
++	return rndis_indicate_status_msg(configNr,
+ 					  RNDIS_STATUS_MEDIA_DISCONNECT);
+ }
+ 
+-void rndis_uninit (int configNr)
++void rndis_uninit(int configNr)
+ {
+ 	u8 *buf;
+ 	u32 length;
+ 
+ 	if (configNr >= RNDIS_MAX_CONFIGS)
+ 		return;
+-	rndis_per_dev_params [configNr].state = RNDIS_UNINITIALIZED;
++	rndis_per_dev_params[configNr].state = RNDIS_UNINITIALIZED;
+ 
+ 	/* drain the response queue */
+ 	while ((buf = rndis_get_next_response(configNr, &length)))
+ 		rndis_free_response(configNr, buf);
+ }
+ 
+-void rndis_set_host_mac (int configNr, const u8 *addr)
++void rndis_set_host_mac(int configNr, const u8 *addr)
+ {
+-	rndis_per_dev_params [configNr].host_mac = addr;
++	rndis_per_dev_params[configNr].host_mac = addr;
+ }
+ 
+ /*
+  * Message Parser
+  */
+-int rndis_msg_parser (u8 configNr, u8 *buf)
++int rndis_msg_parser(u8 configNr, u8 *buf)
+ {
+ 	u32 MsgType, MsgLength;
+ 	__le32 *tmp;
+-	struct rndis_params		*params;
++	struct rndis_params *params;
+ 
+ 	if (!buf)
+ 		return -ENOMEM;
+ 
+-	tmp = (__le32 *) buf;
++	tmp = (__le32 *)buf;
+ 	MsgType   = get_unaligned_le32(tmp++);
+ 	MsgLength = get_unaligned_le32(tmp++);
+ 
+ 	if (configNr >= RNDIS_MAX_CONFIGS)
+ 		return -ENOTSUPP;
+-	params = &rndis_per_dev_params [configNr];
++	params = &rndis_per_dev_params[configNr];
+ 
+ 	/* NOTE: RNDIS is *EXTREMELY* chatty ... Windows constantly polls for
+ 	 * rx/tx statistics and link status, in addition to KEEPALIVE traffic
+@@ -822,41 +820,41 @@ int rndis_msg_parser (u8 configNr, u8 *buf)
+ 	switch (MsgType) {
+ 	case REMOTE_NDIS_INITIALIZE_MSG:
+ 		pr_debug("%s: REMOTE_NDIS_INITIALIZE_MSG\n",
+-			__func__ );
++			__func__);
+ 		params->state = RNDIS_INITIALIZED;
+-		return  rndis_init_response (configNr,
+-					(rndis_init_msg_type *) buf);
++		return rndis_init_response(configNr,
++					(rndis_init_msg_type *)buf);
+ 
+ 	case REMOTE_NDIS_HALT_MSG:
+ 		pr_debug("%s: REMOTE_NDIS_HALT_MSG\n",
+-			__func__ );
++			__func__);
+ 		params->state = RNDIS_UNINITIALIZED;
+ 		if (params->dev) {
+-			netif_carrier_off (params->dev);
+-			netif_stop_queue (params->dev);
++			netif_carrier_off(params->dev);
++			netif_stop_queue(params->dev);
+ 		}
+ 		return 0;
+ 
+ 	case REMOTE_NDIS_QUERY_MSG:
+-		return rndis_query_response (configNr,
+-					(rndis_query_msg_type *) buf);
++		return rndis_query_response(configNr,
++					(rndis_query_msg_type *)buf);
+ 
+ 	case REMOTE_NDIS_SET_MSG:
+-		return rndis_set_response (configNr,
+-					(rndis_set_msg_type *) buf);
++		return rndis_set_response(configNr,
++					(rndis_set_msg_type *)buf);
+ 
+ 	case REMOTE_NDIS_RESET_MSG:
+ 		pr_debug("%s: REMOTE_NDIS_RESET_MSG\n",
+-			__func__ );
+-		return rndis_reset_response (configNr,
+-					(rndis_reset_msg_type *) buf);
++			__func__);
++		return rndis_reset_response(configNr,
++					(rndis_reset_msg_type *)buf);
+ 
+ 	case REMOTE_NDIS_KEEPALIVE_MSG:
+ 		/* For USB: host does this every 5 seconds */
+ 		if (rndis_debug > 1)
+ 			pr_debug("%s: REMOTE_NDIS_KEEPALIVE_MSG\n",
+-				__func__ );
+-		return rndis_keepalive_response (configNr,
++				__func__);
++		return rndis_keepalive_response(configNr,
+ 						 (rndis_keepalive_msg_type *)
+ 						 buf);
+ 
+@@ -866,7 +864,7 @@ int rndis_msg_parser (u8 configNr, u8 *buf)
+ 		 * suspending itself.
+ 		 */
+ 		pr_warning("%s: unknown RNDIS message 0x%08X len %d\n",
+-			__func__ , MsgType, MsgLength);
++			__func__, MsgType, MsgLength);
+ 		{
+ 			unsigned i;
+ 			for (i = 0; i < MsgLength; i += 16) {
+@@ -901,10 +899,10 @@ int rndis_register(void (*resp_avail)(void *v), void *v)
+ 		return -EINVAL;
+ 
+ 	for (i = 0; i < RNDIS_MAX_CONFIGS; i++) {
+-		if (!rndis_per_dev_params [i].used) {
+-			rndis_per_dev_params [i].used = 1;
+-			rndis_per_dev_params [i].resp_avail = resp_avail;
+-			rndis_per_dev_params [i].v = v;
++		if (!rndis_per_dev_params[i].used) {
++			rndis_per_dev_params[i].used = 1;
++			rndis_per_dev_params[i].resp_avail = resp_avail;
++			rndis_per_dev_params[i].v = v;
+ 			pr_debug("%s: configNr = %d\n", __func__, i);
+ 			return i;
+ 		}
+@@ -914,12 +912,12 @@ int rndis_register(void (*resp_avail)(void *v), void *v)
+ 	return -ENODEV;
+ }
+ 
+-void rndis_deregister (int configNr)
++void rndis_deregister(int configNr)
+ {
+-	pr_debug("%s: \n", __func__);
++	pr_debug("%s:\n", __func__);
+ 
+ 	if (configNr >= RNDIS_MAX_CONFIGS) return;
+-	rndis_per_dev_params [configNr].used = 0;
++	rndis_per_dev_params[configNr].used = 0;
+ 
+ 	return;
+ }
+@@ -931,76 +929,76 @@ int rndis_set_param_dev(u8 configNr, struct net_device *dev, u16 *cdc_filter)
+ 		return -EINVAL;
+ 	if (configNr >= RNDIS_MAX_CONFIGS) return -1;
+ 
+-	rndis_per_dev_params [configNr].dev = dev;
+-	rndis_per_dev_params [configNr].filter = cdc_filter;
++	rndis_per_dev_params[configNr].dev = dev;
++	rndis_per_dev_params[configNr].filter = cdc_filter;
+ 
+ 	return 0;
+ }
+ 
+-int rndis_set_param_vendor (u8 configNr, u32 vendorID, const char *vendorDescr)
++int rndis_set_param_vendor(u8 configNr, u32 vendorID, const char *vendorDescr)
+ {
+ 	pr_debug("%s:\n", __func__);
+ 	if (!vendorDescr) return -1;
+ 	if (configNr >= RNDIS_MAX_CONFIGS) return -1;
+ 
+-	rndis_per_dev_params [configNr].vendorID = vendorID;
+-	rndis_per_dev_params [configNr].vendorDescr = vendorDescr;
++	rndis_per_dev_params[configNr].vendorID = vendorID;
++	rndis_per_dev_params[configNr].vendorDescr = vendorDescr;
+ 
+ 	return 0;
+ }
+ 
+-int rndis_set_param_medium (u8 configNr, u32 medium, u32 speed)
++int rndis_set_param_medium(u8 configNr, u32 medium, u32 speed)
+ {
+ 	pr_debug("%s: %u %u\n", __func__, medium, speed);
+ 	if (configNr >= RNDIS_MAX_CONFIGS) return -1;
+ 
+-	rndis_per_dev_params [configNr].medium = medium;
+-	rndis_per_dev_params [configNr].speed = speed;
++	rndis_per_dev_params[configNr].medium = medium;
++	rndis_per_dev_params[configNr].speed = speed;
+ 
+ 	return 0;
+ }
+ 
+-void rndis_add_hdr (struct sk_buff *skb)
++void rndis_add_hdr(struct sk_buff *skb)
+ {
+-	struct rndis_packet_msg_type	*header;
++	struct rndis_packet_msg_type *header;
+ 
+ 	if (!skb)
+ 		return;
+-	header = (void *) skb_push (skb, sizeof *header);
+-	memset (header, 0, sizeof *header);
++	header = (void *)skb_push(skb, sizeof(*header));
++	memset(header, 0, sizeof *header);
+ 	header->MessageType = cpu_to_le32(REMOTE_NDIS_PACKET_MSG);
+ 	header->MessageLength = cpu_to_le32(skb->len);
+-	header->DataOffset = cpu_to_le32 (36);
+-	header->DataLength = cpu_to_le32(skb->len - sizeof *header);
++	header->DataOffset = cpu_to_le32(36);
++	header->DataLength = cpu_to_le32(skb->len - sizeof(*header));
+ }
+ 
+-void rndis_free_response (int configNr, u8 *buf)
++void rndis_free_response(int configNr, u8 *buf)
+ {
+-	rndis_resp_t		*r;
+-	struct list_head	*act, *tmp;
++	rndis_resp_t *r;
++	struct list_head *act, *tmp;
+ 
+-	list_for_each_safe (act, tmp,
+-			&(rndis_per_dev_params [configNr].resp_queue))
++	list_for_each_safe(act, tmp,
++			&(rndis_per_dev_params[configNr].resp_queue))
+ 	{
+-		r = list_entry (act, rndis_resp_t, list);
++		r = list_entry(act, rndis_resp_t, list);
+ 		if (r && r->buf == buf) {
+-			list_del (&r->list);
+-			kfree (r);
++			list_del(&r->list);
++			kfree(r);
+ 		}
+ 	}
+ }
+ 
+-u8 *rndis_get_next_response (int configNr, u32 *length)
++u8 *rndis_get_next_response(int configNr, u32 *length)
+ {
+-	rndis_resp_t		*r;
+-	struct list_head	*act, *tmp;
++	rndis_resp_t *r;
++	struct list_head *act, *tmp;
+ 
+ 	if (!length) return NULL;
+ 
+-	list_for_each_safe (act, tmp,
+-			&(rndis_per_dev_params [configNr].resp_queue))
++	list_for_each_safe(act, tmp,
++			&(rndis_per_dev_params[configNr].resp_queue))
+ 	{
+-		r = list_entry (act, rndis_resp_t, list);
++		r = list_entry(act, rndis_resp_t, list);
+ 		if (!r->send) {
+ 			r->send = 1;
+ 			*length = r->length;
+@@ -1011,20 +1009,20 @@ u8 *rndis_get_next_response (int configNr, u32 *length)
+ 	return NULL;
+ }
+ 
+-static rndis_resp_t *rndis_add_response (int configNr, u32 length)
++static rndis_resp_t *rndis_add_response(int configNr, u32 length)
+ {
+-	rndis_resp_t	*r;
++	rndis_resp_t *r;
+ 
+-	/* NOTE:  this gets copied into ether.c USB_BUFSIZ bytes ... */
+-	r = kmalloc (sizeof (rndis_resp_t) + length, GFP_ATOMIC);
++	/* NOTE: this gets copied into ether.c USB_BUFSIZ bytes ... */
++	r = kmalloc(sizeof(rndis_resp_t) + length, GFP_ATOMIC);
+ 	if (!r) return NULL;
+ 
+-	r->buf = (u8 *) (r + 1);
++	r->buf = (u8 *)(r + 1);
+ 	r->length = length;
+ 	r->send = 0;
+ 
+-	list_add_tail (&r->list,
+-		&(rndis_per_dev_params [configNr].resp_queue));
++	list_add_tail(&r->list,
++		&(rndis_per_dev_params[configNr].resp_queue));
+ 	return r;
+ }
+ 
+@@ -1033,7 +1031,7 @@ int rndis_rm_hdr(struct gether *port,
+ 			struct sk_buff_head *list)
+ {
+ 	/* tmp points to a struct rndis_packet_msg_type */
+-	__le32		*tmp = (void *) skb->data;
++	__le32 *tmp = (void *)skb->data;
+ 
+ 	/* MessageType, MessageLength */
+ 	if (cpu_to_le32(REMOTE_NDIS_PACKET_MSG)
+@@ -1054,7 +1052,7 @@ int rndis_rm_hdr(struct gether *port,
+ 	return 0;
+ }
+ 
+-#ifdef	CONFIG_USB_GADGET_DEBUG_FILES
++#ifdef CONFIG_USB_GADGET_DEBUG_FILES
+ 
+ static int rndis_proc_show(struct seq_file *m, void *v)
+ {
+@@ -1087,7 +1085,7 @@ static int rndis_proc_show(struct seq_file *m, void *v)
+ }
+ 
+ static ssize_t rndis_proc_write(struct file *file, const char __user *buffer,
+-		size_t count, loff_t *ppos)
++				size_t count, loff_t *ppos)
+ {
+ 	rndis_params *p = PDE(file->f_path.dentry->d_inode)->data;
+ 	u32 speed = 0;
+@@ -1109,11 +1107,11 @@ static ssize_t rndis_proc_write(struct file *file, const char __user *buffer,
+ 		case '8':
+ 		case '9':
+ 			fl_speed = 1;
+-			speed = speed*10 + c - '0';
++			speed = speed * 10 + c - '0';
+ 			break;
+ 		case 'C':
+ 		case 'c':
+-			rndis_signal_connect (p->confignr);
++			rndis_signal_connect(p->confignr);
+ 			break;
+ 		case 'D':
+ 		case 'd':
+@@ -1145,11 +1143,11 @@ static const struct file_operations rndis_proc_fops = {
+ 	.write		= rndis_proc_write,
  };
  
-+struct wakeup_source;
-+
- struct dev_pm_info {
- 	pm_message_t		power_state;
- 	unsigned int		can_wakeup:1;
--	unsigned int		should_wakeup:1;
- 	unsigned		async_suspend:1;
- 	enum dpm_state		status;		/* Owned by the PM core */
-+	spinlock_t		lock;
- #ifdef CONFIG_PM_SLEEP
- 	struct list_head	entry;
- 	struct completion	completion;
--	unsigned long		wakeup_count;
-+	struct wakeup_source	*wakeup;
+-#define	NAME_TEMPLATE	"driver/rndis-%03d"
++#define	NAME_TEMPLATE "driver/rndis-%03d"
+ 
+ static struct proc_dir_entry *rndis_connect_state [RNDIS_MAX_CONFIGS];
+ 
+-#endif	/* CONFIG_USB_GADGET_DEBUG_FILES */
++#endif /* CONFIG_USB_GADGET_DEBUG_FILES */
+ 
+ 
+ int rndis_init(void)
+@@ -1160,42 +1158,40 @@ int rndis_init(void)
+ #ifdef	CONFIG_USB_GADGET_DEBUG_FILES
+ 		char name [20];
+ 
+-		sprintf (name, NAME_TEMPLATE, i);
+-		if (!(rndis_connect_state [i]
+-				= proc_create_data(name, 0660, NULL,
++		sprintf(name, NAME_TEMPLATE, i);
++		rndis_connect_state[i] = proc_create_data(name, 0660, NULL,
+ 					&rndis_proc_fops,
+-					(void *)(rndis_per_dev_params + i))))
+-		{
+-			pr_debug("%s :remove entries", __func__);
++					(void *)(rndis_per_dev_params + i))
++		if (!rndis_connect_state[i]) {
++			pr_debug("%s: remove entries", __func__);
+ 			while (i) {
+-				sprintf (name, NAME_TEMPLATE, --i);
+-				remove_proc_entry (name, NULL);
++				sprintf(name, NAME_TEMPLATE, --i);
++				remove_proc_entry(name, NULL);
+ 			}
+ 			pr_debug("\n");
+ 			return -EIO;
+ 		}
  #endif
- #ifdef CONFIG_PM_RUNTIME
- 	struct timer_list	suspend_timer;
- 	unsigned long		timer_expires;
- 	struct work_struct	work;
- 	wait_queue_head_t	wait_queue;
--	spinlock_t		lock;
- 	atomic_t		usage_count;
- 	atomic_t		child_count;
- 	unsigned int		disable_depth:3;
-@@ -559,11 +560,6 @@ extern void __suspend_report_result(cons
- 	} while (0)
- 
- extern void device_pm_wait_for_dev(struct device *sub, struct device *dev);
--
--/* drivers/base/power/wakeup.c */
--extern void pm_wakeup_event(struct device *dev, unsigned int msec);
--extern void pm_stay_awake(struct device *dev);
--extern void pm_relax(void);
- #else /* !CONFIG_PM_SLEEP */
- 
- #define device_pm_lock() do {} while (0)
-@@ -577,10 +573,6 @@ static inline int dpm_suspend_start(pm_m
- #define suspend_report_result(fn, ret)		do {} while (0)
- 
- static inline void device_pm_wait_for_dev(struct device *a, struct device *b) {}
--
--static inline void pm_wakeup_event(struct device *dev, unsigned int msec) {}
--static inline void pm_stay_awake(struct device *dev) {}
--static inline void pm_relax(void) {}
- #endif /* !CONFIG_PM_SLEEP */
- 
- /* How to reorder dpm_list after device_move() */
-Index: linux-2.6/drivers/base/power/wakeup.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/wakeup.c
-+++ linux-2.6/drivers/base/power/wakeup.c
-@@ -11,7 +11,10 @@
- #include <linux/sched.h>
- #include <linux/capability.h>
- #include <linux/suspend.h>
--#include <linux/pm.h>
-+
-+#include "power.h"
-+
-+#define TIMEOUT		100
- 
- /*
-  * If set, the suspend/hibernate code will abort transitions to a sleep state
-@@ -20,18 +23,251 @@
- bool events_check_enabled;
- 
- /* The counter of registered wakeup events. */
--static unsigned long event_count;
-+static atomic_t event_count = ATOMIC_INIT(0);
- /* A preserved old value of event_count. */
--static unsigned long saved_event_count;
-+static unsigned int saved_count;
- /* The counter of wakeup events being processed. */
--static unsigned long events_in_progress;
-+static atomic_t events_in_progress = ATOMIC_INIT(0);
- 
- static DEFINE_SPINLOCK(events_lock);
- 
- static void pm_wakeup_timer_fn(unsigned long data);
- 
--static DEFINE_TIMER(events_timer, pm_wakeup_timer_fn, 0, 0);
--static unsigned long events_timer_expires;
-+static LIST_HEAD(wakeup_sources);
-+
-+/**
-+ * wakeup_source_create - Create a struct wakeup_source object.
-+ * @name: Name of the new wakeup source.
-+ */
-+struct wakeup_source *wakeup_source_create(const char *name)
-+{
-+	struct wakeup_source *ws;
-+
-+	ws = kzalloc(sizeof(*ws), GFP_KERNEL);
-+	if (!ws)
-+		return NULL;
-+
-+	if (name) {
-+		int len = strlen(name);
-+		char *s = kzalloc(len + 1, GFP_KERNEL);
-+		if (s) {
-+			strncpy(s, name, len);
-+			ws->name = s;
-+		}
-+	}
-+
-+	return ws;
-+}
-+EXPORT_SYMBOL_GPL(wakeup_source_create);
-+
-+/**
-+ * wakeup_source_destroy - Destroy a struct wakeup_source object.
-+ * @ws: Wakeup source to destroy.
-+ */
-+void wakeup_source_destroy(struct wakeup_source *ws)
-+{
-+	if (!ws)
-+		return;
-+
-+	spin_lock_irq(&ws->lock);
-+	while (ws->active) {
-+		spin_unlock_irq(&ws->lock);
-+
-+		schedule_timeout_interruptible(msecs_to_jiffies(TIMEOUT));
-+
-+		spin_lock_irq(&ws->lock);
-+	}
-+	spin_unlock_irq(&ws->lock);
-+
-+	if (ws->name)
-+		kfree(ws->name);
-+	kfree(ws);
-+}
-+EXPORT_SYMBOL_GPL(wakeup_source_destroy);
-+
-+/**
-+ * wakeup_source_register - Add given object to the list of wakeup sources.
-+ * @ws: Wakeup source object to register.
-+ */
-+void wakeup_source_register(struct wakeup_source *ws)
-+{
-+	if (WARN_ON(!ws))
-+		return;
-+
-+	spin_lock_init(&ws->lock);
-+	setup_timer(&ws->timer, pm_wakeup_timer_fn, (unsigned long)ws);
-+	ws->active = false;
-+
-+	spin_lock_irq(&events_lock);
-+	list_add_rcu(&ws->entry, &wakeup_sources);
-+	spin_unlock_irq(&events_lock);
-+	synchronize_rcu();
-+}
-+EXPORT_SYMBOL_GPL(wakeup_source_register);
-+
-+/**
-+ * wakeup_source_unregister - Remove given object from the wakeup sources list.
-+ * @ws: Wakeup source object to unregister.
-+ */
-+void wakeup_source_unregister(struct wakeup_source *ws)
-+{
-+	if (WARN_ON(!ws))
-+		return;
-+
-+	spin_lock_irq(&events_lock);
-+	list_del_rcu(&ws->entry);
-+	spin_unlock_irq(&events_lock);
-+	synchronize_rcu();
-+}
-+EXPORT_SYMBOL_GPL(wakeup_source_unregister);
-+
-+/**
-+ * wakeup_source_add - Create and register a wakeup source object.
-+ * @name: Name of the wakeup source to create.
-+ */
-+struct wakeup_source *wakeup_source_add(const char *name)
-+{
-+	struct wakeup_source *ws;
-+
-+	ws = wakeup_source_create(name);
-+	if (ws)
-+		wakeup_source_register(ws);
-+
-+	return ws;
-+}
-+EXPORT_SYMBOL_GPL(wakeup_source_add);
-+
-+/**
-+ * wakeup_source_remove - Unregister and destroy a wakeup source object.
-+ * @ws: Wakeup source object to handle.
-+ */
-+void wakeup_source_remove(struct wakeup_source *ws)
-+{
-+	wakeup_source_unregister(ws);
-+	wakeup_source_destroy(ws);
-+}
-+EXPORT_SYMBOL_GPL(wakeup_source_remove);
-+
-+/**
-+ * device_wakeup_attach - Attach a wakeup source object to a device object.
-+ * @dev: Device to handle.
-+ * @ws: Wakeup source object to attach to @dev.
-+ *
-+ * This causes @dev to be treated as a wakeup device.
-+ */
-+static int device_wakeup_attach(struct device *dev, struct wakeup_source *ws)
-+{
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.wakeup) {
-+		spin_unlock_irq(&dev->power.lock);
-+		return -EEXIST;
-+	}
-+	dev->power.wakeup = ws;
-+	spin_unlock_irq(&dev->power.lock);
-+	return 0;
-+}
-+
-+/**
-+ * device_wakeup_enable - Enable given device to be a wakeup source.
-+ * @dev: Device to handle.
-+ *
-+ * Create a wakeup source object, register it and attach it to @dev.
-+ */
-+int device_wakeup_enable(struct device *dev)
-+{
-+	struct wakeup_source *ws;
-+	int ret;
-+
-+	if (!dev || !dev->power.can_wakeup)
-+		return -EINVAL;
-+
-+	ws = wakeup_source_add(dev_name(dev));
-+	if (!ws)
-+		return -ENOMEM;
-+
-+	ret = device_wakeup_attach(dev, ws);
-+	if (ret)
-+		wakeup_source_remove(ws);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(device_wakeup_enable);
-+
-+/**
-+ * device_wakeup_detach - Detach a device's wakeup source object from it.
-+ * @dev: Device to detach the wakeup source object from.
-+ *
-+ * After it returns, @dev will not be treated as a wakeup device any more.
-+ */
-+static struct wakeup_source *device_wakeup_detach(struct device *dev)
-+{
-+	struct wakeup_source *ws;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	ws = dev->power.wakeup;
-+	dev->power.wakeup = NULL;
-+	spin_unlock_irq(&dev->power.lock);
-+	return ws;
-+}
-+
-+/**
-+ * device_wakeup_disable - Do not regard a device as a wakeup source any more.
-+ * @dev: Device to handle.
-+ *
-+ * Detach the @dev's wakeup source object from it, unregister this wakeup source
-+ * object and destroy it.
-+ */
-+int device_wakeup_disable(struct device *dev)
-+{
-+	struct wakeup_source *ws;
-+
-+	if (!dev || !dev->power.can_wakeup)
-+		return -EINVAL;
-+
-+	ws = device_wakeup_detach(dev);
-+	if (ws)
-+		wakeup_source_remove(ws);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(device_wakeup_disable);
-+
-+/**
-+ * device_init_wakeup - Device wakeup initialization.
-+ * @dev: Device to handle.
-+ * @enable: Whether or not to enable @dev as a wakeup device.
-+ *
-+ * By default, most devices should leave wakeup disabled.  The exceptions are
-+ * devices that everyone expects to be wakeup sources: keyboards, power buttons,
-+ * possibly network interfaces, etc.
-+ */
-+int device_init_wakeup(struct device *dev, bool enable)
-+{
-+	int ret = 0;
-+
-+	if (enable) {
-+		device_set_wakeup_capable(dev, true);
-+		ret = device_wakeup_enable(dev);
-+	} else {
-+		device_set_wakeup_capable(dev, false);
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(device_init_wakeup);
-+
-+/**
-+ * device_set_wakeup_enable - Enable or disable a device to wake up the system.
-+ * @dev: Device to handle.
-+ */
-+int device_set_wakeup_enable(struct device *dev, bool enable)
-+{
-+	if (!dev || !dev->power.can_wakeup)
-+		return -EINVAL;
-+
-+	return enable ? device_wakeup_enable(dev) : device_wakeup_disable(dev);
-+}
-+EXPORT_SYMBOL_GPL(device_set_wakeup_enable);
- 
- /*
-  * The functions below use the observation that each wakeup event starts a
-@@ -55,118 +291,252 @@ static unsigned long events_timer_expire
-  * knowledge, however, may not be available to it, so it can simply specify time
-  * to wait before the system can be suspended and pass it as the second
-  * argument of pm_wakeup_event().
-+ *
-+ * It is valid to call pm_relax() after pm_wakeup_event(), in which case the
-+ * "no suspend" period will be ended either by the pm_relax(), or by the timer
-+ * function executed when the timer expires, whichever comes first.
-  */
- 
- /**
-+ * wakup_source_activate - Mark given wakeup source as active.
-+ * @ws: Wakeup source to handle.
-+ *
-+ * Update the @ws' statistics and, if @ws has just been activated, notify the PM
-+ * core of the event by incrementing the counter of of wakeup events being
-+ * processed.
-+ */
-+static void wakeup_source_activate(struct wakeup_source *ws)
-+{
-+	ws->active = true;
-+	ws->active_count++;
-+	ws->timer_expires = jiffies;
-+	ws->last_time = ktime_get();
-+
-+	atomic_inc(&events_in_progress);
-+}
-+
-+/**
-+ * __pm_stay_awake - Notify the PM core of a wakeup event.
-+ * @ws: Wakeup source object associated with the source of the event.
-+ *
-+ * It is safe to call this function from interrupt context.
-+ */
-+void __pm_stay_awake(struct wakeup_source *ws)
-+{
-+	unsigned long flags;
-+
-+	if (!ws)
-+		return;
-+
-+	spin_lock_irqsave(&ws->lock, flags);
-+	ws->event_count++;
-+	if (!ws->active)
-+		wakeup_source_activate(ws);
-+	spin_unlock_irqrestore(&ws->lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(__pm_stay_awake);
-+
-+/**
-  * pm_stay_awake - Notify the PM core that a wakeup event is being processed.
-  * @dev: Device the wakeup event is related to.
-  *
-- * Notify the PM core of a wakeup event (signaled by @dev) by incrementing the
-- * counter of wakeup events being processed.  If @dev is not NULL, the counter
-- * of wakeup events related to @dev is incremented too.
-+ * Notify the PM core of a wakeup event (signaled by @dev) by calling
-+ * __pm_stay_awake for the @dev's wakeup source object.
-  *
-  * Call this function after detecting of a wakeup event if pm_relax() is going
-  * to be called directly after processing the event (and possibly passing it to
-  * user space for further processing).
-- *
-- * It is safe to call this function from interrupt context.
-  */
- void pm_stay_awake(struct device *dev)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&events_lock, flags);
--	if (dev)
--		dev->power.wakeup_count++;
-+	if (!dev)
-+		return;
- 
--	events_in_progress++;
--	spin_unlock_irqrestore(&events_lock, flags);
-+	spin_lock_irqsave(&dev->power.lock, flags);
-+	__pm_stay_awake(dev->power.wakeup);
-+	spin_unlock_irqrestore(&dev->power.lock, flags);
- }
-+EXPORT_SYMBOL_GPL(pm_stay_awake);
- 
- /**
-- * pm_relax - Notify the PM core that processing of a wakeup event has ended.
-+ * wakup_source_deactivate - Mark given wakeup source as inactive.
-+ * @ws: Wakeup source to handle.
-  *
-- * Notify the PM core that a wakeup event has been processed by decrementing
-- * the counter of wakeup events being processed and incrementing the counter
-- * of registered wakeup events.
-+ * Update the @ws' statistics and notify the PM core that the wakeup source has
-+ * become inactive by decrementing the counter of wakeup events being processed
-+ * and incrementing the counter of registered wakeup events.
-+ */
-+static void wakeup_source_deactivate(struct wakeup_source *ws)
-+{
-+	ktime_t duration;
-+	ktime_t now;
-+
-+	ws->relax_count++;
-+	/*
-+	 * __pm_relax() may be called directly or from a timer function.
-+	 * If it is called directly right after the timer function has been
-+	 * started, but before the timer function calls __pm_relax(), it is
-+	 * possible that __pm_stay_awake() will be called in the meantime and
-+	 * will set ws->active.  Then, ws->active may be cleared immediately
-+	 * by the __pm_relax() called from the timer function, but in such a
-+	 * case ws->relax_count will be different from ws->active_count.
-+	 */
-+	if (ws->relax_count != ws->active_count) {
-+		ws->relax_count--;
-+		return;
-+	}
-+
-+	ws->active = false;
-+
-+	now = ktime_get();
-+	duration = ktime_sub(now, ws->last_time);
-+	ws->total_time = ktime_add(ws->total_time, duration);
-+	if (ktime_to_ns(duration) > ktime_to_ns(ws->max_time))
-+		ws->max_time = duration;
-+
-+	del_timer(&ws->timer);
-+
-+	atomic_inc(&event_count);
-+	atomic_dec(&events_in_progress);
-+}
-+
-+/**
-+ * __pm_relax - Notify the PM core that processing of a wakeup event has ended.
-+ * @ws: Wakeup source object associated with the source of the event.
-  *
-  * Call this function for wakeup events whose processing started with calling
-- * pm_stay_awake().
-+ * __pm_stay_awake().
-  *
-  * It is safe to call it from interrupt context.
-  */
--void pm_relax(void)
-+void __pm_relax(struct wakeup_source *ws)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&events_lock, flags);
--	if (events_in_progress) {
--		events_in_progress--;
--		event_count++;
--	}
--	spin_unlock_irqrestore(&events_lock, flags);
-+	if (!ws)
-+		return;
-+
-+	spin_lock_irqsave(&ws->lock, flags);
-+	if (ws->active)
-+		wakeup_source_deactivate(ws);
-+	spin_unlock_irqrestore(&ws->lock, flags);
- }
-+EXPORT_SYMBOL_GPL(__pm_relax);
-+
-+/**
-+ * pm_relax - Notify the PM core that processing of a wakeup event has ended.
-+ * @dev: Device that signaled the event.
-+ *
-+ * Execute __pm_relax() for the @dev's wakeup source object.
-+ */
-+void pm_relax(struct device *dev)
-+{
-+	unsigned long flags;
-+
-+	if (!dev)
-+		return;
-+
-+	spin_lock_irqsave(&dev->power.lock, flags);
-+	__pm_relax(dev->power.wakeup);
-+	spin_unlock_irqrestore(&dev->power.lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(pm_relax);
- 
- /**
-  * pm_wakeup_timer_fn - Delayed finalization of a wakeup event.
-+ * @data: Address of the wakeup source object associated with the event source.
-  *
-- * Decrease the counter of wakeup events being processed after it was increased
-- * by pm_wakeup_event().
-+ * Call __pm_relax() for the wakeup source whose address is stored in @data.
-  */
- static void pm_wakeup_timer_fn(unsigned long data)
- {
-+	__pm_relax((struct wakeup_source *)data);
-+}
-+
-+/**
-+ * __pm_wakeup_event - Notify the PM core of a wakeup event.
-+ * @ws: Wakeup source object associated with the event source.
-+ * @msec: Anticipated event processing time (in milliseconds).
-+ *
-+ * Notify the PM core of a wakeup event whose source is @ws that will take
-+ * approximately @msec milliseconds to be processed by the kernel.  If @ws is
-+ * not active, activate it.  If @msec is nonzero, set up the @ws' timer to
-+ * execute pm_wakeup_timer_fn() in future.
-+ *
-+ * It is safe to call this function from interrupt context.
-+ */
-+void __pm_wakeup_event(struct wakeup_source *ws, unsigned int msec)
-+{
- 	unsigned long flags;
-+	unsigned long expires;
- 
--	spin_lock_irqsave(&events_lock, flags);
--	if (events_timer_expires
--	    && time_before_eq(events_timer_expires, jiffies)) {
--		events_in_progress--;
--		events_timer_expires = 0;
-+	if (!ws)
-+		return;
-+
-+	spin_lock_irqsave(&ws->lock, flags);
-+
-+	ws->event_count++;
-+	if (!ws->active)
-+		wakeup_source_activate(ws);
-+
-+	if (!msec) {
-+		wakeup_source_deactivate(ws);
-+		goto unlock;
+-		rndis_per_dev_params [i].confignr = i;
+-		rndis_per_dev_params [i].used = 0;
+-		rndis_per_dev_params [i].state = RNDIS_UNINITIALIZED;
+-		rndis_per_dev_params [i].media_state
++		rndis_per_dev_params[i].confignr = i;
++		rndis_per_dev_params[i].used = 0;
++		rndis_per_dev_params[i].state = RNDIS_UNINITIALIZED;
++		rndis_per_dev_params[i].media_state
+ 				= NDIS_MEDIA_STATE_DISCONNECTED;
+-		INIT_LIST_HEAD (&(rndis_per_dev_params [i].resp_queue));
++		INIT_LIST_HEAD(&(rndis_per_dev_params[i].resp_queue));
  	}
--	spin_unlock_irqrestore(&events_lock, flags);
-+
-+	expires = jiffies + msecs_to_jiffies(msec);
-+	if (!expires)
-+		expires = 1;
-+
-+	if (time_after(expires, ws->timer_expires)) {
-+		mod_timer(&ws->timer, expires);
-+		ws->timer_expires = expires;
-+	}
-+
-+ unlock:
-+	spin_unlock_irqrestore(&ws->lock, flags);
+ 
+ 	return 0;
  }
-+EXPORT_SYMBOL_GPL(__pm_wakeup_event);
-+
  
- /**
-  * pm_wakeup_event - Notify the PM core of a wakeup event.
-  * @dev: Device the wakeup event is related to.
-  * @msec: Anticipated event processing time (in milliseconds).
-  *
-- * Notify the PM core of a wakeup event (signaled by @dev) that will take
-- * approximately @msec milliseconds to be processed by the kernel.  Increment
-- * the counter of registered wakeup events and (if @msec is nonzero) set up
-- * the wakeup events timer to execute pm_wakeup_timer_fn() in future (if the
-- * timer has not been set up already, increment the counter of wakeup events
-- * being processed).  If @dev is not NULL, the counter of wakeup events related
-- * to @dev is incremented too.
-- *
-- * It is safe to call this function from interrupt context.
-+ * Call __pm_wakeup_event() for the @dev's wakeup source object.
-  */
- void pm_wakeup_event(struct device *dev, unsigned int msec)
+-void rndis_exit (void)
++void rndis_exit(void)
  {
- 	unsigned long flags;
+-#ifdef	CONFIG_USB_GADGET_DEBUG_FILES
++#ifdef CONFIG_USB_GADGET_DEBUG_FILES
+ 	u8 i;
+-	char name [20];
++	char name[20];
  
--	spin_lock_irqsave(&events_lock, flags);
--	event_count++;
--	if (dev)
--		dev->power.wakeup_count++;
--
--	if (msec) {
--		unsigned long expires;
--
--		expires = jiffies + msecs_to_jiffies(msec);
--		if (!expires)
--			expires = 1;
--
--		if (!events_timer_expires
--		    || time_after(expires, events_timer_expires)) {
--			if (!events_timer_expires)
--				events_in_progress++;
-+	if (!dev)
-+		return;
- 
--			mod_timer(&events_timer, expires);
--			events_timer_expires = expires;
--		}
-+	spin_lock_irqsave(&dev->power.lock, flags);
-+	__pm_wakeup_event(dev->power.wakeup, msec);
-+	spin_unlock_irqrestore(&dev->power.lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(pm_wakeup_event);
-+
-+/**
-+ * pm_wakeup_update_hit_counts - Update hit counts of all active wakeup sources.
-+ */
-+static void pm_wakeup_update_hit_counts(void)
-+{
-+	unsigned long flags;
-+	struct wakeup_source *ws;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
-+		spin_lock_irqsave(&ws->lock, flags);
-+		if (ws->active)
-+			ws->hit_count++;
-+		spin_unlock_irqrestore(&ws->lock, flags);
+ 	for (i = 0; i < RNDIS_MAX_CONFIGS; i++) {
+-		sprintf (name, NAME_TEMPLATE, i);
+-		remove_proc_entry (name, NULL);
++		sprintf(name, NAME_TEMPLATE, i);
++		remove_proc_entry(name, NULL);
  	}
--	spin_unlock_irqrestore(&events_lock, flags);
-+	rcu_read_unlock();
- }
- 
- /**
-@@ -184,10 +554,13 @@ bool pm_check_wakeup_events(void)
- 
- 	spin_lock_irqsave(&events_lock, flags);
- 	if (events_check_enabled) {
--		ret = (event_count == saved_event_count) && !events_in_progress;
-+		ret = ((unsigned int)atomic_read(&event_count) == saved_count)
-+			&& !atomic_read(&events_in_progress);
- 		events_check_enabled = ret;
- 	}
- 	spin_unlock_irqrestore(&events_lock, flags);
-+	if (!ret)
-+		pm_wakeup_update_hit_counts();
- 	return ret;
- }
- 
-@@ -202,24 +575,20 @@ bool pm_check_wakeup_events(void)
-  * drop down to zero has been interrupted by a signal (and the current number
-  * of wakeup events being processed is still nonzero).  Otherwise return true.
-  */
--bool pm_get_wakeup_count(unsigned long *count)
-+bool pm_get_wakeup_count(unsigned int *count)
- {
- 	bool ret;
- 
--	spin_lock_irq(&events_lock);
- 	if (capable(CAP_SYS_ADMIN))
- 		events_check_enabled = false;
- 
--	while (events_in_progress && !signal_pending(current)) {
--		spin_unlock_irq(&events_lock);
--
--		schedule_timeout_interruptible(msecs_to_jiffies(100));
--
--		spin_lock_irq(&events_lock);
-+	while (atomic_read(&events_in_progress) && !signal_pending(current)) {
-+		pm_wakeup_update_hit_counts();
-+		schedule_timeout_interruptible(msecs_to_jiffies(TIMEOUT));
- 	}
--	*count = event_count;
--	ret = !events_in_progress;
--	spin_unlock_irq(&events_lock);
-+
-+	ret = !atomic_read(&events_in_progress);
-+	*count = atomic_read(&event_count);
- 	return ret;
- }
- 
-@@ -232,16 +601,19 @@ bool pm_get_wakeup_count(unsigned long *
-  * old number of registered wakeup events to be used by pm_check_wakeup_events()
-  * and return true.  Otherwise return false.
-  */
--bool pm_save_wakeup_count(unsigned long count)
-+bool pm_save_wakeup_count(unsigned int count)
- {
- 	bool ret = false;
- 
- 	spin_lock_irq(&events_lock);
--	if (count == event_count && !events_in_progress) {
--		saved_event_count = count;
-+	if (count == (unsigned int)atomic_read(&event_count)
-+	    && !atomic_read(&events_in_progress)) {
-+		saved_count = count;
- 		events_check_enabled = true;
- 		ret = true;
- 	}
- 	spin_unlock_irq(&events_lock);
-+	if (!ret)
-+		pm_wakeup_update_hit_counts();
- 	return ret;
- }
-Index: linux-2.6/drivers/base/power/main.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -60,7 +60,8 @@ void device_pm_init(struct device *dev)
- 	dev->power.status = DPM_ON;
- 	init_completion(&dev->power.completion);
- 	complete_all(&dev->power.completion);
--	dev->power.wakeup_count = 0;
-+	dev->power.wakeup = NULL;
-+	spin_lock_init(&dev->power.lock);
- 	pm_runtime_init(dev);
- }
- 
-Index: linux-2.6/drivers/base/power/power.h
-===================================================================
---- linux-2.6.orig/drivers/base/power/power.h
-+++ linux-2.6/drivers/base/power/power.h
-@@ -34,6 +34,7 @@ extern void device_pm_move_last(struct d
- 
- static inline void device_pm_init(struct device *dev)
- {
-+	spin_lock_init(&dev->power.lock);
- 	pm_runtime_init(dev);
- }
- 
-Index: linux-2.6/drivers/base/power/runtime.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/runtime.c
-+++ linux-2.6/drivers/base/power/runtime.c
-@@ -1099,8 +1099,6 @@ EXPORT_SYMBOL_GPL(pm_runtime_allow);
-  */
- void pm_runtime_init(struct device *dev)
- {
--	spin_lock_init(&dev->power.lock);
--
- 	dev->power.runtime_status = RPM_SUSPENDED;
- 	dev->power.idle_notification = false;
- 
-Index: linux-2.6/include/linux/suspend.h
-===================================================================
---- linux-2.6.orig/include/linux/suspend.h
-+++ linux-2.6/include/linux/suspend.h
-@@ -302,8 +302,8 @@ extern int unregister_pm_notifier(struct
- extern bool events_check_enabled;
- 
- extern bool pm_check_wakeup_events(void);
--extern bool pm_get_wakeup_count(unsigned long *count);
--extern bool pm_save_wakeup_count(unsigned long count);
-+extern bool pm_get_wakeup_count(unsigned int *count);
-+extern bool pm_save_wakeup_count(unsigned int count);
- #else /* !CONFIG_PM_SLEEP */
- 
- static inline int register_pm_notifier(struct notifier_block *nb)
-Index: linux-2.6/kernel/power/main.c
-===================================================================
---- linux-2.6.orig/kernel/power/main.c
-+++ linux-2.6/kernel/power/main.c
-@@ -237,18 +237,18 @@ static ssize_t wakeup_count_show(struct 
- 				struct kobj_attribute *attr,
- 				char *buf)
- {
--	unsigned long val;
-+	unsigned int val;
- 
--	return pm_get_wakeup_count(&val) ? sprintf(buf, "%lu\n", val) : -EINTR;
-+	return pm_get_wakeup_count(&val) ? sprintf(buf, "%u\n", val) : -EINTR;
- }
- 
- static ssize_t wakeup_count_store(struct kobject *kobj,
- 				struct kobj_attribute *attr,
- 				const char *buf, size_t n)
- {
--	unsigned long val;
-+	unsigned int val;
- 
--	if (sscanf(buf, "%lu", &val) == 1) {
-+	if (sscanf(buf, "%u", &val) == 1) {
- 		if (pm_save_wakeup_count(val))
- 			return n;
- 	}
-Index: linux-2.6/drivers/base/power/sysfs.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/sysfs.c
-+++ linux-2.6/drivers/base/power/sysfs.c
-@@ -210,11 +210,122 @@ static DEVICE_ATTR(wakeup, 0644, wake_sh
- static ssize_t wakeup_count_show(struct device *dev,
- 				struct device_attribute *attr, char *buf)
- {
--	return sprintf(buf, "%lu\n", dev->power.wakeup_count);
-+	unsigned long count = 0;
-+	bool enabled = false;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.wakeup) {
-+		count = dev->power.wakeup->event_count;
-+		enabled = true;
-+	}
-+	spin_unlock_irq(&dev->power.lock);
-+	return enabled ? sprintf(buf, "%lu\n", count) : sprintf(buf, "\n");
- }
- 
- static DEVICE_ATTR(wakeup_count, 0444, wakeup_count_show, NULL);
--#endif
-+
-+static ssize_t wakeup_active_count_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	unsigned long count = 0;
-+	bool enabled = false;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.wakeup) {
-+		count = dev->power.wakeup->active_count;
-+		enabled = true;
-+	}
-+	spin_unlock_irq(&dev->power.lock);
-+	return enabled ? sprintf(buf, "%lu\n", count) : sprintf(buf, "\n");
-+}
-+
-+static DEVICE_ATTR(wakeup_active_count, 0444, wakeup_active_count_show, NULL);
-+
-+static ssize_t wakeup_hit_count_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	unsigned long count = 0;
-+	bool enabled = false;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.wakeup) {
-+		count = dev->power.wakeup->hit_count;
-+		enabled = true;
-+	}
-+	spin_unlock_irq(&dev->power.lock);
-+	return enabled ? sprintf(buf, "%lu\n", count) : sprintf(buf, "\n");
-+}
-+
-+static DEVICE_ATTR(wakeup_hit_count, 0444, wakeup_hit_count_show, NULL);
-+
-+static ssize_t wakeup_active_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	unsigned int active = 0;
-+	bool enabled = false;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.wakeup) {
-+		active = dev->power.wakeup->active;
-+		enabled = true;
-+	}
-+	spin_unlock_irq(&dev->power.lock);
-+	return enabled ? sprintf(buf, "%u\n", active) : sprintf(buf, "\n");
-+}
-+
-+static DEVICE_ATTR(wakeup_active, 0444, wakeup_active_show, NULL);
-+
-+static ssize_t wakeup_total_time_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	s64 msec = 0;
-+	bool enabled = false;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.wakeup) {
-+		msec = ktime_to_ms(dev->power.wakeup->total_time);
-+		enabled = true;
-+	}
-+	spin_unlock_irq(&dev->power.lock);
-+	return enabled ? sprintf(buf, "%lld\n", msec) : sprintf(buf, "\n");
-+}
-+
-+static DEVICE_ATTR(wakeup_total_time_ms, 0444, wakeup_total_time_show, NULL);
-+
-+static ssize_t wakeup_max_time_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	s64 msec = 0;
-+	bool enabled = false;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.wakeup) {
-+		msec = ktime_to_ms(dev->power.wakeup->max_time);
-+		enabled = true;
-+	}
-+	spin_unlock_irq(&dev->power.lock);
-+	return enabled ? sprintf(buf, "%lld\n", msec) : sprintf(buf, "\n");
-+}
-+
-+static DEVICE_ATTR(wakeup_max_time_ms, 0444, wakeup_max_time_show, NULL);
-+
-+static ssize_t wakeup_last_time_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	s64 msec = 0;
-+	bool enabled = false;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.wakeup) {
-+		msec = ktime_to_ms(dev->power.wakeup->last_time);
-+		enabled = true;
-+	}
-+	spin_unlock_irq(&dev->power.lock);
-+	return enabled ? sprintf(buf, "%lld\n", msec) : sprintf(buf, "\n");
-+}
-+
-+static DEVICE_ATTR(wakeup_last_time_ms, 0444, wakeup_last_time_show, NULL);
-+#endif /* CONFIG_PM_SLEEP */
- 
- #ifdef CONFIG_PM_ADVANCED_DEBUG
- #ifdef CONFIG_PM_RUNTIME
-@@ -288,6 +399,12 @@ static struct attribute * power_attrs[] 
- 	&dev_attr_wakeup.attr,
- #ifdef CONFIG_PM_SLEEP
- 	&dev_attr_wakeup_count.attr,
-+	&dev_attr_wakeup_active_count.attr,
-+	&dev_attr_wakeup_hit_count.attr,
-+	&dev_attr_wakeup_active.attr,
-+	&dev_attr_wakeup_total_time_ms.attr,
-+	&dev_attr_wakeup_max_time_ms.attr,
-+	&dev_attr_wakeup_last_time_ms.attr,
  #endif
- #ifdef CONFIG_PM_ADVANCED_DEBUG
- 	&dev_attr_async.attr,
+ }
+-
