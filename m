@@ -1,98 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757732Ab0IGPtD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:49:03 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44982 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757544Ab0IGPtA convert rfc822-to-8bit (ORCPT
+	id S932133Ab0IGPyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:54:19 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:58961 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757242Ab0IGPyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 11:49:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jZUH+JXu/YzuaL48HAYkjdNv177ZoweUuxWcz3vR4L4KX7nBevpgnR4AFagrOvDxFH
-         bJ8gX0yuf/HzhZyZ5pHPJrRZas4rJUeVS/LuMk/1rCUTl4HeQL+7VvXdc/hnyRpOt+Y+
-         /0J0mCnTSOj0FgIklY7x0vMmqjVCwAFpxM2lw=
+	Tue, 7 Sep 2010 11:54:13 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: James Bottomley <James.Bottomley@suse.de>, bo yang <boyang1288@gmail.com>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Date: Tue, 7 Sep 2010 09:53:58 -0600
+Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
+ MegaRAID SAS driver
+Thread-Topic: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset
+ to MegaRAID SAS driver
+Thread-Index: ActNJMv9FbPAvOJTSaaA3BWfoXrvtQBfvm8A
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3DC054A67@cosmail02.lsi.com>
+References: <AANLkTiktJycDkXu+FHQanTNe-djvvTe9V=9KfSkLcXZd@mail.gmail.com>
+ <1283709850.15944.1277.camel@mulgrave.site>
+In-Reply-To: <1283709850.15944.1277.camel@mulgrave.site>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinrecJXH+uDxtBsskFLpBCz0VSZMtSiWGFW9YCr@mail.gmail.com>
-References: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
-	<AANLkTiksb1AudCzs8-TWdXb11T-QcPx1G_qu6eUtJ74C@mail.gmail.com>
-	<AANLkTin7eVyosgK4XhuB_yqR2ao=YJGVidHB1x2802cr@mail.gmail.com>
-	<AANLkTinrecJXH+uDxtBsskFLpBCz0VSZMtSiWGFW9YCr@mail.gmail.com>
-Date: Tue, 7 Sep 2010 21:18:59 +0530
-Message-ID: <AANLkTinkhY-y6Qv6HJnGbggksdEmULgQ9DTOrNmu1tLp@mail.gmail.com>
-Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization(v1)
-From: venki kaps <venkiece2005@gmail.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o87FsYft007591
 
-Venkii,
+Thanks James,
 
-On Tue, Sep 7, 2010 at 9:10 PM, Ming Lei <tom.leiming@gmail.com> wrote:
-> 2010/9/7 venki kaps <venkiece2005@gmail.com>:
->> thanks for your good response.
->>
->> Venkii,
->>
->> On Tue, Sep 7, 2010 at 6:54 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->>> 2010/9/7 venki kaps <venkiece2005@gmail.com>:
->>>> Dear USB experts,
->>>>
->>>>  Is the same fix valid for omap3430 + 2.6.32 Kernel?
->>>>
->>>>  I have been facing mp3 playback idle current consumption 20mA more
->>>> after booting without USB cable connected
->>>>  but If USB cable detach and attach happen, then able to hit proper
->>>> values otherwise irrespective of cold/warm reset
->>>>  the current values increases to 20mA.
->>>>
->>>>  with cable,
->>>>      OTG_SYSCONFIG standby mode of operation - SMART idle
->>>>      HSOTGUSB_STANDBY - SMART standby
->>>>
->>>>  without cable,
->>>>        OTG_SYSCONFIG standby mode of operation - SMART idle
->>>>        HSOTGUSB_STANDBY - Active
->>>>
->>>>  Even i have applied  patch but still the same issue.
->>>
->>> Are you applying the patch below?
->>>
->>>         http://marc.info/?l=linux-omap&m=128378686221264&w=2
->>>
->>> The patch(USB: otg: twl4030: fix phy initialization(v1)) above is against
->>> 2.6.36-rc3, I don't think you can apply it directly on 2.6.32. And the patch
->>> is introduced to fix the problems caused by
->>>
->>>          commit 461c317705eca5cac09a360f488715927fd0a927.
->>>
->>> which change is committed into mainline 2.6.36-rc3.
->>  >>> Yes, this patch i have applied.
->
-> If you applied the patch, I guess you may see __twl4030_phy_power(twl, 0)
-> is called from .probe.
->
-> If called,  seems your description a little contradictory since you observed
-> __twl4030_phy_power(twl, 0) may hit proper values, right?
+The e-mail broken lines of the description.  I am changing the description to avoid re-submit all the patches(5 of them).
 
-  Yes, __twl4030_phy_power(twl, 0) -  the current values are getting
-proper with or without cable.
->
-> If not called, could you trace the return value of twl4030_usb_linkstat in
-> twl4030_usb_phy_init?
-ok, i can do that and update.
->
-> thanks,
->
-> --
-> Lei Ming
->
+Also 
+
+>  megasas_complete_cmd(struct megasas_instance *instance, struct
+> megasas_cmd *cmd,
+>  		     u8 alt_status);
+
+Not patch line(already in the src, but more than 80 chars).
+
+Regards,
+
+Bo Yang    
+
+-----Original Message-----
+From: James Bottomley [mailto:James.Bottomley@suse.de] 
+Sent: Sunday, September 05, 2010 2:04 PM
+To: bo yang
+Cc: Yang, Bo; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Daftardar, Jayant
+Subject: Re: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
+
+On Wed, 2010-08-11 at 16:45 -0400, bo yang wrote:
+> To add the Online Controller Reset  (OCR) support, driver need to do:
+> 		a). reset the controller chips -- Xscale and Gen2 which will change
+> the function calls and add the reset function
+> 		related to this two chips.
+> 		
+> 		b). during the reset, driver will store the pending cmds which not
+> returned by FW to driver's pending queue.  Driver
+> 		will re-issue those pending cmds again to FW after the OCR finished.
+> 		
+> 		c). In driver's timeout routine, driver will report to OS as reset.
+> Also driver's queue routine will block the
+> 		cmds until the OCR finished.
+> 		
+> 		d). in Driver's ISR routine, if driver get the FW state as state
+> change, FW in Failure status and FW support online controller
+> 		reset (OCR), driver will start to do the controller reset.
+> 		
+> 		e). In driver's IOCTL routine, the application cmds will wait for
+> the OCR to finish, then issue the cmds to FW.
+> 
+> Signed-off-by Bo Yang<bo.yang@lsi.com>
+
+This patch is full of line breaks which prevent application, like this
+one:
+
+> diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas
+> new/Documentation/scsi/ChangeLog.megaraid_sas
+> --- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
+> 04:58:36.000000000 -0400
+> +++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
+> 04:56:30.000000000 -0400
+> @@ -1,3 +1,36 @@
+> +1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
+> +			(emaild-id:megaraidlinux@lsi.com)
+> +			Bo Yang
+[snip]
+
+and this one
+> diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
+> new/drivers/scsi/megaraid/megaraid_sas.c
+> --- old/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:55:41.000000000 -0400
+> +++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:56:30.000000000 -0400
+> @@ -107,6 +107,12 @@ static void
+>  megasas_complete_cmd(struct megasas_instance *instance, struct
+> megasas_cmd *cmd,
+>  		     u8 alt_status);
+
+Since not every long line is broken, this looks like some type of cut
+and paste error ... anyway, could you fix it up, please?
+
+Thanks,
+
+James
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
