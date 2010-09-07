@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757870Ab0IGPiT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:38:19 -0400
-Received: from mail.elliptictech.com ([209.217.122.41]:50562 "EHLO
-	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757844Ab0IGPiJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 11:38:09 -0400
-Date: Tue, 7 Sep 2010 11:37:21 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Joe Perches <joe@perches.com>
-Cc: David Miller <davem@davemloft.net>, trivial@kernel.org,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] include/net/raw.h: Convert raw_seq_private
- macro to inline
-Message-ID: <20100907153721.GA6419@elliptictech.com>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	David Miller <davem@davemloft.net>, trivial@kernel.org,
-	kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-	yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <cover.1283650107.git.joe@perches.com>
- <dd5d79c3aa9f2cffbca1a8d4a9163b0d6a9492a9.1283650107.git.joe@perches.com>
- <20100906.183036.68150190.davem@davemloft.net>
- <20100906.184749.214227378.davem@davemloft.net>
- <1283835677.23280.108.camel@Joe-Laptop>
+	id S1757875Ab0IGPjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:39:03 -0400
+Received: from www.tglx.de ([62.245.132.106]:58477 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757500Ab0IGPi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 11:38:57 -0400
+Date: Tue, 7 Sep 2010 17:38:33 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [patch 00/30] semaphore cleanup
+In-Reply-To: <201009071727.55023.arnd@arndb.de>
+Message-ID: <alpine.LFD.2.00.1009071736100.2477@localhost6.localdomain6>
+References: <20100907124636.880953480@linutronix.de> <201009071727.55023.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283835677.23280.108.camel@Joe-Laptop>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-06 22:01 -0700, Joe Perches wrote:
-> diff --git a/include/net/raw.h b/include/net/raw.h
-> index 43c5750..c621200 100644
-> --- a/include/net/raw.h
-> +++ b/include/net/raw.h
-> @@ -45,7 +45,10 @@ struct raw_iter_state {
->  	struct raw_hashinfo *h;
->  };
->  
-> -#define raw_seq_private(seq) ((struct raw_iter_state *)(seq)->private)
-> +inline struct raw_iter_state *raw_seq_private(struct seq_file *seq)
+On Tue, 7 Sep 2010, Arnd Bergmann wrote:
 
-This needs to be declared static.
+> On Tuesday 07 September 2010, Thomas Gleixner wrote:
+> > init_MUTEX[_LOCKED] and DECLARE_MUTEX are deprecated for quite some
+> > time. Cleanup the remaining users and remove the cruft.
+> 
+> How many of these really need to be semaphores and can't be converted
+> to mutex or completion? I thought that we wanted to send the classic
+> semaphore the same way as the BKL eventually.
 
-> +{
-> +	return seq->private;
-> +}
->  void *raw_seq_start(struct seq_file *seq, loff_t *pos);
->  void *raw_seq_next(struct seq_file *seq, void *v, loff_t *pos);
->  void raw_seq_stop(struct seq_file *seq, void *v);
+Some of those can be converted to completions, but most of them have
+utterly borked semantics. I'm not sure if its worth the trouble to
+actually change all this as most of that stuff is ancient. Real
+semaphores are not going away (at least not the counting type ones).
 
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Thanks,
+
+	tglx
