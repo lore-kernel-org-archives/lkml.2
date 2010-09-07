@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab0IGOX6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 10:23:58 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:30793 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751152Ab0IGOXx (ORCPT
+	id S1757008Ab0IGOYb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 10:24:31 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41946 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756983Ab0IGOY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 10:23:53 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Hrc_3PYVM1lW4LsQMjDQqnEbxUMf3e.A595KKJ5hn0Og6M2
- _e2ekFJjq70qHexQ7jOEn9k.4kpubAMBm.iZDv0dPC1_GInZTWliqyUlpVbf
- RgdCNTMpEeeKJbfQkvDS0H_x2HARbKTiNA6acWBvb62WqCi1124ML8E2Oont
- GzMpRjkUTSY9SmAD88.WhJEle_XGLJy_cUV9tkTxa0elpKdq5dkjKcrjn60g
- x
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 7 Sep 2010 09:23:48 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Dave Chinner <david@fromorbit.com>
-cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after direct
- reclaim allocation fails
-In-Reply-To: <20100906040243.GA7362@dastard>
-Message-ID: <alpine.DEB.2.00.1009070918030.14634@router.home>
-References: <20100903160026.564fdcc9.akpm@linux-foundation.org> <20100904022545.GD705@dastard> <20100903202101.f937b0bb.akpm@linux-foundation.org> <20100904075840.GE705@dastard> <20100904081414.GF705@dastard> <20100905015400.GA10714@localhost>
- <20100905021555.GG705@dastard> <20100905060539.GA17450@localhost> <20100905131447.GJ705@dastard> <20100905134554.GA7083@localhost> <20100906040243.GA7362@dastard>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 7 Sep 2010 10:24:28 -0400
+Date: Tue, 7 Sep 2010 10:24:27 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: RFC: Crypto API User-interface
+Message-ID: <20100907142427.GA14207@infradead.org>
+References: <20100907084213.GA4610@gondor.apana.org.au>
+ <20100907140646.GA31921@infradead.org>
+ <20100907141112.GB6903@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100907141112.GB6903@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Sep 2010, Dave Chinner wrote:
+On Tue, Sep 07, 2010 at 10:11:12PM +0800, Herbert Xu wrote:
+> FWIW I don't care about user-space using kernel software crypto at
+> all.  It's the security people that do.
 
-> [  596.628086]  [<ffffffff81108a8c>] ? drain_all_pages+0x1c/0x20
-> [  596.628086]  [<ffffffff81108fad>] ? __alloc_pages_nodemask+0x42d/0x700
-> [  596.628086]  [<ffffffff8113d0f2>] ? kmem_getpages+0x62/0x160
-> [  596.628086]  [<ffffffff8113dce6>] ? fallback_alloc+0x196/0x240
+And since when did we care about their crack pipe dreams?
 
-fallback_alloc() showing up here means that one page allocator call from
-SLAB has already failed. SLAB then did an expensive search through all
-object caches on all nodes to find some available object. There were no
-objects in queues at all therefore SLAB called the page allocator again
-(kmem_getpages()).
+> The purpose of the user-space API is to export the hardware crypto
+> devices to user-space.  This means PCI devices mostly, as things
+> like aesni-intel can already be used without kernel help.
 
-As soon as memory is available (on any node or any cpu, they are all
-empty) SLAB will repopulate its queues(!).
+I don't think they matter in practice.  We have less than a handfull
+of drivers for them, and with CPUs gaining proper instructions they
+are even less useful.  In addition any sane PCI card should just
+allow userspace mapping of their descriptors.
+
+> Now as a side-effect if this means that we can shut the security
+> people up about adding another interface then all the better.  But
+> I will certainly not go out of the way to add more crap to the
+> kernel for that purpose.
+
+So what is the real use case for this?  In addition to kernel bloat
+the real fear I have is that the security wankers will just configure
+the userspace crypto libraries to always use the kernel interface
+just in case, and once that happens we will have to deal with the whole
+mess.  Especially for RHEL and Fedora where the inmantes now run the
+asylum in that respect.
 
