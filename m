@@ -1,117 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758347Ab0IGUxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 16:53:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56766 "EHLO mx1.redhat.com"
+	id S1758261Ab0IGUtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 16:49:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34821 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756993Ab0IGUx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 16:53:27 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, axboe@kernel.dk
-Cc: nauman@google.com, dpshah@google.com, guijianfeng@cn.fujitsu.com,
-        vgoyal@redhat.com
-Subject: [RFC PATCH] Block device bio throttling support [V2]
-Date: Tue,  7 Sep 2010 16:53:04 -0400
-Message-Id: <1283892788-4751-1-git-send-email-vgoyal@redhat.com>
+	id S1752265Ab0IGUtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 16:49:20 -0400
+Message-ID: <4C86A531.1010801@zytor.com>
+Date: Tue, 07 Sep 2010 13:48:49 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
+References: <20100901213318.19353.54619.stgit@localhost.localdomain>	 <20100902065731.GB29972@elte.hu> <20100902100308.GA17167@basil.fritz.box>	 <20100903063934.GA25863@elte.hu> <1283888337.18468.9.camel@pjaxe>	 <4C869AA3.6000103@zytor.com> <1283890615.18468.11.camel@pjaxe>
+In-Reply-To: <1283890615.18468.11.camel@pjaxe>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/07/2010 01:16 PM, Peter P Waskiewicz Jr wrote:
+>>
+>> If this is a production BIOS it should have this information.
+> 
+> Responding for both your and Ingo's last email, I'll work on getting a
+> DMI match for this system.
+> 
 
-Hi,
+Great.
 
-This is V2 of the bio throttling patches. Following are changes since V1.
-
-- Move throttling hook point from __make_request() to __generic_make_request().
-  This will make sure that now throttling will work any block device which
-  instanciated a request queue and I don't have to modify each block driver.
-  So now it should work with device mapper devices also. Thanks to Mike Snitzer
-  for the suggestion.
-
-- Renamed blkio.read_bps_device to blkio.throttle.read_bps_device. Similar
-  changes were done for blkio.write_bps_device.
-
-- Exported two new files blkio.throttle.io_serviced and
-  blkio.throttle_io_service_bytes to export number of bio and number of bytes
-  served on request queue as seen by throttling policy.
-
-- Introduce a config option CONFIG_BLK_DEV_THROTTLING, so that all the
-  throttling logic can be compiled out. 
-
-Previous version of patches are available here.
-
-[V1] http://lkml.org/lkml/2010/9/1/251
-
-Overview
-========
-Currently CFQ provides the weight based proportional division of bandwidth.
-People also have been looking at extending block IO controller to provide
-throttling/max bandwidth control.
-
-I have started to write the support for throttling in block layer on
-request queue so that it can be used both for higher level logical
-devices as well as leaf nodes. This patch is still work in progress but
-I wanted to post it for early feedback.
-
-Basically currently I have hooked into __generic_make_request() function to
-check which cgroup bio belongs to and if it is exceeding the specified
-BW rate. If no, thread can continue to dispatch bio as it is otherwise
-bio is queued internally and dispatched later with the help of a worker
-thread.
-
-HOWTO
-=====
-- Make sure CONFIG_BLK_CGROUP=y and CONFIG_BLK_DEV_THROTTLING=y.
-
-- Mount blkio controller
-        mount -t cgroup -o blkio none /cgroup/blkio
-
-- Specify a bandwidth rate on particular device for root group. The format
-  for policy is "<major>:<minor>  <byes_per_second>".
-
-        echo "8:16  1048576" > /cgroup/blkio/blkio.throttle.read_bps_device
-
-  Above will put a limit of 1MB/second on reads happening for root group
-  on device having major/minor number 8:16.
-
-- Run dd to read a file and see if rate is throttled to 1MB/s or not.
-
-       	# dd if=/mnt/common/zerofile of=/dev/null bs=4K count=1024 iflag=direct
-        1024+0 records in
-        1024+0 records out
-        4194304 bytes (4.2 MB) copied, 4.0001 s, 1.0 MB/s
-
- Limits for writes can be put using blkio.throttle.write_bps_device file.
-
-Open Issues
-===========
-- Do we need to provide additional queue congestion semantics as we are
-  throttling and queuing bios at request queue and probably we don't want
-  a user space application to consume all the memory allocating bios
-  and bombarding request queue with those bios.
-
-TODO
-====
-- Lots of testing, bug fixes.
-- Provide support for enforcing limits in IOPS.
-
-Any feedback is welcome.
-
-Overall changes look as follows.
-
- Documentation/cgroups/blkio-controller.txt |   89 +++-
- block/Kconfig                              |   12 +
- block/Makefile                             |    1 +
- block/blk-cgroup.c                         |  699 ++++++++++++++++-----
- block/blk-cgroup.h                         |   75 +++-
- block/blk-core.c                           |   24 +
- block/blk-throttle.c                       |  946 ++++++++++++++++++++++++++++
- block/blk.h                                |    4 +-
- block/cfq-iosched.c                        |    4 +
- block/cfq.h                                |    2 +-
- include/linux/blk_types.h                  |    3 +
- include/linux/blkdev.h                     |   24 +
- init/Kconfig                               |    9 +-
-
-Thanks
-Vivek
+	-hpa
