@@ -1,103 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab0IGAvk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 20:51:40 -0400
-Received: from smtp103.sbc.mail.ac4.yahoo.com ([76.13.13.242]:35466 "HELO
-	smtp103.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752968Ab0IGAve (ORCPT
+	id S1755462Ab0IGA4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 20:56:23 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:37809 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717Ab0IGA4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 20:51:34 -0400
-X-Greylist: delayed 1600 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Sep 2010 20:51:33 EDT
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: LvKVh9YVM1k7.H.sRMl8zJmOGnUJPjFJtSlgGASKiR8UcOq
- zkDrp8cNW1KNa1TJaY0l35T3zV6v_1vGw.9oFYiyyEMaU9BpfzMmdTU2i8d_
- z45xQfxIk3ZJTQOR6IyICdwQq3V4L3BJ_UV8ToJKRXXcfhaYu7KjgIvVxe_H
- 6CdbG8z5tQ3gYaP.MuUSf9YE6VJUVAIFJhWvfs6uhIJXezs.c7V6xJ79cS5a
- .1sUtPLCGTWRZGM80ZDgkHQ8xopE7hbrIdrQ5SPV_8.88arC_Egm5in6x.22
- ZUM0X.6cpfNNq777BRE5kC5X9im6YlsHdCLjXbcnSEkoX.r34smmnfNm2CY8
- pXVxX735Fm9CZRZ4hLQ--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH v2] scsi_debug: Convert to use root_device_register()
-	and root_device_unregister()
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>, Greg KH <greg@kroah.com>
-In-Reply-To: <20100907001342.GB20882@core.coreip.homeip.net>
-References: <1283817551-23380-1-git-send-email-nab@linux-iscsi.org>
-	 <20100907001342.GB20882@core.coreip.homeip.net>
-Content-Type: text/plain
-Date: Mon, 06 Sep 2010 17:20:53 -0700
-Message-Id: <1283818853.556.253.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Mon, 6 Sep 2010 20:56:19 -0400
+X-AuditID: b753bd60-a7533ba000000226-48-4c858daf2d97
+Message-ID: <4C858DA8.3060600@hitachi.com>
+Date: Tue, 07 Sep 2010 09:56:08 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Jim Keniston <jkenisto@us.ibm.com>
+Subject: Re: [PATCHv11 2.6.36-rc2-tip 4/15]  4: uprobes: x86 specific functions
+ for user space breakpointing.
+References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6> <20100825134210.5447.10126.sendpatchset@localhost6.localdomain6> <87pqwvm8cl.fsf@basil.nowhere.org> <20100903174832.GB14891@linux.vnet.ibm.com> <20100906095319.7c2fa9b0@basil.nowhere.org> <20100906134407.GF14891@linux.vnet.ibm.com>
+In-Reply-To: <20100906134407.GF14891@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-06 at 17:13 -0700, Dmitry Torokhov wrote:
-> On Mon, Sep 06, 2010 at 04:59:11PM -0700, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > Hi Dough and Co,
-> > 
-> > This patch updates the scsi_debug virtual LLD to use root_device_register()
-> > and root_device_unregister() from include/linux/device.h instead of device_register()
-> > and device_unregister() respectively within scsi_debug_init() and scsi_debug_exit()
-> > This simply involved converting the static struct device pseudo_primary into a
-> > pointer that is setup by the call to root_device_register().
-> > 
-> > This patch also contains the correct IS_ERR() conditional check of
-> > root_device_register() from within scsi_debug_init().
-> > 
-> > Thanks to Richard Sharpe and Dmitry Torokhov for their help with this item.
-> > 
-> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> > ---
-> >  drivers/scsi/scsi_debug.c |   27 +++++++++------------------
-> >  1 files changed, 9 insertions(+), 18 deletions(-)
-> > 
-> > diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-> > index b02bdc6..86d483e 100644
-> > --- a/drivers/scsi/scsi_debug.c
-> > +++ b/drivers/scsi/scsi_debug.c
-> > @@ -3207,23 +3207,14 @@ static void do_remove_driverfs_files(void)
-> >  	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_add_host);
-> >  }
-> >  
-> > -static void pseudo_0_release(struct device *dev)
-> > -{
-> > -	if (SCSI_DEBUG_OPT_NOISE & scsi_debug_opts)
-> > -		printk(KERN_INFO "scsi_debug: pseudo_0_release() called\n");
-> > -}
-> > -
-> > -static struct device pseudo_primary = {
-> > -	.init_name	= "pseudo_0",
-> > -	.release	= pseudo_0_release,
-> > -};
-> > +struct device *pseudo_primary;
-> >  
-> >  static int __init scsi_debug_init(void)
-> >  {
-> >  	unsigned long sz;
-> >  	int host_to_add;
-> >  	int k;
-> > -	int ret;
-> > +	int ret = 0;
+(2010/09/06 22:44), Srikar Dronamraju wrote:
+> [adding Masami and Jim to the copy list] 
 > 
-> Please drop this chunk, it is not needed and is dangerous WRT future
-> changes to the file as I explained earlier.
+>>> I havent tried any fuzz tests with the instruction decoder. But I am
+>>> not sure if Masami has tried that out some of these. 
+>>> One question: Do you want to test uprobes with crashme or test
+>>> instruction decoder with crashme.
 
-As you wish..
+As you can see in kernel tree, x86 insn decoder has a test
+which decodes vmlinux and compares results with objdump.
+Similar tests had been done for glibc etc. by Jim.
+But crashme looks better. :)
 
-Best,
+>> Ideally both, but as a minimum the part that is exposed
+>> to user space, that is uprobes.
+> 
+> Okay, I will test uprobes with crashme.
+> 
+>>
+>>>
+>>> validate_insn_32bit is able to identify all valid instructions in a 32
+>>> bit app and validate_insn_64bits is a superset of
+>>> validate_insn_32bits; i.e it considers valid 32 bit codes as valid
+>>> too.
+>>
+>> How can this be? e.g. 32bit has 1 byte INC/DEC but on 64bit
+>> these are REX prefixes and can be in front of nearly anything.
+>> So a super set cannot be correct. It has to be either / or.
+>>
+> 
+> You are right, the validate_insn_32bits refers to good_insns_32 and
+> validate_insn_64bits refers to good_insns_64 to decode 1 byte
+> instructions. Some instructions like 0x06 and 0x0e seem to be valid in
+> good_insns_32 but not in good_insns_64. 
 
---nab
+Hmm, if you need to validate all instructions, you'd better to
+enhance x86 decoder for checking bad instructions.
+I think it can be done mostly by adding inat bitflags.
 
+Thank you,
+
+>>> Did you get a chance to look at
+>>> validate_insn_32bit/validate_insn_64bits? If you feel that
+>>> validate_insn_32bit/validate_insn_64bits? are unable to detect
+>>> valid codes, then I will certainly rework.
+>>
+>> I don't think you can do a 100% solution because for 100%
+>> you would need to know the code segment the CPU is going
+>> to use later, and that's not possible in advance.
+>>
+> 
+> I think you are referring to RIP related instructions, this how we
+> handle them. 
+> Please correct us if we are wrong, but here is what we do 
+> - While analyzing the instruction, take into account which register acts
+>   as the code segment register.
+> 
+> - When interrupted (but before singlestep), copy the contents of the
+>   register which we think acts as code segment register in our
+>   above analysis into per-task scratch variable.
+> 
+> - After singlestepping we retrieve the saved per-task scratch
+>   variable into the corresponding register.
+> 
+>> A heuristic is reasonable (and leave out applications
+>> that generate 64bit code from 32bit executables or vice versa)
+>> but you need to test the right personality bits for that.
+>>
+>>
+>>>> Also the compat bit is not necessarily set if no system call is
+>>>> executing. You would rather need to check the exec_domain.
+>>>
+>>> Okay, I shall check and revert on this.
+>>
+>> Hmm actually I double checked and this is a separate bit.
+>> So scratch that, TIF_32BIT is ok to test.
+> 
+> Okay, Thanks for confirming this.
