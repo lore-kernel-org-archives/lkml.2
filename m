@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab0IGHAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 03:00:39 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38389 "EHLO mx1.suse.de"
+	id S1754957Ab0IGHGG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 03:06:06 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42914 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab0IGHAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 03:00:33 -0400
-Date: Mon, 6 Sep 2010 23:59:37 -0700
-From: Greg KH <gregkh@suse.de>
-To: Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Regarding USB-serial device driver
-Message-ID: <20100907065937.GA22307@suse.de>
-References: <20100907061327.M12473@admin-gateway.ncra.tifr.res.in>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100907061327.M12473@admin-gateway.ncra.tifr.res.in>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1750805Ab0IGHGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 03:06:01 -0400
+Date: Tue, 7 Sep 2010 17:05:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: Thomas Renninger <trenn@suse.de>, Jason Baron <jbaron@redhat.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the final tree
+ (driver-core tree related)
+Message-Id: <20100907170553.728232dd.sfr@canb.auug.org.au>
+In-Reply-To: <20100907023404.GA11972@kroah.com>
+References: <20100907115426.fc0c3e13.sfr@canb.auug.org.au>
+	<20100907023404.GA11972@kroah.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__7_Sep_2010_17_05_53_+1000_2ncz/htQJz_FEJ=D"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 11:44:50AM +0530, Raju Rameshwar Uprade wrote:
-> 
-> Hi Greg,
->                I have a UART device  driver which is used to control some  MCM ( Monitor
-> & control module ) devices with  address like 2,3,5,10,14 & 0 thru serial port using
-> RS-485 interface card.
-> 
-> Now I want to control these devices thru usb-serial adaptor card.When I plug the
-> usb-to-serial device.It's shows me the terminal ttyUSB0.
-> 
-> I tried sending data thru it , but in between some junk data is also going out ....
-> 
-> output of usbmon :
-> 
->  ee26be80 3612838323 S Co:7:002:0 s 40 01 0008 0000 0000 0
-> ee26be80 3612839660 C Co:7:002:0 0 0
-> ee26be80 3612839716 S Co:7:002:0 s 40 01 0009 0000 0000 0
-> ee26be80 3612840660 C Co:7:002:0 0 0
-> ee26be80 3612840700 S Ci:7:002:0 s a1 21 0000 0000 0007 7 <
-> ee26be80 3612841661 C Ci:7:002:0 0 7 = 80250000 000008
-> ee26be80 3612841710 S Co:7:002:0 s 21 20 0000 0000 0007 7 = 80250000 000008
-> ee26be80 3612842659 C Co:7:002:0 0 7 >
-> ee26be80 3612842672 S Co:7:002:0 s 21 22 0003 0000 0000 0
-> ee26be80 3612843657 C Co:7:002:0 0 0
-> ee2b3800 3612843712 S Ci:7:002:0 s a1 21 0000 0000 0007 7 <
-> ee2b3800 3612844658 C Ci:7:002:0 0 7 = 80250000 000008
-> ee2b3800 3612844668 S Co:7:002:0 s 40 01 0000 0000 0000 0
-> ee2b3800 3612845660 C Co:7:002:0 0 0
-> ee0eaf80 3612845669 S Bi:7:002:3 -115 256 <
-> ee0ead00 3612845674 S Ii:7:002:1 -115:1 10 <
-> ee2b3800 3612845679 S Co:7:002:0 s 21 22 0003 0000 0000 0
-> ee2b3800 3612846657 C Co:7:002:0 0 0
-> ee0ea680 3618022849 S Bo:7:002:2 -115 100 = 00080000 00000000 f8000000 00000000 00000000
-> 00000000 00000000 00000000
-> ee0ea680 3618024532 C Bo:7:002:2 0 100 >
-> 
-> 
-> Ideally data which should go out is : 0080000000f8.( device address is 0 and check sum
-> is f8 ).
+--Signature=_Tue__7_Sep_2010_17_05_53_+1000_2ncz/htQJz_FEJ=D
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Wierd.  If you enable debugging in the driver:
-	modprobe pl2303 debug=1
-do you also see the kernel log showing extra data going out to the host?
+Hi Greg,
 
-What is your userspace program doing?  Are you sure you are only writing
-6 bytes?  The bulk out should only be writing the actual data in the
-buffer, not any more than that.
+On Mon, 6 Sep 2010 19:34:04 -0700 Greg KH <greg@kroah.com> wrote:
+>
+> Wierd, why didn't this show up yesterday?  The patch was in that tree
+> then, right?
 
-Do you have an example userspace code that we can use to test with?
+It may have ... there are lots of warnings and I don't always notice new on=
+es.
 
-thanks,
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-greg k-h
+--Signature=_Tue__7_Sep_2010_17_05_53_+1000_2ncz/htQJz_FEJ=D
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMheRRAAoJEDMEi1NhKgbsRj4H/31wTSo5wueD2M//huyIsjqy
+jRwuSeehylm0WlVkTgMiNaMEnLCYbGvYKHt7j6NizoAbDU9FOH4k1xvrVkvkX9fd
+hsSWLjUCZfMCTNMa9WGC2q7moz6F1LolMK5R3p0vme5uvTWbXHI3u6ujH26kC97j
+zW6pljZGff6p51O5iGTh/mVXpgElst7ovYY3dqRiBOc6N6HfjTE0dtoDpdJmB1cG
+vyE3zGZdx9/G4oDDv4K03ZMucp52xAJHFtTqOBl8jomLRUVAA6u3ZhFUN/4nre/k
+7WHlOYvWyzSmjg2AM3gK7jR/lbJImYRRI06pkwkW0SsTgoEDB5RlLbx8ihLBV4c=
+=yio0
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__7_Sep_2010_17_05_53_+1000_2ncz/htQJz_FEJ=D--
