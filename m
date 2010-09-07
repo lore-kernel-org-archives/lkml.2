@@ -1,122 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab0IGNuM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 09:50:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63488 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036Ab0IGNuH convert rfc822-to-8bit (ORCPT
+	id S1756870Ab0IGNu5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 09:50:57 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:53907 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756036Ab0IGNux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 09:50:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=n+JjqExBtX81N/grH7W/Vy28SDlwAoX112NWCyBUmxUaE96gtqVBCkbI6prySovsjD
-         mOWWkGOZVAzwWo/1OVCURqOpm/O8txiLwrUvdgyFpSeQjh34Rgr5inEWSR8UxBvu56Rs
-         5UnP32qicE6GuXbnjASi5x5R2GAI8eEOY2PSI=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTiksb1AudCzs8-TWdXb11T-QcPx1G_qu6eUtJ74C@mail.gmail.com>
-References: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
-	<AANLkTiksb1AudCzs8-TWdXb11T-QcPx1G_qu6eUtJ74C@mail.gmail.com>
-Date: Tue, 7 Sep 2010 19:20:06 +0530
-Message-ID: <AANLkTin7eVyosgK4XhuB_yqR2ao=YJGVidHB1x2802cr@mail.gmail.com>
-Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization(v1)
-From: venki kaps <venkiece2005@gmail.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Sep 2010 09:50:53 -0400
+Subject: Re: [PATCH 7/7 v3] HID: magicmouse: Adjust major / minor axes to
+ scale
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Michael Poole <mdpoole@troilus.org>, Henrik Rydberg <rydberg@euromail.se>,
+        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1009021654520.26813@pobox.suse.cz>
+References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>
+	 <1283306184-28833-8-git-send-email-chase.douglas@canonical.com>
+	 <alpine.LNX.2.00.1009021654520.26813@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Sep 2010 09:50:41 -0400
+Message-ID: <1283867441.2267.31.camel@mini>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thanks for your good response.
+On Thu, 2010-09-02 at 16:55 +0200, Jiri Kosina wrote:
+> On Tue, 31 Aug 2010, Chase Douglas wrote:
+> 
+> > From: Henrik Rydberg <rydberg@euromail.se>
+> > 
+> > By visual inspection, the reported touch_major and touch_minor axes
+> > are roughly a factor of four too small. The factor is approximate,
+> > since the protocol is not known and the HID report encodes touch size
+> > with fewer bits than positions. This patch scales the reported values
+> > by a factor of four.
+> > 
+> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> > Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> > Acked-by: Michael Poole <mdpoole@troilus.org>
+> > ---
+> >  drivers/hid/hid-magicmouse.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+> > index 6f13e56..0792b16 100644
+> > --- a/drivers/hid/hid-magicmouse.c
+> > +++ b/drivers/hid/hid-magicmouse.c
+> > @@ -254,8 +254,8 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
+> >  	/* Generate the input events for this touch. */
+> >  	if (report_touches && down) {
+> >  		input_report_abs(input, ABS_MT_TRACKING_ID, id);
+> > -		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major);
+> > -		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor);
+> > +		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major << 2);
+> > +		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor << 2);
+> >  		input_report_abs(input, ABS_MT_ORIENTATION, orientation);
+> >  		input_report_abs(input, ABS_MT_POSITION_X, x);
+> >  		input_report_abs(input, ABS_MT_POSITION_Y, y);
+> 
+> Care to fold this into "[PATCH 3/7 v3] HID: magicmouse: simplify touch 
+> data bit manipulation", which is actually adding this?
 
-Venkii,
+Patch 3/7 isn't actually adding this, it just modifies the lines to
+simplify touch data bit manipulation. Keeping this as a separate commit
+ensures we maintain independent changes separately. As it is, Patch 3/7
+doesn't actually change any functionality. If this were folded in, it
+would change the functionality in an otherwise nop commit.
 
-On Tue, Sep 7, 2010 at 6:54 PM, Ming Lei <tom.leiming@gmail.com> wrote:
-> 2010/9/7 venki kaps <venkiece2005@gmail.com>:
->> Dear USB experts,
->>
->>  Is the same fix valid for omap3430 + 2.6.32 Kernel?
->>
->>  I have been facing mp3 playback idle current consumption 20mA more
->> after booting without USB cable connected
->>  but If USB cable detach and attach happen, then able to hit proper
->> values otherwise irrespective of cold/warm reset
->>  the current values increases to 20mA.
->>
->>  with cable,
->>      OTG_SYSCONFIG standby mode of operation - SMART idle
->>      HSOTGUSB_STANDBY - SMART standby
->>
->>  without cable,
->>        OTG_SYSCONFIG standby mode of operation - SMART idle
->>        HSOTGUSB_STANDBY - Active
->>
->>  Even i have applied  patch but still the same issue.
->
-> Are you applying the patch below?
->
->         http://marc.info/?l=linux-omap&m=128378686221264&w=2
->
-> The patch(USB: otg: twl4030: fix phy initialization(v1)) above is against
-> 2.6.36-rc3, I don't think you can apply it directly on 2.6.32. And the patch
-> is introduced to fix the problems caused by
->
->          commit 461c317705eca5cac09a360f488715927fd0a927.
->
-> which change is committed into mainline 2.6.36-rc3.
-  >>> Yes, this patch i have applied.
+Thanks,
 
->>
->>  If i use __twl4030_phy_power(twl, 0) at the end of USB LDO initialization,
->
-> If you apply this patch against 2.6.36-rc3, you will find
-> __twl4030_phy_power(twl, 0)  is always called from .probe
-> if you don't connect musb with PC via cable when powering on.
->
->>  then able to hit proper values but USB ADC values are getting in correct
->>  with Travel adapter (Charger power supply) which means temperature
->>  shows 84 instead of 26~30 degrees.
->>
->>  Queries,
->>  -----------
->>   - Is Errata 1.164 fix : OTG idle will work on 3430?
->
-> No such errata found in ti wetsite, could you give a link?
-   In Zoom3 git,pm34xx.c file
-                        /*
-                         * Errata 1.164 fix : OTG autoidle can prevent
-                         * sleep. enable/disable iclk over OFF.
-                         */
-                        cm_rmw_mod_reg_bits(OMAP3430_EN_HSOTGUSB, 0x0,
-                                                CORE_MOD, CM_ICLKEN1);
+-- Chase
 
->
->>   - USBOTG_SUSPEND is enabled in Kernel 32, will it give any impact?
->
-> Kernel does not have USBOTG_SUSPEND config option. Do you
-> mean USB_SUSPEND? If so, it is nothing to do with your issue since
-> it is only valid for host driver. Also for your case, musb works at
-> b-idle state.
->
-   Yes,CONFIG_USB_SUSPEND.
-
->>   - Is there anything missed from Power management idle path (or)
->>    USB OTG controller/Transreceiver driver part?
->
-> Maybe with transreceiver part, musb doesn't support runtime pm now.
->
->>
->>  Could you please provide the best approach to solve my issue?
->
-> Sorry, this patch is not for your issue, as said above.
->
->
-> --
-> Lei Ming
->
