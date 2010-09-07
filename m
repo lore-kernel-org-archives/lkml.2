@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab0IGG4I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 02:56:08 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:40777 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab0IGG4D convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 02:56:03 -0400
-Date: Tue, 07 Sep 2010 08:55:12 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [RFCv5 3/9] mm: cma: Added SysFS support
-In-reply-to: <20100907060818.GA2609@kroah.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Hans Verkuil <hverkuil@xs4all.nl>,
-        Mel Gorman <mel@csn.ul.ie>, Kyungmin Park <kyungmin.park@samsung.com>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Message-id: <op.vinhiabu7p4s8u@localhost>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.61 (Linux)
-References: <cover.1283749231.git.mina86@mina86.com>
- <9771a9c07874a642bb587f4c0ebf886d720332b6.1283749231.git.mina86@mina86.com>
- <20100906210747.GA5863@kroah.com> <op.vindmsj07p4s8u@localhost>
- <20100907060818.GA2609@kroah.com>
+	id S1755276Ab0IGHAj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 03:00:39 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38389 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751494Ab0IGHAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 03:00:33 -0400
+Date: Mon, 6 Sep 2010 23:59:37 -0700
+From: Greg KH <gregkh@suse.de>
+To: Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Regarding USB-serial device driver
+Message-ID: <20100907065937.GA22307@suse.de>
+References: <20100907061327.M12473@admin-gateway.ncra.tifr.res.in>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100907061327.M12473@admin-gateway.ncra.tifr.res.in>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Sep 07, 2010 at 07:31:30AM +0200, Micha?? Nazarewicz wrote:
->> Thanks for reviewing the sysfs part.  Actually, I was never really sure
->> if I shouldn't rather put this code to debugfs and you got me convinced
->> that I should.  Sysfs somehow looked more appealing from kernel's API
->> point of view -- things seem to be more organised in sysfs than in
->> debugfs.  It seems I'll have to port it to debugfs after all
+On Tue, Sep 07, 2010 at 11:44:50AM +0530, Raju Rameshwar Uprade wrote:
+> 
+> Hi Greg,
+>                I have a UART device  driver which is used to control some  MCM ( Monitor
+> & control module ) devices with  address like 2,3,5,10,14 & 0 thru serial port using
+> RS-485 interface card.
+> 
+> Now I want to control these devices thru usb-serial adaptor card.When I plug the
+> usb-to-serial device.It's shows me the terminal ttyUSB0.
+> 
+> I tried sending data thru it , but in between some junk data is also going out ....
+> 
+> output of usbmon :
+> 
+>  ee26be80 3612838323 S Co:7:002:0 s 40 01 0008 0000 0000 0
+> ee26be80 3612839660 C Co:7:002:0 0 0
+> ee26be80 3612839716 S Co:7:002:0 s 40 01 0009 0000 0000 0
+> ee26be80 3612840660 C Co:7:002:0 0 0
+> ee26be80 3612840700 S Ci:7:002:0 s a1 21 0000 0000 0007 7 <
+> ee26be80 3612841661 C Ci:7:002:0 0 7 = 80250000 000008
+> ee26be80 3612841710 S Co:7:002:0 s 21 20 0000 0000 0007 7 = 80250000 000008
+> ee26be80 3612842659 C Co:7:002:0 0 7 >
+> ee26be80 3612842672 S Co:7:002:0 s 21 22 0003 0000 0000 0
+> ee26be80 3612843657 C Co:7:002:0 0 0
+> ee2b3800 3612843712 S Ci:7:002:0 s a1 21 0000 0000 0007 7 <
+> ee2b3800 3612844658 C Ci:7:002:0 0 7 = 80250000 000008
+> ee2b3800 3612844668 S Co:7:002:0 s 40 01 0000 0000 0000 0
+> ee2b3800 3612845660 C Co:7:002:0 0 0
+> ee0eaf80 3612845669 S Bi:7:002:3 -115 256 <
+> ee0ead00 3612845674 S Ii:7:002:1 -115:1 10 <
+> ee2b3800 3612845679 S Co:7:002:0 s 21 22 0003 0000 0000 0
+> ee2b3800 3612846657 C Co:7:002:0 0 0
+> ee0ea680 3618022849 S Bo:7:002:2 -115 100 = 00080000 00000000 f8000000 00000000 00000000
+> 00000000 00000000 00000000
+> ee0ea680 3618024532 C Bo:7:002:2 0 100 >
+> 
+> 
+> Ideally data which should go out is : 0080000000f8.( device address is 0 and check sum
+> is f8 ).
 
-On Tue, 07 Sep 2010 08:08:18 +0200, Greg KH <greg@kroah.com> wrote:
-> Yes, debugfs looks like a much better place for this.
+Wierd.  If you enable debugging in the driver:
+	modprobe pl2303 debug=1
+do you also see the kernel log showing extra data going out to the host?
 
-I'll fix that in v6 then.
+What is your userspace program doing?  Are you sure you are only writing
+6 bytes?  The bulk out should only be writing the actual data in the
+buffer, not any more than that.
 
->>>> +static ssize_t cma_sysfs_region_name_show(struct cma_region *reg, char *page)
->>>> +{
->>>> +	return reg->name ? snprintf(page, PAGE_SIZE, "%s\n", reg->name) : 0;
->>>> +}
+Do you have an example userspace code that we can use to test with?
 
->>> Is a name field ever really going to be bigger than a page?
+thanks,
 
->> For numeric values you are right that snprintf() is a bit paranoid,
->> still I see no good reason why not to use it.
-
-> Same goes for no good reason to use it :)
-
-I somehow prefer to always use "safe" versions of the string manipulation
-functions -- it's better to use it everywhere then to forget it in one
-place.  Call to sprintf() is translated to vsnprintf() anyway so there's
-no performance gain.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
-
+greg k-h
