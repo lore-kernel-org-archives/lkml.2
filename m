@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757852Ab0IGPiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:38:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33971 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757818Ab0IGPiC (ORCPT
+	id S1757870Ab0IGPiT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:38:19 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:50562 "EHLO
+	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757844Ab0IGPiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 11:38:02 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Jassi Brar <jassi.brar@samsung.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] spi/spi_s3c64xx: Increase dead reckoning time in wait_for_xfer()
-Date: Tue,  7 Sep 2010 16:37:52 +0100
-Message-Id: <1283873872-8633-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1283873872-8633-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1283873872-8633-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Tue, 7 Sep 2010 11:38:09 -0400
+Date: Tue, 7 Sep 2010 11:37:21 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Joe Perches <joe@perches.com>
+Cc: David Miller <davem@davemloft.net>, trivial@kernel.org,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] include/net/raw.h: Convert raw_seq_private
+ macro to inline
+Message-ID: <20100907153721.GA6419@elliptictech.com>
+Mail-Followup-To: Joe Perches <joe@perches.com>,
+	David Miller <davem@davemloft.net>, trivial@kernel.org,
+	kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+	yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <cover.1283650107.git.joe@perches.com>
+ <dd5d79c3aa9f2cffbca1a8d4a9163b0d6a9492a9.1283650107.git.joe@perches.com>
+ <20100906.183036.68150190.davem@davemloft.net>
+ <20100906.184749.214227378.davem@davemloft.net>
+ <1283835677.23280.108.camel@Joe-Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283835677.23280.108.camel@Joe-Laptop>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For small transfers at high speeds the expected transfer time can easily
-be well under 1ms, causing the delay in wait_for_xfer() to be only the
-dead reckoning fudge factor of 5ms currently included. Experiments on
-some of my systems shows that this is marginal for some transfers so
-double it to 10ms.
+On 2010-09-06 22:01 -0700, Joe Perches wrote:
+> diff --git a/include/net/raw.h b/include/net/raw.h
+> index 43c5750..c621200 100644
+> --- a/include/net/raw.h
+> +++ b/include/net/raw.h
+> @@ -45,7 +45,10 @@ struct raw_iter_state {
+>  	struct raw_hashinfo *h;
+>  };
+>  
+> -#define raw_seq_private(seq) ((struct raw_iter_state *)(seq)->private)
+> +inline struct raw_iter_state *raw_seq_private(struct seq_file *seq)
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/spi/spi_s3c64xx.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+This needs to be declared static.
 
-diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
-index 03b28e4..4abb441 100644
---- a/drivers/spi/spi_s3c64xx.c
-+++ b/drivers/spi/spi_s3c64xx.c
-@@ -326,7 +326,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
- 
- 	/* millisecs to xfer 'len' bytes @ 'cur_speed' */
- 	ms = xfer->len * 8 * 1000 / sdd->cur_speed;
--	ms += 5; /* some tolerance */
-+	ms += 10; /* some tolerance */
- 
- 	if (dma_mode) {
- 		val = msecs_to_jiffies(ms) + 10;
+> +{
+> +	return seq->private;
+> +}
+>  void *raw_seq_start(struct seq_file *seq, loff_t *pos);
+>  void *raw_seq_next(struct seq_file *seq, void *v, loff_t *pos);
+>  void raw_seq_stop(struct seq_file *seq, void *v);
+
 -- 
-1.7.1
-
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
