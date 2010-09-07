@@ -1,68 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189Ab0IGOty (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 10:49:54 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:34259 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab0IGOts convert rfc822-to-8bit (ORCPT
+	id S1757251Ab0IGOuM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 10:50:12 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:55061 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757217Ab0IGOuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 10:49:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=TNHCNFzSnnm+g92XXDgSMfcHDtDzs8YExoz+FEMPoyJGgItEaOrkeuIlLbqORAd1Mu
-         TepfgK5j6BX5AAzlOp2FL/9tK+1wAgsFA5BmicXrPqH9c/I+INS1a0e7UUkR1C8Je4PK
-         MJzNfTcYmOuH0628d6qJGjjOlw2AqfpKQFx8w=
+	Tue, 7 Sep 2010 10:50:08 -0400
+X-Greylist: delayed 1498 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Sep 2010 10:50:08 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -24.389
+Message-ID: <4C864B3E.5060603@tremplin-utc.net>
+Date: Tue, 07 Sep 2010 16:25:02 +0200
+From: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100809 Mandriva/3.1.2-3mdv2011.0 (2011.0) Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <20100907141112.GB6903@gondor.apana.org.au>
-References: <20100907084213.GA4610@gondor.apana.org.au>
-	<20100907140646.GA31921@infradead.org>
-	<20100907141112.GB6903@gondor.apana.org.au>
-Date: Tue, 7 Sep 2010 16:49:46 +0200
-X-Google-Sender-Auth: Odqd8nBfq3SK9sPo-PpsF90Qt8Y
-Message-ID: <AANLkTikWRewCXdq3eeBMRQr3Ke7C2q42jnKqbKVwwpCH@mail.gmail.com>
-Subject: Re: RFC: Crypto API User-interface
-From: Nikos Mavrogiannopoulos <nmav@gnutls.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Takashi Iwai <tiwai@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lis3: Add axes module parameter for custom axis-mapping
+References: <s5htymla56q.wl%tiwai@suse.de> <s5haanuvypc.wl%tiwai@suse.de>
+In-Reply-To: <s5haanuvypc.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 7, 2010 at 4:11 PM, Herbert Xu <herbert@gondor.hengli.com.au> wrote:
-
->> > This is what I am proposing for the Crypto API user-interface.
+Op 07-09-10 08:45, Takashi Iwai schreef:
+> At Mon, 23 Aug 2010 14:23:25 +0200,
+> Takashi Iwai wrote:
 >>
->> Can you explain why we would ever want a userspace interface to it?
+>> The axis-mapping of lis3dev device on many (rather most) HP machines
+>> doesn't follow the standard.  When each new model appears, users need
+>> to adjust again.  Testing this requires the rebuild of kernel, thus
+>> it's not trivial for end-users.
 >>
->> doing crypto in kernel for userspace consumers sis simply insane.
->> It's computational intensive code which has no business in kernel space
->> unless absolutely required (e.g. for kernel consumers).  In addition
->> to that adding the context switch overhead and address space transitions
->> is god awfull too.
+>> This patch adds a module parameter "axes" to allow a custom
+>> axis-mapping without patching and recompiling the kernel driver.
+>> User can pass the parameter such as axes=3,2,1.  Also it can be
+>> changed via sysfs.
 >>
->> This all very much sounds like someone had far too much crack.
->
-> FWIW I don't care about user-space using kernel software crypto at
-> all.  It's the security people that do.
+>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> 
+> Can anyone review / take this?
+> Jean, should it be through hwmon tree? 
+Sorry for not answering before, but I'm very busy currently.
 
-Then I'd suggest to not enforce your design over to people who have
-thought and have interests on that. The NCR api which you rejected
-(for not supporting kernel keyring - which your design also doesn't!),
-has specific security goals and protects against specific threats.
-This design here has been proposed by you quite many times in the past
-and neither you, nor anyone else bothered implementing it. Now we have
-two working implementations that offer user-space access to crypto
-operations, (the openbsd cryptodev port), and NCR, but you discard
-them and insist on a different design. Maybe yours is better (you have
-to argue about that)... Probably I'd use it if it was there, but it
-isn't.
+I like the idea, but the implementation seems weird. Maybe it's just
+that I don't understand well enough module_param_array_named() though.
 
-regards,
-Nikos
+Each time the user changes the axis parameter, param_set_axis() is
+called three times (once per axis), right? Why always calling
+copy_to_axis_array() ? Does param_set_int(val, kp) return null only on
+the 3rd time? This function really looks like a kludge. Either you need
+to put more comments in order to make clear why things work, or rework it.
+
+Wouldn't it be much cleaner if lis3_dev.ac was an array instead of a
+struct? I don't mind that it involves changing more line if it makes
+things more understandable.
+
+Cheers,
+Eric
+
+> 
+> 
+> thanks,
+> 
+> Takashi
+> 
+>> ---
+>>  drivers/hwmon/hp_accel.c  |    5 ++++-
+>>  drivers/hwmon/lis3lv02d.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 49 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/hwmon/hp_accel.c b/drivers/hwmon/hp_accel.c
+>> index 7580f55..3462a5d 100644
+>> --- a/drivers/hwmon/hp_accel.c
+>> +++ b/drivers/hwmon/hp_accel.c
+>> @@ -297,7 +297,10 @@ static int lis3lv02d_add(struct acpi_device *device)
+>>  	lis3lv02d_enum_resources(device);
+>>  
+>>  	/* If possible use a "standard" axes order */
+>> -	if (dmi_check_system(lis3lv02d_dmi_ids) == 0) {
+>> +	if (lis3_dev.ac.x && lis3_dev.ac.y && lis3_dev.ac.z) {
+>> +		printk(KERN_INFO DRIVER_NAME ": Using custom axes %d,%d,%d\n",
+>> +		       lis3_dev.ac.x, lis3_dev.ac.y, lis3_dev.ac.z);
+>> +	} else if (dmi_check_system(lis3lv02d_dmi_ids) == 0) {
+>>  		printk(KERN_INFO DRIVER_NAME ": laptop model unknown, "
+>>  				 "using default axes configuration\n");
+>>  		lis3_dev.ac = lis3lv02d_axis_normal;
+>> diff --git a/drivers/hwmon/lis3lv02d.c b/drivers/hwmon/lis3lv02d.c
+>> index 6138f03..4b179d5 100644
+>> --- a/drivers/hwmon/lis3lv02d.c
+>> +++ b/drivers/hwmon/lis3lv02d.c
+>> @@ -75,6 +75,51 @@ struct lis3lv02d lis3_dev = {
+>>  
+>>  EXPORT_SYMBOL_GPL(lis3_dev);
+>>  
+>> +static int axis_array[3];
+>> +static void copy_to_axis_array(void)
+>> +{
+>> +	axis_array[0] = lis3_dev.ac.x;
+>> +	axis_array[1] = lis3_dev.ac.y;
+>> +	axis_array[2] = lis3_dev.ac.z;
+>> +}
+>> +
+>> +static void copy_from_axis_array(void)
+>> +{
+>> +	lis3_dev.ac.x = axis_array[0];
+>> +	lis3_dev.ac.y = axis_array[1];
+>> +	lis3_dev.ac.z = axis_array[2];
+>> +}
+>> +
+>> +static int param_set_axis(const char *val, const struct kernel_param *kp)
+>> +{
+>> +	int ret;
+>> +	copy_to_axis_array();
+>> +	ret = param_set_int(val, kp);
+>> +	if (!ret) {
+>> +		int val = *(int *)kp->arg;
+>> +		if (val < 0)
+>> +			val = -val;
+>> +		if (!val || val > 3)
+>> +			return -EINVAL;
+>> +		copy_from_axis_array();
+>> +	}
+>> +	return ret;
+>> +}
+>> +
+>> +static int param_get_axis(char *buffer, const struct kernel_param *kp)
+>> +{
+>> +	copy_to_axis_array();
+>> +	return param_get_int(buffer, kp);
+>> +}
+>> +
+>> +static struct kernel_param_ops param_ops_axis = {
+>> +	.set = param_set_axis,
+>> +	.get = param_get_axis,
+>> +};
+>> +
+>> +module_param_array_named(axes, axis_array, axis, NULL, 0644);
+>> +MODULE_PARM_DESC(axes, "Axis-mapping for x,y,z directions");
+>> +
+>>  static s16 lis3lv02d_read_8(struct lis3lv02d *lis3, int reg)
+>>  {
+>>  	s8 lo;
