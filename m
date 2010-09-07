@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848Ab0IGPlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:41:55 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42267 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757476Ab0IGPlu convert rfc822-to-8bit (ORCPT
+	id S1757643Ab0IGPs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:48:27 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34955 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757242Ab0IGPsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 11:41:50 -0400
+	Tue, 7 Sep 2010 11:48:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CI4zMYJFJdwjm5yvGG116SQ53a/Jk/0PLeH53aM+tz9ratTUqkpiL4ebgjGviNXtN6
-         Hk49a0+xXDxl4yKdO/tKg1B3h7euhBTTCPS+X4ksOyNdtrya6/HSdFUmvgqWhIx2yQQG
-         ft/J670SI2w3Clu6yAIeFg+kL2Eu4zbKzFymM=
+        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=cFLfLPke9eyw8pd36GWZswmEoCyl/13zbj5+Vd54i8UtIbTCXKWU8gp16qDB3zD0qP
+         rw0QD7/FR4w3x7LTLfgXV3QuSLtdT0xO0aofLfLVi71jvgzg6u8dk+VqkSJubM8lnUWP
+         YzMrRixqhb3z6yaLfD9UUpwXfEZ5AaXgkHJBs=
+Message-ID: <4C865EC1.5000402@gmail.com>
+Date: Tue, 07 Sep 2010 23:48:17 +0800
+From: =?UTF-8?B?Ik1yLiBUZW8gRW4gTWluZyAoWmhhbmcgRW5taW5nKSDlvKDmganpuKMgbw==?=
+	 =?UTF-8?B?ZiBTaW5nYXBvcmUi?= <space.time.universe@gmail.com>
+Reply-To: space.time.universe@gmail.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin7eVyosgK4XhuB_yqR2ao=YJGVidHB1x2802cr@mail.gmail.com>
-References: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
-	<AANLkTiksb1AudCzs8-TWdXb11T-QcPx1G_qu6eUtJ74C@mail.gmail.com>
-	<AANLkTin7eVyosgK4XhuB_yqR2ao=YJGVidHB1x2802cr@mail.gmail.com>
-Date: Tue, 7 Sep 2010 23:40:55 +0800
-Message-ID: <AANLkTinrecJXH+uDxtBsskFLpBCz0VSZMtSiWGFW9YCr@mail.gmail.com>
-Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization(v1)
-From: Ming Lei <tom.leiming@gmail.com>
-To: venki kaps <venkiece2005@gmail.com>
-Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: LKML <linux-kernel@vger.kernel.org>
+CC: piotr@hosowicz.com,
+        "space.time.universe@gmail.com" <space.time.universe@gmail.com>,
+        "teoenming@hotmail.com" <teoenming@hotmail.com>,
+        zhang_enming@lavabit.com
+Subject: Re: What's up with Linus?
+References: <4C865888.4070706@example.com>
+In-Reply-To: <4C865888.4070706@example.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/7 venki kaps <venkiece2005@gmail.com>:
-> thanks for your good response.
+I love compiling Linux kernels too.
+
+Yours sincerely,
+
+Mr. Teo En Ming (Zhang Enming)
+Citizenship: Singapore Citizen/Singaporean
+Facebook account: Teo En Ming (Zhang Enming)
+Facebook link:http://www.facebook.com/profile.php?id=100000750083982
+Facebook photos:
+
+http://www.facebook.com/profile.php?id=100000750083982#!/profile.php?id=100000750083982&v=photos 
+<http://www.facebook.com/profile.php?id=100000750083982#%21/profile.php?id=100000750083982&v=photos> 
+
+
+Facebook videos:
+http://www.facebook.com/profile.php?id=100000750083982&v=app_2392950137  <http://www.facebook.com/profile.php?id=100000750083982&v=app_2392950137>
+Mobile Phone (Starhub pre-paid): +65-8369-2618
+Windows Live Messenger: teoenming at hotmail.com
+Location: Bedok Reservoir Road, Singapore
+ZIP: 470103
+My Open Letter (Plea for Medical Help/Assistance) to World Leaders:-
+http://lists.mcs.anl.gov/pipermail/mpich-discuss/2010-August/007811.html
+http://mythtv.org/pipermail/mythtv-users/2010-August/295952.html
+http://archives.gentoo.org/gentoo-user/msg_f6a341d9623fda17880159b137c07335.xml
+Photo of Mr. Teo En Ming (Zhang Enming) of Singapore:http://i38.tinypic.com/2a6pp4z.jpg
+
+
+
+On 09/07/2010 11:21 PM, Piotr Hosowicz wrote:
+> Hello,
 >
-> Venkii,
+> I guess that Linus should be already back from the conference in 
+> Brasil. Am I right? I am tremendously missing fresh Linux kernels to 
+> build.
 >
-> On Tue, Sep 7, 2010 at 6:54 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->> 2010/9/7 venki kaps <venkiece2005@gmail.com>:
->>> Dear USB experts,
->>>
->>>  Is the same fix valid for omap3430 + 2.6.32 Kernel?
->>>
->>>  I have been facing mp3 playback idle current consumption 20mA more
->>> after booting without USB cable connected
->>>  but If USB cable detach and attach happen, then able to hit proper
->>> values otherwise irrespective of cold/warm reset
->>>  the current values increases to 20mA.
->>>
->>>  with cable,
->>>      OTG_SYSCONFIG standby mode of operation - SMART idle
->>>      HSOTGUSB_STANDBY - SMART standby
->>>
->>>  without cable,
->>>        OTG_SYSCONFIG standby mode of operation - SMART idle
->>>        HSOTGUSB_STANDBY - Active
->>>
->>>  Even i have applied  patch but still the same issue.
->>
->> Are you applying the patch below?
->>
->>         http://marc.info/?l=linux-omap&m=128378686221264&w=2
->>
->> The patch(USB: otg: twl4030: fix phy initialization(v1)) above is against
->> 2.6.36-rc3, I don't think you can apply it directly on 2.6.32. And the patch
->> is introduced to fix the problems caused by
->>
->>          commit 461c317705eca5cac09a360f488715927fd0a927.
->>
->> which change is committed into mainline 2.6.36-rc3.
->  >>> Yes, this patch i have applied.
+> Regards,
+>
+> Piotr Hosowicz
+>
 
-If you applied the patch, I guess you may see __twl4030_phy_power(twl, 0)
-is called from .probe.
-
-If called,  seems your description a little contradictory since you observed
-__twl4030_phy_power(twl, 0) may hit proper values, right?
-
-If not called, could you trace the return value of twl4030_usb_linkstat in
-twl4030_usb_phy_init?
-
-thanks,
-
--- 
-Lei Ming
