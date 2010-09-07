@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab0IGTNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 15:13:15 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58102 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757579Ab0IGTNN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 15:13:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vGiBeCue1RSaanLa+uEESB0XyjxqGD/TBdu3SqNVzKpBrnZ2LzBy61Mok6iAw3zAeS
-         bRLHByqyO/H14RiAkGOOtjcmyfmMyLnpl7dqKbOX7GcWsGNDLlEYD9u70lSMxPjRMXSK
-         EgeNoR7nP3qFpBpHpn0wxg0pTIxMrjHzSsatI=
+	id S1758136Ab0IGTPN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 15:15:13 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40246 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757286Ab0IGTPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 15:15:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,329,1280732400"; 
+   d="scan'208";a="835615521"
+From: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
+To: Marc Haber <mh+linux-kernel@zugschlus.de>
+CC: Linux Kernel Developers <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Date: Tue, 7 Sep 2010 13:15:09 -0600
+Subject: RE: No link on e1000e with 2.6.35.3 and ThinkPad T60
+Thread-Topic: No link on e1000e with 2.6.35.3 and ThinkPad T60
+Thread-Index: ActL+z6HNKv0Bo81QSC7duV/FRKtKQCxHJOA
+Message-ID: <EA929A9653AAE14F841771FB1DE5A13660085FFA51@rrsmsx501.amr.corp.intel.com>
+References: <20100724092644.GA13353@torres.zugschlus.de>
+ <20100824094524.GA17608@torres.zugschlus.de>
+ <EA929A9653AAE14F841771FB1DE5A136600821444B@rrsmsx501.amr.corp.intel.com>
+ <20100826112732.GA15559@torres.zugschlus.de>
+ <EA929A9653AAE14F841771FB1DE5A13660082E8C5B@rrsmsx501.amr.corp.intel.com>
+ <20100904063433.GB18734@torres.zugschlus.de>
+In-Reply-To: <20100904063433.GB18734@torres.zugschlus.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <569801.35222.qm@web180310.mail.gq1.yahoo.com>
-References: <4C85BEFD.402@bluewatersys.com>
-	<569801.35222.qm@web180310.mail.gq1.yahoo.com>
-Date: Tue, 7 Sep 2010 21:13:12 +0200
-Message-ID: <AANLkTinq98+ryOOKx1o1o21x9VnHz3nRCHh=5Wwixn4o@mail.gmail.com>
-Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
-From: "avictor.za@gmail.com" <avictor.za@gmail.com>
-To: David Brownell <david-b@pacbell.net>
-Cc: Eric Miao <eric.y.miao@gmail.com>, Ryan Mallon <ryan@bluewatersys.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        bn@niasdigital.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o87JFH30008515
 
-hi,
+Marc Haber wrote:
+> Hi,
+> 
+> On Thu, Aug 26, 2010 at 11:22:45AM -0600, Tantilov, Emil S wrote:
+>> As far as the crashes go - it would help a lot if you can get a
+>> trace. You can use a serial console if you have a docking station
+>> for the T60. 
+> 
+> I have indeed recently bought a docking station. How do I obtain a
+> trace from a frozen sysem?
 
-> NAK still.  You're trying to abuse gpio_is_valid(),
-> which I see no need to support.
->
-> In terms of GPIO framework architecture, zero is
-> the first GPIO in all cases, and is always
-> a valid GPIO number, even if it's not
-> requestable/swritable/readable on a given board.
->
-> Whether it's usable on a given platform depends
-> on whether a GPIO controller is registered which
-> claims numbers 0..N ... (assuming gpiolib in use).
+The idea is to catch any output that may be pertinent to the crash. With some luck the hang would be associated with a trace which you can record by using a serial console. 
 
-How should the following be done in a driver then?
+Check out the serial-console.txt file for more info in the Documentation section of the kernel source. Once you have your primary system configured you can connect via serial cable to a secondary system with minicom (or other terminal that can read from serial port) to be able to capture the trace.
 
-   if (gpio_is_valid(device->output_pin)) {
-         if (gpio_request(device->output_pin, "driverX") != 0)
-             goto error_handling;
+> 
+> Greetings
+> Marc
 
-         /* continue with gpio setup */
-    }
-    else {
-        /* there is no vcc_pin, so don't do any gpio setup */
-    }
-
-    ....
-
-   if (gpio_is_valid(device->output_pin)) {
-       /* set value high */
-   }
-
-
-Regards,
-  Andrew Victor
+Thanks,
+Emil
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
