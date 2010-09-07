@@ -1,86 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068Ab0IGMxw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 08:53:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:43361 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756736Ab0IGMxq (ORCPT
+	id S1756769Ab0IGMx7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 08:53:59 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46367 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756742Ab0IGMxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 08:53:46 -0400
-X-Authority-Analysis: v=1.1 cv=kSl6L8luU05z5mpL051isgeeLpAUfowbwuc/WIqEapw= c=1 sm=0 a=X7QPjtwe-8wA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=wy_DN1xdFeO1OxuRwIkA:9 a=U4Jn-0_ewWWRe0PtFkeA2TyFd-8A:4 a=PUjeQqilurYA:10 a=-fl8KtO-vjMe9lsy:21 a=UCPUVuFKJ0m7x1CA:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: disabling group leader perf_event
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tom Zanussi <tzanussi@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Avi Kivity <avi@redhat.com>, linux-perf-users@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1283791331.3594.27.camel@elnicho32>
-References: <4C84B088.5050003@redhat.com> <1283772256.1930.303.camel@laptop>
-	 <4C84D1CE.3070205@redhat.com> <1283774045.1930.341.camel@laptop>
-	 <4C84D77B.6040600@redhat.com> <1283776189.1930.380.camel@laptop>
-	 <20100906124046.GA20777@elte.hu>
-	 <1de72fcf-91c7-4357-a6ac-27704ac1ba0b@email.android.com>
-	 <1283791331.3594.27.camel@elnicho32>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 07 Sep 2010 08:53:43 -0400
-Message-ID: <1283864023.5133.58.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Sep 2010 08:53:47 -0400
+Date: Tue, 7 Sep 2010 13:53:35 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Igor Grinberg <grinberg@compulab.co.il>
+Cc: Marek Vasut <marek.vasut@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        vapier@gentoo.org, khilman@deeprootsystems.com,
+        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org, pavel@ucw.cz,
+        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v2] Input: Make ADS7846 independent on regulator
+Message-ID: <20100907125335.GD25830@sirena.org.uk>
+References: <1280560182-7071-1-git-send-email-marek.vasut@gmail.com> <4C862EB3.4080006@compulab.co.il>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C862EB3.4080006@compulab.co.il>
+X-Cookie: Truckers welcome.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-06 at 11:42 -0500, Tom Zanussi wrote:
-> Hi,
+On Tue, Sep 07, 2010 at 03:23:15PM +0300, Igor Grinberg wrote:
+>  Seems that there are some more platforms then Sharp Zaurus
+> are interested in this patch.
 > 
-> On Mon, 2010-09-06 at 09:16 -0400, Steven Rostedt wrote:
-> > Sorry for top post, sending via my android phone. Today's a US holiday.
-> >  
-> > 
-> > We can filter before the work, if we expose the parameters. Currently we filter what goes into the buffer and there are several cases where we don't know the result before the work.
-> > 
-> > If we also expose the parameters of a TRACE_EVENT, then we can filter on them before the work.
+> Dmitry, Mike, Pavel,
 > 
-> I'm not sure exactly what you mean by exposing the parameters, but yeah,
-> in general it should be possible to filter on any field you can get the
-> address of, before you ever allocate space for the event or assign the
-> field to it.
-> 
-> In the cases where you don't know the result until you do the work, such
-> as for example this from kvm_age_page tracepoint:
-> 
->         TP_fast_assign(
->                 __entry->hva            = hva;
->                 __entry->gfn            =
->                   slot->base_gfn + ((hva - slot->userspace_addr) >>
-> PAGE_SHIFT);
->                 __entry->referenced     = ref;
->         ),
-> 
-> I guess you'd want the macro to assign the result to a temporary in
-> order to be able to participate in the filtering, or did you have
-> something else in mind?
+> What's the status of it?
 
-Here we already did the work. We assigned everything, then might as well
-keep what we have. What I had in mind was:
-
-TRACE_EVENT(kvm_age_page,
-        TP_PROTO(ulong hva, struct kvm_memory_slot *slot, int ref),
-        TP_ARGS(hva, slot, ref),
-
-and be able to make a filter that says: slot->userspace_addr > X
-
-Where we filter the parameters and not what is in the entry.
-Unfortunately, this would make TRACE_EVENT() even bigger since we would
-need to store what the parameter names are.
-
--- Steve
-
-
-
-
+>From a regulator API usage point of view a separate implementation of
+the same thing was nacked - there are regulator API facilties for hiding
+missing regulators from drivers when needed to get systems going, unless
+the device genuinely can cope without supplies it should be relying on
+those.
