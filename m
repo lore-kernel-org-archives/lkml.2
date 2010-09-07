@@ -1,164 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab0IGULW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 16:11:22 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13846 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757890Ab0IGULS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 16:11:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,330,1280732400"; 
-   d="p7s'?scan'208";a="604742813"
-Subject: Re: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-In-Reply-To: <4C869AA3.6000103@zytor.com>
-References: <20100901213318.19353.54619.stgit@localhost.localdomain>
-	 <20100902065731.GB29972@elte.hu> <20100902100308.GA17167@basil.fritz.box>
-	 <20100903063934.GA25863@elte.hu> <1283888337.18468.9.camel@pjaxe>
-	 <4C869AA3.6000103@zytor.com>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-KzagmC3GXa+F/HUmQPr0"
-Date: Tue, 07 Sep 2010 13:16:55 -0700
-Message-ID: <1283890615.18468.11.camel@pjaxe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+	id S1758241Ab0IGUOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 16:14:30 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61773 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758220Ab0IGUO2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 16:14:28 -0400
+Message-ID: <4C869D13.90401@vlnb.net>
+Date: Wed, 08 Sep 2010 00:14:11 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: James Bottomley <James.Bottomley@suse.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+References: <4C76CA57.3050405@vlnb.net>	 <1282857806.32007.175.camel@haakon2.linux-iscsi.org>	 <4C79484B.3090607@vlnb.net>	 <1283028468.32007.357.camel@haakon2.linux-iscsi.org>	 <4C7C18CE.5020103@vlnb.net>	 <1283204792.32007.448.camel@haakon2.linux-iscsi.org>	 <4C7FFD1A.8090509@vlnb.net>	 <1283459158.5598.143.camel@haakon2.linux-iscsi.org>	 <20100905201802.GC18411@core.coreip.homeip.net>	 <1283723447.556.133.camel@haakon2.linux-iscsi.org>	 <20100905234134.GA17212@core.coreip.homeip.net>	 <1283731194.556.147.camel@haakon2.linux-iscsi.org>	 <1283769578.15944.1293.camel@mulgrave.site>  <4C85617E.2080603@vlnb.net> <1283810135.556.238.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1283810135.556.238.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:STwRzR/4CE2fhOPNcSqWexH3GpJyTFkOseHF/SeqWX0
+ vPeEb8RbxBmlwC1+wREgfn3s3YMnrjHnXyWW9URWCCEyNfJKFy
+ UbheVZrhOniALkoAvk3YL/V06UXnKrzN8n7ua07D9jqLLir0HM
+ 1Ef3PnDdf5Mmxk9YRflH40putJiUmNVkKl9rb+qpbeigctZht4
+ oH0NHCkzImRgrNbSs/MnQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Nicholas A. Bellinger, on 09/07/2010 01:55 AM wrote:
+>> Frankly, in all the situation around Linux SCSI targets I for quite a
+>> long time feeling myself as a hero of a Kafka novel. Supposed to be
+>> goals are to have the best code doing its job the best, but on practice
+>> nobody cares about technical arguments and figuring out which subsystem
+>> is the best. Instead, everything lives it own incomprehensible life,
+>> where doesn't matter what you are doing, all already long ago decided
+>> behind your back and you will never be told why. All accurate statements
+>> not heard or, at best, called "handwaving", but dirty public opinion
+>> manipulations based on half- and less-than-half- truth have very warn
+>> welcome. This atmosphere is unhealthy, really.
+>
+> Sorry Vlad, but this is simply not the truth.  You have had ample time
+> to comment on the hundreds of TCM/LIO patches posted to linux-scsi and
+> lkml over the last years, but you have chosen never to comment on a
+> *single* one then, or even on a single one now of the dozens that have
+> been posted in the last 3 weeks while this thread has been lumbering
+> forward..
 
---=-KzagmC3GXa+F/HUmQPr0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Actually, http://scst.sourceforge.net/comparison.html is the result of a 
+very careful and comprehensive review of your code, most likely, the 
+best it has ever had. Until high level questions are answered (Dmitry 
+perfectly summarized them), there's no point to go into low level 
+details reviewing particular patches.
 
-On Tue, 2010-09-07 at 13:03 -0700, H. Peter Anvin wrote:
-> On 09/07/2010 12:38 PM, Peter P Waskiewicz Jr wrote:
-> >=20
-> > It's one SKU of a Nehalem-EX system.  The BIOS for that SKU has an issu=
-e
-> > with resolving SRAT hotplug enumeration, and screws up the table.  Othe=
-r
-> > SKU's of this same platform do not have the issue.  Efforts are underwa=
-y
-> > to get this BIOS fixed, but in the meantime, there's nothing for users
-> > to work around the bug (aside from disabling memory hotplug in the
-> > BIOS).  Another platform almost shipped with the same symptoms, but
-> > caught it and had it fixed before it shipped (didn't catch it early
-> > because Windows wasn't failing, and most of the testing on that platfor=
-m
-> > was done under Windows).
-> >=20
-> > I agree with Andi that adding DMI strings would be overkill and would
-> > leave clutter once the BIOS is fixed.  I look at this patch as a
-> > stop-gap measure for people to fall back on until a newer BIOS is
-> > available to correct the NUMA enumeration issues.  Without it, we have
-> > nothing to point users to when they run into this, waiting for a new
-> > BIOS.
-> >=20
->=20
-> No, this is exactly the kind of stuff for which a DMI match is ideal.  A
-> specific system with bounded propagation of the problem.  Thus, the DMI
-> match acts as a whitelist -- "we know this system and it is safe to
-> activate this hack on it."  This is a very good thing.
->=20
-> If this is a production BIOS it should have this information.
-
-Responding for both your and Ingo's last email, I'll work on getting a
-DMI match for this system.
-
-Thanks,
--PJ
-
---=-KzagmC3GXa+F/HUmQPr0
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIPAjCCAz0w
-ggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UEChMHRXF1
-aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5MB4XDTA2
-MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoTEUludGVs
-IENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kgQ0EwggEi
-MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATDIsV2xDyt
-30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUjZzTZFq2N
-4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZvuSQ0E11y
-YL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4lz36wOdN
-Zn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+iC1HawJd
-AgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0Vgaj7TdU
-DDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3NlY3VyZWNh
-LmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTADAQH/MA0G
-CSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69tOkIP4Sg
-DJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3jMfr900fX
-ZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFijCCBHKgAwIBAgIKYSCKYgAAAAAACDAN
-BgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24x
-JzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUxOTI3MjZa
-Fw0xNTA1MTUxOTM3MjZaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlv
-bjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQjCCASIwDQYJKoZI
-hvcNAQEBBQADggEPADCCAQoCggEBAKQEM1Wn9TU9vc9C+/Tc7KB+eiYElmrcEWE32WUdHvWG+IcQ
-HVQsikTmMyKKojNLw2B5s6Iekc8ivDo/wCfjZzX9JyftMnc+AArc0la87Olybzm8K9jXEfTBvTnU
-SFSiI9ZYefITdiUgqlAFuljFZEHYKYtLuhrRacpmQfP4mV63NKdc2bT804HRf6YptZFa4k6YN94z
-lrGNrBuQQ74WFzz/jLBusbUpEkro6Mu/ZYFOFWQrV9lBhF9Ruk8yN+3N6n9fUo/qBigiF2kEn9xV
-h1ykl7SCGL2jBUkXx4qgV27a6Si8lRRdgrHGtN/HWnSWlLXTH5l575H4Lq++77OFv38CAwEAAaOC
-AlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFA7GKvdZsggQkCVvw939imYxMCvFMAsG
-A1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBQ5oFY2ekKQ/5Kt
-im+VdMeSWb4QWTAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQaxgxKxEdv
-qNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3LmludGVsLmNv
-bS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3klMjBDQS5j
-cmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIw
-RXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYwgdMwYwYI
-KwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0lu
-dGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcwAoZgaHR0
-cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwl
-MjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUAA4IBAQCx
-tQEHchVQhXyjEqtMVUMe6gkmPsIczHxSeqNbo9dsD+6xbT65JT+oYgpIAtfEsYXeUJu1cChqpb22
-U5bMAz7eaQcW5bzefufWvA6lg2048B8oczBj/q+5P5NpYrUO8jOmN4jTjfJq3ElZ7yFWpy7rB3Vm
-/aN6ATYqWfMbS/xfh+JCxmH3droUmMJI0/aZJHsLtjbjFnNsHDNrJZX1vxlM78Lb1hjskTENPmhb
-VbfTj5i/ZGnhv4tmI8QZPCNtcegXJrfhRl2D9bWpdTOPrWiLDUqzy1Z6KL7TcOS/PCl8RHCJXkPa
-u/thTQCpIoDa2+c+3XA++gRTfAQ4svTO260NMIIGLzCCBRegAwIBAgIKf0es/QABAABRFTANBgkq
-hkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzAp
-BgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0IwHhcNMTAwNDA5MDgyNzMw
-WhcNMTMwMzI0MDgyNzMwWjBRMR8wHQYDVQQDExZXYXNraWV3aWN6IEpyLCBQZXRlciBQMS4wLAYJ
-KoZIhvcNAQkBFh9wZXRlci5wLndhc2tpZXdpY3ouanJAaW50ZWwuY29tMIIBIjANBgkqhkiG9w0B
-AQEFAAOCAQ8AMIIBCgKCAQEAxNvzDG+qS7UFSaYiqMqQr7exXHirCVe1tapLZoFlJZLPfqZsBsAA
-UqARnY+v3RQj3WDmoIOtTMHxtnmo4pd5UXrsk+PraedGAilso9tkfp5ZjRjZo9LL06AZzjiBVfAx
-gvyxMPsoKhdfFijzqSJRpc12kB662PAJWfyJO+f6lg5+Cd4KgRVGrpGI4bvBKEVGMeOqwD+kcVti
-wRcqNygx35GqdcpJCCJqOSAJsLI3DR7tDvATeNzsasweaHgWonaK4D6qaHkoGx4VHknC6uNn/FK/
-wXtFbXkeOrnRGJIzaZNsOBVhTou9w3NYU1EjuK75hZJ4Fd4/r1gHafxWD+VzrwIDAQABo4IDAjCC
-Av4wCwYDVR0PBAQDAgeAMDwGCSsGAQQBgjcVBwQvMC0GJSsGAQQBgjcVCIbDjHWEmeVRg/2BKIWO
-n1OCkcAJZ4HevTmV8EMCAWQCAQgwHQYDVR0OBBYEFLtB44dRTSgY1071RY+nMiKRkn1PMB8GA1Ud
-IwQYMBaAFA7GKvdZsggQkCVvw939imYxMCvFMIHPBgNVHR8EgccwgcQwgcGggb6ggbuGV2h0dHA6
-Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUy
-MElzc3VpbmclMjBDQSUyMDNCKDEpLmNybIZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20v
-cmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIw
-M0IoMSkuY3JsMIH1BggrBgEFBQcBAQSB6DCB5TBsBggrBgEFBQcwAoZgaHR0cDovL3d3dy5pbnRl
-bC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIw
-SXNzdWluZyUyMENBJTIwM0IoMSkuY3J0MHUGCCsGAQUFBzAChmlodHRwOi8vY2VydGlmaWNhdGVz
-LmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFz
-aWMlMjBJc3N1aW5nJTIwQ0ElMjAzQigxKS5jcnQwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQB
-gjcKAwwwKQYJKwYBBAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMMMFsGA1UdEQRU
-MFKgLwYKKwYBBAGCNxQCA6AhDB9wZXRlci5wLndhc2tpZXdpY3ouanJAaW50ZWwuY29tgR9wZXRl
-ci5wLndhc2tpZXdpY3ouanJAaW50ZWwuY29tMA0GCSqGSIb3DQEBBQUAA4IBAQBYea1KThIl9gNf
-1uIob1trWtsthhWAXsdUu1V+gl10RBChuM4okZccJf1JXItFA2z7J2UR4cu/tRZBRFartVPhGBjK
-ntLofxsaW7wwzfsinbNy30gHGShG83XDADdGUteL8PmupDcDf/MtbRIlfjEknLiuOnrM25WVajtB
-3fB1pOA2jmLaaNmasza9ordaD3afJD3IWr/Zj+aevMu4zrKzwdOZqBZW1J1Qc7uog8Mn+mm+wRMm
-EY0z7VFdjsZjJH9EQA0UbF1aYcshv0a/M2deKN9TdYuJ1eTKRSZdzSiRG5w75xujFMYZgo4ETlu1
-Behgey1jvJiyWdOsPt7at08QMYIB6jCCAeYCAQEwZDBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMR
-SW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3Vpbmcg
-Q0EgM0ICCn9HrP0AAQAAURUwCQYFKw4DAhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEw
-HAYJKoZIhvcNAQkFMQ8XDTEwMDkwNzIwMTY1NVowIwYJKoZIhvcNAQkEMRYEFMrXr3px3inBX2/m
-xKva9c2OzDCdMA0GCSqGSIb3DQEBAQUABIIBABdR5ZmwugWEVMDIIIz8Z+rukXT4An6Hkv9QpJHn
-I12p0aQJScyNB7LELZ2+l6HJAEd2FsmUNhVAD3HybMDzllft+vMcjbx4DSDUM2bnkg54iNkmE3TZ
-ckriT5l+HjX/1ZMlm7+TA2sLhfDXNnJphD21eaAQXyd+O+YrN7OMYNRGMs3iS5JpYxjh3i75UD3q
-D7SDWZxLd6CWzrxyDAgRMtbcYYdZC6PHO/Ura5DCNYuF6ofMonl8K7jvOrICwoIMAJfRIvjTRoDp
-cX32+15YZPdad2cfn0hZOv7qGdR9ixSCF+jDmCx10zBJQJo8yIWIWuL6xJxOcZGfXD7EYxvetxsA
-AAAAAAA=
-
-
---=-KzagmC3GXa+F/HUmQPr0--
-
+Vlad
