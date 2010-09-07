@@ -1,136 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab0IGAdC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 20:33:02 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:53042 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929Ab0IGAc5 (ORCPT
+	id S1755307Ab0IGAlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 20:41:45 -0400
+Received: from n1-vm1.bullet.mail.gq1.yahoo.com ([67.195.23.153]:43239 "HELO
+	n1-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753943Ab0IGAln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 20:32:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=logO98lk1RZdlYRtlHy3bm+J5deCjKNYUV+JiuZKe192FPNq7TC7e3cJTqSVoUf/qW
-         089Ka4wXGU3rvmMVT402MniV5XFYW91/VobCMBVuEPPdH4YmRNklCY+XiVFZEgH/wVjR
-         eNxCm9ff620o8327GfjRT6mY+TIIILVpIjTMw=
-Date: Mon, 6 Sep 2010 17:32:52 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH v3] scsi_debug: Convert to use root_device_register() and
- root_device_unregister()
-Message-ID: <20100907003251.GA21430@core.coreip.homeip.net>
-References: <1283819068-24587-1-git-send-email-nab@linux-iscsi.org>
+	Mon, 6 Sep 2010 20:41:43 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 824722.78060.bm@omp123.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=DNWZ5PBaztyWG7pedSluLnHxqL/jXrzcvlLVC6s6mhn+GRrlOV08KOe51DNCSbNkjzEBDO6gMXvG3uh0ReBDvQMjiJ3/Oe8mYgYuH2iBavaeEqpYW2gHBhazo71S09rqvYhHUpkSuZAmzl+wvUSt6YLq+VmZj7wv14hZx2US5Yw=;
+Message-ID: <677002.54522.qm@web180309.mail.gq1.yahoo.com>
+X-YMail-OSG: KDxM9YcVM1mRDrsSqST.xo9bwGPs1zZUjsY8VwNBMZ1VcaA
+ IU7lxXONyQ.vwtc8sPAblZjjn5cD9EL8az8xntWesZdpINWyDb1JT5.SnNsx
+ sY.vfbST3BezG7JsYfH39JKPT_TOUX4wqOsLLYhxnCWE4Vfz3ur9ivTl8M6A
+ SzD9q_jFjTFF4K2zOIpPb.OIB_46_ZkDDSvJft3.qovPu2C6GKhpYUTtMn5Z
+ p5r1MKc8viAAVzlN3BF7572c0CwVl52xFVjNFXw9wy3hTdxsDFMzXHJtX3N8
+ VebWfFy6gSAseoMGbxzJ_3tI5r1Kz0hB5TwEoqUP3OyJ8JvtloawZ_KipOvz
+ 50LYwhp6QUHqpOg1R.gBPplCT_TgG
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Mon, 6 Sep 2010 17:41:42 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH v4] GPIO: add support for 74x164 serial-in/parallel-out 8-bit shift register
+To: Florian Fainelli <florian@openwrt.org>
+Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Miguel Gaio <miguel.gaio@efixo.com>, Juhos Gabor <juhosg@openwrt.org>
+In-Reply-To: <201009011137.31938.florian@openwrt.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283819068-24587-1-git-send-email-nab@linux-iscsi.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 05:24:28PM -0700, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> Hi Doug and Co,
-> 
-> This patch updates the scsi_debug virtual LLD to use root_device_register()
-> and root_device_unregister() from include/linux/device.h instead of device_register()
-> and device_unregister() respectively within scsi_debug_init() and scsi_debug_exit()
-> This simply involved converting the static struct device pseudo_primary into a
-> pointer that is setup by the call to root_device_register().
-> 
-> This patch also contains the correct IS_ERR() conditional check of
-> root_device_register() from within scsi_debug_init().
-> 
-> Thanks to Richard Sharpe and Dmitry Torokhov for their help with this item.
-> 
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 
-Thanks for making the changes.
 
-Acked-by: Dmitry Torokhov <dtor@mail.ru>
-
-> ---
->  drivers/scsi/scsi_debug.c |   25 ++++++++-----------------
->  1 files changed, 8 insertions(+), 17 deletions(-)
+--- On Wed, 9/1/10, Florian Fainelli <florian@openwrt.org> wrote:
 > 
-> diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-> index b02bdc6..6047c10 100644
-> --- a/drivers/scsi/scsi_debug.c
-> +++ b/drivers/scsi/scsi_debug.c
-> @@ -3207,16 +3207,7 @@ static void do_remove_driverfs_files(void)
->  	driver_remove_file(&sdebug_driverfs_driver, &driver_attr_add_host);
->  }
->  
-> -static void pseudo_0_release(struct device *dev)
-> -{
-> -	if (SCSI_DEBUG_OPT_NOISE & scsi_debug_opts)
-> -		printk(KERN_INFO "scsi_debug: pseudo_0_release() called\n");
-> -}
-> -
-> -static struct device pseudo_primary = {
-> -	.init_name	= "pseudo_0",
-> -	.release	= pseudo_0_release,
-> -};
-> +struct device *pseudo_primary;
->  
->  static int __init scsi_debug_init(void)
->  {
-> @@ -3352,10 +3343,10 @@ static int __init scsi_debug_init(void)
->  			map_region(0, 2);
->  	}
->  
-> -	ret = device_register(&pseudo_primary);
-> -	if (ret < 0) {
-> -		printk(KERN_WARNING "scsi_debug: device_register error: %d\n",
-> -			ret);
-> +	pseudo_primary = root_device_register("pseudo_0");
-> +	if (IS_ERR(pseudo_primary)) {
-> +		printk(KERN_WARNING "scsi_debug: root_device_register() error\n");
-> +		ret = PTR_ERR(pseudo_primary);
->  		goto free_vm;
->  	}
->  	ret = bus_register(&pseudo_lld_bus);
-> @@ -3402,7 +3393,7 @@ del_files:
->  bus_unreg:
->  	bus_unregister(&pseudo_lld_bus);
->  dev_unreg:
-> -	device_unregister(&pseudo_primary);
-> +	root_device_unregister(pseudo_primary);
->  free_vm:
->  	if (map_storep)
->  		vfree(map_storep);
-> @@ -3423,7 +3414,7 @@ static void __exit scsi_debug_exit(void)
->  	do_remove_driverfs_files();
->  	driver_unregister(&sdebug_driverfs_driver);
->  	bus_unregister(&pseudo_lld_bus);
-> -	device_unregister(&pseudo_primary);
-> +	root_device_unregister(pseudo_primary);
->  
->  	if (dif_storep)
->  		vfree(dif_storep);
-> @@ -3474,7 +3465,7 @@ static int sdebug_add_adapter(void)
->          spin_unlock(&sdebug_host_list_lock);
->  
->          sdbg_host->dev.bus = &pseudo_lld_bus;
-> -        sdbg_host->dev.parent = &pseudo_primary;
-> +        sdbg_host->dev.parent = pseudo_primary;
->          sdbg_host->dev.release = &sdebug_release_adapter;
->          dev_set_name(&sdbg_host->dev, "adapter%d", scsi_debug_add_host);
->  
-> -- 
-> 1.5.6.5
-> 
+> Changes since v3:
+> - support daisy-chaining of 74x164 up to 32 gpios
 
--- 
-Dmitry
+cool, a new feature!
+
+
+
+I kind of dislike doing this after having
+offereed feedback that you accepted, but I'm going
+to NAK this driver for mainline.
+
+The reasons are associated with a point I made in
+my last feedback.  The chip interface is SPI (but
+it's not called that in the data sheets, true).
+
+This driver is two things:
+
+ - maybe 85% looks like spi-over-gpio, cloning what
+the spi-gpio.c driver does (a three-wire SPI mode,
+using the NO_RX option, vs normal four-wire).
+
+The rest is a small 74x164 driver.
+
+So if there are spare GPIOs *this* driver can be
+used, but not if there's just a spare SPI select.
+
+If this were re-packaged as a small SPI protocol
+driver and a small SPI-over-GPIO instance both of
+the two components would be more reusable...
+
+Your current hardware can handle the SPI-over-GPIO
+approach, obviously.
+
+I'd ack a small 74x164 SPI protocol driver, which is
+what I expected when I saw the first post.  But a
+conglomerate driver -- no.  Sorry.
+
+- Dave
+
+
