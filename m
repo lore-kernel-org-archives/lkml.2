@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab0IGMfj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 08:35:39 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36683 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756263Ab0IGMfe (ORCPT
+	id S1756700Ab0IGMfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 08:35:50 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51504 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756661Ab0IGMfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 08:35:34 -0400
+	Tue, 7 Sep 2010 08:35:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=lm6l65K64jmTxKEobWn1uUm+UKb4qEs698rCRkx71Ilsb8Qb4pOFDZi1J4xEAeN9Cy
-         qP+bay2Qt+fgr55joVeWbKvetwx04ylgSCweqKUPB/Cudv+jOWXs2ilFiBCdd53uwKNH
-         TJ939HAFxuXC4nnqcp6mXk8aveQHEl6G0btPM=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Roland McGrath <roland@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] exit: add lock context annotation on find_new_reaper()
-Date: Tue,  7 Sep 2010 21:35:26 +0900
-Message-Id: <1283862926-17406-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=OkdaVjCFsnNO36I/gCGUzNbYYvP9IqmqhCWxRxdBAXq6uPJfrCPo0JWrvQ4NGJij8h
+         iPtZQmbhZhP+PtoB9RwSQxDnPzux/2bitADu+yq+WMyGlYgo7Pd1mq676lTWjltLwXfw
+         5k5lKU/th+uEmjK4cLhkMcO4P3eCdV0o6Z/iQ=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Hunter Adrian <adrian.hunter@nokia.com>, Chris Ball <cjb@laptop.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Subject: [PATCHv6 2/3] mmc_test: change simple_strtol() to strict_strtol()
+Date: Tue,  7 Sep 2010 15:35:25 +0300
+Message-Id: <ba5173c9b420d9554c83965f47d0b5cba642743a.1283862780.git.ext-andriy.shevchenko@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com>
+References: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com>
+In-Reply-To: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com>
+References: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-find_new_reaper() releases and regrabs tasklist_lock but was missing
-proper annotations. Add it. This remove following sparse warning:
+It's better to use strict_strtol() to convert user's input and strictly check
+it. At least it forbids to interpret wrong input as a 0 and prevents to run all
+tests.
 
- warning: context imbalance in 'find_new_reaper' - unexpected unlock
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
 ---
- kernel/exit.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/mmc/card/mmc_test.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 0312022..d31385b 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -702,6 +702,8 @@ static void exit_mm(struct task_struct * tsk)
-  * space.
-  */
- static struct task_struct *find_new_reaper(struct task_struct *father)
-+	__releases(&tasklist_lock)
-+	__acquires(&tasklist_lock)
+diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
+index cd8edf4..6bffb33 100644
+--- a/drivers/mmc/card/mmc_test.c
++++ b/drivers/mmc/card/mmc_test.c
+@@ -1937,9 +1937,10 @@ static ssize_t mmc_test_store(struct device *dev,
  {
- 	struct pid_namespace *pid_ns = task_active_pid_ns(father);
- 	struct task_struct *thread;
+ 	struct mmc_card *card = mmc_dev_to_card(dev);
+ 	struct mmc_test_card *test;
+-	int testcase;
++	long testcase;
+ 
+-	testcase = simple_strtol(buf, NULL, 10);
++	if (strict_strtol(buf, 10, &testcase))
++		return -EINVAL;
+ 
+ 	test = kzalloc(sizeof(struct mmc_test_card), GFP_KERNEL);
+ 	if (!test)
 -- 
-1.7.2.2
+1.6.3.3
 
