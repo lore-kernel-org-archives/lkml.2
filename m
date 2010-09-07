@@ -1,120 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab0IGJFW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 05:05:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56656 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751369Ab0IGJFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 05:05:15 -0400
-Message-ID: <4C86003B.6090706@kernel.org>
-Date: Tue, 07 Sep 2010 11:04:59 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [2.6.36-rc3] Workqueues, XFS, dependencies and deadlocks
-References: <20100907072954.GM705@dastard>
-In-Reply-To: <20100907072954.GM705@dastard>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755983Ab0IGJJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 05:09:04 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44385 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755475Ab0IGJJB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 05:09:01 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 7 Sep 2010 18:03:54 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minchan.kim\@gmail.com" <minchan.kim@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        "kosaki.motohiro\@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC][PATCH] big continuous memory allocator v2
+Message-Id: <20100907180354.a8dd5669.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100907104635.2a02a1ca@basil.nowhere.org>
+References: <20100907114505.fc40ea3d.kamezawa.hiroyu@jp.fujitsu.com>
+	<87occa9fla.fsf@basil.nowhere.org>
+	<20100907172559.496554d8.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100907104635.2a02a1ca@basil.nowhere.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Sep 2010 09:05:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 7 Sep 2010 10:46:35 +0200
+Andi Kleen <andi@firstfloor.org> wrote:
 
-On 09/07/2010 09:29 AM, Dave Chinner wrote:
-> 1. I have had xfstests deadlock twice via #3, once on 2.6.36-rc2,
-> and once on 2.6.36-rc3. This is clearly a regression, but it is not
-> caused by any XFS changes since 2.6.35.  From what I can tell from
-> the backtraces I saw was that it appears that the delaying of the
-> data IO completion processing by requeuing does not allow the
-> workqueue to move off the kworker thread. As a result, any work that
-> is still queued on that kworker queue appears to be starved, and
-> hence we never get the log workqueue processed that would allow data
-> IO completion processing to make progress.
+> On Tue, 7 Sep 2010 17:25:59 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > On Tue, 07 Sep 2010 09:29:21 +0200
+> > Andi Kleen <andi@firstfloor.org> wrote:
+> > 
+> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+> > > 
+> > > > This is a page allcoator based on memory migration/hotplug code.
+> > > > passed some small tests, and maybe easier to read than previous
+> > > > one.
+> > > 
+> > > Maybe I'm missing context here, but what is the use case for this?
+> > > 
+> > 
+> > I hear some drivers want to allocate xxMB of continuous area.(camera?)
+> > Maybe embeded guys can answer the question.
+> 
+> Ok what I wanted to say -- assuming you can make this work
+> nicely, and the delays (swap storms?) likely caused by this are not
+> too severe, it would be interesting for improving the 1GB pages on x86.
+> 
 
-This is puzzling.  Queueing order shouldn't have changed.  Maybe I
-screwed up queueing order handling of delayed works.  Which workqueue
-is this?  Or better, can you give me a small test case which
-reproduces the problem?
+Oh, I didn't consider that. Hmm. If x86 really wants to support 1GB page,
+MAX_ORDER should be raised. (I'm sorry if it was already disccused.)
 
-> 2. I have circumstantial evidence that #4 is contributing to
-> several minute long livelocks. This is intertwined with memory
-> reclaim and lock contention, but fundamentally log IO completion
-> processing is being blocked for extremely long periods of time
-> waiting for a kworker thread to start processing them.  In this
-> case, I'm creating close to 100,000 inodes every second, and they
-> are getting written to disk. There is a burst of log IO every 3s or
-> so, so the log Io completion is getting queued behind at least tens
-> of thousands of inode IO completion work items. These work
-> completion items are generating lock contention which slows down
-> processing even further. The transaciton subsystem stalls completely
-> while it waits for log IO completion to be processed. AFAICT, this
-> did not happen on 2.6.35.
 
-Creating the workqueue for log completion w/ WQ_HIGHPRI should solve
-this.
+> This would be a major use case and probably be enough
+> to keep the code around.
+> 
+> But it depends on how well it works.
+> 
+Sure.
 
-> XFS has used workqueues for these "separate processing threads"
-> because they were a simple primitve that provided the separation and
-> isolation guarantees that XFS IO completion processing required.
-> That is, work deferred from one processing queue to another would
-> not block the original queue, and queues can be blocked
-> independently of the processing of other queues.
+> e.g. when the zone is already fully filled how long
+> does the allocation of 1GB take?
+> 
+Maybe not very quick, even slow.
 
-Semantically, that property is (or should be) preserved.  The
-scheduling properties change tho and if the code has been depending on
-more subtile aspects of work scheduling, it will definitely need to be
-adjusted.
+> How about when parallel programs are allocating/freeing
+> in it too?
+> 
+This code doesn't assume that. I wonder I should add mutex because this code
+generates IPI for draining some per-cpu lists.
 
->>From what I can tell of the new kworker thread based implementation,
-> I cannot see how it provides the same work queue separation,
-> blocking and isolation guarantees. If we block during work
-> processing, then anything on the queue for that thread appears to be
-> blocked from processing until the work is unblocked.
+I think 1GB pages should be preallocated as current hugepage does.
 
-I fail to follow here.  Can you elaborate a bit?
 
-> Hence my main concern is that the new work queue implementation does
-> not provide the same semantics as the old workqueues, and as such
-> re-introduces a class of problems that will cause random hangs and
-> other bad behaviours on XFS filesystems under heavy load.
+> What's the worst case delay under stress?
+> 
+memory offline itself is robust against stress because it make
+pageblock ISOLATED. But memory allocation of 1GB is problem.
+I have an idea (see below).
 
-I don't think it has that level of fundamental design flaw.
+> Does it cause swap storms?
+> 
+Maybe same as allocating 1GB of memory when memory is full.
+It's LRU matter.
 
-> Hence, I'd like to know if my reading of the new workqueue code is
-> correct and:
 
-Probably not.
+> One issue is also that it would be good to be able to decide
+> in advance if the OOM killer is likely triggered (and if yes
+> reject the allocation in the first place). 
+> 
 
-> 	a) if not, understand why the workqueues are deadlocking;
+Checking the amount of memory and swap before starts ? 
+It sounds nice. I'd like to add something.
 
-Yeah, let's track this one down.
+Or changing my patche's logic as..
 
-> 	c) understand how we can prioritise log IO completion
-> 	processing over data, metadata and unwritten extent IO
-> 	completion processing; and
+  1. allocates required migration target pages (of 1GB)
+  2. start migration to allocated pages.
+  3. create a big page. 
 
-As I wrote above, WQ_HIGHPRI is there for you.
+Then, we can use some GFP_XXXX at (1) and can do some tuning as usual
+vm codes.
 
-> 	d) what can be done before 2.6.36 releases.
+Thanks,
+-Kame
 
-To preserve the original behavior, create_workqueue() and friends
-create workqueues with @max_active of 1, which is pretty silly and bad
-for latency.  Aside from fixing the above problems, it would be nice
-to find out better values for @max_active for xfs workqueues.  For
-most users, using the pretty high default value is okay as they
-usually have much stricter constraint elsewhere (like limited number
-of work_struct), but last time I tried xfs allocated work_structs and
-fired them as fast as it could, so it looked like it definitely needed
-some kind of resasonable capping value.
-
-Thanks.
-
--- 
-tejun
