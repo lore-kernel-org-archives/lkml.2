@@ -1,107 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438Ab0IGT46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 15:56:58 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58018 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757970Ab0IGT4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 15:56:54 -0400
-Date: Tue, 7 Sep 2010 21:56:27 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
-Message-ID: <20100907195627.GA16387@elte.hu>
-References: <20100901213318.19353.54619.stgit@localhost.localdomain>
- <20100902065731.GB29972@elte.hu>
- <20100902100308.GA17167@basil.fritz.box>
- <20100903063934.GA25863@elte.hu>
- <1283888337.18468.9.camel@pjaxe>
+	id S932469Ab0IGUBH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 16:01:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63984 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101Ab0IGUBE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 16:01:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Subject: Re: [PATCH] md: do not use ++ in rcu_dereference() argument
+Date: Tue, 7 Sep 2010 22:00:58 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3; KDE/4.5.1; x86_64; ; )
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        kernel-janitors@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1283711539-7123-1-git-send-email-segooon@gmail.com> <201009062210.56824.arnd@arndb.de> <20100907192154.GA14214@albatros>
+In-Reply-To: <20100907192154.GA14214@albatros>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283888337.18468.9.camel@pjaxe>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0024]
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009072200.59509.arnd@arndb.de>
+X-Provags-ID: V02:K0:8lTfGfAhfWeqMltL6a+1wpVvM7X//vsWBzBU2lgwG/D
+ VXCYLeDGO8VXHN1Z8uhvBqPIxhZitt33Uz9C5HmeNzh6yWzsYp
+ e4jDYo7DyWs59eTNyIgmhTTQs501aBiimq9/oNFxWc7hiz3v8/
+ ZIIdOdrNARyHalYbRFFGT2crjLZ82+G/jAOic4wB5p+XTsJ6Hr
+ hjEDZN1UpKE0aGRhPIvvg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com> wrote:
-
-> On Thu, 2010-09-02 at 23:39 -0700, Ingo Molnar wrote:
-> > * Andi Kleen <andi@firstfloor.org> wrote:
-> > 
-> > > > This isnt a particularly useful solution to users of said systems - 
-> > > > they have to figure out that this option exists, and then they have 
-> > > > to enter this option on the boot line.
-> > > 
-> > > This usually only happens in early preproduction systems. So far the 
-> > > BIOS always got fixed before they shipped to users.
-> > 
-> > 'Usually' != 'always'. Read the changelog:
-> > 
-> >   ' There are BIOSes in production that have these failures, so this will 
-> >     allow people in the field to work around these BIOS issues. '
-> > 
-> > Peter, which system in production that has this problem? That one needs 
-> > a DMI match.
+On Tuesday 07 September 2010 21:21:55 Kulikov Vasiliy wrote:
+> #define __rcu_dereference_check(p, c, space) \
+>         ({ \
+>                 typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
+>                                                                    ^
+>                 rcu_lockdep_assert(c); \
+>                 (void) (((typeof (*p) space *)p) == p); \
+>                                       ^     ^
+>                 smp_read_barrier_depends(); \
+>                 ((typeof(*p) __force __kernel *)(_________p1)); \
+>         })
 > 
-> It's one SKU of a Nehalem-EX system.  The BIOS for that SKU has an 
-> issue with resolving SRAT hotplug enumeration, and screws up the 
-> table.  Other SKU's of this same platform do not have the issue.  
-> Efforts are underway to get this BIOS fixed, but in the meantime, 
-> there's nothing for users to work around the bug (aside from disabling 
-> memory hotplug in the BIOS).  Another platform almost shipped with the 
-> same symptoms, but caught it and had it fixed before it shipped 
-> (didn't catch it early because Windows wasn't failing, and most of the 
-> testing on that platform was done under Windows).
->
-> I agree with Andi that adding DMI strings would be overkill and would 
-> leave clutter once the BIOS is fixed. [...]
+> If I understand this, it is evaluated three times, right?
+ 
+Yes, that looks like my own fault, I added that :(
 
-We use the following policy for hardware/firmware workarounds in 
-upstream arch/x86: if the system got shipped and if the vendor/OEM wants 
-it fixed, then it has real DMI info (or some PCI ID match method, etc.) 
-and an automatic workaround is very well possible and desirable.
+This patch seems to fix it, but I need to think about it some more
+to make sure it still does everything we need.
 
-If the vendor cannot be bothered to add a few lines based on a simple 
-reading of dmidecode output and test it, then we dont really want/need 
-the rest of the patch upstream either.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-It should be literally 5 minutes of work to add a DMI match.
-
-> I look at this patch as a stop-gap measure for people to fall back on 
-> until a newer BIOS is available to correct the NUMA enumeration 
-> issues. [...]
-
-We dont do half-done stop-gap measures in the upstream kernel like that, 
-and for various good reasons.
-
-Furthermore, since Windows doesnt have a problem booting with this, i'm 
-afraid that we are bound to see repeat problems of this sort, so we 
-better have the DMI path beaten out - even if in this case it's a single 
-model.
-
-> [...]  Without it, we have nothing to point users to when they run 
-> into this, waiting for a new BIOS.
-
-I by all means support you to give users a real fix - one that applies 
-the workaround automatically with a DMI match. Also, as i said, we can 
-also add the boot option in the same patch.
-
-Thanks,
-
-	Ingo
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 89414d6..743bc3f 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -313,21 +313,21 @@ extern int rcu_my_thread_group_empty(void);
+ #define __rcu_access_pointer(p, space) \
+ 	({ \
+ 		typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
+-		(void) (((typeof (*p) space *)p) == p); \
++		(void) (((typeof (*p) space *)NULL) == (typeof(p))NULL); \
+ 		((typeof(*p) __force __kernel *)(_________p1)); \
+ 	})
+ #define __rcu_dereference_check(p, c, space) \
+ 	({ \
+ 		typeof(*p) *_________p1 = (typeof(*p)*__force )ACCESS_ONCE(p); \
+ 		rcu_lockdep_assert(c); \
+-		(void) (((typeof (*p) space *)p) == p); \
++		(void) (((typeof (*p) space *)NULL) == (typeof(p))NULL); \
+ 		smp_read_barrier_depends(); \
+ 		((typeof(*p) __force __kernel *)(_________p1)); \
+ 	})
+ #define __rcu_dereference_protected(p, c, space) \
+ 	({ \
+ 		rcu_lockdep_assert(c); \
+-		(void) (((typeof (*p) space *)p) == p); \
++		(void) (((typeof (*p) space *)NULL) == (typeof(p))NULL); \
+ 		((typeof(*p) __force __kernel *)(p)); \
+ 	})
+ 
