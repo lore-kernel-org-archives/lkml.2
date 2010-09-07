@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab0IGJKe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 05:10:34 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:52921 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942Ab0IGJK1 (ORCPT
+	id S1756071Ab0IGJNM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 05:13:12 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55761 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755885Ab0IGJNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 05:10:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=IDw0nYcsCzv4Osv5HkaxUj+NrlqZMzzkOUtrcobNnaWHh9FqQrRtNTBmxM0j7v+8E+
-         R+cQs+9XyGMOIvEA08QMv7rE6lHNJ57n6FlLMBacp1iHdymuIGgJFaM+dTuW6yfmiyWe
-         kLOOB+fpiASMGfT+cZ7nXCL379/V2HQ+vaCc8=
+	Tue, 7 Sep 2010 05:13:07 -0400
+Message-ID: <4C8601C0.40001@mvista.com>
+Date: Tue, 07 Sep 2010 13:11:28 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <1281536463-10680-1-git-send-email-andy.shevchenko@gmail.com>
-References: <1281536463-10680-1-git-send-email-andy.shevchenko@gmail.com>
-Date: Tue, 7 Sep 2010 12:10:26 +0300
-Message-ID: <AANLkTi=Ewb8xKMx_5rYxdBcM9w2W3_oxg8aJY=rb8SSr@mail.gmail.com>
-Subject: Re: [PATCH] fs: use kernel's hex_to_bin() method
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Kevin Cernekee <cernekee@gmail.com>
+CC: Ralf Baechle <ralf@linux-mips.org>, dediao@cisco.com, dvomlehn@cisco.com,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] MIPS: HIGHMEM DMA on noncoherent MIPS32 processors
+References: <7d28a475591d9522bd1841a95fe21260@localhost>
+In-Reply-To: <7d28a475591d9522bd1841a95fe21260@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 5:21 PM, Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: linux-fsdevel@vger.kernel.org
-Any comments?
+Hello.
 
+On 07-09-2010 8:03, Kevin Cernekee wrote:
 
--- 
-With Best Regards,
-Andy Shevchenko
+> The MIPS DMA coherency functions do not work properly (i.e. kernel oops)
+> when HIGHMEM pages are passed in as arguments.  This patch uses the PPC
+> approach of calling kmap_atomic() with IRQs disabled to temporarily map
+> high pages, in order to flush them out to memory.
+
+> Signed-off-by: Dezhong Diao <dediao@cisco.com>
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+> ---
+>   arch/mips/mm/dma-default.c |  159 ++++++++++++++++++++++----------------------
+>   1 files changed, 80 insertions(+), 79 deletions(-)
+
+> diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+> index 469d401..3f23952 100644
+> --- a/arch/mips/mm/dma-default.c
+> +++ b/arch/mips/mm/dma-default.c
+[...]
+> @@ -191,8 +231,8 @@ void dma_unmap_single(struct device *dev, dma_addr_t dma_addr, size_t size,
+>   	enum dma_data_direction direction)
+>   {
+>   	if (cpu_is_noncoherent_r10000(dev))
+> -		__dma_sync(dma_addr_to_virt(dev, dma_addr), size,
+> -		           direction);
+> +		__dma_sync(dma_addr_to_page(dev, dma_addr),
+> +			   (dma_addr & ~PAGE_MASK), size, direction);
+
+    Parens are not needed here.
+
+> @@ -277,15 +297,10 @@ EXPORT_SYMBOL(dma_sync_single_for_cpu);
+>   void dma_sync_single_for_device(struct device *dev, dma_addr_t dma_handle,
+>   	size_t size, enum dma_data_direction direction)
+>   {
+> -	BUG_ON(direction == DMA_NONE);
+> -
+>   	plat_extra_sync_for_device(dev);
+> -	if (!plat_device_is_coherent(dev)) {
+> -		unsigned long addr;
+> -
+> -		addr = dma_addr_to_virt(dev, dma_handle);
+> -		__dma_sync(addr, size, direction);
+> -	}
+> +	if (!plat_device_is_coherent(dev))
+> +		__dma_sync(dma_addr_to_page(dev, dma_handle),
+> +			   (dma_handle & ~PAGE_MASK), size, direction);
+
+    Here as well...
+
+WBR, Sergei
