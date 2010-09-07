@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601Ab0IGPYu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:24:50 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57767 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757504Ab0IGPYp (ORCPT
+	id S1757634Ab0IGPZO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:25:14 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39134 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757432Ab0IGPZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 11:24:45 -0400
+	Tue, 7 Sep 2010 11:25:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=DPOMqQozsAL3L3XvxlgMXHjn8nAoCrqBgNZ6lr3xpO8Qe3tj1liLj2CD95rZlXUT7y
-         aSd9UmMcquE5sn4B7iCZ9LjETpYVSkXa+bPqB68XEqR2MOvbMDNSNuR/43mzD0bMGaY8
-         wf7oEes818gF9DbVkhkvuPd+0TSoLCy3mWrhE=
+        b=L6BTOToS4QUR3jw9pH5sIAMxXQJTwJqPkfaAg4khwPzR6MfZmtevqVKwUjmku6szPl
+         MCe5VvoHVyZbMkPX3iRcZFr7uynJg3B67rj/waRCG5S3Rj1Em2U/HWCZj08/1IsfsuZT
+         56MpDCSduK0Xe9M2bpNXdr/h808xRwtwtBP7Y=
 From: tom.leiming@gmail.com
 To: greg@kroah.com
 Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
@@ -21,9 +21,9 @@ Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
         Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>,
         Mike Frysinger <vapier@gentoo.org>,
         Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Subject: [RESEND/PATCH 3/6] USB: musb-gadget: enable autoclear for OUT transfer in both DMA 0 and DMA 1
-Date: Tue,  7 Sep 2010 23:23:31 +0800
-Message-Id: <1283873014-32511-4-git-send-email-tom.leiming@gmail.com>
+Subject: [RESEND/PATCH 4/6] USB: musb-gadget: fix DMA length for OUT transfer
+Date: Tue,  7 Sep 2010 23:23:32 +0800
+Message-Id: <1283873014-32511-5-git-send-email-tom.leiming@gmail.com>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
 References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
@@ -33,51 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ming Lei <tom.leiming@gmail.com>
 
-This patch fixes one bugs of OUT transfer in double buffer case:
-
-	-the current code only enable autoclear for dma mode 1, and not
-	for dma mode 0
-
-Without this patch, test #5 of usbtest can't be passed if we
-configure musb as g_zero and use fifo mode 3 to enable double
-buffer mode.
-
-With this patch and the following patch(fix dma length),
-on my beagle B5, test#5(queued bulk out) may go beyond
-18Mbyte/s(seems dma mode 0 is quicker in double buffer case)
-if musb is configured as g_zero and fifo mode 3 is taken, follows
-the test command:
-
-    #./testusb -D DEV_NAME -c 1024 -t 5 -s 32768 -g 8   [1]
-
-Also I have tested this patch can't make g_ether broken.
-
-[1],source of testusb : tools/usb/testusb.c under linux kernel;
+DMA length should not go beyond the availabe space of request buffer,
+so fix it.
 
 Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Acked-by:   Anand Gadiyar <gadiyar@ti.com>
 Cc: David Brownell <dbrownell@users.sourceforge.net>
 Cc: Felipe Balbi <me@felipebalbi.com>
 Cc: Anand Gadiyar <gadiyar@ti.com>
 Cc: Mike Frysinger <vapier@gentoo.org>
 Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 ---
- drivers/usb/musb/musb_gadget.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/usb/musb/musb_gadget.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index f206c94..176e127 100644
+index 176e127..f3ee04f 100644
 --- a/drivers/usb/musb/musb_gadget.c
 +++ b/drivers/usb/musb/musb_gadget.c
-@@ -643,8 +643,8 @@ static void rxstate(struct musb *musb, struct musb_request *req)
- 	 */
- 
- 				csr |= MUSB_RXCSR_DMAENAB;
--#ifdef USE_MODE1
- 				csr |= MUSB_RXCSR_AUTOCLEAR;
-+#ifdef USE_MODE1
- 				/* csr |= MUSB_RXCSR_DMAMODE; */
- 
- 				/* this special sequence (enabling and then
+@@ -659,10 +659,11 @@ static void rxstate(struct musb *musb, struct musb_request *req)
+ 				if (request->actual < request->length) {
+ 					int transfer_size = 0;
+ #ifdef USE_MODE1
+-					transfer_size = min(request->length,
++					transfer_size = min(request->length - request->actual,
+ 							channel->max_len);
+ #else
+-					transfer_size = len;
++					transfer_size = min(request->length - request->actual,
++							(unsigned)len);
+ #endif
+ 					if (transfer_size <= musb_ep->packet_sz)
+ 						musb_ep->dma->desired_mode = 0;
 -- 
 1.6.2.5
 
