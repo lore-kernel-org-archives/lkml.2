@@ -1,60 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab0IGNSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 09:18:42 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45354 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756487Ab0IGNSg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 09:18:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=pEr4FD0rLoUsW3+z0K2b8wST+FppomCjkAjMsutTvjIOi11864cAgu+2uYrTpwRV74
-         U2hD213CjINHrV3QXgSjutFSx550+xsLDpeJNcvj9ZqDLAX0HcaKCmJPvY3+O8lKODTu
-         5Y1bwCknZr4VW5rwiCTzELK42E88HLOlVHSlw=
+	id S1756850Ab0IGNSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 09:18:51 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:41480 "EHLO vps.mortis.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756808Ab0IGNSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 09:18:39 -0400
+Date: Tue, 7 Sep 2010 15:18:37 +0200
+From: Giel van Schijndel <me@mortis.eu>
+To: Lutz Ballaschke <vegan.grindcore@googlemail.com>
+Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] watchdog: add f71862fg support
+Message-ID: <20100907131837.GH6114@salidar.me.mortis.eu>
+References: <20100906132434.GA17730@kreios.titan>
 MIME-Version: 1.0
-In-Reply-To: <e07f55b5f77ea471f41353190431bc78@secure211.sgcpanel.com>
-References: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
-	<0dfed6f7fe2c07da3ce8108a4c5620c3@secure211.sgcpanel.com>
-	<AANLkTinGSXdfWBABm9dmGDxnbf-_udg0ZvVCyH8FX-aO@mail.gmail.com>
-	<e07f55b5f77ea471f41353190431bc78@secure211.sgcpanel.com>
-Date: Tue, 7 Sep 2010 18:48:35 +0530
-Message-ID: <AANLkTik8m2hzWCdFaVxRmv-5f=Sv5nPo1rs7PKK8CCVS@mail.gmail.com>
-Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization(v1)
-From: venki kaps <venkiece2005@gmail.com>
-To: Felipe Balbi <me@felipebalbi.com>
-Cc: tom.leiming@gmail.com, greg@kroah.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Anand Gadiyar <gadiyar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PyMzGVE0NRonI6bs"
+Content-Disposition: inline
+In-Reply-To: <20100906132434.GA17730@kreios.titan>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Venkii,
-On Tue, Sep 7, 2010 at 6:16 PM, Felipe Balbi <me@felipebalbi.com> wrote:
-> Hi,
->
-> On Tue, 7 Sep 2010 11:49:38 +0900, venki kaps <venkiece2005@gmail.com>
-> wrote:
->>> let me see if I understand you right. The consumption is higher
->>> when the cable is kept plugged or the consumption is higher if
->>> you boot with usb cable pugged and remove it afterwards ?
->>   >> The consumption is higher if boot without usb cable.If boot when
->> the cable is kept plugged
->>   >> and remove it afterwards, then normal.
->
-> ok, so that's what I had observed and my original patch is the one
-> you want. You probably _also_ want this one though due the WARN
-  >>> Is WARN_ON created issue? or
-  >>> As you mentioned earlier, if (!regulator_is_enabled(twl->usb3v1)
-regulator_enable(twl->usb3v1); would be required?
-  >>> could you please provide more details?
->
-> --
-> balbi
->
+
+--PyMzGVE0NRonI6bs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Sep 06, 2010 at 03:24:34PM +0200, Lutz Ballaschke wrote:
+> Fintek Super-I/O f71862fg watchdog support added to f71808e_wdt driver.
+> Furthermore the WDIOC_GETTIMELEFT ioctl is added to the driver.
+
+You're patch makes three changes:
+ * Add f71862 support
+ * Add the WDIOC_GETTIMELEFT ioctl
+ * Change some config-register (magic) numbers into constants
+
+Please split these things into separate patches.
+
+> diff -Nurp linux-2.6.36-rc1-orig/drivers/watchdog/f71808e_wdt.c linux-2.6=
+=2E36-rc1/drivers/watchdog/f71808e_wdt.c
+> --- linux-2.6.36-rc1-orig/drivers/watchdog/f71808e_wdt.c	2010-08-16 02:41=
+:37.000000000 +0200
+> +++ linux-2.6.36-rc1/drivers/watchdog/f71808e_wdt.c	2010-09-04 18:52:14.0=
+00000000 +0200
+> @@ -252,6 +255,24 @@ exit_unlock:
+>  	return err;
+>  }
+> =20
+> +static int watchdog_time_left(void)
+> +{
+> +	int ret =3D 0;
+> +
+> +	mutex_lock(&watchdog.lock);
+> +	ret =3D superio_enter(watchdog.sioaddr);
+> +	if (ret)
+> +		goto exit_unlock;
+> +
+> +	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
+> +	ret =3D (int) superio_inb(watchdog.sioaddr, F71808FG_REG_WD_TIME);
+> +	superio_exit(watchdog.sioaddr);
+> +
+> +exit_unlock:
+> +	mutex_unlock(&watchdog.lock);
+> +	return ret;
+> +}
+> +
+>  static int watchdog_keepalive(void)
+>  {
+>  	int err =3D 0;
+
+This function doesn't perform any unit-conversion.  The ioctl expects to
+receive seconds as the result, while this function can either return
+minutes or seconds depending on the value of WD_UNIT (see datasheet
+and/or uses of minutes_mode in the driver).
+
+Further, why are you casting superio_inb()'s return value to (int) while
+that's already the return type of that function?
+
+> @@ -308,4 +329,10 @@ static int watchdog_start(void)
+>  		superio_set_bit(watchdog.sioaddr, SIO_REG_MFUNCT1, 1);
+>  		break;
+> =20
+> +	case f71862fg:
+> +		/* Set pin 63 to WDTRST# (SPI must be disabled first!) */
+> +		superio_clear_bit(watchdog.sioaddr, SIO_REG_ROM_ADDR_SEL, 6);
+> +		superio_set_bit(watchdog.sioaddr, SIO_REG_MFUNCT3, 4);
+> +		break;
+> +
+>  	default:
+
+Given that the F71862 has *two* pins assignable to the WDTRST# signal,
+please document that fact, and the reason for choosing this one in the
+code.
+
+Perhaps it might even be desirable to insert a printk there.  This to
+make the user aware of the fact that this driver might not work if the
+pin configuration of their hardware doesn't match the assumption you
+make about it in this code.
+
+--=20
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
+
+--PyMzGVE0NRonI6bs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkyGO60ACgkQZBYm/87l50KF+ACfZbPGiajF5ynS2tOcVNnh100K
+4PoAnjuGYHgOgxcgTD/9Hxke5uUKGOl5
+=jYS7
+-----END PGP SIGNATURE-----
+
+--PyMzGVE0NRonI6bs--
