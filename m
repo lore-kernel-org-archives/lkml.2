@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695Ab0IGIwv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 04:52:51 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46339 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669Ab0IGIws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 04:52:48 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 7 Sep 2010 17:47:43 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mel@csn.ul.ie>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC][PATCH] big continuous memory allocator v2
-Message-Id: <20100907174743.2efa34bd.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTintQqzx50Jp_zyKQMaAfhSEFah3HhseNmNfNMjB@mail.gmail.com>
-References: <20100907114505.fc40ea3d.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTintQqzx50Jp_zyKQMaAfhSEFah3HhseNmNfNMjB@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755897Ab0IGJC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 05:02:29 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52119 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755416Ab0IGJCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 05:02:23 -0400
+Date: Tue, 7 Sep 2010 11:02:20 +0200
+From: Frank Becker <fb@alien8.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jens Taprogge <jens.taprogge@taprogge.org>, linux-kernel@vger.kernel.org,
+        alsa-devel@vger.kernel.org, bp@alien8.de
+Subject: Re: commit 7b2bfdb broke sound card detection on my Lenovo T400s
+Message-ID: <20100907090220.GA3204@alien8.de>
+References: <20100906170421.GA2957@alien8.de>
+ <20100906224548.GA27279@taprogge.org>
+ <s5hlj7ew0ph.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
+Content-Disposition: inline
+In-Reply-To: <s5hlj7ew0ph.wl%tiwai@suse.de>
+Organisation: private
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Sep 2010 01:37:27 -0700
-Minchan Kim <minchan.kim@gmail.com> wrote:
 
-> Nice cleanup.
-> There are some comments in below.
-> 
-> On Mon, Sep 6, 2010 at 7:45 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> >
-> > This is a page allcoator based on memory migration/hotplug code.
-> > passed some small tests, and maybe easier to read than previous one.
-> >
-> > ==
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >
-> > This patch as a memory allocator for contiguous memory larger than MAX_ORDER.
-> >
-> >  alloc_contig_pages(hint, size, node);
-> 
-> I have thought this patch is to be good for dumb device drivers which
-> want big contiguous
-> memory. So if some device driver want big memory and they can tolerate
-> latency or fail,
-> this is good solution, I think.
-> And some device driver can't tolerate fail, they have to use MOVABLE zone.
-> 
-> For it, I hope we have a option like ALLOC_FIXED(like MAP_FIXED).
-> That's because embedded people wanted to aware BANK of memory.
-> So if they get free page which they don't want, it can be pointless.
-> 
-Okay.
+--bp/iNruPH9dso1Pn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Takashi Iwai [2010-09-07, 08:17 +0200]:
+> At Tue, 7 Sep 2010 00:45:48 +0200,
+> Jens Taprogge wrote:
+> >=20
+> > On Mon, Sep 06, 2010 at 07:04:21PM +0200, Frank Becker wrote:
 
-> In addition, I hope it can support CROSS_ZONE migration mode.
-> Most of small system can't support swap system. So if we can't migrate
-> anon pages into other zones, external fragment problem still happens.
-> 
-Now, this code migrates pages to somewhere, including crossing zone, node etc..
-(because it just use GFP_HIGHUSER_MOVABLE)
+Hi,
 
-> I think reclaim(ex, discard file-backed pages) can become one option to prevent
-> the problem. But it's more cost so we can support it by calling mode.
-> (But it could be trivial since caller should know this function is very cost)
-> 
+> Also, it'd be helpful if alsa-info.sh output is given.
+> Jens, Frank, could you guys run it with --no-upload option and attach
+> the output for comparison?
+Sorry, I wasn't aware of this fine tool.
 
-> ex) alloc_contig_pages(hint, size, node, ALLOC_FIXED|ALLOC_RECLAIM);
-> 
+Hope, it's OK to upload it as well. Don't want to fill up everyones mboxes
+again
 
-This migration's page allocation code will cause memory reclaim and
-kswapd wakeup if memory is in short. But hmm, there are no codes as
+2.6.32: http://www.alsa-project.org/db/?f=3Df985e74bdda393213a29c6243012a7a=
+8ea1dfe1f
+2.6.35-broken: http://www.alsa-project.org/db/?f=3D827e4ef1a0d6c726a09fc580=
+1853aa2ba58225ed
+2.6.35-ideapad: http://www.alsa-project.org/db/?f=3D01e6a47003948f33aeb8ff1=
+32b64d4bc4ecc73b8
 
- reclaim_memory_within(start, end).
+Bye,
 
-But I guess if there are LRU pages within the range which cannot be migrated,
-they can't be dropped. In another consideration, 
+Frank
 
-  shrink_slab_within(start, end)
-will be able to make success-rate better. (and this is good for memory hotplug, too)
+--=20
+Frank Becker <fb@alien8.de> (jabber|mail) | http://twitter.com/41i3n8
+GnuPG: 0xADC29ECD | F01B 5E9C 1D09 981B 5B40 50D3 C80F 7459 ADC2 9ECD
+SILC-Net: a8 | Home: http://www.alien8.de | <<</>> http://www.c3d2.de
+"> Freedom is just chaos, with better lighting. <"  Alan Dean  Foster
 
-I'll start from adding ALLOC_FIXED.
+--bp/iNruPH9dso1Pn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-Thanks,
--Kame
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iEYEARECAAYFAkyF/5cACgkQyA90Wa3Cns2svACfTQXBbA2aJKULQ+m3/PkctAp0
+hssAnj1XuVCDfZjDRO/nWaHhbrXmqqMS
+=uCBd
+-----END PGP SIGNATURE-----
+
+--bp/iNruPH9dso1Pn--
