@@ -1,52 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab0IGH33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 03:29:29 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:45545 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755429Ab0IGH3X (ORCPT
+	id S1755639Ab0IGHaH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 03:30:07 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:44955 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755416Ab0IGH37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 03:29:23 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "minchan.kim\@gmail.com" <minchan.kim@gmail.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        "kosaki.motohiro\@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC][PATCH] big continuous memory allocator v2
-References: <20100907114505.fc40ea3d.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Tue, 07 Sep 2010 09:29:21 +0200
-In-Reply-To: <20100907114505.fc40ea3d.kamezawa.hiroyu@jp.fujitsu.com>
-	(KAMEZAWA Hiroyuki's message of "Tue, 7 Sep 2010 11:45:05 +0900")
-Message-ID: <87occa9fla.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 7 Sep 2010 03:29:59 -0400
+Date: Tue, 7 Sep 2010 17:29:54 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-fsdevel@vger.kernel.org
+Subject: [2.6.36-rc3] Workqueues, XFS, dependencies and deadlocks
+Message-ID: <20100907072954.GM705@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+Hi Tejun,
 
-> This is a page allcoator based on memory migration/hotplug code.
-> passed some small tests, and maybe easier to read than previous one.
+I've got a few concerns about workqueue consolidation it has gone
+into 2.6.36-rc and the way XFS has been using workqueues for
+concurrency and deadlock avoidance in IO completion. To give you an
+idea of the complex dependencies of the IO completion workqueues XFS
+uses, I'll start by describing the major deadlock iand latency
+issues that they were crafted to avoid:
 
-Maybe I'm missing context here, but what is the use case for this?
+1. XFS used separate processing threads to prevent deadlocks between
+data and log IO completion processing. The deadlock is as follows:
 
-If this works well enough the 1GB page code for x86, which currently
-only supports allocating at boot time due to the MAX_ORDER problem,
-could be moved over to runtime allocation. This would make
-GB pages a lot nicer to use.
+	- inode locked in transaction
+	- transaction commit triggers writes to log buffer
+	- log buffer write blocks because all log buffers are under
+	  IO
+	- log IO completion queued behind data IO completion
+	- data IO completion blocks on inode lock held by
+	  transaction blocked waiting for log IO.
 
-I think it would still need declaring a large moveable
-area at boot right? (but moveable area is better than
-prereserved memory)
+This has been avoided by log IO completion processing being placed
+in a separate processing workqueue so they do not get blocked behind
+data IO completion. XFS has used this separation of IO completion
+processing since this deadlock was discovered in the late 90s on
+Irix.
 
-On the other hand I'm not sure the VM is really up to speed
-in managing such large areas.
+2. XFS used separate threads to avoid OOM deadlocks on unwritten
+extent conversion. The deadlock is as follows:
 
--Andi
+	- data IO into unwritten extent completes
+	- unwritten extent conversion starts a transaction
+	- transaction requires memory allocation
+	- data IO to complete cleaning of dirty pages (say issued by
+	  kswapd) gets queued up behind unwritten extent conversion
+	  processing
+	- data IO completion stalls
+	- system goes (B)OOM
 
+XFS pushes unwritten extent conversion off into a separate
+processing thread so that it doesn't block other data IO completion
+needed to clean pages and hence avoids the OOM deadlock in these
+cases.
+
+3. Loop devices turn log IO into data IO on backing filesystem. This
+leads to deadlocks because:
+
+	- transaction on loop device holds inode locked, commit
+	  blocks waiting for log IO. Log-IO-on-loop-device is turned
+	  into data-IO-on-backing-device.
+	- data-IO-on-loop-device completes, blocks taking inode lock
+	  to update file size.
+	- data-IO-on-backing-device for the log-IO-on-loop-device
+	  gets queued behind blocked data-IO-on-loop-device
+	  completion. Deadlocks loop device and IO completion
+	  processing thread.
+
+XFS has worked around this deadlock by using try-lock semantics for
+the inode lock on data IO completion, and if it fails we backoff by
+sleeping for a jiffie and requeuing the work back to the tail of the
+work queue. This works perfectly well for a dedicated set of
+processing threads as the only impact is on XFS....
+
+4. XFS used separate threads to minimise log IO completion latency
+
+Queuing log IO completion behind thousands of data and metadata IO
+completions stalls the entire transaction subsystem until the log IO
+completion is done. By having separate processing threads, log IO
+completion processing is not delayed by having to first wait for
+data/metadata IO completion processing. This delay can be
+significant because XFS can have thousands of IOs in flight at a
+time and IO completion processing backlog can extend to tens to
+hundreds of thousands of objects that have to be processed every
+second.
+
+-----
+
+So, with those descriptions out of the way, I've seen the following
+problems in the past week or so:
+
+1. I have had xfstests deadlock twice via #3, once on 2.6.36-rc2,
+and once on 2.6.36-rc3. This is clearly a regression, but it is not
+caused by any XFS changes since 2.6.35.  From what I can tell from
+the backtraces I saw was that it appears that the delaying of the
+data IO completion processing by requeuing does not allow the
+workqueue to move off the kworker thread. As a result, any work that
+is still queued on that kworker queue appears to be starved, and
+hence we never get the log workqueue processed that would allow data
+IO completion processing to make progress.
+
+2. I have circumstantial evidence that #4 is contributing to
+several minute long livelocks. This is intertwined with memory
+reclaim and lock contention, but fundamentally log IO completion
+processing is being blocked for extremely long periods of time
+waiting for a kworker thread to start processing them.  In this
+case, I'm creating close to 100,000 inodes every second, and they
+are getting written to disk. There is a burst of log IO every 3s or
+so, so the log Io completion is getting queued behind at least tens
+of thousands of inode IO completion work items. These work
+completion items are generating lock contention which slows down
+processing even further. The transaciton subsystem stalls completely
+while it waits for log IO completion to be processed. AFAICT, this
+did not happen on 2.6.35.
+
+This also seems to be correlated memory starvation because we can't
+free any memory until the log subsystem comes alive again and allows
+all the pinned metadata and transaction structures to be freed (can
+be tens to hundreds of megabytes of memory).
+
+http://marc.info/?l=linux-kernel&m=128374586809180&w=2
+http://marc.info/?l=linux-kernel&m=128380988716141&w=2
+
+----
+
+XFS has used workqueues for these "separate processing threads"
+because they were a simple primitve that provided the separation and
+isolation guarantees that XFS IO completion processing required.
+That is, work deferred from one processing queue to another would
+not block the original queue, and queues can be blocked
+independently of the processing of other queues.
+
+>From what I can tell of the new kworker thread based implementation,
+I cannot see how it provides the same work queue separation,
+blocking and isolation guarantees. If we block during work
+processing, then anything on the queue for that thread appears to be
+blocked from processing until the work is unblocked.
+
+Hence my main concern is that the new work queue implementation does
+not provide the same semantics as the old workqueues, and as such
+re-introduces a class of problems that will cause random hangs and
+other bad behaviours on XFS filesystems under heavy load.
+
+Hence, I'd like to know if my reading of the new workqueue code is
+correct and:
+
+	a) if not, understand why the workqueues are deadlocking;
+	b) if so, understand what needs to be done to solve the
+	deadlocks;
+	c) understand how we can prioritise log IO completion
+	processing over data, metadata and unwritten extent IO
+	completion processing; and
+	d) what can be done before 2.6.36 releases.
+
+Cheers,
+
+Dave.
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Dave Chinner
+david@fromorbit.com
