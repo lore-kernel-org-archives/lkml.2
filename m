@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252Ab0IGUWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 16:22:03 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35278 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757890Ab0IGUV7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 16:21:59 -0400
-Date: Tue, 7 Sep 2010 13:20:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Andrea Gelmini <andrea.gelmini@gmail.com>,
-        Balbir Singh <balbir@in.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Nigel Cunningham <nigel@tuxonice.net>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH 2/4] swap: prevent reuse during hibernation
-Message-Id: <20100907132036.03428c47.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1009060111220.13600@sister.anvils>
-References: <alpine.LSU.2.00.1009060104410.13600@sister.anvils>
-	<alpine.LSU.2.00.1009060111220.13600@sister.anvils>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758264Ab0IGUX2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 16:23:28 -0400
+Received: from www.tglx.de ([62.245.132.106]:40887 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756829Ab0IGUX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 16:23:26 -0400
+Date: Tue, 7 Sep 2010 22:23:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [patch 00/30] semaphore cleanup
+In-Reply-To: <201009071938.17681.arnd@arndb.de>
+Message-ID: <alpine.LFD.2.00.1009072219400.2477@localhost6.localdomain6>
+References: <20100907124636.880953480@linutronix.de> <201009071727.55023.arnd@arndb.de> <alpine.LFD.2.00.1009071736100.2477@localhost6.localdomain6> <201009071938.17681.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Sep 2010 01:12:38 -0700 (PDT)
-Hugh Dickins <hughd@google.com> wrote:
+Arnd,
 
-> Move the hibernation check from scan_swap_map() into try_to_free_swap():
+On Tue, 7 Sep 2010, Arnd Bergmann wrote:
 
-Well, it doesn't really "move" anything.  It removes one test (usage ==
-SWAP_HAS_CACHE) and adds a quite different one (gfp_allowed_mask &
-__GFP_IO).
-
-> to catch not only the common case when hibernation's allocation itself
-> triggers swap reuse, but also the less likely case when concurrent page
-> reclaim (shrink_page_list) might happen to try_to_free_swap from a page.
+> On Tuesday 07 September 2010 17:38:33 Thomas Gleixner wrote:
+> > Some of those can be converted to completions, but most of them have
+> > utterly borked semantics. I'm not sure if its worth the trouble to
+> > actually change all this as most of that stuff is ancient. Real
+> > semaphores are not going away (at least not the counting type ones).
 > 
-> Hibernation already clears __GFP_IO from the gfp_allowed_mask, to stop
-> reclaim from going to swap: check that to prevent swap reuse too.
+> Ok. I thought I had seen a series from Ingo some time ago that actually
+> converted all of them to something else, but maybe I was mistaken.
 > 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Ondrej Zary <linux@rainbow-software.org>
-> Cc: Andrea Gelmini <andrea.gelmini@gmail.com>
-> Cc: Balbir Singh <balbir@in.ibm.com>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: Nigel Cunningham <nigel@tuxonice.net>
-> Cc: stable@kernel.org
-> ---
+> Not sure if there is anything to be gained (other than more work) from
+> merging semaphore and rw_semaphore into a single implementation that
+> is both counting and read-write.
 > 
->  mm/swapfile.c |   24 ++++++++++++++++++++----
->  1 file changed, 20 insertions(+), 4 deletions(-)
-> 
-> --- swap1/mm/swapfile.c	2010-09-05 22:37:07.000000000 -0700
-> +++ swap2/mm/swapfile.c	2010-09-05 22:45:54.000000000 -0700
-> @@ -318,10 +318,8 @@ checks:
->  	if (offset > si->highest_bit)
->  		scan_base = offset = si->lowest_bit;
->  
-> -	/* reuse swap entry of cache-only swap if not hibernation. */
-> -	if (vm_swap_full()
-> -		&& usage == SWAP_HAS_CACHE
-> -		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
-> +	/* reuse swap entry of cache-only swap if not busy. */
-> +	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
->  		int swap_was_freed;
->  		spin_unlock(&swap_lock);
->  		swap_was_freed = __try_to_reclaim_swap(si, offset);
+> One problem I see (not with your series, just with semaphores in
+> general) is that they keep creeping in through drivers/staging: About
+> half the users we currently have are in staging. Obviously they get
+> removed from there in order for drivers to graduate from staging, but
+> not exposing the interface to device drivers would reduce the number
+> of bad choices for authors to make.
 
-This hunk is already present in 2.6.35.
+sure, but most of them are really the init_MUTEX[_LOCKED] type which
+has been copied over and over again for almost a decade.
 
-> @@ -688,6 +686,24 @@ int try_to_free_swap(struct page *page)
->  	if (page_swapcount(page))
->  		return 0;
->  
-> +	/*
-> +	 * Once hibernation has begun to create its image of memory,
-> +	 * there's a danger that one of the calls to try_to_free_swap()
-> +	 * - most probably a call from __try_to_reclaim_swap() while
-> +	 * hibernation is allocating its own swap pages for the image,
-> +	 * but conceivably even a call from memory reclaim - will free
-> +	 * the swap from a page which has already been recorded in the
-> +	 * image as a clean swapcache page, and then reuse its swap for
-> +	 * another page of the image.  On waking from hibernation, the
-> +	 * original page might be freed under memory pressure, then
-> +	 * later read back in from swap, now with the wrong data.
-> +	 *
-> +	 * Hibernation clears bits from gfp_allowed_mask to prevent
-> +	 * memory reclaim from writing to disk, so check that here.
-> +	 */
-> +	if (!(gfp_allowed_mask & __GFP_IO))
-> +		return 0;
-> +
->  	delete_from_swap_cache(page);
->  	SetPageDirty(page);
->  	return 1;
+That's going away, so people are actually forced to look into the
+alternative solutions. And I do not worry too much about staging/*
 
-This is the good bit.  I guess the (unCc:ed!) -stable guys would like a
-standalone patch.
+Thanks,
 
-Also, are patches [3/4] and [4/4] really -stable material??
+	tglx
