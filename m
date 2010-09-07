@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab0IGGhs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 02:37:48 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:55524 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960Ab0IGGhn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 02:37:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=adgmYGtghbGxicMe/glKtn2X4qi/3cVjC0rLe3BqseX9LRecRel8JhAF3efwICX5/v
-         DdEOmqm4AtQZYLP8CRm7nrdGnYjlrlLvJOHrLEIAp7Lm0/alC+sx17mrLyvP0Ec4TOK6
-         vAfN3ioNQ90pU8wI8RIdtza3oNi6kOyzWh6OA=
+	id S1754800Ab0IGGmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 02:42:11 -0400
+Received: from kroah.org ([198.145.64.141]:42399 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752216Ab0IGGmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 02:42:05 -0400
+Date: Mon, 6 Sep 2010 23:14:20 -0700
+From: Greg KH <greg@kroah.com>
+To: Javier Martinez Canillas <martinez.javier@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Bill Pemberton <wfp5p@virginia.edu>,
+        Arnaud Patard <apatard@mandriva.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] staging: xgifb: Removes unnecessary log
+Message-ID: <20100907061420.GA2889@kroah.com>
+References: <1283837309.6302.4.camel@lenovo>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim=JEuHBXXqVFOJ4ozXGSEVxjuCt7sOpXcox-NQ@mail.gmail.com>
-References: <AANLkTim=JEuHBXXqVFOJ4ozXGSEVxjuCt7sOpXcox-NQ@mail.gmail.com>
-Date: Tue, 7 Sep 2010 14:37:41 +0800
-Message-ID: <AANLkTikyM=XmFp2RSQtiHpoF3gVZKyEfpDFg2_Cd_ssW@mail.gmail.com>
-Subject: Fwd: anyone can help me about nand_get_flash_type
-From: Tony Wan <visual2me@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283837309.6302.4.camel@lenovo>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anyone can help me with this problem? even some ideas how to debug and
-find the problem? Thank you!
+On Tue, Sep 07, 2010 at 01:28:29AM -0400, Javier Martinez Canillas wrote:
+> This patch fixes a compile warning in today linux-next.
 
+Note, you need to fix up how your patches are generated.  [1/1] and then
+[2/2] and then [3/3] would cause me to belive that I'm missing some
+patches you would have sent out (1/2, 1/3, and 2/3).  Just use git
+format-patch to generate them if you have a problem with them.
 
----------- Forwarded message ----------
-From: Tony Wan <visual2me@gmail.com>
-Date: Wed, Aug 25, 2010 at 5:36 PM
-Subject: anyone can help me about nand_get_flash_type
-To: linux-mtd@lists.infradead.org
+> The first version of this patch casted XGIFB_GET_INFO to unsigned long, but Greg suggest that I should use %p instead and that the whole message is just looney.
 
+Please wrap your lines at 72 characters.
 
-Hi there,
+thanks,
 
-I got an ARM device from Marvell with a NAND rom, running Linux
-2.6.22.18. These days I'm working on upgrading the kernel to 2.6.31.8.
-After the upgrade, all devices work well except the NAND rom. I found
-it's because that the device and manufacturer IDs cannot be retrieved
-correctly in nand_get_flash_type.  In 2.6.22.18, the IDs can be
-retrieved as expected; but in 2.6.31.8, the IDs always be 0, which
-leads to an error in nand_scan.
-
-I'm a definitely newbie with MTD, and currently have no idea about the
-problem. Except IO_ADDR_R & IO_ADDR_W are remapped to different
-addresses, I can't find any differences between the 2 versions from
-the system log -- may it be the reason? Anyone can give me some tips
-about this problem -- how to fix it or how to debug? Any suggestions
-will be appreciated.
-
---
-Best regards,
-Tony Wan
-
-
-
--- 
-Best regards,
-Tony Wan
+greg k-h
