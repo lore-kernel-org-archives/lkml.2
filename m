@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab0IGO7p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 10:59:45 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40832 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab0IGO7k (ORCPT
+	id S1757226Ab0IGPHx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:07:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:62294 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab0IGPHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 10:59:40 -0400
-Date: Tue, 7 Sep 2010 10:59:36 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Nikos Mavrogiannopoulos <nmav@gnutls.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: RFC: Crypto API User-interface
-Message-ID: <20100907145936.GA23178@infradead.org>
-References: <20100907084213.GA4610@gondor.apana.org.au>
- <20100907140646.GA31921@infradead.org>
- <AANLkTinfQprsNC2ipocUKUWv894mbVtnDoxd5as9kCt-@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinfQprsNC2ipocUKUWv894mbVtnDoxd5as9kCt-@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 7 Sep 2010 11:07:47 -0400
+X-Authority-Analysis: v=1.1 cv=kSl6L8luU05z5mpL051isgeeLpAUfowbwuc/WIqEapw= c=1 sm=0 a=DRyNg-0iXyMA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Vrj5tWq_V90gqbJsK74A:9 a=9vXcHVeHisQs9QUhhKwA:7 a=NVKMYTLVVI2qXOqIVOY1m6EQrlkA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] trace: add graph output support for wakeup tracer
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100907141846.GC5375@nowhere>
+References: <1281020247-5756-1-git-send-email-jolsa@redhat.com>
+	 <20100907141846.GC5375@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 07 Sep 2010 11:07:45 -0400
+Message-ID: <1283872065.5133.116.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 04:57:04PM +0200, Nikos Mavrogiannopoulos wrote:
-> Or that someone is not really aware of some cryptographic uses.
-> Embedded systems have crypto accelerators in hardware available
-> through kernel device drivers. In the systems I worked the
-> accelerators via a crypto device interface gave a 50x to 100x boost in
-> crypto operations and relieved the CPU from doing them.
+On Tue, 2010-09-07 at 16:18 +0200, Frederic Weisbecker wrote:
+> On Thu, Aug 05, 2010 at 04:57:27PM +0200, Jiri Olsa wrote:
 
-An interface to external crypto co-process _can_ be useful.  It
-certainly isn't for the tiny requests where mr crackhead complains about
-the overhead.   So if we do want to design an interface for addons cards
-we need to expose a threshold from which it makes sense to use it, and
-not even bother using for the simply software in-kernel algorithms.
+> > +static void wakeup_graph_return(struct ftrace_graph_ret *trace)
+> > +{
+> > +	struct trace_array *tr = wakeup_trace;
+> > +	struct trace_array_cpu *data;
+> > +	unsigned long flags;
+> > +	long disabled;
+> > +	int cpu, pc;
+> > +
+> > +	if (likely(!wakeup_task))
+> > +		return;
+> > +
+> > +	pc = preempt_count();
+> > +	preempt_disable_notrace();
+> > +
+> > +	cpu = raw_smp_processor_id();
+> > +	if (cpu != wakeup_current_cpu)
+> > +		goto out_enable;
+> > +
+> > +	data = tr->data[cpu];
+> > +	disabled = atomic_inc_return(&data->disabled);
+> > +	if (unlikely(disabled != 1))
+> > +		goto out;
+> > +
+> > +	local_irq_save(flags);
+> > +	__trace_graph_return(tr, trace, flags, pc);
+> > +	local_irq_restore(flags);
+> 
+> 
+> 
+> Do you disable irqs to avoid losing traces? If so there is a race
+> window between the recursion barrier in data->disabled and the
+> time you disable irqs.
+> 
+> If you don't want to lose anything (except NMIs), you need to
+> replace the preempt_disable by the local_irq_save, ie disable
+> irqs before the recursion protection.
+> 
 
-Which is something that could be done easily using a variant of
-Herbert's interface.
+
+Or is it just to get the flags variable? If so then use
+local_save_flags() instead.
+
+-- Steve
+
 
