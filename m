@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab0IGNu5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 09:50:57 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:53907 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036Ab0IGNux (ORCPT
+	id S1756876Ab0IGNzQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 09:55:16 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51691 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756159Ab0IGNzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 09:50:53 -0400
-Subject: Re: [PATCH 7/7 v3] HID: magicmouse: Adjust major / minor axes to
- scale
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Michael Poole <mdpoole@troilus.org>, Henrik Rydberg <rydberg@euromail.se>,
-        Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1009021654520.26813@pobox.suse.cz>
-References: <1283306184-28833-1-git-send-email-chase.douglas@canonical.com>
-	 <1283306184-28833-8-git-send-email-chase.douglas@canonical.com>
-	 <alpine.LNX.2.00.1009021654520.26813@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Sep 2010 09:50:41 -0400
-Message-ID: <1283867441.2267.31.camel@mini>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Sep 2010 09:55:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=K4Tgl5hRQRZkJGiDNaTe4gkhLPtQnvhFOJMiojNSiC+7swsD2idnriYHoq9UjvM2Dh
+         vFtKecTRwg3MVW/XrCDtbXv0n9qIl6QSJ8Jpkq/hif3fAEqYk7e6Lci3Km76YWLITXIh
+         hDWzIm+xulyquDjjuXfXFh4J0UPxaZhEcJVJ0=
+From: Namhyung Kim <namhyung@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] net: remove address space warnings in net/socket.c
+Date: Tue,  7 Sep 2010 22:55:00 +0900
+Message-Id: <1283867700-24132-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-02 at 16:55 +0200, Jiri Kosina wrote:
-> On Tue, 31 Aug 2010, Chase Douglas wrote:
-> 
-> > From: Henrik Rydberg <rydberg@euromail.se>
-> > 
-> > By visual inspection, the reported touch_major and touch_minor axes
-> > are roughly a factor of four too small. The factor is approximate,
-> > since the protocol is not known and the HID report encodes touch size
-> > with fewer bits than positions. This patch scales the reported values
-> > by a factor of four.
-> > 
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> > Acked-by: Michael Poole <mdpoole@troilus.org>
-> > ---
-> >  drivers/hid/hid-magicmouse.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-> > index 6f13e56..0792b16 100644
-> > --- a/drivers/hid/hid-magicmouse.c
-> > +++ b/drivers/hid/hid-magicmouse.c
-> > @@ -254,8 +254,8 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
-> >  	/* Generate the input events for this touch. */
-> >  	if (report_touches && down) {
-> >  		input_report_abs(input, ABS_MT_TRACKING_ID, id);
-> > -		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major);
-> > -		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor);
-> > +		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major << 2);
-> > +		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor << 2);
-> >  		input_report_abs(input, ABS_MT_ORIENTATION, orientation);
-> >  		input_report_abs(input, ABS_MT_POSITION_X, x);
-> >  		input_report_abs(input, ABS_MT_POSITION_Y, y);
-> 
-> Care to fold this into "[PATCH 3/7 v3] HID: magicmouse: simplify touch 
-> data bit manipulation", which is actually adding this?
+Casts __kernel to __user pointer require __force markup, so add it. Also
+sock_get/setsockopt() takes @optval and/or @optlen arguments as user pointers
+but were taking kernel pointers, use new variables 'uoptval' and/or 'uoptlen'
+to fix it. These remove following warnings from sparse:
 
-Patch 3/7 isn't actually adding this, it just modifies the lines to
-simplify touch data bit manipulation. Keeping this as a separate commit
-ensures we maintain independent changes separately. As it is, Patch 3/7
-doesn't actually change any functionality. If this were folded in, it
-would change the functionality in an otherwise nop commit.
+ net/socket.c:1922:46: warning: cast adds address space to expression (<asn:1>)
+ net/socket.c:3061:61: warning: incorrect type in argument 4 (different address spaces)
+ net/socket.c:3061:61:    expected char [noderef] <asn:1>*optval
+ net/socket.c:3061:61:    got char *optval
+ net/socket.c:3061:69: warning: incorrect type in argument 5 (different address spaces)
+ net/socket.c:3061:69:    expected int [noderef] <asn:1>*optlen
+ net/socket.c:3061:69:    got int *optlen
+ net/socket.c:3063:67: warning: incorrect type in argument 4 (different address spaces)
+ net/socket.c:3063:67:    expected char [noderef] <asn:1>*optval
+ net/socket.c:3063:67:    got char *optval
+ net/socket.c:3064:45: warning: incorrect type in argument 5 (different address spaces)
+ net/socket.c:3064:45:    expected int [noderef] <asn:1>*optlen
+ net/socket.c:3064:45:    got int *optlen
+ net/socket.c:3078:61: warning: incorrect type in argument 4 (different address spaces)
+ net/socket.c:3078:61:    expected char [noderef] <asn:1>*optval
+ net/socket.c:3078:61:    got char *optval
+ net/socket.c:3080:67: warning: incorrect type in argument 4 (different address spaces)
+ net/socket.c:3080:67:    expected char [noderef] <asn:1>*optval
+ net/socket.c:3080:67:    got char *optval
 
-Thanks,
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ net/socket.c |   21 +++++++++++++++------
+ 1 files changed, 15 insertions(+), 6 deletions(-)
 
--- Chase
+diff --git a/net/socket.c b/net/socket.c
+index 2270b94..cb43f22 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1919,7 +1919,8 @@ SYSCALL_DEFINE3(sendmsg, int, fd, struct msghdr __user *, msg, unsigned, flags)
+ 		 * Afterwards, it will be a kernel pointer. Thus the compiler-assisted
+ 		 * checking falls down on this.
+ 		 */
+-		if (copy_from_user(ctl_buf, (void __user *)msg_sys.msg_control,
++		if (copy_from_user(ctl_buf,
++				   (void __user __force *)msg_sys.msg_control,
+ 				   ctl_len))
+ 			goto out_freectl;
+ 		msg_sys.msg_control = ctl_buf;
+@@ -3054,14 +3055,19 @@ int kernel_getsockopt(struct socket *sock, int level, int optname,
+ 			char *optval, int *optlen)
+ {
+ 	mm_segment_t oldfs = get_fs();
++	char __user *uoptval;
++	int __user *uoptlen;
+ 	int err;
+ 
++	uoptval = (char __user __force *) optval;
++	uoptlen = (int __user __force *) optlen;
++
+ 	set_fs(KERNEL_DS);
+ 	if (level == SOL_SOCKET)
+-		err = sock_getsockopt(sock, level, optname, optval, optlen);
++		err = sock_getsockopt(sock, level, optname, uoptval, uoptlen);
+ 	else
+-		err = sock->ops->getsockopt(sock, level, optname, optval,
+-					    optlen);
++		err = sock->ops->getsockopt(sock, level, optname, uoptval,
++					    uoptlen);
+ 	set_fs(oldfs);
+ 	return err;
+ }
+@@ -3071,13 +3077,16 @@ int kernel_setsockopt(struct socket *sock, int level, int optname,
+ 			char *optval, unsigned int optlen)
+ {
+ 	mm_segment_t oldfs = get_fs();
++	char __user *uoptval;
+ 	int err;
+ 
++	uoptval = (char __user __force *) optval;
++
+ 	set_fs(KERNEL_DS);
+ 	if (level == SOL_SOCKET)
+-		err = sock_setsockopt(sock, level, optname, optval, optlen);
++		err = sock_setsockopt(sock, level, optname, uoptval, optlen);
+ 	else
+-		err = sock->ops->setsockopt(sock, level, optname, optval,
++		err = sock->ops->setsockopt(sock, level, optname, uoptval,
+ 					    optlen);
+ 	set_fs(oldfs);
+ 	return err;
+-- 
+1.7.2.2
 
