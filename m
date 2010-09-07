@@ -1,100 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab0IGJa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 05:30:56 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:50826 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756049Ab0IGJaw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 05:30:52 -0400
-Message-ID: <4C860632.7010700@cs.helsinki.fi>
-Date: Tue, 07 Sep 2010 12:30:26 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1756206Ab0IGJbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 05:31:09 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:44001 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756194Ab0IGJa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 05:30:59 -0400
+Date: Tue, 7 Sep 2010 10:30:44 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, fengguang.wu@intel.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        andi.kleen@intel.com, Dave Hansen <dave@linux.vnet.ibm.com>,
+        stable@kernel.org
+Subject: Re: [BUGFIX][PATCH 1/3] memory hotplug: fix next block calculation
+	in is_removable
+Message-ID: <20100907093044.GR8384@csn.ul.ie>
+References: <20100906144019.946d3c49.kamezawa.hiroyu@jp.fujitsu.com> <20100906144228.4ee5a738.kamezawa.hiroyu@jp.fujitsu.com> <20100906133914.GL8384@csn.ul.ie> <AANLkTikPkKcxja4tqRPmJErEGs3YZ=NS4dBNyz1e--+d@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Pekka Enberg <penberg@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        "=?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?=" <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-perf-users@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: disabling group leader perf_event
-References: <1283772256.1930.303.camel@laptop> <4C84D1CE.3070205@redhat.com> <1283774045.1930.341.camel@laptop> <4C84D77B.6040600@redhat.com> <20100906124330.GA22314@elte.hu> <4C84E265.1020402@redhat.com> <20100906125905.GA25414@elte.hu> <4C850147.8010908@redhat.com> <20100906154737.GA4332@elte.hu> <AANLkTikQk0S-mR2Ow2NgdzqAMB0DD05Vd1Th99gNRy8h@mail.gmail.com> <20100907040331.GB14046@elte.hu>
-In-Reply-To: <20100907040331.GB14046@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikPkKcxja4tqRPmJErEGs3YZ=NS4dBNyz1e--+d@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Tue, Sep 07, 2010 at 02:15:01AM +0900, Hiroyuki Kamezawa wrote:
+> 2010/9/6 Mel Gorman <mel@csn.ul.ie>:
+> > On Mon, Sep 06, 2010 at 02:42:28PM +0900, KAMEZAWA Hiroyuki wrote:
+> >>
+> >> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >>
+> >> next_active_pageblock() is for finding next _used_ freeblock. It skips
+> >> several blocks when it finds there are a chunk of free pages lager than
+> >> pageblock. But it has 2 bugs.
+> >>
+> >>   1. We have no lock. page_order(page) - pageblock_order can be minus.
+> >>   2. pageblocks_stride += is wrong. it should skip page_order(p) of pages.
+> >>
+> >> CC: stable@kernel.org
+> >> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >> ---
+> >>  mm/memory_hotplug.c |   16 ++++++++--------
+> >>  1 file changed, 8 insertions(+), 8 deletions(-)
+> >>
+> >> Index: kametest/mm/memory_hotplug.c
+> >> ===================================================================
+> >> --- kametest.orig/mm/memory_hotplug.c
+> >> +++ kametest/mm/memory_hotplug.c
+> >> @@ -584,19 +584,19 @@ static inline int pageblock_free(struct
+> >>  /* Return the start of the next active pageblock after a given page */
+> >>  static struct page *next_active_pageblock(struct page *page)
+> >>  {
+> >> -     int pageblocks_stride;
+> >> -
+> >>       /* Ensure the starting page is pageblock-aligned */
+> >>       BUG_ON(page_to_pfn(page) & (pageblock_nr_pages - 1));
+> >>
+> >> -     /* Move forward by at least 1 * pageblock_nr_pages */
+> >> -     pageblocks_stride = 1;
+> >> -
+> >>       /* If the entire pageblock is free, move to the end of free page */
+> >> -     if (pageblock_free(page))
+> >> -             pageblocks_stride += page_order(page) - pageblock_order;
+> >> +     if (pageblock_free(page)) {
+> >> +             int order;
+> >> +             /* be careful. we don't have locks, page_order can be changed.*/
+> >> +             order = page_order(page);
+> >> +             if (order > pageblock_order)
+> >> +                     return page + (1 << order);
+> >> +     }
+> >
+> > As you note in your changelog, page_order() is unsafe because we do not have
+> > the zone lock but you don't check if order is somewhere between pageblock_order
+> > and MAX_ORDER_NR_PAGES. How is this safer?
+> >
+> Ah, I missed that.
+> 
+> if ((pageblock_order <= order) && (order < MAX_ORDER))
+>           return page + (1 << order);
+> ok ?
+> 
 
-On 9/7/10 7:03 AM, Ingo Molnar wrote:
-> But i'd prefer C code really, as it's really 'abstract data' in the most
-> generic sense. That's why the trace filter engine started with a subset
-> of C.
+Seems ok. There will still be some false usage of order but it should be
+harmless.
 
-I think it sounds better in principle than what it will be in practice. 
-The OpenGL shadling language the same kind of model where you use an API 
-call to upload C-like code that gets parsed. That of course has the 
-unfortunate side-effect that compilation error reporting isn't all that 
-user-friendly because you have to query for errors separately.
-
-I think we've seen with ftrace vs. perf that it's easier to write rich, 
-user-friendly interfaces in userspace than in kernel-space.
-
->> [...] You also probably don't want to put heavy-weight compiler
->> optimization passes in the kernel so with an intermediate form, you
->> can do much of that in user-space.
->
-> The question of what can and cannot be done in the kernel is overrated.
-> We sure can put a C compiler into the kernel - 10 years down the line we
-> wont understand what the fuss was all about.
-
-Yeah, I'm not saying we can't do that but it's a big chunk of code that 
-can be potentially exploited.
-
->> As for the intermediate form, you might want to take a look at Dalvik:
->>
->> http://www.netmite.com/android/mydroid/dalvik/docs/dalvik-bytecode.html
->>
->> and probably ParrotVM bytecode too. The thing to avoid is stack-based
->> instructions like in Java bytecode because although it's easy to write
->> interpreters for them, it makes JIT'ing harder (which needs to convert
->> stack-based representation to register-based) and probably doesn't
->> lend itself well to stack-constrained kernel code.
->
-> _If_ we pass in any sort of machine code to the kernel (which bytecode
-> really is), then we should do the right thing and pass in raw x86
-> bytecode, and verify it in the kernel.
->
-> That way the compiler can be kept out of the kernel, and performance of
-> the thing will be phenomenal from day 1 on.
->
-> For non-x86 in most cases we can use a simple translator that runs
-> during the verification run - or of course they could have their own
-> native 'assembly bytecode' verifier and their user-space could compile
-> to those.
-
-If you'd go for x86 as 'assembly bytecode' which ISA would you pick? 
-32-bit or 64-bit? I can see problems with both of them:
-
-   - The register set that can be encoded with 32-bit ISA is very
-     limited which will force us to spill in memory.
-
-   - The 64-bit ISA with REX prefixes is unnecessarily fat.
-
-   - Instructions work directly on memory addresses which makes
-     verification harder
-
-   - The 32-bit ABI uses stack for argument passing which forces us
-     to verify that operations on stack make sense.
-
-OTOH, if the ABI is that you upload _native code_ on every architecture, 
-then the trade-off makes more sense to me. The downside is that we'd 
-need a separate verifier for each architecture, though.
-
-			Pekka
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
