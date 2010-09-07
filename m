@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab0IGMfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 08:35:50 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51504 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756661Ab0IGMfh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 08:35:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=OkdaVjCFsnNO36I/gCGUzNbYYvP9IqmqhCWxRxdBAXq6uPJfrCPo0JWrvQ4NGJij8h
-         iPtZQmbhZhP+PtoB9RwSQxDnPzux/2bitADu+yq+WMyGlYgo7Pd1mq676lTWjltLwXfw
-         5k5lKU/th+uEmjK4cLhkMcO4P3eCdV0o6Z/iQ=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Hunter Adrian <adrian.hunter@nokia.com>, Chris Ball <cjb@laptop.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Subject: [PATCHv6 2/3] mmc_test: change simple_strtol() to strict_strtol()
-Date: Tue,  7 Sep 2010 15:35:25 +0300
-Message-Id: <ba5173c9b420d9554c83965f47d0b5cba642743a.1283862780.git.ext-andriy.shevchenko@nokia.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com>
-References: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com>
-In-Reply-To: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com>
-References: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com>
+	id S1756701Ab0IGMgY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 08:36:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52046 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756256Ab0IGMgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 08:36:19 -0400
+Message-ID: <4C8631BE.9030709@kernel.org>
+Date: Tue, 07 Sep 2010 14:36:14 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Jens Axboe <jaxboe@fusionio.com>
+CC: Christoph Hellwig <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET] backing-dev: replace private thread pool with  workqueue
+References: <1283777182-11426-1-git-send-email-tj@kernel.org> <20100907121608.GA26597@lst.de> <4C862DDC.6010702@kernel.org> <4C86303A.90601@fusionio.com>
+In-Reply-To: <4C86303A.90601@fusionio.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Sep 2010 12:36:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's better to use strict_strtol() to convert user's input and strictly check
-it. At least it forbids to interpret wrong input as a 0 and prevents to run all
-tests.
+Hello,
 
-Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
----
- drivers/mmc/card/mmc_test.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+On 09/07/2010 02:29 PM, Jens Axboe wrote:
+> I agree (with both of you). It's definitely too early to convert it
+> over, but if we can in the longer run, it never hurts to get rid of
+> code. The writeback threads aren't a typical threadpool, in that the
+> threads stick around and only go away when idle for too long. If they
+> stick around, you get the same process hammering IO at your device. So
+> converting that over to the generic cwq may or may not be at a
+> performance cost, it'll definitely have to be tested.
 
-diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
-index cd8edf4..6bffb33 100644
---- a/drivers/mmc/card/mmc_test.c
-+++ b/drivers/mmc/card/mmc_test.c
-@@ -1937,9 +1937,10 @@ static ssize_t mmc_test_store(struct device *dev,
- {
- 	struct mmc_card *card = mmc_dev_to_card(dev);
- 	struct mmc_test_card *test;
--	int testcase;
-+	long testcase;
- 
--	testcase = simple_strtol(buf, NULL, 10);
-+	if (strict_strtol(buf, 10, &testcase))
-+		return -EINVAL;
- 
- 	test = kzalloc(sizeof(struct mmc_test_card), GFP_KERNEL);
- 	if (!test)
+One thing to try is removing WQ_UNBOUND and see how it affects the
+performance.  I put WQ_UNBOUND there mainly to keep the behavior about
+the same as the current code but given what it does I think it would
+probably fare better with workers bound to CPUs.
+
+Thanks.
+
 -- 
-1.6.3.3
-
+tejun
