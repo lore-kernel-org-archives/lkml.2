@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab0IGXnB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 19:43:01 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:29770 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755991Ab0IGXnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 19:43:00 -0400
-Date: Tue, 7 Sep 2010 16:41:14 -0700
-From: Joel Becker <boel.becker@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, tao.ma@oracle.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
-Subject: [GIT PULL] ocfs2 fixes for 2.6.36.
-Message-ID: <20100907234114.GD21935@mail.oracle.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>, tao.ma@oracle.com,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
+	id S1758249Ab0IGXpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 19:45:00 -0400
+Received: from n9.bullet.mail.ac4.yahoo.com ([76.13.13.237]:33449 "HELO
+	n9.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755991Ab0IGXo6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 19:44:58 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 222102.25273.bm@omp205.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=d19/MwvxqJIaZBQy4vkAXZP2/ITVcGkMhD7WzT351uGXTD5hC5xsoB0kq8kjbQKV67AC94q5CSDV4qIrp/Hc35X6llofPugLY2Go8Y2Jpj/U88qZlQFIk6KuH/aHf3NhaHkNHsBgNvfOqFmm7vJQrY11duv4Stk7fgCQaguTf5s=;
+Message-ID: <616992.75276.qm@web180302.mail.gq1.yahoo.com>
+X-YMail-OSG: KY8VU.MVM1kCHQwpbYaw.nHEghbHW8CKn3w4knkuvcGQhaF
+ pYfJ6MykYgcYEl5F8nlb8rPBTd_X6ozCMvH3x00rK3B0oIipTaACZoZQ2nx8
+ v0tWKmj6b4oPX2SvcW6B2Xfr70WEU61SFgFARrT4amxBIAVq56d31U8OsnOR
+ Oim8fM7N1y.yYdObA0zXza2uUg77WO1.76piags4o4baX6hE59nhhnyEYqFQ
+ CBW.rZ_u0ldDwe7Tlj8sbHaiEeljEUPXvMj_RDQOW.AyUp3tPvvog4OVIR21
+ yeoptUHpjMhmbz_XDpCEg9dVWCq3czgpNsHF_TrlcTbJKnOntiGapaZaz_So
+ KP0vhlCkP5pVmDP0wOJ2KdAFKf6IR
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Tue, 7 Sep 2010 16:44:55 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
+To: Ryan Mallon <ryan@bluewatersys.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "avictor.za@gmail.com" <avictor.za@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        bn@niasdigital.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20100907222230.4a3594be@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus et al,
-	Here are the ocfs2 fixes we have ready for pulling right now.  I
-have a bit of a procedural question, though.  I've been busy, so Tao was
-kind enough to take the fixes I already had and apply all the new fixes.
-He coordinated testing them and getting them ready to go upstream.
-That's why I have his git tree in the pull request below.
-	I wasn't sure how the signoffs work for this.  He's got signoffs
-on the stuff he put together, because it's coming through his tree.  My
-naive assumption is that this is the correct way to go.  If you'd like
-another arrangement (same branch in my tree, a merge commit somewhere to
-stick my SoB on, etc), let me know.
-	Otherwise, please pull.
-
-Joel
 
 
-The following changes since commit 2bfc96a127bc1cc94d26bfaa40159966064f9c8c:
-  Linus Torvalds (1):
-        Linux 2.6.36-rc3
+--- On Tue, 9/7/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> > 
+> >      device->output_pin = -EINVAL;
+> 
+> gpio numbers are unsigned in the rest of the API
 
-are available in the git repository at:
+Minor goof; should have been "int" everywhere,
+as implied by the references to negative numbers
+in the docs... negatives not used internally, but
+preserved for external use (as above).
 
-  git://oss.oracle.com/git/tma/linux-2.6.git fixes
 
-Jan Kara (2):
-      ocfs2: Flush drive's caches on fdatasync
-      ocfs2: Fix deadlock when allocating page
+> 
+> It's unfortunate that 0 was used for a GPIO
 
-Mark Fasheh (6):
-      ocfs2: properly set and use inode group alloc hint
-      ocfs2: split out inode alloc code from ocfs2_mknod_locked
-      ocfs2: use ocfs2_alloc_dinode_update_counts() instead of open coding
-      ocfs2: allow return of new inode block location before allocation of the inode
-      ocfs2: split out ocfs2_prepare_orphan_dir() into locking and prep functions
-      ocfs2: Fix orphan add in ocfs2_create_inode_in_orphan
+Intentional:  board schematics and chip docs can
+easily match up to Linux this way.  What would be
+unfortunate is needing to map hardware docs into
+software ones all the time -- error prone.
 
-Sunil Mushran (2):
-      ocfs2: Fix metaecc error messages
-      ocfs2: Fix incorrect checksum validation error
+When the API is used correctly, it's not an issue.
 
-Tao Ma (2):
-      ocfs2: make __ocfs2_page_mkwrite handle file end properly.
-      ocfs2: Use the right group in nfs sync check.
-
-Tristan Ye (1):
-      Ocfs2: Fix a regression bug from mainline commit(6b933c8e6f1a2f3118082c455eef25f9b1ac7b45).
-
- fs/ocfs2/alloc.c        |    2 +-
- fs/ocfs2/blockcheck.c   |    4 +-
- fs/ocfs2/file.c         |   15 ++-
- fs/ocfs2/inode.c        |    6 +-
- fs/ocfs2/mmap.c         |    8 +-
- fs/ocfs2/namei.c        |  302 ++++++++++++++++++++++++++++++++++++-----------
- fs/ocfs2/refcounttree.c |    5 +-
- fs/ocfs2/suballoc.c     |  219 ++++++++++++++++++++++++++++++----
- fs/ocfs2/suballoc.h     |   21 ++++
- 9 files changed, 475 insertions(+), 107 deletions(-)
