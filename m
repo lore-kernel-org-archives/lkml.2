@@ -1,152 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab0IGEYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 00:24:17 -0400
-Received: from [69.28.251.93] ([69.28.251.93]:34305 "EHLO b32.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751356Ab0IGEYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 00:24:05 -0400
-From: Kevin Cernekee <cernekee@gmail.com>
-Date: Mon, 6 Sep 2010 21:03:52 -0700
-Subject: [PATCH 5/5] MIPS: Move FIXADDR_TOP into spaces.h
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-Message-Id: <d84f0a8caeb61c388b1145f89c879de3@localhost>
-User-Agent: vim 7.2
+	id S1751227Ab0IGE0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 00:26:45 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:29740 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750814Ab0IGE0k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 00:26:40 -0400
+Message-ID: <4C85BEFD.402@bluewatersys.com>
+Date: Tue, 07 Sep 2010 16:26:37 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Eric Miao <eric.y.miao@gmail.com>
+CC: David Brownell <david-b@pacbell.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        avictor.za@gmail.com, bn@niasdigital.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
+References: <280328.53116.qm@web180311.mail.gq1.yahoo.com> <4C85A71F.3010402@bluewatersys.com> <AANLkTi=B7O9jDB_pzHS6feWTxHQTfDZ-QLx7jOKaA2vN@mail.gmail.com> <4C85BA83.9080002@bluewatersys.com> <AANLkTi=RRSOnPVCEv5ni40D71BeMSV5bccWXnZphzGTX@mail.gmail.com>
+In-Reply-To: <AANLkTi=RRSOnPVCEv5ni40D71BeMSV5bccWXnZphzGTX@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory maps and addressing quirks are normally defined in <spaces.h>.
-There are already three targets that need to override FIXADDR_TOP, and
-others exist.  This will be a cleaner approach than adding lots of
-ifdefs in fixmap.h .
+On 09/07/2010 04:19 PM, Eric Miao wrote:
+> On Tue, Sep 7, 2010 at 12:07 PM, Ryan Mallon <ryan@bluewatersys.com> wrote:
+>> On 09/07/2010 03:54 PM, Eric Miao wrote:
+>>> On Tue, Sep 7, 2010 at 10:44 AM, Ryan Mallon <ryan@bluewatersys.com> wrote:
+>>>> On 09/07/2010 02:23 PM, David Brownell wrote:
+>>>>> Still not liking or accepting this proposed
+>>>>> change to the GPIO framework.
+>>>>>
+>>>>> For the AT91 case (where integers 0..N are
+>>>>> IRQs, but N..max are GPIOs)
+>>>>>
+>>>>> A simpler solution is just to use a bit in
+>>>>> the integer to indicate IRQ vs GPIO.  Like
+>>>>> maybe the sign bit.. which is never set on
+>>>>> valid GPIO numbers, but platforms could let
+>>>>> be set on IRQs.
+>>>>>
+>>>> How about this approach instead?
+>>>>
+>>>
+>>> This doesn't solve the problem with more complicated settings, e.g.
+>>> some GPIOs within are not valid, not just the begining ones.
+>>
+>> Agreed, but this does solve the immediate problem for AT91 in a simple
+>> way. Are there boards in the kernel which have holes in the gpio layout?
+>>
+>> Another possible solution is to loop through all the gpio_chips to see
+>> if the number maps to a valid gpio. The obvious downside to this
+>> approach is that the complexity of gpio_is_valid becomes reasonably high
+>> for something which should be a very simple test and, as you say below,
+>> we probably just don't need that fine-grained information.
+>>
+>>> So the real question here is the semantics of gpio_is_valid(). I'd
+>>> personally incline it reads as if a GPIO _number_ is valid generally,
+>>> (e.g. like -1 is not a valid GPIO number), instead of that specific
+>>> GPIO is valid on that specific platform. The latter can be judged
+>>> with gpio_request().
+>>
+>> Some drivers in the kernel appear to be using this behaviour to have
+>> optional gpios, ie setting the foo_gpio = -1 in the platform data for
+>> some driver. The documentation also suggests that this is what
+>> gpio_is_valid is intended for. However, the documentation also says we
+>> may want gpio_is_valid to return invalid on some other numbers.
+> 
+> Right. So I'd really like David to make the semantics clear. My intention
+> is to keep gpio_is_valid() as simple as checking a general range to
+> rule out most invalid cases. And just use gpio_request() to handle the
+> platform specific cases.
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- arch/mips/include/asm/fixmap.h              |   10 +---------
- arch/mips/include/asm/mach-bcm63xx/spaces.h |   17 +++++++++++++++++
- arch/mips/include/asm/mach-generic/spaces.h |    4 ++++
- arch/mips/include/asm/mach-tx39xx/spaces.h  |   17 +++++++++++++++++
- arch/mips/include/asm/mach-tx49xx/spaces.h  |   17 +++++++++++++++++
- 5 files changed, 56 insertions(+), 9 deletions(-)
- create mode 100644 arch/mips/include/asm/mach-bcm63xx/spaces.h
- create mode 100644 arch/mips/include/asm/mach-tx39xx/spaces.h
- create mode 100644 arch/mips/include/asm/mach-tx49xx/spaces.h
+Agreed. The intent of my patch was to keep gpio_is_valid simple, but add
+a simple check for architectures where the base gpio is not zero. Will
+wait and see what David has to say.
 
-diff --git a/arch/mips/include/asm/fixmap.h b/arch/mips/include/asm/fixmap.h
-index 0b89b83..98bcc98 100644
---- a/arch/mips/include/asm/fixmap.h
-+++ b/arch/mips/include/asm/fixmap.h
-@@ -14,6 +14,7 @@
- #define _ASM_FIXMAP_H
- 
- #include <asm/page.h>
-+#include <spaces.h>
- #ifdef CONFIG_HIGHMEM
- #include <linux/threads.h>
- #include <asm/kmap_types.h>
-@@ -67,15 +68,6 @@ enum fixed_addresses {
-  * the start of the fixmap, and leave one page empty
-  * at the top of mem..
-  */
--#ifdef CONFIG_BCM63XX
--#define FIXADDR_TOP     ((unsigned long)(long)(int)0xff000000)
--#else
--#if defined(CONFIG_CPU_TX39XX) || defined(CONFIG_CPU_TX49XX)
--#define FIXADDR_TOP	((unsigned long)(long)(int)(0xff000000 - 0x20000))
--#else
--#define FIXADDR_TOP	((unsigned long)(long)(int)0xfffe0000)
--#endif
--#endif
- #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
- #define FIXADDR_START	(FIXADDR_TOP - FIXADDR_SIZE)
- 
-diff --git a/arch/mips/include/asm/mach-bcm63xx/spaces.h b/arch/mips/include/asm/mach-bcm63xx/spaces.h
-new file mode 100644
-index 0000000..cb8d2ab
---- /dev/null
-+++ b/arch/mips/include/asm/mach-bcm63xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_BCM63XX_SPACES_H
-+#define _ASM_BCM63XX_SPACES_H
-+
-+#define FIXADDR_TOP		_AC(0xff000000, UL)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_BCM63XX_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-generic/spaces.h b/arch/mips/include/asm/mach-generic/spaces.h
-index c9fa4b1..77c36ee 100644
---- a/arch/mips/include/asm/mach-generic/spaces.h
-+++ b/arch/mips/include/asm/mach-generic/spaces.h
-@@ -82,4 +82,8 @@
- #define PAGE_OFFSET		(CAC_BASE + PHYS_OFFSET)
- #endif
- 
-+#ifndef FIXADDR_TOP
-+#define FIXADDR_TOP		_AC(0xfffe0000, UL)
-+#endif
-+
- #endif /* __ASM_MACH_GENERIC_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-tx39xx/spaces.h b/arch/mips/include/asm/mach-tx39xx/spaces.h
-new file mode 100644
-index 0000000..0cf322b
---- /dev/null
-+++ b/arch/mips/include/asm/mach-tx39xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_TX39XX_SPACES_H
-+#define _ASM_TX39XX_SPACES_H
-+
-+#define FIXADDR_TOP		_AC(0xfefe0000, UL)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_TX39XX_SPACES_H */
-diff --git a/arch/mips/include/asm/mach-tx49xx/spaces.h b/arch/mips/include/asm/mach-tx49xx/spaces.h
-new file mode 100644
-index 0000000..455e042
---- /dev/null
-+++ b/arch/mips/include/asm/mach-tx49xx/spaces.h
-@@ -0,0 +1,17 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
-+ * Copyright (C) 2000, 2002  Maciej W. Rozycki
-+ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
-+ */
-+#ifndef _ASM_TX49XX_SPACES_H
-+#define _ASM_TX49XX_SPACES_H
-+
-+#define FIXADDR_TOP		_AC(0xfefe0000, UL)
-+
-+#include <asm/mach-generic/spaces.h>
-+
-+#endif /* __ASM_TX49XX_SPACES_H */
+~Ryan
+
 -- 
-1.7.0.4
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
