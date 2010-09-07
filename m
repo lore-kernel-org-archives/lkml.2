@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105Ab0IGOev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 10:34:51 -0400
-Received: from www.tglx.de ([62.245.132.106]:43945 "EHLO www.tglx.de"
+	id S1757157Ab0IGOel (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 10:34:41 -0400
+Received: from www.tglx.de ([62.245.132.106]:43941 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932254Ab0IGOd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 10:33:58 -0400
-Message-Id: <20100907125057.086367802@linutronix.de>
+	id S932244Ab0IGOd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 10:33:56 -0400
+Message-Id: <20100907125056.799770214@linutronix.de>
 User-Agent: quilt/0.47-1
-Date: Tue, 07 Sep 2010 14:33:40 -0000
+Date: Tue, 07 Sep 2010 14:33:27 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Christoph Hellwig <hch@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [patch 25/30] drivers/macintosh/adb: Do not claim that the semaphore
-	is a mutex
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org
+Subject: [patch 22/30] dvb: Convert "mutex" to semaphore
 References: <20100907124636.880953480@linutronix.de>
-Content-Disposition: inline; filename=drivers-mac-adb-sema.patch
+Content-Disposition: inline;
+	filename=drivers-media-dvb-dvb-core-frontend-sema.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-User DEFINE_SEMAPHORE() instead of DECLARE_MUTEX()
+Get rid of init_MUTEX[_LOCKED]() and use sema_init() instead.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-media@vger.kernel.org
 
 ---
- drivers/macintosh/adb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/dvb/dvb-core/dvb_frontend.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux-2.6/drivers/macintosh/adb.c
+Index: linux-2.6/drivers/media/dvb/dvb-core/dvb_frontend.c
 ===================================================================
---- linux-2.6.orig/drivers/macintosh/adb.c
-+++ linux-2.6/drivers/macintosh/adb.c
-@@ -83,7 +83,7 @@ static struct adb_driver *adb_controller
- BLOCKING_NOTIFIER_HEAD(adb_client_list);
- static int adb_got_sleep;
- static int adb_inited;
--static DECLARE_MUTEX(adb_probe_mutex);
-+static DEFINE_SEMAPHORE(adb_probe_mutex);
- static int sleepy_trackpad;
- static int autopoll_devs;
- int __adb_probe_sync;
+--- linux-2.6.orig/drivers/media/dvb/dvb-core/dvb_frontend.c
++++ linux-2.6/drivers/media/dvb/dvb-core/dvb_frontend.c
+@@ -702,7 +702,7 @@ static void dvb_frontend_stop(struct dvb
+ 
+ 	kthread_stop(fepriv->thread);
+ 
+-	init_MUTEX (&fepriv->sem);
++	sema_init(&fepriv->sem, 1);
+ 	fepriv->state = FESTATE_IDLE;
+ 
+ 	/* paranoia check in case a signal arrived */
+@@ -2061,7 +2061,7 @@ int dvb_register_frontend(struct dvb_ada
+ 	}
+ 	fepriv = fe->frontend_priv;
+ 
+-	init_MUTEX (&fepriv->sem);
++	sema_init(&fepriv->sem, 1);
+ 	init_waitqueue_head (&fepriv->wait_queue);
+ 	init_waitqueue_head (&fepriv->events.wait_queue);
+ 	mutex_init(&fepriv->events.mtx);
 
 
