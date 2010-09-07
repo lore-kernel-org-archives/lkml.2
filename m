@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab0IGFc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 01:32:26 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:39561 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab0IGFcW convert rfc822-to-8bit (ORCPT
+	id S1756032Ab0IGFci (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 01:32:38 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64494 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755456Ab0IGFca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 01:32:22 -0400
-Date: Tue, 07 Sep 2010 07:31:30 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [RFCv5 3/9] mm: cma: Added SysFS support
-In-reply-to: <20100906210747.GA5863@kroah.com>
-To: Greg KH <greg@kroah.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>, Peter Zijlstra <peterz@infradead.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Message-id: <op.vindmsj07p4s8u@localhost>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.61 (Linux)
-References: <cover.1283749231.git.mina86@mina86.com>
- <9771a9c07874a642bb587f4c0ebf886d720332b6.1283749231.git.mina86@mina86.com>
- <20100906210747.GA5863@kroah.com>
+	Tue, 7 Sep 2010 01:32:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=msD+WE5hl66SrTKbOLUNUTh9rU9LmRB6awNKIbp/PxxT+VSiAEcFrkVCwaJ53Srlqh
+         IC4nTB/ZSyp87dCPmrTGck/F+o3D6/qNtKzu5F5x+7MZ88Pp52yEHEYZEweruC79mtOg
+         ikxIDsNxS+RkjFgfHe0HKFWADDNhZM7WxEqc0=
+Subject: [PATCH 2/3] staging: xgifb: Removes compilation conditionals
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Bill Pemberton <wfp5p@virginia.edu>,
+        Arnaud Patard <apatard@mandriva.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 07 Sep 2010 01:32:23 -0400
+Message-ID: <1283837543.6302.8.camel@lenovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+This patch fixes a compilation warning in today linux-next. 
 
-Thanks for reviewing the sysfs part.  Actually, I was never really sure
-if I shouldn't rather put this code to debugfs and you got me convinced
-that I should.  Sysfs somehow looked more appealing from kernel's API
-point of view -- things seem to be more organised in sysfs than in
-debugfs.  It seems I'll have to port it to debugfs after all
+The first version of this patch introduced a compilation conditional but Greg pointed me that instead of adding more compilation conditional, 
+the code needs to be fixed to not need more of them.
 
-Nonetheless, a few responses to your comments:
+So this patch removes some compilation conditionals to eliminate the compilation warning.
 
-> On Mon, Sep 06, 2010 at 08:33:53AM +0200, Michal Nazarewicz wrote:
->> +		The "allocators" file list all registered allocators.
->> +		Allocators with no name are listed as a single minus
->> +		sign.
+Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+---
+ drivers/staging/xgifb/XGI_main_26.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-On Mon, 06 Sep 2010 23:07:47 +0200, Greg KH <greg@kroah.com> wrote:
-> So this returns more than one value?
-
-Aren't thing like cpufreq governors listed in a single sysfs file?
-I remember there was such a file somewhere.  Has that been made
-deprecated? I cannot seem to find any information on that.
-
->> +		The "regions" directory list all reserved regions.
->
-> Same here?
-
-regions is actually a directory with subdirectories for each
-region. ;)
-
->> +static ssize_t cma_sysfs_region_name_show(struct cma_region *reg, char *page)
->> +{
->> +	return reg->name ? snprintf(page, PAGE_SIZE, "%s\n", reg->name) : 0;
->> +}
-
-> Is a name field ever really going to be bigger than a page?
-
-I prefer being on the safe side -- I have no idea what user will provide
-as region name so I assume as little as possible.  For numeric values you
-are right that snprintf() is a bit paranoid, still I see no good reason
-why not to use it.
-
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index 46e7088..9722b33 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -2744,7 +2744,6 @@ static void XGIfb_post_setmode(void)
+ 
+ }
+ 
+-#ifndef MODULE
+ XGIINITSTATIC int __init XGIfb_setup(char *options)
+ {
+ 	char *this_opt;
+@@ -2827,7 +2826,6 @@ XGIINITSTATIC int __init XGIfb_setup(char *options)
+ 	printk("\nxgifb: outa xgifb_setup 3450");
+ 	return 0;
+ }
+-#endif
+ 
+ static unsigned char VBIOS_BUF[65535];
+ 
+@@ -3454,13 +3452,12 @@ static struct pci_driver xgifb_driver = {
+ 
+ XGIINITSTATIC int __init xgifb_init(void)
+ {
+-#ifndef MODULE
+ 	char *option = NULL;
+ 
+ 	if (fb_get_options("xgifb", &option))
+ 		return -ENODEV;
+ 	XGIfb_setup(option);
+-#endif
++
+ 	return(pci_register_driver(&xgifb_driver));
+ }
+ 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+1.7.0.4
+
+
 
