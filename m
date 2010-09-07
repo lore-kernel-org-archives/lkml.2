@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757457Ab0IGPSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:18:15 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:22993
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757059Ab0IGPSL (ORCPT
+	id S1757466Ab0IGPS0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:18:26 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57660 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757462Ab0IGPSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 11:18:11 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zzbb2dK1432N98dN9371Pzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L8DUE5-01-2RF-02
-X-M-MSG: 
-Date: Tue, 7 Sep 2010 17:15:41 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Matt Domsch <Matt_Domsch@dell.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.kernel.org>
-Subject: Re: [PATCH] perf, x86: Disable perf if the BIOS got its grubby
- paws on the PMU
-Message-ID: <20100907151541.GA13563@erda.amd.com>
-References: <1283505227.1783.224.camel@laptop>
- <4C80FDF7.1080106@linux.intel.com>
- <20100903143258.GB373@auslistsprd01.us.dell.com>
- <1283525163.2050.105.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1283525163.2050.105.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	Tue, 7 Sep 2010 11:18:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=AGVplb6OsLScgeckL8iNkGhfnqEqh5jeF6BUqpt8Hi7e+TbIcn4jy5xpYC2xB8HtR/
+         +CuqEvnjQEj4qN2g/MmSb7jkpFMzXqIJd+8yw65xcPlNyFI7+eYImdo4g+6ZNUC4SU2A
+         ay7zp6MOcGvuBYQGPoOJ1GYut3Zb/9FJyuihc=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] lib: use hex_to_bin()
+Date: Tue,  7 Sep 2010 18:18:05 +0300
+Message-Id: <1283872685-23046-1-git-send-email-andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > On 9/3/2010 2:13 AM, Peter Zijlstra wrote:
-> > > >+static void print_BIOS_fail(void)
-> > > >+{
-> > > >+	printk(KERN_ERR "\n");
-> > > >+	printk(KERN_ERR "=============================================\n");
-> > > >+	printk(KERN_ERR "It appears the BIOS is actively using the PMU\n");
-> > > >+	printk(KERN_ERR "this avoids Linux from using it, please de-  \n");
-> > > >+	printk(KERN_ERR "activate this BIOS feature or request a BIOS \n");
-> > > >+	printk(KERN_ERR "update from your vendor.                     \n");
-> > > >+	printk(KERN_ERR "=============================================\n");
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ lib/bitmap.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-I would rather prefer this:
-
- BIOS bug, cpu 1, invalid  <register=value> ...
-
-... which is a much better information on one line, explains the bug
-and is also better parsable. I intend to implement messages like
-this. So maybe we could find consensus with this or something similar.
-
-A simple grep of dmesg will then give a list of BIOS bugs.
-
--Robert
-
+diff --git a/lib/bitmap.c b/lib/bitmap.c
+index ffb78c9..741fae9 100644
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -359,7 +359,6 @@ EXPORT_SYMBOL(bitmap_find_next_zero_area);
+ 
+ #define CHUNKSZ				32
+ #define nbits_to_hold_value(val)	fls(val)
+-#define unhex(c)			(isdigit(c) ? (c - '0') : (toupper(c) - 'A' + 10))
+ #define BASEDEC 10		/* fancier cpuset lists input in decimal */
+ 
+ /**
+@@ -466,7 +465,7 @@ int __bitmap_parse(const char *buf, unsigned int buflen,
+ 			if (chunk & ~((1UL << (CHUNKSZ - 4)) - 1))
+ 				return -EOVERFLOW;
+ 
+-			chunk = (chunk << 4) | unhex(c);
++			chunk = (chunk << 4) | hex_to_bin(c);
+ 			ndigits++; totaldigits++;
+ 		}
+ 		if (ndigits == 0)
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+1.7.2.2
 
