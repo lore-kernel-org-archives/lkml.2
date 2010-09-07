@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab0IGRui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 13:50:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44254 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932099Ab0IGRuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 13:50:37 -0400
-Date: Tue, 7 Sep 2010 14:48:05 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Avi Kivity <avi@redhat.com>, Alexander Graf <agraf@suse.de>,
-        joro@8bytes.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/27] KVM: MMU: Make walk_addr_generic capable for
- two-level walking
-Message-ID: <20100907174805.GA11215@amt.cnet>
-References: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
- <1283788566-29186-15-git-send-email-joerg.roedel@amd.com>
+	id S1757687Ab0IGSAa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 14:00:30 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:59421 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576Ab0IGSA2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 14:00:28 -0400
+Date: Tue, 7 Sep 2010 19:00:25 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: checkpatch problem
+Message-ID: <20100907180025.GD2662@shadowen.org>
+References: <23323.1283864982@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283788566-29186-15-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <23323.1283864982@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 05:55:53PM +0200, Joerg Roedel wrote:
-> This patch uses kvm_read_guest_page_tdp to make the
-> walk_addr_generic functions suitable for two-level page
-> table walking.
+On Tue, Sep 07, 2010 at 02:09:42PM +0100, David Howells wrote:
 > 
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> ---
->  arch/x86/kvm/paging_tmpl.h |   27 ++++++++++++++++++++-------
->  1 files changed, 20 insertions(+), 7 deletions(-)
+> Hi,
 > 
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index cd59af1..a5b5759 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -124,6 +124,8 @@ static int FNAME(walk_addr_generic)(struct guest_walker *walker,
->  	unsigned index, pt_access, uninitialized_var(pte_access);
->  	gpa_t pte_gpa;
->  	bool eperm, present, rsvd_fault;
-> +	int offset;
-> +	u32 error = 0;
->  
->  	trace_kvm_mmu_pagetable_walk(addr, write_fault, user_fault,
->  				     fetch_fault);
-> @@ -153,12 +155,13 @@ walk:
->  		index = PT_INDEX(addr, walker->level);
->  
->  		table_gfn = gpte_to_gfn(pte);
-> -		pte_gpa = gfn_to_gpa(table_gfn);
-> -		pte_gpa += index * sizeof(pt_element_t);
-> +		offset    = index * sizeof(pt_element_t);
-> +		pte_gpa   = gfn_to_gpa(table_gfn) + offset;
->  		walker->table_gfn[walker->level - 1] = table_gfn;
->  		walker->pte_gpa[walker->level - 1] = pte_gpa;
->  
-> -		if (kvm_read_guest(vcpu->kvm, pte_gpa, &pte, sizeof(pte))) {
-> +		if (kvm_read_guest_page_mmu(vcpu, mmu, table_gfn, &pte, offset,
-> +					    sizeof(pte), &error)) {
->  			present = false;
->  			break;
->  		}
+> Checkpatch generates the following messages for inline asm strings:
+> 
+> WARNING: unnecessary whitespace before a quoted newline
+> #49: FILE: arch/m32r/include/asm/irqflags.h:31:
+> +               "ld24   %0, #0  ; Use 32-bit insn.                      \n\t"
+> 
+> however, inline asm is more readable if I can tabulate things, including the
+> newline markers:
+> 
+> 	asm volatile (
+> 		"ld24	%0, #0	; Use 32-bit insn.			\n\t"
+> 		"mvfc	%1, psw	; No interrupt can be accepted here.	\n\t"
+> 		"mvtc	%0, psw						\n\t"
+> 		"and3	%0, %1, #0xffbf					\n\t"
+> 		"mvtc	%0, psw						\n\t"
+> 		: "=&r" (tmpreg0), "=&r" (tmpreg1)
+> 		:
+> 		: "cbit", "memory");
+> 
+> Can you please fix it, even if it's only to permit multiple TAB chars before
+> '\n'.
+> 
+> Whilst this check is probaly fine for strings to be displayed in some way, this
+> doesn't necessarily apply to inline asm strings.  Furthermore, the extra white
+> space does not impact the resulting binary.
 
-If there is failure reading the nested page tables here, you fill
-vcpu->arch.fault. But the nested fault error values will be overwritten
-at the end of walk_addr() by the original fault values?
+A tricky one to know how to detect it as different.  Often we do not
+have the asm markers to hint us to change style.  This affects us often
+as gcc abuses the meaning of almost every character and has different
+spacing for them too.
 
-> @@ -209,15 +212,25 @@ walk:
->  				is_large_pte(pte) &&
->  				mmu->root_level == PT64_ROOT_LEVEL)) {
->  			int lvl = walker->level;
-> +			gpa_t real_gpa;
-> +			gfn_t gfn;
->  
-> -			walker->gfn = gpte_to_gfn_lvl(pte, lvl);
-> -			walker->gfn += (addr & PT_LVL_OFFSET_MASK(lvl))
-> -					>> PAGE_SHIFT;
-> +			gfn = gpte_to_gfn_lvl(pte, lvl);
-> +			gfn += (addr & PT_LVL_OFFSET_MASK(lvl)) >> PAGE_SHIFT;
->  
->  			if (PTTYPE == 32 &&
->  			    walker->level == PT_DIRECTORY_LEVEL &&
->  			    is_cpuid_PSE36())
-> -				walker->gfn += pse36_gfn_delta(pte);
-> +				gfn += pse36_gfn_delta(pte);
-> +
-> +			real_gpa = mmu->translate_gpa(vcpu, gfn_to_gpa(gfn),
-> +						      &error);
-> +			if (real_gpa == UNMAPPED_GVA) {
-> +				walker->error_code = error;
-> +				return 0;
-> +			}
-> +
-> +			walker->gfn = real_gpa >> PAGE_SHIFT;
->  
->  			break;
->  		}
-> -- 
-> 1.7.0.4
-> 
+Will think on it.
+
+-apw
