@@ -1,148 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab0IGOuM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 10:50:12 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:55061 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757217Ab0IGOuI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 10:50:08 -0400
-X-Greylist: delayed 1498 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Sep 2010 10:50:08 EDT
-X-Spam-Flag: NO
-X-Spam-Score: -24.389
-Message-ID: <4C864B3E.5060603@tremplin-utc.net>
-Date: Tue, 07 Sep 2010 16:25:02 +0200
-From: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100809 Mandriva/3.1.2-3mdv2011.0 (2011.0) Thunderbird/3.1.2
+	id S1757290Ab0IGOvh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 10:51:37 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:48022 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757093Ab0IGOva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 10:51:30 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201009071451.o87EpPVc014171@stout.americas.sgi.com>
+Date: Tue, 07 Sep 2010 09:51:24 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 2.6.36-rc4
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.4 7/29/08
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lis3: Add axes module parameter for custom axis-mapping
-References: <s5htymla56q.wl%tiwai@suse.de> <s5haanuvypc.wl%tiwai@suse.de>
-In-Reply-To: <s5haanuvypc.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 07-09-10 08:45, Takashi Iwai schreef:
-> At Mon, 23 Aug 2010 14:23:25 +0200,
-> Takashi Iwai wrote:
->>
->> The axis-mapping of lis3dev device on many (rather most) HP machines
->> doesn't follow the standard.  When each new model appears, users need
->> to adjust again.  Testing this requires the rebuild of kernel, thus
->> it's not trivial for end-users.
->>
->> This patch adds a module parameter "axes" to allow a custom
->> axis-mapping without patching and recompiling the kernel driver.
->> User can pass the parameter such as axes=3,2,1.  Also it can be
->> changed via sysfs.
->>
->> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> 
-> Can anyone review / take this?
-> Jean, should it be through hwmon tree? 
-Sorry for not answering before, but I'm very busy currently.
+Linus, please pull the following four XFS changes for 2.6.36.  Three
+are bug fixes, one makes two simple changes to reduce the effect of
+some hot spots on large systems.  Thanks.
 
-I like the idea, but the implementation seems weird. Maybe it's just
-that I don't understand well enough module_param_array_named() though.
+					-Alex
 
-Each time the user changes the axis parameter, param_set_axis() is
-called three times (once per axis), right? Why always calling
-copy_to_axis_array() ? Does param_set_int(val, kp) return null only on
-the 3rd time? This function really looks like a kludge. Either you need
-to put more comments in order to make clear why things work, or rework it.
+The following changes since commit 2bfc96a127bc1cc94d26bfaa40159966064f9c8c:
 
-Wouldn't it be much cleaner if lis3_dev.ac was an array instead of a
-struct? I don't mind that it involves changing more line if it makes
-things more understandable.
+  Linux 2.6.36-rc3 (2010-08-29 08:36:04 -0700)
 
-Cheers,
-Eric
+are available in the git repository at:
+  git://oss.sgi.com/xfs/xfs for-linus
 
-> 
-> 
-> thanks,
-> 
-> Takashi
-> 
->> ---
->>  drivers/hwmon/hp_accel.c  |    5 ++++-
->>  drivers/hwmon/lis3lv02d.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 49 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/hwmon/hp_accel.c b/drivers/hwmon/hp_accel.c
->> index 7580f55..3462a5d 100644
->> --- a/drivers/hwmon/hp_accel.c
->> +++ b/drivers/hwmon/hp_accel.c
->> @@ -297,7 +297,10 @@ static int lis3lv02d_add(struct acpi_device *device)
->>  	lis3lv02d_enum_resources(device);
->>  
->>  	/* If possible use a "standard" axes order */
->> -	if (dmi_check_system(lis3lv02d_dmi_ids) == 0) {
->> +	if (lis3_dev.ac.x && lis3_dev.ac.y && lis3_dev.ac.z) {
->> +		printk(KERN_INFO DRIVER_NAME ": Using custom axes %d,%d,%d\n",
->> +		       lis3_dev.ac.x, lis3_dev.ac.y, lis3_dev.ac.z);
->> +	} else if (dmi_check_system(lis3lv02d_dmi_ids) == 0) {
->>  		printk(KERN_INFO DRIVER_NAME ": laptop model unknown, "
->>  				 "using default axes configuration\n");
->>  		lis3_dev.ac = lis3lv02d_axis_normal;
->> diff --git a/drivers/hwmon/lis3lv02d.c b/drivers/hwmon/lis3lv02d.c
->> index 6138f03..4b179d5 100644
->> --- a/drivers/hwmon/lis3lv02d.c
->> +++ b/drivers/hwmon/lis3lv02d.c
->> @@ -75,6 +75,51 @@ struct lis3lv02d lis3_dev = {
->>  
->>  EXPORT_SYMBOL_GPL(lis3_dev);
->>  
->> +static int axis_array[3];
->> +static void copy_to_axis_array(void)
->> +{
->> +	axis_array[0] = lis3_dev.ac.x;
->> +	axis_array[1] = lis3_dev.ac.y;
->> +	axis_array[2] = lis3_dev.ac.z;
->> +}
->> +
->> +static void copy_from_axis_array(void)
->> +{
->> +	lis3_dev.ac.x = axis_array[0];
->> +	lis3_dev.ac.y = axis_array[1];
->> +	lis3_dev.ac.z = axis_array[2];
->> +}
->> +
->> +static int param_set_axis(const char *val, const struct kernel_param *kp)
->> +{
->> +	int ret;
->> +	copy_to_axis_array();
->> +	ret = param_set_int(val, kp);
->> +	if (!ret) {
->> +		int val = *(int *)kp->arg;
->> +		if (val < 0)
->> +			val = -val;
->> +		if (!val || val > 3)
->> +			return -EINVAL;
->> +		copy_from_axis_array();
->> +	}
->> +	return ret;
->> +}
->> +
->> +static int param_get_axis(char *buffer, const struct kernel_param *kp)
->> +{
->> +	copy_to_axis_array();
->> +	return param_get_int(buffer, kp);
->> +}
->> +
->> +static struct kernel_param_ops param_ops_axis = {
->> +	.set = param_set_axis,
->> +	.get = param_get_axis,
->> +};
->> +
->> +module_param_array_named(axes, axis_array, axis, NULL, 0644);
->> +MODULE_PARM_DESC(axes, "Axis-mapping for x,y,z directions");
->> +
->>  static s16 lis3lv02d_read_8(struct lis3lv02d *lis3, int reg)
->>  {
->>  	s8 lo;
+Alex Elder (1):
+      Merge branch '2.6.36-xfs-misc' of git://git.kernel.org/.../dgc/xfsdev
+
+Arkadiusz Mi?kiewicz (1):
+      xfs: Disallow 32bit project quota id
+
+Dave Chinner (2):
+      xfs: improve buffer cache hash scalability
+      xfs: prevent 32bit overflow in space reservation
+
+Tao Ma (1):
+      xfs: Make fiemap work with sparse files
+
+ fs/xfs/linux-2.6/xfs_buf.c   |    8 +-------
+ fs/xfs/linux-2.6/xfs_buf.h   |    1 -
+ fs/xfs/linux-2.6/xfs_ioctl.c |    7 +++++++
+ fs/xfs/linux-2.6/xfs_iops.c  |    2 +-
+ fs/xfs/xfs_bmap.c            |   14 +++++++++++++-
+ fs/xfs/xfs_fs.h              |    4 +++-
+ fs/xfs/xfs_vnodeops.c        |   13 ++++++++++---
+ 7 files changed, 35 insertions(+), 14 deletions(-)
