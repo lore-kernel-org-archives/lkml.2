@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab0IGXaI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 19:30:08 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58999 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755505Ab0IGXaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 19:30:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nico Schottelius <nico-linux-20100709@schottelius.org>
-Subject: Re: 2.6.36-rc3 suspend issue (was: 2.6.35-rc4 / X201 issues)
-Date: Wed, 8 Sep 2010 01:28:52 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <20100709170432.GA7691@schottelius.org> <201009072348.41344.rjw@sisk.pl> <20100907225004.GA2805@schottelius.org>
-In-Reply-To: <20100907225004.GA2805@schottelius.org>
+	id S1758245Ab0IGXbZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 19:31:25 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:17661 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505Ab0IGXbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 19:31:20 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6098"; a="53560520"
+Date: Tue, 7 Sep 2010 16:31:19 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Kenneth Heitke <kheitke@codeaurora.org>
+Cc: khali@linux-fr.org, ben-linux@fluff.org, srinidhi.kasagar@stericsson.com,
+        tsoni@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/2] msm: i2c: Add msm_qup_i2c.h
+Message-ID: <20100907233119.GA2707@huya.qualcomm.com>
+References: <1283471059-22262-1-git-send-email-kheitke@codeaurora.org>
+ <1283471059-22262-2-git-send-email-kheitke@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009080128.52849.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283471059-22262-2-git-send-email-kheitke@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 08, 2010, Nico Schottelius wrote:
-> Rafael J. Wysocki [Tue, Sep 07, 2010 at 11:48:41PM +0200]:
-> > On Tuesday, September 07, 2010, Jeff Chua wrote:
-> > > On Tue, Sep 7, 2010 at 2:37 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > > On Monday, September 06, 2010, Jeff Chua wrote:
-> > > >> On Mon, Sep 6, 2010 at 3:17 PM, Nico Schottelius
-> > > >> <nico-linux-20100709@schottelius.org> wrote:
-> > > >> Same problem here. X201s. Haven't had time to bisect.
-> > > > Somebody has already done that:
-> > > >
-> > > > http://marc.info/?l=linux-kernel&m=128376394825563&w=4
-> > > 
-> > > Rafael,
-> > > 
-> > > Cool. Thanks for the short-cut! At least now, I can resume, but got a
-> > > lot of BUGS showing up upon resume after applying the patch.
-> > 
-> > This also was reported IIRC, but there's no resolution so far.  It's a
-> > different issue.
+On Thu, Sep 02, 2010 at 05:44:19PM -0600, Kenneth Heitke wrote:
+> Defines the platform data used by the MSM QUP I2C driver.
 > 
-> Can somebody ping me, as soon as a git pull on linux-2.6
-> should be as "stable" (or more stable) than 2.6.34?
+> Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
+> ---
+>  arch/arm/mach-msm/include/mach/msm_qup_i2c.h |   28 ++++++++++++++++++++++++++
+>  1 files changed, 28 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/mach-msm/include/mach/msm_qup_i2c.h
 
-No one can say when that happens for your machine.
+Acked-by: David Brown <davidb@codeaurora.org>
 
-For me -rc3 is pretty much usable already.
+It's probably easiest to just keep this patch together with the other
+one, and bring them both into the I2C code together.
 
-Thanks,
-Rafael
+David
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
