@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab0IGD6M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 23:58:12 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61725 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab0IGD6J (ORCPT
+	id S1750861Ab0IGEGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 00:06:37 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:39944 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750738Ab0IGEGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 23:58:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UlDAvpasnM4s4W+Sq+pSrHOgjc7qZPKK+ns8CWB87DViarSteNkYuIRiB1uVtglLBK
-         yWYhTRSsM3G0qCKxm+OOcYlX8Vt35uVb1+49G61IBa9L4N48P4xBK/dWL10Ei160ebXP
-         b1GWPxStd5zYqsXblWXEJOPBBgDjo/ifkRr50=
-Date: Mon, 6 Sep 2010 20:58:03 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH v3] scsi_debug: Convert to use root_device_register() and
- root_device_unregister()
-Message-ID: <20100907035803.GA1562@core.coreip.homeip.net>
-References: <1283819068-24587-1-git-send-email-nab@linux-iscsi.org>
- <20100907003251.GA21430@core.coreip.homeip.net>
- <1283828456.15944.1323.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283828456.15944.1323.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Tue, 7 Sep 2010 00:06:31 -0400
+Message-ID: <000401cb4e42$0c7b5b10$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>
+Cc: <fujita.tomonori@lab.ntt.co.jp>, <shemminger@vyatta.com>,
+        <sam@ravnborg.org>, <joe@perches.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <gregory.v.rose@intel.com>,
+        <mbizon@freebox.fr>, <kristoffer@gaisler.com>, <ralf@linux-mips.org>,
+        <john.linn@xilinx.com>, <randy.dunlap@oracle.com>,
+        <davem@davemloft.net>, <meego-dev@meego.com>, <qi.wang@intel.com>,
+        <yong.y.wang@intel.com>, <andrew.chih.howe.khor@intel.com>,
+        <joel.clark@intel.com>, <margie.foster@intel.com>,
+        <okada533@dsn.okisemi.com>, <morinaga526@dsn.okisemi.com>,
+        <shimizu394@dsn.okisemi.com>
+References: <4C7D0E7A.5060309@dsn.okisemi.com><20100903112248Q.fujita.tomonori@lab.ntt.co.jp><001a01cb4e2a$5f870bf0$66f8800a@maildom.okisemi.com> <20100907122012O.fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+Date: Tue, 7 Sep 2010 13:06:15 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 11:00:56PM -0400, James Bottomley wrote:
-> On Mon, 2010-09-06 at 17:32 -0700, Dmitry Torokhov wrote:
-> > On Mon, Sep 06, 2010 at 05:24:28PM -0700, Nicholas A. Bellinger wrote:
-> > > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > > 
-> > > Hi Doug and Co,
-> > > 
-> > > This patch updates the scsi_debug virtual LLD to use root_device_register()
-> > > and root_device_unregister() from include/linux/device.h instead of device_register()
-> > > and device_unregister() respectively within scsi_debug_init() and scsi_debug_exit()
-> > > This simply involved converting the static struct device pseudo_primary into a
-> > > pointer that is setup by the call to root_device_register().
-> > > 
-> > > This patch also contains the correct IS_ERR() conditional check of
-> > > root_device_register() from within scsi_debug_init().
-> > > 
-> > > Thanks to Richard Sharpe and Dmitry Torokhov for their help with this item.
-> > > 
-> > > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> > 
-> > Thanks for making the changes.
-> > 
-> > Acked-by: Dmitry Torokhov <dtor@mail.ru>
-> 
-> Can I make that Reviewed-by:? Acked-by is really just for maintainer
-> patches which don't warrant a signoff.
-> 
+Hi Fujita
 
-Sure, whatever suits better.
+> > This DMA of device is not standard.  Personal use of Gigabit Ethernet device.
+> > So, I guess that I do not need to use DMA-API.
+>
+> Sorry, I'm not sure what you mean. If a driver does DMA, it must use
+> the DMA API. Your driver already uses the DMA API (pci_dma_*),
+> however, pci_map_* API is obsolete so please use dma_map_* API
+> instead.
 
--- 
-Dmitry
+Thank you for the explanation.
+I understood and use dma_map_* .
+
+Thanks Ohtake
+----- Original Message ----- 
+From: "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>
+To: <masa-korg@dsn.okisemi.com>
+Cc: <fujita.tomonori@lab.ntt.co.jp>; <shemminger@vyatta.com>; <sam@ravnborg.org>; <joe@perches.com>;
+<linux-kernel@vger.kernel.org>; <netdev@vger.kernel.org>; <gregory.v.rose@intel.com>; <mbizon@freebox.fr>;
+<kristoffer@gaisler.com>; <ralf@linux-mips.org>; <john.linn@xilinx.com>; <randy.dunlap@oracle.com>;
+<davem@davemloft.net>; <meego-dev@meego.com>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
+<andrew.chih.howe.khor@intel.com>; <joel.clark@intel.com>; <margie.foster@intel.com>; <okada533@dsn.okisemi.com>;
+<morinaga526@dsn.okisemi.com>; <shimizu394@dsn.okisemi.com>
+Sent: Tuesday, September 07, 2010 12:21 PM
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+
+
+> On Tue, 7 Sep 2010 10:13:22 +0900
+> "Masayuki Ohtake" <masa-korg@dsn.okisemi.com> wrote:
+>
+> > > Probably, this trick doesn't work because zero could be a valid DMA
+> > > address on some architctures.
+> > >
+> >
+> > The flag which shows mapped will be added.
+> > And it is used instead of "if (buffer_info->dma) ".
+>
+> Sounds fine. That's what other drivers do.
+>
+>
+> > > > + /*-- Set Buffer infomation --*/
+> > > > + buffer_info->length = skb->len;
+> > > > + buffer_info->dma =
+> > > > +     pci_map_single(adapter->pdev, skb->data, buffer_info->length,
+> > > > +    PCI_DMA_TODEVICE);
+> > >
+> > > Needs to handle mapping failure (dma_mapping_errro)?
+> >
+> > Error process will be added.
+>
+> Nice.
+>
+>
+> > > Can you use dma_map_* API instead of pci_map_*? Please read:
+> > >
+> >
+> > This DMA of device is not standard.  Personal use of Gigabit Ethernet device.
+> > So, I guess that I do not need to use DMA-API.
+>
+> Sorry, I'm not sure what you mean. If a driver does DMA, it must use
+> the DMA API. Your driver already uses the DMA API (pci_dma_*),
+> however, pci_map_* API is obsolete so please use dma_map_* API
+> instead.
+>
+> Thanks,
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
