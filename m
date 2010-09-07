@@ -1,53 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab0IGW0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 18:26:09 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:47670 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755463Ab0IGW0H convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 18:26:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lL2ipXVIX9TpZ8j9wVXuvTU2NEkPtxRIjYn5mVO99W5pKr+yG2pJ28TCRVPwRu8Wxx
-         0txlH80IWQXsPUUFBJnz50VoWnOjdqtzMmEEDJaofxIHEtatEP6ZJQciVji+3G++G7vi
-         gsIWxQdGOCL4NCH3+2U7TiZO7XUfROWyBZJtM=
+	id S1757520Ab0IGW14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 18:27:56 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34626 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755463Ab0IGW1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 18:27:55 -0400
+Date: Wed, 8 Sep 2010 00:27:20 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Pekka Enberg <penberg@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: disabling group leader perf_event
+Message-ID: <20100907222720.GB11605@elte.hu>
+References: <1283774045.1930.341.camel@laptop>
+ <4C84D77B.6040600@redhat.com>
+ <20100906124330.GA22314@elte.hu>
+ <4C84E265.1020402@redhat.com>
+ <20100906125905.GA25414@elte.hu>
+ <4C850147.8010908@redhat.com>
+ <20100906154737.GA4332@elte.hu>
+ <AANLkTikQk0S-mR2Ow2NgdzqAMB0DD05Vd1Th99gNRy8h@mail.gmail.com>
+ <20100907040331.GB14046@elte.hu>
+ <4C860632.7010700@cs.helsinki.fi>
 MIME-Version: 1.0
-In-Reply-To: <35B17FE5076C7040809188FBE7913F983F23479F74@SC1EXMB-MBCL.global.atheros.com>
-References: <09b7da2e5462e0b855617ff5308ed6efb4fc9cab.1283872748.git.andy.shevchenko@gmail.com>
-	<8b251244717765e795b92a1f7335f8af98e5706f.1283872748.git.andy.shevchenko@gmail.com>
-	<35B17FE5076C7040809188FBE7913F983F23479F74@SC1EXMB-MBCL.global.atheros.com>
-Date: Wed, 8 Sep 2010 01:26:05 +0300
-Message-ID: <AANLkTi=ppiChKzzeBqOhjPQHavoS6RCQWNS377hqtji6@mail.gmail.com>
-Subject: Re: [PATCH 2/2] staging: ath6kl: use native methods from kernel library
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Vipin Mehta <Vipin.Mehta@atheros.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C860632.7010700@cs.helsinki.fi>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 8, 2010 at 12:18 AM, Vipin Mehta <Vipin.Mehta@atheros.com> wrote:
-> Andy,
->   Thanks for the patch. Although the driver supports Linux but it has been architected to support other OSes if desired. The code is, therefore, organized into generic and OS specific components with the latter part of the code captured into the os/linux directory. As such, the patch will be more useful if we can move out the inclusion of linux specific header files <linux/kernel.h> and <linux/ctype.h> into a header file in os/linux/include directory. You can refer to os/linux/include/osapi_linux.h for example. A macro could be defined which would use linux specific APIs for Linux and keep the original definitions for any other OS.
 
-The file ar3kpsparser.h, which is directly included by patched one,
-contains few includes like <linux/XXX.h>. Due to this I consider this
-part of code as OS-dependent. That's why I decide to put necessary
-headers inside c-file.
-Thus I think patch could be applied w/o modifications. However, If you
-want to do me some odd stuff (at least until I have not got the clear
-explanation), I could provide you 3 patches: clean up file under
-os/linux, remove unused macros, and fix in ar3kpsparser in way when
-necessary os-dependent headers will be located at some common header.
+* Pekka Enberg <penberg@cs.helsinki.fi> wrote:
 
+> Hi Ingo,
+> 
+> On 9/7/10 7:03 AM, Ingo Molnar wrote:
+> >But i'd prefer C code really, as it's really 'abstract data' in the most
+> >generic sense. That's why the trace filter engine started with a subset
+> >of C.
+> 
+> I think it sounds better in principle than what it will be in
+> practice. The OpenGL shadling language the same kind of model where
+> you use an API call to upload C-like code that gets parsed. That of
+> course has the unfortunate side-effect that compilation error
+> reporting isn't all that user-friendly because you have to query for
+> errors separately.
 
--- 
-With Best Regards,
-Andy Shevchenko
+Not really. It's not a binary choice. The very same checking code can be 
+used by tools and by the kernel too.
+
+The kernel does the checking not because we want to do development of 
+this code by using the kernel as an editor/compiler, but because we want 
+to allow unprivileged tasks to pass in stuff, hence we must verify.
+
+Error reporting by the kernel is a rare slowpath and should be pretty 
+straightforward and minimalistic: to return the position of the parsing 
+error.
+
+> I think we've seen with ftrace vs. perf that it's easier to write
+> rich, user-friendly interfaces in userspace than in kernel-space.
+> 
+> >>[...] You also probably don't want to put heavy-weight compiler
+> >>optimization passes in the kernel so with an intermediate form, you
+> >>can do much of that in user-space.
+> >
+> >The question of what can and cannot be done in the kernel is overrated.
+> >We sure can put a C compiler into the kernel - 10 years down the line we
+> >wont understand what the fuss was all about.
+> 
+> Yeah, I'm not saying we can't do that but it's a big chunk of code
+> that can be potentially exploited.
+
+The kernel is 10+ million lines of code that can potentially be 
+exploited ...
+
+> >>As for the intermediate form, you might want to take a look at Dalvik:
+> >>
+> >>http://www.netmite.com/android/mydroid/dalvik/docs/dalvik-bytecode.html
+> >>
+> >>and probably ParrotVM bytecode too. The thing to avoid is stack-based
+> >>instructions like in Java bytecode because although it's easy to write
+> >>interpreters for them, it makes JIT'ing harder (which needs to convert
+> >>stack-based representation to register-based) and probably doesn't
+> >>lend itself well to stack-constrained kernel code.
+> >
+> >_If_ we pass in any sort of machine code to the kernel (which bytecode
+> >really is), then we should do the right thing and pass in raw x86
+> >bytecode, and verify it in the kernel.
+> >
+> >That way the compiler can be kept out of the kernel, and performance of
+> >the thing will be phenomenal from day 1 on.
+> >
+> >For non-x86 in most cases we can use a simple translator that runs
+> >during the verification run - or of course they could have their own
+> >native 'assembly bytecode' verifier and their user-space could compile
+> >to those.
+> 
+> If you'd go for x86 as 'assembly bytecode' which ISA would you pick?
+> 32-bit or 64-bit? I can see problems with both of them:
+
+I'd use the native mode and would start with 64-bit.
+
+>   - The register set that can be encoded with 32-bit ISA is very
+>     limited which will force us to spill in memory.
+> 
+>   - The 64-bit ISA with REX prefixes is unnecessarily fat.
+> 
+>   - Instructions work directly on memory addresses which makes
+>     verification harder
+> 
+>   - The 32-bit ABI uses stack for argument passing which forces us
+>     to verify that operations on stack make sense.
+> 
+> OTOH, if the ABI is that you upload _native code_ on every
+> architecture, then the trade-off makes more sense to me. The
+> downside is that we'd need a separate verifier for each
+> architecture, though.
+
+Correct. I still prefer the C style variant tho.
+
+Thanks,
+
+	Ingo
