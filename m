@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab0IGPOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:14:50 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64607 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757186Ab0IGPOn (ORCPT
+	id S1757457Ab0IGPSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:18:15 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:22993
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757059Ab0IGPSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 11:14:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=mHstnyDXNItgyWpwAjExFjDGWvtCOFauRSPENbAaRzkyfeFFi8h3XKZpkasCSrezXr
-         PLuxApoXLNdy/TuEfW8MCpi7n+IGhE2sqjQtAsx0NNBW71gRHZFPJbMP36azhd4/u6E+
-         8K/mq+eQROwxdPoK/0QK8RJPk2JEzc3GnO2cs=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-kernel@vger.kernel.org, davem@davemloft.net
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Karsten Keil <isdn@linux-pingi.de>, Tilman Schmidt <tilman@imap.cc>,
-        netdev@vger.kernel.org
-Subject: [PATCH] drivers: isdn: capi: use simple_strtol to convert numbers
-Date: Tue,  7 Sep 2010 18:14:30 +0300
-Message-Id: <1283872470-22800-1-git-send-email-andy.shevchenko@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+	Tue, 7 Sep 2010 11:18:11 -0400
+X-SpamScore: -22
+X-BigFish: VPS-22(zzbb2dK1432N98dN9371Pzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L8DUE5-01-2RF-02
+X-M-MSG: 
+Date: Tue, 7 Sep 2010 17:15:41 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Matt Domsch <Matt_Domsch@dell.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.kernel.org>
+Subject: Re: [PATCH] perf, x86: Disable perf if the BIOS got its grubby
+ paws on the PMU
+Message-ID: <20100907151541.GA13563@erda.amd.com>
+References: <1283505227.1783.224.camel@laptop>
+ <4C80FDF7.1080106@linux.intel.com>
+ <20100903143258.GB373@auslistsprd01.us.dell.com>
+ <1283525163.2050.105.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1283525163.2050.105.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Karsten Keil <isdn@linux-pingi.de>
-Cc: Tilman Schmidt <tilman@imap.cc>
-Cc: netdev@vger.kernel.org
----
- drivers/isdn/capi/capidrv.c |   17 +++++++++++++----
- 1 files changed, 13 insertions(+), 4 deletions(-)
+> > > On 9/3/2010 2:13 AM, Peter Zijlstra wrote:
+> > > >+static void print_BIOS_fail(void)
+> > > >+{
+> > > >+	printk(KERN_ERR "\n");
+> > > >+	printk(KERN_ERR "=============================================\n");
+> > > >+	printk(KERN_ERR "It appears the BIOS is actively using the PMU\n");
+> > > >+	printk(KERN_ERR "this avoids Linux from using it, please de-  \n");
+> > > >+	printk(KERN_ERR "activate this BIOS feature or request a BIOS \n");
+> > > >+	printk(KERN_ERR "update from your vendor.                     \n");
+> > > >+	printk(KERN_ERR "=============================================\n");
 
-diff --git a/drivers/isdn/capi/capidrv.c b/drivers/isdn/capi/capidrv.c
-index 2978bda..e54e79d4 100644
---- a/drivers/isdn/capi/capidrv.c
-+++ b/drivers/isdn/capi/capidrv.c
-@@ -1515,8 +1515,13 @@ static int decodeFVteln(char *teln, unsigned long *bmaskp, int *activep)
- 	while (*s) {
- 		int digit1 = 0;
- 		int digit2 = 0;
--		if (!isdigit(*s)) return -3;
--		while (isdigit(*s)) { digit1 = digit1*10 + (*s - '0'); s++; }
-+		char *endp;
-+
-+		digit1 = simple_strtoul(s, &endp, 10);
-+		if (s == endp)
-+			return -3;
-+		s = endp;
-+
- 		if (digit1 <= 0 || digit1 > 30) return -4;
- 		if (*s == 0 || *s == ',' || *s == ' ') {
- 			bmask |= (1 << digit1);
-@@ -1526,8 +1531,12 @@ static int decodeFVteln(char *teln, unsigned long *bmaskp, int *activep)
- 		}
- 		if (*s != '-') return -5;
- 		s++;
--		if (!isdigit(*s)) return -3;
--		while (isdigit(*s)) { digit2 = digit2*10 + (*s - '0'); s++; }
-+
-+		digit2 = simple_strtoul(s, &endp, 10);
-+		if (s == endp)
-+			return -3;
-+		s = endp;
-+
- 		if (digit2 <= 0 || digit2 > 30) return -4;
- 		if (*s == 0 || *s == ',' || *s == ' ') {
- 			if (digit1 > digit2)
+I would rather prefer this:
+
+ BIOS bug, cpu 1, invalid  <register=value> ...
+
+... which is a much better information on one line, explains the bug
+and is also better parsable. I intend to implement messages like
+this. So maybe we could find consensus with this or something similar.
+
+A simple grep of dmesg will then give a list of BIOS bugs.
+
+-Robert
+
 -- 
-1.7.2.2
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
