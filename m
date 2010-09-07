@@ -1,178 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab0IGN6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 09:58:37 -0400
-Received: from pindarots.xs4all.nl ([80.101.128.228]:51416 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756181Ab0IGN6e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 09:58:34 -0400
-X-Greylist: delayed 963 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Sep 2010 09:58:33 EDT
-Message-ID: <4C864143.5090803@xs4all.nl>
-Date: Tue, 07 Sep 2010 15:42:27 +0200
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: known vboxgetty/isdn issue in 2.6.35.3?
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756891Ab0IGOAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 10:00:33 -0400
+Received: from www.tglx.de ([62.245.132.106]:58758 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756181Ab0IGOA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 10:00:28 -0400
+Message-Id: <20100907111349.782893465@linutronix.de>
+User-Agent: quilt/0.47-1
+Date: Tue, 07 Sep 2010 14:00:00 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: [patch 1/3] audit: Call tty_audit_push_task() outside preempt disabled
+References: <20100907111326.202980881@linutronix.de>
+Content-Disposition: inline;
+	filename=audit-call-tty_audit_push_task-outside-preempt-disabled.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found this in messages:
+While auditing all tasklist_lock read_lock sites I stumbled over the
+following call chain:
 
-Sep  2 15:00:22 epia klogd: INFO: task vboxgetty:25662 blocked for more
-than 120 seconds.
-Sep  2 15:00:22 epia klogd: "echo 0 >
-/proc/sys/kernel/hung_task_timeout_secs" disables this message.
-Sep  2 15:00:22 epia klogd: vboxgetty     D 00000000     0 25662      1
-0x00000000
-Sep  2 15:00:22 epia klogd:  cba29c74 00000046 c1157e3a 00000000
-f4c28000 f4c28000 cbb13c4c f4c28000
-Sep  2 15:00:22 epia klogd:  cbb13858 f4c28000 00000202 cba29ca4
-c1294879 cbb13878 00000202 cbb13878
-Sep  2 15:00:22 epia klogd:  cbb13878 f4c28000 cba29c84 ffffffff
-cbb13800 cbb13858 cbb13c4c cba29cb4
-Sep  2 15:00:22 epia klogd: Call Trace:
-Sep  2 15:00:22 epia klogd:  [<c1157e3a>] ? tty_unthrottle+0x13/0x3a
-Sep  2 15:00:22 epia klogd:  [<c1294879>] mutex_lock_nested+0x13e/0x23f
-Sep  2 15:00:22 epia klogd:  [<c1157e3a>] tty_unthrottle+0x13/0x3a
-Sep  2 15:00:22 epia klogd:  [<c1156a6e>] reset_buffer_flags+0xd4/0xd9
-Sep  2 15:00:22 epia klogd:  [<c1156a80>] n_tty_flush_buffer+0xd/0x63
-Sep  2 15:00:22 epia klogd:  [<c11593c7>] tty_ldisc_flush+0x1f/0x34
-Sep  2 15:00:22 epia klogd:  [<c11d6e28>] isdn_tty_modem_result+0x342/0x37c
-Sep  2 15:00:22 epia klogd:  [<c1153ff3>] ? tty_wakeup+0x46/0x4e
-Sep  2 15:00:22 epia klogd:  [<c11d910a>] isdn_tty_modem_hup+0x76/0x176
-Sep  2 15:00:22 epia klogd:  [<c115824b>] ? set_termios+0x1a8/0x397
-Sep  2 15:00:22 epia klogd:  [<c129476a>] ? mutex_lock_nested+0x2f/0x23f
-Sep  2 15:00:22 epia klogd:  [<c11d9b17>] isdn_tty_change_speed+0xa2/0xd4
-Sep  2 15:00:22 epia klogd:  [<c11d9b86>] isdn_tty_set_termios+0x3d/0x5a
-Sep  2 15:00:22 epia klogd:  [<c11583bb>] set_termios+0x318/0x397
-Sep  2 15:00:22 epia klogd:  [<c1158661>] tty_mode_ioctl+0x178/0x2db
-Sep  2 15:00:22 epia klogd:  [<c1158a06>] ? tty_ldisc_try+0x11/0x38
-Sep  2 15:00:22 epia klogd:  [<c1155f62>] ? n_tty_ioctl+0x0/0xa0
-Sep  2 15:00:22 epia klogd:  [<c1158908>] n_tty_ioctl_helper+0x144/0x154
-Sep  2 15:00:22 epia klogd:  [<c1155f62>] ? n_tty_ioctl+0x0/0xa0
-Sep  2 15:00:22 epia klogd:  [<c1155ff9>] n_tty_ioctl+0x97/0xa0
-Sep  2 15:00:22 epia klogd:  [<c1155f62>] ? n_tty_ioctl+0x0/0xa0
-Sep  2 15:00:22 epia klogd:  [<c11547ed>] tty_ioctl+0x699/0x6d3
-Sep  2 15:00:22 epia klogd:  [<c1083788>] vfs_ioctl+0x27/0x91
-Sep  2 15:00:22 epia klogd:  [<c1154154>] ? tty_ioctl+0x0/0x6d3
-Sep  2 15:00:22 epia klogd:  [<c1083d06>] do_vfs_ioctl+0x467/0x4a5
-Sep  2 15:00:22 epia klogd:  [<c1205478>] ? __kfree_skb+0x68/0x6b
-Sep  2 15:00:22 epia klogd:  [<c1205478>] ? __kfree_skb+0x68/0x6b
-Sep  2 15:00:22 epia klogd:  [<c1209c83>] ? net_tx_action+0x47/0xcc
-Sep  2 15:00:22 epia klogd:  [<c102262a>] ? __do_softirq+0xc3/0xd2
-Sep  2 15:00:22 epia klogd:  [<c1083d85>] sys_ioctl+0x41/0x61
-Sep  2 15:00:22 epia klogd:  [<c1003cb9>] ? do_IRQ+0x74/0x87
-Sep  2 15:00:22 epia klogd:  [<c1002813>] sysenter_do_call+0x12/0x2d
-Sep  2 15:00:22 epia klogd: INFO: lockdep is turned off.
+audit_prepare_user_tty()
+  read_lock(&tasklist_lock);
+  tty_audit_push_task();
+     mutex_lock(&buf->mutex);
+
+     --> buf->mutex is locked with preemption disabled.
+
+Solve this by acquiring a reference to the task struct under
+rcu_read_lock and call tty_audit_push_task outside of the preempt
+disabled region.
+
+Move all code which needs to be protected by sighand lock into
+tty_audit_push_task() and use lock/unlock_sighand as we do not hold
+tasklist_lock.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+
+---
+drivers/char/tty_audit.c |   38 ++++++++++++++++++++++++++++----------
+ drivers/char/tty_audit.c |   38 ++++++++++++++++++++++++++++----------
+ include/linux/tty.h      |    8 ++------
+ kernel/audit.c           |   25 +++++++++----------------
+ 3 files changed, 39 insertions(+), 32 deletions(-)
+Index: linux-2.6/drivers/char/tty_audit.c
+===================================================================
+--- linux-2.6.orig/drivers/char/tty_audit.c
++++ linux-2.6/drivers/char/tty_audit.c
+@@ -188,25 +188,43 @@ void tty_audit_tiocsti(struct tty_struct
+ }
+ 
+ /**
+- *	tty_audit_push_task	-	Flush task's pending audit data
++ * tty_audit_push_task	-	Flush task's pending audit data
++ * @tsk:		task pointer
++ * @loginuid:		sender login uid
++ * @sessionid:		sender session id
++ *
++ * Called with a ref on @tsk held. Try to lock sighand and get a
++ * reference to the tty audit buffer if available.
++ * Flush the buffer or return an appropriate error code.
+  */
+-void tty_audit_push_task(struct task_struct *tsk, uid_t loginuid, u32 sessionid)
++int tty_audit_push_task(struct task_struct *tsk, uid_t loginuid, u32 sessionid)
+ {
+-	struct tty_audit_buf *buf;
++	struct tty_audit_buf *buf = ERR_PTR(-EPERM);
++	unsigned long flags;
+ 
+-	spin_lock_irq(&tsk->sighand->siglock);
+-	buf = tsk->signal->tty_audit_buf;
+-	if (buf)
+-		atomic_inc(&buf->count);
+-	spin_unlock_irq(&tsk->sighand->siglock);
+-	if (!buf)
+-		return;
++	if (!lock_task_sighand(tsk, &flags))
++		return -ESRCH;
++
++	if (tsk->signal->audit_tty) {
++		buf = tsk->signal->tty_audit_buf;
++		if (buf)
++			atomic_inc(&buf->count);
++	}
++	unlock_task_sighand(tsk, &flags);
++
++	/*
++	 * Return 0 when signal->audit_tty set
++	 * but tsk->signal->tty_audit_buf == NULL.
++	 */
++	if (!buf || IS_ERR(buf))
++		return PTR_ERR(buf);
+ 
+ 	mutex_lock(&buf->mutex);
+ 	tty_audit_buf_push(tsk, loginuid, sessionid, buf);
+ 	mutex_unlock(&buf->mutex);
+ 
+ 	tty_audit_buf_put(buf);
++	return 0;
+ }
+ 
+ /**
+Index: linux-2.6/include/linux/tty.h
+===================================================================
+--- linux-2.6.orig/include/linux/tty.h
++++ linux-2.6/include/linux/tty.h
+@@ -539,8 +539,8 @@ extern void tty_audit_exit(void);
+ extern void tty_audit_fork(struct signal_struct *sig);
+ extern void tty_audit_tiocsti(struct tty_struct *tty, char ch);
+ extern void tty_audit_push(struct tty_struct *tty);
+-extern void tty_audit_push_task(struct task_struct *tsk,
+-					uid_t loginuid, u32 sessionid);
++extern int tty_audit_push_task(struct task_struct *tsk,
++			       uid_t loginuid, u32 sessionid);
+ #else
+ static inline void tty_audit_add_data(struct tty_struct *tty,
+ 				      unsigned char *data, size_t size)
+@@ -558,10 +558,6 @@ static inline void tty_audit_fork(struct
+ static inline void tty_audit_push(struct tty_struct *tty)
+ {
+ }
+-static inline void tty_audit_push_task(struct task_struct *tsk,
+-					uid_t loginuid, u32 sessionid)
+-{
+-}
+ #endif
+ 
+ /* tty_io.c */
+Index: linux-2.6/kernel/audit.c
+===================================================================
+--- linux-2.6.orig/kernel/audit.c
++++ linux-2.6/kernel/audit.c
+@@ -467,23 +467,16 @@ static int audit_prepare_user_tty(pid_t 
+ 	struct task_struct *tsk;
+ 	int err;
+ 
+-	read_lock(&tasklist_lock);
++	rcu_read_lock();
+ 	tsk = find_task_by_vpid(pid);
+-	err = -ESRCH;
+-	if (!tsk)
+-		goto out;
+-	err = 0;
+-
+-	spin_lock_irq(&tsk->sighand->siglock);
+-	if (!tsk->signal->audit_tty)
+-		err = -EPERM;
+-	spin_unlock_irq(&tsk->sighand->siglock);
+-	if (err)
+-		goto out;
+-
+-	tty_audit_push_task(tsk, loginuid, sessionid);
+-out:
+-	read_unlock(&tasklist_lock);
++	if (!tsk) {
++		rcu_read_unlock();
++		return -ESRCH;
++	}
++	get_task_struct(tsk);
++	rcu_read_unlock();
++	err = tty_audit_push_task(tsk, loginuid, sessionid);
++	put_task_struct(tsk);
+ 	return err;
+ }
+ 
 
 
-Sep  2 15:02:22 epia klogd: INFO: task vboxgetty:25662 blocked for more
-than 120 seconds.
-Sep  2 15:02:22 epia klogd: "echo 0 >
-/proc/sys/kernel/hung_task_timeout_secs" disables this message.
-Sep  2 15:02:22 epia klogd: vboxgetty     D 00000000     0 25662      1
-0x00000000
-Sep  2 15:02:22 epia klogd:  cba29c74 00000046 c1157e3a 00000000
-f4c28000 f4c28000 cbb13c4c f4c28000
-Sep  2 15:02:22 epia klogd:  cbb13858 f4c28000 00000202 cba29ca4
-c1294879 cbb13878 00000202 cbb13878
-Sep  2 15:02:22 epia klogd:  cbb13878 f4c28000 cba29c84 ffffffff
-cbb13800 cbb13858 cbb13c4c cba29cb4
-Sep  2 15:02:22 epia klogd: Call Trace:
-Sep  2 15:02:22 epia klogd:  [<c1157e3a>] ? tty_unthrottle+0x13/0x3a
-Sep  2 15:02:22 epia klogd:  [<c1294879>] mutex_lock_nested+0x13e/0x23f
-Sep  2 15:02:22 epia klogd:  [<c1157e3a>] tty_unthrottle+0x13/0x3a
-Sep  2 15:02:22 epia klogd:  [<c1156a6e>] reset_buffer_flags+0xd4/0xd9
-Sep  2 15:02:22 epia klogd:  [<c1156a80>] n_tty_flush_buffer+0xd/0x63
-Sep  2 15:02:22 epia klogd:  [<c11593c7>] tty_ldisc_flush+0x1f/0x34
-Sep  2 15:02:22 epia klogd:  [<c11d6e28>] isdn_tty_modem_result+0x342/0x37c
-Sep  2 15:02:22 epia klogd:  [<c1153ff3>] ? tty_wakeup+0x46/0x4e
-Sep  2 15:02:22 epia klogd:  [<c11d910a>] isdn_tty_modem_hup+0x76/0x176
-Sep  2 15:02:22 epia klogd:  [<c115824b>] ? set_termios+0x1a8/0x397
-Sep  2 15:02:22 epia klogd:  [<c129476a>] ? mutex_lock_nested+0x2f/0x23f
-Sep  2 15:02:22 epia klogd:  [<c11d9b17>] isdn_tty_change_speed+0xa2/0xd4
-Sep  2 15:02:22 epia klogd:  [<c11d9b86>] isdn_tty_set_termios+0x3d/0x5a
-Sep  2 15:02:22 epia klogd:  [<c11583bb>] set_termios+0x318/0x397
-Sep  2 15:02:22 epia klogd:  [<c1158661>] tty_mode_ioctl+0x178/0x2db
-Sep  2 15:02:22 epia klogd:  [<c1158a06>] ? tty_ldisc_try+0x11/0x38
-Sep  2 15:02:22 epia klogd:  [<c1155f62>] ? n_tty_ioctl+0x0/0xa0
-Sep  2 15:02:22 epia klogd:  [<c1158908>] n_tty_ioctl_helper+0x144/0x154
-Sep  2 15:02:22 epia klogd:  [<c1155f62>] ? n_tty_ioctl+0x0/0xa0
-Sep  2 15:02:22 epia klogd:  [<c1155ff9>] n_tty_ioctl+0x97/0xa0
-Sep  2 15:02:22 epia klogd:  [<c1155f62>] ? n_tty_ioctl+0x0/0xa0
-Sep  2 15:02:22 epia klogd:  [<c11547ed>] tty_ioctl+0x699/0x6d3
-Sep  2 15:02:22 epia klogd:  [<c1083788>] vfs_ioctl+0x27/0x91
-Sep  2 15:02:22 epia klogd:  [<c1154154>] ? tty_ioctl+0x0/0x6d3
-Sep  2 15:02:22 epia klogd:  [<c1083d06>] do_vfs_ioctl+0x467/0x4a5
-Sep  2 15:02:22 epia klogd:  [<c1205478>] ? __kfree_skb+0x68/0x6b
-Sep  2 15:02:22 epia klogd:  [<c1205478>] ? __kfree_skb+0x68/0x6b
-Sep  2 15:02:22 epia klogd:  [<c1209c83>] ? net_tx_action+0x47/0xcc
-Sep  2 15:02:22 epia klogd:  [<c102262a>] ? __do_softirq+0xc3/0xd2
-Sep  2 15:02:22 epia klogd:  [<c1083d85>] sys_ioctl+0x41/0x61
-Sep  2 15:02:22 epia klogd:  [<c1003cb9>] ? do_IRQ+0x74/0x87
-Sep  2 15:02:22 epia klogd:  [<c1002813>] sysenter_do_call+0x12/0x2d
-Sep  2 15:02:22 epia klogd: INFO: lockdep is turned off.
-
-
-Sep  2 15:04:22 epia klogd: INFO: task vboxgetty:25662 blocked for more
-than 120 seconds.
-Sep  2 15:04:22 epia klogd: "echo 0 >
-/proc/sys/kernel/hung_task_timeout_secs" disables this message.
-Sep  2 15:04:22 epia klogd: vboxgetty     D 00000000     0 25662      1
-0x00000000
-Sep  2 15:04:22 epia klogd:  cba29c74 00000046 c1157e3a 00000000
-f4c28000 f4c28000 cbb13c4c f4c28000
-Sep  2 15:04:22 epia klogd:  cbb13858 f4c28000 00000202 cba29ca4
-c1294879 cbb13878 00000202 cbb13878
-Sep  2 15:04:22 epia klogd:  cbb13878 f4c28000 cba29c84 ffffffff
-cbb13800 cbb13858 cbb13c4c cba29cb4
-Sep  2 15:04:22 epia klogd: Call Trace:
-Sep  2 15:04:22 epia klogd:  [<c1157e3a>] ? tty_unthrottle+0x13/0x3a
-Sep  2 15:04:22 epia klogd:  [<c1294879>] mutex_lock_nested+0x13e/0x23f
-Sep  2 15:04:22 epia klogd:  [<c1157e3a>] tty_unthrottle+0x13/0x3a
-Sep  2 15:04:22 epia klogd:  [<c1156a6e>] reset_buffer_flags+0xd4/0xd9
-Sep  2 15:04:22 epia klogd:  [<c1156a80>] n_tty_flush_buffer+0xd/0x63
-Sep  2 15:04:22 epia klogd:  [<c11593c7>] tty_ldisc_flush+0x1f/0x34
-Sep  2 15:04:22 epia klogd:  [<c11d6e28>] isdn_tty_modem_result+0x342/0x37c
-Sep  2 15:04:22 epia klogd:  [<c1153ff3>] ? tty_wakeup+0x46/0x4e
-Sep  2 15:04:22 epia klogd:  [<c11d910a>] isdn_tty_modem_hup+0x76/0x176
-Sep  2 15:04:22 epia klogd:  [<c115824b>] ? set_termios+0x1a8/0x397
-Sep  2 15:04:22 epia klogd:  [<c129476a>] ? mutex_lock_nested+0x2f/0x23f
-Sep  2 15:04:22 epia klogd:  [<c11d9b17>] isdn_tty_change_speed+0xa2/0xd4
-Sep  2 15:04:22 epia klogd:  [<c11d9b86>] isdn_tty_set_termios+0x3d/0x5a
-Sep  2 15:04:22 epia klogd:  [<c11583bb>] set_termios+0x318/0x397
-Sep  2 15:04:22 epia klogd:  [<c1158661>] tty_mode_ioctl+0x178/0x2db
-Sep  2 15:04:22 epia klogd:  [<c1158a06>] ? tty_ldisc_try+0x11/0x38
-Sep  2 15:04:22 epia klogd:  [<c1155f62>] ? n_tty_ioctl+0x0/0xa0
-Sep  2 15:04:22 epia klogd:  [<c1158908>] n_tty_ioctl_helper+0x144/0x154
-Sep  2 15:04:22 epia klogd:  [<c1155f62>] ? n_tty_ioctl+0x0/0xa0
-Sep  2 15:04:22 epia klogd:  [<c1155ff9>] n_tty_ioctl+0x97/0xa0
-Sep  2 15:04:22 epia klogd:  [<c1155f62>] ? n_tty_ioctl+0x0/0xa0
-Sep  2 15:04:22 epia klogd:  [<c11547ed>] tty_ioctl+0x699/0x6d3
-Sep  2 15:04:22 epia klogd:  [<c1083788>] vfs_ioctl+0x27/0x91
-Sep  2 15:04:22 epia klogd:  [<c1154154>] ? tty_ioctl+0x0/0x6d3
-Sep  2 15:04:22 epia klogd:  [<c1083d06>] do_vfs_ioctl+0x467/0x4a5
-Sep  2 15:04:22 epia klogd:  [<c1205478>] ? __kfree_skb+0x68/0x6b
-Sep  2 15:04:22 epia klogd:  [<c1205478>] ? __kfree_skb+0x68/0x6b
-Sep  2 15:04:22 epia klogd:  [<c1209c83>] ? net_tx_action+0x47/0xcc
-Sep  2 15:04:22 epia klogd:  [<c102262a>] ? __do_softirq+0xc3/0xd2
-Sep  2 15:04:22 epia klogd:  [<c1083d85>] sys_ioctl+0x41/0x61
-Sep  2 15:04:22 epia klogd:  [<c1003cb9>] ? do_IRQ+0x74/0x87
-Sep  2 15:04:22 epia klogd:  [<c1002813>] sysenter_do_call+0x12/0x2d
-Sep  2 15:04:22 epia klogd: INFO: lockdep is turned off.
-
-(etc)
-
-Load went to 1.0 and up even while the box was 90%+ idle.
-Why did this happen?
-How to debug?
-
-
-Kind regards,
-Udo
