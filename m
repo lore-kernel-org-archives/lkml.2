@@ -1,57 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab0IGNP3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 09:15:29 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:61687 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756800Ab0IGNPU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 09:15:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Wu5+KEIZIKFCikUcNzyMzbVuqagSjOxwe9PssA8esrMCufcaPaYCCGvMHezf/mv8x0
-         3e16lrpEDwupyU/YX3jBefIiYHP8/+70fM+5oMZewCqkkEx0dWJf/LoAEWLUiksDwDpz
-         vj8kbrowIZQr+qXvb8OX3+Yg739W/X7tfFZ1Q=
-From: "Prashant P. Shah" <pshah.mumbai@gmail.com>
-To: gregkh@suse.de
-Cc: pshah.mumbai@gmail.com, julia@diku.dk, daniele.boncompagni@gmail.com,
-        a.beregalov@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] Staging: otus: removes global variable initialization to 0 in wwrap.c
-Date: Tue,  7 Sep 2010 18:44:50 +0530
-Message-Id: <6c0c2afab52a5ae4dfc18bc0b065c3bf656abe07.1283865137.git.pshah.mumbai@gmail.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <7e1ccc28be954d553b6daddf54dbc149f27c709f.1283865137.git.pshah.mumbai@gmail.com>
-References: <3f9402c47b6c1e56310bc43ea624bae01dce826f.1283865137.git.pshah.mumbai@gmail.com>
- <7e1ccc28be954d553b6daddf54dbc149f27c709f.1283865137.git.pshah.mumbai@gmail.com>
-In-Reply-To: <3f9402c47b6c1e56310bc43ea624bae01dce826f.1283865137.git.pshah.mumbai@gmail.com>
-References: <3f9402c47b6c1e56310bc43ea624bae01dce826f.1283865137.git.pshah.mumbai@gmail.com>
+	id S1756817Ab0IGNQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 09:16:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60936 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756609Ab0IGNQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 09:16:15 -0400
+Date: Tue, 7 Sep 2010 15:16:12 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        fengguang.wu@intel.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, andi.kleen@intel.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/3] memory hotplug: use unified logic for is_removable
+ and offline_pages
+Message-ID: <20100907131612.GA23617@tiehlicka.suse.cz>
+References: <20100906144019.946d3c49.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100906144716.dfd6d536.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100906093042.GB23089@tiehlicka.suse.cz>
+ <AANLkTikOi6BqXs2wiLetFP9OgYtXD+vbC+Ez8a7z0dcU@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikOi6BqXs2wiLetFP9OgYtXD+vbC+Ez8a7z0dcU@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the wwrap.c file that removes the initialization
-of global variable 'smp_kevent_Lock' to 0
+On Mon 06-09-10 22:30:43, Hiroyuki Kamezawa wrote:
+> 2010/9/6 Michal Hocko <mhocko@suse.cz>:
+> > On Mon 06-09-10 14:47:16, KAMEZAWA Hiroyuki wrote:
+[...]
+> >> Changelog: 2010/09/06
+> >> ?- added comments.
+> >> ?- removed zone->lock.
+> >> ?- changed the name of the function to be is_pageblock_removable_async().
+> >> ? ?because I removed the zone->lock.
+> >
+> > wouldn't be __is_pageblock_removable a better name? _async suffix is
+> > usually used for asynchronous operations and this is just a function
+> > withtout locks.
+> >
+> rename as _is_pagebloc_removable_nolock().
 
-Signed-off-by: Prashant P. Shah <pshah.mumbai@gmail.com>
----
- drivers/staging/otus/wwrap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Sounds good as well.
 
-diff --git a/drivers/staging/otus/wwrap.c b/drivers/staging/otus/wwrap.c
-index eee2f56..cab9ffb 100644
---- a/drivers/staging/otus/wwrap.c
-+++ b/drivers/staging/otus/wwrap.c
-@@ -939,7 +939,7 @@ u32_t zfwReadReg(zdev_t *dev, u32_t offset)
- 
- #define KEVENT_WATCHDOG        0x00000001
- 
--u32_t smp_kevent_Lock = 0;
-+u32_t smp_kevent_Lock;
- 
- void kevent(struct work_struct *work)
- {
+[...]
+> >> +bool is_pageblock_removable_async(struct page *page)
+> >> +{
+> >> + ? ? struct zone *zone = page_zone(page);
+> >> + ? ? unsigned long flags;
+> >> + ? ? int num;
+> >> + ? ? /* Don't take zone->lock interntionally. */
+> >
+> > Could you add the reason?
+> > Don't take zone-> lock intentionally because we are called from the
+> > userspace (sysfs interface).
+> >
+> I don't like to assume caller context which will limit the callers.
+> 
+> /* holding zone->lock or not is caller's job. */
+
+Sure, but I think that if you explicitely mention that the lock is not
+held intentionaly then it would be good to provide some reasonining.
+
+> 
+> 
+> > [...]
+> >> ? ? ? /* All pageblocks in the memory block are likely to be hot-removable */
+> >> Index: kametest/include/linux/memory_hotplug.h
+> >> ===================================================================
+> >> --- kametest.orig/include/linux/memory_hotplug.h
+> >> +++ kametest/include/linux/memory_hotplug.h
+> >> @@ -69,6 +69,7 @@ extern void online_page(struct page *pag
+> >> ?/* VM interface that may be used by firmware interface */
+> >> ?extern int online_pages(unsigned long, unsigned long);
+> >> ?extern void __offline_isolated_pages(unsigned long, unsigned long);
+> >
+> > #ifdef CONFIG_HOTREMOVE
+> >
+> >> +extern bool is_pageblock_removable_async(struct page *page);
+> >
+> > #else
+> > #define is_pageblock_removable_async(p) 0
+> > #endif
+> > ?
+> 
+> Is this function is called even if HOTREMOVE is off ?
+> If so, the caller is buggy. I'll check tomorrow.
+
+It is not, but then it should be defined under CONFIG_HOTREMOVE without
+#else part, shoudln't it?
+
+> 
+> Thanks,
+> -Kame
+
+Thanks!
 -- 
-1.6.0.4
-
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
