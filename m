@@ -1,82 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab0IGAlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 20:41:45 -0400
-Received: from n1-vm1.bullet.mail.gq1.yahoo.com ([67.195.23.153]:43239 "HELO
-	n1-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753943Ab0IGAln (ORCPT
+	id S1755348Ab0IGAog (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 20:44:36 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:64281 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752968Ab0IGAo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 20:41:43 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 824722.78060.bm@omp123.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=DNWZ5PBaztyWG7pedSluLnHxqL/jXrzcvlLVC6s6mhn+GRrlOV08KOe51DNCSbNkjzEBDO6gMXvG3uh0ReBDvQMjiJ3/Oe8mYgYuH2iBavaeEqpYW2gHBhazo71S09rqvYhHUpkSuZAmzl+wvUSt6YLq+VmZj7wv14hZx2US5Yw=;
-Message-ID: <677002.54522.qm@web180309.mail.gq1.yahoo.com>
-X-YMail-OSG: KDxM9YcVM1mRDrsSqST.xo9bwGPs1zZUjsY8VwNBMZ1VcaA
- IU7lxXONyQ.vwtc8sPAblZjjn5cD9EL8az8xntWesZdpINWyDb1JT5.SnNsx
- sY.vfbST3BezG7JsYfH39JKPT_TOUX4wqOsLLYhxnCWE4Vfz3ur9ivTl8M6A
- SzD9q_jFjTFF4K2zOIpPb.OIB_46_ZkDDSvJft3.qovPu2C6GKhpYUTtMn5Z
- p5r1MKc8viAAVzlN3BF7572c0CwVl52xFVjNFXw9wy3hTdxsDFMzXHJtX3N8
- VebWfFy6gSAseoMGbxzJ_3tI5r1Kz0hB5TwEoqUP3OyJ8JvtloawZ_KipOvz
- 50LYwhp6QUHqpOg1R.gBPplCT_TgG
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Mon, 6 Sep 2010 17:41:42 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH v4] GPIO: add support for 74x164 serial-in/parallel-out 8-bit shift register
-To: Florian Fainelli <florian@openwrt.org>
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Miguel Gaio <miguel.gaio@efixo.com>, Juhos Gabor <juhosg@openwrt.org>
-In-Reply-To: <201009011137.31938.florian@openwrt.org>
+	Mon, 6 Sep 2010 20:44:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Iz1TjkEdw6E1rvpC0/n81XH6cYyide5avgdWCRraOypVaojjNxazPVDGMewjPcqbH4
+         HdLBfFtUwdzP1nXwr8WPDjvuRaUi8L955XCqfZ2Q6Lu+I7BQU8vTn6QS6jiRGBr4/gqs
+         1RM1WtHD4qjBLbsaBoZHAsB9jDj04coMqB2b4=
+Date: Mon, 6 Sep 2010 17:44:24 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+Message-ID: <20100907004424.GB21430@core.coreip.homeip.net>
+References: <1283204792.32007.448.camel@haakon2.linux-iscsi.org>
+ <4C7FFD1A.8090509@vlnb.net>
+ <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
+ <20100905201802.GC18411@core.coreip.homeip.net>
+ <1283723447.556.133.camel@haakon2.linux-iscsi.org>
+ <20100905234134.GA17212@core.coreip.homeip.net>
+ <1283731194.556.147.camel@haakon2.linux-iscsi.org>
+ <1283769578.15944.1293.camel@mulgrave.site>
+ <4C85617E.2080603@vlnb.net>
+ <1283810135.556.238.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283810135.556.238.camel@haakon2.linux-iscsi.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
---- On Wed, 9/1/10, Florian Fainelli <florian@openwrt.org> wrote:
+On Mon, Sep 06, 2010 at 02:55:35PM -0700, Nicholas A. Bellinger wrote:
+> On Tue, 2010-09-07 at 01:47 +0400, Vladislav Bolkhovitin wrote:
+> > James Bottomley, on 09/06/2010 02:39 PM wrote:
+> > >>>> Anyways, if we are going to compare SCM distributed vs. centralized
+> > >>>> workflow in terms of kernel projects, lets please at least compare
+> > >>>> apples to apples here.
+> > >>>
+> > >>> No, we should not be comparing SCMs at all here but rather 2 competing
+> > >>> implementations based on quality of the code. You tried to bring SMC
+> > >>> angle in and I am saying that it is BS.
+> > >>
+> > >> Again, without getting into another pointless flamewar,  I think the
+> > >> main point here is that a open source project using a distributed
+> > >> workflow (like git) has major advantages when it comes to working with a
+> > >> larger group of developers than a centralized model (like SVN) does.
+> > >>
+> > >> Because being a subsystem maintainer typically involves this type of
+> > >> complex workflow involving lots of different parties, git is a tool that
+> > >> was created (originally) expressely for a kernel workflow, and for those
+> > >> types of people it works really, really well.
+> > >
+> > > Oh, for god's sake children.  Why does every LIO vs SCST discussion turn
+> > > into a pointless flameware over stuff no-one really cares about?  If
+> > > none of you has anything substantive to say: don't say it.
+> > 
+> > James, sorry, but you can't blame us. I keep asking for clear rules and 
+> > don't receive much. So, there are speculations and pseudo-rules, which 
+> > sometimes go to the absurd, as in this SVN vs Git case. No surprise 
+> > then, that people have risen against this absurd (thanks a lot to them 
+> > for support!).
+> > 
+> > Frankly, in all the situation around Linux SCSI targets I for quite a 
+> > long time feeling myself as a hero of a Kafka novel. Supposed to be 
+> > goals are to have the best code doing its job the best, but on practice 
+> > nobody cares about technical arguments and figuring out which subsystem 
+> > is the best. Instead, everything lives it own incomprehensible life, 
+> > where doesn't matter what you are doing, all already long ago decided 
+> > behind your back and you will never be told why. All accurate statements 
+> > not heard or, at best, called "handwaving", but dirty public opinion 
+> > manipulations based on half- and less-than-half- truth have very warn 
+> > welcome. This atmosphere is unhealthy, really.
 > 
-> Changes since v3:
-> - support daisy-chaining of 74x164 up to 32 gpios
+> Sorry Vlad, but this is simply not the truth.  You have had ample time
+> to comment on the hundreds of TCM/LIO patches posted to linux-scsi and
+> lkml over the last years, but you have chosen never to comment on a
+> *single* one then, or even on a single one now of the dozens that have
+> been posted in the last 3 weeks while this thread has been lumbering
+> forward..
+> 
+> So at this point, I will once again to refrain from any non technical
+> interaction with yourself.  If you have geninue concerns about any of
+> the TCM/LIO v4 code, then I suggest that you and your devels make them
+> known from within threads containing [PATCH] and [RFC] tags, because I
+> will not be bothering with anything that does not contain comments on
+> creating new or improving existing design and code.
+> 
 
-cool, a new feature!
+I think this is somewhat backwards...
 
+Vlad appears to be asserting that SCST is more feature-complete that LIO
+at this point. It also seems that LIO is somewhat younger than SCST. So
+at this point it might be interesting to see:
 
+1. What are the shortcomings of SCST design compared to LIO and why LIO
+developers chose to come with their own solution instead of
+collaborating with SCST folks?
 
-I kind of dislike doing this after having
-offereed feedback that you accepted, but I'm going
-to NAK this driver for mainline.
+2. What features are missing from SCST that are currently available in
+LIO?
 
-The reasons are associated with a point I made in
-my last feedback.  The chip interface is SPI (but
-it's not called that in the data sheets, true).
+Once this is sorted out and [most] everyone agrees that LIO is indeed
+technically superior (even if maybe not as mature yet) solution, then it
+would make sense to request SCST developers to go to file/line depth of
+the review.
 
-This driver is two things:
+Thanks.
 
- - maybe 85% looks like spi-over-gpio, cloning what
-the spi-gpio.c driver does (a three-wire SPI mode,
-using the NO_RX option, vs normal four-wire).
-
-The rest is a small 74x164 driver.
-
-So if there are spare GPIOs *this* driver can be
-used, but not if there's just a spare SPI select.
-
-If this were re-packaged as a small SPI protocol
-driver and a small SPI-over-GPIO instance both of
-the two components would be more reusable...
-
-Your current hardware can handle the SPI-over-GPIO
-approach, obviously.
-
-I'd ack a small 74x164 SPI protocol driver, which is
-what I expected when I saw the first post.  But a
-conglomerate driver -- no.  Sorry.
-
-- Dave
-
-
+-- 
+Dmitry
