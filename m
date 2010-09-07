@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757694Ab0IGPZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:25:41 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54138 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757536Ab0IGPZd (ORCPT
+	id S1757757Ab0IGPZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:25:53 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:51861 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757700Ab0IGPZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 11:25:33 -0400
+	Tue, 7 Sep 2010 11:25:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=OCciRJzfOXpGKsowi+CiGfTlwcyhqOIVPL40/QfmGKIjo+mI2SilrHgEiBLVwiOH9A
-         6QuQgC+FVHPHxl3DididTP0jbvnjPHjnmZLgRLlQzukhxfwZilCgOQ4pkL6W9hZJDkRr
-         SVA/O3h9y64GPXGtXO7x5JkjXCNeNHLCJo7uw=
+        b=Fu6GOtMzZkJy+XaBxmBbyHfynbFmdnWE2TKPPFT5dJIShARzC705VmDHFWRGmB3Bxt
+         4lJgY1B6gaNmtDFjPX9YKS8Mmoc4JJvotkKhZDUj8xJMPtbtl927Bu8tg8hapk7D8pcO
+         m6NtSmrwD2cCzLIfxsotn6ngBOD3qVkMYuaEA=
 From: tom.leiming@gmail.com
 To: greg@kroah.com
 Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
@@ -21,9 +21,9 @@ Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
         Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>,
         Mike Frysinger <vapier@gentoo.org>,
         Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Subject: [RESEND/PATCH 5/6] USB: musb-gadget: complete request only if data is transfered over
-Date: Tue,  7 Sep 2010 23:23:33 +0800
-Message-Id: <1283873014-32511-6-git-send-email-tom.leiming@gmail.com>
+Subject: [RESEND/PATCH 6/6] USB: musb-gadget: fix dma length in txstate
+Date: Tue,  7 Sep 2010 23:23:34 +0800
+Message-Id: <1283873014-32511-7-git-send-email-tom.leiming@gmail.com>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
 References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
@@ -33,7 +33,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ming Lei <tom.leiming@gmail.com>
 
-Complete the current request only if the data transfer is over.
+DMA length should not go beyond the availabe space of request buffer,
+so fix it.
 
 Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 Cc: David Brownell <dbrownell@users.sourceforge.net>
@@ -42,36 +43,59 @@ Cc: Anand Gadiyar <gadiyar@ti.com>
 Cc: Mike Frysinger <vapier@gentoo.org>
 Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 ---
- drivers/usb/musb/musb_gadget.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/usb/musb/musb_gadget.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index f3ee04f..fa826f9 100644
+index fa826f9..cacae96 100644
 --- a/drivers/usb/musb/musb_gadget.c
 +++ b/drivers/usb/musb/musb_gadget.c
-@@ -501,14 +501,14 @@ void musb_g_tx(struct musb *musb, u8 epnum)
- 				request->zero = 0;
- 			}
+@@ -300,6 +300,11 @@ static void txstate(struct musb *musb, struct musb_request *req)
+ #ifndef	CONFIG_MUSB_PIO_ONLY
+ 	if (is_dma_capable() && musb_ep->dma) {
+ 		struct dma_controller	*c = musb->dma_controller;
++		size_t request_size;
++
++		/* setup DMA, then program endpoint CSR */
++		request_size = min_t(size_t, request->length - request->actual,
++					musb_ep->dma->max_len);
  
--			/* ... or if not, then complete it. */
--			musb_g_giveback(musb_ep, request, 0);
+ 		use_dma = (request->dma != DMA_ADDR_INVALID);
+ 
+@@ -307,11 +312,6 @@ static void txstate(struct musb *musb, struct musb_request *req)
+ 
+ #ifdef CONFIG_USB_INVENTRA_DMA
+ 		{
+-			size_t request_size;
 -
--			request = musb_ep->desc ? next_request(musb_ep) : NULL;
--			if (!request) {
--				DBG(4, "%s idle now\n",
--					musb_ep->end_point.name);
--				return;
-+			if (request->actual == request->length) {
-+				musb_g_giveback(musb_ep, request, 0);
-+				request = musb_ep->desc ? next_request(musb_ep) : NULL;
-+				if (!request) {
-+					DBG(4, "%s idle now\n",
-+						musb_ep->end_point.name);
-+					return;
-+				}
- 			}
- 		}
- 
+-			/* setup DMA, then program endpoint CSR */
+-			request_size = min_t(size_t, request->length,
+-						musb_ep->dma->max_len);
+ 			if (request_size < musb_ep->packet_sz)
+ 				musb_ep->dma->desired_mode = 0;
+ 			else
+@@ -373,8 +373,8 @@ static void txstate(struct musb *musb, struct musb_request *req)
+ 		use_dma = use_dma && c->channel_program(
+ 				musb_ep->dma, musb_ep->packet_sz,
+ 				0,
+-				request->dma,
+-				request->length);
++				request->dma + request->actual,
++				request_size);
+ 		if (!use_dma) {
+ 			c->channel_release(musb_ep->dma);
+ 			musb_ep->dma = NULL;
+@@ -386,8 +386,8 @@ static void txstate(struct musb *musb, struct musb_request *req)
+ 		use_dma = use_dma && c->channel_program(
+ 				musb_ep->dma, musb_ep->packet_sz,
+ 				request->zero,
+-				request->dma,
+-				request->length);
++				request->dma + request->actual,
++				request_size);
+ #endif
+ 	}
+ #endif
 -- 
 1.6.2.5
 
