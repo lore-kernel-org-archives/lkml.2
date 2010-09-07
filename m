@@ -1,140 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab0IGW14 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 18:27:56 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34626 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755463Ab0IGW1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 18:27:55 -0400
-Date: Wed, 8 Sep 2010 00:27:20 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Pekka Enberg <penberg@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-perf-users@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: disabling group leader perf_event
-Message-ID: <20100907222720.GB11605@elte.hu>
-References: <1283774045.1930.341.camel@laptop>
- <4C84D77B.6040600@redhat.com>
- <20100906124330.GA22314@elte.hu>
- <4C84E265.1020402@redhat.com>
- <20100906125905.GA25414@elte.hu>
- <4C850147.8010908@redhat.com>
- <20100906154737.GA4332@elte.hu>
- <AANLkTikQk0S-mR2Ow2NgdzqAMB0DD05Vd1Th99gNRy8h@mail.gmail.com>
- <20100907040331.GB14046@elte.hu>
- <4C860632.7010700@cs.helsinki.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C860632.7010700@cs.helsinki.fi>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1757684Ab0IGW2E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 18:28:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41236 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756521Ab0IGW2A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 18:28:00 -0400
+Date: Tue, 7 Sep 2010 15:27:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hunter Adrian <adrian.hunter@nokia.com>, Chris Ball <cjb@laptop.org>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Subject: Re: [PATCHv6 3/3] mmc_test: collect data and show it via sysfs by
+ demand
+Message-Id: <20100907152753.4726c076.akpm@linux-foundation.org>
+In-Reply-To: <d7cf4d98c6e0396da903c2e49b028f240853bfc2.1283862780.git.ext-andriy.shevchenko@nokia.com>
+References: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com>
+	<ba5173c9b420d9554c83965f47d0b5cba642743a.1283862780.git.ext-andriy.shevchenko@nokia.com>
+	<d7cf4d98c6e0396da903c2e49b028f240853bfc2.1283862780.git.ext-andriy.shevchenko@nokia.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue,  7 Sep 2010 15:35:26 +0300
+Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
 
-* Pekka Enberg <penberg@cs.helsinki.fi> wrote:
-
-> Hi Ingo,
+> TODO:
+>  - implement show() method based on seq_file API
 > 
-> On 9/7/10 7:03 AM, Ingo Molnar wrote:
-> >But i'd prefer C code really, as it's really 'abstract data' in the most
-> >generic sense. That's why the trace filter engine started with a subset
-> >of C.
+> Changes since v5:
+>  - we can't use BUG_ON at exit() method because it quite normal case when the
+>    module is going to be removed with card plugged in, that's why we just free
+>    memory there
+>  - rebase against recent linux-next tree
 > 
-> I think it sounds better in principle than what it will be in
-> practice. The OpenGL shadling language the same kind of model where
-> you use an API call to upload C-like code that gets parsed. That of
-> course has the unfortunate side-effect that compilation error
-> reporting isn't all that user-friendly because you have to query for
-> errors separately.
-
-Not really. It's not a binary choice. The very same checking code can be 
-used by tools and by the kernel too.
-
-The kernel does the checking not because we want to do development of 
-this code by using the kernel as an editor/compiler, but because we want 
-to allow unprivileged tasks to pass in stuff, hence we must verify.
-
-Error reporting by the kernel is a rare slowpath and should be pretty 
-straightforward and minimalistic: to return the position of the parsing 
-error.
-
-> I think we've seen with ftrace vs. perf that it's easier to write
-> rich, user-friendly interfaces in userspace than in kernel-space.
+> Changes since v4:
+>  - BUG_ON at exit if the list of the results isn't empty
 > 
-> >>[...] You also probably don't want to put heavy-weight compiler
-> >>optimization passes in the kernel so with an intermediate form, you
-> >>can do much of that in user-space.
-> >
-> >The question of what can and cannot be done in the kernel is overrated.
-> >We sure can put a C compiler into the kernel - 10 years down the line we
-> >wont understand what the fuss was all about.
+> Changes since v3:
+>  - fix multi-line commentary style
+>  - protect mmc_test_free_result() by mutex
+>  - apply known values to newly created mmc_test_general_result structure before
+>    attaching it to the list
+>  - call list_del() before free mmc_test_transfer_result structure
+>  - check truncated output in show() method, return -ENOBUFS if so
+>  - avoid deadlock in show() method if snprintf() fails
 > 
-> Yeah, I'm not saying we can't do that but it's a big chunk of code
-> that can be potentially exploited.
-
-The kernel is 10+ million lines of code that can potentially be 
-exploited ...
-
-> >>As for the intermediate form, you might want to take a look at Dalvik:
-> >>
-> >>http://www.netmite.com/android/mydroid/dalvik/docs/dalvik-bytecode.html
-> >>
-> >>and probably ParrotVM bytecode too. The thing to avoid is stack-based
-> >>instructions like in Java bytecode because although it's easy to write
-> >>interpreters for them, it makes JIT'ing harder (which needs to convert
-> >>stack-based representation to register-based) and probably doesn't
-> >>lend itself well to stack-constrained kernel code.
-> >
-> >_If_ we pass in any sort of machine code to the kernel (which bytecode
-> >really is), then we should do the right thing and pass in raw x86
-> >bytecode, and verify it in the kernel.
-> >
-> >That way the compiler can be kept out of the kernel, and performance of
-> >the thing will be phenomenal from day 1 on.
-> >
-> >For non-x86 in most cases we can use a simple translator that runs
-> >during the verification run - or of course they could have their own
-> >native 'assembly bytecode' verifier and their user-space could compile
-> >to those.
+> Changes since v2:
+>  - move card memeber to mmc_test_general_result structrure and thus throw away
+>    mmc_test_overall_result which was overkill
+>  - check result of kmalloc and kzalloc
+>  - keep pointer to the actual mmc_test_general_result structure in the
+>    mmc_test_card
 > 
-> If you'd go for x86 as 'assembly bytecode' which ISA would you pick?
-> 32-bit or 64-bit? I can see problems with both of them:
+> Changes since v1:
+>  - structrure members are described
+>  - save transfer results code is split to separate function
+>  - in mmc_test_print_rate() use count = 1 instead of 0
+>  - mmc_test_result keeps overall results (across all tested cards), however
+>    it's still global variable
+>  - list_head variables inside structures have a suffix _lst now
 
-I'd use the native mode and would start with 64-bit.
+While useful and important, none of the above is relevant for a
+mainline commit (IMP) so I always remove it.
 
->   - The register set that can be encoded with 32-bit ISA is very
->     limited which will force us to spill in memory.
+> Here is a patch which brings possibility to get test results via sysfs. It
+> helps to do tests non-interactively.
+>
+> We have the file created under sysfs already and we could use it to out test
+> results.
+
+That's the patch changelog.
+
+> This patch applied on top of patches published here [1]
 > 
->   - The 64-bit ISA with REX prefixes is unnecessarily fat.
-> 
->   - Instructions work directly on memory addresses which makes
->     verification harder
-> 
->   - The 32-bit ABI uses stack for argument passing which forces us
->     to verify that operations on stack make sense.
-> 
-> OTOH, if the ABI is that you upload _native code_ on every
-> architecture, then the trade-off makes more sense to me. The
-> downside is that we'd need a separate verifier for each
-> architecture, though.
+> [1] http://lkml.org/lkml/2010/8/18/164
 
-Correct. I still prefer the C style variant tho.
+And that's irrelevant for a mainline commit.
 
-Thanks,
 
-	Ingo
+So what we end up with is extremely thin.  Something about adding
+something to sysfs.
+
+This is not enough!  You're proposing an addition to the kernel->user
+ABI.  Please fully describe this interface so that we can understand
+and review it.  What are the names of these sysfs files?  What do they
+do?  Provide us with example output in the changelog so we can see for
+ourselves.
+
+Please consider documenting the thing in a permanent documentation
+file.  (I don't believe that Documentation/ABI/ is appropriate, given
+mmc_test's scope).
+
+
+afacit the only useful info we have about mmc_test is
+
+        help
+          Development driver that performs a series of reads and writes
+          to a memory card in order to expose certain well known bugs
+          in host controllers. The tests are executed by writing to the
+          "test" file in sysfs under each card. Note that whatever is
+          on your card will be overwritten by these tests.
+
+          This driver is only of interest to those developing or
+          testing a host driver. Most people should say N here.
+
+which I guess is good enough, given the smallness and sophistication of
+its users.  It could be improved on though!
