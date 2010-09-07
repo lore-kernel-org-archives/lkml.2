@@ -1,101 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757757Ab0IGPZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 11:25:53 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:51861 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757700Ab0IGPZo (ORCPT
+	id S1757565Ab0IGP0F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 11:26:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41789 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757703Ab0IGPZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Sep 2010 11:25:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Fu6GOtMzZkJy+XaBxmBbyHfynbFmdnWE2TKPPFT5dJIShARzC705VmDHFWRGmB3Bxt
-         4lJgY1B6gaNmtDFjPX9YKS8Mmoc4JJvotkKhZDUj8xJMPtbtl927Bu8tg8hapk7D8pcO
-         m6NtSmrwD2cCzLIfxsotn6ngBOD3qVkMYuaEA=
-From: tom.leiming@gmail.com
-To: greg@kroah.com
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Subject: [RESEND/PATCH 6/6] USB: musb-gadget: fix dma length in txstate
-Date: Tue,  7 Sep 2010 23:23:34 +0800
-Message-Id: <1283873014-32511-7-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
-References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=v5CQ6nPODE1c4C33EAlX2UXXQAParZHSHnp8WnoHH6fflY7odaPFQx+w3Ob8R31woe
+         FSkgYtQyRnx1LnEwWk+n0/yz5vP4BXpz1sATRe4ThZr4F2fgDXTTSSxN/8EUDpetfZL+
+         Nc1P2LA81rMVviUbA1+KelqFGJmaKnoeAQUTQ=
+Date: Wed, 8 Sep 2010 00:25:33 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 03/10] writeback: Do not congestion sleep if there are
+ no congested BDIs or significant writeback
+Message-ID: <20100907152533.GB4620@barrios-desktop>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
+ <1283770053-18833-4-git-send-email-mel@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283770053-18833-4-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ming Lei <tom.leiming@gmail.com>
+On Mon, Sep 06, 2010 at 11:47:26AM +0100, Mel Gorman wrote:
+> If congestion_wait() is called with no BDIs congested, the caller will sleep
+> for the full timeout and this may be an unnecessary sleep. This patch adds
+> a wait_iff_congested() that checks congestion and only sleeps if a BDI is
+> congested or if there is a significant amount of writeback going on in an
+> interesting zone. Else, it calls cond_resched() to ensure the caller is
+> not hogging the CPU longer than its quota but otherwise will not sleep.
+> 
+> This is aimed at reducing some of the major desktop stalls reported during
+> IO. For example, while kswapd is operating, it calls congestion_wait()
+> but it could just have been reclaiming clean page cache pages with no
+> congestion. Without this patch, it would sleep for a full timeout but after
+> this patch, it'll just call schedule() if it has been on the CPU too long.
+> Similar logic applies to direct reclaimers that are not making enough
+> progress.
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> ---
+>  include/linux/backing-dev.h      |    2 +-
+>  include/trace/events/writeback.h |    7 ++++
+>  mm/backing-dev.c                 |   66 ++++++++++++++++++++++++++++++++++++-
+>  mm/page_alloc.c                  |    4 +-
+>  mm/vmscan.c                      |   26 ++++++++++++--
+>  5 files changed, 96 insertions(+), 9 deletions(-)
+> 
+> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+> index 35b0074..f1b402a 100644
+> --- a/include/linux/backing-dev.h
+> +++ b/include/linux/backing-dev.h
+> @@ -285,7 +285,7 @@ enum {
+>  void clear_bdi_congested(struct backing_dev_info *bdi, int sync);
+>  void set_bdi_congested(struct backing_dev_info *bdi, int sync);
+>  long congestion_wait(int sync, long timeout);
+> -
+> +long wait_iff_congested(struct zone *zone, int sync, long timeout);
+>  
+>  static inline bool bdi_cap_writeback_dirty(struct backing_dev_info *bdi)
+>  {
+> diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
+> index 275d477..eeaf1f5 100644
+> --- a/include/trace/events/writeback.h
+> +++ b/include/trace/events/writeback.h
+> @@ -181,6 +181,13 @@ DEFINE_EVENT(writeback_congest_waited_template, writeback_congestion_wait,
+>  	TP_ARGS(usec_timeout, usec_delayed)
+>  );
+>  
+> +DEFINE_EVENT(writeback_congest_waited_template, writeback_wait_iff_congested,
+> +
+> +	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
+> +
+> +	TP_ARGS(usec_timeout, usec_delayed)
+> +);
+> +
+>  #endif /* _TRACE_WRITEBACK_H */
+>  
+>  /* This part must be outside protection */
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index 298975a..94b5433 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -724,6 +724,7 @@ static wait_queue_head_t congestion_wqh[2] = {
+>  		__WAIT_QUEUE_HEAD_INITIALIZER(congestion_wqh[0]),
+>  		__WAIT_QUEUE_HEAD_INITIALIZER(congestion_wqh[1])
+>  	};
+> +static atomic_t nr_bdi_congested[2];
+>  
+>  void clear_bdi_congested(struct backing_dev_info *bdi, int sync)
+>  {
+> @@ -731,7 +732,8 @@ void clear_bdi_congested(struct backing_dev_info *bdi, int sync)
+>  	wait_queue_head_t *wqh = &congestion_wqh[sync];
+>  
+>  	bit = sync ? BDI_sync_congested : BDI_async_congested;
+> -	clear_bit(bit, &bdi->state);
+> +	if (test_and_clear_bit(bit, &bdi->state))
+> +		atomic_dec(&nr_bdi_congested[sync]);
+>  	smp_mb__after_clear_bit();
+>  	if (waitqueue_active(wqh))
+>  		wake_up(wqh);
+> @@ -743,7 +745,8 @@ void set_bdi_congested(struct backing_dev_info *bdi, int sync)
+>  	enum bdi_state bit;
+>  
+>  	bit = sync ? BDI_sync_congested : BDI_async_congested;
+> -	set_bit(bit, &bdi->state);
+> +	if (!test_and_set_bit(bit, &bdi->state))
+> +		atomic_inc(&nr_bdi_congested[sync]);
+>  }
+>  EXPORT_SYMBOL(set_bdi_congested);
+>  
+> @@ -774,3 +777,62 @@ long congestion_wait(int sync, long timeout)
+>  }
+>  EXPORT_SYMBOL(congestion_wait);
+>  
+> +/**
+> + * congestion_wait - wait for a backing_dev to become uncongested
+      wait_iff_congested
 
-DMA length should not go beyond the availabe space of request buffer,
-so fix it.
+> + * @zone: A zone to consider the number of being being written back from
+> + * @sync: SYNC or ASYNC IO
+> + * @timeout: timeout in jiffies
+> + *
+> + * Waits for up to @timeout jiffies for a backing_dev (any backing_dev) to exit
+> + * write congestion.  If no backing_devs are congested then the number of
+> + * writeback pages in the zone are checked and compared to the inactive
+> + * list. If there is no sigificant writeback or congestion, there is no point
+                                                and 
 
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>
-Cc: Felipe Balbi <me@felipebalbi.com>
-Cc: Anand Gadiyar <gadiyar@ti.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
----
- drivers/usb/musb/musb_gadget.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+> + * in sleeping but cond_resched() is called in case the current process has
+> + * consumed its CPU quota.
+> + */
+> +long wait_iff_congested(struct zone *zone, int sync, long timeout)
+> +{
+> +	long ret;
+> +	unsigned long start = jiffies;
+> +	DEFINE_WAIT(wait);
+> +	wait_queue_head_t *wqh = &congestion_wqh[sync];
+> +
+> +	/*
+> +	 * If there is no congestion, check the amount of writeback. If there
+> +	 * is no significant writeback and no congestion, just cond_resched
+> +	 */
+> +	if (atomic_read(&nr_bdi_congested[sync]) == 0) {
+> +		unsigned long inactive, writeback;
+> +
+> +		inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
+> +				zone_page_state(zone, NR_INACTIVE_ANON);
+> +		writeback = zone_page_state(zone, NR_WRITEBACK);
+> +
+> +		/*
+> +		 * If less than half the inactive list is being written back,
+> +		 * reclaim might as well continue
+> +		 */
+> +		if (writeback < inactive / 2) {
 
-diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index fa826f9..cacae96 100644
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -300,6 +300,11 @@ static void txstate(struct musb *musb, struct musb_request *req)
- #ifndef	CONFIG_MUSB_PIO_ONLY
- 	if (is_dma_capable() && musb_ep->dma) {
- 		struct dma_controller	*c = musb->dma_controller;
-+		size_t request_size;
-+
-+		/* setup DMA, then program endpoint CSR */
-+		request_size = min_t(size_t, request->length - request->actual,
-+					musb_ep->dma->max_len);
- 
- 		use_dma = (request->dma != DMA_ADDR_INVALID);
- 
-@@ -307,11 +312,6 @@ static void txstate(struct musb *musb, struct musb_request *req)
- 
- #ifdef CONFIG_USB_INVENTRA_DMA
- 		{
--			size_t request_size;
--
--			/* setup DMA, then program endpoint CSR */
--			request_size = min_t(size_t, request->length,
--						musb_ep->dma->max_len);
- 			if (request_size < musb_ep->packet_sz)
- 				musb_ep->dma->desired_mode = 0;
- 			else
-@@ -373,8 +373,8 @@ static void txstate(struct musb *musb, struct musb_request *req)
- 		use_dma = use_dma && c->channel_program(
- 				musb_ep->dma, musb_ep->packet_sz,
- 				0,
--				request->dma,
--				request->length);
-+				request->dma + request->actual,
-+				request_size);
- 		if (!use_dma) {
- 			c->channel_release(musb_ep->dma);
- 			musb_ep->dma = NULL;
-@@ -386,8 +386,8 @@ static void txstate(struct musb *musb, struct musb_request *req)
- 		use_dma = use_dma && c->channel_program(
- 				musb_ep->dma, musb_ep->packet_sz,
- 				request->zero,
--				request->dma,
--				request->length);
-+				request->dma + request->actual,
-+				request_size);
- #endif
- 	}
- #endif
+I am not sure this is best.
+
+1. Without considering various speed class storage, could we fix it as half of inactive?
+2. Isn't there any writeback throttling on above layer? Do we care of it in here?
+
+Just out of curiosity. 
+
 -- 
-1.6.2.5
-
+Kind regards,
+Minchan Kim
