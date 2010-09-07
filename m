@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab0IGSKe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 14:10:34 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38600 "EHLO
+	id S932408Ab0IGSPE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 14:15:04 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60011 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757994Ab0IGSKb convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756976Ab0IGSPB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 14:10:31 -0400
+	Tue, 7 Sep 2010 14:15:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ht8AD9wK4t5YHI1//3FKcOEl+HbWdRDS79wNgyXz5FD3eOmg6GKr00sfLGiL44noJh
-         PMGA4HPfgrN7iPSJVTIBcddkBwFl3zqD6q+Fre3dx+hQO2EADOE8NyPUqf0kE9eiM1gJ
-         pm4SBhTItMxk/0hsAcUlIM2lD5QBAEKwE7MhE=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=heBH30KwEhejDO0D5dlyuCnbVUGNoFkbBbu+ugEn9UZTrv4qs1HPcwL9L0Bz83O/2Q
+         sgIZ5L/X0NCR7LXX85RPSLGp3lQSaBp0cu2eslbgbjcQhpOyJnL9/hotNl1jlHKGM61S
+         J+wbnqTH4SiZilKO2aThRKf7qbHxevOs/la1Y=
 MIME-Version: 1.0
-In-Reply-To: <1282845485-8991-10-git-send-email-konrad.wilk@oracle.com>
-References: <1282845485-8991-1-git-send-email-konrad.wilk@oracle.com>
-	<1282845485-8991-10-git-send-email-konrad.wilk@oracle.com>
-Date: Tue, 7 Sep 2010 11:10:30 -0700
-X-Google-Sender-Auth: 2W3Lr8xuX4ST13p4KzV9HWFOLyk
-Message-ID: <AANLkTikcdyNP8x28u3-m0oNcOqSek=xwUn3wW-=3sqnY@mail.gmail.com>
-Subject: Re: [PATCH 09/10] x86/VT-d: Make Intel VT-d IOMMU use IOMMU_INIT_* macros.
-From: Tony Luck <tony.luck@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: hpa@zytor.com, fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Len Brown <len.brown@intel.com>, Chris Wright <chrisw@sous-sol.org>,
-        Yinghai Lu <yinghai@kernel.org>
+In-Reply-To: <AANLkTinkhY-y6Qv6HJnGbggksdEmULgQ9DTOrNmu1tLp@mail.gmail.com>
+References: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
+	<AANLkTiksb1AudCzs8-TWdXb11T-QcPx1G_qu6eUtJ74C@mail.gmail.com>
+	<AANLkTin7eVyosgK4XhuB_yqR2ao=YJGVidHB1x2802cr@mail.gmail.com>
+	<AANLkTinrecJXH+uDxtBsskFLpBCz0VSZMtSiWGFW9YCr@mail.gmail.com>
+	<AANLkTinkhY-y6Qv6HJnGbggksdEmULgQ9DTOrNmu1tLp@mail.gmail.com>
+Date: Tue, 7 Sep 2010 23:45:00 +0530
+Message-ID: <AANLkTikZK=8HCtXDR_2dSBce1E10xNfBtyXGOJqykV83@mail.gmail.com>
+Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization(v1)
+From: venki kaps <venkiece2005@gmail.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 26, 2010 at 10:58 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> We utilize the IOMMU_INIT macros to create this dependency:
-...
->  drivers/pci/dmar.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+Venkii,
+On Tue, Sep 7, 2010 at 9:18 PM, venki kaps <venkiece2005@gmail.com> wrote:
+> Venkii,
 >
-> diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
-> index 5fa64ea..4ef56a0 100644
-> --- a/drivers/pci/dmar.c
-> +++ b/drivers/pci/dmar.c
-> @@ -36,6 +36,7 @@
->  #include <linux/tboot.h>
->  #include <linux/dmi.h>
->  #include <linux/slab.h>
-> +#include <asm/iommu_table.h>
+> On Tue, Sep 7, 2010 at 9:10 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+>> 2010/9/7 venki kaps <venkiece2005@gmail.com>:
+>>> thanks for your good response.
+>>>
+>>> Venkii,
+>>>
+>>> On Tue, Sep 7, 2010 at 6:54 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+>>>> 2010/9/7 venki kaps <venkiece2005@gmail.com>:
+>>>>> Dear USB experts,
+>>>>>
+>>>>>  Is the same fix valid for omap3430 + 2.6.32 Kernel?
+>>>>>
+>>>>>  I have been facing mp3 playback idle current consumption 20mA more
+>>>>> after booting without USB cable connected
+>>>>>  but If USB cable detach and attach happen, then able to hit proper
+>>>>> values otherwise irrespective of cold/warm reset
+>>>>>  the current values increases to 20mA.
+>>>>>
+>>>>>  with cable,
+>>>>>      OTG_SYSCONFIG standby mode of operation - SMART idle
+>>>>>      HSOTGUSB_STANDBY - SMART standby
+>>>>>
+>>>>>  without cable,
+>>>>>        OTG_SYSCONFIG standby mode of operation - SMART idle
+>>>>>        HSOTGUSB_STANDBY - Active
+>>>>>
+>>>>>  Even i have applied  patch but still the same issue.
+>>>>
+>>>> Are you applying the patch below?
+>>>>
+>>>>         http://marc.info/?l=linux-omap&m=128378686221264&w=2
+>>>>
+>>>> The patch(USB: otg: twl4030: fix phy initialization(v1)) above is against
+>>>> 2.6.36-rc3, I don't think you can apply it directly on 2.6.32. And the patch
+>>>> is introduced to fix the problems caused by
+>>>>
+>>>>          commit 461c317705eca5cac09a360f488715927fd0a927.
+>>>>
+>>>> which change is committed into mainline 2.6.36-rc3.
+>>>  >>> Yes, this patch i have applied.
+>>
+>> If you applied the patch, I guess you may see __twl4030_phy_power(twl, 0)
+>> is called from .probe.
+>>
+>> If called,  seems your description a little contradictory since you observed
+>> __twl4030_phy_power(twl, 0) may hit proper values, right?
+>
+>  Yes, __twl4030_phy_power(twl, 0) -  the current values are getting
+> proper with or without cable.
+>>
+>> If not called, could you trace the return value of twl4030_usb_linkstat in
+>> twl4030_usb_phy_init?
+> ok, i can do that and update.
+     twl4030_usb_linkstat return value is zero (0) in both
+twl4030_usb_phy_init/twl4030_usb_irq.
 
-This breaks ia64 - since you didn't make an asm/iommu_table.h for it :-(
-
-Just copying the x86 one led to complaints about pci_swiotlb_detect_4gb()
-not being declared ... so I think I need a bit more of the same infrastructure
-you made of x86.
-
-Pointers & hints please?
-
--Tony
+>> thanks,
+>>
+>> --
+>> Lei Ming
+>>
+>
