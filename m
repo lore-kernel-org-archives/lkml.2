@@ -1,130 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab0IGKf7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 06:35:59 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37023 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755591Ab0IGKfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 06:35:54 -0400
-Message-ID: <4C861582.6080102@kernel.org>
-Date: Tue, 07 Sep 2010 12:35:46 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1756307Ab0IGKsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 06:48:51 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44417 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755888Ab0IGKsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 06:48:47 -0400
+From: "Gadiyar, Anand" <gadiyar@ti.com>
+To: Maxim Osipov <maxim.osipov@gmail.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+CC: Greg KH <gregkh@suse.de>, David Brownell <dbrownell@users.sourceforge.net>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 7 Sep 2010 16:18:23 +0530
+Subject: RE: [PATCH] USB: Fix kernel oops with g_ether and Windows
+Thread-Topic: [PATCH] USB: Fix kernel oops with g_ether and Windows
+Thread-Index: ActOdSI6LZkDh3ZFSNSkbel8nvuXbwABIibQ
+Message-ID: <5A47E75E594F054BAF48C5E4FC4B92AB03293269CD@dbde02.ent.ti.com>
+References: <AANLkTinKBYzMwxEJarwN_HmKAORqJ7oiauj5JuXCo+rm@mail.gmail.com>
+	<5A47E75E594F054BAF48C5E4FC4B92AB03291AE03E@dbde02.ent.ti.com>
+	<20100906201852.GB5162@suse.de>	<4C860C21.40708@ru.mvista.com>
+ <AANLkTins336XV97o=72YdqLf1Gr_hA9NjMNqcaWDosfK@mail.gmail.com>
+In-Reply-To: <AANLkTins336XV97o=72YdqLf1Gr_hA9NjMNqcaWDosfK@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [2.6.36-rc3] Workqueues, XFS, dependencies and deadlocks
-References: <20100907072954.GM705@dastard> <4C86003B.6090706@kernel.org> <20100907100108.GN705@dastard>
-In-Reply-To: <20100907100108.GN705@dastard>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Sep 2010 10:35:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o87AnGhx006203
 
-Hello,
+Maxim Osipov wrote:
+> On Tue, Sep 7, 2010 at 1:55 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
+> >
+> > Â  It was caught by me on the list too, right at the same day the patch was
+> > posted. The author remained silent though...
+> >
 
-On 09/07/2010 12:01 PM, Dave Chinner wrote:
-> The three workqueues are initialised in
-> fs/xfs/linux-2.6/xfs_buf.c::xfs_buf_init().
->
-> They do not use delayed works, the requeuing of interest here
-> occurs in .../xfs_aops.c::xfs_end_io via
-> .../xfs_aops.c:xfs_finish_ioend() onto the xfsdatad_workqueue
+Sorry Sergei, I seem to have missed your mail on the list, and didn't
+bother hunting in the list archives.
 
-Oh, I was talking about cwq->delayed_works which is a mechanism which
-is used to enforce max_active among other things.
-
->> Or better, can you give me a small test case which
->> reproduces the problem?
 > 
-> I've seen it twice in about 100 xfstests runs in the past week.
-> I can't remember the test that tripped over it - 078 I think did
-> once, and it was a different test the first time - only some tests
-> use the loopback device. We've never had a reliable reproducer
-> because of the complexity of the race condition that leads to
-> the deadlock....
-
-I see.
-
->> Creating the workqueue for log completion w/ WQ_HIGHPRI should solve
->> this.
+> Sorry for being silent - I had lots of things to do. Regarding the
+> patch itself - I respect kernel coding conventions, but I think it is
+> bad to have two different code styles in one file. Note, this is my
+> personal opinion only.
 > 
-> So what you are saying is that we need to change the workqueue
-> creation interface to use alloc_workqueue() with some special set of
-> flags to make the workqueue behave as we want, and that each
-> workqueue will require a different configuration?  Where can I find
-> the interface documentation that describes how the different flags
-> affect the workqueue behaviour?
 
-Heh, sorry about that.  I'm writing it now.  The plan is to audit all
-the create_*workqueue() users and replace them with alloc_workqueue()
-w/ appropriate parameters.  Most of them would be fine with the
-default set of parameters but there are a few which would need some
-adjustments.
+I should have looked closer - I see now that you've only retained
+the existing style.
 
->> I fail to follow here.  Can you elaborate a bit?
-> 
-> Here's what the work function does:
-> 
->  -> run @work
-> 	-> trylock returned EAGAIN
-> 	-> queue_work(@work)
-> 	-> delay(1); // to stop workqueue spinning chewing up CPU
->
-> So basically I'm seeing a kworker thread blocked in delay(1) - it's
-> appears to be making progress by processing the same work item over and over
-> again with delay(1) calls between them. The queued log IO completion
-> is not being processed, even though it is sitting in a queue
-> waiting...
+Since Greg has already sent a pull request, I won't touch the file
+now; maybe a trivial patch later on to fix up the coding style.
 
-Can you please help me a bit more?  Are you saying the following?
-
-Work w0 starts execution on wq0.  w0 tries locking but fails.  Does
-delay(1) and requeues itself on wq0 hoping another work w1 would be
-queued on wq0 which will release the lock.  The requeueing should make
-w0 queued and executed after w1, but instead w1 never gets executed
-while w0 hogs the CPU constantly by re-executing itself.  Also, how
-does delay(1) help with chewing up CPU?  Are you talking about
-avoiding constant lock/unlock ops starving other lockers?  In such
-case, wouldn't cpu_relax() make more sense?
-
->> To preserve the original behavior, create_workqueue() and friends
->> create workqueues with @max_active of 1, which is pretty silly and bad
->> for latency.  Aside from fixing the above problems, it would be nice
->> to find out better values for @max_active for xfs workqueues.  For
-> 
-> Um, call me clueless, but WTF does max_active actually do?
-
-It regulates the maximum level of per-cpu concurrency.  ie. If a
-workqueue has @max_active of 16.  16 works on the workqueue may
-execute concurrently per-cpu.
-
-> It's not described anywhere, it's clamped to magic numbers ("I
-> really like 512"), etc.
-
-Yeap, that's just a random safety value I chose.  In most cases, the
-level of concurrency is limited by the number of work_struct, so the
-default limit is there just to survive complete runaway cases.
-
->> most users, using the pretty high default value is okay as they
->> usually have much stricter constraint elsewhere (like limited number
->> of work_struct), but last time I tried xfs allocated work_structs and
->> fired them as fast as it could, so it looked like it definitely needed
->> some kind of resasonable capping value.
-> 
-> What part of XFS fired work structures as fast as it could? Queuing
-> rates are determined completely by the IO completion rates...
-
-I don't remember but once I increased maximum concurrency for every
-workqueue (the limit was 128 or something) and xfs pretty quickly hit
-the concurrency limit.  IIRC, there was a function which allocates
-work_struct and schedules it.  I'll look through the emails.
-
-Thanks.
-
--- 
-tejun
+- Anand
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
