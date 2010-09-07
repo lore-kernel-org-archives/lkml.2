@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab0IGGdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 02:33:49 -0400
-Received: from n2-vm1.bullet.mail.gq1.yahoo.com ([67.195.23.155]:36417 "HELO
-	n2-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751066Ab0IGGdp (ORCPT
+	id S1754233Ab0IGGhs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 02:37:48 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:55524 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab0IGGhn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 02:33:45 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 356684.11233.bm@omp131.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=H1uACB3aT4LEwdPq6ENfOkshojYuZWhn/vaBb8DIkVvlM0UmOccrEuOlk+ZHCGS/XEq826m6oMMykHnPYMcaBvIffV5uWvOk8MQJSzKO8YEqm3UqUIErf664JHTGFd74WSpXpEN+1s+NfW+xGsmQcSbGC2tp9/20/cngqomWD3s=;
-Message-ID: <159882.19856.qm@web180315.mail.gq1.yahoo.com>
-X-YMail-OSG: huhCBmwVM1lEHdNs1WHvmsQ8lg.hlIzdx7CASakkE1fmd25
- 4E2JJcvImuPKF4upVz9OlX__FUX1UuEwuBLaKZJKXZzVm1BU641oPbaxKlvK
- fMGAtsgC6askJtBJJIVEqakGsoX7CogQ6a7FHn5lmgivQgf8Ek.BzScMRaAc
- hIpSWvFLjChMf6VgEwSPBAQk_eRkzwmPlsgi4MG0XWnFNqoqcPXsWPtNB.BX
- AF6v0Ypg2rLRhBIa0Wl8rVM4xN8eHqcYfIxQqcVR05RzSjnUNS0AOet0y7oS
- 1zQ1.TcvnbAqQ_qexeYOZMCWIp3l5D1un2BoaiVEQumorXV41b8l_9Pa16dh
- pdfJK0pQ2vyItMVTK9lBQpYnaPjscdq5yyhM-
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Mon, 6 Sep 2010 23:33:43 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
-To: Ryan Mallon <ryan@bluewatersys.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        bn@niasdigital.com, avictor.za@gmail.com
-In-Reply-To: <4C85A71F.3010402@bluewatersys.com>
+	Tue, 7 Sep 2010 02:37:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=adgmYGtghbGxicMe/glKtn2X4qi/3cVjC0rLe3BqseX9LRecRel8JhAF3efwICX5/v
+         DdEOmqm4AtQZYLP8CRm7nrdGnYjlrlLvJOHrLEIAp7Lm0/alC+sx17mrLyvP0Ec4TOK6
+         vAfN3ioNQ90pU8wI8RIdtza3oNi6kOyzWh6OA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <AANLkTim=JEuHBXXqVFOJ4ozXGSEVxjuCt7sOpXcox-NQ@mail.gmail.com>
+References: <AANLkTim=JEuHBXXqVFOJ4ozXGSEVxjuCt7sOpXcox-NQ@mail.gmail.com>
+Date: Tue, 7 Sep 2010 14:37:41 +0800
+Message-ID: <AANLkTikyM=XmFp2RSQtiHpoF3gVZKyEfpDFg2_Cd_ssW@mail.gmail.com>
+Subject: Fwd: anyone can help me about nand_get_flash_type
+From: Tony Wan <visual2me@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Anyone can help me with this problem? even some ideas how to debug and
+find the problem? Thank you!
 
 
---- On Mon, 9/6/10, Ryan Mallon <ryan@bluewatersys.com> wrote:
+---------- Forwarded message ----------
+From: Tony Wan <visual2me@gmail.com>
+Date: Wed, Aug 25, 2010 at 5:36 PM
+Subject: anyone can help me about nand_get_flash_type
+To: linux-mtd@lists.infradead.org
 
 
-> How about this approach instead?
+Hi there,
 
-Still don't like it, sorry.  gpio_is_valid()
-is not intended as a fine-grained call, there is
-a call which is fine grained; use that instead.
+I got an ARM device from Marvell with a NAND rom, running Linux
+2.6.22.18. These days I'm working on upgrading the kernel to 2.6.31.8.
+After the upgrade, all devices work well except the NAND rom. I found
+it's because that the device and manufacturer IDs cannot be retrieved
+correctly in nand_get_flash_type.  In 2.6.22.18, the IDs can be
+retrieved as expected; but in 2.6.31.8, the IDs always be 0, which
+leads to an error in nand_scan.
 
-> ----
-> On some architectures gpio numbering does not start from zero.
+I'm a definitely newbie with MTD, and currently have no idea about the
+problem. Except IO_ADDR_R & IO_ADDR_W are remapped to different
+addresses, I can't find any differences between the 2 versions from
+the system log -- may it be the reason? Anyone can give me some tips
+about this problem -- how to fix it or how to debug? Any suggestions
+will be appreciated.
 
-But on all of them, zero is a valid GPIO number.
-It could get dynamically allocated someday...
-
- Allow for
-> correct behaviour of gpio_is_valid
-
-I'd say it's already correct ... what's not
-correct is expecting to validate the *active* set
-of GPIOs (some dynamically allocated) through
-that, instead of one of the GPIO setup calls
-like gpio_request, which have explicit guarantees
-of reporting errors for GPIO numbers which are
-not usable on the target board.
+--
+Best regards,
+Tony Wan
 
 
- on values below the
-> first gpio by
-> adding the architecture overrideable ARCH_FIRST_GPIO.
 
-What are you (?) doing that it even matters
-to a driver  which GPIOs are built into the SOC
-versus external?  Caring about arch-specific
-stuff at this level is a big thought-bug...
-
-And  I'd ask why you're ignoring or bypassing
-the error reporting from gpio_request() ...
-
-That is, just what are you doing that makes
-you want gpio_is_valid() to include error checks
-you are supposed to get via gpio_request as part
-of GPIO configuration?
-
+-- 
+Best regards,
+Tony Wan
