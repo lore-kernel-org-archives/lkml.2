@@ -1,132 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab0IGDFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Sep 2010 23:05:09 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:56846 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751584Ab0IGDFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Sep 2010 23:05:05 -0400
-X-Greylist: delayed 497 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Sep 2010 23:05:05 EDT
-Message-ID: <4C85A9E8.8060708@interlog.com>
-Date: Mon, 06 Sep 2010 22:56:40 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1752442Ab0IGDGX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Sep 2010 23:06:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58118 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab0IGDGQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Sep 2010 23:06:16 -0400
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH v3] scsi_debug: Convert to use root_device_register()
- and root_device_unregister()
-References: <1283819068-24587-1-git-send-email-nab@linux-iscsi.org> <20100907003251.GA21430@core.coreip.homeip.net>
-In-Reply-To: <20100907003251.GA21430@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4C8558FD.2010107@gmail.com>
+References: <272391166.1009231283787434910.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+ <169108422.1009631283788251084.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+ <AANLkTim=nf7VVs0zDshivjrdFFYeWaoWYqAA6PCs3c4k@mail.gmail.com>
+ <4C853D69.2080108@gmail.com> <AANLkTi=kF880O_DuemgRPajvs3diyuvK8s4Ap04+kPzL@mail.gmail.com>
+ <4C8558FD.2010107@gmail.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Mon, 6 Sep 2010 23:05:54 -0400
+Message-ID: <AANLkTimmue10v8TRSXSL51CdHibF-tUVpGmrFJj5JHuv@mail.gmail.com>
+Subject: Re: [PATCH 01/19] User-space API definition
+To: Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
+Cc: Miloslav Trmac <mitr@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-crypto@vger.kernel.org, Neil Horman <nhorman@redhat.com>,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-09-06 08:32 PM, Dmitry Torokhov wrote:
-> On Mon, Sep 06, 2010 at 05:24:28PM -0700, Nicholas A. Bellinger wrote:
->> From: Nicholas Bellinger<nab@linux-iscsi.org>
->>
->> Hi Doug and Co,
->>
->> This patch updates the scsi_debug virtual LLD to use root_device_register()
->> and root_device_unregister() from include/linux/device.h instead of device_register()
->> and device_unregister() respectively within scsi_debug_init() and scsi_debug_exit()
->> This simply involved converting the static struct device pseudo_primary into a
->> pointer that is setup by the call to root_device_register().
->>
->> This patch also contains the correct IS_ERR() conditional check of
->> root_device_register() from within scsi_debug_init().
->>
->> Thanks to Richard Sharpe and Dmitry Torokhov for their help with this item.
->>
->> Signed-off-by: Nicholas A. Bellinger<nab@linux-iscsi.org>
+On Mon, Sep 6, 2010 at 17:11, Nikos Mavrogiannopoulos
+<n.mavrogiannopoulos@gmail.com> wrote:
+> I suppose you mean the reference to the internal representation of the
+> key. This might be valid for few seconds until the required operation is
+> over.
 >
-> Thanks for making the changes.
+> This is not really what I would call storage. The storage and retrieval
+> of keys is being done using two ioctl() the STORAGE_WRAP and STORAGE_UNWRAP.
 >
-> Acked-by: Dmitry Torokhov<dtor@mail.ru>
-
-Acked-by: Douglas Gilbert <dgilbert@interlog.com>
-
->> ---
->>   drivers/scsi/scsi_debug.c |   25 ++++++++-----------------
->>   1 files changed, 8 insertions(+), 17 deletions(-)
->>
->> diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
->> index b02bdc6..6047c10 100644
->> --- a/drivers/scsi/scsi_debug.c
->> +++ b/drivers/scsi/scsi_debug.c
->> @@ -3207,16 +3207,7 @@ static void do_remove_driverfs_files(void)
->>   	driver_remove_file(&sdebug_driverfs_driver,&driver_attr_add_host);
->>   }
->>
->> -static void pseudo_0_release(struct device *dev)
->> -{
->> -	if (SCSI_DEBUG_OPT_NOISE&  scsi_debug_opts)
->> -		printk(KERN_INFO "scsi_debug: pseudo_0_release() called\n");
->> -}
->> -
->> -static struct device pseudo_primary = {
->> -	.init_name	= "pseudo_0",
->> -	.release	= pseudo_0_release,
->> -};
->> +struct device *pseudo_primary;
->>
->>   static int __init scsi_debug_init(void)
->>   {
->> @@ -3352,10 +3343,10 @@ static int __init scsi_debug_init(void)
->>   			map_region(0, 2);
->>   	}
->>
->> -	ret = device_register(&pseudo_primary);
->> -	if (ret<  0) {
->> -		printk(KERN_WARNING "scsi_debug: device_register error: %d\n",
->> -			ret);
->> +	pseudo_primary = root_device_register("pseudo_0");
->> +	if (IS_ERR(pseudo_primary)) {
->> +		printk(KERN_WARNING "scsi_debug: root_device_register() error\n");
->> +		ret = PTR_ERR(pseudo_primary);
->>   		goto free_vm;
->>   	}
->>   	ret = bus_register(&pseudo_lld_bus);
->> @@ -3402,7 +3393,7 @@ del_files:
->>   bus_unreg:
->>   	bus_unregister(&pseudo_lld_bus);
->>   dev_unreg:
->> -	device_unregister(&pseudo_primary);
->> +	root_device_unregister(pseudo_primary);
->>   free_vm:
->>   	if (map_storep)
->>   		vfree(map_storep);
->> @@ -3423,7 +3414,7 @@ static void __exit scsi_debug_exit(void)
->>   	do_remove_driverfs_files();
->>   	driver_unregister(&sdebug_driverfs_driver);
->>   	bus_unregister(&pseudo_lld_bus);
->> -	device_unregister(&pseudo_primary);
->> +	root_device_unregister(pseudo_primary);
->>
->>   	if (dif_storep)
->>   		vfree(dif_storep);
->> @@ -3474,7 +3465,7 @@ static int sdebug_add_adapter(void)
->>           spin_unlock(&sdebug_host_list_lock);
->>
->>           sdbg_host->dev.bus =&pseudo_lld_bus;
->> -        sdbg_host->dev.parent =&pseudo_primary;
->> +        sdbg_host->dev.parent = pseudo_primary;
->>           sdbg_host->dev.release =&sdebug_release_adapter;
->>           dev_set_name(&sdbg_host->dev, "adapter%d", scsi_debug_add_host);
->>
->> --
->> 1.5.6.5
->>
+> An example of how NCR works:
+> 1. A Process generates an RSA key pair
+> 2. Stores the (encrypted) pair using the STORAGE_WRAP to a file.
 >
+> 3. Another process loads the file, unwraps it using STORAGE_UNWRAP and
+> gets a reference to the key
+> 4. Does an RSA decryption using the key
+> 5. Discards the reference to the key
+>
+> Consider the reference as a file descriptor after you have opened a file
+> (a wrapped key).
+>
+> How do you see keyring being involved in a setup like this?
 
+Fundamentally the operations you described are *EXACTLY* the kind of
+things that I believe the keyring API should support.  It does not
+support them now, but that API is where the described functionality
+really belongs.  Please consider just extending the keyring API to
+support what you need.
+
+For example, assuming that we automatically register 1 keyring key
+type per algo it should be pretty straightforward.
+
+You would want to write a "request_key()" handler for those key types
+which can use whatever hardware support is available to automatically
+generate a new random key or alternatively pass the operation off to
+the /sbin/request-key process to generate and load one from userspace.
+ The call might take a *long* time to complete, depending on the key
+type and whether or not there is hardware support.
+
+That would allow you to perform the "generate an RSA key" step in
+either a trusted "request-key" process or directly in a piece of
+hardware, helping to avoid accidental key material leaks from the
+unprivileged process.
+
+Then, you would want "KEYCTL_DECRYPT_KEY", and "KEYCTL_ENCRYPT_KEY"
+which would use one key to encrypt another into a user buffer (or
+decrypt a key from a user buffer).  These would probably need new LSM
+hooks and maybe key DAC permission bits.
+
+This would implement the "STORAGE_WRAP" and "STORAGE_UNWRAP"
+functionality you want, but it would be extensible to much more than
+just what NCR needs.  I could see this being very useful as an
+extension to the existing Kerberos or NFS keyring usage.  Other
+potential applications include very secure replacements for the SSH or
+GPG agent programs.
+
+For the final step of actually performing encryption/decryption of
+user data you would then want generic keyctl() ops for
+"KEYCTL_ENCRYPT" and "KEYCTL_DECRYPT", which would simply call
+CryptoAPI with the user-provided input and output buffers.  Again,
+you'd need new LSM hooks, etc.  These are very obviously extensible to
+other applications.
+
+It's getting a bit late here, so I apologize if anything I've written
+above makes particularly little sense, but hopefully I've gotten the
+gist across.
+
+Cheers,
+Kyle Moffett
