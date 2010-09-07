@@ -1,55 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab0IGEYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 00:24:12 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:57922 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab0IGEYF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752131Ab0IGEYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 00:24:17 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:34305 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751356Ab0IGEYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Sep 2010 00:24:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=sD0iHtirHVhrsNZQKvAJdjMEz2T6+GBmNiLuS7Ij1ynpuzjeNxBAuzpvE9R4W/ookc
-         rWqA0PKk8HpmhlMlCK3nPfkPD60l9ZQ204eo8tpwE1EzdguEydzUp63GCL/axffT6/aG
-         uBNBpElvJj0oZMu3gnUl/q5R/NW9POnkDyYaw=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 2/2]Documentation/w1/masters/mxc-w1 Fix web address to one line instead of two.
-Date: Mon,  6 Sep 2010 21:24:21 -0700
-Message-Id: <1283833461-26449-2-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1283833461-26449-1-git-send-email-justinmattock@gmail.com>
-References: <1283833461-26449-1-git-send-email-justinmattock@gmail.com>
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Mon, 6 Sep 2010 21:03:52 -0700
+Subject: [PATCH 5/5] MIPS: Move FIXADDR_TOP into spaces.h
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
+Message-Id: <d84f0a8caeb61c388b1145f89c879de3@localhost>
+User-Agent: vim 7.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As mentioned in other posts, it's better to just have the web address
-as one long line instead of broken into two lines.
+Memory maps and addressing quirks are normally defined in <spaces.h>.
+There are already three targets that need to override FIXADDR_TOP, and
+others exist.  This will be a cleaner approach than adding lots of
+ifdefs in fixmap.h .
 
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- Documentation/w1/masters/mxc-w1 |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ arch/mips/include/asm/fixmap.h              |   10 +---------
+ arch/mips/include/asm/mach-bcm63xx/spaces.h |   17 +++++++++++++++++
+ arch/mips/include/asm/mach-generic/spaces.h |    4 ++++
+ arch/mips/include/asm/mach-tx39xx/spaces.h  |   17 +++++++++++++++++
+ arch/mips/include/asm/mach-tx49xx/spaces.h  |   17 +++++++++++++++++
+ 5 files changed, 56 insertions(+), 9 deletions(-)
+ create mode 100644 arch/mips/include/asm/mach-bcm63xx/spaces.h
+ create mode 100644 arch/mips/include/asm/mach-tx39xx/spaces.h
+ create mode 100644 arch/mips/include/asm/mach-tx49xx/spaces.h
 
-diff --git a/Documentation/w1/masters/mxc-w1 b/Documentation/w1/masters/mxc-w1
-index 38be1ad..be6a1c8 100644
---- a/Documentation/w1/masters/mxc-w1
-+++ b/Documentation/w1/masters/mxc-w1
-@@ -5,8 +5,7 @@ Supported chips:
-   * Freescale MX27, MX31 and probably other i.MX SoCs
-     Datasheets:
-         http://www.freescale.com/files/32bit/doc/data_sheet/MCIMX31.pdf?fpsp=1
--	http://cache.freescale.com/files/dsp/doc/archive/MCIMX27.pdf?fsrch=1&WT_TYPE=
--	Data%20Sheets&WT_VENDOR=FREESCALE&WT_FILE_FORMAT=pdf&WT_ASSET=Documentation
-+	http://cache.freescale.com/files/dsp/doc/archive/MCIMX27.pdf?fsrch=1&WT_TYPE=Data%20Sheets&WT_VENDOR=FREESCALE&WT_FILE_FORMAT=pdf&WT_ASSET=Documentation
+diff --git a/arch/mips/include/asm/fixmap.h b/arch/mips/include/asm/fixmap.h
+index 0b89b83..98bcc98 100644
+--- a/arch/mips/include/asm/fixmap.h
++++ b/arch/mips/include/asm/fixmap.h
+@@ -14,6 +14,7 @@
+ #define _ASM_FIXMAP_H
  
- Author: Originally based on Freescale code, prepared for mainline by
- 	Sascha Hauer <s.hauer@pengutronix.de>
+ #include <asm/page.h>
++#include <spaces.h>
+ #ifdef CONFIG_HIGHMEM
+ #include <linux/threads.h>
+ #include <asm/kmap_types.h>
+@@ -67,15 +68,6 @@ enum fixed_addresses {
+  * the start of the fixmap, and leave one page empty
+  * at the top of mem..
+  */
+-#ifdef CONFIG_BCM63XX
+-#define FIXADDR_TOP     ((unsigned long)(long)(int)0xff000000)
+-#else
+-#if defined(CONFIG_CPU_TX39XX) || defined(CONFIG_CPU_TX49XX)
+-#define FIXADDR_TOP	((unsigned long)(long)(int)(0xff000000 - 0x20000))
+-#else
+-#define FIXADDR_TOP	((unsigned long)(long)(int)0xfffe0000)
+-#endif
+-#endif
+ #define FIXADDR_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
+ #define FIXADDR_START	(FIXADDR_TOP - FIXADDR_SIZE)
+ 
+diff --git a/arch/mips/include/asm/mach-bcm63xx/spaces.h b/arch/mips/include/asm/mach-bcm63xx/spaces.h
+new file mode 100644
+index 0000000..cb8d2ab
+--- /dev/null
++++ b/arch/mips/include/asm/mach-bcm63xx/spaces.h
+@@ -0,0 +1,17 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
++ * Copyright (C) 2000, 2002  Maciej W. Rozycki
++ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
++ */
++#ifndef _ASM_BCM63XX_SPACES_H
++#define _ASM_BCM63XX_SPACES_H
++
++#define FIXADDR_TOP		_AC(0xff000000, UL)
++
++#include <asm/mach-generic/spaces.h>
++
++#endif /* __ASM_BCM63XX_SPACES_H */
+diff --git a/arch/mips/include/asm/mach-generic/spaces.h b/arch/mips/include/asm/mach-generic/spaces.h
+index c9fa4b1..77c36ee 100644
+--- a/arch/mips/include/asm/mach-generic/spaces.h
++++ b/arch/mips/include/asm/mach-generic/spaces.h
+@@ -82,4 +82,8 @@
+ #define PAGE_OFFSET		(CAC_BASE + PHYS_OFFSET)
+ #endif
+ 
++#ifndef FIXADDR_TOP
++#define FIXADDR_TOP		_AC(0xfffe0000, UL)
++#endif
++
+ #endif /* __ASM_MACH_GENERIC_SPACES_H */
+diff --git a/arch/mips/include/asm/mach-tx39xx/spaces.h b/arch/mips/include/asm/mach-tx39xx/spaces.h
+new file mode 100644
+index 0000000..0cf322b
+--- /dev/null
++++ b/arch/mips/include/asm/mach-tx39xx/spaces.h
+@@ -0,0 +1,17 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
++ * Copyright (C) 2000, 2002  Maciej W. Rozycki
++ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
++ */
++#ifndef _ASM_TX39XX_SPACES_H
++#define _ASM_TX39XX_SPACES_H
++
++#define FIXADDR_TOP		_AC(0xfefe0000, UL)
++
++#include <asm/mach-generic/spaces.h>
++
++#endif /* __ASM_TX39XX_SPACES_H */
+diff --git a/arch/mips/include/asm/mach-tx49xx/spaces.h b/arch/mips/include/asm/mach-tx49xx/spaces.h
+new file mode 100644
+index 0000000..455e042
+--- /dev/null
++++ b/arch/mips/include/asm/mach-tx49xx/spaces.h
+@@ -0,0 +1,17 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 1994 - 1999, 2000, 03, 04 Ralf Baechle
++ * Copyright (C) 2000, 2002  Maciej W. Rozycki
++ * Copyright (C) 1990, 1999, 2000 Silicon Graphics, Inc.
++ */
++#ifndef _ASM_TX49XX_SPACES_H
++#define _ASM_TX49XX_SPACES_H
++
++#define FIXADDR_TOP		_AC(0xfefe0000, UL)
++
++#include <asm/mach-generic/spaces.h>
++
++#endif /* __ASM_TX49XX_SPACES_H */
 -- 
-1.7.2.1
+1.7.0.4
 
