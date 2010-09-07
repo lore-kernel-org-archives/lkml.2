@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab0IGV1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 17:27:00 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:53258 "EHLO
+	id S1758317Ab0IGV1S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 17:27:18 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:53277 "EHLO
 	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756451Ab0IGV05 (ORCPT
+	with ESMTP id S1757753Ab0IGV1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 17:26:57 -0400
+	Tue, 7 Sep 2010 17:27:15 -0400
 From: Konrad Rzeszutek Wilk <konrad@darnok.org>
 To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: [RFC 04/22] tcm: Add v4 base data structures and struct target_core_fabric_ops
-Date: Tue, 7 Sep 2010 16:56:20 -0400
+Subject: Re: [RFC 02/22] configfs: Add struct configfs_item_operations->check_link() in configfs_unlink()
+Date: Tue, 7 Sep 2010 17:01:01 -0400
 User-Agent: KMail/1.9.10
-Cc: "linux-scsi" <linux-scsi@vger.kernel.org>,
+Cc: Joel Becker <Joel.Becker@oracle.com>,
+        "linux-scsi" <linux-scsi@vger.kernel.org>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
         Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
         Hannes Reinecke <hare@suse.de>,
         James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
-References: <1283160040-6636-1-git-send-email-nab@linux-iscsi.org> <1283455187.5598.86.camel@haakon2.linux-iscsi.org> <1283644390.556.74.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1283644390.556.74.camel@haakon2.linux-iscsi.org>
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        "Linux-fsdevel" <linux-fsdevel@vger.kernel.org>
+References: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org> <20100902064814.GB27904@mail.oracle.com> <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
-Content-Disposition: inline
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009071656.21568.konrad@darnok.org>
+Content-Disposition: inline
+Message-Id: <201009071701.02847.konrad@darnok.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Konard,
+> > 	I NAK'd this a while back.  I'm willing to be convinced, but so
+> > far it remains that way.
 >
-> I just pushed most of your recommend cleanups for target_core_base.h to
-> lio-core-2.6.git/lio-4.0.  The cleanup series has been posted on
-> lio-devel list to prevent extra noise on linux-scsi, et al, but for
-> reference the shortlog and diffstat are attached below..  I did not dive
-> into intermixed struct + #defines, but I am still pretty indifferent on
-> this particular item.
+> Hi Joel,
 >
+> Thanks for bringing this point up again.  So a brief refresh on why this
+> is currently required in the fabric independent configfs handlers in
+> drivers/target/target_core_fabric_configfs.c (patch #19).
 
-So the reasons why I thought it would be a good idea to combine the #defines 
-and the values and also dropping the prefix of structs for all of the 'flag' 
-members is that:
-
-1) once you have them intermixed, searching for a particular flag either using 
-cscope/ctags becomes easier. You have the definition of the 'flag' and the 
-different values it can have in one localized spot. It also removes your 
-worry about the 'grep' - you usually search for the values that a specific 
-flag has and if you use that tool you can find it right there along with the
-structure it was defined in.
-
-2). From a perspective of a vendor maintainer who has to find a fix, getting
- familiarized with the code within a short window time frame and having the 
-acceptable states and its definitions in one place (and even pointers to the 
-specs if there are some) makes it sooo much easier to grok the code.
-Having even nice ascii art of how/what works together is even better.
-
-Obviously thought there are tools that can do this for you. But when the bug 
-hits I somehow never managed to have those tools ready :-(
-
->
-> Please have a look and feel free to make additional comments.
-
-Sure.
+Well, that is great that you mentioned your requirements. But I don't see a 
+quote of Joel's concerns? Is there an LKML link for it perhaps?
