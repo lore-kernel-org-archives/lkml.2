@@ -1,120 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757854Ab0IGQC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 12:02:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:48261 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab0IGQC0 (ORCPT
+	id S1757888Ab0IGQDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 12:03:05 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:65328 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756896Ab0IGQDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 12:02:26 -0400
-X-Authority-Analysis: v=1.1 cv=kSl6L8luU05z5mpL051isgeeLpAUfowbwuc/WIqEapw= c=1 sm=0 a=X7QPjtwe-8wA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=c9YeY8kDIQcXXN3QzrIA:9 a=YtbkV0ja4RBU0ZTBWo0A:7 a=DOyUdHPu07bu9F0ax3B22z-ZqEsA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: disabling group leader perf_event
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-perf-users@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C864281.2020907@redhat.com>
-References: <4C84B088.5050003@redhat.com> <1283772256.1930.303.camel@laptop>
-	 <4C84D1CE.3070205@redhat.com> <1283774045.1930.341.camel@laptop>
-	 <4C84D77B.6040600@redhat.com> <20100906124330.GA22314@elte.hu>
-	 <4C84E265.1020402@redhat.com> <20100906125905.GA25414@elte.hu>
-	 <4C850147.8010908@redhat.com>  <20100906154737.GA4332@elte.hu>
-	 <1283866558.5133.73.camel@gandalf.stny.rr.com>
-	 <4C864281.2020907@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 07 Sep 2010 12:02:24 -0400
-Message-ID: <1283875344.5133.123.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Sep 2010 12:03:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=dThhY6W4wajUn+SPXmdYQdpeseDR+GZ09s3QjFehXYUwBJrjRaqUaekaTrYC1aaaz+
+         d09GtYGp86yXE5NJ9jr8wB4o9ASRuTEMlQcfn0BUyPGieBXkGLIk+6OBY7EX7v3PQoWT
+         IpEikiHwSGYLZCgR3OZJjeA8dn0lLt9lYi9pk=
+Message-ID: <4C866250.3020902@gmail.com>
+Date: Tue, 07 Sep 2010 09:03:28 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
+MIME-Version: 1.0
+To: Eric Sandeen <sandeen@redhat.com>
+CC: linux-ext4@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: BUG ext4_inode_cache: Padding overwritten. 0xffff88000008fe00-0xffff88000008fe32
+References: <AANLkTin1XDdJisP9vTS8tax3yfgJLO+BpX2XqZOOV5RU@mail.gmail.com> <4C865213.2070002@redhat.com>
+In-Reply-To: <4C865213.2070002@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-07 at 16:47 +0300, Avi Kivity wrote:
+On 09/07/2010 07:54 AM, Eric Sandeen wrote:
+> Justin Mattock wrote:
+>> Im not sure if theres already assigned to this or not...  but noticed
+>> this in dmesg..
+>> only thing I remember was building glibc, and looking into an issue
+>> with it, suspended a few times and such..
+>
+> hm so ext4's inode cache got overwritten, indicative of memory corruption
+> but hard to know how it happened; it's not necessarily (maybe even likely)
+> an ext4 bug... not quite sure how to track it down though.
+>
+>
+> Also the M taint indicates:
+>
+>    5: 'M' if any processor has reported a Machine Check Exception,
+>       ' ' if no Machine Check Exceptions have occurred.
+>
+> so something may have gone wrong before this.
+>
+> -Eric
 
-> > Now here's some of my concerns for any of this. Using the kvm tracepoint
-> > as an example:
-> >
-> > slot->base_gfn + ((hva - slot->userspace_addr)>>  PAGE_SHIFT)
-> 
-> We can't allow untrusted access to random kernel memory.
-> 
-> Let's take netfilter as an example.  Userspace downloads bytecode to 
-> determine whether to allow a packet or not, or to mangle it.  The kernel 
-> exposes APIs to read and write the packet, access the conntrack hash, 
-> and whatever else is needed.  The bytecode reads the packet, allows, 
-> denies or mangles to taste, and exits.
-> 
-> > If we were given "slot" and now we need to dereference it to get
-> > base_gfn or userspace_addr, how would the kernel know this is a valid
-> > address that can be read? Seems to me that this may allow userspace to
-> > trivially see parts of the kernel that was never meant to be seen.
-> 
-> I don't understand this example.  Why would you need such bytecode?
+I was doing a bisect on glibc to find a certain commit, maybe the 
+constant installation of those libraries, and the combination of putting 
+the machine a sleep while I was doing other things caused this to fire 
+off.(after doing all of this, and letting the machine idol and run, 
+nothing like this showed up.)
 
-I was just using this as if we were to use this bytecode for filtering
-on parameters and we wanted to look at the same stuff that goes into the
-buffers, but before we touch the buffer code.
-
-> 
-> For untrusted filters, you only allow access to tracepoint arguments.  
-> For trusted filters, perhaps, you can allow arbitrary memory access at 
-> the user's own risk.
-
-I was thinking this too.
-
-> 
-> > One reason that ftrace only allows root access, is that the kernel is
-> > best a black box for most userspace.  Letting userspace see how SELinux
-> > is treating it, and finding addresses that SELinux is using, can give a
-> > large arsenal to black hats that are writing tools to circumvent Linux
-> > security.
-> >
-> > Unless we only let this interpreter access the inputs and its own
-> > allocated memory, it will be very difficult to verify what the
-> > interpreter is doing. I guess one thing we could do is to have a table
-> > of places in the kernel that we let userspace see. This table will need
-> > strict scrutinizing to verify that it can't be used to exploit other
-> > parts of the kernel.
-> 
-> The way I see it, we expose a function pointer vector to the untrusted 
-> code, similar to the syscall vector.  Trusted code may also see 
-> functions to access kernel memory (or we just loosen up the validation 
-> rules).
-
-Ah, kind of what the tracepoints already do. Taking the same example:
-
-        TP_fast_assign(
-                __entry->hva            = hva;
-                __entry->gfn            =
-                  slot->base_gfn + ((hva - slot->userspace_addr) >> PAGE_SHIFT);
-                __entry->referenced     = ref;
-        ),
-
-Have a function does the slot->base_gfn... work for us. It would also be
-required that the only input is indeed the slot pointer, otherwise you
-could dereference any tracepoint argument. So the arguments to the
-tracepoint may get a list of helper functions that allow filtering on
-dereferences to them.
-
-This is getting a bit over-engineered IMO. If we want to do something
-with the tracepoints, it should start out with simply taking the
-arguments that are passed in, and then manipulating them and testing
-them. Perhaps we allow a single page of heap to let the algorithms work
-with.
-
-Later, we could add functionality that could be triggered with a
-condition. The first thing that comes to mind is a way to trigger the
-start of tracing or stopping a trace.
-
--- Steve
-
+>
+>> [13299.426905] =============================================================================
+>> [13299.426913] BUG ext4_inode_cache: Padding overwritten.
+>> 0xffff88000008fe00-0xffff88000008fe32
+>> [13299.426919] -----------------------------------------------------------------------------
+>> [13299.426922]
+>> [13299.426928] INFO: Slab 0xffffea0000001ea0 objects=13 used=11
+>> fp=0xffff88000008d798 flags=0x4081
+>> [13299.426936] Pid: 17044, comm: rm Tainted: G   M
+>> 2.6.36-rc3-00001-gb0425ef #2
+>> [13299.426942] Call Trace:
+>> [13299.426955]  [<ffffffff810e3a5c>] slab_err+0x89/0x95
+>> [13299.426966]  [<ffffffff8109c5fe>] ? call_rcu_sched+0x10/0x12
+>> [13299.426974]  [<ffffffff8109c609>] ? call_rcu+0x9/0xb
+>> [13299.426982]  [<ffffffff810e48b9>] slab_pad_check.part.46+0xc0/0xf7
+>> [13299.426991]  [<ffffffff8114c1b9>] ? ext4_destroy_inode+0x96/0x9d
+>> [13299.426999]  [<ffffffff810e4984>] check_slab+0x94/0x9a
+>> [13299.427008]  [<ffffffff813e5c38>] __slab_free+0x15e/0x342
+>> [13299.427008]  [<ffffffff810e4f34>] kmem_cache_free+0x96/0xed
+>> [13299.427008]  [<ffffffff8114c1b9>] ext4_destroy_inode+0x96/0x9d
+>> [13299.427008]  [<ffffffff81114fd9>] ? __fsnotify_inode_delete+0x9/0xb
+>> [13299.427008]  [<ffffffff810fd046>] ? __destroy_inode+0x27/0x76
+>> [13299.427008]  [<ffffffff810fd4fb>] destroy_inode+0x2a/0x3f
+>> [13299.427008]  [<ffffffff810fd948>] iput+0x223/0x228
+>> [13299.427008]  [<ffffffff810f4bcb>] do_unlinkat+0x118/0x16b
+>> [13299.427008]  [<ffffffff810ee3ad>] ? sys_newfstatat+0x25/0x2e
+>> [13299.427008]  [<ffffffff81094841>] ? audit_syscall_entry+0x1d1/0x1fd
+>> [13299.427008]  [<ffffffff810f641e>] sys_unlinkat+0x24/0x26
+>> [13299.427008]  [<ffffffff81027602>] system_call_fastpath+0x16/0x1b
+>> [13299.427008]  Padding 0xffff88000008fb8b:  00 ad 4e ad de ff ff ff
+>> ff 00 00 00 00 ff ff ff .­N­Þÿÿÿÿ....ÿÿÿ
+>> [13299.427008]  Padding 0xffff88000008fb9b:  ff ff ff ff ff a0 fb 08
+>> 00 00 88 ff ff a0 fb 08 ÿÿÿÿÿ.û....ÿÿ.û.
+>> [13299.427008]  Padding 0xffff88000008fbab:  00 00 88 ff ff 00 00 00
+>> 00 00 00 00 00 b8 fb 08 ...ÿÿ........¸û.
+>> [13299.427008]  Padding 0xffff88000008fbbb:  00 00 88 ff ff b8 fb 08
+>> 00 00 88 ff ff 00 00 00 ...ÿÿ¸û....ÿÿ...
+>> [13299.427008]  Padding 0xffff88000008fbcb:  00 00 00 00 00 25 53 d9
+>> 92 00 00 00 00 00 00 00 .....%SÙ........
+>> [13299.427008]  Padding 0xffff88000008fbdb:  00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 d9 59 bb .............ÙY»
+>> [13299.427008]  Padding 0xffff88000008fbeb:  00 01 00 00 00 00 00 00
+>> 00 00 00 00 00 10 1a b7 ...............·
+>> [13299.427008]  Padding 0xffff88000008fbfb:  2e 00 88 ff ff ff ff ff
+>> ff ff ff ff ff ff ff ff ...ÿÿÿÿÿÿÿÿÿÿÿÿÿ
+>> [13299.427008]  Padding 0xffff88000008fc0b:  ff ff ff ff ff 00 00 00
+>> 00 00 00 00 00 00 00 00 ÿÿÿÿÿ...........
+>> [13299.427008]  Padding 0xffff88000008fc1b:  00 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 01 10 ................
+>> [13299.427008]  Padding 0xffff88000008fc2b:  00 00 00 ad de 00 02 20
+>> 00 00 00 ad de 80 f9 08 ...­Þ......­Þ.ù.
+>> [13299.427008]  Padding 0xffff88000008fc3b:  00 00 88 ff ff 00 00 00
+>> 00 5a 5a 5a 5a b8 b6 28 ...ÿÿ....ZZZZ¸¶(
+>> [13299.427008]  Padding 0xffff88000008fc4b:  00 00 00 00 00 00 00 00
+>> 00 01 00 00 00 02 00 00 ................
+>> [13299.427008]  Padding 0xffff88000008fc5b:  00 00 00 00 00 a2 99 81
+>> 4c 00 00 00 00 13 41 21 .....¢..L.....A!
+>> [13299.427008]  Padding 0xffff88000008fc6b:  37 00 00 00 00 70 fc 08
+>> 00 00 88 ff ff 70 fc 08 7....pü....ÿÿpü.
+>> [13299.427008]  Padding 0xffff88000008fc7b:  00 00 88 ff ff 01 01 00
+>> 00 ad 4e ad de ff ff ff ...ÿÿ....­N­Þÿÿÿ
+>> [13299.427008]  Padding 0xffff88000008fc8b:  ff 5a 5a 5a 5a ff ff ff
+>> ff ff ff ff ff ff ff ff ÿZZZZÿÿÿÿÿÿÿÿÿÿÿ
+>> [13299.427008]  Padding 0xffff88000008fc9b:  ff 00 00 00 00 00 00 00
+>> 00 00 00 00 00 00 00 5a ÿ..............Z
+>> [13299.427008]  Padding 0xffff88000008fcab:  5a 5a 5a 5a 5a 00 00 00
+>> 00 00 00 00 00 00 00 00 ZZZZZ...........
+>> [13299.427008]  Padding 0xffff88000008fcbb:  00 1c 00 5a 5a 0e 0e 00
+>> 00 ad 4e ad de ff ff ff ...ZZ....­N­Þÿÿÿ
+>> [13299.427008]  Padding 0xffff88000008fccb:  ff 5a 5a 5a 5a ff ff ff
+>> ff ff ff ff ff d8 fc 08 ÿZZZZÿÿÿÿÿÿÿÿØü.
+>> [13299.427008]  Padding 0xffff88000008fcdb:  00 00 88 ff ff d8 fc 08
+>> 00 00 88 ff ff 00 00 00 ...ÿÿØü....ÿÿ...
+>> [13299.427008]  Padding 0xffff88000008fceb:  00 ad 4e ad de ff ff ff
+>> ff 5a 5a 5a 5a ff ff ff .­N­ÞÿÿÿÿZZZZÿÿÿ
+>> [13299.427008]  Padding 0xffff88000008fcfb:  ff ff ff ff ff 00 00 00
+>> 00 00 00 00 00 bb 59 03 ÿÿÿÿÿ........»Y.
+>> [13299.427008]  Padding 0xffff88000008fd0b:  00 bb 59 03 00 cc cc cc
+>> cc cc cc cc cc e8 f3 08 .»Y..ÌÌÌÌÌÌÌÌèó.
+>> [13299.427008]  Padding 0xffff88000008fd1b:  00 00 88 ff ff 9f 60 14
+>> 81 ff ff ff ff 01 00 00 ...ÿÿ.`..ÿÿÿÿ...
+>> [13299.427008]  Padding 0xffff88000008fd2b:  00 c0 28 00 00 a5 58 bb
+>> 00 01 00 00 00 b9 c1 14 .À(..¥X».....¹Á.
+>> [13299.427008]  Padding 0xffff88000008fd3b:  81 ff ff ff ff 01 00 00
+>> 00 0f 1c 00 00 b0 7a ba .ÿÿÿÿ........°zº
+>> [13299.427008]  Padding 0xffff88000008fd4b:  00 01 00 00 00 5a 5a 5a
+>> 5a 5a 5a 5a 5a 5a 5a 5a .....ZZZZZZZZZZZ
+>> [13299.427008]  Padding 0xffff88000008fd5b:  5a 5a 5a 5a 5a 5a 5a 5a
+>> 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+>> [13299.427008]  Padding 0xffff88000008fd6b:  5a 5a 5a 5a 5a 5a 5a 5a
+>> 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+>> [13299.427008]  Padding 0xffff88000008fd7b:  5a 5a 5a 5a 5a 5a 5a 5a
+>> 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+>> [13299.427008]  Padding 0xffff88000008fd8b:  5a 5a 5a 5a 5a 5a 5a 5a
+>> 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+>> [13299.427008]  Padding 0xffff88000008fd9b:  5a 5a 5a 5a 5a 5a 5a 5a
+>> 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+>> [13299.427008]  Padding 0xffff88000008fdab:  5a 5a 5a 5a 5a 5a 5a 5a
+>> 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+>> [13299.427008]  Padding 0xffff88000008fdbb:  5a 5a 5a 5a 5a 5a 5a 5a
+>> 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+>> [13299.427008]  Padding 0xffff88000008fdcb:  5a 5a 5a 5a 5a 5a 5a 5a
+>> 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+>> [13299.427008]  Padding 0xffff88000008fddb:  5a 5a 5a 5a 5a 5a 5a 5a
+>> 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+>> [13299.427008]  Padding 0xffff88000008fdeb:  5a 5a 5a 5a 5a 5a 5a 5a
+>> 5a 5a 5a 5a 5a 5a 5a 5a ZZZZZZZZZZZZZZZZ
+>> [13299.427008]  Padding 0xffff88000008fdfb:  5a 5a 5a 5a 5a 00 5a 5a
+>> 5a 10 20 0f 3f 00 80 00 ZZZZZ.ZZZ...?...
+>> [13299.427008]  Padding 0xffff88000008fe0b:  00 c7 60 ed 3f 3f 00 10
+>> df ed 3f ff 07 10 c0 ed .Ç`í??..ßí?ÿ..Àí
+>> [13299.427008]  Padding 0xffff88000008fe1b:  3f fa 33 c9 33 d2 b8 3c
+>> fe 08 00 0f 01 c8 b8 31 ?ú3É3Ò¸<þ....È¸1
+>> [13299.427008]  Padding 0xffff88000008fe2b:  00 00 00 0f 01 c9 eb e9
+>>                        .....Éëé
+>> [13299.427008] FIX ext4_inode_cache: Restoring
+>> 0xffff88000008fb8b-0xffff88000008fe32=0x5a
+>> [13299.427008]
+>> [13369.168442] general protection fault: 0000 [#1] SMP
+>> [13369.168448] last sysfs file: /sys/devices/platform/applesmc.768/light
+>> [13369.168451] CPU 0
+>> [13369.168453] Modules linked in: xfrm4_mode_transport xcbc rmd160
+>> sha512_generic sco bnep xt_tcpudp ipt_LOG iptable_nat nf_nat xt_state
+>> nf_conntrack_ftp nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4
+>> iptable_filter ip_tables x_tables snd_hda_codec_idt ath9k
+>> firewire_ohci firewire_core ath9k_common evdev ath9k_hw ohci1394
+>> joydev button thermal battery sky2 ac ath snd_hda_intel snd_hda_codec
+>> snd_hwdep snd_pcm snd_timer snd soundcore snd_page_alloc i2c_i801
+>> video aes_x86_64 lzo lzo_compress tun kvm_intel ipcomp xfrm_ipcomp
+>> crypto_null sha256_generic cbc des_generic cast5 blowfish serpent
+>> camellia twofish_generic twofish_x86_64 twofish_common ctr ah4 esp4
+>> authenc raw1394 ieee1394 uhci_hcd ehci_hcd hci_uart rfcomm btusb hidp
+>> l2cap bluetooth coretemp acpi_cpufreq processor mperf appletouch
+>> applesmc
+>> [13369.168522]
+>> [13369.168526] Pid: 21876, comm: objdump Tainted: G   M
+>> 2.6.36-rc3-00001-gb0425ef #2 Mac-F42187C8/MacBookPro2,2
+>> [13369.168529] RIP: 0010:[<ffffffff811a19ad>]  [<ffffffff811a19ad>]
+>> selinux_dentry_open+0x27/0x91
+>> [13369.168540] RSP: 0018:ffff88000dcb7c98  EFLAGS: 00010292
+>> [13369.168543] RAX: 5a5a5a5a5a5a5a5a RBX: ffff88000008f980 RCX: ffff880001800000
+>> [13369.168545] RDX: ffff880001800000 RSI: ffff88000ddf6800 RDI: ffff880030d6f500
+>> [13369.168548] RBP: ffff88000dcb7cb8 R08: 0000000000000000 R09: ffff88001aa70360
+>> [13369.168551] R10: ffff880030f25c6c R11: ffff88000191c000 R12: ffff880030d6f500
+>> [13369.168553] R13: ffff88001e6b79a0 R14: ffff88000ddf6800 R15: ffff88000008f980
+>> [13369.168557] FS:  00002ab84b7ebb20(0000) GS:ffff880001800000(0000)
+>> knlGS:0000000000000000
+>> [13369.168560] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [13369.168562] CR2: 00002ab84b52b300 CR3: 00000000276ed000 CR4: 00000000000006f0
+>> [13369.168565] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [13369.168568] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [13369.168571] Process objdump (pid: 21876, threadinfo
+>> ffff88000dcb6000, task ffff88001e799ec0)
+>> [13369.168573] Stack:
+>> [13369.168575]  ffff880030d6f500 ffff88003ecf08c0 ffff88001aa70360
+>> 0000000000000000
+>> [13369.168579]<0>  ffff88000dcb7cd8 ffffffff8119afc9 ffff880030d6f500
+>> ffff880030d6f500
+>> [13369.168584]<0>  ffff88000dcb7d48 ffffffff810e8ebc ffff88000dcb7d18
+>> ffffffff810f2f78
+>> [13369.168589] Call Trace:
+>> [13369.168595]  [<ffffffff8119afc9>] security_dentry_open+0x19/0x4c
+>> [13369.168601]  [<ffffffff810e8ebc>] __dentry_open+0x159/0x2be
+>> [13369.168607]  [<ffffffff810f2f78>] ? generic_permission+0x17/0xa4
+>> [13369.168611]  [<ffffffff810e9e96>] nameidata_to_filp+0x3a/0x4b
+>> [13369.168616]  [<ffffffff810f58cb>] do_last+0x504/0x691
+>> [13369.168620]  [<ffffffff810f5c48>] do_filp_open+0x1f0/0x621
+>> [13369.168625]  [<ffffffff810ff29f>] ? alloc_fd+0x102/0x114
+>> [13369.168629]  [<ffffffff810e9f02>] do_sys_open+0x5b/0xf7
+>> [13369.168633]  [<ffffffff810e9fb9>] sys_open+0x1b/0x1d
+>> [13369.168639]  [<ffffffff81027602>] system_call_fastpath+0x16/0x1b
+>> [13369.168642] Code: ff ff c9 c3 55 48 89 e5 41 56 49 89 f6 41 55 41
+>> 54 49 89 fc 53 48 8b 47 18 4c 8b af c0 00 00 00 48 8b 58 28 48 8b 83
+>> 78 02 00 00<8b>  40 1c 41 89 45 08 e8 a1 af ff ff 41 89 45 0c 41 8b 44
+>> 24 54
+>> [13369.168681] RIP  [<ffffffff811a19ad>] selinux_dentry_open+0x27/0x91
+>> [13369.168685]  RSP<ffff88000dcb7c98>
+>> [13369.168688] ---[ end trace a79a28a58d538d97 ]---
+>>
+>> as for performance issues,would of never know about this if I hadnt
+>> looked in dmesg.
+>>
+>>
+>
+>
 
