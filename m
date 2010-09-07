@@ -1,114 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab0IGGWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 02:22:43 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37762 "EHLO
+	id S1753810Ab0IGG1F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 02:27:05 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39510 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066Ab0IGGWg (ORCPT
+	with ESMTP id S1750772Ab0IGG06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 02:22:36 -0400
+	Tue, 7 Sep 2010 02:26:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=n6ly6T9SwMJYDWA6cn0pBX/jHniHkbF0/Yfk1uND9+bQNqkDdiMAXaHx5V1+7nWDQN
-         aEfzN3O7Sh3G6vbrDOfYkiEKVGtQBebYax/nW5c+upT3dhUjQ1W+2ai/4LUPtvAfX6iZ
-         h4+nak3m313UyD3uqZM9TxApqMzmP2YfdYRio=
-Date: Mon, 6 Sep 2010 23:22:27 -0700
-From: mark gross <markgross@thegnar.org>
-To: Dan Carpenter <error27@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        mark gross <markgross@thegnar.org>,
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tyZO6Em4zcBOs4gtBAebXbhtlU7rk5PprR3+5TgMn40PGFydLnbFZv7WeuKs0U4HZP
+         KW46EHi476bzsaBaJbgHY64VPozP4/bGPfJBB24xDkuStKWpvCinjE7QffgcI7u8qQp/
+         aDJBl1QrhmLhoE9GzzUGDmR4Qi1KQB5bG/8kg=
+Date: Mon, 6 Sep 2010 23:26:52 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Vladislav Bolkhovitin <vst@vlnb.net>,
         James Bottomley <James.Bottomley@suse.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] pm_qos_params: cleanup: terminate a string
-Message-ID: <20100907062227.GB25651@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <20100903124105.GJ5437@bicker>
+        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
+        Chetan Loke <chetanloke@gmail.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+Message-ID: <20100907062652.GA1680@core.coreip.homeip.net>
+References: <1283459158.5598.143.camel@haakon2.linux-iscsi.org>
+ <20100905201802.GC18411@core.coreip.homeip.net>
+ <1283723447.556.133.camel@haakon2.linux-iscsi.org>
+ <20100905234134.GA17212@core.coreip.homeip.net>
+ <1283731194.556.147.camel@haakon2.linux-iscsi.org>
+ <1283769578.15944.1293.camel@mulgrave.site>
+ <4C85617E.2080603@vlnb.net>
+ <1283810135.556.238.camel@haakon2.linux-iscsi.org>
+ <20100907004424.GB21430@core.coreip.homeip.net>
+ <AANLkTin9Hk8+oMdXfB4h_DhirRyPf00739g5BpKcUE_5@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100903124105.GJ5437@bicker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTin9Hk8+oMdXfB4h_DhirRyPf00739g5BpKcUE_5@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 03, 2010 at 02:41:06PM +0200, Dan Carpenter wrote:
-> This is just a picky thing, but we pass an possibly unterminated string
-> to printk if debugging is turned on.  Also printk level is set to
-> "debug" by pr_debug() so the "KERN_ERR" isn't used.
-
-Picky is good.  But we should probably get the other pr_debug fixed and
-return -EINVAL if the strlen of the ascii_value is not bigger than 10.
-
-thanks for finding my screw up!
-
-
+On Tue, Sep 07, 2010 at 08:08:37AM +0200, Bart Van Assche wrote:
+> On Tue, Sep 7, 2010 at 2:44 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> >
+> > [ ... ]
+> >
+> > Vlad appears to be asserting that SCST is more feature-complete that LIO
+> > at this point. It also seems that LIO is somewhat younger than SCST. So
+> > at this point it might be interesting to see:
+> >
+> > 1. What are the shortcomings of SCST design compared to LIO and why LIO
+> > developers chose to come with their own solution instead of
+> > collaborating with SCST folks?
+> >
+> > 2. What features are missing from SCST that are currently available in
+> > LIO?
+> >
+> > Once this is sorted out and [most] everyone agrees that LIO is indeed
+> > technically superior (even if maybe not as mature yet) solution, then it
+> > would make sense to request SCST developers to go to file/line depth of
+> > the review.
 > 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> You seem to have missed the start of this thread. The design of SCST
+> is significantly more advanced than that of LIO, and it has already
+> been explained in this thread why
+> (http://www.spinics.net/lists/linux-scsi/msg45856.html).
 > 
-> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> index b7e4c36..310a51e 100644
-> --- a/kernel/pm_qos_params.c
-> +++ b/kernel/pm_qos_params.c
-> @@ -389,10 +389,11 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
->  	} else if (count == 11) { /* len('0x12345678/0') */
->  		if (copy_from_user(ascii_value, buf, 11))
->  			return -EFAULT;
-> +		ascii_value[10] = '\0';
->  		x = sscanf(ascii_value, "%x", &value);
->  		if (x != 1)
->  			return -EINVAL;
-> -		pr_debug(KERN_ERR "%s, %d, 0x%x\n", ascii_value, x, value);
-> +		pr_debug("%s, %d, 0x%x\n", ascii_value, x, value);
->  	} else
->  		return -EINVAL;
->  
 
-Updated version of this patch:
+The question was directed to LIO folks as they appear to disagree with
+this statement.
 
---mark
-
-Signed-off-by: mark gross <markgross@thegnar.org>
-
-Subject: [PATCH] correct some pr_debug misuse and add a stronger parrameter check to
- pm_qos_write for the ascii hex value case.  Thanks to Dan Carpenter for
- pointing out the problem!
-
----
- kernel/pm_qos_params.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-index f42d3f7..db4295a 100644
---- a/kernel/pm_qos_params.c
-+++ b/kernel/pm_qos_params.c
-@@ -155,7 +155,7 @@ static void update_target(int pm_qos_class)
- 		call_notifier = 1;
- 		atomic_set(&pm_qos_array[pm_qos_class]->target_value,
- 				extreme_value);
--		pr_debug(KERN_ERR "new target for qos %d is %d\n", pm_qos_class,
-+		pr_debug("new target for qos %d is %d\n", pm_qos_class,
- 			atomic_read(&pm_qos_array[pm_qos_class]->target_value));
- 	}
- 	spin_unlock_irqrestore(&pm_qos_lock, flags);
-@@ -374,10 +374,12 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
- 	} else if (count == 11) { /* len('0x12345678/0') */
- 		if (copy_from_user(ascii_value, buf, 11))
- 			return -EFAULT;
-+		if (strlen(ascii_value) > 10)
-+			return -EINVAL;
- 		x = sscanf(ascii_value, "%x", &value);
- 		if (x != 1)
- 			return -EINVAL;
--		pr_debug(KERN_ERR "%s, %d, 0x%x\n", ascii_value, x, value);
-+		pr_debug("%s, %d, 0x%x\n", ascii_value, x, value);
- 	} else
- 		return -EINVAL;
- 
 -- 
-1.7.0.4
-
+Dmitry
