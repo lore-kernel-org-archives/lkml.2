@@ -1,99 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756530Ab0IGNcF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 09:32:05 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:35809 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab0IGNb6 (ORCPT
+	id S1756658Ab0IGNdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 09:33:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40168 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755675Ab0IGNdO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 09:31:58 -0400
+	Tue, 7 Sep 2010 09:33:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=b0aQHoKKhV/IPPOnsGZ9vTaH4qIpe4mWhQJe7v/mMO0Qg5qB8ztCDAjsx16wAFfLxG
-         oG9gSSrB3FBDlJ2h8+LKpDXlEYjAUAS+d/RO/q5ORlv+/MSAPS4pwtxLrGtJ5oZDNapn
-         bfPWoUKZGX+nXTwLSERSANtuGbARoGqU8K74o=
-Date: Tue, 7 Sep 2010 17:31:54 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] base/platform: Simplifications for NULL platform
- data/resources handling
-Message-ID: <20100907133154.GB28139@oksana.dev.rtsoft.ru>
-References: <20100907133107.GA21463@oksana.dev.rtsoft.ru>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KeIJYPbhXRLKGdS+G8SS96mzHQc9HUMyjyhpIxlezIRdvo+9DDxSXZkQUvbJH+QCmS
+         1gY+6RCqIf/g3Jp65vA6K9yaMsJTbOkWmxA75hR4sGjKlI6/CCT3YhLhKCv9vYPdg2bt
+         Uvgh2oUUcAVNnWLqYjD9MKUv1avr9EhCDH8gA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100907133107.GA21463@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
+References: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
+Date: Tue, 7 Sep 2010 21:24:44 +0800
+Message-ID: <AANLkTiksb1AudCzs8-TWdXb11T-QcPx1G_qu6eUtJ74C@mail.gmail.com>
+Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization(v1)
+From: Ming Lei <tom.leiming@gmail.com>
+To: venki kaps <venkiece2005@gmail.com>
+Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no need to explicitly check for data and resources being NULL,
-as platform_device_add_{data,resources}() do this internally nowadays.
+2010/9/7 venki kaps <venkiece2005@gmail.com>:
+> Dear USB experts,
+>
+>  Is the same fix valid for omap3430 + 2.6.32 Kernel?
+>
+>  I have been facing mp3 playback idle current consumption 20mA more
+> after booting without USB cable connected
+>  but If USB cable detach and attach happen, then able to hit proper
+> values otherwise irrespective of cold/warm reset
+>  the current values increases to 20mA.
+>
+>  with cable,
+>      OTG_SYSCONFIG standby mode of operation - SMART idle
+>      HSOTGUSB_STANDBY - SMART standby
+>
+>  without cable,
+>        OTG_SYSCONFIG standby mode of operation - SMART idle
+>        HSOTGUSB_STANDBY - Active
+>
+>  Even i have applied  patch but still the same issue.
 
-This makes the code more linear and less indented.
+Are you applying the patch below?
 
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
----
- drivers/base/platform.c |   32 ++++++++++++--------------------
- 1 files changed, 12 insertions(+), 20 deletions(-)
+         http://marc.info/?l=linux-omap&m=128378686221264&w=2
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 67519cd..716d563 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -380,17 +380,13 @@ struct platform_device *__init_or_module platform_device_register_resndata(
- 
- 	pdev->dev.parent = parent;
- 
--	if (res) {
--		ret = platform_device_add_resources(pdev, res, num);
--		if (ret)
--			goto err;
--	}
-+	ret = platform_device_add_resources(pdev, res, num);
-+	if (ret)
-+		goto err;
- 
--	if (data) {
--		ret = platform_device_add_data(pdev, data, size);
--		if (ret)
--			goto err;
--	}
-+	ret = platform_device_add_data(pdev, data, size);
-+	if (ret)
-+		goto err;
- 
- 	ret = platform_device_add(pdev);
- 	if (ret) {
-@@ -537,17 +533,13 @@ struct platform_device * __init_or_module platform_create_bundle(
- 		goto err_out;
- 	}
- 
--	if (res) {
--		error = platform_device_add_resources(pdev, res, n_res);
--		if (error)
--			goto err_pdev_put;
--	}
-+	error = platform_device_add_resources(pdev, res, n_res);
-+	if (error)
-+		goto err_pdev_put;
- 
--	if (data) {
--		error = platform_device_add_data(pdev, data, size);
--		if (error)
--			goto err_pdev_put;
--	}
-+	error = platform_device_add_data(pdev, data, size);
-+	if (error)
-+		goto err_pdev_put;
- 
- 	error = platform_device_add(pdev);
- 	if (error)
+The patch(USB: otg: twl4030: fix phy initialization(v1)) above is against
+2.6.36-rc3, I don't think you can apply it directly on 2.6.32. And the patch
+is introduced to fix the problems caused by
+
+          commit 461c317705eca5cac09a360f488715927fd0a927.
+
+which change is committed into mainline 2.6.36-rc3.
+
+>
+>  If i use __twl4030_phy_power(twl, 0) at the end of USB LDO initialization,
+
+If you apply this patch against 2.6.36-rc3, you will find
+__twl4030_phy_power(twl, 0)  is always called from .probe
+if you don't connect musb with PC via cable when powering on.
+
+>  then able to hit proper values but USB ADC values are getting in correct
+>  with Travel adapter (Charger power supply) which means temperature
+>  shows 84 instead of 26~30 degrees.
+>
+>  Queries,
+>  -----------
+>   - Is Errata 1.164 fix : OTG idle will work on 3430?
+
+No such errata found in ti wetsite, could you give a link?
+
+>   - USBOTG_SUSPEND is enabled in Kernel 32, will it give any impact?
+
+Kernel does not have USBOTG_SUSPEND config option. Do you
+mean USB_SUSPEND? If so, it is nothing to do with your issue since
+it is only valid for host driver. Also for your case, musb works at
+b-idle state.
+
+>   - Is there anything missed from Power management idle path (or)
+>    USB OTG controller/Transreceiver driver part?
+
+Maybe with transreceiver part, musb doesn't support runtime pm now.
+
+>
+>  Could you please provide the best approach to solve my issue?
+
+Sorry, this patch is not for your issue, as said above.
+
+
 -- 
-1.7.0.5
+Lei Ming
