@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758296Ab0IGUy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 16:54:28 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18631 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757092Ab0IGUyX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 16:54:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp02.nvidia.com on Tue, 07 Sep 2010 13:53:20 -0700
-From: Gary King <gking@nvidia.com>
-To: linux-mm@kvack.org
-Cc: linux-arm-kernel@lists.infradead.org, tj@kernel.org,
-        linux-kernel@vger.kernel.org, Gary King <gking@nvidia.com>
-Subject: [PATCH] bounce: call flush_dcache_page after bounce_copy_vec
-Date: Tue,  7 Sep 2010 13:45:34 -0700
-Message-Id: <1283892334-9238-1-git-send-email-gking@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1758347Ab0IGUxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 16:53:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56766 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756993Ab0IGUx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 16:53:27 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Cc: nauman@google.com, dpshah@google.com, guijianfeng@cn.fujitsu.com,
+        vgoyal@redhat.com
+Subject: [RFC PATCH] Block device bio throttling support [V2]
+Date: Tue,  7 Sep 2010 16:53:04 -0400
+Message-Id: <1283892788-4751-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have been seeing problems on Tegra 2 (ARMv7 SMP) systems with HIGHMEM
-enabled on 2.6.35 (plus some patches targetted at 2.6.36 to perform
-cache maintenance lazily), and the root cause appears to be that the
-mm bouncing code is calling flush_dcache_page before it copies the
-bounce buffer into the bio.
 
-The patch below reorders these two operations, and eliminates numerous
-arbitrary application crashes on my dev system.
+Hi,
 
-Gary
+This is V2 of the bio throttling patches. Following are changes since V1.
 
---
->From 678c9bca8d8a8f254f28af91e69fad3aa1be7593 Mon Sep 17 00:00:00 2001
-From: Gary King <gking@nvidia.com>
-Date: Mon, 6 Sep 2010 15:37:12 -0700
-Subject: bounce: call flush_dcache_page after bounce_copy_vec
+- Move throttling hook point from __make_request() to __generic_make_request().
+  This will make sure that now throttling will work any block device which
+  instanciated a request queue and I don't have to modify each block driver.
+  So now it should work with device mapper devices also. Thanks to Mike Snitzer
+  for the suggestion.
 
-the bounced page needs to be flushed after data is copied into it,
-to ensure that architecture implementations can synchronize
-instruction and data caches if necessary.
+- Renamed blkio.read_bps_device to blkio.throttle.read_bps_device. Similar
+  changes were done for blkio.write_bps_device.
 
-Signed-off-by: Gary King <gking@nvidia.com>
----
- mm/bounce.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+- Exported two new files blkio.throttle.io_serviced and
+  blkio.throttle_io_service_bytes to export number of bio and number of bytes
+  served on request queue as seen by throttling policy.
 
-diff --git a/mm/bounce.c b/mm/bounce.c
-index 13b6dad..1481de6 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -116,8 +116,8 @@ static void copy_to_high_bio_irq(struct bio *to, struct bio *from)
- 		 */
- 		vfrom = page_address(fromvec->bv_page) + tovec->bv_offset;
- 
--		flush_dcache_page(tovec->bv_page);
- 		bounce_copy_vec(tovec, vfrom);
-+		flush_dcache_page(tovec->bv_page);
- 	}
- }
- 
--- 
-1.7.0.4
+- Introduce a config option CONFIG_BLK_DEV_THROTTLING, so that all the
+  throttling logic can be compiled out. 
 
+Previous version of patches are available here.
+
+[V1] http://lkml.org/lkml/2010/9/1/251
+
+Overview
+========
+Currently CFQ provides the weight based proportional division of bandwidth.
+People also have been looking at extending block IO controller to provide
+throttling/max bandwidth control.
+
+I have started to write the support for throttling in block layer on
+request queue so that it can be used both for higher level logical
+devices as well as leaf nodes. This patch is still work in progress but
+I wanted to post it for early feedback.
+
+Basically currently I have hooked into __generic_make_request() function to
+check which cgroup bio belongs to and if it is exceeding the specified
+BW rate. If no, thread can continue to dispatch bio as it is otherwise
+bio is queued internally and dispatched later with the help of a worker
+thread.
+
+HOWTO
+=====
+- Make sure CONFIG_BLK_CGROUP=y and CONFIG_BLK_DEV_THROTTLING=y.
+
+- Mount blkio controller
+        mount -t cgroup -o blkio none /cgroup/blkio
+
+- Specify a bandwidth rate on particular device for root group. The format
+  for policy is "<major>:<minor>  <byes_per_second>".
+
+        echo "8:16  1048576" > /cgroup/blkio/blkio.throttle.read_bps_device
+
+  Above will put a limit of 1MB/second on reads happening for root group
+  on device having major/minor number 8:16.
+
+- Run dd to read a file and see if rate is throttled to 1MB/s or not.
+
+       	# dd if=/mnt/common/zerofile of=/dev/null bs=4K count=1024 iflag=direct
+        1024+0 records in
+        1024+0 records out
+        4194304 bytes (4.2 MB) copied, 4.0001 s, 1.0 MB/s
+
+ Limits for writes can be put using blkio.throttle.write_bps_device file.
+
+Open Issues
+===========
+- Do we need to provide additional queue congestion semantics as we are
+  throttling and queuing bios at request queue and probably we don't want
+  a user space application to consume all the memory allocating bios
+  and bombarding request queue with those bios.
+
+TODO
+====
+- Lots of testing, bug fixes.
+- Provide support for enforcing limits in IOPS.
+
+Any feedback is welcome.
+
+Overall changes look as follows.
+
+ Documentation/cgroups/blkio-controller.txt |   89 +++-
+ block/Kconfig                              |   12 +
+ block/Makefile                             |    1 +
+ block/blk-cgroup.c                         |  699 ++++++++++++++++-----
+ block/blk-cgroup.h                         |   75 +++-
+ block/blk-core.c                           |   24 +
+ block/blk-throttle.c                       |  946 ++++++++++++++++++++++++++++
+ block/blk.h                                |    4 +-
+ block/cfq-iosched.c                        |    4 +
+ block/cfq.h                                |    2 +-
+ include/linux/blk_types.h                  |    3 +
+ include/linux/blkdev.h                     |   24 +
+ init/Kconfig                               |    9 +-
+
+Thanks
+Vivek
