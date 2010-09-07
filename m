@@ -1,56 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab0IGOvh (ORCPT <rfc822;w@1wt.eu>);
+	id S1757341Ab0IGOvp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 10:51:45 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34296 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757286Ab0IGOvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Sep 2010 10:51:37 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:48022 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757093Ab0IGOva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 10:51:30 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201009071451.o87EpPVc014171@stout.americas.sgi.com>
-Date: Tue, 07 Sep 2010 09:51:24 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 2.6.36-rc4
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.4 7/29/08
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Q4tMK4qqmXocBLGrb9NGJ4uD3FXx1bjZeqxFOdhLB2anAra2Zi1ygDOC/BNtldIxB/
+         yfHjLDMJGQDxu2NNkKD80NiqRdLkE7Nz1L6Gnr33Yxx6JK+B06SBjloBc2WZetHCd0j/
+         i9xksWhGcAZBR1Z0acFcAFXYLQeRGlkKjHSuA=
+Date: Tue, 7 Sep 2010 23:51:26 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC][PATCH] big continuous memory allocator v2
+Message-ID: <20100907145126.GA4620@barrios-desktop>
+References: <20100907114505.fc40ea3d.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTintQqzx50Jp_zyKQMaAfhSEFah3HhseNmNfNMjB@mail.gmail.com>
+ <20100907174743.2efa34bd.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100907174743.2efa34bd.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull the following four XFS changes for 2.6.36.  Three
-are bug fixes, one makes two simple changes to reduce the effect of
-some hot spots on large systems.  Thanks.
+On Tue, Sep 07, 2010 at 05:47:43PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 7 Sep 2010 01:37:27 -0700
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+> 
+> > Nice cleanup.
+> > There are some comments in below.
+> > 
+> > On Mon, Sep 6, 2010 at 7:45 PM, KAMEZAWA Hiroyuki
+> > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > >
+> > > This is a page allcoator based on memory migration/hotplug code.
+> > > passed some small tests, and maybe easier to read than previous one.
+> > >
+> > > ==
+> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > >
+> > > This patch as a memory allocator for contiguous memory larger than MAX_ORDER.
+> > >
+> > > ??alloc_contig_pages(hint, size, node);
+> > 
+> > I have thought this patch is to be good for dumb device drivers which
+> > want big contiguous
+> > memory. So if some device driver want big memory and they can tolerate
+> > latency or fail,
+> > this is good solution, I think.
+> > And some device driver can't tolerate fail, they have to use MOVABLE zone.
+> > 
+> > For it, I hope we have a option like ALLOC_FIXED(like MAP_FIXED).
+> > That's because embedded people wanted to aware BANK of memory.
+> > So if they get free page which they don't want, it can be pointless.
+> > 
+> Okay.
+> 
+> 
+> > In addition, I hope it can support CROSS_ZONE migration mode.
+> > Most of small system can't support swap system. So if we can't migrate
+> > anon pages into other zones, external fragment problem still happens.
+> > 
+> Now, this code migrates pages to somewhere, including crossing zone, node etc..
+> (because it just use GFP_HIGHUSER_MOVABLE)
+> 
+> > I think reclaim(ex, discard file-backed pages) can become one option to prevent
+> > the problem. But it's more cost so we can support it by calling mode.
+> > (But it could be trivial since caller should know this function is very cost)
+> > 
+> 
+> > ex) alloc_contig_pages(hint, size, node, ALLOC_FIXED|ALLOC_RECLAIM);
+> > 
+> 
+> This migration's page allocation code will cause memory reclaim and
+> kswapd wakeup if memory is in short. But hmm, there are no codes as
 
-					-Alex
+Yes. But it's useless. That's because it's not a zone/node we want to reclaim.
+The zone we want to reclaim is not alloc failed zone but the zone which include 
+alloc_contig_pages's hint address. 
 
-The following changes since commit 2bfc96a127bc1cc94d26bfaa40159966064f9c8c:
+> 
+>  reclaim_memory_within(start, end).
+> 
+> But I guess if there are LRU pages within the range which cannot be migrated,
+> they can't be dropped. In another consideration, 
+> 
+>   shrink_slab_within(start, end)
+> will be able to make success-rate better. (and this is good for memory hotplug, too)
 
-  Linux 2.6.36-rc3 (2010-08-29 08:36:04 -0700)
+And it can help normal external memory fragement, too. 
 
-are available in the git repository at:
-  git://oss.sgi.com/xfs/xfs for-linus
+> 
+> I'll start from adding ALLOC_FIXED.
 
-Alex Elder (1):
-      Merge branch '2.6.36-xfs-misc' of git://git.kernel.org/.../dgc/xfsdev
-
-Arkadiusz Mi?kiewicz (1):
-      xfs: Disallow 32bit project quota id
-
-Dave Chinner (2):
-      xfs: improve buffer cache hash scalability
-      xfs: prevent 32bit overflow in space reservation
-
-Tao Ma (1):
-      xfs: Make fiemap work with sparse files
-
- fs/xfs/linux-2.6/xfs_buf.c   |    8 +-------
- fs/xfs/linux-2.6/xfs_buf.h   |    1 -
- fs/xfs/linux-2.6/xfs_ioctl.c |    7 +++++++
- fs/xfs/linux-2.6/xfs_iops.c  |    2 +-
- fs/xfs/xfs_bmap.c            |   14 +++++++++++++-
- fs/xfs/xfs_fs.h              |    4 +++-
- fs/xfs/xfs_vnodeops.c        |   13 ++++++++++---
- 7 files changed, 35 insertions(+), 14 deletions(-)
+I am looking forward to seeing your next version. :)
+Thanks, Kame. 
+-- 
+Kind regards,
+Minchan Kim
