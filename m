@@ -1,61 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab0IGKeY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 06:34:24 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46201 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755591Ab0IGKeR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 06:34:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:in-reply-to:user-agent;
-        b=a1Bpvik8M+XrTbMNJpGXAQb5gsBhV9TIIw+4cjLTcgxIjN4fRNhDmWJ1eOstklUrK2
-         IQAZKj+4T3XB3ef/0PypzS4T7OyyUHKy7YL088AFWVUFNhNQfuO0nUVD0zZPwgHR2G4u
-         HFlbvt2XnEUaScB1Z+D2a4wSdfJYD27o22FyM=
-Date: Tue, 7 Sep 2010 10:34:13 +0000
-From: Jarek Poplawski <jarkao2@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Linux Netdev List <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: [PROBLEM] ipw2200: WARNING: at kernel/softirq.c:143
-	local_bh_enable+0x58/0x80()
-Message-ID: <20100907103412.GA8999@ff.dom.local>
+	id S1756273Ab0IGKf7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 06:35:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37023 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755591Ab0IGKfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 06:35:54 -0400
+Message-ID: <4C861582.6080102@kernel.org>
+Date: Tue, 07 Sep 2010 12:35:46 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=BBQL5cS6Ox8MGiy+Pun56xtEhakJxeLwx9UnW@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Dave Chinner <david@fromorbit.com>
+CC: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [2.6.36-rc3] Workqueues, XFS, dependencies and deadlocks
+References: <20100907072954.GM705@dastard> <4C86003B.6090706@kernel.org> <20100907100108.GN705@dastard>
+In-Reply-To: <20100907100108.GN705@dastard>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Sep 2010 10:35:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-05 17:11, Pekka Enberg wrote:
-> Hi,
+Hello,
+
+On 09/07/2010 12:01 PM, Dave Chinner wrote:
+> The three workqueues are initialised in
+> fs/xfs/linux-2.6/xfs_buf.c::xfs_buf_init().
+>
+> They do not use delayed works, the requeuing of interest here
+> occurs in .../xfs_aops.c::xfs_end_io via
+> .../xfs_aops.c:xfs_finish_ioend() onto the xfsdatad_workqueue
+
+Oh, I was talking about cwq->delayed_works which is a mechanism which
+is used to enforce max_active among other things.
+
+>> Or better, can you give me a small test case which
+>> reproduces the problem?
 > 
-> This showed up in dmesg:
+> I've seen it twice in about 100 xfstests runs in the past week.
+> I can't remember the test that tripped over it - 078 I think did
+> once, and it was a different test the first time - only some tests
+> use the loopback device. We've never had a reliable reproducer
+> because of the complexity of the race condition that leads to
+> the deadlock....
+
+I see.
+
+>> Creating the workqueue for log completion w/ WQ_HIGHPRI should solve
+>> this.
 > 
-> [  143.695527] ------------[ cut here ]------------
-> [  143.695550] WARNING: at kernel/softirq.c:143 local_bh_enable+0x58/0x80()
-> [  143.695557] Hardware name: 2373KYG
-> [  143.695562] Modules linked in: ipw2200 libipw
-> [  143.695577] Pid: 4112, comm: NetworkManager Not tainted 2.6.36-rc2+ #182
-> [  143.695584] Call Trace:
-> [  143.695596]  [<c15b8ddc>] ? printk+0x18/0x1a
-> [  143.695610]  [<c1033fbd>] warn_slowpath_common+0x6d/0xa0
-> [  143.695620]  [<c1039568>] ? local_bh_enable+0x58/0x80
-> [  143.695630]  [<c1039568>] ? local_bh_enable+0x58/0x80
-> [  143.695640]  [<c103400b>] warn_slowpath_null+0x1b/0x20
-> [  143.695650]  [<c1039568>] local_bh_enable+0x58/0x80
-> [  143.695662]  [<c1482d25>] netif_rx+0x155/0x180
-> [  143.695677]  [<f807519c>] libipw_rx+0x55c/0xad0 [libipw]
-> [  143.695703]  [<f816f86a>] ipw_handle_data_packet+0x12a/0x260 [ipw2200]
+> So what you are saying is that we need to change the workqueue
+> creation interface to use alloc_workqueue() with some special set of
+> flags to make the workqueue behave as we want, and that each
+> workqueue will require a different configuration?  Where can I find
+> the interface documentation that describes how the different flags
+> affect the workqueue behaviour?
 
-Hi,
-Here is the thread:
+Heh, sorry about that.  I'm writing it now.  The plan is to audit all
+the create_*workqueue() users and replace them with alloc_workqueue()
+w/ appropriate parameters.  Most of them would be fine with the
+default set of parameters but there are a few which would need some
+adjustments.
 
-http://www.spinics.net/lists/netdev/msg139731.html
+>> I fail to follow here.  Can you elaborate a bit?
+> 
+> Here's what the work function does:
+> 
+>  -> run @work
+> 	-> trylock returned EAGAIN
+> 	-> queue_work(@work)
+> 	-> delay(1); // to stop workqueue spinning chewing up CPU
+>
+> So basically I'm seeing a kworker thread blocked in delay(1) - it's
+> appears to be making progress by processing the same work item over and over
+> again with delay(1) calls between them. The queued log IO completion
+> is not being processed, even though it is sitting in a queue
+> waiting...
 
-Jarek P.
+Can you please help me a bit more?  Are you saying the following?
+
+Work w0 starts execution on wq0.  w0 tries locking but fails.  Does
+delay(1) and requeues itself on wq0 hoping another work w1 would be
+queued on wq0 which will release the lock.  The requeueing should make
+w0 queued and executed after w1, but instead w1 never gets executed
+while w0 hogs the CPU constantly by re-executing itself.  Also, how
+does delay(1) help with chewing up CPU?  Are you talking about
+avoiding constant lock/unlock ops starving other lockers?  In such
+case, wouldn't cpu_relax() make more sense?
+
+>> To preserve the original behavior, create_workqueue() and friends
+>> create workqueues with @max_active of 1, which is pretty silly and bad
+>> for latency.  Aside from fixing the above problems, it would be nice
+>> to find out better values for @max_active for xfs workqueues.  For
+> 
+> Um, call me clueless, but WTF does max_active actually do?
+
+It regulates the maximum level of per-cpu concurrency.  ie. If a
+workqueue has @max_active of 16.  16 works on the workqueue may
+execute concurrently per-cpu.
+
+> It's not described anywhere, it's clamped to magic numbers ("I
+> really like 512"), etc.
+
+Yeap, that's just a random safety value I chose.  In most cases, the
+level of concurrency is limited by the number of work_struct, so the
+default limit is there just to survive complete runaway cases.
+
+>> most users, using the pretty high default value is okay as they
+>> usually have much stricter constraint elsewhere (like limited number
+>> of work_struct), but last time I tried xfs allocated work_structs and
+>> fired them as fast as it could, so it looked like it definitely needed
+>> some kind of resasonable capping value.
+> 
+> What part of XFS fired work structures as fast as it could? Queuing
+> rates are determined completely by the IO completion rates...
+
+I don't remember but once I increased maximum concurrency for every
+workqueue (the limit was 128 or something) and xfs pretty quickly hit
+the concurrency limit.  IIRC, there was a function which allocates
+work_struct and schedules it.  I'll look through the emails.
+
+Thanks.
+
+-- 
+tejun
