@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750988Ab0IGEH2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 00:07:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60370 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738Ab0IGEHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 00:07:25 -0400
-Date: Tue, 7 Sep 2010 04:06:58 GMT
-From: tip-bot for Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tj@kernel.org, heukelum@fastmail.fm, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        heukelum@fastmail.fm, tj@kernel.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1283799222.15941.1393621887@webmail.messagingengine.com>
-References: <1283799222.15941.1393621887@webmail.messagingengine.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/irq] x86, 32-bit: Align percpu area and irq stacks to THREAD_SIZE
-Message-ID: <tip-fe8e0c25cad28e8858ecfa5863333c70685a6811@git.kernel.org>
-Git-Commit-ID: fe8e0c25cad28e8858ecfa5863333c70685a6811
-X-Mailer: tip-git-log-daemon
+	id S1750970Ab0IGEHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 00:07:51 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:54428 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750839Ab0IGEHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 00:07:45 -0400
+Message-ID: <4C85BA83.9080002@bluewatersys.com>
+Date: Tue, 07 Sep 2010 16:07:31 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: Eric Miao <eric.y.miao@gmail.com>
+CC: David Brownell <david-b@pacbell.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        avictor.za@gmail.com, bn@niasdigital.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
+References: <280328.53116.qm@web180311.mail.gq1.yahoo.com> <4C85A71F.3010402@bluewatersys.com> <AANLkTi=B7O9jDB_pzHS6feWTxHQTfDZ-QLx7jOKaA2vN@mail.gmail.com>
+In-Reply-To: <AANLkTi=B7O9jDB_pzHS6feWTxHQTfDZ-QLx7jOKaA2vN@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 07 Sep 2010 04:06:59 +0000 (UTC)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fe8e0c25cad28e8858ecfa5863333c70685a6811
-Gitweb:     http://git.kernel.org/tip/fe8e0c25cad28e8858ecfa5863333c70685a6811
-Author:     Alexander van Heukelum <heukelum@fastmail.fm>
-AuthorDate: Mon, 6 Sep 2010 20:53:42 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 7 Sep 2010 05:07:00 +0200
+On 09/07/2010 03:54 PM, Eric Miao wrote:
+> On Tue, Sep 7, 2010 at 10:44 AM, Ryan Mallon <ryan@bluewatersys.com> wrote:
+>> On 09/07/2010 02:23 PM, David Brownell wrote:
+>>> Still not liking or accepting this proposed
+>>> change to the GPIO framework.
+>>>
+>>> For the AT91 case (where integers 0..N are
+>>> IRQs, but N..max are GPIOs)
+>>>
+>>> A simpler solution is just to use a bit in
+>>> the integer to indicate IRQ vs GPIO.  Like
+>>> maybe the sign bit.. which is never set on
+>>> valid GPIO numbers, but platforms could let
+>>> be set on IRQs.
+>>>
+>> How about this approach instead?
+>>
+> 
+> This doesn't solve the problem with more complicated settings, e.g.
+> some GPIOs within are not valid, not just the begining ones.
 
-x86, 32-bit: Align percpu area and irq stacks to THREAD_SIZE
+Agreed, but this does solve the immediate problem for AT91 in a simple
+way. Are there boards in the kernel which have holes in the gpio layout?
 
-The irq stacks, located in the percpu-area, need to be
-THREAD_SIZE aligned. Add the infrastucture to align percpu
-variables to larger-than-pagesize amounts within the percpu
-area, and use it to specify the alignment for the irq stacks.
-Also align the percpu area itself to THREAD_SIZE.
+Another possible solution is to loop through all the gpio_chips to see
+if the number maps to a valid gpio. The obvious downside to this
+approach is that the complexity of gpio_is_valid becomes reasonably high
+for something which should be a very simple test and, as you say below,
+we probably just don't need that fine-grained information.
 
-This should make irq stacks work with 8K THREAD_SIZE.
+> So the real question here is the semantics of gpio_is_valid(). I'd
+> personally incline it reads as if a GPIO _number_ is valid generally,
+> (e.g. like -1 is not a valid GPIO number), instead of that specific
+> GPIO is valid on that specific platform. The latter can be judged
+> with gpio_request().
 
-Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: hch@lst.de
-LKML-Reference: <1283799222.15941.1393621887@webmail.messagingengine.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/irq_32.c      |    4 ++--
- arch/x86/kernel/vmlinux.lds.S |    2 +-
- include/linux/percpu-defs.h   |   12 ++++++++++++
- 3 files changed, 15 insertions(+), 3 deletions(-)
+Some drivers in the kernel appear to be using this behaviour to have
+optional gpios, ie setting the foo_gpio = -1 in the platform data for
+some driver. The documentation also suggests that this is what
+gpio_is_valid is intended for. However, the documentation also says we
+may want gpio_is_valid to return invalid on some other numbers.
 
-diff --git a/arch/x86/kernel/irq_32.c b/arch/x86/kernel/irq_32.c
-index 3b5609f..50fbbe6 100644
---- a/arch/x86/kernel/irq_32.c
-+++ b/arch/x86/kernel/irq_32.c
-@@ -60,8 +60,8 @@ union irq_ctx {
- static DEFINE_PER_CPU(union irq_ctx *, hardirq_ctx);
- static DEFINE_PER_CPU(union irq_ctx *, softirq_ctx);
- 
--static DEFINE_PER_CPU_PAGE_ALIGNED(union irq_ctx, hardirq_stack);
--static DEFINE_PER_CPU_PAGE_ALIGNED(union irq_ctx, softirq_stack);
-+static DEFINE_PER_CPU_MULTIPAGE_ALIGNED(union irq_ctx, hardirq_stack, THREAD_SIZE);
-+static DEFINE_PER_CPU_MULTIPAGE_ALIGNED(union irq_ctx, softirq_stack, THREAD_SIZE);
- 
- static void call_on_stack(void *func, void *stack)
- {
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index d0bb522..bb89947 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -273,7 +273,7 @@ SECTIONS
- 	}
- 
- #if !defined(CONFIG_X86_64) || !defined(CONFIG_SMP)
--	PERCPU(PAGE_SIZE)
-+	PERCPU(THREAD_SIZE)
- #endif
- 
- 	. = ALIGN(PAGE_SIZE);
-diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
-index ce2dc65..ab20d11 100644
---- a/include/linux/percpu-defs.h
-+++ b/include/linux/percpu-defs.h
-@@ -139,6 +139,18 @@
- 	__aligned(PAGE_SIZE)
- 
- /*
-+ * Declaration/definition used for large per-CPU variables that must be
-+ * aligned to something larger than the pagesize.
-+ */
-+#define DECLARE_PER_CPU_MULTIPAGE_ALIGNED(type, name, size)		\
-+	DECLARE_PER_CPU_SECTION(type, name, "..page_aligned")		\
-+	__aligned(size)
-+
-+#define DEFINE_PER_CPU_MULTIPAGE_ALIGNED(type, name, size)		\
-+	DEFINE_PER_CPU_SECTION(type, name, "..page_aligned")		\
-+	__aligned(size)
-+
-+/*
-  * Intermodule exports for per-CPU variables.  sparse forgets about
-  * address space across EXPORT_SYMBOL(), change EXPORT_SYMBOL() to
-  * noop if __CHECKER__.
+~Ryan
+
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
