@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab0IGGPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 02:15:06 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:59879 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab0IGGPC (ORCPT
+	id S1756154Ab0IGGPN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 02:15:13 -0400
+Received: from dhruva1.ncra.tifr.res.in ([158.144.12.129]:49425 "EHLO
+	dhruva1.ncra.tifr.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878Ab0IGGPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 02:15:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=njvBzOIVpCvd7Uzl4A26xslAfaTuh3rW565YWzpja1KNz1dNBF2VvOT7Ozf4owZmC+
-         4XqdktbzOfKURSHB+wQX15Yo3GH8pDSIRKqzETaFqeaqDN43qwc/xpw0ecackhXhWmNl
-         A04/k8GZGPcG6W60KWSCnZfS4PsIgg8HeraWI=
+	Tue, 7 Sep 2010 02:15:04 -0400
+From: "Raju Rameshwar Uprade" <rajsingh@ncra.tifr.res.in>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Regarding USB-serial device driver
+Date: Tue, 7 Sep 2010 11:44:50 +0530
+Message-Id: <20100907061327.M12473@admin-gateway.ncra.tifr.res.in>
+X-Mailer: OpenWebMail 2.53 (08:Aug:2008)
+X-OriginatingIP: 158.144.12.129
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikxeV3yVXcnKgZCiORyzZ8xR4Ydxf2rbquvRcJ=@mail.gmail.com>
-References: <1283204792.32007.448.camel@haakon2.linux-iscsi.org>
-	<4C7FFD1A.8090509@vlnb.net>
-	<1283459158.5598.143.camel@haakon2.linux-iscsi.org>
-	<20100905201802.GC18411@core.coreip.homeip.net>
-	<1283723447.556.133.camel@haakon2.linux-iscsi.org>
-	<20100905234134.GA17212@core.coreip.homeip.net>
-	<1283731194.556.147.camel@haakon2.linux-iscsi.org>
-	<1283769578.15944.1293.camel@mulgrave.site>
-	<4C85617E.2080603@vlnb.net>
-	<1283810135.556.238.camel@haakon2.linux-iscsi.org>
-	<20100907004424.GB21430@core.coreip.homeip.net>
-	<AANLkTikxeV3yVXcnKgZCiORyzZ8xR4Ydxf2rbquvRcJ=@mail.gmail.com>
-Date: Tue, 7 Sep 2010 08:15:01 +0200
-X-Google-Sender-Auth: WNe6TH14NmbYKqFe9D_KoUwwQ7s
-Message-ID: <AANLkTi=KTPMRQpdKihE=+otDUSDjPcjw2OeL8+V58k2o@mail.gmail.com>
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-From: Bart Van Assche <bvanassche@acm.org>
-To: Chetan Loke <chetanloke@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Vladislav Bolkhovitin <vst@vlnb.net>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Dirk Meister <dmeister@uni-paderborn.de>, linux-scsi@vger.kernel.org,
-        Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 7, 2010 at 5:45 AM, Chetan Loke <chetanloke@gmail.com> wrote:
-> [ ... ]
->
-> I would also appreciate an overview or a block diagram of how things
-> work in LIO. I hope that's not too much to ask for? That way we can
-> compare/contrast how things work from 10,000 feet level.
-> I for one don't want to look at a single patch and comment -
-> i) Oh, change this variable here because it doesn't follow linux coding style.
-> ii) You dropped a lock in queue-cmd? Good. qla's driver has been doing
-> it for sometime, no? So you could have just looked at that LLDD.
->
-> Sorry, not trying to criticize anything but would like to offer my 2 cents too.
 
-I agree with you. Not only the code of the two projects should be
-reviewed but their respective designs should be reviewed too.
+Hi Greg,
+               I have a UART device  driver which is used to control some  MCM ( Monitor
+& control module ) devices with  address like 2,3,5,10,14 & 0 thru serial port using
+RS-485 interface card.
 
-Bart.
+Now I want to control these devices thru usb-serial adaptor card.When I plug the
+usb-to-serial device.It's shows me the terminal ttyUSB0.
+
+I tried sending data thru it , but in between some junk data is also going out ....
+
+output of usbmon :
+
+ ee26be80 3612838323 S Co:7:002:0 s 40 01 0008 0000 0000 0
+ee26be80 3612839660 C Co:7:002:0 0 0
+ee26be80 3612839716 S Co:7:002:0 s 40 01 0009 0000 0000 0
+ee26be80 3612840660 C Co:7:002:0 0 0
+ee26be80 3612840700 S Ci:7:002:0 s a1 21 0000 0000 0007 7 <
+ee26be80 3612841661 C Ci:7:002:0 0 7 = 80250000 000008
+ee26be80 3612841710 S Co:7:002:0 s 21 20 0000 0000 0007 7 = 80250000 000008
+ee26be80 3612842659 C Co:7:002:0 0 7 >
+ee26be80 3612842672 S Co:7:002:0 s 21 22 0003 0000 0000 0
+ee26be80 3612843657 C Co:7:002:0 0 0
+ee2b3800 3612843712 S Ci:7:002:0 s a1 21 0000 0000 0007 7 <
+ee2b3800 3612844658 C Ci:7:002:0 0 7 = 80250000 000008
+ee2b3800 3612844668 S Co:7:002:0 s 40 01 0000 0000 0000 0
+ee2b3800 3612845660 C Co:7:002:0 0 0
+ee0eaf80 3612845669 S Bi:7:002:3 -115 256 <
+ee0ead00 3612845674 S Ii:7:002:1 -115:1 10 <
+ee2b3800 3612845679 S Co:7:002:0 s 21 22 0003 0000 0000 0
+ee2b3800 3612846657 C Co:7:002:0 0 0
+ee0ea680 3618022849 S Bo:7:002:2 -115 100 = 00080000 00000000 f8000000 00000000 00000000
+00000000 00000000 00000000
+ee0ea680 3618024532 C Bo:7:002:2 0 100 >
+
+
+Ideally data which should go out is : 0080000000f8.( device address is 0 and check sum
+is f8 ).
+
+In my  previous emails, you told me to use current kernel version..so I am now using
+2.6.35 kernel version.
+
+ kindly help me.
+
+
+Thanks-
+ Raj.
+--
+Open WebMail Project (http://openwebmail.org)
+
