@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab0IGUww (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 16:52:52 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:62785 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756987Ab0IGUwu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 16:52:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=Ipvt8cQCSFx+/UN/VSZOXABv7mEyjGKW8bt9PGTPyVku8BY/ZP4WIOAFCpO9eZQOcU
-         OlMMoEubsn0+m9yPpt+m9zttg5TJaKxyCcO41CD/I0mSH8O1VFYUxjzIxq/DJpQYkQfO
-         AIpg2JhOGUH998h+u8JPCz113LumZEZ/v8stM=
-Date: Wed, 8 Sep 2010 00:28:28 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: d binderman <dcb314@hotmail.com>, dwmw2@infradead.org
-Subject: [PATCH] apm_power: Add missing break statement
-Message-ID: <20100907202828.GA14143@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757350Ab0IGUw7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 16:52:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27365 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932523Ab0IGUw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 16:52:57 -0400
+Message-Id: <8u3s8d$jgk7o2@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,330,1280732400"; 
+   d="scan'208";a="654974722"
+Date: Tue, 07 Sep 2010 21:52:45 +0100
+To: Kyle McMartin <kyle@mcmartin.ca>
+Subject: Re: [git pull v2] i915
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        Andy Isaacson <adi@hexapodia.org>
+References: <89kc63$i063ms@fmsmga002.fm.intel.com> <AANLkTi=pFSB5AfqXbPNUQUknbnCBwqUHdUVzR6jaZqaQ@mail.gmail.com> <8u3s94$geldgp@orsmga002.jf.intel.com> <20100907202934.GA24791@bombadil.infradead.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <20100907202934.GA24791@bombadil.infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The missing break statement causes wrong capacity calculation for
-batteries that report energy.
+On Tue, 7 Sep 2010 16:29:34 -0400, Kyle McMartin <kyle@mcmartin.ca> wrote:
+> Hi Chris,
+> 
+> Without reverting ce171780, graphics don't come back after resuming on
+> my x201s. (drm/i915: Enable RC6 on Ironlake.) Several users bisected
+> failing graphics on resume to this commit, and I've confirmed that
+> reverting it does indeed fix the problem.
 
-Reported-by: d binderman <dcb314@hotmail.com>
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
----
+Reverted. Thanks.
+-Chris
 
-Applied to battery-2.6.36.git.
-
- drivers/power/apm_power.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/power/apm_power.c b/drivers/power/apm_power.c
-index 936bae5..dc628cb 100644
---- a/drivers/power/apm_power.c
-+++ b/drivers/power/apm_power.c
-@@ -233,6 +233,7 @@ static int calculate_capacity(enum apm_source source)
- 		empty_design_prop = POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN;
- 		now_prop = POWER_SUPPLY_PROP_ENERGY_NOW;
- 		avg_prop = POWER_SUPPLY_PROP_ENERGY_AVG;
-+		break;
- 	case SOURCE_VOLTAGE:
- 		full_prop = POWER_SUPPLY_PROP_VOLTAGE_MAX;
- 		empty_prop = POWER_SUPPLY_PROP_VOLTAGE_MIN;
 -- 
-1.7.0.5
+Chris Wilson, Intel Open Source Technology Centre
