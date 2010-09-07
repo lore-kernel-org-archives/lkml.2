@@ -1,237 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab0IGQxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 12:53:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42698 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757943Ab0IGQxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 12:53:09 -0400
-Date: Tue, 7 Sep 2010 18:53:05 +0200
-From: "Dr. Werner Fink" <werner@suse.de>
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: [PATCH] tty: Add a new file /proc/tty/consoles
-Message-ID: <20100907165305.GA18757@boole.suse.de>
-Mail-Followup-To: Greg KH <gregkh@suse.de>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-	linux-api@vger.kernel.org
+	id S1758017Ab0IGQyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 12:54:01 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:46921
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757943Ab0IGQx7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 12:53:59 -0400
+X-SpamScore: -25
+X-BigFish: VPS-25(zzbb2dKbb2cK1432N98dN9371Pzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L8DYUK-01-4H5-02
+X-M-MSG: 
+Date: Tue, 7 Sep 2010 18:51:58 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Matt Domsch <Matt_Domsch@dell.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.kernel.org>
+Subject: Re: [PATCH] perf, x86: Disable perf if the BIOS got its grubby
+ paws on the PMU
+Message-ID: <20100907165158.GB13563@erda.amd.com>
+References: <1283505227.1783.224.camel@laptop>
+ <4C80FDF7.1080106@linux.intel.com>
+ <20100903143258.GB373@auslistsprd01.us.dell.com>
+ <1283525163.2050.105.camel@laptop>
+ <20100907151541.GA13563@erda.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <20100907151541.GA13563@erda.amd.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Add a new file /proc/tty/consoles to be able to
- determine the registered system console lines.
- If the reading process holds /dev/console open at
- the regular standard input stream the active device
- will be marked by an asterisk.
+On 07.09.10 17:15:41, Robert Richter wrote:
+> > > > On 9/3/2010 2:13 AM, Peter Zijlstra wrote:
+> > > > >+static void print_BIOS_fail(void)
+> > > > >+{
+> > > > >+	printk(KERN_ERR "\n");
+> > > > >+	printk(KERN_ERR "=============================================\n");
+> > > > >+	printk(KERN_ERR "It appears the BIOS is actively using the PMU\n");
+> > > > >+	printk(KERN_ERR "this avoids Linux from using it, please de-  \n");
+> > > > >+	printk(KERN_ERR "activate this BIOS feature or request a BIOS \n");
+> > > > >+	printk(KERN_ERR "update from your vendor.                     \n");
+> > > > >+	printk(KERN_ERR "=============================================\n");
+> 
+> I would rather prefer this:
+> 
+>  BIOS bug, cpu 1, invalid  <register=value> ...
 
-Signed-off-by: Werner Fink <werner@suse.de>
----
- Documentation/filesystems/proc.txt |   16 ++++
- fs/proc/proc_tty.c                 |  138 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 154 insertions(+), 0 deletions(-)
+I got the note there is already a macro for this in kernel.h:
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index 9fb6cbe..a5b6dd5 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1074,6 +1074,7 @@ Table 1-11: Files in /proc/tty
-  drivers       list of drivers and their usage                
-  ldiscs        registered line disciplines                    
-  driver/serial usage statistic and status of single tty lines 
-+ consoles      registered system console lines
- ..............................................................................
- 
- To see  which  tty's  are  currently in use, you can simply look into the file
-@@ -1092,6 +1093,21 @@ To see  which  tty's  are  currently in use, you can simply look into the file
-   /dev/tty             /dev/tty        5       0 system:/dev/tty 
-   unknown              /dev/tty        4    1-63 console 
- 
-+To see which character device lines are currently used for the system console
-+/dev/console, you may simply look into the file /proc/tty/consoles:
-+
-+  > cat /proc/tty/consoles
-+  tty0                 4:7
-+  ttyS0                4:64
-+
-+If the reading process holds /dev/console open at the regular standard input
-+stream the active device will be marked by an asterisk:
-+
-+  > cat /proc/tty/consoles < /dev/console
-+  *tty0                4:7
-+  > tty
-+  /dev/pts/3
-+
- 
- 1.8 Miscellaneous kernel statistics in /proc/stat
- -------------------------------------------------
-diff --git a/fs/proc/proc_tty.c b/fs/proc/proc_tty.c
-index 83adcc8..f717e84 100644
---- a/fs/proc/proc_tty.c
-+++ b/fs/proc/proc_tty.c
-@@ -12,7 +12,10 @@
- #include <linux/proc_fs.h>
- #include <linux/stat.h>
- #include <linux/tty.h>
-+#include <linux/tty_driver.h>
-+#include <linux/console.h>
- #include <linux/seq_file.h>
-+#include <linux/fdtable.h>
- #include <linux/bitops.h>
- 
- /*
-@@ -137,6 +140,140 @@ static const struct file_operations proc_tty_drivers_operations = {
- };
- 
- /*
-+ * The device ID of file descriptor 0 of the current reading
-+ * task if a character device...
-+ */
-+static dev_t current_dev;
-+
-+/*
-+ * This is the handler for /proc/tty/consoles
-+ */
-+static int show_console_dev(struct seq_file *m, void *v)
-+{
-+	const struct tty_driver * driver;
-+	struct console * con;
-+	int index, len;
-+	dev_t dev;
-+
-+	if (v == SEQ_START_TOKEN)
-+		return 0;
-+	con = (struct console *)v;
-+	if (!con)
-+		return 0;
-+	driver = con->device(con, &index);
-+	if (!driver)
-+		return 0;
-+
-+	dev = MKDEV(driver->major, driver->minor_start) + index;
-+
-+	seq_printf(m, "%s%s%d%n", (current_dev == dev) ? "*" : "",
-+			con->name, con->index, &len);
-+	len = 19 - len;
-+	if (len < 1)
-+		len = 1;
-+	seq_printf(m, "%*c%d:%d\n", len, ' ', MAJOR(dev), MINOR(dev));
-+
-+	return 0;
-+}
-+
-+/* iterator for consoles */
-+static void *c_start(struct seq_file *m, loff_t *pos)
-+{
-+	struct console * con;
-+	loff_t off = 0;
-+
-+	if (*pos == 0)
-+		return SEQ_START_TOKEN;
-+
-+	acquire_console_sem();
-+	for (con = console_drivers; con; con = con->next) {
-+		if (!con->device)
-+			continue;
-+		if (!con->write)
-+			continue;
-+		if ((con->flags & CON_ENABLED) == 0)
-+			continue;
-+		if (++off == *pos)
-+			break;
-+	}
-+	release_console_sem();
-+
-+	return con;
-+}
-+
-+static void *c_next(struct seq_file *m, void *v, loff_t *pos)
-+{
-+	struct console * con;
-+
-+	acquire_console_sem();
-+ 	if (v == SEQ_START_TOKEN)
-+		con = console_drivers;
-+	else
-+		con = ((struct console *)v)->next;
-+	for (; con; con = con->next) {
-+		if (!con->device)
-+			continue;
-+		if (!con->write)
-+			continue;
-+		if ((con->flags & CON_ENABLED) == 0)
-+			continue;
-+		++*pos;
-+		break;
-+	}
-+	release_console_sem();
-+
-+	return con;
-+}
-+
-+static void c_stop(struct seq_file *m, void *v)
-+{
-+}
-+
-+static const struct seq_operations tty_consoles_op = {
-+	.start	= c_start,
-+	.next	= c_next,
-+	.stop	= c_stop,
-+	.show	= show_console_dev
-+};
-+
-+static int tty_consoles_open(struct inode *inode, struct file *file)
-+{
-+	struct files_struct * curfiles;
-+
-+	current_dev = 0;
-+	curfiles = get_files_struct(current);
-+	if (curfiles) {
-+		const struct file * curfp;
-+		spin_lock(&curfiles->file_lock);
-+		curfp = fcheck_files(curfiles, 0);
-+		if (curfp && curfp->private_data) {
-+			const struct inode * inode;
-+			dget(curfp->f_dentry);
-+			inode = curfp->f_dentry->d_inode;
-+			if (S_ISCHR(inode->i_mode)) {
-+				struct tty_struct * tty;
-+				tty = (struct tty_struct *)curfp->private_data;
-+				if (tty && tty->magic == TTY_MAGIC) {
-+					tty = tty_pair_get_tty(tty);
-+					current_dev = tty_devnum(tty);
-+				}
-+			}
-+			dput(curfp->f_dentry);
-+		}
-+		spin_unlock(&curfiles->file_lock);
-+		put_files_struct(curfiles);
-+	}
-+	return seq_open(file, &tty_consoles_op);
-+}
-+
-+static const struct file_operations proc_tty_consoles_operations = {
-+	.open		= tty_consoles_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
-+};
-+
-+/*
-  * This function is called by tty_register_driver() to handle
-  * registering the driver's /proc handler into /proc/tty/driver/<foo>
-  */
-@@ -186,4 +323,5 @@ void __init proc_tty_init(void)
- 	proc_tty_driver = proc_mkdir_mode("tty/driver", S_IRUSR|S_IXUSR, NULL);
- 	proc_create("tty/ldiscs", 0, NULL, &tty_ldiscs_proc_fops);
- 	proc_create("tty/drivers", 0, NULL, &proc_tty_drivers_operations);
-+	proc_create("tty/consoles", 0, NULL, &proc_tty_consoles_operations);
- }
+ #define FW_BUG          "[Firmware Bug]: "
+
+So, we would have something like:
+
+ [Firmware Bug]: cpu 1, invalid  <register=value> ...
+
+in dmesg.
+
+-Robert
+
+> 
+> ... which is a much better information on one line, explains the bug
+> and is also better parsable. I intend to implement messages like
+> this. So maybe we could find consensus with this or something similar.
+> 
+> A simple grep of dmesg will then give a list of BIOS bugs.
+> 
+> -Robert
+> 
+> -- 
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+
 -- 
-1.6.0.2
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
