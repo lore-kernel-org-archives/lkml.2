@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab0IGE4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 00:56:13 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50719 "EHLO mx2.mail.elte.hu"
+	id S1751802Ab0IGFBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 01:01:25 -0400
+Received: from mail.perches.com ([173.55.12.10]:1493 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061Ab0IGE4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 00:56:05 -0400
-Date: Tue, 7 Sep 2010 06:55:53 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: mingo@redhat.com, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, hch@lst.de,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/irq] x86: Always use irq stacks
-Message-ID: <20100907045553.GA20770@elte.hu>
-References: <20100628121554.GA6605@lst.de>
- <tip-7974891db234467eaf1fec613ec0129cb4ac2332@git.kernel.org>
- <20100903150041.GA30573@elte.hu>
- <1283799222.15941.1393621887@webmail.messagingengine.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283799222.15941.1393621887@webmail.messagingengine.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751061Ab0IGFBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 01:01:19 -0400
+Subject: [PATCH net-next] include/net/raw.h: Convert raw_seq_private macro
+ to inline
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: trivial@kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100906.184749.214227378.davem@davemloft.net>
+References: <cover.1283650107.git.joe@perches.com>
+	 <dd5d79c3aa9f2cffbca1a8d4a9163b0d6a9492a9.1283650107.git.joe@perches.com>
+	 <20100906.183036.68150190.davem@davemloft.net>
+	 <20100906.184749.214227378.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 06 Sep 2010 22:01:17 -0700
+Message-ID: <1283835677.23280.108.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-09-06 at 18:47 -0700, David Miller wrote:
+> raw_seq_private() expands to something which dereferences the pointer,
+> which you've now made void, which is illegal and breaks the build.
+> Reverted.
 
-* Alexander van Heukelum <heukelum@fastmail.fm> wrote:
+Apologies, I had this in my tree which I didn't send
+because it wasn't a private_data cast removal.
 
-> On Fri, 03 Sep 2010 17:00 +0200, "Ingo Molnar" <mingo@elte.hu> wrote:
-> > 
-> > * tip-bot for Christoph Hellwig <hch@lst.de> wrote:
-> > 
-> > > Commit-ID:  7974891db234467eaf1fec613ec0129cb4ac2332
-> > > Gitweb:     http://git.kernel.org/tip/7974891db234467eaf1fec613ec0129cb4ac2332
-> > > Author:     Christoph Hellwig <hch@lst.de>
-> > > AuthorDate: Mon, 28 Jun 2010 14:15:54 +0200
-> > > Committer:  Thomas Gleixner <tglx@linutronix.de>
-> > > CommitDate: Tue, 29 Jun 2010 12:12:59 +0200
-> > > 
-> > > x86: Always use irq stacks
-> >
-> > [...]
-> > 
-> > Checking out 7974891db2 and building+booting a kernel with this config 
-> > causes shows the crash.
-> > 
-> > Checking out 7974891db2~1 and building+booting a kernel with this config 
-> > gives a working system.
-> > 
-> > Note that tip:x86/irq has these commits currently:
-> > 
-> >  1813a68: x86: Move alloc_desk_mask variables inside ifdef
-> >  2589737: x86-32: Align IRQ stacks properly
-> >  dcfa726: x86: Remove CONFIG_4KSTACKS
-> >  7974891: x86: Always use irq stacks
-> 
-> Hello Ingo, Christoph, ...
-> 
-> There is still a problem with the alignment of the irq stacks. Maybe it's only
-> theoretical, but I think the attached patch is necessary. (Attached because
-> I'm sending it via a web interface.)
-> 
-> Please test and apply :).
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/net/raw.h |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-This apparently solved the crash, thanks a lot Alexander!
+diff --git a/include/net/raw.h b/include/net/raw.h
+index 43c5750..c621200 100644
+--- a/include/net/raw.h
++++ b/include/net/raw.h
+@@ -45,7 +45,10 @@ struct raw_iter_state {
+ 	struct raw_hashinfo *h;
+ };
+ 
+-#define raw_seq_private(seq) ((struct raw_iter_state *)(seq)->private)
++inline struct raw_iter_state *raw_seq_private(struct seq_file *seq)
++{
++	return seq->private;
++}
+ void *raw_seq_start(struct seq_file *seq, loff_t *pos);
+ void *raw_seq_next(struct seq_file *seq, void *v, loff_t *pos);
+ void raw_seq_stop(struct seq_file *seq, void *v);
 
-	Ingo
+
+
