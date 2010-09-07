@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab0IGUw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 16:52:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27365 "EHLO mga02.intel.com"
+	id S1758332Ab0IGUxa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 16:53:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44434 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932523Ab0IGUw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 16:52:57 -0400
-Message-Id: <8u3s8d$jgk7o2@orsmga001.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,330,1280732400"; 
-   d="scan'208";a="654974722"
-Date: Tue, 07 Sep 2010 21:52:45 +0100
-To: Kyle McMartin <kyle@mcmartin.ca>
-Subject: Re: [git pull v2] i915
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        Andy Isaacson <adi@hexapodia.org>
-References: <89kc63$i063ms@fmsmga002.fm.intel.com> <AANLkTi=pFSB5AfqXbPNUQUknbnCBwqUHdUVzR6jaZqaQ@mail.gmail.com> <8u3s94$geldgp@orsmga002.jf.intel.com> <20100907202934.GA24791@bombadil.infradead.org>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <20100907202934.GA24791@bombadil.infradead.org>
+	id S1756552Ab0IGUx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 16:53:27 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Cc: nauman@google.com, dpshah@google.com, guijianfeng@cn.fujitsu.com,
+        vgoyal@redhat.com
+Subject: [PATCH 1/4] Kill the header printed at the start of blkio.weight_device file
+Date: Tue,  7 Sep 2010 16:53:05 -0400
+Message-Id: <1283892788-4751-2-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1283892788-4751-1-git-send-email-vgoyal@redhat.com>
+References: <1283892788-4751-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Sep 2010 16:29:34 -0400, Kyle McMartin <kyle@mcmartin.ca> wrote:
-> Hi Chris,
-> 
-> Without reverting ce171780, graphics don't come back after resuming on
-> my x201s. (drm/i915: Enable RC6 on Ironlake.) Several users bisected
-> failing graphics on resume to this commit, and I've confirmed that
-> reverting it does indeed fix the problem.
+o Kill extra "dev weight" header which is printed when somebody reads
+  blkio.weight_device file. This really seems to be out of convention. No other
+  blkio files are printing any header at the start of file. I think it is ok
+  to just print values and how to interpret values should be part of
+  documentation.
 
-Reverted. Thanks.
--Chris
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-cgroup.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index a680964..c1a39d9 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -811,8 +811,6 @@ static int blkiocg_weight_device_read(struct cgroup *cgrp, struct cftype *cft,
+ 	struct blkio_cgroup *blkcg;
+ 	struct blkio_policy_node *pn;
+ 
+-	seq_printf(m, "dev\tweight\n");
+-
+ 	blkcg = cgroup_to_blkio_cgroup(cgrp);
+ 	if (!list_empty(&blkcg->policy_list)) {
+ 		spin_lock_irq(&blkcg->lock);
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.2.2
+
