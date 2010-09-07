@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab0IGWqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 18:46:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33272 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756251Ab0IGWqF (ORCPT
+	id S1757358Ab0IGWte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 18:49:34 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:37176 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab0IGWtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 18:46:05 -0400
-Date: Tue, 7 Sep 2010 15:44:13 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RFC 02/22] configfs: Add struct
- configfs_item_operations->check_link() in configfs_unlink()
-Message-ID: <20100907224413.GC21935@mail.oracle.com>
-Mail-Followup-To: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-	"Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-	linux-scsi <linux-scsi@vger.kernel.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-	Mike Christie <michaelc@cs.wisc.edu>,
-	Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-	James Bottomley <James.Bottomley@suse.de>,
-	Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-	Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
- <20100902064814.GB27904@mail.oracle.com>
- <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
- <201009071701.02847.konrad@darnok.org>
+	Tue, 7 Sep 2010 18:49:32 -0400
+Date: Wed, 8 Sep 2010 00:50:04 +0200
+From: Nico Schottelius <nico-linux-20100709@schottelius.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
+        Nico Schottelius <nico-linux-20100709@schottelius.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.36-rc3 suspend issue (was: 2.6.35-rc4 / X201 issues)
+Message-ID: <20100907225004.GA2805@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20100709@schottelius.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Jeff Chua <jeff.chua.linux@gmail.com>,
+	Jesse Barnes <jbarnes@virtuousgeek.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20100709170432.GA7691@schottelius.org>
+ <201009062037.55898.rjw@sisk.pl>
+ <AANLkTimhwCsxbRp3LgsH7zye4e1qEjC-4CRo+faS=D0r@mail.gmail.com>
+ <201009072348.41344.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ibTvN161/egqYuK8"
 Content-Disposition: inline
-In-Reply-To: <201009071701.02847.konrad@darnok.org>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201009072348.41344.rjw@sisk.pl>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.34 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 05:01:01PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > 	I NAK'd this a while back.  I'm willing to be convinced, but so
-> > > far it remains that way.
-> >
-> > Hi Joel,
-> >
-> > Thanks for bringing this point up again.  So a brief refresh on why this
-> > is currently required in the fabric independent configfs handlers in
-> > drivers/target/target_core_fabric_configfs.c (patch #19).
-> 
-> Well, that is great that you mentioned your requirements. But I don't see a 
-> quote of Joel's concerns? Is there an LKML link for it perhaps?
 
-	It was a while back.  Essentially, the concern is that configfs
-is defined to be userspace-driven.  If the user asks you to remove
-something, the module should be handling safe teardown rather than
-rejecting the user's request.
-	Now, the world isn't always clean-cut.  Code outside of the
-filesystem representation can lay a claim on a configfs item to say "I'm
-busy with this."  An example is ocfs2 pinning the configfs item
-describing its cluster heartbeat device.   But this is ocfs2 - a
-separate thing - claiming it.  There is a defined API to take and
-release these claims.
-	This API doesn't cover symlinks, as symlinks are simply linkage
-between config items.  It may be, as Nick suggested at the bottom of his
-reply, that we want the API extended to cover that case.  But he hasn't
-yet convinced me that safe teardown is impossible or disasterous.
-That's what I'd like to see.  It's not obvious on the face of all the
-file trees in the email.
-	Nick, can you provide some form of description, not long
-pathnames, that explains a) what breaks when the symlink is removed b)
-why that can't be allowed if the user is dumb enough to request it?
+--ibTvN161/egqYuK8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Joel
+Rafael J. Wysocki [Tue, Sep 07, 2010 at 11:48:41PM +0200]:
+> On Tuesday, September 07, 2010, Jeff Chua wrote:
+> > On Tue, Sep 7, 2010 at 2:37 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > On Monday, September 06, 2010, Jeff Chua wrote:
+> > >> On Mon, Sep 6, 2010 at 3:17 PM, Nico Schottelius
+> > >> <nico-linux-20100709@schottelius.org> wrote:
+> > >> Same problem here. X201s. Haven't had time to bisect.
+> > > Somebody has already done that:
+> > >
+> > > http://marc.info/?l=3Dlinux-kernel&m=3D128376394825563&w=3D4
+> >=20
+> > Rafael,
+> >=20
+> > Cool. Thanks for the short-cut! At least now, I can resume, but got a
+> > lot of BUGS showing up upon resume after applying the patch.
+>=20
+> This also was reported IIRC, but there's no resolution so far.  It's a
+> different issue.
 
--- 
+Can somebody ping me, as soon as a git pull on linux-2.6
+should be as "stable" (or more stable) than 2.6.34?
 
-"The lawgiver, of all beings, most owes the law allegiance.  He of all
- men should behave as though the law compelled him.  But it is the
- universal weakness of mankind that what we are given to administer we
- presently imagine we own."
-        - H.G. Wells
+Cheers,
 
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+Nico
+
+--=20
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+
+--ibTvN161/egqYuK8
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkyGwZwACgkQ19zI5DGHffCpmQCg2HBLpiyQxRF/t40xs3Ruwsd9
+FNsAoJBj0cZdcdNFe9+ndHeBxRxYYylz
+=2xzk
+-----END PGP SIGNATURE-----
+
+--ibTvN161/egqYuK8--
