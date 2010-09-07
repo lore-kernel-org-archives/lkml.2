@@ -1,68 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab0IGL7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 07:59:40 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:24434 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756118Ab0IGL7f (ORCPT
+	id S1756564Ab0IGMFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 08:05:42 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49971 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756464Ab0IGMFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 07:59:35 -0400
-X-SpamScore: -45
-X-BigFish: VPS-45(zz1432N9370J98dN4015L1447R9371Pzz1202hzz8275bh15d4Rz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L8DL2W-02-4MV-02
-X-M-MSG: 
-From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Organization: AMD OSRC
-To: Tejun Heo <htejun@gmail.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
-Subject: Re: [PATCH] libata: skip EH autopsy and recovery during suspend
-Date: Tue, 7 Sep 2010 13:54:31 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-020635rc4-generic; KDE/4.5.0; x86_64; ; )
+	Tue, 7 Sep 2010 08:05:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=SVuHUtvcDssClv/Pu+AJErMzgLNFFnVCVhJFjS3VTKwYQWONQDx0tYCO+XQk+e5DDr
+         pGn6/ZaTSAUDY9I96h5q4hzwIHqr0cvnkqB7VRkBPYFXmdm+fAHAmlkvBTTaNwzpQ/mh
+         uAr3+6nwrsNHt7yVl21bpeiUI8ahn+Bt2OJIs=
+Message-ID: <4C862A8B.3000506@gmail.com>
+Date: Tue, 07 Sep 2010 14:05:31 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Jeff Garzik <jeff@garzik.org>
 CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <201009021633.22869.stephan.diestelhorst@amd.com> <AANLkTi==kpbcJQ9E_MMfs9Ohu_O4vNsf8T7NK1z+iAwn@mail.gmail.com>
-In-Reply-To: <AANLkTi==kpbcJQ9E_MMfs9Ohu_O4vNsf8T7NK1z+iAwn@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>,
+        stable@kernel.org
+Subject: [PATCH #upstream-fixes] libata: skip EH autopsy and recovery during
+ suspend
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C7376BE.5040006@gmail.com> <201008242239.43249.rjw@sisk.pl> <201008270109.36687.rjw@sisk.pl> <4C7F6931.4050707@gmail.com>
+In-Reply-To: <4C7F6931.4050707@gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <201009071354.32149.stephan.diestelhorst@amd.com>
-X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 September 2010, 22:52:56 I wrote:
-> On Thu, Sep 2, 2010 at 4:33 PM, Stephan Diestelhorst
-> <stephan.diestelhorst@amd.com> wrote:
-> > On Thursday 02 September 2010, 12:02:49 Tejun Heo wrote:
-> >> For some mysterious reason, certain hardware reacts badly to usual EH
-> >> actions while the system is going for suspend.  As the devices won't
-> >> be needed until the system is resumed, ask EH to skip usual autopsy
-> >> and recovery and proceed directly to suspend.
-> >
-> > Thanks Tejun for this patch. Will test in a second!
-> 
-> Applied, compiled and worked for the 5 iterations I managed to test it.
-> Much better than your previous patch, thanks a lot! I'd give it some more spins
-> tomorrow, though.
+For some mysterious reason, certain hardware reacts badly to usual EH
+actions while the system is going for suspend.  As the devices won't
+be needed until the system is resumed, ask EH to skip usual autopsy
+and recovery and proceed directly to suspend.
 
-Alright, I have tested for more than 20 iterations now. It works
-great! Thanks for the fix!
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Tested-by: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Cc: stable@kernel.org
+---
+ drivers/ata/libata-core.c |   14 +++++++++++++-
+ drivers/ata/libata-eh.c   |    4 ++++
+ include/linux/libata.h    |    1 +
+ 3 files changed, 18 insertions(+), 1 deletion(-)
 
-Are there any plans for upstream inclusion?
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 9ceb493..92cd5f3 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -5427,6 +5427,7 @@ static int ata_host_request_pm(struct ata_host *host, pm_message_t mesg,
+  */
+ int ata_host_suspend(struct ata_host *host, pm_message_t mesg)
+ {
++	unsigned int ehi_flags = ATA_EHI_QUIET;
+ 	int rc;
 
-Thanks,
-  Stephan
+ 	/*
+@@ -5435,7 +5436,18 @@ int ata_host_suspend(struct ata_host *host, pm_message_t mesg)
+ 	 */
+ 	ata_lpm_enable(host);
 
+-	rc = ata_host_request_pm(host, mesg, 0, ATA_EHI_QUIET, 1);
++	/*
++	 * On some hardware, device fails to respond after spun down
++	 * for suspend.  As the device won't be used before being
++	 * resumed, we don't need to touch the device.  Ask EH to skip
++	 * the usual stuff and proceed directly to suspend.
++	 *
++	 * http://thread.gmane.org/gmane.linux.ide/46764
++	 */
++	if (mesg.event == PM_EVENT_SUSPEND)
++		ehi_flags |= ATA_EHI_NO_AUTOPSY | ATA_EHI_NO_RECOVERY;
++
++	rc = ata_host_request_pm(host, mesg, 0, ehi_flags, 1);
+ 	if (rc == 0)
+ 		host->dev->power.power_state = mesg;
+ 	return rc;
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index 0108731..95838b3 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -3242,6 +3242,10 @@ static int ata_eh_skip_recovery(struct ata_link *link)
+ 	if (link->flags & ATA_LFLAG_DISABLED)
+ 		return 1;
 
--- 
-Stephan Diestelhorst, AMD Operating System Research Center
-stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
++	/* skip if explicitly requested */
++	if (ehc->i.flags & ATA_EHI_NO_RECOVERY)
++		return 1;
++
+ 	/* thaw frozen port and recover failed devices */
+ 	if ((ap->pflags & ATA_PFLAG_FROZEN) || ata_link_nr_enabled(link))
+ 		return 0;
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index 89115f8..d1ef41b 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -335,6 +335,7 @@ enum {
+ 	ATA_EHI_HOTPLUGGED	= (1 << 0),  /* could have been hotplugged */
+ 	ATA_EHI_NO_AUTOPSY	= (1 << 2),  /* no autopsy */
+ 	ATA_EHI_QUIET		= (1 << 3),  /* be quiet */
++	ATA_EHI_NO_RECOVERY	= (1 << 4),  /* no recovery */
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+ 	ATA_EHI_DID_SOFTRESET	= (1 << 16), /* already soft-reset this port */
+ 	ATA_EHI_DID_HARDRESET	= (1 << 17), /* already soft-reset this port */
