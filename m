@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab0IGFeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 01:34:19 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60892 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab0IGFeQ (ORCPT
+	id S1754877Ab0IGFgM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 01:36:12 -0400
+Received: from smtp-115-monday.nerim.net ([62.4.16.115]:59339 "EHLO
+	maiev.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751162Ab0IGFgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 01:34:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=V/OQTkWC2h+FbJRVnIoM3aVIAZgE1xrXrqb5u7i1M2Qz540npCj50ugeK5OcXilWF4
-         q7bg+C6PWF9r5wFhseywMKm0EeeZci6YdoIv8lT87Sn/izQXxZU/hcnphtji+hqKBC9U
-         ijxSBTwNFWR7TIg62hpg6Oo9UCQXKzcALMuOA=
-Subject: [PATCH 3/3] staging: xgifb: Initialize uninitialized variables
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Bill Pemberton <wfp5p@virginia.edu>,
-        Arnaud Patard <apatard@mandriva.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 07 Sep 2010 01:34:05 -0400
-Message-ID: <1283837645.6302.10.camel@lenovo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Sep 2010 01:36:03 -0400
+X-Greylist: delayed 86586 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Sep 2010 01:36:03 EDT
+Date: Tue, 7 Sep 2010 07:36:00 +0200
+From: Damien Wyart <damien.wyart@free.fr>
+To: Nix <nix@esperi.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.35.*: horrible (exponential? >linear) slowdown to
+ unusability (ACPI idle?)
+Message-ID: <20100907053600.GA2508@brouette>
+References: <87zkvx2ese.fsf@spindle.srvr.nix>
+ <20100906053255.GA23340@brouette>
+ <87aanu39ev.fsf@spindle.srvr.nix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87aanu39ev.fsf@spindle.srvr.nix>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current patch solves compilation warnings in staging/xgifb for using possibly uninitialized variables.
+> > I think this is related to what has been discussed in this thread:
+> > http://lkml.org/lkml/2010/7/14/11
 
-Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
----
- drivers/staging/xgifb/vb_setmode.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+* Nix <nix@esperi.org.uk> [2010-09-06 21:27]:
+> Quite possibly :/ though I'm on x86-64, not x86, and certainly don't
+> have kmemleak turne don.
 
-diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-index c4db2fc..720a592 100644
---- a/drivers/staging/xgifb/vb_setmode.c
-+++ b/drivers/staging/xgifb/vb_setmode.c
-@@ -376,7 +376,7 @@ void InitTo330Pointer(unsigned char ChipType, struct vb_device_info *pVBInfo)
- unsigned char XGISetModeNew(struct xgi_hw_device_info *HwDeviceExtension,
- 			unsigned short ModeNo)
- {
--	unsigned short ModeIdIndex;
-+	unsigned short ModeIdIndex = 0;
- 	/* unsigned char *pVBInfo->FBAddr = HwDeviceExtension->pjVideoMemoryAddress; */
- 	struct vb_device_info VBINF;
- 	struct vb_device_info *pVBInfo = &VBINF;
-@@ -3834,7 +3834,7 @@ unsigned char XGI_SetCRT2Group301(unsigned short ModeNo,
- 		struct xgi_hw_device_info *HwDeviceExtension,
- 		struct vb_device_info *pVBInfo)
- {
--	unsigned short tempbx, ModeIdIndex, RefreshRateTableIndex;
-+	unsigned short tempbx, ModeIdIndex = 0, RefreshRateTableIndex;
- 
- 	tempbx = pVBInfo->VBInfo;
- 	pVBInfo->SetFlag |= ProgrammingCRT2;
+Yes, at first we were talking about x86 and kmemleak but leter on, the
+problem seemed more related to x86-64 and the config_no_bootmem option.
+
+> > So if you can reproduce it quite easily, I guess bisection (even
+> > painful) will be the best way to get (hopefuly) an idea of where the
+> > problem might come from...
+
+> 'Quite easily' is not quite true. It does not show up in qemu -kernel.
+> It does not show up if you boot straight to an emergency boot shell
+> in the initramfs (I was trying to avoid activating the RAID arrays).
+
+> So I guess it's a full-blown boot each time, which is made pointlessly
+> difficult by the fact that the rpc.mountd on my NFS server is acting up,
+> giving me -ESTALE half the time for an initial mount (??!!!) and thus
+> totally buggering up my client system whenever I reboot. So I may have
+> to debug *that* first. What fun.
+
+Yes, but you seem to get it at each boot and immediately, which was
+never my case (don't know about Zeno). With 2.6.35.3 I got it only once
+in several days of uptimes and boots.
+
+I hope your specific situation will help isolate the problem...
+
 -- 
-1.7.0.4
-
-
-
+Damien Wyart
