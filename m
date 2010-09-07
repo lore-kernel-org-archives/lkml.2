@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab0IGWQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 18:16:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59620 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756295Ab0IGWQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 18:16:08 -0400
-Date: Tue, 7 Sep 2010 18:15:43 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Milan Broz <mbroz@redhat.com>
-Cc: jack@suse.cz, mst@redhat.com, linux-ide@vger.kernel.org,
-        device-mapper development <dm-devel@redhat.com>,
-        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp, hch@lst.de,
-        k-ueda@ct.jp.nec.com, vst@vlnb.net, linux-scsi@vger.kernel.org,
-        rusty@rustcorp.com.au, linux-raid@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, mpatocka@redhat.com, swhiteho@redhat.com,
-        chris.mason@oracle.com, tytso@mit.edu, jaxboe@fusionio.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        rwheeler@redhat.com
-Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
- dm
-Message-ID: <20100907221543.GB22525@redhat.com>
-References: <1283509796-1510-1-git-send-email-tj@kernel.org>
- <1283509796-1510-24-git-send-email-tj@kernel.org>
- <4C84CD18.6060906@redhat.com>
- <20100907211724.GA22525@redhat.com>
+	id S1757399Ab0IGW0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 18:26:09 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47670 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755463Ab0IGW0H convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 18:26:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=lL2ipXVIX9TpZ8j9wVXuvTU2NEkPtxRIjYn5mVO99W5pKr+yG2pJ28TCRVPwRu8Wxx
+         0txlH80IWQXsPUUFBJnz50VoWnOjdqtzMmEEDJaofxIHEtatEP6ZJQciVji+3G++G7vi
+         gsIWxQdGOCL4NCH3+2U7TiZO7XUfROWyBZJtM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100907211724.GA22525@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <35B17FE5076C7040809188FBE7913F983F23479F74@SC1EXMB-MBCL.global.atheros.com>
+References: <09b7da2e5462e0b855617ff5308ed6efb4fc9cab.1283872748.git.andy.shevchenko@gmail.com>
+	<8b251244717765e795b92a1f7335f8af98e5706f.1283872748.git.andy.shevchenko@gmail.com>
+	<35B17FE5076C7040809188FBE7913F983F23479F74@SC1EXMB-MBCL.global.atheros.com>
+Date: Wed, 8 Sep 2010 01:26:05 +0300
+Message-ID: <AANLkTi=ppiChKzzeBqOhjPQHavoS6RCQWNS377hqtji6@mail.gmail.com>
+Subject: Re: [PATCH 2/2] staging: ath6kl: use native methods from kernel library
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Vipin Mehta <Vipin.Mehta@atheros.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07 2010 at  5:17pm -0400,
-Mike Snitzer <snitzer@redhat.com> wrote:
+On Wed, Sep 8, 2010 at 12:18 AM, Vipin Mehta <Vipin.Mehta@atheros.com> wrote:
+> Andy,
+>   Thanks for the patch. Although the driver supports Linux but it has been architected to support other OSes if desired. The code is, therefore, organized into generic and OS specific components with the latter part of the code captured into the os/linux directory. As such, the patch will be more useful if we can move out the inclusion of linux specific header files <linux/kernel.h> and <linux/ctype.h> into a header file in os/linux/include directory. You can refer to os/linux/include/osapi_linux.h for example. A macro could be defined which would use linux specific APIs for Linux and keep the original definitions for any other OS.
 
-> On Mon, Sep 06 2010 at  7:14am -0400,
-> Milan Broz <mbroz@redhat.com> wrote:
-> 
-> > On 09/03/2010 12:29 PM, Tejun Heo wrote:
-> > 
-> > > +++ b/drivers/md/dm-crypt.c
-> > > @@ -1278,7 +1278,7 @@ static int crypt_map(struct dm_target *ti, struct bio *bio,
-> > >  	struct dm_crypt_io *io;
-> > >  	struct crypt_config *cc;
-> > >  
-> > > -	if (unlikely(bio_empty_barrier(bio))) {
-> > > +	if (bio->bi_rw & REQ_FLUSH) {
-> > >  		cc = ti->private;
-> > >  		bio->bi_bdev = cc->dev->bdev;
-> > >  		return DM_MAPIO_REMAPPED;
-> > 
-> > ...
-> > 
-> > > +++ b/drivers/md/dm.c
-> > > @@ -1400,14 +1391,22 @@ static void __split_and_process_bio(struct mapped_device *md, struct bio *bio)
-> > >  	ci.io->md = md;
-> > >  	spin_lock_init(&ci.io->endio_lock);
-> > >  	ci.sector = bio->bi_sector;
-> > > -	ci.sector_count = bio_sectors(bio);
-> > > -	if (unlikely(bio_empty_barrier(bio)))
-> > > +	if (!(bio->bi_rw & REQ_FLUSH))
-> > > +		ci.sector_count = bio_sectors(bio);
-> > > +	else {
-> > > +		/* all FLUSH bio's reaching here should be empty */
-> > > +		WARN_ON_ONCE(bio_has_data(bio));
-> > >  		ci.sector_count = 1;
-> > > +	}
-> > 
-> > 
-> > I would add BUG_ON(bio_has_data(bio)) either to dm-crypt target or directly to DM core
-> > in this path.
-> 
-> I agree, that WARN_ON_ONCE should be changed to BUG_ON.  This is a
-> guarantee that the block layer now provides so it seems correct to have
-> the DM core bug if that guarantee isn't actually provided.
+The file ar3kpsparser.h, which is directly included by patched one,
+contains few includes like <linux/XXX.h>. Due to this I consider this
+part of code as OS-dependent. That's why I decide to put necessary
+headers inside c-file.
+Thus I think patch could be applied w/o modifications. However, If you
+want to do me some odd stuff (at least until I have not got the clear
+explanation), I could provide you 3 patches: clean up file under
+os/linux, remove unused macros, and fix in ar3kpsparser in way when
+necessary os-dependent headers will be located at some common header.
 
-I was mistaken, DM enforces that guarantee... ;)
 
-(but block layer will also enforce empty flush for request-based)
-
-But it wasn't clear until Christoph and I looked closer.  The point
-stands though; we should BUG_ON rather than WARN_ON_ONCE.
-
-I'll send a follow-on patch to help clean this code up a bit more (based
-on Christoph's suggestions).  Mainly just making the flush paths a bit
-more distinct and adding some comments.
-
-Mike
+-- 
+With Best Regards,
+Andy Shevchenko
