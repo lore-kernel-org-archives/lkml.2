@@ -1,119 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab0IGQ5Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 12:57:24 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39256 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757967Ab0IGQ5T (ORCPT
+	id S1758110Ab0IGQ4y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 12:56:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60097 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932192Ab0IGQ4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 12:57:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QhFtRtbGPLjLGol/fTPuuhe+mRehJGBQbNt+/Wb+QvnoRTbd73gCN8r9UJbGdTg0n/
-         JIwgdWATa6WPnOdFjfaezd/vG4M9ehy1JhCM/1mUYHIYlOgiYqYE8MZ2C1ix/vBCyqyE
-         x7l6n/8oN7Kzzdrj23ck7A1c8wb9HfAt55cIU=
-Date: Tue, 7 Sep 2010 18:57:25 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
-        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@polymtl.ca
-Subject: Re: [PATCH v4 5/5] perf:add a script shows a process of packet
-Message-ID: <20100907165721.GA5495@nowhere>
-References: <4C72422C.5070102@jp.fujitsu.com> <4C72439D.3040001@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C72439D.3040001@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 7 Sep 2010 12:56:40 -0400
+Message-Id: <20100907165012.279252800@chello.nl>
+User-Agent: quilt/0.47-1
+Date: Tue, 07 Sep 2010 18:46:52 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Yanmin <yanmin_zhang@linux.intel.com>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [RFC][PATCH 19/19] perf: Optimize context ops
+References: <20100907164633.879932949@chello.nl>
+Content-Disposition: inline; filename=perf-more-disable.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 23, 2010 at 06:47:09PM +0900, Koki Sanagi wrote:
-> Add a perf script which shows a process of packets and processed time.
-> It helps us to investigate networking or network device.
-> 
-> If you want to use it, install perf and record perf.data like following.
-> 
-> #perf trace record netdev-times [script]
-> 
-> If you set script, perf gathers records until it ends.
-> If not, you must Ctrl-C to stop recording.
-> 
-> And if you want a report from record,
-> 
-> #perf trace report netdev-times [options]
-> 
-> If you use some options, you can limit an output.
-> Option is below.
-> 
-> tx: show only process of tx packets
-> rx: show only process of rx packets
-> dev=: show a process specified with this option
-> debug: work with debug mode. It shows buffer status.
-> 
-> For example, if you want to show a process of received packets associated
-> with eth4,
-> 
-> #perf trace report netdev-times rx dev=eth4
-> 106133.171439sec cpu=0
->   irq_entry(+0.000msec irq=24:eth4)
->          |
->   softirq_entry(+0.006msec)
->          |
->          |---netif_receive_skb(+0.010msec skb=f2d15900 len=100)
->          |            |
->          |      skb_copy_datagram_iovec(+0.039msec 10291::10291)
->          |
->   napi_poll_exit(+0.022msec eth4)
-> 
-> This perf script helps us to analyze a process time of transmit/receive
-> sequence.
-> 
-> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-> ---
->  tools/perf/scripts/python/bin/netdev-times-record |    8 +
->  tools/perf/scripts/python/bin/netdev-times-report |    5 +
->  tools/perf/scripts/python/netdev-times.py         |  464 +++++++++++++++++++++
->  3 files changed, 477 insertions(+), 0 deletions(-)
-> 
-> diff --git a/tools/perf/scripts/python/bin/netdev-times-record b/tools/perf/scripts/python/bin/netdev-times-record
-> new file mode 100644
-> index 0000000..2b59511
-> --- /dev/null
-> +++ b/tools/perf/scripts/python/bin/netdev-times-record
-> @@ -0,0 +1,8 @@
-> +#!/bin/bash
-> +perf record -c 1 -f -R -a -e net:net_dev_xmit -e net:net_dev_queue	\
+Assuming we don't mix events of different pmus onto a single context
+(with the exeption of software events inside a hardware group) we can
+now assume that all events on a particular context belong to the same
+pmu, hence we can disable the pmu for the entire context operations.
 
+This reduces the amount of hardware writes.
 
-Nano-nits:
+The exception for swevents comes from the fact that the sw pmu disable
+is a nop.
 
--c 1 and -R are now default settings for tracepoints and -f is not
-needed anymore. I've removed them.
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/perf_event.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
+Index: linux-2.6/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/kernel/perf_event.c
++++ linux-2.6/kernel/perf_event.c
+@@ -1046,6 +1046,7 @@ static void ctx_sched_out(struct perf_ev
+ 	struct perf_event *event;
+ 
+ 	raw_spin_lock(&ctx->lock);
++	perf_pmu_disable(ctx->pmu);
+ 	ctx->is_active = 0;
+ 	if (likely(!ctx->nr_events))
+ 		goto out;
+@@ -1064,6 +1065,7 @@ static void ctx_sched_out(struct perf_ev
+ 			group_sched_out(event, cpuctx, ctx);
+ 	}
+ out:
++	perf_pmu_enable(ctx->pmu);
+ 	raw_spin_unlock(&ctx->lock);
+ }
+ 
+@@ -1386,6 +1388,7 @@ void perf_event_context_sched_in(struct 
+ 	if (cpuctx->task_ctx == ctx)
+ 		return;
+ 
++	perf_pmu_disable(ctx->pmu);
+ 	/*
+ 	 * We want to keep the following priority order:
+ 	 * cpu pinned (that don't need to move), task pinned,
+@@ -1398,6 +1401,7 @@ void perf_event_context_sched_in(struct 
+ 	ctx_sched_in(ctx, cpuctx, EVENT_FLEXIBLE);
+ 
+ 	cpuctx->task_ctx = ctx;
++	perf_pmu_enable(ctx->pmu);
+ }
+ 
+ /*
+@@ -1602,6 +1606,7 @@ static enum hrtimer_restart perf_event_c
+ 			rotate = 1;
+ 	}
+ 
++	perf_pmu_disable(cpuctx->ctx.pmu);
+ 	perf_ctx_adjust_freq(&cpuctx->ctx, cpuctx->timer_interval);
+ 	if (ctx)
+ 		perf_ctx_adjust_freq(ctx, cpuctx->timer_interval);
+@@ -1622,6 +1627,7 @@ static enum hrtimer_restart perf_event_c
+ 		task_ctx_sched_in(ctx, EVENT_FLEXIBLE);
+ 
+ done:
++	perf_pmu_enable(cpuctx->ctx.pmu);
+ 	hrtimer_forward_now(timer, ns_to_ktime(cpuctx->timer_interval));
+ 
+ 	return restart;
 
-
-> +all_event_list = []; # insert all tracepoint event related with this script
-
-
-
-Ah I didn't know ";" works with python :)
-
-
-> +def trace_end():
-> +	# order all events in time
-> +	all_event_list.sort(lambda a,b :cmp(a[EINFO_IDX_TIME],
-> +					    b[EINFO_IDX_TIME]))
-
-
-
-Events already arrive in time order to the scripts.
-
-Thnaks!
 
