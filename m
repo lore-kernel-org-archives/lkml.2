@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab0IGXjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 19:39:08 -0400
-Received: from 217.59.140-88.rev.gaoland.net ([88.140.59.217]:52479 "EHLO
-	electric-eye.fr.zoreil.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756557Ab0IGXjF (ORCPT
+	id S1758235Ab0IGXlL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 19:41:11 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:16300 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755991Ab0IGXlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 19:39:05 -0400
-X-Greylist: delayed 506 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Sep 2010 19:39:05 EDT
-Date: Wed, 8 Sep 2010 01:29:57 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Matt Causey <matt.causey@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Simon Kagstrom <simon.kagstrom@netinsight.net>
-Subject: Re: Is via-velocity broken in 2.6.34?
-Message-ID: <20100907232957.GA11595@electric-eye.fr.zoreil.com>
-References: <AANLkTinK4VywsJ86jaC8wQjbXjzvP-z44JD3XbZbMM2a@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinK4VywsJ86jaC8wQjbXjzvP-z44JD3XbZbMM2a@mail.gmail.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Tue, 7 Sep 2010 19:41:09 -0400
+Date: Wed, 08 Sep 2010 08:41:20 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH v2] regulators: add support max8952 regulator
+In-reply-to: <20100907100442.GD7886@rakim.wolfsonmicro.main>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, lrg@slimlogic.co.uk,
+        "'Changhwan Youn'" <chaos.youn@samsung.com>
+Message-id: <003901cb4ee6$2f22de50$8d689af0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: ActOdBqfn3NDtG3YSGaeI0HkkoWb0QAce7XA
+References: <1283844202-4158-1-git-send-email-kgene.kim@samsung.com>
+ <20100907100442.GD7886@rakim.wolfsonmicro.main>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please Cc: netdev@vger.kernel.org
+Mark Brown wrote:
+> 
+> On Tue, Sep 07, 2010 at 04:23:22PM +0900, Kukjin Kim wrote:
+> > From: Changhwan Youn <chaos.youn@samsung.com>
+> >
+> > The operation of max8952 is almost similar to max8649 except
+> > the output voltage range. This patch adds support the max8952
+> > regulator using current max8649 implementation.
+> >
+> > Signed-off-by: Changhwan Youn <chaos.youn@samsung.com>
+> > Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+> > Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> 
+> This is OK but it should also include removal of the separate max8952
+> driver since the functionality is now merged into this driver.  With
+> that
+> 
+Sure, just now submitted updated patch.
 
-Matt Causey <matt.causey@gmail.com> :
-[2.6.29 -> 2.6.34 regression]
-> Attached is debug.tar.  It contains dmesg, config.gz, ethtool,
-> ifconfig, and lspci output.  I'm not sure what else to do at this
-> point.  Is there some debugging I can enable in the kernel to give
-> more clues as to what's gone wrong?
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Any chance you could bisect the regression or narrow it down a bit ?
+Thanks for your review and ack ;-)
 
-Otherwise may I assume that there is no difference in the
-userspace tools (just in case) ?
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
--- 
-Ueimor
