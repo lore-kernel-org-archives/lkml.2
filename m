@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab0IHGSx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 02:18:53 -0400
-Received: from shamrock.taprogge.org ([213.146.117.139]:49977 "EHLO
-	shamrock.taprogge.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab0IHGSv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 02:18:51 -0400
-Date: Tue, 7 Sep 2010 20:59:29 +0200
-From: Jens Taprogge <jens.taprogge@taprogge.org>
-To: Frank Becker <fb@alien8.de>
-Cc: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        alsa-devel@vger.kernel.org, bp@alien8.de
-Subject: Re: commit 7b2bfdb broke sound card detection on my Lenovo T400s
-Message-ID: <20100907185929.GA32126@taprogge.org>
-References: <20100906170421.GA2957@alien8.de>
- <20100906224548.GA27279@taprogge.org>
- <s5hlj7ew0ph.wl%tiwai@suse.de>
- <20100907090220.GA3204@alien8.de>
- <s5h7hixap1c.wl%tiwai@suse.de>
- <20100907094041.GA2815@alien8.de>
- <s5h1v95anxg.wl%tiwai@suse.de>
- <20100907095300.GB2815@alien8.de>
+	id S1757912Ab0IHGTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 02:19:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2586 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757314Ab0IHGTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 02:19:36 -0400
+Message-ID: <4C872AD7.6000604@redhat.com>
+Date: Wed, 08 Sep 2010 09:19:03 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100907095300.GB2815@alien8.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-Score: -2.5 (--)
-X-Spam-Report: Spam detection software, running on the system "shamrock.taprogge.org", has
-	identified this incoming email as possible spam.  The original message
-	has been attached to this so you can view it (if it isn't spam) or label
-	similar future email.  If you have any questions, see
-	the administrator of that system for details.
-	Content preview:  On Tue, Sep 07, 2010 at 11:53:00AM +0200, Frank Becker wrote:
-	> Takashi Iwai [2010-09-07, 11:44 +0200]: > > At Tue, 7 Sep 2010 11:40:41
-	+0200, > > Frank Becker wrote: > > > > > > Takashi Iwai [2010-09-07, 11:20
-	+0200]: > > > > At Tue, 7 Sep 2010 11:02:20 +0200, > > > > Frank Becker wrote:
-	> > > > > > > > > > Takashi Iwai [2010-09-07, 08:17 +0200]: > > > > > > At
-	Tue, 7 Sep 2010 00:45:48 +0200, > > > > > > Jens Taprogge wrote: > > > >
-	> > > > > > > > > > On Mon, Sep 06, 2010 at 07:04:21PM +0200, Frank Becker
-	wrote: > > Hi, > > [...] > > Oh, one forgotten question is whether your machine
-	can have a docking > > station. If yes, model=thinkpad is the right choice.
-	If not, > > model=ideapad would work more or less same. > Yes[0]. With that
-	model (T400s [1]) Lenovo introduced a new series of docking > stations that
-	are not backward compatible with older Lenovo/ThinkPads. > > I just don't
-	happen to have one available. > > [0] http://shop.lenovo.com/SEUILibrary/controller/e/web/LenovoPortal/en_US/catalog.workflow:show-category-with-items?category-id=34851FD360E5473EB9DFEB639312E18E
-	> > [1] http://shop.lenovo.com/SEUILibrary/controller/e/web/LenovoPortal/en_US/catalog.workflow:category.details?current-catalog-id=12F0696583E04D86B9B79B0FEC01C087&current-category-id=AEA4BB4495A04C098DBEA8EBB87059AC
-	[...] 
-	Content analysis details:   (-2.5 points, 10.0 required)
-	pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	-1.8 ALL_TRUSTED            Passed through trusted hosts only via SMTP
-	1.9 TVD_RCVD_IP            TVD_RCVD_IP
-	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Paul Mackerras <paulus@samba.org>
+CC: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: disabling group leader perf_event
+References: <4C84D1CE.3070205@redhat.com> <1283774045.1930.341.camel@laptop> <4C84D77B.6040600@redhat.com> <20100906124330.GA22314@elte.hu> <4C84E265.1020402@redhat.com> <20100906125905.GA25414@elte.hu> <4C850147.8010908@redhat.com> <20100906154737.GA4332@elte.hu> <4C852B2A.2030103@redhat.com> <20100907034417.GA14046@elte.hu> <20100908014409.GA17010@brick.ozlabs.ibm.com>
+In-Reply-To: <20100908014409.GA17010@brick.ozlabs.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 11:53:00AM +0200, Frank Becker wrote:
-> Takashi Iwai [2010-09-07, 11:44 +0200]:
-> > At Tue, 7 Sep 2010 11:40:41 +0200,
-> > Frank Becker wrote:
-> > > 
-> > > Takashi Iwai [2010-09-07, 11:20 +0200]:
-> > > > At Tue, 7 Sep 2010 11:02:20 +0200,
-> > > > Frank Becker wrote:
-> > > > > 
-> > > > > Takashi Iwai [2010-09-07, 08:17 +0200]:
-> > > > > > At Tue, 7 Sep 2010 00:45:48 +0200,
-> > > > > > Jens Taprogge wrote:
-> > > > > > > 
-> > > > > > > On Mon, Sep 06, 2010 at 07:04:21PM +0200, Frank Becker wrote:
-> 
-> Hi,
-> 
-> [...]
-> > Oh, one forgotten question is whether your machine can have a docking
-> > station.  If yes, model=thinkpad is the right choice.  If not,
-> > model=ideapad would work more or less same.
-> Yes[0]. With that model (T400s [1]) Lenovo introduced a new series of docking
-> stations that are not backward compatible with older Lenovo/ThinkPads.
-> 
-> I just don't happen to have one available.
-> 
-> [0] http://shop.lenovo.com/SEUILibrary/controller/e/web/LenovoPortal/en_US/catalog.workflow:show-category-with-items?category-id=34851FD360E5473EB9DFEB639312E18E
-> 
-> [1] http://shop.lenovo.com/SEUILibrary/controller/e/web/LenovoPortal/en_US/catalog.workflow:category.details?current-catalog-id=12F0696583E04D86B9B79B0FEC01C087&current-category-id=AEA4BB4495A04C098DBEA8EBB87059AC
+  On 09/08/2010 04:44 AM, Paul Mackerras wrote:
+>
+> So... I would be interested to see you add the case for the MOV
+> instruction. :)
 
-Hello Frank.
+x86 32-bit segmentation.
 
-That is the docking station I have developed the patch with.  So
-hopefully after adding your PCI IDs it should work with your Thinkpad as
-well.
+Unfortunately those are limited to i386.  With some care we could use 
+them on x86_64 (temporarily switch the address space to include the 
+"bytecode" and its data at the lower 4G, execute a far call to the 
+bytecode, etc.
 
-Best Regards
-Jens
+It's cumbersome though, and will make context switches to the bytecode 
+quite slow.
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
