@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758359Ab0IHJBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 05:01:54 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:13295 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab0IHJBw (ORCPT
+	id S1758485Ab0IHJCY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 05:02:24 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42860 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871Ab0IHJCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 05:01:52 -0400
-Message-ID: <4C8750B8.6000107@atmel.com>
-Date: Wed, 08 Sep 2010 11:00:40 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.8) Gecko/20100802 Lightning/1.0b2 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: "avictor.za@gmail.com" <avictor.za@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-CC: linux-kernel@vger.kernel.org, Fabian Godehardt <fg@emlix.com>
-Subject: Re: [PATCH] AT91: SAM9G45 - add a separate clock entry for every
- single TC block
-References: <201009060548.18521.fg@emlix.com>	<1283772201-15453-1-git-send-email-nicolas.ferre@atmel.com> <AANLkTin+vCsG3FUvX6DTUfFe7ZJpbkYyqw_TLvH9ujrJ@mail.gmail.com>
-In-Reply-To: <AANLkTin+vCsG3FUvX6DTUfFe7ZJpbkYyqw_TLvH9ujrJ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Sep 2010 05:02:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=p+k+Iix7NBXFcbxmBR/bnWImssaHUXPWXcv8o3GOzpsHJ8BjQIp53We2Lpi0pOsyeI
+         mTu0QASrdddjZAqATU1uHFxQ3cNPVfgBpqWhhZ+QJh2d3IdAjEKEAEfVLvdg7kS7ReRu
+         gvUgwGTngKKDXx9q+fVQP16LJAAOm4g9hQbjU=
+Subject: Re: [PATCH 5/5] backing-dev: replace sync_supers_tsk/timer with a
+ delayed_work
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Tejun Heo <tj@kernel.org>
+Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org, hch@lst.de
+In-Reply-To: <1283777182-11426-6-git-send-email-tj@kernel.org>
+References: <1283777182-11426-1-git-send-email-tj@kernel.org>
+	 <1283777182-11426-6-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Sep 2010 12:00:51 +0300
+Message-ID: <1283936451.2979.65.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 07/09/2010 21:42, avictor.za@gmail.com :
-> hi,
+On Mon, 2010-09-06 at 14:46 +0200, Tejun Heo wrote:
+> sync_supers_task/timer can trivially replaced with a delayed_work.  As
+> it's not on the allocation path, run it on the system_wq.
 > 
->> +/* One additional fake clock for second TC block */
->> +static struct clk tcb1_clk = {
->> +       .name           = "tcb1_clk",
->> +       .pmc_mask       = 0,
->> +       .type           = CLK_TYPE_PERIPHERAL,
->> +       .parent         = &tcb0_clk,
->> +};
->> +
+> NOTE: Both before and after this patch, sync_supers is not freezeable.
+>       This might need to be changed.
 > 
-> Looking at this again...  since type is CLK_TYPE_PERIPHERAL, when you
-> call clk_register() the "parent" is changed to the master clock.
-> 
-> Which means, then later you call clk_enable() the "pmc_mask" is still
-> 0, so 0 gets written (in pmc_periph_mode) to AT91_PMC_PCER.  So the
-> TCB clock won't be enabled.
-> 
-> Or am I missing something?
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+>  mm/backing-dev.c |   49 ++++++++++++++-----------------------------------
+>  1 files changed, 14 insertions(+), 35 deletions(-)
 
-You are absolutely right!
+Actually what Al Viro wants is to make sync_supers() go away and make
+every FS to take care of its own superblock. So I guess this change is
+useful in a sense that it'll be then easier to push this down to FSes.
 
-What do you think about this modification of clk_register() function?
-
---- a/arch/arm/mach-at91/clock.c
-+++ b/arch/arm/mach-at91/clock.c
-@@ -501,7 +501,8 @@ postcore_initcall(at91_clk_debugfs_init);
- int __init clk_register(struct clk *clk)
- {
-        if (clk_is_peripheral(clk)) {
--               clk->parent = &mck;
-+               if (!clk->parent)
-+                       clk->parent = &mck;
-                clk->mode = pmc_periph_mode;
-                list_add_tail(&clk->node, &clocks);
-        }
-
-It is a very little modification which implements what I had in mind
-while creating a kind of "child peripheral" clock.
-
-Best regards,
 -- 
-Nicolas Ferre
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
