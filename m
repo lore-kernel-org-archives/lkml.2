@@ -1,35 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab0IHVjK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 17:39:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37875 "EHLO mail.zytor.com"
+	id S1756140Ab0IHVk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 17:40:29 -0400
+Received: from www.tglx.de ([62.245.132.106]:60598 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755268Ab0IHVjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 17:39:06 -0400
-Message-ID: <4C880278.3060108@zytor.com>
-Date: Wed, 08 Sep 2010 14:39:04 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	id S1755548Ab0IHVkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 17:40:23 -0400
+Date: Wed, 8 Sep 2010 23:35:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
+        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
+        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
+        linux-arch@vger.kernel.org
+Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
+ __do_IRQ() code
+In-Reply-To: <1283978124.11763.80.camel@mulgrave.site>
+Message-ID: <alpine.LFD.2.00.1009082333350.2477@localhost6.localdomain6>
+References: <20100908152036.643594727@linutronix.de>  <1283971919.11763.35.camel@mulgrave.site>  <alpine.LFD.2.00.1009082056210.2477@localhost6.localdomain6> <1283978124.11763.80.camel@mulgrave.site>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Nick Lowe <nick.lowe@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Promoting Crusoe and Geode Processors to i686 Status
-References: <AANLkTimqn6=uzE9FawJkWe3w3+AipiMUUcjLd8fo48s1@mail.gmail.com> <AANLkTim0GX8bmZu8j5wVs11QFCmKjNK2MBkV7Mcha_Ae@mail.gmail.com>
-In-Reply-To: <AANLkTim0GX8bmZu8j5wVs11QFCmKjNK2MBkV7Mcha_Ae@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2010 05:27 PM, Nick Lowe wrote:
+On Wed, 8 Sep 2010, James Bottomley wrote:
+> On Wed, 2010-09-08 at 21:34 +0200, Thomas Gleixner wrote:
+> > On Wed, 8 Sep 2010, James Bottomley wrote:
+> > > On Wed, 2010-09-08 at 18:14 +0000, Thomas Gleixner wrote:
+> > > > plain text document attachment (genirq-troll-patch.patch)
+> > > > __do_IRQ() has been deprecated after a two years migration phase in
+> > > > commit 0e57aa1. Since then another 18 month have gone by.
+> > > > 
+> > > > So here's the status three and a half years after the flow based
+> > > > infrastructure was merged:
+> > > > 
+> > > >  The following architectures are fully converted to the new flow
+> > > >  handler code:
+> > > > 
+> > > >   arm, avr32, blackfin, frv, microblaze, mips, mn10300, powerpc, score, sh,
+> > > >   sparc 64bit, tile, x86, xtensa
+> > > > 
+> > > >   (avr32 and xtensa should set CONFIG_GENERIC_HARDIRQS_NO__DO_IRQ
+> > > >   though)
+> > > > 
+> > > >  The following architectures are not using the generic interrupt
+> > > >  infrastructure at all and are therefor unaffected:
+> > > > 
+> > > >   s390, m68k, sparc 32bit
+> > > > 
+> > > >  The following architectures are still using __do_IRQ():
+> > > > 
+> > > >   alpha, cris, ia64, h8300, m32r, m68knommu, parisc, um
+> > > > 
+> > > > So now the question arises what to do with __do_IRQ().
+> > > > 
+> > > > Removing it would be the right thing, but that'll break 8 archs, so
+> > > > it's probably not considered a good idea, though for most of them the
+> > > > conversion should be reasonably trivial.
+> > > > 
+> > > > I'm happy to move that code into kernel/irq/cruft.c forever if there
+> > > > is no way to get the remaining users converted in the forseeable
+> > > > future. It looks like they can cope with the annoying build warning
+> > > > nicely.
+> > > 
+> > > Well, if you're going to deprecate something that 8 architectures rely
+> > > on, it would be nice to tell people ... or even just linux-arch ... most
+> > 
+> > It's been told people. The deprecation patch was on LKMl (I don't
+> > remember whether I sent it to linux-arch),
 > 
-> 2) Should there be the special case that forces the suboptimal
-> -mtune=generic32 to work around the binutils NOPL bug or, as I think,
-> should people just update to a sane binutils version? (It's a special
-> case triggered where CONFIG_X86_P6_NOP is not set.)
+> You didn't ... I checked.
 > 
+> >  but there were a bunch of
+> > related patches to clean out the old irq related cruft which were sent
+> > to linux-arch and also hit the parisc tree. There is an entry in
+> > feature-removal-schedule.txt for 18 month now.
+> > 
+> > > of us do read that.  I've actually never noticed the warning the commit
+> > > activated in any of my parisc compiles for some reason.
+> > 
+> > CONFIG_ENABLE_WARN_DEPRECATED=y perhaps ?
+> >
+> > I'm really tired of your whining when you did not get a personalized
+> > taylored to your needs info.
+> 
+> So you send out deliberate flame bait and then suffer humour failure at
+> an ironic reply?
 
-What's suboptimal about it?
+Darn, I missed the ironic tag.
 
-	-hpa
+I added you to the "beware-of-british-irony" filter of my .procmailrc
+to avoid that in the future.
+
+Thanks,
+
+	tglx
