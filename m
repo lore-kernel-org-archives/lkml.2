@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab0IHOzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 10:55:50 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:60480 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755378Ab0IHOzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 10:55:48 -0400
-Date: Wed, 8 Sep 2010 07:55:45 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Ralf Baechle <ralf@linux-mips.org>, ML netdev <netdev@vger.kernel.org>,
-        MeeGo <meego-dev@meego.com>, Maxime Bizon <mbizon@freebox.fr>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        John Linn <john.linn@xilinx.com>, Joe Perches <joe@perches.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
-        Toshiharu Okada <okada533@dsn.okisemi.com>,
-        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
-        Takahiro Shimizu <shimizu394@dsn.okisemi.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-Message-ID: <20100908075545.79023fa9@nehalam>
-In-Reply-To: <4C879AAB.6000905@suse.cz>
-References: <4C81019E.1010808@dsn.okisemi.com>
-	<4C8123D6.8020001@suse.cz>
-	<003901cb4f5d$bf977c80$66f8800a@maildom.okisemi.com>
-	<4C879AAB.6000905@suse.cz>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751731Ab0IHO4F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 10:56:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34777 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755419Ab0IHO4C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 10:56:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1009081507250.2477@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1009081507250.2477@localhost6.localdomain6>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 8 Sep 2010 07:54:57 -0700
+Message-ID: <AANLkTikYEjV8ikkPsfJ0d7WsikWHJ0n74u9uDS4uGHC+@mail.gmail.com>
+Subject: Re: [GIT pull] Preparatory patch for semaphore cleanup
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Sep 2010 16:16:11 +0200
-Jiri Slaby <jslaby@suse.cz> wrote:
+On Wed, Sep 8, 2010 at 6:11 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> This patch just provides the DEFINE_SEMAPHORE macro which is required
+> for the various subsystem cleanups I sent out, so we can finally get
+> rid of init_MUTEX[_LOCKED] in 2.6.37.
 
-> >>> +
-> >>> + rxdr->count = max(ring->rx_pending, (u32) PCH_GBE_MIN_RXD);
-> >>> + rxdr->count = min(rxdr->count, (u32) PCH_GBE_MAX_RXD);  
-> >>
-> >> clamp()
-> >> And why you need the cast?  
-> > 
-> > [masa]
-> > Since warning appears at the time of a make.  
-> 
-> OK, then you have type error which you should fix instead. Perhaps
-> define the constnts with U suffix?
+Why is it called DEFINE_SEMAPHORE(), when two lines later the we have
+DECLARE_MUTEX()?
 
-Better yet:
-	rxdr->count = clamp_val(ring->rx_pending,
-				PCH_GBE_MIN_RXD,
-				PCH_GBE_MAX_RXD);
+IOW, the whole DEFINE vs DECLARE thing seems confused. I'm not saying
+one is better than the other (maybe "define" is), but the mixing of
+names is worse than either, I feel..
 
+                     Linus
