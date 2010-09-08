@@ -1,143 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab0IHPvb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 11:51:31 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42227 "EHLO
+	id S1755955Ab0IHPwG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 11:52:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43318 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab0IHPv2 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755748Ab0IHPwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 11:51:28 -0400
+	Wed, 8 Sep 2010 11:52:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=C5OgvW96ev+79OkchcqV3dCoy5JTvoWqC1IDo9dcZrBtLG957pND9Le9is/cAqJZ2g
-         KKoe24MHwxuaSaJyDSux6DkRVqlLuD4ysir8SpVxtcqj/EoPK4eh5fVn49YamVzdf/Q+
-         gOal+Fnu6gJnqnnm+QEpuQeY9m4alLbdaFfq4=
-From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: pxa168: added support for Teton BGA platform
-Date: Wed, 8 Sep 2010 17:51:22 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-1-amd64; KDE/4.4.5; x86_64; ; )
-Cc: "Mark F. Brown" <mark.brown314@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        linux-kernel@vger.kernel.org
-References: <1283914607-10570-1-git-send-email-mark.brown314@gmail.com> <1283914607-10570-2-git-send-email-mark.brown314@gmail.com>
-In-Reply-To: <1283914607-10570-2-git-send-email-mark.brown314@gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=cThVrtKgq77S9XspF5X+kvPldMCDKvzjZcLWU6rKM9EY3vkaGEMqiQ28/ONkDTv87U
+         gRrwGhFu5ofe6sDx7qom3/9rAKKtrTnM+8CiD2p1kptaxNIkEDaZMHJpo6dG0ymhYhf7
+         ZYPirNsXuSBGXhnyCzVvwP0p9E9IiwfN4T388=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201009081751.22841.marek.vasut@gmail.com>
+In-Reply-To: <8u3s8d$jgt7hk@orsmga001.jf.intel.com>
+References: <AANLkTim2mrVRCKg-2couMTFV7krHQp0+2e_cbaiT_KYW@mail.gmail.com>
+	<8u3s8d$jgt7hk@orsmga001.jf.intel.com>
+Date: Wed, 8 Sep 2010 11:52:01 -0400
+Message-ID: <AANLkTinFJFSq01N2cko__4vYXJEH7o3OUeLG86Y-8T64@mail.gmail.com>
+Subject: Re: [regression] i915 incorrectly detects bogus LVDS connection
+ instead of LVDS1
+From: Woody Suwalski <terraluna977@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne St 8. září 2010 04:56:45 Mark F. Brown napsal(a):
+On Wed, Sep 8, 2010 at 11:19 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Wed, 8 Sep 2010 11:10:42 -0400, Woody Suwalski <terraluna977@gmail.com> wrote:
+>> LVDS connected 800x600+0+0 (normal left inverted right x axis y axis) 0mm x 0mm
+>> LVDS-1 connected 800x600+0+0 (normal left inverted right x axis y
+>
+> The -intel driver does not generate either of these names, it strictly
+> uses "%s%d" or "UNKNOWN" for the output name. Maybe an Xorg.log would
+> help identify the issue?
+>
+> --
+> Chris Wilson, Intel Open Source Technology Centre
+>
 
----------------------------
-Description is missing here
----------------------------
+Correct about naming.
+However it is same X, only the kernel is changed.
+The issue is that kernel reports 2 displays connected, when in fact
+there is only one.
 
-> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
-> ---
->  arch/arm/mach-mmp/Kconfig     |    7 ++++++
->  arch/arm/mach-mmp/Makefile    |    1 +
->  arch/arm/mach-mmp/teton_bga.c |   47
-> +++++++++++++++++++++++++++++++++++++++++ 3 files changed, 55
-> insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/mach-mmp/teton_bga.c
-> 
-> diff --git a/arch/arm/mach-mmp/Kconfig b/arch/arm/mach-mmp/Kconfig
-> index 6ab843e..0711d3b 100644
-> --- a/arch/arm/mach-mmp/Kconfig
-> +++ b/arch/arm/mach-mmp/Kconfig
-> @@ -57,6 +57,13 @@ config MACH_MARVELL_JASPER
->  	  PXA910-based development board. Since MMP2 is compatible to
->  	  ARMv6 architecture.
-> 
-> +config MACH_TETON_BGA
-> +	bool "Marvell's PXA168 Teton BGA Development Board"
-> +	select CPU_PXA168
-> +	help
-> +	  Say 'Y' here if you want to support the Marvell PXA168-based
-> +	  Teton BGA Development Board.
-> +
->  endmenu
-> 
->  config CPU_PXA168
-> diff --git a/arch/arm/mach-mmp/Makefile b/arch/arm/mach-mmp/Makefile
-> index 8b66d06..751cdbf 100644
-> --- a/arch/arm/mach-mmp/Makefile
-> +++ b/arch/arm/mach-mmp/Makefile
-> @@ -17,3 +17,4 @@ obj-$(CONFIG_MACH_TAVOREVB)	+= tavorevb.o
->  obj-$(CONFIG_MACH_TTC_DKB)	+= ttc_dkb.o
->  obj-$(CONFIG_MACH_FLINT)	+= flint.o
->  obj-$(CONFIG_MACH_MARVELL_JASPER) += jasper.o
-> +obj-$(CONFIG_MACH_TETON_BGA)	+= teton_bga.o
-> diff --git a/arch/arm/mach-mmp/teton_bga.c b/arch/arm/mach-mmp/teton_bga.c
-> new file mode 100644
-> index 0000000..014cc37
-> --- /dev/null
-> +++ b/arch/arm/mach-mmp/teton_bga.c
-> @@ -0,0 +1,47 @@
-> +/*
-> + *  linux/arch/arm/mach-mmp/teton_bga.c
-> + *
-> + *  Support for the Marvell PXA168 Teton BGA Development Platform.
+Here is the part from Xorg.log on 2.6.36:
+(II) intel(0): Creating default Display subsection in Screen section
+        "Builtin Default intel Screen 0" for depth/fbbpp 24/32
+(==) intel(0): Depth 24, (--) framebuffer bpp 32
+(==) intel(0): RGB weight 888
+(==) intel(0): Default visual is TrueColor
+(II) intel(0): Integrated Graphics Chipset: Intel(R) 945GME
+(--) intel(0): Chipset: "945GME"
+(--) intel(0): Linear framebuffer at 0xC0000000
+(--) intel(0): IO registers at addr 0xDFE80000 size 524288
+(WW) intel(0): libpciaccess reported 0 rom size, guessing 64kB
+(II) intel(0): the SDVO device with slave addr 70 is found on DVO 1 port
+(II) intel(0): 2 display pipes available.
+(II) Loading sub module "ddc"
+(II) LoadModule: "ddc"
+(II) Module "ddc" already built-in
+(II) Loading sub module "i2c"
+(II) LoadModule: "i2c"
+(II) Module "i2c" already built-in
+(II) intel(0): Output VGA has no monitor section
+(II) intel(0): Output LVDS has no monitor section
+(II) intel(0): I2C bus "LVDSDDC_C" initialized.
+(II) intel(0): Attempting to determine panel fixed mode.
+(II) intel(0): I2C device "LVDSDDC_C:ddc2" registered at address 0xA0.
+(II) intel(0): EDID for output LVDS
+(II) intel(0): found backlight control method /sys/class/backlight/acpi_video0
+xf86TokenToOptinfo: table is NULL
+(II) intel(0): I2C bus "SDVOCTRL_E for SDVOB" initialized.
+(II) intel(0): I2C device "SDVOCTRL_E for SDVOB:SDVO Controller B"
+registered at address 0x70.
+(II) intel(0): I2C bus "SDVOB DDC Bus" initialized.
+(II) intel(0): Output LVDS-1 has no monitor section
+(II) intel(0): SDVOB: device VID/DID: 02:41.01, clock range 25.0MHz - 200.0MHz
+(II) intel(0): SDVOB: 1 input channel
+(II) intel(0): SDVOB: LVDS0 output reported
+xf86TokenToOptinfo: table is NULL
+(II) intel(0): I2C bus "SDVOCTRL_E for SDVOC" initialized.
+(II) intel(0): I2C device "SDVOCTRL_E for SDVOC:SDVO Controller C"
+registered at address 0x72.
+(II) intel(0): No SDVO device found on SDVOC
+(II) intel(0): I2C device "SDVOCTRL_E for SDVOC:SDVO Controller C" removed.
+(II) intel(0): I2C bus "SDVOCTRL_E for SDVOC" removed.
+(II) intel(0): Current clock rate multiplier: 1
 
-Authoring information of this file are missing. Also, MAINTAINERS entry is 
-missing.
-> + *
-> + *  This code is based on aspenite.c
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2 as
-> + *  publishhed by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/platform_device.h>
-> +
-> +#include <asm/mach-types.h>
-> +#include <asm/mach/arch.h>
-> +#include <mach/addr-map.h>
-> +#include <mach/mfp-pxa168.h>
-> +#include <mach/pxa168.h>
-> +#include <mach/gpio.h>
+The real issue is that kernel is most likely crashing if KMS is used -
+I can see big cursor before KMS, then cursor disappears (if I run in
+noquiet mode, the last line will be about drm), and from now on I have
+a black screen. Can not ssh into the box, so probably is dead... No
+USB kbd seems alive - X input was not run either?
+As such - the box is undebugable...
 
-use ... #include <linux/gpio.h>
+I agree that probably hardware is wired incorrectly, yet "the other
+OS" seems to cope with it.
+As were kernels 2.6.33...2.6.35.
 
-> +
-> +#include "common.h"
-> +
-> +static unsigned long teton_bga_pin_config[] __initdata = {
-> +	/* UART1 */
-> +	GPIO107_UART1_TXD,
-> +	GPIO108_UART1_RXD,
-> +};
-> +
-> +static void __init teton_bga_init(void)
-> +{
-> +	mfp_config(ARRAY_AND_SIZE(teton_bga_pin_config));
-> +
-> +	/* on-chip devices */
-> +	pxa168_add_uart(1);
+I just checked the history - I had to backport LVDS detection from
+2.6.33 to 2.6.32 to make it work.
 
-Don't we have enum for these magic numbers on pxa168 ?
-> +}
-> +
-> +MACHINE_START(TETON_BGA, "PXA168-based Teton BGA Development Platform")
-> +	.phys_io        = APB_PHYS_BASE,
-> +	.io_pg_offst    = (APB_VIRT_BASE >> 18) & 0xfffc,
-> +	.map_io		= mmp_map_io,
-> +	.init_irq       = pxa168_init_irq,
-> +	.timer          = &pxa168_timer,
-> +	.init_machine   = teton_bga_init,
-> +MACHINE_END
-
-Cheers
+Thanks, Woody
