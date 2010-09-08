@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680Ab0IHPfP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 11:35:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34348 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754811Ab0IHPfL convert rfc822-to-8bit (ORCPT
+	id S1755844Ab0IHPhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 11:37:54 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:61846 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755781Ab0IHPhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 11:35:11 -0400
-From: "Murphy, Dan" <dmurphy@ti.com>
-To: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>,
-        Andrew Chew <AChew@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Date: Wed, 8 Sep 2010 10:34:46 -0500
-Subject: RE: [PATCH 1/1] iio: ak8975: Add Ak8975 magnetometer sensor
-Thread-Topic: [PATCH 1/1] iio: ak8975: Add Ak8975 magnetometer sensor
-Thread-Index: ActK/I9N9is6KwSRSO+mVM+JyVFhbAClNv1AAFP8PaAADSlbUAAVTzSw
-Message-ID: <C9D59C82B94F474B872F2092A87F26141272E7852C@dlee07.ent.ti.com>
-References: <1283470837-18210-1-git-send-email-achew@nvidia.com>
- <0680EC522D0CC943BC586913CF3768C003C2018464@dbde02.ent.ti.com>
- <643E69AA4436674C8F39DCC2C05F763816B85AD0A9@HQMAIL03.nvidia.com>
- <0680EC522D0CC943BC586913CF3768C003C2018BD4@dbde02.ent.ti.com>
-In-Reply-To: <0680EC522D0CC943BC586913CF3768C003C2018BD4@dbde02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 8 Sep 2010 11:37:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=r+5XJnbEy4mbcBgbYKnEj3i8yc2+yiv4EQuMCEEk7+ivi6d8NQHYhMQbPWl6udPf9h
+         h7P612gHbHePSebf8VyeWyl6qwr868ESGH6ch3Vn52OaK2nCVW18B9f+iapiyytwIHHR
+         5sGxwOmXgJHm8mB2/3up209WsNHc0I16oHcBA=
+Date: Wed, 8 Sep 2010 08:37:45 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [patch 02/30] input: misc/hp_sdc_rtc: semaphore cleanup
+Message-ID: <20100908153745.GD4190@core.coreip.homeip.net>
+References: <20100907124636.880953480@linutronix.de>
+ <20100907125054.888438853@linutronix.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100907125054.888438853@linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew
-Do you know if AKM is updating their user space eCompass library to interface with IIO?
+On Tue, Sep 07, 2010 at 02:31:58PM -0000, Thomas Gleixner wrote:
+> Get rid of init_MUTEX[_LOCKED]() and use sema_init() instead.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Dmitry Torokhov <dtor@mail.ru>
 
-Dan
+All 3 look good to me Thomas, please merge with the rest of the patch
+series.
 
-> -----Original Message-----
-> From: linux-iio-owner@vger.kernel.org [mailto:linux-iio-
-> owner@vger.kernel.org] On Behalf Of Datta, Shubhrajyoti
-> Sent: Wednesday, September 08, 2010 5:05 AM
-> To: Andrew Chew; linux-kernel@vger.kernel.org; linux-iio@vger.kernel.org;
-> linux-i2c@vger.kernel.org
-> Cc: akpm@linux-foundation.org; khali@linux-fr.org; Laxman Dewangan
-> Subject: RE: [PATCH 1/1] iio: ak8975: Add Ak8975 magnetometer sensor
+> 
+> ---
+>  drivers/input/misc/hp_sdc_rtc.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/drivers/input/misc/hp_sdc_rtc.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/input/misc/hp_sdc_rtc.c
+> +++ linux-2.6/drivers/input/misc/hp_sdc_rtc.c
+> @@ -104,7 +104,7 @@ static int hp_sdc_rtc_do_read_bbrtc (str
+>  	t.endidx =		91;
+>  	t.seq =			tseq;
+>  	t.act.semaphore =	&tsem;
+> -	init_MUTEX_LOCKED(&tsem);
+> +	sema_init(&tsem, 0);
+>  	
+>  	if (hp_sdc_enqueue_transaction(&t)) return -1;
+>  	
+> @@ -698,7 +698,7 @@ static int __init hp_sdc_rtc_init(void)
+>  		return -ENODEV;
+>  #endif
+>  
+> -	init_MUTEX(&i8042tregs);
+> +	sema_init(&i8042tregs, 1);
+>  
+>  	if ((ret = hp_sdc_request_timer_irq(&hp_sdc_rtc_isr)))
+>  		return ret;
 > 
 > 
-> 
-> > -----Original Message-----
-> > From: Andrew Chew [mailto:AChew@nvidia.com]
-> > Sent: Wednesday, September 08, 2010 4:37 AM
-> > To: Datta, Shubhrajyoti; linux-kernel@vger.kernel.org; linux-
-> > iio@vger.kernel.org; linux-i2c@vger.kernel.org
-> > Cc: akpm@linux-foundation.org; khali@linux-fr.org; Laxman Dewangan
-> > Subject: RE: [PATCH 1/1] iio: ak8975: Add Ak8975 magnetometer sensor
-> >
-> > > > This is for the Asahi Kasei AK8975 3-axis magnetometer.  It
-> > > resides within
-> > > > the magnetometer section of the IIO subsystem, and
-> > > implements the raw
-> > > > magn_x,y,z attributes, as well as x,y,z factory calibration
-> > > attributes.
-> > > >
-> > > Could you help me with the datasheet details.
-> >
-> > What do you mean by this?
-> Could you share a link where the datasheet could be downloaded.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Dmitry
