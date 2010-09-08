@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758250Ab0IHHfX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 03:35:23 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:31970 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758015Ab0IHHfU (ORCPT
+	id S1758324Ab0IHHgD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 03:36:03 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:65206 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758259Ab0IHHgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 03:35:20 -0400
-Date: Wed, 8 Sep 2010 09:34:49 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: "Ben Dooks (em, bedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 7/8] drivers/i2c/busses/i2c-amd8111.c: Fix unsigned
- return  type
-Message-ID: <20100908093449.0adef429@hyperion.delvare>
-In-Reply-To: <Pine.LNX.4.64.1009080757050.27892@ask.diku.dk>
-References: <Pine.LNX.4.64.1009080757050.27892@ask.diku.dk>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Sep 2010 03:36:00 -0400
+From: Bernhard Walle <walle@corscience.de>
+To: ralf@linux-mips.org
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] MIPS: N32: Fix getdents64 syscall for n32
+Date: Wed,  8 Sep 2010 09:35:57 +0200
+Message-Id: <1283931357-4550-1-git-send-email-walle@corscience.de>
+X-Mailer: git-send-email 1.7.0.4
+X-Provags-ID: V02:K0:A88FcoG+4ETwZjSdVb6m4bq/PACEGxvt/d7rR0O5oLq
+ teWV2Q7vdDH6EDzManA8+RHXqIyOWflBoAW+YzmmbUkhkoLEQH
+ B61bYmD/1PnMWo1yvCwx1lNdC4ObulzPrB8ucO0DONN1QEvBzg
+ O2nZnRfs5iIq1zcCyuSQ3/jZpaQLwv00vhSemHzeGrIu5ATWz5
+ ExlFdct7AQmmGsBh7fj6Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+Commit 31c984a5acabea5d8c7224dc226453022be46f33 introduced a new syscall
+getdents64. However, in the syscall table, the new syscall still refers
+to the old getdents which doesn't work.
 
-On Wed, 8 Sep 2010 07:58:45 +0200 (CEST), Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> In each case, the function has an unsigned return type, but returns a
-> negative constant to indicate an error condition.  The result of calling
-> the function is always stored in a variable of type (signed) int, and thus
-> unsigned can be dropped from the return type.
-> 
-> A sematic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @exists@
-> identifier f;
-> constant C;
-> @@
-> 
->  unsigned f(...)
->  { <+...
-> *  return -C;
->  ...+> }
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  drivers/i2c/busses/i2c-amd8111.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-amd8111.c b/drivers/i2c/busses/i2c-amd8111.c
-> index af1e5e2..02a3726 100644
-> --- a/drivers/i2c/busses/i2c-amd8111.c
-> +++ b/drivers/i2c/busses/i2c-amd8111.c
-> @@ -69,7 +69,7 @@ static struct pci_driver amd8111_driver;
->   * ACPI 2.0 chapter 13 access of registers of the EC
->   */
->  
-> -static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
-> +static int amd_ec_wait_write(struct amd_smbus *smbus)
->  {
->  	int timeout = 500;
->  
-> @@ -85,7 +85,7 @@ static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
->  	return 0;
->  }
->  
-> -static unsigned int amd_ec_wait_read(struct amd_smbus *smbus)
-> +static int amd_ec_wait_read(struct amd_smbus *smbus)
->  {
->  	int timeout = 500;
->  
-> 
+The problem appeared with a system that uses the eglibc 2.12-r11187
+(that utilizes that new syscall) is very confused. The fix has been
+tested with that eglibc version.
 
-Thanks for reporting. Unfortunately the fix above is incomplete.
-amd_ec_wait_write() and amd_ec_wait_read() are called by amd_ec_read()
-and amd_ec_write(), which will now attempt to return negative error
-codes as unsigned ints. So amd_ec_read() and amd_ec_write() must have
-their return type fixed too.
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+---
+ arch/mips/kernel/scall64-n32.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Note that the driver code never checks for errors returned by
-amd_ec_read() or amd_ec_write() anyway, so the fix alone is a no-op. A
-real fix would have to also update the caller sites to properly deal
-with errors if then happen.
-
+diff --git a/arch/mips/kernel/scall64-n32.S b/arch/mips/kernel/scall64-n32.S
+index a3d6613..dfa8cbc 100644
+--- a/arch/mips/kernel/scall64-n32.S
++++ b/arch/mips/kernel/scall64-n32.S
+@@ -419,5 +419,5 @@ EXPORT(sysn32_call_table)
+ 	PTR	sys_perf_event_open
+ 	PTR	sys_accept4
+ 	PTR     compat_sys_recvmmsg
+-	PTR     sys_getdents
++	PTR     sys_getdents64
+ 	.size	sysn32_call_table,.-sysn32_call_table
 -- 
-Jean Delvare
+1.7.0.4
+
