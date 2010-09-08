@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751160Ab0IHEIE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 00:08:04 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42921 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab0IHEIC (ORCPT
+	id S1751358Ab0IHEcV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 00:32:21 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37176 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab0IHEcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 00:08:02 -0400
+	Wed, 8 Sep 2010 00:32:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=wOOGjX/dWXGSE7+67fZqxosOPk9NtQjwlPwwGLVSW4KsT6WOvaqpl/M8LVjyJxOgHq
-         KOxq0N+fdL2eIW68S80sDyjjmrKzrmfyraueT4todNwL+FYExPyHtcW+SKguI2+fBVuM
-         Hb2FoFEvJNIbuKdLQVgQkz5ywtt6Ck+/toX64=
-Subject: [PATCH 2/2 v2] staging : xgifb: Removes compilation conditionals
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Bill Pemberton <wfp5p@virginia.edu>,
-        Arnaud Patard <apatard@mandriva.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Sep 2010 00:07:57 -0400
-Message-ID: <1283918877.4905.5.camel@lenovo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Qk6EZuwylJNAUtZ5XvdOodHkOAODNx/nlP++xHoQnK5LxhuB1Mp3nzVZn4x0aVlUc8
+         T6ndMjeJIvJ/odlTmfCN9PMDc36owEDfcjZ+g0yw00RkUU6LH+7NcmRHkAcpapZER1+s
+         74k2bBEIN83YfH5xgtMr7zT4zl45Q8lGy0bIk=
+MIME-Version: 1.0
+In-Reply-To: <20100908021939.GA20443@kroah.com>
+References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
+	<20100908021939.GA20443@kroah.com>
+Date: Wed, 8 Sep 2010 12:32:19 +0800
+Message-ID: <AANLkTim605xLy8LjaKO+wR+UX2_r-dEQr=bMasXLAk22@mail.gmail.com>
+Subject: Re: [RESEND/PATCH 0/6] USB: musb-gadget: bug fix
+From: Ming Lei <tom.leiming@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Felipe Balbi <me@felipebalbi.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a compilation warning in today linux-next 
-removing some compilation conditionals.
+CC Felipe / David / Gadiyar / Mike /  Sergei
 
-Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
----
- drivers/staging/xgifb/XGI_main_26.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+2010/9/8 Greg KH <greg@kroah.com>:
+> I seem to not have 1/6 here, did it get stuck somewhere?
 
-diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index dbce3d0..4f73d09 100644
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -2797,7 +2797,6 @@ static void XGIfb_post_setmode(void)
- 
- }
- 
--#ifndef MODULE
- XGIINITSTATIC int __init XGIfb_setup(char *options)
- {
- 	char *this_opt;
-@@ -2880,7 +2879,6 @@ XGIINITSTATIC int __init XGIfb_setup(char *options)
- 	printk("\nxgifb: outa xgifb_setup 3450");
- 	return 0;
- }
--#endif
- 
- static unsigned char VBIOS_BUF[65535];
- 
-@@ -3454,13 +3452,12 @@ static struct pci_driver xgifb_driver = {
- 
- XGIINITSTATIC int __init xgifb_init(void)
- {
--#ifndef MODULE
- 	char *option = NULL;
- 
- 	if (fb_get_options("xgifb", &option))
- 		return -ENODEV;
- 	XGIfb_setup(option);
--#endif
-+
- 	return pci_register_driver(&xgifb_driver);
- }
- 
+Here is 1/6:
+
+         http://marc.info/?l=linux-usb&m=128387307419605&w=2
+
+If you need, I can send the 1/6 to you directly.
+
+>
+> Anyway, I need Felipe's ack before I can accept these.
+
+Felipe, expect your comments on the patch set...
+
+BTW: The mailbox of felipe.balbi@nokia.com in MAINTAINERS has been
+obsolete now, and his current box is me@felipebalbi.com, seems MAINTAINERS
+should be updated for it.
+
 -- 
-1.7.0.4
-
-
-
-
+Lei Ming
