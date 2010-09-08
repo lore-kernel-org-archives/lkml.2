@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab0IHDla (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 23:41:30 -0400
-Received: from dhruva1.ncra.tifr.res.in ([158.144.12.129]:59182 "EHLO
-	dhruva1.ncra.tifr.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab0IHDlZ (ORCPT
+	id S1751173Ab0IHEF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 00:05:58 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53163 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab0IHEF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 23:41:25 -0400
-From: "Raju Rameshwar Uprade" <rajsingh@ncra.tifr.res.in>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Regarding USB-serial device driver
-Date: Wed, 8 Sep 2010 09:11:19 +0530
-Message-Id: <20100908034006.M11954@admin-gateway.ncra.tifr.res.in>
-In-Reply-To: <20100907114913.M69542@admin-gateway.ncra.tifr.res.in>
-References: <20100907061327.M12473@admin-gateway.ncra.tifr.res.in> <20100907065937.GA22307@suse.de> <20100907114913.M69542@admin-gateway.ncra.tifr.res.in>
-X-Mailer: OpenWebMail 2.53 (08:Aug:2008)
-X-OriginatingIP: 158.144.12.129
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=utf-8
+	Wed, 8 Sep 2010 00:05:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=oOT1nizxtyhPC4Hgtu7mWkPfNbBCzbd+kQ1UsJl8BJ1NHr3A1JmI14dVY2TsgPCL13
+         o0j6OyNZTHb5hha/MpBKrpQQTmtQQMB5GNO1jk8xw8aSa0k8UGm+AFAFv0C8E5edjmrP
+         ns84LPlM25IWFzPl7bP3C9PzKl6Cvszr5fAMw=
+Subject: [PATCH 1/2 v2] staging: xgifb: Removes unnecesary log
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Bill Pemberton <wfp5p@virginia.edu>,
+        Arnaud Patard <apatard@mandriva.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Sep 2010 00:05:40 -0400
+Message-ID: <1283918740.4905.3.camel@lenovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch fixes a compile warning removing an unnecessary log message. 
+I redo the patch against today linux-next.
+
+Thanks a lot
+
+Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+---
+ drivers/staging/xgifb/XGI_main_26.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index bd863a0..dbce3d0 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -3419,13 +3419,6 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
+ 
+ 		XGIfb_registered = 1;
+ 
+-		printk(KERN_INFO "XGIfb: Installed XGIFB_GET_INFO ioctl (%lx)\n",
+-				XGIFB_GET_INFO);
+-
+-		/*		printk(KERN_INFO "XGIfb: 2D acceleration is %s, scrolling mode %s\n",
+-		 XGIfb_accel ? "enabled" : "disabled",
+-		 XGIfb_ypan  ? "ypan" : "redraw");
+-		 */
+ 		printk(KERN_INFO "fb%d: %s frame buffer device, Version %d.%d.%02d\n",
+ 				fb_info->node, myid, VER_MAJOR, VER_MINOR, VER_LEVEL);
+ 
+-- 
+1.7.0.4
 
 
-> Wierd.  If you enable debugging in the driver:
-> 	modprobe pl2303 debug=1
-> do you also see the kernel log showing extra data going out to the host?
-> 
-> What is your userspace program doing?  Are you sure you are only writing
-> 6 bytes?  The bulk out should only be writing the actual data in the
-> buffer, not any more than that.
-> 
-> Do you have an example userspace code that we can use to test with?
-> 
-> thanks,
-> 
-> greg k-h
-
-Greg, 
-      I am really sorry, that superfluous data was due to user space program.I have
-modified that.Now I am able to send correct data to the device. 5e and 40 is also going
-out.I don't know from where it is coming.
-But I am not getting the response.
-
-output of usbmon :
-
-ee9e1680 4108443204 C Co:7:003:0 0 0
-f6e80c00 4108443237 S Bo:7:003:2 -115 9 = 05080000 00000000 f8 // correct data bytes 
-f6e80c00 4108444202 C Bo:7:003:2 0 9 >
-ee9e1680 4108448251 S Co:7:003:0 s 21 22 0000 0000 0000 0
-ee9e1680 4108449202 C Co:7:003:0 0 0
-f6e80700 4108450204 C Bi:7:003:3 0 1 = 00
-ee9e1680 4108450546 S Co:7:003:0 s 21 22 0003 0000 0000 0
-f6e80900 4108451204 C Ii:7:003:1 0:1 10 = a1200000 00000200 0400
-f6e80900 4108451223 S Ii:7:003:1 -115:1 10 <
-ee9e1680 4108451227 C Co:7:003:0 0 0
-f6e80c00 4108451252 S Bo:7:003:2 -115 1 = 5e // don't know from where it is going out 
-f6e80c00 4108452201 C Bo:7:003:2 0 1 >
-f6e80900 4108453203 C Ii:7:003:1 0:1 10 = a1200000 00000200 0000
-f6e80900 4108453221 S Ii:7:003:1 -115:1 10 <
-ee9e1680 4108456262 S Co:7:003:0 s 21 22 0000 0000 0000 0
-ee9e1680 4108457202 C Co:7:003:0 0 0
-ee9e1680 4108457225 S Co:7:003:0 s 21 22 0003 0000 0000 0
-ee9e1680 4108458201 C Co:7:003:0 0 0
-f6e80c00 4108458228 S Bo:7:003:2 -115 1 = 40 // don't know from where it is going out 
-f6e80c00 4108459201 C Bo:7:003:2 0 1 >
-ee9e1680 4108463235 S Co:7:003:0 s 21 22 0000 0000 0000 0
-ee9e1680 4108464204 C Co:7:003:0 0 0
-
-Regards,
-Raj.
 
