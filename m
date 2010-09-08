@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab0IHNcX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 09:32:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34567 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883Ab0IHNcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 09:32:21 -0400
-Date: Wed, 8 Sep 2010 09:32:13 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        linux-fsdevel@vger.kernel.org, jaxboe@fusionio.com
-cc: Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: i_size misuses
-Message-ID: <Pine.LNX.4.64.1009080833180.16126@hs20-bc2-1.build.redhat.com>
+	id S1753654Ab0IHNdB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 09:33:01 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61735 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883Ab0IHNc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 09:32:59 -0400
+Message-ID: <4C87907A.2040500@cn.fujitsu.com>
+Date: Wed, 08 Sep 2010 21:32:42 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andi Kleen <andi@firstfloor.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Ext4 <linux-ext4@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>
+Subject: Re: [PATCH V2 1/3] lib: introduce some memory copy macros and   
+   functions
+References: <46238.91.60.152.217.1283948365.squirrel@www.firstfloor.org>	<4C878823.60709@cn.fujitsu.com> <20100908150519.2f9fe283@basil.nowhere.org>
+In-Reply-To: <20100908150519.2f9fe283@basil.nowhere.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, 8 Sep 2010 15:05:19 +0200, Andi Kleen wrote:
+> On Wed, 08 Sep 2010 20:57:07 +0800
+> Miao Xie<miaox@cn.fujitsu.com>  wrote:
+>
+>> On Wed, 8 Sep 2010 14:19:25 +0200 (cest), Andi Kleen wrote:
+>>>
+>>>> According to the data, the length of the most copies is>=128.
+>>>
+>>> Thanks for the data. Large is easier to optimize than small, that's
+>>> good.
+>>>
+>>> Could you also measure how many memsets need the backwards copy?
+                                     ^^^^^^^ :-)
+>>> (should be easy to add)
+>>
+>> I think memset doesn't need the backwards copy.
+>
+> I meant for memmove of course. Obviously memset doesn't need a backwards
+> copy. That was just the only thing the script didn't measure because
+> the original version didn't have memmove support.
 
-when reviewing some i_size problem, I searched the kernel for i_size usage 
-(the variable should really be written with i_size_write and read with 
-i_size_read).
+memmove
+total 5224252
+[snip]
 
-Properly locked direct use of "i_size" inside memory management or 
-filesystems may not be a problem, but there are many problems in general 
-code outside mm.
-
-The misuses are:
-SOUND/SOUND_FIRMWARE.C:l = filp->f_path.dentry->d_inode->i_size;
-KERNEL/RELAY.C:buf->dentry->d_inode->i_size = buf->early_bytes;
-KERNEL/RELAY.C:buf->dentry->d_inode->i_size += buf->chan->subbuf_size 
--buf->padding[old_subbuf];
-DRIVERS/USB/CORE/INODE.C:dev->usbfs_dentry->d_inode->i_size = i_size;
-DRIVERS/MTD/DEVICES/BLOCK2MTD.C:dev->mtd.size = 
-dev->blkdev->bd_inode->i_size & PAGE_MASK;
-DRIVERS/MD/MD.C: many reads of i_size 
-DRIVERS/BLOCK/NBD.C: many writes to i_size without i_size_write
-DRIVERS/BLOCK/DRBD/DRBD_INT.H: return bdev ? bdev->bd_inode->i_size >> 9 : 0;
-DRIVERS/BLOCK/DRBD/DRBD_WRAPPERS.H: mdev->this_bdev->bd_inode->i_size = 
-(loff_t)size << 9;
-BLOCK/BLK-CORE.C:printk(KERN_INFO "%s: rw=%ld, want=%Lu, limit=%Lu\n",
-                bdevname(bio->bi_bdev, b),
-                bio->bi_rw,
-                (unsigned long long)bio->bi_sector + bio_sectors(bio),
-                (long long)(bio->bi_bdev->bd_inode->i_size >> 9));
-maxsector = bio->bi_bdev->bd_inode->i_size >> 9;
-BLOCK/COMPAT_IOCTL.C: size = bdev->bd_inode->i_size;
-return compat_put_u64(arg, bdev->bd_inode->i_size);
-BLOCK/IOCTL.C: if (start + len > (bdev->bd_inode->i_size >> 9))
-size = bdev->bd_inode->i_size;
-return put_u64(arg, bdev->bd_inode->i_size);
-
-The problem with this code is that if you read i_size without i_size_read 
-and the size wraps around 32 bits, for example from 0xffffffff to 
-0x100000000 , there is a possibility on 32-bit machines to read an invalid 
-value (either 0 or 0x1ffffffff). Similarly, if you write i_size without 
-i_size_write, the readers can see intermediate invalid values.
+forward copy
+value |-------------------------------------------------- count
+     0 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  980253
 
 
-The original problem that caused this investigation is the question, how a 
-block device driver can change the size of its device. Normal method (used 
-in a few drivers, including dm), consists of
-mutex_lock(&inode->i_mutex);
-i_size_write(inode, new_size);
-mutex_unlock(&inode->i_mutex);
+backward copy
+value |-------------------------------------------------- count
+     0 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  4243999
 
-This is deadlock-prone, because i_mutex is also held on fsync path. 
-Therefore, this deadlock happens: fsync takes i_mutex and issues I/Os, 
-block device driver wants to change its size, so it waits on i_mutex, 
-the I/Os wait until the device driver did its internal maintenance and 
-changed the inode size. The driver doesn't change the size until fsync 
-finished.
+the backward copy is much more than the forward copy.
 
-Jens, as a block maintainer, please think about it and propose some 
-specification how to clean this up. Also a clean verifiable rule regarding 
-i_size should be specified and the code should be fixed to conform to the 
-rule: maybe we could rename i_size to __i_size and ban its using.
+Thanks
+Miao
 
-Mikulas
+
