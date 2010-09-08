@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab0IHJSd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 05:18:33 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:58287
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751089Ab0IHJSb (ORCPT
+	id S1758588Ab0IHJTE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 05:19:04 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:22293 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756004Ab0IHJTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 05:18:31 -0400
-X-SpamScore: -16
-X-BigFish: VS-16(zz1432N98dN148cMzz1202hzz8275bhz32i87h2a8h61h)
+	Wed, 8 Sep 2010 05:19:01 -0400
+X-SpamScore: -38
+X-BigFish: VS-38(zzbb2dK1432N98dN179dN9371Pzz1202hzz15d4Rz32i87h2a8h61h)
 X-Spam-TCS-SCL: 0:0
-X-FB-SS: 0,
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8F899-02-3BJ-02
+X-WSS-ID: 0L8F8G0-02-3IY-02
 X-M-MSG: 
-Date: Wed, 8 Sep 2010 11:12:52 +0200
+Date: Wed, 8 Sep 2010 11:16:55 +0200
 From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Alexander Graf <agraf@suse.de>,
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
         "joro@8bytes.org" <joro@8bytes.org>,
         "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 14/27] KVM: MMU: Make walk_addr_generic capable for
- two-level walking
-Message-ID: <20100908091252.GH2177@amd.com>
+Subject: Re: [PATCH 22/27] KVM: MMU: Refactor mmu_alloc_roots function
+Message-ID: <20100908091655.GI2177@amd.com>
 References: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
- <1283788566-29186-15-git-send-email-joerg.roedel@amd.com>
- <20100907174805.GA11215@amt.cnet>
+ <1283788566-29186-23-git-send-email-joerg.roedel@amd.com>
+ <20100907203952.GA14489@amt.cnet>
+ <4C87386B.2030109@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100907174805.GA11215@amt.cnet>
+In-Reply-To: <4C87386B.2030109@redhat.com>
 Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
 	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
 	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
@@ -43,59 +42,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 01:48:05PM -0400, Marcelo Tosatti wrote:
-> On Mon, Sep 06, 2010 at 05:55:53PM +0200, Joerg Roedel wrote:
-> > This patch uses kvm_read_guest_page_tdp to make the
-> > walk_addr_generic functions suitable for two-level page
-> > table walking.
-> > 
-> > Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> > ---
-> >  arch/x86/kvm/paging_tmpl.h |   27 ++++++++++++++++++++-------
-> >  1 files changed, 20 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> > index cd59af1..a5b5759 100644
-> > --- a/arch/x86/kvm/paging_tmpl.h
-> > +++ b/arch/x86/kvm/paging_tmpl.h
-> > @@ -124,6 +124,8 @@ static int FNAME(walk_addr_generic)(struct guest_walker *walker,
-> >  	unsigned index, pt_access, uninitialized_var(pte_access);
-> >  	gpa_t pte_gpa;
-> >  	bool eperm, present, rsvd_fault;
-> > +	int offset;
-> > +	u32 error = 0;
-> >  
-> >  	trace_kvm_mmu_pagetable_walk(addr, write_fault, user_fault,
-> >  				     fetch_fault);
-> > @@ -153,12 +155,13 @@ walk:
-> >  		index = PT_INDEX(addr, walker->level);
-> >  
-> >  		table_gfn = gpte_to_gfn(pte);
-> > -		pte_gpa = gfn_to_gpa(table_gfn);
-> > -		pte_gpa += index * sizeof(pt_element_t);
-> > +		offset    = index * sizeof(pt_element_t);
-> > +		pte_gpa   = gfn_to_gpa(table_gfn) + offset;
-> >  		walker->table_gfn[walker->level - 1] = table_gfn;
-> >  		walker->pte_gpa[walker->level - 1] = pte_gpa;
-> >  
-> > -		if (kvm_read_guest(vcpu->kvm, pte_gpa, &pte, sizeof(pte))) {
-> > +		if (kvm_read_guest_page_mmu(vcpu, mmu, table_gfn, &pte, offset,
-> > +					    sizeof(pte), &error)) {
-> >  			present = false;
-> >  			break;
-> >  		}
+On Wed, Sep 08, 2010 at 03:16:59AM -0400, Avi Kivity wrote:
+>   On 09/07/2010 11:39 PM, Marcelo Tosatti wrote:
+> >
+> >> @@ -2406,16 +2441,11 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
+> >>   			root_gfn = pdptr>>  PAGE_SHIFT;
+> >>   			if (mmu_check_root(vcpu, root_gfn))
+> >>   				return 1;
+> >> -		} else if (vcpu->arch.mmu.root_level == 0)
+> >> -			root_gfn = 0;
+> >> -		if (vcpu->arch.mmu.direct_map) {
+> >> -			direct = 1;
+> >> -			root_gfn = i<<  30;
+> >>   		}
+> >>   		spin_lock(&vcpu->kvm->mmu_lock);
+> >>   		kvm_mmu_free_some_pages(vcpu);
+> >>   		sp = kvm_mmu_get_page(vcpu, root_gfn, i<<  30,
+> >> -				      PT32_ROOT_LEVEL, direct,
+> >> +				      PT32_ROOT_LEVEL, 0,
+> >>   				      ACC_ALL, NULL);
+> > Should not write protect the gfn for nonpaging mode.
+> >
 > 
-> If there is failure reading the nested page tables here, you fill
-> vcpu->arch.fault. But the nested fault error values will be overwritten
-> at the end of walk_addr() by the original fault values?
+> nonpaging mode should have direct_map set, so wouldn't enter this path 
+> at all.
 
-True. Thanks for pointing that out. I will write a test-case for that
-too. The results from my implemented tests show that sometimes the error
-code is not reported correctly too. So I decided to do a v4 of this
-patch-set with all found issues fixed.
-
-Thanks for your review.
+Hmm, actually the nonpaging path does not set direct_map. I'll fix this
+too in v4. Thanks.
 
 	Joerg
 
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
