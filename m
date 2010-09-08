@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab0IHJvo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 05:51:44 -0400
-Received: from www.tglx.de ([62.245.132.106]:55529 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147Ab0IHJvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 05:51:42 -0400
-Date: Wed, 8 Sep 2010 11:51:13 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: slow nanosleep?
-In-Reply-To: <OF2B75FA7C.7064BC41-ONC1257798.00318FDA-C1257798.00329AEF@transmode.se>
-Message-ID: <alpine.LFD.2.00.1009081143200.2477@localhost6.localdomain6>
-References: <OF71DD00AE.26643E4D-ONC1257798.00250630-C1257798.002A9748@transmode.se>  <1283932600.2880.1.camel@edumazet-laptop>  <OF5074952F.1B97B2B8-ONC1257798.002C51D7-C1257798.002C63A4@transmode.se> <1283934289.2880.12.camel@edumazet-laptop>
- <OF2B75FA7C.7064BC41-ONC1257798.00318FDA-C1257798.00329AEF@transmode.se>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757839Ab0IHJvv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 05:51:51 -0400
+Received: from 64.mail-out.ovh.net ([91.121.185.65]:54462 "HELO
+	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756838Ab0IHJvs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 05:51:48 -0400
+Date: Wed, 8 Sep 2010 11:50:58 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: "avictor.za@gmail.com" <avictor.za@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Fabian Godehardt <fg@emlix.com>
+Subject: Re: [PATCH] AT91: SAM9G45 - add a separate clock entry for every
+ single TC block
+Message-ID: <20100908095058.GA3939@game.jcrosoft.org>
+References: <201009060548.18521.fg@emlix.com>
+ <1283772201-15453-1-git-send-email-nicolas.ferre@atmel.com>
+ <AANLkTin+vCsG3FUvX6DTUfFe7ZJpbkYyqw_TLvH9ujrJ@mail.gmail.com>
+ <4C8750B8.6000107@atmel.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1394950388-1283939474=:2477"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C8750B8.6000107@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 6678838249225694060
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
----1463795968-1394950388-1283939474=:2477
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 8 Sep 2010, Joakim Tjernlund wrote:
-
-> Eric Dumazet <eric.dumazet@gmail.com> wrote on 2010/09/08 10:24:49:
-> >
-> > Le mercredi 08 septembre 2010 à 10:04 +0200, Joakim Tjernlund a écrit :
-> >
-> > > That makes litte difference:
-> > > root@localhost ~ # ./nanosleep
-> > > nanosleep
-> > > req:0 :0
-> > > tv_res:0 :112
-> > >
-> >
-> > Here, result is 30 (with prctl())
-> > instead of 95 (without)
+On 11:00 Wed 08 Sep     , Nicolas Ferre wrote:
+> Le 07/09/2010 21:42, avictor.za@gmail.com :
+> > hi,
+> > 
+> >> +/* One additional fake clock for second TC block */
+> >> +static struct clk tcb1_clk = {
+> >> +       .name           = "tcb1_clk",
+> >> +       .pmc_mask       = 0,
+> >> +       .type           = CLK_TYPE_PERIPHERAL,
+> >> +       .parent         = &tcb0_clk,
+> >> +};
+> >> +
+> > 
+> > Looking at this again...  since type is CLK_TYPE_PERIPHERAL, when you
+> > call clk_register() the "parent" is changed to the master clock.
+> > 
+> > Which means, then later you call clk_enable() the "pmc_mask" is still
+> > 0, so 0 gets written (in pmc_periph_mode) to AT91_PMC_PCER.  So the
+> > TCB clock won't be enabled.
+> > 
+> > Or am I missing something?
 > 
-> On x86 I notice a difference:
->   7 vs 57.
-> however select is still faster: 2
-> The system call OH seems to be bigger for nanosleep than
-> for select and on my ppc is is about 112 us. Can anything
-> be done about that?
+> You are absolutely right!
+> 
+> What do you think about this modification of clk_register() function?
+> 
+> --- a/arch/arm/mach-at91/clock.c
+> +++ b/arch/arm/mach-at91/clock.c
+> @@ -501,7 +501,8 @@ postcore_initcall(at91_clk_debugfs_init);
+>  int __init clk_register(struct clk *clk)
+>  {
+>         if (clk_is_peripheral(clk)) {
+> -               clk->parent = &mck;
+> +               if (!clk->parent)
+> +                       clk->parent = &mck;
+>                 clk->mode = pmc_periph_mode;
+>                 list_add_tail(&clk->node, &clocks);
+>         }
+> 
+> It is a very little modification which implements what I had in mind
+> while creating a kind of "child peripheral" clock.
+so so
 
-Hmm, the only reason I can see is that select calls finally
-schedule_hrtimeout_range_clock() which optimizes the expiry = 0 case
-while nanosleep does not. So the difference is only visiable when the
-relative timeout is 0. For timeouts > 0 nanosleep and select should
-behave the same way.
+but until we switch to clkdev it will solve the issue
 
-Thanks,
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-	tglx
----
- kernel/hrtimer.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-Index: linux-2.6/kernel/hrtimer.c
-===================================================================
---- linux-2.6.orig/kernel/hrtimer.c
-+++ linux-2.6/kernel/hrtimer.c
-@@ -1609,6 +1609,9 @@ SYSCALL_DEFINE2(nanosleep, struct timesp
- 	if (!timespec_valid(&tu))
- 		return -EINVAL;
- 
-+	if (!tu.tv_sec && !tu.tv_usec)
-+		return 0;
-+
- 	return hrtimer_nanosleep(&tu, rmtp, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
- }
- 
-
----1463795968-1394950388-1283939474=:2477--
+Best Regards,
+J.
