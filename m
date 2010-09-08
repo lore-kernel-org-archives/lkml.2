@@ -1,85 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736Ab0IHXc2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 19:32:28 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:53412 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756674Ab0IHXcP (ORCPT
+	id S1756653Ab0IHXml (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 19:42:41 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37210 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab0IHXmi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 19:32:15 -0400
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: linux-bluetooth@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, marcel@holtmann.org,
-        davem@davemloft.net
-Subject: [PATCH] Bluetooth: Simplify L2CAP Streaming mode sending
-Date: Wed,  8 Sep 2010 20:32:07 -0300
-Message-Id: <1283988727-1456-2-git-send-email-padovan@profusion.mobi>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1283988727-1456-1-git-send-email-padovan@profusion.mobi>
-References: <1283988727-1456-1-git-send-email-padovan@profusion.mobi>
+	Wed, 8 Sep 2010 19:42:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=G4tH9d67Yj8SRuyn0COBqiB+ZvN7FkmjrIiITaeMk+pglQYGGbdniLmMy1jsXHS7CO
+         I1B3FY3totmWfsk52Inr3vXVBopk0fR/RYQ3E1+sBsuCoA6zWH6oCq7cSGGodO4XPYW3
+         vs5qAj7qE6++nasrSWYow/0CrtKUkg5z8nkek=
+MIME-Version: 1.0
+In-Reply-To: <201009081751.22841.marek.vasut@gmail.com>
+References: <1283914607-10570-1-git-send-email-mark.brown314@gmail.com>
+	<1283914607-10570-2-git-send-email-mark.brown314@gmail.com>
+	<201009081751.22841.marek.vasut@gmail.com>
+Date: Wed, 8 Sep 2010 19:42:36 -0400
+Message-ID: <AANLkTim+heO9nDOUhKYatAKts6QcPvcE0tBs=wVtvF4g@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM: pxa168: added support for Teton BGA platform
+From: "Mark F. Brown" <mark.brown314@gmail.com>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we don't have any error control on the Streaming mode, i.e., we don't
-need to keep a copy of the skb for later resending we don't need to
-call skb_clone() on it.
-Then we can go one further here, and dequeue the skb before sending it,
-that also means we don't need to look to sk->sk_send_head anymore.
+On Wed, Sep 8, 2010 at 11:51 AM, Marek Vasut <marek.vasut@gmail.com> wrote:
+> Dne St 8. září 2010 04:56:45 Mark F. Brown napsal(a):
+>
+> ---------------------------
+> Description is missing here
+> ---------------------------
+>
+>> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+>> ---
+>>  arch/arm/mach-mmp/Kconfig     |    7 ++++++
+>>  arch/arm/mach-mmp/Makefile    |    1 +
+>>  arch/arm/mach-mmp/teton_bga.c |   47
+>> +++++++++++++++++++++++++++++++++++++++++ 3 files changed, 55
+>> insertions(+), 0 deletions(-)
+>>  create mode 100644 arch/arm/mach-mmp/teton_bga.c
+>>
+>> diff --git a/arch/arm/mach-mmp/Kconfig b/arch/arm/mach-mmp/Kconfig
+>> index 6ab843e..0711d3b 100644
+>> --- a/arch/arm/mach-mmp/Kconfig
+>> +++ b/arch/arm/mach-mmp/Kconfig
+>> @@ -57,6 +57,13 @@ config MACH_MARVELL_JASPER
+>>         PXA910-based development board. Since MMP2 is compatible to
+>>         ARMv6 architecture.
+>>
+>> +config MACH_TETON_BGA
+>> +     bool "Marvell's PXA168 Teton BGA Development Board"
+>> +     select CPU_PXA168
+>> +     help
+>> +       Say 'Y' here if you want to support the Marvell PXA168-based
+>> +       Teton BGA Development Board.
+>> +
+>>  endmenu
+>>
+>>  config CPU_PXA168
+>> diff --git a/arch/arm/mach-mmp/Makefile b/arch/arm/mach-mmp/Makefile
+>> index 8b66d06..751cdbf 100644
+>> --- a/arch/arm/mach-mmp/Makefile
+>> +++ b/arch/arm/mach-mmp/Makefile
+>> @@ -17,3 +17,4 @@ obj-$(CONFIG_MACH_TAVOREVB) += tavorevb.o
+>>  obj-$(CONFIG_MACH_TTC_DKB)   += ttc_dkb.o
+>>  obj-$(CONFIG_MACH_FLINT)     += flint.o
+>>  obj-$(CONFIG_MACH_MARVELL_JASPER) += jasper.o
+>> +obj-$(CONFIG_MACH_TETON_BGA) += teton_bga.o
+>> diff --git a/arch/arm/mach-mmp/teton_bga.c b/arch/arm/mach-mmp/teton_bga.c
+>> new file mode 100644
+>> index 0000000..014cc37
+>> --- /dev/null
+>> +++ b/arch/arm/mach-mmp/teton_bga.c
+>> @@ -0,0 +1,47 @@
+>> +/*
+>> + *  linux/arch/arm/mach-mmp/teton_bga.c
+>> + *
+>> + *  Support for the Marvell PXA168 Teton BGA Development Platform.
+>
+> Authoring information of this file are missing. Also, MAINTAINERS entry is
+> missing.
+>> + *
+>> + *  This code is based on aspenite.c
+>> + *
+>> + *  This program is free software; you can redistribute it and/or modify
+>> + *  it under the terms of the GNU General Public License version 2 as
+>> + *  publishhed by the Free Software Foundation.
+>> + */
+>> +
+>> +#include <linux/init.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/platform_device.h>
+>> +
+>> +#include <asm/mach-types.h>
+>> +#include <asm/mach/arch.h>
+>> +#include <mach/addr-map.h>
+>> +#include <mach/mfp-pxa168.h>
+>> +#include <mach/pxa168.h>
+>> +#include <mach/gpio.h>
+>
+> use ... #include <linux/gpio.h>
+>
+>> +
+>> +#include "common.h"
+>> +
+>> +static unsigned long teton_bga_pin_config[] __initdata = {
+>> +     /* UART1 */
+>> +     GPIO107_UART1_TXD,
+>> +     GPIO108_UART1_RXD,
+>> +};
+>> +
+>> +static void __init teton_bga_init(void)
+>> +{
+>> +     mfp_config(ARRAY_AND_SIZE(teton_bga_pin_config));
+>> +
+>> +     /* on-chip devices */
+>> +     pxa168_add_uart(1);
+>
+> Don't we have enum for these magic numbers on pxa168 ?
+>> +}
+>> +
+>> +MACHINE_START(TETON_BGA, "PXA168-based Teton BGA Development Platform")
+>> +     .phys_io        = APB_PHYS_BASE,
+>> +     .io_pg_offst    = (APB_VIRT_BASE >> 18) & 0xfffc,
+>> +     .map_io         = mmp_map_io,
+>> +     .init_irq       = pxa168_init_irq,
+>> +     .timer          = &pxa168_timer,
+>> +     .init_machine   = teton_bga_init,
+>> +MACHINE_END
+>
+> Cheers
+>
 
-The patch saves memory and time when sending Streaming mode data, so
-it is good to mainline.
+I am assuming you mean the magic number for .io_pg_offst:
+ .io_pg_offst    = (APB_VIRT_BASE >> 18) & 0xfffc,
 
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
----
- net/bluetooth/l2cap.c |   24 +++++++-----------------
- 1 files changed, 7 insertions(+), 17 deletions(-)
+It seems all of the other platforms in arch/arm are configuring it
+this way. Do you really want me to change this?
 
-diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-index 9fad312..f2062aa 100644
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -1441,33 +1441,23 @@ static inline void l2cap_do_send(struct sock *sk, struct sk_buff *skb)
- 
- static void l2cap_streaming_send(struct sock *sk)
- {
--	struct sk_buff *skb, *tx_skb;
-+	struct sk_buff *skb;
- 	struct l2cap_pinfo *pi = l2cap_pi(sk);
- 	u16 control, fcs;
- 
--	while ((skb = sk->sk_send_head)) {
--		tx_skb = skb_clone(skb, GFP_ATOMIC);
--
--		control = get_unaligned_le16(tx_skb->data + L2CAP_HDR_SIZE);
-+	while ((skb = skb_dequeue(TX_QUEUE(sk)))) {
-+		control = get_unaligned_le16(skb->data + L2CAP_HDR_SIZE);
- 		control |= pi->next_tx_seq << L2CAP_CTRL_TXSEQ_SHIFT;
--		put_unaligned_le16(control, tx_skb->data + L2CAP_HDR_SIZE);
-+		put_unaligned_le16(control, skb->data + L2CAP_HDR_SIZE);
- 
- 		if (pi->fcs == L2CAP_FCS_CRC16) {
--			fcs = crc16(0, (u8 *)tx_skb->data, tx_skb->len - 2);
--			put_unaligned_le16(fcs, tx_skb->data + tx_skb->len - 2);
-+			fcs = crc16(0, (u8 *)skb->data, skb->len - 2);
-+			put_unaligned_le16(fcs, skb->data + skb->len - 2);
- 		}
- 
--		l2cap_do_send(sk, tx_skb);
-+		l2cap_do_send(sk, skb);
- 
- 		pi->next_tx_seq = (pi->next_tx_seq + 1) % 64;
--
--		if (skb_queue_is_last(TX_QUEUE(sk), skb))
--			sk->sk_send_head = NULL;
--		else
--			sk->sk_send_head = skb_queue_next(TX_QUEUE(sk), skb);
--
--		skb = skb_dequeue(TX_QUEUE(sk));
--		kfree_skb(skb);
- 	}
- }
- 
--- 
-1.7.2.2
-
+Regards,
+-- Mark
