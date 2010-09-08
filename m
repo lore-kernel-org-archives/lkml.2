@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab0IHP5X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 11:57:23 -0400
-Received: from mail.lixom.net ([70.86.134.90]:45561 "EHLO mail.lixom.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755950Ab0IHP5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 11:57:22 -0400
-Date: Wed, 8 Sep 2010 10:57:21 -0500
-From: Olof Johansson <olof@lixom.net>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Lei Wen <adrian.wenl@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mandeep Baines <msb@chromium.org>
-Subject: Re: [PATCH v3] mmc: add config and runtime option for number of
-	mmcblk minors
-Message-ID: <20100908155721.GD23745@lixom.net>
-References: <20100818041333.GA14149@lixom.net> <20100818171636.0625b668.akpm@linux-foundation.org> <20100819032230.GA21980@lixom.net> <20100820010242.GA29588@lixom.net> <20100820221323.GC8535@lixom.net> <AANLkTikLLwfSXbnjPByXTktEFFVueeAd7HZS5ft-rj-m@mail.gmail.com> <20100908145705.GC23745@lixom.net> <AANLkTi=jft-j+2Y_dez_gJSrHEkuKSwKq8PbPZxvuHqk@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=jft-j+2Y_dez_gJSrHEkuKSwKq8PbPZxvuHqk@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756034Ab0IHP6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 11:58:41 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46926 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755579Ab0IHP6j convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 11:58:39 -0400
+Subject: Re: [GIT pull] Preparatory patch for semaphore cleanup
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100908155604.GA18064@elte.hu>
+References: <alpine.LFD.2.00.1009081507250.2477@localhost6.localdomain6>
+	 <AANLkTikYEjV8ikkPsfJ0d7WsikWHJ0n74u9uDS4uGHC+@mail.gmail.com>
+	 <1283957961.23762.28.camel@laptop>  <20100908155604.GA18064@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 08 Sep 2010 17:58:24 +0200
+Message-ID: <1283961504.23762.34.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 05:19:25PM +0200, Kay Sievers wrote:
-> On Wed, Sep 8, 2010 at 16:57, Olof Johansson <olof@lixom.net> wrote:
-> > On Wed, Sep 08, 2010 at 10:25:58PM +0800, Lei Wen wrote:
-> >
-> >> The patch's purpose is good. As modern sd&mmc is used to host the file
-> >> system, the 8 partition limitation is becoming a kind of bottleneck...
-> >> But why not just add GENHD_FL_EXT_DEVT flag to allow mmc use extended
-> >> partition numbers?
-> >
-> > No need to quote the whole patch next time. :)
-> >
-> > Given that MMC is sometimes used in deeply embedded environments where
-> > udev might not be running to take care of dynamic device numbering,
-> > I chose to stay with a static layout.
-> >
-> > I could be convinced otherwise though. It would cause some additional
-> > hassles for me since we start udev lateish during boot and have a
-> > prepopulated /dev before that, but that can be dealt with.
+On Wed, 2010-09-08 at 17:56 +0200, Ingo Molnar wrote:
+> * Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> I think the extended number are only used for stuff larger than the static 8?
+> > On Wed, 2010-09-08 at 07:54 -0700, Linus Torvalds wrote:
+> > > On Wed, Sep 8, 2010 at 6:11 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > >
+> > > > This patch just provides the DEFINE_SEMAPHORE macro which is required
+> > > > for the various subsystem cleanups I sent out, so we can finally get
+> > > > rid of init_MUTEX[_LOCKED] in 2.6.37.
+> > > 
+> > > Why is it called DEFINE_SEMAPHORE(), when two lines later the we have
+> > > DECLARE_MUTEX()?
+> > > 
+> > > IOW, the whole DEFINE vs DECLARE thing seems confused. I'm not saying
+> > > one is better than the other (maybe "define" is), but the mixing of
+> > > names is worse than either, I feel..
+> > 
+> > The rest of the series, that Thomas didn't include in this pull, removes
+> > all the DECLARE_MUTEX() users. So its temporary awkward-ness.
+> 
+> and DEFINE_MUTEX() is needed upstream so that we can spread those 
 
-Ah, yes, of course.
+s/DEFINE_MUTEX/DEFINE_SEMAPHORE/
 
-> Apart from that, you can not reliably or securely use a static /dev
-> these days, you never know which device you talk to, because the
-> kernel has far too many dynamically assigned numbers. For that reason,
-> most embedded setups use the busybox hack to populate /dev. Recent
-> kernels have a devfs again, and there is no reason today to continue
-> any static /dev experiments -- unless someone is going over the entire
-> tree and fixes all the dynamic assignments, which is unlikely to
-> happen ever.
-
-Yeah, it's a weak argument but I wanted to go for the least surprising
-one for anyone who still relies on static numbering of mmc, since it's
-used as root device, etc.
-
-But with the first 8 minors being the same as before, there's little
-reason to care about that -- the EXT_DEVT approach will actually be
-the smaller change, since it won't renumber anything, just extend in a
-different part of the address space.
-
-Lei, want to submit a proper patch for it to replace mine?
+> patches into a dozen maintainer trees. Once those flow upstream 
+> DECLARE_MUTEX() will be removed.
 
 
--Olof
