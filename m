@@ -1,113 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab0IHQxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 12:53:13 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1821 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751405Ab0IHQxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 12:53:09 -0400
-Message-ID: <4C87BF63.3070808@canonical.com>
-Date: Wed, 08 Sep 2010 10:52:51 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1756103Ab0IHQxt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 12:53:49 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:53948 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793Ab0IHQxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 12:53:45 -0400
+Date: Wed, 8 Sep 2010 10:53:41 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Yong Wang <yong.y.wang@linux.intel.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Feng Tang <feng.tang@intel.com>, George Shore <george@georgeshore.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dw_spi: Allow interrupt sharing
+Message-ID: <20100908165341.GJ3686@angua.secretlab.ca>
+References: <20100907072727.GA2152@ywang-moblin2.bj.intel.com>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Trond.Myklebust@netapp.com
-Subject: Re: nfsd deadlock, 2.6.36-rc3
-References: <4C7E73CB.7030603@canonical.com> <20100901165400.GB1201@fieldses.org> <20100902065551.079e297c@notabene> <4C7EC17B.6070509@canonical.com> <20100901211321.GC10507@fieldses.org> <4C7FBF26.3090203@canonical.com>
-In-Reply-To: <4C7FBF26.3090203@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100907072727.GA2152@ywang-moblin2.bj.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2010 09:13 AM, Tim Gardner wrote:
-> On 09/01/2010 03:13 PM, J. Bruce Fields wrote:
->> On Wed, Sep 01, 2010 at 03:11:23PM -0600, Tim Gardner wrote:
->>> On 09/01/2010 02:55 PM, Neil Brown wrote:
->>>> On Wed, 1 Sep 2010 12:54:01 -0400
->>>> "J. Bruce Fields"<bfields@fieldses.org> wrote:
->>>>
->>>>> On Wed, Sep 01, 2010 at 09:39:55AM -0600, Tim Gardner wrote:
->>>>>> I've been pursuing a simple reproducer for an NFS lockup that shows
->>>>>> up under stress. There is a bunch of info (some of it extraneous) in
->>>>>> http://bugs.launchpad.net/bugs/561210. I can reproduce it by writing
->>>>>> loop mounted NFS exports:
->>>>>>
->>>>>> /etc/fstab: 127.0.0.1:/srv /mnt/srv nfs rw 0 2
->>>>>> /etc/exports: /srv 127.0.0.1(rw,insecure,no_subtree_check)
->>>>>>
->>>>>> See the attached scripts test_master.sh and test_client.sh. I simply
->>>>>> repeat './test_master.sh wait' until nfsd locks up, typically within
->>>>>> 1-3 cycles, e.g.,
->>>>>
->>>>> Without looking at the dmesg and scripts carefully to confirm, one
->>>>> possible explanation is a deadlock when the server can't allocate
->>>>> memory
->>>>> required to service client requests, memory which the client itself
->>>>> needs to free by writing back dirty pages, but can't because the
->>>>> server
->>>>> isn't processing its writes.
->>>>
->>>> Having looked closely I'd say it is almost certainly this issue.
->>>> nfsd thread 1266 is in zone_reclaim waiting on a page to be written
->>>> out so
->>>> the memory can be reused.
->>>> The other nfsd threads are blocking on a mutex held by 1266.
->>>> The dd processes are waiting for pages to be written to the server
->>>>
->>>> The particular page that 1266 is waiting on is almost certainly a
->>>> page on an
->>>> NFS file, so you have a cyclic deadlock.
->>>>
->>>>>
->>>>> For that reason we just don't support loopback mounts--they're OK for
->>>>> light testing, but it would be difficult to make them completely
->>>>> robust
->>>>> under load.
->>>>
->>>> I wonder if we could use 'containers' to partition available memory
->>>> between
->>>> 'nfsd threads' and 'everything else'?? Probably not worth the effort.
->>>>
->>>> NeilBrown
->>>>
->>>
->>> I'm currently working with my support folks to reproduce this using
->>> the exact same configuration as the customer, e.g., an NFS server
->>> (running as a guest on a VMWare ESX host) serving multiple gigabit
->>> clients.
->>>
->>> I assume that is a reasonable scenario?
->>
->> Assuming no VMWare problem (which I know nothing about), sure.
->>
->> --b.
->>
->
-> The support folks were able to reproduce the failure using external
-> clients after about 6 hours. We're thinking that its the same symptom as
-> seen in https://bugzilla.kernel.org/show_bug.cgi?id=16056. That
-> backported patch b608b283a962caaa280756bc8563016a71712acf from Trond was
-> just incorporated into the Ubuntu 10.04 kernel, so they'll retest to see
-> if its a bona-fide fix.
->
-> rtg
+On Tue, Sep 07, 2010 at 03:27:27PM +0800, Yong Wang wrote:
+> Allow interrupt sharing since exclusive interrupt line for
+> DW SPI controller is not provided on every platform.
+> 
+> Signed-off-by: Yong Wang <yong.y.wang@intel.com>
+> ---
+>  drivers/spi/dw_spi.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/spi/dw_spi.c b/drivers/spi/dw_spi.c
+> index d256cb0..11fbbf6 100644
+> --- a/drivers/spi/dw_spi.c
+> +++ b/drivers/spi/dw_spi.c
+> @@ -396,6 +396,11 @@ static irqreturn_t interrupt_transfer(struct dw_spi *dws)
+>  static irqreturn_t dw_spi_irq(int irq, void *dev_id)
+>  {
+>  	struct dw_spi *dws = dev_id;
+> +	u16 irq_status, irq_mask = 0x3f;
+> +
+> +	irq_status = dw_readw(dws, isr) & irq_mask;
+> +	if (!irq_status)
+> +		return IRQ_NONE;
 
-The solution appears to be to twiddle with /proc/sys/vm/min_free_kbytes 
-and /proc/sys/vm/drop_caches, though I'm not sure this addresses the 
-root cause. Perhaps low memory really is the root cause.
+To be more concise, this could have simply been:
 
-At any rate, their solution was to set min_free_kbytes to 4GB, and to 
-'echo 1 > /proc/sys/vm/drop_caches' whenever free memory fell below 8GB. 
-Not particularly elegant, but it appears to have stopped their server 
-from wedging.
+if (!dw_readw(dws, isr) & 0x3f)
+	return IRQ_NONE;
 
-rtg
+... but I'm nitpicking here.  If I don't get an updated version of
+this patch from you in the next few days then I'll apply this one.
 
--- 
-Tim Gardner tim.gardner@canonical.com
+g.
+
+>  
+>  	if (!dws->cur_msg) {
+>  		spi_mask_intr(dws, SPI_INT_TXEI);
+> @@ -883,7 +888,7 @@ int __devinit dw_spi_add_host(struct dw_spi *dws)
+>  	dws->dma_inited = 0;
+>  	dws->dma_addr = (dma_addr_t)(dws->paddr + 0x60);
+>  
+> -	ret = request_irq(dws->irq, dw_spi_irq, 0,
+> +	ret = request_irq(dws->irq, dw_spi_irq, IRQF_SHARED,
+>  			"dw_spi", dws);
+>  	if (ret < 0) {
+>  		dev_err(&master->dev, "can not get IRQ\n");
+> -- 
+> 1.5.5.1
+> 
