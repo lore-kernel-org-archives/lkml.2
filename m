@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab0IHVSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 17:18:45 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37412 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab0IHVSk (ORCPT
+	id S1755649Ab0IHVUL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 17:20:11 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36037 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab0IHVUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 17:18:40 -0400
-Date: Wed, 8 Sep 2010 17:18:35 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-Cc: Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Akinobu Mita <akinobu.mita@gmail.com>, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 03/14] arch/parisc: Removing undead ifdef CONFIG_PA20
-Message-ID: <20100908211835.GG24791@bombadil.infradead.org>
-References: <cover.1283782698.git.qy03fugy@stud.informatik.uni-erlangen.de>
- <27caeba6c5aeb0e5fffb339479ad1c87a1ec7ca3.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <27caeba6c5aeb0e5fffb339479ad1c87a1ec7ca3.1283782701.git.qy03fugy@stud.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Wed, 8 Sep 2010 17:20:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=AmV8Yxg5sxkgdJaVb4/exmysgymLEx8v+J7Ds2bcnGVRQDxTjw8YDhbM7zk+w/VZsP
+         TbJqb4Z/y71+Cg3+zT/oegvAzMxYrK1h6FkUkb1BKINke8OpGum+tECL1D8VZJ7o6W5s
+         vT9SmqYO7pI6MDf5o8Mg1Uu8Rv96yi5Lzpe4g=
+From: Nikitas Angelinas <nikitasangelinas@gmail.com>
+To: eilong@broadcom.com, davem@davemloft.net, dmitry@broadcom.com,
+        yanivr@broadcom.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nikitas Angelinas <nikitasangelinas@gmail.com>
+Subject: [PATCH 5/8] drivers/net/bnx2x: use ARRAY_SIZE macro in bnx2x_main.c
+Date: Wed,  8 Sep 2010 22:20:37 +0100
+Message-Id: <1283980837-5025-1-git-send-email-nikitasangelinas@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
+References: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 06, 2010 at 04:36:06PM +0200, Christian Dietrich wrote:
-> The CONFIG_PA20 ifdef isn't necessary at this point, because it is
-> checked in an outer ifdef level already and has no effect here.
-> 
+Replace sizeof(bnx2x_parity_mask)/(sizeof(bnx2x_parity_mask[0]) with
+ARRAY_SIZE(bnx2x_parity_mask) in drivers/net/bnx2x/bnx2x_main.c
 
-Looks good, applied, thanks.
--- Kyle
+Signed-off-by: Nikitas Angelinas <nikitasangelinas@gmail.com>
+---
+ drivers/net/bnx2x/bnx2x_main.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-> Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-> ---
->  arch/parisc/kernel/unaligned.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/parisc/kernel/unaligned.c b/arch/parisc/kernel/unaligned.c
-> index 92d977b..234e368 100644
-> --- a/arch/parisc/kernel/unaligned.c
-> +++ b/arch/parisc/kernel/unaligned.c
-> @@ -619,15 +619,12 @@ void handle_unaligned(struct pt_regs *regs)
->  		flop=1;
->  		ret = emulate_std(regs, R2(regs->iir),1);
->  		break;
-> -
-> -#ifdef CONFIG_PA20
->  	case OPCODE_LDD_L:
->  		ret = emulate_ldd(regs, R2(regs->iir),0);
->  		break;
->  	case OPCODE_STD_L:
->  		ret = emulate_std(regs, R2(regs->iir),0);
->  		break;
-> -#endif
->  	}
->  #endif
->  	switch (regs->iir & OPCODE3_MASK)
-> -- 
-> 1.7.0.4
-> 
-> 
+diff --git a/drivers/net/bnx2x/bnx2x_main.c b/drivers/net/bnx2x/bnx2x_main.c
+index f8c3f08..e534ae8 100644
+--- a/drivers/net/bnx2x/bnx2x_main.c
++++ b/drivers/net/bnx2x/bnx2x_main.c
+@@ -3803,10 +3803,9 @@ static const struct {
+ 
+ static void enable_blocks_parity(struct bnx2x *bp)
+ {
+-	int i, mask_arr_len =
+-		sizeof(bnx2x_parity_mask)/(sizeof(bnx2x_parity_mask[0]));
++	int i;
+ 
+-	for (i = 0; i < mask_arr_len; i++)
++	for (i = 0; i < ARRAY_SIZE(bnx2x_parity_mask); i++)
+ 		REG_WR(bp, bnx2x_parity_mask[i].addr,
+ 			bnx2x_parity_mask[i].mask);
+ }
+-- 
+1.7.2.3
+
