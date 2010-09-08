@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab0IHOzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 10:55:42 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:49253 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751613Ab0IHOzk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 10:55:40 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: San Mehat <san@android.com>, Jens Axboe <axboe@kernel.dk>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH] block: block_dump: Add number of sectors to debug output
-Date: Wed, 8 Sep 2010 16:55:12 +0200
-Message-ID: <1283957712-772-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755497Ab0IHOzu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 10:55:50 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:60480 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755378Ab0IHOzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 10:55:48 -0400
+Date: Wed, 8 Sep 2010 07:55:45 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Ralf Baechle <ralf@linux-mips.org>, ML netdev <netdev@vger.kernel.org>,
+        MeeGo <meego-dev@meego.com>, Maxime Bizon <mbizon@freebox.fr>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kristoffer Glembo <kristoffer@gaisler.com>,
+        John Linn <john.linn@xilinx.com>, Joe Perches <joe@perches.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+        Toshiharu Okada <okada533@dsn.okisemi.com>,
+        Tomoya Morinaga <morinaga526@dsn.okisemi.com>,
+        Takahiro Shimizu <shimizu394@dsn.okisemi.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>
+Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
+Message-ID: <20100908075545.79023fa9@nehalam>
+In-Reply-To: <4C879AAB.6000905@suse.cz>
+References: <4C81019E.1010808@dsn.okisemi.com>
+	<4C8123D6.8020001@suse.cz>
+	<003901cb4f5d$bf977c80$66f8800a@maildom.okisemi.com>
+	<4C879AAB.6000905@suse.cz>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: San Mehat <san@android.com>
+On Wed, 08 Sep 2010 16:16:11 +0200
+Jiri Slaby <jslaby@suse.cz> wrote:
 
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: San Mehat <san@android.com>
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
-Found this in the Android tree, apparently it has never been
-upstreamed so doing that now.
----
- block/blk-core.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+> >>> +
+> >>> + rxdr->count = max(ring->rx_pending, (u32) PCH_GBE_MIN_RXD);
+> >>> + rxdr->count = min(rxdr->count, (u32) PCH_GBE_MAX_RXD);  
+> >>
+> >> clamp()
+> >> And why you need the cast?  
+> > 
+> > [masa]
+> > Since warning appears at the time of a make.  
+> 
+> OK, then you have type error which you should fix instead. Perhaps
+> define the constnts with U suffix?
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 29fd2cc..9b3d98e 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1612,11 +1612,12 @@ void submit_bio(int rw, struct bio *bio)
- 
- 		if (unlikely(block_dump)) {
- 			char b[BDEVNAME_SIZE];
--			printk(KERN_DEBUG "%s(%d): %s block %Lu on %s\n",
-+			printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",
- 			current->comm, task_pid_nr(current),
- 				(rw & WRITE) ? "WRITE" : "READ",
- 				(unsigned long long)bio->bi_sector,
--				bdevname(bio->bi_bdev, b));
-+				bdevname(bio->bi_bdev, b),
-+				count);
- 		}
- 	}
- 
--- 
-1.6.3.3
+Better yet:
+	rxdr->count = clamp_val(ring->rx_pending,
+				PCH_GBE_MIN_RXD,
+				PCH_GBE_MAX_RXD);
 
