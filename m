@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259Ab0IHAZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 20:25:36 -0400
-Received: from kroah.org ([198.145.64.141]:51491 "EHLO coco.kroah.org"
+	id S1757460Ab0IHAZp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 20:25:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53696 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757064Ab0IHAZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 20:25:27 -0400
-Date: Tue, 7 Sep 2010 16:58:00 -0700
-From: Greg KH <greg@kroah.com>
-To: David Cross <david.cross@cypress.com>
-Cc: tony@atomide.com, linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] gpmc, EXPORT_SYMBOLS, west bridge related
-Message-ID: <20100907235800.GD12823@kroah.com>
-References: <1283887607.7250.10.camel@odc-laptop>
+	id S1757326Ab0IHAZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 20:25:43 -0400
+Date: Tue, 7 Sep 2010 17:03:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: Vipin Mehta <Vipin.Mehta@Atheros.com>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: Re: [PATCH 2/2] staging: ath6kl: use native methods from kernel
+	library
+Message-ID: <20100908000331.GA15785@suse.de>
+References: <09b7da2e5462e0b855617ff5308ed6efb4fc9cab.1283872748.git.andy.shevchenko@gmail.com> <8b251244717765e795b92a1f7335f8af98e5706f.1283872748.git.andy.shevchenko@gmail.com> <35B17FE5076C7040809188FBE7913F983F23479F74@SC1EXMB-MBCL.global.atheros.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283887607.7250.10.camel@odc-laptop>
+In-Reply-To: <35B17FE5076C7040809188FBE7913F983F23479F74@SC1EXMB-MBCL.global.atheros.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 12:26:47PM -0700, David Cross wrote:
-> This patch exports some of the gpmc driver functions in OMAP3. The purpose behind this patch 
-> is to allow device drivers compiled as loadable modules to be interfaced to the GPMC. I am
-> hoping that Tony is the correct maintainer and willing to ACK this change. Please let me know 
-> if there are any issues or concerns with this patch.
-> Thanks,
-> David
-> 
-> Signed-off-by: David Cross <david.cross@cypress.com>
-> 
-> diff -uprN -X linux-next-vanilla/Documentation/dontdiff linux-next-vanilla/arch/arm/mach-omap2/gpmc.c linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c
-> --- linux-next-vanilla/arch/arm/mach-omap2/gpmc.c	2010-08-31 19:32:51.000000000 -0700
-> +++ linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c	2010-09-01 16:10:21.000000000 -0700
-> @@ -133,6 +133,7 @@ void gpmc_cs_write_reg(int cs, int idx, 
->  	reg_addr = gpmc_base + GPMC_CS0_OFFSET + (cs * GPMC_CS_SIZE) + idx;
->  	__raw_writel(val, reg_addr);
->  }
-> +EXPORT_SYMBOL(gpmc_cs_write_reg);
+On Tue, Sep 07, 2010 at 02:18:02PM -0700, Vipin Mehta wrote:
+> Andy,
+> Thanks for the patch. Although the driver supports Linux but it has
+> been architected to support other OSes if desired. The code is,
+> therefore, organized into generic and OS specific components with the
+> latter part of the code captured into the os/linux directory. As such,
+> the patch will be more useful if we can move out the inclusion of
+> linux specific header files <linux/kernel.h> and <linux/ctype.h> into
+> a header file in os/linux/include directory.
 
-EXPORT_SYMBOL_GPL() perhaps?
+Ick, no.
 
-What about platforms that don't have this symbol, how will the driver
-build properly then?  Shouldn't something like this be in a arch-neutral
-place in the kernel tree?
+The driver is now in the main kernel tree, the "compatiblity" wrappers
+are to now be removed as the kernel code does not need to run on any
+other operating systems.
+
+That whole subdir needs to be deleted entirely.
+
+> You can refer to
+> os/linux/include/osapi_linux.h for example. A macro could be defined
+> which would use linux specific APIs for Linux and keep the original
+> definitions for any other OS.
+
+Again, no, this is not ok at all.  If you are going to insist on trying
+to do this for the driver, I will just delete it from the tree right now
+as that is now how kernel development happens, sorry.
 
 thanks,
 
