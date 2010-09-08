@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab0IHRv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 13:51:29 -0400
-Received: from fieldses.org ([174.143.236.118]:37671 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554Ab0IHRvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 13:51:23 -0400
-Date: Wed, 8 Sep 2010 13:50:32 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Trond.Myklebust@netapp.com
-Subject: Re: nfsd deadlock, 2.6.36-rc3
-Message-ID: <20100908175032.GA816@fieldses.org>
-References: <4C7E73CB.7030603@canonical.com>
- <20100901165400.GB1201@fieldses.org>
- <20100902065551.079e297c@notabene>
- <4C7EC17B.6070509@canonical.com>
- <20100901211321.GC10507@fieldses.org>
- <4C7FBF26.3090203@canonical.com>
- <4C87BF63.3070808@canonical.com>
+	id S1752841Ab0IHRvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 13:51:52 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45712 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab0IHRvq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 13:51:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Y2io6dZysKdL2025BbULfbZoQYMRE/EaEX+1hiH56eBYvn1CYRyAMoYM5UHXFRlI1N
+         oRt73xO5eCA8Xz3u3cjMFWEnt105j1szwXcl8rUWjOOJg/l1POhPwq3E9OTWH4jniDiZ
+         5QYjiM1x/KRwQtWBAfukgG6Wnjy48kwQWrUjE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C87BF63.3070808@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100908185605.55671889@lxorguk.ukuu.org.uk>
+References: <fmbxh-5N8-41@gated-at.bofh.it>
+	<55BC9463-95B9-4034-AA1E-55042D6E9354@gmail.com>
+	<201009081115.15544.hpj@urpla.net>
+	<AANLkTi=U40mzeMh-UJJy=ggVDry2qDWW-MYYyBhS_Kex@mail.gmail.com>
+	<20100908185605.55671889@lxorguk.ukuu.org.uk>
+Date: Wed, 8 Sep 2010 18:51:46 +0100
+Message-ID: <AANLkTi=khD7fSVv_tC6TogimjJshEErj6Em8mCcDF+SM@mail.gmail.com>
+Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
+From: Nick Lowe <nick.lowe@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Hans-Peter Jansen <hpj@urpla.net>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 10:52:51AM -0600, Tim Gardner wrote:
-> The solution appears to be to twiddle with
-> /proc/sys/vm/min_free_kbytes and /proc/sys/vm/drop_caches, though
-> I'm not sure this addresses the root cause. Perhaps low memory
-> really is the root cause.
-> 
-> At any rate, their solution was to set min_free_kbytes to 4GB, and
-> to 'echo 1 > /proc/sys/vm/drop_caches' whenever free memory fell
-> below 8GB. Not particularly elegant, but it appears to have stopped
-> their server from wedging.
+Hi,
 
-That does sound like a workaround rather than a fix.  Were there any
-diagnostics left in the logs after the lockups?  Could you get sysrq-t
-dumps and figure out what was waiting on what?  If the system was too
-wedged for any of that to work, would any fo the watchdog deubgging
-options help?
+It would only be through back-porting a form of this patch that it
+would affect existing distributions, surely?
 
---b.
+Why should it make it to the stable tree and a new kernel, though? The
+chances are that if a distribution moves to a new kernel, they'll move
+all the other packages up with it.
+
+The Latest Ubuntu, for example, has been compiled against a version of
+binutils that does not have this problem.
+
+And nobody has answered what happens when NOPLs are used to
+synchronise with something else? Surely that can lead to subtle, hard
+to debug breakage? Isn't that plain worse than refusing to run or
+breaking out of execution?
+
+A CMOV was never used in that way so the fact it took longer to trap
+and execute an emulation wouldn't have been a problem.
+
+Cheers,
+
+Nick
+
+On Wed, Sep 8, 2010 at 6:56 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> If a process crashes because of NOPL usage, you get the feedback loop to fix it.
+>
+> Trouble is that means rebuilding entire distributios, who don't
+> neccessarily care about Geode. We had the same problem before with cmov
+> and the VIA processors, GCC programmers didn't read the Intel PPro
+> manual and got it wrong but it was the end users who suffered, and most of
+> them were not in a position to rebuild their distro (and every security
+> update, and test them all ...) and their distro didn't care.
+>
+> So lots of people ran a kernel with a CMOV hack in it - never got
+> mainstream which is unfortunate because if it had it would have helped
+> a lot more people and had the hole in it fixed.
+>
+>> The beauty of open source is that we can recompile to correct the bad
+>> assumption; the latest version of binutils (GAS) finally corrects the
+>> bad semantic that generic i686 includes NOPL.
+>
+> And the reality is that this won't happen. Yes you can do it but it's an
+> enormously slow and inefficient way to tackle the problem.
+>
+> So the patch (corrected) makes complete sense.
+>
+> Alan
+>
