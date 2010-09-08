@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758611Ab0IHJsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 05:48:22 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50119 "EHLO mgw2.diku.dk"
+	id S1756440Ab0IHJvo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 05:51:44 -0400
+Received: from www.tglx.de ([62.245.132.106]:55529 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752837Ab0IHJsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 05:48:20 -0400
-Date: Wed, 8 Sep 2010 11:48:17 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: "Ben Dooks (em, bedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 7/8] drivers/i2c/busses/i2c-amd8111.c: Fix unsigned return
-  type
-In-Reply-To: <20100908093449.0adef429@hyperion.delvare>
-Message-ID: <Pine.LNX.4.64.1009081148040.3297@ask.diku.dk>
-References: <Pine.LNX.4.64.1009080757050.27892@ask.diku.dk>
- <20100908093449.0adef429@hyperion.delvare>
+	id S1751147Ab0IHJvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 05:51:42 -0400
+Date: Wed, 8 Sep 2010 11:51:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: slow nanosleep?
+In-Reply-To: <OF2B75FA7C.7064BC41-ONC1257798.00318FDA-C1257798.00329AEF@transmode.se>
+Message-ID: <alpine.LFD.2.00.1009081143200.2477@localhost6.localdomain6>
+References: <OF71DD00AE.26643E4D-ONC1257798.00250630-C1257798.002A9748@transmode.se>  <1283932600.2880.1.camel@edumazet-laptop>  <OF5074952F.1B97B2B8-ONC1257798.002C51D7-C1257798.002C63A4@transmode.se> <1283934289.2880.12.camel@edumazet-laptop>
+ <OF2B75FA7C.7064BC41-ONC1257798.00318FDA-C1257798.00329AEF@transmode.se>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1394950388-1283939474=:2477"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, thanks. I will look at the code again.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-julia
+---1463795968-1394950388-1283939474=:2477
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
+On Wed, 8 Sep 2010, Joakim Tjernlund wrote:
 
-On Wed, 8 Sep 2010, Jean Delvare wrote:
+> Eric Dumazet <eric.dumazet@gmail.com> wrote on 2010/09/08 10:24:49:
+> >
+> > Le mercredi 08 septembre 2010 à 10:04 +0200, Joakim Tjernlund a écrit :
+> >
+> > > That makes litte difference:
+> > > root@localhost ~ # ./nanosleep
+> > > nanosleep
+> > > req:0 :0
+> > > tv_res:0 :112
+> > >
+> >
+> > Here, result is 30 (with prctl())
+> > instead of 95 (without)
+> 
+> On x86 I notice a difference:
+>   7 vs 57.
+> however select is still faster: 2
+> The system call OH seems to be bigger for nanosleep than
+> for select and on my ppc is is about 112 us. Can anything
+> be done about that?
 
-> Hi Julia,
-> 
-> On Wed, 8 Sep 2010 07:58:45 +0200 (CEST), Julia Lawall wrote:
-> > From: Julia Lawall <julia@diku.dk>
-> > 
-> > In each case, the function has an unsigned return type, but returns a
-> > negative constant to indicate an error condition.  The result of calling
-> > the function is always stored in a variable of type (signed) int, and thus
-> > unsigned can be dropped from the return type.
-> > 
-> > A sematic match that finds this problem is as follows:
-> > (http://coccinelle.lip6.fr/)
-> > 
-> > // <smpl>
-> > @exists@
-> > identifier f;
-> > constant C;
-> > @@
-> > 
-> >  unsigned f(...)
-> >  { <+...
-> > *  return -C;
-> >  ...+> }
-> > // </smpl>
-> > 
-> > Signed-off-by: Julia Lawall <julia@diku.dk>
-> > 
-> > ---
-> >  drivers/i2c/busses/i2c-amd8111.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/i2c/busses/i2c-amd8111.c b/drivers/i2c/busses/i2c-amd8111.c
-> > index af1e5e2..02a3726 100644
-> > --- a/drivers/i2c/busses/i2c-amd8111.c
-> > +++ b/drivers/i2c/busses/i2c-amd8111.c
-> > @@ -69,7 +69,7 @@ static struct pci_driver amd8111_driver;
-> >   * ACPI 2.0 chapter 13 access of registers of the EC
-> >   */
-> >  
-> > -static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
-> > +static int amd_ec_wait_write(struct amd_smbus *smbus)
-> >  {
-> >  	int timeout = 500;
-> >  
-> > @@ -85,7 +85,7 @@ static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
-> >  	return 0;
-> >  }
-> >  
-> > -static unsigned int amd_ec_wait_read(struct amd_smbus *smbus)
-> > +static int amd_ec_wait_read(struct amd_smbus *smbus)
-> >  {
-> >  	int timeout = 500;
-> >  
-> > 
-> 
-> Thanks for reporting. Unfortunately the fix above is incomplete.
-> amd_ec_wait_write() and amd_ec_wait_read() are called by amd_ec_read()
-> and amd_ec_write(), which will now attempt to return negative error
-> codes as unsigned ints. So amd_ec_read() and amd_ec_write() must have
-> their return type fixed too.
-> 
-> Note that the driver code never checks for errors returned by
-> amd_ec_read() or amd_ec_write() anyway, so the fix alone is a no-op. A
-> real fix would have to also update the caller sites to properly deal
-> with errors if then happen.
-> 
-> -- 
-> Jean Delvare
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Hmm, the only reason I can see is that select calls finally
+schedule_hrtimeout_range_clock() which optimizes the expiry = 0 case
+while nanosleep does not. So the difference is only visiable when the
+relative timeout is 0. For timeouts > 0 nanosleep and select should
+behave the same way.
+
+Thanks,
+
+	tglx
+---
+ kernel/hrtimer.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+Index: linux-2.6/kernel/hrtimer.c
+===================================================================
+--- linux-2.6.orig/kernel/hrtimer.c
++++ linux-2.6/kernel/hrtimer.c
+@@ -1609,6 +1609,9 @@ SYSCALL_DEFINE2(nanosleep, struct timesp
+ 	if (!timespec_valid(&tu))
+ 		return -EINVAL;
+ 
++	if (!tu.tv_sec && !tu.tv_usec)
++		return 0;
++
+ 	return hrtimer_nanosleep(&tu, rmtp, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
+ }
+ 
+
+---1463795968-1394950388-1283939474=:2477--
