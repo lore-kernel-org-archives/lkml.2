@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab0IHUvs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 16:51:48 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56514 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754142Ab0IHUvp (ORCPT
+	id S1754432Ab0IHUwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 16:52:30 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:44999 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754508Ab0IHUwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 16:51:45 -0400
-Date: Wed, 8 Sep 2010 22:11:44 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Nick Lowe <nick.lowe@gmail.com>
-Cc: Hans-Peter Jansen <hpj@urpla.net>, linux-kernel@vger.kernel.org
-Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
-Message-ID: <20100908221144.73066e2d@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTi=FNFKmBgobH4q-GHguHM-0UOCQpa7JhPhyZZHG@mail.gmail.com>
-References: <fmbxh-5N8-41@gated-at.bofh.it>
-	<55BC9463-95B9-4034-AA1E-55042D6E9354@gmail.com>
-	<201009081115.15544.hpj@urpla.net>
-	<AANLkTi=U40mzeMh-UJJy=ggVDry2qDWW-MYYyBhS_Kex@mail.gmail.com>
-	<20100908185605.55671889@lxorguk.ukuu.org.uk>
-	<AANLkTi=khD7fSVv_tC6TogimjJshEErj6Em8mCcDF+SM@mail.gmail.com>
-	<20100908200715.2e56d0be@lxorguk.ukuu.org.uk>
-	<AANLkTi=FNFKmBgobH4q-GHguHM-0UOCQpa7JhPhyZZHG@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 8 Sep 2010 16:52:23 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: David Miller <davem@davemloft.net>
+Subject: [PATCH v3] cxacru: ignore cx82310_eth devices
+Date: Wed, 8 Sep 2010 22:52:12 +0200
+User-Agent: KMail/1.9.10
+Cc: greg@kroah.com, simon@fire.lp0.eu, dbrownell@users.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201009051901.13851.linux@rainbow-software.org> <201009052212.37015.linux@rainbow-software.org> <20100908.131227.28827971.davem@davemloft.net>
+In-Reply-To: <20100908.131227.28827971.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201009082252.15865.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 1) Those enterprise long term distributions aren't going to be
-> targeting the Crusoe or Geode. It's not their market. Would they even
+Ignore ADSL routers, which can have the same vendor and product IDs
+as ADSL modems but should be handled by the cx82310_eth driver.
 
-See this is the problem. You've forgotten *users*. It's easy to roll a
-special kernel, its hell on earth 
+This intentionally ignores device IDs that aren't currently handled
+by cx82310_eth. There may be other device IDs that perhaps shouldn't
+be claimed by cxacru.
 
-> back port, therefore, if it was an issue?
-> (This hypothetical anyway as it assuming they have an i686 targeted
-> build already. Who does? Centos, RHEL and SUSE Enterprise are all i386
-> targeted at the moment for x86.)
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
 
-Wrong for some packages - and enough to break things. Bits like glibc for
-example and chunks of X and proprietary apps.
+--- linux-2.6.36-rc3-orig/drivers/usb/atm/cxacru.c	2010-08-29 17:36:04.000000000 +0200
++++ linux-2.6.36-rc3/drivers/usb/atm/cxacru.c	2010-09-08 22:42:47.000000000 +0200
+@@ -1324,8 +1324,23 @@ static struct usbatm_driver cxacru_drive
+ 	.tx_padding	= 11,
+ };
+ 
+-static int cxacru_usb_probe(struct usb_interface *intf, const struct usb_device_id *id)
++static int cxacru_usb_probe(struct usb_interface *intf,
++		const struct usb_device_id *id)
+ {
++	struct usb_device *usb_dev = interface_to_usbdev(intf);
++	char buf[15];
++
++	/* avoid ADSL routers (cx82310_eth)
++	 * abort if bDeviceClass is 0xff and iProduct is "USB NET CARD" */
++	if (usb_dev->descriptor.bDeviceClass == USB_CLASS_VENDOR_SPEC
++			&& usb_string(usb_dev, usb_dev->descriptor.iProduct,
++				buf, sizeof(buf)) > 0) {
++		if (!strcmp(buf, "USB NET CARD")) {
++			dev_info(&intf->dev, "ignoring cx82310_eth device\n");
++			return -ENODEV;
++		}
++	}
++
+ 	return usbatm_usb_probe(intf, id, &cxacru_driver);
+ }
+ 
 
->. (Again, hypothetical, as they're not targeted at i686!)
-
-See above
-
-> 4) As for proprietary apps, again, is it likely that they're targeting
-> i686 already? Or is it far more likely they're compiled for i386 et.
-> al.
-
-Lots used -i686 because the compiler people said its faster and it works
-on all 686 platforms. Neither of which it turns out is exactly true in
-many cases.
-
-> 6) What we are talking about is future distributions, whatever they
-> are, that are now or are changing to target i686 which end users will
-> ultimately want to migrate to and run.
-
-s/we/you
-
-Getting the stuff right in the current kernel makes it easier to backport
-and fix and do tidily. It's not as if NOPL is complicated to emulate.
+-- 
+Ondrej Zary
