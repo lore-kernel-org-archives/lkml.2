@@ -1,140 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab0IHT2y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 15:28:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60104 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab0IHT2s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 15:28:48 -0400
-Date: Wed, 8 Sep 2010 12:26:39 -0700
-From: Joel Becker <Joel.Becker@ORACLE.COM>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RFC 02/22] configfs: Add struct
- configfs_item_operations->check_link() in configfs_unlink()
-Message-ID: <20100908192639.GD29545@mail.oracle.com>
-Mail-Followup-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-	Konrad Rzeszutek Wilk <konrad@darnok.org>,
-	linux-scsi <linux-scsi@vger.kernel.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-	Mike Christie <michaelc@cs.wisc.edu>,
-	Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-	James Bottomley <James.Bottomley@suse.de>,
-	Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-	Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
- <20100902064814.GB27904@mail.oracle.com>
- <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
- <201009071701.02847.konrad@darnok.org>
- <20100907224413.GC21935@mail.oracle.com>
- <1283911739.556.420.camel@haakon2.linux-iscsi.org>
+	id S1753600Ab0IHTb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 15:31:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53273 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752549Ab0IHTby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 15:31:54 -0400
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        =?us-ascii?Q?=3D=3Fiso-8859-1=3FQ=3FFr=3DE9d=3DE9ric=3F=3D?=
+	 Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: disabling group leader perf_event
+References: <4C84D77B.6040600@redhat.com> <20100906124330.GA22314@elte.hu>
+	<4C84E265.1020402@redhat.com> <20100906125905.GA25414@elte.hu>
+	<4C850147.8010908@redhat.com> <20100906154737.GA4332@elte.hu>
+	<4C852B2A.2030103@redhat.com> <20100907034417.GA14046@elte.hu>
+	<20100908014409.GA17010@brick.ozlabs.ibm.com>
+	<AANLkTi=YdAxdGv1nEEZ4w0jM0K3ss0g5x7_5cU8xNEhj@mail.gmail.com>
+	<20100908064427.GD3439@elte.hu>
+From: fche@redhat.com (Frank Ch. Eigler)
+Date: Wed, 08 Sep 2010 15:30:59 -0400
+In-Reply-To: <20100908064427.GD3439@elte.hu> (Ingo Molnar's message of "Wed, 8 Sep 2010 08:44:27 +0200")
+Message-ID: <y0m39tkdocs.fsf@fche.csb>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283911739.556.420.camel@haakon2.linux-iscsi.org>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 07:08:59PM -0700, Nicholas A. Bellinger wrote:
-> On Tue, 2010-09-07 at 15:44 -0700, Joel Becker wrote:
-> > 	Nick, can you provide some form of description, not long
-> > pathnames, that explains a) what breaks when the symlink is removed b)
-> > why that can't be allowed if the user is dumb enough to request it?
-> > 
-> 
-> So, the case where configfs will actually OOPs without the
-> ->check_link() patch (or without some other internal solution) is on the
-> unlink(2) path is when the symlink is created to a destination outside
-> of the source struct config_group.  This may have not been exactly
-> apparent in my LIO-Target example, but here is another shot at an
-> example without the other complexities of target mode invovled.
 
-	I wish you'd mentioned the oops earlier.  We need to figure out
-who is oopsing.
+mingo wrote:
 
-> Say we have two different struct config_subsystem in two different LKM
-> sub_parent and sub_child.  I will spare the actual mkdir(2) and ln(2)
-> calls here, but (I hope) these are obvious:
-> 
-> First, we start out with the parent source struct config_group from
-> sub_parent module:
-> 
-> 	/sys/kernel/config/sub_parent/group1/parent/
-> 
-> Next, we have a symlink from sub_parent/group1/parent to a different LKM
-> in sub_child:
-> 
-> 	/sys/kernel/config/sub_child/group1/src_0/src_link -> ../../../../sub_parent/group1/parent
-> 
-> And then a second symlink from sub_child/group1/src_0/src_link to a
-> sstuct config_group outside of group1, but still within sub_child:
-> 
-> 	/sys/kernel/config/sub_child/group2/dst_0/dst_link -> ../../../group1/src_0/
+> [...] Do you know some interesting usecase that would be excluded
+> via such address restrictions?
 
-	I think you have too many ../ on your examples.  dst_link
-pointing to ../../../../group1/src_0 resolves to
-/sys/kernel/config/group1/src_0, which I don't think you want.  I think
-you have:
+You could study tracing-oriented runtime systems such as those of
+dtrace, dprobes, or even systemtap, to help answer such questions.
 
-    sub_parent/group1/parent
-    sub_child/group1/src_0/src_link -> ../../../sub_parent/group1/parent
-    sub_child/group2/dst_0/dst_link -> ../../group1/src_0
 
-	If I'm reading this right, 'ls sub_child/group1/src_0/src_link'
-gives you the contents of sub_parent/group1/parent, 'ls
-sub_child/group2/dst_0/dst_link' gives you 'src_link', and 'ls
-sub_child/group2/dst_0/dst_link/src_link' brings you right back to the
-contents of sub_parent/group1/parent.  Am I right?
+> Things like flexible arrays or more complex data structures such as
+> trees couldnt be used initially. More complex data structures would
+> need locking in any case. [...]  I.e. it would initially be
+> restricted roughly to code where halting can be proven. Still looks
+> interesting to me [...]
 
-> So once the sub_child/group2/dest_0/dst_link has been created to back to
-> sub_child/group1/src_0/src_link, the oops will appear any time that
-> 'unlink sub_child/group1/src_0/src_link' is called while the second
-> group2/dst_0/dst_link is still present.  I don't recall the actual
-> backtrace of the OOPs that occurs when the unlink(2) is called, but it
-> is easily reproducable .
+There are years of experience out there to learn from.  Note the sorts
+of filtering expressions (never mind control logic) used in the prior
+art, so that you can know what you're about to sacrifice by a
+simple-sounding implementation.
 
-	I'm confused.  Above it appears that
-sub_child/group2/dst_0/dst_link -> ../../group1/src_0, but this
-paragraph suggests that sub_child/group2/dst_0/dst_link ->
-../../group1/src_0/src_link.  Which is it?
 
-> I am really starting to think that fixing this properly below the struct
-> config_item_operations API is going to make the most sense, but I have
-> not realized this in a patch for fs/configfs/ just yet..  I am happy to
-> do this in the next days if you think this would be the cleanest
-> resolution for the above case.
-
-	My big question is whether the oops comes from something
-configfs is doing wrong when symlinking symlinks, or if your module is
-just surprised when things change.  If the former, it needs to be fixed
-in configfs.  It shouldn't require a hook for your module to avoid
-configfs breakage.  If it is the latter, and your module needs to know
-not to break itself, then we discuss how to help it.
-
-Joel
-
--- 
-
-"Friends may come and go, but enemies accumulate." 
-        - Thomas Jones
-
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+- FChE
