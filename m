@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758776Ab0IHNXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 09:23:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39998 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755591Ab0IHNXi (ORCPT
+	id S1758812Ab0IHNYF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 09:24:05 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:40307 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756833Ab0IHNYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 09:23:38 -0400
-From: fabio de francesco <fabio@metanix.org>
-Organization: metanix.org
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux/kernel/sched.c: context_switch().
-Date: Wed, 8 Sep 2010 15:23:40 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-tuxonice-r1-100826; KDE/4.4.5; x86_64; ; )
-References: <201009081508.30490.fabio@metanix.org> <AANLkTik7sSbiPBM8Sdo2R3=NwLN4oJr3Q7MSNp+Y4jo3@mail.gmail.com>
-In-Reply-To: <AANLkTik7sSbiPBM8Sdo2R3=NwLN4oJr3Q7MSNp+Y4jo3@mail.gmail.com>
+	Wed, 8 Sep 2010 09:24:03 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Jan Blunck <jblunck@suse.de>
+Cc: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+        linux-rt-users@vger.kernel.org, peterz@infradead.org,
+        Sven-Thorsten Dietrich <sdietrich@novell.com>,
+        Michael Galbraith <MGalbraith@novell.com>
+Subject: Re: [RFC 1/4] ftrace: Add events for tracing timer interrupts
+References: <1283948964-6418-1-git-send-email-jblunck@suse.de>
+	<1283948964-6418-2-git-send-email-jblunck@suse.de>
+Date: Wed, 08 Sep 2010 15:24:01 +0200
+In-Reply-To: <1283948964-6418-2-git-send-email-jblunck@suse.de> (Jan Blunck's
+	message of "Wed, 8 Sep 2010 14:29:21 +0200")
+Message-ID: <87zkvsweq6.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Message-Id: <201009081523.41718.fabio@metanix.org>
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 September 2010 15:10:49 you wrote:
-> Long day? Do you mean likely(!mm) actually means unlikely(0)?
+Jan Blunck <jblunck@suse.de> writes:
 
-No, no. I am sorry for my poor English. I mean:"likely(!mm)" is like 
-"likely(0)".
- 
-> On 8 September 2010 20:08, fabio de francesco <fabio@metanix.org> wrote:
-> > There must be something I am missing in sched.c at context_switch()
-> > function definition.
-> > 
-> > There I can read the following code:
-> > 
-> > static inline void
-> > context_switch(struct rq *rq, struct task_struct *prev,
-> >               struct task_struct *next)
-> > {
-> >        ...
-> >        struct mm_struct *mm;
-> >        mm = next->mm;
-> >        if (likely(!mm)) {
-> >                next->active_mm = oldmm;
-> >                atomic_inc(&oldmm->mm_count);
-> >                enter_lazy_tlb(oldmm, next);
-> >        } else
-> >                switch_mm(oldmm, mm, next);
-> >        ...
-> > }
-> > 
-> > May someone please explain why the mm pointer is likely supposed to be
-> > NULL?
-> > 
-> > Thanks in advance.
-> > 
-> > fabio
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> > in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> Trace the execution of the timer interrupt. I did not find an argument that
+> makes any sense so traces look like this:
+>
+> <idle>-0     [000] 181019.693546: timerirq_enter: unused=1
+> <idle>-0     [000] 181019.693553: timerirq_exit: unused=1
+
+I think you can get the same by just filtering the normal
+irq entry for the timer irq  number.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
