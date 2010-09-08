@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab0IHVOT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 17:14:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41474 "EHLO
+	id S1755478Ab0IHVR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 17:17:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35451 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754787Ab0IHVOM (ORCPT
+	with ESMTP id S1754142Ab0IHVRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 17:14:12 -0400
+	Wed, 8 Sep 2010 17:17:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ZvrVykkdnC7BvQjh5yGXqv23TW0FibMX3VahgudPhrBteqk3YGMlwdQn678GHRXhzV
-         Rzq5DjkT2DL7YcJui9BhTf9xcdXw+C/8Xos52o2KW2/OK1uhg/dQDax6oHsFSsr5vdD4
-         ayv8v6FzMqU3i5+xlHnGq5PaC0IykHhKveUSQ=
+        b=RuuylunCHDstvnARhDO7MEnDBANc27weP1VRMI0fpXSe+uoanLnuxTVXlMQ0BvDRBQ
+         4omnQ7LMck8ut/O82POGlO3j2TpjyXfGzG6xGSAgPrg1p+y6Xre/XOY7H/2D5xQ2iJUL
+         BUT+SbgcZgl5RutW+2rbXvnJXb1IwavCg491k=
 From: Nikitas Angelinas <nikitasangelinas@gmail.com>
-To: airlied@linux.ie, ajax@redhat.com, airlied@redhat.com
+To: airlied@linux.ie, eric@anholt.net, zhenyuw@linux.intel.com,
+        yakui.zhao@intel.com, chris@chris-wilson.co.uk,
+        jbarnes@virtuousgeek.org
 Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         Nikitas Angelinas <nikitasangelinas@gmail.com>
-Subject: [PATCH 3/8] drivers/gpu/drm: use ARRAY_SIZE macro in drm_edid_modes.h
-Date: Wed,  8 Sep 2010 22:14:41 +0100
-Message-Id: <1283980481-4933-1-git-send-email-nikitasangelinas@gmail.com>
+Subject: [PATCH 4/8] drivers/gpu/drm/i915: use ARRAY_SIZE macro in intel_tv.c
+Date: Wed,  8 Sep 2010 22:17:57 +0100
+Message-Id: <1283980677-4980-1-git-send-email-nikitasangelinas@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
 References: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
@@ -27,24 +29,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace sizeof(est3_modes) / sizeof(est3_modes[0]) with
-ARRAY_SIZE(est3_modes) in drivers/gpu/drm/drm_edid_modes.h
+Replace sizeof(tv_modes) / sizeof (tv_modes[0]) with
+ARRAY_SIZE(tv_modes) in drivers/gpu/drm/i915/intel_tv.c
 
 Signed-off-by: Nikitas Angelinas <nikitasangelinas@gmail.com>
 ---
- drivers/gpu/drm/drm_edid_modes.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/gpu/drm/i915/intel_tv.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_edid_modes.h b/drivers/gpu/drm/drm_edid_modes.h
-index 6eb7592..7601284 100644
---- a/drivers/gpu/drm/drm_edid_modes.h
-+++ b/drivers/gpu/drm/drm_edid_modes.h
-@@ -377,4 +377,4 @@ static const struct {
- 	{ 1920, 1440, 60, 0 },
- 	{ 1920, 1440, 75, 0 },
- };
--static const int num_est3_modes = sizeof(est3_modes) / sizeof(est3_modes[0]);
-+static const int num_est3_modes = ARRAY_SIZE(est3_modes);
+diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+index d2029ef..6dc19f6 100644
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -30,6 +30,7 @@
+  * Integrated TV-out support for the 915GM and 945GM.
+  */
+ 
++#include <linux/kernel.h>
+ #include "drmP.h"
+ #include "drm.h"
+ #include "drm_crtc.h"
+@@ -926,7 +927,7 @@ intel_tv_mode_lookup (char *tv_format)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < sizeof(tv_modes) / sizeof (tv_modes[0]); i++) {
++	for (i = 0; i < ARRAY_SIZE(tv_modes); i++) {
+ 		const struct tv_mode *tv_mode = &tv_modes[i];
+ 
+ 		if (!strcmp(tv_format, tv_mode->name))
 -- 
 1.7.2.3
 
