@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab0IHQoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 12:44:37 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36539 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671Ab0IHQof (ORCPT
+	id S1754485Ab0IHQsx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 12:48:53 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34340 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab0IHQsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 12:44:35 -0400
-Date: Wed, 8 Sep 2010 10:44:32 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jassi Brar <jassisinghbrar@gmail.com>, Jassi Brar <jassi.brar@samsung.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        spi-devel-general@lists.sourceforge.net,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi/spi_s3c64xx: Move to subsys_initcall()
-Message-ID: <20100908164432.GG3686@angua.secretlab.ca>
-References: <1283855357-15179-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <AANLkTim=ArPyqC7K-aaer97deGeR6yU-FS1Hpm3D_1ER@mail.gmail.com>
- <20100908091242.GB31253@rakim.wolfsonmicro.main>
- <AANLkTimvc52yXuMFN2=qLKX1MSyTum1GHnLdDW8dMR=2@mail.gmail.com>
- <20100908161245.GC3686@angua.secretlab.ca>
- <20100908162251.GA15562@rakim.wolfsonmicro.main>
+	Wed, 8 Sep 2010 12:48:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=MUg8nIRslT+GnW+bL3va/c4OEKon6o+VIT0SHioHoD2jfNDsSJ5CJwpHsInRE2YWz7
+         jxXH02nkpfQNfb5Z1Zqg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100908162251.GA15562@rakim.wolfsonmicro.main>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100908155721.GD23745@lixom.net>
+References: <20100818041333.GA14149@lixom.net>
+	<20100818171636.0625b668.akpm@linux-foundation.org>
+	<20100819032230.GA21980@lixom.net>
+	<20100820010242.GA29588@lixom.net>
+	<20100820221323.GC8535@lixom.net>
+	<AANLkTikLLwfSXbnjPByXTktEFFVueeAd7HZS5ft-rj-m@mail.gmail.com>
+	<20100908145705.GC23745@lixom.net>
+	<AANLkTi=jft-j+2Y_dez_gJSrHEkuKSwKq8PbPZxvuHqk@mail.gmail.com>
+	<20100908155721.GD23745@lixom.net>
+Date: Wed, 8 Sep 2010 09:48:46 -0700
+Message-ID: <AANLkTinUNpWsu=AY+1EeG8xznPaESL8XnjGo7613yoMt@mail.gmail.com>
+Subject: Re: [PATCH v3] mmc: add config and runtime option for number of
+ mmcblk minors
+From: Colin Cross <ccross@google.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Lei Wen <adrian.wenl@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mandeep Baines <msb@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 05:22:51PM +0100, Mark Brown wrote:
-> On Wed, Sep 08, 2010 at 10:12:45AM -0600, Grant Likely wrote:
-> 
-> [reflowed into 80 columns]
+On Wed, Sep 8, 2010 at 8:57 AM, Olof Johansson <olof@lixom.net> wrote:
+> On Wed, Sep 08, 2010 at 05:19:25PM +0200, Kay Sievers wrote:
+>> On Wed, Sep 8, 2010 at 16:57, Olof Johansson <olof@lixom.net> wrote:
+>> > On Wed, Sep 08, 2010 at 10:25:58PM +0800, Lei Wen wrote:
+>> >
+>> >> The patch's purpose is good. As modern sd&mmc is used to host the file
+>> >> system, the 8 partition limitation is becoming a kind of bottleneck...
+>> >> But why not just add GENHD_FL_EXT_DEVT flag to allow mmc use extended
+>> >> partition numbers?
+>> >
+>> > No need to quote the whole patch next time. :)
+>> >
+>> > Given that MMC is sometimes used in deeply embedded environments where
+>> > udev might not be running to take care of dynamic device numbering,
+>> > I chose to stay with a static layout.
+>> >
+>> > I could be convinced otherwise though. It would cause some additional
+>> > hassles for me since we start udev lateish during boot and have a
+>> > prepopulated /dev before that, but that can be dealt with.
+>>
+>> I think the extended number are only used for stuff larger than the static 8?
+>
+> Ah, yes, of course.
+>
+>> Apart from that, you can not reliably or securely use a static /dev
+>> these days, you never know which device you talk to, because the
+>> kernel has far too many dynamically assigned numbers. For that reason,
+>> most embedded setups use the busybox hack to populate /dev. Recent
+>> kernels have a devfs again, and there is no reason today to continue
+>> any static /dev experiments -- unless someone is going over the entire
+>> tree and fixes all the dynamic assignments, which is unlikely to
+>> happen ever.
+>
+> Yeah, it's a weak argument but I wanted to go for the least surprising
+> one for anyone who still relies on static numbering of mmc, since it's
+> used as root device, etc.
+>
+> But with the first 8 minors being the same as before, there's little
+> reason to care about that -- the EXT_DEVT approach will actually be
+> the smaller change, since it won't renumber anything, just extend in a
+> different part of the address space.
+>
+> Lei, want to submit a proper patch for it to replace mine?
 
-Sorry about that.  I'm in the process of switching to mutt+vim for my
-mailer.  gmail is just not efficient enough when managing patches.
-
-> > ... but it seems to me that there is a systemic problem in the way the
-> > driver model is being used if SPI (and I2C) bus drivers need to be
-> > 'special' in this regard.  What are the ordering requirements on things
-> > like PMICs?  (My uneducated assumption is that other devices depend on
-> > them being enabled before being probed.)  Would it be better to have a
-> 
-> Pretty much this, yes - if you might want to turn on your supplies
-> when you're probed it's rather helpful if the subsystem needed to
-> control the regulators is available when you probe.
-> 
-> > mechanism to defer probing on certain devices until other devices are
-> > probed?  Then the relationships could be made explicit instead of the
-> > rather coarse-grained (and potentially fragile) approach of changing the
-> > init order.
-> 
-> That would be much nicer (and this is far from the only case where we
-> need to deal with it) but it's a substantial change to core kernel
-> infrastructure so it's being worked around like this.  Given how all the
-> discussions about sorting and dependencies for suspend and resume went
-> it might be an uphill struggle to do much more, especially while we are
-> able to continue to deal with things fairly easily using the current
-> infrastructure.
-> 
-> Doing dependencies could get pretty complicated, especially once you
-> handle optional dependencies ("is this missing because it didn't probe
-> yet or because it's just not there?") so it's not entirely clear to me
-> that it's worth the hassle.
-
-I think it might be doable.  I had a similar problem with Ethernet
-MACs and PHYs where the PHY was on a completely separate bus from the
-MAC with zero guarantees on probe order.  I had some code that made it
-simple to use a bus notifier to defer MAC initialization until the
-required phy turned up and was probed.  I eventually abandoned it
-because accessing the PHY could be deferred until .ndo_open() time.
-However, it would be easy to resurrect, and might be a reasonable
-solution.  At the very least it is worth an investigation.
-
-g.
+I have a tested patch for this.  It also cleans up the connection
+between devidx and minor numbers.  I'll send it shortly.
