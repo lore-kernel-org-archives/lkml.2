@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758480Ab0IHIjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 04:39:08 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:56774 "EHLO gir.skynet.ie"
+	id S1758499Ab0IHIq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 04:46:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46566 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758028Ab0IHIjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 04:39:06 -0400
-Date: Wed, 8 Sep 2010 09:38:51 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/9] Reduce latencies and improve overall reclaim
-	efficiency v1
-Message-ID: <20100908083851.GA29263@csn.ul.ie>
-References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie> <20100908115807.C916.A69D9226@jp.fujitsu.com>
+	id S1758373Ab0IHIqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 04:46:21 -0400
+Message-ID: <4C874D55.6080402@kernel.org>
+Date: Wed, 08 Sep 2010 10:46:13 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100908115807.C916.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Dave Chinner <david@fromorbit.com>
+CC: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [2.6.36-rc3] Workqueues, XFS, dependencies and deadlocks
+References: <20100907072954.GM705@dastard> <4C86003B.6090706@kernel.org> <20100907100108.GN705@dastard> <4C861582.6080102@kernel.org> <20100907124850.GP705@dastard> <4C865CC4.9070701@kernel.org> <20100908073428.GR705@dastard> <4C87474B.3050405@kernel.org> <20100908082819.GV705@dastard>
+In-Reply-To: <20100908082819.GV705@dastard>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Sep 2010 08:46:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 12:14:29PM +0900, KOSAKI Motohiro wrote:
-> > There have been numerous reports of stalls that pointed at the problem being
-> > somewhere in the VM. There are multiple roots to the problems which means
-> > dealing with any of the root problems in isolation is tricky to justify on
-> > their own and they would still need integration testing. This patch series
-> > gathers together three different patch sets which in combination should
-> > tackle some of the root causes of latency problems being reported.
-> > 
-> > The first patch improves vmscan latency by tracking when pages get reclaimed
-> > by shrink_inactive_list. For this series, the most important results is
-> > being able to calculate the scanning/reclaim ratio as a measure of the
-> > amount of work being done by page reclaim.
-> > 
-> > Patches 2 and 3 account for the time spent in congestion_wait() and avoids
-> > calling going to sleep on congestion when it is unnecessary. This is expected
-> > to reduce stalls in situations where the system is under memory pressure
-> > but not due to congestion.
-> > 
-> > Patches 4-8 were originally developed by Kosaki Motohiro but reworked for
-> > this series. It has been noted that lumpy reclaim is far too aggressive and
-> > trashes the system somewhat. As SLUB uses high-order allocations, a large
-> > cost incurred by lumpy reclaim will be noticeable. It was also reported
-> > during transparent hugepage support testing that lumpy reclaim was trashing
-> > the system and these patches should mitigate that problem without disabling
-> > lumpy reclaim.
-> 
-> Wow, I'm sorry my lazyness bother you. I'll join to test this patch series
-> ASAP and take a feedback soon.
-> 
+Hello,
 
-It did not bother me at all. I generally agreed with the direction and
-it seemed sensible to take them into consideration before patches 9 and
-10 in particular and make sure they all played nicely together.
+On 09/08/2010 10:28 AM, Dave Chinner wrote:
+>> They may if necessary to keep the workqueue progressing.
+> 
+> Ok, so the normal case is that they will all be processed local to the
+> CPU they were queued on, like the old workqueue code?
+
+Bound workqueues always process works locally.  Please consider the
+following scenario.
+
+ w0, w1, w2 are queued to q0 on the same CPU.  w0 burns CPU for 5ms
+ then sleeps for 10ms then burns CPU for 5ms again then finishes.  w1
+ and w2 sleeps for 10ms.
+
+The following is what happens with the original workqueue (ignoring
+all other tasks and processing overhead).
+
+ TIME IN MSECS	EVENT
+ 0		w0 burns CPU
+ 5		w0 sleeps
+ 15		w0 wakes and burns CPU
+ 20		w0 finishes, w1 starts and sleeps
+ 30		w1 finishes, w2 starts and sleeps
+ 40		w2 finishes
+
+With cmwq if @max_active >= 3,
+
+ TIME IN MSECS	EVENT
+ 0		w0 burns CPU
+ 5		w0 sleeps, w1 starts and sleeps, w2 starts and sleeps
+ 15		w0 wakes and burns CPU, w1 finishes, w2 finishes
+ 20		w0 finishes
+
+IOW, cmwq assigns a new worker when there are more work items to
+process but no work item is currently in progress on the CPU.  Please
+note that this behavior is across *all* workqueues.  It doesn't matter
+which work item belongs to which workqueue.
+
+Thanks.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+tejun
