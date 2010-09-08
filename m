@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638Ab0IHFdc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 01:33:32 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35649 "EHLO
+	id S1752032Ab0IHFea (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 01:34:30 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52245 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab0IHFda convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751815Ab0IHFe0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 01:33:30 -0400
+	Wed, 8 Sep 2010 01:34:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=cgLcxdZ0iJe9lJn+AS/eEOzFVJ3YH2waTXAazYuKBw9YtxmYSTGh8WRbHsEbg+qD5M
-         CHfWiwpKPMKcSJgR5qA8o4XPPU3Ol5w1pKm1gnj1AMrVHMJQTieapjkisrO4vGPYld1f
-         PS4qfwaRIX+4Gr1hoeMSVz1vokywYqhgWZ9mQ=
+        b=LLeX1ASX2O2pp9NRB7R1MRZO9KyNS6gBpTlbG3YCdbLz5+GWQrcP4jsvzUcXDjg7Dr
+         kOTttMpRdUNbow2+uYSfEsm9ctZO9mxFYPR0VJXwFuv0pLOez14z3+WTcTys1zs6hwXz
+         +L10YCkLieiq+XyoE9LrUOcW3hoRMJx1xReEA=
 MIME-Version: 1.0
-In-Reply-To: <1283923185.2634.772.camel@edumazet-laptop>
-References: <AANLkTikp0m8cQYfEBHP_E8XpGZqdMj6Cr4M=aWCnei=X@mail.gmail.com>
-	<1283923185.2634.772.camel@edumazet-laptop>
-Date: Wed, 8 Sep 2010 13:33:28 +0800
-Message-ID: <AANLkTim+=vj+k3=1hzT3=J4ssOopp5Eq=g+DHis=pZFN@mail.gmail.com>
-Subject: Re: [PATCH] netlink: Fix kfree NULL pointer
-From: jovi zhang <bookjovi@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@openvz.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1283914607-10570-4-git-send-email-mark.brown314@gmail.com>
+References: <1283914607-10570-1-git-send-email-mark.brown314@gmail.com>
+	<1283914607-10570-4-git-send-email-mark.brown314@gmail.com>
+Date: Wed, 8 Sep 2010 13:34:24 +0800
+Message-ID: <AANLkTi=StWVfeGjNCqJWJka0yifXv6rEB6GoZEkq7NT5@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: pxa168/teton bga: add board support for i2c and rtc-ds1337
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: "Mark F. Brown" <mark.brown314@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 8, 2010 at 1:19 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le mercredi 08 septembre 2010 Ã  13:13 +0800, jovi zhang a Ã©crit :
->> It will kfree NULL pointer if listeners is NULL. fix it.
->>
->> Signed-off-by: bookjovi@gmail.com
->> net/netlink/af_netlink.c | Â  Â 5 +++--
->> 1 files changed, 3 insertions(+), 2 deletions(-)
->>
->> diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
->> index 980fe4a..1c7bf48 100644
->> --- a/net/netlink/af_netlink.c
->> +++ b/net/netlink/af_netlink.c
->> @@ -1532,8 +1532,10 @@ netlink_kernel_create(struct net *net, int
->> unit, unsigned int groups,
->> Â  Â  Â  Â if (input)
->> Â  Â  Â  Â  Â  Â  Â  Â nlk_sk(sk)->netlink_rcv = input;
->>
->> - Â  Â  Â  if (netlink_insert(sk, net, 0))
->> + Â  Â  Â  if (netlink_insert(sk, net, 0)) {
->> + Â  Â  Â  Â  Â  Â  Â  kfree(listeners);
->> Â  Â  Â  Â  Â  Â  Â  Â goto out_sock_release;
->> + Â  Â  Â  }
->>
->> Â  Â  Â  Â nlk = nlk_sk(sk);
->> Â  Â  Â  Â nlk->flags |= NETLINK_KERNEL_SOCKET;
->> @@ -1553,7 +1555,6 @@ netlink_kernel_create(struct net *net, int unit,
->> unsigned int groups,
->> Â  Â  Â  Â return sk;
->>
->> out_sock_release:
->> - Â  Â  Â  kfree(listeners);
->> Â  Â  Â  Â netlink_kernel_release(sk);
->> Â  Â  Â  Â return NULL;
+On Wed, Sep 8, 2010 at 10:56 AM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+> ---
+>  arch/arm/mach-mmp/teton_bga.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
 >
+> diff --git a/arch/arm/mach-mmp/teton_bga.c b/arch/arm/mach-mmp/teton_bga.c
+> index bbeda5c..8e5801c 100644
+> --- a/arch/arm/mach-mmp/teton_bga.c
+> +++ b/arch/arm/mach-mmp/teton_bga.c
+> @@ -22,6 +22,7 @@
+>  #include <mach/gpio.h>
+>  #include <linux/input.h>
+>  #include <plat/pxa27x_keypad.h>
+> +#include <linux/i2c.h>
 >
-> This patch is not needed
+>  #include "common.h"
 >
-> kfree(NULL) is legal
+> @@ -35,6 +36,10 @@ static unsigned long teton_bga_pin_config[] __initdata = {
+>        GPIO110_KP_MKIN0,
+>        GPIO111_KP_MKOUT7,
+>        GPIO112_KP_MKOUT6,
+> +
+> +       /* i2c bus */
+> +       GPIO105_CI2C_SDA,
+> +       GPIO106_CI2C_SCL,
+>  };
 >
+>  static unsigned int teton_bga_matrix_key_map[] = {
+> @@ -52,6 +57,10 @@ static struct pxa27x_keypad_platform_data teton_bga_keypad_info __initdata = {
+>        .debounce_interval      = 30,
+>  };
 >
->
->
+> +static struct i2c_board_info teton_bga_i2c_info[] __initdata = {
+> +       { I2C_BOARD_INFO("ds1337", 0x68), },
+> +};
+> +
 
-YES, maybe kfree(NULL) is legal, but I cannot see there have any need
-to invoke kfree(NULL) in this function.
-Â Also I check kfree usage in other code, I havn't find any kfree(NULL) usage.
+I don't have the schematic of teton. But RTC chips should always has
+an irq pin. Is it also connected in your platform?
+
+>  static void __init teton_bga_init(void)
+>  {
+>        mfp_config(ARRAY_AND_SIZE(teton_bga_pin_config));
+> @@ -59,6 +68,7 @@ static void __init teton_bga_init(void)
+>        /* on-chip devices */
+>        pxa168_add_uart(1);
+>        pxa168_add_keypad(&teton_bga_keypad_info);
+> +       pxa168_add_twsi(0, NULL, ARRAY_AND_SIZE(teton_bga_i2c_info));
+>  }
+>
+>  MACHINE_START(TETON_BGA, "PXA168-based Teton BGA Development Platform")
+> --
+> 1.7.0.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
