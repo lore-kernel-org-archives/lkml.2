@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758778Ab0IHNFY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 09:05:24 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:49915 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab0IHNFW (ORCPT
+	id S1751570Ab0IHNI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 09:08:28 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64798 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab0IHNI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 09:05:22 -0400
-Date: Wed, 8 Sep 2010 15:05:19 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: miaox@cn.fujitsu.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>
-Subject: Re: [PATCH V2 1/3] lib: introduce some memory copy macros and     
- functions
-Message-ID: <20100908150519.2f9fe283@basil.nowhere.org>
-In-Reply-To: <4C878823.60709@cn.fujitsu.com>
-References: <46238.91.60.152.217.1283948365.squirrel@www.firstfloor.org>
-	<4C878823.60709@cn.fujitsu.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 8 Sep 2010 09:08:26 -0400
+From: fabio de francesco <fabio@metanix.org>
+Organization: metanix.org
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: linux/kernel/sched.c: context_switch().
+Date: Wed, 8 Sep 2010 15:08:29 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-tuxonice-r1-100826; KDE/4.4.5; x86_64; ; )
+MIME-Version: 1.0
+Message-Id: <201009081508.30490.fabio@metanix.org>
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Sep 2010 20:57:07 +0800
-Miao Xie <miaox@cn.fujitsu.com> wrote:
+There must be something I am missing in sched.c at context_switch() function 
+definition. 
 
-> On Wed, 8 Sep 2010 14:19:25 +0200 (cest), Andi Kleen wrote:
-> >
-> >> According to the data, the length of the most copies is>=128.
-> >
-> > Thanks for the data. Large is easier to optimize than small, that's
-> > good.
-> >
-> > Could you also measure how many memsets need the backwards copy?
-> > (should be easy to add)
-> 
-> I think memset doesn't need the backwards copy.
+There I can read the following code:
 
-I meant for memmove of course. Obviously memset doesn't need a backwards
-copy. That was just the only thing the script didn't measure because
-the original version didn't have memmove support.
+static inline void
+context_switch(struct rq *rq, struct task_struct *prev,
+               struct task_struct *next)
+{
+	...
+	struct mm_struct *mm;
+	mm = next->mm;
+	if (likely(!mm)) {
+                next->active_mm = oldmm;
+                atomic_inc(&oldmm->mm_count);
+                enter_lazy_tlb(oldmm, next);
+        } else
+                switch_mm(oldmm, mm, next);
+	...
+}
 
-Your whole thread was about making memmove faster, right?
+May someone please explain why the mm pointer is likely supposed to be NULL?
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Thanks in advance.
+
+fabio
