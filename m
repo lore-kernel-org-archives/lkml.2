@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997Ab0IHRMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 13:12:06 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:57141 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab0IHRL7 (ORCPT
+	id S1752498Ab0IHR24 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 13:28:56 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:65288 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab0IHR2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 13:11:59 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: Jan Blunck <jblunck@novell.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
-        linux-rt-users@vger.kernel.org,
-        Sven-Thorsten Dietrich <sdietrich@novell.com>,
-        Michael Galbraith <MGalbraith@novell.com>
-Subject: Re: [RFC 3/4] Disable scheduler tick when we are running SCHED_FIFO tasks
-References: <1283948964-6418-1-git-send-email-jblunck@suse.de>
-	<1283948964-6418-4-git-send-email-jblunck@suse.de>
-	<1283949943.23762.16.camel@laptop>
-	<20100908142826.GI7436@bolzano.suse.de>
-Date: Wed, 08 Sep 2010 19:11:53 +0200
-In-Reply-To: <20100908142826.GI7436@bolzano.suse.de> (Jan Blunck's message of
-	"Wed, 8 Sep 2010 16:28:26 +0200")
-Message-ID: <87iq2gw46e.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 8 Sep 2010 13:28:49 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 69.181.193.102
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19LmflqUMAzc2d0/9N6FWwa
+Date: Wed, 8 Sep 2010 10:28:45 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Greg KH <greg@kroah.com>
+Cc: David Cross <david.cross@cypress.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] gpmc, EXPORT_SYMBOLS, west bridge related
+Message-ID: <20100908172845.GO22507@atomide.com>
+References: <1283887607.7250.10.camel@odc-laptop>
+ <20100907235800.GD12823@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100907235800.GD12823@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Blunck <jblunck@novell.com> writes:
+* Greg KH <greg@kroah.com> [100907 17:17]:
+> On Tue, Sep 07, 2010 at 12:26:47PM -0700, David Cross wrote:
+> > This patch exports some of the gpmc driver functions in OMAP3. The purpose behind this patch 
+> > is to allow device drivers compiled as loadable modules to be interfaced to the GPMC. I am
+> > hoping that Tony is the correct maintainer and willing to ACK this change. Please let me know 
+> > if there are any issues or concerns with this patch.
+> > Thanks,
+> > David
+> > 
+> > Signed-off-by: David Cross <david.cross@cypress.com>
+> > 
+> > diff -uprN -X linux-next-vanilla/Documentation/dontdiff linux-next-vanilla/arch/arm/mach-omap2/gpmc.c linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c
+> > --- linux-next-vanilla/arch/arm/mach-omap2/gpmc.c	2010-08-31 19:32:51.000000000 -0700
+> > +++ linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c	2010-09-01 16:10:21.000000000 -0700
+> > @@ -133,6 +133,7 @@ void gpmc_cs_write_reg(int cs, int idx, 
+> >  	reg_addr = gpmc_base + GPMC_CS0_OFFSET + (cs * GPMC_CS_SIZE) + idx;
+> >  	__raw_writel(val, reg_addr);
+> >  }
+> > +EXPORT_SYMBOL(gpmc_cs_write_reg);
+> 
+> EXPORT_SYMBOL_GPL() perhaps?
+> 
+> What about platforms that don't have this symbol, how will the driver
+> build properly then?  Shouldn't something like this be in a arch-neutral
+> place in the kernel tree?
 
-> On Wed, Sep 08, Peter Zijlstra wrote:
->
->> On Wed, 2010-09-08 at 14:29 +0200, Jan Blunck wrote:
->> > This patch is disabling the scheduler tick to go off when there is a task
->> > with SCHED_FIFO policy running. Since these tasks are not timesliced anyway
->> > we only care about timers, softirqs and such stuff just like when we disable
->> > the tick during idle periods.
->> > 
->> 
->> Also, doesn't this break any and all jiffies users?
->> 
->
-> Sure. It was enough to make FTQ run.
->
->> And you need to restart the tick on call_rcu() and everything else that
->> requires the tick for processing.
->> 
->
-> I realized that before as well but somehow forgot about it. Checking for a
-> disabled timer tick on syscall entry would help. Like we do on irq entry as
-> well.
+I don't think exporting these functions is a good idea, so NAK from
+me for that.
 
-That doesn't help the gettimeofday/clock_gettime vDSOs
-which access jiffie like state in user space.
+All the drivers should be generic, and whatever needs to be done
+that's omap specific should be done in the platform init code.
 
-I guess you could force the vdso to call into the kernel
-during such a region, but you cannot force it for an
-process that is already context switched in this path
-when the option is first enabled.
+If the driver needs to reconfigure something, such as memory timings,
+it can be done by passing a retime function pointer to the driver
+in the platform_data. Then the driver can call that function if
+it exists.
 
-I guess it would work if you force all the vDSOs
-to always do a system call at boot, but that's pretty
-costly.
+Regards,
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Tony
