@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab0IHQxt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 12:53:49 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53948 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753793Ab0IHQxp (ORCPT
+	id S1755363Ab0IHQzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 12:55:31 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44405 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751405Ab0IHQz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 12:53:45 -0400
-Date: Wed, 8 Sep 2010 10:53:41 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Yong Wang <yong.y.wang@linux.intel.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Feng Tang <feng.tang@intel.com>, George Shore <george@georgeshore.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dw_spi: Allow interrupt sharing
-Message-ID: <20100908165341.GJ3686@angua.secretlab.ca>
-References: <20100907072727.GA2152@ywang-moblin2.bj.intel.com>
+	Wed, 8 Sep 2010 12:55:29 -0400
+Date: Wed, 8 Sep 2010 17:55:27 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>, Jassi Brar <jassi.brar@samsung.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        spi-devel-general@lists.sourceforge.net,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi/spi_s3c64xx: Move to subsys_initcall()
+Message-ID: <20100908165526.GB15562@rakim.wolfsonmicro.main>
+References: <1283855357-15179-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <AANLkTim=ArPyqC7K-aaer97deGeR6yU-FS1Hpm3D_1ER@mail.gmail.com>
+ <20100908091242.GB31253@rakim.wolfsonmicro.main>
+ <AANLkTimvc52yXuMFN2=qLKX1MSyTum1GHnLdDW8dMR=2@mail.gmail.com>
+ <20100908161245.GC3686@angua.secretlab.ca>
+ <20100908162251.GA15562@rakim.wolfsonmicro.main>
+ <20100908164432.GG3686@angua.secretlab.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100907072727.GA2152@ywang-moblin2.bj.intel.com>
+In-Reply-To: <20100908164432.GG3686@angua.secretlab.ca>
+X-Cookie: Real programs don't eat cache.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 03:27:27PM +0800, Yong Wang wrote:
-> Allow interrupt sharing since exclusive interrupt line for
-> DW SPI controller is not provided on every platform.
-> 
-> Signed-off-by: Yong Wang <yong.y.wang@intel.com>
-> ---
->  drivers/spi/dw_spi.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/spi/dw_spi.c b/drivers/spi/dw_spi.c
-> index d256cb0..11fbbf6 100644
-> --- a/drivers/spi/dw_spi.c
-> +++ b/drivers/spi/dw_spi.c
-> @@ -396,6 +396,11 @@ static irqreturn_t interrupt_transfer(struct dw_spi *dws)
->  static irqreturn_t dw_spi_irq(int irq, void *dev_id)
->  {
->  	struct dw_spi *dws = dev_id;
-> +	u16 irq_status, irq_mask = 0x3f;
-> +
-> +	irq_status = dw_readw(dws, isr) & irq_mask;
-> +	if (!irq_status)
-> +		return IRQ_NONE;
+On Wed, Sep 08, 2010 at 10:44:32AM -0600, Grant Likely wrote:
+> On Wed, Sep 08, 2010 at 05:22:51PM +0100, Mark Brown wrote:
 
-To be more concise, this could have simply been:
+> > Doing dependencies could get pretty complicated, especially once you
+> > handle optional dependencies ("is this missing because it didn't probe
+> > yet or because it's just not there?") so it's not entirely clear to me
+> > that it's worth the hassle.
 
-if (!dw_readw(dws, isr) & 0x3f)
-	return IRQ_NONE;
+> I think it might be doable.  I had a similar problem with Ethernet
+> MACs and PHYs where the PHY was on a completely separate bus from the
+> MAC with zero guarantees on probe order.  I had some code that made it
+> simple to use a bus notifier to defer MAC initialization until the
+> required phy turned up and was probed.  I eventually abandoned it
+> because accessing the PHY could be deferred until .ndo_open() time.
+> However, it would be easy to resurrect, and might be a reasonable
+> solution.  At the very least it is worth an investigation.
 
-... but I'm nitpicking here.  If I don't get an updated version of
-this patch from you in the next few days then I'll apply this one.
-
-g.
-
->  
->  	if (!dws->cur_msg) {
->  		spi_mask_intr(dws, SPI_INT_TXEI);
-> @@ -883,7 +888,7 @@ int __devinit dw_spi_add_host(struct dw_spi *dws)
->  	dws->dma_inited = 0;
->  	dws->dma_addr = (dma_addr_t)(dws->paddr + 0x60);
->  
-> -	ret = request_irq(dws->irq, dw_spi_irq, 0,
-> +	ret = request_irq(dws->irq, dw_spi_irq, IRQF_SHARED,
->  			"dw_spi", dws);
->  	if (ret < 0) {
->  		dev_err(&master->dev, "can not get IRQ\n");
-> -- 
-> 1.5.5.1
-> 
+If you've got stuff that'd be great - ASoC also has a deferral mechanism
+implemented due to this song and dance.  Like I say, the main reason
+I've never looked at it myself is that it's never been sufficiently much
+of a practical problem for me to justify the effort.
