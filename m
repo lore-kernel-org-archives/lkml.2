@@ -1,133 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab0IHRDs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 13:03:48 -0400
-Received: from ns2.cypress.com ([157.95.67.5]:41395 "EHLO ns2.cypress.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756782Ab0IHRDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 13:03:13 -0400
-Reply-To: <david.cross@cypress.com>
-From: "David Cross" <david.cross@cypress.com>
-To: "'Greg KH'" <greg@kroah.com>
-Cc: <dhowells@redhat.com>, <linux-cachefs@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-References: <1283888011.7250.17.camel@odc-laptop> <20100907235905.GE12823@kroah.com>
-Subject: RE: [PATCH] Cachefiles, mpage_cleardirty addtition, west bridgerelated
-Date: Wed, 8 Sep 2010 10:02:49 -0700
-Organization: Cypress Semiconductor
-Message-ID: <F6CA58C781EF4D31B9DBCBBACC511DAD@stanford.edu>
+	id S1754878Ab0IHREg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 13:04:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39453 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab0IHREc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 13:04:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ksj9SljmpwT0B02uMASl39sMriXeSi+EllzHsLqdUD0mGB3Fa21z4PfU2aWW18Neyf
+         +Y1aN+ZKiHARPH88qd2SeJYkaLpZV8Z9JY8EdTwbRFqywR/bq38yB5rho4mq51hxs3Mc
+         3kQ48ER9VSoZL1DDGMMHtbuLPjOIQ9/7g+DY4=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: ActO7Fg/1eJC1JaYRSiq48wPYy37SQAixQ7A
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
-In-Reply-To: <20100907235905.GE12823@kroah.com>
-X-Brightmail-Tracker: AAAAAA==
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
+In-Reply-To: <20100908170320.GA4888@srcf.ucam.org>
+References: <1283963539-4039-1-git-send-email-mjg@redhat.com>
+	<1283963539-4039-3-git-send-email-mjg@redhat.com>
+	<AANLkTi=kDXwRPxfbLv=EGEqARfTkhuhRBrXUL9DOQ_zw@mail.gmail.com>
+	<20100908170320.GA4888@srcf.ucam.org>
+Date: Wed, 8 Sep 2010 13:04:31 -0400
+Message-ID: <AANLkTinmUDmsS7bJOzfv3TayeTOOLzT_POQQ+BmksSgS@mail.gmail.com>
+Subject: Re: [PATCH] radeon: Expose backlight class device for legacy LVDS encoder
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
+        dri-devel@lists.freedesktop.org,
+        =?ISO-8859-1?Q?Michel_D=E4nzer?= <daenzer@vmware.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 8, 2010 at 1:03 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Wed, Sep 08, 2010 at 12:58:32PM -0400, Alex Deucher wrote:
+>
+>> The only problem with this is that not all oems use the internal
+>> backlight controller; systems that don't need to use the acpi methods.
+>
+> That's why we expose the backlight type. Userspace should use the acpi
+> or platform mechanism when available, with this being a last-ditch
+> fallback.
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com] 
+Ah, gotcha.
 
-> On Tue, Sep 07, 2010 at 12:33:31PM -0700, David Cross wrote:
-> > This patch adds the mpage_cleardirty function to the cachefiles
-implementation in the kernel.
-> > The purpose behind this patch is to allow for file based DMA through an
-external DMA engine
-> > without the data ever going through the process. The procedure for the
-usage of this function 
-> > is as follows:
-> > 1) User space allocates and maps a file
-> > 2) external DMA device transfers the data to non-volatile storage
-directly without it going through 
-> >    the processor
-> > 3) the "dirty" pages must be cleared and invalidated as they do not
-contain correct information.
-> > 
-> > I believe that David is the correct maintainer and am hoping that he is
-willing to ACK this change. Please let me know 
-> > if there are any issues or concerns with this patch or if I should be
-> > asking a different maintainer to ack.
-> > Thanks,
-> > David
-> > 
-> > Signed-off-by: David Cross <david.cross@cypress.com>
-> > 
-> > diff -uprN -X linux-next-vanilla/Documentation/dontdiff
-linux-next-vanilla/fs/mpage.c linux-next-incl-sdk/fs/mpage.c
-> > --- linux-next-vanilla/fs/mpage.c	2010-08-31 19:32:51.000000000 -0700
-> > +++ linux-next-incl-sdk/fs/mpage.c	2010-09-07 11:52:39.000000000 -0700
-> > @@ -716,3 +716,50 @@ int mpage_writepage(struct page *page, g
-> >  	return ret;
-> >  }
-> >  EXPORT_SYMBOL(mpage_writepage);
-> > +
-> > +int mpage_cleardirty(struct address_space *mapping, int num_pages)
-> > +{
-> > +	int ret = 0;
-> > +	int nr_pages;
-> > +	struct pagevec pvec;
-> > +	pgoff_t index = 0;
-> > +	pgoff_t end;
-> > +
-> > +	pagevec_init(&pvec, 0);
-> > +	index = mapping->writeback_index;
-> > +	end = index + num_pages;
-> > +
-> > +	while ((index <= end) &&
-> > +	       (nr_pages = pagevec_lookup_tag(&pvec, mapping, &index,
-> > +				PAGECACHE_TAG_DIRTY, min(end - index,
-> > +					(pgoff_t)PAGEVEC_SIZE-1) + 1))) {
-> > +		unsigned i;
-> > +
-> > +		for (i = 0; i < nr_pages; i++) {
-> > +			struct page *page = pvec.pages[i];
-> > +
-> > +			lock_page(page);
-> > +			ret = clear_page_dirty_for_io(page);
-> > +			if (page_has_private(page))
-> > +				do_invalidatepage(page, 0);
-> > +
-> > +			cancel_dirty_page(page, PAGE_CACHE_SIZE);
-> > +
-> > +			remove_from_page_cache(page);
-> > +			ClearPageMappedToDisk(page);
-> > +			page_cache_release(page);	/* pagecache ref */
-> > +			unlock_page(page);
-> > +
-> > +			if (!ret) {
-> > +				printk(KERN_INFO "mpage_cleardirty: "
-> > +				"clear_page_dirty_for_io returned %d\n",
-ret);
-> > +				return ret;
-> > +			}
-> > +		}
-> > +		pagevec_release(&pvec);
-> > +		cond_resched();
-> > +	}
-> > +
-> > +	return ret;
-> > +}
-> > +EXPORT_SYMBOL(mpage_cleardirty);
+>
+>>  On atombios systems there is a bit in the
+>> ATOM_FIRMWARE_CAPABILITY_ACCESS struct in the FirmwareInfo data table
+>> to determine whether the backlight is controlled by the GPU or some
+>> external mechanism.  Combios may have something similar.  If the
+>> backlight is controlled via the GPU, it can be adjusting using the
+>> atom OutputControl and TransmitterControl control tables depending on
+>> the GPU family.  However, if the driver chooses to control the
+>> backlight itself, it needs to set the appropriate bit in the bios
+>> scratch regs to tell the firmware not to attempt to change the
+>> backlight itself.
+>
+> If there's support for probing this more reliably then I'm all for that,
+> but I'm not keen on taking over control if the BIOS has previous
+> asserted it.
 
-> EXPORT_SYMBOL_GPL()?
-Sure, but do I need to submit a new patch for this as well?
+Agreed.
 
-thanks,
-
-david
-
-
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
-
+Alex
