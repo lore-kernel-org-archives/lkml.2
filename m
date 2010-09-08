@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757958Ab0IHHJQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 03:09:16 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51175 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756350Ab0IHHJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 03:09:15 -0400
-Date: Wed, 8 Sep 2010 00:08:32 -0700
-From: Greg KH <gregkh@suse.de>
-To: Vipin Mehta <Vipin.Mehta@Atheros.com>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: Re: [PATCH 2/2] staging: ath6kl: use native methods from kernel
-	library
-Message-ID: <20100908070832.GA24777@suse.de>
-References: <09b7da2e5462e0b855617ff5308ed6efb4fc9cab.1283872748.git.andy.shevchenko@gmail.com> <8b251244717765e795b92a1f7335f8af98e5706f.1283872748.git.andy.shevchenko@gmail.com> <35B17FE5076C7040809188FBE7913F983F23479F74@SC1EXMB-MBCL.global.atheros.com> <20100908000331.GA15785@suse.de> <35B17FE5076C7040809188FBE7913F983F2381D71F@SC1EXMB-MBCL.global.atheros.com>
+	id S1758084Ab0IHHQw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 03:16:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60705 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757573Ab0IHHQt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 03:16:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=Ws/gIWNK0TyxxLGebo3dF8dU+wPBL7fu7pRlgAKuk3JFWd8xfH3Oj0bD3Iaml7M/4v
+         LfcBOsemA7fGCxs5/oHXs34TDdJZAk9RVKuUuTdP9RuVf5kxBchLAItNLu1sUMU8RvPw
+         aHiU1RQ5UPZDrwe2igrZGIXKMz9u1OmYsTlQo=
+Message-ID: <4C87385B.1000101@gmail.com>
+Date: Wed, 08 Sep 2010 09:16:43 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <35B17FE5076C7040809188FBE7913F983F2381D71F@SC1EXMB-MBCL.global.atheros.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Greg KH <gregkh@suse.de>
+CC: Javier Martinez Canillas <martinez.javier@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Arnaud Patard <apatard@mandriva.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] staging: xgifb: Initialize uninitialized variables
+References: <1283837645.6302.10.camel@lenovo> <4C85FBE3.4000605@gmail.com> <20100908003821.GC27719@suse.de>
+In-Reply-To: <20100908003821.GC27719@suse.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 07:29:30PM -0700, Vipin Mehta wrote:
+On 09/08/2010 02:38 AM, Greg KH wrote:
+> On Tue, Sep 07, 2010 at 10:46:27AM +0200, Jiri Slaby wrote:
+>> On 09/07/2010 07:34 AM, Javier Martinez Canillas wrote:
+>>> Current patch solves compilation warnings in staging/xgifb for using possibly uninitialized variables.
+>>>
+>>> Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+>>> ---
+>>>  drivers/staging/xgifb/vb_setmode.c |    4 ++--
+>>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
+>>> index c4db2fc..720a592 100644
+>>> --- a/drivers/staging/xgifb/vb_setmode.c
+>>> +++ b/drivers/staging/xgifb/vb_setmode.c
+>>> @@ -376,7 +376,7 @@ void InitTo330Pointer(unsigned char ChipType, struct vb_device_info *pVBInfo)
+>>>  unsigned char XGISetModeNew(struct xgi_hw_device_info *HwDeviceExtension,
+>>>  			unsigned short ModeNo)
+>>>  {
+>>> -	unsigned short ModeIdIndex;
+>>> +	unsigned short ModeIdIndex = 0;
+>>>  	/* unsigned char *pVBInfo->FBAddr = HwDeviceExtension->pjVideoMemoryAddress; */
+>>>  	struct vb_device_info VBINF;
+>>>  	struct vb_device_info *pVBInfo = &VBINF;
+>>
+>> No, please don't. This is a compiler bug.
+>>
+>> The first use in that function is:
+>> XGI_SearchModeID( ModeNo , &ModeIdIndex, pVBInfo );
+>>
+>> and that function contains:
+>> if (XYZ) {
+>>   for( *ModeIdIndex = 0 ; ; ( *ModeIdIndex )++ )
+>>     ...
+>> } else {
+>>   for( *ModeIdIndex = 0 ; ; ( *ModeIdIndex )++ )
+>>     ...
+>> }
+>>
+>> So your compiler is foolish if that emits a warning.
 > 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:gregkh@suse.de]
-> > Sent: Tuesday, September 07, 2010 5:04 PM
-> > To: Vipin Mehta
-> > Cc: Andy Shevchenko; linux-kernel@vger.kernel.org;
-> > devel@driverdev.osuosl.org
-> > Subject: Re: [PATCH 2/2] staging: ath6kl: use native methods from kernel
-> > library
-> > 
-> > On Tue, Sep 07, 2010 at 02:18:02PM -0700, Vipin Mehta wrote:
-> > > Andy,
-> > > Thanks for the patch. Although the driver supports Linux but it has
-> > > been architected to support other OSes if desired. The code is,
-> > > therefore, organized into generic and OS specific components with the
-> > > latter part of the code captured into the os/linux directory. As such,
-> > > the patch will be more useful if we can move out the inclusion of
-> > > linux specific header files <linux/kernel.h> and <linux/ctype.h> into
-> > > a header file in os/linux/include directory.
-> > 
-> > Ick, no.
-> > 
-> > The driver is now in the main kernel tree, the "compatiblity" wrappers
-> > are to now be removed as the kernel code does not need to run on any
-> > other operating systems.
-> > 
-> > That whole subdir needs to be deleted entirely.
-> > 
-> > > You can refer to
-> > > os/linux/include/osapi_linux.h for example. A macro could be defined
-> > > which would use linux specific APIs for Linux and keep the original
-> > > definitions for any other OS.
-> > 
-> > Again, no, this is not ok at all.  If you are going to insist on trying
-> > to do this for the driver, I will just delete it from the tree right now
-> > as that is now how kernel development happens, sorry.
-> 
-> Got it. I think we can discard my suggestion in that case. The patch
-> looks good otherwise. It is ok from my side and could be pushed in to
-> the driver.
+> No, I don't see a way that the compiler could really figure that type of
+> logic out.  It doesn't know that XGI_SearchModeID() always will set that
+> field.  Heck, at first glance I couldn't even figure it out :)
 
-Thanks, will do.
+No, the compiler could. Trust me :). Actually you've just hidden a bug
+in XGI_SearchModeID. There is #ifdef LINUX and LINUX is defined in
+main.h. But that file is not included in vb_setmode.c. Hence the
+uninitialized warnings...
 
-greg k-h
+> So I don't mind applying this patch, as I'll just constantly keep
+> getting people sending me the same change, when they could be off
+> working on other things that this driver needs.
+
+So instead of hiding bugs, please fix the right ones.
+
+thanks,
+-- 
+js
