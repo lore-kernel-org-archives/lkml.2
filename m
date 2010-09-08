@@ -1,79 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab0IHVUo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 17:20:44 -0400
-Received: from ns2.cypress.com ([157.95.67.5]:49083 "EHLO ns2.cypress.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755388Ab0IHVUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 17:20:41 -0400
-Reply-To: <david.cross@cypress.com>
-From: "David Cross" <david.cross@cypress.com>
-To: "'Christoph Hellwig'" <hch@infradead.org>
-Cc: <dhowells@redhat.com>, <linux-cachefs@redhat.com>, <greg@kroah.com>,
-        <linux-kernel@vger.kernel.org>
-References: <1283888011.7250.17.camel@odc-laptop> <4313.1283956531@redhat.com> <9465F8A421744836B35704023ECA8253@stanford.edu> <20100908210553.GA22411@infradead.org>
-Subject: RE: [PATCH] Cachefiles, mpage_cleardirty addtition, west bridge related
-Date: Wed, 8 Sep 2010 14:20:06 -0700
-Organization: Cypress Semiconductor
-Message-ID: <AE20F72077384EF281F87A1E094BED26@stanford.edu>
+	id S1755794Ab0IHVZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 17:25:06 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:41746 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755187Ab0IHVZD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 17:25:03 -0400
+To: Damien Wyart <damien.wyart@free.fr>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.35.*: horrible (exponential? >linear) slowdown to unusability (ACPI idle?)
+References: <87zkvx2ese.fsf@spindle.srvr.nix>
+	<20100906053255.GA23340@brouette>
+From: Nix <nix@esperi.org.uk>
+Emacs: if it payed rent for disk space, you'd be rich.
+Date: Wed, 08 Sep 2010 22:24:59 +0100
+In-Reply-To: <20100906053255.GA23340@brouette> (Damien Wyart's message of "Mon, 6 Sep 2010 07:32:55 +0200")
+Message-ID: <87iq2gyllg.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
-Thread-Index: ActPmaNjVy1m5z4xRfaTMlOmvfkoZgAAPsFg
-In-Reply-To: <20100908210553.GA22411@infradead.org>
-X-Brightmail-Tracker: AAAAAA==
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
+Content-Type: text/plain; charset=us-ascii
+X-DCC-URT-Metrics: spindle 1060; Body=2 Fuz1=2 Fuz2=2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 6 Sep 2010, Damien Wyart uttered the following:
+> So if you can reproduce it quite easily, I guess bisection (even
 
+ha ha ha. I thought I could, but it's intermittent enough to make
+bisection pretty much impossible, and when I gave up and rebooted back
+into 2.6.35.4 the bug went away entirely.
 
------Original Message-----
-From: Christoph Hellwig [mailto:hch@infradead.org] 
-
-On Wed, Sep 08, 2010 at 09:51:22AM -0700, David Cross wrote:
-> > This is used by the current west bridge driver in the linux-next tree,
-> > marked as BROKEN at the moment. It is used in order to clear dirty pages
-> > from the page cache for a specific file after it has been allocated.
-This
-> > allows west bridge to transfer data from USB to storage directly without
-> > requiring that the file data path go through the CPU. The easiest way to
-> > think of this is that it allows for direct file based DMA. Please let me
-> > know if you have any additional questions or concerns on this.
-
-> It's sad enough that it was taken into any tree at all, but we're not
-> going to add incorrect crap into the kernel kernel for it.
-
-Can you elaborate on what you mean by "incorrect crap" in a constructive way
-if at all possible please?
-
-> mpage_* are pagecache manpipulation routines, and are only for use by
-> filesystems for inodes they manage.  A driver may never access this
-> directly.
-
-Then what about a user space call such as falloc()? Is your objection to the
-existence of the code or the place where it is called from?
-
-> Is this the same piece of junk you wanted fat_get_block
-> exported for?
-
-It is the same driver code, but I removed the fat_get_block call in a patch
-that I submitted previously based on past inputs, instead adding a few lines
-to this function.
-
-
-
-
-
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
-
+I don't think bisection will work with something this intermittent :/
