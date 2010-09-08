@@ -1,58 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab0IHT15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 15:27:57 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:52833 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160Ab0IHT1w (ORCPT
+	id S1753544Ab0IHT2y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 15:28:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60104 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549Ab0IHT2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 15:27:52 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -22.589
-Message-ID: <4C87E3EC.5050207@tremplin-utc.net>
-Date: Wed, 08 Sep 2010 21:28:44 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <Eric.Piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100809 Mandriva/3.1.2-3mdv2011.0 (2011.0) Thunderbird/3.1.2
+	Wed, 8 Sep 2010 15:28:48 -0400
+Date: Wed, 8 Sep 2010 12:26:39 -0700
+From: Joel Becker <Joel.Becker@ORACLE.COM>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC 02/22] configfs: Add struct
+ configfs_item_operations->check_link() in configfs_unlink()
+Message-ID: <20100908192639.GD29545@mail.oracle.com>
+Mail-Followup-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+	Konrad Rzeszutek Wilk <konrad@darnok.org>,
+	linux-scsi <linux-scsi@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+	Mike Christie <michaelc@cs.wisc.edu>,
+	Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+	James Bottomley <James.Bottomley@suse.de>,
+	Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+	Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+References: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
+ <20100902064814.GB27904@mail.oracle.com>
+ <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
+ <201009071701.02847.konrad@darnok.org>
+ <20100907224413.GC21935@mail.oracle.com>
+ <1283911739.556.420.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lis3: Add axes module parameter for custom axis-mapping
-References: <s5htymla56q.wl%tiwai@suse.de>	<s5haanuvypc.wl%tiwai@suse.de>	<4C864B3E.5060603@tremplin-utc.net>	<s5heid58vfv.wl%tiwai@suse.de>	<4C866052.5020206@tremplin-utc.net>	<s5h4oe18rhg.wl%tiwai@suse.de>	<4C868FC0.3040602@tremplin-utc.net> <s5hmxrtuz85.wl%tiwai@suse.de>
-In-Reply-To: <s5hmxrtuz85.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283911739.556.420.camel@haakon2.linux-iscsi.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 07-09-10 21:31, Takashi Iwai schreef:
-> At Tue, 07 Sep 2010 21:17:20 +0200,
-> Éric Piel wrote:
->>
->> Op 07-09-10 18:10, Takashi Iwai schreef:
->>> At Tue, 07 Sep 2010 17:54:58 +0200,
->> :
->>>>>  
->>>>> +module_param_array_named(axes, lis3_dev.axis_map, int, NULL, 0644);
->>>>> +MODULE_PARM_DESC(axes, "Axis-mapping for x,y,z directions");
->>>> But now there is no check at all about the value being between 1 and 3,
->>>> is there?
->>>> I think it's still necessary to have a small function which checks for
->>>> correct values, otherwise the user could read a bit anywhere in the memory.
->>>
->>> Ah, right, it's accessing the array index.  This must be fixed indeed.
->>> Another revised version below.
->>>
->> It seems to be the same patch as the previous version. You probably
->> attached the wrong patch.
+On Tue, Sep 07, 2010 at 07:08:59PM -0700, Nicholas A. Bellinger wrote:
+> On Tue, 2010-09-07 at 15:44 -0700, Joel Becker wrote:
+> > 	Nick, can you provide some form of description, not long
+> > pathnames, that explains a) what breaks when the symlink is removed b)
+> > why that can't be allowed if the user is dumb enough to request it?
+> > 
 > 
-> Oops, sorry.  Attached below.
+> So, the case where configfs will actually OOPs without the
+> ->check_link() patch (or without some other internal solution) is on the
+> unlink(2) path is when the symlink is created to a destination outside
+> of the source struct config_group.  This may have not been exactly
+> apparent in my LIO-Target example, but here is another shot at an
+> example without the other complexities of target mode invovled.
+
+	I wish you'd mentioned the oops earlier.  We need to figure out
+who is oopsing.
+
+> Say we have two different struct config_subsystem in two different LKM
+> sub_parent and sub_child.  I will spare the actual mkdir(2) and ln(2)
+> calls here, but (I hope) these are obvious:
 > 
-Looks good to me. Thanks Takashi.
+> First, we start out with the parent source struct config_group from
+> sub_parent module:
+> 
+> 	/sys/kernel/config/sub_parent/group1/parent/
+> 
+> Next, we have a symlink from sub_parent/group1/parent to a different LKM
+> in sub_child:
+> 
+> 	/sys/kernel/config/sub_child/group1/src_0/src_link -> ../../../../sub_parent/group1/parent
+> 
+> And then a second symlink from sub_child/group1/src_0/src_link to a
+> sstuct config_group outside of group1, but still within sub_child:
+> 
+> 	/sys/kernel/config/sub_child/group2/dst_0/dst_link -> ../../../group1/src_0/
 
-Acked-by: Éric Piel <eric.piel@tremplin-utc.net>
+	I think you have too many ../ on your examples.  dst_link
+pointing to ../../../../group1/src_0 resolves to
+/sys/kernel/config/group1/src_0, which I don't think you want.  I think
+you have:
 
-Andrew, would you mind picking it up?
-Eric
+    sub_parent/group1/parent
+    sub_child/group1/src_0/src_link -> ../../../sub_parent/group1/parent
+    sub_child/group2/dst_0/dst_link -> ../../group1/src_0
+
+	If I'm reading this right, 'ls sub_child/group1/src_0/src_link'
+gives you the contents of sub_parent/group1/parent, 'ls
+sub_child/group2/dst_0/dst_link' gives you 'src_link', and 'ls
+sub_child/group2/dst_0/dst_link/src_link' brings you right back to the
+contents of sub_parent/group1/parent.  Am I right?
+
+> So once the sub_child/group2/dest_0/dst_link has been created to back to
+> sub_child/group1/src_0/src_link, the oops will appear any time that
+> 'unlink sub_child/group1/src_0/src_link' is called while the second
+> group2/dst_0/dst_link is still present.  I don't recall the actual
+> backtrace of the OOPs that occurs when the unlink(2) is called, but it
+> is easily reproducable .
+
+	I'm confused.  Above it appears that
+sub_child/group2/dst_0/dst_link -> ../../group1/src_0, but this
+paragraph suggests that sub_child/group2/dst_0/dst_link ->
+../../group1/src_0/src_link.  Which is it?
+
+> I am really starting to think that fixing this properly below the struct
+> config_item_operations API is going to make the most sense, but I have
+> not realized this in a patch for fs/configfs/ just yet..  I am happy to
+> do this in the next days if you think this would be the cleanest
+> resolution for the above case.
+
+	My big question is whether the oops comes from something
+configfs is doing wrong when symlinking symlinks, or if your module is
+just surprised when things change.  If the former, it needs to be fixed
+in configfs.  It shouldn't require a hook for your module to avoid
+configfs breakage.  If it is the latter, and your module needs to know
+not to break itself, then we discuss how to help it.
+
+Joel
+
+-- 
+
+"Friends may come and go, but enemies accumulate." 
+        - Thomas Jones
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
