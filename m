@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690Ab0IHP14 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 11:27:56 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45641 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619Ab0IHP1z (ORCPT
+	id S1755765Ab0IHP2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 11:28:14 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34228 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab0IHP2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 11:27:55 -0400
+	Wed, 8 Sep 2010 11:28:13 -0400
+From: fabio de francesco <fabio@metanix.org>
+Organization: metanix.org
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [process scheduler] Possible bug in context_swich()?
+Date: Wed, 8 Sep 2010 17:28:17 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-tuxonice-r1-100826; KDE/4.4.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <1283957657-17740-1-git-send-email-andi@firstfloor.org>
-References: <1283957657-17740-1-git-send-email-andi@firstfloor.org>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 8 Sep 2010 17:27:37 +0200
-Message-ID: <AANLkTimwX_RQfdqbotgdZax-=MLATi7WjsBjkZ+86aaw@mail.gmail.com>
-Subject: Re: [PATCH] SYSFS: Allow boot time switching between deprecated and
- modern sysfs layout v2
-To: Andi Kleen <andi@firstfloor.org>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, axboe@kernel.dk
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009081728.18227.fabio@metanix.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 8, 2010 at 16:54, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> I have some systems which need legacy sysfs due to old udev versions,
-> and it's a big hazzle to compile separate kernels for them.
+Dear List,
 
-It's not udev, it's other tools making wrong assumptions like that
-directories can not be a symlink to a directory, or that a device is
-always the same parent device. It's also not udev which fails on newer
-installations, it's the lack of information in the non-extensible
-deprecated layout which makes all sorts of tools fail. So please
-work-off the text from the old help text instead of blaming the wrong
-things here. :)
+My previous mails to you have gone unheard... my last chance...
 
-Kay
+In context_switch() (in linux/kernel/sched.c), starting with release 2.6.33, 
+two "unlikely" macro  have been changed to "likely". I think the previous 
+logic was right while the latter is wrong.
+
+In case I am missing something I, please, ask someone to explain the above 
+mentioned inversion of logic through releases.
+
+Thanks in advance.
+
+fabio
+
