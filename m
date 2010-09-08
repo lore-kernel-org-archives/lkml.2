@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795Ab0IHQ7d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 12:59:33 -0400
-Received: from waste.org ([173.11.57.241]:37750 "EHLO waste.org"
+	id S1756405Ab0IHRAx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 13:00:53 -0400
+Received: from ns2.cypress.com ([157.95.67.5]:41312 "EHLO ns2.cypress.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752627Ab0IHQ7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 12:59:31 -0400
-Subject: Re: 2.6.36-rc2 : slabtop report 10170292 size-32 objects...
-From: Matt Mackall <mpm@selenic.com>
-To: Paul Rolland <rol@as2917.net>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>
-In-Reply-To: <20100901115507.705fe5e4@tux.DEF.witbe.net>
-References: <20100901113525.04b356c5@tux.DEF.witbe.net>
-	 <AANLkTimnBG1qcLwZoEkr_iDkwE4zygLdjFJHVk9S3+wZ@mail.gmail.com>
-	 <20100901115507.705fe5e4@tux.DEF.witbe.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Sep 2010 11:59:27 -0500
-Message-ID: <1283965167.2964.17.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	id S1753100Ab0IHRAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 13:00:52 -0400
+Reply-To: <david.cross@cypress.com>
+From: "David Cross" <david.cross@cypress.com>
+To: "'Greg KH'" <greg@kroah.com>
+Cc: <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+References: <1283887607.7250.10.camel@odc-laptop> <20100907235800.GD12823@kroah.com>
+Subject: RE: [PATCH] gpmc, EXPORT_SYMBOLS, west bridge related
+Date: Wed, 8 Sep 2010 10:00:33 -0700
+Organization: Cypress Semiconductor
+Message-ID: <701AE2655D844F9AAB5F2492AD477066@stanford.edu>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: ActO7FZ1Tnp73YSVQkCSDCiytfU9PwAijOUA
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+In-Reply-To: <20100907235800.GD12823@kroah.com>
+X-Brightmail-Tracker: AAAAAA==
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-01 at 11:55 +0200, Paul Rolland wrote:
-> Hi Pekka,
-> 
-> On Wed, 1 Sep 2010 12:41:59 +0300
-> Pekka Enberg <penberg@kernel.org> wrote:
-> 
-> > On Wed, Sep 1, 2010 at 12:35 PM, Paul Rolland <rol@as2917.net> wrote:
-> > > I was surprised to see my machine using so much swap when I couldn't
-> > > find where all the memory was gone, and I checked quickly what slabtop
-> > > had to say, and found that one :
-> > >
-> > >  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
-> > > 10172288 10171996  99%    0.03K  90824      112    363296K size-32
-> > >
+
+> From: Greg KH [mailto:greg@kroah.com] 
+
+> On Tue, Sep 07, 2010 at 12:26:47PM -0700, David Cross wrote:
+> > This patch exports some of the gpmc driver functions in OMAP3. The
+purpose behind this patch 
+> > is to allow device drivers compiled as loadable modules to be interfaced
+> to the GPMC. I am
+> > hoping that Tony is the correct maintainer and willing to ACK this
+change. Please let me know 
+> > if there are any issues or concerns with this patch.
+> > Thanks,
+> > David
 > > 
-> > Might be related to this:
+> > Signed-off-by: David Cross <david.cross@cypress.com>
 > > 
-> > http://kerneltrap.org/mailarchive/linux-kernel/2010/8/25/4611329
->  
-> Yes, considering that lspci also confirms my machine has some common points 
-> with Matt's one :
+> > diff -uprN -X linux-next-vanilla/Documentation/dontdiff
+linux-next-vanilla/arch/arm/mach-omap2/gpmc.c
+linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c
+> > --- linux-next-vanilla/arch/arm/mach-omap2/gpmc.c	2010-08-31
+19:32:51.000000000 -0700
+> > +++ linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c	2010-09-01
+16:10:21.000000000 -0700
+> > @@ -133,6 +133,7 @@ void gpmc_cs_write_reg(int cs, int idx, 
+> >  	reg_addr = gpmc_base + GPMC_CS0_OFFSET + (cs * GPMC_CS_SIZE) + idx;
+> >  	__raw_writel(val, reg_addr);
+> >  }
+> > +EXPORT_SYMBOL(gpmc_cs_write_reg);
 
-For the record, I'm using a conventional 2D window manager so the leak
-is somewhere in that path.
+> EXPORT_SYMBOL_GPL() perhaps?
 
--- 
-Mathematics is the supreme nostalgia of our time.
+I don't have an issue with that, though I am not sure I understand why we
+would want to limit the usage of the function to GPL'd modules. It is
+probably Tony's call assuming he is ok with exporting the symbol.
 
+> What about platforms that don't have this symbol, how will the driver
+> build properly then?
+The driver will require some sort of HAL to build, this is part of the
+reason for the Kconfig changes. They require a HAL to be selected before the
+driver can be included. A platform which does not have a gpmc specifically
+will have some method of configuring the memory interface to talk with an
+external chip. In that case, whatever functions are used for memory
+interface configuration will be used.
+
+> Shouldn't something like this be in a arch-neutral
+> place in the kernel tree?
+I don't think so, the inclusion of west bridge is architecture specific
+based on the need to configure an external memory interface to talk to it.
+
+Thanks,
+david
+
+
+
+
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
 
