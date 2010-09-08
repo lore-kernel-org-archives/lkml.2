@@ -1,69 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758469Ab0IHIW4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 04:22:56 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:35176 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758390Ab0IHIWx (ORCPT
+	id S1758491Ab0IHIYP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 04:24:15 -0400
+Received: from mx4.sophos.com ([74.202.89.161]:37846 "EHLO mx4.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758458Ab0IHIYM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 04:22:53 -0400
-Date: Wed, 8 Sep 2010 18:22:49 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [2.6.36-rc3] Workqueues, XFS, dependencies and deadlocks
-Message-ID: <20100908082249.GT705@dastard>
-References: <20100907072954.GM705@dastard>
- <4C86003B.6090706@kernel.org>
- <20100907100108.GN705@dastard>
- <4C861582.6080102@kernel.org>
- <4C862F8E.7030507@kernel.org>
+	Wed, 8 Sep 2010 04:24:12 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Eric Paris <eparis@redhat.com>
+Subject: Re: [BUG][PATCH][2.6.36-rc3] fanotify: Do not ignore result of permission decisions
+Date: Wed, 8 Sep 2010 09:24:04 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+References: <201009071608.02290.tvrtko.ursulin@sophos.com>
+In-Reply-To: <201009071608.02290.tvrtko.ursulin@sophos.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C862F8E.7030507@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <201009080924.04841.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 08/09/2010 09:24:06,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 08/09/2010 09:24:10,
+	Serialize complete at 08/09/2010 09:24:10
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 02:26:54PM +0200, Tejun Heo wrote:
-> On 09/07/2010 12:35 PM, Tejun Heo wrote:
-> > Can you please help me a bit more?  Are you saying the following?
-> > 
-> > Work w0 starts execution on wq0.  w0 tries locking but fails.  Does
-> > delay(1) and requeues itself on wq0 hoping another work w1 would be
-> > queued on wq0 which will release the lock.  The requeueing should make
-> > w0 queued and executed after w1, but instead w1 never gets executed
-> > while w0 hogs the CPU constantly by re-executing itself.  Also, how
-> > does delay(1) help with chewing up CPU?  Are you talking about
-> > avoiding constant lock/unlock ops starving other lockers?  In such
-> > case, wouldn't cpu_relax() make more sense?
-> 
-> Ooh, almost forgot.  There was nr_active underflow bug in workqueue
-> code which could lead to malfunctioning max_active regulation and
-> problems during queue freezing, so you could be hitting that too.  I
-> sent out pull request some time ago but hasn't been pulled into
-> mainline yet.  Can you please pull from the following branch and add
-> WQ_HIGHPRI as discussed before and see whether the problem is still
-> reproducible?
 
-Ok, it looks as if the WQ_HIGHPRI is all that was required to avoid
-the log IO completion starvation livelocks. I haven't yet pulled
-the tree below, but I've now created about a billion inodes without
-seeing any evidence of the livelock occurring.
+Improved version of the fix which does not include the check
+when permission events are not enabled in configuration and
+stops processing if no interesting events remain.
 
-Hence it looks like I've been seeing two livelocks - one caused by
-the VM that Mel's patches fix, and one caused by the workqueue
-changeover that is fixed by the WQ_HIGHPRI change.
+Current code ignores access replies to permission decisions so
+fix it in a way which will allow all listeners to still receive
+non permission events.
 
-Thanks for you insights, Tejun - I'll push the workqueue change
-through the XFS tree to Linus.
+Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+---
+ fs/notify/fsnotify.c             |   32 ++++++++++++++++++++++++--------
+ include/linux/fsnotify_backend.h |    4 ++++
+ 2 files changed, 28 insertions(+), 8 deletions(-)
 
-Cheers,
+diff --git a/fs/notify/fsnotify.c b/fs/notify/fsnotify.c
+index 3680242..2350a53 100644
+--- a/fs/notify/fsnotify.c
++++ b/fs/notify/fsnotify.c
+@@ -224,7 +224,7 @@ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
+        struct fsnotify_group *inode_group, *vfsmount_group;
+        struct fsnotify_event *event = NULL;
+        struct vfsmount *mnt;
+-       int idx, ret = 0;
++       int idx, ret = 0, res;
+        /* global tests shouldn't care about events on child only the specific event */
+        __u32 test_mask = (mask & ~FS_EVENT_ON_CHILD);
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+@@ -275,20 +275,36 @@ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
+
+                if (inode_group > vfsmount_group) {
+                        /* handle inode */
+-                       send_to_group(to_tell, NULL, inode_mark, NULL, mask, data,
+-                                     data_is, cookie, file_name, &event);
++                       res = send_to_group(to_tell, NULL, inode_mark, NULL, mask, data,
++                                           data_is, cookie, file_name, &event);
+                        /* we didn't use the vfsmount_mark */
+                        vfsmount_group = NULL;
+                } else if (vfsmount_group > inode_group) {
+-                       send_to_group(to_tell, mnt, NULL, vfsmount_mark, mask, data,
+-                                     data_is, cookie, file_name, &event);
++                       res = send_to_group(to_tell, mnt, NULL, vfsmount_mark, mask, data,
++                                           data_is, cookie, file_name, &event);
+                        inode_group = NULL;
+                } else {
+-                       send_to_group(to_tell, mnt, inode_mark, vfsmount_mark,
+-                                     mask, data, data_is, cookie, file_name,
+-                                     &event);
++                       res = send_to_group(to_tell, mnt, inode_mark, vfsmount_mark,
++                                           mask, data, data_is, cookie, file_name,
++                                           &event);
+                }
+
++#ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
++               /* If a listener denied on a permission event we will remember the reason
++                  and run the rest with a non-permission mask only. This allows other
++                  listeners to receive non-permission notifications but we do not care
++                  about further permission checks and want to deny this event. */
++               if (unlikely((res == -EPERM) && (mask & FS_ALL_PERM_EVENTS))) {
++                       mask &= ~FS_ALL_PERM_EVENTS;
++                       ret = res;
++                       /* Stop processing if no interesting events remains. */
++                       if (!(mask & (ALL_FSNOTIFY_EVENTS & ~FS_EVENT_ON_CHILD)))
++                               break;
++               }
++#else
++               (void)res;
++#endif
++
+                if (inode_group)
+                        inode_node = srcu_dereference(inode_node->next,
+                                                      &fsnotify_mark_srcu);
+diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
+index e40190d..c8aea03 100644
+--- a/include/linux/fsnotify_backend.h
++++ b/include/linux/fsnotify_backend.h
+@@ -64,6 +64,10 @@
+
+ #define FS_MOVE                        (FS_MOVED_FROM | FS_MOVED_TO)
+
++/* All events which require a permission response from userspace */
++#define FS_ALL_PERM_EVENTS (FS_OPEN_PERM |\
++                           FS_ACCESS_PERM)
++
+ #define ALL_FSNOTIFY_EVENTS (FS_ACCESS | FS_MODIFY | FS_ATTRIB | \
+                             FS_CLOSE_WRITE | FS_CLOSE_NOWRITE | FS_OPEN | \
+                             FS_MOVED_FROM | FS_MOVED_TO | FS_CREATE | \
+
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
