@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab0IHWPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 18:15:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39727 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756167Ab0IHWPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 18:15:48 -0400
-Message-ID: <4C880B12.3040200@zytor.com>
-Date: Wed, 08 Sep 2010 15:15:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Nick Lowe <nick.lowe@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Promoting Crusoe and Geode Processors to i686 Status
-References: <AANLkTimqn6=uzE9FawJkWe3w3+AipiMUUcjLd8fo48s1@mail.gmail.com>	<AANLkTim0GX8bmZu8j5wVs11QFCmKjNK2MBkV7Mcha_Ae@mail.gmail.com>	<4C880278.3060108@zytor.com> <AANLkTimp5kh3Wg5kzfCWq0Rz3uCL7ivu+TED1oHcFDP8@mail.gmail.com>
-In-Reply-To: <AANLkTimp5kh3Wg5kzfCWq0Rz3uCL7ivu+TED1oHcFDP8@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756413Ab0IHWUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 18:20:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47389 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756220Ab0IHWUD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 18:20:03 -0400
+Date: Wed, 8 Sep 2010 15:19:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "M. Vefa Bicakci" <bicave@superonline.com>, stable@kernel.org
+Subject: Re: [PATCH] vmscan: check all_unreclaimable in direct reclaim path
+Message-Id: <20100908151929.2586ace5.akpm@linux-foundation.org>
+In-Reply-To: <20100908154527.GA5936@barrios-desktop>
+References: <1283697637-3117-1-git-send-email-minchan.kim@gmail.com>
+	<20100908054831.GB20955@cmpxchg.org>
+	<20100908154527.GA5936@barrios-desktop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2010 03:14 PM, Nick Lowe wrote:
-> Hi,
-> 
-> Here goes...
-> 
-> -mtune tunes the binary for given architecture. This as opposed to
-> defining the baseline architecture, and thus available instruction
-> set, which -march does.
-> 
-> I believe that -mtune is predominantly used for instruction
-> scheduling. GCC uses it when it's reordering instructions to optimise
-> for specific micro-architecture over others.
-> 
-> With -mtune=i686, I am of the opinion that you instruct the compiler,
-> and give it the opportunity, to deliver a better ordering of the
-> instructions. In this case, better ordering for i686 than you would
-> get with -mtune=generic32.
-> 
-> I'm probably wrong somehow, it's probably marginal, and I'll concede
-> to your infinitely better knowledge any day! That's why I phrased it
-> as a question! :)
-> 
+On Thu, 9 Sep 2010 00:45:27 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-We don't pass -mtune=generic32 to gcc.  We pass -Wa,-mtune=generic32 to
-gcc, which affects binutils only.
+> +static inline bool zone_reclaimable(struct zone *zone)
+> +{
+> +	return zone->pages_scanned < zone_reclaimable_pages(zone) * 6;
+> +}
+> +
+> +static inline bool all_unreclaimable(struct zonelist *zonelist,
+> +		struct scan_control *sc)
+> +{
+> +	struct zoneref *z;
+> +	struct zone *zone;
+> +	bool all_unreclaimable = true;
+> +
+> +	if (!scanning_global_lru(sc))
+> +		return false;
+> +
+> +	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+> +			gfp_zone(sc->gfp_mask), sc->nodemask) {
+> +		if (!populated_zone(zone))
+> +			continue;
+> +		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+> +			continue;
+> +		if (zone_reclaimable(zone)) {
+> +			all_unreclaimable = false;
+> +			break;
+> +		}
+> +	}
+> +
+>  	return all_unreclaimable;
+>  }
 
-	-hpa
+Could we have some comments over these functions please?  Why they
+exist, what problem they solve, how they solve them, etc.  Stuff which
+will be needed for maintaining this code three years from now.
+
+We may as well remove the `inline's too.  gcc will tkae care of that.
+
+> -		if (nr_slab == 0 &&
+> -		   zone->pages_scanned >= (zone_reclaimable_pages(zone) * 6))
+> +		if (nr_slab == 0 && !zone_reclaimable(zone))
+
+Extra marks for working out and documenting how we decided on the value
+of "6".  Sigh.  It's hopefully in the git record somewhere.
