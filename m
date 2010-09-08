@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758730Ab0IHMqK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 08:46:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44202 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756295Ab0IHMqF convert rfc822-to-8bit (ORCPT
+	id S1758766Ab0IHMqj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 08:46:39 -0400
+Received: from n6.bullet.mail.gq1.yahoo.com ([98.137.27.133]:35956 "HELO
+	n6.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756263Ab0IHMqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 08:46:05 -0400
-Subject: Re: [RFC 3/4] Disable scheduler tick when we are running
- SCHED_FIFO tasks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jan Blunck <jblunck@suse.de>
-Cc: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
-        linux-rt-users@vger.kernel.org,
-        Sven-Thorsten Dietrich <sdietrich@novell.com>,
-        Michael Galbraith <MGalbraith@novell.com>
-In-Reply-To: <1283948964-6418-4-git-send-email-jblunck@suse.de>
-References: <1283948964-6418-1-git-send-email-jblunck@suse.de>
-	 <1283948964-6418-4-git-send-email-jblunck@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 08 Sep 2010 14:45:43 +0200
-Message-ID: <1283949943.23762.16.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 8 Sep 2010 08:46:34 -0400
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 405368.18978.bm@omp118.mail.gq1.yahoo.com
+Message-ID: <201860.99499.qm@web1209.biz.mail.gq1.yahoo.com>
+X-YMail-OSG: KfkfPLEVM1k9o2Z9rIQqHaA2LnOoJQAiSllX2kmpZuA5tab
+ rbdCd1aDw9X5kcdEo_rpzPIu3p3gfOs3JidnFjUe3Ow8LM7d.Xy.pUWdFzHn
+ 9AYxVzKHSdfDKx9tzsW.jbVB0pHid67mXdez3beO4MhPUmU6DsRCPDVP_gcN
+ vduAUNePilC3Ab1qpu2bIAvDsGivX9EPnYPcRoTbL1_5k1n126fV.Ovb5sQb
+ EOU5KisdbFpJNxW2c.2JQ_jDdnXkLsimKw8RZaAvXjBrWqlSQTWut1wXZSVn
+ JBMwDT84FCJhZJ7i5IPgFx5wN8HJFmhEi0s2koNhqJk16moIbDwTZW.tpn.2
+ GhozaAAyk_ZlUwfJB7YtB4LIv_pleYox8a2sDMrpb_UC9CrbL7Ubo69EwIxI
+ aAkgnn.Ae8AKUYqyMnugNdkoY2IFdHBTH
+X-RocketYMMF: superjet5@att.net
+X-Mailer: YahooMailClassic/11.4.7 YahooMailWebService/0.8.105.279950
+Date: Wed, 8 Sep 2010 05:46:34 -0700 (PDT)
+From: "Ms.Marie" <mssmyap@hotmail.com>
+Reply-To: mssmbyapo@gmail.com
+Subject: reply me
+To: undisclosed recipients:;
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-08 at 14:29 +0200, Jan Blunck wrote:
-> This patch is disabling the scheduler tick to go off when there is a task
-> with SCHED_FIFO policy running. Since these tasks are not timesliced anyway
-> we only care about timers, softirqs and such stuff just like when we disable
-> the tick during idle periods.
-> 
 
-Also, doesn't this break any and all jiffies users?
+Dearest, 
+Please, I do not have former relationship with you but because of my
+present predicament I want to confide my life to you, I know I am taking risk but it is my best option at present please, accept me.
+I want you to help me to transfer my inheritance for investment purpose in your country. Please, I am anticipating your urgent reply
+Thanks
+Ms marie Yapo
 
-And you need to restart the tick on call_rcu() and everything else that
-requires the tick for processing.
+
 
