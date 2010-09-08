@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab0IHFzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 01:55:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45932 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab0IHFza (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 01:55:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=sNTKmQMGKUZ6cC3sw0uZ90nK/vu9AexCfFU3dCJtcgeX6RpahzXq48DLEjRW1nvEDy
-         hycAydMUHJkBZcr7S5cYiSMEG/4Mtnmeq1/b4n/wWLZB1dhy0Hsc6n3AvhoSKMHbpmVC
-         K8OBZIg8XhdeOXa+n5PkaMmRtuoeriQC9Bxk4=
-Subject: Re: [PATCH] netlink: Fix kfree NULL pointer
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: jovi zhang <bookjovi@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@openvz.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <AANLkTim+=vj+k3=1hzT3=J4ssOopp5Eq=g+DHis=pZFN@mail.gmail.com>
-References: <AANLkTikp0m8cQYfEBHP_E8XpGZqdMj6Cr4M=aWCnei=X@mail.gmail.com>
-	 <1283923185.2634.772.camel@edumazet-laptop>
-	 <AANLkTim+=vj+k3=1hzT3=J4ssOopp5Eq=g+DHis=pZFN@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 08 Sep 2010 07:55:24 +0200
-Message-ID: <1283925324.2634.843.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1757191Ab0IHF6u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 01:58:50 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:46387 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756142Ab0IHF6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 01:58:47 -0400
+Date: Wed, 8 Sep 2010 07:58:45 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (em, bedded platforms)" <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 7/8] drivers/i2c/busses/i2c-amd8111.c: Fix unsigned return
+ type
+Message-ID: <Pine.LNX.4.64.1009080757050.27892@ask.diku.dk>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 08 septembre 2010 à 13:33 +0800, jovi zhang a écrit :
+From: Julia Lawall <julia@diku.dk>
 
-> YES, maybe kfree(NULL) is legal, but I cannot see there have any need
-> to invoke kfree(NULL) in this function.
->  Also I check kfree usage in other code, I havn't find any kfree(NULL) usage.
+In each case, the function has an unsigned return type, but returns a
+negative constant to indicate an error condition.  The result of calling
+the function is always stored in a variable of type (signed) int, and thus
+unsigned can be dropped from the return type.
 
-We have hundred call sites doing kfree(NULL), if it makes code shorter.
+A sematic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-Its usually code path handling exceptions (errors if you prefer), and we
-prefer to use ugly gotos, and even kfree(NULL), to make it as short as
-possible.
+// <smpl>
+@exists@
+identifier f;
+constant C;
+@@
 
+ unsigned f(...)
+ { <+...
+*  return -C;
+ ...+> }
+// </smpl>
 
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/i2c/busses/i2c-amd8111.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-amd8111.c b/drivers/i2c/busses/i2c-amd8111.c
+index af1e5e2..02a3726 100644
+--- a/drivers/i2c/busses/i2c-amd8111.c
++++ b/drivers/i2c/busses/i2c-amd8111.c
+@@ -69,7 +69,7 @@ static struct pci_driver amd8111_driver;
+  * ACPI 2.0 chapter 13 access of registers of the EC
+  */
+ 
+-static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
++static int amd_ec_wait_write(struct amd_smbus *smbus)
+ {
+ 	int timeout = 500;
+ 
+@@ -85,7 +85,7 @@ static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
+ 	return 0;
+ }
+ 
+-static unsigned int amd_ec_wait_read(struct amd_smbus *smbus)
++static int amd_ec_wait_read(struct amd_smbus *smbus)
+ {
+ 	int timeout = 500;
+ 
 
