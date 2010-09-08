@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab0IHQvB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 12:51:01 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:35693 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773Ab0IHQu7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 12:50:59 -0400
-From: Colin Cross <ccross@android.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Lei Wen <adrian.wenl@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mandeep Baines <msb@chromium.org>,
-        Colin Cross <ccross@android.com>
-Subject: [PATCH] mmc_block: Allow more than 8 partitions per card
-Date: Wed,  8 Sep 2010 09:50:37 -0700
-Message-Id: <1283964637-28246-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <AANLkTinUNpWsu=AY+1EeG8xznPaESL8XnjGo7613yoMt@mail.gmail.com>
-References: <AANLkTinUNpWsu=AY+1EeG8xznPaESL8XnjGo7613yoMt@mail.gmail.com>
-X-System-Of-Record: true
+	id S1756151Ab0IHQvv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 12:51:51 -0400
+Received: from ns2.cypress.com ([157.95.67.5]:40984 "EHLO ns2.cypress.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753512Ab0IHQvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 12:51:48 -0400
+Reply-To: <david.cross@cypress.com>
+From: "David Cross" <david.cross@cypress.com>
+To: <dhowells@redhat.com>
+Cc: <linux-cachefs@redhat.com>, <greg@kroah.com>,
+        <linux-kernel@vger.kernel.org>
+References: <1283888011.7250.17.camel@odc-laptop> <4313.1283956531@redhat.com>
+Subject: RE: [PATCH] Cachefiles, mpage_cleardirty addtition, west bridge related
+Date: Wed, 8 Sep 2010 09:51:22 -0700
+Organization: Cypress Semiconductor
+Message-ID: <9465F8A421744836B35704023ECA8253@stanford.edu>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: ActPYx0sJldoARoJRmyiY0nqvPZdswAEntqQ
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+In-Reply-To: <4313.1283956531@redhat.com>
+X-Brightmail-Tracker: AAAAAA==
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the GENHD_FL_EXT_DEVT flag, which will allocate minor numbers
-in major 259 for partitions past disk->minors.
 
-Also remove the use of disk_devt to determine devidx from md->disk.
-md->disk->first_minor is always initialized from devidx and can
-always be used to recover it.
+> From: dhowells@redhat.com [mailto:dhowells@redhat.com] 
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
- drivers/mmc/card/block.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+> David Cross <david.cross@cypress.com> wrote:
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index d545f79..07d8eb0 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -87,11 +87,7 @@ static void mmc_blk_put(struct mmc_blk_data *md)
- 	mutex_lock(&open_lock);
- 	md->usage--;
- 	if (md->usage == 0) {
--		int devmaj = MAJOR(disk_devt(md->disk));
--		int devidx = MINOR(disk_devt(md->disk)) >> MMC_SHIFT;
--
--		if (!devmaj)
--			devidx = md->disk->first_minor >> MMC_SHIFT;
-+		int devidx = md->disk->first_minor >> MMC_SHIFT;
- 
- 		blk_cleanup_queue(md->queue.queue);
- 
-@@ -607,6 +603,7 @@ static struct mmc_blk_data *mmc_blk_alloc(struct mmc_card *card)
- 	md->disk->private_data = md;
- 	md->disk->queue = md->queue.queue;
- 	md->disk->driverfs_dev = &card->dev;
-+	md->disk->flags = GENHD_FL_EXT_DEVT;
- 
- 	/*
- 	 * As discussed on lkml, GENHD_FL_REMOVABLE should:
--- 
-1.7.1
+> > This patch adds the mpage_cleardirty function to the cachefiles >
+implementation in the kernel.
+
+> Ummm...  How is this used by cachefiles?  Nothing in this patch actually >
+uses
+> mpage_cleardirty().
+
+This is used by the current west bridge driver in the linux-next tree,
+marked as BROKEN at the moment. It is used in order to clear dirty pages
+from the page cache for a specific file after it has been allocated. This
+allows west bridge to transfer data from USB to storage directly without
+requiring that the file data path go through the CPU. The easiest way to
+think of this is that it allows for direct file based DMA. Please let me
+know if you have any additional questions or concerns on this.
+Thanks,
+David
+
+
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
 
