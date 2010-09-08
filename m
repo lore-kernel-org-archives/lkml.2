@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab0IHRvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 13:51:52 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45712 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab0IHRvq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 13:51:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Y2io6dZysKdL2025BbULfbZoQYMRE/EaEX+1hiH56eBYvn1CYRyAMoYM5UHXFRlI1N
-         oRt73xO5eCA8Xz3u3cjMFWEnt105j1szwXcl8rUWjOOJg/l1POhPwq3E9OTWH4jniDiZ
-         5QYjiM1x/KRwQtWBAfukgG6Wnjy48kwQWrUjE=
+	id S1752829Ab0IHSEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 14:04:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46157 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752443Ab0IHSEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 14:04:13 -0400
+Message-ID: <4C87CFFC.8050709@zytor.com>
+Date: Wed, 08 Sep 2010 11:03:40 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <20100908185605.55671889@lxorguk.ukuu.org.uk>
-References: <fmbxh-5N8-41@gated-at.bofh.it>
-	<55BC9463-95B9-4034-AA1E-55042D6E9354@gmail.com>
-	<201009081115.15544.hpj@urpla.net>
-	<AANLkTi=U40mzeMh-UJJy=ggVDry2qDWW-MYYyBhS_Kex@mail.gmail.com>
-	<20100908185605.55671889@lxorguk.ukuu.org.uk>
-Date: Wed, 8 Sep 2010 18:51:46 +0100
-Message-ID: <AANLkTi=khD7fSVv_tC6TogimjJshEErj6Em8mCcDF+SM@mail.gmail.com>
-Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
-From: Nick Lowe <nick.lowe@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Hans-Peter Jansen <hpj@urpla.net>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andi Kleen <andi@firstfloor.org>
+CC: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
+References: <20100901213318.19353.54619.stgit@localhost.localdomain>	<20100902065731.GB29972@elte.hu>	<20100902100308.GA17167@basil.fritz.box>	<20100903063934.GA25863@elte.hu> <1283888337.18468.9.camel@pjaxe>	<4C869AA3.6000103@zytor.com> <87wrqwiv1l.fsf@basil.nowhere.org>
+In-Reply-To: <87wrqwiv1l.fsf@basil.nowhere.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/07/2010 11:55 PM, Andi Kleen wrote:
+> "H. Peter Anvin" <hpa@zytor.com> writes:
+>>
+>> If this is a production BIOS it should have this information.
+> 
+> The point was -- it wasn't a production BIOS and the production
+> BIOS will be fixed.
+> 
 
-It would only be through back-porting a form of this patch that it
-would affect existing distributions, surely?
+>From the original description:
 
-Why should it make it to the stable tree and a new kernel, though? The
-chances are that if a distribution moves to a new kernel, they'll move
-all the other packages up with it.
+This patch adds a boot parameter to allow a kernel to be booted
+with the option to skip the SRAT check.  There are BIOSes in
+                                         ^^^^^^^^^^^^^^^^^^^
+production that have these failures, so this will allow people
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+in the field to work around these BIOS issues.
 
-The Latest Ubuntu, for example, has been compiled against a version of
-binutils that does not have this problem.
 
-And nobody has answered what happens when NOPLs are used to
-synchronise with something else? Surely that can lead to subtle, hard
-to debug breakage? Isn't that plain worse than refusing to run or
-breaking out of execution?
+Agreed that command-line option is a good thing to have in general and
+that it is not necessary to have DMI quirks for preproduction BIOSes.
 
-A CMOV was never used in that way so the fact it took longer to trap
-and execute an emulation wouldn't have been a problem.
+	-hpa
 
-Cheers,
 
-Nick
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-On Wed, Sep 8, 2010 at 6:56 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> If a process crashes because of NOPL usage, you get the feedback loop to fix it.
->
-> Trouble is that means rebuilding entire distributios, who don't
-> neccessarily care about Geode. We had the same problem before with cmov
-> and the VIA processors, GCC programmers didn't read the Intel PPro
-> manual and got it wrong but it was the end users who suffered, and most of
-> them were not in a position to rebuild their distro (and every security
-> update, and test them all ...) and their distro didn't care.
->
-> So lots of people ran a kernel with a CMOV hack in it - never got
-> mainstream which is unfortunate because if it had it would have helped
-> a lot more people and had the hole in it fixed.
->
->> The beauty of open source is that we can recompile to correct the bad
->> assumption; the latest version of binutils (GAS) finally corrects the
->> bad semantic that generic i686 includes NOPL.
->
-> And the reality is that this won't happen. Yes you can do it but it's an
-> enormously slow and inefficient way to tackle the problem.
->
-> So the patch (corrected) makes complete sense.
->
-> Alan
->
