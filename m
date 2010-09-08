@@ -1,69 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab0IHXM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 19:12:26 -0400
-Received: from [69.28.251.93] ([69.28.251.93]:47035 "EHLO b32.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932093Ab0IHXMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 19:12:21 -0400
-From: Kevin Cernekee <cernekee@gmail.com>
-Date: Wed, 8 Sep 2010 16:02:14 -0700
-Subject: [PATCH 2/3] MIPS: Allow UserLocal on MIPS_R1 processors
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-Message-Id: <d57a8d9cc346a9235a93e528beac4c40@localhost>
-In-Reply-To: <064bb0722da5d8c271c2bd9fe0a521cc@localhost>
-References: <064bb0722da5d8c271c2bd9fe0a521cc@localhost>
-User-Agent: vim 7.2
+	id S932151Ab0IHXMe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 19:12:34 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:38565 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101Ab0IHXMX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 19:12:23 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [RFC PATCH 1/1] PCI: override BIOS/firmware resource allocation
+Date: Wed, 8 Sep 2010 17:11:49 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        clemens@ladisch.de, Yinghai Lu <yinghai@kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <20100908065958.GA27447@ram-laptop> <201009081435.14209.bjorn.helgaas@hp.com> <20100908214438.GD27447@ram-laptop>
+In-Reply-To: <20100908214438.GD27447@ram-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201009081711.49458.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some MIPS32R1 processors implement UserLocal (RDHWR $29) to accelerate
-programs that make extensive use of thread-local storage.  Therefore,
-setting up the HWRENA register should not depend on cpu_has_mips_r2.
+On Wednesday, September 08, 2010 03:44:38 pm Ram Pai wrote:
+> On Wed, Sep 08, 2010 at 02:35:13PM -0600, Bjorn Helgaas wrote:
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- arch/mips/kernel/traps.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+> > What specific problem are you solving?  Does this patch enable
+> > us to assign resources to a device that previously had none?
+> > A concrete example might help.
+> 
+> On machines with BIOS/uEFI that is unaware of SRIOV BARs, the BIOS/uEFI
+> fails to allocate memory resources to the SRIOV BARs of PCIe functions.
+> On such machines PCI-e Virtual functions cannot be enabled. 
 
-diff --git a/arch/mips/kernel/traps.c b/arch/mips/kernel/traps.c
-index 03ec001..ec6cbd2 100644
---- a/arch/mips/kernel/traps.c
-+++ b/arch/mips/kernel/traps.c
-@@ -1469,6 +1469,7 @@ void __cpuinit per_cpu_trap_init(void)
- {
- 	unsigned int cpu = smp_processor_id();
- 	unsigned int status_set = ST0_CU0;
-+	unsigned int hwrena = cpu_hwrena_impl_bits;
- #ifdef CONFIG_MIPS_MT_SMTC
- 	int secondaryTC = 0;
- 	int bootTC = (cpu == 0);
-@@ -1501,14 +1502,14 @@ void __cpuinit per_cpu_trap_init(void)
- 	change_c0_status(ST0_CU|ST0_MX|ST0_RE|ST0_FR|ST0_BEV|ST0_TS|ST0_KX|ST0_SX|ST0_UX,
- 			 status_set);
- 
--	if (cpu_has_mips_r2) {
--		unsigned int enable = 0x0000000f | cpu_hwrena_impl_bits;
-+	if (cpu_has_mips_r2)
-+		hwrena |= 0x0000000f;
- 
--		if (!noulri && cpu_has_userlocal)
--			enable |= (1 << 29);
-+	if (!noulri && cpu_has_userlocal)
-+		hwrena |= (1 << 29);
- 
--		write_c0_hwrena(enable);
--	}
-+	if (hwrena)
-+		write_c0_hwrena(hwrena);
- 
- #ifdef CONFIG_MIPS_MT_SMTC
- 	if (!secondaryTC) {
--- 
-1.7.0.4
+I think you mean that an upstream bridge window might not be big
+enough to assign SR-IOV BARs, so we might have to reassign peers
+of the bridge so we can expand the window.  But a concrete example
+would make this clear.
 
+> Also on machines where BIOS/uEFI allocations conflict, the corresponding 
+> devices are disabled.
+
+What does it mean for BIOS allocations to conflict?  Two BARs that
+claim the same space?  Is that a BIOS defect?
+
+> This patch provides the user the ability to explicitly tell the kernel
+> to try and allocate resources to such devices or resolve any conflicts.
+> 
+> By default the kernel disables all devices that have conflicting or no
+> allocations.
+
+> > > Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+> > > 
+> > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > > index f084af0..eec068f 100644
+> > > --- a/Documentation/kernel-parameters.txt
+> > > +++ b/Documentation/kernel-parameters.txt
+> > > @@ -1961,6 +1961,21 @@ and is between 256 and 4096 characters. It is defined in the file
+> > >  				PAGE_SIZE is used as alignment.
+> > >  				PCI-PCI bridge can be specified, if resource
+> > >  				windows need to be expanded.
+> > > +		override=[off, conflict, always, <device>]
+> > > +				off : Do not override BIOS/firmware allocations. This is the 
+> > > +					default
+> > > +				conflict : override BIOS/firmware allocations if conflicting
+> > > +					or not allocated.
+> > > +				always : override all BIOS/firmware allocations
+> > > +				<device>: Format [<domain>:]<bus>:<slot>.<func>[; ...]
+> > > +					override BIOS/firmware allocations of specified
+> > > +					devices
+> > > +
+> > > +		clear=<device>
+> > > +				<device>: Format [<domain>:]<bus>:<slot>.<func>[; ...]
+> > > +					release BIOS/firmware allocations of specified
+> > > +					devices. By default no allocations are cleared.
+> > 
+> > I object in principle to new kernel parameters that users might need
+> > to use just to get their box to work.  How would a user know that he
+> > might need this option?  Isn't it possible for the kernel to figure
+> > that out automatically?
+> 
+> The user can use these options only if he/she realizes that some devices are 
+> disabled. These options are not needed in the normal case which is about 95% of
+> the time. But I need these parameter to get my box working with SRIOV adapters.
+> And I am sure they are needed for many other boxes that face similar issue.
+
+I don't think this is a very convincing argument.  As a user, I don't
+want to have to "realize some devices are disabled" and then grope
+around for an option to fix things up.  As a vendor, I don't want to
+have to mention stuff like this in release notes for machines that
+might need it.
+
+>From your other response:
+> Well Yanghai's patch, git commit 977d17bb1749517b353874ccdc9b85abc7a58c2a,
+> tried to automate the process. But it was error prone and caused regression.
+
+Is it actually impossible to do it automatically, or did we just
+not try hard enough?
+
+Bjorn
