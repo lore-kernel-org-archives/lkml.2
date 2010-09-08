@@ -1,61 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758627Ab0IHK3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 06:29:21 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:54027 "EHLO imr3.ericy.com"
+	id S1758617Ab0IHLET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 07:04:19 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:54395 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756942Ab0IHK3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 06:29:18 -0400
-Date: Wed, 8 Sep 2010 03:28:16 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwmon: Add support for max6695 and max6696 to lm90
- driver
-Message-ID: <20100908102816.GA10676@ericsson.com>
-References: <1283639675-31714-1-git-send-email-guenter.roeck@ericsson.com>
- <20100906181229.2e25db07@hyperion.delvare>
+	id S1752392Ab0IHLER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 07:04:17 -0400
+Date: Wed, 8 Sep 2010 12:04:03 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 03/10] writeback: Do not congestion sleep if there are
+	no congested BDIs or significant writeback
+Message-ID: <20100908110403.GB29263@csn.ul.ie>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie> <1283770053-18833-4-git-send-email-mel@csn.ul.ie> <20100907152533.GB4620@barrios-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100906181229.2e25db07@hyperion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100907152533.GB4620@barrios-desktop>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
-
-On Mon, Sep 06, 2010 at 12:12:29PM -0400, Jean Delvare wrote:
-> Hi Guenter,
-> 
-> On Sat, 4 Sep 2010 15:34:35 -0700, Guenter Roeck wrote:
-> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+On Wed, Sep 08, 2010 at 12:25:33AM +0900, Minchan Kim wrote:
+> On Mon, Sep 06, 2010 at 11:47:26AM +0100, Mel Gorman wrote:
+> > If congestion_wait() is called with no BDIs congested, the caller will sleep
+> > for the full timeout and this may be an unnecessary sleep. This patch adds
+> > a wait_iff_congested() that checks congestion and only sleeps if a BDI is
+> > congested or if there is a significant amount of writeback going on in an
+> > interesting zone. Else, it calls cond_resched() to ensure the caller is
+> > not hogging the CPU longer than its quota but otherwise will not sleep.
+> > 
+> > This is aimed at reducing some of the major desktop stalls reported during
+> > IO. For example, while kswapd is operating, it calls congestion_wait()
+> > but it could just have been reclaiming clean page cache pages with no
+> > congestion. Without this patch, it would sleep for a full timeout but after
+> > this patch, it'll just call schedule() if it has been on the CPU too long.
+> > Similar logic applies to direct reclaimers that are not making enough
+> > progress.
+> > 
+> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 > > ---
-> > To apply this patch, the previously submitted lm90 cleanup patch has to be
-> > applied first.
-> >
-> > My main concern with this patch is the chip detection code, specifically if it
-> > is able to safely distinguish between MAX6680/81 and MAX6695/96.
-> > Would be great to get some test coverage from a system with one of those chips.
+> > <SNIP>
+> > +/**
+> > + * congestion_wait - wait for a backing_dev to become uncongested
+>       wait_iff_congested
 > 
-> Unfortunately I don't have any of these Maxim chips at hand. I have an
-> ADM1032 but it won't offer much coverage obviously. And I have dumps of
-> Maxim chips, but the real chips behave differently, so it's of little
-> help.
+
+Fixed, thanks.
+
+> > + * @zone: A zone to consider the number of being being written back from
+> > + * @sync: SYNC or ASYNC IO
+> > + * @timeout: timeout in jiffies
+> > + *
+> > + * Waits for up to @timeout jiffies for a backing_dev (any backing_dev) to exit
+> > + * write congestion.  If no backing_devs are congested then the number of
+> > + * writeback pages in the zone are checked and compared to the inactive
+> > + * list. If there is no sigificant writeback or congestion, there is no point
+>                                                 and 
 > 
-Do you by any chance have register dumps of max6657/58/59 ?
 
-max6659 also supports a 3rd upper limit. Turns out it is convenient to add support
-for this limit first before adding support for max6696. To do that, I'll need
-to be able to distinguish between max6657/58 and max6659. My thought is to check
-for the address and if register 0x16 exists.
+Why and? "or" makes sense because we avoid sleeping on either condition.
 
-Also, do you happen to remember why address 0x4e for max6659 is not supported by the driver ?
-The code only says that it isn't supported, and it does not detect it, but there
-is not reason. sensors-detect does detect it at address 0x4e.
+> > + * in sleeping but cond_resched() is called in case the current process has
+> > + * consumed its CPU quota.
+> > + */
+> > +long wait_iff_congested(struct zone *zone, int sync, long timeout)
+> > +{
+> > +	long ret;
+> > +	unsigned long start = jiffies;
+> > +	DEFINE_WAIT(wait);
+> > +	wait_queue_head_t *wqh = &congestion_wqh[sync];
+> > +
+> > +	/*
+> > +	 * If there is no congestion, check the amount of writeback. If there
+> > +	 * is no significant writeback and no congestion, just cond_resched
+> > +	 */
+> > +	if (atomic_read(&nr_bdi_congested[sync]) == 0) {
+> > +		unsigned long inactive, writeback;
+> > +
+> > +		inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
+> > +				zone_page_state(zone, NR_INACTIVE_ANON);
+> > +		writeback = zone_page_state(zone, NR_WRITEBACK);
+> > +
+> > +		/*
+> > +		 * If less than half the inactive list is being written back,
+> > +		 * reclaim might as well continue
+> > +		 */
+> > +		if (writeback < inactive / 2) {
+> 
+> I am not sure this is best.
+> 
 
-Thanks,
-Guenter
+I'm not saying it is. The objective is to identify a situation where
+sleeping until the next write or congestion clears is pointless. We have
+already identified that we are not congested so the question is "are we
+writing a lot at the moment?". The assumption is that if there is a lot
+of writing going on, we might as well sleep until one completes rather
+than reclaiming more.
+
+This is the first effort at identifying pointless sleeps. Better ones
+might be identified in the future but that shouldn't stop us making a
+semi-sensible decision now.
+
+> 1. Without considering various speed class storage, could we fix it as half of inactive?
+
+We don't really have a good means of identifying speed classes of
+storage. Worse, we are considering on a zone-basis here, not a BDI
+basis. The pages being written back in the zone could be backed by
+anything so we cannot make decisions based on BDI speed.
+
+> 2. Isn't there any writeback throttling on above layer? Do we care of it in here?
+> 
+
+There are but congestion_wait() and now wait_iff_congested() are part of
+that. We can see from the figures in the leader that congestion_wait()
+is sleeping more than is necessary or smart.
+
+> Just out of curiosity. 
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
