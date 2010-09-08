@@ -1,275 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab0IHOyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 10:54:31 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58960 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755341Ab0IHOya (ORCPT
+	id S1755399Ab0IHOzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 10:55:42 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:49253 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751613Ab0IHOzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 10:54:30 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        axboe@kernel.dk
-Subject: [PATCH] SYSFS: Allow boot time switching between deprecated and modern sysfs layout v2
-Date: Wed,  8 Sep 2010 16:54:17 +0200
-Message-Id: <1283957657-17740-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.1
+	Wed, 8 Sep 2010 10:55:40 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: San Mehat <san@android.com>, Jens Axboe <axboe@kernel.dk>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH] block: block_dump: Add number of sectors to debug output
+Date: Wed, 8 Sep 2010 16:55:12 +0200
+Message-ID: <1283957712-772-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.3.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: San Mehat <san@android.com>
 
-I have some systems which need legacy sysfs due to old udev versions,
-and it's a big hazzle to compile separate kernels for them.
-
-This patch turns CONFIG_SYSFS_DEPRECATED into a run time option
-that can be switched on/off the kernel command line. This way
-the same binary can be used in both cases with just a option
-on the command line.
-
-The old CONFIG_SYSFS_DEPRECATED_V2 option is still there to set
-the default. I kept the weird name to not break existing
-config files.
-
-Also the compat code can be still completely disabled by undefining
-CONFIG_SYSFS_DEPRECATED_SWITCH -- just the optimizer takes
-care of this now instead of lots of ifdefs. This makes the code
-look nicer.
-
-v2: This is an updated version on top of Kay's patch to only
-handle the block devices. I tested it on my old systems
-and that seems to work.
-
-Cc: axboe@kernel.dk
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: San Mehat <san@android.com>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- Documentation/kernel-parameters.txt |    9 +++++++++
- block/genhd.c                       |    7 ++-----
- drivers/base/class.c                |    4 ++--
- drivers/base/core.c                 |   26 +++++++++++++++++---------
- fs/partitions/check.c               |   19 +++++++++----------
- include/linux/device.h              |    7 +++++++
- init/Kconfig                        |   15 ++++++++++++---
- 7 files changed, 58 insertions(+), 29 deletions(-)
+Found this in the Android tree, apparently it has never been
+upstreamed so doing that now.
+---
+ block/blk-core.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index f084af0..a452600 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2357,6 +2357,15 @@ and is between 256 and 4096 characters. It is defined in the file
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 29fd2cc..9b3d98e 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1612,11 +1612,12 @@ void submit_bio(int rw, struct bio *bio)
  
- 	switches=	[HW,M68k]
- 
-+	sysfs.deprecated=0|1 [KNL] 
-+			Enable/disable old style sysfs layout for old udev
-+			on older distributions. When this option is enabled
-+			very new udev will not work anymore. When this option
-+			is disabled (or CONFIG_SYSFS_DEPRECATED not compiled)
-+			in older udev will not work anymore.
-+			Default depends on CONFIG_SYSFS_DEPRECATED_V2 set in 
-+			the kernel configuration.
-+
- 	sysrq_always_enabled
- 			[KNL]
- 			Ignore sysrq setting - this boot parameter will
-diff --git a/block/genhd.c b/block/genhd.c
-index 59a2db6..4e28a84 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -22,9 +22,7 @@
- #include "blk.h"
- 
- static DEFINE_MUTEX(block_class_lock);
--#ifndef CONFIG_SYSFS_DEPRECATED
- struct kobject *block_depr;
--#endif
- 
- /* for extended dynamic devt allocation, currently only one major is used */
- #define MAX_EXT_DEVT		(1 << MINORBITS)
-@@ -803,10 +801,9 @@ static int __init genhd_device_init(void)
- 
- 	register_blkdev(BLOCK_EXT_MAJOR, "blkext");
- 
--#ifndef CONFIG_SYSFS_DEPRECATED
- 	/* create top-level block dir */
--	block_depr = kobject_create_and_add("block", NULL);
--#endif
-+	if (!sysfs_deprecated)
-+		block_depr = kobject_create_and_add("block", NULL);
- 	return 0;
- }
- 
-diff --git a/drivers/base/class.c b/drivers/base/class.c
-index 1078969..9c63a56 100644
---- a/drivers/base/class.c
-+++ b/drivers/base/class.c
-@@ -184,9 +184,9 @@ int __class_register(struct class *cls, struct lock_class_key *key)
- 	if (!cls->dev_kobj)
- 		cls->dev_kobj = sysfs_dev_char_kobj;
- 
--#if defined(CONFIG_SYSFS_DEPRECATED) && defined(CONFIG_BLOCK)
-+#if defined(CONFIG_BLOCK)
- 	/* let the block class directory show up in the root of sysfs */
--	if (cls != &block_class)
-+	if (!sysfs_deprecated || cls != &block_class)
- 		cp->class_subsys.kobj.kset = class_kset;
- #else
- 	cp->class_subsys.kobj.kset = class_kset;
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 6cf9069..f7f906f 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -26,6 +26,19 @@
- #include "base.h"
- #include "power/power.h"
- 
-+#ifdef CONFIG_SYSFS_DEPRECATED
-+#ifdef CONFIG_SYSFS_DEPRECATED_V2
-+long sysfs_deprecated = 1;
-+#else
-+long sysfs_deprecated = 0;
-+#endif
-+static __init int sysfs_deprecated_setup(char *arg)
-+{
-+	return strict_strtol(arg, 10, &sysfs_deprecated);
-+}
-+early_param("sysfs.deprecated", sysfs_deprecated_setup);
-+#endif
-+
- int (*platform_notify)(struct device *dev) = NULL;
- int (*platform_notify_remove)(struct device *dev) = NULL;
- static struct kobject *dev_kobj;
-@@ -617,14 +630,13 @@ static struct kobject *get_device_parent(struct device *dev,
- 		struct kobject *parent_kobj;
- 		struct kobject *k;
- 
--#ifdef CONFIG_SYSFS_DEPRECATED
- 		/* block disks show up in /sys/block */
--		if (dev->class == &block_class) {
-+		if (sysfs_deprecated && dev->class == &block_class) {
- 			if (parent && parent->class == &block_class)
- 				return &parent->kobj;
- 			return &block_class.p->class_subsys.kobj;
+ 		if (unlikely(block_dump)) {
+ 			char b[BDEVNAME_SIZE];
+-			printk(KERN_DEBUG "%s(%d): %s block %Lu on %s\n",
++			printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",
+ 			current->comm, task_pid_nr(current),
+ 				(rw & WRITE) ? "WRITE" : "READ",
+ 				(unsigned long long)bio->bi_sector,
+-				bdevname(bio->bi_bdev, b));
++				bdevname(bio->bi_bdev, b),
++				count);
  		}
--#endif
-+
- 		/*
- 		 * If we have no parent, we live in "virtual".
- 		 * Class-devices with a non class-device as parent, live
-@@ -707,11 +719,9 @@ static int device_add_class_symlinks(struct device *dev)
- 			goto out_subsys;
  	}
  
--#ifdef CONFIG_SYSFS_DEPRECATED
- 	/* /sys/block has directories and does not need symlinks */
--	if (dev->class == &block_class)
-+	if (sysfs_deprecated && dev->class == &block_class)
- 		return 0;
--#endif
- 
- 	/* link in the class directory pointing to the device */
- 	error = sysfs_create_link(&dev->class->p->class_subsys.kobj,
-@@ -738,10 +748,8 @@ static void device_remove_class_symlinks(struct device *dev)
- 	if (dev->parent && device_is_not_partition(dev))
- 		sysfs_remove_link(&dev->kobj, "device");
- 	sysfs_remove_link(&dev->kobj, "subsystem");
--#ifdef CONFIG_SYSFS_DEPRECATED
--	if (dev->class == &block_class)
-+	if (sysfs_deprecated && dev->class == &block_class)
- 		return;
--#endif
- 	sysfs_delete_link(&dev->class->p->class_subsys.kobj, &dev->kobj, dev_name(dev));
- }
- 
-diff --git a/fs/partitions/check.c b/fs/partitions/check.c
-index 79fbf3f..137bf97 100644
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -513,14 +513,14 @@ void register_disk(struct gendisk *disk)
- 
- 	if (device_add(ddev))
- 		return;
--#ifndef CONFIG_SYSFS_DEPRECATED
--	err = sysfs_create_link(block_depr, &ddev->kobj,
--				kobject_name(&ddev->kobj));
--	if (err) {
--		device_del(ddev);
--		return;
-+	if (!sysfs_deprecated) {
-+		err = sysfs_create_link(block_depr, &ddev->kobj,
-+					kobject_name(&ddev->kobj));
-+		if (err) {
-+			device_del(ddev);
-+			return;
-+		}
- 	}
--#endif
- 	disk->part0.holder_dir = kobject_create_and_add("holders", &ddev->kobj);
- 	disk->slave_dir = kobject_create_and_add("slaves", &ddev->kobj);
- 
-@@ -737,8 +737,7 @@ void del_gendisk(struct gendisk *disk)
- 	kobject_put(disk->part0.holder_dir);
- 	kobject_put(disk->slave_dir);
- 	disk->driverfs_dev = NULL;
--#ifndef CONFIG_SYSFS_DEPRECATED
--	sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
--#endif
-+	if (!sysfs_deprecated)
-+		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
- 	device_del(disk_to_dev(disk));
- }
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 516feca..dd48953 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -751,4 +751,11 @@ do {						     \
- 	MODULE_ALIAS("char-major-" __stringify(major) "-" __stringify(minor))
- #define MODULE_ALIAS_CHARDEV_MAJOR(major) \
- 	MODULE_ALIAS("char-major-" __stringify(major) "-*")
-+
-+#ifdef CONFIG_SYSFS_DEPRECATED
-+extern long sysfs_deprecated;
-+#else
-+#define sysfs_deprecated 0
-+#endif
-+
- #endif /* _DEVICE_H_ */
-diff --git a/init/Kconfig b/init/Kconfig
-index 137609f..e3c8a52 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -660,8 +660,10 @@ config SYSFS_DEPRECATED
- 	depends on SYSFS
- 	default n
- 	help
--	  This option switches the layout of the "block" class devices, to not
-+	  This option adds code that switches the layout of the "block" class devices, to not
- 	  show up in /sys/class/block/, but only in /sys/block/.
-+          This switch is only active when the sysfs.deprecated=1 boot option is passed
-+	  or the SYSFS_DEPRECATED_V2 option is set.
- 
- 	  This option allows new kernels to run on old distributions and tools,
- 	  which might get confused by /sys/class/block/. Since 2007/2008 all
-@@ -672,8 +674,15 @@ config SYSFS_DEPRECATED
- 	  option enabled.
- 
- 	  Only if you are using a new kernel on an old distribution, you might
--	  need to say Y here. Never say Y, if the original kernel, that came
--	  with your distribution, has not set this option.
-+	  need to say Y here.
-+
-+config SYSFS_DEPRECATED_V2
-+	bool "enabled deprecated sysfs features by default"
-+	default n
-+	depends on SYSFS
-+	depends on SYSFS_DEPRECATED
-+	help
-+	  Enable deprecated sysfs by default.
- 
- config RELAY
- 	bool "Kernel->user space relay support (formerly relayfs)"
 -- 
-1.7.1
+1.6.3.3
 
