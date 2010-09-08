@@ -1,165 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab0IHSVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 14:21:17 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:34200 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752868Ab0IHSVJ (ORCPT
+	id S1753074Ab0IHSX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 14:23:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63196 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946Ab0IHSXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 14:21:09 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=nJnNvAKOdNwz/U5ROBd3b2C1W3BiOyE+uWMF/I4p4IUBRhLhTOekRhyjj7A/n8nIJF13aQ4bzgkdzb6AXOpaMSzeG0llgxYyp9J/9Y33UztDXNCMiLrnk9KWKYEWfvTQ;
-Date: Wed, 8 Sep 2010 11:21:04 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Allan, Bruce W" <bruce.w.allan@intel.com>
-Cc: Tony Jones <tonyj@suse.de>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bphilips@suse.de" <bphilips@suse.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: high latency on 82573L
-Message-ID: <20100908112104.33219331@jbarnes-desktop>
-In-Reply-To: <8DD2590731AB5D4C9DBF71A877482A900168EDB454@orsmsx509.amr.corp.intel.com>
-References: <20100902033900.GA5283@suse.de>
-	<8DD2590731AB5D4C9DBF71A877482A900168E59EFA@orsmsx509.amr.corp.intel.com>
-	<20100903175102.GA7767@suse.de>
-	<8DD2590731AB5D4C9DBF71A877482A900168EDB454@orsmsx509.amr.corp.intel.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	Wed, 8 Sep 2010 14:23:25 -0400
+Date: Wed, 8 Sep 2010 12:23:15 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        spi-devel-general@lists.sourceforge.net,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [spi-devel-general] [PATCH] spi/spi_s3c64xx: Warn if PIO
+ transfers time out
+Message-ID: <20100908182315.GR3686@angua.secretlab.ca>
+References: <1282581656-26137-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <AANLkTim6+6-L8ALM0YO01D44PmZgsbcMrrwRxrPJMkpT@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTim6+6-L8ALM0YO01D44PmZgsbcMrrwRxrPJMkpT@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010 11:59:30 -0700
-"Allan, Bruce W" <bruce.w.allan@intel.com> wrote:
-
-> On Friday, September 03, 2010 10:51 AM, Tony Jones wrote:
-> > On Thu, Sep 02, 2010 at 11:49:12AM -0700, Allan, Bruce W wrote:
-> >> Please provide more verbose lspci output and include the PCI config
-> >> space, i.e. 'lspci -s 2:0.0 -vvv -xxx' after the driver is loaded,
-> > 
-> > # lspci -s 2:0.0 -vvv -xxx
-> > 02:00.0 Ethernet controller: Intel Corporation 82573L Gigabit
-> > 	Ethernet Controller Subsystem: Lenovo ThinkPad T60
-> > 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> > 	Stepping- SERR+ FastB2B- DisINTx+ Status: Cap+ 66MHz- UDF- FastB2B-
-> > 	ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> > 	Latency: 0, Cache Line Size: 64 bytes Interrupt: pin A routed to IRQ
-> > 	46 Region 0: Memory at ee000000 (32-bit, non-prefetchable)
-> > 	[size=128K] Region 2: I/O ports at 3000 [size=32]
-> > 	Capabilities: [c8] Power Management version 2
-> > 		Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
-> > 		PME(D0+,D1-,D2-,D3hot+,D3cold+) Status: D0 NoSoftRst- PME-Enable-
-> > 	DSel=0 DScale=1 PME- Capabilities: [d0] MSI: Enable+ Count=1/1
-> > 		Maskable- 64bit+ Address: 00000000fee0100c  Data: 41c9
-> > 	Capabilities: [e0] Express (v1) Endpoint, MSI 00
-> > 		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1
-> > 			<64us ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
-> > 		DevCtl:	Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
-> > 			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-> > 			MaxPayload 128 bytes, MaxReadReq 512 bytes
-> > 		DevSta:	CorrErr- UncorrErr+ FatalErr- UnsuppReq+ AuxPwr+ TransPend-
-> > 		LnkCap:	Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0
-> > 			<128ns, L1 <64us ClockPM+ Surprise- LLActRep- BwNot-
-> > 		LnkCtl:	ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
-> > 			ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
-> > 		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive-
-> > 	BWMgmt- ABWMgmt- Capabilities: [100 v1] Advanced Error Reporting
-> > 		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF-
-> > 		MalfTLP- ECRC- UnsupReq+ ACSViol- UEMsk:	DLP- SDES- TLP- FCP-
-> > 		CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq-
-> > 		ACSViol- UESvrt:	DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt-
-> > 		RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol- CESta:	RxErr+ BadTLP+
-> > 		BadDLLP- Rollover- Timeout- NonFatalErr- CEMsk:	RxErr- BadTLP-
-> > 	BadDLLP- Rollover- Timeout- NonFatalErr- AERCap:	First Error
-> > 	Pointer: 14, GenCap- CGenEn- ChkCap- ChkEn- Capabilities: [140 v1]
-> > Device Serial Number 00-1a-6b-ff-ff-6c-7e-a4 Kernel driver in use:
-> > e1000e 00: 86 80 9a 10 07 05 10 00 00 00 00 02 10 00 00 00 10: 00 00
-> > 00 ee 00 00 00 00 01 30 00 00 00 00 00 00 20: 00 00 00 00 00 00 00 00
-> > 00 00 00 00 aa 17 01 20 30: 00 00 00 00 c8 00 00 00 00 00 00 00 0b 01
-> > 00 00 40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > 50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > 60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > 70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > 80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > 90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > c0: 00 00 00 00 00 00 00 00 01 d0 22 c8 00 20 00 0f
-> > d0: 05 e0 81 00 0c 10 e0 fe 00 00 00 00 c9 41 00 00
-> > e0: 10 00 01 00 c1 0c 00 00 1f 28 1a 00 11 1c 07 00
-> > f0: 42 01 11 10 00 00 00 00 00 00 00 00 00 00 00 00
-> > 
-> >> kernel.  Are there any messages in the system log regarding disabling
-> >> ASPM L0s and/or L1 on that device?
-> > 
-> > It would appear it is being disabled:
-> > 
-> > [    0.194271] ACPI FADT declares the system doesn't support PCIe
-> > ASPM, so disable it [    0.297112] pci 0000:01:00.0: disabling ASPM
-> > on pre-1.1 PCIe device.  You can enable it with 'pcie_aspm=force' [  
-> > 0.298003] pci 0000:02:00.0: disabling ASPM on pre-1.1 PCIe device. 
-> > You can enable it with 'pcie_aspm=force' [    0.299123] pci
-> > 0000:03:00.0: disabling ASPM on pre-1.1 PCIe device.  You can enable
-> > it with 'pcie_aspm=force' [   18.135907] e1000e 0000:02:00.0:
-> > Disabling ASPM  L1 [   18.137262] e1000e 0000:02:00.0: Disabling ASPM
-> > L0s   
-> > 
-> > but I see the same high ping latencies.
-> > 
-> >> I can understand the latency with the OpenSUSE 2.6.34-based kernels
-> >> assuming commit 19833b5dff is not present, but I do not understand
-> >> the latency with 2.6.36-rc3.
-> > 
-> > The first thing I tried was OpenSUSE 2.6.34 plus 19833b5dff.   This
-> > led me to 
-> > think it wasn't related to ASPM so I resorted to a bisect which ended
-> > up showing 
-> > it was 6f461f6c7c.
-> > 
-> > Anyways, all of the above is from vanilla 2.6.36-rc3 so lets ignore
-> > OpenSUSE 
-> > kernels.
-> > 
-> > http://ftp.suse.com/pub/people/tonyj/82573L/config  is the config for
-> > .36-rc3 
-> > generated using localmodconfig, defaults chosen for all prompts.
-> > 
-> > http://ftp.suse.com/pub/people/tonyj/82573L/dmesg  is the full dmesg
-> > 
-> > Tony
+On Tue, Aug 24, 2010 at 09:06:40AM +0900, Jassi Brar wrote:
+> On Tue, Aug 24, 2010 at 1:40 AM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+> > When using PIO we have a timeout for the TX and RX FIFOs to ensure that
+> > the data actually gets transferred. Warn if we hit that timeout - it
+> > should never happen, but this makes sure we'll find out if it does.
+> >
+> > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > ---
+> >  drivers/spi/spi_s3c64xx.c |    6 ++++++
+> >  1 files changed, 6 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
+> > index 7e627f7..f72e1c0 100644
+> > --- a/drivers/spi/spi_s3c64xx.c
+> > +++ b/drivers/spi/spi_s3c64xx.c
+> > @@ -200,6 +200,9 @@ static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
+> >                val = readl(regs + S3C64XX_SPI_STATUS);
+> >        } while (TX_FIFO_LVL(val, sci) && loops--);
+> >
+> > +       if (loops == 0)
+> > +               dev_warn(&sdd->pdev->dev, "Timed out flushing TX FIFO\n");
+> > +
+> >        /* Flush RxFIFO*/
+> >        loops = msecs_to_loops(1);
+> >        do {
+> > @@ -210,6 +213,9 @@ static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
+> >                        break;
+> >        } while (loops--);
+> >
+> > +       if (loops == 0)
+> > +               dev_warn(&sdd->pdev->dev, "Timed out flushing RX FIFO\n");
+> > +
+> >        val = readl(regs + S3C64XX_SPI_CH_CFG);
+> >        val &= ~S3C64XX_SPI_CH_SW_RST;
+> >        writel(val, regs + S3C64XX_SPI_CH_CFG);
 > 
-> ASPM L1 must be disabled on this device otherwise the latency described
-> above will happen.  And even though there are log messages indicating
-> ASPM L1 is disabled, it really isn't according to the verbose lspci
-> output and PCI config space for the 2:0.0 device (see LnkCtl above).
-> Since CONFIG_PCIEASPM is enabled in your kernel config, the driver is
-> calling the kernel function pci_disable_link_state() to disable ASPM L1
-> which it fails to do because the variable aspm_disabled=1 (as indicated
-> by the "ACPI FADT declares the system doesn't support PCIe ASPM, so
-> disable it" message).
+> Ok, though I'll be very surprised to see the FIFO flush failing. We
+> are not waiting
+> for data to be transferred, but for SW Reset to make its effect.
 > 
-> I'm unclear on whether the aspm_disabled variable is meant to indicate
-> ASPM L0s or both ASPM L0s _and_ L1 are disabled (added PCI maintainer
-> and linux-pci mail-list).  To resolve this issue, we need to either a)
-> change e1000e to directly write the PCI config space to disable ASPM L1
-> as was done before 6f461f6c7c, or b) fix pci_disable_link_state() et. al.
-> to allow for ASPM L1 to be disabled properly.  I would prefer the latter
-> option so that other drivers do not have to use the same kludge to write
-> to the PCI config space.  Any input from the PCI guys?
+> Acked-by: Jassi Brar <jassi.brar@samsung.com>
 
-Yeah, I'd prefer this code to be in the core.  Are there any patches
-available yet?
+Applied, thanks.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+g.
+
