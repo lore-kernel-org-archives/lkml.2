@@ -1,265 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758576Ab0IHJPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 05:15:31 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53846 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab0IHJP2 convert rfc822-to-8bit (ORCPT
+	id S1758590Ab0IHJPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 05:15:44 -0400
+Received: from gw1.transmode.se ([213.115.205.20]:34863 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758580Ab0IHJPk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 05:15:28 -0400
-From: "Hans-Peter Jansen" <hpj@urpla.net>
-To: linux-kernel@vger.kernel.org
-Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
-Date: Wed, 8 Sep 2010 11:15:15 +0200
-User-Agent: KMail/1.9.10
-Cc: Nick Lowe <nick.lowe@gmail.com>
-References: <fmbxh-5N8-41@gated-at.bofh.it> <55BC9463-95B9-4034-AA1E-55042D6E9354@gmail.com>
-In-Reply-To: <55BC9463-95B9-4034-AA1E-55042D6E9354@gmail.com>
+	Wed, 8 Sep 2010 05:15:40 -0400
+In-Reply-To: <1283934289.2880.12.camel@edumazet-laptop>
+References: <OF71DD00AE.26643E4D-ONC1257798.00250630-C1257798.002A9748@transmode.se>	 <1283932600.2880.1.camel@edumazet-laptop>
+	 <OF5074952F.1B97B2B8-ONC1257798.002C51D7-C1257798.002C63A4@transmode.se> <1283934289.2880.12.camel@edumazet-laptop>
+Subject: Re: slow nanosleep?
+X-KeepSent: 2B75FA7C:7064BC41-C1257798:00318FDA;
+ type=4; name=$KeepSent
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+X-Mailer: Lotus Notes Release 8.5.2 August 10, 2010
+Message-ID: <OF2B75FA7C.7064BC41-ONC1257798.00318FDA-C1257798.00329AEF@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Wed, 8 Sep 2010 11:12:44 +0200
+X-MIMETrack: Serialize by Router on sesr04/Transmode(Release 8.5.1FP3|May 23, 2010) at
+ 2010-09-08 11:15:39
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201009081115.15544.hpj@urpla.net>
-X-Provags-ID: V02:K0:p+hh3SmacOEBDFRCATPnNqYqI9f6GHgm5gv53D/rOl/
- b7s1xxDtiBzWEygDt3b45sv6+LAjJaWlK3gT2XyluikZ+3stag
- xt6sNLF0fXa/QcgtfgNoazKEDBHePjwzAcA1ja1Ycik0uAAUCC
- kstbHg+T6uuY74fMeAnZZg1/+L+QXBzdZanXPaJ5493UvAQVXB
- AmC0iEZUcp2hTUaBab2ePB/rs2zMtJEkjR164iMN60=
+Content-type: text/plain; charset=ISO-8859-15
+Content-transfer-encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 07 September 2010, 17:57:17 Nick Lowe wrote:
-> In my opinion, this patch shouldn't be seen as a solution in the
-> slightest. To me, it's a ugly hack and a kludge at best!
+Eric Dumazet <eric.dumazet@gmail.com> wrote on 2010/09/08 10:24:49:
 >
-> Abstractly a NOP is meant to be exactly as it says on the tin, a No
-> Operation.
+> Le mercredi 08 septembre 2010 à 10:04 +0200, Joakim Tjernlund a écrit :
 >
-> It's meant to do nothing at all - for a predefined number of clock
-> cycles. A NOP is commonly used for timing purposes, this completely
-> breaks that contract surely?
+> > That makes litte difference:
+> > root@localhost ~ # ./nanosleep
+> > nanosleep
+> > req:0 :0
+> > tv_res:0 :112
+> >
 >
-> NOPL is not standard i686, it was undocumented and has just been de facto
-> supported since the Pentium Pro.
->
-> The solution is surely to ensure that when something is compiled for
-> generic i686, NOPL is nowhere to be seen... Any compiler that does
-> otherwise is broken.
+> Here, result is 30 (with prctl())
+> instead of 95 (without)
 
->From a user POV, this patch done right is the better solution, because you 
-cannot ensure, that all code _generally_ comply to your *policy*. This is 
-not a kernel only issue! Keep processes crashing is worse IMHO.
+On x86 I notice a difference:
+  7 vs 57.
+however select is still faster: 2
+The system call OH seems to be bigger for nanosleep than
+for select and on my ppc is is about 112 us. Can anything
+be done about that?
 
-With properly done, I mean:
- - runtime check, if iopl opcode exists
- - emulate, if not
-
-Hence, don't bind this to nor label it after a certain cpu model.
-
-Remember: we do not live in a perfect world.
-
-Pete
-
-> For example, until recently, the basic semantics for choosing the NOP
-> sequence were completely wrong in binutils. This has, finally, been
-> fixed!
->
-> http://sourceware.org/ml/binutils-cvs/2010-08/msg00057.html
-> http://gcc.gnu.org/ml/gcc/2010-08/msg00194.html
->
-> On 27 Aug 2010, at 19:10, Matteo Croce wrote:
-> > Hi,
-> > I have received many mails asking to refresh the patch so I decided to
-> > post them on the public mailing list
-> > In this version such feature is configurable via a kernel config option
-> >
-> > Signed-off-by: Matteo Croce <matteo@openwrt.org>
-> >
-> > --- a/arch/x86/kernel/Makefile	2010-08-27 00:27:50.101261000 +0200
-> > +++ b/arch/x86/kernel/Makefile	2010-08-27 00:31:11.391261002 +0200
-> > @@ -88,6 +88,8 @@
-> > obj-$(CONFIG_APB_TIMER)		+= apb_timer.o
-> >
-> > obj-$(CONFIG_K8_NB)		+= k8.o
-> > +obj-$(CONFIG_GEODE_NOPL)	+= nopl_emu.o
-> > +obj-$(CONFIG_GEODE_NOPL)	+= nopl_emu.o
-> > obj-$(CONFIG_DEBUG_RODATA_TEST)	+= test_rodata.o
-> > obj-$(CONFIG_DEBUG_NX_TEST)	+= test_nx.o
-> >
-> > --- a/arch/x86/kernel/cpu/amd.c	2010-08-27 00:27:50.161261000 +0200
-> > +++ b/arch/x86/kernel/cpu/amd.c	2010-08-27 00:34:13.371261000 +0200
-> > @@ -137,11 +137,15 @@
-> > 		return;
-> > 	}
-> >
-> > +#ifdef CONFIG_GEODE_NOPL
-> > 	if (c->x86_model == 10) {
-> > -		/* AMD Geode LX is model 10 */
-> > -		/* placeholder for any needed mods */
-> > +		/* Geode only lacks the NOPL instruction to be i686,
-> > +		   but we can promote it to a i686 class cpu
-> > +		   and emulate NOPLs in the exception handler*/
-> > +		boot_cpu_data.x86 = 6;
-> > 		return;
-> > 	}
-> > +#endif
-> > }
-> >
-> > static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
-> > --- a/arch/x86/kernel/entry_32.S	2010-08-27 00:27:50.051261000 +0200
-> > +++ b/arch/x86/kernel/entry_32.S	2010-08-27 00:57:35.531261000 +0200
-> > @@ -978,7 +978,11 @@
-> > 	RING0_INT_FRAME
-> > 	pushl $0
-> > 	CFI_ADJUST_CFA_OFFSET 4
-> > +#ifdef CONFIG_GEODE_NOPL
-> > +	pushl $do_nopl_emu
-> > +#else
-> > 	pushl $do_invalid_op
-> > +#endif
-> > 	CFI_ADJUST_CFA_OFFSET 4
-> > 	jmp error_code
-> > 	CFI_ENDPROC
-> > --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-> > +++ b/arch/x86/kernel/nopl_emu.c	2010-08-27 00:27:57.881261002 +0200
-> > @@ -0,0 +1,110 @@
-> > +/*
-> > + *  linux/arch/x86/kernel/nopl_emu.c
-> > + *
-> > + *  Copyright (C) 2002  Willy Tarreau
-> > + *  Copyright (C) 2010  Matteo Croce
-> > + */
-> > +
-> > +#include <asm/processor.h>
-> > +#include <asm/traps.h>
-> > +
-> > +/* This code can be used to allow the AMD Geode to hopefully correctly
-> > execute + * some code which was originally compiled for an i686, by
-> > emulating NOPL, + * the only missing i686 instruction in the CPU
-> > + *
-> > + * Willy Tarreau <willy@meta-x.org>
-> > + * Matteo Croce <technoboy85@gmail.co>
-> > + */
-> > +
-> > +static inline int do_1f(u8 *ip)
-> > +{
-> > +	int length = 3;
-> > +	switch (*ip) {
-> > +	case 0x84:
-> > +		if (!ip[5])
-> > +			length++;
-> > +		else
-> > +			return 0;
-> > +	case 0x80:
-> > +		if (!ip[4] && !ip[3])
-> > +			length += 2;
-> > +		else
-> > +			return 0;
-> > +	case 0x44:
-> > +		if (!ip[2])
-> > +			length++;
-> > +		else
-> > +			return 0;
-> > +	case 0x40:
-> > +		if (!ip[1])
-> > +			length++;
-> > +		else
-> > +			return 0;
-> > +	case 0x00:
-> > +		return length;
-> > +	}
-> > +	return 0;
-> > +}
-> > +
-> > +static inline int do_0f(u8 *ip)
-> > +{
-> > +	if (*ip == 0x1f)
-> > +		return do_1f(ip + 1);
-> > +	return 0;
-> > +}
-> > +
-> > +static inline int do_66(u8 *ip)
-> > +{
-> > +	if (*ip == 0x90)
-> > +		return 2;
-> > +	if (*ip == 0x0f) {
-> > +		int res = do_0f(ip + 1);
-> > +		if (res)
-> > +			return res + 1;
-> > +		else
-> > +			return 0;
-> > +	}
-> > +	return 0;
-> > +}
-> > +
-> > +static inline int do_start(u8 *ip)
-> > +{
-> > +	if (*ip == 0x0f)
-> > +		return do_0f(ip + 1);
-> > +	if (*ip == 0x66)
-> > +		return do_66(ip + 1);
-> > +	return 0;
-> > +}
-> > +
-> > +/* [do_nopl_emu] is called by exception 6 after an invalid opcode has
-> > been + * encountered. It will try to emulate it by doing nothing,
-> > + * and will send a SIGILL or SIGSEGV to the process if not possible.
-> > + * the NOPL can have variable length opcodes:
-> > +
-> > +bytes number	opcode
-> > +	2	66 90
-> > +	3	0f 1f 00
-> > +	4	0f 1f 40 00
-> > +	5	0f 1f 44 00 00
-> > +	6	66 0f 1f 44 00 00
-> > +	7	0f 1f 80 00 00 00 00
-> > +	8	0f 1f 84 00 00 00 00 00
-> > +	9	66 0f 1f 84 00 00 00 00 00
-> > +*/
-> > +void do_nopl_emu(struct pt_regs *regs, long error_code)
-> > +{
-> > +	u8 *ip = (u8 *)instruction_pointer(regs);
-> > +	int res = do_start(ip);
-> > +
-> > +	if (res) {
-> > +		int i = 0;
-> > +		do {
-> > +			ip += res;
-> > +			i++;
-> > +			res = do_start(ip);
-> > +		} while(res);
-> > +		printk(KERN_DEBUG "geode_nopl: emulated %d instructions\n", i);
-> > +		regs->ip = (typeof(regs->ip))ip;
-> > +	} else
-> > +		do_invalid_op(regs, error_code);
-> > +}
-> >
-> >
-> > --
-> > Matteo Croce
-> > OpenWrt developer
-> > Â  _______Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  ________Â  Â  Â  Â  __
-> > Â |Â  Â  Â Â  |.-----.-----.-----.|Â  |Â  |Â  |.----.|Â  |_
-> > Â |Â Â  -Â Â  ||Â  _Â  |Â  -__|Â  Â Â  ||Â  |Â  |Â  ||Â Â  _||Â Â  _|
-> > Â |_______||Â Â  __|_____|__|__||________||__|Â  |____|
-> > Â  Â  Â  Â  Â  |__| W I R E L E S SÂ Â  F R E E D O M
-> > Â KAMIKAZE (bleeding edge) ------------------
-> > Â  * 10 oz VodkaÂ  Â  Â Â  Shake well with ice and strain
-> > Â  * 10 oz Triple secÂ  mixture into 10 shot glasses.
-> > Â  * 10 oz lime juiceÂ  Salute!
-> > Â ---------------------------------------------------
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> > in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> in the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+  Jocke
 
