@@ -1,172 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758655Ab0IHMZz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 08:25:55 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44315 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab0IHMZx (ORCPT
+	id S1756908Ab0IHM2h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 08:28:37 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:33955 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab0IHM2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 08:25:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=T3lK0YgmgRK7qcdXkFJZ0nnc/MNQLlgtS+CAHjaf1yStvKWgn52VwcBGC61Qi5of7l
-         mnSu8IDblNB1XwfziD3QTEDBZ0MUsLY/9JJ7yZPScEPtEdSk+jkbLjPBJsh3X0aBgDCz
-         OqaeI4idOYLwvcMd8aC11P2aPz8PDu2XWqd5U=
-Date: Wed, 8 Sep 2010 14:26:00 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: mingo@redhat.com, mathieu.desnoyers@efficios.com,
-        sanagi.koki@jp.fujitsu.com, rostedt@goodmis.org, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, tglx@linutronix.de, laijs@cn.fujitsu.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        kaneshige.kenji@jp.fujitsu.com, davem@davemloft.net,
-        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
-        linux-tip-commits@vger.kernel.org
-Subject: [PATCH] irq: Fix circular headers dependency
-Message-ID: <20100908122557.GA5310@nowhere>
-References: <4C724298.4050509@jp.fujitsu.com> <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org> <20100908112529.GA25931@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100908112529.GA25931@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 8 Sep 2010 08:28:34 -0400
+Date: Wed, 08 Sep 2010 21:28:45 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH v3] regulators: add support max8952 regulator
+In-reply-to: <01a401cb4f01$73d60ac0$5b822040$%park@samsung.com>
+To: kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: lrg@slimlogic.co.uk, "'Changhwan Youn'" <chaos.youn@samsung.com>,
+        "'MyungJoo Ham'" <myungjoo.ham@samsung.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Message-id: <004001cb4f51$63ea5d00$2bbf1700$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: ActO5kLH59RwdkyyRB6bO2YWhCCsKgAGvnQQABNFQRA=
+References: <1283901976-32588-1-git-send-email-kgene.kim@samsung.com>
+ <01a401cb4f01$73d60ac0$5b822040$%park@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 01:25:29PM +0200, Ingo Molnar wrote:
+Kyungmin Park wrote:
 > 
-> * tip-bot for Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+> Do you check the DVS feature?
+> It can support the DVS by GPIOs and platform can set the each voltages at
+> each mode.
 > 
-> > Commit-ID:  2bf2160d8805de64308e2e7c3cd97813cb58ed2f
-> > Gitweb:     http://git.kernel.org/tip/2bf2160d8805de64308e2e7c3cd97813cb58ed2f
-> > Author:     Lai Jiangshan <laijs@cn.fujitsu.com>
-> > AuthorDate: Mon, 23 Aug 2010 18:42:48 +0900
-> > Committer:  Frederic Weisbecker <fweisbec@gmail.com>
-> > CommitDate: Tue, 7 Sep 2010 17:49:34 +0200
-> > 
-> > irq: Add tracepoint to softirq_raise
-> > 
-> > Add a tracepoint for tracing when softirq action is raised.
-> > 
-> > This and the existing tracepoints complete softirq's tracepoints:
-> > softirq_raise, softirq_entry and softirq_exit.
-> > 
-> > And when this tracepoint is used in combination with
-> > the softirq_entry tracepoint we can determine
-> > the softirq raise latency.
-> > 
-> > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Acked-by: Neil Horman <nhorman@tuxdriver.com>
-> > Cc: David Miller <davem@davemloft.net>
-> > Cc: Kaneshige Kenji <kaneshige.kenji@jp.fujitsu.com>
-> > Cc: Izumo Taku <izumi.taku@jp.fujitsu.com>
-> > Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > Cc: Scott Mcmillan <scott.a.mcmillan@intel.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> > LKML-Reference: <4C724298.4050509@jp.fujitsu.com>
-> > [ factorize softirq events with DECLARE_EVENT_CLASS ]
-> > Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > ---
-> >  include/linux/interrupt.h  |    8 +++++++-
-> >  include/trace/events/irq.h |   26 ++++++++++++++++++++++++--
-> >  2 files changed, 31 insertions(+), 3 deletions(-)
-> 
-> FYI, this commit broke the Sparc build:
-> 
-> In file included from /home/mingo/tip/arch/sparc/include/asm/irq_32.h:11,
->                  from /home/mingo/tip/arch/sparc/include/asm/irq.h:6,
->                  from /home/mingo/tip/include/linux/irqnr.h:10,
->                  from /home/mingo/tip/include/linux/irq.h:22,
->                  from /home/mingo/tip/include/asm-generic/hardirq.h:6,
->                  from /home/mingo/tip/arch/sparc/include/asm/hardirq_32.h:11,
->                  from /home/mingo/tip/arch/sparc/include/asm/hardirq.h:6,
->                  from /home/mingo/tip/include/linux/hardirq.h:10,
->                  from /home/mingo/tip/include/linux/ftrace_event.h:7,
->                  from /home/mingo/tip/include/trace/syscall.h:6,
->                  from /home/mingo/tip/include/linux/syscalls.h:76,
->                  from /home/mingo/tip/init/initramfs.c:9:
-> /home/mingo/tip/include/linux/interrupt.h: In function '__raise_softirq_irqoff':
-> /home/mingo/tip/include/linux/interrupt.h:414: error: implicit declaration of function 'local_softirq_pending'
-> /home/mingo/tip/include/linux/interrupt.h:414: error: lvalue required as left operand of assignment
-> make[2]: *** [init/initramfs.o] Error 1
-> make[2]: *** Waiting for unfinished jobs....
-> In file included from /home/mingo/tip/arch/sparc/include/asm/irq_32.h:11,
-> 
-> 	Ingo
+Ok...I agree about the feature's necessity that you said.
 
+However, we don't need separate driver which has same/similar functionality.
+So...would be better that could implement it in max8649...
 
-Yeah, there is a circular dependency.
-Does that fixes the issue (and if so, does that look sane)?
+Could you please do it based on this?...in fact, can't test it on SMDK.
 
 Thanks.
 
----
->From fc21eaa02d4a6f0af396af6a106587e61515cd86 Mon Sep 17 00:00:00 2001
-From: Frederic Weisbecker <fweisbec@gmail.com>
-Date: Wed, 8 Sep 2010 14:17:31 +0200
-Subject: [PATCH] irq: Fix circular headers dependency
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-asm-generic/hardirq.h needs asm/irq.h which might include
-linux/interrupt.h as in the sparc 32 case. At this point
-we need irq_cpustat generic definitions, but those are
-included later in asm-generic/hardirq.h.
-
-Then delay a bit the inclusion of irq.h from
-asm-generic/hardirq.h, it doesn't need to be included early.
-
-This fixes:
-
-In file included from arch/sparc/include/asm/irq_32.h:11,
-                  from arch/sparc/include/asm/irq.h:6,
-                  from include/linux/irqnr.h:10,
-                  from include/linux/irq.h:22,
-                  from include/asm-generic/hardirq.h:6,
-                  from arch/sparc/include/asm/hardirq_32.h:11,
-                  from arch/sparc/include/asm/hardirq.h:6,
-                  from include/linux/hardirq.h:10,
-                  from include/linux/ftrace_event.h:7,
-                  from include/trace/syscall.h:6,
-                  from include/linux/syscalls.h:76,
-                  from init/initramfs.c:9:
-include/linux/interrupt.h: In function '__raise_softirq_irqoff':
-include/linux/interrupt.h:414: error: implicit declaration of function 'local_softirq_pending'
-include/linux/interrupt.h:414: error: lvalue required as left operand of assignment
-
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
----
- include/asm-generic/hardirq.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/asm-generic/hardirq.h b/include/asm-generic/hardirq.h
-index 62f5908..04d0a97 100644
---- a/include/asm-generic/hardirq.h
-+++ b/include/asm-generic/hardirq.h
-@@ -3,13 +3,13 @@
- 
- #include <linux/cache.h>
- #include <linux/threads.h>
--#include <linux/irq.h>
- 
- typedef struct {
- 	unsigned int __softirq_pending;
- } ____cacheline_aligned irq_cpustat_t;
- 
- #include <linux/irq_cpustat.h>	/* Standard mappings for irq_cpustat_t above */
-+#include <linux/irq.h>
- 
- #ifndef ack_bad_irq
- static inline void ack_bad_irq(unsigned int irq)
--- 
-1.6.2.3
-
+> As quick review of max8649. It can't support it.
+> 
+> Thank you,
+> Kyungmin Park
+> 
+> -----Original Message-----
+> From: Kukjin Kim [mailto:kgene.kim@samsung.com]
+> Sent: Wednesday, September 08, 2010 8:26 AM
+> To: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> linux-samsung-soc@vger.kernel.org
+> Cc: lrg@slimlogic.co.uk; Changhwan Youn; Kukjin Kim; MyungJoo Ham;
+Kyungmin
+> Park
+> Subject: [PATCH v3] regulators: add support max8952 regulator
+> 
+> From: Changhwan Youn <chaos.youn@samsung.com>
+> 
+> The operation of max8952 is almost similar to max8649 except the output
+> voltage range. This patch adds support the max8952 regulator using
+> current max8649 implementation. And removes separate max8952.[ch] files
+> since the functionality is now merged into this driver.
+> 
+> Signed-off-by: Changhwan Youn <chaos.youn@samsung.com>
+> Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+> Following is as per Mark Brown's suggestion.
+> Changes since v2:
+> - Removed separate max8952.[ch] files
+> 
+> Changes since v1:
+> - Added returning fail when detected wrong ID
+> - Added matching the ID from the chip in case the user got things wrong
+> - Added enum chip ID instead of 0, 1
+> 
+(snip)
 
