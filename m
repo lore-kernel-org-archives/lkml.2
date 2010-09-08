@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757839Ab0IHJvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 05:51:51 -0400
-Received: from 64.mail-out.ovh.net ([91.121.185.65]:54462 "HELO
-	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756838Ab0IHJvs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 05:51:48 -0400
-Date: Wed, 8 Sep 2010 11:50:58 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: "avictor.za@gmail.com" <avictor.za@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Fabian Godehardt <fg@emlix.com>
-Subject: Re: [PATCH] AT91: SAM9G45 - add a separate clock entry for every
- single TC block
-Message-ID: <20100908095058.GA3939@game.jcrosoft.org>
-References: <201009060548.18521.fg@emlix.com>
- <1283772201-15453-1-git-send-email-nicolas.ferre@atmel.com>
- <AANLkTin+vCsG3FUvX6DTUfFe7ZJpbkYyqw_TLvH9ujrJ@mail.gmail.com>
- <4C8750B8.6000107@atmel.com>
+	id S1758236Ab0IHKDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 06:03:21 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56748 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757535Ab0IHKDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 06:03:20 -0400
+Date: Wed, 8 Sep 2010 12:03:17 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Julia Lawall <julia@diku.dk>, Dmitry Torokhov <dtor@mail.ru>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: wake up reading tasks when debug event occurs
+In-Reply-To: <1283189265-5015-1-git-send-email-chase.douglas@canonical.com>
+Message-ID: <alpine.LNX.2.00.1009081202290.26813@pobox.suse.cz>
+References: <1283189265-5015-1-git-send-email-chase.douglas@canonical.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C8750B8.6000107@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 6678838249225694060
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11:00 Wed 08 Sep     , Nicolas Ferre wrote:
-> Le 07/09/2010 21:42, avictor.za@gmail.com :
-> > hi,
-> > 
-> >> +/* One additional fake clock for second TC block */
-> >> +static struct clk tcb1_clk = {
-> >> +       .name           = "tcb1_clk",
-> >> +       .pmc_mask       = 0,
-> >> +       .type           = CLK_TYPE_PERIPHERAL,
-> >> +       .parent         = &tcb0_clk,
-> >> +};
-> >> +
-> > 
-> > Looking at this again...  since type is CLK_TYPE_PERIPHERAL, when you
-> > call clk_register() the "parent" is changed to the master clock.
-> > 
-> > Which means, then later you call clk_enable() the "pmc_mask" is still
-> > 0, so 0 gets written (in pmc_periph_mode) to AT91_PMC_PCER.  So the
-> > TCB clock won't be enabled.
-> > 
-> > Or am I missing something?
-> 
-> You are absolutely right!
-> 
-> What do you think about this modification of clk_register() function?
-> 
-> --- a/arch/arm/mach-at91/clock.c
-> +++ b/arch/arm/mach-at91/clock.c
-> @@ -501,7 +501,8 @@ postcore_initcall(at91_clk_debugfs_init);
->  int __init clk_register(struct clk *clk)
->  {
->         if (clk_is_peripheral(clk)) {
-> -               clk->parent = &mck;
-> +               if (!clk->parent)
-> +                       clk->parent = &mck;
->                 clk->mode = pmc_periph_mode;
->                 list_add_tail(&clk->node, &clocks);
->         }
-> 
-> It is a very little modification which implements what I had in mind
-> while creating a kind of "child peripheral" clock.
-so so
+On Mon, 30 Aug 2010, Chase Douglas wrote:
 
-but until we switch to clkdev it will solve the issue
+> From: Chase Douglas <chase.douglas@ubuntu.com>
+> 
+> Some devices poke the hid core in a way that causes hid_debug_event to
+> be called, while never calling hid_dump_input. Without this wakeup
+> addition, tasks reading for hid events through debugfs may never see any
+> events. It may be that a well written driver doesn't cause this, but
+> then what's the point of debugfs?
 
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Well the main reason for the debugfs interface has been to debug strange 
+devices. But your fix is a clear improvement for pathological cases, which 
+is OK for debugging interface.
 
-Best Regards,
-J.
+Applied, thanks.
+
+> 
+> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> ---
+>  drivers/hid/hid-debug.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-debug.c b/drivers/hid/hid-debug.c
+> index 850d02a..adff4ef 100644
+> --- a/drivers/hid/hid-debug.c
+> +++ b/drivers/hid/hid-debug.c
+> @@ -570,6 +570,8 @@ void hid_debug_event(struct hid_device *hdev, char *buf)
+>  				buf[i];
+>  		list->tail = (list->tail + i) % HID_DEBUG_BUFSIZE;
+>          }
+> +
+> +	wake_up_interruptible(&hdev->debug_wait);
+>  }
+>  EXPORT_SYMBOL_GPL(hid_debug_event);
+>  
+> -- 
+> 1.7.1
+> 
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
