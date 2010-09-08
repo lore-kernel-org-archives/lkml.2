@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405Ab0IHRAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 13:00:53 -0400
-Received: from ns2.cypress.com ([157.95.67.5]:41312 "EHLO ns2.cypress.com"
+	id S1752397Ab0IHRDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 13:03:48 -0400
+Received: from ns2.cypress.com ([157.95.67.5]:41395 "EHLO ns2.cypress.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753100Ab0IHRAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 13:00:52 -0400
+	id S1756782Ab0IHRDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 13:03:13 -0400
 Reply-To: <david.cross@cypress.com>
 From: "David Cross" <david.cross@cypress.com>
 To: "'Greg KH'" <greg@kroah.com>
-Cc: <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-References: <1283887607.7250.10.camel@odc-laptop> <20100907235800.GD12823@kroah.com>
-Subject: RE: [PATCH] gpmc, EXPORT_SYMBOLS, west bridge related
-Date: Wed, 8 Sep 2010 10:00:33 -0700
+Cc: <dhowells@redhat.com>, <linux-cachefs@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+References: <1283888011.7250.17.camel@odc-laptop> <20100907235905.GE12823@kroah.com>
+Subject: RE: [PATCH] Cachefiles, mpage_cleardirty addtition, west bridgerelated
+Date: Wed, 8 Sep 2010 10:02:49 -0700
 Organization: Cypress Semiconductor
-Message-ID: <701AE2655D844F9AAB5F2492AD477066@stanford.edu>
+Message-ID: <F6CA58C781EF4D31B9DBCBBACC511DAD@stanford.edu>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Office Outlook 11
-Thread-Index: ActO7FZ1Tnp73YSVQkCSDCiytfU9PwAijOUA
+Thread-Index: ActO7Fg/1eJC1JaYRSiq48wPYy37SQAixQ7A
 X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
-In-Reply-To: <20100907235800.GD12823@kroah.com>
+In-Reply-To: <20100907235905.GE12823@kroah.com>
 X-Brightmail-Tracker: AAAAAA==
 X-Brightmail-Tracker: AAAAAA==
 X-MailScanner: 
@@ -32,58 +32,96 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+> -----Original Message-----
 > From: Greg KH [mailto:greg@kroah.com] 
 
-> On Tue, Sep 07, 2010 at 12:26:47PM -0700, David Cross wrote:
-> > This patch exports some of the gpmc driver functions in OMAP3. The
-purpose behind this patch 
-> > is to allow device drivers compiled as loadable modules to be interfaced
-> to the GPMC. I am
-> > hoping that Tony is the correct maintainer and willing to ACK this
-change. Please let me know 
-> > if there are any issues or concerns with this patch.
+> On Tue, Sep 07, 2010 at 12:33:31PM -0700, David Cross wrote:
+> > This patch adds the mpage_cleardirty function to the cachefiles
+implementation in the kernel.
+> > The purpose behind this patch is to allow for file based DMA through an
+external DMA engine
+> > without the data ever going through the process. The procedure for the
+usage of this function 
+> > is as follows:
+> > 1) User space allocates and maps a file
+> > 2) external DMA device transfers the data to non-volatile storage
+directly without it going through 
+> >    the processor
+> > 3) the "dirty" pages must be cleared and invalidated as they do not
+contain correct information.
+> > 
+> > I believe that David is the correct maintainer and am hoping that he is
+willing to ACK this change. Please let me know 
+> > if there are any issues or concerns with this patch or if I should be
+> > asking a different maintainer to ack.
 > > Thanks,
 > > David
 > > 
 > > Signed-off-by: David Cross <david.cross@cypress.com>
 > > 
 > > diff -uprN -X linux-next-vanilla/Documentation/dontdiff
-linux-next-vanilla/arch/arm/mach-omap2/gpmc.c
-linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c
-> > --- linux-next-vanilla/arch/arm/mach-omap2/gpmc.c	2010-08-31
-19:32:51.000000000 -0700
-> > +++ linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c	2010-09-01
-16:10:21.000000000 -0700
-> > @@ -133,6 +133,7 @@ void gpmc_cs_write_reg(int cs, int idx, 
-> >  	reg_addr = gpmc_base + GPMC_CS0_OFFSET + (cs * GPMC_CS_SIZE) + idx;
-> >  	__raw_writel(val, reg_addr);
+linux-next-vanilla/fs/mpage.c linux-next-incl-sdk/fs/mpage.c
+> > --- linux-next-vanilla/fs/mpage.c	2010-08-31 19:32:51.000000000 -0700
+> > +++ linux-next-incl-sdk/fs/mpage.c	2010-09-07 11:52:39.000000000 -0700
+> > @@ -716,3 +716,50 @@ int mpage_writepage(struct page *page, g
+> >  	return ret;
 > >  }
-> > +EXPORT_SYMBOL(gpmc_cs_write_reg);
+> >  EXPORT_SYMBOL(mpage_writepage);
+> > +
+> > +int mpage_cleardirty(struct address_space *mapping, int num_pages)
+> > +{
+> > +	int ret = 0;
+> > +	int nr_pages;
+> > +	struct pagevec pvec;
+> > +	pgoff_t index = 0;
+> > +	pgoff_t end;
+> > +
+> > +	pagevec_init(&pvec, 0);
+> > +	index = mapping->writeback_index;
+> > +	end = index + num_pages;
+> > +
+> > +	while ((index <= end) &&
+> > +	       (nr_pages = pagevec_lookup_tag(&pvec, mapping, &index,
+> > +				PAGECACHE_TAG_DIRTY, min(end - index,
+> > +					(pgoff_t)PAGEVEC_SIZE-1) + 1))) {
+> > +		unsigned i;
+> > +
+> > +		for (i = 0; i < nr_pages; i++) {
+> > +			struct page *page = pvec.pages[i];
+> > +
+> > +			lock_page(page);
+> > +			ret = clear_page_dirty_for_io(page);
+> > +			if (page_has_private(page))
+> > +				do_invalidatepage(page, 0);
+> > +
+> > +			cancel_dirty_page(page, PAGE_CACHE_SIZE);
+> > +
+> > +			remove_from_page_cache(page);
+> > +			ClearPageMappedToDisk(page);
+> > +			page_cache_release(page);	/* pagecache ref */
+> > +			unlock_page(page);
+> > +
+> > +			if (!ret) {
+> > +				printk(KERN_INFO "mpage_cleardirty: "
+> > +				"clear_page_dirty_for_io returned %d\n",
+ret);
+> > +				return ret;
+> > +			}
+> > +		}
+> > +		pagevec_release(&pvec);
+> > +		cond_resched();
+> > +	}
+> > +
+> > +	return ret;
+> > +}
+> > +EXPORT_SYMBOL(mpage_cleardirty);
 
-> EXPORT_SYMBOL_GPL() perhaps?
+> EXPORT_SYMBOL_GPL()?
+Sure, but do I need to submit a new patch for this as well?
 
-I don't have an issue with that, though I am not sure I understand why we
-would want to limit the usage of the function to GPL'd modules. It is
-probably Tony's call assuming he is ok with exporting the symbol.
+thanks,
 
-> What about platforms that don't have this symbol, how will the driver
-> build properly then?
-The driver will require some sort of HAL to build, this is part of the
-reason for the Kconfig changes. They require a HAL to be selected before the
-driver can be included. A platform which does not have a gpmc specifically
-will have some method of configuring the memory interface to talk with an
-external chip. In that case, whatever functions are used for memory
-interface configuration will be used.
-
-> Shouldn't something like this be in a arch-neutral
-> place in the kernel tree?
-I don't think so, the inclusion of west bridge is architecture specific
-based on the need to configure an external memory interface to talk to it.
-
-Thanks,
 david
-
-
 
 
 ---------------------------------------------------------------
