@@ -1,111 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757788Ab0IGXtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 19:49:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756459Ab0IGXto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 19:49:44 -0400
-Date: Tue, 7 Sep 2010 19:49:18 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jack@suse.cz, mst@redhat.com, linux-ide@vger.kernel.org,
-        device-mapper development <dm-devel@redhat.com>,
-        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp, hch@lst.de,
-        k-ueda@ct.jp.nec.com, vst@vlnb.net, linux-scsi@vger.kernel.org,
-        rusty@rustcorp.com.au, linux-raid@vger.kernel.org, mpatocka@redhat.com,
-        swhiteho@redhat.com, chris.mason@oracle.com, tytso@mit.edu,
-        jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, rwheeler@redhat.com,
-        Milan Broz <mbroz@redhat.com>
-Subject: [PATCH 42/41] dm: convey that all flushes are processed as empty
-Message-ID: <20100907234918.GA23921@redhat.com>
-References: <1283509796-1510-1-git-send-email-tj@kernel.org>
- <1283509796-1510-24-git-send-email-tj@kernel.org>
- <4C84CD18.6060906@redhat.com>
- <20100907211724.GA22525@redhat.com>
- <20100907221543.GB22525@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100907221543.GB22525@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1757938Ab0IGXwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 19:52:04 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44914 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757363Ab0IGXwC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 19:52:02 -0400
+Date: Wed, 8 Sep 2010 01:11:12 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Brownell <david-b@pacbell.net>
+Cc: Ryan Mallon <ryan@bluewatersys.com>,
+        "avictor.za@gmail.com" <avictor.za@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        bn@niasdigital.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] pio: add arch specific gpio_is_valid() function
+Message-ID: <20100908011112.6469db62@lxorguk.ukuu.org.uk>
+In-Reply-To: <616992.75276.qm@web180302.mail.gq1.yahoo.com>
+References: <20100907222230.4a3594be@lxorguk.ukuu.org.uk>
+	<616992.75276.qm@web180302.mail.gq1.yahoo.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-14
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename __clone_and_map_flush to __clone_and_map_empty_flush for added
-clarity.
+On Tue, 7 Sep 2010 16:44:55 -0700 (PDT)
+David Brownell <david-b@pacbell.net> wrote:
 
-Reintroduce a BUG_ON() and add a few more helpful comments to the code
-so that it is clear that all flushes are empty.
+> 
+> 
+> --- On Tue, 9/7/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> > > 
+> > >      device->output_pin = -EINVAL;
+> > 
+> > gpio numbers are unsigned in the rest of the API
+> 
+> Minor goof; should have been "int" everywhere,
+> as implied by the references to negative numbers
+> in the docs... negatives not used internally, but
+> preserved for external use (as above).
 
-Cleanup __split_and_process_bio() so that an empty flush isn't processed
-by a 'sector_count' focused while loop.
+Ok I need to patch a couple of the intel drivers to use -1 then.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
----
- drivers/md/dm.c |   21 +++++++++------------
- 1 files changed, 9 insertions(+), 12 deletions(-)
-
-Tejun, please feel free to fold this patch into (or insert after)
-0025-dm-relax-ordering-of-bio-based-flush-implementation.patch
-
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index cd2f7e7..9a852ee 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -622,6 +622,7 @@ static void dec_pending(struct dm_io *io, int error)
- 			return;
- 
- 		if (!(bio->bi_rw & REQ_FLUSH) || !bio->bi_size) {
-+			/* done with normal IO or empty flush */
- 			trace_block_bio_complete(md->queue, bio);
- 			bio_endio(bio, io_error);
- 		} else {
-@@ -1132,16 +1133,15 @@ static void __issue_target_requests(struct clone_info *ci, struct dm_target *ti,
- 		__issue_target_request(ci, ti, request_nr, len);
- }
- 
--static int __clone_and_map_flush(struct clone_info *ci)
-+static int __clone_and_map_empty_flush(struct clone_info *ci)
- {
- 	unsigned target_nr = 0;
- 	struct dm_target *ti;
- 
-+	BUG_ON(bio_has_data(ci->bio));
- 	while ((ti = dm_table_get_target(ci->map, target_nr++)))
- 		__issue_target_requests(ci, ti, ti->num_flush_requests, 0);
- 
--	ci->sector_count = 0;
--
- 	return 0;
- }
- 
-@@ -1302,20 +1302,17 @@ static void __split_and_process_bio(struct mapped_device *md, struct bio *bio)
- 	ci.sector = bio->bi_sector;
- 	ci.idx = bio->bi_idx;
- 
-+	start_io_acct(ci.io);
- 	if (!is_flush) {
- 		ci.bio = bio;
- 		ci.sector_count = bio_sectors(bio);
-+		while (ci.sector_count && !error)
-+			error = __clone_and_map(&ci);
- 	} else {
- 		ci.bio = &ci.md->flush_bio;
--		ci.sector_count = 1;
--	}
--
--	start_io_acct(ci.io);
--	while (ci.sector_count && !error) {
--		if (!is_flush)
--			error = __clone_and_map(&ci);
--		else
--			error = __clone_and_map_flush(&ci);
-+		ci.sector_count = 0;
-+		error = __clone_and_map_empty_flush(&ci);
-+		/* dec_pending submits any data associated with flush */
- 	}
- 
- 	/* drop the extra reference count */
+Alan
