@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab0IHQAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 12:00:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49172 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755790Ab0IHQAh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 12:00:37 -0400
-Date: Wed, 8 Sep 2010 10:00:34 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Jassi Brar <jassi.brar@samsung.com>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] spi/spi_s3c64xx: Increase dead reckoning time in
- wait_for_xfer()
-Message-ID: <20100908160034.GB3686@angua.secretlab.ca>
-References: <1283873872-8633-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1283873872-8633-2-git-send-email-broonie@opensource.wolfsonmicro.com>
- <AANLkTimxXWjiX64wJcNui2mLrvVg9RUtN9fFVnLhZsBY@mail.gmail.com>
+	id S1756070Ab0IHQDl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 12:03:41 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:55931 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754892Ab0IHQDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 12:03:39 -0400
+Date: Wed, 8 Sep 2010 18:03:26 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT pull] Preparatory patch for semaphore cleanup
+Message-ID: <20100908160326.GA18932@elte.hu>
+References: <alpine.LFD.2.00.1009081507250.2477@localhost6.localdomain6>
+ <AANLkTikYEjV8ikkPsfJ0d7WsikWHJ0n74u9uDS4uGHC+@mail.gmail.com>
+ <1283957961.23762.28.camel@laptop>
+ <20100908155604.GA18064@elte.hu>
+ <1283961504.23762.34.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimxXWjiX64wJcNui2mLrvVg9RUtN9fFVnLhZsBY@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1283961504.23762.34.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0057]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 10:44:26AM +0900, Jassi Brar wrote:
-> On Wed, Sep 8, 2010 at 12:37 AM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
-> > For small transfers at high speeds the expected transfer time can easily
-> > be well under 1ms, causing the delay in wait_for_xfer() to be only the
-> > dead reckoning fudge factor of 5ms currently included. Experiments on
-> > some of my systems shows that this is marginal for some transfers so
-> > double it to 10ms.
-> >
-> > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > ---
-> >  drivers/spi/spi_s3c64xx.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
-> > index 03b28e4..4abb441 100644
-> > --- a/drivers/spi/spi_s3c64xx.c
-> > +++ b/drivers/spi/spi_s3c64xx.c
-> > @@ -326,7 +326,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
-> >
-> >        /* millisecs to xfer 'len' bytes @ 'cur_speed' */
-> >        ms = xfer->len * 8 * 1000 / sdd->cur_speed;
-> > -       ms += 5; /* some tolerance */
-> > +       ms += 10; /* some tolerance */
-> >
-> >        if (dma_mode) {
-> >                val = msecs_to_jiffies(ms) + 10;
+
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Wed, 2010-09-08 at 17:56 +0200, Ingo Molnar wrote:
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Wed, 2010-09-08 at 07:54 -0700, Linus Torvalds wrote:
+> > > > On Wed, Sep 8, 2010 at 6:11 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > > >
+> > > > > This patch just provides the DEFINE_SEMAPHORE macro which is required
+> > > > > for the various subsystem cleanups I sent out, so we can finally get
+> > > > > rid of init_MUTEX[_LOCKED] in 2.6.37.
+> > > > 
+> > > > Why is it called DEFINE_SEMAPHORE(), when two lines later the we have
+> > > > DECLARE_MUTEX()?
+> > > > 
+> > > > IOW, the whole DEFINE vs DECLARE thing seems confused. I'm not saying
+> > > > one is better than the other (maybe "define" is), but the mixing of
+> > > > names is worse than either, I feel..
+> > > 
+> > > The rest of the series, that Thomas didn't include in this pull, removes
+> > > all the DECLARE_MUTEX() users. So its temporary awkward-ness.
+> > 
+> > and DEFINE_MUTEX() is needed upstream so that we can spread those 
 > 
-> Acked-by: Jassi Brar <jassi.brar@samsung.com>
+> s/DEFINE_MUTEX/DEFINE_SEMAPHORE/
 
-Applied, thanks.
+Heh, i was demonstrating Linus's point ;-)
 
-g.
+Thanks,
+
+	Ingo
