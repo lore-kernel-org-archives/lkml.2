@@ -1,161 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab0IHBbp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 21:31:45 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:64082 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab0IHBbm (ORCPT
+	id S1755657Ab0IHBo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 21:44:29 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51350 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab0IHBo2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 21:31:42 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 03/10] hugetlb: redefine hugepage copy functions
-Date: Wed,  8 Sep 2010 10:19:34 +0900
-Message-Id: <1283908781-13810-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	Tue, 7 Sep 2010 21:44:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dn/l7x+ZTKhePWBViQD6FkGHI36NIuqK4ADX9m75scaCBtMtN2nzw/Ji0zU3LyP0ds
+         aOSjgKbpMaIPk+PDBPfDjykHA35mdyDsYKe9YqUl+3KQ0x3FDDFRrWvHq4ivSIbXbrOJ
+         JlWtyOUWiFfJuU+A1VDo+BUfdiyM4iRPhagkA=
+MIME-Version: 1.0
+In-Reply-To: <1283873872-8633-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1283873872-8633-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	<1283873872-8633-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Wed, 8 Sep 2010 10:44:26 +0900
+Message-ID: <AANLkTimxXWjiX64wJcNui2mLrvVg9RUtN9fFVnLhZsBY@mail.gmail.com>
+Subject: Re: [PATCH 2/2] spi/spi_s3c64xx: Increase dead reckoning time in wait_for_xfer()
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Jassi Brar <jassi.brar@samsung.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies hugepage copy functions to have only destination
-and source hugepages as arguments for later use.
-The old ones are renamed from copy_{gigantic,huge}_page() to
-copy_user_{gigantic,huge}_page().
-This naming convention is consistent with that between copy_highpage()
-and copy_user_highpage().
+On Wed, Sep 8, 2010 at 12:37 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> For small transfers at high speeds the expected transfer time can easily
+> be well under 1ms, causing the delay in wait_for_xfer() to be only the
+> dead reckoning fudge factor of 5ms currently included. Experiments on
+> some of my systems shows that this is marginal for some transfers so
+> double it to 10ms.
+>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/spi/spi_s3c64xx.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
+> index 03b28e4..4abb441 100644
+> --- a/drivers/spi/spi_s3c64xx.c
+> +++ b/drivers/spi/spi_s3c64xx.c
+> @@ -326,7 +326,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
+>
+>        /* millisecs to xfer 'len' bytes @ 'cur_speed' */
+>        ms = xfer->len * 8 * 1000 / sdd->cur_speed;
+> -       ms += 5; /* some tolerance */
+> +       ms += 10; /* some tolerance */
+>
+>        if (dma_mode) {
+>                val = msecs_to_jiffies(ms) + 10;
 
-ChangeLog since v4:
-- add blank line between local declaration and code
-- remove unnecessary might_sleep()
-
-ChangeLog since v2:
-- change copy_huge_page() from macro to inline dummy function
-  to avoid compile warning when !CONFIG_HUGETLB_PAGE.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- include/linux/hugetlb.h |    4 ++++
- mm/hugetlb.c            |   45 ++++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 44 insertions(+), 5 deletions(-)
-
-diff --git v2.6.36-rc2/include/linux/hugetlb.h v2.6.36-rc2/include/linux/hugetlb.h
-index 0b73c53..9e51f77 100644
---- v2.6.36-rc2/include/linux/hugetlb.h
-+++ v2.6.36-rc2/include/linux/hugetlb.h
-@@ -44,6 +44,7 @@ int hugetlb_reserve_pages(struct inode *inode, long from, long to,
- 						int acctflags);
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
- void __isolate_hwpoisoned_huge_page(struct page *page);
-+void copy_huge_page(struct page *dst, struct page *src);
- 
- extern unsigned long hugepages_treat_as_movable;
- extern const unsigned long hugetlb_zero, hugetlb_infinity;
-@@ -102,6 +103,9 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
- #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
- #define huge_pte_offset(mm, address)	0
- #define __isolate_hwpoisoned_huge_page(page)	0
-+static inline void copy_huge_page(struct page *dst, struct page *src)
-+{
-+}
- 
- #define hugetlb_change_protection(vma, address, end, newprot)
- 
-diff --git v2.6.36-rc2/mm/hugetlb.c v2.6.36-rc2/mm/hugetlb.c
-index f526228..351f8d1 100644
---- v2.6.36-rc2/mm/hugetlb.c
-+++ v2.6.36-rc2/mm/hugetlb.c
-@@ -423,14 +423,14 @@ static void clear_huge_page(struct page *page,
- 	}
- }
- 
--static void copy_gigantic_page(struct page *dst, struct page *src,
-+static void copy_user_gigantic_page(struct page *dst, struct page *src,
- 			   unsigned long addr, struct vm_area_struct *vma)
- {
- 	int i;
- 	struct hstate *h = hstate_vma(vma);
- 	struct page *dst_base = dst;
- 	struct page *src_base = src;
--	might_sleep();
-+
- 	for (i = 0; i < pages_per_huge_page(h); ) {
- 		cond_resched();
- 		copy_user_highpage(dst, src, addr + i*PAGE_SIZE, vma);
-@@ -440,14 +440,15 @@ static void copy_gigantic_page(struct page *dst, struct page *src,
- 		src = mem_map_next(src, src_base, i);
- 	}
- }
--static void copy_huge_page(struct page *dst, struct page *src,
-+
-+static void copy_user_huge_page(struct page *dst, struct page *src,
- 			   unsigned long addr, struct vm_area_struct *vma)
- {
- 	int i;
- 	struct hstate *h = hstate_vma(vma);
- 
- 	if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
--		copy_gigantic_page(dst, src, addr, vma);
-+		copy_user_gigantic_page(dst, src, addr, vma);
- 		return;
- 	}
- 
-@@ -458,6 +459,40 @@ static void copy_huge_page(struct page *dst, struct page *src,
- 	}
- }
- 
-+static void copy_gigantic_page(struct page *dst, struct page *src)
-+{
-+	int i;
-+	struct hstate *h = page_hstate(src);
-+	struct page *dst_base = dst;
-+	struct page *src_base = src;
-+
-+	for (i = 0; i < pages_per_huge_page(h); ) {
-+		cond_resched();
-+		copy_highpage(dst, src);
-+
-+		i++;
-+		dst = mem_map_next(dst, dst_base, i);
-+		src = mem_map_next(src, src_base, i);
-+	}
-+}
-+
-+void copy_huge_page(struct page *dst, struct page *src)
-+{
-+	int i;
-+	struct hstate *h = page_hstate(src);
-+
-+	if (unlikely(pages_per_huge_page(h) > MAX_ORDER_NR_PAGES)) {
-+		copy_gigantic_page(dst, src);
-+		return;
-+	}
-+
-+	might_sleep();
-+	for (i = 0; i < pages_per_huge_page(h); i++) {
-+		cond_resched();
-+		copy_highpage(dst + i, src + i);
-+	}
-+}
-+
- static void enqueue_huge_page(struct hstate *h, struct page *page)
- {
- 	int nid = page_to_nid(page);
-@@ -2415,7 +2450,7 @@ retry_avoidcopy:
- 	if (unlikely(anon_vma_prepare(vma)))
- 		return VM_FAULT_OOM;
- 
--	copy_huge_page(new_page, old_page, address, vma);
-+	copy_user_huge_page(new_page, old_page, address, vma);
- 	__SetPageUptodate(new_page);
- 
- 	/*
--- 
-1.7.2.2
-
+Acked-by: Jassi Brar <jassi.brar@samsung.com>
