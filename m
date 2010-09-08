@@ -1,223 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab0IHQmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 12:42:05 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:44236 "EHLO
+	id S1756645Ab0IHQmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 12:42:21 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:44233 "EHLO
 	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756148Ab0IHQli (ORCPT
+	with ESMTP id S1756043Ab0IHQli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Sep 2010 12:41:38 -0400
 From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org, "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH 3/5] fpga: add basic CARMA board support
-Date: Wed,  8 Sep 2010 09:41:20 -0700
-Message-Id: <1283964082-30133-4-git-send-email-iws@ovro.caltech.edu>
+Subject: [PATCH 2/5] fsldma: move DMA_SLAVE support functions to the driver
+Date: Wed,  8 Sep 2010 09:41:19 -0700
+Message-Id: <1283964082-30133-3-git-send-email-iws@ovro.caltech.edu>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1283964082-30133-1-git-send-email-iws@ovro.caltech.edu>
 References: <1283964082-30133-1-git-send-email-iws@ovro.caltech.edu>
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Wed, 08 Sep 2010 09:41:38 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Wed, 08 Sep 2010 09:41:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds basic support for the system controller FPGA on the OVRO CARMA
-board. This patch only adds infrastructure that will be used by later
-drivers.
+The DMA_SLAVE support functions all existed as static inlines in the
+driver specific header arch/powerpc/include/asm/fsldma.h. Move the body
+of the functions to the driver itself, and EXPORT_SYMBOL_GPL() them.
+
+At the same time, add the missing linux/list.h header.
 
 Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
 ---
- drivers/Kconfig             |    2 +
- drivers/Makefile            |    1 +
- drivers/fpga/Kconfig        |    1 +
- drivers/fpga/Makefile       |    1 +
- drivers/fpga/carma/Kconfig  |   21 ++++++++++++
- drivers/fpga/carma/Makefile |    1 +
- drivers/fpga/carma/carma.c  |   73 +++++++++++++++++++++++++++++++++++++++++++
- drivers/fpga/carma/carma.h  |   22 +++++++++++++
- 8 files changed, 122 insertions(+), 0 deletions(-)
- create mode 100644 drivers/fpga/Kconfig
- create mode 100644 drivers/fpga/Makefile
- create mode 100644 drivers/fpga/carma/Kconfig
- create mode 100644 drivers/fpga/carma/Makefile
- create mode 100644 drivers/fpga/carma/carma.c
- create mode 100644 drivers/fpga/carma/carma.h
+ arch/powerpc/include/asm/fsldma.h |   70 +++------------------------------
+ drivers/dma/fsldma.c              |   77 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 83 insertions(+), 64 deletions(-)
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index a2b902f..8945ae6 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -111,4 +111,6 @@ source "drivers/xen/Kconfig"
- source "drivers/staging/Kconfig"
- 
- source "drivers/platform/Kconfig"
-+
-+source "drivers/fpga/Kconfig"
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index ae47344..c0b05de 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -115,3 +115,4 @@ obj-$(CONFIG_VLYNQ)		+= vlynq/
- obj-$(CONFIG_STAGING)		+= staging/
- obj-y				+= platform/
- obj-y				+= ieee802154/
-+obj-$(CONFIG_FPGA_DRIVERS)	+= fpga/
-diff --git a/drivers/fpga/Kconfig b/drivers/fpga/Kconfig
-new file mode 100644
-index 0000000..c85c2cc
---- /dev/null
-+++ b/drivers/fpga/Kconfig
-@@ -0,0 +1 @@
-+source "drivers/fpga/carma/Kconfig"
-diff --git a/drivers/fpga/Makefile b/drivers/fpga/Makefile
-new file mode 100644
-index 0000000..409a5f9
---- /dev/null
-+++ b/drivers/fpga/Makefile
-@@ -0,0 +1 @@
-+obj-y		+= carma/
-diff --git a/drivers/fpga/carma/Kconfig b/drivers/fpga/carma/Kconfig
-new file mode 100644
-index 0000000..448885e
---- /dev/null
-+++ b/drivers/fpga/carma/Kconfig
-@@ -0,0 +1,21 @@
-+
-+menuconfig FPGA_DRIVERS
-+	bool "FPGA Drivers"
-+	default n
-+	help
-+	  Say Y here to see options for devices used with custom FPGAs.
-+	  This option alone does not add any kernel code.
-+
-+	  If you say N, all options in this submenu will be skipped and disabled.
-+
-+if FPGA_DRIVERS
-+
-+config CARMA
-+	tristate "CARMA System Controller FPGA support"
-+	depends on FSL_SOC && PPC_83xx
-+	default n
-+	help
-+	  Say Y here to include basic support for the CARMA System Controller
-+	  FPGA. This option allows the other more advanced drivers to be built.
-+
-+endif # FPGA_DRIVERS
-diff --git a/drivers/fpga/carma/Makefile b/drivers/fpga/carma/Makefile
-new file mode 100644
-index 0000000..90d0594
---- /dev/null
-+++ b/drivers/fpga/carma/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_CARMA)			+= carma.o
-diff --git a/drivers/fpga/carma/carma.c b/drivers/fpga/carma/carma.c
-new file mode 100644
-index 0000000..97549d2
---- /dev/null
-+++ b/drivers/fpga/carma/carma.c
-@@ -0,0 +1,73 @@
-+/*
-+ * CARMA Board Utility Driver
-+ *
+diff --git a/arch/powerpc/include/asm/fsldma.h b/arch/powerpc/include/asm/fsldma.h
+index debc5ed..34ec00b 100644
+--- a/arch/powerpc/include/asm/fsldma.h
++++ b/arch/powerpc/include/asm/fsldma.h
+@@ -1,7 +1,7 @@
+ /*
+  * Freescale MPC83XX / MPC85XX DMA Controller
+  *
+- * Copyright (c) 2009 Ira W. Snyder <iws@ovro.caltech.edu>
 + * Copyright (c) 2009-2010 Ira W. Snyder <iws@ovro.caltech.edu>
+  *
+  * This file is licensed under the terms of the GNU General Public License
+  * version 2. This program is licensed "as is" without any warranty of any
+@@ -11,6 +11,7 @@
+ #ifndef __ARCH_POWERPC_ASM_FSLDMA_H__
+ #define __ARCH_POWERPC_ASM_FSLDMA_H__
+ 
++#include <linux/list.h>
+ #include <linux/slab.h>
+ #include <linux/dmaengine.h>
+ 
+@@ -69,69 +70,10 @@ struct fsl_dma_slave {
+ 	bool external_pause;
+ };
+ 
+-/**
+- * fsl_dma_slave_append - add an address/length pair to a struct fsl_dma_slave
+- * @slave: the &struct fsl_dma_slave to add to
+- * @address: the hardware address to add
+- * @length: the length of bytes to transfer from @address
+- *
+- * Add a hardware address/length pair to a struct fsl_dma_slave. Returns 0 on
+- * success, -ERRNO otherwise.
+- */
+-static inline int fsl_dma_slave_append(struct fsl_dma_slave *slave,
+-				       dma_addr_t address, size_t length)
+-{
+-	struct fsl_dma_hw_addr *addr;
+-
+-	addr = kzalloc(sizeof(*addr), GFP_ATOMIC);
+-	if (!addr)
+-		return -ENOMEM;
+-
+-	INIT_LIST_HEAD(&addr->entry);
+-	addr->address = address;
+-	addr->length = length;
+-
+-	list_add_tail(&addr->entry, &slave->addresses);
+-	return 0;
+-}
+-
+-/**
+- * fsl_dma_slave_free - free a struct fsl_dma_slave
+- * @slave: the struct fsl_dma_slave to free
+- *
+- * Free a struct fsl_dma_slave and all associated address/length pairs
+- */
+-static inline void fsl_dma_slave_free(struct fsl_dma_slave *slave)
+-{
+-	struct fsl_dma_hw_addr *addr, *tmp;
+-
+-	if (slave) {
+-		list_for_each_entry_safe(addr, tmp, &slave->addresses, entry) {
+-			list_del(&addr->entry);
+-			kfree(addr);
+-		}
+-
+-		kfree(slave);
+-	}
+-}
+-
+-/**
+- * fsl_dma_slave_alloc - allocate a struct fsl_dma_slave
+- * @gfp: the flags to pass to kmalloc when allocating this structure
+- *
+- * Allocate a struct fsl_dma_slave for use by the DMA_SLAVE API. Returns a new
+- * struct fsl_dma_slave on success, or NULL on failure.
+- */
+-static inline struct fsl_dma_slave *fsl_dma_slave_alloc(gfp_t gfp)
+-{
+-	struct fsl_dma_slave *slave;
+-
+-	slave = kzalloc(sizeof(*slave), gfp);
+-	if (!slave)
+-		return NULL;
++struct fsl_dma_slave *fsl_dma_slave_alloc(gfp_t gfp);
++void fsl_dma_slave_free(struct fsl_dma_slave *slave);
+ 
+-	INIT_LIST_HEAD(&slave->addresses);
+-	return slave;
+-}
++int fsl_dma_slave_append(struct fsl_dma_slave *slave, dma_addr_t address,
++			 size_t length, gfp_t gfp);
+ 
+ #endif /* __ARCH_POWERPC_ASM_FSLDMA_H__ */
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index cea08be..f436ca4 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -38,6 +38,83 @@
+ #include <asm/fsldma.h>
+ #include "fsldma.h"
+ 
++/*
++ * External API
++ */
++
++/**
++ * fsl_dma_slave_append - add an address/length pair to a struct fsl_dma_slave
++ * @slave: the &struct fsl_dma_slave to add to
++ * @address: the hardware address to add
++ * @length: the length of bytes to transfer from @address
++ * @gfp: the flags to pass to kmalloc when allocating memory
 + *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2 of the License, or (at your
-+ * option) any later version.
++ * Add a hardware address/length pair to a struct fsl_dma_slave. Returns 0 on
++ * success, -ERRNO otherwise.
 + */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/err.h>
-+
-+#include "carma.h"
-+
-+static struct class *carma_class;
-+static const char drv_name[] = "carma";
-+
-+/*
-+ * CARMA Device Class Functions
-+ */
-+
-+struct device *carma_device_create(struct device *parent, dev_t devno,
-+				   const char *fmt, ...)
++int fsl_dma_slave_append(struct fsl_dma_slave *slave, dma_addr_t address,
++			 size_t length, gfp_t gfp)
 +{
-+	struct device *dev;
-+	va_list vargs;
++	struct fsl_dma_hw_addr *addr;
 +
-+	va_start(vargs, fmt);
-+	dev = device_create_vargs(carma_class, parent, devno, NULL, fmt, vargs);
-+	va_end(vargs);
++	addr = kzalloc(sizeof(*addr), gfp);
++	if (!addr)
++		return -ENOMEM;
 +
-+	return dev;
-+}
-+EXPORT_SYMBOL_GPL(carma_device_create);
++	INIT_LIST_HEAD(&addr->entry);
++	addr->address = address;
++	addr->length = length;
 +
-+void carma_device_destroy(dev_t devno)
-+{
-+	device_destroy(carma_class, devno);
-+}
-+EXPORT_SYMBOL_GPL(carma_device_destroy);
-+
-+/*
-+ * Module Init / Exit
-+ */
-+
-+static int __init carma_init(void)
-+{
-+	/* Register the CARMA device class */
-+	carma_class = class_create(THIS_MODULE, "carma");
-+	if (IS_ERR(carma_class)) {
-+		pr_err("%s: unable to create CARMA class\n", drv_name);
-+		return PTR_ERR(carma_class);
-+	}
-+
++	list_add_tail(&addr->entry, &slave->addresses);
 +	return 0;
 +}
++EXPORT_SYMBOL_GPL(fsl_dma_slave_append);
 +
-+static void __exit carma_exit(void)
++/**
++ * fsl_dma_slave_free - free a struct fsl_dma_slave
++ * @slave: the struct fsl_dma_slave to free
++ *
++ * Free a struct fsl_dma_slave and all associated address/length pairs
++ */
++void fsl_dma_slave_free(struct fsl_dma_slave *slave)
 +{
-+	class_destroy(carma_class);
++	struct fsl_dma_hw_addr *addr, *tmp;
++
++	if (slave) {
++		list_for_each_entry_safe(addr, tmp, &slave->addresses, entry) {
++			list_del(&addr->entry);
++			kfree(addr);
++		}
++
++		kfree(slave);
++	}
 +}
++EXPORT_SYMBOL_GPL(fsl_dma_slave_free);
 +
-+MODULE_AUTHOR("Ira W. Snyder <iws@ovro.caltech.edu>");
-+MODULE_DESCRIPTION("CARMA Device Class Driver");
-+MODULE_LICENSE("GPL");
++/**
++ * fsl_dma_slave_alloc - allocate a struct fsl_dma_slave
++ * @gfp: the flags to pass to kmalloc when allocating this structure
++ *
++ * Allocate a struct fsl_dma_slave for use by the DMA_SLAVE API. Returns a new
++ * struct fsl_dma_slave on success, or NULL on failure.
++ */
++struct fsl_dma_slave *fsl_dma_slave_alloc(gfp_t gfp)
++{
++	struct fsl_dma_slave *slave;
 +
-+module_init(carma_init);
-+module_exit(carma_exit);
-diff --git a/drivers/fpga/carma/carma.h b/drivers/fpga/carma/carma.h
-new file mode 100644
-index 0000000..f556dc8
---- /dev/null
-+++ b/drivers/fpga/carma/carma.h
-@@ -0,0 +1,22 @@
++	slave = kzalloc(sizeof(*slave), gfp);
++	if (!slave)
++		return NULL;
++
++	INIT_LIST_HEAD(&slave->addresses);
++	return slave;
++}
++EXPORT_SYMBOL_GPL(fsl_dma_slave_alloc);
++
 +/*
-+ * CARMA Board Utilities
-+ *
-+ * Copyright (c) 2009-2010 Ira W. Snyder <iws@ovro.caltech.edu>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2 of the License, or (at your
-+ * option) any later version.
++ * Driver Code
 + */
 +
-+#ifndef CARMA_DEVICE_H
-+#define CARMA_DEVICE_H
-+
-+#include <linux/device.h>
-+
-+struct device *carma_device_create(struct device *parent, dev_t devno,
-+				   const char *fmt, ...)
-+				   __attribute__((format(printf, 3, 4)));
-+void carma_device_destroy(dev_t devno);
-+
-+#endif /* CARMA_DEVICE_H */
+ static void dma_init(struct fsldma_chan *chan)
+ {
+ 	/* Reset the channel */
 -- 
 1.7.1
 
