@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab0IHRgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 13:36:16 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39299 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751469Ab0IHRgK (ORCPT
+	id S1752646Ab0IHRcn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 13:32:43 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54144
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751716Ab0IHRci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 13:36:10 -0400
-Date: Wed, 8 Sep 2010 18:56:05 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Nick Lowe <nick.lowe@gmail.com>
-Cc: Hans-Peter Jansen <hpj@urpla.net>, linux-kernel@vger.kernel.org
-Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
-Message-ID: <20100908185605.55671889@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTi=U40mzeMh-UJJy=ggVDry2qDWW-MYYyBhS_Kex@mail.gmail.com>
-References: <fmbxh-5N8-41@gated-at.bofh.it>
-	<55BC9463-95B9-4034-AA1E-55042D6E9354@gmail.com>
-	<201009081115.15544.hpj@urpla.net>
-	<AANLkTi=U40mzeMh-UJJy=ggVDry2qDWW-MYYyBhS_Kex@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Wed, 8 Sep 2010 13:32:38 -0400
+Date: Wed, 08 Sep 2010 10:32:56 -0700 (PDT)
+Message-Id: <20100908.103256.112592448.davem@davemloft.net>
+To: jarkao2@gmail.com
+Cc: pvp-lsts@fs.uni-ruse.bg, eric.dumazet@gmail.com,
+        herbert@gondor.hengli.com.au, rjw@sisk.pl,
+        kernel-testers@vger.kernel.org, maciej.rutecki@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [Bug #16626] Machine hangs with EIP at skb_copy_and_csum_dev
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100908062004.GA6280@ff.dom.local>
+References: <1283672983.3402.38.camel@edumazet-laptop>
+	<4C8717BB.2050504@fs.uni-ruse.bg>
+	<20100908062004.GA6280@ff.dom.local>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If a process crashes because of NOPL usage, you get the feedback loop to fix it.
+From: Jarek Poplawski <jarkao2@gmail.com>
+Date: Wed, 8 Sep 2010 06:20:04 +0000
 
-Trouble is that means rebuilding entire distributios, who don't
-neccessarily care about Geode. We had the same problem before with cmov
-and the VIA processors, GCC programmers didn't read the Intel PPro
-manual and got it wrong but it was the end users who suffered, and most of
-them were not in a position to rebuild their distro (and every security
-update, and test them all ...) and their distro didn't care.
+> We need both of them. I hope David could add this too:
+> 
+> Tested-by: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
 
-So lots of people ran a kernel with a CMOV hack in it - never got
-mainstream which is unfortunate because if it had it would have helped
-a lot more people and had the hole in it fixed.
-
-> The beauty of open source is that we can recompile to correct the bad
-> assumption; the latest version of binutils (GAS) finally corrects the
-> bad semantic that generic i686 includes NOPL.
-
-And the reality is that this won't happen. Yes you can do it but it's an
-enormously slow and inefficient way to tackle the problem.
-
-So the patch (corrected) makes complete sense.
-
-Alan
+Done, and applied, thanks :-)
