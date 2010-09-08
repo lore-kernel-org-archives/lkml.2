@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab0IHSrV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 14:47:21 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:32852 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752563Ab0IHSrR (ORCPT
+	id S1753306Ab0IHSwM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 14:52:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57480 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752536Ab0IHSwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 14:47:17 -0400
-Date: Wed, 8 Sep 2010 20:07:15 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Nick Lowe <nick.lowe@gmail.com>
-Cc: Hans-Peter Jansen <hpj@urpla.net>, linux-kernel@vger.kernel.org
-Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
-Message-ID: <20100908200715.2e56d0be@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTi=khD7fSVv_tC6TogimjJshEErj6Em8mCcDF+SM@mail.gmail.com>
-References: <fmbxh-5N8-41@gated-at.bofh.it>
-	<55BC9463-95B9-4034-AA1E-55042D6E9354@gmail.com>
-	<201009081115.15544.hpj@urpla.net>
-	<AANLkTi=U40mzeMh-UJJy=ggVDry2qDWW-MYYyBhS_Kex@mail.gmail.com>
-	<20100908185605.55671889@lxorguk.ukuu.org.uk>
-	<AANLkTi=khD7fSVv_tC6TogimjJshEErj6Em8mCcDF+SM@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Wed, 8 Sep 2010 14:52:07 -0400
+Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
+ __do_IRQ() code
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
+        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
+        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
+        linux-arch@vger.kernel.org
+In-Reply-To: <20100908152036.643594727@linutronix.de>
+References: <20100908152036.643594727@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Sep 2010 13:51:59 -0500
+Message-ID: <1283971919.11763.35.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And nobody has answered what happens when NOPLs are used to
-> synchronise with something else? Surely that can lead to subtle, hard
-> to debug breakage? Isn't that plain worse than refusing to run or
-> breaking out of execution?
+On Wed, 2010-09-08 at 18:14 +0000, Thomas Gleixner wrote:
+> plain text document attachment (genirq-troll-patch.patch)
+> __do_IRQ() has been deprecated after a two years migration phase in
+> commit 0e57aa1. Since then another 18 month have gone by.
+> 
+> So here's the status three and a half years after the flow based
+> infrastructure was merged:
+> 
+>  The following architectures are fully converted to the new flow
+>  handler code:
+> 
+>   arm, avr32, blackfin, frv, microblaze, mips, mn10300, powerpc, score, sh,
+>   sparc 64bit, tile, x86, xtensa
+> 
+>   (avr32 and xtensa should set CONFIG_GENERIC_HARDIRQS_NO__DO_IRQ
+>   though)
+> 
+>  The following architectures are not using the generic interrupt
+>  infrastructure at all and are therefor unaffected:
+> 
+>   s390, m68k, sparc 32bit
+> 
+>  The following architectures are still using __do_IRQ():
+> 
+>   alpha, cris, ia64, h8300, m32r, m68knommu, parisc, um
+> 
+> So now the question arises what to do with __do_IRQ().
+> 
+> Removing it would be the right thing, but that'll break 8 archs, so
+> it's probably not considered a good idea, though for most of them the
+> conversion should be reasonably trivial.
+> 
+> I'm happy to move that code into kernel/irq/cruft.c forever if there
+> is no way to get the remaining users converted in the forseeable
+> future. It looks like they can cope with the annoying build warning
+> nicely.
 
-NOPL for synchronisation - of user space. I'd say thats sufficiently
-unlikely not to care. It's still an improvement on crashing.
+Well, if you're going to deprecate something that 8 architectures rely
+on, it would be nice to tell people ... or even just linux-arch ... most
+of us do read that.  I've actually never noticed the warning the commit
+activated in any of my parisc compiles for some reason.
 
-The other point you make is a good one but it's not clear that all the
-proprietary apps for example will get recompiled, so to many users its
-not a solution. Similarly the long term stable distros aren't going to
-recompile everything and invalidate all their test data, so I doubt that
-things like Centos will.
+> Either that or moving everything what breaks into staging/arch/* and
+> hand it over to GregKH :)
+> 
+> Thoughts ?
 
-Alan
+We could move x86 into staging while it tries out the replacement ...
+
+James
+
+
