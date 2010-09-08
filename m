@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab0IHEzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 00:55:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33107 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab0IHEzk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 00:55:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cz9CmwUGnAcwwLKwoT7GIq2ZDqq0iVvNwa4AK07pnnTmdLyRkAvQet2dAZFE/36t0k
-         JBK0a404Lu2Nja2oVudbMdSVCWzimqn7aURpCBTGy2lZfYdEOUO9reN3+QlB13zicnhT
-         dD5b111ZwpvSB+NRNrMHsCs0FijieDeM1ksbQ=
+	id S1751490Ab0IHE5h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 00:57:37 -0400
+Received: from [83.228.35.12] ([83.228.35.12]:53223 "EHLO fs.ru.acad.bg"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167Ab0IHE5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 00:57:34 -0400
+Message-ID: <4C8717BB.2050504@fs.uni-ruse.bg>
+Date: Wed, 08 Sep 2010 07:57:31 +0300
+From: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; bg; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
 MIME-Version: 1.0
-In-Reply-To: <1283855357-15179-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1283855357-15179-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Date: Wed, 8 Sep 2010 13:55:39 +0900
-Message-ID: <AANLkTim=ArPyqC7K-aaer97deGeR6yU-FS1Hpm3D_1ER@mail.gmail.com>
-Subject: Re: [PATCH] spi/spi_s3c64xx: Move to subsys_initcall()
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jassi Brar <jassi.brar@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        spi-devel-general@lists.sourceforge.net,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Jarek Poplawski <jarkao2@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: [Bug #16626] Machine hangs with EIP at skb_copy_and_csum_dev
+References: <20100904203429.GA4891@del.dom.local> <1283672983.3402.38.camel@edumazet-laptop>
+In-Reply-To: <1283672983.3402.38.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 7, 2010 at 7:29 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> Allow the use of the S3C64xx SPI controller with things like PMICs by
-> moving the init up to subsys_initcall().
+На 05.9.2010 г. 10:49, Eric Dumazet написа:
+> Le samedi 04 septembre 2010 à 22:34 +0200, Jarek Poplawski a écrit :
 >
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
+>> Hi again,
+>>
+>> Just had a second look, and unless I miss something...
+>>
+>> Plamen, could you test this patch, too? (Without removing the previous
+>> one.)
+>>
+>> Thanks,
+>> Jarek P.
+>>
+>> ------------------->
+>>
+>> [PATCH] gro: Re-fix different skb headrooms
+>>
+>> The patch: "gro: fix different skb headrooms" in its part:
+>> "2) allocate a minimal skb for head of frag_list" is buggy. The copied
+>> skb has p->data set at the ip header at the moment, and skb_gro_offset
+>> is the length of ip + tcp headers. So, after the change the length of
+>> mac header is skipped. Later skb_set_mac_header() sets it into the
+>> NET_SKB_PAD area (if it's long enough) and ip header is misaligned at
+>> NET_SKB_PAD + NET_IP_ALIGN offset. There is no reason to assume the
+>> original skb was wrongly allocated, so let's copy it as it was.
+>>
+>> bugzilla : https://bugzilla.kernel.org/show_bug.cgi?id=16626
+>> fixes commit: 3d3be4333fdf6faa080947b331a6a19bce1a4f57
+>>
+>> Reported-by: Plamen Petrov<pvp-lsts@fs.uni-ruse.bg>
+>> Signed-off-by: Jarek Poplawski<jarkao2@gmail.com>
+>> CC: Eric Dumazet<eric.dumazet@gmail.com>
+>> ---
+>>
+>> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+>> index 26396ff..c83b421 100644
+>> --- a/net/core/skbuff.c
+>> +++ b/net/core/skbuff.c
+>> @@ -2706,7 +2706,7 @@ int skb_gro_receive(struct sk_buff **head, struct sk_buff *skb)
+>>   	} else if (skb_gro_len(p) != pinfo->gso_size)
+>>   		return -E2BIG;
+>>
+>> -	headroom = NET_SKB_PAD + NET_IP_ALIGN;
+>> +	headroom = skb_headroom(p);
+>>   	nskb = alloc_skb(headroom + skb_gro_offset(p), GFP_ATOMIC);
+>>   	if (unlikely(!nskb))
+>>   		return -ENOMEM;
 >
-> Incidentally I don't seem to see anything in the current SPI tree for
-> -next - should the tree being used be updated or something?
+> You are right, thanks for reviewing this patch again :)
 >
->  drivers/spi/spi_s3c64xx.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> By the way, NET_IP_ALIGN is now 0 on x86, so technically speaking, your
+> patch un-aligns IP header on x86, but thats OK, since other arches might
+> want it being aligned, while x86 doesnt care.
 >
-> diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
-> index f72e1c0..6e48ea9 100644
-> --- a/drivers/spi/spi_s3c64xx.c
-> +++ b/drivers/spi/spi_s3c64xx.c
-> @@ -1181,7 +1181,7 @@ static int __init s3c64xx_spi_init(void)
->  {
->        return platform_driver_probe(&s3c64xx_spi_driver, s3c64xx_spi_probe);
->  }
-> -module_init(s3c64xx_spi_init);
-> +subsys_initcall(s3c64xx_spi_init);
+> Acked-by: Eric Dumazet<eric.dumazet@gmail.com>
+>
+>
+>
 
-Couldn't any user ever need to load it as a module?
-If no, we might as well drop the s3c64xx_spi_exit and s3c64xx_spi_remove
-as well and save space. Rather going a step further, shouldn't then all
-spi drivers be that way? Two steps further, why not every 'bus-driver' ?
+Well, now that I'm back at work, I'm glad to report
+that I tested both variants of the patch, and as Eric
+points out - it works both ways.
+
+So, which ever fits you guys better.
+
+Thanks a lot!
