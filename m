@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab0IHS3K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 14:29:10 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:33625 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab0IHS3D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 14:29:03 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C87D5E9.1060307@s5r6.in-berlin.de>
-Date: Wed, 08 Sep 2010 20:28:57 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	id S1753120Ab0IHSbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 14:31:37 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:60833 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752563Ab0IHSbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 14:31:32 -0400
+Date: Wed, 8 Sep 2010 11:30:19 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: Add support for max6695 and max6696 to lm90
+ driver
+Message-ID: <20100908183019.GA12314@ericsson.com>
+References: <1283639675-31714-1-git-send-email-guenter.roeck@ericsson.com>
+ <20100906181229.2e25db07@hyperion.delvare>
+ <20100908102816.GA10676@ericsson.com>
+ <20100908134854.2c60f406@hyperion.delvare>
+ <20100908135654.GA11277@ericsson.com>
+ <20100908172902.6ed57505@hyperion.delvare>
 MIME-Version: 1.0
-To: Pedro Francisco <pedrogfrancisco@gmail.com>
-CC: =?ISO-8859-1?Q?Alejandro_Riveira_Fern=E1ndez?= <ariveira@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 2.6.35.4: sudo rmmod ahci @ 2.6.35.4 succeeds: filesystem access
- errors follow
-References: <201009071834.27953.pedrogfrancisco@gmail.com> <20100907202143.02cf60ec@varda> <201009072247.18438.pedrogfrancisco@gmail.com>
-In-Reply-To: <201009072247.18438.pedrogfrancisco@gmail.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100908172902.6ed57505@hyperion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pedro Francisco wrote:
-> On Tuesday 07 September 2010 19:21:43 Alejandro Riveira Fernández wrote:
->> El Tue, 7 Sep 2010 18:34:27 +0100
->>
->> Pedro Francisco <pedrogfrancisco@gmail.com> escribió:
->>> sudo rmmod ahci @ 2.6.35.4 succeeds: filesystem access errors follow.
->>>
->>> Now what I'm surprised is not the filesystem errors but me being allowed
->>> to remove the module without using the '-f' option.
->>>
->>> Do note, lsmod |grep ahci reports something like [this is adapted from a
->>> 2.6.32 kernel]:
->>>
->>> ahci                   32200  0
->>>
->>> so it isn't at all surprising I'm being allowed to remove a seemingly
->>> unused module. So....
->>> a) is this supposed to happen?
->>  Yes afaics. root can do many stupid things if (s)he wants
->>  including « rm -rf --no-preserve-root / »
+On Wed, Sep 08, 2010 at 11:29:02AM -0400, Jean Delvare wrote:
+> On Wed, 8 Sep 2010 06:56:54 -0700, Guenter Roeck wrote:
+> > Too bad - registers 0x16 and 0x17 exist on both 6658 and 6659. So the only way to detect 6659 
+> > would be the address (0x4d or 0x4e), and we would mis-detect it on 0x4c. Is that worth it ?
 > 
-> That makes no sense. That's what the force option "-f" is for. It's my opinion 
-> the usage count for ahci on `lsmod' should be 1 and not 0. Whoever still wants 
-> to remove it can use the `rmmod -f ahci'
+> I'd say adding support for the MAX6659 is worth it. Just don't add
+> detection. That is, all of MAX6657, 6658 and 6658 should be detected as
+> max6657, which has the minimum set of features. But if someone declares
+> a "max6659" device either as part of the platform data or from
+> user-space, then the driver should expose all the chip features.
+> 
+> Deal?
+> 
+I'd say yes, but then we would deliberately mis-detect the 6659 on address 0x4d and 0x4e,
+which kind of hurts my consciousness. 
 
-The usage count of a module is only there to ensure that function calls into
-the module succeed.  As long as some other part of the kernel has a pointer of
-a function in the module, removal of the module needs to be prevented.
+How about a middle ground - mis-detect it on address 0x4c, but detect it correctly
+on 0x4d and 0x4e ? Should be ok if we add a note into the file and into the documentation,
+and we would do as good as we can.
 
-"rmmod ahci" on the other hand is something like pulling the SATA cable.  Or
-ejection of the controller from an ExpressCard slot.  The driver shutdown
-causes the controller device and thus its child devices (disk devices behind
-the controller) to go away, and that's it.  You can do also
-# echo $DEVICE_ID > /sys/module/ahci/drivers/pci\:ahci/unbind
-which tells the driver to let go of the controller.
--- 
-Stefan Richter
--=====-==-=- =--= -=---
-http://arcgraph.de/sr/
+Guenter
