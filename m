@@ -1,39 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab0IHT7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 15:59:20 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54645 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526Ab0IHT7O (ORCPT
+	id S1753958Ab0IHUAW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 16:00:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34976 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab0IHUAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 15:59:14 -0400
-Date: Wed, 8 Sep 2010 13:59:11 -0600
+	Wed, 8 Sep 2010 16:00:19 -0400
+Date: Wed, 8 Sep 2010 14:00:16 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
 To: Julia Lawall <julia@diku.dk>
-Cc: Timur Tabi <timur@freescale.com>, kernel-janitors@vger.kernel.org,
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
         linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/4] drivers/serial/ucc_uart.c: Add of_node_put to
- avoid memory leak
-Message-ID: <20100908195911.GD7065@angua.secretlab.ca>
+Subject: Re: [PATCH 4/4] arch/powerpc/platforms/chrp/nvram.c: Add
+ of_node_put to avoid memory leak
+Message-ID: <20100908200016.GE7065@angua.secretlab.ca>
 References: <1283269738-14612-1-git-send-email-julia@diku.dk>
- <1283269738-14612-2-git-send-email-julia@diku.dk>
+ <1283269738-14612-5-git-send-email-julia@diku.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1283269738-14612-2-git-send-email-julia@diku.dk>
+In-Reply-To: <1283269738-14612-5-git-send-email-julia@diku.dk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 05:48:55PM +0200, Julia Lawall wrote:
+On Tue, Aug 31, 2010 at 05:48:58PM +0200, Julia Lawall wrote:
 > Add a call to of_node_put in the error handling code following a call to
-> of_find_compatible_node or of_find_node_by_type.
-> 
-> This patch also substantially reorganizes the error handling code in the
-> function, to that it is possible first to jump to code that frees qe_port
-> and then to jump to code that also puts np.
+> of_find_node_by_type.
 > 
 > The semantic match that finds this problem is as follows:
 > (http://coccinelle.lip6.fr/)
@@ -81,192 +78,27 @@ On Tue, Aug 31, 2010 at 05:48:55PM +0200, Julia Lawall wrote:
 > 
 > Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Looks good to me.
-
 Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
 > 
 > ---
->  drivers/serial/ucc_uart.c |   67 ++++++++++++++++++++++++----------------------
->  1 file changed, 35 insertions(+), 32 deletions(-)
+>  arch/powerpc/platforms/chrp/nvram.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/serial/ucc_uart.c b/drivers/serial/ucc_uart.c
-> index 3f4848e..38a5ef0 100644
-> --- a/drivers/serial/ucc_uart.c
-> +++ b/drivers/serial/ucc_uart.c
-> @@ -1270,13 +1270,12 @@ static int ucc_uart_probe(struct platform_device *ofdev,
->  	ret = of_address_to_resource(np, 0, &res);
->  	if (ret) {
->  		dev_err(&ofdev->dev, "missing 'reg' property in device tree\n");
-> -		kfree(qe_port);
-> -		return ret;
-> +		goto out_free;
->  	}
->  	if (!res.start) {
->  		dev_err(&ofdev->dev, "invalid 'reg' property in device tree\n");
-> -		kfree(qe_port);
-> -		return -EINVAL;
-> +		ret = -EINVAL;
-> +		goto out_free;
->  	}
->  	qe_port->port.mapbase = res.start;
+> diff --git a/arch/powerpc/platforms/chrp/nvram.c b/arch/powerpc/platforms/chrp/nvram.c
+> index ba3588f..d3ceff0 100644
+> --- a/arch/powerpc/platforms/chrp/nvram.c
+> +++ b/arch/powerpc/platforms/chrp/nvram.c
+> @@ -74,8 +74,10 @@ void __init chrp_nvram_init(void)
+>  		return;
 >  
-> @@ -1286,17 +1285,17 @@ static int ucc_uart_probe(struct platform_device *ofdev,
->  	if (!iprop) {
->  		iprop = of_get_property(np, "device-id", NULL);
->  		if (!iprop) {
-> -			kfree(qe_port);
->  			dev_err(&ofdev->dev, "UCC is unspecified in "
->  				"device tree\n");
-> -			return -EINVAL;
-> +			ret = -EINVAL;
-> +			goto out_free;
->  		}
->  	}
+>  	nbytes_p = of_get_property(nvram, "#bytes", &proplen);
+> -	if (nbytes_p == NULL || proplen != sizeof(unsigned int))
+> +	if (nbytes_p == NULL || proplen != sizeof(unsigned int)) {
+> +		of_node_put(nvram);
+>  		return;
+> +	}
 >  
->  	if ((*iprop < 1) || (*iprop > UCC_MAX_NUM)) {
->  		dev_err(&ofdev->dev, "no support for UCC%u\n", *iprop);
-> -		kfree(qe_port);
-> -		return -ENODEV;
-> +		ret = -ENODEV;
-> +		goto out_free;
->  	}
->  	qe_port->ucc_num = *iprop - 1;
+>  	nvram_size = *nbytes_p;
 >  
-> @@ -1310,16 +1309,16 @@ static int ucc_uart_probe(struct platform_device *ofdev,
->  	sprop = of_get_property(np, "rx-clock-name", NULL);
->  	if (!sprop) {
->  		dev_err(&ofdev->dev, "missing rx-clock-name in device tree\n");
-> -		kfree(qe_port);
-> -		return -ENODEV;
-> +		ret = -ENODEV;
-> +		goto out_free;
->  	}
->  
->  	qe_port->us_info.rx_clock = qe_clock_source(sprop);
->  	if ((qe_port->us_info.rx_clock < QE_BRG1) ||
->  	    (qe_port->us_info.rx_clock > QE_BRG16)) {
->  		dev_err(&ofdev->dev, "rx-clock-name must be a BRG for UART\n");
-> -		kfree(qe_port);
-> -		return -ENODEV;
-> +		ret = -ENODEV;
-> +		goto out_free;
->  	}
->  
->  #ifdef LOOPBACK
-> @@ -1329,39 +1328,39 @@ static int ucc_uart_probe(struct platform_device *ofdev,
->  	sprop = of_get_property(np, "tx-clock-name", NULL);
->  	if (!sprop) {
->  		dev_err(&ofdev->dev, "missing tx-clock-name in device tree\n");
-> -		kfree(qe_port);
-> -		return -ENODEV;
-> +		ret = -ENODEV;
-> +		goto out_free;
->  	}
->  	qe_port->us_info.tx_clock = qe_clock_source(sprop);
->  #endif
->  	if ((qe_port->us_info.tx_clock < QE_BRG1) ||
->  	    (qe_port->us_info.tx_clock > QE_BRG16)) {
->  		dev_err(&ofdev->dev, "tx-clock-name must be a BRG for UART\n");
-> -		kfree(qe_port);
-> -		return -ENODEV;
-> +		ret = -ENODEV;
-> +		goto out_free;
->  	}
->  
->  	/* Get the port number, numbered 0-3 */
->  	iprop = of_get_property(np, "port-number", NULL);
->  	if (!iprop) {
->  		dev_err(&ofdev->dev, "missing port-number in device tree\n");
-> -		kfree(qe_port);
-> -		return -EINVAL;
-> +		ret = -EINVAL;
-> +		goto out_free;
->  	}
->  	qe_port->port.line = *iprop;
->  	if (qe_port->port.line >= UCC_MAX_UART) {
->  		dev_err(&ofdev->dev, "port-number must be 0-%u\n",
->  			UCC_MAX_UART - 1);
-> -		kfree(qe_port);
-> -		return -EINVAL;
-> +		ret = -EINVAL;
-> +		goto out_free;
->  	}
->  
->  	qe_port->port.irq = irq_of_parse_and_map(np, 0);
->  	if (qe_port->port.irq == NO_IRQ) {
->  		dev_err(&ofdev->dev, "could not map IRQ for UCC%u\n",
->  		       qe_port->ucc_num + 1);
-> -		kfree(qe_port);
-> -		return -EINVAL;
-> +		ret = -EINVAL;
-> +		goto out_free;
->  	}
->  
->  	/*
-> @@ -1373,8 +1372,8 @@ static int ucc_uart_probe(struct platform_device *ofdev,
->  		np = of_find_node_by_type(NULL, "qe");
->  		if (!np) {
->  			dev_err(&ofdev->dev, "could not find 'qe' node\n");
-> -			kfree(qe_port);
-> -			return -EINVAL;
-> +			ret = -EINVAL;
-> +			goto out_free;
->  		}
->  	}
->  
-> @@ -1382,8 +1381,8 @@ static int ucc_uart_probe(struct platform_device *ofdev,
->  	if (!iprop) {
->  		dev_err(&ofdev->dev,
->  		       "missing brg-frequency in device tree\n");
-> -		kfree(qe_port);
-> -		return -EINVAL;
-> +		ret = -EINVAL;
-> +		goto out_np;
->  	}
->  
->  	if (*iprop)
-> @@ -1398,16 +1397,16 @@ static int ucc_uart_probe(struct platform_device *ofdev,
->  		if (!iprop) {
->  			dev_err(&ofdev->dev,
->  				"missing QE bus-frequency in device tree\n");
-> -			kfree(qe_port);
-> -			return -EINVAL;
-> +			ret = -EINVAL;
-> +			goto out_np;
->  		}
->  		if (*iprop)
->  			qe_port->port.uartclk = *iprop / 2;
->  		else {
->  			dev_err(&ofdev->dev,
->  				"invalid QE bus-frequency in device tree\n");
-> -			kfree(qe_port);
-> -			return -EINVAL;
-> +			ret = -EINVAL;
-> +			goto out_np;
->  		}
->  	}
->  
-> @@ -1445,8 +1444,7 @@ static int ucc_uart_probe(struct platform_device *ofdev,
->  	if (ret) {
->  		dev_err(&ofdev->dev, "could not add /dev/ttyQE%u\n",
->  		       qe_port->port.line);
-> -		kfree(qe_port);
-> -		return ret;
-> +		goto out_np;
->  	}
->  
->  	dev_set_drvdata(&ofdev->dev, qe_port);
-> @@ -1460,6 +1458,11 @@ static int ucc_uart_probe(struct platform_device *ofdev,
->  	       SERIAL_QE_MINOR + qe_port->port.line);
->  
->  	return 0;
-> +out_np:
-> +	of_node_put(np);
-> +out_free:
-> +	kfree(qe_port);
-> +	return ret;
->  }
->  
->  static int ucc_uart_remove(struct platform_device *ofdev)
 > 
