@@ -1,140 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757184Ab0IHGn7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 02:43:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38338 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab0IHGn4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 02:43:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=w4VHs2dWhrdAMSYWLhzwPNQ6xXqhl/DkTDS3w9osPjF79GPeXBXsJU0Oi3fXUju2iM
-         SP6q8MImBBBY2gQZsIWogXXFz3zSmgORep3PytPulaHAPDyYqFEzF/7DuHHJMKEEwsc9
-         Ez2GXAeihqdvX6ZtY2scYVJEegoGN+KUu/M6Y=
+	id S1757238Ab0IHGpE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 02:45:04 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56804 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756293Ab0IHGo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 02:44:58 -0400
+Date: Wed, 8 Sep 2010 08:44:27 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>, Avi Kivity <avi@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: disabling group leader perf_event
+Message-ID: <20100908064427.GD3439@elte.hu>
+References: <4C84D77B.6040600@redhat.com>
+ <20100906124330.GA22314@elte.hu>
+ <4C84E265.1020402@redhat.com>
+ <20100906125905.GA25414@elte.hu>
+ <4C850147.8010908@redhat.com>
+ <20100906154737.GA4332@elte.hu>
+ <4C852B2A.2030103@redhat.com>
+ <20100907034417.GA14046@elte.hu>
+ <20100908014409.GA17010@brick.ozlabs.ibm.com>
+ <AANLkTi=YdAxdGv1nEEZ4w0jM0K3ss0g5x7_5cU8xNEhj@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <201009080055.16598.Martin@lichtvoll.de>
-References: <201009071635.11110.Martin@lichtvoll.de>
-	<AANLkTi=o7f9_u9BpJ2ORA-WSv5YV_H5hZSMbLzN+g0TF@mail.gmail.com>
-	<201009080055.16598.Martin@lichtvoll.de>
-Date: Wed, 8 Sep 2010 02:43:55 -0400
-Message-ID: <AANLkTimiVkOYeGRLiEXMxoo6NX8LeeDMB6Eyck26h1Ns@mail.gmail.com>
-Subject: Re: Bisecting radeon kms freeze bug: Almost there, please help with
- choosing next commit
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=YdAxdGv1nEEZ4w0jM0K3ss0g5x7_5cU8xNEhj@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0059]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 7, 2010 at 6:55 PM, Martin Steigerwald <Martin@lichtvoll.de> wrote:
-> Am Dienstag 07 September 2010 schrieb Alex Deucher:
->> On Tue, Sep 7, 2010 at 10:34 AM, Martin Steigerwald
-> <Martin@lichtvoll.de> wrote:
->> > Hello Alex and und Dave,
->> >
->> > please excuse typing errors. The machine is abysmally slow with that
->> > kernel.
->> >
->> > I am almost there with bisecting Bug 16376, random - possibly Radeon
->> > DRM KM related - freezes. I think I found the merge where is issue
->> > has been introduced and I am now testing
->> >
->> > martin@shambhala:~/Computer/Shambhala/Kernel/2.6.33-2.6.34-
->> > bisect/linux-2.6> git log | head
->> > commit 6ad86c311a8b8a6d856527a1b6ba21790ab7054b
->> > Author: Alex Deucher <alexdeucher@gmail.com>
->> > Date:   Thu Feb 11 10:47:52 2010 -0500
->> >
->> >    drm/radeon/kms: remove HDP flushes from fence emit (v2)
->> >
->> >    r600_ioctl_wait_idle() now handles this.
->> >
->> >    v2: update blit fence counts
->> >
->> > Unfortunately it has some other issues that has been fixed later on
->> > prior to 2.6.34 already:
->> >
->> > 7.9.2010 - 2.6.32-tp42-00514-g6ad86c3
->> > 6ad86c311a8b8a6d856527a1b6ba21790ab7054b
->> > - Sluggy desktop. Short pauses, locks of about a second.
->> > - Slow scroll performance on tty.
->> > - No complete freeze yet.
->> > - Much CPU time used in system:70-90%
->> >
->> > You know the changes in that merge better than me. Can you recommend
->> > which commits to test next? Som commits may require other ones and
->> > thus it might be wise to choose the next commits with that in mind.
->> > Maybe you already have an idea which one it could be. I thought
->> > about the memory controllr v2 changes, but I really don't have the
->> > foggiest.
->>
->> This might be a duplicate of:
->> https://bugs.freedesktop.org/show_bug.cgi?id=28402
->> Does the patch there help?
->
-> Which of the patches mentioned in the bug report?
->
-> The ones mentioned in:
->
-> https://bugs.freedesktop.org/show_bug.cgi?id=28402#c44
->
-> Or your patch from
->
-> https://bugs.freedesktop.org/show_bug.cgi?id=28402#c47
->
-> ?
 
-I originally meant my patch in comment 47, but you might as well try
-both (separately).
+* Pekka Enberg <penberg@kernel.org> wrote:
 
-Alex
+> 2010/9/8 Paul Mackerras <paulus@samba.org>:
+> >> We start with trivial (and useless) special case of something like:
+> >>
+> >> #define MAX_BYTECODE_SIZE 256
+> >>
+> >> int x86_bytecode_verify(char *opcodes, unsigned int len)
+> >> {
+> >>
+> >>       if (len-1 > MAX_BYTECODE_SIZE-1)
+> >>               return -EINVAL;
+> >>
+> >>       if (opcodes[0] != 0xc3) /* RET instruction */
+> >>               return -EINVAL;
+> >>
+> >>       return 0;
+> >> }
+> >>
+> >> ... and then we add checks for accepted/safe x86 patterns of
+> >> instructions step by step - always keeping it 100% correct.
+> >
+> > So... I would be interested to see you add the case for the MOV
+> > instruction. :)
+> 
+> Heh, which one of them - there are tons of variants under 'mov' on 
+> x86? On a more serious note: the biggest problem is that you need to 
+> do verification during execution because you don't know the exact 
+> address until then for most addressing modes that use registers.
 
->
-> I am already testing the next bisect kernel and I am quite close 10-15
-> commits in exactly the area described in the bug report. If
-> 30d6c72c4a760cfc9069ee100786e4d6cf6de59d turns out to be good, like it
-> seems, then the issue must have been introduced between it and the sluggy
-> 6ad86c311a8b8a6d856527a1b6ba21790ab7054b mentioned below.
->
-> Thanks,
-> Martin
->
->> Alex
->>
->> > Here is excerpt from atop which shows ridicully high system CPU usage
->> > with that kernel.
->> >
->> > ATOP - shambhala          2010/09/07  16:11:22               10
->> > seconds elapsed
->> > PRC | sys   8.66s | user   1.30s | #proc    195 | #zombie    0 |
->> > #exit 0 |
->> > CPU | sys     85% | user     11% | irq       4% | idle      0% | wait
->> > 0% |
->> > CPL | avg1   3.39 | avg5    3.80 | avg15   3.25 | csw    18458 | intr
->> > 11472 |
->> > MEM | tot    2.0G | free  543.1M | cache 759.6M | buff   95.0M | slab
->> > 37.8M |
->> > SWP | tot    3.8G | free    3.8G |              | vmcom   1.3G |
->> > vmlim 4.8G |
->> > DSK |         sda | busy      3% | read       1 | write     95 | avio
->> >    2 ms |
->> >
->> > I wrote by mail since bugzilla has too many MySQL connections again.
->> > Maybe bug can be switched to mail?
->> >
->> > Rebooting and testing this kernel another time whether it hard
->> > freezes, --
->> > Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
->> > GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
->
->
-> --
-> Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-> GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
->
+Well, the main model and usecase would be to provide some sort of 
+function (in the mathematical sense), which is dependent on fixed-size 
+input and stores a fixed-size output somewhere.
+
+For that category to restrict both the input and output space initially, 
+wouldnt be a big restriction. I.e. dont allow register addresses, only 
+stack addresses or fixed addresses to the user-space parameter space.
+
+These functions are supposed to be short and generally they dont change 
+state (they dont have access to locking in any case - we want to be able 
+to call them from atomic contexts, etc.).
+
+Thus instructions like 'mov (%rax), ...' would be handled by not 
+allowing them, only addresses which do not change from execution state.
+
+That still gives plenty of flexibility to implement filters or other 
+kinds of input/output calculation/netfilter-rule kind of logic.
+
+Do you know some interesting usecase that would be excluded via such 
+address restrictions? Things like flexible arrays or more complex data 
+structures such as trees couldnt be used initially. More complex data 
+structures would need locking in any case.
+
+I.e. it would initially be restricted roughly to code where halting can 
+be proven. Still looks interesting to me: most netfilter policy rules, 
+trace filters or selinux rules could be implemented that way - an order 
+of magnitude or two faster than the ad-hoc tracing, avc or iptables rule 
+engines ...
+
+Thanks,
+
+	Ingo
