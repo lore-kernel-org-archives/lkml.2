@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466Ab0IHQMu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 12:12:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53155 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756416Ab0IHQMs (ORCPT
+	id S1756097Ab0IHQPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 12:15:00 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:36318 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755279Ab0IHQO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 12:12:48 -0400
-Date: Wed, 8 Sep 2010 10:12:45 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jassi Brar <jassi.brar@samsung.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        spi-devel-general@lists.sourceforge.net,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi/spi_s3c64xx: Move to subsys_initcall()
-Message-ID: <20100908161245.GC3686@angua.secretlab.ca>
-References: <1283855357-15179-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <AANLkTim=ArPyqC7K-aaer97deGeR6yU-FS1Hpm3D_1ER@mail.gmail.com>
- <20100908091242.GB31253@rakim.wolfsonmicro.main>
- <AANLkTimvc52yXuMFN2=qLKX1MSyTum1GHnLdDW8dMR=2@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimvc52yXuMFN2=qLKX1MSyTum1GHnLdDW8dMR=2@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 8 Sep 2010 12:14:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=AyATjPxGb5+oiGNJ3znA/59r0JcmdesfC2ZQ46LpjEYvRIhl3hWwF/v3dS0YJ+nUWp
+         MMbqwUiIuojC1cUVODkUm0wVpktDQj1Yp09SdViETnddylwHZyl+qTtaP6ppyljba2AG
+         6H8Je9P0T1TpaF/cvGO+nTqwczaH3zm2h2wNo=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jiri Kosina <trivial@kernel.org>, linux-ext4@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] ext2: trivial: fix a typo on comment in ext2/inode.c
+Date: Thu,  9 Sep 2010 01:14:49 +0900
+Message-Id: <1283962489-15842-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 06:37:59PM +0900, Jassi Brar wrote:
-> On Wed, Sep 8, 2010 at 6:12 PM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
-> > On Wed, Sep 08, 2010 at 01:55:39PM +0900, Jassi Brar wrote:
-> >> On Tue, Sep 7, 2010 at 7:29 PM, Mark Brown
-> >> <broonie@opensource.wolfsonmicro.com> wrote:
-> >> > Allow the use of the S3C64xx SPI controller with things like PMICs by
-> >> > moving the init up to subsys_initcall().
-> >
-> >> Couldn't any user ever need to load it as a module?
-> >> If no, we might as well drop the s3c64xx_spi_exit and s3c64xx_spi_remove
-> >
-> > This doesn't prevent building as a module - when built as a module
-> > subsys_initcall() is identical to module_init(), the change will only
-> > affect the order in which things are done when the code is built into
-> > the kernel otherwise it's a noop.
-> I didn't know that, thanks for the info.
-> 
-> Acked-by: Jassi Brar <jassi.brar@samsung.com>
+'ext3_get_branch' should be 'ext2_get_branch'.
 
-Applied, thanks.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/ext2/inode.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-... but it seems to me that there is a systemic problem in the way the driver model is being used if SPI (and I2C) bus drivers need to be 'special' in this regard.  What are the ordering requirements on things like PMICs?  (My uneducated assumption is that other devices depend on them being enabled before being probed.)  Would it be better to have a mechanism to defer probing on certain devices until other devices are probed?  Then the relationships could be made explicit instead of the rather coarse-grained (and potentially fragile) approach of changing the init order.
+diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+index 940c961..860d715 100644
+--- a/fs/ext2/inode.c
++++ b/fs/ext2/inode.c
+@@ -662,7 +662,7 @@ static int ext2_get_blocks(struct inode *inode,
+ 	mutex_lock(&ei->truncate_mutex);
+ 	/*
+ 	 * If the indirect block is missing while we are reading
+-	 * the chain(ext3_get_branch() returns -EAGAIN err), or
++	 * the chain(ext2_get_branch() returns -EAGAIN err), or
+ 	 * if the chain has been changed after we grab the semaphore,
+ 	 * (either because another process truncated this branch, or
+ 	 * another get_block allocated this branch) re-grab the chain to see if
+-- 
+1.7.2.2
 
-g.
