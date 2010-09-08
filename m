@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758773Ab0IHM5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 08:57:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49737 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758699Ab0IHM53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 08:57:29 -0400
-Message-ID: <4C878823.60709@cn.fujitsu.com>
-Date: Wed, 08 Sep 2010 20:57:07 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>
-Subject: Re: [PATCH V2 1/3] lib: introduce some memory copy macros and   
-   functions
-References: <46238.91.60.152.217.1283948365.squirrel@www.firstfloor.org>
-In-Reply-To: <46238.91.60.152.217.1283948365.squirrel@www.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758752Ab0IHNAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 09:00:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42881 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697Ab0IHNAY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 09:00:24 -0400
+Subject: Re: slow nanosleep?
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LFD.2.00.1009081442390.2477@localhost6.localdomain6>
+References: <OF71DD00AE.26643E4D-ONC1257798.00250630-C1257798.002A9748@transmode.se>
+	 <1283932600.2880.1.camel@edumazet-laptop>
+	 <OF5074952F.1B97B2B8-ONC1257798.002C51D7-C1257798.002C63A4@transmode.se>
+	 <1283934289.2880.12.camel@edumazet-laptop>
+	 <OF2B75FA7C.7064BC41-ONC1257798.00318FDA-C1257798.00329AEF@transmode.se>
+	 <alpine.LFD.2.00.1009081143200.2477@localhost6.localdomain6>
+	 <OF82705D74.3C13AE80-ONC1257798.00427DAB-C1257798.0042F243@transmode.se>
+	 <alpine.LFD.2.00.1009081442390.2477@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 08 Sep 2010 15:00:18 +0200
+Message-ID: <1283950818.23762.20.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Sep 2010 14:19:25 +0200 (cest), Andi Kleen wrote:
->
->> According to the data, the length of the most copies is>=128.
->
-> Thanks for the data. Large is easier to optimize than small, that's good.
->
-> Could you also measure how many memsets need the backwards copy?
-> (should be easy to add)
+On Wed, 2010-09-08 at 14:43 +0200, Thomas Gleixner wrote:
+> > However nanosleep with 1 ns and prctl(PR_SET_TIMERSLACK, 1) takes
+> > about 8 us on x86(Intel(R) Core(TM)2 Duo CPU E8500  @ 3.16GHz)
+> > and 20 us on my slower ppc board. Is that system call overhead
+> > or possibly some error?
+> 
+> That's overhead I fear. We go way up to enqueue/arm the timer until we
+> figure out that the timeout already happened. 
 
-I think memset doesn't need the backwards copy.
-The reason why memmove needs the backward copy is because the forward copy may
-cover the data which will be used later if the dest string intersect with the
-src string. But memset needn't worry about this problem.
+Well, there's also the fact that his ppc board is simply dead slow,
+using the freq ratio: 3166/266 you'd expect (at a similar ins/clock
+ratio) the ppc to take 95us.
 
-Thanks!
-Miao  
+So in fact the pcc taking 20us is actually quite good.
 
->
-> If the number is small that needs backwards then the easiest fix
-> would be to simply call the normal memcpy in the forward case.
->
-> That is for backward could also use a string instruction copy
-> of course, just have to set the direction flag.
->
-> That would be a very small code change.
->
-> -Andi
->
->
->
->
 
