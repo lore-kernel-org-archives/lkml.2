@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758586Ab0IHJjb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 05:39:31 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:56912 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab0IHJj1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 05:39:27 -0400
-X-SpamScore: -21
-X-BigFish: VS-21(zz1432N98dNzz1202hzz15d4Rz32i87h2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 0,
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8F8HV-02-3L1-02
-X-M-MSG: 
-Date: Wed, 8 Sep 2010 11:18:03 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Alexander Graf <agraf@suse.de>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 19/27] KVM: X86: Propagate fetch faults
-Message-ID: <20100908091802.GJ2177@amd.com>
-References: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com>
- <1283788566-29186-20-git-send-email-joerg.roedel@amd.com>
- <20100907184316.GA11990@amt.cnet>
+	id S1758603Ab0IHJrk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 05:47:40 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56142 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752837Ab0IHJrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 05:47:37 -0400
+Date: Wed, 8 Sep 2010 11:47:35 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Rafi Rubin <rafi@seas.upenn.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        micki@n-trig.com, rydberg@euromail.se, chatty@enac.fr
+Subject: Re: [PATCH] identify firmware version
+In-Reply-To: <4C85E1A7.2010906@gmail.com>
+Message-ID: <alpine.LNX.2.00.1009081147070.26813@pobox.suse.cz>
+References: <4C7EB3A3.7050402@gmail.com> <1283791362-27780-1-git-send-email-rafi@seas.upenn.edu> <20100906194838.GB31384@core.coreip.homeip.net> <4C855BAA.4000900@gmail.com> <20100906233203.GA18048@seas.upenn.edu> <4C85E1A7.2010906@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100907184316.GA11990@amt.cnet>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 02:43:16PM -0400, Marcelo Tosatti wrote:
-> On Mon, Sep 06, 2010 at 05:55:58PM +0200, Joerg Roedel wrote:
-> >  		r = x86_decode_insn(&vcpu->arch.emulate_ctxt);
-> > +		if (r == X86EMUL_PROPAGATE_FAULT)
-> > +			goto done;
-> > +
+On Tue, 7 Sep 2010, Jiri Slaby wrote:
+
+> >>>> +
+> >>>> +		ret = ntrig_version_string(&data[2], buf);
+> >>>> +
+> >>>> +		dev_info(&hdev->dev,
+> >>>> +			 "Firmware version: %s (%02x%02x %02x%02x)\n",
+> >>>> +			 buf, data[2], data[3], data[4], data[5]);
+> >>>> +
+> >>>> +		kfree(buff);
+> >>
+> >> In any case, this doesn't compile...
+> >>
+> >>>> +	}
+> > 
+> > Jiri, I moved the code to a separate function as Dmitry suggested, and compiled a kernel from a clean tree using 
+> > gcc-3.4 (I think).
 > 
-> x86_decode_insn returns -1 / 0 ?
+> This version is OK. In the previous one, there was
+> char *buf;
+> ...
+> kfree(buff);
 
-Yes. This looks like a left-over from v2 of the patch-set. I'll check
-the path again and remove it if not necessary anymore.
+Dmitry, Jiri, thanks a lot for taking care reviewing the patch while I 
+have been lagging behind.
 
-	Joerg
+Now applied, thanks Rafi.
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
