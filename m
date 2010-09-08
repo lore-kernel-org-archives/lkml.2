@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab0IHV33 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 17:29:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53108 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756083Ab0IHV3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 17:29:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=SJd9AGdP7nQE3+yJk+2enrjeX/ifZztC9/5n58HSHmEkrQDubVrgDKWCMCN6XZQmIl
-         FyNcYHUcNXgiZedOlyXnSXsOMrEhX7jJ9avwxYe+qxEHvZvHjERFiHtBOm2P1h3/6DzD
-         2nZiv9X82wQBBHVzE1UORFoKkES4PhNAkh6gU=
-From: Nikitas Angelinas <nikitasangelinas@gmail.com>
-To: johannes@sipsolutions.net, linville@tuxdriver.com, davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Nikitas Angelinas <nikitasangelinas@gmail.com>
-Subject: [PATCH 8/8] net/wireless: use ARRAY_SIZE macro in radiotap.c
-Date: Wed,  8 Sep 2010 22:29:53 +0100
-Message-Id: <1283981393-5134-1-git-send-email-nikitasangelinas@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
+	id S1756000Ab0IHVbf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 17:31:35 -0400
+Received: from mail.atheros.com ([12.19.149.2]:21795 "EHLO mail.atheros.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755172Ab0IHVba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 17:31:30 -0400
+Date: Wed, 8 Sep 2010 14:31:28 -0700
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: Nikitas Angelinas <nikitasangelinas@gmail.com>
+CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        Jouni Malinen <Jouni.Malinen@atheros.com>,
+        Vasanth Thiagarajan <Vasanth.Thiagarajan@atheros.com>,
+        Senthilkumar Balasubramanian 
+	<Senthilkumar.Balasubramanian@atheros.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        Sujith Manoharan <Sujith.Manoharan@atheros.com>,
+        "nbd@openwrt.org" <nbd@openwrt.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/8] drivers/net/wireless/ath/ath9k: use ARRAY_SIZE
+ macro in ani.c
+Message-ID: <20100908213128.GD1783@tux>
 References: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
+ <1283981142-5062-1-git-send-email-nikitasangelinas@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1283981142-5062-1-git-send-email-nikitasangelinas@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace sizeof(rtap_namespace_sizes) / sizeof(rtap_namespace_sizes[0])
-with ARRAY_SIZE(rtap_namespace_sizes) in net/wireless/radiotap.c
+On Wed, Sep 08, 2010 at 02:25:42PM -0700, Nikitas Angelinas wrote:
+> Replace (sizeof(ofdm_level_table)/sizeof(ofdm_level_table[0]) with
+> ARRAY_SIZE(ofdm_level_table), and (sizeof(cck_level_table)/
+> sizeof(cck_level_table[0]) with ARRAY_SIZE(cck_level_table) in
+> drivers/net/wireless/ath/ath9k/ani.c
+> 
+> Signed-off-by: Nikitas Angelinas <nikitasangelinas@gmail.com>
 
-Signed-off-by: Nikitas Angelinas <nikitasangelinas@gmail.com>
----
- net/wireless/radiotap.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Sure.
 
-diff --git a/net/wireless/radiotap.c b/net/wireless/radiotap.c
-index 1332c44..c774bc0 100644
---- a/net/wireless/radiotap.c
-+++ b/net/wireless/radiotap.c
-@@ -14,6 +14,7 @@
-  * See COPYING for more details.
-  */
- 
-+#include <linux/kernel.h>
- #include <net/cfg80211.h>
- #include <net/ieee80211_radiotap.h>
- #include <asm/unaligned.h>
-@@ -45,7 +46,7 @@ static const struct radiotap_align_size rtap_namespace_sizes[] = {
- };
- 
- static const struct ieee80211_radiotap_namespace radiotap_ns = {
--	.n_bits = sizeof(rtap_namespace_sizes) / sizeof(rtap_namespace_sizes[0]),
-+	.n_bits = ARRAY_SIZE(rtap_namespace_sizes),
- 	.align_size = rtap_namespace_sizes,
- };
- 
--- 
-1.7.2.3
-
+  Luis
