@@ -1,57 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903Ab0IHPsX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 11:48:23 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:61511 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207Ab0IHPsU convert rfc822-to-8bit (ORCPT
+	id S1755898Ab0IHPvb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 11:51:31 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42227 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338Ab0IHPv2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 11:48:20 -0400
+	Wed, 8 Sep 2010 11:51:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=F+XpAd8D+PQ2TNxYcud7E0qtJPjHe4Mv37z+XlwFjjzgePkYT0VBMN7WIc+dF6LORW
-         5wbRySSyJv6xb0YRzEMQJfyxclDHRVdI+0edggNgxUFJGvU55fOF+SKXr/knwEmXZRL1
-         GacGtpz889ymD4QpKxYnplUGdle+kdfGFUP2g=
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=C5OgvW96ev+79OkchcqV3dCoy5JTvoWqC1IDo9dcZrBtLG957pND9Le9is/cAqJZ2g
+         KKoe24MHwxuaSaJyDSux6DkRVqlLuD4ysir8SpVxtcqj/EoPK4eh5fVn49YamVzdf/Q+
+         gOal+Fnu6gJnqnnm+QEpuQeY9m4alLbdaFfq4=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: pxa168: added support for Teton BGA platform
+Date: Wed, 8 Sep 2010 17:51:22 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-1-amd64; KDE/4.4.5; x86_64; ; )
+Cc: "Mark F. Brown" <mark.brown314@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-kernel@vger.kernel.org
+References: <1283914607-10570-1-git-send-email-mark.brown314@gmail.com> <1283914607-10570-2-git-send-email-mark.brown314@gmail.com>
+In-Reply-To: <1283914607-10570-2-git-send-email-mark.brown314@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <201009081728.18227.fabio@metanix.org>
-References: <201009081728.18227.fabio@metanix.org>
-Date: Wed, 8 Sep 2010 16:48:18 +0100
-Message-ID: <AANLkTimqTH5Fqus4CvBvmJUrfC9RyijPQxcohVbGMNzG@mail.gmail.com>
-Subject: Re: [process scheduler] Possible bug in context_swich()?
-From: Will Newton <will.newton@gmail.com>
-To: fabio de francesco <fabio@metanix.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201009081751.22841.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 8, 2010 at 4:28 PM, fabio de francesco <fabio@metanix.org> wrote:
-> Dear List,
->
-> My previous mails to you have gone unheard... my last chance...
->
-> In context_switch() (in linux/kernel/sched.c), starting with release 2.6.33,
-> two "unlikely" macro �have been changed to "likely". I think the previous
-> logic was right while the latter is wrong.
->
-> In case I am missing something I, please, ask someone to explain the above
-> mentioned inversion of logic through releases.
+Dne St 8. září 2010 04:56:45 Mark F. Brown napsal(a):
 
-Hi fabio,
+---------------------------
+Description is missing here
+---------------------------
 
-The logic was changed in commit
-710390d90f143a9ebb87a475215140f426792efd on the basis of a branch hint
-profiling run. It would guess previous logic was more likely to be
-correct, unless one is often scheduling between kernel threads, but
-maybe that happens more often than I expect.
+> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+> ---
+>  arch/arm/mach-mmp/Kconfig     |    7 ++++++
+>  arch/arm/mach-mmp/Makefile    |    1 +
+>  arch/arm/mach-mmp/teton_bga.c |   47
+> +++++++++++++++++++++++++++++++++++++++++ 3 files changed, 55
+> insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/mach-mmp/teton_bga.c
+> 
+> diff --git a/arch/arm/mach-mmp/Kconfig b/arch/arm/mach-mmp/Kconfig
+> index 6ab843e..0711d3b 100644
+> --- a/arch/arm/mach-mmp/Kconfig
+> +++ b/arch/arm/mach-mmp/Kconfig
+> @@ -57,6 +57,13 @@ config MACH_MARVELL_JASPER
+>  	  PXA910-based development board. Since MMP2 is compatible to
+>  	  ARMv6 architecture.
+> 
+> +config MACH_TETON_BGA
+> +	bool "Marvell's PXA168 Teton BGA Development Board"
+> +	select CPU_PXA168
+> +	help
+> +	  Say 'Y' here if you want to support the Marvell PXA168-based
+> +	  Teton BGA Development Board.
+> +
+>  endmenu
+> 
+>  config CPU_PXA168
+> diff --git a/arch/arm/mach-mmp/Makefile b/arch/arm/mach-mmp/Makefile
+> index 8b66d06..751cdbf 100644
+> --- a/arch/arm/mach-mmp/Makefile
+> +++ b/arch/arm/mach-mmp/Makefile
+> @@ -17,3 +17,4 @@ obj-$(CONFIG_MACH_TAVOREVB)	+= tavorevb.o
+>  obj-$(CONFIG_MACH_TTC_DKB)	+= ttc_dkb.o
+>  obj-$(CONFIG_MACH_FLINT)	+= flint.o
+>  obj-$(CONFIG_MACH_MARVELL_JASPER) += jasper.o
+> +obj-$(CONFIG_MACH_TETON_BGA)	+= teton_bga.o
+> diff --git a/arch/arm/mach-mmp/teton_bga.c b/arch/arm/mach-mmp/teton_bga.c
+> new file mode 100644
+> index 0000000..014cc37
+> --- /dev/null
+> +++ b/arch/arm/mach-mmp/teton_bga.c
+> @@ -0,0 +1,47 @@
+> +/*
+> + *  linux/arch/arm/mach-mmp/teton_bga.c
+> + *
+> + *  Support for the Marvell PXA168 Teton BGA Development Platform.
 
-I would suggest trying the branch tracer yourself if you think the
-current code is wrong for your workload, the config option is
-PROFILE_ANNOTATED_BRANCHES. I would suggest not profiling the boot
-process (which will have predominantly kernel threads) and not
-profiling on an idle system (which may also be relatively heavy on
-kernel threads).
+Authoring information of this file are missing. Also, MAINTAINERS entry is 
+missing.
+> + *
+> + *  This code is based on aspenite.c
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  publishhed by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/kernel.h>
+> +#include <linux/platform_device.h>
+> +
+> +#include <asm/mach-types.h>
+> +#include <asm/mach/arch.h>
+> +#include <mach/addr-map.h>
+> +#include <mach/mfp-pxa168.h>
+> +#include <mach/pxa168.h>
+> +#include <mach/gpio.h>
+
+use ... #include <linux/gpio.h>
+
+> +
+> +#include "common.h"
+> +
+> +static unsigned long teton_bga_pin_config[] __initdata = {
+> +	/* UART1 */
+> +	GPIO107_UART1_TXD,
+> +	GPIO108_UART1_RXD,
+> +};
+> +
+> +static void __init teton_bga_init(void)
+> +{
+> +	mfp_config(ARRAY_AND_SIZE(teton_bga_pin_config));
+> +
+> +	/* on-chip devices */
+> +	pxa168_add_uart(1);
+
+Don't we have enum for these magic numbers on pxa168 ?
+> +}
+> +
+> +MACHINE_START(TETON_BGA, "PXA168-based Teton BGA Development Platform")
+> +	.phys_io        = APB_PHYS_BASE,
+> +	.io_pg_offst    = (APB_VIRT_BASE >> 18) & 0xfffc,
+> +	.map_io		= mmp_map_io,
+> +	.init_irq       = pxa168_init_irq,
+> +	.timer          = &pxa168_timer,
+> +	.init_machine   = teton_bga_init,
+> +MACHINE_END
+
+Cheers
