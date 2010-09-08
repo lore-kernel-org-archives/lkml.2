@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab0IHGF7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 02:05:59 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43669 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251Ab0IHGF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 02:05:56 -0400
-Date: Wed, 8 Sep 2010 08:05:46 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        "David S . Miller" <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [GIT PULL] tracing updates
-Message-ID: <20100908060546.GA3439@elte.hu>
-References: <1283878091-5751-1-git-send-regression-fweisbec@gmail.com>
+	id S1757233Ab0IHGOr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 02:14:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36759 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671Ab0IHGOo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 02:14:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=I14Mr3X75FEjOgl3QMKl0uopocU4XNyght5KhO1TnuXC14MF/gvU9tYH18IglaVods
+         caW0kQcTmFOJG3e1brnW/4QD4zK776w4UmIC1+v6jLYpe7vkNWs7NLuhUqGnGQES9qHE
+         0EyoPqfOUwjZu8R36HBXrGluVb7AVxgsaFvBw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283878091-5751-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1283925324.2634.843.camel@edumazet-laptop>
+References: <AANLkTikp0m8cQYfEBHP_E8XpGZqdMj6Cr4M=aWCnei=X@mail.gmail.com>
+	<1283923185.2634.772.camel@edumazet-laptop>
+	<AANLkTim+=vj+k3=1hzT3=J4ssOopp5Eq=g+DHis=pZFN@mail.gmail.com>
+	<1283925324.2634.843.camel@edumazet-laptop>
+Date: Wed, 8 Sep 2010 14:14:42 +0800
+Message-ID: <AANLkTikfhz4AQntX2o5sSQy67TWb=rYqEjsoA2ju+Ycq@mail.gmail.com>
+Subject: Re: [PATCH] netlink: Fix kfree NULL pointer
+From: jovi zhang <bookjovi@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@openvz.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 8, 2010 at 1:55 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le mercredi 08 septembre 2010 à 13:33 +0800, jovi zhang a écrit :
+>
+>> YES, maybe kfree(NULL) is legal, but I cannot see there have any need
+>> to invoke kfree(NULL) in this function.
+>>  Also I check kfree usage in other code, I havn't find any kfree(NULL) usage.
+>
+> We have hundred call sites doing kfree(NULL), if it makes code shorter.
+>
+> Its usually code path handling exceptions (errors if you prefer), and we
+> prefer to use ugly gotos, and even kfree(NULL), to make it as short as
+> possible.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> Ingo,
-> 
-> Please pull the perf/core branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	perf/core
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Koki Sanagi (3):
->       netdev: Add tracepoints to netdev layer
->       skb: Add tracepoints to freeing skb
->       perf: Add a script to show packets processing
-> 
-> Lai Jiangshan (1):
->       irq: Add tracepoint to softirq_raise
-> 
-> Neil Horman (1):
->       napi: Convert trace_napi_poll to TRACE_EVENT
-> 
-> 
->  include/linux/interrupt.h                         |    8 +-
->  include/trace/events/irq.h                        |   26 +-
->  include/trace/events/napi.h                       |   25 +-
->  include/trace/events/net.h                        |   82 ++++
->  include/trace/events/skb.h                        |   17 +
->  net/core/datagram.c                               |    1 +
->  net/core/dev.c                                    |    8 +
->  net/core/net-traces.c                             |    1 +
->  net/core/skbuff.c                                 |    1 +
->  tools/perf/scripts/python/bin/netdev-times-record |    8 +
->  tools/perf/scripts/python/bin/netdev-times-report |    5 +
->  tools/perf/scripts/python/netdev-times.py         |  464 +++++++++++++++++++++
->  12 files changed, 641 insertions(+), 5 deletions(-)
-
-Pulled, thanks a lot!
-
-	Ingo
+OK, I understand.
