@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab0IHGOr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 02:14:47 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36759 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671Ab0IHGOo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 02:14:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=I14Mr3X75FEjOgl3QMKl0uopocU4XNyght5KhO1TnuXC14MF/gvU9tYH18IglaVods
-         caW0kQcTmFOJG3e1brnW/4QD4zK776w4UmIC1+v6jLYpe7vkNWs7NLuhUqGnGQES9qHE
-         0EyoPqfOUwjZu8R36HBXrGluVb7AVxgsaFvBw=
+	id S1757307Ab0IHGPm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 02:15:42 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:34897 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753671Ab0IHGPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 02:15:40 -0400
+Date: Wed, 8 Sep 2010 08:15:28 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 04/10] vmscan: Synchronous lumpy reclaim should not call
+ congestion_wait()
+Message-ID: <20100908061528.GD20955@cmpxchg.org>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
+ <1283770053-18833-5-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-In-Reply-To: <1283925324.2634.843.camel@edumazet-laptop>
-References: <AANLkTikp0m8cQYfEBHP_E8XpGZqdMj6Cr4M=aWCnei=X@mail.gmail.com>
-	<1283923185.2634.772.camel@edumazet-laptop>
-	<AANLkTim+=vj+k3=1hzT3=J4ssOopp5Eq=g+DHis=pZFN@mail.gmail.com>
-	<1283925324.2634.843.camel@edumazet-laptop>
-Date: Wed, 8 Sep 2010 14:14:42 +0800
-Message-ID: <AANLkTikfhz4AQntX2o5sSQy67TWb=rYqEjsoA2ju+Ycq@mail.gmail.com>
-Subject: Re: [PATCH] netlink: Fix kfree NULL pointer
-From: jovi zhang <bookjovi@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@openvz.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283770053-18833-5-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 8, 2010 at 1:55 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le mercredi 08 septembre 2010 à 13:33 +0800, jovi zhang a écrit :
->
->> YES, maybe kfree(NULL) is legal, but I cannot see there have any need
->> to invoke kfree(NULL) in this function.
->>  Also I check kfree usage in other code, I havn't find any kfree(NULL) usage.
->
-> We have hundred call sites doing kfree(NULL), if it makes code shorter.
->
-> Its usually code path handling exceptions (errors if you prefer), and we
-> prefer to use ugly gotos, and even kfree(NULL), to make it as short as
-> possible.
+On Mon, Sep 06, 2010 at 11:47:27AM +0100, Mel Gorman wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> congestion_wait() mean "waiting queue congestion is cleared".  However,
+> synchronous lumpy reclaim does not need this congestion_wait() as
+> shrink_page_list(PAGEOUT_IO_SYNC) uses wait_on_page_writeback()
+> and it provides the necessary waiting.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 
-OK, I understand.
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+
+> ---
+>  mm/vmscan.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index eabe987..5979850 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1341,8 +1341,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  
+>  	/* Check if we should syncronously wait for writeback */
+>  	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
+> -		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+> -
+>  		/*
+>  		 * The attempt at page out may have made some
+>  		 * of the pages active, mark them inactive again.
