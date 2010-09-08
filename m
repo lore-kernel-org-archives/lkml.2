@@ -1,84 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab0IHPyX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 11:54:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51171 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755613Ab0IHPyU convert rfc822-to-8bit (ORCPT
+	id S1756054Ab0IHPyZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 11:54:25 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44805 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab0IHPyU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Sep 2010 11:54:20 -0400
-Subject: Re: [process scheduler] Possible bug in context_swich()?
-From: Peter Zijlstra <peterz@infradead.org>
-To: fabio de francesco <fabio@metanix.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <201009081728.18227.fabio@metanix.org>
-References: <201009081728.18227.fabio@metanix.org>
-Content-Type: text/plain; charset="UTF-8"
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=B4MTf5snsLhjvuLnF1wmP2As5BZWQreKDsoEe8q5iAUfsbtTfP6hc3wRhp9aQXfwec
+         xRlHLmzg3joIQ1BF0Z+qw2X0hAa5zRUkaZqbgfQQ0hLD9EQP4Iz+Yn0m/o3PRIqGbGcT
+         uKBG+IS9I21lBmVtKoLJkzmX/izr7UnovAp98=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] ARM: pxa168/teton bga: add board support for i2c and rtc-ds1337
+Date: Wed, 8 Sep 2010 17:54:15 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-1-amd64; KDE/4.4.5; x86_64; ; )
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "Mark F. Brown" <mark.brown314@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <1283914607-10570-1-git-send-email-mark.brown314@gmail.com> <1283914607-10570-4-git-send-email-mark.brown314@gmail.com> <AANLkTi=StWVfeGjNCqJWJka0yifXv6rEB6GoZEkq7NT5@mail.gmail.com>
+In-Reply-To: <AANLkTi=StWVfeGjNCqJWJka0yifXv6rEB6GoZEkq7NT5@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 08 Sep 2010 17:54:18 +0200
-Message-ID: <1283961258.23762.33.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Message-Id: <201009081754.15515.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-08 at 17:28 +0200, fabio de francesco wrote:
-
-> In context_switch() (in linux/kernel/sched.c), starting with release 2.6.33, 
-> two "unlikely" macro  have been changed to "likely". I think the previous 
-> logic was right while the latter is wrong.
+Dne St 8. září 2010 07:34:24 Haojian Zhuang napsal(a):
+> On Wed, Sep 8, 2010 at 10:56 AM, Mark F. Brown <mark.brown314@gmail.com> 
+wrote:
+> > Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+> > ---
+> >  arch/arm/mach-mmp/teton_bga.c |   10 ++++++++++
+> >  1 files changed, 10 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-mmp/teton_bga.c
+> > b/arch/arm/mach-mmp/teton_bga.c index bbeda5c..8e5801c 100644
+> > --- a/arch/arm/mach-mmp/teton_bga.c
+> > +++ b/arch/arm/mach-mmp/teton_bga.c
+> > @@ -22,6 +22,7 @@
+> >  #include <mach/gpio.h>
+> >  #include <linux/input.h>
+> >  #include <plat/pxa27x_keypad.h>
+> > +#include <linux/i2c.h>
+> > 
+> >  #include "common.h"
+> > 
+> > @@ -35,6 +36,10 @@ static unsigned long teton_bga_pin_config[] __initdata
+> > = { GPIO110_KP_MKIN0,
+> >        GPIO111_KP_MKOUT7,
+> >        GPIO112_KP_MKOUT6,
+> > +
+> > +       /* i2c bus */
+> > +       GPIO105_CI2C_SDA,
+> > +       GPIO106_CI2C_SCL,
+> >  };
+> > 
+> >  static unsigned int teton_bga_matrix_key_map[] = {
+> > @@ -52,6 +57,10 @@ static struct pxa27x_keypad_platform_data
+> > teton_bga_keypad_info __initdata = { .debounce_interval      = 30,
+> >  };
+> > 
+> > +static struct i2c_board_info teton_bga_i2c_info[] __initdata = {
+> > +       { I2C_BOARD_INFO("ds1337", 0x68), },
+> > +};
+> > +
 > 
-> In case I am missing something I, please, ask someone to explain the above 
-> mentioned inversion of logic through releases.
+> I don't have the schematic of teton. But RTC chips should always has
+> an irq pin. Is it also connected in your platform?
 
-It helps if you CC people, LKML alone is a bit of a gamble.
+I think this one doesn't, but I haven't checked.
 
-git blame kernel/sched.c, will tell you that the change you refer to
-comes from:
+Cheers
 
-commit 710390d90f143a9ebb87a475215140f426792efd
-Author: Tim Blechmann <tim@klingt.org>
-Date:   Tue Nov 24 11:55:27 2009 +0100
-
-    sched: Optimize branch hint in context_switch()
-    
-    Branch hint profiling on my nehalem machine showed over 90%
-    incorrect branch hints:
-    
-      10420275 170645395  94 context_switch                 sched.c
-       3043
-      10408421 171098521  94 context_switch                 sched.c
-       3050
-    
-    Signed-off-by: Tim Blechmann <tim@klingt.org>
-    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Cc: Mike Galbraith <efault@gmx.de>
-    Cc: Paul Mackerras <paulus@samba.org>
-    Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    LKML-Reference: <4B0BBB9F.6080304@klingt.org>
-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 93474a7..010d5e1 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2829,14 +2829,14 @@ context_switch(struct rq *rq, struct task_struct *prev,
- 	 */
- 	arch_start_context_switch(prev);
- 
--	if (unlikely(!mm)) {
-+	if (likely(!mm)) {
- 		next->active_mm = oldmm;
- 		atomic_inc(&oldmm->mm_count);
- 		enter_lazy_tlb(oldmm, next);
- 	} else
- 		switch_mm(oldmm, mm, next);
- 
--	if (unlikely(!prev->mm)) {
-+	if (likely(!prev->mm)) {
- 		prev->active_mm = NULL;
- 		rq->prev_mm = oldmm;
- 	}
-
+> 
+> >  static void __init teton_bga_init(void)
+> >  {
+> >        mfp_config(ARRAY_AND_SIZE(teton_bga_pin_config));
+> > @@ -59,6 +68,7 @@ static void __init teton_bga_init(void)
+> >        /* on-chip devices */
+> >        pxa168_add_uart(1);
+> >        pxa168_add_keypad(&teton_bga_keypad_info);
+> > +       pxa168_add_twsi(0, NULL, ARRAY_AND_SIZE(teton_bga_i2c_info));
+> >  }
+> > 
+> >  MACHINE_START(TETON_BGA, "PXA168-based Teton BGA Development Platform")
+> > --
+> > 1.7.0.4
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> > in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
