@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab0IHF6u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 01:58:50 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:46387 "EHLO mgw2.diku.dk"
+	id S1756543Ab0IHGF7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 02:05:59 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43669 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756142Ab0IHF6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 01:58:47 -0400
-Date: Wed, 8 Sep 2010 07:58:45 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (em, bedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 7/8] drivers/i2c/busses/i2c-amd8111.c: Fix unsigned return
- type
-Message-ID: <Pine.LNX.4.64.1009080757050.27892@ask.diku.dk>
+	id S1751251Ab0IHGF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 02:05:56 -0400
+Date: Wed, 8 Sep 2010 08:05:46 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        "David S . Miller" <davem@davemloft.net>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL] tracing updates
+Message-ID: <20100908060546.GA3439@elte.hu>
+References: <1283878091-5751-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283878091-5751-1-git-send-regression-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
 
-In each case, the function has an unsigned return type, but returns a
-negative constant to indicate an error condition.  The result of calling
-the function is always stored in a variable of type (signed) int, and thus
-unsigned can be dropped from the return type.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-A sematic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+> Ingo,
+> 
+> Please pull the perf/core branch that can be found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	perf/core
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Koki Sanagi (3):
+>       netdev: Add tracepoints to netdev layer
+>       skb: Add tracepoints to freeing skb
+>       perf: Add a script to show packets processing
+> 
+> Lai Jiangshan (1):
+>       irq: Add tracepoint to softirq_raise
+> 
+> Neil Horman (1):
+>       napi: Convert trace_napi_poll to TRACE_EVENT
+> 
+> 
+>  include/linux/interrupt.h                         |    8 +-
+>  include/trace/events/irq.h                        |   26 +-
+>  include/trace/events/napi.h                       |   25 +-
+>  include/trace/events/net.h                        |   82 ++++
+>  include/trace/events/skb.h                        |   17 +
+>  net/core/datagram.c                               |    1 +
+>  net/core/dev.c                                    |    8 +
+>  net/core/net-traces.c                             |    1 +
+>  net/core/skbuff.c                                 |    1 +
+>  tools/perf/scripts/python/bin/netdev-times-record |    8 +
+>  tools/perf/scripts/python/bin/netdev-times-report |    5 +
+>  tools/perf/scripts/python/netdev-times.py         |  464 +++++++++++++++++++++
+>  12 files changed, 641 insertions(+), 5 deletions(-)
 
-// <smpl>
-@exists@
-identifier f;
-constant C;
-@@
+Pulled, thanks a lot!
 
- unsigned f(...)
- { <+...
-*  return -C;
- ...+> }
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/i2c/busses/i2c-amd8111.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-amd8111.c b/drivers/i2c/busses/i2c-amd8111.c
-index af1e5e2..02a3726 100644
---- a/drivers/i2c/busses/i2c-amd8111.c
-+++ b/drivers/i2c/busses/i2c-amd8111.c
-@@ -69,7 +69,7 @@ static struct pci_driver amd8111_driver;
-  * ACPI 2.0 chapter 13 access of registers of the EC
-  */
- 
--static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
-+static int amd_ec_wait_write(struct amd_smbus *smbus)
- {
- 	int timeout = 500;
- 
-@@ -85,7 +85,7 @@ static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
- 	return 0;
- }
- 
--static unsigned int amd_ec_wait_read(struct amd_smbus *smbus)
-+static int amd_ec_wait_read(struct amd_smbus *smbus)
- {
- 	int timeout = 500;
- 
-
+	Ingo
