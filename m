@@ -1,78 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab0IHAiG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 20:38:06 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44669 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757172Ab0IHAiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 20:38:02 -0400
-Date: Tue, 7 Sep 2010 17:38:21 -0700
-From: Greg KH <gregkh@suse.de>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Javier Martinez Canillas <martinez.javier@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Arnaud Patard <apatard@mandriva.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] staging: xgifb: Initialize uninitialized variables
-Message-ID: <20100908003821.GC27719@suse.de>
-References: <1283837645.6302.10.camel@lenovo> <4C85FBE3.4000605@gmail.com>
+	id S1757178Ab0IHAqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 20:46:13 -0400
+Received: from n10.bullet.mail.ac4.yahoo.com ([76.13.13.238]:38527 "HELO
+	n10.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755480Ab0IHAqI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 20:46:08 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 742157.2643.bm@omp132.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
+  b=LLjo6HfJUpZYEBzhAi33a7WnfbihxHZHgKfVWdandi3T1PsqKiznQHFSea3MHoYRd2gNAzAUKnTFeYdjqftRJ+hWnBq2QLIX291H+5/tMmVVq2y1juV5rGEpxMdMxKt8vFezEE216dtSkjlxng31A4q46OMuiehc1OHCXax9vI0=;
+Message-ID: <621591.67832.qm@web180301.mail.gq1.yahoo.com>
+X-YMail-OSG: fEEuyHkVM1mL2blN7_9JYc7fIAvpnKjahD_QJ63I62AAt0e
+ .UHWA7IovLJMUPeraCDAeOpNvzOR0to5QpXlIDLm0SLogl9IFlYiOuKaD128
+ ViqAjLaLyjBPDUzNX9RADdKmCgZxWC8BrelTgtbSE3QysLHdpMm7JDRGyVVE
+ 3OUZRhG7AM_7zVgnKDlqFaI61I.Ogu9XV4kpPvyE12uvXQrRDvWcknrHPkV8
+ V3aPnnCo79lmfr7BhwAgL5J9m0XTa9WVd4jeDgjv4KhKAYmXOXbKyKZmvn.V
+ sEtz2Da_uhwOAve9Us6XZYvqA6eAsUbYrvHShqNVUfBkmuUkkw.H2CJ15hzF
+ cEacdmK_Q3IaNnPOWtTIcphlsPgpc32ynr.Qs3CsPdqZfOh._8OA_YzxMkQ-
+ -
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Tue, 7 Sep 2010 17:46:04 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH] usbnet: allow rx_process() to ignore packets
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: David Brownell <dbrownell@users.sourceforge.net>, netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C85FBE3.4000605@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: multipart/mixed; boundary="0-14384708-1283906764=:67832"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 10:46:27AM +0200, Jiri Slaby wrote:
-> On 09/07/2010 07:34 AM, Javier Martinez Canillas wrote:
-> > Current patch solves compilation warnings in staging/xgifb for using possibly uninitialized variables.
-> > 
-> > Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
-> > ---
-> >  drivers/staging/xgifb/vb_setmode.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-> > index c4db2fc..720a592 100644
-> > --- a/drivers/staging/xgifb/vb_setmode.c
-> > +++ b/drivers/staging/xgifb/vb_setmode.c
-> > @@ -376,7 +376,7 @@ void InitTo330Pointer(unsigned char ChipType, struct vb_device_info *pVBInfo)
-> >  unsigned char XGISetModeNew(struct xgi_hw_device_info *HwDeviceExtension,
-> >  			unsigned short ModeNo)
-> >  {
-> > -	unsigned short ModeIdIndex;
-> > +	unsigned short ModeIdIndex = 0;
-> >  	/* unsigned char *pVBInfo->FBAddr = HwDeviceExtension->pjVideoMemoryAddress; */
-> >  	struct vb_device_info VBINF;
-> >  	struct vb_device_info *pVBInfo = &VBINF;
-> 
-> No, please don't. This is a compiler bug.
-> 
-> The first use in that function is:
-> XGI_SearchModeID( ModeNo , &ModeIdIndex, pVBInfo );
-> 
-> and that function contains:
-> if (XYZ) {
->   for( *ModeIdIndex = 0 ; ; ( *ModeIdIndex )++ )
->     ...
-> } else {
->   for( *ModeIdIndex = 0 ; ; ( *ModeIdIndex )++ )
->     ...
-> }
-> 
-> So your compiler is foolish if that emits a warning.
+--0-14384708-1283906764=:67832
+Content-Type: text/plain; charset=us-ascii
 
-No, I don't see a way that the compiler could really figure that type of
-logic out.  It doesn't know that XGI_SearchModeID() always will set that
-field.  Heck, at first glance I couldn't even figure it out :)
+--- On Tue, 9/7/10, Ondrej Zary <linux@rainbow-software.org> wrote:
+> 
+> It's not a garbage, just a packet that is not yet
+> complete.
 
-So I don't mind applying this patch, as I'll just constantly keep
-getting people sending me the same change, when they could be off
-working on other things that this driver needs.
+Sorry, I guess I was being dense.
 
-thanks,
+I thought packets were by definition complete... :)
 
-greg k-h
+I think you're saying this is one of N fragments
+which the minidriver will be re-assembling into
+a bigger packet, before somehow passing it up
+the stack...
+
+I attach my doc update patch.  (should be the
+same as what I sent before.  Consider my apology
+for using an attachment as repeated here; my email
+setup remains partly broken).  Can you send
+a version of your defrag-enabling patch which
+applies on top of it, and documents your new
+calling convention (with a third return case
+for rx_process() too?
+--0-14384708-1283906764=:67832
+Content-Type: application/octet-stream; name=rxfix
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename=rxfix
+
+U2lnbmVkLW9mZi1ieTogRGF2aWQgQnJvd25lbGwgPGRicm93bmVsbEB1c2Vy
+cy5zb3VyY2Vmb3JnZS5uZXQ+ClN1YmplY3Q6IHVzYm5ldDogZG9jIHVwZGF0
+ZXMKClByb3ZpZGUgbW9yZSBkb2N1bWVudGF0aW9uIGFib3V0IHRoZSByeF9m
+aXh1cCgpIGNhbGxpbmcgY29udmVudGlvbiwKdG8gaGVscCByZWR1Y2Ugc29t
+ZSByZWNlbnRseS1vYnNlcnZlZCBjb25mdXNpb24uCgpBbHNvIHN1bW1hcml6
+ZSB0aGUgZXF1aXZhbGVuY2Ugb2YgVVNCIGFuZCBuZXR3b3JrIFRYL1JYIHF1
+ZXVlcywgdG8KaGVscCBoaWdobGlnaHQgdGhlIHJvbGVzIG9mIHRoZSBmaXh1
+cCgpIHJvdXRpbmVzIHdpdGggbGluayBwcm90b2NvbHMKdXNpbmcgdGhlIENQ
+VS1pbnRlbnNpdmUgcGFja2V0IGJhdGNoaW5nIG1vZGVscy4KClNpZ25lZC1v
+ZmYtYnk6IERhdmlkIEJyb3duZWxsIDxkYnJvd25lbGxAdXNlcnMuc291cmNl
+Zm9yZ2UubmV0PgotLS0KCgogaW5jbHVkZS9saW51eC91c2IvdXNibmV0Lmgg
+fCAgIDMxICsrKysrKysrKysrKysrKysrKysrKysrKysrKysrLS0KIDEgZmls
+ZSBjaGFuZ2VkLCAyOSBpbnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQoK
+LS0tIGEvaW5jbHVkZS9saW51eC91c2IvdXNibmV0LmgKKysrIGIvaW5jbHVk
+ZS9saW51eC91c2IvdXNibmV0LmgKQEAgLTIyLDggKzIyLDIyIEBACiAjaWZu
+ZGVmCV9fTElOVVhfVVNCX1VTQk5FVF9ICiAjZGVmaW5lCV9fTElOVVhfVVNC
+X1VTQk5FVF9ICiAKLS8qIGludGVyZmFjZSBmcm9tIHVzYm5ldCBjb3JlIHRv
+IGVhY2ggVVNCIG5ldHdvcmtpbmcgbGluayB3ZSBoYW5kbGUgKi8KKy8qKiBp
+bnRlcmZhY2UgZnJvbSB1c2JuZXQgY29yZSB0byBlYWNoIFVTQiBuZXR3b3Jr
+aW5nIGxpbmsgd2UgaGFuZGxlLgorICoKKyAqIE5vdGUgdGhhdCB0aGUgZGVz
+aWduIGNlbnRlciBmb3IgdXNibmV0IGhhcyBvbmUgSUVFRSBwYWNrZXQgcGVy
+IFVSQiwKKyAqIGFuZCBtYXBzIG5ldHdvcmsgVFggYW5kIFJYIHF1ZXVlcyBk
+aXJlY3RseSB0byB0aGUKKyAqIFVTQiBoYXJkd2FyZSBUWC9SWCBxdWV1ZXMs
+IG1pbmltaXppbmcgc29mdHdhcmUgYW5kIGhhcmR3YXJlIG92ZXJoZWFkLgor
+ICogU29tZSBsaW5rIHByb3RvY29scyAobGlrZSBSTkRJUyBhbmQgQ0RDIE5D
+TSkgcHJvbW90ZSAgbGVzcyBlZmZpY2llbnQKKyAqIGRlc2lnbnMgd2hpY2gg
+aW52b2x2ZSBiYXRjaGluZyBtdWx0aXBsZSBJRUVFIHBhY2tldHMgaW4gZWFj
+aCBVUkIsCisgKiB3aXRoIGluY3JlYXNlZCBUWCBvdmVyaGVhZCB0byBjb3B5
+IElFRUUgcGFja2V0cyBpbnRvIFRYIFVSQnMnIGRhdGEKKyAqIGJ1ZmZlcnMg
+aW4gdHhfZml4dXAoKSByb3V0aW5lcywgcGx1cyB1bmJhdGNoaW5nIHdvcmsg
+aW4gcnhfZml4dXAoKSB0b28uCisgKiBTb21ldGltZXMgdGhlIFRYIG92ZXJo
+ZWFkIGNhbiBiZSBtaW5pbWl6ZWQgb24gTGludXggYnkgbm90IGJhdGNoaW5n
+LCBidXQKKyAqIHRoaXMgdXN1YWxseSB3b24ndCB3b3JrIGZvciBSWCBiZWNh
+dXNlIG9mIHRoZSBuZWVkIHRvIGludGVyb3BlcmF0ZSB3aXRoCisgKiBpbXBs
+ZW1lbnRhdGlvbnMgd2hpY2ggYmF0Y2ggb24gVFguCisgKi8KKwogc3RydWN0
+IHVzYm5ldCB7CisKIAkvKiBob3VzZWtlZXBpbmcgKi8KIAlzdHJ1Y3QgdXNi
+X2RldmljZQkqdWRldjsKIAlzdHJ1Y3QgdXNiX2ludGVyZmFjZQkqaW50ZjsK
+QEAgLTExMyw3ICsxMjcsMjAgQEAgc3RydWN0IGRyaXZlcl9pbmZvIHsKIAkv
+KiBsaW5rIHJlc2V0IGhhbmRsaW5nLCBjYWxsZWQgZnJvbSBkZWZlcl9rZXZl
+bnQgKi8KIAlpbnQJKCpsaW5rX3Jlc2V0KShzdHJ1Y3QgdXNibmV0ICopOwog
+Ci0JLyogZml4dXAgcnggcGFja2V0IChzdHJpcCBmcmFtaW5nKSAqLworCS8q
+IGZpeHVwIHJ4IHBhY2tldCAoIGJ5IHN0cmlwcGluZyBmcmFtaW5nIGZyb20g
+VVJCL1NLQi4KKwkgKgorCSAqIElmIFNLQiBiYXRjaGVzIG9uZSBvciBtb3Jl
+IHBhY2tldHMsIHBhc3MgYWxsIGJ1dCBvbmUgb2YgdGhlbQorCSAqIHVwIHRo
+ZSBzdGFjayAoY2xvbmUgU0tCIGFuZCBmaXh1cCBlYWNoIGNsb25lIGJlZm9y
+ZSBuZXRpZl9yeCkpLgorCSAqCisKKwkgKiBXaGVuIHlvdSBsZWF2ZSBvbmUg
+cGFja2V0IGluIFNLQiAoaW50ZW5kZWQgdXNhZ2UpLCByZXR1cm4KKwkgKiBu
+b256ZXJvIGFuZCBlbnN1cmUgc2tiLWxlbiBpcyBub256ZXJvLiAgdGhlIHBh
+Y2tldCB3aWxsIGJlCisJICogcGFzc2VkIHVwIHRoZSBuZXR3b3JrIHN0YWNr
+IGFuZCBhY2NvdW50ZWQgcHJvcGVybHkuCisJICoKKwkgKiByZXR1cm4gemVy
+byB0byBpbmRpY2F0ZSBlcnJvcnMgc3VjaCBhcyB0b28gbXVjaCBoZWFkZXIg
+b3IKKwkgKiBkYXRhLCBvciBhIGJhZCBjaGVja3N1bTsgdGhlIHBhY2tldCB3
+aWxsIGJlIGRyb3BwZWQKKwkgKiBhbmQgYWNjb3VudGVkIGFzIGFuIGVycm9y
+LgorCSovCiAJaW50CSgqcnhfZml4dXApKHN0cnVjdCB1c2JuZXQgKmRldiwg
+c3RydWN0IHNrX2J1ZmYgKnNrYik7CiAKIAkvKiBmaXh1cCB0eCBwYWNrZXQg
+KGFkZCBmcmFtaW5nKSAqLwo=
+
+--0-14384708-1283906764=:67832--
+
