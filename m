@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab0IHTJy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 15:09:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36104 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753041Ab0IHTJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 15:09:46 -0400
-Message-ID: <4C87DF5C.70801@zytor.com>
-Date: Wed, 08 Sep 2010 12:09:16 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	id S1753491Ab0IHTT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 15:19:57 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:43837 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460Ab0IHTTu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 15:19:50 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Cliff Wickman <cpw@sgi.com>
+Cc: kexec@lists.infradead.org, mingo@elte.hu, linux-kernel@vger.kernel.org
+References: <E1OtMLz-0001yp-Ia@eag09.americas.sgi.com>
+Date: Wed, 08 Sep 2010 12:19:43 -0700
+In-Reply-To: <E1OtMLz-0001yp-Ia@eag09.americas.sgi.com> (Cliff Wickman's
+	message of "Wed, 08 Sep 2010 10:14:27 -0500")
+Message-ID: <m1eid4gi0g.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-CC: "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
-References: <20100901213318.19353.54619.stgit@localhost.localdomain>	 <41621.148.87.67.139.1283378664.squirrel@www.xenotime.net> <1283379098.28591.20.camel@pjaxe>
-In-Reply-To: <1283379098.28591.20.camel@pjaxe>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
+	*      [URIs: infradead.org]
+	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;Cliff Wickman <cpw@sgi.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] x86: copy_oldmem_page using cached addressing
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2010 03:11 PM, Peter P Waskiewicz Jr wrote:
-> On Wed, 2010-09-01 at 15:04 -0700, rdunlap@xenotime.net wrote:
->> On Wed, September 1, 2010 2:33 pm, Peter P Waskiewicz Jr wrote:
->>> Documentation/x86/x86_64/boot-options.txt |    4 ++++
->>> arch/x86/mm/srat_64.c                     |   20 +++++++++++++++++--- 2
->>> files changed, 21 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c index
->>> f9897f7..8719472 100644 --- a/arch/x86/mm/srat_64.c
->>> +++ b/arch/x86/mm/srat_64.c
->>> @@ -351,6 +351,15 @@ int __init acpi_get_nodes(struct bootnode *physnodes)
->>>  return ret; }
->>>
->>>
->>> +int srat_bypass_bios = 0;
->>
->> static int srat_bypass_bios;
->>
->> Don't need to init to 0.
-> 
-> I'll fix and send a second version.  Thanks Randy.
-> 
+Cliff Wickman <cpw@sgi.com> writes:
 
-Should be static *bool* srat_bypass_bios;
+> From: Cliff Wickman <cpw@sgi.com>
+>
+> The copy of /proc/vmcore to a user buffer proceeds much faster
+> if the kernel addresses memory as cached.
+>
+> With this patch we have seen an increase in transfer rate from less than
+> 15MB/s to 80-460MB/s, depending on size of the transfer.  This makes
+> a big difference in time needed to save a system dump.
+>
+> (Does anyone know of a reason why copy_oldmem_page() would need
+>  to use uncached addresses?)
+>
+> Diffed against 2.6.36-rc3
 
-Please use bool for actual booleans; it prevents someone from being
-"smart" and using values like 2 or -1 for "special cases".
+I believe this code simply predates being able to specify the
+caching attributes at ioremap time.  Being cached in this case
+actually looks more correct, as that is the default for RAM
+and we are talking about RAM.
 
-	-hpa
+Ultimately either there is another cpu running wild with these pages
+mapped with some random set of attributes, and we cannot get the
+permissions right or we have captured all of the cpus and this is the
+only mapping so it doesn't matter.
+
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+
+>
+> Signed-off-by: Cliff Wickman <cpw@sgi.com>
+> ---
+>  arch/x86/kernel/crash_dump_64.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> Index: linus.current/arch/x86/kernel/crash_dump_64.c
+> ===================================================================
+> --- linus.current.orig/arch/x86/kernel/crash_dump_64.c
+> +++ linus.current/arch/x86/kernel/crash_dump_64.c
+> @@ -34,7 +34,7 @@ ssize_t copy_oldmem_page(unsigned long p
+>  	if (!csize)
+>  		return 0;
+>  
+> -	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
+> +	vaddr = ioremap_cache(pfn << PAGE_SHIFT, PAGE_SIZE);
+>  	if (!vaddr)
+>  		return -ENOMEM;
+>  
+>
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
