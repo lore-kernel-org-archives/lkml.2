@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758677Ab0IHMez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 08:34:55 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56597 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab0IHMew (ORCPT
+	id S1757162Ab0IHMib (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 08:38:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48003 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697Ab0IHMi2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 08:34:52 -0400
-From: fabio de francesco <fabio@metanix.org>
-Organization: metanix.org
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: linux/kernel/sched.c: context_switch().
-Date: Wed, 8 Sep 2010 14:33:34 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-tuxonice-r1-100826; KDE/4.4.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009081433.35019.fabio@metanix.org>
+	Wed, 8 Sep 2010 08:38:28 -0400
+Subject: Re: [RFC 1/4] ftrace: Add events for tracing timer interrupts
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jan Blunck <jblunck@suse.de>
+Cc: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+        linux-rt-users@vger.kernel.org,
+        Sven-Thorsten Dietrich <sdietrich@novell.com>,
+        Michael Galbraith <MGalbraith@novell.com>
+In-Reply-To: <1283948964-6418-2-git-send-email-jblunck@suse.de>
+References: <1283948964-6418-1-git-send-email-jblunck@suse.de>
+	 <1283948964-6418-2-git-send-email-jblunck@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 08 Sep 2010 14:38:23 +0200
+Message-ID: <1283949503.23762.9.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There must be something I am missing in sched.c at context_switch() function 
-definition. 
+On Wed, 2010-09-08 at 14:29 +0200, Jan Blunck wrote:
+> Trace the execution of the timer interrupt. I did not find an argument that
+> makes any sense so traces look like this:
+> 
+> <idle>-0     [000] 181019.693546: timerirq_enter: unused=1
+> <idle>-0     [000] 181019.693553: timerirq_exit: unused=1
 
-There I can read the following code:
-
-static inline void
-context_switch(struct rq *rq, struct task_struct *prev,
-               struct task_struct *next)
-{
-	...
-	struct mm_struct *mm;
-	mm = next->mm;
-	if (likely(!mm)) {
-                next->active_mm = oldmm;
-                atomic_inc(&oldmm->mm_count);
-                enter_lazy_tlb(oldmm, next);
-        } else
-                switch_mm(oldmm, mm, next);
-	...
-}
-
-May someone please explain why the mm pointer is likely supposed to be NULL?
-
-Thanks in advance.
-
-fabio
+So what's wrong with the normal IRQ enter/exit tracepoints?
