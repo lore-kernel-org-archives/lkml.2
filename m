@@ -1,34 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab0IHN5W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 09:57:22 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:28247 "EHLO
+	id S1754694Ab0IHN50 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 09:57:26 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:28265 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750847Ab0IHN5T (ORCPT
+	by vger.kernel.org with ESMTP id S1751568Ab0IHN5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 09:57:19 -0400
-Message-ID: <003901cb4f5d$bf977c80$66f8800a@maildom.okisemi.com>
+	Wed, 8 Sep 2010 09:57:22 -0400
+Message-ID: <003a01cb4f5d$c1424650$66f8800a@maildom.okisemi.com>
 From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Jiri Slaby" <jslaby@suse.cz>
-Cc: "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "Ralf Baechle" <ralf@linux-mips.org>,
-        "ML netdev" <netdev@vger.kernel.org>, "MeeGo" <meego-dev@meego.com>,
-        "Maxime Bizon" <mbizon@freebox.fr>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "Kristoffer Glembo" <kristoffer@gaisler.com>,
-        "John Linn" <john.linn@xilinx.com>, "Joe Perches" <joe@perches.com>,
-        "Greg Rose" <gregory.v.rose@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
-        "Toshiharu Okada" <okada533@dsn.okisemi.com>,
-        "Tomoya Morinaga" <morinaga526@dsn.okisemi.com>,
-        "Takahiro Shimizu" <shimizu394@dsn.okisemi.com>,
+To: "Micha? Nazarewicz" <m.nazarewicz@samsung.com>,
+        "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "Peter Korsgaard" <peter.korsgaard@barco.com>,
+        "Nicolas Ferre" <nicolas.ferre@atmel.com>,
+        "Maurus Cuelenaere" <mcuelenaere@gmail.com>,
+        "linux-usb" <linux-usb@vger.kernel.org>,
+        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "Fabien Chouteau" <fabien.chouteau@barco.com>,
+        "david Brownell" <dbrownell@users.sourceforge.net>,
+        "Christoph Egger" <siccegge@stud.informatik.uni-erlangen.de>,
+        "LKML" <linux-kernel@vger.kernel.org>, "MeeGo" <meego-dev@meego.com>
+Cc: "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Andrew" <andrew.chih.howe.khor@intel.com>,
         "Intel OTC" <joel.clark@intel.com>,
         "Foster, Margie" <margie.foster@intel.com>,
-        "Andrew" <andrew.chih.howe.khor@intel.com>
-References: <4C81019E.1010808@dsn.okisemi.com> <4C8123D6.8020001@suse.cz>
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-Date: Wed, 8 Sep 2010 22:52:47 +0900
+        "Arjan" <arjan@linux.intel.com>,
+        "Toshiharu Okada" <okada533@dsn.okisemi.com>,
+        "Takahiro Shimizu" <shimizu394@dsn.okisemi.com>,
+        "Tomoya Morinaga" <morinaga526@dsn.okisemi.com>
+References: <4C85EE6F.6000706@dsn.okisemi.com> <op.vioye2r17p4s8u@localhost>
+Subject: Re: [PATCH] USB device driver of Topcliff PCH
+Date: Wed, 8 Sep 2010 22:57:11 +0900
 X-Priority: 3
 X-MSMail-Priority: Normal
 X-Mailer: Microsoft Outlook Express 6.00.2800.1983
@@ -39,946 +42,572 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri
+Hi Micha?, Greg and Maurus.
 
-I have some questions.
-Please see out inline comments.
+Thank you for your comments.
+I confirm them.
 
 Thanks, Ohtake
-
 ----- Original Message ----- 
-From: "Jiri Slaby" <jslaby@suse.cz>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Cc: "Randy Dunlap" <randy.dunlap@oracle.com>; "Ralf Baechle" <ralf@linux-mips.org>; "ML netdev"
-<netdev@vger.kernel.org>; "MeeGo" <meego-dev@meego.com>; "Maxime Bizon" <mbizon@freebox.fr>; "LKML"
-<linux-kernel@vger.kernel.org>; "Kristoffer Glembo" <kristoffer@gaisler.com>; "John Linn" <john.linn@xilinx.com>; "Joe
-Perches" <joe@perches.com>; "Greg Rose" <gregory.v.rose@intel.com>; "David S. Miller" <davem@davemloft.net>; "Wang, Yong
-Y" <yong.y.wang@intel.com>; "Wang, Qi" <qi.wang@intel.com>; "Toshiharu Okada" <okada533@dsn.okisemi.com>; "Tomoya
-Morinaga" <morinaga526@dsn.okisemi.com>; "Takahiro Shimizu" <shimizu394@dsn.okisemi.com>; "Intel OTC"
-<joel.clark@intel.com>; "Foster, Margie" <margie.foster@intel.com>; "Andrew" <andrew.chih.howe.khor@intel.com>
-Sent: Saturday, September 04, 2010 1:35 AM
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-
-
-> Hi, I wrote few comments below.
->
-> On 09/03/2010 04:09 PM, Masayuki Ohtake wrote:
-> > --- a/drivers/net/Kconfig
-> > +++ b/drivers/net/Kconfig
-> > @@ -2004,7 +2004,6 @@ menuconfig NETDEV_1000
-> >    If you say N, all options in this submenu will be skipped and disabled.
-> >
-> >  if NETDEV_1000
-> > -
-> >  config ACENIC
-> >  tristate "Alteon AceNIC/3Com 3C985/NetGear GA620 Gigabit support"
-> >  depends on PCI
->
-> This hunk is unwanted, I think.
-
-[masa]
-This will be deleted.
-
-
->
-> > --- /dev/null
-> > +++ b/drivers/net/pch_gbe/pch_gbe.h
-> > @@ -0,0 +1,683 @@
-> ...
-> > +/**
-> > + * pch_gbe_regs_mac_adr - Structure holding values of mac address registers
-> > + * @high Denotes the 1st to 4th byte from the initial of MAC address
-> > + * @low Denotes the 5th to 6th byte from the initial of MAC address
-> > + */
-> > +struct pch_gbe_regs_mac_adr {
-> > + u32 high;
-> > + u32 low;
-> > +};
-> > +/**
-> > + * pch_udc_regs - Structure holding values of MAC registers
-> > + */
-> > +struct pch_gbe_regs {
-> > + u32 INT_ST;
-> > + u32 INT_EN;
-> > + u32 MODE;
-> > + u32 RESET;
-> > + u32 TCPIP_ACC;
-> > + u32 EX_LIST;
-> > + u32 INT_ST_HOLD;
-> > + u32 PHY_INT_CTRL;
-> > + u32 MAC_RX_EN;
-> > + u32 RX_FCTRL;
-> > + u32 PAUSE_REQ;
-> > + u32 RX_MODE;
-> > + u32 TX_MODE;
-> > + u32 RX_FIFO_ST;
-> > + u32 TX_FIFO_ST;
-> > + u32 TX_FID;
-> > + u32 TX_RESULT;
-> > + u32 PAUSE_PKT1;
-> > + u32 PAUSE_PKT2;
-> > + u32 PAUSE_PKT3;
-> > + u32 PAUSE_PKT4;
-> > + u32 PAUSE_PKT5;
-> > + u32 reserve[2];
-> > + struct pch_gbe_regs_mac_adr mac_adr[16];
-> > + u32 ADDR_MASK;
-> > + u32 MIIM;
-> > + u32 reserve2;
-> > + u32 RGMII_ST;
-> > + u32 RGMII_CTRL;
-> > + u32 reserve3[3];
-> > + u32 DMA_CTRL;
-> > + u32 reserve4[3];
-> > + u32 RX_DSC_BASE;
-> > + u32 RX_DSC_SIZE;
-> > + u32 RX_DSC_HW_P;
-> > + u32 RX_DSC_HW_P_HLD;
-> > + u32 RX_DSC_SW_P;
-> > + u32 reserve5[3];
-> > + u32 TX_DSC_BASE;
-> > + u32 TX_DSC_SIZE;
-> > + u32 TX_DSC_HW_P;
-> > + u32 TX_DSC_HW_P_HLD;
-> > + u32 TX_DSC_SW_P;
-> > + u32 reserve6[3];
-> > + u32 RX_DMA_ST;
-> > + u32 TX_DMA_ST;
-> > + u32 reserve7[2];
-> > + u32 WOL_ST;
-> > + u32 WOL_CTRL;
-> > + u32 WOL_ADDR_MASK;
-> > +};
->
-> Shouldn't that be packed? As it is full of u32, probably not, but
-> consider this comment when thinking about all structures you have here.
-
-[masa]
-packed?
-I am sorry, I can not understand.
-Please let me know details.
-
->
-> > +/* Device Driver infomation */
-> > +#define DRV_STRING      "PCH Network Driver"
-> > +#define DRV_EXT         "-NAPI"
-> > +#define DRV_VERSION     "0.95"DRV_EXT
-> > +#define DRV_DESCRIPTION \
-> > + "OKI semiconductor sample Linux driver for PCH Gigabit ethernet"
-> > +#define DRV_COPYRIGHT   "Copyright(c) 2010 OKI semiconductor"
->
-> Why you need these defines?
-
-[masa]
-This will be deleted.
-
->
-> > +struct pch_gbe_hw {
-> > + void *back;
-> > +
-> > + struct pch_gbe_regs  __iomem *reg;
-> > + spinlock_t miim_lock;
-> > +
-> > + const struct pch_gbe_functions *func;
-> > + struct pch_gbe_mac_info mac;
-> > + struct pch_gbe_phy_info phy;
-> > + struct pch_gbe_bus_info bus;
-> > +
-> > + u16 vendor_id;
-> > + u16 device_id;
-> > + u16 subsystem_vendor_id;
-> > + u16 subsystem_device_id;
-> > + u8 revision_id;
->
-> What you need these IDs for?
-
-[masa]
-This will be deleted.
-
-
->
-> > +};
-> > +
-> > +/**
-> > + * struct pch_gbe_rx_desc - Receive Descriptor
-> > + * @buffer_addr: RX Frame Buffer Address
-> > + * @tcp_ip_status: TCP/IP Accelerator Status
-> > + * @rx_words_eob: RX word count and Byte position
-> > + * @gbec_status: GMAC Status
-> > + * @dma_status: DMA Status
-> > + * @reserved1: Reserved
-> > + * @reserved2: Reserved
-> > + */
-> > +struct pch_gbe_rx_desc {
-> > + u32 buffer_addr;
-> > + u32 tcp_ip_status;
-> > + u16 rx_words_eob;
-> > + u16 gbec_status;
-> > + u8 dma_status;
-> > + u8 reserved1;
-> > + u16 reserved2;
-> > +};
-> > +
-> > +/**
-> > + * struct pch_gbe_tx_desc - Transmit Descriptor
-> > + * @buffer_addr: TX Frame Buffer Address
-> > + * @length: Data buffer length
-> > + * @reserved1: Reserved
-> > + * @tx_words_eob: TX word count and Byte position
-> > + * @tx_frame_ctrl: TX Frame Control
-> > + * @dma_status: DMA Status
-> > + * @reserved2: Reserved
-> > + * @gbec_status: GMAC Status
-> > + */
-> > +struct pch_gbe_tx_desc {
-> > + u32 buffer_addr;
-> > + u16 length;
-> > + u16 reserved1;
-> > + u16 tx_words_eob;
-> > + u16 tx_frame_ctrl;
-> > + u8 dma_status;
-> > + u8 reserved2;
-> > + u16 gbec_status;
-> > +};
->
-> packed?
-
-[masa]
-Ditto
-
-
->
-> > +struct pch_gbe_adapter {
-> > + spinlock_t stats_lock;
-> > + spinlock_t tx_queue_lock;
->
-> unitialized
-
-[masa]
-This will be modified.
-
->
-> > + spinlock_t int_en_lock;
->
-> unused
-
-
-[masa]
-This will be deleted.
-
->
-> > + spinlock_t ethtool_lock;
-> > + atomic_t irq_sem;
-> > + struct net_device *netdev;
-> > + struct pci_dev *pdev;
-> > + struct net_device_stats net_stats;
-> > + struct net_device *polling_netdev;
-> > + struct napi_struct napi;
-> > + struct pch_gbe_hw hw;
-> > + struct pch_gbe_hw_stats stats;
-> > + struct work_struct reset_task;
-> > + struct mii_if_info mii;
-> > + struct timer_list watchdog_timer;
-> > + u32 wake_up_evt;
-> > + u32 *config_space;
-> > + struct timer_list blink_timer;
->
-> unused
-
-[masa]
-This will be deleted.
-
->
-> > + unsigned long led_status;
-> > + struct pch_gbe_tx_ring *tx_ring;
-> > + struct pch_gbe_rx_ring *rx_ring;
-> > + unsigned long rx_buffer_len;
-> > + unsigned long tx_queue_len;
-> > + bool rx_csum;
-> > + bool tx_csum;
-> > + bool have_msi;
-> > +};
-> > +
-> > +/**
-> > + * enum pch_gbe_state_t - Driver Status
-> > + * @__PCH_GBE_TESTING: Testing
-> > + * @__PCH_GBE_RESETTING: Reseting
-> > + */
-> > +enum pch_gbe_state_t {
-> > + __PCH_GBE_TESTING,
-> > + __PCH_GBE_RESETTING,
-> > +};
->
-> Why _t? It's not a typedef.
-
-[masa]
-This will be deleted.
-
->
-> > --- /dev/null
-> > +++ b/drivers/net/pch_gbe/pch_gbe_api.c
-> > @@ -0,0 +1,246 @@
-> ...
-> > +/**
-> > + * pch_gbe_hal_setup_init_funcs - Initializes function pointers
-> > + * @hw: Pointer to the HW structure
-> > + * Returns
-> > + * 0: Successfully
-> > + * ENOSYS: Function is not registered
-> > + */
-> > +inline s32 pch_gbe_hal_setup_init_funcs(struct pch_gbe_hw *hw)
-> > +{
-> > + if (!hw->reg) {
-> > + pr_err("ERROR: Registers not mapped\n");
->
-> No pr_fmt in this file, this line is helpless. Reconsider using dev_*
-> and netdev_* (dev_err, netdev_err and alike) printing wherever possible.
-
-[masa]
-This will be modified pch_gbe.h.
-"#define pr_fmt(fmt) KBUILD_MODNAME ": " tmt" is added
-
->
-> > + return -ENOSYS;
-> > + }
-> > + pch_gbe_plat_init_function_pointers(hw);
-> > + return 0;
-> > +}
-> > +
-> > +/**
-> > + * pch_gbe_hal_get_bus_info - Obtain bus information for adapter
-> > + * @hw: Pointer to the HW structure
-> > + */
-> > +inline void pch_gbe_hal_get_bus_info(struct pch_gbe_hw *hw)
-> > +{
-> > + if (!hw->func->get_bus_info)
-> > + pr_err("ERROR: configuration\n");
->
-> Ditto. And on some more places too.
->
-> > --- /dev/null
-> > +++ b/drivers/net/pch_gbe/pch_gbe_ethtool.c
-> > @@ -0,0 +1,620 @@
-> ...
-> > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> > +#include <linux/pci.h>
-> > +#include <linux/ethtool.h>
-> > +
-> > +#include "pch_gbe.h"
-> > +#include "pch_gbe_api.h"
-> > +
-> > +#define FUNC_ENTER() pr_devel("ethtool: %s enter\n", __func__)
-> > +#define FUNC_EXIT() pr_devel("ethtool: %s exit\n", __func__)
->
-> Why you need these when you have kprobes (or whatever the name for
-> function entry/exit instrumentation is)?
-
-[masa]
-This will be deleted.
-
->
-> > +/**
-> > + * pch_gbe_get_wol - Report whether Wake-on-Lan is enabled
-> > + * @netdev: Network interface device structure
-> > + * @wol:    Wake-on-Lan information
-> > + */
-> > +static void pch_gbe_get_wol(struct net_device *netdev,
-> > + struct ethtool_wolinfo *wol)
-> > +{
-> > + struct pch_gbe_adapter *adapter = netdev_priv(netdev);
-> > +
-> > + FUNC_ENTER();
-> > +
-> > + wol->supported = WAKE_UCAST | WAKE_MCAST | WAKE_BCAST | WAKE_MAGIC;
-> > + wol->wolopts = 0;
-> > +
-> > + if ((adapter->wake_up_evt & PCH_GBE_WLC_IND))
-> > + wol->wolopts |= WAKE_UCAST;
-> > + if ((adapter->wake_up_evt & PCH_GBE_WLC_MLT))
-> > + wol->wolopts |= WAKE_MCAST;
-> > + if ((adapter->wake_up_evt & PCH_GBE_WLC_BR))
-> > + wol->wolopts |= WAKE_BCAST;
-> > + if ((adapter->wake_up_evt & PCH_GBE_WLC_MP))
-> > + wol->wolopts |= WAKE_MAGIC;
-> > + return;
->
-> no need to return here.
-
-[masa]
-This will be deleted
-
->
-> > +}
-> ...
-> > +/**
-> > + * pch_gbe_set_ringparam - Set ring sizes
-> > + * @netdev:  Network interface device structure
-> > + * @ring:    Ring param structure
-> > + * Returns
-> > + * 0: Successful.
-> > + * Negative value: Failed.
-> > + */
-> > +static int pch_gbe_set_ringparam(struct net_device *netdev,
-> > + struct ethtool_ringparam *ring)
-> > +{
-> > + struct pch_gbe_adapter *adapter = netdev_priv(netdev);
-> > + struct pch_gbe_tx_ring *txdr, *tx_old;
-> > + struct pch_gbe_rx_ring *rxdr, *rx_old;
-> > + int tx_ring_size, rx_ring_size;
-> > + int err = 0;
-> > + unsigned long flags;
-> > +
-> > + FUNC_ENTER();
-> > + if ((ring->rx_mini_pending) || (ring->rx_jumbo_pending))
-> > + return -EINVAL;
-> > + tx_ring_size = (int)sizeof(struct pch_gbe_tx_ring);
-> > + rx_ring_size = (int)sizeof(struct pch_gbe_rx_ring);
-> > +
-> > + spin_lock_irqsave(&adapter->ethtool_lock, flags);
-> > + if ((netif_running(adapter->netdev)))
-> > + pch_gbe_down(adapter);
-> > + tx_old = adapter->tx_ring;
-> > + rx_old = adapter->rx_ring;
-> > +
-> > + txdr = kzalloc(tx_ring_size, GFP_KERNEL);
->
-> This is deadlocable. You are calling sleeping allocation inside spinlock.
-
-[masa]
-This will be modified
-Since spin lock is deleted, this issue is lost.
-
->
-> > + if (!txdr) {
-> > + err = -ENOMEM;
-> > + goto err_alloc_tx;
-> > + }
-> > + rxdr = kzalloc(rx_ring_size, GFP_KERNEL);
-> > + if (!rxdr) {
-> > + err = -ENOMEM;
-> > + goto err_alloc_rx;
-> > + }
-> > + adapter->tx_ring = txdr;
-> > + adapter->rx_ring = rxdr;
-> > +
-> > + rxdr->count = max(ring->rx_pending, (u32) PCH_GBE_MIN_RXD);
-> > + rxdr->count = min(rxdr->count, (u32) PCH_GBE_MAX_RXD);
->
-> clamp()
-> And why you need the cast?
-
-[masa]
-Since warning appears at the time of a make.
-
-
->
-> > + rxdr->count = roundup(rxdr->count, PCH_GBE_RX_DESC_MULTIPLE);
-> > +
-> > + txdr->count = max(ring->tx_pending, (u32) PCH_GBE_MIN_TXD);
-> > + txdr->count = min(txdr->count, (u32) PCH_GBE_MAX_TXD);
-> > + txdr->count = roundup(txdr->count, PCH_GBE_TX_DESC_MULTIPLE);
-> > +
-> > + if ((netif_running(adapter->netdev))) {
-> > + /* Try to get new resources before deleting old */
-> > + err = pch_gbe_setup_rx_resources(adapter, adapter->rx_ring);
->
-> There is vmalloc inside. You really haven't tried sleep-inside-atomic
-> debug option, have you?
->
-> In fact you alloc there (at most) PCH_GBE_MAX_TXD*sizeof(struct
-> pch_gbe_rx_desc) = 4096*16=65k=order 16 of continuous (DMAable) space in
-> the atomic context. This is likely to fail early.
-
-[masa]
-Since spin lock is deleted, this issue is lost.
-
-
->
-> > + if (err)
-> > + goto err_setup_rx;
-> > + err = pch_gbe_setup_tx_resources(adapter, adapter->tx_ring);
-> > + if (err)
-> > + goto err_setup_tx;
-> > + /* save the new, restore the old in order to free it,
-> > + * then restore the new back again */
-> > + adapter->rx_ring = rx_old;
-> > + adapter->tx_ring = tx_old;
-> > + pch_gbe_free_rx_resources(adapter, adapter->rx_ring);
-> > + pch_gbe_free_tx_resources(adapter, adapter->tx_ring);
-> > + kfree(tx_old);
-> > + kfree(rx_old);
-> > + adapter->rx_ring = rxdr;
-> > + adapter->tx_ring = txdr;
->
-> Why this shuffling? Isn't enough to free *x_old and set adapter->*x_ring?
-
-[masa]
-This will be modified
-
-
->
-> > + err = pch_gbe_up(adapter);
->
-> Well pch_gbe_up may sleep (via pch_gbe_request_irq via pci_enable_msi
-> and request_irq) and you call it here and on other places from inside an
-> atomic context.
-
-[masa]
-Since spin lock is deleted, this issue is lost.
-
->
-> > + }
-> > + spin_unlock_irqrestore(&adapter->ethtool_lock, flags);
-> > + return err;
-> > +
-> > +err_setup_tx:
-> > + pch_gbe_free_rx_resources(adapter, adapter->rx_ring);
-> > +err_setup_rx:
-> > + adapter->rx_ring = rx_old;
-> > + adapter->tx_ring = tx_old;
-> > + kfree(rxdr);
-> > +err_alloc_rx:
-> > + kfree(txdr);
-> > +err_alloc_tx:
-> > + if (netif_running(adapter->netdev))
-> > + pch_gbe_up(adapter);
-> > + spin_unlock_irqrestore(&adapter->ethtool_lock, flags);
-> > + return err;
-> > +}
-> ...
-> > --- /dev/null
-> > +++ b/drivers/net/pch_gbe/pch_gbe_main.c
-> > @@ -0,0 +1,2547 @@
-> ...
-> > +#define PCI_DEVICE_ID_INTEL_IOH1_GBE    (u16)(0x8802) /* Pci device ID */
->
-> Why the cast?
-
-[masa]
-This will be deleted.
-
->
-> > +void pch_gbe_mac_mar_set(struct pch_gbe_hw *hw, u8 * addr, u32 index)
-> > +{
-> > + u32 mar_low, mar_high, adrmask;
-> > +
-> > + FUNC_ENTER();
-> > + pr_debug("index : 0x%x\n", index);
-> > +
-> > + /*
-> > + * HW expects these in little endian so we reverse the byte order
-> > + * from network order (big endian) to little endian
-> > + */
-> > + mar_high = ((u32) addr[0] | ((u32) addr[1] << 8) |
-> > +    ((u32) addr[2] << 16) | ((u32) addr[3] << 24));
-> > + mar_low = ((u32) addr[4] | ((u32) addr[5] << 8));
-> > + /* Stop the MAC Address of index. */
-> > + adrmask = ioread32(&hw->reg->ADDR_MASK);
-> > + iowrite32((adrmask | (0x0001 << index)), &hw->reg->ADDR_MASK);
-> > + /* wait busy */
-> > + while ((ioread32(&hw->reg->ADDR_MASK) & PCH_GBE_BUSY))
-> > + cpu_relax();
->
-> There should be probably some time limit. Nobody trusts hardware.
-
-[masa]
-How should it modify?
-
-
->
-> > +static int pch_gbe_alloc_queues(struct pch_gbe_adapter *adapter)
-> > +{
-> > + int size;
-> > +
-> > + FUNC_ENTER();
-> > + size = (int)sizeof(struct pch_gbe_tx_ring);
-> > + adapter->tx_ring = kmalloc(size, GFP_KERNEL);
-> > + if (!adapter->tx_ring)
-> > + return -ENOMEM;
-> > + memset(adapter->tx_ring, 0, size);
->
-> kzalloc()
-
-[masa]
-This will be modified.
-
->
-> > +
-> > + size = (int)sizeof(struct pch_gbe_rx_ring);
-> > + adapter->rx_ring = kmalloc(size, GFP_KERNEL);
-> > + if (!adapter->rx_ring) {
-> > + kfree(adapter->tx_ring);
-> > + return -ENOMEM;
-> > + }
-> > + memset(adapter->rx_ring, 0, size);
->
-> Ditto.
->
-> > + size = (int)sizeof(struct net_device);
->
-> Unused?
-
-[masa]
-This will be deleted.
-
->
-> > + return 0;
-> > +}
-> ...
-> > +static void pch_gbe_free_irq(struct pch_gbe_adapter *adapter)
-> > +{
-> > + struct net_device *netdev = adapter->netdev;
-> > +
-> > + FUNC_ENTER();
-> > + free_irq(adapter->pdev->irq, netdev);
-> > + if (adapter->have_msi) {
-> > + pci_disable_msi(adapter->pdev);
-> > + pr_debug("call pci_disable_msi\n");
-> > + }
-> > +}
-> > +
-> > +/**
-> > + * pch_gbe_irq_disable - Mask off interrupt generation on the NIC
-> > + * @adapter:  Board private structure
-> > + */
-> > +static void pch_gbe_irq_disable(struct pch_gbe_adapter *adapter)
-> > +{
-> > + struct pch_gbe_hw *hw = &adapter->hw;
-> > +
-> > + FUNC_ENTER();
-> > + atomic_inc(&adapter->irq_sem);
-> > + iowrite32(0, &hw->reg->INT_EN);
->
-> You should flush posted writes here.
-
-[masa]
-This will be modified
-
-Reading of a register is added after iowrite.
-OK?
-
->
-> > + synchronize_irq(adapter->pdev->irq);
-> > +
-> > + pr_debug("INT_EN reg : 0x%08x\n", ioread32(&hw->reg->INT_EN));
-> > +}
-> ...
-> > +static void
-> > +pch_gbe_alloc_rx_buffers(struct pch_gbe_adapter *adapter,
-> > + struct pch_gbe_rx_ring *rx_ring, int cleaned_count)
-> > +{
-> > + struct net_device *netdev = adapter->netdev;
-> > + struct pci_dev *pdev = adapter->pdev;
-> > + struct pch_gbe_hw *hw = &adapter->hw;
-> > + struct pch_gbe_rx_desc *rx_desc;
-> > + struct pch_gbe_buffer *buffer_info;
-> > + struct sk_buff *skb;
-> > + unsigned int i;
-> > + unsigned int bufsz;
-> ...
-> > + if (likely(rx_ring->next_to_use != i)) {
-> > + rx_ring->next_to_use = i;
-> > + if (unlikely(i-- == 0))
-> > + i = (rx_ring->count - 1);
-> > + wmb();
->
-> Document the barrier.
-
-[masa]
-Document will be added.
-
->
-> > + iowrite32(rx_ring->dma +
-> > +   (int)sizeof(struct pch_gbe_rx_desc) * i,
-> > +   &hw->reg->RX_DSC_SW_P);
-> > + }
-> > + return;
-> > +}
-> ...
-> > +static int pch_gbe_sw_init(struct pch_gbe_adapter *adapter)
-> > +{
-> > + struct pch_gbe_hw *hw = &adapter->hw;
-> > + struct net_device *netdev = adapter->netdev;
-> > + struct pci_dev *pdev = adapter->pdev;
-> > +
-> > + FUNC_ENTER();
-> > + /* PCI config space info */
-> > + hw->vendor_id = pdev->vendor;
-> > + hw->device_id = pdev->device;
-> > + hw->subsystem_vendor_id = pdev->subsystem_vendor;
-> > + hw->subsystem_device_id = pdev->subsystem_device;
-> > +
-> > + pci_read_config_byte(pdev, PCI_REVISION_ID, &hw->revision_id);
->
-> pdev->revision?
-
-[masa]
-This will be deleted
-
->
-> > +static int pch_gbe_xmit_frame(struct sk_buff *skb, struct net_device *netdev)
-> > +{
-> > + struct pch_gbe_adapter *adapter = netdev_priv(netdev);
-> > + struct pch_gbe_tx_ring *tx_ring = adapter->tx_ring;
-> > + unsigned long flags;
-> > +
-> > + FUNC_ENTER();
-> > + if (unlikely(skb->len <= 0)) {
-> > + dev_kfree_skb_any(skb);
-> > + pr_debug("Return : OK  skb len : %d\n", skb->len);
-> > + return NETDEV_TX_OK;
-> > + }
-> > + if (unlikely(skb->len > (adapter->hw.mac.max_frame_size - 4))) {
-> > + pr_err("Transfer length Error: skb len: %d > max: %d\n",
-> > +        skb->len, adapter->hw.mac.max_frame_size);
-> > + dev_kfree_skb_any(skb);
-> > + adapter->stats.tx_length_errors++;
-> > + return NETDEV_TX_BUSY;
->
-> Not nice. ndev layer will reuse the freed skb now.
-
-[masa]
-How should it modify?
-
->
-> > + }
-> ...
-> > +static int pch_gbe_suspend(struct pci_dev *pdev, pm_message_t state)
-> > +{
-> > + struct net_device *netdev = pci_get_drvdata(pdev);
-> > + struct pch_gbe_adapter *adapter = netdev_priv(netdev);
-> > + struct pch_gbe_hw *hw = &adapter->hw;
-> > + u32 wufc = adapter->wake_up_evt;
-> > + int retval = 0;
-> > +
-> > + FUNC_ENTER();
-> > + netif_device_detach(netdev);
-> > + if (netif_running(netdev))
-> > + pch_gbe_down(adapter);
-> > +#ifdef CONFIG_PM
-> > + /* Implement our own version of pci_save_state(pdev) because pci-
-> > + * express adapters have 256-byte config spaces. */
-> > + retval = pci_save_state(pdev);
->
-> But PCIe saves all caps, why you need this?
-
-[masa]
-I can not understand.
-Please let me know details.
-
-
->
-> > +static int pch_gbe_probe(struct pci_dev *pdev,
-> > +   const struct pci_device_id *pci_id)
-> > +{
-> > + struct net_device *netdev;
-> > + struct pch_gbe_adapter *adapter;
-> > + unsigned long mmio_start;
-> > + unsigned long mmio_len;
-> > + int ret;
-> > +
-> > + FUNC_ENTER();
-> > + ret = pci_enable_device(pdev);
-> > + if (ret)
-> > + return ret;
-> > +
-> > + if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))
-> > + && !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-> > + ;
-> > + } else {
->
-> You should invert the logic. And use pci_ variants.
-
-[masa]
-This will be modified like
-if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))
- || dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-
-What is pci_ variants?
-
-
->
-> > + ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-> > + if (ret) {
-> > + ret = dma_set_coherent_mask(&pdev->dev,
-> > +     DMA_BIT_MASK(32));
-> > + if (ret) {
-> > + pr_err("ERR: No usable DMA configuration, aborting\n");
-> > + goto err_disable_device;
-> > + }
-> > + }
-> > + }
-> > + ret = pci_request_regions(pdev, KBUILD_MODNAME);
-> > + if (ret) {
-> > + pr_err("ERR: Can't reserve PCI I/O and memory resources\n");
->
-> Here (and below) you should use dev_err instead.
-
-[masa]
-This will be modified
-
->
-> > + goto err_disable_device;
-> > + }
-> > + pci_set_master(pdev);
-> > +
-> > + netdev = alloc_etherdev((int)sizeof(struct pch_gbe_adapter));
-> > + if (!netdev) {
-> > + ret = -ENOMEM;
-> > + pr_err("ERR: Can't allocate and set up an Ethernet device\n");
-> > + goto err_release_pci;
-> > + }
-> > + SET_NETDEV_DEV(netdev, &pdev->dev);
-> > +
-> > + pci_set_drvdata(pdev, netdev);
-> > + adapter = netdev_priv(netdev);
-> > + adapter->netdev = netdev;
-> > + adapter->pdev = pdev;
-> > + adapter->hw.back = adapter;
-> > + mmio_start = pci_resource_start(pdev, PCH_GBE_PCI_BAR);
-> > + mmio_len = pci_resource_len(pdev, PCH_GBE_PCI_BAR);
-> > + adapter->hw.reg = ioremap_nocache(mmio_start, mmio_len);
->
-> pci_ioremap_bar()
->
-> Anyway you should not use ioread/iowrite* on an ioremapped space. It is
-> intended for iomapped space (pci_iomap) and is slower.
-
-[masa]
-This will be modified like
-pci_iomap(pdev, PCH_GBE_PCI_BAR, 0) is used.
-
->
-> > + if (!adapter->hw.reg) {
-> > + ret = -EIO;
-> > + pr_err("Can't ioremap\n");
-> > + goto err_free_netdev;
-> > + }
-> > +
-> > + netdev->netdev_ops = &pch_gbe_netdev_ops;
-> > + netdev->watchdog_timeo = PCH_GBE_WATCHDOG_PERIOD;
-> > + netif_napi_add(netdev, &adapter->napi,
-> > +        pch_gbe_napi_poll, PCH_GBE_RX_WEIGHT);
-> > + netdev->mem_start = mmio_start;
-> > + netdev->mem_end = mmio_start + mmio_len;
-> > + netdev->features = NETIF_F_HW_CSUM;
-> > + pch_gbe_set_ethtool_ops(netdev);
-> > +
-> > + pch_gbe_mac_reset_hw(&adapter->hw);
-> > +
-> > + /* setup the private structure */
-> > + ret = pch_gbe_sw_init(adapter);
-> > + if (ret)
-> > + goto err_iounmap;
-> > +
-> > + /* Initialize PHY */
-> > + ret = pch_gbe_init_phy(adapter);
-> > + if (ret) {
-> > + pr_err("PHY initialize error\n");
-> > + goto err_free_adapter;
-> > + }
-> > + pch_gbe_hal_get_bus_info(&adapter->hw);
-> > +
-> > + /* Read the MAC address. and store to the private data */
-> > + ret = pch_gbe_hal_read_mac_addr(&adapter->hw);
-> > + if (ret) {
-> > + pr_err("MAC address Read Error\n");
-> > + goto err_free_adapter;
-> > + }
-> > +
-> > + memcpy(netdev->dev_addr, adapter->hw.mac.addr, netdev->addr_len);
-> > + if (!is_valid_ether_addr(netdev->dev_addr)) {
-> > + pr_err("Invalid MAC Address\n");
-> > + ret = -EIO;
-> > + goto err_free_adapter;
-> > + }
-> > +
-> > + init_timer(&adapter->watchdog_timer);
-> > + adapter->watchdog_timer.function = &pch_gbe_watchdog;
-> > + adapter->watchdog_timer.data = (unsigned long)adapter;
->
-> setup_timer()
-
-[masa]
-This will be modified
-setup_timer() is used.
-
->
-> > +static int __init pch_gbe_init_module(void)
-> > +{
-> > + int ret;
-> > + pr_info("%s - version %s\n", DRV_STRING, DRV_VERSION);
->
-> You don't want to do that. Boot log is polluted enough already.
-
-[masa]
-This will be deleted
-
->
-> > + ret = pci_register_driver(&pch_gbe_pcidev);
-> > + if (copybreak != PCH_GBE_COPYBREAK_DEFAULT) {
-> > + if (copybreak == 0) {
-> > + pr_info("copybreak disabled\n");
-> > + } else {
-> > + pr_info("copybreak enabled for packets <= %u bytes\n",
-> > + copybreak);
-> > + }
-> > + }
-> > + return ret;
-> > +}
-> > +
-> > +static void __exit pch_gbe_exit_module(void)
-> > +{
-> > + FUNC_ENTER();
-> > + pci_unregister_driver(&pch_gbe_pcidev);
-> > +
-> > + pr_info("%s - unregister\n", DRV_STRING);
->
-> Get rid of that, please.
-
-[masa]
-This will be deleted
-
->
-> > --- /dev/null
-> > +++ b/drivers/net/pch_gbe/pch_gbe_param.c
-> > @@ -0,0 +1,507 @@
-> ...
-> > +static void pch_gbe_check_copper_options(struct pch_gbe_adapter *adapter)
-> > +{
-> > + struct pch_gbe_hw *hw = &adapter->hw;
-> > + int speed, dplx;
-> > +
-> > + { /* Speed */
-> > + struct pch_gbe_opt_list speed_list[] = {
-> > + {0, "" },
-> > + {SPEED_10, ""},
-> > + {SPEED_100, ""},
-> > + {SPEED_1000, ""} };
->
-> Is there a reason why these are not static const?
-
-[masa]
-This will be modified
-
->
-> > +
-> > + struct pch_gbe_option opt = {
-> > + .type = list_option,
-> > + .name = "Speed",
-> > + .err  = "parameter ignored",
-> > + .def  = 0,
-> > + .arg  = { .l = { .nr = (int)ARRAY_SIZE(speed_list),
-> > + .p = speed_list } }
-> > + };
-> > + speed = Speed;
-> > + pch_gbe_validate_option(&speed, &opt, adapter);
-> > + }
->
-> regards,
-> -- 
-> js
-> suse labs
->
+From: "Micha? Nazarewicz" <m.nazarewicz@samsung.com>
+To: "Randy Dunlap" <randy.dunlap@oracle.com>; "Peter Korsgaard" <peter.korsgaard@barco.com>; "Nicolas Ferre"
+<nicolas.ferre@atmel.com>; "Maurus Cuelenaere" <mcuelenaere@gmail.com>; "linux-usb" <linux-usb@vger.kernel.org>;
+"Laurent Pinchart" <laurent.pinchart@ideasonboard.com>; "Greg Kroah-Hartman" <gregkh@suse.de>; "Fabien Chouteau"
+<fabien.chouteau@barco.com>; "david Brownell" <dbrownell@users.sourceforge.net>; "Christoph Egger"
+<siccegge@stud.informatik.uni-erlangen.de>; "LKML" <linux-kernel@vger.kernel.org>; "MeeGo" <meego-dev@meego.com>;
+"Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y" <yong.y.wang@intel.com>; "Andrew" <andrew.chih.howe.khor@intel.com>;
+"Intel OTC" <joel.clark@intel.com>; "Foster, Margie" <margie.foster@intel.com>; "Arjan" <arjan@linux.intel.com>;
+"Toshiharu Okada" <okada533@dsn.okisemi.com>; "Takahiro Shimizu" <shimizu394@dsn.okisemi.com>; "Tomoya Morinaga"
+<morinaga526@dsn.okisemi.com>
+Sent: Wednesday, September 08, 2010 10:58 AM
+Subject: Re: [PATCH] USB device driver of Topcliff PCH
+
+
+Not sure why I'm on the "To" list, but here are a few of my comments:
+
+On Tue, 07 Sep 2010 09:49:03 +0200, Masayuki Ohtake <masa-korg@dsn.okisemi.com> wrote:
+> +/**
+> + * pch_udc_write_csr - Write the command and status registers.
+
+IIRC, the correct way to write kernel doc is:
+
++ * pch_udc_write_csr() - Write the command and status registers.
+
+Note the "()".  This applies to other functions as well.
+
+> + * @val: value to be written to CSR register
+> + * @addr: address of CSR register
+> + */
+> +inline void pch_udc_write_csr(unsigned long val, unsigned long addr)
+
+As it was pointed, unless those functions are extern, make them static and remove
+the inline.
+
+> +{
+> + int count = MAX_LOOP;
+> +
+> + /* Wait till idle */
+> + while ((count > 0) &&\
+> + (ioread32((u32 *)(PCH_UDC_CSR_BUSY_ADDR + pch_udc_base)) &
+> + PCH_UDC_CSR_BUSY))
+> + count--;
+
+I'd say: "while (ioread(...) && --count);"  Also, I'd make count to be unsigned.
+
+> +
+> + if (count < 0)
+> + pr_debug("%s: wait error; count = %x", __func__, count);
+
+Dead code.  If MAX_LOOP is >= 0 count will never get negative.  Did you mean
+if (!count)?
+
+> +
+> + iowrite32(val, (u32 *)addr);
+> + /* Wait till idle */
+> + count = MAX_LOOP;
+> + while ((count > 0) &&
+> + (ioread32((u32 *)(PCH_UDC_CSR_BUSY_ADDR + pch_udc_base)) &
+> + PCH_UDC_CSR_BUSY))
+> + count--;
+> +
+> + if (count < 0)
+> + pr_debug("%s: wait error; count = %x", __func__, count);
+
+Dead code.
+
+> +/**
+> + * pch_udc_read_csr - Read the command and status registers.
+> + * @addr: address of CSR register
+> + * Returns
+> + * content of CSR register
+> + */
+> +inline u32 pch_udc_read_csr(unsigned long addr)
+
+All comments to the pch_udc_write_csr() function apply here as well.
+
+> +/**
+> + * pch_udc_get_speed - Return the speed status
+> + * @dev: Reference to pch_udc_regs structure
+> + * Retern The speed(LOW=1, FULL=2, HIGH=3)
+> + */
+> +inline int pch_udc_get_speed(struct pch_udc_regs __iomem *dev)
+> +{
+> + u32 val;
+> +
+> + val = ioread32(&dev->devsts);
+
+It's just me, but why not join the two lines together:
+
++ u32 val = ioread32(&dev->devsts);
+
+> + return (val & UDC_DEVSTS_ENUM_SPEED_MASK) >> UDC_DEVSTS_ENUM_SPEED_OFS;
+> +}
+
+> +/**
+> + * pch_udc_ep_clear_nak - Set the bit 8 (CNAK field)
+> + * of the endpoint control register
+> + * @ep: reference to structure of type pch_udc_ep_regs
+> + */
+> +void pch_udc_ep_clear_nak(struct pch_udc_ep_regs __iomem *ep)
+> +{
+> + unsigned int loopcnt = 0;
+> +
+> + if (ioread32(&ep->epctl) & (1 << UDC_EPCTL_NAK)) {
+
+if (!(ioread32(&ep->epctl) & (1 << UDC_EPCTL_NAK)))
+return;
+
+and then drop one indention level for the rest of the function.
+This will help to keep indention level nearer the recommended
+limit of 3.
+
+> + if (!(EP_IS_IN(ep))) {
+> + while ((pch_udc_read_ep_status(ep) &
+> + (1 << UDC_EPSTS_MRXFIFO_EMP)) == 0) {
+> + if (loopcnt++ > 100000) {
+> + pr_debug("%s: RxFIFO not Empty "
+> +   "loop count = %d",
+> +   __func__, loopcnt);
+> + break;
+> + }
+> + udelay(100);
+> + }
+> + }
+> + while (ioread32(&ep->epctl) & (1 << UDC_EPCTL_NAK)) {
+> + PCH_UDC_BIT_SET(&ep->epctl, 1 << UDC_EPCTL_CNAK);
+> + udelay(5);
+> + if (loopcnt++ >= 25) {
+> + pr_debug("%s: Clear NAK not set for"
+> +   "ep%d%s: counter=%d",
+> +   __func__, EP_NUM(ep),
+> +   (EP_IS_IN(ep) ? "in" : "out"),
+> +   loopcnt);
+> + break;
+> + }
+> + }
+> + }
+> +}
+> +
+> +/**
+> + * pch_udc_ep_fifo_flush - Flush the endpoint fifo
+> + * @ep: reference to structure of type pch_udc_ep_regs
+> + * @dir: direction of endpoint
+> + * - dir = 0 endpoint is OUT
+> + * - dir != 0 endpoint is IN
+> + */
+> +void pch_udc_ep_fifo_flush(struct pch_udc_ep_regs __iomem *ep, int dir)
+> +{
+> + unsigned int loopcnt = 0;
+> +
+> + pr_debug("%s: ep%d%s", __func__, EP_NUM(ep),
+> + (EP_IS_IN(ep) ? "in" : "out"));
+> + if (dir) { /* IN ep */
+> + PCH_UDC_BIT_SET(&ep->epctl, 1 << UDC_EPCTL_F);
+
+I'd add "return;" here and move the else part out of the else dropping
+one indention level.
+
+> + } else {
+> + if ((pch_udc_read_ep_status(ep) &
+> +     (1 << UDC_EPSTS_MRXFIFO_EMP)) == 0) {
+
+if (pch_udc_read_ep_status(ep) & (1 << UDC_EPSTS_MRXFIFO_EMP)
+return;
+
+and drop indention.
+
+> + PCH_UDC_BIT_SET(&ep->epctl, 1 << UDC_EPCTL_MRXFLUSH);
+> + /* Wait for RxFIFO Empty */
+> + while ((pch_udc_read_ep_status(ep) &
+> + (1 << UDC_EPSTS_MRXFIFO_EMP)) == 0) {
+> + if (loopcnt++ > 1000000) {
+> + pr_debug("RxFIFO not Empty loop"
+> +   " count = %d", loopcnt);
+> + break;
+> + }
+> + udelay(100);
+> + }
+> + PCH_UDC_BIT_CLR(&ep->epctl, 1 << UDC_EPCTL_MRXFLUSH);
+> + }
+> + }
+> +}
+
+> +/**
+> + * pch_udc_pcd_pullup - This API is invoked to make the device
+> + * visible/invisible to the host
+> + * @gadget: Reference to the gadget driver
+> + * @is_on: Specifies whether the pull up is made active or inactive
+> + * Returns
+> + * 0: Success
+> + * -EINVAL: If the gadget passed is NULL
+> + */
+> +static int pch_udc_pcd_pullup(struct usb_gadget *gadget, int is_on)
+> +{
+> + struct pch_udc_dev *dev;
+> +
+> + pr_debug("%s: enter", __func__);
+
+It just struck me.  Wouldn't it be feasible to use "dev_*" instead of "pr_*"?
+
+> + if (gadget == NULL) {
+> + pr_debug("%s: exit -EINVAL", __func__);
+> + return -EINVAL;
+> + }
+> + dev = container_of(gadget, struct pch_udc_dev, gadget);
+> + if (is_on == 0)
+> + pch_udc_set_disconnect(dev->regs);
+> + else
+> + pch_udc_clear_disconnect(dev->regs);
+
+There was function that did exactly that I think.  Wasn't there?
+
+> + return 0;
+> +}
+
+> +/**
+> + * pch_udc_start_next_txrequest - This function starts
+> + * the next transmission requirement
+> + * @ep: Reference to the endpoint structure
+> + */
+> +static void pch_udc_start_next_txrequest(struct pch_udc_ep *ep)
+> +{
+> + struct pch_udc_request *req;
+> +
+> + pr_debug("%s: enter", __func__);
+> + if (pch_udc_read_ep_control(ep->regs) & (1 << UDC_EPCTL_P))
+> + return;
+> +
+> + if (!list_empty(&ep->queue)) {
+
+if (list_empty(...))
+return;
+
+and drop indention.
+
+> + /* next request */
+> + req = list_entry(ep->queue.next, struct pch_udc_request, queue);
+> + if (req && !req->dma_going) {
+
+Same here.
+
+> + pr_debug("%s: Set request: req=%p req->td_data=%p",
+> + __func__, req, req->td_data);
+> + if (req->td_data) {
+
+Same eher.
+
+> + struct pch_udc_data_dma_desc *td_data;
+> +
+> + while (pch_udc_read_ep_control(ep->regs) &
+> + (1 << UDC_EPCTL_S))
+> + udelay(100);
+> +
+> + req->dma_going = 1;
+> + /* Clear the descriptor pointer */
+> + pch_udc_ep_set_ddptr(ep->regs, 0);
+> +
+> + td_data = req->td_data;
+> + while (1) {
+> + td_data->status = (td_data->status &
+> + ~PCH_UDC_BUFF_STS) |
+> + PCH_UDC_BS_HST_RDY;
+> + if ((td_data->status &
+> + PCH_UDC_DMA_LAST) ==
+> + PCH_UDC_DMA_LAST)
+> + break;
+
+The line above has 6 levels of indention.  If you drop indentions the way
+described above you get back to 3.
+
+> +
+> + td_data =
+> + (struct pch_udc_data_dma_desc *)\
+> + phys_to_virt(td_data->next);
+> + }
+> + /* Write the descriptor pointer */
+> + pch_udc_ep_set_ddptr(ep->regs,
+> + req->td_data_phys);
+> + pch_udc_set_dma(ep->dev->regs, DMA_DIR_TX);
+> + /* Set the poll demand bit */
+> + pch_udc_ep_set_pd(ep->regs);
+> + pch_udc_enable_ep_interrupts(ep->dev->regs,
+> + 1 << (ep->in ? ep->num :\
+> + ep->num + UDC_EPINT_OUT_EP0));
+> + pch_udc_ep_clear_nak(ep->regs);
+> + }
+> + }
+> + }
+> +}
+> +
+> +/**
+> + * pch_udc_complete_transfer - This function completes a transfer
+> + * @ep: Reference to the endpoint structure
+> + */
+> +static void pch_udc_complete_transfer(struct pch_udc_ep *ep)
+
+Same as with the function above.
+
+> +/**
+> + * pch_udc_complete_receiver - This function completes a receiver
+> + * @ep: Reference to the endpoint structure
+> + */
+> +static void pch_udc_complete_receiver(struct pch_udc_ep *ep)
+
+This function would use some indention fixing as well.
+
+> + if (list_empty(&ep->queue)) {
+> + /* enable DMA */
+> + pch_udc_set_dma(dev->regs, DMA_DIR_RX);
+> + }
+
+Drop the "{" and "}". script/checkpatch.pl will find issues like this one.
+
+> +}
+
+> +static void pch_udc_read_all_epstatus(struct pch_udc_dev *dev, u32 ep_intr)
+> +{
+> + int i;
+> + struct pch_udc_ep *ep;
+> +
+> + for (i = 0; i < PCH_UDC_USED_EP_NUM; i++) {
+> + /* IN */
+> + if (ep_intr & (0x1 << i)) {
+> + ep = &dev->ep[2*i];
+> + ep->epsts = pch_udc_read_ep_status(ep->regs);
+> + pch_udc_clear_ep_status(ep->regs, ep->epsts);
+> + }
+> + /* OUT */
+> + if (ep_intr & (0x10000 << i)) {
+> + ep = &dev->ep[2*i+1];
+> + ep->epsts = pch_udc_read_ep_status(ep->regs);
+> + pch_udc_clear_ep_status(ep->regs, ep->epsts);
+> + }
+> + }
+> + return;
+
+Useless return.
+
+> +}
+
+> +/**
+> + * pch_udc_svc_enum_interrupt - This function handles a USB speed enumeration
+> + * done interrupt
+> + * @dev: Reference to driver structure
+> + */
+> +void
+> +pch_udc_svc_enum_interrupt(struct pch_udc_dev *dev)
+
+Useless line break.  This applies not only to this function.
+
+> +void
+> +pch_udc_svc_intf_interrupt(struct pch_udc_dev *dev)
+> +{
+> + u32 reg, dev_stat = 0;
+> + int i, ret;
+> +
+> + pr_debug("%s: enter", __func__);
+> + dev_stat = pch_udc_read_device_status(dev->regs);
+> + dev->cfg_data.cur_intf = (dev_stat & UDC_DEVSTS_INTF_MASK) >>
+> + UDC_DEVSTS_INTF_OFS;
+> + dev->cfg_data.cur_alt = (dev_stat & UDC_DEVSTS_ALT_MASK) >>
+> + UDC_DEVSTS_ALT_OFS;
+> + pr_debug("DVSTATUS=%08x, cfg=%d, intf=%d, alt=%d", dev_stat,
+> + (dev_stat & UDC_CSR_NE_CFG_MASK) >> UDC_CSR_NE_CFG_OFS,
+> + dev->cfg_data.cur_intf, dev->cfg_data.cur_alt);
+> +
+> + dev->set_cfg_not_acked = 1;
+> +
+> + /* Construct the usb request for gadget driver and inform it */
+> + memset(&setup_data, 0 , sizeof setup_data);
+> + setup_data.request.bRequest = USB_REQ_SET_INTERFACE;
+> + setup_data.request.bRequestType = USB_RECIP_INTERFACE;
+> + setup_data.request.wValue = cpu_to_le16(dev->cfg_data.cur_alt);
+> + setup_data.request.wIndex = cpu_to_le16(dev->cfg_data.cur_intf);
+> +
+> + /* programm the Endpoint Cfg registers */
+> + for (i = 0; i < PCH_UDC_USED_EP_NUM * 2; i++) {
+> + if (i == 1) { /* Only one end point cfg register */
+> + reg = pch_udc_read_csr((u32) (&dev->csr->ne[i]));
+> + reg = (reg & ~UDC_CSR_NE_INTF_MASK) |
+> + (dev->cfg_data.cur_intf << UDC_CSR_NE_INTF_OFS);
+> + reg = (reg & ~UDC_CSR_NE_ALT_MASK) |
+> + (dev->cfg_data.cur_alt << UDC_CSR_NE_ALT_OFS);
+> + pch_udc_write_csr(reg, (u32) (&dev->csr->ne[i]));
+> + }
+
+Could this if be put outside of the loop? This applies not only to this function.
+
+> + /* clear stall bits */
+> + pch_udc_ep_clear_stall(dev->ep[i].regs);
+> + dev->ep[i].halted = 0;
+> + }
+> + dev->stall = 0;
+> + spin_unlock(&dev->lock);
+> + ret = dev->driver->setup(&dev->gadget, &setup_data.request);
+> + spin_lock(&dev->lock);
+> +}
+
+> +irqreturn_t pch_udc_isr(int irq, void *pdev)
+> +{
+> + struct pch_udc_dev *dev;
+> + u32 dev_intr, ep_intr;
+> + int i;
+> +
+> + pr_debug("%s: enter", __func__);
+> + dev = (struct pch_udc_dev *) pdev;
+> + dev_intr = pch_udc_read_device_interrupts(dev->regs);
+> + ep_intr = pch_udc_read_ep_interrupts(dev->regs);
+> +
+> + if (dev_intr != 0) {
+> + /* Clear device interrupts */
+> + pch_udc_write_device_interrupts(dev->regs, dev_intr);
+> + }
+> + if (ep_intr != 0) {
+> + /* Clear ep interrupts */
+> + pch_udc_write_ep_interrupts(dev->regs, ep_intr);
+> + }
+
+Useless "{" and "}" in the two above ifs.
+
+> + if ((dev_intr == 0) && (ep_intr == 0)) {
+> + pr_debug("%s: exit IRQ_NONE", __func__);
+> + return IRQ_NONE;
+> + }
+> + spin_lock(&dev->lock);
+> +
+> + if (dev_intr != 0) {
+> + pr_debug("%s: device intr 0x%x", __func__, dev_intr);
+> + pch_udc_dev_isr(dev, dev_intr);
+> + }
+> +
+> + if (ep_intr != 0) {
+> + pr_debug("%s: ep intr 0x%x", __func__, ep_intr);
+> + pch_udc_read_all_epstatus(dev, ep_intr);
+> +
+> + /* Process Control In interrupts, if present */
+> + if (ep_intr & (1 << UDC_EPINT_IN_EP0)) {
+> + pch_udc_svc_control_in(dev);
+> + pch_udc_postsvc_epinters(dev, 0);
+> + }
+> + /* Process Control Out interrupts, if present */
+> + if (ep_intr & (1 << UDC_EPINT_OUT_EP0))
+> + pch_udc_svc_control_out(dev);
+> +
+> + /* Process data in end point interrupts */
+> + for (i = 1; i < PCH_UDC_USED_EP_NUM; i++) {
+> + if (ep_intr & (1 <<  i)) {
+> + pch_udc_svc_data_in(dev, i);
+> + pch_udc_postsvc_epinters(dev, i);
+> + }
+> + }
+> + /* Process data out end point interrupts */
+> + for (i = UDC_EPINT_OUT_EP1; i < (UDC_EPINT_OUT_EP0 +
+> + PCH_UDC_USED_EP_NUM); i++) {
+> + if (ep_intr & (1 <<  i))
+> + pch_udc_svc_data_out(dev, i -
+> + UDC_EPINT_OUT_EP0);
+> + }
+
+Useless "{" and "}" in for.
+
+> + }
+> + spin_unlock(&dev->lock);
+> + return IRQ_HANDLED;
+> +}
+
+> +int pch_udc_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+> +{
+> + unsigned long resource;
+> + unsigned long len;
+> + int retval = 0;
+> + struct pch_udc_dev *dev;
+> +
+> + dev_dbg(&pdev->dev, "%s: enter", __func__);
+> + /* one udc only */
+> + if (pch_udc != NULL) {
+> + dev_err(&pdev->dev, "%s: already probed", __func__);
+> + return -EBUSY;
+> + }
+> +
+> + /* init */
+> + dev = kzalloc(sizeof(struct pch_udc_dev), GFP_KERNEL);
+
+I just noticed it here but it may apply to other places as well.  I recommend:
+
++ dev = kzalloc(sizeof *dev, GFP_KERNEL);
+
+> + if (dev == NULL) {
+> + dev_err(&pdev->dev, "%s: no memory for device structure",
+> + __func__);
+> + return -ENOMEM;
+> + }
+> + memset(dev, 0, sizeof(struct pch_udc_dev));
+
+kzalloc() does that.
+
+> +/**
+> + * pch_udc_cfg_data - Structure to hold current configuration
+> + * and interface information
+
+This applies to other places as well.  The above should read:
+
++ * struct pch_udc_cfg_data - ...
+
+> + * @cur_cfg current configuration in use
+> + * @cur_intf current interface in use
+> + * @cur_alt current alt interface in use
+
+And there should be ":" after member name.
+
+> + */
+> +struct pch_udc_cfg_data {
+> + u16 cur_cfg;
+> + u16 cur_intf;
+> + u16 cur_alt;
+> +};
+
+> +/**
+> + * pch_udc_dev - Structure holding complete information of the PCH USB device
+> + *
+> + * @gadget gadget driver data
+> + * @driver; reference to gadget driver bound
+> + * @pdev; reference to the PCI device
+> + * @ep[PCH_UDC_EP_NUM]; array of endpoints
+> + * @lock; protects all state
+> + * @active:1, enabled the PCI device
+> + * @stall:1, stall requested
+> + * @prot_stall:1, protcol stall requested
+> + * @irq_registered:1, irq registered with system
+> + * @mem_region:1, device memory mapped
+> + * @registered:1, driver regsitered with system
+> + * @suspended:1, driver in suspended state
+> + * @connected:1, gadget driver associated
+> + * @set_cfg_not_acked:1, pending acknowledgement 4 setup
+> + * @waiting_zlp_ack:1; pending acknowledgement 4 ZLP
+> + * @csr; address of config & status
+> + * @regs; address of device registers
+> + * @*ep_regs; address of endpoint registers
+> + * @data_requests; DMA pool for data requests
+> + * @stp_requests; DMA pool for setup requests
+> + * @phys_addr; of device memory
+> + * @virt_addr; for mapped device memory
+> + * @irq; IRQ line for the device
+> + * @cfg_data; current cfg, intf, and alt in use
+> + */
+
+Useless ":1", there should be ":" after member name and not nothing, ";" or ",".
+
+> +
+
+Needless empty line.
+
+> +struct pch_udc_dev {
+
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Micha? "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
 
 
