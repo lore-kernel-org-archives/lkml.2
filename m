@@ -1,84 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613Ab0IHI6a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 04:58:30 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:37840 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab0IHI61 (ORCPT
+	id S1758230Ab0IHI6u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 04:58:50 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40118 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757884Ab0IHI6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 04:58:27 -0400
-To: Neil Brown <neilb@suse.de>
-CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org, haveblue@us.ibm.com,
-        linux-kernel@vger.kernel.org
-In-reply-to: <20100908174726.21aec19b@notabene> (message from Neil Brown on
-	Wed, 8 Sep 2010 17:47:26 +1000)
-Subject: Re: [PATCH 09/10] VFS: Remove read-only checks from
- dentry_permission
-References: <20100906004829.20775.68828.stgit@localhost.localdomain>
-	<20100906005029.20775.70918.stgit@localhost.localdomain>
-	<E1Osh50-0005s0-V7@pomaz-ex.szeredi.hu> <20100908174726.21aec19b@notabene>
-Message-Id: <E1OtGTx-0000by-Lt@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 08 Sep 2010 10:58:17 +0200
+	Wed, 8 Sep 2010 04:58:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=PqCeYsnM1Q7KSNxdjayOJXNkMkfYnjkPr465AFbJGnMAQR7pZRhf9E23c1mrykVUo1
+         KquaohLWZzzJ52ybC+uDofWPChL6yKQgh7cJb29yFu6lGOAVCkPTQUZ6wNwhUe0n7g72
+         cd6ZeTZBTZe8LQ64+QuHtpRVqRV2kdtUzSZX4=
+Subject: Re: [PATCH 2/5] backing-dev: kill unused bdi_writeback->nr
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Tejun Heo <tj@kernel.org>
+Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org, hch@lst.de
+In-Reply-To: <1283777182-11426-3-git-send-email-tj@kernel.org>
+References: <1283777182-11426-1-git-send-email-tj@kernel.org>
+	 <1283777182-11426-3-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 08 Sep 2010 11:57:18 +0300
+Message-ID: <1283936238.2979.63.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Sep 2010, Neil Brown wrote:
-> On Mon, 06 Sep 2010 21:10:10 +0200
-> Miklos Szeredi <miklos@szeredi.hu> wrote:
+On Mon, 2010-09-06 at 14:46 +0200, Tejun Heo wrote:
+> bdi_writeback->nr is no longer used.  Kill it.
 > 
-> > On Mon, 06 Sep 2010, NeilBrown wrote:
-> > > It is not sufficient to depend on the the "filesystem is readonly"
-> > > tests in dentry_permission as it does not check if the vfsmnt is
-> > > readonly.
-> > > All call sites already call mnt_want_write or __mnt_is_readonly which
-> > > includes the test on MS_RDONLY.
-> > 
-> > Last time I checked I found some holes (in nfsd IIRC).  That was a
-> > long time ago and things may have changed.
-> 
-> nfsd looks OK to me.  I didn't do an exhaustive audit but couldn't find
-> things that would not still work correctly.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-Looks to me as if nfsd_setattr() and some of its callers fail to
-acquire a write ref.
+This is obviously an independent clean-up which can be picked straight
+away?
 
-> > 
-> > That check could be replaced with a
-> > 
-> > 		if (IS_RDONLY(inode) &&
-> > 		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
-> > 			BUG();
-> 
-> That wouldn't quite work currently.
-> sys_faccessat checks __mnt_is_readonly *after* the call to dentry_permission,
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-Ugh.
-
-> so the above would cause it to BUG.  Possibly the __mnt_is_readonly could be
-> checked before dentry_permission.
-> 
-> However nfsd_permission is a bit more awkward to fix as sometimes it
-> deliberately wants to ignore read-only-filesystem issues ... but it might
-> still be possible to work around..
-> 
-> > 
-> > which would catch these cases but only if the superblock was marked
-> > r/o.  Otherwise it's basically impossible to make sure the callers of
-> > the VFS play by the rules.  That was one reason I advocated a
-> > path_... interface for the VFS instead of the current dentry based
-> > one, but Al didn't like it.
-> >
-> 
-> I guess there comes a point were we just have to document the rules and if
-> someone doesn't play by them - that is a bug...
-
-Yeah and that's fine as long as the bug shows up relatively easily and
-not result in silent fs corruption once in blue moon instead.
-
-If that MS_RDONLY check is removed the above criterion will not be
-met.
-
-Thanks,
-Miklos
