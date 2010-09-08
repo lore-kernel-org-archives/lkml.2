@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab0IHNyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 09:54:11 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35231 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab0IHNyJ (ORCPT
+	id S1753217Ab0IHN4Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 09:56:25 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:65110 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab0IHN4W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 09:54:09 -0400
-From: fabio de francesco <fabio@metanix.org>
-Organization: metanix.org
-To: "chxanders@gmail.com" <chxanders@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux/kernel/sched.c: context_switch().
-Date: Wed, 8 Sep 2010 15:54:07 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-tuxonice-r1-100826; KDE/4.4.5; x86_64; ; )
-References: <201009081508.30490.fabio@metanix.org> <201009081518.21569.fabio@metanix.org> <AANLkTi=mNJhoODzZqLpTC8QqqnwLgWxVXEJzXviF64mV@mail.gmail.com>
-In-Reply-To: <AANLkTi=mNJhoODzZqLpTC8QqqnwLgWxVXEJzXviF64mV@mail.gmail.com>
+	Wed, 8 Sep 2010 09:56:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=AZTilR4u07rWAa4ZMAdKgqAzihXlzzSIV1OQSwd252mFq07zDnRJ/KhCkCX7ZgpVlL
+         uCd+yDqhdwJzzOQZIj1bqI1XuThgQOU41G+UXR5GFCQ/qjNl0mVroniRTi2pAeuTn2cl
+         Ejw29zCQVlL1C5UUS20tpDs7Tw6jTyHvLoBz0=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009081554.08676.fabio@metanix.org>
+Reply-To: eranian@gmail.com
+In-Reply-To: <1283953967.23762.22.camel@laptop>
+References: <4c8793a9.cde7d80a.3bb6.0290@mx.google.com>
+	<1283953967.23762.22.camel@laptop>
+Date: Wed, 8 Sep 2010 15:56:21 +0200
+Message-ID: <AANLkTikcJ3X0q8SXb55NbrFRd5GUVEXGzbePGUtxF+Wf@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] perf_events: add support for per-cpu per-cgroup
+ monitoring (v2)
+From: stephane eranian <eranian@googlemail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, robert.richter@amd.com, acme@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 September 2010 15:22:07 you wrote:
-> but there is a ! not operator, !mm means mm != 0 , or the other way it
-> is saying it is unlikey(mm is NULL)
+On Wed, Sep 8, 2010 at 3:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-09-08 at 15:30 +0200, Stephane Eranian wrote:
+>> +       } times[NR_CPUS] ____cacheline_aligned_in_smp;
+>
+> That's fail! NR_CPUS can be like 4k for distro configs.
+>
+How do you do this on struct that are dynamically allocated?
+The number of css is dynamic.
 
-Ok. Let me point to Linux-2.6.32. You may see that there the opposite is 
-written. Can you please explain why they changed unlikely with likely passing 
-from 2.6.32 to 2.6.33?
-
-> On 8 September 2010 20:18, fabio de francesco <fabio@metanix.org> wrote:
-> > On Wednesday 08 September 2010 15:10:49 you wrote:
-> >> Long day? Do you mean likely(!mm) actually means unlikely(0)?
-> > 
-> > No, no. I am sorry for my poor English. I mean:"likely(!mm) is like
-> > "likely(0)".
-> > 
-> >> On 8 September 2010 20:08, fabio de francesco <fabio@metanix.org> wrote:
-> >> > There must be something I am missing in sched.c at context_switch()
-> >> > function definition.
-> >> > 
-> >> > There I can read the following code:
-> >> > 
-> >> > static inline void
-> >> > context_switch(struct rq *rq, struct task_struct *prev,
-> >> >               struct task_struct *next)
-> >> > {
-> >> >        ...
-> >> >        struct mm_struct *mm;
-> >> >        mm = next->mm;
-> >> >        if (likely(!mm)) {
-> >> >                next->active_mm = oldmm;
-> >> >                atomic_inc(&oldmm->mm_count);
-> >> >                enter_lazy_tlb(oldmm, next);
-> >> >        } else
-> >> >                switch_mm(oldmm, mm, next);
-> >> >        ...
-> >> > }
-> >> > 
-> >> > May someone please explain why the mm pointer is likely supposed to be
-> >> > NULL?
-> >> > 
-> >> > Thanks in advance.
-> >> > 
-> >> > fabio
-> >> > --
-> >> > To unsubscribe from this list: send the line "unsubscribe
-> >> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> > Please read the FAQ at  http://www.tux.org/lkml/
+> Use proper per-cpu allocations.
+>
