@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab0IHC3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 22:29:36 -0400
-Received: from mail.atheros.com ([12.19.149.2]:25266 "EHLO mail.atheros.com"
+	id S1756494Ab0IHCfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 22:35:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3674 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab0IHC3e convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 22:29:34 -0400
-From: Vipin Mehta <Vipin.Mehta@Atheros.com>
-To: Greg KH <gregkh@suse.de>
-CC: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Date: Tue, 7 Sep 2010 19:29:30 -0700
-Subject: RE: [PATCH 2/2] staging: ath6kl: use native methods from kernel
-	library
-Thread-Topic: [PATCH 2/2] staging: ath6kl: use native methods from kernel
-	library
-Thread-Index: ActO7GBE3Eo4y+v2Tw612FuATzaBOAADm08A
-Message-ID: <35B17FE5076C7040809188FBE7913F983F2381D71F@SC1EXMB-MBCL.global.atheros.com>
-References: <09b7da2e5462e0b855617ff5308ed6efb4fc9cab.1283872748.git.andy.shevchenko@gmail.com>
- <8b251244717765e795b92a1f7335f8af98e5706f.1283872748.git.andy.shevchenko@gmail.com>
- <35B17FE5076C7040809188FBE7913F983F23479F74@SC1EXMB-MBCL.global.atheros.com>
- <20100908000331.GA15785@suse.de>
-In-Reply-To: <20100908000331.GA15785@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756403Ab0IHCfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 22:35:09 -0400
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
+        Solar Designer <solar@openwall.com>,
+        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-fsdevel@vger.kernel.org,
+        pageexec@freemail.hu,
+        "Brad Spengler <spender@grsecurity.net> Eugene Teo" 
+	<eugene@redhat.com>
+X-Fcc: ~/Mail/linus
+Subject: [PATCH 0/3] execve argument-copying fixes
+In-Reply-To: Roland McGrath's message of  Monday, 30 August 2010 03:06:16 -0700 <20100830100616.78971400D9@magilla.sf.frob.com>
+References: <20100827220258.GF4703@outflux.net>
+	<20100830005648.431B7400D9@magilla.sf.frob.com>
+	<20100830032331.GA22773@openwall.com>
+	<20100830100616.78971400D9@magilla.sf.frob.com>
+X-Antipastobozoticataclysm: Bariumenemanilow
+Message-Id: <20100908023417.8B055401AF@magilla.sf.frob.com>
+Date: Tue,  7 Sep 2010 19:34:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is my take on parts of the execve large arguments copying issues
+that Kees posted about, and Brad and others have been discussing.
+I've only looked at the narrow area of the argument copying code
+itself.  I think these are good and necessary fixes.  But I'm not
+addressing the whole OOM killer/mm accounting issue, which also needs
+to be fixed (and I have the impression others are already looking into that).
+
+The following changes since commit d56557af19867edb8c0e96f8e26399698a08857f:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 (2010-09-07 16:00:17 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/frob/linux-2.6-roland.git topic/exec-fixes
+
+Roland McGrath (3):
+      setup_arg_pages: diagnose excessive argument size
+      execve: improve interactivity with large arguments
+      execve: make responsive to SIGKILL with large arguments
+
+ fs/exec.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Tuesday, September 07, 2010 5:04 PM
-> To: Vipin Mehta
-> Cc: Andy Shevchenko; linux-kernel@vger.kernel.org;
-> devel@driverdev.osuosl.org
-> Subject: Re: [PATCH 2/2] staging: ath6kl: use native methods from kernel
-> library
-> 
-> On Tue, Sep 07, 2010 at 02:18:02PM -0700, Vipin Mehta wrote:
-> > Andy,
-> > Thanks for the patch. Although the driver supports Linux but it has
-> > been architected to support other OSes if desired. The code is,
-> > therefore, organized into generic and OS specific components with the
-> > latter part of the code captured into the os/linux directory. As such,
-> > the patch will be more useful if we can move out the inclusion of
-> > linux specific header files <linux/kernel.h> and <linux/ctype.h> into
-> > a header file in os/linux/include directory.
-> 
-> Ick, no.
-> 
-> The driver is now in the main kernel tree, the "compatiblity" wrappers
-> are to now be removed as the kernel code does not need to run on any
-> other operating systems.
-> 
-> That whole subdir needs to be deleted entirely.
-> 
-> > You can refer to
-> > os/linux/include/osapi_linux.h for example. A macro could be defined
-> > which would use linux specific APIs for Linux and keep the original
-> > definitions for any other OS.
-> 
-> Again, no, this is not ok at all.  If you are going to insist on trying
-> to do this for the driver, I will just delete it from the tree right now
-> as that is now how kernel development happens, sorry.
-
-Got it. I think we can discard my suggestion in that case. The patch looks good otherwise. It is ok from my side and could be pushed in to the driver.
- 
-> 
-> thanks,
-> 
-> greg k-h
+Thanks,
+Roland
