@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758385Ab0IHHrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 03:47:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33033 "EHLO mx2.suse.de"
+	id S1758383Ab0IHHuD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 03:50:03 -0400
+Received: from gw1.transmode.se ([213.115.205.20]:52794 "EHLO gw1.transmode.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756393Ab0IHHri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 03:47:38 -0400
-Date: Wed, 8 Sep 2010 17:47:26 +1000
-From: Neil Brown <neilb@suse.de>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, haveblue@us.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/10] VFS: Remove read-only checks from
- dentry_permission
-Message-ID: <20100908174726.21aec19b@notabene>
-In-Reply-To: <E1Osh50-0005s0-V7@pomaz-ex.szeredi.hu>
-References: <20100906004829.20775.68828.stgit@localhost.localdomain>
-	<20100906005029.20775.70918.stgit@localhost.localdomain>
-	<E1Osh50-0005s0-V7@pomaz-ex.szeredi.hu>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756688Ab0IHHuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 03:50:00 -0400
+Subject: slow nanosleep?
+X-KeepSent: 71DD00AE:26643E4D-C1257798:00250630;
+ type=4; name=$KeepSent
+To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+X-Mailer: Lotus Notes Release 8.5.2 August 10, 2010
+Message-ID: <OF71DD00AE.26643E4D-ONC1257798.00250630-C1257798.002A9748@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Wed, 8 Sep 2010 09:45:12 +0200
+X-MIMETrack: Serialize by Router on sesr04/Transmode(Release 8.5.1FP3|May 23, 2010) at
+ 2010-09-08 09:49:58
+MIME-Version: 1.0
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 06 Sep 2010 21:10:10 +0200
-Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-> On Mon, 06 Sep 2010, NeilBrown wrote:
-> > It is not sufficient to depend on the the "filesystem is readonly"
-> > tests in dentry_permission as it does not check if the vfsmnt is
-> > readonly.
-> > All call sites already call mnt_want_write or __mnt_is_readonly which
-> > includes the test on MS_RDONLY.
-> 
-> Last time I checked I found some holes (in nfsd IIRC).  That was a
-> long time ago and things may have changed.
+Hi Thomas
 
-nfsd looks OK to me.  I didn't do an exhaustive audit but couldn't find
-things that would not still work correctly.
+while playing with nanosleep I noticed that it is slow
+compared to select. This little test program shows what
+the effect:
+#include <time.h>
+#include <sys/time.h>
+#include <stdio.h>
+#define NANO_SLEEP 1
+main()
+{
+	struct timespec req, rem;
+	struct timeval tv1, tv2, tv_res;
+	int res;
+
+	rem.tv_sec = 0;
+	rem.tv_nsec = 0;
+
+	req.tv_sec = 0;
+	req.tv_nsec = 0;
+
+	tv2.tv_sec = req.tv_sec;
+	tv2.tv_usec = req.tv_nsec/1000;
+
+	gettimeofday(&tv1, NULL);
+#ifdef NANO_SLEEP
+	res = nanosleep(&req, &rem);
+#else
+	res = select(0, NULL,NULL,NULL, &tv2);
+#endif
+	gettimeofday(&tv2, NULL);
+	timersub(&tv2, &tv1, &tv_res);
+#ifdef NANO_SLEEP
+	printf("nanosleep\n");
+#else
+	printf("selectsleep\n");
+#endif
+	printf("req:%d :%d\n", (int)req.tv_sec, (int)req.tv_nsec/1000);
+	printf("tv_res:%d :%d\n", (int)tv_res.tv_sec, (int)tv_res.tv_usec);
+}
+root@localhost ~ # ./nanosleep
+nanosleep
+req:0 :0
+tv_res:0 :119
+root@localhost ~ # ./selectsleep
+selectsleep
+req:0 :0
+tv_res:0 :36
 
 
-> 
-> That check could be replaced with a
-> 
-> 		if (IS_RDONLY(inode) &&
-> 		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
-> 			BUG();
+Isn't nanosleep to slow here? The min time is about 120 us compared
+to select which is 36 us. I would expect nanosleep to be better than
+select.
 
-That wouldn't quite work currently.
-sys_faccessat checks __mnt_is_readonly *after* the call to dentry_permission,
-so the above would cause it to BUG.  Possibly the __mnt_is_readonly could be
-checked before dentry_permission.
+Kernel 2.6.35 with HIGH_RES timers on Powerpc(MPC8321, 266 MHz)
+x86 shows the same effect.
 
-However nfsd_permission is a bit more awkward to fix as sometimes it
-deliberately wants to ignore read-only-filesystem issues ... but it might
-still be possible to work around..
+    Jocke
 
-> 
-> which would catch these cases but only if the superblock was marked
-> r/o.  Otherwise it's basically impossible to make sure the callers of
-> the VFS play by the rules.  That was one reason I advocated a
-> path_... interface for the VFS instead of the current dentry based
-> one, but Al didn't like it.
->
-
-I guess there comes a point were we just have to document the rules and if
-someone doesn't play by them - that is a bug...
-
-NeilBrown
