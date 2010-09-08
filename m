@@ -1,70 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab0IHQDl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 12:03:41 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55931 "EHLO mx2.mail.elte.hu"
+	id S932070Ab0IHQJn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 12:09:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44568 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754892Ab0IHQDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 12:03:39 -0400
-Date: Wed, 8 Sep 2010 18:03:26 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT pull] Preparatory patch for semaphore cleanup
-Message-ID: <20100908160326.GA18932@elte.hu>
-References: <alpine.LFD.2.00.1009081507250.2477@localhost6.localdomain6>
- <AANLkTikYEjV8ikkPsfJ0d7WsikWHJ0n74u9uDS4uGHC+@mail.gmail.com>
- <1283957961.23762.28.camel@laptop>
- <20100908155604.GA18064@elte.hu>
- <1283961504.23762.34.camel@laptop>
+	id S1756189Ab0IHQJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 12:09:41 -0400
+Message-ID: <4C87B51C.6050703@kernel.org>
+Date: Wed, 08 Sep 2010 18:09:00 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283961504.23762.34.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0057]
+To: Mike Snitzer <snitzer@redhat.com>
+CC: Christoph Hellwig <hch@lst.de>, jack@suse.cz, mst@redhat.com,
+        linux-ide@vger.kernel.org,
+        device-mapper development <dm-devel@redhat.com>,
+        James.Bottomley@suse.de, konishi.ryusuke@lab.ntt.co.jp,
+        k-ueda@ct.jp.nec.com, vst@vlnb.net, linux-scsi@vger.kernel.org,
+        rusty@rustcorp.com.au, linux-raid@vger.kernel.org, mpatocka@redhat.com,
+        swhiteho@redhat.com, chris.mason@oracle.com, tytso@mit.edu,
+        jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, rwheeler@redhat.com,
+        Milan Broz <mbroz@redhat.com>
+Subject: Re: [PATCH 42/41 v2] dm: convey that all flushes are processed as
+ empty
+References: <1283509796-1510-1-git-send-email-tj@kernel.org> <1283509796-1510-24-git-send-email-tj@kernel.org> <4C84CD18.6060906@redhat.com> <20100907211724.GA22525@redhat.com> <20100907221543.GB22525@redhat.com> <20100907234918.GA23921@redhat.com> <20100908000001.GA21552@lst.de> <20100908020429.GA24635@redhat.com>
+In-Reply-To: <20100908020429.GA24635@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Sep 2010 16:09:06 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Wed, 2010-09-08 at 17:56 +0200, Ingo Molnar wrote:
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Wed, 2010-09-08 at 07:54 -0700, Linus Torvalds wrote:
-> > > > On Wed, Sep 8, 2010 at 6:11 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > > >
-> > > > > This patch just provides the DEFINE_SEMAPHORE macro which is required
-> > > > > for the various subsystem cleanups I sent out, so we can finally get
-> > > > > rid of init_MUTEX[_LOCKED] in 2.6.37.
-> > > > 
-> > > > Why is it called DEFINE_SEMAPHORE(), when two lines later the we have
-> > > > DECLARE_MUTEX()?
-> > > > 
-> > > > IOW, the whole DEFINE vs DECLARE thing seems confused. I'm not saying
-> > > > one is better than the other (maybe "define" is), but the mixing of
-> > > > names is worse than either, I feel..
-> > > 
-> > > The rest of the series, that Thomas didn't include in this pull, removes
-> > > all the DECLARE_MUTEX() users. So its temporary awkward-ness.
-> > 
-> > and DEFINE_MUTEX() is needed upstream so that we can spread those 
+On 09/08/2010 04:04 AM, Mike Snitzer wrote:
+> Rename __clone_and_map_flush to __clone_and_map_empty_flush for added
+> clarity.
 > 
-> s/DEFINE_MUTEX/DEFINE_SEMAPHORE/
+> Simplify logic associated with REQ_FLUSH conditionals.
+> 
+> Introduce a BUG_ON() and add a few more helpful comments to the code
+> so that it is clear that all flushes are empty.
+> 
+> Cleanup __split_and_process_bio() so that an empty flush isn't processed
+> by a 'sector_count' focused while loop.
+> 
+> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+> ---
+>  drivers/md/dm.c |   34 +++++++++++++++-------------------
+>  1 files changed, 15 insertions(+), 19 deletions(-)
+> 
+> Tejun, please feel free to fold this patch into (or insert after)
+> 0025-dm-relax-ordering-of-bio-based-flush-implementation.patch
+> 
+> v2: Simplify logic associated with REQ_FLUSH conditionals
+> 
+> diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+> index cd2f7e7..f934e98 100644
+> --- a/drivers/md/dm.c
+> +++ b/drivers/md/dm.c
+> @@ -621,16 +621,17 @@ static void dec_pending(struct dm_io *io, int error)
+>  		if (io_error == DM_ENDIO_REQUEUE)
+>  			return;
+>  
+> -		if (!(bio->bi_rw & REQ_FLUSH) || !bio->bi_size) {
+> -			trace_block_bio_complete(md->queue, bio);
+> -			bio_endio(bio, io_error);
+> -		} else {
+> +		if ((bio->bi_rw & REQ_FLUSH) && bio->bi_size) {
+>  			/*
+>  			 * Preflush done for flush with data, reissue
+>  			 * without REQ_FLUSH.
+>  			 */
+>  			bio->bi_rw &= ~REQ_FLUSH;
+>  			queue_io(md, bio);
+> +		} else {
+> +			/* done with normal IO or empty flush */
+> +			trace_block_bio_complete(md->queue, bio);
+> +			bio_endio(bio, io_error);
+>  		}
+>  	}
+>  }
+> @@ -1132,16 +1133,15 @@ static void __issue_target_requests(struct clone_info *ci, struct dm_target *ti,
+>  		__issue_target_request(ci, ti, request_nr, len);
+>  }
+>  
+> -static int __clone_and_map_flush(struct clone_info *ci)
+> +static int __clone_and_map_empty_flush(struct clone_info *ci)
+>  {
+>  	unsigned target_nr = 0;
+>  	struct dm_target *ti;
+>  
+> +	BUG_ON(bio_has_data(ci->bio));
+>  	while ((ti = dm_table_get_target(ci->map, target_nr++)))
+>  		__issue_target_requests(ci, ti, ti->num_flush_requests, 0);
+>  
+> -	ci->sector_count = 0;
+> -
+>  	return 0;
+>  }
+>  
+> @@ -1282,7 +1282,6 @@ static int __clone_and_map(struct clone_info *ci)
+>   */
+>  static void __split_and_process_bio(struct mapped_device *md, struct bio *bio)
+>  {
+> -	bool is_flush = bio->bi_rw & REQ_FLUSH;
+>  	struct clone_info ci;
+>  	int error = 0;
+>  
+> @@ -1302,20 +1301,17 @@ static void __split_and_process_bio(struct mapped_device *md, struct bio *bio)
+>  	ci.sector = bio->bi_sector;
+>  	ci.idx = bio->bi_idx;
+>  
+> -	if (!is_flush) {
+> +	start_io_acct(ci.io);
+> +	if (bio->bi_rw & REQ_FLUSH) {
+> +		ci.bio = &ci.md->flush_bio;
+> +		ci.sector_count = 0;
+> +		error = __clone_and_map_empty_flush(&ci);
+> +		/* dec_pending submits any data associated with flush */
+> +	} else {
+>  		ci.bio = bio;
+>  		ci.sector_count = bio_sectors(bio);
+> -	} else {
+> -		ci.bio = &ci.md->flush_bio;
+> -		ci.sector_count = 1;
+> -	}
+> -
+> -	start_io_acct(ci.io);
+> -	while (ci.sector_count && !error) {
+> -		if (!is_flush)
+> +		while (ci.sector_count && !error)
+>  			error = __clone_and_map(&ci);
+> -		else
+> -			error = __clone_and_map_flush(&ci);
+>  	}
+>  
+>  	/* drop the extra reference count */
 
-Heh, i was demonstrating Linus's point ;-)
 
-Thanks,
-
-	Ingo
+-- 
+tejun
