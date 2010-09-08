@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab0IHOoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 10:44:14 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57844 "EHLO bear.ext.ti.com"
+	id S1755293Ab0IHOrO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 10:47:14 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39715 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117Ab0IHOoL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 10:44:11 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-CC: Greg KH <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Date: Wed, 8 Sep 2010 20:09:35 +0530
-Subject: RE: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
-Thread-Topic: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
-Thread-Index: ActPHuZ0KLKGHTNmQ9WIQoEOLBS5NAARJqRg
-Message-ID: <19F8576C6E063C45BE387C64729E739404687B2B27@dbde02.ent.ti.com>
-References: <1282241331-5178-1-git-send-email-pavan_savoy@ti.com>
-	<4C6D6A9A.3010409@oracle.com>
-	<19F8576C6E063C45BE387C64729E7394044F124F7B@dbde02.ent.ti.com>
-	<4C6D6BCB.2090307@oracle.com>
-	<AANLkTi==HVhXcS0Mxv4GJL1rB0nLc3YQ=b5RbzM0iFwG@mail.gmail.com>
-	<20100822033248.GA4886@suse.de>
-	<19F8576C6E063C45BE387C64729E7394046836CB57@dbde02.ent.ti.com>
-	<20100831041114.GA16009@suse.de>
-	<19F8576C6E063C45BE387C64729E7394046836CE5C@dbde02.ent.ti.com>
-	<20100831224238.GA13253@suse.de>
-	<19F8576C6E063C45BE387C64729E739404687B2835@dbde02.ent.ti.com>
- <AANLkTimCkTFfe157dHK=caAdAeX_4m1A_p6ZRxp=2RWt@mail.gmail.com>
-In-Reply-To: <AANLkTimCkTFfe157dHK=caAdAeX_4m1A_p6ZRxp=2RWt@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752931Ab0IHOrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 10:47:12 -0400
+Date: Wed, 8 Sep 2010 16:47:08 +0200
+From: Jan Blunck <jblunck@novell.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+        linux-rt-users@vger.kernel.org, peterz@infradead.org,
+        Sven-Thorsten Dietrich <sdietrich@novell.com>,
+        Michael Galbraith <MGalbraith@novell.com>
+Subject: Re: [RFC 3/4] Disable scheduler tick when we are running
+	SCHED_FIFO tasks
+Message-ID: <20100908144708.GK7436@bolzano.suse.de>
+References: <1283948964-6418-1-git-send-email-jblunck@suse.de> <1283948964-6418-4-git-send-email-jblunck@suse.de> <87vd6gweo6.fsf@basil.nowhere.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vd6gweo6.fsf@basil.nowhere.org>
+Organization: SUSE LINUX Products GmbH, GF Markus Rex, HRB 16746 (AG
+	Nuernberg)
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Emanuel,
+On Wed, Sep 08, Andi Kleen wrote:
 
-I've recently posted a patch to solve this problem.
-Patch @ http://lkml.org/lkml/2010/8/19/238
- 
-PS: In fact it is strange that you replied to the same thread which is supposed to solve the problem.
+> Jan Blunck <jblunck@suse.de> writes:
+> 
+> > This patch is disabling the scheduler tick to go off when there is a task
+> > with SCHED_FIFO policy running. Since these tasks are not timesliced anyway
+> > we only care about timers, softirqs and such stuff just like when we disable
+> > the tick during idle periods.
+> 
+> How would these tasks accounted for then? 
+> 
+> The CPU time accounting relies on the timer tick currently.
+> 
 
-Thanks...
+Yes, that is a known issue.
 
-> -----Original Message-----
-> From: Anca Emanuel [mailto:anca.emanuel@gmail.com]
-> Sent: Wednesday, September 08, 2010 1:27 AM
-> To: Savoy, Pavan
-> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org
-> Subject: Re: [PATCH] drivers:staging:ti-st: remove st_get_plat_device
+Jan
+
+> -Andi
 > 
-> Build error (kernel 2.6.36-rc3-git1):
-> 
-> 
-> Building modules, stage 2.
->   MODPOST 3056 modules
-> ERROR: "st_get_plat_device" [drivers/staging/ti-st/st_drv.ko] undefined!
+> -- 
+> ak@linux.intel.com -- Speaking for myself only.
