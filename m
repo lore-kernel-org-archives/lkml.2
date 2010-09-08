@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758398Ab0IHHnN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 03:43:13 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:53781 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758239Ab0IHHnL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 03:43:11 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after direct reclaim allocation fails
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1283504926-2120-4-git-send-email-mel@csn.ul.ie>
-References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie> <1283504926-2120-4-git-send-email-mel@csn.ul.ie>
-Message-Id: <20100908163956.C930.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  8 Sep 2010 16:43:03 +0900 (JST)
+	id S1758385Ab0IHHrm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 03:47:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33033 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756393Ab0IHHri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 03:47:38 -0400
+Date: Wed, 8 Sep 2010 17:47:26 +1000
+From: Neil Brown <neilb@suse.de>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, haveblue@us.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/10] VFS: Remove read-only checks from
+ dentry_permission
+Message-ID: <20100908174726.21aec19b@notabene>
+In-Reply-To: <E1Osh50-0005s0-V7@pomaz-ex.szeredi.hu>
+References: <20100906004829.20775.68828.stgit@localhost.localdomain>
+	<20100906005029.20775.70918.stgit@localhost.localdomain>
+	<E1Osh50-0005s0-V7@pomaz-ex.szeredi.hu>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	/*
-> +	 * If an allocation failed after direct reclaim, it could be because
-> +	 * pages are pinned on the per-cpu lists. Drain them and try again
-> +	 */
-> +	if (!page && !drained) {
-> +		drain_all_pages();
-> +		drained = true;
-> +		goto retry;
-> +	}
+On Mon, 06 Sep 2010 21:10:10 +0200
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-nit: when slub, get_page_from_freelist() failure is frequently happen
-than slab because slub try to allocate high order page at first.
-So, I guess we have to avoid drain_all_pages() if __GFP_NORETRY is passed.
+> On Mon, 06 Sep 2010, NeilBrown wrote:
+> > It is not sufficient to depend on the the "filesystem is readonly"
+> > tests in dentry_permission as it does not check if the vfsmnt is
+> > readonly.
+> > All call sites already call mnt_want_write or __mnt_is_readonly which
+> > includes the test on MS_RDONLY.
+> 
+> Last time I checked I found some holes (in nfsd IIRC).  That was a
+> long time ago and things may have changed.
 
-
-
-
->From 9209ceb1d48446b031576ba9360036ddabc1a0e5 Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 10 Sep 2010 03:29:05 +0900
-Subject: [PATCH] mm: don't call drain_all_pages() when __GFP_NORETRY
-
-SLUB try to allocate high order pages at first. therefore page allocator
-eventually call drain_all_pages() frequently. We don't hope IPI storm.
-Thus, we don't call drain_all_pages() when caller passed __GFP_NORETRY.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/page_alloc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8587c10..b9eafb1 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1878,7 +1878,7 @@ retry:
- 	 * If an allocation failed after direct reclaim, it could be because
- 	 * pages are pinned on the per-cpu lists. Drain them and try again
- 	 */
--	if (!page && !drained) {
-+	if (!page && !drained && !(gfp_mask & __GFP_NORETRY)) {
- 		drain_all_pages();
- 		drained = true;
- 		goto retry;
--- 
-1.6.5.2
+nfsd looks OK to me.  I didn't do an exhaustive audit but couldn't find
+things that would not still work correctly.
 
 
+> 
+> That check could be replaced with a
+> 
+> 		if (IS_RDONLY(inode) &&
+> 		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
+> 			BUG();
 
+That wouldn't quite work currently.
+sys_faccessat checks __mnt_is_readonly *after* the call to dentry_permission,
+so the above would cause it to BUG.  Possibly the __mnt_is_readonly could be
+checked before dentry_permission.
+
+However nfsd_permission is a bit more awkward to fix as sometimes it
+deliberately wants to ignore read-only-filesystem issues ... but it might
+still be possible to work around..
+
+> 
+> which would catch these cases but only if the superblock was marked
+> r/o.  Otherwise it's basically impossible to make sure the callers of
+> the VFS play by the rules.  That was one reason I advocated a
+> path_... interface for the VFS instead of the current dentry based
+> one, but Al didn't like it.
+>
+
+I guess there comes a point were we just have to document the rules and if
+someone doesn't play by them - that is a bug...
+
+NeilBrown
