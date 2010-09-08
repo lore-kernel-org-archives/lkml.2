@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab0IHWGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 18:06:12 -0400
-Received: from void.printf.net ([89.145.121.20]:50388 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756113Ab0IHWGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 18:06:06 -0400
-Date: Wed, 8 Sep 2010 23:05:48 +0100
-From: Chris Ball <cjb@laptop.org>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Albert Herranz <albert_herranz@yahoo.es>,
-        Matt Fleming <matt@console-pimps.org>, Ben Dooks <ben-linux@fluff.org>,
-        Pierre Ossman <pierre@ossman.eu>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 0/8] sdhci: Move real work out of an atomic context
-Message-ID: <20100908220548.GA7967@void.printf.net>
-References: <20100714130728.GA27339@oksana.dev.rtsoft.ru> <20100907153813.936db0c6.akpm@linux-foundation.org> <20100908213740.GA7550@void.printf.net> <20100908215750.GA17232@oksana.dev.rtsoft.ru>
+	id S1756298Ab0IHWOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 18:14:18 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49361 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755940Ab0IHWOM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 18:14:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=C4q0kRys0kTTiUp4NksAOAJfe+kwKuxkW8qYGUFGek3935pvgzS6bi9ASF5quGbLpq
+         annkaNhDpKrPrUb+20IxbcpP3jLAOzZp0utueUrFKdYXAPQKq+1jqMPnZJi/XNI5ohEt
+         odw+QwPSqdVezhrKDEqmWo5aO5VCEH5QaXa1U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100908215750.GA17232@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C880278.3060108@zytor.com>
+References: <AANLkTimqn6=uzE9FawJkWe3w3+AipiMUUcjLd8fo48s1@mail.gmail.com>
+	<AANLkTim0GX8bmZu8j5wVs11QFCmKjNK2MBkV7Mcha_Ae@mail.gmail.com>
+	<4C880278.3060108@zytor.com>
+Date: Wed, 8 Sep 2010 23:14:11 +0100
+Message-ID: <AANLkTimp5kh3Wg5kzfCWq0Rz3uCL7ivu+TED1oHcFDP8@mail.gmail.com>
+Subject: Re: Promoting Crusoe and Geode Processors to i686 Status
+From: Nick Lowe <nick.lowe@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+Hi,
 
-On Thu, Sep 09, 2010 at 01:57:50AM +0400, Anton Vorontsov wrote:
-> Thanks!
-> 
-> Would be also great if you could point out which patch causes
-> most of the performance drop (if any)?
-> 
-> Albert, if you could find time, can you also "bisect" the
-> patchset? I wouldn't want to buy Nintendo WII just to debug the
-> perf regression. ;-) FWIW, I tried to disable multiblock
-> read/writes and test with SD cards, and still didn't notice
-> any performance drops.
-> 
-> Maybe it's SDIO IRQs that cause the performance drop for the
-> WII case, as we delay them a little bit? Or it could be the
-> patch that introduces threaded IRQ handler in whole causes
-> it. If so, I guess we'd need to move some of the processing to
-> the real IRQ context, keeping the handler lockless (if
-> possible) or introducing a very fine grained locking.
+Here goes...
 
-I didn't know anything about a reported performance drop, and I don't
-think Andrew did either -- Albert's test results don't seem to have
-made it to this list, or anywhere else that I can see.  Could you 
-link to/repost his comments?
+-mtune tunes the binary for given architecture. This as opposed to
+defining the baseline architecture, and thus available instruction
+set, which -march does.
 
-(I'll be testing with libertas, so that will stress-test SDIO IRQs.)
+I believe that -mtune is predominantly used for instruction
+scheduling. GCC uses it when it's reordering instructions to optimise
+for specific micro-architecture over others.
 
-Thanks,
+With -mtune=i686, I am of the opinion that you instruct the compiler,
+and give it the opportunity, to deliver a better ordering of the
+instructions. In this case, better ordering for i686 than you would
+get with -mtune=generic32.
 
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+I'm probably wrong somehow, it's probably marginal, and I'll concede
+to your infinitely better knowledge any day! That's why I phrased it
+as a question! :)
+
+Cheers,
+
+Nick
+
+On Wed, Sep 8, 2010 at 10:39 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 09/07/2010 05:27 PM, Nick Lowe wrote:
+>>
+>> 2) Should there be the special case that forces the suboptimal
+>> -mtune=generic32 to work around the binutils NOPL bug or, as I think,
+>> should people just update to a sane binutils version? (It's a special
+>> case triggered where CONFIG_X86_P6_NOP is not set.)
+>>
+>
+> What's suboptimal about it?
+>
+>        -hpa
+>
