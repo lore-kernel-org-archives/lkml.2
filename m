@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757093Ab0IHA1y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 20:27:54 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36536 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab0IHA1u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 20:27:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=yBmrU2L/kyEcxyn4RusnD6AC593xhCrxmAWPxoKUNC1Ywzbe1iyLbVhiT0GAuQutG/
-         dZySLrGYEXznWlpOViHt17SaPwaiy3hIQbMEx4XgUnTAHko+Hhc1gcs/BxnNWxS5qtkn
-         r0YpxvqJ3bLKbFrHpfz/asQG98ufFD/3ZLpm4=
+	id S1756638Ab0IHAcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 20:32:45 -0400
+Received: from sous-sol.org ([216.99.217.87]:34573 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752292Ab0IHAco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 20:32:44 -0400
+X-Greylist: delayed 392 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Sep 2010 20:32:43 EDT
+Date: Tue, 7 Sep 2010 17:25:20 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Cam Macdonell <cam@cs.ualberta.ca>
+Cc: Avi Kivity <avi@redhat.com>,
+        "qemu-devel@nongnu.org Developers" <qemu-devel@nongnu.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Chris Wright <chrisw@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
+Subject: [PATCH] pci: fix pci_resource_alignment prototype
+Message-ID: <20100908002520.GM30129@sequoia.sous-sol.org>
+References: <AANLkTimk19OmkNYvVemxgyFfgByNDDq6R2fa6=FQ8H9L@mail.gmail.com>
+ <4C83CA5A.7030404@redhat.com>
+ <AANLkTimtATH7JvBRXBbnr0hJ5bFrtOa_3vsZRe4a_rfR@mail.gmail.com>
+ <AANLkTim9EOUVuSq6Z3q6-j-x2w+JDD8F-_xH614uDFi8@mail.gmail.com>
+ <AANLkTimGui3atGAa-FE=6JhF1rM7BU0xtN-T4mZKqD8_@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimqn6=uzE9FawJkWe3w3+AipiMUUcjLd8fo48s1@mail.gmail.com>
-References: <AANLkTimqn6=uzE9FawJkWe3w3+AipiMUUcjLd8fo48s1@mail.gmail.com>
-Date: Wed, 8 Sep 2010 01:27:49 +0100
-Message-ID: <AANLkTim0GX8bmZu8j5wVs11QFCmKjNK2MBkV7Mcha_Ae@mail.gmail.com>
-Subject: Re: Promoting Crusoe and Geode Processors to i686 Status
-From: Nick Lowe <nick.lowe@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimGui3atGAa-FE=6JhF1rM7BU0xtN-T4mZKqD8_@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two further questions...
+From: Cam Macdonell <cam@cs.ualberta.ca>
 
-1) Is there a benefit to keeping a CONFIG_MGEODEGX1 and
-CONFIG_MGEODE_LX when we have a situation where i686
-CONFIG_X86_GENERIC builds work?
+* Cam Macdonell (cam@cs.ualberta.ca) wrote:
+> It seems it was the alignment value being passed back from
+> pci_resource_alignment().  The return type is an int, which was
+> causing value of 2GB to be sign extended to to 0xffffffff80000000.
+> Changing the return type to resource_size_t allows BAR values >= 2GB
+> to be successfully assigned.
+<snip>
+> -static inline int pci_resource_alignment(struct pci_dev *dev,
+> +static inline resource_size_t pci_resource_alignment(struct pci_dev *dev,
+>                                          struct resource *res)
 
-# Geode GX1 support
-cflags-$(CONFIG_MGEODEGX1)      += -march=pentium-mmx
-cflags-$(CONFIG_MGEODE_LX)      += $(call
-cc-option,-march=geode,-march=pentium-mmx)
+Yes, that's my mistake.  Thanks for debugging the issue Cam.
+This fixes the prototype for both pci_resource_alignment() and
+pci_sriov_resource_alignment().
 
-2) Should there be the special case that forces the suboptimal
--mtune=generic32 to work around the binutils NOPL bug or, as I think,
-should people just update to a sane binutils version? (It's a special
-case triggered where CONFIG_X86_P6_NOP is not set.)
+Patch started as debugging effort from Cam Macdonell.
 
-# Bug fix for binutils: this option is required in order to keep
-# binutils from generating NOPL instructions against our will.
-ifneq ($(CONFIG_X86_P6_NOP),y)
-cflags-y                        += $(call
-cc-option,-Wa$(comma)-mtune=generic32,)
-endif
+Cc: Cam Macdonell <cam@cs.ualberta.ca>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+[chrisw: add iov bits]
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+---
+ drivers/pci/iov.c |    2 +-
+ drivers/pci/pci.h |    5 +++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-Reference: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=arch/x86/Makefile_32.cpu;hb=HEAD
+diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+index ce6a366..553d8ee 100644
+--- a/drivers/pci/iov.c
++++ b/drivers/pci/iov.c
+@@ -608,7 +608,7 @@ int pci_iov_resource_bar(struct pci_dev *dev, int resno,
+  * the VF BAR size multiplied by the number of VFs.  The alignment
+  * is just the VF BAR size.
+  */
+-int pci_sriov_resource_alignment(struct pci_dev *dev, int resno)
++resource_size_t pci_sriov_resource_alignment(struct pci_dev *dev, int resno)
+ {
+ 	struct resource tmp;
+ 	enum pci_bar_type type;
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index 679c39d..5d0aeb1 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -262,7 +262,8 @@ extern int pci_iov_init(struct pci_dev *dev);
+ extern void pci_iov_release(struct pci_dev *dev);
+ extern int pci_iov_resource_bar(struct pci_dev *dev, int resno,
+ 				enum pci_bar_type *type);
+-extern int pci_sriov_resource_alignment(struct pci_dev *dev, int resno);
++extern resource_size_t pci_sriov_resource_alignment(struct pci_dev *dev,
++						    int resno);
+ extern void pci_restore_iov_state(struct pci_dev *dev);
+ extern int pci_iov_bus_range(struct pci_bus *bus);
+ 
+@@ -318,7 +319,7 @@ static inline int pci_ats_enabled(struct pci_dev *dev)
+ }
+ #endif /* CONFIG_PCI_IOV */
+ 
+-static inline int pci_resource_alignment(struct pci_dev *dev,
++static inline resource_size_t pci_resource_alignment(struct pci_dev *dev,
+ 					 struct resource *res)
+ {
+ #ifdef CONFIG_PCI_IOV
 
-Cheers,
-
-Nick
