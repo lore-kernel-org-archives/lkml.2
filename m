@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab0IHTT5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 15:19:57 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:43837 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab0IHTTu (ORCPT
+	id S1753512Ab0IHT15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 15:27:57 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:52833 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160Ab0IHT1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 15:19:50 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Cliff Wickman <cpw@sgi.com>
-Cc: kexec@lists.infradead.org, mingo@elte.hu, linux-kernel@vger.kernel.org
-References: <E1OtMLz-0001yp-Ia@eag09.americas.sgi.com>
-Date: Wed, 08 Sep 2010 12:19:43 -0700
-In-Reply-To: <E1OtMLz-0001yp-Ia@eag09.americas.sgi.com> (Cliff Wickman's
-	message of "Wed, 08 Sep 2010 10:14:27 -0500")
-Message-ID: <m1eid4gi0g.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 8 Sep 2010 15:27:52 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -22.589
+Message-ID: <4C87E3EC.5050207@tremplin-utc.net>
+Date: Wed, 08 Sep 2010 21:28:44 +0200
+From: =?UTF-8?B?w4lyaWMgUGllbA==?= <Eric.Piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100809 Mandriva/3.1.2-3mdv2011.0 (2011.0) Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: infradead.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Cliff Wickman <cpw@sgi.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] x86: copy_oldmem_page using cached addressing
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Takashi Iwai <tiwai@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lis3: Add axes module parameter for custom axis-mapping
+References: <s5htymla56q.wl%tiwai@suse.de>	<s5haanuvypc.wl%tiwai@suse.de>	<4C864B3E.5060603@tremplin-utc.net>	<s5heid58vfv.wl%tiwai@suse.de>	<4C866052.5020206@tremplin-utc.net>	<s5h4oe18rhg.wl%tiwai@suse.de>	<4C868FC0.3040602@tremplin-utc.net> <s5hmxrtuz85.wl%tiwai@suse.de>
+In-Reply-To: <s5hmxrtuz85.wl%tiwai@suse.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cliff Wickman <cpw@sgi.com> writes:
+Op 07-09-10 21:31, Takashi Iwai schreef:
+> At Tue, 07 Sep 2010 21:17:20 +0200,
+> Éric Piel wrote:
+>>
+>> Op 07-09-10 18:10, Takashi Iwai schreef:
+>>> At Tue, 07 Sep 2010 17:54:58 +0200,
+>> :
+>>>>>  
+>>>>> +module_param_array_named(axes, lis3_dev.axis_map, int, NULL, 0644);
+>>>>> +MODULE_PARM_DESC(axes, "Axis-mapping for x,y,z directions");
+>>>> But now there is no check at all about the value being between 1 and 3,
+>>>> is there?
+>>>> I think it's still necessary to have a small function which checks for
+>>>> correct values, otherwise the user could read a bit anywhere in the memory.
+>>>
+>>> Ah, right, it's accessing the array index.  This must be fixed indeed.
+>>> Another revised version below.
+>>>
+>> It seems to be the same patch as the previous version. You probably
+>> attached the wrong patch.
+> 
+> Oops, sorry.  Attached below.
+> 
+Looks good to me. Thanks Takashi.
 
-> From: Cliff Wickman <cpw@sgi.com>
->
-> The copy of /proc/vmcore to a user buffer proceeds much faster
-> if the kernel addresses memory as cached.
->
-> With this patch we have seen an increase in transfer rate from less than
-> 15MB/s to 80-460MB/s, depending on size of the transfer.  This makes
-> a big difference in time needed to save a system dump.
->
-> (Does anyone know of a reason why copy_oldmem_page() would need
->  to use uncached addresses?)
->
-> Diffed against 2.6.36-rc3
+Acked-by: Éric Piel <eric.piel@tremplin-utc.net>
 
-I believe this code simply predates being able to specify the
-caching attributes at ioremap time.  Being cached in this case
-actually looks more correct, as that is the default for RAM
-and we are talking about RAM.
-
-Ultimately either there is another cpu running wild with these pages
-mapped with some random set of attributes, and we cannot get the
-permissions right or we have captured all of the cpus and this is the
-only mapping so it doesn't matter.
-
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-
->
-> Signed-off-by: Cliff Wickman <cpw@sgi.com>
-> ---
->  arch/x86/kernel/crash_dump_64.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> Index: linus.current/arch/x86/kernel/crash_dump_64.c
-> ===================================================================
-> --- linus.current.orig/arch/x86/kernel/crash_dump_64.c
-> +++ linus.current/arch/x86/kernel/crash_dump_64.c
-> @@ -34,7 +34,7 @@ ssize_t copy_oldmem_page(unsigned long p
->  	if (!csize)
->  		return 0;
->  
-> -	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
-> +	vaddr = ioremap_cache(pfn << PAGE_SHIFT, PAGE_SIZE);
->  	if (!vaddr)
->  		return -ENOMEM;
->  
->
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+Andrew, would you mind picking it up?
+Eric
