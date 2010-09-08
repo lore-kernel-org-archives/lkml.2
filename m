@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab0IHRDl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 13:03:41 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:36870 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754927Ab0IHRD2 (ORCPT
+	id S1751997Ab0IHRMG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 13:12:06 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57141 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab0IHRL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 13:03:28 -0400
-Date: Wed, 8 Sep 2010 18:03:20 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        dri-devel@lists.freedesktop.org,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <daenzer@vmware.com>
-Subject: Re: [PATCH] radeon: Expose backlight class device for legacy LVDS
-	encoder
-Message-ID: <20100908170320.GA4888@srcf.ucam.org>
-References: <1283963539-4039-1-git-send-email-mjg@redhat.com> <1283963539-4039-3-git-send-email-mjg@redhat.com> <AANLkTi=kDXwRPxfbLv=EGEqARfTkhuhRBrXUL9DOQ_zw@mail.gmail.com>
+	Wed, 8 Sep 2010 13:11:59 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Jan Blunck <jblunck@novell.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+        linux-rt-users@vger.kernel.org,
+        Sven-Thorsten Dietrich <sdietrich@novell.com>,
+        Michael Galbraith <MGalbraith@novell.com>
+Subject: Re: [RFC 3/4] Disable scheduler tick when we are running SCHED_FIFO tasks
+References: <1283948964-6418-1-git-send-email-jblunck@suse.de>
+	<1283948964-6418-4-git-send-email-jblunck@suse.de>
+	<1283949943.23762.16.camel@laptop>
+	<20100908142826.GI7436@bolzano.suse.de>
+Date: Wed, 08 Sep 2010 19:11:53 +0200
+In-Reply-To: <20100908142826.GI7436@bolzano.suse.de> (Jan Blunck's message of
+	"Wed, 8 Sep 2010 16:28:26 +0200")
+Message-ID: <87iq2gw46e.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=kDXwRPxfbLv=EGEqARfTkhuhRBrXUL9DOQ_zw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 12:58:32PM -0400, Alex Deucher wrote:
+Jan Blunck <jblunck@novell.com> writes:
 
-> The only problem with this is that not all oems use the internal
-> backlight controller; systems that don't need to use the acpi methods.
+> On Wed, Sep 08, Peter Zijlstra wrote:
+>
+>> On Wed, 2010-09-08 at 14:29 +0200, Jan Blunck wrote:
+>> > This patch is disabling the scheduler tick to go off when there is a task
+>> > with SCHED_FIFO policy running. Since these tasks are not timesliced anyway
+>> > we only care about timers, softirqs and such stuff just like when we disable
+>> > the tick during idle periods.
+>> > 
+>> 
+>> Also, doesn't this break any and all jiffies users?
+>> 
+>
+> Sure. It was enough to make FTQ run.
+>
+>> And you need to restart the tick on call_rcu() and everything else that
+>> requires the tick for processing.
+>> 
+>
+> I realized that before as well but somehow forgot about it. Checking for a
+> disabled timer tick on syscall entry would help. Like we do on irq entry as
+> well.
 
-That's why we expose the backlight type. Userspace should use the acpi 
-or platform mechanism when available, with this being a last-ditch 
-fallback.
+That doesn't help the gettimeofday/clock_gettime vDSOs
+which access jiffie like state in user space.
 
->  On atombios systems there is a bit in the
-> ATOM_FIRMWARE_CAPABILITY_ACCESS struct in the FirmwareInfo data table
-> to determine whether the backlight is controlled by the GPU or some
-> external mechanism.  Combios may have something similar.  If the
-> backlight is controlled via the GPU, it can be adjusting using the
-> atom OutputControl and TransmitterControl control tables depending on
-> the GPU family.  However, if the driver chooses to control the
-> backlight itself, it needs to set the appropriate bit in the bios
-> scratch regs to tell the firmware not to attempt to change the
-> backlight itself.
+I guess you could force the vdso to call into the kernel
+during such a region, but you cannot force it for an
+process that is already context switched in this path
+when the option is first enabled.
 
-If there's support for probing this more reliably then I'm all for that, 
-but I'm not keen on taking over control if the BIOS has previous 
-asserted it.
+I guess it would work if you force all the vDSOs
+to always do a system call at boot, but that's pretty
+costly.
+
+-Andi
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+ak@linux.intel.com -- Speaking for myself only.
