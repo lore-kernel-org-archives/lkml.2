@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab0IHBA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 21:00:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11965 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756829Ab0IHBAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 21:00:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,331,1280732400"; 
-   d="scan'208";a="655049013"
-From: "Zou, Nanhai" <nanhai.zou@intel.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
-        Andy Isaacson <adi@hexapodia.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "He, Shuang" <shuang.he@intel.com>
-Date: Wed, 8 Sep 2010 09:00:46 +0800
-Subject: RE: [2.6.36-rc2 regression] X201s: resume-from-S2R hangs
-Thread-Topic: [2.6.36-rc2 regression] X201s: resume-from-S2R hangs
-Thread-Index: ActOs2sm3RdkAY11TEOSUQDgauv49QAPYB5g
-Message-ID: <41EFD7A46E18724CAB128DAD00733480157B65A84C@shsmsx502.ccr.corp.intel.com>
-References: <20100906090536.GA12250@hexapodia.org>
- <87fwxlbhq5.fsf@pollan.anholt.net> <8u3s94$geonkf@orsmga002.jf.intel.com>
-In-Reply-To: <8u3s94$geonkf@orsmga002.jf.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	id S1756995Ab0IHBMF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 21:12:05 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58111 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755201Ab0IHBMB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 21:12:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZF4y4J8uzXVHfUfO4YpnXtkkqP9XcSGY5kFZBzn5fHfScW9C9BPbXQJXqjRnsvQUtF
+         gfvG1RWyk88GHiEtMsPKKl6PzKWUfeKJzO5bqIHwOZIAgcXq7bT7pSK42lllkt+OUe5e
+         MHrYJQJy/SN37zBp0+cwCM9c3jAgXj0rF1Lo8=
 MIME-Version: 1.0
+In-Reply-To: <1283873872-8633-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1283873872-8633-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Wed, 8 Sep 2010 10:11:59 +0900
+Message-ID: <AANLkTi=6voS7WXcXgVTdK614W0Epy_Ehf5QzufErV2tD@mail.gmail.com>
+Subject: Re: [PATCH 1/2] spi/spi_s3c64xx: Fix timeout handling in wait_for_xfer()
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Jassi Brar <jassi.brar@samsung.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o88110FE009900
 
-We've had tried every kind of G45 and G45M machines here for many times, 
-But can not reproduce #29406, 
-We will see if we can reproduce this issue on X201
+On Wed, Sep 8, 2010 at 12:37 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> In wait_for_xfer() for PIO transfer we are using val as both a
+> counter variable to track the number of spins we've waited for
+> completion and the value we read from the controller, causing
+> us to fail to ever actually notice the timeout. Fix this by using
+> a separate value to hold the register readback.
+>
+> Also warn when we hit the timeout.
+>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+> Â drivers/spi/spi_s3c64xx.c | Â  11 +++++++----
+> Â 1 files changed, 7 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
+> index 6e48ea9..03b28e4 100644
+> --- a/drivers/spi/spi_s3c64xx.c
+> +++ b/drivers/spi/spi_s3c64xx.c
+> @@ -321,7 +321,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
+> Â {
+> Â  Â  Â  Â struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
+> Â  Â  Â  Â void __iomem *regs = sdd->regs;
+> - Â  Â  Â  unsigned long val;
+> + Â  Â  Â  unsigned long val, reg;
+> Â  Â  Â  Â int ms;
+>
+> Â  Â  Â  Â /* millisecs to xfer 'len' bytes @ 'cur_speed' */
+> @@ -333,13 +333,16 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
+> Â  Â  Â  Â  Â  Â  Â  Â val = wait_for_completion_timeout(&sdd->xfer_completion, val);
+> Â  Â  Â  Â } else {
+> Â  Â  Â  Â  Â  Â  Â  Â val = msecs_to_loops(ms);
+> +
+> Â  Â  Â  Â  Â  Â  Â  Â do {
+> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  val = readl(regs + S3C64XX_SPI_STATUS);
+> - Â  Â  Â  Â  Â  Â  Â  } while (RX_FIFO_LVL(val, sci) < xfer->len && --val);
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  reg = readl(regs + S3C64XX_SPI_STATUS);
+> + Â  Â  Â  Â  Â  Â  Â  } while (RX_FIFO_LVL(reg, sci) < xfer->len && --val);
+> Â  Â  Â  Â }
+>
+> - Â  Â  Â  if (!val)
+> + Â  Â  Â  if (!val) {
+> + Â  Â  Â  Â  Â  Â  Â  dev_warn(&sdd->pdev->dev, "Transfer timeout\n");
+> Â  Â  Â  Â  Â  Â  Â  Â return -EIO;
+> + Â  Â  Â  }
 
-Thanks
-Zou Nan hai
-
------Original Message-----
-From: Chris Wilson [mailto:chris@chris-wilson.co.uk] 
-Sent: 2010Äê9ÔÂ8ÈÕ 1:38
-To: Eric Anholt; Andy Isaacson; linux-kernel@vger.kernel.org
-Cc: Zou, Nanhai
-Subject: Re: [2.6.36-rc2 regression] X201s: resume-from-S2R hangs
-
-On Tue, 07 Sep 2010 10:12:34 -0700, Eric Anholt <eric@anholt.net> wrote:
-> On Mon, 6 Sep 2010 02:05:36 -0700, Andy Isaacson <adi@hexapodia.org> wrote:
-> > I have a Thinkpad X201s on which suspend-to-RAM was quite reliable until
-> > after 2.6.36-rc1; with problematic kernels, suspend seems to work OK
-> > (the machine goes to sleep with the moon LED steadily lit) but on resume
-> > the LCD never lights up (and it's not just the backlight, the screen
-> > isn't drawing at all) and the keyboard and network are dead.  Nothing
-> > makes it to syslog, either.  The moon LED is turned off though.
-> > 
-> > There seems to be some timing component to the problem -- some problem
-> > kernels will suspend reliably 25% or 50% of the time and hang the rest.
-> > There also seems to be some per-reboot state involved; one problem
-> > kernel suspended successfully and survived 25 suspends in a row without
-> > triggering a failure.  (But after a reboot, the first suspend hung...)
-> > Other problem kernels fail on 4 out of 4 reboots.
-
-We introduced a timing regression which should be fixed by 
-http://cgit.freedesktop.org/~ickle/drm-intel/ drm-intel-fixes
-[http://cgit.freedesktop.org/~ickle/drm-intel/commit/?id=300387c0b57d75e5218e2881d6ad2720657a8bcf]
-
-> > Bisecting is pretty hard under these conditions, but it seems to point
-> > to
-> 
-> Weird.  That's exactly the hardware that I tested RC6 on, and I haven't
-> seen a single resume failure on mine.  Sounds like time to revert for
-> this release.
-
-At the moment we have a second resume regression that has been difficult to
-reproduce, https://bugs.freedesktop.org/show_bug.cgi?id=29406 :
-
-commit d1b851fc0d105caa6b6e3e7c92d2987dfb52cbe0
-Author: Zou Nan hai <nanhai.zou@intel.com>
-Date:   Fri May 21 09:08:57 2010 +0800
-
-    drm/i915: implement BSD ring buffer V2
-
-The workaround for this is to #define HAS_BSD(dev) 0 [i915_drv.h].
-
-Andy, can you try the workaround to see if this is the same issue in a
-different guise?
-
-Alternatively, we can be optimistic that it is just a timing issue fixed
-in drm-intel-next. :)
-
-Otherwise we will revert that patch. Thanks.
--Chris
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I have already submitted a patch a few days ago
+https://patchwork.kernel.org/patch/151941/
+(It's strange that Grant's id isn't there in the CC list, despite my writing it)
