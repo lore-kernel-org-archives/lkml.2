@@ -1,126 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab0IHCNB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 22:13:01 -0400
-Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:36316 "HELO
-	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755420Ab0IHCM6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 22:12:58 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: mGYYUXkVM1mbIYrVW__nzHVsQI5EjCqvMczp7tgS1_8jlbH
- Vg2KsXF_5r8xxU9fYpFdDl_ncke04DWhr5Y.hhu.4QG0NeBWueUpe8cwSvUt
- nDamag8.fNeE8PhTZe5yMR_tURRXrzv3TLulv0ompdsE.n0a0wgFtSH5EEKz
- bO7AMvGOyNP_Bi665vKayRha21t_RpzVZTFCKUtTynA1dMJyL5P1smhz_5kB
- iFXNvfHc94gnu3HR0EQCbXl32kncmwJSpO1t70AshiG_0em7_aaoBvzN7pah
- LQ1Mie490ResX5MnIVkypa_c-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [RFC 02/22] configfs: Add struct
-	configfs_item_operations->check_link() in configfs_unlink()
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Joel Becker <Joel.Becker@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <20100907224413.GC21935@mail.oracle.com>
-References: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
-	 <20100902064814.GB27904@mail.oracle.com>
-	 <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
-	 <201009071701.02847.konrad@darnok.org>
-	 <20100907224413.GC21935@mail.oracle.com>
-Content-Type: text/plain
-Date: Tue, 07 Sep 2010 19:08:59 -0700
-Message-Id: <1283911739.556.420.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1756251Ab0IHCNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 22:13:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:39839 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752546Ab0IHCNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 22:13:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,331,1280732400"; 
+   d="scan'208";a="604863455"
+Date: Wed, 8 Sep 2010 10:13:41 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
+ direct reclaim allocation fails
+Message-ID: <20100908021341.GA6182@localhost>
+References: <20100903202101.f937b0bb.akpm@linux-foundation.org>
+ <20100904075840.GE705@dastard>
+ <20100904081414.GF705@dastard>
+ <20100905015400.GA10714@localhost>
+ <20100905021555.GG705@dastard>
+ <20100905060539.GA17450@localhost>
+ <20100905131447.GJ705@dastard>
+ <20100905134554.GA7083@localhost>
+ <20100906040243.GA7362@dastard>
+ <alpine.DEB.2.00.1009070918030.14634@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1009070918030.14634@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-07 at 15:44 -0700, Joel Becker wrote:
-> On Tue, Sep 07, 2010 at 05:01:01PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > > 	I NAK'd this a while back.  I'm willing to be convinced, but so
-> > > > far it remains that way.
-> > >
-> > > Hi Joel,
-> > >
-> > > Thanks for bringing this point up again.  So a brief refresh on why this
-> > > is currently required in the fabric independent configfs handlers in
-> > > drivers/target/target_core_fabric_configfs.c (patch #19).
-> > 
-> > Well, that is great that you mentioned your requirements. But I don't see a 
-> > quote of Joel's concerns? Is there an LKML link for it perhaps?
+On Tue, Sep 07, 2010 at 10:23:48PM +0800, Christoph Lameter wrote:
+> On Mon, 6 Sep 2010, Dave Chinner wrote:
 > 
-> 	It was a while back.  Essentially, the concern is that configfs
-> is defined to be userspace-driven.  If the user asks you to remove
-> something, the module should be handling safe teardown rather than
-> rejecting the user's request.
-> 	Now, the world isn't always clean-cut.  Code outside of the
-> filesystem representation can lay a claim on a configfs item to say "I'm
-> busy with this."  An example is ocfs2 pinning the configfs item
-> describing its cluster heartbeat device.   But this is ocfs2 - a
-> separate thing - claiming it.  There is a defined API to take and
-> release these claims.
-> 	This API doesn't cover symlinks, as symlinks are simply linkage
-> between config items.  It may be, as Nick suggested at the bottom of his
-> reply, that we want the API extended to cover that case.  But he hasn't
-> yet convinced me that safe teardown is impossible or disasterous.
-> That's what I'd like to see.  It's not obvious on the face of all the
-> file trees in the email.
-> 	Nick, can you provide some form of description, not long
-> pathnames, that explains a) what breaks when the symlink is removed b)
-> why that can't be allowed if the user is dumb enough to request it?
+> > [  596.628086]  [<ffffffff81108a8c>] ? drain_all_pages+0x1c/0x20
+> > [  596.628086]  [<ffffffff81108fad>] ? __alloc_pages_nodemask+0x42d/0x700
+> > [  596.628086]  [<ffffffff8113d0f2>] ? kmem_getpages+0x62/0x160
+> > [  596.628086]  [<ffffffff8113dce6>] ? fallback_alloc+0x196/0x240
 > 
+> fallback_alloc() showing up here means that one page allocator call from
+> SLAB has already failed.
 
-Hi Joel,
+That may be due to the GFP_THISNODE flag which includes __GFP_NORETRY
+which may fail the allocation simply because there are many concurrent
+page allocating tasks, but not necessary in real short of memory.
 
-So, the case where configfs will actually OOPs without the
-->check_link() patch (or without some other internal solution) is on the
-unlink(2) path is when the symlink is created to a destination outside
-of the source struct config_group.  This may have not been exactly
-apparent in my LIO-Target example, but here is another shot at an
-example without the other complexities of target mode invovled.
+The concurrent page allocating tasks may consume all the pages freed
+by try_to_free_pages() inside __alloc_pages_direct_reclaim(), before
+the direct reclaim task is able to get it's page with
+get_page_from_freelist(). Then should_alloc_retry() returns 0 for
+__GFP_NORETRY which stops further retries.
 
-Say we have two different struct config_subsystem in two different LKM
-sub_parent and sub_child.  I will spare the actual mkdir(2) and ln(2)
-calls here, but (I hope) these are obvious:
+In theory, __GFP_NORETRY might fail even without other tasks
+concurrently stealing current task's direct reclaimed pages. The pcp
+lists might happen to be low populated (pcp.count ranges 0 to pcp.batch),
+and try_to_free_pages() might not free enough pages to fill them to
+the pcp.high watermark, hence no pages are freed into the buddy system
+and NR_FREE_PAGES increased. Then zone_watermark_ok() will remain
+false and allocation fails. Mel's patch to increase accuracy of
+zone_watermark_ok() should help this case.
 
-First, we start out with the parent source struct config_group from
-sub_parent module:
+> SLAB then did an expensive search through all
+> object caches on all nodes to find some available object. There were no
+> objects in queues at all therefore SLAB called the page allocator again
+> (kmem_getpages()).
+> 
+> As soon as memory is available (on any node or any cpu, they are all
+> empty) SLAB will repopulate its queues(!).
 
-	/sys/kernel/config/sub_parent/group1/parent/
-
-Next, we have a symlink from sub_parent/group1/parent to a different LKM
-in sub_child:
-
-	/sys/kernel/config/sub_child/group1/src_0/src_link -> ../../../../sub_parent/group1/parent
-
-And then a second symlink from sub_child/group1/src_0/src_link to a
-sstuct config_group outside of group1, but still within sub_child:
-
-	/sys/kernel/config/sub_child/group2/dst_0/dst_link -> ../../../group1/src_0/
-
-So once the sub_child/group2/dest_0/dst_link has been created to back to
-sub_child/group1/src_0/src_link, the oops will appear any time that
-'unlink sub_child/group1/src_0/src_link' is called while the second
-group2/dst_0/dst_link is still present.  I don't recall the actual
-backtrace of the OOPs that occurs when the unlink(2) is called, but it
-is easily reproducable .
-
-I am really starting to think that fixing this properly below the struct
-config_item_operations API is going to make the most sense, but I have
-not realized this in a patch for fs/configfs/ just yet..  I am happy to
-do this in the next days if you think this would be the cleanest
-resolution for the above case.
-
-Thanks Joel!
-
---nab
-
+Thanks,
+Fengguang
