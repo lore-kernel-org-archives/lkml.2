@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab0IHTto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 15:49:44 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:38522 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753161Ab0IHTtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 15:49:41 -0400
-Message-ID: <4C87E8D2.4050005@kernel.dk>
-Date: Wed, 08 Sep 2010 21:49:38 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1753968Ab0IHTuM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 15:50:12 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63822 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753608Ab0IHTuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 15:50:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=woD/9/6qoTOAjLMPDoYU8J3wq305YaaCYD//EC8lpyG424u8Gev8CPa3QIQ7sxI7R8
+         JkcURQsJiR0R7x+hAuFWkevc4i4RAyjASGFhLNqaLAwtR6YGGUMZyWUoY1CnfZ7knHBT
+         U0QrlH+P6OQpzn5a1yK7xgBlkfdGOE728dh7g=
+From: Pedro Francisco <pedrogfrancisco@gmail.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: 2.6.35.4: sudo rmmod ahci @ 2.6.35.4 succeeds: filesystem access errors follow
+Date: Wed, 8 Sep 2010 20:49:53 +0100
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
+Cc: Alejandro Riveira =?iso-8859-1?q?Fern=E1ndez?= 
+	<ariveira@gmail.com>,
+        linux-kernel@vger.kernel.org
+References: <201009071834.27953.pedrogfrancisco@gmail.com> <201009072247.18438.pedrogfrancisco@gmail.com> <4C87D5E9.1060307@s5r6.in-berlin.de>
+In-Reply-To: <4C87D5E9.1060307@s5r6.in-berlin.de>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Gary King <gking@nvidia.com>, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, tj@kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] bounce: call flush_dcache_page after bounce_copy_vec
-References: <1283892334-9238-1-git-send-email-gking@nvidia.com> <20100908124716.830a0055.akpm@linux-foundation.org>
-In-Reply-To: <20100908124716.830a0055.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009082049.54128.pedrogfrancisco@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2010 09:47 PM, Andrew Morton wrote:
-> On Tue,  7 Sep 2010 13:45:34 -0700
-> Gary King <gking@nvidia.com> wrote:
+On Wednesday 08 September 2010 19:28:57 Stefan Richter wrote:
+> Pedro Francisco wrote:
+> > That makes no sense. That's what the force option "-f" is for. It's my
+> > opinion the usage count for ahci on `lsmod' should be 1 and not 0.
+> > Whoever still wants to remove it can use the `rmmod -f ahci'
 > 
->> I have been seeing problems on Tegra 2 (ARMv7 SMP) systems with HIGHMEM
->> enabled on 2.6.35 (plus some patches targetted at 2.6.36 to perform
->> cache maintenance lazily), and the root cause appears to be that the
->> mm bouncing code is calling flush_dcache_page before it copies the
->> bounce buffer into the bio.
->>
->> The patch below reorders these two operations, and eliminates numerous
->> arbitrary application crashes on my dev system.
->>
->> Gary
->>
->> --
->> >From 678c9bca8d8a8f254f28af91e69fad3aa1be7593 Mon Sep 17 00:00:00 2001
->> From: Gary King <gking@nvidia.com>
->> Date: Mon, 6 Sep 2010 15:37:12 -0700
->> Subject: bounce: call flush_dcache_page after bounce_copy_vec
->>
->> the bounced page needs to be flushed after data is copied into it,
->> to ensure that architecture implementations can synchronize
->> instruction and data caches if necessary.
->>
->> Signed-off-by: Gary King <gking@nvidia.com>
->> ---
->>  mm/bounce.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/mm/bounce.c b/mm/bounce.c
->> index 13b6dad..1481de6 100644
->> --- a/mm/bounce.c
->> +++ b/mm/bounce.c
->> @@ -116,8 +116,8 @@ static void copy_to_high_bio_irq(struct bio *to, struct bio *from)
->>  		 */
->>  		vfrom = page_address(fromvec->bv_page) + tovec->bv_offset;
->>  
->> -		flush_dcache_page(tovec->bv_page);
->>  		bounce_copy_vec(tovec, vfrom);
->> +		flush_dcache_page(tovec->bv_page);
->>  	}
->>  }
+> The usage count of a module is only there to ensure that function calls
+> into the module succeed.  As long as some other part of the kernel has a
+> pointer of a function in the module, removal of the module needs to be
+> prevented.
 > 
-> Oh my, that was bad.
+> "rmmod ahci" on the other hand is something like pulling the SATA cable. 
+> Or ejection of the controller from an ExpressCard slot.  The driver
+> shutdown causes the controller device and thus its child devices (disk
+> devices behind the controller) to go away, and that's it.  You can do also
+> # echo $DEVICE_ID > /sys/module/ahci/drivers/pci\:ahci/unbind
+> which tells the driver to let go of the controller.
 
-Indeed, I wonder how that could have been wrong for so long.
+Hum ok... Still I find it weird since on 2.6.32 I've, after `lsmod | grep -i 
+ahci':
+ahci                   32200  4
+and on 2.6.35.4:
+ahci                   32200  0
 
-> I queued your fix for 2.6.36 and tagged it for -stable backporting,
-> thanks.
-
-Thanks, you can add my acked-by.
+Why the change of behaviour? Is it because of the split of libahci from ahci ?
 
 -- 
-Jens Axboe
-
+Pedro
