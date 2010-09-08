@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab0IHOrO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 10:47:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39715 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752931Ab0IHOrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 10:47:12 -0400
-Date: Wed, 8 Sep 2010 16:47:08 +0200
-From: Jan Blunck <jblunck@novell.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
-        linux-rt-users@vger.kernel.org, peterz@infradead.org,
-        Sven-Thorsten Dietrich <sdietrich@novell.com>,
-        Michael Galbraith <MGalbraith@novell.com>
-Subject: Re: [RFC 3/4] Disable scheduler tick when we are running
-	SCHED_FIFO tasks
-Message-ID: <20100908144708.GK7436@bolzano.suse.de>
-References: <1283948964-6418-1-git-send-email-jblunck@suse.de> <1283948964-6418-4-git-send-email-jblunck@suse.de> <87vd6gweo6.fsf@basil.nowhere.org>
+	id S1755316Ab0IHOtC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 10:49:02 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:42047 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751323Ab0IHOtA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 10:49:00 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Brian Swetland <swetland@google.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH] w1: don't allow arbitrary users to remove w1 devices
+Date: Wed, 8 Sep 2010 16:48:47 +0200
+Message-ID: <1283957327-32324-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87vd6gweo6.fsf@basil.nowhere.org>
-Organization: SUSE LINUX Products GmbH, GF Markus Rex, HRB 16746 (AG
-	Nuernberg)
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, Andi Kleen wrote:
+From: Brian Swetland <swetland@google.com>
 
-> Jan Blunck <jblunck@suse.de> writes:
-> 
-> > This patch is disabling the scheduler tick to go off when there is a task
-> > with SCHED_FIFO policy running. Since these tasks are not timesliced anyway
-> > we only care about timers, softirqs and such stuff just like when we disable
-> > the tick during idle periods.
-> 
-> How would these tasks accounted for then? 
-> 
-> The CPU time accounting relies on the timer tick currently.
-> 
+The search/pullup/add/remove device attributes were 0666 which would
+allow arbitrary users to affect the 1 wire bus.  Change to 0664 to
+prevent that.
 
-Yes, that is a known issue.
+Cc:Evgeniy Polyakov <johnpol@2ka.mipt.ru>
+Signed-off-by: Brian Swetland <swetland@google.com>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+I found this patch in the Android tree, apparently this has never
+been sent upstream so doing it now.
+---
+ drivers/w1/w1.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Jan
+diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
+index 2839e28..b7b5014 100644
+--- a/drivers/w1/w1.c
++++ b/drivers/w1/w1.c
+@@ -517,10 +517,10 @@ static W1_MASTER_ATTR_RO(max_slave_count, S_IRUGO);
+ static W1_MASTER_ATTR_RO(attempts, S_IRUGO);
+ static W1_MASTER_ATTR_RO(timeout, S_IRUGO);
+ static W1_MASTER_ATTR_RO(pointer, S_IRUGO);
+-static W1_MASTER_ATTR_RW(search, S_IRUGO | S_IWUGO);
+-static W1_MASTER_ATTR_RW(pullup, S_IRUGO | S_IWUGO);
+-static W1_MASTER_ATTR_RW(add, S_IRUGO | S_IWUGO);
+-static W1_MASTER_ATTR_RW(remove, S_IRUGO | S_IWUGO);
++static W1_MASTER_ATTR_RW(search, S_IRUGO | S_IWUSR | S_IWGRP);
++static W1_MASTER_ATTR_RW(pullup, S_IRUGO | S_IWUSR | S_IWGRP);
++static W1_MASTER_ATTR_RW(add, S_IRUGO | S_IWUSR | S_IWGRP);
++static W1_MASTER_ATTR_RW(remove, S_IRUGO | S_IWUSR | S_IWGRP);
+ 
+ static struct attribute *w1_master_default_attrs[] = {
+ 	&w1_master_attribute_name.attr,
+-- 
+1.6.3.3
 
-> -Andi
-> 
-> -- 
-> ak@linux.intel.com -- Speaking for myself only.
