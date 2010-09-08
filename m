@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab0IHJF5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 05:05:57 -0400
-Received: from gateway14.websitewelcome.com ([69.93.154.35]:57791 "HELO
-	gateway14.websitewelcome.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751806Ab0IHJFz (ORCPT
+	id S1758519Ab0IHJGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 05:06:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56654 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751806Ab0IHJGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 05:05:55 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Sep 2010 05:05:55 EDT
-To: linux-kernel@vger.kernel.org
-Subject: How is your home biz doing...
-From: todd <todd@bulldogmarketer1.com>
-Reply-To: todd@bulldogmarketer1.com
+	Wed, 8 Sep 2010 05:06:53 -0400
+Date: Wed, 8 Sep 2010 10:06:50 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Jassi Brar <jassi.brar@samsung.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] spi/spi_s3c64xx: Fix timeout handling in
+ wait_for_xfer()
+Message-ID: <20100908090649.GA31253@rakim.wolfsonmicro.main>
+References: <1283873872-8633-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <AANLkTi=6voS7WXcXgVTdK614W0Epy_Ehf5QzufErV2tD@mail.gmail.com>
 MIME-Version: 1.0
-X-Mailer: GMailer 1.2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <E1OtGUf-0000M5-P3@gator1031.hostgator.com>
-Date: Wed, 08 Sep 2010 03:59:01 -0500
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - gator1031.hostgator.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [1340 1330] / [47 12]
-X-AntiAbuse: Sender Address Domain - bulldogmarketer1.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=6voS7WXcXgVTdK614W0Epy_Ehf5QzufErV2tD@mail.gmail.com>
+X-Cookie: Crazee Edeee, his prices are INSANE!!!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-Found your home Business on the net and was wondering how things
-are going for you?
+On Wed, Sep 08, 2010 at 10:11:59AM +0900, Jassi Brar wrote:
 
-sincerely,
+> I have already submitted a patch a few days ago
+> https://patchwork.kernel.org/patch/151941/
+> (It's strange that Grant's id isn't there in the CC list, despite my writing it)
 
-Todd
-(954)856-9391
-
-
+Ah, excellent.  Now I see patchwork there look to be some other things
+sitting in patchwork which might be handy for me as well.
