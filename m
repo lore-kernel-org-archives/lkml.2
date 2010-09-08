@@ -1,102 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758646Ab0IHL0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 07:26:08 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52986 "EHLO mx2.mail.elte.hu"
+	id S1757275Ab0IHL3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 07:29:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7510 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751289Ab0IHL0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 07:26:07 -0400
-Date: Wed, 8 Sep 2010 13:25:29 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: mingo@redhat.com, mathieu.desnoyers@efficios.com,
-        sanagi.koki@jp.fujitsu.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        nhorman@tuxdriver.com, scott.a.mcmillan@intel.com, tglx@linutronix.de,
-        laijs@cn.fujitsu.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        davem@davemloft.net, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: [sparc build bug] Re: [tip:perf/core] irq: Add tracepoint to
- softirq_raise
-Message-ID: <20100908112529.GA25931@elte.hu>
-References: <4C724298.4050509@jp.fujitsu.com>
- <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>
+	id S1752726Ab0IHL3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 07:29:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,334,1280732400"; 
+   d="scan'208";a="655205974"
+Date: Wed, 8 Sep 2010 19:28:35 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 05/10] vmscan: Synchrounous lumpy reclaim use
+ lock_page() instead trylock_page()
+Message-ID: <20100908112835.GB7597@localhost>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
+ <1283770053-18833-6-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1283770053-18833-6-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* tip-bot for Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
-
-> Commit-ID:  2bf2160d8805de64308e2e7c3cd97813cb58ed2f
-> Gitweb:     http://git.kernel.org/tip/2bf2160d8805de64308e2e7c3cd97813cb58ed2f
-> Author:     Lai Jiangshan <laijs@cn.fujitsu.com>
-> AuthorDate: Mon, 23 Aug 2010 18:42:48 +0900
-> Committer:  Frederic Weisbecker <fweisbec@gmail.com>
-> CommitDate: Tue, 7 Sep 2010 17:49:34 +0200
+On Mon, Sep 06, 2010 at 06:47:28PM +0800, Mel Gorman wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > 
-> irq: Add tracepoint to softirq_raise
+> With synchrounous lumpy reclaim, there is no reason to give up to reclaim
+> pages even if page is locked. This patch uses lock_page() instead of
+> trylock_page() in this case.
 > 
-> Add a tracepoint for tracing when softirq action is raised.
-> 
-> This and the existing tracepoints complete softirq's tracepoints:
-> softirq_raise, softirq_entry and softirq_exit.
-> 
-> And when this tracepoint is used in combination with
-> the softirq_entry tracepoint we can determine
-> the softirq raise latency.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Acked-by: Neil Horman <nhorman@tuxdriver.com>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Kaneshige Kenji <kaneshige.kenji@jp.fujitsu.com>
-> Cc: Izumo Taku <izumi.taku@jp.fujitsu.com>
-> Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Cc: Scott Mcmillan <scott.a.mcmillan@intel.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> LKML-Reference: <4C724298.4050509@jp.fujitsu.com>
-> [ factorize softirq events with DECLARE_EVENT_CLASS ]
-> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  include/linux/interrupt.h  |    8 +++++++-
->  include/trace/events/irq.h |   26 ++++++++++++++++++++++++--
->  2 files changed, 31 insertions(+), 3 deletions(-)
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 
-FYI, this commit broke the Sparc build:
-
-In file included from /home/mingo/tip/arch/sparc/include/asm/irq_32.h:11,
-                 from /home/mingo/tip/arch/sparc/include/asm/irq.h:6,
-                 from /home/mingo/tip/include/linux/irqnr.h:10,
-                 from /home/mingo/tip/include/linux/irq.h:22,
-                 from /home/mingo/tip/include/asm-generic/hardirq.h:6,
-                 from /home/mingo/tip/arch/sparc/include/asm/hardirq_32.h:11,
-                 from /home/mingo/tip/arch/sparc/include/asm/hardirq.h:6,
-                 from /home/mingo/tip/include/linux/hardirq.h:10,
-                 from /home/mingo/tip/include/linux/ftrace_event.h:7,
-                 from /home/mingo/tip/include/trace/syscall.h:6,
-                 from /home/mingo/tip/include/linux/syscalls.h:76,
-                 from /home/mingo/tip/init/initramfs.c:9:
-/home/mingo/tip/include/linux/interrupt.h: In function '__raise_softirq_irqoff':
-/home/mingo/tip/include/linux/interrupt.h:414: error: implicit declaration of function 'local_softirq_pending'
-/home/mingo/tip/include/linux/interrupt.h:414: error: lvalue required as left operand of assignment
-make[2]: *** [init/initramfs.o] Error 1
-make[2]: *** Waiting for unfinished jobs....
-In file included from /home/mingo/tip/arch/sparc/include/asm/irq_32.h:11,
-
-	Ingo
+Acked-by: Wu Fengguang <fengguang.wu@intel.com>
