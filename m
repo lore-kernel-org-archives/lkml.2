@@ -1,71 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab0IHNdB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 09:33:01 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61735 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883Ab0IHNc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 09:32:59 -0400
-Message-ID: <4C87907A.2040500@cn.fujitsu.com>
-Date: Wed, 08 Sep 2010 21:32:42 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1751889Ab0IHNhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 09:37:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34826 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750984Ab0IHNhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 09:37:09 -0400
+Date: Wed, 8 Sep 2010 09:36:39 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Cc: Mike Kazantsev <mk.fraggod@gmail.com>
+Subject: [PATCH] cfq-iosched: Fix a kernel OOPs when usb key is inserted
+Message-ID: <20100908133639.GA10058@redhat.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>
-Subject: Re: [PATCH V2 1/3] lib: introduce some memory copy macros and   
-   functions
-References: <46238.91.60.152.217.1283948365.squirrel@www.firstfloor.org>	<4C878823.60709@cn.fujitsu.com> <20100908150519.2f9fe283@basil.nowhere.org>
-In-Reply-To: <20100908150519.2f9fe283@basil.nowhere.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Sep 2010 15:05:19 +0200, Andi Kleen wrote:
-> On Wed, 08 Sep 2010 20:57:07 +0800
-> Miao Xie<miaox@cn.fujitsu.com>  wrote:
->
->> On Wed, 8 Sep 2010 14:19:25 +0200 (cest), Andi Kleen wrote:
->>>
->>>> According to the data, the length of the most copies is>=128.
->>>
->>> Thanks for the data. Large is easier to optimize than small, that's
->>> good.
->>>
->>> Could you also measure how many memsets need the backwards copy?
-                                     ^^^^^^^ :-)
->>> (should be easy to add)
->>
->> I think memset doesn't need the backwards copy.
->
-> I meant for memmove of course. Obviously memset doesn't need a backwards
-> copy. That was just the only thing the script didn't measure because
-> the original version didn't have memmove support.
+o Mike, reported a kernel crash when a usb key hotplug is performed while all
+  kernel thrads are not in a root cgroup and are running in one of the child
+  cgroups of blkio controller.
 
-memmove
-total 5224252
-[snip]
+	BUG: unable to handle kernel NULL pointer dereference at 0000002c
+	IP: [<c11c7b08>] cfq_get_queue+0x232/0x412
+	*pde = 00000000 
+	Oops: 0000 [#1] PREEMPT 
+	last sysfs file: /sys/devices/pci0000:00/0000:00:1d.7/usb2/2-1/2-1:1.0/host3/scsi_host/host3/uevent
 
-forward copy
-value |-------------------------------------------------- count
-     0 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  980253
+	[..]
+	Pid: 30039, comm: scsi_scan_3 Not tainted 2.6.35.2-fg.roam #1 Volvi2                         /Aspire 4315                    
+	EIP: 0060:[<c11c7b08>] EFLAGS: 00010086 CPU: 0
+	EIP is at cfq_get_queue+0x232/0x412
+	EAX: f705f9c0 EBX: e977abac ECX: 00000000 EDX: 00000000
+	ESI: f00da400 EDI: f00da4ec EBP: e977a800 ESP: dff8fd00
+	 DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+	Process scsi_scan_3 (pid: 30039, ti=dff8e000 task=f6b6c9a0 task.ti=dff8e000)
+	Stack:
+	 00000000 00000000 00000001 01ff0000 f00da508 00000000 f00da524 f00da540
+	<0> e7994940 dd631750 f705f9c0 e977a820 e977ac44 f00da4d0 00000001 f6b6c9a0
+	<0> 00000010 00008010 0000000b 00000000 00000001 e977a800 dd76fac0 00000246
+	Call Trace:
+	 [<c11c7f10>] ? cfq_set_request+0x228/0x34c
+	 [<c11c7ce8>] ? cfq_set_request+0x0/0x34c
+	 [<c11bb3b9>] ? elv_set_request+0xf/0x1c
+	 [<c11bdd51>] ? get_request+0x1ad/0x22f
+	 [<c11bddf2>] ? get_request_wait+0x1f/0x11a
+	 [<c11d013b>] ? kvasprintf+0x33/0x3b
+	 [<c127b537>] ? scsi_execute+0x1d/0x103
+	 [<c127b675>] ? scsi_execute_req+0x58/0x83
+	 [<c127c391>] ? scsi_probe_and_add_lun+0x188/0x7c2
+	 [<c12718c6>] ? attribute_container_add_device+0x15/0xfa
+	 [<c11c95d1>] ? kobject_get+0xf/0x13
+	 [<c126d1db>] ? get_device+0x10/0x14
+	 [<c127be93>] ? scsi_alloc_target+0x217/0x24d
+	 [<c127cbd8>] ? __scsi_scan_target+0x95/0x480
+	 [<c10204eb>] ? dequeue_entity+0x14/0x1fe
+	 [<c1020491>] ? update_curr+0x165/0x1ab
+	 [<c1020491>] ? update_curr+0x165/0x1ab
+	 [<c127d00d>] ? scsi_scan_channel+0x4a/0x76
+	 [<c127d0b0>] ? scsi_scan_host_selected+0x77/0xad
+	 [<c127d13c>] ? do_scan_async+0x0/0x11a
+	 [<c127d137>] ? do_scsi_scan_host+0x51/0x56
+	 [<c127d13c>] ? do_scan_async+0x0/0x11a
+	 [<c127d14a>] ? do_scan_async+0xe/0x11a
+	 [<c127d13c>] ? do_scan_async+0x0/0x11a
+	 [<c10354c5>] ? kthread+0x5e/0x63
+	 [<c1035467>] ? kthread+0x0/0x63
+	 [<c1002af6>] ? kernel_thread_helper+0x6/0x10
+	Code: 44 24 1c 54 83 44 24 18 54 83 fa 03 75 94 8b 06 c7 86 64 02 00 00 01 00 00 00 83 e0 03 09 f0 89 06 8b 44 24 28 8b 90 58 01 00 00 <8b> 42 2c 85 c0 75 03 8b 42 08 8d 54 24 48 52 8d 4c 24 50 51 68 
+	EIP: [<c11c7b08>] cfq_get_queue+0x232/0x412 SS:ESP 0068:dff8fd00
+	CR2: 000000000000002c
+	---[ end trace 9a88306573f69b12 ]---
 
+o The problem here is that we don't have bdi->dev information available
+  when thread does some IO. Hence when dev_name() tries to access bdi->dev,
+  it crashes.
 
-backward copy
-value |-------------------------------------------------- count
-     0 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  4243999
+o This problem does not happen if kernel threads are in root group as root
+  group is statically allocated at device initialization time and we don't
+  hit this piece of code.
 
-the backward copy is much more than the forward copy.
+o Fix it by delaying the filling of major and minor number information of
+  device in blk_group. Initially a blk_group is created with 0 as device
+  information and this information is filled later once some more IO comes
+  in from same group.   
+ 
+Reported-by: Mike Kazantsev <mk.fraggod@gmail.com>
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/cfq-iosched.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-Thanks
-Miao
-
-
+Index: linux-2.6/block/cfq-iosched.c
+===================================================================
+--- linux-2.6.orig/block/cfq-iosched.c	2010-09-07 17:44:28.391843012 -0400
++++ linux-2.6/block/cfq-iosched.c	2010-09-07 17:45:04.316843214 -0400
+@@ -994,10 +994,20 @@ cfq_find_alloc_cfqg(struct cfq_data *cfq
+ 	 */
+ 	atomic_set(&cfqg->ref, 1);
+ 
+-	/* Add group onto cgroup list */
+-	sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+-	cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
++	/*
++	 * Add group onto cgroup list. It might happen that bdi->dev is
++	 * not initiliazed yet. Initialize this new group without major
++	 * and minor info and this info will be filled in once a new thread
++	 * comes for IO. See code above.
++	 */
++	if (bdi->dev) {
++		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
++		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
+ 					MKDEV(major, minor));
++	} else
++		cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
++					0);
++
+ 	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
+ 
+ 	/* Add group on cfqd list */
