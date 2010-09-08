@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab0IHSX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 14:23:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63196 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab0IHSXZ (ORCPT
+	id S1753124Ab0IHS3K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 14:29:10 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:33625 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab0IHS3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 14:23:25 -0400
-Date: Wed, 8 Sep 2010 12:23:15 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        spi-devel-general@lists.sourceforge.net,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [spi-devel-general] [PATCH] spi/spi_s3c64xx: Warn if PIO
- transfers time out
-Message-ID: <20100908182315.GR3686@angua.secretlab.ca>
-References: <1282581656-26137-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <AANLkTim6+6-L8ALM0YO01D44PmZgsbcMrrwRxrPJMkpT@mail.gmail.com>
+	Wed, 8 Sep 2010 14:29:03 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C87D5E9.1060307@s5r6.in-berlin.de>
+Date: Wed, 08 Sep 2010 20:28:57 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Pedro Francisco <pedrogfrancisco@gmail.com>
+CC: =?ISO-8859-1?Q?Alejandro_Riveira_Fern=E1ndez?= <ariveira@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: 2.6.35.4: sudo rmmod ahci @ 2.6.35.4 succeeds: filesystem access
+ errors follow
+References: <201009071834.27953.pedrogfrancisco@gmail.com> <20100907202143.02cf60ec@varda> <201009072247.18438.pedrogfrancisco@gmail.com>
+In-Reply-To: <201009072247.18438.pedrogfrancisco@gmail.com>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim6+6-L8ALM0YO01D44PmZgsbcMrrwRxrPJMkpT@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 24, 2010 at 09:06:40AM +0900, Jassi Brar wrote:
-> On Tue, Aug 24, 2010 at 1:40 AM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
-> > When using PIO we have a timeout for the TX and RX FIFOs to ensure that
-> > the data actually gets transferred. Warn if we hit that timeout - it
-> > should never happen, but this makes sure we'll find out if it does.
-> >
-> > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > ---
-> >  drivers/spi/spi_s3c64xx.c |    6 ++++++
-> >  1 files changed, 6 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
-> > index 7e627f7..f72e1c0 100644
-> > --- a/drivers/spi/spi_s3c64xx.c
-> > +++ b/drivers/spi/spi_s3c64xx.c
-> > @@ -200,6 +200,9 @@ static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
-> >                val = readl(regs + S3C64XX_SPI_STATUS);
-> >        } while (TX_FIFO_LVL(val, sci) && loops--);
-> >
-> > +       if (loops == 0)
-> > +               dev_warn(&sdd->pdev->dev, "Timed out flushing TX FIFO\n");
-> > +
-> >        /* Flush RxFIFO*/
-> >        loops = msecs_to_loops(1);
-> >        do {
-> > @@ -210,6 +213,9 @@ static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
-> >                        break;
-> >        } while (loops--);
-> >
-> > +       if (loops == 0)
-> > +               dev_warn(&sdd->pdev->dev, "Timed out flushing RX FIFO\n");
-> > +
-> >        val = readl(regs + S3C64XX_SPI_CH_CFG);
-> >        val &= ~S3C64XX_SPI_CH_SW_RST;
-> >        writel(val, regs + S3C64XX_SPI_CH_CFG);
+Pedro Francisco wrote:
+> On Tuesday 07 September 2010 19:21:43 Alejandro Riveira Fernández wrote:
+>> El Tue, 7 Sep 2010 18:34:27 +0100
+>>
+>> Pedro Francisco <pedrogfrancisco@gmail.com> escribió:
+>>> sudo rmmod ahci @ 2.6.35.4 succeeds: filesystem access errors follow.
+>>>
+>>> Now what I'm surprised is not the filesystem errors but me being allowed
+>>> to remove the module without using the '-f' option.
+>>>
+>>> Do note, lsmod |grep ahci reports something like [this is adapted from a
+>>> 2.6.32 kernel]:
+>>>
+>>> ahci                   32200  0
+>>>
+>>> so it isn't at all surprising I'm being allowed to remove a seemingly
+>>> unused module. So....
+>>> a) is this supposed to happen?
+>>  Yes afaics. root can do many stupid things if (s)he wants
+>>  including « rm -rf --no-preserve-root / »
 > 
-> Ok, though I'll be very surprised to see the FIFO flush failing. We
-> are not waiting
-> for data to be transferred, but for SW Reset to make its effect.
-> 
-> Acked-by: Jassi Brar <jassi.brar@samsung.com>
+> That makes no sense. That's what the force option "-f" is for. It's my opinion 
+> the usage count for ahci on `lsmod' should be 1 and not 0. Whoever still wants 
+> to remove it can use the `rmmod -f ahci'
 
-Applied, thanks.
+The usage count of a module is only there to ensure that function calls into
+the module succeed.  As long as some other part of the kernel has a pointer of
+a function in the module, removal of the module needs to be prevented.
 
-g.
-
+"rmmod ahci" on the other hand is something like pulling the SATA cable.  Or
+ejection of the controller from an ExpressCard slot.  The driver shutdown
+causes the controller device and thus its child devices (disk devices behind
+the controller) to go away, and that's it.  You can do also
+# echo $DEVICE_ID > /sys/module/ahci/drivers/pci\:ahci/unbind
+which tells the driver to let go of the controller.
+-- 
+Stefan Richter
+-=====-==-=- =--= -=---
+http://arcgraph.de/sr/
