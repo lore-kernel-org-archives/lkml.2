@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab0IHNpS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 09:45:18 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:32956 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab0IHNpR (ORCPT
+	id S1751907Ab0IHNqS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 09:46:18 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:40621 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab0IHNqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 09:45:17 -0400
-Date: Wed, 8 Sep 2010 15:45:14 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Paul Moore <paul.moore@hp.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        x86@kernel.org, Al Viro <viro@ZenIV.linux.org.uk>, arjan@infradead.org,
-        davem@davemloft.net
-Subject: Re: [PATCH] Remove implicit list prefetches for most cases
-Message-ID: <20100908154514.7c8596ae@basil.nowhere.org>
-In-Reply-To: <1283949179.4480.3.camel@flek>
-References: <1283936344-19124-1-git-send-email-andi@firstfloor.org>
-	<1283949179.4480.3.camel@flek>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Sep 2010 09:46:17 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=GBiOvLut0CVKfhpdr53ZDWA3nzKGFrOBv+ly+LbnS2itOhEPqsS6YDLskwEcMOFDX
+	egnKDyN9b9a+FQ2IQjqiA==
+Message-ID: <4c87939b.1707e30a.3619.034a@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Wed, 8 Sep 2010 15:30:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        eranian@google.com, robert.richter@amd.com, acme@redhat.com
+Subject: [RFC PATCH 0/2] perf_events: add support for per-cpu per-cgroup monitoring (v2)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This series of patches adds per-container (cgroup) filtering capability
+to per-cpu monitoring. In other words, we can monitor all threads belonging
+to a specific cgroup and running on a specific CPU. 
 
-> 
-> If prefetch() is generally considered a "Bad Thing", 
+This is useful to measure what is going on inside a cgroup. Something that
+cannot easily and cheaply be achieved with either per-thread or per-cpu mode.
+Cgroups can span multiple CPUs. CPUs can be shared between cgroups. Cgroups
+can have lots of threads. Threads can come and go during a measurement.
 
-Using it unconditionally in list_for_each style operations at least is.
-> 
-I'm OK with just
-> removing them from NetLabel; no need to rename and conditionalize.  I
-> put them in the netlbl_af[4,6]list_*() routines because those routines
-> were modeled after the normal list routines which had prefetches and I
-> just assumed someone much smarter had found them to be a win.
+To measure per-cgroup today requires using per-thread mode and attaching to
+all the current threads inside a cgroup and tracking new threads. That would
+require scanning of /proc/PID, which is subject to race conditions, and
+creating an event for each thread, each event requiring kernel memory.
 
-Unless you have gigantic list walk bodies they are unlikely to be
-on anything modern. 
+The approach taken by this patch is to leverage the per-cpu mode by simply
+adding a filtering capability on context switch only when necessary. That
+way the amount of kernel memory used remains bound by the number of CPUs.
+We also do not have to scan /proc. We are only interested in cgroup level
+counts, not per-thread.
 
--Andi
+The cgroup to monitor is designated by passing a file descriptor opened
+on a new per-cgroup file in the cgroup filesystem (perf_event.perf). The
+option must be activated by setting perf_event_attr.cgroup=1 and passing
+a valid file descriptor in perf_event_attr.cgroup_fd. Those are the only
+two ABI extensions.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+The patch also includes changes to the perf tool to make use of cgroup
+filtering. Both perf stat and perf record have been extended to support
+cgroup via a new -G option. The cgroup is specified per event:
+
+$ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
+ Performance counter stats for 'sleep 1':
+
+      2,368,667,414  cycles                   test1
+      2,369,661,459  cycles                  
+      <not counted>  cycles                   test2
+
+        1.001856890  seconds time elapsed
+
+Here, we measure cycles in 3 different cgroups. When a cgroup is omitted,
+the "root" cgroup is used, i.e., all threads executing on the monitored
+CPUs are measured.
+
+In this second version, time tracking has been updated. In cgroup mode,
+time_enabled tracks the time during which the cgroup was active, i.e., threads
+from the cgroup executed on the monitored CPU. The meaning of time_running
+is unchanged. In non-cgroup mode, time_enabled stills tracks wall-clock time
+for per-cpu events. Here is an example:
+
+In one shell I do:
+$ echo $$ >/cgroup/test1/perf_events.perf
+$ taskset -c 1 noploop 600
+In another shell I do:
+$ taskset -c 1 noploop 600
+
+Both noploops are competing on CPU1 (part of cgroup test1)
+
+$ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
+ Performance counter stats for 'sleep 1':
+
+      1,190,595,954  cycles                   test1
+      2,372,471,023  cycles                  
+      <not counted>  cycles                   test2
+
+        1.001845567  seconds time elapsed
+
+The second count reflects activity across all CPUs and cgroups.
+The first count reflects was happened inside cgroup test1. As shown,
+the noploop running inside test1, only got half the CPU time.
+
+PATCH 0/2: introduction
+PATCH 1/2: kernel changes
+PATCH 2/2: perf tool changes
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
