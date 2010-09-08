@@ -1,67 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab0IHTzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 15:55:48 -0400
-Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:40405 "EHLO
-	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753768Ab0IHTzk (ORCPT
+	id S1754042Ab0IHT7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 15:59:20 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54645 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab0IHT7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 15:55:40 -0400
-Subject: Re: [PATCH 0/5] hybrid union filesystem prototype
-From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Jan Engelhardt <jengelh@medozas.de>, neilb@suse.de,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vaurora@redhat.com, viro@zeniv.linux.org.uk, jblunck@suse.de,
-        hch@infradead.org
-In-Reply-To: <E1OrAm5-0002eF-Hw@pomaz-ex.szeredi.hu>
-References: <20100826183340.027591901@szeredi.hu>
-	 <20100827170551.19616048@notabene> <E1Ooub5-0007Wh-SQ@pomaz-ex.szeredi.hu>
-	 <20100827213502.31af4a4c@notabene> <E1Op2BV-0008Ut-BR@pomaz-ex.szeredi.hu>
-	 <20100829144207.4fbf2713@notabene> <E1Oq1RL-0003zF-Tw@pomaz-ex.szeredi.hu>
-	 <alpine.LNX.2.01.1009021513040.10859@obet.zrqbmnf.qr>
-	 <20100902233200.586fcb31@notabene>
-	 <alpine.LNX.2.01.1009021625050.14798@obet.zrqbmnf.qr>
-	 <E1OrAm5-0002eF-Hw@pomaz-ex.szeredi.hu>
-Content-Type: text/plain
-Date: Wed, 08 Sep 2010 15:47:59 -0400
-Message-Id: <1283975279.24418.54.camel@moss-terrapins.epoch.ncsc.mil>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Sep 2010 15:59:14 -0400
+Date: Wed, 8 Sep 2010 13:59:11 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Julia Lawall <julia@diku.dk>
+Cc: Timur Tabi <timur@freescale.com>, kernel-janitors@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 1/4] drivers/serial/ucc_uart.c: Add of_node_put to
+ avoid memory leak
+Message-ID: <20100908195911.GD7065@angua.secretlab.ca>
+References: <1283269738-14612-1-git-send-email-julia@diku.dk>
+ <1283269738-14612-2-git-send-email-julia@diku.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283269738-14612-2-git-send-email-julia@diku.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-02 at 16:28 +0200, Miklos Szeredi wrote:
-> On Thu, 2 Sep 2010, Jan Engelhardt wrote:
-> > There ought to be a reason that other implementations offer
-> > doing multiple branches with a single vfsmount.
+On Tue, Aug 31, 2010 at 05:48:55PM +0200, Julia Lawall wrote:
+> Add a call to of_node_put in the error handling code following a call to
+> of_find_compatible_node or of_find_node_by_type.
 > 
-> Overdesign.
+> This patch also substantially reorganizes the error handling code in the
+> function, to that it is possible first to jump to code that frees qe_port
+> and then to jump to code that also puts np.
 > 
-> Thanks,
-> Miklos
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r exists@
+> local idexpression x;
+> expression E,E1,E2;
+> statement S;
+> @@
+> 
+> *x = 
+> (of_find_node_by_path
+> |of_find_node_by_name
+> |of_find_node_by_phandle
+> |of_get_parent
+> |of_get_next_parent
+> |of_get_next_child
+> |of_find_compatible_node
+> |of_match_node
+> |of_find_node_by_type
+> |of_find_node_with_property
+> |of_find_matching_node
+> |of_parse_phandle
+> )(...);
+> ...
+> if (x == NULL) S
+> <... when != x = E
+> *if (...) {
+>   ... when != of_node_put(x)
+>       when != if (...) { ... of_node_put(x); ... }
+> (
+>   return <+...x...+>;
+> |
+> *  return ...;
+> )
+> }
+> ...>
+> (
+> E2 = x;
+> |
+> of_node_put(x);
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
+Looks good to me.
 
-Actually it's not overdesign. We support an arbitrary number of branches
-with only the requirement that the top most branch be writable unless
-you want the entire mount to be read-only. That is a feature that people
-seem to have wanted for the many years that we have been working on
-UnionFS. You have the limitation that you only support two branches
-which is why you have to use the hack of making unions of unions of
-unions where we would just add the 3 branches and mark them ro instead.
-This kind of functionality makes administration more straight forward
-when you are performing a task such as creating an RPM repository from a
-series of loop back mounted images. I also used UnionFS to create a
-mechanism for providing unified home directories on polyinstantiated MLS
-systems (which is essentially a unified namespace with extra namespace
-manipulation rules). I'd actually look at what UnionFS and AUFS have
-done before you write their decisions off with snippy one word answers.
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-Dave
-
+> 
+> ---
+>  drivers/serial/ucc_uart.c |   67 ++++++++++++++++++++++++----------------------
+>  1 file changed, 35 insertions(+), 32 deletions(-)
+> 
+> diff --git a/drivers/serial/ucc_uart.c b/drivers/serial/ucc_uart.c
+> index 3f4848e..38a5ef0 100644
+> --- a/drivers/serial/ucc_uart.c
+> +++ b/drivers/serial/ucc_uart.c
+> @@ -1270,13 +1270,12 @@ static int ucc_uart_probe(struct platform_device *ofdev,
+>  	ret = of_address_to_resource(np, 0, &res);
+>  	if (ret) {
+>  		dev_err(&ofdev->dev, "missing 'reg' property in device tree\n");
+> -		kfree(qe_port);
+> -		return ret;
+> +		goto out_free;
+>  	}
+>  	if (!res.start) {
+>  		dev_err(&ofdev->dev, "invalid 'reg' property in device tree\n");
+> -		kfree(qe_port);
+> -		return -EINVAL;
+> +		ret = -EINVAL;
+> +		goto out_free;
+>  	}
+>  	qe_port->port.mapbase = res.start;
+>  
+> @@ -1286,17 +1285,17 @@ static int ucc_uart_probe(struct platform_device *ofdev,
+>  	if (!iprop) {
+>  		iprop = of_get_property(np, "device-id", NULL);
+>  		if (!iprop) {
+> -			kfree(qe_port);
+>  			dev_err(&ofdev->dev, "UCC is unspecified in "
+>  				"device tree\n");
+> -			return -EINVAL;
+> +			ret = -EINVAL;
+> +			goto out_free;
+>  		}
+>  	}
+>  
+>  	if ((*iprop < 1) || (*iprop > UCC_MAX_NUM)) {
+>  		dev_err(&ofdev->dev, "no support for UCC%u\n", *iprop);
+> -		kfree(qe_port);
+> -		return -ENODEV;
+> +		ret = -ENODEV;
+> +		goto out_free;
+>  	}
+>  	qe_port->ucc_num = *iprop - 1;
+>  
+> @@ -1310,16 +1309,16 @@ static int ucc_uart_probe(struct platform_device *ofdev,
+>  	sprop = of_get_property(np, "rx-clock-name", NULL);
+>  	if (!sprop) {
+>  		dev_err(&ofdev->dev, "missing rx-clock-name in device tree\n");
+> -		kfree(qe_port);
+> -		return -ENODEV;
+> +		ret = -ENODEV;
+> +		goto out_free;
+>  	}
+>  
+>  	qe_port->us_info.rx_clock = qe_clock_source(sprop);
+>  	if ((qe_port->us_info.rx_clock < QE_BRG1) ||
+>  	    (qe_port->us_info.rx_clock > QE_BRG16)) {
+>  		dev_err(&ofdev->dev, "rx-clock-name must be a BRG for UART\n");
+> -		kfree(qe_port);
+> -		return -ENODEV;
+> +		ret = -ENODEV;
+> +		goto out_free;
+>  	}
+>  
+>  #ifdef LOOPBACK
+> @@ -1329,39 +1328,39 @@ static int ucc_uart_probe(struct platform_device *ofdev,
+>  	sprop = of_get_property(np, "tx-clock-name", NULL);
+>  	if (!sprop) {
+>  		dev_err(&ofdev->dev, "missing tx-clock-name in device tree\n");
+> -		kfree(qe_port);
+> -		return -ENODEV;
+> +		ret = -ENODEV;
+> +		goto out_free;
+>  	}
+>  	qe_port->us_info.tx_clock = qe_clock_source(sprop);
+>  #endif
+>  	if ((qe_port->us_info.tx_clock < QE_BRG1) ||
+>  	    (qe_port->us_info.tx_clock > QE_BRG16)) {
+>  		dev_err(&ofdev->dev, "tx-clock-name must be a BRG for UART\n");
+> -		kfree(qe_port);
+> -		return -ENODEV;
+> +		ret = -ENODEV;
+> +		goto out_free;
+>  	}
+>  
+>  	/* Get the port number, numbered 0-3 */
+>  	iprop = of_get_property(np, "port-number", NULL);
+>  	if (!iprop) {
+>  		dev_err(&ofdev->dev, "missing port-number in device tree\n");
+> -		kfree(qe_port);
+> -		return -EINVAL;
+> +		ret = -EINVAL;
+> +		goto out_free;
+>  	}
+>  	qe_port->port.line = *iprop;
+>  	if (qe_port->port.line >= UCC_MAX_UART) {
+>  		dev_err(&ofdev->dev, "port-number must be 0-%u\n",
+>  			UCC_MAX_UART - 1);
+> -		kfree(qe_port);
+> -		return -EINVAL;
+> +		ret = -EINVAL;
+> +		goto out_free;
+>  	}
+>  
+>  	qe_port->port.irq = irq_of_parse_and_map(np, 0);
+>  	if (qe_port->port.irq == NO_IRQ) {
+>  		dev_err(&ofdev->dev, "could not map IRQ for UCC%u\n",
+>  		       qe_port->ucc_num + 1);
+> -		kfree(qe_port);
+> -		return -EINVAL;
+> +		ret = -EINVAL;
+> +		goto out_free;
+>  	}
+>  
+>  	/*
+> @@ -1373,8 +1372,8 @@ static int ucc_uart_probe(struct platform_device *ofdev,
+>  		np = of_find_node_by_type(NULL, "qe");
+>  		if (!np) {
+>  			dev_err(&ofdev->dev, "could not find 'qe' node\n");
+> -			kfree(qe_port);
+> -			return -EINVAL;
+> +			ret = -EINVAL;
+> +			goto out_free;
+>  		}
+>  	}
+>  
+> @@ -1382,8 +1381,8 @@ static int ucc_uart_probe(struct platform_device *ofdev,
+>  	if (!iprop) {
+>  		dev_err(&ofdev->dev,
+>  		       "missing brg-frequency in device tree\n");
+> -		kfree(qe_port);
+> -		return -EINVAL;
+> +		ret = -EINVAL;
+> +		goto out_np;
+>  	}
+>  
+>  	if (*iprop)
+> @@ -1398,16 +1397,16 @@ static int ucc_uart_probe(struct platform_device *ofdev,
+>  		if (!iprop) {
+>  			dev_err(&ofdev->dev,
+>  				"missing QE bus-frequency in device tree\n");
+> -			kfree(qe_port);
+> -			return -EINVAL;
+> +			ret = -EINVAL;
+> +			goto out_np;
+>  		}
+>  		if (*iprop)
+>  			qe_port->port.uartclk = *iprop / 2;
+>  		else {
+>  			dev_err(&ofdev->dev,
+>  				"invalid QE bus-frequency in device tree\n");
+> -			kfree(qe_port);
+> -			return -EINVAL;
+> +			ret = -EINVAL;
+> +			goto out_np;
+>  		}
+>  	}
+>  
+> @@ -1445,8 +1444,7 @@ static int ucc_uart_probe(struct platform_device *ofdev,
+>  	if (ret) {
+>  		dev_err(&ofdev->dev, "could not add /dev/ttyQE%u\n",
+>  		       qe_port->port.line);
+> -		kfree(qe_port);
+> -		return ret;
+> +		goto out_np;
+>  	}
+>  
+>  	dev_set_drvdata(&ofdev->dev, qe_port);
+> @@ -1460,6 +1458,11 @@ static int ucc_uart_probe(struct platform_device *ofdev,
+>  	       SERIAL_QE_MINOR + qe_port->port.line);
+>  
+>  	return 0;
+> +out_np:
+> +	of_node_put(np);
+> +out_free:
+> +	kfree(qe_port);
+> +	return ret;
+>  }
+>  
+>  static int ucc_uart_remove(struct platform_device *ofdev)
+> 
