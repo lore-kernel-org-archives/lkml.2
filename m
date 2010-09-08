@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358Ab0IHEcV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 00:32:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37176 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab0IHEcT (ORCPT
+	id S1751427Ab0IHEzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 00:55:42 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33107 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab0IHEzk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 00:32:19 -0400
+	Wed, 8 Sep 2010 00:55:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Qk6EZuwylJNAUtZ5XvdOodHkOAODNx/nlP++xHoQnK5LxhuB1Mp3nzVZn4x0aVlUc8
-         T6ndMjeJIvJ/odlTmfCN9PMDc36owEDfcjZ+g0yw00RkUU6LH+7NcmRHkAcpapZER1+s
-         74k2bBEIN83YfH5xgtMr7zT4zl45Q8lGy0bIk=
+         :cc:content-type:content-transfer-encoding;
+        b=cz9CmwUGnAcwwLKwoT7GIq2ZDqq0iVvNwa4AK07pnnTmdLyRkAvQet2dAZFE/36t0k
+         JBK0a404Lu2Nja2oVudbMdSVCWzimqn7aURpCBTGy2lZfYdEOUO9reN3+QlB13zicnhT
+         dD5b111ZwpvSB+NRNrMHsCs0FijieDeM1ksbQ=
 MIME-Version: 1.0
-In-Reply-To: <20100908021939.GA20443@kroah.com>
-References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
-	<20100908021939.GA20443@kroah.com>
-Date: Wed, 8 Sep 2010 12:32:19 +0800
-Message-ID: <AANLkTim605xLy8LjaKO+wR+UX2_r-dEQr=bMasXLAk22@mail.gmail.com>
-Subject: Re: [RESEND/PATCH 0/6] USB: musb-gadget: bug fix
-From: Ming Lei <tom.leiming@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Felipe Balbi <me@felipebalbi.com>,
+In-Reply-To: <1283855357-15179-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1283855357-15179-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Wed, 8 Sep 2010 13:55:39 +0900
+Message-ID: <AANLkTim=ArPyqC7K-aaer97deGeR6yU-FS1Hpm3D_1ER@mail.gmail.com>
+Subject: Re: [PATCH] spi/spi_s3c64xx: Move to subsys_initcall()
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jassi Brar <jassi.brar@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
         David Brownell <dbrownell@users.sourceforge.net>,
-        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        spi-devel-general@lists.sourceforge.net,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC Felipe / David / Gadiyar / Mike /  Sergei
-
-2010/9/8 Greg KH <greg@kroah.com>:
-> I seem to not have 1/6 here, did it get stuck somewhere?
-
-Here is 1/6:
-
-         http://marc.info/?l=linux-usb&m=128387307419605&w=2
-
-If you need, I can send the 1/6 to you directly.
-
+On Tue, Sep 7, 2010 at 7:29 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> Allow the use of the S3C64xx SPI controller with things like PMICs by
+> moving the init up to subsys_initcall().
 >
-> Anyway, I need Felipe's ack before I can accept these.
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>
+> Incidentally I don't seem to see anything in the current SPI tree for
+> -next - should the tree being used be updated or something?
+>
+>  drivers/spi/spi_s3c64xx.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
+> index f72e1c0..6e48ea9 100644
+> --- a/drivers/spi/spi_s3c64xx.c
+> +++ b/drivers/spi/spi_s3c64xx.c
+> @@ -1181,7 +1181,7 @@ static int __init s3c64xx_spi_init(void)
+>  {
+>        return platform_driver_probe(&s3c64xx_spi_driver, s3c64xx_spi_probe);
+>  }
+> -module_init(s3c64xx_spi_init);
+> +subsys_initcall(s3c64xx_spi_init);
 
-Felipe, expect your comments on the patch set...
-
-BTW: The mailbox of felipe.balbi@nokia.com in MAINTAINERS has been
-obsolete now, and his current box is me@felipebalbi.com, seems MAINTAINERS
-should be updated for it.
-
--- 
-Lei Ming
+Couldn't any user ever need to load it as a module?
+If no, we might as well drop the s3c64xx_spi_exit and s3c64xx_spi_remove
+as well and save space. Rather going a step further, shouldn't then all
+spi drivers be that way? Two steps further, why not every 'bus-driver' ?
