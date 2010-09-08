@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758496Ab0IHIuM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 04:50:12 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:51443 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756944Ab0IHIuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 04:50:09 -0400
-Date: Wed, 8 Sep 2010 18:49:23 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
- direct reclaim allocation fails
-Message-ID: <20100908084923.GW705@dastard>
-References: <20100904075840.GE705@dastard>
- <20100904081414.GF705@dastard>
- <20100905015400.GA10714@localhost>
- <20100905021555.GG705@dastard>
- <20100905060539.GA17450@localhost>
- <20100905131447.GJ705@dastard>
- <20100905134554.GA7083@localhost>
- <20100906040243.GA7362@dastard>
- <20100906084015.GJ8384@csn.ul.ie>
- <20100906215023.GC7362@dastard>
+	id S1758536Ab0IHIvf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 04:51:35 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43613 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758230Ab0IHIvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 04:51:33 -0400
+Message-ID: <4C874E90.5040405@kernel.org>
+Date: Wed, 08 Sep 2010 10:51:28 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100906215023.GC7362@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dave Chinner <david@fromorbit.com>
+CC: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [2.6.36-rc3] Workqueues, XFS, dependencies and deadlocks
+References: <20100907072954.GM705@dastard> <4C86003B.6090706@kernel.org> <20100907100108.GN705@dastard> <4C861582.6080102@kernel.org> <4C862F8E.7030507@kernel.org> <20100908082249.GT705@dastard>
+In-Reply-To: <20100908082249.GT705@dastard>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Sep 2010 08:51:29 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 07:50:23AM +1000, Dave Chinner wrote:
-> On Mon, Sep 06, 2010 at 09:40:15AM +0100, Mel Gorman wrote:
-> > On Mon, Sep 06, 2010 at 02:02:43PM +1000, Dave Chinner wrote:
-> > > I just went to grab the CAL counters, and found the system in
-> > > another livelock.  This time I managed to start the sysrq-trigger
-> > > dump while the livelock was in progress - I bas??cally got one shot
-> > > at a command before everything stopped responding. Now I'm waiting
-> > > for the livelock to pass.... 5min.... the fs_mark workload
-> > > has stopped (ctrl-c finally responded), still livelocked....
-> > > 10min.... 15min.... 20min.... OK, back now.
-> > > 
-> > > Interesting - all the fs_mark processes are in D state waiting on IO
-> > > completion processing.
-> > 
-> > Very interesting, maybe they are all stuck in congestion_wait() this
-> > time? There are a few sources where that is possible.
+Hello,
+
+On 09/08/2010 10:22 AM, Dave Chinner wrote:
+> Ok, it looks as if the WQ_HIGHPRI is all that was required to avoid
+> the log IO completion starvation livelocks. I haven't yet pulled
+> the tree below, but I've now created about a billion inodes without
+> seeing any evidence of the livelock occurring.
 > 
-> No, they are waiting on log IO completion, not doing allocation or
-> in the VM at all.  They stuck in xlog_get_iclog_state() waiting for
-> all the log IO buffers to be processed which are stuck behind the
-> inode buffer IO completions in th kworker threads that I posted. 
+> Hence it looks like I've been seeing two livelocks - one caused by
+> the VM that Mel's patches fix, and one caused by the workqueue
+> changeover that is fixed by the WQ_HIGHPRI change.
 > 
-> This potentially is caused by the kworker thread consolidation - log
-> IO completion processing used to be in a separate workqueue for
-> processing latency and deadlock prevention reasons - the data and
-> metadata IO completion can block, whereas we need the log IO
-> completion to occur as quickly as possible. I've seen one deadlock
-> that the separate work queues solved w.r.t. loop devices, and I
-> suspect that part of the problem here is that transaction completion
-> cannot occur (and free the memory it and the CIL holds) because log IO
-> completion processing is being delayed significantly by metadata IO
-> completion...
-.....
-> > > Which shows that this wasn't an IPI storm that caused this
-> > > particular livelock.
-> > 
-> > No, but it's possible we got stuck somewhere like too_many_isolated() or
-> > in congestion_wait. One thing at a time though, would you mind testing
-> > the following patch? I haven't tested this *at all* but it should reduce
-> > the number of times drain_all_pages() are called further while not
-> > eliminating them entirely.
-> 
-> Ok, I'll try it later today, but first I think I need to do some
-> deeper investigation on the kworker thread behaviour....
+> Thanks for you insights, Tejun - I'll push the workqueue change
+> through the XFS tree to Linus.
 
-Ok, so an update is needed here. I have confirmed that the above
-livelock was caused by the kworker thread consolidation, and I have
-a fix for it (make the log IO completion processing queue WQ_HIGHPRI
-so it gets queued ahead of the data/metadata IO completions), and
-I've been able to create over a billion inodes now without a
-livelock occurring. See the thread titled "[2.6.36-rc3] Workqueues,
-XFS, dependencies and deadlock" if you want more details.
+Great, BTW, I have several questions regarding wq usage in xfs.
 
-To make sure I've been seeing two different livelocks, I removed
-Mel's series from my tree (which still contained the above workqueue
-fix), and I started seeing short memory allocation livelocks (10-15s
-at most) with abnormal increases in CAL counts indication an
-increase in IPIs during the short livelocks.  IOWs, the livelock
-was't as severe as before the workqueue fix, but still present.
-Hence the workqueue issue was definitely a contributing factor to
-the severity of the memory allocation triggered issue.
+* Do you think @max_active > 1 could be useful for xfs?  If most works
+  queued on the wq are gonna contend for the same (blocking) set of
+  resources, it would just make more threads sleeping on those
+  resources but otherwise it would help reducing execution latency a
+  lot.
 
-It is clear that there have been two different livelocks with
-different caused by the same test, which has led to a lot of
-confusion in this thread. It appears that Mel's patch series as
-originally posted in this thread is all that is necessary to avoid
-the memory allocation livelock issue I was seeing. The workqueue
-fix solves the other livelock I was seeing once Mel's patches were
-in place.
+* xfs_mru_cache is a singlethread workqueue.  Do you specifically need
+  singlethreadedness (strict ordering of works) or is it just to avoid
+  creating dedicated per-cpu workers?  If the latter, there's no need
+  to use singlethread one anymore.
 
-Thanks to everyone for helping me track these livelocks down and
-providing lots of suggestions for things to try. I'll keep testing
-and looking for livelocks, but my confidence is increasing that
-we've got to the root of them now. 
+* Are all four workqueues in xfs used during memory allocation?  With
+  the new implementation, the reasons to have dedicated wqs are,
 
-Cheers,
+  - Forward progress guarantee in the memory allocation path.  Each
+    workqueue w/ WQ_RESCUER has _one_ rescuer thread reserved for
+    execution of works on the specific wq, which will be used under
+    memory pressure to make forward progress.
 
-Dave.
+  - A wq is a flush domain.  You can flush works on it as a group.
+
+  - A wq is also a attribute domain.  If certain work items need to be
+    handled differently (highpri, cpu intensive, execution ordering,
+    etc...), they can be queued to a wq w/ those attributes specified.
+
+  Maybe some of those workqueues can drop WQ_RESCUER or merged or just
+  use the system workqueue?
+
+Thanks.
+
 -- 
-Dave Chinner
-david@fromorbit.com
+tejun
