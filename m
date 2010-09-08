@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab0IHTuM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 15:50:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63822 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753608Ab0IHTuH (ORCPT
+	id S1753961Ab0IHTu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 15:50:59 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60695 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753497Ab0IHTuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 15:50:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=woD/9/6qoTOAjLMPDoYU8J3wq305YaaCYD//EC8lpyG424u8Gev8CPa3QIQ7sxI7R8
-         JkcURQsJiR0R7x+hAuFWkevc4i4RAyjASGFhLNqaLAwtR6YGGUMZyWUoY1CnfZ7knHBT
-         U0QrlH+P6OQpzn5a1yK7xgBlkfdGOE728dh7g=
-From: Pedro Francisco <pedrogfrancisco@gmail.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: 2.6.35.4: sudo rmmod ahci @ 2.6.35.4 succeeds: filesystem access errors follow
-Date: Wed, 8 Sep 2010 20:49:53 +0100
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
-Cc: Alejandro Riveira =?iso-8859-1?q?Fern=E1ndez?= 
-	<ariveira@gmail.com>,
-        linux-kernel@vger.kernel.org
-References: <201009071834.27953.pedrogfrancisco@gmail.com> <201009072247.18438.pedrogfrancisco@gmail.com> <4C87D5E9.1060307@s5r6.in-berlin.de>
-In-Reply-To: <4C87D5E9.1060307@s5r6.in-berlin.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	Wed, 8 Sep 2010 15:50:55 -0400
+Date: Wed, 8 Sep 2010 12:50:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hunter Adrian <adrian.hunter@nokia.com>, Chris Ball <cjb@laptop.org>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Subject: Re: [PATCHv6 3/3] mmc_test: collect data and show it via sysfs by
+ demand
+Message-Id: <20100908125017.686ebebd.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTikV4TvwtwQHnb_p9HBsJTV4hVmbpvjKs6MvbYo=@mail.gmail.com>
+References: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com>
+	<ba5173c9b420d9554c83965f47d0b5cba642743a.1283862780.git.ext-andriy.shevchenko@nokia.com>
+	<d7cf4d98c6e0396da903c2e49b028f240853bfc2.1283862780.git.ext-andriy.shevchenko@nokia.com>
+	<20100907152753.4726c076.akpm@linux-foundation.org>
+	<AANLkTikV4TvwtwQHnb_p9HBsJTV4hVmbpvjKs6MvbYo=@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009082049.54128.pedrogfrancisco@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 September 2010 19:28:57 Stefan Richter wrote:
-> Pedro Francisco wrote:
-> > That makes no sense. That's what the force option "-f" is for. It's my
-> > opinion the usage count for ahci on `lsmod' should be 1 and not 0.
-> > Whoever still wants to remove it can use the `rmmod -f ahci'
+On Wed, 8 Sep 2010 12:08:58 +0300
+Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+
+> On Wed, Sep 8, 2010 at 1:27 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> >> Here is a patch which brings possibility to get test results via sysfs. It
+> >> helps to do tests non-interactively.
+> >>
+> >> We have the file created under sysfs already and we could use it to out test
+> >> results.
+> >
+> > So what we end up with is extremely thin. __Something about adding
+> > something to sysfs.
+> Yeah, agree with you. How to proceed with commit messages?
+> Should I make newer version of this certain patch with updated commit message?
 > 
-> The usage count of a module is only there to ensure that function calls
-> into the module succeed.  As long as some other part of the kernel has a
-> pointer of a function in the module, removal of the module needs to be
-> prevented.
-> 
-> "rmmod ahci" on the other hand is something like pulling the SATA cable. 
-> Or ejection of the controller from an ExpressCard slot.  The driver
-> shutdown causes the controller device and thus its child devices (disk
-> devices behind the controller) to go away, and that's it.  You can do also
-> # echo $DEVICE_ID > /sys/module/ahci/drivers/pci\:ahci/unbind
-> which tells the driver to let go of the controller.
 
-Hum ok... Still I find it weird since on 2.6.32 I've, after `lsmod | grep -i 
-ahci':
-ahci                   32200  4
-and on 2.6.35.4:
-ahci                   32200  0
+I used the words which Chris sent:
 
-Why the change of behaviour? Is it because of the split of libahci from ahci ?
 
--- 
-Pedro
+: Make it possibile to get test results via sysfs.  It helps to do tests
+: non-interactively.
+: 
+: We have the file created under sysfs already and we could use it to out test
+: results.
+: 
+: Prior to this patch, the "test" file under each card's sysfs node was
+: write-only, and results were obtained by looking at dmesg.  This patch
+: improves programmatic access to the test results, making them available by
+: reading back from the same "test" file:
+: 
+: [root@host mmc0:e624]# echo 6 > test
+: [root@host mmc0:e624]# cat test
+: Test 6: 2
+: 
+: [cjb@laptop.org: changelog improvements]
+: Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+: Cc: Chris Ball <cjb@laptop.org>
+: Cc: <linux-mmc@vger.kernel.org>
+
+which is good enough.  You can send me replacement changelog text any
+old time - it's not problem.  I'm forever editing changelogs, mainly
+adding acked-by's etc.  
+
