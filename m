@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab0IHVEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 17:04:08 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63164 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab0IHVEE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 17:04:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=sUeOw+ikST616aTLBhg/ctrWszh6wolA8xzlTCWlWmlBULVIIdrB+fdT1yU3HRELUk
-         YswhBg/VHvlTAnSzizJqvb4zFoJiIkxPXviRQLgyBA6CWeYCJPWwgF2AKbuISxRpo+tB
-         3aIjuGlxwGYQXcjReDgpJclaZh34kIr9F3SMI=
-From: Nikitas Angelinas <nikitasangelinas@gmail.com>
-To: tony.luck@intel.com, fenghua.yu@intel.com
-Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nikitas Angelinas <nikitasangelinas@gmail.com>
-Subject: [PATCH 1/8] arch/ia64/xen: use ARRAY_SIZE macro in xen_pv_ops.c
-Date: Wed,  8 Sep 2010 22:04:30 +0100
-Message-Id: <1283979870-4764-1-git-send-email-nikitasangelinas@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
-References: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
+	id S1755209Ab0IHVFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 17:05:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53203 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754359Ab0IHVFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 17:05:17 -0400
+Message-ID: <4C87FA80.9080100@zytor.com>
+Date: Wed, 08 Sep 2010 14:05:04 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Nick Lowe <nick.lowe@gmail.com>, Hans-Peter Jansen <hpj@urpla.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
+References: <fmbxh-5N8-41@gated-at.bofh.it>	<55BC9463-95B9-4034-AA1E-55042D6E9354@gmail.com>	<201009081115.15544.hpj@urpla.net>	<AANLkTi=U40mzeMh-UJJy=ggVDry2qDWW-MYYyBhS_Kex@mail.gmail.com>	<20100908185605.55671889@lxorguk.ukuu.org.uk>	<AANLkTi=khD7fSVv_tC6TogimjJshEErj6Em8mCcDF+SM@mail.gmail.com>	<20100908200715.2e56d0be@lxorguk.ukuu.org.uk>	<AANLkTi=FNFKmBgobH4q-GHguHM-0UOCQpa7JhPhyZZHG@mail.gmail.com> <20100908221144.73066e2d@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100908221144.73066e2d@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace sizeof(xen_branch_target) / sizeof(xen_branch_target[0]) with
-ARRAY_SIZE(xen_branch_target) in arch/ia64/xen/xen_pv_ops.c
+On 09/08/2010 02:11 PM, Alan Cox wrote:
+> 
+> Getting the stuff right in the current kernel makes it easier to backport
+> and fix and do tidily. It's not as if NOPL is complicated to emulate.
 
-Signed-off-by: Nikitas Angelinas <nikitasangelinas@gmail.com>
----
- arch/ia64/xen/xen_pv_ops.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+The execution phase is easy ;)  The parsing phase is rather hard.  This
+is part of why I would much rather see a single x86 interpreter in the
+kernel, and the one single interpreter that we need anyway is the one in
+KVM.
 
-diff --git a/arch/ia64/xen/xen_pv_ops.c b/arch/ia64/xen/xen_pv_ops.c
-index 8adc6a1..3e8d350 100644
---- a/arch/ia64/xen/xen_pv_ops.c
-+++ b/arch/ia64/xen/xen_pv_ops.c
-@@ -1136,7 +1136,6 @@ __initconst = {
- static void __init
- xen_patch_branch(unsigned long tag, unsigned long type)
- {
--	const unsigned long nelem =
--		sizeof(xen_branch_target) / sizeof(xen_branch_target[0]);
--	__paravirt_patch_apply_branch(tag, type, xen_branch_target, nelem);
-+	__paravirt_patch_apply_branch(tag, type, xen_branch_target,
-+					ARRAY_SIZE(xen_branch_target));
- }
--- 
-1.7.2.3
+I haven't looked at what it would take to generalize it to also support
+trap and emulate of arbitrary instructions (not just NOPL and CMOV and
+so on), but x86 is subtle and quick to anger, and doing it wrong can
+trivially introduce security holes.
 
+	-hpa
