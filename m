@@ -1,130 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab0IHPzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 11:55:32 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33187 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab0IHPza convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 11:55:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uuNfMxeYlZ3fm4WpTowEhK2xgUIpdTwh6+ChtnK6dCfk8IA3J584iqEB2TkRvGDK0t
-         jK6tbVLWSi8mssOaASFGjcdqblXysuqE3F3p+StVpCHrv1vp7C/gLArD+qCCJjCu1mJL
-         LKV79Fa9l+wN10wDu8XMZwcrAVPCRgPyrZMkA=
+	id S1756139Ab0IHP4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 11:56:22 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60588 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755789Ab0IHP4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 11:56:21 -0400
+Date: Wed, 8 Sep 2010 17:56:04 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT pull] Preparatory patch for semaphore cleanup
+Message-ID: <20100908155604.GA18064@elte.hu>
+References: <alpine.LFD.2.00.1009081507250.2477@localhost6.localdomain6>
+ <AANLkTikYEjV8ikkPsfJ0d7WsikWHJ0n74u9uDS4uGHC+@mail.gmail.com>
+ <1283957961.23762.28.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin8bXvPqdkYQq++wf0iCK=ZAfZ2jnqbgL=xj8yq@mail.gmail.com>
-References: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
-	<AANLkTiksb1AudCzs8-TWdXb11T-QcPx1G_qu6eUtJ74C@mail.gmail.com>
-	<AANLkTin7eVyosgK4XhuB_yqR2ao=YJGVidHB1x2802cr@mail.gmail.com>
-	<AANLkTinrecJXH+uDxtBsskFLpBCz0VSZMtSiWGFW9YCr@mail.gmail.com>
-	<AANLkTinkhY-y6Qv6HJnGbggksdEmULgQ9DTOrNmu1tLp@mail.gmail.com>
-	<AANLkTikZK=8HCtXDR_2dSBce1E10xNfBtyXGOJqykV83@mail.gmail.com>
-	<AANLkTin8bXvPqdkYQq++wf0iCK=ZAfZ2jnqbgL=xj8yq@mail.gmail.com>
-Date: Wed, 8 Sep 2010 21:25:30 +0530
-Message-ID: <AANLkTimwMiOfvCpUfeXPSF8zh3t3YsM_8nDZbuWFcKM4@mail.gmail.com>
-Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization(v1)
-From: venki kaps <venkiece2005@gmail.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: greg@kroah.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <me@felipebalbi.com>, Anand Gadiyar <gadiyar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283957961.23762.28.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ming Lei &  Balbi,
 
-Thanks for your support and the porblem is resolved.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-Venkii,
-On Tue, Sep 7, 2010 at 11:52 PM, venki kaps <venkiece2005@gmail.com> wrote:
-> Venkii,
-> On Tue, Sep 7, 2010 at 11:45 PM, venki kaps <venkiece2005@gmail.com> wrote:
->> Venkii,
->> On Tue, Sep 7, 2010 at 9:18 PM, venki kaps <venkiece2005@gmail.com> wrote:
->>> Venkii,
->>>
->>> On Tue, Sep 7, 2010 at 9:10 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->>>> 2010/9/7 venki kaps <venkiece2005@gmail.com>:
->>>>> thanks for your good response.
->>>>>
->>>>> Venkii,
->>>>>
->>>>> On Tue, Sep 7, 2010 at 6:54 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->>>>>> 2010/9/7 venki kaps <venkiece2005@gmail.com>:
->>>>>>> Dear USB experts,
->>>>>>>
->>>>>>>  Is the same fix valid for omap3430 + 2.6.32 Kernel?
->>>>>>>
->>>>>>>  I have been facing mp3 playback idle current consumption 20mA more
->>>>>>> after booting without USB cable connected
->>>>>>>  but If USB cable detach and attach happen, then able to hit proper
->>>>>>> values otherwise irrespective of cold/warm reset
->>>>>>>  the current values increases to 20mA.
->>>>>>>
->>>>>>>  with cable,
->>>>>>>      OTG_SYSCONFIG standby mode of operation - SMART idle
->>>>>>>      HSOTGUSB_STANDBY - SMART standby
->>>>>>>
->>>>>>>  without cable,
->>>>>>>        OTG_SYSCONFIG standby mode of operation - SMART idle
->>>>>>>        HSOTGUSB_STANDBY - Active
->>>>>>>
->>>>>>>  Even i have applied  patch but still the same issue.
->>>>>>
->>>>>> Are you applying the patch below?
->>>>>>
->>>>>>         http://marc.info/?l=linux-omap&m=128378686221264&w=2
->>>>>>
->>>>>> The patch(USB: otg: twl4030: fix phy initialization(v1)) above is against
->>>>>> 2.6.36-rc3, I don't think you can apply it directly on 2.6.32. And the patch
->>>>>> is introduced to fix the problems caused by
->>>>>>
->>>>>>          commit 461c317705eca5cac09a360f488715927fd0a927.
->>>>>>
->>>>>> which change is committed into mainline 2.6.36-rc3.
->>>>>  >>> Yes, this patch i have applied.
->>>>
->>>> If you applied the patch, I guess you may see __twl4030_phy_power(twl, 0)
->>>> is called from .probe.
->>>>
->>>> If called,  seems your description a little contradictory since you observed
->>>> __twl4030_phy_power(twl, 0) may hit proper values, right?
->>>
->>>  Yes, __twl4030_phy_power(twl, 0) -  the current values are getting
->>> proper with or without cable.
->>>>
->>>> If not called, could you trace the return value of twl4030_usb_linkstat in
->>>> twl4030_usb_phy_init?
->>> ok, i can do that and update.
->>     twl4030_usb_linkstat return value is zero (0) in both
->> twl4030_usb_phy_init/twl4030_usb_irq.
->  WIth twl4030_usb_phy_init, Everything is fine except battery temperature
->  but surprisingly the temperature is fine with PC based usb cable charger and
->  the problem is with travel adapter only.
+> On Wed, 2010-09-08 at 07:54 -0700, Linus Torvalds wrote:
+> > On Wed, Sep 8, 2010 at 6:11 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > >
+> > > This patch just provides the DEFINE_SEMAPHORE macro which is required
+> > > for the various subsystem cleanups I sent out, so we can finally get
+> > > rid of init_MUTEX[_LOCKED] in 2.6.37.
+> > 
+> > Why is it called DEFINE_SEMAPHORE(), when two lines later the we have
+> > DECLARE_MUTEX()?
+> > 
+> > IOW, the whole DEFINE vs DECLARE thing seems confused. I'm not saying
+> > one is better than the other (maybe "define" is), but the mixing of
+> > names is worse than either, I feel..
+> 
+> The rest of the series, that Thomas didn't include in this pull, removes
+> all the DECLARE_MUTEX() users. So its temporary awkward-ness.
 
- The temperature with TA effected due to the TWL4030 PHY power down on
-I2c(__twl4030_phy_power(twl, 0)).
- When TA connect to the phone the battery ADC is not reading proper
-values since already PHY power down.
+and DEFINE_MUTEX() is needed upstream so that we can spread those 
+patches into a dozen maintainer trees. Once those flow upstream 
+DECLARE_MUTEX() will be removed.
 
-  To resolve the above issue, we have made "PHY power on" in battery
-adc on function
-  and "PHY power down" in battery adc off function.
+Thanks,
 
-  With the above change the problem is resolved.
-
->>>> thanks,
->>>>
->>>> --
->>>> Lei Ming
->>>>
->>>
->>
->
+	Ingo
