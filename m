@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab0IHBo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Sep 2010 21:44:29 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51350 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab0IHBo2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Sep 2010 21:44:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dn/l7x+ZTKhePWBViQD6FkGHI36NIuqK4ADX9m75scaCBtMtN2nzw/Ji0zU3LyP0ds
-         aOSjgKbpMaIPk+PDBPfDjykHA35mdyDsYKe9YqUl+3KQ0x3FDDFRrWvHq4ivSIbXbrOJ
-         JlWtyOUWiFfJuU+A1VDo+BUfdiyM4iRPhagkA=
+	id S1756134Ab0IHBos (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Sep 2010 21:44:48 -0400
+Received: from ozlabs.org ([203.10.76.45]:58771 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756029Ab0IHBoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Sep 2010 21:44:46 -0400
+Date: Wed, 8 Sep 2010 11:44:09 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: disabling group leader perf_event
+Message-ID: <20100908014409.GA17010@brick.ozlabs.ibm.com>
+References: <4C84D1CE.3070205@redhat.com>
+ <1283774045.1930.341.camel@laptop>
+ <4C84D77B.6040600@redhat.com>
+ <20100906124330.GA22314@elte.hu>
+ <4C84E265.1020402@redhat.com>
+ <20100906125905.GA25414@elte.hu>
+ <4C850147.8010908@redhat.com>
+ <20100906154737.GA4332@elte.hu>
+ <4C852B2A.2030103@redhat.com>
+ <20100907034417.GA14046@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <1283873872-8633-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1283873872-8633-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<1283873872-8633-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-Date: Wed, 8 Sep 2010 10:44:26 +0900
-Message-ID: <AANLkTimxXWjiX64wJcNui2mLrvVg9RUtN9fFVnLhZsBY@mail.gmail.com>
-Subject: Re: [PATCH 2/2] spi/spi_s3c64xx: Increase dead reckoning time in wait_for_xfer()
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Jassi Brar <jassi.brar@samsung.com>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100907034417.GA14046@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 8, 2010 at 12:37 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> For small transfers at high speeds the expected transfer time can easily
-> be well under 1ms, causing the delay in wait_for_xfer() to be only the
-> dead reckoning fudge factor of 5ms currently included. Experiments on
-> some of my systems shows that this is marginal for some transfers so
-> double it to 10ms.
->
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/spi/spi_s3c64xx.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/spi/spi_s3c64xx.c b/drivers/spi/spi_s3c64xx.c
-> index 03b28e4..4abb441 100644
-> --- a/drivers/spi/spi_s3c64xx.c
-> +++ b/drivers/spi/spi_s3c64xx.c
-> @@ -326,7 +326,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
->
->        /* millisecs to xfer 'len' bytes @ 'cur_speed' */
->        ms = xfer->len * 8 * 1000 / sdd->cur_speed;
-> -       ms += 5; /* some tolerance */
-> +       ms += 10; /* some tolerance */
->
->        if (dma_mode) {
->                val = msecs_to_jiffies(ms) + 10;
+On Tue, Sep 07, 2010 at 05:44:17AM +0200, Ingo Molnar wrote:
 
-Acked-by: Jassi Brar <jassi.brar@samsung.com>
+> No, it's machine code. It's 'safe x86 bytecode executed natively by the 
+> kernel as a function'.
+
+I'm curious - how are you going to prove that addresses for the MOV
+instruction are safe, using just a static pre-execution scan of the
+code?  If you only allow things that you can prove are safe, then
+either you'll have a very large and complex verifier, or you'll end up
+disallowing interesting and useful cases.
+
+The other alternative is to do runtime verification of addressses,
+which is much more straightforward (and it's also much easier to prove
+it's secure).  But it does mean that you can't run the code as-is.
+
+> It needs a verification pass (because the code can come from untrusted 
+> apps) so that we can copy, verify and trust it (so obviously it's not 
+> _arbitrary_ x86 machine code - a safe subset of x86) - maybe with a sha1 
+> based cache for already-verified snippets (or a fast verifier).
+> 
+> > x86 is quite unpleasant.
+> 
+> Any machine code that is fast and compact is unpleasant almost by 
+> definition: it's a rather non-obvious Huffman encoding embedded in an 
+> instruction architecture.
+
+>From the point of view of having to emulate or translate x86 code (as
+we would have to do on powerpc), it's not the compactness that's
+unpleasant, it's things like not being able to tell whether the
+condition codes set by an instruction are ever going to be used.  Many
+x86 instructions set the condition codes but for most instructions the
+condition codes that are set are never used.  So when emulating or
+translating, you either waste time computing condition code values
+that are never used, or you have to do complex lifetime analysis to
+work out which instructions do need to compute the condition codes.
+
+> We start with trivial (and useless) special case of something like:
+> 
+> #define MAX_BYTECODE_SIZE 256
+> 
+> int x86_bytecode_verify(char *opcodes, unsigned int len)
+> {
+> 
+> 	if (len-1 > MAX_BYTECODE_SIZE-1)
+> 		return -EINVAL;
+> 
+> 	if (opcodes[0] != 0xc3) /* RET instruction */
+> 		return -EINVAL;
+> 
+> 	return 0;
+> }
+> 
+> ... and then we add checks for accepted/safe x86 patterns of 
+> instructions step by step - always keeping it 100% correct.
+
+So... I would be interested to see you add the case for the MOV
+instruction. :)
+
+Paul.
