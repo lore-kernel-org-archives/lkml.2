@@ -1,92 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908Ab0IHM2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 08:28:37 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:33955 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751Ab0IHM2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 08:28:34 -0400
-Date: Wed, 08 Sep 2010 21:28:45 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH v3] regulators: add support max8952 regulator
-In-reply-to: <01a401cb4f01$73d60ac0$5b822040$%park@samsung.com>
-To: kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: lrg@slimlogic.co.uk, "'Changhwan Youn'" <chaos.youn@samsung.com>,
-        "'MyungJoo Ham'" <myungjoo.ham@samsung.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Message-id: <004001cb4f51$63ea5d00$2bbf1700$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: ActO5kLH59RwdkyyRB6bO2YWhCCsKgAGvnQQABNFQRA=
-References: <1283901976-32588-1-git-send-email-kgene.kim@samsung.com>
- <01a401cb4f01$73d60ac0$5b822040$%park@samsung.com>
+	id S1758685Ab0IHM3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 08:29:50 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33877 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751751Ab0IHM3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 08:29:47 -0400
+From: Jan Blunck <jblunck@suse.de>
+To: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
+        linux-rt-users@vger.kernel.org
+Cc: peterz@infradead.org, Sven-Thorsten Dietrich <sdietrich@novell.com>,
+        Michael Galbraith <MGalbraith@novell.com>,
+        Jan Blunck <jblunck@suse.de>
+Subject: [RFC 1/4] ftrace: Add events for tracing timer interrupts
+Date: Wed,  8 Sep 2010 14:29:21 +0200
+Message-Id: <1283948964-6418-2-git-send-email-jblunck@suse.de>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1283948964-6418-1-git-send-email-jblunck@suse.de>
+References: <1283948964-6418-1-git-send-email-jblunck@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kyungmin Park wrote:
-> 
-> Do you check the DVS feature?
-> It can support the DVS by GPIOs and platform can set the each voltages at
-> each mode.
-> 
-Ok...I agree about the feature's necessity that you said.
+Trace the execution of the timer interrupt. I did not find an argument that
+makes any sense so traces look like this:
 
-However, we don't need separate driver which has same/similar functionality.
-So...would be better that could implement it in max8649...
+<idle>-0     [000] 181019.693546: timerirq_enter: unused=1
+<idle>-0     [000] 181019.693553: timerirq_exit: unused=1
 
-Could you please do it based on this?...in fact, can't test it on SMDK.
+Signed-off-by: Jan Blunck <jblunck@suse.de>
+---
+ arch/x86/kernel/apic/apic.c |    4 ++++
+ arch/x86/kernel/time.c      |    5 +++++
+ include/trace/events/irq.h  |   38 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 47 insertions(+), 0 deletions(-)
 
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
-> As quick review of max8649. It can't support it.
-> 
-> Thank you,
-> Kyungmin Park
-> 
-> -----Original Message-----
-> From: Kukjin Kim [mailto:kgene.kim@samsung.com]
-> Sent: Wednesday, September 08, 2010 8:26 AM
-> To: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-> linux-samsung-soc@vger.kernel.org
-> Cc: lrg@slimlogic.co.uk; Changhwan Youn; Kukjin Kim; MyungJoo Ham;
-Kyungmin
-> Park
-> Subject: [PATCH v3] regulators: add support max8952 regulator
-> 
-> From: Changhwan Youn <chaos.youn@samsung.com>
-> 
-> The operation of max8952 is almost similar to max8649 except the output
-> voltage range. This patch adds support the max8952 regulator using
-> current max8649 implementation. And removes separate max8952.[ch] files
-> since the functionality is now merged into this driver.
-> 
-> Signed-off-by: Changhwan Youn <chaos.youn@samsung.com>
-> Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
-> Following is as per Mark Brown's suggestion.
-> Changes since v2:
-> - Removed separate max8952.[ch] files
-> 
-> Changes since v1:
-> - Added returning fail when detected wrong ID
-> - Added matching the ID from the chip in case the user got things wrong
-> - Added enum chip ID instead of 0, 1
-> 
-(snip)
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index a96489e..edd775b 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -35,6 +35,8 @@
+ #include <linux/smp.h>
+ #include <linux/mm.h>
+ 
++#include <trace/events/irq.h>
++
+ #include <asm/perf_event.h>
+ #include <asm/x86_init.h>
+ #include <asm/pgalloc.h>
+@@ -823,7 +825,9 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+ 	 */
+ 	exit_idle();
+ 	irq_enter();
++	trace_timerirq_enter(1);
+ 	local_apic_timer_interrupt();
++	trace_timerirq_exit(1);
+ 	irq_exit();
+ 
+ 	set_irq_regs(old_regs);
+diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+index fb5cc5e..01c2395 100644
+--- a/arch/x86/kernel/time.c
++++ b/arch/x86/kernel/time.c
+@@ -14,6 +14,8 @@
+ #include <linux/time.h>
+ #include <linux/mca.h>
+ 
++#include <trace/events/irq.h>
++
+ #include <asm/vsyscall.h>
+ #include <asm/x86_init.h>
+ #include <asm/i8259.h>
+@@ -63,6 +65,8 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 	/* Keep nmi watchdog up to date */
+ 	inc_irq_stat(irq0_irqs);
+ 
++	trace_timerirq_enter(0);
++
+ 	/* Optimized out for !IO_APIC and x86_64 */
+ 	if (timer_ack) {
+ 		/*
+@@ -83,6 +87,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 	if (MCA_bus)
+ 		outb_p(inb_p(0x61)| 0x80, 0x61);
+ 
++	trace_timerirq_exit(0);
+ 	return IRQ_HANDLED;
+ }
+ 
+diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+index 0e4cfb6..c638ab0 100644
+--- a/include/trace/events/irq.h
++++ b/include/trace/events/irq.h
+@@ -136,6 +136,44 @@ DEFINE_EVENT(softirq, softirq_exit,
+ 	TP_ARGS(h, vec)
+ );
+ 
++/**
++ * timerirq_enter
++ */
++TRACE_EVENT(timerirq_enter,
++
++	TP_PROTO(int unused),
++
++	TP_ARGS(unused),
++
++	TP_STRUCT__entry(
++		__field(u64, unused)
++		),
++
++	TP_fast_assign(
++		__entry->unused = unused;
++		),
++	TP_printk("unused=%lu", (unsigned long)__entry->unused)
++);
++
++/**
++ * timerirq_exit
++ */
++TRACE_EVENT(timerirq_exit,
++
++	TP_PROTO(int unused),
++
++	TP_ARGS(unused),
++
++	TP_STRUCT__entry(
++		__field(u64, unused)
++		),
++
++	TP_fast_assign(
++		__entry->unused = unused;
++		),
++	TP_printk("unused=%lu", (unsigned long)__entry->unused)
++);
++
+ #endif /*  _TRACE_IRQ_H */
+ 
+ /* This part must be outside protection */
+-- 
+1.6.4.2
 
