@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab0IHV1d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 17:27:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46622 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754807Ab0IHV13 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 17:27:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ssYnhUrVdVlGhITg8+PBcjN4BvhYfcVR6nF8YRHBGYs0ynfz7k7Kd8Nb+bOy65U27w
-         KMROWMj/T3Azs9Jvy+XYKo8rkVWB9JYLOGTDdP8gsMlmQo+qua7fst8iy1/h4vhJaMNH
-         Qpby70hXnlNEVO2yRGOMpJIHq0fdkBLhzdwTM=
-From: Nikitas Angelinas <nikitasangelinas@gmail.com>
-To: gregkh@suse.de, more.andres@gmail.com, lieb@canonical.com,
-        forest@alittletooquiet.net
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Nikitas Angelinas <nikitasangelinas@gmail.com>
-Subject: [PATCH 7/8] drivers/staging/vt6656: use ARRAY_SIZE macro in channel.c
-Date: Wed,  8 Sep 2010 22:27:55 +0100
-Message-Id: <1283981275-5098-1-git-send-email-nikitasangelinas@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
-References: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
+	id S1755845Ab0IHV2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 17:28:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54327 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755823Ab0IHV2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 17:28:07 -0400
+Date: Wed, 8 Sep 2010 21:27:47 GMT
+From: tip-bot for Andre Przywara <andre.przywara@amd.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        andre.przywara@amd.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andre.przywara@amd.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1283778860-26843-2-git-send-email-andre.przywara@amd.com>
+References: <1283778860-26843-2-git-send-email-andre.przywara@amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, cpu: Fix renamed, not-yet-shipping AMD CPUID feature bit
+Message-ID: <tip-7ef8aa72ab176e0288f363d1247079732c5d5792@git.kernel.org>
+Git-Commit-ID: 7ef8aa72ab176e0288f363d1247079732c5d5792
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 08 Sep 2010 21:27:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace (sizeof(ChannelRuleTab) / sizeof(ChannelRuleTab[0])) with
-ARRAY_SIZE(ChannelRuleTab) in drivers/staging/vt6656/channel.c
+Commit-ID:  7ef8aa72ab176e0288f363d1247079732c5d5792
+Gitweb:     http://git.kernel.org/tip/7ef8aa72ab176e0288f363d1247079732c5d5792
+Author:     Andre Przywara <andre.przywara@amd.com>
+AuthorDate: Mon, 6 Sep 2010 15:14:17 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 8 Sep 2010 13:32:55 -0700
 
-Signed-off-by: Nikitas Angelinas <nikitasangelinas@gmail.com>
+x86, cpu: Fix renamed, not-yet-shipping AMD CPUID feature bit
+
+The AMD SSE5 feature set as-it has been replaced by some extensions
+to the AVX instruction set. Thus the bit formerly advertised as SSE5
+is re-used for one of these extensions (XOP).
+Although this changes the /proc/cpuinfo output, it is not user visible, as
+there are no CPUs (yet) having this feature.
+To avoid confusion this should be added to the stable series, too.
+
+Cc: stable@kernel.org [.32.x .34.x, .35.x]
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+LKML-Reference: <1283778860-26843-2-git-send-email-andre.przywara@amd.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- drivers/staging/vt6656/channel.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/cpufeature.h |    2 +-
+ arch/x86/kvm/x86.c                |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/vt6656/channel.c b/drivers/staging/vt6656/channel.c
-index 6ad03e4..a2460ae 100644
---- a/drivers/staging/vt6656/channel.c
-+++ b/drivers/staging/vt6656/channel.c
-@@ -34,6 +34,7 @@
-  *
-  */
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 781a50b..c9c73d8 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -152,7 +152,7 @@
+ #define X86_FEATURE_3DNOWPREFETCH (6*32+ 8) /* 3DNow prefetch instructions */
+ #define X86_FEATURE_OSVW	(6*32+ 9) /* OS Visible Workaround */
+ #define X86_FEATURE_IBS		(6*32+10) /* Instruction Based Sampling */
+-#define X86_FEATURE_SSE5	(6*32+11) /* SSE-5 */
++#define X86_FEATURE_XOP		(6*32+11) /* extended AVX instructions */
+ #define X86_FEATURE_SKINIT	(6*32+12) /* SKINIT/STGI instructions */
+ #define X86_FEATURE_WDT		(6*32+13) /* Watchdog timer */
+ #define X86_FEATURE_NODEID_MSR	(6*32+19) /* NodeId MSR */
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 3a09c62..dd54779 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1996,7 +1996,7 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 	const u32 kvm_supported_word6_x86_features =
+ 		F(LAHF_LM) | F(CMP_LEGACY) | F(SVM) | 0 /* ExtApicSpace */ |
+ 		F(CR8_LEGACY) | F(ABM) | F(SSE4A) | F(MISALIGNSSE) |
+-		F(3DNOWPREFETCH) | 0 /* OSVW */ | 0 /* IBS */ | F(SSE5) |
++		F(3DNOWPREFETCH) | 0 /* OSVW */ | 0 /* IBS */ | F(XOP) |
+ 		0 /* SKINIT */ | 0 /* WDT */;
  
-+#include <linux/kernel.h>
- #include "country.h"
- #include "channel.h"
- #include "rf.h"
-@@ -367,7 +368,7 @@ static  struct
- /*                                           1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38  39  40  41  42  43  44  45  46  47  48  49  50  51  52  53  54  55  56  */
- };
- 
--#define NUM_RULES	(sizeof(ChannelRuleTab) / sizeof(ChannelRuleTab[0]))
-+#define NUM_RULES	ARRAY_SIZE(ChannelRuleTab)
- 
- /*---------------------  Export function  -------------------------*/
- /************************************************************************
--- 
-1.7.2.3
-
+ 	/* all calls to cpuid_count() should be made on the same cpu */
