@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758685Ab0IHM3u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 08:29:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33877 "EHLO mx1.suse.de"
+	id S1758695Ab0IHM3w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 08:29:52 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33878 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751Ab0IHM3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755836Ab0IHM3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Sep 2010 08:29:47 -0400
 From: Jan Blunck <jblunck@suse.de>
 To: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
@@ -12,9 +12,9 @@ To: Linux-Kernel Mailinglist <linux-kernel@vger.kernel.org>,
 Cc: peterz@infradead.org, Sven-Thorsten Dietrich <sdietrich@novell.com>,
         Michael Galbraith <MGalbraith@novell.com>,
         Jan Blunck <jblunck@suse.de>
-Subject: [RFC 1/4] ftrace: Add events for tracing timer interrupts
-Date: Wed,  8 Sep 2010 14:29:21 +0200
-Message-Id: <1283948964-6418-2-git-send-email-jblunck@suse.de>
+Subject: [RFC 2/4] ftrace: Add events for tracing tick start and stop
+Date: Wed,  8 Sep 2010 14:29:22 +0200
+Message-Id: <1283948964-6418-3-git-send-email-jblunck@suse.de>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1283948964-6418-1-git-send-email-jblunck@suse.de>
 References: <1283948964-6418-1-git-send-email-jblunck@suse.de>
@@ -22,121 +22,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trace the execution of the timer interrupt. I did not find an argument that
-makes any sense so traces look like this:
+Trace the starting and stopping of the scheduler tick. The traces look like
+this:
 
-<idle>-0     [000] 181019.693546: timerirq_enter: unused=1
-<idle>-0     [000] 181019.693553: timerirq_exit: unused=1
+<idle>-0     [000] 187573.495750: sched_tick_stop: idle=1, expires=6876704000000
+<idle>-0     [000] 187573.629998: sched_tick_stop: idle=0, expires=6876704000000
+<idle>-0     [000] 187573.764273: sched_tick_stop: idle=0, expires=6876704000000
+<idle>-0     [000] 187573.898508: sched_tick_stop: idle=0, expires=6876704000000
+<idle>-0     [000] 187574.009284: sched_tick_start: now=6876232761127
+
+In this trace you can see how tick_nohz_stop_sched_tick() is called from
+the idle thread (idle=1) and later through irq_exit() (idle=0).
 
 Signed-off-by: Jan Blunck <jblunck@suse.de>
 ---
- arch/x86/kernel/apic/apic.c |    4 ++++
- arch/x86/kernel/time.c      |    5 +++++
- include/trace/events/irq.h  |   38 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 47 insertions(+), 0 deletions(-)
+ include/trace/events/sched.h |   40 ++++++++++++++++++++++++++++++++++++++++
+ kernel/time/tick-sched.c     |   21 ++++++++++++++++-----
+ 2 files changed, 56 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index a96489e..edd775b 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -35,6 +35,8 @@
- #include <linux/smp.h>
- #include <linux/mm.h>
- 
-+#include <trace/events/irq.h>
-+
- #include <asm/perf_event.h>
- #include <asm/x86_init.h>
- #include <asm/pgalloc.h>
-@@ -823,7 +825,9 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
- 	 */
- 	exit_idle();
- 	irq_enter();
-+	trace_timerirq_enter(1);
- 	local_apic_timer_interrupt();
-+	trace_timerirq_exit(1);
- 	irq_exit();
- 
- 	set_irq_regs(old_regs);
-diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
-index fb5cc5e..01c2395 100644
---- a/arch/x86/kernel/time.c
-+++ b/arch/x86/kernel/time.c
-@@ -14,6 +14,8 @@
- #include <linux/time.h>
- #include <linux/mca.h>
- 
-+#include <trace/events/irq.h>
-+
- #include <asm/vsyscall.h>
- #include <asm/x86_init.h>
- #include <asm/i8259.h>
-@@ -63,6 +65,8 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
- 	/* Keep nmi watchdog up to date */
- 	inc_irq_stat(irq0_irqs);
- 
-+	trace_timerirq_enter(0);
-+
- 	/* Optimized out for !IO_APIC and x86_64 */
- 	if (timer_ack) {
- 		/*
-@@ -83,6 +87,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
- 	if (MCA_bus)
- 		outb_p(inb_p(0x61)| 0x80, 0x61);
- 
-+	trace_timerirq_exit(0);
- 	return IRQ_HANDLED;
- }
- 
-diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-index 0e4cfb6..c638ab0 100644
---- a/include/trace/events/irq.h
-+++ b/include/trace/events/irq.h
-@@ -136,6 +136,44 @@ DEFINE_EVENT(softirq, softirq_exit,
- 	TP_ARGS(h, vec)
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index b9e1dd6..36385b6 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -380,6 +380,46 @@ TRACE_EVENT(sched_stat_runtime,
+ 			(unsigned long long)__entry->vruntime)
  );
  
-+/**
-+ * timerirq_enter
-+ */
-+TRACE_EVENT(timerirq_enter,
++TRACE_EVENT(sched_tick_start,
 +
-+	TP_PROTO(int unused),
++	TP_PROTO(ktime_t *now),
 +
-+	TP_ARGS(unused),
++	TP_ARGS(now),
 +
 +	TP_STRUCT__entry(
-+		__field(u64, unused)
++		__field(s64, tv64)
 +		),
 +
 +	TP_fast_assign(
-+		__entry->unused = unused;
++		__entry->tv64 = now->tv64;
 +		),
-+	TP_printk("unused=%lu", (unsigned long)__entry->unused)
++	TP_printk("now=%ld",
++		(long)__entry->tv64)
++
 +);
 +
-+/**
-+ * timerirq_exit
-+ */
-+TRACE_EVENT(timerirq_exit,
++TRACE_EVENT(sched_tick_stop,
 +
-+	TP_PROTO(int unused),
++	TP_PROTO(ktime_t *expires, int idle),
 +
-+	TP_ARGS(unused),
++	TP_ARGS(expires, idle),
 +
 +	TP_STRUCT__entry(
-+		__field(u64, unused)
++		__field(s64, tv64)
++		__field(int, idle)
 +		),
 +
 +	TP_fast_assign(
-+		__entry->unused = unused;
++		__entry->tv64 = expires->tv64;
++		__entry->idle = idle;
 +		),
-+	TP_printk("unused=%lu", (unsigned long)__entry->unused)
++	TP_printk("idle=%d, expires=%ld%s",
++		__entry->idle,
++		(long)__entry->tv64,
++		(__entry->tv64 == KTIME_MAX) ? " (KTIME_MAX)" : "" )
++
 +);
 +
- #endif /*  _TRACE_IRQ_H */
+ #endif /* _TRACE_SCHED_H */
  
  /* This part must be outside protection */
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 813993b..81b7398 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -22,6 +22,8 @@
+ #include <linux/tick.h>
+ #include <linux/module.h>
+ 
++#include <trace/events/sched.h>
++
+ #include <asm/irq_regs.h>
+ 
+ #include "tick-internal.h"
+@@ -428,9 +430,11 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 		 * If the expiration time == KTIME_MAX, then
+ 		 * in this case we simply stop the tick timer.
+ 		 */
+-		 if (unlikely(expires.tv64 == KTIME_MAX)) {
+-			if (ts->nohz_mode == NOHZ_MODE_HIGHRES)
++		if (unlikely(expires.tv64 == KTIME_MAX)) {
++			if (ts->nohz_mode == NOHZ_MODE_HIGHRES) {
++				trace_sched_tick_stop(&expires, inidle);
+ 				hrtimer_cancel(&ts->sched_timer);
++			}
+ 			goto out;
+ 		}
+ 
+@@ -438,10 +442,15 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 			hrtimer_start(&ts->sched_timer, expires,
+ 				      HRTIMER_MODE_ABS_PINNED);
+ 			/* Check, if the timer was already in the past */
+-			if (hrtimer_active(&ts->sched_timer))
+-				goto out;
+-		} else if (!tick_program_event(expires, 0))
++			if (hrtimer_active(&ts->sched_timer)) {
++				trace_sched_tick_stop(&expires, inidle);
+ 				goto out;
++			}
++		} else if (!tick_program_event(expires, 0)) {
++			trace_sched_tick_stop(&expires, inidle);
++			goto out;
++		}
++
+ 		/*
+ 		 * We are past the event already. So we crossed a
+ 		 * jiffie boundary. Update jiffies and raise the
+@@ -495,6 +504,8 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+ 		tick_do_update_jiffies64(now);
+ 		now = ktime_get();
+ 	}
++
++	trace_sched_tick_start(&now);
+ }
+ 
+ /**
 -- 
 1.6.4.2
 
