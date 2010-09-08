@@ -1,76 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab0IHWUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 18:20:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47389 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756220Ab0IHWUD (ORCPT
+	id S1756446Ab0IHWZa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 18:25:30 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:51330 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756281Ab0IHWZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 18:20:03 -0400
-Date: Wed, 8 Sep 2010 15:19:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "M. Vefa Bicakci" <bicave@superonline.com>, stable@kernel.org
-Subject: Re: [PATCH] vmscan: check all_unreclaimable in direct reclaim path
-Message-Id: <20100908151929.2586ace5.akpm@linux-foundation.org>
-In-Reply-To: <20100908154527.GA5936@barrios-desktop>
-References: <1283697637-3117-1-git-send-email-minchan.kim@gmail.com>
-	<20100908054831.GB20955@cmpxchg.org>
-	<20100908154527.GA5936@barrios-desktop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Sep 2010 18:25:25 -0400
+To: John Drescher <drescherjm@gmail.com>
+Cc: Damien Wyart <damien.wyart@free.fr>, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.35.*: horrible (exponential? >linear) slowdown to unusability (ACPI idle?)
+References: <87zkvx2ese.fsf@spindle.srvr.nix>
+	<20100906053255.GA23340@brouette> <87iq2gyllg.fsf@spindle.srvr.nix>
+	<AANLkTi=ioyeBvN_yiHER7imi9tjGKH3E=jQCbO0NeO-z@mail.gmail.com>
+From: Nix <nix@esperi.org.uk>
+Emacs: Our Lady of Perpetual Garbage Collection
+Date: Wed, 08 Sep 2010 23:25:22 +0100
+In-Reply-To: <AANLkTi=ioyeBvN_yiHER7imi9tjGKH3E=jQCbO0NeO-z@mail.gmail.com> (John Drescher's message of "Wed, 8 Sep 2010 17:35:48 -0400")
+Message-ID: <87eid3zxd9.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-DCC-z.dcc-servers-Metrics: spindle 1049; Body=3 Fuz1=3 Fuz2=3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Sep 2010 00:45:27 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+On 8 Sep 2010, John Drescher spake thusly:
+> I believe I have the same problem reported in your first post. Or at
+> least a lot of the symptoms.
+>
+> http://forums.gentoo.org/viewtopic-t-842775-postdays-0-postorder-asc-start-0.html
 
-> +static inline bool zone_reclaimable(struct zone *zone)
-> +{
-> +	return zone->pages_scanned < zone_reclaimable_pages(zone) * 6;
-> +}
-> +
-> +static inline bool all_unreclaimable(struct zonelist *zonelist,
-> +		struct scan_control *sc)
-> +{
-> +	struct zoneref *z;
-> +	struct zone *zone;
-> +	bool all_unreclaimable = true;
-> +
-> +	if (!scanning_global_lru(sc))
-> +		return false;
-> +
-> +	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> +			gfp_zone(sc->gfp_mask), sc->nodemask) {
-> +		if (!populated_zone(zone))
-> +			continue;
-> +		if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-> +			continue;
-> +		if (zone_reclaimable(zone)) {
-> +			all_unreclaimable = false;
-> +			break;
-> +		}
-> +	}
-> +
->  	return all_unreclaimable;
->  }
-
-Could we have some comments over these functions please?  Why they
-exist, what problem they solve, how they solve them, etc.  Stuff which
-will be needed for maintaining this code three years from now.
-
-We may as well remove the `inline's too.  gcc will tkae care of that.
-
-> -		if (nr_slab == 0 &&
-> -		   zone->pages_scanned >= (zone_reclaimable_pages(zone) * 6))
-> +		if (nr_slab == 0 && !zone_reclaimable(zone))
-
-Extra marks for working out and documenting how we decided on the value
-of "6".  Sigh.  It's hopefully in the git record somewhere.
+Yeah, that looks mostly the same, though when I see it with
+CONFIG_NO_HZ, I get an increasing slowdown to unusability, not instant
+sloth as you do. (The WD GreenPower thing is a complete red herring, of
+course: if that was the cause of the sloth, it would be slow in other
+kernels too. I see this both on machines with -- non-buggy --
+GreenPowers behind an Areca RAID array, and on machines with totally
+different brands of drives. ToI is likewise a complete red herring.)
