@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758177Ab0IHHRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 03:17:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28322 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757729Ab0IHHRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 03:17:10 -0400
-Message-ID: <4C87386B.2030109@redhat.com>
-Date: Wed, 08 Sep 2010 10:16:59 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Joerg Roedel <joerg.roedel@amd.com>, Alexander Graf <agraf@suse.de>,
-        joro@8bytes.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 22/27] KVM: MMU: Refactor mmu_alloc_roots function
-References: <1283788566-29186-1-git-send-email-joerg.roedel@amd.com> <1283788566-29186-23-git-send-email-joerg.roedel@amd.com> <20100907203952.GA14489@amt.cnet>
-In-Reply-To: <20100907203952.GA14489@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758224Ab0IHHb4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 03:31:56 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38506 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756537Ab0IHHby convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 03:31:54 -0400
+Subject: Re: disabling group leader perf_event
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100908064427.GD3439@elte.hu>
+References: <4C84D77B.6040600@redhat.com> <20100906124330.GA22314@elte.hu>
+	 <4C84E265.1020402@redhat.com> <20100906125905.GA25414@elte.hu>
+	 <4C850147.8010908@redhat.com> <20100906154737.GA4332@elte.hu>
+	 <4C852B2A.2030103@redhat.com> <20100907034417.GA14046@elte.hu>
+	 <20100908014409.GA17010@brick.ozlabs.ibm.com>
+	 <AANLkTi=YdAxdGv1nEEZ4w0jM0K3ss0g5x7_5cU8xNEhj@mail.gmail.com>
+	 <20100908064427.GD3439@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 08 Sep 2010 09:30:48 +0200
+Message-ID: <1283931048.1930.1827.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/07/2010 11:39 PM, Marcelo Tosatti wrote:
->
->> @@ -2406,16 +2441,11 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
->>   			root_gfn = pdptr>>  PAGE_SHIFT;
->>   			if (mmu_check_root(vcpu, root_gfn))
->>   				return 1;
->> -		} else if (vcpu->arch.mmu.root_level == 0)
->> -			root_gfn = 0;
->> -		if (vcpu->arch.mmu.direct_map) {
->> -			direct = 1;
->> -			root_gfn = i<<  30;
->>   		}
->>   		spin_lock(&vcpu->kvm->mmu_lock);
->>   		kvm_mmu_free_some_pages(vcpu);
->>   		sp = kvm_mmu_get_page(vcpu, root_gfn, i<<  30,
->> -				      PT32_ROOT_LEVEL, direct,
->> +				      PT32_ROOT_LEVEL, 0,
->>   				      ACC_ALL, NULL);
-> Should not write protect the gfn for nonpaging mode.
->
+On Wed, 2010-09-08 at 08:44 +0200, Ingo Molnar wrote:
+> Thus instructions like 'mov (%rax), ...' would be handled by not 
+> allowing them, only addresses which do not change from execution
+> state.
 
-nonpaging mode should have direct_map set, so wouldn't enter this path 
-at all.
+> Do you know some interesting usecase that would be excluded via such 
+> address restrictions? 
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+my_array[i] = foo;
 
+usually ends up wanting to do something with a register offset.
