@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab0IHRas (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 13:30:48 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:51592 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab0IHRal (ORCPT
+	id S1752623Ab0IHRgQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 13:36:16 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39299 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751469Ab0IHRgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 13:30:41 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 69.181.193.102
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18lxfvNBmhpUTiKAsEGSHgr
-Date: Wed, 8 Sep 2010 10:30:40 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: David Cross <david.cross@cypress.com>
-Cc: "'Greg KH'" <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] gpmc, EXPORT_SYMBOLS, west bridge related
-Message-ID: <20100908173040.GP22507@atomide.com>
-References: <1283887607.7250.10.camel@odc-laptop>
- <20100907235800.GD12823@kroah.com>
- <701AE2655D844F9AAB5F2492AD477066@stanford.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <701AE2655D844F9AAB5F2492AD477066@stanford.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 8 Sep 2010 13:36:10 -0400
+Date: Wed, 8 Sep 2010 18:56:05 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Nick Lowe <nick.lowe@gmail.com>
+Cc: Hans-Peter Jansen <hpj@urpla.net>, linux-kernel@vger.kernel.org
+Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
+Message-ID: <20100908185605.55671889@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTi=U40mzeMh-UJJy=ggVDry2qDWW-MYYyBhS_Kex@mail.gmail.com>
+References: <fmbxh-5N8-41@gated-at.bofh.it>
+	<55BC9463-95B9-4034-AA1E-55042D6E9354@gmail.com>
+	<201009081115.15544.hpj@urpla.net>
+	<AANLkTi=U40mzeMh-UJJy=ggVDry2qDWW-MYYyBhS_Kex@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Cross <david.cross@cypress.com> [100908 09:52]:
-> 
-> > From: Greg KH [mailto:greg@kroah.com] 
-> 
-> > On Tue, Sep 07, 2010 at 12:26:47PM -0700, David Cross wrote:
-> > > This patch exports some of the gpmc driver functions in OMAP3. The
-> purpose behind this patch 
-> > > is to allow device drivers compiled as loadable modules to be interfaced
-> > to the GPMC. I am
-> > > hoping that Tony is the correct maintainer and willing to ACK this
-> change. Please let me know 
-> > > if there are any issues or concerns with this patch.
-> > > Thanks,
-> > > David
-> > > 
-> > > Signed-off-by: David Cross <david.cross@cypress.com>
-> > > 
-> > > diff -uprN -X linux-next-vanilla/Documentation/dontdiff
-> linux-next-vanilla/arch/arm/mach-omap2/gpmc.c
-> linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c
-> > > --- linux-next-vanilla/arch/arm/mach-omap2/gpmc.c	2010-08-31
-> 19:32:51.000000000 -0700
-> > > +++ linux-next-incl-sdk/arch/arm/mach-omap2/gpmc.c	2010-09-01
-> 16:10:21.000000000 -0700
-> > > @@ -133,6 +133,7 @@ void gpmc_cs_write_reg(int cs, int idx, 
-> > >  	reg_addr = gpmc_base + GPMC_CS0_OFFSET + (cs * GPMC_CS_SIZE) + idx;
-> > >  	__raw_writel(val, reg_addr);
-> > >  }
-> > > +EXPORT_SYMBOL(gpmc_cs_write_reg);
-> 
-> > EXPORT_SYMBOL_GPL() perhaps?
-> 
-> I don't have an issue with that, though I am not sure I understand why we
-> would want to limit the usage of the function to GPL'd modules. It is
-> probably Tony's call assuming he is ok with exporting the symbol.
+> If a process crashes because of NOPL usage, you get the feedback loop to fix it.
 
-Exporting these is not a good idea, it should be done in the platform
-init code like I replied in another message.
+Trouble is that means rebuilding entire distributios, who don't
+neccessarily care about Geode. We had the same problem before with cmov
+and the VIA processors, GCC programmers didn't read the Intel PPro
+manual and got it wrong but it was the end users who suffered, and most of
+them were not in a position to rebuild their distro (and every security
+update, and test them all ...) and their distro didn't care.
 
-Regards,
+So lots of people ran a kernel with a CMOV hack in it - never got
+mainstream which is unfortunate because if it had it would have helped
+a lot more people and had the hole in it fixed.
 
-Tony
+> The beauty of open source is that we can recompile to correct the bad
+> assumption; the latest version of binutils (GAS) finally corrects the
+> bad semantic that generic i686 includes NOPL.
+
+And the reality is that this won't happen. Yes you can do it but it's an
+enormously slow and inefficient way to tackle the problem.
+
+So the patch (corrected) makes complete sense.
+
+Alan
