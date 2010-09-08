@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab0IHVGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 17:06:06 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:32880 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569Ab0IHVF6 (ORCPT
+	id S1755233Ab0IHVHR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 17:07:17 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47693 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab0IHVHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 17:05:58 -0400
-Date: Wed, 8 Sep 2010 17:05:53 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: David Cross <david.cross@cypress.com>
-Cc: dhowells@redhat.com, linux-cachefs@redhat.com, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Cachefiles, mpage_cleardirty addtition, west bridge
- related
-Message-ID: <20100908210553.GA22411@infradead.org>
-References: <1283888011.7250.17.camel@odc-laptop>
- <4313.1283956531@redhat.com>
- <9465F8A421744836B35704023ECA8253@stanford.edu>
+	Wed, 8 Sep 2010 17:07:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=c88XbXU0N0yLwugc97YtD2cBG0PKfsf2/wwPaWiuV1KlJydOLH4l4QVKK42c/n1o3N
+         Y8AlPW0h1wZ6zk7mwiiE3fWpWeeErNFoWz3nBcxZaDZC9iOlO7rKablL/4axzi5BT8Us
+         yqoqXXHg+wjVrVYBxu8DAvKZR1C6R2QH9Hp68=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9465F8A421744836B35704023ECA8253@stanford.edu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100908221144.73066e2d@lxorguk.ukuu.org.uk>
+References: <fmbxh-5N8-41@gated-at.bofh.it>
+	<55BC9463-95B9-4034-AA1E-55042D6E9354@gmail.com>
+	<201009081115.15544.hpj@urpla.net>
+	<AANLkTi=U40mzeMh-UJJy=ggVDry2qDWW-MYYyBhS_Kex@mail.gmail.com>
+	<20100908185605.55671889@lxorguk.ukuu.org.uk>
+	<AANLkTi=khD7fSVv_tC6TogimjJshEErj6Em8mCcDF+SM@mail.gmail.com>
+	<20100908200715.2e56d0be@lxorguk.ukuu.org.uk>
+	<AANLkTi=FNFKmBgobH4q-GHguHM-0UOCQpa7JhPhyZZHG@mail.gmail.com>
+	<20100908221144.73066e2d@lxorguk.ukuu.org.uk>
+Date: Wed, 8 Sep 2010 22:07:13 +0100
+Message-ID: <AANLkTi=YDGV2gd21Ora8YyfGRLC8kEkKzpo+S41VJunw@mail.gmail.com>
+Subject: Re: AMD Geode NOPL emulation for kernel 2.6.36-rc2
+From: Nick Lowe <nick.lowe@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 09:51:22AM -0700, David Cross wrote:
-> This is used by the current west bridge driver in the linux-next tree,
-> marked as BROKEN at the moment. It is used in order to clear dirty pages
-> from the page cache for a specific file after it has been allocated. This
-> allows west bridge to transfer data from USB to storage directly without
-> requiring that the file data path go through the CPU. The easiest way to
-> think of this is that it allows for direct file based DMA. Please let me
-> know if you have any additional questions or concerns on this.
+Okay, you win! :)
 
-It's sad enough that it was taken into any tree at all, but we're not
-going to add incorrect crap into the kernel kernel for it.
+Were some form of this patch to be merged in the future, the bintutils
+fix is likely to result in it never being hit anyway, so I suppose it
+doesn't matter much.
+In the long run, it could probably be removed.
 
-mpage_* are pagecache manpipulation routines, and are only for use by
-filesystems for inodes they manage.  A driver may never access this
-directly.  Is this the same piece of junk you wanted fat_get_block
-exported for?
+I still think it's an incredibly ugly hack! :P
 
+Cheers,
+
+Nick
+
+On Wed, Sep 8, 2010 at 10:11 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> 1) Those enterprise long term distributions aren't going to be
+>> targeting the Crusoe or Geode. It's not their market. Would they even
+>
+> See this is the problem. You've forgotten *users*. It's easy to roll a
+> special kernel, its hell on earth
+>
+>> back port, therefore, if it was an issue?
+>> (This hypothetical anyway as it assuming they have an i686 targeted
+>> build already. Who does? Centos, RHEL and SUSE Enterprise are all i386
+>> targeted at the moment for x86.)
+>
+> Wrong for some packages - and enough to break things. Bits like glibc for
+> example and chunks of X and proprietary apps.
+>
+>>. (Again, hypothetical, as they're not targeted at i686!)
+>
+> See above
+>
+>> 4) As for proprietary apps, again, is it likely that they're targeting
+>> i686 already? Or is it far more likely they're compiled for i386 et.
+>> al.
+>
+> Lots used -i686 because the compiler people said its faster and it works
+> on all 686 platforms. Neither of which it turns out is exactly true in
+> many cases.
+>
+>> 6) What we are talking about is future distributions, whatever they
+>> are, that are now or are changing to target i686 which end users will
+>> ultimately want to migrate to and run.
+>
+> s/we/you
+>
+> Getting the stuff right in the current kernel makes it easier to backport
+> and fix and do tidily. It's not as if NOPL is complicated to emulate.
+>
