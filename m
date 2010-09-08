@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab0IHGzW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 02:55:22 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:59101 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757323Ab0IHGzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 02:55:20 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "tglx\@linutronix.de" <tglx@linutronix.de>,
-        "mingo\@redhat.com" <mingo@redhat.com>,
-        "x86\@kernel.org" <x86@kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] [arch-x86] Allow SRAT integrity check to be skipped
-References: <20100901213318.19353.54619.stgit@localhost.localdomain>
-	<20100902065731.GB29972@elte.hu>
-	<20100902100308.GA17167@basil.fritz.box>
-	<20100903063934.GA25863@elte.hu> <1283888337.18468.9.camel@pjaxe>
-	<4C869AA3.6000103@zytor.com>
-Date: Wed, 08 Sep 2010 08:55:18 +0200
-In-Reply-To: <4C869AA3.6000103@zytor.com> (H. Peter Anvin's message of "Tue,
-	07 Sep 2010 13:03:47 -0700")
-Message-ID: <87wrqwiv1l.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1757784Ab0IHGzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 02:55:48 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43006 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757696Ab0IHGzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 02:55:46 -0400
+Date: Wed, 8 Sep 2010 08:53:33 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jean Pihet <jean.pihet@newoldbits.com>
+Cc: Thomas Renninger <trenn@suse.de>, Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
+        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, discuss@lesswatts.org,
+        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] tracing, perf: add more power related events
+Message-ID: <20100908065333.GG3439@elte.hu>
+References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
->
-> If this is a production BIOS it should have this information.
 
-The point was -- it wasn't a production BIOS and the production
-BIOS will be fixed.
+* Jean Pihet <jean.pihet@newoldbits.com> wrote:
 
-If you want you call fill the DMI tables with all bugs in preproduction
-BIOS, but I suspect that will fill them up rather quickly. Preproduction
-BIOS tend to be buggy (that is why they are pre-production)
+> Hi,
+> 
+> Here is a patch proposal for adding new trace events for power management.
+> Note: thread restarted after the initial discussions on LKML.
 
-Another problem also with adding stuff for early BIOS is that the later
-BIOS likely have this fixed and then you have a quirk that runs but is
-not needed (unless you add another DMI match for the fixed production
-BIOS etc.) While for this case it would be probably harmless, 
-this has caused problems in the past with other quirks.
+Also mind including the ACPI tracepoints we talked about? That way a lot 
+more people could test it, etc.
 
-Normally early users are also ok with having to specify an option
-as a workaround, they just need something they can specify.
-
-IMHO also it's good coding practice to have a command line option
-for every DMI quirk anyways. This makes it easier to let 
-users test if they need a particular quirk and helps
-with users running older kernels.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+	Ingo
