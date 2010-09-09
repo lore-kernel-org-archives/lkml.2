@@ -1,36 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab0IIJyF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 05:54:05 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:56820 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab0IIJyE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 05:54:04 -0400
-Date: Thu, 9 Sep 2010 11:53:59 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] MIPS: Allow UserLocal on MIPS_R1 processors
-Message-ID: <20100909095359.GA27815@linux-mips.org>
-References: <064bb0722da5d8c271c2bd9fe0a521cc@localhost>
- <d57a8d9cc346a9235a93e528beac4c40@localhost>
+	id S1754290Ab0IIJ6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 05:58:15 -0400
+Received: from www.tglx.de ([62.245.132.106]:41020 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab0IIJ6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 05:58:13 -0400
+Date: Thu, 9 Sep 2010 11:58:09 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Richard Cochran <richardcochran@gmail.com>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH 0/2] [RFC] posix clock tuning
+In-Reply-To: <cover.1283504065.git.richard.cochran@omicron.at>
+Message-ID: <alpine.LFD.2.00.1009091152300.2477@localhost6.localdomain6>
+References: <cover.1283504065.git.richard.cochran@omicron.at>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d57a8d9cc346a9235a93e528beac4c40@localhost>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 04:02:14PM -0700, Kevin Cernekee wrote:
+On Fri, 3 Sep 2010, Richard Cochran wrote:
 
-> Some MIPS32R1 processors implement UserLocal (RDHWR $29) to accelerate
-> programs that make extensive use of thread-local storage.  Therefore,
-> setting up the HWRENA register should not depend on cpu_has_mips_r2.
+> Recently on the lkml, we discussed how to allow adjustment of posix
+> clocks. I have tried to understand and implement the ideas expressed
+> in the various threads.
 
-Interesting - which R1 processor has RDHWR?  When UserLocal was conceived
-R2 was already long released.
+Cc'ing the relevant maintainers to such discussions and patches might
+be helpful. Seems I need to do some archive digging.
 
-  Ralf
+> If there is agreement on this approach, I will resubmit these two
+> patches as part of a longer series, including support for a new kind
+> of hardware clock, so you can see how it all fits together. But first,
+> I would like to concentrate on the new syscall itself.
+> 
+> The patches are against a recent net-next tree. Please don't worry if
+> the syscall tables are not quite up to date. I can fix that later.
+
+How is this related to net-next ? 
+
+Thanks,
+
+	tglx
