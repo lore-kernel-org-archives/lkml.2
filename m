@@ -1,99 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab0IIPPY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 11:15:24 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40013 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371Ab0IIPPX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 11:15:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:content-type:content-transfer-encoding;
-        b=smYpkeXZAZrOA2mm0EDKNaRpdCZr1S38ukZVV+wlCZXspLqq/ZFcbRvpIy5g7XygqY
-         elZSWGsRHP3F1R0OP7myfVE+1/vp/lJeaZWNHb19oh/xMq5fasxP13jKmnADcoqNxAdj
-         YtHHMfUo2lV3bHM3bIU/PDBOGry9pOYS6Yz0E=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTi=uzLJxDbd+uJAww-b5aP10gd8gbGVG19HS46ue@mail.gmail.com>
-References: <AANLkTi=uzLJxDbd+uJAww-b5aP10gd8gbGVG19HS46ue@mail.gmail.com>
-Date: Thu, 9 Sep 2010 17:15:22 +0200
-Message-ID: <AANLkTinoR=ZeCqcqSuoY884y_7MNB50B7RiwY4B+Fycc@mail.gmail.com>
-Subject: Re: mm/Kconfig: warning: (COMPACTION && EXPERIMENTAL && HUGETLB_PAGE
- && MMU) selects MIGRATION which has unmet direct dependencies (NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754084Ab0IIPXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 11:23:38 -0400
+Received: from mail.perches.com ([173.55.12.10]:1550 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751371Ab0IIPXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 11:23:37 -0400
+Subject: Re: [PATCH] include/linux/pci.h: Make struct pci_driver.name const
+ char *
+From: Joe Perches <joe@perches.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100909075455.0cf3d3a5@nehalam>
+References: <1284017884.24986.93.camel@Joe-Laptop>
+	 <20100909075455.0cf3d3a5@nehalam>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Sep 2010 08:23:34 -0700
+Message-ID: <1284045814.24986.119.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Argh, forgot...
+On Thu, 2010-09-09 at 07:54 -0700, Stephen Hemminger wrote:
+> On Thu, 09 Sep 2010 00:38:04 -0700
+> Joe Perches <joe@perches.com> wrote:
+> > As far as I can tell, name is never modified.
+> I already sent same patch to Jesse
 
-[ mm/Kconfig ]
-...
-#
-# support for page migration
-#
-config MIGRATION
-        bool "Page migration"
-        def_bool y
-        depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE
-        help
-          Allows the migration of the physical location of pages of processes
-          while the virtual addresses are not changed. This is useful in
-          two situations. The first is on NUMA systems to put pages nearer
-          to the processors accessing. The second is when allocating huge
-          pages as migration can relocate pages to satisfy a huge page
-          allocation instead of reclaiming.
-...
+Great.
 
-- Sedat -
+I found it now on linux-pci.
+https://patchwork.kernel.org/project/linux-pci/list/
 
-On Thu, Sep 9, 2010 at 5:10 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> Hi,
->
-> while build latest 2.6.36-rc3 I get this warning:
->
-> [ build.log]
-> ...
-> warning: (COMPACTION && EXPERIMENTAL && HUGETLB_PAGE && MMU) selects
-> MIGRATION which has unmet direct dependencies (NUMA ||
-> ARCH_ENABLE_MEMORY_HOTREMOVE)
-> ...
->
-> Here the excerpt of...
->
-> [ mm/Kconfig ]
-> ...
-> # support for memory compaction
-> config COMPACTION
->        bool "Allow for memory compaction"
->        select MIGRATION
->        depends on EXPERIMENTAL && HUGETLB_PAGE && MMU
->        help
->          Allows the compaction of memory for the allocation of huge pages.
-> ...
->
-> I have set the following kernel-config parameters:
->
-> $ egrep 'COMPACTION|HUGETLB_PAGE|MMU|MIGRATION|NUMA|ARCH_ENABLE_MEMORY_HOTREMOVE'
-> linux-2.6.36-rc3/debian/build/build_i386_none_686/.config
-> CONFIG_MMU=y
-> # CONFIG_IOMMU_HELPER is not set
-> CONFIG_IOMMU_API=y
-> CONFIG_COMPACTION=y
-> CONFIG_MIGRATION=y
-> CONFIG_MMU_NOTIFIER=y
-> CONFIG_HUGETLB_PAGE=y
-> # CONFIG_IOMMU_STRESS is not set
->
-> Looks like I have no NUMA or ARCH_ENABLE_MEMORY_HOTREMOVE set.
->
-> Ok, it is a *warning*...
->
-> Kind Regards,
-> - Sedat -
->
+I think it's better to cc lkml with patches to enable
+easier searches of the patchwork queue in a single place.
+
+https://patchwork.kernel.org/project/LKML/list/
+
+cheers, Joe
+
