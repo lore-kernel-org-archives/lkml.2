@@ -1,85 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab0IIBLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 21:11:49 -0400
-Received: from helicon.mas.viperplatform.net.au ([202.147.75.21]:60993 "EHLO
-	helicon.mas.viperplatform.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754863Ab0IIBLn (ORCPT
+	id S1756804Ab0IIBVf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 21:21:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50895 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756763Ab0IIBVb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 21:11:43 -0400
-X-Greylist: delayed 4130 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Sep 2010 21:11:43 EDT
-Date: Thu, 9 Sep 2010 10:02:45 +1000
-From: Stuart Longland <redhatter@gentoo.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Voltage/current/sensor monitoring interface and Wiegand
-Message-ID: <20100909000245.GK14056@atomos.longlandclan.yi.org>
+	Wed, 8 Sep 2010 21:21:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=Q5MJ58F6J2NOky+dFXtr/H9tqlTIFXXLSK0In0CpexqMA2C1JLOJ5kH9Ek3F24mS8y
+         OWF5BjHYJ+0ogj7w4MDi8h2mWdIlpwMxdH1v0lUjNSpAwBzGpP5wb5j68+j2cU0o0zbQ
+         LHoGu3IVDG50JpGhvYLsHImBbCD0X86BJUwmI=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: "Mark F. Brown" <mark.brown314@gmail.com>
+Subject: Re: [PATCH 1/3] ARM: pxa168: added support for Teton BGA platform
+Date: Thu, 9 Sep 2010 03:21:24 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-1-amd64; KDE/4.4.5; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        linux-kernel@vger.kernel.org
+References: <1283914607-10570-1-git-send-email-mark.brown314@gmail.com> <201009081751.22841.marek.vasut@gmail.com> <AANLkTim+heO9nDOUhKYatAKts6QcPvcE0tBs=wVtvF4g@mail.gmail.com>
+In-Reply-To: <AANLkTim+heO9nDOUhKYatAKts6QcPvcE0tBs=wVtvF4g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201009090321.24440.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Dne Čt 9. září 2010 01:42:36 Mark F. Brown napsal(a):
+> On Wed, Sep 8, 2010 at 11:51 AM, Marek Vasut <marek.vasut@gmail.com> wrote:
+> > Dne St 8. září 2010 04:56:45 Mark F. Brown napsal(a):
+> > 
+> > ---------------------------
+> > Description is missing here
+> > ---------------------------
+> > 
+> >> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+> >> ---
+> >>  arch/arm/mach-mmp/Kconfig     |    7 ++++++
+> >>  arch/arm/mach-mmp/Makefile    |    1 +
+> >>  arch/arm/mach-mmp/teton_bga.c |   47
+> >> +++++++++++++++++++++++++++++++++++++++++ 3 files changed, 55
+> >> insertions(+), 0 deletions(-)
+> >>  create mode 100644 arch/arm/mach-mmp/teton_bga.c
+> >> 
+> >> diff --git a/arch/arm/mach-mmp/Kconfig b/arch/arm/mach-mmp/Kconfig
+> >> index 6ab843e..0711d3b 100644
+> >> --- a/arch/arm/mach-mmp/Kconfig
+> >> +++ b/arch/arm/mach-mmp/Kconfig
+> >> @@ -57,6 +57,13 @@ config MACH_MARVELL_JASPER
+> >>         PXA910-based development board. Since MMP2 is compatible to
+> >>         ARMv6 architecture.
+> >> 
+> >> +config MACH_TETON_BGA
+> >> +     bool "Marvell's PXA168 Teton BGA Development Board"
+> >> +     select CPU_PXA168
+> >> +     help
+> >> +       Say 'Y' here if you want to support the Marvell PXA168-based
+> >> +       Teton BGA Development Board.
+> >> +
+> >>  endmenu
+> >> 
+> >>  config CPU_PXA168
+> >> diff --git a/arch/arm/mach-mmp/Makefile b/arch/arm/mach-mmp/Makefile
+> >> index 8b66d06..751cdbf 100644
+> >> --- a/arch/arm/mach-mmp/Makefile
+> >> +++ b/arch/arm/mach-mmp/Makefile
+> >> @@ -17,3 +17,4 @@ obj-$(CONFIG_MACH_TAVOREVB) += tavorevb.o
+> >>  obj-$(CONFIG_MACH_TTC_DKB)   += ttc_dkb.o
+> >>  obj-$(CONFIG_MACH_FLINT)     += flint.o
+> >>  obj-$(CONFIG_MACH_MARVELL_JASPER) += jasper.o
+> >> +obj-$(CONFIG_MACH_TETON_BGA) += teton_bga.o
+> >> diff --git a/arch/arm/mach-mmp/teton_bga.c
+> >> b/arch/arm/mach-mmp/teton_bga.c new file mode 100644
+> >> index 0000000..014cc37
+> >> --- /dev/null
+> >> +++ b/arch/arm/mach-mmp/teton_bga.c
+> >> @@ -0,0 +1,47 @@
+> >> +/*
+> >> + *  linux/arch/arm/mach-mmp/teton_bga.c
+> >> + *
+> >> + *  Support for the Marvell PXA168 Teton BGA Development Platform.
+> > 
+> > Authoring information of this file are missing. Also, MAINTAINERS entry
+> > is missing.
+> > 
+> >> + *
+> >> + *  This code is based on aspenite.c
+> >> + *
+> >> + *  This program is free software; you can redistribute it and/or
+> >> modify + *  it under the terms of the GNU General Public License
+> >> version 2 as + *  publishhed by the Free Software Foundation.
+> >> + */
+> >> +
+> >> +#include <linux/init.h>
+> >> +#include <linux/kernel.h>
+> >> +#include <linux/platform_device.h>
+> >> +
+> >> +#include <asm/mach-types.h>
+> >> +#include <asm/mach/arch.h>
+> >> +#include <mach/addr-map.h>
+> >> +#include <mach/mfp-pxa168.h>
+> >> +#include <mach/pxa168.h>
+> >> +#include <mach/gpio.h>
+> > 
+> > use ... #include <linux/gpio.h>
+> > 
+> >> +
+> >> +#include "common.h"
+> >> +
+> >> +static unsigned long teton_bga_pin_config[] __initdata = {
+> >> +     /* UART1 */
+> >> +     GPIO107_UART1_TXD,
+> >> +     GPIO108_UART1_RXD,
+> >> +};
+> >> +
+> >> +static void __init teton_bga_init(void)
+> >> +{
+> >> +     mfp_config(ARRAY_AND_SIZE(teton_bga_pin_config));
+> >> +
+> >> +     /* on-chip devices */
+> >> +     pxa168_add_uart(1);
+> > 
+> > Don't we have enum for these magic numbers on pxa168 ?
+> > 
+> >> +}
+> >> +
+> >> +MACHINE_START(TETON_BGA, "PXA168-based Teton BGA Development Platform")
+> >> +     .phys_io        = APB_PHYS_BASE,
+> >> +     .io_pg_offst    = (APB_VIRT_BASE >> 18) & 0xfffc,
+> >> +     .map_io         = mmp_map_io,
+> >> +     .init_irq       = pxa168_init_irq,
+> >> +     .timer          = &pxa168_timer,
+> >> +     .init_machine   = teton_bga_init,
+> >> +MACHINE_END
+> > 
+> > Cheers
+> 
+> I am assuming you mean the magic number for .io_pg_offst:
+>  .io_pg_offst    = (APB_VIRT_BASE >> 18) & 0xfffc,
 
-I'm currently writing a driver for an in-house developed sensor
-controller device.  This device communicates via I�C, and functions as a
-multi-function device incorporating:
+Nope, sorry, I meant this:
 
-- Touchscreen controller
-- Keypad/Button controller
-- LED driver
-- Voltage/current monitor
-- Temperature sensor monitor
-- Light sensor monitor
-- PIR (motion) detection monitor
-- Communications interface (for slow serial links like Wiegand)
++     pxa168_add_uart(1);
 
-Our target is a Ka-Ro TX27 module, running their supplied kernel
-(2.6.28)... however I'm not afraid to backport things from the latest
-kernel, or to forward port any changes for mainline kernel inclusion.
-(I've already got an experimental patchset that gets these things
-booting kernel 2.6.34.)
+The (1) seems weird, but whatever. I don't have any pxa168 device.
 
-The first three on this list, I've got settled pretty nicely using
-existing interfaces.  The things I'm not sure about, are the remaining
-interfaces, and how to best write a driver for them.
-
-How are voltage *monitors* normally written?  (note, not voltage
-*regulators*... this thing does not alter the voltage rails.)  I tried
-to make sense of lm-sensors, but that seems very ad-hoc (maybe I missed
-some document that explains it) to me.  It's hard to be clear on what is
-the *right* way to report a voltage or current reading to userspace.
-
-For the temperature and light sensing... temperature sensors certainly
-exist in the PC world, and maybe I should look closely at how they are
-normally done, but I wasn't sure about the light sensor.  I was thinking
-maybe an input device with some new absolute value reported?
-
-Likewise with the PIR sensor, I notice there's a "gesture" input
-(MSC_GESTURE)... seems appropriate?  Or am I barking up the wrong tree?
-
-The other feature is for things like Wiegand... Looking around I cannot
-see any interface in the Linux kernel for Wiegand interfaces.
-
-<http://en.wikipedia.org/wiki/Wiegand_protocol>
-
-Given the likely use of embedded Linux in security systems, it makes
-sense to come up with a suitable interface out in the open, rather than
-everyone coming up with their own device-specific interfaces.
-
-Apologies if this has been asked before, but I've looked around and
-haven't seen anything... so I figured before I get too deep into this,
-I'd enquire about the Right Way it should be done. ;-)
-
-Regards,
--- 
-Stuart Longland (aka Redhatter, VK4MSL)      .'''.
-Gentoo Linux/MIPS Cobalt and Docs Developer  '.'` :
-. . . . . . . . . . . . . . . . . . . . . .   .'.'
-http://dev.gentoo.org/~redhatter             :.'
-
-I haven't lost my mind...
-  ...it's backed up on a tape somewhere.
+> It seems all of the other platforms in arch/arm are configuring it
+> this way. Do you really want me to change this?
+> 
+> Regards,
+> -- Mark
