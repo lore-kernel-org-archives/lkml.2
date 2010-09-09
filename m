@@ -1,80 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab0IIKtn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 06:49:43 -0400
-Received: from www.tglx.de ([62.245.132.106]:54159 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753840Ab0IIKtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 06:49:41 -0400
-Date: Thu, 9 Sep 2010 12:49:27 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Cochran <richardcochran@gmail.com>
-cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 1/2] posix clocks: introduce a syscall for clock
- tuning.
-In-Reply-To: <7f4815cdfcf5bc49df4bdd09d59a4f56ca2598f5.1283504065.git.richard.cochran@omicron.at>
-Message-ID: <alpine.LFD.2.00.1009091159260.2477@localhost6.localdomain6>
-References: <cover.1283504065.git.richard.cochran@omicron.at> <7f4815cdfcf5bc49df4bdd09d59a4f56ca2598f5.1283504065.git.richard.cochran@omicron.at>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754833Ab0IIK52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 06:57:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55398 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab0IIK5Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 06:57:24 -0400
+Message-ID: <4C88BD8F.5080208@monstr.eu>
+Date: Thu, 09 Sep 2010 12:57:19 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 08/43] memblock/microblaze: Use new accessors
+References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>	 <1281071724-28740-9-git-send-email-benh@kernel.crashing.org>	 <4C5BCD41.3040501@monstr.eu> <1281135046.2168.40.camel@pasglop>
+In-Reply-To: <1281135046.2168.40.camel@pasglop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010, Richard Cochran wrote:
-
-This patch needs to be split in pieces. The syscall change is totally
-unrelated to the dynamic clock id creation. Though I do not like
-either of them. :)
-
-> A new syscall is introduced that allows tuning of a POSIX clock. The
-> syscall is implemented for four architectures: arm, blackfin, powerpc,
-> and x86.
+Benjamin Herrenschmidt wrote:
+> On Fri, 2010-08-06 at 10:52 +0200, Michal Simek wrote:
+>> Benjamin Herrenschmidt wrote:
+>>> CC: Michal Simek <monstr@monstr.eu>
+>>> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> This patch remove bug which I reported but there is another place which 
+>> needs to be changed.
+>>
+>> I am not sure if my patch is correct but at least point you on places 
+>> which is causing compilation errors.
+>>
+>> I tested your memblock branch with this fix and microblaze can boot.
 > 
-> The new syscall, clock_adjtime, takes two parameters, the clock ID,
-> and a pointer to a struct timex. The semantics of the timex struct
-> have been expanded by one additional mode flag, which allows an
-> absolute offset correction. When specificied, the clock offset is
-> immediately corrected by skipping to the new time value.
+> Ok, that's missing in my initial rename patch. I'll fix it up. Thanks.
+> 
+> Cheers,
+> Ben.
 
-And why do we need a separate syscall for this?
+I don't know why but this unfixed old patch is in linux-next today. Not 
+sure which tree contains it.
 
-> In addition, the POSIX clock code has been augmented to offer a
-> dynamic clock creation method. Instead of registering a hard
-> coded clock ID, modules may call create_posix_clock(), which
-> returns a new clock ID.
+Thanks,
+Michal
 
-This has been discussed for years and I still fail to see the
-requirement for this. The only result is that it allows folks to
-create their special purpose clock stuff and keep it out of tree
-instead of fixing the problems they have with the existing clock
-infrastructure in the kernel.
+>>
+>>    CC      arch/microblaze/mm/init.o
+>> arch/microblaze/mm/init.c: In function 'mm_cmdline_setup':
+>> arch/microblaze/mm/init.c:236: error: 'struct memblock_type' has no 
+>> member named 'region'
+>> arch/microblaze/mm/init.c: In function 'mmu_init':
+>> arch/microblaze/mm/init.c:279: error: 'struct memblock_type' has no 
+>> member named 'region'
+>> arch/microblaze/mm/init.c:284: error: 'struct memblock_type' has no 
+>> member named 'region'
+>> arch/microblaze/mm/init.c:285: error: 'struct memblock_type' has no 
+>> member named 'region'
+>> arch/microblaze/mm/init.c:286: error: 'struct memblock_type' has no 
+>> member named 'region'
+>> make[1]: *** [arch/microblaze/mm/init.o] Error 1
+>> make: *** [arch/microblaze/mm] Error 2
+>>
+>>
+>> diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
+>> index 32a702b..a9d7b9b 100644
+>> --- a/arch/microblaze/mm/init.c
+>> +++ b/arch/microblaze/mm/init.c
+>> @@ -233,7 +233,7 @@ static void mm_cmdline_setup(void)
+>>                  if (maxmem && memory_size > maxmem) {
+>>                          memory_size = maxmem;
+>>                          memory_end = memory_start + memory_size;
+>> -                       memblock.memory.region[0].size = memory_size;
+>> +                       memblock.memory.regions[0].size = memory_size;
+>>                  }
+>>          }
+>>   }
+>> @@ -276,14 +276,14 @@ asmlinkage void __init mmu_init(void)
+>>                  machine_restart(NULL);
+>>          }
+>>
+>> -       if ((u32) memblock.memory.region[0].size < 0x1000000) {
+>> +       if ((u32) memblock.memory.regions[0].size < 0x1000000) {
+>>                  printk(KERN_EMERG "Memory must be greater than 16MB\n");
+>>                  machine_restart(NULL);
+>>          }
+>>          /* Find main memory where the kernel is */
+>> -       memory_start = (u32) memblock.memory.region[0].base;
+>> -       memory_end = (u32) memblock.memory.region[0].base +
+>> -                               (u32) memblock.memory.region[0].size;
+>> +       memory_start = (u32) memblock.memory.regions[0].base;
+>> +       memory_end = (u32) memblock.memory.regions[0].base +
+>> +                               (u32) memblock.memory.regions[0].size;
+>>          memory_size = memory_end - memory_start;
+>>
+>>          mm_cmdline_setup(); /* FIXME parse args from command line - not 
+>> used */
+>>
+>>
+>>
+>>> ---
+>>>  arch/microblaze/mm/init.c |   20 +++++++++-----------
+>>>  1 files changed, 9 insertions(+), 11 deletions(-)
+>>>
+>>> diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
+>>> index afd6494..32a702b 100644
+>>> --- a/arch/microblaze/mm/init.c
+>>> +++ b/arch/microblaze/mm/init.c
+>>> @@ -70,16 +70,16 @@ static void __init paging_init(void)
+>>>  
+>>>  void __init setup_memory(void)
+>>>  {
+>>> -	int i;
+>>>  	unsigned long map_size;
+>>> +	struct memblock_region *reg;
+>>> +
+>>>  #ifndef CONFIG_MMU
+>>>  	u32 kernel_align_start, kernel_align_size;
+>>>  
+>>>  	/* Find main memory where is the kernel */
+>>> -	for (i = 0; i < memblock.memory.cnt; i++) {
+>>> -		memory_start = (u32) memblock.memory.regions[i].base;
+>>> -		memory_end = (u32) memblock.memory.regions[i].base
+>>> -				+ (u32) memblock.memory.region[i].size;
+>>> +	for_each_memblock(memory, reg) {
+>>> +		memory_start = (u32)reg->base;
+>>> +		memory_end = (u32) reg->base + reg->size;
+>>>  		if ((memory_start <= (u32)_text) &&
+>>>  					((u32)_text <= memory_end)) {
+>>>  			memory_size = memory_end - memory_start;
+>>> @@ -147,12 +147,10 @@ void __init setup_memory(void)
+>>>  	free_bootmem(memory_start, memory_size);
+>>>  
+>>>  	/* reserve allocate blocks */
+>>> -	for (i = 0; i < memblock.reserved.cnt; i++) {
+>>> -		pr_debug("reserved %d - 0x%08x-0x%08x\n", i,
+>>> -			(u32) memblock.reserved.region[i].base,
+>>> -			(u32) memblock_size_bytes(&memblock.reserved, i));
+>>> -		reserve_bootmem(memblock.reserved.region[i].base,
+>>> -			memblock_size_bytes(&memblock.reserved, i) - 1, BOOTMEM_DEFAULT);
+>>> +	for_each_memblock(reserved, reg) {
+>>> +		pr_debug("reserved - 0x%08x-0x%08x\n",
+>>> +			 (u32) reg->base, (u32) reg->size);
+>>> +		reserve_bootmem(reg->base, reg->size, BOOTMEM_DEFAULT);
+>>>  	}
+>>>  #ifdef CONFIG_MMU
+>>>  	init_bootmem_done = 1;
+>>
+> 
+> 
 
-As far as I understood from the previous discussions, the final goal
-is to provide PTP support, right?
 
-But what I see is an approach which tries to implement disconnected
-special purpose clocks which have the ability to be adjusted
-independently. What's the purpose of this ? Why can't we just use the
-existing clocks and make PTP work on them ?
-
-I know that lots of embedded folks think that they need their special
-timers and extra magic to make stuff work, but that's the wrong
-approach.
-
-What's wrong with the existing clocks? Nothing, except that we have no
-way to sync CLOCK_MONOTONIC across several machines. And that's what
-you really want if you try to do distributed control and data
-acquisition stuff.
-
-That's a single CLOCK_MONOTONIC_GLOBAL and not a bunch of completely
-disconnected clock implementations with random clock ids and random
-feature sets.
-
-Thoughts ?
-
-
-	 tglx
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
