@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab0IIWcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:32:41 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41656 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932513Ab0IIWch (ORCPT
+	id S932487Ab0IIWd1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:33:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61959 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757067Ab0IIWc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:32:37 -0400
+	Thu, 9 Sep 2010 18:32:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=wNb/G5urE1LuaOwNPcu1/Y9UxyCAVvyfr2brHddSr44VJMTcPwJLYl+0UU9Sax/uRx
-         YntSb7XCqYEphF0JEQ1zokGaZ0159OnvrI7OQJO1aImU50RfPJJx/HGZXN0imw3zfYpI
-         EWX/Vxbb26pfEN2fXkqEYchF5Ky6GmEDqUqKI=
+        b=M93m7rIyi/rAwdfDgZUIrGC6qmc7TSxZPv15hbnKYZboLAPE3fvBKafasVin17txfQ
+         eeH3uVoACNiIkYOF7ldmJ3dLM10BbrlOTezNsYNXB/d7kiEw2bqpHzwwxTOwlOBPiSUb
+         mu/AJbXFoSsw2IfbfQnlg0VrhpSGGKg/inlgw=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 099/223]drivers/net/wireless/ath/ath5k/ath5k.h Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:32:42 -0700
-Message-Id: <1284071562-7948-9-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 096/223]drivers/net/wireless/hostap/hostap_cs.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:32:39 -0700
+Message-Id: <1284071562-7948-6-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071562-7948-1-git-send-email-justinmattock@gmail.com>
 References: <1284071562-7948-1-git-send-email-justinmattock@gmail.com>
@@ -33,22 +33,23 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/net/wireless/ath/ath5k/ath5k.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/wireless/hostap/hostap_cs.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath5k/ath5k.h b/drivers/net/wireless/ath/ath5k/ath5k.h
-index ea6362a..97659a0 100644
---- a/drivers/net/wireless/ath/ath5k/ath5k.h
-+++ b/drivers/net/wireless/ath/ath5k/ath5k.h
-@@ -351,7 +351,7 @@ struct ath5k_srev_name {
+diff --git a/drivers/net/wireless/hostap/hostap_cs.c b/drivers/net/wireless/hostap/hostap_cs.c
+index ba54d1b..813518a 100644
+--- a/drivers/net/wireless/hostap/hostap_cs.c
++++ b/drivers/net/wireless/hostap/hostap_cs.c
+@@ -214,8 +214,7 @@ static int prism2_pccard_card_present(local_info_t *local)
+ 
  /*
-  * Some of this information is based on Documentation from:
-  *
-- * http://madwifi.org/wiki/ChipsetFeatures/SuperAG
-+ * http://madwifi-project.org/wiki/ChipsetFeatures/SuperAG 
-  *
-  * Modulation for Atheros' eXtended Range - range enhancing extension that is
-  * supposed to double the distance an Atheros client device can keep a
+  * SanDisk CompactFlash WLAN Flashcard - Product Manual v1.0
+- * Document No. 20-10-00058, January 2004
+- * http://www.sandisk.com/pdf/industrial/ProdManualCFWLANv1.0.pdf
++ * http://www.sandisk.com
+  */
+ #define SANDISK_WLAN_ACTIVATION_OFF 0x40
+ #define SANDISK_HCR_OFF 0x42
 -- 
 1.7.2.1
 
