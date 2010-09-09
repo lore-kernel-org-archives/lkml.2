@@ -1,145 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab0IID1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 23:27:45 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43767 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab0IID1j (ORCPT
+	id S1751650Ab0IIDnT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 23:43:19 -0400
+Received: from web32402.mail.mud.yahoo.com ([68.142.207.195]:38394 "HELO
+	web32402.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751152Ab0IIDnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 23:27:39 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 9 Sep 2010 12:22:28 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 10/10] vmscan: Kick flusher threads to clean pages when
- reclaim is encountering dirty pages
-Message-Id: <20100909122228.3db2b95c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1283770053-18833-11-git-send-email-mel@csn.ul.ie>
-References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
-	<1283770053-18833-11-git-send-email-mel@csn.ul.ie>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Sep 2010 23:43:15 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Sep 2010 23:43:14 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=WbNuFe4Pvlx7+T8dg0pYb+WCh0QK4zWAYRTuBWP0drbZ4+uRwc2zSsUy0gyi3M+b3JixnU910T8iY5PuON4jgtadeSQ8/4ZQ8TvtvLyOd0LfT2+XLNmYzYvEiGpnSruFMHcfmpnFXxlpiA44Xu0IwP94tibiQNs5C5Ckqkyuy1o=;
+Message-ID: <35352.83946.qm@web32402.mail.mud.yahoo.com>
+X-YMail-OSG: fcPf6NgVM1k29HCNCO89t5CO5.gtD4r6YoZjJikVx7ZmAhj
+ HPgaH3Kd6pfuv5BA.ePsNpDJm8_OE9qbsMZxabcinEWaZmQrnx4mWhsLO1eE
+ Mx.7yhcgCO6PKm.0yn8R4KlY3KTYm1_AHL_FvNS5UuGTM8.fc7Uyhi5etmKB
+ 5BBFC12urpJK4B3MH5x4RJJ1Ba5Sshlu3V2eeGKb9SNm.ih.arGzm6otUIGt
+ iP60adKsbM5ekfRoxarGp5CEAh8HsHU2LNFn.XKDWEkMCDDsgj0FMZ6pUfwV
+ r4mfIpLMs1wQkXRlwbkAW5k7XuSnASj6bS8E-
+X-Mailer: YahooMailClassic/11.4.7 YahooMailWebService/0.8.105.279950
+Date: Wed, 8 Sep 2010 20:36:32 -0700 (PDT)
+From: Anil kumar <anils_r@yahoo.com>
+Subject: scsi_cmnd data_buffer checksum
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  6 Sep 2010 11:47:33 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
 
-> There are a number of cases where pages get cleaned but two of concern
-> to this patch are;
->   o When dirtying pages, processes may be throttled to clean pages if
->     dirty_ratio is not met.
->   o Pages belonging to inodes dirtied longer than
->     dirty_writeback_centisecs get cleaned.
-> 
-> The problem for reclaim is that dirty pages can reach the end of the LRU if
-> pages are being dirtied slowly so that neither the throttling or a flusher
-> thread waking periodically cleans them.
-> 
-> Background flush is already cleaning old or expired inodes first but the
-> expire time is too far in the future at the time of page reclaim. To mitigate
-> future problems, this patch wakes flusher threads to clean 4M of data -
-> an amount that should be manageable without causing congestion in many cases.
-> 
-> Ideally, the background flushers would only be cleaning pages belonging
-> to the zone being scanned but it's not clear if this would be of benefit
-> (less IO) or not (potentially less efficient IO if an inode is scattered
-> across multiple zones).
-> 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> ---
->  mm/vmscan.c |   32 ++++++++++++++++++++++++++++++--
->  1 files changed, 30 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 408c101..33d27a4 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -148,6 +148,18 @@ static DECLARE_RWSEM(shrinker_rwsem);
->  /* Direct lumpy reclaim waits up to five seconds for background cleaning */
->  #define MAX_SWAP_CLEAN_WAIT 50
->  
-> +/*
-> + * When reclaim encounters dirty data, wakeup flusher threads to clean
-> + * a maximum of 4M of data.
-> + */
-> +#define MAX_WRITEBACK (4194304UL >> PAGE_SHIFT)
-> +#define WRITEBACK_FACTOR (MAX_WRITEBACK / SWAP_CLUSTER_MAX)
-> +static inline long nr_writeback_pages(unsigned long nr_dirty)
-> +{
-> +	return laptop_mode ? 0 :
-> +			min(MAX_WRITEBACK, (nr_dirty * WRITEBACK_FACTOR));
-> +}
-> +
->  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
->  						  struct scan_control *sc)
->  {
-> @@ -686,12 +698,14 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
->   */
->  static unsigned long shrink_page_list(struct list_head *page_list,
->  					struct scan_control *sc,
-> +					int file,
->  					unsigned long *nr_still_dirty)
->  {
->  	LIST_HEAD(ret_pages);
->  	LIST_HEAD(free_pages);
->  	int pgactivate = 0;
->  	unsigned long nr_dirty = 0;
-> +	unsigned long nr_dirty_seen = 0;
->  	unsigned long nr_reclaimed = 0;
->  
->  	cond_resched();
-> @@ -790,6 +804,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		}
->  
->  		if (PageDirty(page)) {
-> +			nr_dirty_seen++;
-> +
->  			/*
->  			 * Only kswapd can writeback filesystem pages to
->  			 * avoid risk of stack overflow
-> @@ -923,6 +939,18 @@ keep_lumpy:
->  
->  	list_splice(&ret_pages, page_list);
->  
-> +	/*
-> +	 * If reclaim is encountering dirty pages, it may be because
-> +	 * dirty pages are reaching the end of the LRU even though the
-> +	 * dirty_ratio may be satisified. In this case, wake flusher
-> +	 * threads to pro-actively clean up to a maximum of
-> +	 * 4 * SWAP_CLUSTER_MAX amount of data (usually 1/2MB) unless
-> +	 * !may_writepage indicates that this is a direct reclaimer in
-> +	 * laptop mode avoiding disk spin-ups
-> +	 */
-> +	if (file && nr_dirty_seen && sc->may_writepage)
-> +		wakeup_flusher_threads(nr_writeback_pages(nr_dirty));
-> +
+I am writing a checksum calculation of scsi_cmnd data buffer in the driver. 
 
-Thank you. Ok, I'll check what happens in memcg.
+I calculate the checksum of the scsi_cmd data buffer(request_buffer) in driver queuecommand.
 
-Can I add
-	if (sc->memcg) {
-		memcg_check_flusher_wakeup()
-	}
-or some here ?
+Now when the command is completed from the hardware and before driver sends it back to mid-layer, I calculate the checksum again of the same scsi_cmd data_buffer again.
 
-Hm, maybe memcg should wake up flusher at starting try_to_free_memory_cgroup_pages().
-
-Thanks,
--Kame
+Sometimes the checksums don't match. I mean somehow looks like OS changed the scsi_cmd data_buffer(request_buffer) in the meantime when driver is working on the command.
+I print the address of the scsi_cmd data_buffer (virtual address) and its same and the contents of the buffer is also same during both the calculations.
+ 
+Can this happen?
 
 
+
+      
