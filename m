@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab0IILBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 07:01:13 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:46424 "EHLO kernel.dk"
+	id S1754938Ab0IILDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 07:03:55 -0400
+Received: from www.tglx.de ([62.245.132.106]:47166 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753840Ab0IILBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 07:01:10 -0400
-Message-ID: <4C88BE6B.6000006@fusionio.com>
-Date: Thu, 09 Sep 2010 13:00:59 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753840Ab0IILDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 07:03:51 -0400
+Date: Thu, 9 Sep 2010 13:03:38 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arthur Kepner <akepner@sgi.com>
+cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        netdev@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC/PATCH] kernel/irq: allow more precise irq affinity
+ policies
+In-Reply-To: <20100906233827.GB12956@sgi.com>
+Message-ID: <alpine.LFD.2.00.1009091056280.2477@localhost6.localdomain6>
+References: <20100906233827.GB12956@sgi.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Alexey Dobriyan <adobriyan@gmail.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.36-rc3: EIP is at scsi_init_io+...
-References: <20100830184620.GA4818@core2.telecom.by> <AANLkTikyv10vkg1g+G3LW+nu=0omBpc40KehOUH=YXk2@mail.gmail.com>
-In-Reply-To: <AANLkTikyv10vkg1g+G3LW+nu=0omBpc40KehOUH=YXk2@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-09 02:12, Linus Torvalds wrote:
-> Hmm. No noise about this one.
+On Mon, 6 Sep 2010, Arthur Kepner wrote:
+ 
+> SGI has encountered situations where particular CPUs run out of 
+> interrupt vectors on systems with many (several hundred or more) 
+> CPUs. This happens because some drivers (particularly the mlx4_core 
+> driver) select the number of interrupts they allocate based on the 
+> number of CPUS, and because of how the default irq affinity is used.
 > 
-> Jens, Fujita, James, any comments?
+> The following patch allows for a more precise policy about how irq 
+> affinities are assigned by the kernel (though it doesn't implement 
+> any new policy, except for a practically useless example).
 > 
-> On Mon, Aug 30, 2010 at 11:46 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
->> Not much of a calltrace, it scrolled away because of hardlockup detector.
->> On the bright side, radeon KMS worked correctly and actually showed it.
->>
->> $ addr2line -e vmlinux ffffffff812d207b
->> drivers/scsi/scsi_lib.c:1015
->>
->>  1012  err_exit:
->>  1013          scsi_release_buffers(cmd);
->>  1014          scsi_put_command(cmd);
->>  1015  ===>    cmd->request->special = NULL; <===
->>  1016          return error;
->>  1017  }
->>  1018  EXPORT_SYMBOL(scsi_init_io);
+> This is a work in progress. I know that it needs several additional 
+> things, including:
 > 
-> I do have to say that it looks rather wrong that it accesses "cmd"
-> after it has done the "scsi_put_command(cmd)" on it.
-> 
-> I also note that that was introduced pretty recently by commit
-> 610a63498f7 ("scsi: fix discard page leak"), merged during this merge
-> window. That does look suspicious to me.
+> 	- redistribute interrupts when the 'current_irq_policy' is 
+> 	  updated (for now it only affects irqs allocated after the 
+> 	  policy is changed)
 
-Agree, that's clearly a bug. That assignment should just go away.
+We implement mechanisms not policies in the kernel. And we already
+have a mechanism to redistribute interrupts.
 
--- 
-Jens Axboe
+Let's look at the problem you're tyring to solve.
 
+Your network driver wants to use one interrupt per cpu, which are now
+assigned to a single core due to the way the default irq affinity
+settings work. On a large system this exceeds the number of vectors
+per cpu. Ok, that's bad.
+
+But now you try to solve that problem with magic policies in the
+generic irq code. That's wrong.
+
+What you really want is a way to tell the generic code that your
+driver would like to see a particular interrupt assigned to a
+particular core, right ?
+
+We already have the affinity_hint mechanism in place, which allows a
+driver to give a hint to the user space irq balancer, which of course
+does not help if your device comes up before user space runs.
+
+So the obvious solution is to extend that mechanism and let the kernel
+use the affinity hint as a first selection criteria as well - user
+space can still override it.
+
+That's a trivial change and does not impose any policies on the
+kernel. 
+
+> 	- a means to notify drivers about irq_policy changes (so 
+> 	  they can adjust network queues, etc.)
+
+I can understand that, but again it's not about policies. What you
+want is a callback into the driver which is called _before_ a user
+space irq affinity setting is applied. That way a driver could even
+veto such a change if there are hard restrictions on which core or
+node it can be placed.
+
+OTOH, it's more straight forward to tell the driver to move a specific
+queue to a specific core and handle it from there. That keeps the
+magic confined to the driver and does not affect generic code.
+
+Thanks,
+
+	tglx
