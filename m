@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab0IIX10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 19:27:26 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34003 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab0IIX1Y (ORCPT
+	id S1756391Ab0IIXnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 19:43:25 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40259 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284Ab0IIXnY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 19:27:24 -0400
+	Thu, 9 Sep 2010 19:43:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=s4GAxYcJ2oBgYQG+dmWHLJKs13egaFjLr6UdgIxMLBFqaSEZ9BLejtlwwBCv2gyFqq
-         wL+8MzC5oQMot3PMPyaywVWvMC+sS1R/BbbjVrKnzD1lZAjhjtt79qUFydEJ0TqtdEQE
-         CFAQ5/v6XGZibIsu5ZqWB91ewqHwudgAGJzxs=
-Message-ID: <4C896D81.1040904@gmail.com>
-Date: Thu, 09 Sep 2010 16:28:01 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ddm6nyhGZeaOVPtPr8InhZgaxhipNGTHBx8qxEy/lrM66yNfLKHuyUtT7ozblrzngt
+         T2bJ74/9RkMIaGKQ+pSbHddIw+CjmJuhf1IxpjQoiZ3vumob39rPoZ8tSpMxTTuU0wD/
+         iWLcLhbajFbV18aA0JXs/Sf1TgFBQek6xyjGs=
 MIME-Version: 1.0
-To: Mike Frysinger <vapier.adi@gmail.com>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 135/223]drivers/serial/bfin_sport_uart.h Update broken
- web addresses.
-References: <1284071862-8194-1-git-send-email-justinmattock@gmail.com> <1284071862-8194-15-git-send-email-justinmattock@gmail.com> <AANLkTinJew4-3VodmHAeoxYsnk=ejhBFpz2ccSziq1D6@mail.gmail.com>
-In-Reply-To: <AANLkTinJew4-3VodmHAeoxYsnk=ejhBFpz2ccSziq1D6@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4C895028.3010609@zytor.com>
+References: <1283563039-3466-1-git-send-email-brgerst@gmail.com>
+	<1283563039-3466-8-git-send-email-brgerst@gmail.com>
+	<4C895028.3010609@zytor.com>
+Date: Thu, 9 Sep 2010 19:43:22 -0400
+Message-ID: <AANLkTim17SC==8Tm6=vMwRa6_ddpo2VcVjQqJAen7bHW@mail.gmail.com>
+Subject: Re: [PATCH 07/12] x86-64: Simplify constraints for fxsave/fxtstor
+From: Brian Gerst <brgerst@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, penberg@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2010 04:06 PM, Mike Frysinger wrote:
-> On Thu, Sep 9, 2010 at 18:37, Justin P. Mattock wrote:
->> Below you will find an Update to a broken web address.
->> Please let me know if this needs to be changed.
+On Thu, Sep 9, 2010 at 5:22 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 09/03/2010 06:17 PM, Brian Gerst wrote:
+>> Use the "R" constraint (legacy register) instead of listing all the
+>> possible registers.  Clean up the comments as well.
+>>
+>> Signed-off-by: Brian Gerst <brgerst@gmail.com>
 >
-> thanks, this is OK
-> -mike
+> Hi Brian,
 >
+> Have you tested this on *old* versions of gcc?  Since the whole point of
+> that butt-ugly code sequence is to support now-historic versions of
+> binutils, we need to make sure that "R" was supposed on the
+> corresponding gcc versions...
 
+It's documented as far back as the GCC 3.1.1 manual.  Whether it
+actually works or not on older compilers I have no way of testing.
 
-alright..cool
-
-Justin P. Mattock
-
-
+--
+Brian Gerst
