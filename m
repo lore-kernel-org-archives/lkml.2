@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab0IIWcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:32:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58564 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756879Ab0IIW3U (ORCPT
+	id S1757018Ab0IIWcU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:32:20 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:61012 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932648Ab0IIWcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:29:20 -0400
+	Thu, 9 Sep 2010 18:32:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=oiph2OQfKI1V60j7ImjeZYLJCEKGB245/ZxYRcxvpAA7tspWBkloWzmNf4kbqKm9Sd
-         5XLo9K1UOioIjteWwckbo6xks4NLdlKB8Io3WkFYM9FTCA/S6p/CWMdnVLJIUr514v5z
-         EYp0WyZ7cn1HevspaEKCSd9j8cSuosMGANkqo=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=vUt5tdZhVkJPMnlTAtKduvBaazKTooJthRCZSxHSSskVdtXuoFKJTZlvYDbaFY+tBP
+         5/UJ8QLtdCVPI8R53FQDN/H4Cr6W4HOukYmDH0PiibtHHBAUjtNlQY1GlpGJKhHMTI3O
+         OzHIbh32OkxHVScLF3Fo2FGfKd+i3lu/nvrkk=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 080/223]drivers/mtd/maps/pismo.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:29:24 -0700
-Message-Id: <1284071374-7867-5-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 091/223]drivers/net/usb/plusb.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:32:34 -0700
+Message-Id: <1284071562-7948-1-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1284071374-7867-1-git-send-email-justinmattock@gmail.com>
-References: <1284071374-7867-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,20 +31,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/mtd/maps/pismo.c |    2 +-
+ drivers/net/usb/plusb.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mtd/maps/pismo.c b/drivers/mtd/maps/pismo.c
-index f4ce273..b42eecb 100644
---- a/drivers/mtd/maps/pismo.c
-+++ b/drivers/mtd/maps/pismo.c
-@@ -1,5 +1,5 @@
+diff --git a/drivers/net/usb/plusb.c b/drivers/net/usb/plusb.c
+index 08555f8..c928261 100644
+--- a/drivers/net/usb/plusb.c
++++ b/drivers/net/usb/plusb.c
+@@ -32,7 +32,7 @@
+ 
+ 
  /*
-- * PISMO memory driver - http://www.pismoworld.org/
-+ * PISMO memory driver - http://web.archive.org/web/*/http://www.pismoworld.org/ 
+- * Prolific PL-2301/PL-2302 driver ... http://www.prolifictech.com
++ * Prolific PL-2301/PL-2302 driver ...http://www.prolific.com.tw/ 
   *
-  * For ARM Realview and Versatile platforms
-  *
+  * The protocol and handshaking used here should be bug-compatible
+  * with the Linux 2.2 "plusb" driver, by Deti Fliegl.
 -- 
 1.7.2.1
 
