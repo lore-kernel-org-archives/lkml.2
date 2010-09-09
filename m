@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab0IIF1l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 01:27:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:6319 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751118Ab0IIF1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 01:27:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,337,1280732400"; 
-   d="scan'208";a="322557329"
-Date: Thu, 9 Sep 2010 13:08:58 +0800
-From: Yong Wang <yong.y.wang@linux.intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Feng Tang <feng.tang@intel.com>, George Shore <george@georgeshore.com>,
+	id S1752879Ab0IIFbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 01:31:33 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:57240 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab0IIFb0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 01:31:26 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Brad Spengler <spender@grsecurity.net>
+Subject: Re: [PATCH 1/3] setup_arg_pages: diagnose excessive argument size
+Cc: kosaki.motohiro@jp.fujitsu.com, Roland McGrath <roland@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dw_spi: Allow interrupt sharing
-Message-ID: <20100909050858.GA8003@ywang-moblin2.bj.intel.com>
-References: <20100907072727.GA2152@ywang-moblin2.bj.intel.com> <20100908165341.GJ3686@angua.secretlab.ca>
+        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
+        Solar Designer <solar@openwall.com>,
+        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu,
+        "Brad Spengler <spender@grsecurity.net> Eugene Teo" 
+	<eugene@redhat.com>
+In-Reply-To: <20100908115728.GB11762@grsecurity.net>
+References: <20100908023549.BFFA8401AF@magilla.sf.frob.com> <20100908115728.GB11762@grsecurity.net>
+Message-Id: <20100909141534.C948.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100908165341.GJ3686@angua.secretlab.ca>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  9 Sep 2010 14:31:18 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 08, 2010 at 10:53:41AM -0600, Grant Likely wrote:
-> On Tue, Sep 07, 2010 at 03:27:27PM +0800, Yong Wang wrote:
-> > Allow interrupt sharing since exclusive interrupt line for
-> > DW SPI controller is not provided on every platform.
-> > 
-> > Signed-off-by: Yong Wang <yong.y.wang@intel.com>
-> > ---
-> >  drivers/spi/dw_spi.c |    7 ++++++-
-> >  1 files changed, 6 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/spi/dw_spi.c b/drivers/spi/dw_spi.c
-> > index d256cb0..11fbbf6 100644
-> > --- a/drivers/spi/dw_spi.c
-> > +++ b/drivers/spi/dw_spi.c
-> > @@ -396,6 +396,11 @@ static irqreturn_t interrupt_transfer(struct dw_spi *dws)
-> >  static irqreturn_t dw_spi_irq(int irq, void *dev_id)
-> >  {
-> >  	struct dw_spi *dws = dev_id;
-> > +	u16 irq_status, irq_mask = 0x3f;
-> > +
-> > +	irq_status = dw_readw(dws, isr) & irq_mask;
-> > +	if (!irq_status)
-> > +		return IRQ_NONE;
+> I still don't think this addresses the whole problem.  Without question,
+> the rlimit / 4 check is bogus.  If nobody agrees with the intent of that 
+> check, then it should be removed, but I think the better solution is to 
+> fix the check so that it matches its original intent: let the initial 
+> stack setup be up to 1/Xth of the min(rlimit, TASK_SIZE dependent upon 
+> personality), which allows space for additional stack setup in the ELF 
+> loader and then further growth once the process is live.  If that 
+> amount is overstepped, then the exec will return an error to the calling 
+> process instead of being terminated.
 > 
-> To be more concise, this could have simply been:
-> 
-> if (!dw_readw(dws, isr) & 0x3f)
-> 	return IRQ_NONE;
-> 
-> ... but I'm nitpicking here.  If I don't get an updated version of
-> this patch from you in the next few days then I'll apply this one.
-> 
+> It might be useful to consult with the people who introduced/approved 
+> the check in the first place, as they seemed to have reasons for 
+> implementing it.
 
-Thanks for your comments, Grant. Could you please apply the patch as is?
-I think it is more readable. In addition, it is consistent with other
-parts of the driver in terms of how isr register is manipulated.
+Brad, sorry, I have bad news. glibc sysconf(_SC_ARG_MAX) is implemented
+by hard coded RLIMIT_STACK/4 heuristics. That said, at least _now_, we
+can't change this even though you disliked. That said, we can't break
+userland even though userland library is very crazy.
 
-Thanks
--Yong
+I don't dislike your "1/Xth of the min(rlimit, TASK_SIZE dependent upon 
+> personality)" idea. however I think You and Roland haven't agreed this
+point yet. he seems to want "unlimited" works as "unlimited". then, now
+I don't make such patch. Instead, I would propose to insert 
+__vm_enough_memory() check in execve() pass. It prevent almost argv attack.
+
+
 
