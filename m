@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab0IILDz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 07:03:55 -0400
-Received: from www.tglx.de ([62.245.132.106]:47166 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753840Ab0IILDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 07:03:51 -0400
-Date: Thu, 9 Sep 2010 13:03:38 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arthur Kepner <akepner@sgi.com>
-cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        netdev@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC/PATCH] kernel/irq: allow more precise irq affinity
- policies
-In-Reply-To: <20100906233827.GB12956@sgi.com>
-Message-ID: <alpine.LFD.2.00.1009091056280.2477@localhost6.localdomain6>
-References: <20100906233827.GB12956@sgi.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754976Ab0IILGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 07:06:39 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38236 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754314Ab0IILGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 07:06:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Te+mqIukOwL0rd/fhvzlwTjVQ87So6i86hRPbXcxBcahky+VR93RWNI+Rmk8W0cExc
+         4s02Depeim2q8ZB6ruVEmpw5pED8G3m4iUOyGY1yqAAdjPbJIs58WCo8WBX2KKruTc+s
+         JvecQbtG/FzyBaISb6KAGT6a/gl8wrzwKYixw=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 9 Sep 2010 13:06:35 +0200
+Message-ID: <AANLkTi=yeHyOeewm9tdsHRtj+=d+vE5=NRKGaPyq_yGH@mail.gmail.com>
+Subject: perf events over (net) console?
+From: Harald Gustafsson <hgu1972@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        Song Yuan <song.yuan@ericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Sep 2010, Arthur Kepner wrote:
- 
-> SGI has encountered situations where particular CPUs run out of 
-> interrupt vectors on systems with many (several hundred or more) 
-> CPUs. This happens because some drivers (particularly the mlx4_core 
-> driver) select the number of interrupts they allocate based on the 
-> number of CPUS, and because of how the default irq affinity is used.
-> 
-> The following patch allows for a more precise policy about how irq 
-> affinities are assigned by the kernel (though it doesn't implement 
-> any new policy, except for a practically useless example).
-> 
-> This is a work in progress. I know that it needs several additional 
-> things, including:
-> 
-> 	- redistribute interrupts when the 'current_irq_policy' is 
-> 	  updated (for now it only affects irqs allocated after the 
-> 	  policy is changed)
+Hi,
 
-We implement mechanisms not policies in the kernel. And we already
-have a mechanism to redistribute interrupts.
+We would like to monitor the perf events continuously on a remote
+machine. Does it exist a solution (in the kernel) to direct the output
+to a console or maybe even a netconsole? We would like to avoid a user
+space application to transfer it, due to that the machine will be
+running a test which will heavily load it and we want to avoid as many
+unrelated user space tasks as possible. If not mainlined does anyone
+have a patch for this?
 
-Let's look at the problem you're tyring to solve.
+Our purpose is to visualize task's CPU utilization and a few other
+events like CPU frequency changes etc in realtime on the remote
+machine.
 
-Your network driver wants to use one interrupt per cpu, which are now
-assigned to a single core due to the way the default irq affinity
-settings work. On a large system this exceeds the number of vectors
-per cpu. Ok, that's bad.
-
-But now you try to solve that problem with magic policies in the
-generic irq code. That's wrong.
-
-What you really want is a way to tell the generic code that your
-driver would like to see a particular interrupt assigned to a
-particular core, right ?
-
-We already have the affinity_hint mechanism in place, which allows a
-driver to give a hint to the user space irq balancer, which of course
-does not help if your device comes up before user space runs.
-
-So the obvious solution is to extend that mechanism and let the kernel
-use the affinity hint as a first selection criteria as well - user
-space can still override it.
-
-That's a trivial change and does not impose any policies on the
-kernel. 
-
-> 	- a means to notify drivers about irq_policy changes (so 
-> 	  they can adjust network queues, etc.)
-
-I can understand that, but again it's not about policies. What you
-want is a callback into the driver which is called _before_ a user
-space irq affinity setting is applied. That way a driver could even
-veto such a change if there are hard restrictions on which core or
-node it can be placed.
-
-OTOH, it's more straight forward to tell the driver to move a specific
-queue to a specific core and handle it from there. That keeps the
-magic confined to the driver and does not affect generic code.
-
-Thanks,
-
-	tglx
+Regards,
+  Harald Gustafsson
