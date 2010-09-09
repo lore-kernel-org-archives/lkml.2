@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032Ab0IIWgv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:36:51 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47134 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932681Ab0IIWgt (ORCPT
+	id S932788Ab0IIWg4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:36:56 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:48051 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757035Ab0IIWgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:36:49 -0400
+	Thu, 9 Sep 2010 18:36:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=OqgaYTg5hXj/UI/3mmbDMoef0UW0vdnFhH0MXRxM0lBhs2eeHJXKhEXBetL/zM5vMo
-         VBCt7PJtANgT24rNPbPoflOGa0loP8yrZkMLZh+08T9wWbcEe+FRyia+OY3veIUiNF1a
-         sjR9U7Xcwbb/jyaJo7GYWu28D1vtN+YWby7o8=
+        b=qOWBM4YXBBZ9oSNY1agwVd+DCip4WU02iTXn30Dw/ecY0DV1PY+WOr9GUCjyU6XV7Y
+         VUd4OIUwQbdzEtHnk11WYflorCHKXTa5Ki/OpRhaGW15zM7ccYxgckEfgbHFpSluLP+/
+         PX9XGZtM/9ZZGe0Rjcc5IWi3lA2oqkBpIHygI=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 117/223]drivers/net/epic100.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:36:46 -0700
-Message-Id: <1284071809-8149-12-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 118/223]drivers/net/appletalk/Kconfig Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:36:47 -0700
+Message-Id: <1284071809-8149-13-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071809-8149-1-git-send-email-justinmattock@gmail.com>
 References: <1284071809-8149-1-git-send-email-justinmattock@gmail.com>
@@ -33,33 +33,31 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/net/epic100.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/appletalk/Kconfig |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/epic100.c b/drivers/net/epic100.c
-index 57c8ac0..b9a934b 100644
---- a/drivers/net/epic100.c
-+++ b/drivers/net/epic100.c
-@@ -18,8 +18,7 @@
- 	Annapolis MD 21403
+diff --git a/drivers/net/appletalk/Kconfig b/drivers/net/appletalk/Kconfig
+index 0a0e0cd..9368cfa 100644
+--- a/drivers/net/appletalk/Kconfig
++++ b/drivers/net/appletalk/Kconfig
+@@ -10,15 +10,15 @@ config ATALK
+ 	  wish to connect to it, say Y.  You will need to use the netatalk package
+ 	  so that your Linux box can act as a print and file server for Macs as
+ 	  well as access AppleTalk printers.  Check out
+-	  <http://www.zettabyte.net/netatalk/> on the WWW for details.
++	  <http://cgi.zettabyte.net/> on the WWW for details.
+ 	  EtherTalk is the name used for AppleTalk over Ethernet and the
+ 	  cheaper and slower LocalTalk is AppleTalk over a proprietary Apple
+ 	  network using serial links.  EtherTalk and LocalTalk are fully
+ 	  supported by Linux.
  
- 	Information and updates available at
--	http://www.scyld.com/network/epic100.html
--	[this link no longer provides anything useful -jgarzik]
-+	http://www.silan.com.cn/All/Default.aspx	
- 
- 	---------------------------------------------------------------------
- 
-@@ -131,8 +130,8 @@ IIIa. Ring buffers
- 
- IVb. References
- 
--http://www.smsc.com/main/tools/discontinued/83c171.pdf
--http://www.smsc.com/main/tools/discontinued/83c175.pdf
-+http://www.smsc.com/media/Downloads_Public/discontinued/83c171.pdf
-+http://www.smsc.com/media/Downloads_Public/discontinued/83c175.pdf
- http://scyld.com/expert/NWay.html
- http://www.national.com/pf/DP/DP83840A.html
+ 	  General information about how to connect Linux, Windows machines and
+-	  Macs is on the WWW at <http://www.eats.com/linux_mac_win.html>.  The
+-	  NET-3-HOWTO, available from
++	  Macs is on the WWW at <http://en.wikibooks.org/wiki/Linux_Networking/Appletalk_%28AF_APPLETALK%29>.
++	  The NET-3-HOWTO, available from
+ 	  <http://www.tldp.org/docs.html#howto>, contains valuable
+ 	  information as well.
  
 -- 
 1.7.2.1
