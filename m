@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab0IIQXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 12:23:39 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:58442 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753479Ab0IIQXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 12:23:37 -0400
-Subject: Re: [RFC][PATCH] make file's timestamp more accurate
-From: john stultz <johnstul@us.ibm.com>
-To: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
-        "Patrick J. LoPresti" <lopresti@gmail.com>
-Cc: Andreas Dilger <adilger@sun.com>, Chris Mason <chris.mason@oracle.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C7CC08A.9010302@jp.fujitsu.com>
-References: <4C7CC08A.9010302@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Sep 2010 09:23:27 -0700
-Message-ID: <1284049407.2762.19.camel@localhost.localdomain>
+	id S1755114Ab0IIQ2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 12:28:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64902 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab0IIQ2M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 12:28:12 -0400
+Date: Thu, 9 Sep 2010 09:26:45 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, lud <linux-usb@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        gregkh@suse.de, Alan Cox <alan@linux.intel.com>,
+        Alek Du <alek.du@intel.com>
+Subject: Re: linux-next: Tree for September 9 (usb/otg/langwell)
+Message-Id: <20100909092645.11fc3bf0.randy.dunlap@oracle.com>
+In-Reply-To: <20100909211249.2c70ac41.sfr@canb.auug.org.au>
+References: <20100909211249.2c70ac41.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-31 at 17:42 +0900, Satoru Takeuchi wrote:
-> linux has supported nanosecond order file's timestamp since 2.5.48.
-> However current file timestamp is got by current_fs_time() and
-> is only updated once a tick. It can't say true nanosecond accuracy.
-> In addition, gettimeofday() before a file operation updating
-> {a,c,m}time would outstrip file's timestamp because of the difference
-> about time source between gettimeofday() and file's timestamp.
-> A certain kind of application would corrupted by this problem.
+On Thu, 9 Sep 2010 21:12:49 +1000 Stephen Rothwell wrote:
 
-Applications mixing gettimeofday and filesystem timesamps can currently
-use clock_gettime(CLOCK_REALTIME_COARSE,...) - which returns tick
-granular timestamps, the same as the filesystem timestamps - method to
-avoid this issue.
-
-However, Patrick LoPresti (cc'ed) was working on a similar issue here
-connected to nfs.  
-
-> I attached a most simple patch fixing this problem here. However
-> it has several problems and I don't say it can be applied as is.
-> The most big two problems is the following:
+> Hi all,
 > 
->  - It would cause performance regression, especially in
->    not TSC capable system.
->  - Is gettimeofday()'s monotonicity reliable on all systems?
+> Changes since 20100908:
 
-It *should* be. But hardware issues can cause trouble here.
+on i386 (X86_32), drivers/usb/otg/langwell_otg.c has 429 errors and 2 warnings.
 
-> The relative discussion:
-> http://lkml.org/lkml/2010/7/13/443
-> 
-> Does anybody have good idea? Should it be tunable, for example?
+Examples:
 
-I think the discussion from earlier suggested that this be configurable
-from a mount option so the performance/granularity trade-off can be
-managed there. 
+include/linux/usb/langwell_otg.h:23:37: error: linux/usb/intel_mid_otg.h: No such file or directory
+include/linux/usb/langwell_otg.h:115: error: field 'iotg' has incomplete type
+include/linux/usb/langwell_otg.h:136: warning: type defaults to 'int' in declaration of '__mptr'
+include/linux/usb/langwell_otg.h:136: warning: initialization from incompatible pointer type
+drivers/usb/otg/langwell_otg.c:251: error: dereferencing pointer to incomplete type
+drivers/usb/otg/langwell_otg.c:520: warning: its scope is only this definition or declaration, which is probably not what you want
+drivers/usb/otg/langwell_otg.c:904: error: 'MID_OTG_NOTIFY_CONNECT' undeclared (first use in this function)
+drivers/usb/otg/langwell_otg.c:2132 : error: implicit declaration of function 'intel_mid_otg_register_notifier'
+drivers/usb/otg/langwell_otg.c:2191 : error: implicit declaration of function 'intel_mid_otg_unregister_notifier'
 
-Potential pot-holes on the road here: Although I guess doing this on a
-per-mount basis in the future could make it difficult for apps that use
-CLOCK_REALTIME_COARSE to function if fs granularity is increased. Some
-sort of CLOCK_REALTIME_FS could be introduced to map to whichever
-granularity is right, but that can only be done on a global basis.
-Hrm...
 
-thanks
--john
+Note the missing header file.
 
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
