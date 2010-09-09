@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062Ab0IIWkF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:40:05 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41427 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932901Ab0IIWjz (ORCPT
+	id S1756871Ab0IIWmx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:42:53 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57020 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757143Ab0IIWmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:39:55 -0400
-Date: Fri, 10 Sep 2010 00:00:08 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH 2/2] posix clocks: introduce a sysfs presence.
-Message-ID: <20100910000008.1483fdd7@lxorguk.ukuu.org.uk>
-In-Reply-To: <84124d2479b8967cac2b35f852fc0fcae6ad9444.1283504065.git.richard.cochran@omicron.at>
-References: <cover.1283504065.git.richard.cochran@omicron.at>
-	<84124d2479b8967cac2b35f852fc0fcae6ad9444.1283504065.git.richard.cochran@omicron.at>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Sep 2010 18:42:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=WTv7Df8/YX/dRgpoLPCTf36dA5toelfuQ+y89CJymn1OMGADUOL1oA2VBEhyZTip0h
+         RJBHj0rMtGMFzUZX6EGGPlH6C/tKO49kzMr9id69ofpo2ZiGdPZUZ+LLg8OG8qtQBZ3y
+         fB6pFPlWfT+9uTShRhgzmPyrt/Q1Jx7H5Anco=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 166/223]drivers/staging/comedi/drivers/addi-data/hwdrv_apci2032.h Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:43:01 -0700
+Message-Id: <1284072195-8345-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010 11:30:13 +0200
-Richard Cochran <richardcochran@gmail.com> wrote:
+Below you will find an Update to a broken web address.
+Please let me know if this needs to be changed.
 
-> This patch adds a 'timesource' class into sysfs. Each registered POSIX
-> clock appears by name under /sys/class/timesource. The idea is to
-> expose to user space the dynamic mapping between clock devices and
-> clock IDs.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-This is intrinsically racy so not a good API at all.
+---
+ .../comedi/drivers/addi-data/hwdrv_apci2032.h      |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-By the time I have acquired an id from sysfs it may have been re-issued
-or changed.
+diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci2032.h b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci2032.h
+index c971d14..ab145e7 100644
+--- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci2032.h
++++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci2032.h
+@@ -6,7 +6,7 @@
+  *	D-77833 Ottersweier
+  *	Tel: +19(0)7223/9493-0
+  *	Fax: +49(0)7223/9493-92
+- *	http://www.addi-data-com
++ *	http://www.addi-data.com
+  *	info@addi-data.com
+  *
+  * This program is free software; you can redistribute it and/or modify it
+-- 
+1.7.2.1
 
-POSIX habit of enumerating objects not properties of objects is one of
-the brain dead aspects of POSIX that we should have nothing to do with.
-
-Also we have existing time sources that don't follow the poxix clock
-model - I can open /dev/rtc and I can open the hpet and so on.
-
-I like /sys/class/time* *but* you need to be able to open the sysfs
-device and apply operations to it in order for it to work when your closk
-can be dynamically created and destroyed and to get a sane Unix API.
-
-To start with try applying permissions to clock sources via the POSIX
-API. That is something that will be required for some applications.
-
-I need to be able to open sys/clock/foo/something and get a meaningful
-handle. Sure it's quite likely the operations it supports are related to
-the POSIX timer ops.
-
-Alan
