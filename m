@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab0IIJ3V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 05:29:21 -0400
-Received: from mtagate7.de.ibm.com ([195.212.17.167]:32897 "EHLO
-	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab0IIJ3R (ORCPT
+	id S1754126Ab0IIJ3P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 05:29:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34833 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987Ab0IIJ3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 05:29:17 -0400
-Date: Thu, 9 Sep 2010 11:29:06 +0200
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
-To: Anil kumar <anils_r@yahoo.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: scsi_cmnd data_buffer checksum
-Message-ID: <20100909092906.GA21760@schmichrtp.mainz.de.ibm.com>
-References: <20100909085142.GA15327@schmichrtp.mainz.de.ibm.com>
- <215508.92384.qm@web32402.mail.mud.yahoo.com>
+	Thu, 9 Sep 2010 05:29:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=ELmk3d3/MuboWRnHZU8gNTshuuNsHdXQThYfk0aGGsXKc6FOpk6xtQskhX9bj7Gq4y
+         eO2+yX7n8XA+Fy73HMs+6YgcAVyRzvkThwmRlVdT5V0WxVw7CJRVrvosq2Z8znW8tj1c
+         lmP8t0VoM2sYMpCGgyllYrstW8MtsCCGYjbTM=
+Date: Thu, 9 Sep 2010 11:29:35 +0200
+From: Charles =?iso-8859-1?Q?Cl=E9ment?= <caratorn@gmail.com>
+To: Nikitas Angelinas <nikitasangelinas@gmail.com>
+Cc: gregkh@suse.de, more.andres@gmail.com, lieb@canonical.com,
+        forest@alittletooquiet.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8] drivers/staging/vt6656: use ARRAY_SIZE macro in
+ channel.c
+Message-ID: <20100909092915.GA4994@air>
+References: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
+ <1283981275-5098-1-git-send-email-nikitasangelinas@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <215508.92384.qm@web32402.mail.mud.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1283981275-5098-1-git-send-email-nikitasangelinas@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 02:09:28AM -0700, Anil kumar wrote:
-> I quickly tried copying the data buffer to local buffers as follows:
-> 
-> In Queuecommand:
-> 
-> cmd->local_write_buf = pci_alloc_consistent(...);
-> cmd->write_buf = (u8 *)(kmap_atomic(sg->page, KM_IRQ0) + sg->offset);
-> 
-> memcpy(cmd->local_write_buf, cmd->write_buf, scsibufflen(scsi_cmnd));
-> 
-> Now I calculate checksums of cmd->write_buf and my local cmd->local_write_buf
-> 
-> and the checksum fails. Am I doing something wrong here?
+I think this definition is not used anywhere in the driver and thus can
+be removed.
 
-Are you only copying one element of the sg list? Are you sure that
-there is only one element? If not, you have to use something like
-scsi_kmap_atomic_sg and create a copy of each element (maybe use
-scsi_for_each_sg).
+On Wed, Sep 08, 2010 at 10:27:55PM +0100, Nikitas Angelinas wrote:
+> Replace (sizeof(ChannelRuleTab) / sizeof(ChannelRuleTab[0])) with
+> ARRAY_SIZE(ChannelRuleTab) in drivers/staging/vt6656/channel.c
+> 
+> Signed-off-by: Nikitas Angelinas <nikitasangelinas@gmail.com>
+> ---
+>  drivers/staging/vt6656/channel.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/vt6656/channel.c b/drivers/staging/vt6656/channel.c
+> index 6ad03e4..a2460ae 100644
+> --- a/drivers/staging/vt6656/channel.c
+> +++ b/drivers/staging/vt6656/channel.c
+> @@ -34,6 +34,7 @@
+>   *
+>   */
+>  
+> +#include <linux/kernel.h>
+>  #include "country.h"
+>  #include "channel.h"
+>  #include "rf.h"
+> @@ -367,7 +368,7 @@ static  struct
+>  /*                                           1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38  39  40  41  42  43  44  45  46  47  48  49  50  51  52  53  54  55  56  */
+>  };
+>  
+> -#define NUM_RULES	(sizeof(ChannelRuleTab) / sizeof(ChannelRuleTab[0]))
+> +#define NUM_RULES	ARRAY_SIZE(ChannelRuleTab)
+>  
+>  /*---------------------  Export function  -------------------------*/
+>  /************************************************************************
+> -- 
+> 1.7.2.3
+> 
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
 
-Or maybe there is another problem... hard to guess from the distance.
-
-Christof
+-- 
+Charles Clément
