@@ -1,121 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab0IITB6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 15:01:58 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58610 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab0IITBy convert rfc822-to-8bit (ORCPT
+	id S1755394Ab0IITHx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 15:07:53 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:38872 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab0IITHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 15:01:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ZvMpfS2Wrv8vGA+NhaSGwdi3DU54E/G6bOt3H8e6kBSZnPzJjRZDvtjs2qIcD38u3w
-         isV7bbCSj4ce8AW45vv1SHCew8i3kseXokdSOxFPtQomEQzjs6qUXUCH35tOJroZRXzz
-         5qUuB6KEr3syzMts07AYyXBgCeiDKSzAyL+yE=
+	Thu, 9 Sep 2010 15:07:51 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=s3l/bHc/5FCxaIjZqtwSaiVHHYeLRMM1b5xAE1xJH96EDwTjUo1Vo53KTZ2CtEMhL
+	decTP43EwQwqEPRpBb2xA==
+Date: Thu, 9 Sep 2010 12:07:43 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+cc: Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Minchan Kim <minchan.kim@gmail.com>, Greg KH <greg@kroah.com>,
+        Linux Driver Project <devel@driverdev.osuosl.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [patch -rc] oom: always return a badness score of non-zero for
+ eligible tasks
+In-Reply-To: <1284053081.7586.7910.camel@nimitz>
+Message-ID: <alpine.DEB.2.00.1009091152090.5556@chino.kir.corp.google.com>
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org> <1284053081.7586.7910.camel@nimitz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1283907557-1874-1-git-send-email-kheitke@codeaurora.org>
-References: <1283907557-1874-1-git-send-email-kheitke@codeaurora.org>
-Date: Fri, 10 Sep 2010 00:31:52 +0530
-Message-ID: <AANLkTimHQ=ag5z+SKbGrm5BD-eF+xcDuKp4R_=4tf3cP@mail.gmail.com>
-Subject: Re: [PATCH v3] i2c: QUP based bus driver for Qualcomm MSM chipsets
-From: Sundar <sunder.svit@gmail.com>
-To: Kenneth Heitke <kheitke@codeaurora.org>
-Cc: khali@linux-fr.org, ben-linux@fluff.org, srinidhi.kasagar@stericsson.com,
-        tsoni@codeaurora.org, linus.walleij@stericsson.com,
-        linux-arm-msm@vger.kernel.org, arve@android.com, swetland@google.com,
-        sdharia@codeaurora.com, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Crane Cai <crane.cai@amd.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kenneth,
+On Thu, 9 Sep 2010, Dave Hansen wrote:
 
-just some error codes and leaks if I am right :)
+> Hi Nitin,
+> 
+> I've been playing with using zram (from -staging) to back some qemu
+> guest memory directly.  Basically mmap()'ing the device in instead of
+> using anonymous memory.  The old code with the backing swap devices
+> seemed to work pretty well, but I'm running into a problem with the new
+> code.
+> 
+> I have plenty of swap on the system, and I'd been running with compcache
+> nicely for a while.  But, I went to go tar up (and gzip) a pretty large
+> directory in my qemu guest.  It panic'd the qemu host system:
+> 
+> [703826.003126] Kernel panic - not syncing: Out of memory and no killable processes...
+> [703826.003127] 
+> [703826.012350] Pid: 25508, comm: cat Not tainted 2.6.36-rc3-00114-g9b9913d #29
 
-On Wed, Sep 8, 2010 at 6:29 AM, Kenneth Heitke <kheitke@codeaurora.org> wrote:
-> +
-> +static int __devinit
-> +qup_i2c_probe(struct platform_device *pdev)
-> +{
-> +
-> +       qup_mem = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-> +                                               "qup_phys_addr");
-> +       if (!qup_mem) {
-> +               dev_err(&pdev->dev, "no qup mem resource?\n");
-> +               return -ENODEV;
+I'm curious why there are no killable processes on the system; it seems 
+like the triggering task here, cat, would at least be killable itself.  
+Could you post the tasklist dump that preceeds this (or, if you've 
+disabled it try echo 1 > /proc/sys/vm/oom_dump_tasks first)?
 
-I think this should be -ENXIO instead of -ENODEV?
+It's possible that if you have enough swap that none of the eligible tasks 
+actually have non-zero badness scores either because they are being run as 
+root or because the amount of RAM or swap is sufficiently high such that 
+(task's rss + swap) / (total rss + swap) is never non-zero.  And, since 
+root tasks have a 3% bonus, it's possible these are all root tasks and no 
+single task uses more than 3% of rss and swap.
 
-> +       gsbi_mem = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-> +                                               "gsbi_qup_i2c_addr");
-> +       if (!gsbi_mem) {
-> +               dev_err(&pdev->dev, "no gsbi mem resource?\n");
-> +               return -ENODEV;
+While this may not be the issue in your case, and can be confirmed with 
+the tasklist dump if you can get it, we need to protect against these 
+situations where eligible tasks may not be killed.
 
-Ditto here.
+Andrew, I'd like to propose this patch for 2.6.36-rc-series since the 
+worst case is that the machine will panic if there are an exceptionally 
+large number of tasks, each with little memory usage at the time of oom.
 
-> +       in_irq = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
-> +                                               "qup_in_intr");
-> +
-> +       out_irq = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
-> +                                               "qup_out_intr");
-> +
-> +       err_irq = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
-> +                                               "qup_err_intr");
-> +       if (!err_irq) {
-> +               dev_err(&pdev->dev, "no error irq resource?\n");
-> +               return -ENODEV;
-> +       }
 
-All the same here too?
 
-> +
-> +       qup_io = devm_request_mem_region(&pdev->dev, qup_mem->start,
-> +                       resource_size(qup_mem), pdev->name);
-> +       if (!qup_io) {
-> +               dev_err(&pdev->dev, "QUP region already claimed\n");
-> +               return -EBUSY;
-> +       }
-> +
-> +       gsbi_io = devm_request_mem_region(&pdev->dev, gsbi_mem->start,
-> +                       resource_size(gsbi_mem), pdev->name);
-> +       if (!gsbi_io) {
-> +               dev_err(&pdev->dev, "GSBI region already claimed\n");
-> +               return -EBUSY;
-> +       }
-> +
-> +       dev = devm_kzalloc(&pdev->dev, sizeof(struct qup_i2c_dev), GFP_KERNEL);
+oom: always return a badness score of non-zero for eligible tasks
 
-[..]
+A task's badness score is roughly a proportion of its rss and swap
+compared to the system's capacity.  The scale ranges from 0 to 1000 with
+the highest score chosen for kill.  Thus, this scale operates on a
+resolution of 0.1% of RAM + swap.  Admin tasks are also given a 3% bonus,
+so the badness score of an admin task using 3% of memory, for example,
+would still be 0.
 
-> +       if (!dev->base)
-> +               return -ENOMEM;
+It's possible that an exceptionally large number of tasks will combine to 
+exhaust all resources but never have a single task that uses more than
+0.1% of RAM and swap (or 3.0% for admin tasks).
 
-Missing *_kzfree whilst returning?
+This patch ensures that the badness score of any eligible task is never 0
+so the machine doesn't unnecessarily panic because it cannot find a task
+to kill.
 
-> +       dev->gsbi = devm_ioremap(&pdev->dev,
-> +                       gsbi_mem->start, resource_size(gsbi_mem));
-> +       if (!dev->gsbi)
-> +               return -ENOMEM;
-> +
-> +       clk = clk_get(&pdev->dev, "qup_clk");
-> +       if (IS_ERR(clk)) {
-> +               dev_err(&pdev->dev, "Could not get clock\n");
-> +               ret = PTR_ERR(clk);
-> +               goto err_clk_get_failed;
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/oom_kill.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-Will not the devm_iounmap be needed here?
-
-Thanx!
-Sundar
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -208,8 +208,13 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+ 	 */
+ 	points += p->signal->oom_score_adj;
+ 
+-	if (points < 0)
+-		return 0;
++	/*
++	 * Never return 0 for an eligible task that may be killed since it's
++	 * possible that no single user task uses more than 0.1% of memory and
++	 * no single admin tasks uses more than 3.0%.
++	 */
++	if (points <= 0)
++		return 1;
+ 	return (points < 1000) ? points : 1000;
+ }
+ 
