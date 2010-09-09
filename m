@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933087Ab0IIWmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:42:25 -0400
-Received: from xenotime.net ([72.52.115.56]:37731 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932899Ab0IIWmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:42:17 -0400
-Date: Thu, 9 Sep 2010 15:42:13 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 129/223]drivers/scsi/Kconfig Update broken web
- addresses.
-Message-Id: <20100909154213.aefda094.rdunlap@xenotime.net>
-In-Reply-To: <1284071862-8194-9-git-send-email-justinmattock@gmail.com>
-References: <1284071862-8194-1-git-send-email-justinmattock@gmail.com>
-	<1284071862-8194-9-git-send-email-justinmattock@gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S933062Ab0IIWkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:40:05 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41427 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932901Ab0IIWjz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 18:39:55 -0400
+Date: Fri, 10 Sep 2010 00:00:08 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH 2/2] posix clocks: introduce a sysfs presence.
+Message-ID: <20100910000008.1483fdd7@lxorguk.ukuu.org.uk>
+In-Reply-To: <84124d2479b8967cac2b35f852fc0fcae6ad9444.1283504065.git.richard.cochran@omicron.at>
+References: <cover.1283504065.git.richard.cochran@omicron.at>
+	<84124d2479b8967cac2b35f852fc0fcae6ad9444.1283504065.git.richard.cochran@omicron.at>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,35 +26,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  9 Sep 2010 15:37:36 -0700 Justin P. Mattock wrote:
+On Fri, 3 Sep 2010 11:30:13 +0200
+Richard Cochran <richardcochran@gmail.com> wrote:
 
-> Below you will find an Update to a broken web address.
-> Please let me know if this needs to be changed.
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
->  drivers/scsi/Kconfig |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-> index bbf91ae..6fe68d0 100644
-> --- a/drivers/scsi/Kconfig
-> +++ b/drivers/scsi/Kconfig
-> @@ -1608,9 +1608,9 @@ config SCSI_DEBUG
->  	  each with multiple dummy SCSI devices (disks). It defaults to one
->  	  host adapter with one dummy SCSI disk. Each dummy disk uses kernel
->  	  RAM as storage (i.e. it is a ramdisk). To save space when multiple
-> -	  dummy disks are simulated, they share the same kernel RAM for 
-> -	  their storage. See <http://www.torque.net/sg/sdebug.html> for more
-> -	  information. This driver is primarily of use to those testing the
-> +	  dummy disks are simulated, they share the same kernel RAM for their 
-> +	  storage. See <http://web.archive.org/web/*/http://www.torque.net/sg/sdebug.html> 
-> +	  for more information. This driver is primarily of use to those testing the
->  	  SCSI and block subsystems. If unsure, say N.
+> This patch adds a 'timesource' class into sysfs. Each registered POSIX
+> clock appears by name under /sys/class/timesource. The idea is to
+> expose to user space the dynamic mapping between clock devices and
+> clock IDs.
 
-This one should be <http://sg.danny.cz/sg/sdebug26.html>
+This is intrinsically racy so not a good API at all.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+By the time I have acquired an id from sysfs it may have been re-issued
+or changed.
+
+POSIX habit of enumerating objects not properties of objects is one of
+the brain dead aspects of POSIX that we should have nothing to do with.
+
+Also we have existing time sources that don't follow the poxix clock
+model - I can open /dev/rtc and I can open the hpet and so on.
+
+I like /sys/class/time* *but* you need to be able to open the sysfs
+device and apply operations to it in order for it to work when your closk
+can be dynamically created and destroyed and to get a sane Unix API.
+
+To start with try applying permissions to clock sources via the POSIX
+API. That is something that will be required for some applications.
+
+I need to be able to open sys/clock/foo/something and get a meaningful
+handle. Sure it's quite likely the operations it supports are related to
+the POSIX timer ops.
+
+Alan
