@@ -1,193 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab0IINjD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 09:39:03 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:24655 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752390Ab0IINi7 (ORCPT
+	id S1754324Ab0IINkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 09:40:33 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51972 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752718Ab0IINkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 09:38:59 -0400
-Message-ID: <002501cb5024$5a5e3800$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Jiri Slaby" <jslaby@suse.cz>
-Cc: "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "Ralf Baechle" <ralf@linux-mips.org>,
-        "ML netdev" <netdev@vger.kernel.org>, "MeeGo" <meego-dev@meego.com>,
-        "Maxime Bizon" <mbizon@freebox.fr>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "Kristoffer Glembo" <kristoffer@gaisler.com>,
-        "John Linn" <john.linn@xilinx.com>, "Joe Perches" <joe@perches.com>,
-        "Greg Rose" <gregory.v.rose@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
-        "Toshiharu Okada" <okada533@dsn.okisemi.com>,
-        "Tomoya Morinaga" <morinaga526@dsn.okisemi.com>,
-        "Takahiro Shimizu" <shimizu394@dsn.okisemi.com>,
-        "Intel OTC" <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        "Andrew" <andrew.chih.howe.khor@intel.com>
-References: <4C81019E.1010808@dsn.okisemi.com> <4C8123D6.8020001@suse.cz> <003901cb4f5d$bf977c80$66f8800a@maildom.okisemi.com> <4C879AAB.6000905@suse.cz>
-Subject: Re: [PATCH] Gigabit Ethernet driver of Topcliff PCH
-Date: Thu, 9 Sep 2010 22:38:06 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	Thu, 9 Sep 2010 09:40:32 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Woodhouse <David.Woodhouse@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] ihex: Add support for CS:IP/EIP records
+Date: Thu,  9 Sep 2010 14:40:26 +0100
+Message-Id: <1284039626-30394-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri
+ihex firmwares can include a jump address for starting execution. Add
+a -j option which will cause this to be written into the generated
+file as a record with address zero and data consisting of the address
+to jump to, allowing drivers to make use of this information.
 
-Thank you for your answer
+This format is chosen because it most closely follows the original ihex
+format, though it may make more sense to write a record with length zero
+and the address stored as the address.
 
-On: Wed, 08 Sep 2010 16:16:11 +0200,: Jiri Slaby wrote:
-> >>> + u32 TX_DMA_ST;
-> >>> + u32 reserve7[2];
-> >>> + u32 WOL_ST;
-> >>> + u32 WOL_CTRL;
-> >>> + u32 WOL_ADDR_MASK;
-> >>> +};
-> >>
-> >> Shouldn't that be packed? As it is full of u32, probably not, but
-> >> consider this comment when thinking about all structures you have here.
-> >
-> > [masa]
-> > packed?
-> > I am sorry, I can not understand.
-> > Please let me know details.
->
-> attribute((packed)). It ensures that compiler won't add gaps in there
-> for better alignment. As I wrote I'm not sure whether you need them at
-> all, since you use u32 here which are aligned naturally. But bear this
-> in mind while defining the rest of your structures which are transferred
-> from/to the HW.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ firmware/ihex2fw.c |   16 +++++++++++++---
+ 1 files changed, 13 insertions(+), 3 deletions(-)
 
-[masa]
-I understood.
-"__attribute ((packed))" is added
-
-    u32 WOL_ST;
-    u32 WOL_CTRL;
-    u32 WOL_ADDR_MASK;
-} __attribute ((packed));
-
-
-> >>> + rxdr->count = max(ring->rx_pending, (u32) PCH_GBE_MIN_RXD);
-> >>> + rxdr->count = min(rxdr->count, (u32) PCH_GBE_MAX_RXD);
-> >>
-> >> clamp()
-> >> And why you need the cast?
-> >
-> > [masa]
-> > Since warning appears at the time of a make.
->
-> OK, then you have type error which you should fix instead. Perhaps
-> define the constnts with U suffix?
-
-[masa]
-I will modify like Stephen's comment
-rxdr->count = clamp_val(ring->rx_pending, PCH_GBE_MIN_RXD, PCH_GBE_MAX_RXD);
-
-
-> >>> + /* wait busy */
-> >>> + while ((ioread32(&hw->reg->ADDR_MASK) & PCH_GBE_BUSY))
-> >>> + cpu_relax();
-> >>
-> >> There should be probably some time limit. Nobody trusts hardware.
-> >
-> > [masa]
-> > How should it modify?
->
-> Similarly to other busy waiting code you have in other places. Some
-> udelay with a loop bound.
-
-[masa]
-I understood.
-This will be modified.
-
-
-> >>> + if (unlikely(skb->len > (adapter->hw.mac.max_frame_size - 4))) {
-> >>> + pr_err("Transfer length Error: skb len: %d > max: %d\n",
-> >>> +        skb->len, adapter->hw.mac.max_frame_size);
-> >>> + dev_kfree_skb_any(skb);
-> >>> + adapter->stats.tx_length_errors++;
-> >>> + return NETDEV_TX_BUSY;
-> >>
-> >> Not nice. ndev layer will reuse the freed skb now.
-> >
-> > [masa]
-> > How should it modify?
->
-> Remove dev_kfree_skb_any(skb) to not free the skb so that ndev layer can
-> requeue the buffer.
-
-[masa]
-"dev_kfree_skb_any(skb)" is removed.
-
-
-> >>> +#ifdef CONFIG_PM
-> >>> + /* Implement our own version of pci_save_state(pdev) because pci-
-> >>> + * express adapters have 256-byte config spaces. */
-> >>> + retval = pci_save_state(pdev);
-> >>
-> >> But PCIe saves all caps, why you need this?
-> >
-> > [masa]
-> > I can not understand.
-> > Please let me know details.
->
-> What exactly do you need the state of pcie for? The core should do it
-> fine on its own...
-
-[masa]
-Since a config space needs to be stored, pci_save_state() is used.
-
-
-> >>> + if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))
-> >>> + && !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-> >>> + ;
-> >>> + } else {
-> >>
-> >> You should invert the logic. And use pci_ variants.
-> >
-> > [masa]
-> > This will be modified like
-> > if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))
-> >  || dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-> >
-> > What is pci_ variants?
->
-> No, don't use them, they used to be pci specific intended for dma
-> setting/mapping but are deprecated now which I didn't realize.
-
-[masa]
-I use "pci_set_dma_mask" and "pci_set_coherent_mask".
-This will be modified like below
-OK?
-
-> >>> + mmio_start = pci_resource_start(pdev, PCH_GBE_PCI_BAR);
-> >>> + mmio_len = pci_resource_len(pdev, PCH_GBE_PCI_BAR);
-> >>> + adapter->hw.reg = ioremap_nocache(mmio_start, mmio_len);
-> >>
-> >> pci_ioremap_bar()
-> >>
-> >> Anyway you should not use ioread/iowrite* on an ioremapped space. It is
-> >> intended for iomapped space (pci_iomap) and is slower.
-> >
-> > [masa]
-> > This will be modified like
-> > pci_iomap(pdev, PCH_GBE_PCI_BAR, 0) is used.
->
-> If you don't mind one extra branching in each read/write, then OK :).
-> Here you know it's MMIO space I think, so pci_ioremap_map+readl/writel
-> would be more appropriate and faster. But it's your call.
-
-[masa]
-I use "pci_ioremap_bar()"
-
-Thanks Ohtake
-
+diff --git a/firmware/ihex2fw.c b/firmware/ihex2fw.c
+index 5a03ba8..2ea707b 100644
+--- a/firmware/ihex2fw.c
++++ b/firmware/ihex2fw.c
+@@ -55,6 +55,7 @@ static int output_records(int outfd);
+ 
+ static int sort_records = 0;
+ static int wide_records = 0;
++static int include_jump = 0;
+ 
+ static int usage(void)
+ {
+@@ -63,6 +64,7 @@ static int usage(void)
+ 	fprintf(stderr, "usage: ihex2fw [<options>] <src.HEX> <dst.fw>\n");
+ 	fprintf(stderr, "       -w: wide records (16-bit length)\n");
+ 	fprintf(stderr, "       -s: sort records by address\n");
++	fprintf(stderr, "       -j: include records for CS:IP/EIP address\n");
+ 	return 1;
+ }
+ 
+@@ -73,7 +75,7 @@ int main(int argc, char **argv)
+ 	uint8_t *data;
+ 	int opt;
+ 
+-	while ((opt = getopt(argc, argv, "ws")) != -1) {
++	while ((opt = getopt(argc, argv, "wsj")) != -1) {
+ 		switch (opt) {
+ 		case 'w':
+ 			wide_records = 1;
+@@ -81,7 +83,9 @@ int main(int argc, char **argv)
+ 		case 's':
+ 			sort_records = 1;
+ 			break;
+-		default:
++		case 'j':
++			include_jump = 1;
++			break;
+ 			return usage();
+ 		}
+ 	}
+@@ -128,6 +132,7 @@ static int process_ihex(uint8_t *data, ssize_t size)
+ {
+ 	struct ihex_binrec *record;
+ 	uint32_t offset = 0;
++	uint32_t *data32;
+ 	uint8_t type, crc = 0, crcbyte = 0;
+ 	int i, j;
+ 	int line = 1;
+@@ -223,8 +228,13 @@ next_record:
+ 			return -EINVAL;
+ 		}
+ 
++		data32 = &record->data[0];
++		*data32 = htonl(*data32);
++
+ 		/* These records contain the CS/IP or EIP where execution
+-		 * starts. Don't really know what to do with them. */
++		 * starts. If requested output this as a record. */
++		if (include_jump)
++			file_record(record);
+ 		goto next_record;
+ 
+ 	default:
+-- 
+1.7.1
 
