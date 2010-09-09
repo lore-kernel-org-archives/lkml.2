@@ -1,54 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab0IIWYg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:24:36 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:35469 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756258Ab0IIWYe (ORCPT
+	id S1756211Ab0IIXTP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 19:19:15 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:31553 "HELO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753530Ab0IIXTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:24:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=C02Lr2wr/tYSXyCQ39ZfHBYUf19wnlkzuS7AdlLvvXaDQop0E2vnUnbsmSeQYhKqs1
-         QfvwM4RIH6xjokuad5LeSxPJccV5ZiUmIbc4y/VUtiuFtiMKfqdPZgT42OJZ5TXk8z18
-         pV7YBhF7qWsCe6J/NFtgqsPNLNUFwxJASnePc=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 003/223]drivers/block/Kconfig Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:24:39 -0700
-Message-Id: <1284071091-7676-4-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1284071091-7676-1-git-send-email-justinmattock@gmail.com>
-References: <1284071091-7676-1-git-send-email-justinmattock@gmail.com>
+	Thu, 9 Sep 2010 19:19:12 -0400
+Message-ID: <4C896B11.6030705@snapgear.com>
+Date: Fri, 10 Sep 2010 09:17:37 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Kyle McMartin <kyle@mcmartin.ca>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
+        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
+        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
+        linux-arch@vger.kernel.org
+Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
+ __do_IRQ() code
+References: <20100908152036.643594727@linutronix.de> <4C888AFF.80304@snapgear.com> <20100909140926.GH24791@bombadil.infradead.org>
+In-Reply-To: <20100909140926.GH24791@bombadil.infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Sep 2010 23:18:14.0155 (UTC) FILETIME=[46ED65B0:01CB5075]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below you will find an Update to a broken web address.
-Please let me know if this needs to be changed.
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Hi Kyle,
 
----
- drivers/block/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Kyle McMartin wrote:
+> On Thu, Sep 09, 2010 at 05:21:35PM +1000, Greg Ungerer wrote:
+>> The m68knommu arch should be easy to fix up. Here is a first pass
+>> patch. Tested and working on 1 board so far. I need to check all
+>> the processor types, and test a few more to be sure :-)
+>>
+> 
+> Dunno if you noticed, Greg, but you've already had a removal patch
+> submitted some time ago...
 
-diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-index de27768..645a3f8 100644
---- a/drivers/block/Kconfig
-+++ b/drivers/block/Kconfig
-@@ -169,7 +169,7 @@ config BLK_DEV_UMEM
- 	---help---
- 	  Saying Y here will include support for the MM5415 family of
- 	  battery backed (Non-volatile) RAM cards.
--	  <http://www.umem.com/>
-+	  <http://web.archive.org/web/*/http://www.umem.com/>
- 
- 	  The cards appear as block devices that can be partitioned into
- 	  as many as 15 partitions.
+I had forgotten about that patch... But if you follow the email
+trail I had to drop it soon after, it caused user space to lock
+up. I let Steven know (in that same thread) but he never came
+back with any fixes/updates.
+
+(That patch also added support for edge triggered GPIO interrupts,
+and that may well have been the source of the problems).
+
+Thanks
+Greg
+
+
+> Date: Wed, 16 Dec 2009 19:15:39 -0800                                                                                                                                              
+> From: Steven King <sfking@fdwdc.com>                                                                                                                                               
+> To: Greg Ungerer <gerg@snapgear.com>                                                                                                                                               
+> Subject: [PATCH] m68knommu: get rid of __do_IRQ and add support for
+>  using gpio irqs.       
+> 
+> (noticed this while searching for __do_IRQ related stuff in my email
+> last night.)
+> 
+> regards, Kyle
+> 
+>> Regards
+>> Greg
+>>
+>>
+>> -- 
+>> ------------------------------------------------------------------------
+>> Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+>> SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+>> 8 Gardner Close                             FAX:         +61 7 3217 5323
+>> Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+> 
+>> m68knommu: stop using __do_IRQ
+>>
+>> The use of __do_IRQ is deprecated, so lets stop using it.
+>> Generally the interrupts on the supported processors here are
+>> level triggered, so this is strait forward to switch over to
+>> using the standard handle_level_irq flow handler.
+>>
+>> Signed-off-by: Greg Ungerer <gerg@uclinux.org>
+>> ---
+>>  arch/m68knommu/Kconfig                       |    4 ++++
+>>  arch/m68knommu/platform/5272/intc.c          |    1 +
+>>  arch/m68knommu/platform/68328/ints.c         |    1 +
+>>  arch/m68knommu/platform/68360/ints.c         |    1 +
+>>  arch/m68knommu/platform/coldfire/intc-2.c    |    1 +
+>>  arch/m68knommu/platform/coldfire/intc-simr.c |    1 +
+>>  arch/m68knommu/platform/coldfire/intc.c      |    1 +
+>>  7 files changed, 10 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/m68knommu/Kconfig b/arch/m68knommu/Kconfig
+>> index 2609c39..fd28178 100644
+>> --- a/arch/m68knommu/Kconfig
+>> +++ b/arch/m68knommu/Kconfig
+>> @@ -59,6 +59,10 @@ config GENERIC_HARDIRQS
+>>  	bool
+>>  	default y
+>>  
+>> +config GENERIC_HARDIRQS_NO__DO_IRQ
+>> +	bool
+>> +	default y
+>> +
+>>  config GENERIC_CALIBRATE_DELAY
+>>  	bool
+>>  	default y
+>> diff --git a/arch/m68knommu/platform/5272/intc.c b/arch/m68knommu/platform/5272/intc.c
+>> index 7081e0a..e9da6f1 100644
+>> --- a/arch/m68knommu/platform/5272/intc.c
+>> +++ b/arch/m68knommu/platform/5272/intc.c
+>> @@ -133,6 +133,7 @@ void __init init_IRQ(void)
+>>  		irq_desc[irq].depth = 1;
+>>  		irq_desc[irq].chip = &intc_irq_chip;
+>>  		intc_irq_set_type(irq, 0);
+>> +		set_irq_handler(irq, handle_level_irq);
+>>  	}
+>>  }
+>>  
+>> diff --git a/arch/m68knommu/platform/68328/ints.c b/arch/m68knommu/platform/68328/ints.c
+>> index b91ee85..90516ee 100644
+>> --- a/arch/m68knommu/platform/68328/ints.c
+>> +++ b/arch/m68knommu/platform/68328/ints.c
+>> @@ -183,6 +183,7 @@ void __init init_IRQ(void)
+>>  		irq_desc[i].action = NULL;
+>>  		irq_desc[i].depth = 1;
+>>  		irq_desc[i].chip = &intc_irq_chip;
+>> +		set_irq_handler(irq, handle_level_irq);
+>>  	}
+>>  }
+>>  
+>> diff --git a/arch/m68knommu/platform/68360/ints.c b/arch/m68knommu/platform/68360/ints.c
+>> index 6f22970..cdf691e 100644
+>> --- a/arch/m68knommu/platform/68360/ints.c
+>> +++ b/arch/m68knommu/platform/68360/ints.c
+>> @@ -136,6 +136,7 @@ void init_IRQ(void)
+>>  		irq_desc[i].action = NULL;
+>>  		irq_desc[i].depth = 1;
+>>  		irq_desc[i].chip = &intc_irq_chip;
+>> +		set_irq_handler(irq, handle_level_irq);
+>>  	}
+>>  }
+>>  
+>> diff --git a/arch/m68knommu/platform/coldfire/intc-2.c b/arch/m68knommu/platform/coldfire/intc-2.c
+>> index 5598c8b..6410f7e 100644
+>> --- a/arch/m68knommu/platform/coldfire/intc-2.c
+>> +++ b/arch/m68knommu/platform/coldfire/intc-2.c
+>> @@ -88,6 +88,7 @@ void __init init_IRQ(void)
+>>  		irq_desc[irq].action = NULL;
+>>  		irq_desc[irq].depth = 1;
+>>  		irq_desc[irq].chip = &intc_irq_chip;
+>> +		set_irq_handler(irq, handle_level_irq);
+>>  	}
+>>  }
+>>  
+>> diff --git a/arch/m68knommu/platform/coldfire/intc-simr.c b/arch/m68knommu/platform/coldfire/intc-simr.c
+>> index 1b01e79..7f4abb3 100644
+>> --- a/arch/m68knommu/platform/coldfire/intc-simr.c
+>> +++ b/arch/m68knommu/platform/coldfire/intc-simr.c
+>> @@ -73,6 +73,7 @@ void __init init_IRQ(void)
+>>  		irq_desc[irq].depth = 1;
+>>  		irq_desc[irq].chip = &intc_irq_chip;
+>>  		intc_irq_set_type(irq, 0);
+>> +		set_irq_handler(irq, handle_level_irq);
+>>  	}
+>>  }
+>>  
+>> diff --git a/arch/m68knommu/platform/coldfire/intc.c b/arch/m68knommu/platform/coldfire/intc.c
+>> index a4560c8..40b9e8d 100644
+>> --- a/arch/m68knommu/platform/coldfire/intc.c
+>> +++ b/arch/m68knommu/platform/coldfire/intc.c
+>> @@ -148,6 +148,7 @@ void __init init_IRQ(void)
+>>  		irq_desc[irq].depth = 1;
+>>  		irq_desc[irq].chip = &intc_irq_chip;
+>>  		intc_irq_set_type(irq, 0);
+>> +		set_irq_handler(irq, handle_level_irq);
+>>  	}
+>>  }
+>>  
+> 
+> 
+
+
 -- 
-1.7.2.1
-
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
