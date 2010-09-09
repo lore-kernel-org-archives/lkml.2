@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933067Ab0IIWmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:42:23 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57020 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932901Ab0IIWmR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933087Ab0IIWmZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:42:25 -0400
+Received: from xenotime.net ([72.52.115.56]:37731 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932899Ab0IIWmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Sep 2010 18:42:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=dIcHAnl9LN2/8UaAkYBXjqXv4kULqqHqMbJ+Xb41gHJTQoFqJHP9iHujb602U2H3Zk
-         3Fe0JML/yu5Yivh9d7J6aiJZDtpSISsKIrkXebPam6NPhS2zoesz2gq+Jx2ZGmEPyC1C
-         2WSzIhNViuH5OIbKuab1f7JOGCNAMxhB8wv/o=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 161/223]drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.h Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:42:37 -0700
-Message-Id: <1284072161-8312-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.2.1
+Date: Thu, 9 Sep 2010 15:42:13 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 129/223]drivers/scsi/Kconfig Update broken web
+ addresses.
+Message-Id: <20100909154213.aefda094.rdunlap@xenotime.net>
+In-Reply-To: <1284071862-8194-9-git-send-email-justinmattock@gmail.com>
+References: <1284071862-8194-1-git-send-email-justinmattock@gmail.com>
+	<1284071862-8194-9-git-send-email-justinmattock@gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below you will find an Update to a broken web address.
-Please let me know if this needs to be changed.
+On Thu,  9 Sep 2010 15:37:36 -0700 Justin P. Mattock wrote:
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> Below you will find an Update to a broken web address.
+> Please let me know if this needs to be changed.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  drivers/scsi/Kconfig |   14 +++++++-------
+>  1 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+> index bbf91ae..6fe68d0 100644
+> --- a/drivers/scsi/Kconfig
+> +++ b/drivers/scsi/Kconfig
+> @@ -1608,9 +1608,9 @@ config SCSI_DEBUG
+>  	  each with multiple dummy SCSI devices (disks). It defaults to one
+>  	  host adapter with one dummy SCSI disk. Each dummy disk uses kernel
+>  	  RAM as storage (i.e. it is a ramdisk). To save space when multiple
+> -	  dummy disks are simulated, they share the same kernel RAM for 
+> -	  their storage. See <http://www.torque.net/sg/sdebug.html> for more
+> -	  information. This driver is primarily of use to those testing the
+> +	  dummy disks are simulated, they share the same kernel RAM for their 
+> +	  storage. See <http://web.archive.org/web/*/http://www.torque.net/sg/sdebug.html> 
+> +	  for more information. This driver is primarily of use to those testing the
+>  	  SCSI and block subsystems. If unsure, say N.
+
+This one should be <http://sg.danny.cz/sg/sdebug26.html>
 
 ---
- .../comedi/drivers/addi-data/hwdrv_apci035.h       |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.h b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.h
-index 68db9c1..3c700c7 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.h
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.h
-@@ -6,7 +6,7 @@
-  *	D-77833 Ottersweier
-  *	Tel: +19(0)7223/9493-0
-  *	Fax: +49(0)7223/9493-92
-- *	http://www.addi-data-com
-+ *	http://www.addi-data.com
-  *	info@addi-data.com
-  *
-  * This program is free software; you can redistribute it and/or modify it
--- 
-1.7.2.1
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
