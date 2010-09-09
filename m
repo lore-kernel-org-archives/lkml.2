@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab0IIXKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 19:10:15 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49828 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756547Ab0IIWZb (ORCPT
+	id S1756605Ab0IIWZa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:25:30 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:39116 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756277Ab0IIWZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:25:31 -0400
+	Thu, 9 Sep 2010 18:25:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=suExI/imOol0/SwfoxfRL/51ToOavlEv5mqrgJ2JRD78IUxTUbmXBguDK8irfBwH4f
-         wGPaxdsdcnkxmy/nM/xo7b33nHAl+4r+2fQwMkC9oYgFH5OkELQnZJVqGM/ipxYqucc8
-         i77UnF3h3720UvXauDhllAXCCZmSj4BspZcBk=
+        b=U2/3hd4Aa2Q3eoOf4NPBRuKFDj2h46cHsem79XSGN5OqcpT7lo0k5pSOhVRyytTl++
+         9MZZbQXhUufvfmf8fyHRGhcvI4b7KRHA7JAa7SshzwH6NU3y66QUV5n/lk2F/nwAZCL+
+         VzccYdGwEK6TRv04p8BYztwsoeolF/W5M3zhk=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 019/223]drivers/gpu/drm/README.drm Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:25:38 -0700
-Message-Id: <1284071149-7723-4-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 017/223]drivers/firmware/Kconfig Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:25:36 -0700
+Message-Id: <1284071149-7723-2-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071149-7723-1-git-send-email-justinmattock@gmail.com>
 References: <1284071149-7723-1-git-send-email-justinmattock@gmail.com>
@@ -33,22 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/gpu/drm/README.drm |    2 +-
+ drivers/firmware/Kconfig |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpu/drm/README.drm b/drivers/gpu/drm/README.drm
-index b5b3327..f2d7040 100644
---- a/drivers/gpu/drm/README.drm
-+++ b/drivers/gpu/drm/README.drm
-@@ -28,7 +28,7 @@ ways:
- Documentation on the DRI is available from:
-     http://dri.freedesktop.org/wiki/Documentation
-     http://sourceforge.net/project/showfiles.php?group_id=387
--    http://dri.sourceforge.net/doc/
-+    http://dri.freedesktop.org/wiki/Documentation 
+diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
+index 280c9b5..de0aca5 100644
+--- a/drivers/firmware/Kconfig
++++ b/drivers/firmware/Kconfig
+@@ -74,7 +74,7 @@ config EFI_PCDP
  
- For specific information about kernel-level support, see:
+ 	  You must also enable the appropriate drivers (serial, VGA, etc.)
  
+-	  See <http://www.dig64.org/specifications/DIG64_HCDPv20_042804.pdf>
++	  See <http://www.dig64.org/specifications/agreement>
+ 
+ config DELL_RBU
+ 	tristate "BIOS update support for DELL systems via sysfs"
 -- 
 1.7.2.1
 
