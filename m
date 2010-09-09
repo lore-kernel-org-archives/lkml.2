@@ -1,73 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab0IITQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 15:16:53 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:47122 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754421Ab0IITQv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 15:16:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=D3+d8R0krYMlFMjenNNeE63n+AOrsjqxUvr31oBO/UeCEttI8MGHeJY9YL2najS5Fd
-         Kf1Rrjtw5V4a4HFsYrMiu0s14knhE4t5/zrmnoNg7dG7FU1i2a6KOQrKptYC5Qot4Gdb
-         t+EPaGbsKB/QvtvpZM3WIgl0o1CluEBJ/iMIM=
-MIME-Version: 1.0
-In-Reply-To: <1284058127.24986.199.camel@Joe-Laptop>
-References: <1284056536.24986.182.camel@Joe-Laptop> <AANLkTimAuA1oYyoaKsFTPEifdDsz9h=EzTB8gKudyAJk@mail.gmail.com>
- <1284058127.24986.199.camel@Joe-Laptop>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 9 Sep 2010 15:16:29 -0400
-Message-ID: <AANLkTimzAOvP62VnhpSmKoazKkPc30-YTy09g2eYPGBg@mail.gmail.com>
-Subject: Re: [rfc patch] treewide: Convert "static const char <*> foo[] =" to
- "static const char <*> const foo[] ="
-To: Joe Perches <joe@perches.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755461Ab0IITRv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 15:17:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45563 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752657Ab0IITRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 15:17:48 -0400
+From: Peter Jones <pjones@redhat.com>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Luke Macken <lmacken@redhat.com>, Peter Jones <pjones@redhat.com>
+Subject: [PATCH 2/2] efifb: support the EFI framebuffer on more Apple hardware
+Date: Thu,  9 Sep 2010 15:16:49 -0400
+Message-Id: <1284059809-9973-2-git-send-email-pjones@redhat.com>
+In-Reply-To: <1284059809-9973-1-git-send-email-pjones@redhat.com>
+References: <1284059809-9973-1-git-send-email-pjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 9, 2010 at 14:48, Joe Perches wrote:
-> On Thu, 2010-09-09 at 14:29 -0400, Mike Frysinger wrote:
->> this is going to keep
->> creeping back in with new drivers unless we have something like
->> checkpatch.pl catching it ...
->
-> These are added pretty slowly, but both of
->
->        static char foo[] = "bar"
-> and
->        static const char *foo[] = {"bar"}
->
-> could be warned by checkpatch
+From: Luke Macken <lmacken@redhat.com>
 
-i dont think you even need to check the contents.  just match the base:
-char foo[]
-const char *foo[]
+This patch enables the EFI framebuffer on 14 more Macs, including the
+iMac11,1 iMac10,1 iMac8,1 Macmini3,1 Macmini4,1 MacBook5,1 MacBook6,1
+MacBook7,1 MacBookPro2,2 MacBookPro5,2 MacBookPro5,3 MacBookPro6,1
+MacBookPro6,2 and MacBookPro7,1
 
-we want to catch these even if it isnt static, and catching the
-forward decl would be useful too.
+Information gathered from various user submissions.
 
->> where is the actual patch ?
->
-> On my computer.  300KB is pretty big to post.
-> I'll sent it to you separately.
+    https://bugzilla.redhat.com/show_bug.cgi?id=528232
+    http://ubuntuforums.org/showthread.php?t=1557326
 
-thanks.  for reviewing/merging, probably be best to split up by
-subsystem.  the MTD parts look straight forward (part probe types), so
-that'd be one big change.  i'd even include the board changes in that
-one commit.
+Signed-off-by: Luke Macken <lmacken@redhat.com>
+Signed-off-by: Peter Jones <pjones@redhat.com>
+---
+ drivers/video/efifb.c |   42 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 42 insertions(+), 0 deletions(-)
 
-same goes for the ASoC changes (most everything under sound/).  looks
-sane, so make one chunk for that and send to the ASoC guys.
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index c082b61..254b282 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -39,17 +39,31 @@ enum {
+ 	M_I20,		/* 20-Inch iMac */
+ 	M_I20_SR,	/* 20-Inch iMac (Santa Rosa) */
+ 	M_I24,		/* 24-Inch iMac */
++	M_I24_8_1,	/* 24-Inch iMac, 8,1th gen */
++	M_I24_10_1,	/* 24-Inch iMac, 10,1th gen */
++	M_I27_11_1,	/* 27-Inch iMac, 11,1th gen */
+ 	M_MINI,		/* Mac Mini */
++	M_MINI_3_1,	/* Mac Mini, 3,1th gen */
++	M_MINI_4_1,	/* Mac Mini, 4,1th gen */
+ 	M_MB,		/* MacBook */
+ 	M_MB_2,		/* MacBook, 2nd rev. */
+ 	M_MB_3,		/* MacBook, 3rd rev. */
++	M_MB_5_1,	/* MacBook, 5th rev. */
++	M_MB_6_1,	/* MacBook, 6th rev. */
++	M_MB_7_1,	/* MacBook, 7th rev. */
+ 	M_MB_SR,	/* MacBook, 2nd gen, (Santa Rosa) */
+ 	M_MBA,		/* MacBook Air */
+ 	M_MBP,		/* MacBook Pro */
+ 	M_MBP_2,	/* MacBook Pro 2nd gen */
++	M_MBP_2_2,	/* MacBook Pro 2,2nd gen */
+ 	M_MBP_SR,	/* MacBook Pro (Santa Rosa) */
+ 	M_MBP_4,	/* MacBook Pro, 4th gen */
+ 	M_MBP_5_1,    /* MacBook Pro, 5,1th gen */
++	M_MBP_5_2,	/* MacBook Pro, 5,2th gen */
++	M_MBP_5_3,	/* MacBook Pro, 5,3rd gen */
++	M_MBP_6_1,	/* MacBook Pro, 6,1th gen */
++	M_MBP_6_2,	/* MacBook Pro, 6,2th gen */
++	M_MBP_7_1,	/* MacBook Pro, 7,1th gen */
+ 	M_UNKNOWN	/* placeholder */
+ };
+ 
+@@ -64,14 +78,28 @@ static struct efifb_dmi_info {
+ 	[M_I20] = { "i20", 0x80010000, 1728 * 4, 1680, 1050 }, /* guess */
+ 	[M_I20_SR] = { "imac7", 0x40010000, 1728 * 4, 1680, 1050 },
+ 	[M_I24] = { "i24", 0x80010000, 2048 * 4, 1920, 1200 }, /* guess */
++	[M_I24_8_1] = { "imac8", 0xc0060000, 2048 * 4, 1920, 1200 },
++	[M_I24_10_1] = { "imac10", 0xc0010000, 2048 * 4, 1920, 1080 },
++	[M_I27_11_1] = { "imac11", 0xc0010000, 2560 * 4, 2560, 1440 },
+ 	[M_MINI]= { "mini", 0x80000000, 2048 * 4, 1024, 768 },
++	[M_MINI_3_1]= { "mini31", 0x40010000, 1024 * 4, 1024, 768 },
++	[M_MINI_4_1]= { "mini41", 0xc0010000, 2048 * 4, 1920, 1200 },
+ 	[M_MB] = { "macbook", 0x80000000, 2048 * 4, 1280, 800 },
++	[M_MB_5_1] = { "macbook51", 0x80010000, 2048 * 4, 1280, 800 },
++	[M_MB_6_1] = { "macbook61", 0x80010000, 2048 * 4, 1280, 800 },
++	[M_MB_7_1] = { "macbook71", 0x80010000, 2048 * 4, 1280, 800 },
+ 	[M_MBA] = { "mba", 0x80000000, 2048 * 4, 1280, 800 },
+ 	[M_MBP] = { "mbp", 0x80010000, 1472 * 4, 1440, 900 },
+ 	[M_MBP_2] = { "mbp2", 0, 0, 0, 0 }, /* placeholder */
++	[M_MBP_2_2] = { "mbp22", 0x80010000, 1472 * 4, 1440, 900 },
+ 	[M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900 },
+ 	[M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200 },
+ 	[M_MBP_5_1] = { "mbp51", 0xc0010000, 2048 * 4, 1440, 900 },
++	[M_MBP_5_2] = { "mbp52", 0xc0010000, 2048 * 4, 1920, 1200 },
++	[M_MBP_5_3] = { "mbp53", 0xd0010000, 2048 * 4, 1440, 900 },
++	[M_MBP_6_1] = { "mbp61", 0x90030000, 2048 * 4, 1920, 1200 },
++	[M_MBP_6_2] = { "mbp62", 0x90030000, 2048 * 4, 1680, 1050 },
++	[M_MBP_7_1] = { "mbp71", 0xc0010000, 2048 * 4, 1280, 800 },
+ 	[M_UNKNOWN] = { NULL, 0, 0, 0, 0 }
+ };
+ 
+@@ -92,7 +120,12 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac6,1", M_I24),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac6,1", M_I24),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac7,1", M_I20_SR),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac8,1", M_I24_8_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac10,1", M_I24_10_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac11,1", M_I27_11_1),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "Macmini1,1", M_MINI),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini3,1", M_MINI_3_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini4,1", M_MINI_4_1),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook1,1", M_MB),
+ 	/* At least one of these two will be right; maybe both? */
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook2,1", M_MB),
+@@ -101,14 +134,23 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook3,1", M_MB),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook3,1", M_MB),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook4,1", M_MB),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook5,1", M_MB_5_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook6,1", M_MB_6_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook7,1", M_MB_7_1),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir1,1", M_MBA),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro1,1", M_MBP),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,1", M_MBP_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,2", M_MBP_2_2),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro2,1", M_MBP_2),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro4,1", M_MBP_4),
+ 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,1", M_MBP_5_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,2", M_MBP_5_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,3", M_MBP_5_3),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,1", M_MBP_6_1),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,2", M_MBP_6_2),
++	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro7,1", M_MBP_7_1),
+ 	{},
+ };
+ 
+-- 
+1.7.2.2
 
-your perl hack isnt quite right.  the change to
-drivers/mtd/maps/ixp2000.c and intel_vr_nor.c incorrectly ate leading
-whitespace.  how about making a coccinelle patch ?  then you could add
-it to scripts/coccinelle/ for other people to use in the future, and
-hopefully these style changes wouldnt be broken in the process.
--mike
