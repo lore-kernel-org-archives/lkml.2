@@ -1,78 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab0IIXmg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 19:42:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27173 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284Ab0IIXmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 19:42:35 -0400
-Date: Fri, 10 Sep 2010 01:40:08 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Izik Eidus <ieidus@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: Transparent Hugepage Support #30
-Message-ID: <20100909234008.GS8925@random.random>
-References: <20100901190859.GA20316@random.random>
- <20100909104630.GO4443@balbir.in.ibm.com>
+	id S1755222Ab0IIXo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 19:44:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64103 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab0IIXo4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 19:44:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=bg7g3ry151iyI9wvexFu3bhDe9nmUkDTwtIkGEodFUVbZyBhfwnGigpXqW1uEXf7/N
+         kvtDTCvredShpgctX72Cp9xf+kYBZ3Aitp+Y/HUXmfO95XOla49ndE67jrP2ZKS5n5bR
+         q+LBJgHgkP5F2ovrrh33dSNB/HrDkwfM/ypMI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100909104630.GO4443@balbir.in.ibm.com>
+In-Reply-To: <87wrqu8s1u.fsf_-_@spindle.srvr.nix>
+References: <87zkvx2ese.fsf@spindle.srvr.nix>
+	<20100906053255.GA23340@brouette>
+	<87iq2gyllg.fsf@spindle.srvr.nix>
+	<87wrqu8s1u.fsf_-_@spindle.srvr.nix>
+Date: Thu, 9 Sep 2010 19:44:55 -0400
+Message-ID: <AANLkTinSr0xoRrtZ6R+sRyQbf0LXhqBJisQTcdHc+A8+@mail.gmail.com>
+Subject: Re: [BISECTED] 2.6.35.*: horrible (exponential? >linear) slowdown to
+ unusability (HPET)
+From: John Drescher <drescherjm@gmail.com>
+To: Nix <nix@esperi.org.uk>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Damien Wyart <damien.wyart@free.fr>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> John, Damien, you seem to be experiencing this: are you using HPET as
+> your clocksource? Do you also have ICH10 82801JIs, or is this more
+> widespread?
+>
+I am not using hpet as my clocksource.
 
-On Thu, Sep 09, 2010 at 04:16:30PM +0530, Balbir Singh wrote:
-> * Andrea Arcangeli <aarcange@redhat.com> [2010-09-01 21:08:59]:
-> > btw, memcg developers could already support THP inside memcg even if
-> > THP is not included yet without any sort of problem, so it's also
-> 
-> Could you elaborate by what you mean here?
+jmd1 ~ # uname -a
+Linux jmd1 2.6.35-std160-amd64 #2 SMP Fri Aug 13 18:42:02 UTC 2010
+x86_64 Intel(R) Core(TM) i7 CPU 920 @ 2.67GHz GenuineIntel GNU/Linux
+jmd1 ~ # cat /sys/devices/system/clocksource/clocksource0/current_clocksource
+tsc
 
-Ok, what I mean is that you could already stop assuming the "page"
-passed as parameter to memcg is PAGE_SIZE in size. It would still work
-fine. The check should later be done with PageTransCompound as that
-will be optimized away at compile time when
-CONFIG_TRANSPARENT_HUGEPAGE=n. But in the meantime PageCompund shall
-work fine.
+I do have ICH10 82801JI
 
-One nasty detail to pay attention to later (which isn't possible to
-implement until compound_lock is defined), is that at times we may
-also need to take the compound_lock to avoid the size of the page to
-change from under us (it should only be needed if PageTransCompound
-returns true so it won't affect the regular paths and it won't be
-built if THP is off at compile time). The collapsing takes the
-mmap_sem write mode which normally won't risk to run in parallel,
-furthermore the collapsing isn't done in place so it's unlikely to
-give issues. So only the transition from transcompound to regular
-page, is likely to require special care.
-
-> We try not to change too drastically, but several of the current
-> changes are fixes, we are currently contemplating some more changes to
-> support the I/O control. Some of the recent changes have been driven
-> by tracing. We will pay closer attention to THP changes, thanks for
-> bring your concern to our notice.
-
-Thanks a lot. I can already start looking more closely into the memcg
-of current upstream myself, if this is a good time and there are no
-more big changes planned or already queued in some git tree waiting to
-be pulled.
+jmd1 ~ # lspci -v | grep 82801JI
+00:1a.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
+UHCI Controller #4 (prog-if 00 [UHCI])
+        Subsystem: Intel Corporation 82801JI (ICH10 Family) USB UHCI
+Controller #4
+00:1a.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
+UHCI Controller #5 (prog-if 00 [UHCI])
+        Subsystem: Intel Corporation 82801JI (ICH10 Family) USB UHCI
+Controller #5
+00:1a.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
+UHCI Controller #6 (prog-if 00 [UHCI])
+        Subsystem: Intel Corporation 82801JI (ICH10 Family) USB UHCI
+Controller #6
+00:1a.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2
+EHCI Controller #2 (prog-if 20 [EHCI])
+        Subsystem: Intel Corporation 82801JI (ICH10 Family) USB2 EHCI
+Controller #2
+00:1b.0 Audio device: Intel Corporation 82801JI (ICH10 Family) HD
+Audio Controller
+        Subsystem: Intel Corporation 82801JI (ICH10 Family) HD Audio Controller
+00:1c.0 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI
+Express Root Port 1 (prog-if 00 [Normal decode])
+        Capabilities: [90] Subsystem: Intel Corporation 82801JI (ICH10
+Family) PCI Express Root Port 1
+00:1c.1 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI
+Express Port 2 (prog-if 00 [Normal decode])
+        Capabilities: [90] Subsystem: Intel Corporation 82801JI (ICH10
+Family) PCI Express Port 2
+00:1c.2 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI
+Express Root Port 3 (prog-if 00 [Normal decode])
+        Capabilities: [90] Subsystem: Intel Corporation 82801JI (ICH10
+Family) PCI Express Root Port 3
+00:1c.4 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI
+Express Root Port 5 (prog-if 00 [Normal decode])
+        Capabilities: [90] Subsystem: Intel Corporation 82801JI (ICH10
+Family) PCI Express Root Port 5
+00:1d.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
+UHCI Controller #1 (prog-if 00 [UHCI])
+        Subsystem: Intel Corporation 82801JI (ICH10 Family) USB UHCI
+Controller #1
+00:1d.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
+UHCI Controller #2 (prog-if 00 [UHCI])
+        Subsystem: Intel Corporation 82801JI (ICH10 Family) USB UHCI
+Controller #2
+00:1d.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
+UHCI Controller #3 (prog-if 00 [UHCI])
+        Subsystem: Intel Corporation 82801JI (ICH10 Family) USB UHCI
+Controller #3
+00:1d.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2
+EHCI Controller #1 (prog-if 20 [EHCI])
+        Subsystem: Intel Corporation 82801JI (ICH10 Family) USB2 EHCI
+Controller #1
+00:1f.0 ISA bridge: Intel Corporation 82801JIR (ICH10R) LPC Interface Controller
+        Subsystem: Intel Corporation 82801JIR (ICH10R) LPC Interface Controller
+00:1f.2 SATA controller: Intel Corporation 82801JI (ICH10 Family) SATA
+AHCI Controller (prog-if 01 [AHCI 1.0])
+00:1f.3 SMBus: Intel Corporation 82801JI (ICH10 Family) SMBus Controller
+        Subsystem: Intel Corporation 82801JI (ICH10 Family) SMBus Controller
+jmd1 ~ #
