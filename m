@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933337Ab0IIWpv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:45:51 -0400
+	id S933349Ab0IIWpy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:45:54 -0400
 Received: from mail-px0-f174.google.com ([209.85.212.174]:46296 "EHLO
 	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933275Ab0IIWpr (ORCPT
+	with ESMTP id S933327Ab0IIWpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:45:47 -0400
+	Thu, 9 Sep 2010 18:45:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=hQZpmSo5+EY7wRo7ImwNaivFSOO2V90mecNBcZwEprFPWVD/RKVHymSA0nM7ZnU0K8
-         DBCJgCYEHqt09ClnPQqJwiRQoAk+XuTyZ9hxEqyvzA6SOiDf4jPrev7VqgMi63G7+g0U
-         u0g7HFDF556WFOR1xvDFl65N+IB8FNYzGR8PA=
+        b=qN7wdHXlbrPuelE77xRBFp9IHRiHBVsPsIGWWRn4r1iFaDFmZRm3jDCFIF3nFZy15t
+         01EikPII9ks/ef4pl/bSfA2um0kDSoC+11KH7BfV4Q+ucXJl9/GHx3CFrMKN7WMw23/s
+         AjyPCadX+KDyRifqwe2+XzLOVliRsweaRkxg8=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 213/223]drivers/video/macfb.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:45:57 -0700
-Message-Id: <1284072367-8485-3-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 214/223]drivers/video/vgastate.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:45:58 -0700
+Message-Id: <1284072367-8485-4-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284072367-8485-1-git-send-email-justinmattock@gmail.com>
 References: <1284072367-8485-1-git-send-email-justinmattock@gmail.com>
@@ -33,22 +33,21 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/video/macfb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/video/vgastate.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/macfb.c b/drivers/video/macfb.c
-index 43207cc..6cc8363 100644
---- a/drivers/video/macfb.c
-+++ b/drivers/video/macfb.c
-@@ -16,7 +16,7 @@
-  * Jacobowitz, Paul Mackerras, Fabio Riccardi, and Geert Uytterhoeven.
+diff --git a/drivers/video/vgastate.c b/drivers/video/vgastate.c
+index b91c466..33da030 100644
+--- a/drivers/video/vgastate.c
++++ b/drivers/video/vgastate.c
+@@ -5,7 +5,6 @@
+  * 
+  * Copyright history from vga16fb.c:
+  *	Copyright 1999 Ben Pfaff and Petr Vandrovec
+- *	Based on VGA info at http://www.goodnet.com/~tinara/FreeVGA/home.htm
+  *	Based on VESA framebuffer (c) 1998 Gerd Knorr
   *
-  * The VideoToolbox "Bugs" web page at
-- * http://rajsky.psych.nyu.edu/Tips/VideoBugs.html
-+ * http://web.archive.org/web/*/http://rajsky.psych.nyu.edu/Tips/VideoBugs.html 
-  *
-  * This code is free software.  You may copy, modify, and distribute
-  * it subject to the terms and conditions of the GNU General Public
+  * This file is subject to the terms and conditions of the GNU General
 -- 
 1.7.2.1
 
