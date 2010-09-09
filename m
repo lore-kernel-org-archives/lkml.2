@@ -1,79 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab0IIC6w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 22:58:52 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44663 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873Ab0IIC6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 22:58:45 -0400
-Date: Thu, 9 Sep 2010 12:58:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bojan Smojver <bojan@rexursive.com>
-Subject: linux-next: build failure after merge of the final tree (suspend
- tree related)
-Message-Id: <20100909125838.6c82edc4.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752567Ab0IIDH5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 23:07:57 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57261 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab0IIDHu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 23:07:50 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 9 Sep 2010 12:02:31 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 03/10] writeback: Do not congestion sleep if there are
+ no congested BDIs or significant writeback
+Message-Id: <20100909120231.fe6d3078.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1283770053-18833-4-git-send-email-mel@csn.ul.ie>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
+	<1283770053-18833-4-git-send-email-mel@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__9_Sep_2010_12_58_38_+1000_+od2_IVNiLLHl4nL"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__9_Sep_2010_12_58_38_+1000_+od2_IVNiLLHl4nL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon,  6 Sep 2010 11:47:26 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-Hi Rafael,
+> If congestion_wait() is called with no BDIs congested, the caller will sleep
+> for the full timeout and this may be an unnecessary sleep. This patch adds
+> a wait_iff_congested() that checks congestion and only sleeps if a BDI is
+> congested or if there is a significant amount of writeback going on in an
+> interesting zone. Else, it calls cond_resched() to ensure the caller is
+> not hogging the CPU longer than its quota but otherwise will not sleep.
+> 
+> This is aimed at reducing some of the major desktop stalls reported during
+> IO. For example, while kswapd is operating, it calls congestion_wait()
+> but it could just have been reclaiming clean page cache pages with no
+> congestion. Without this patch, it would sleep for a full timeout but after
+> this patch, it'll just call schedule() if it has been on the CPU too long.
+> Similar logic applies to direct reclaimers that are not making enough
+> progress.
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> ---
+>  include/linux/backing-dev.h      |    2 +-
+>  include/trace/events/writeback.h |    7 ++++
+>  mm/backing-dev.c                 |   66 ++++++++++++++++++++++++++++++++++++-
+>  mm/page_alloc.c                  |    4 +-
+>  mm/vmscan.c                      |   26 ++++++++++++--
+>  5 files changed, 96 insertions(+), 9 deletions(-)
+> 
+> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+> index 35b0074..f1b402a 100644
+> --- a/include/linux/backing-dev.h
+> +++ b/include/linux/backing-dev.h
+> @@ -285,7 +285,7 @@ enum {
+>  void clear_bdi_congested(struct backing_dev_info *bdi, int sync);
+>  void set_bdi_congested(struct backing_dev_info *bdi, int sync);
+>  long congestion_wait(int sync, long timeout);
+> -
+> +long wait_iff_congested(struct zone *zone, int sync, long timeout);
+>  
+>  static inline bool bdi_cap_writeback_dirty(struct backing_dev_info *bdi)
+>  {
+> diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
+> index 275d477..eeaf1f5 100644
+> --- a/include/trace/events/writeback.h
+> +++ b/include/trace/events/writeback.h
+> @@ -181,6 +181,13 @@ DEFINE_EVENT(writeback_congest_waited_template, writeback_congestion_wait,
+>  	TP_ARGS(usec_timeout, usec_delayed)
+>  );
+>  
+> +DEFINE_EVENT(writeback_congest_waited_template, writeback_wait_iff_congested,
+> +
+> +	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
+> +
+> +	TP_ARGS(usec_timeout, usec_delayed)
+> +);
+> +
+>  #endif /* _TRACE_WRITEBACK_H */
+>  
+>  /* This part must be outside protection */
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index 298975a..94b5433 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -724,6 +724,7 @@ static wait_queue_head_t congestion_wqh[2] = {
+>  		__WAIT_QUEUE_HEAD_INITIALIZER(congestion_wqh[0]),
+>  		__WAIT_QUEUE_HEAD_INITIALIZER(congestion_wqh[1])
+>  	};
+> +static atomic_t nr_bdi_congested[2];
+>  
+>  void clear_bdi_congested(struct backing_dev_info *bdi, int sync)
+>  {
+> @@ -731,7 +732,8 @@ void clear_bdi_congested(struct backing_dev_info *bdi, int sync)
+>  	wait_queue_head_t *wqh = &congestion_wqh[sync];
+>  
+>  	bit = sync ? BDI_sync_congested : BDI_async_congested;
+> -	clear_bit(bit, &bdi->state);
+> +	if (test_and_clear_bit(bit, &bdi->state))
+> +		atomic_dec(&nr_bdi_congested[sync]);
+>  	smp_mb__after_clear_bit();
+>  	if (waitqueue_active(wqh))
+>  		wake_up(wqh);
+> @@ -743,7 +745,8 @@ void set_bdi_congested(struct backing_dev_info *bdi, int sync)
+>  	enum bdi_state bit;
+>  
+>  	bit = sync ? BDI_sync_congested : BDI_async_congested;
+> -	set_bit(bit, &bdi->state);
+> +	if (!test_and_set_bit(bit, &bdi->state))
+> +		atomic_inc(&nr_bdi_congested[sync]);
+>  }
+>  EXPORT_SYMBOL(set_bdi_congested);
+>  
+> @@ -774,3 +777,62 @@ long congestion_wait(int sync, long timeout)
+>  }
+>  EXPORT_SYMBOL(congestion_wait);
+>  
+> +/**
+> + * congestion_wait - wait for a backing_dev to become uncongested
+> + * @zone: A zone to consider the number of being being written back from
+> + * @sync: SYNC or ASYNC IO
+> + * @timeout: timeout in jiffies
+> + *
+> + * Waits for up to @timeout jiffies for a backing_dev (any backing_dev) to exit
+> + * write congestion.  If no backing_devs are congested then the number of
+> + * writeback pages in the zone are checked and compared to the inactive
+> + * list. If there is no sigificant writeback or congestion, there is no point
+> + * in sleeping but cond_resched() is called in case the current process has
+> + * consumed its CPU quota.
+> + */
+> +long wait_iff_congested(struct zone *zone, int sync, long timeout)
+> +{
+> +	long ret;
+> +	unsigned long start = jiffies;
+> +	DEFINE_WAIT(wait);
+> +	wait_queue_head_t *wqh = &congestion_wqh[sync];
+> +
+> +	/*
+> +	 * If there is no congestion, check the amount of writeback. If there
+> +	 * is no significant writeback and no congestion, just cond_resched
+> +	 */
+> +	if (atomic_read(&nr_bdi_congested[sync]) == 0) {
+> +		unsigned long inactive, writeback;
+> +
+> +		inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
+> +				zone_page_state(zone, NR_INACTIVE_ANON);
+> +		writeback = zone_page_state(zone, NR_WRITEBACK);
+> +
+> +		/*
+> +		 * If less than half the inactive list is being written back,
+> +		 * reclaim might as well continue
+> +		 */
+> +		if (writeback < inactive / 2) {
 
-After merging the final tree, today's linux-next build (powerpc allyesconfi=
-g)
-failed like this:
+Hmm..can't we have a way that "find a page which can be just dropped without writeback"
+rather than sleeping ? I think we can throttole the number of victims for avoidng I/O
+congestion as pages/tick....if exhausted, ok, we should sleep.
 
-kernel/power/swap.c: In function 'save_image_lzo':
-kernel/power/swap.c:447: error: implicit declaration of function 'vmalloc'
-kernel/power/swap.c:447: warning: assignment makes pointer from integer wit=
-hout a cast
-kernel/power/swap.c:454: warning: assignment makes pointer from integer wit=
-hout a cast
-kernel/power/swap.c:457: error: implicit declaration of function 'vfree'
-kernel/power/swap.c:462: warning: assignment makes pointer from integer wit=
-hout a cast
-kernel/power/swap.c: In function 'load_image_lzo':
-kernel/power/swap.c:767: warning: assignment makes pointer from integer wit=
-hout a cast
-kernel/power/swap.c:774: warning: assignment makes pointer from integer wit=
-hout a cast
+Thanks,
+-Kame
 
-Caused by commit 2b2609c19ff19361360552786bd252ef40dfe5ce ("PM /
-Hibernate: Compress hibernation image with LZO").
 
-See Rule 1 in Documentation/SubmitChecklist.  There is a missing include
-of linux/vmalloc.h.
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Thu__9_Sep_2010_12_58_38_+1000_+od2_IVNiLLHl4nL
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMiE1eAAoJEDMEi1NhKgbsEOsH/iU1jjKH94H4ZWGXm+1Qc1Wj
-/E1WvTQpUmZibauZC2riCkS9y9PykOEYsZu4rzHkE8vnZYS5XJzDlBRDw4rV4icp
-BeVNQnYofoYLovvdVoMqocplU7rop2VzNwUJfjVw9bJIRePHk+Hqu7ful4u4AIuG
-BH1m8Dh7htVrJ1xmUUxigAqzZ2M3CReT3MCfShGO1Hs1cmHaO3u2DxJg0PZXWZ/I
-qcOu53R0kV0IRgLvwOeKs7c16sFPaXcocjHTLUE7jIoNdLQ9fs2sfFLnNmGsO6rk
-IPmokcRPJ16X4f7Qg4+5PrjlAvXcIk2mDdxoXb8z3OAtx4Ap1Mcm2GXN7sXgXjg=
-=Cww5
------END PGP SIGNATURE-----
-
---Signature=_Thu__9_Sep_2010_12_58_38_+1000_+od2_IVNiLLHl4nL--
