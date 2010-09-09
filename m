@@ -1,112 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab0IIUlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 16:41:51 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:45370 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752718Ab0IIUlu (ORCPT
+	id S1755481Ab0IIUwX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 16:52:23 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:49402 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab0IIUwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 16:41:50 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=cW7VqT6cs/7RBgpy/dtaILePnGoqTaqjSlvGckSrxk6W0EXpc1/qvnqapZeyyUGMyWRD06nZovjXILFSlObnOe4aHvItjffyRWQACt15t9RTn46gIZ+S6IyBriGa52mP;
-Date: Thu, 9 Sep 2010 13:41:43 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: Cam Macdonell <cam@cs.ualberta.ca>, Avi Kivity <avi@redhat.com>,
-        "qemu-devel@nongnu.org Developers" <qemu-devel@nongnu.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Chris Wright <chrisw@redhat.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] pci: fix pci_resource_alignment prototype
-Message-ID: <20100909134143.59154112@jbarnes-desktop>
-In-Reply-To: <20100908002520.GM30129@sequoia.sous-sol.org>
-References: <AANLkTimk19OmkNYvVemxgyFfgByNDDq6R2fa6=FQ8H9L@mail.gmail.com>
-	<4C83CA5A.7030404@redhat.com>
-	<AANLkTimtATH7JvBRXBbnr0hJ5bFrtOa_3vsZRe4a_rfR@mail.gmail.com>
-	<AANLkTim9EOUVuSq6Z3q6-j-x2w+JDD8F-_xH614uDFi8@mail.gmail.com>
-	<AANLkTimGui3atGAa-FE=6JhF1rM7BU0xtN-T4mZKqD8_@mail.gmail.com>
-	<20100908002520.GM30129@sequoia.sous-sol.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 9 Sep 2010 16:52:22 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6100"; a="53936134"
+Message-ID: <4C894903.1050909@codeaurora.org>
+Date: Thu, 09 Sep 2010 14:52:19 -0600
+From: Kenneth Heitke <kheitke@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Sundar <sunder.svit@gmail.com>
+CC: khali@linux-fr.org, ben-linux@fluff.org, srinidhi.kasagar@stericsson.com,
+        tsoni@codeaurora.org, linus.walleij@stericsson.com,
+        linux-arm-msm@vger.kernel.org, arve@android.com, swetland@google.com,
+        sdharia@codeaurora.com, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Crane Cai <crane.cai@amd.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v3] i2c: QUP based bus driver for Qualcomm MSM chipsets
+References: <1283907557-1874-1-git-send-email-kheitke@codeaurora.org> <AANLkTimHQ=ag5z+SKbGrm5BD-eF+xcDuKp4R_=4tf3cP@mail.gmail.com>
+In-Reply-To: <AANLkTimHQ=ag5z+SKbGrm5BD-eF+xcDuKp4R_=4tf3cP@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Sep 2010 17:25:20 -0700
-Chris Wright <chrisw@sous-sol.org> wrote:
+Sundar wrote:
+> Hi Kenneth,
+> 
+> just some error codes and leaks if I am right :)
+> 
+> On Wed, Sep 8, 2010 at 6:29 AM, Kenneth Heitke <kheitke@codeaurora.org> wrote:
+>> +
+>> +static int __devinit
+>> +qup_i2c_probe(struct platform_device *pdev)
+>> +{
+>> +
+>> +       qup_mem = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+>> +                                               "qup_phys_addr");
+>> +       if (!qup_mem) {
+>> +               dev_err(&pdev->dev, "no qup mem resource?\n");
+>> +               return -ENODEV;
+> 
+> I think this should be -ENXIO instead of -ENODEV?
+> 
+>> +       gsbi_mem = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+>> +                                               "gsbi_qup_i2c_addr");
+>> +       if (!gsbi_mem) {
+>> +               dev_err(&pdev->dev, "no gsbi mem resource?\n");
+>> +               return -ENODEV;
+> 
+> Ditto here.
+> 
+>> +       in_irq = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
+>> +                                               "qup_in_intr");
+>> +
+>> +       out_irq = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
+>> +                                               "qup_out_intr");
+>> +
+>> +       err_irq = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
+>> +                                               "qup_err_intr");
+>> +       if (!err_irq) {
+>> +               dev_err(&pdev->dev, "no error irq resource?\n");
+>> +               return -ENODEV;
+>> +       }
+> 
+> All the same here too?
+> 
+>> +
+>> +       qup_io = devm_request_mem_region(&pdev->dev, qup_mem->start,
+>> +                       resource_size(qup_mem), pdev->name);
+>> +       if (!qup_io) {
+>> +               dev_err(&pdev->dev, "QUP region already claimed\n");
+>> +               return -EBUSY;
+>> +       }
+>> +
+>> +       gsbi_io = devm_request_mem_region(&pdev->dev, gsbi_mem->start,
+>> +                       resource_size(gsbi_mem), pdev->name);
+>> +       if (!gsbi_io) {
+>> +               dev_err(&pdev->dev, "GSBI region already claimed\n");
+>> +               return -EBUSY;
+>> +       }
+>> +
+>> +       dev = devm_kzalloc(&pdev->dev, sizeof(struct qup_i2c_dev), GFP_KERNEL);
+> 
+> [..]
+> 
+>> +       if (!dev->base)
+>> +               return -ENOMEM;
+> 
+> Missing *_kzfree whilst returning?
+> 
+>> +       dev->gsbi = devm_ioremap(&pdev->dev,
+>> +                       gsbi_mem->start, resource_size(gsbi_mem));
+>> +       if (!dev->gsbi)
+>> +               return -ENOMEM;
+>> +
+>> +       clk = clk_get(&pdev->dev, "qup_clk");
+>> +       if (IS_ERR(clk)) {
+>> +               dev_err(&pdev->dev, "Could not get clock\n");
+>> +               ret = PTR_ERR(clk);
+>> +               goto err_clk_get_failed;
+> 
+> Will not the devm_iounmap be needed here?
+> 
+> Thanx!
+> Sundar
+> 
 
-> From: Cam Macdonell <cam@cs.ualberta.ca>
-> 
-> * Cam Macdonell (cam@cs.ualberta.ca) wrote:
-> > It seems it was the alignment value being passed back from
-> > pci_resource_alignment().  The return type is an int, which was
-> > causing value of 2GB to be sign extended to to 0xffffffff80000000.
-> > Changing the return type to resource_size_t allows BAR values >= 2GB
-> > to be successfully assigned.
-> <snip>
-> > -static inline int pci_resource_alignment(struct pci_dev *dev,
-> > +static inline resource_size_t pci_resource_alignment(struct pci_dev *dev,
-> >                                          struct resource *res)
-> 
-> Yes, that's my mistake.  Thanks for debugging the issue Cam.
-> This fixes the prototype for both pci_resource_alignment() and
-> pci_sriov_resource_alignment().
-> 
-> Patch started as debugging effort from Cam Macdonell.
-> 
-> Cc: Cam Macdonell <cam@cs.ualberta.ca>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> [chrisw: add iov bits]
-> Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-> ---
->  drivers/pci/iov.c |    2 +-
->  drivers/pci/pci.h |    5 +++--
->  2 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> index ce6a366..553d8ee 100644
-> --- a/drivers/pci/iov.c
-> +++ b/drivers/pci/iov.c
-> @@ -608,7 +608,7 @@ int pci_iov_resource_bar(struct pci_dev *dev, int resno,
->   * the VF BAR size multiplied by the number of VFs.  The alignment
->   * is just the VF BAR size.
->   */
-> -int pci_sriov_resource_alignment(struct pci_dev *dev, int resno)
-> +resource_size_t pci_sriov_resource_alignment(struct pci_dev *dev, int resno)
->  {
->  	struct resource tmp;
->  	enum pci_bar_type type;
-> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-> index 679c39d..5d0aeb1 100644
-> --- a/drivers/pci/pci.h
-> +++ b/drivers/pci/pci.h
-> @@ -262,7 +262,8 @@ extern int pci_iov_init(struct pci_dev *dev);
->  extern void pci_iov_release(struct pci_dev *dev);
->  extern int pci_iov_resource_bar(struct pci_dev *dev, int resno,
->  				enum pci_bar_type *type);
-> -extern int pci_sriov_resource_alignment(struct pci_dev *dev, int resno);
-> +extern resource_size_t pci_sriov_resource_alignment(struct pci_dev *dev,
-> +						    int resno);
->  extern void pci_restore_iov_state(struct pci_dev *dev);
->  extern int pci_iov_bus_range(struct pci_bus *bus);
->  
-> @@ -318,7 +319,7 @@ static inline int pci_ats_enabled(struct pci_dev *dev)
->  }
->  #endif /* CONFIG_PCI_IOV */
->  
-> -static inline int pci_resource_alignment(struct pci_dev *dev,
-> +static inline resource_size_t pci_resource_alignment(struct pci_dev *dev,
->  					 struct resource *res)
->  {
->  #ifdef CONFIG_PCI_IOV
-> 
-> 
-
-Applied to my for-linus branch, thanks.
+Hopefully no leaks since I am using the devm_ calls.  The resources 
+should be freed up automatically on device release and if the probe 
+function fails.  Please let me know if this assumption is not correct.
 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
