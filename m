@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab0IIW4f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:56:35 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57020 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932953Ab0IIWmU (ORCPT
+	id S933280Ab0IIWu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:50:58 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42850 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933217Ab0IIWoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:42:20 -0400
+	Thu, 9 Sep 2010 18:44:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=cNYjhrw9ZwY4e0gt3y+ucuVTE23Im++m89ZdDoZLEXcGIttrZKNqxrAPDaJmBu7VaM
-         fLibPfLskKd2Uxg78txZpr6QyJK7UQCLYAuUZnZ2dKmLA+liE9fkP8UkbatTsf+iyWSw
-         yJp2h6SMLArJPVI4U2bwKiEYmw4jidEnEkMMM=
+        b=gaU/WI6TpKK8n/dD0RSUrZq/D/4xlnmYmTo+Xke+qvbw9vAmADMwKJayZlxEkphTRn
+         qVFmJbxBjVSZlXmxlVQbplxnauMWLwUelBdxfgor9+WoB1WU0m8fjK7NAZSL4NvZXOy6
+         h0tReSECrXqhNUDEwcRjFvO0Ydj56IxqLzONI=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 162/223]drivers/staging/comedi/drivers/addi-data/APCI1710_Pwm.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:42:38 -0700
-Message-Id: <1284072161-8312-2-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 197/223]drivers/staging/asus_oled/asus_oled.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:44:56 -0700
+Message-Id: <1284072309-8452-2-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1284072161-8312-1-git-send-email-justinmattock@gmail.com>
-References: <1284072161-8312-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1284072309-8452-1-git-send-email-justinmattock@gmail.com>
+References: <1284072309-8452-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,22 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- .../comedi/drivers/addi-data/APCI1710_Pwm.c        |    2 +-
+ drivers/staging/asus_oled/asus_oled.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/APCI1710_Pwm.c b/drivers/staging/comedi/drivers/addi-data/APCI1710_Pwm.c
-index 148ce6f..8883e66 100644
---- a/drivers/staging/comedi/drivers/addi-data/APCI1710_Pwm.c
-+++ b/drivers/staging/comedi/drivers/addi-data/APCI1710_Pwm.c
-@@ -8,7 +8,7 @@ Copyright (C) 2004,2005  ADDI-DATA GmbH for the source code of this module.
- 	D-77833 Ottersweier
- 	Tel: +19(0)7223/9493-0
- 	Fax: +49(0)7223/9493-92
--	http://www.addi-data-com
-+	http://www.addi-data.com
- 	info@addi-data.com
- 
- This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
+index 5b279fb..1cb2116 100644
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -24,7 +24,7 @@
+  *
+  *
+  *  Asus OLED support is based on asusoled program taken from
+- *  https://launchpad.net/asusoled/.
++ *  http://lapsus.berlios.de/asus_oled.html.
+  *
+  *
+  */
 -- 
 1.7.2.1
 
