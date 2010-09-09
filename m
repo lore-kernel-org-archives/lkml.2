@@ -1,61 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab0IIIvs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 04:51:48 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:55916 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab0IIIvp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 04:51:45 -0400
-Date: Thu, 9 Sep 2010 10:51:43 +0200
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
-To: Anil kumar <anils_r@yahoo.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: scsi_cmnd data_buffer checksum
-Message-ID: <20100909085142.GA15327@schmichrtp.mainz.de.ibm.com>
-References: <20100909080028.GA4880@schmichrtp.mainz.de.ibm.com>
- <534531.52796.qm@web32407.mail.mud.yahoo.com>
+	id S1751539Ab0IIIyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 04:54:55 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:48651 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750873Ab0IIIyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 04:54:51 -0400
+Date: Thu, 9 Sep 2010 09:54:36 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 03/10] writeback: Do not congestion sleep if there are
+	no congested BDIs or significant writeback
+Message-ID: <20100909085436.GJ29263@csn.ul.ie>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie> <1283770053-18833-4-git-send-email-mel@csn.ul.ie> <20100907152533.GB4620@barrios-desktop> <20100908110403.GB29263@csn.ul.ie> <20100908145245.GG4620@barrios-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <534531.52796.qm@web32407.mail.mud.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100908145245.GG4620@barrios-desktop>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 01:35:02AM -0700, Anil kumar wrote:
-> Hi Christof,
+On Wed, Sep 08, 2010 at 11:52:45PM +0900, Minchan Kim wrote:
+> On Wed, Sep 08, 2010 at 12:04:03PM +0100, Mel Gorman wrote:
+> > On Wed, Sep 08, 2010 at 12:25:33AM +0900, Minchan Kim wrote:
+> > > > + * @zone: A zone to consider the number of being being written back from
+> > > > + * @sync: SYNC or ASYNC IO
+> > > > + * @timeout: timeout in jiffies
+> > > > + *
+> > > > + * Waits for up to @timeout jiffies for a backing_dev (any backing_dev) to exit
+> > > > + * write congestion.  If no backing_devs are congested then the number of
+> > > > + * writeback pages in the zone are checked and compared to the inactive
+> > > > + * list. If there is no sigificant writeback or congestion, there is no point
+> > >                                                 and 
+> > > 
+> > 
+> > Why and? "or" makes sense because we avoid sleeping on either condition.
 > 
-> Thanks for the response.
+> if (nr_bdi_congested[sync]) == 0) {
+>         if (writeback < inactive / 2) {
+>                 cond_resched();
+>                 ..
+>                 goto out
+>         }
+> }
 > 
-> I am running mkfs.ext3 command.
-> 
-> I am doing the following in the driver for write(10):
-> 
-> Queuecommand:
-> 
-> sg = scsi_sglist(cmd->scsi_cmd);
-> cmd->write_buf = (u8 *)(kmap_atomic(sg->page, KM_IRQ0) + sg->offset);
-> Calculate checksum for write_buf
-> 
-> Write Done:
-> Calculate checksum for cmd->write_buf
-> 
-> and checksums don't match. I am wondering how come OS changed the cmd->write_buf when I have not even unmapped the buffer. Is filesystem changing this cmd->write_buf pages when driver/HW is working on it?
+> for avoiding sleeping, above two condition should meet. 
 
-Yes, the driver has direct access to the data. Usually, the data is
-not copied for I/O requests. The driver gets one sg list that points
-to the data pages of file system (or whatever the data source is).
-When the filesystem decides to change the data, this single data
-buffer is changed.
+This is a terrible comment that is badly written. Is this any clearer?
 
-> Is there anyway I can avoid this. How about if we allocate a local buffer(kmalloc/pci_alloc_consistent) and memcpy kmap_atomic to that local buffer and then calculate checksum on that local buffer. Will this help?
+/**
+ * wait_iff_congested - Conditionally wait for a backing_dev to become uncongested or a zone to complete writes
+ * @zone: A zone to consider the number of being being written back from
+ * @sync: SYNC or ASYNC IO
+ * @timeout: timeout in jiffies
+ *
+ * In the event of a congested backing_dev (any backing_dev) or a given @zone
+ * having a large number of pages in writeback, this waits for up to @timeout
+ * jiffies for either a BDI to exit congestion or a write to complete.
+ *
+ * If there is no congestion and few pending writes, then cond_resched()
+ * is called to yield the processor if necessary but otherwise does not
+ * sleep.
+ */
 
-Sure, you can create copies of data buffers in the driver, calculate
-the checksum of the copy and submit the data copy with the checksum to
-the hardware controller. This is usually not done for performance
-reasons, and you probably should keep a mempool to be able to issue
-I/Os when memory is low.
+> > 
+> > > > + * in sleeping but cond_resched() is called in case the current process has
+> > > > + * consumed its CPU quota.
+> > > > + */
+> > > > +long wait_iff_congested(struct zone *zone, int sync, long timeout)
+> > > > +{
+> > > > +	long ret;
+> > > > +	unsigned long start = jiffies;
+> > > > +	DEFINE_WAIT(wait);
+> > > > +	wait_queue_head_t *wqh = &congestion_wqh[sync];
+> > > > +
+> > > > +	/*
+> > > > +	 * If there is no congestion, check the amount of writeback. If there
+> > > > +	 * is no significant writeback and no congestion, just cond_resched
+> > > > +	 */
+> > > > +	if (atomic_read(&nr_bdi_congested[sync]) == 0) {
+> > > > +		unsigned long inactive, writeback;
+> > > > +
+> > > > +		inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
+> > > > +				zone_page_state(zone, NR_INACTIVE_ANON);
+> > > > +		writeback = zone_page_state(zone, NR_WRITEBACK);
+> > > > +
+> > > > +		/*
+> > > > +		 * If less than half the inactive list is being written back,
+> > > > +		 * reclaim might as well continue
+> > > > +		 */
+> > > > +		if (writeback < inactive / 2) {
+> > > 
+> > > I am not sure this is best.
+> > > 
+> > 
+> > I'm not saying it is. The objective is to identify a situation where
+> > sleeping until the next write or congestion clears is pointless. We have
+> > already identified that we are not congested so the question is "are we
+> > writing a lot at the moment?". The assumption is that if there is a lot
+> > of writing going on, we might as well sleep until one completes rather
+> > than reclaiming more.
+> > 
+> > This is the first effort at identifying pointless sleeps. Better ones
+> > might be identified in the future but that shouldn't stop us making a
+> > semi-sensible decision now.
+> 
+> nr_bdi_congested is no problem since we have used it for a long time.
+> But you added new rule about writeback. 
+> 
 
-Christof
+Yes, I'm trying to add a new rule about throttling in the page allocator
+and from vmscan. As you can see from the results in the leader, we are
+currently sleeping more than we need to.
+
+> Why I pointed out is that you added new rule and I hope let others know
+> this change since they have a good idea or any opinions. 
+> I think it's a one of roles as reviewer.
+> 
+
+Of course.
+
+> > 
+> > > 1. Without considering various speed class storage, could we fix it as half of inactive?
+> > 
+> > We don't really have a good means of identifying speed classes of
+> > storage. Worse, we are considering on a zone-basis here, not a BDI
+> > basis. The pages being written back in the zone could be backed by
+> > anything so we cannot make decisions based on BDI speed.
+> 
+> True. So it's why I have below question.
+> As you said, we don't have enough information in vmscan.
+> So I am not sure how effective such semi-sensible decision is. 
+> 
+
+What additional metrics would you apply than the ones I used in the
+leader mail?
+
+> I think best is to throttle in page-writeback well. 
+
+I do not think there is a problem as such in page writeback throttling.
+The problem is that we are going to sleep without any congestion or without
+writes in progress. We sleep for a full timeout in this case for no reason
+and this is what I'm trying to avoid.
+
+> But I am not a expert about that and don't have any idea. Sorry.
+
+Don't be, this is something that needs thinking about!
+
+> So I can't insist on my nitpick. If others don't have any objection,
+> I don't mind this, either. 
+> 
+> Wu, Do you have any opinion?
+> 
+> > 
+> > > 2. Isn't there any writeback throttling on above layer? Do we care of it in here?
+> > > 
+> > 
+> > There are but congestion_wait() and now wait_iff_congested() are part of
+> > that. We can see from the figures in the leader that congestion_wait()
+> > is sleeping more than is necessary or smart.
+> > 
+> > > Just out of curiosity. 
+> > > 
+> > 
+> > -- 
+> > Mel Gorman
+> > Part-time Phd Student                          Linux Technology Center
+> > University of Limerick                         IBM Dublin Software Lab
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
