@@ -1,114 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab0IINHd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 09:07:33 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48494 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752080Ab0IINHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 09:07:31 -0400
-Date: Thu, 9 Sep 2010 15:07:23 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Harald Gustafsson <hgu1972@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        Song Yuan <song.yuan@ericsson.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: perf events over (net) console?
-Message-ID: <20100909130723.GA20470@elte.hu>
-References: <AANLkTi=yeHyOeewm9tdsHRtj+=d+vE5=NRKGaPyq_yGH@mail.gmail.com>
- <1284031141.402.1.camel@laptop>
- <20100909112940.GA5267@nowhere>
- <20100909114053.GA15140@elte.hu>
- <AANLkTikuqHFdOoiB4ejRygi3EV3p4HN2jgjJwM6Sw+31@mail.gmail.com>
- <1284036453.402.11.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284036453.402.11.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753320Ab0IINJy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 09:09:54 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32666 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab0IINJw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 09:09:52 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=pz9HnrQwgGeGdBJjJy9vPFdleCLOrjmVjAAEdZriNPUf1zSYWL9f4AQ8100+3RAW1
+	kqi4MHry+Sk7oR/TfgchQ==
+Message-ID: <4c88dc9c.991ce30a.3d91.3e0e@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Thu, 9 Sep 2010 15:05:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        eranian@google.com, robert.richter@amd.com, acme@redhat.com
+Subject: [RFC PATCH 0/2] perf_events: add support for per-cpu per-cgroup monitoring (v3)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This series of patches adds per-container (cgroup) filtering capability
+to per-cpu monitoring. In other words, we can monitor all threads belonging
+to a specific cgroup and running on a specific CPU. 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+This is useful to measure what is going on inside a cgroup. Something that
+cannot easily and cheaply be achieved with either per-thread or per-cpu mode.
+Cgroups can span multiple CPUs. CPUs can be shared between cgroups. Cgroups
+can have lots of threads. Threads can come and go during a measurement.
 
-> On Thu, 2010-09-09 at 14:31 +0200, Harald Gustafsson wrote:
-> 
-> > Sorry for being daft...
-> 
-> No worries, I'm sure we all qualify at times ;-)
-> 
-> > >> >
-> > >> > You need a process context anyway to read the data and send it to
-> > >> > whatever place you want it.
-> > >> >
-> > >> > Putting that in-kernel serves no purpose what so ever.
-> > >>
-> > >> But if we bring the splice support, that can be done with minimal
-> > >> userspace noise. Plus that would work with the usual sockets but not
-> > >> limited to that.
-> > >
-> > > Yes. If we can transform the data over the network without it touching
-> > > disk, then that would be a sufficiently 'does not disturb other tasks'
-> > > measurement method.
-> > 
-> > Thanks for the pointers to more information, and yes my thoughts was 
-> > more about avoiding the data copy then avoiding any processing 
-> > context at all.
-> 
-> Right, currently you get a single copy with mmap() + write(), once we 
-> manage to fix splice() and actually provide perf-splice() you'd be 
-> able to do zero-copy.
+To measure per-cgroup today requires using per-thread mode and attaching to
+all the current threads inside a cgroup and tracking new threads. That would
+require scanning of /proc/PID, which is subject to race conditions, and
+creating an event for each thread, each event requiring kernel memory.
 
-I think it would also be very useful to have some sort of tooling help 
-for "low overhead/impact perf recording".
+The approach taken by this patch is to leverage the per-cpu mode by simply
+adding a filtering capability on context switch only when necessary. That
+way the amount of kernel memory used remains bound by the number of CPUs.
+We also do not have to scan /proc. We are only interested in cgroup level
+counts, not per-thread.
 
-If there's a 'target box' and a different 'host box' (where most of 
-development is done, etc.), then there might not be any NFS connection 
-set up to make zero-copy file transfer easy. Doing it over ssh would add 
-overhead.
+The cgroup to monitor is designated by passing a file descriptor opened
+on a new per-cgroup file in the cgroup filesystem (perf_event.perf). The
+option must be activated by setting perf_event_attr.cgroup=1 and passing
+a valid file descriptor in perf_event_attr.cgroup_fd. Those are the only
+two ABI extensions.
 
-One possible workflow would be to run this on the target/remote box:
+The patch also includes changes to the perf tool to make use of cgroup
+filtering. Both perf stat and perf record have been extended to support
+cgroup via a new -G option. The cgroup is specified per event:
 
-  perf remote
+$ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
+ Performance counter stats for 'sleep 1':
 
-And as long as that command is running there, it could be used from the 
-development box (over a trusted local network), using something like:
+      2,368,667,414  cycles                   test1
+      2,369,661,459  cycles                  
+      <not counted>  cycles                   test2
 
-  perf --remote <hostname> record sleep 60
-  perf --remote <hostname> stat -a sleep 1
+        1.001856890  seconds time elapsed
 
-these would all do the measurements on the remote box, and the resulting 
-perf.data would be created on the desktop box. Communication would be 
-done via some well-known port.
+Here, we measure cycles in 3 different cgroups. When a cgroup is omitted,
+the "root" cgroup is used, i.e., all threads executing on the monitored
+CPUs are measured.
 
-etc.
+In the second version, time tracking has been updated. In cgroup mode,
+time_enabled tracks the time during which the cgroup was active, i.e., threads
+from the cgroup executed on the monitored CPU. The meaning of time_running
+is unchanged. In non-cgroup mode, time_enabled stills tracks wall-clock time
+for per-cpu events. Here is an example:
 
-An alternative implementation would be to drive this on the assumption 
-that an ssh connection can be established with the target box - but 
-followup high-volume data transfer would be done over an ordinary TCP 
-connection.
+In one shell I do:
+$ echo $$ >/cgroup/test1/perf_events.perf
+$ taskset -c 1 noploop 600
+In another shell I do:
+$ taskset -c 1 noploop 600
 
-I.e. the workflow would be even simpler, something like:
+Both noploops are competing on CPU1 (part of cgroup test1)
 
-  perf --remote user@hostname record sleep 60
-  perf --remote user@hostname stat -a sleep 1
+$ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
+ Performance counter stats for 'sleep 1':
 
-Internally it would work by executing those commands on the remote box 
-via ssh, and redirecting the output via a TCP connection. (some other 
-details might be needed as well for splice to be usable in such a setup)
+      1,190,595,954  cycles                   test1
+      2,372,471,023  cycles                  
+      <not counted>  cycles                   test2
 
-Would anyone be interested in having (and implementing ;-) this?
+        1.001845567  seconds time elapsed
 
-	Ingo
+The second count reflects activity across all CPUs and cgroups.
+The first count reflects was happened inside cgroup test1. As shown,
+the noploop running inside test1, only got half the CPU time.
+
+In the third version, we have dropped dependency on NR_CPUS
+in favor of dynamic allocation with alloc_percpu(). We have
+also renamed get_event_time() to something more explicit:
+perf_event_time(). We cleaned the code so it compiles with
+CONFIG_CGROUPS disabled. We have also fixed a bug in the
+perf tool sampling module builtin-record.c
+
+PATCH 0/2: introduction
+PATCH 1/2: kernel changes
+PATCH 2/2: perf tool changes
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
