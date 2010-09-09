@@ -1,69 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab0IIFWo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 01:22:44 -0400
-Received: from kroah.org ([198.145.64.141]:35804 "EHLO coco.kroah.org"
+	id S1753008Ab0IIFWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 01:22:37 -0400
+Received: from kroah.org ([198.145.64.141]:35802 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752424Ab0IIFWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 01:22:25 -0400
-Date: Wed, 8 Sep 2010 20:59:51 -0700
+	id S1752270Ab0IIFWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 01:22:22 -0400
+Date: Wed, 8 Sep 2010 20:51:33 -0700
 From: Greg KH <greg@kroah.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hunter Adrian <adrian.hunter@nokia.com>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Subject: Re: [PATCHv6 3/3] mmc_test: collect data and show it via sysfs by
-	demand
-Message-ID: <20100909035951.GA3945@kroah.com>
-References: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com> <ba5173c9b420d9554c83965f47d0b5cba642743a.1283862780.git.ext-andriy.shevchenko@nokia.com> <d7cf4d98c6e0396da903c2e49b028f240853bfc2.1283862780.git.ext-andriy.shevchenko@nokia.com> <20100907152753.4726c076.akpm@linux-foundation.org> <20100907225843.GA26240@void.printf.net>
+To: David Cross <david.cross@cypress.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] west bridge, kconfig and hal fixes
+Message-ID: <20100909035133.GD3723@kroah.com>
+References: <5BFACB1451C1459BA8562A5561D0A4E6@stanford.edu> <1283386101.17399.10.camel@odc-laptop> <1283467434.4378.11.camel@odc-laptop> <1283887330.7250.6.camel@odc-laptop> <20100907235704.GC12823@kroah.com> <04CAA605B7EE4630B1EB550AAAD0B746@stanford.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100907225843.GA26240@void.printf.net>
+In-Reply-To: <04CAA605B7EE4630B1EB550AAAD0B746@stanford.edu>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 11:58:43PM +0100, Chris Ball wrote:
-> On Tue, Sep 07, 2010 at 03:27:53PM -0700, Andrew Morton wrote:
-> > So what we end up with is extremely thin.  Something about adding
-> > something to sysfs.
-> > 
-> > This is not enough!  You're proposing an addition to the kernel->user
-> > ABI.  Please fully describe this interface so that we can understand
-> > and review it.  What are the names of these sysfs files?  What do they
-> > do?  Provide us with example output in the changelog so we can see for
-> > ourselves.
+On Wed, Sep 08, 2010 at 01:56:09PM -0700, David Cross wrote:
 > 
-> Hoping Andy doesn't mind me jumping in, here's an attempt at a better
-> changelog:
+> From: Greg KH [mailto:greg@kroah.com] 
 > 
-> ---
+> On Tue, Sep 07, 2010 at 12:22:10PM -0700, David Cross wrote:
 > 
-> Prior to this patch, the "test" file under each card's sysfs node was
-> write-only, and results were obtained by looking at dmesg.  This patch
-> improves programmatic access to the test results, making them available
-> by reading back from the same "test" file:
+> > First off, what's with the "Re:" of the Subject?  What are you
+> > responding to here?
+> I will removed that going forward when submitting patches, it does seem
+> appropriate on this response, so am leaving it in.
+
+Yes, of course it is correct here :)
+
+> > > This patch contains the kconfig changes necessary to fix build errors
+> > > that could come up in the linux-next version. It also includes an
+> > > additional HAL layer for the west bridge CRAM interface.
 > 
-> [root@host mmc0:e624]# echo 6 > test
-> [root@host mmc0:e624]# cat test
-> Test 6: 2
+> > Again, one patch per change, please break this up.
+> 
+> Can I break it up as 1) moving PNAND HAL layer + Kconfig changes and
 
-Ick, no.
+Wait, look, you had a "and" in there.  Why?
 
-Why is this in sysfs at all anyway?
+Why not just do:
+	- move PNAND HAL layer
+	- Kconfig changes
+as individual patches.
 
-Why not put it in debugfs?
+Each one does only one thing.  Again, please try to remember that.
 
-And for every sysfs file, you need to have a Documenation/ABI/ entry.
+> 2) CRAM HAL layer inclusion or is this still too tightly coupled? The
+> issue that I am having is that I was working on these drivers while
+> waiting on inclusion in the staging area in order to incorporate all
+> of the feedback I have gotten so far. As such, I now either have to
+> artificially break up the patches or start with a clean kernel and
+> start sequentially hand coding them again. I think this latter might
+> be what you want, but this is really time-consuming to do at this
+> point. 
 
-Remember, sysfs is "one value per file".  Does that work with this file?
-At first glance, it doesn't look like it.
+Well, it shouldn't take all that long of time, as you know what you want
+to accomplish.  It's also how kernel development works, you usually go
+off and do a bunch of work, then step back and figure out how to break
+it up into logical chunks to submit it.  Everyone does it.  After time
+you will get used to doing things in logical steps so you don't have to
+redo things, but that takes a bit of time.
 
-Please use debugfs instead.
+> While I definitely understand the need for this type of review of patches
+> for changes to the kernel itself, it is hard for me to understand why the
+> same rigor needs to apply to this driver in the staging area.
 
-thanks,
+There is no difference here for what type of patches I can accept in the
+staging area.  Staging is for code that doesn't meet the "normal"
+acceptance guidelines, but that does not mean that the proper
+development process does not also apply here at all.  It's a matter of
+both cleaning up the code, and cleaning up the developers who are
+working on the code at the same time :)
+
+> As you gmentioned, it needs a lot of work to meet the standards for
+> acceptance. I have done a fair amount of work to move it closer. Do I
+> really need to undo and repeat all of that in order to clean up
+> "BROKEN" code in the staging area of the linux-next tree? 
+
+It's marked "BROKEN" because it breaks the build.  Once that is fixed we
+can remove that marking, that's the only thing keeping it that way.
+
+> > > The inclusion
+> > > of this interface support did require the reorganization of some of the
+> > > existing code, which is part of the reason for the size of the patch.
+> > > Moving files and directories makes this patch seem larger than it really
+> > > is.
+> 
+> > If you use git you can send a patch that properly shows only what
+> > changes even if the file is moved.  Care to do that?
+> 
+> I have not used git so far, other than to pull from repositories. I probably
+> could, but it will take me some time to learn. Is this "nice to have" or do
+> I need to do it to get this patch applied?
+
+What are you using to develop your patches?  If you don't use git, you
+can use quilt, or some other type of patch management system.  But it
+might be worth spending a few hours to get up and running on one of them
+as this is going to be something you use a lot in the future, and it
+will help you get work done much faster and be able to work with the
+rest of the community better as well.
+
+Trust me, taking the time to learn git is worth it in the end.
+
+> > > The Kconfig changes are closely related to the inclusion of the CRAM
+> > > HAL layer, and as such this patch is difficult to logically separate. 
+> 
+> > Why is it necessary?
+> 
+> The HAL layer in general or this specific HAL layer?
+
+Any HAL layer.
+
+> One of the reasons for needing memory interface options is the
+> allocation of pins on a given platform. For example, if CLE was used
+> as a GPIO for some other purpose, it is nice to have the option to
+> move to an SRAM like interface. Also, I needed to develop this for
+> unrelated reasons. As such, making minor structural changes such that
+> new HALs could be easily incorporated in an intuitive manner seemed to
+> be a plus. I also hoped that it would make the structure and rationale
+> behind the initial driver structure more intuitive to the kernel
+> maintainers.
+
+Note that almost no other driver in the kernel needs such a layer.  What
+you do is have a "backend" that talks to either GPIO or SRAM or
+something else.  Then, at runtime, you can pick the one you need/want
+depending on the hardware the code is running on, and everything "just
+works".
+
+Remember, the goal is to be able to build your driver once for any
+platform it might run on.  Don't rely on Kconfig options to select the
+hardware types, that's not the correct way to do things in the end at
+all.
+
+> > > The linux-next tree does not seem to have a config for the zoom2, and
+> > > trying to build it for that board seems to make the compilation break.
+> 
+> > Why should the driver care about which arch it is built for?  It should
+> > build on _all_ arches, right?
+> 
+> It should build on all architectures that have an appropriate HAL
+> implemented. Otherwise, if you don't have a method for low level
+> communication with west bridge, why would you want to build the driver?
+
+Testing that the build isn't broken?  Building one image to run on lots
+of different platforms?  Distros really need this and there is a large
+unification effort for ARM to get this to work for that platform right
+now.  PPC has done this a lot already as well.
+
+Hope this helps,
 
 greg k-h
