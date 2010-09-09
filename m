@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933228Ab0IIWos (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:44:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57020 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933186Ab0IIWoo (ORCPT
+	id S933337Ab0IIWpv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:45:51 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:46296 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933275Ab0IIWpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:44:44 -0400
+	Thu, 9 Sep 2010 18:45:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=WpwRfz0fmHvoAqJaTA7dQDiR7ESl3AIunCkHJTzDQ3+hOHtubxKruXAYMEQGPakn3l
-         P5nWe5oFamI163wtX5cWC1NaAZnL8UBRln3yLcvQYc6sYkyar+YOoX0pl9uCQUVhyjFm
-         2NG8PZJ1a84EKUhzUmJKbVdvhIZFEfL6a8H+M=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=hQZpmSo5+EY7wRo7ImwNaivFSOO2V90mecNBcZwEprFPWVD/RKVHymSA0nM7ZnU0K8
+         DBCJgCYEHqt09ClnPQqJwiRQoAk+XuTyZ9hxEqyvzA6SOiDf4jPrev7VqgMi63G7+g0U
+         u0g7HFDF556WFOR1xvDFl65N+IB8FNYzGR8PA=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 196/223]drivers/staging/quickstart/quickstart.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:44:55 -0700
-Message-Id: <1284072309-8452-1-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 213/223]drivers/video/macfb.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:45:57 -0700
+Message-Id: <1284072367-8485-3-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
+In-Reply-To: <1284072367-8485-1-git-send-email-justinmattock@gmail.com>
+References: <1284072367-8485-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,25 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/staging/quickstart/quickstart.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/video/macfb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/quickstart/quickstart.c b/drivers/staging/quickstart/quickstart.c
-index 6612247..d58d769 100644
---- a/drivers/staging/quickstart/quickstart.c
-+++ b/drivers/staging/quickstart/quickstart.c
-@@ -4,9 +4,8 @@
+diff --git a/drivers/video/macfb.c b/drivers/video/macfb.c
+index 43207cc..6cc8363 100644
+--- a/drivers/video/macfb.c
++++ b/drivers/video/macfb.c
+@@ -16,7 +16,7 @@
+  * Jacobowitz, Paul Mackerras, Fabio Riccardi, and Geert Uytterhoeven.
   *
-  *  Copyright (C) 2007-2010 Angelo Arrifano <miknix@gmail.com>
+  * The VideoToolbox "Bugs" web page at
+- * http://rajsky.psych.nyu.edu/Tips/VideoBugs.html
++ * http://web.archive.org/web/*/http://rajsky.psych.nyu.edu/Tips/VideoBugs.html 
   *
-- *  Information gathered from disassebled dsdt and from here:
-- *  "http://download.microsoft.com/download/9/c/5/
-- *  9c5b2167-8017-4bae-9fde-d599bac8184a/DirAppLaunch_Vista.doc"
-+ *  Information gathered from disassebled dsdt here:
-+ *  http://download.microsoft.com/
-  *
-  *  This program is free software; you can redistribute it and/or modify
-  *  it under the terms of the GNU General Public License as published by
+  * This code is free software.  You may copy, modify, and distribute
+  * it subject to the terms and conditions of the GNU General Public
 -- 
 1.7.2.1
 
