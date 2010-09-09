@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab0IIWhZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:37:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33063 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932503Ab0IIWhU (ORCPT
+	id S1757379Ab0IIW7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:59:32 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44888 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932816Ab0IIWhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:37:20 -0400
+	Thu, 9 Sep 2010 18:37:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=TSKqwVYNblb+/wUrfBBPpa7MaBDrjS5EPbNExYOM/8QsmKWapA8UEE1wqW9LQtB8F7
-         Z+vCNppUXwc/D1KD6mKiJwMsfo/QpNepLyX2T5pLYsogMnuMFrebmay7tqIhH3oDwRMe
-         9F2Q5htKu1OrCE94tY3XZtGXCPNtSZeSxdef8=
+        b=X8jeAx5xQSA0OUr2sPuwjPql/y8+5iKtxLBioSNwojKwdsH9VUp0w3/QsVYGkXpP74
+         MDe9QjgtqkYyTkXWLp7qq0CCX/ccOaUfDv40Lt6HwekySY4ccKBRggtWRY9vaxajq6BI
+         UZ6+ztpMYeWzFoAd8woZ+s1q+tUt8Jmba8RLs=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 122/223]drivers/parisc/README.dino Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:37:29 -0700
-Message-Id: <1284071862-8194-2-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 124/223]drivers/pci/quirks.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:37:31 -0700
+Message-Id: <1284071862-8194-4-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071862-8194-1-git-send-email-justinmattock@gmail.com>
 References: <1284071862-8194-1-git-send-email-justinmattock@gmail.com>
@@ -33,23 +33,31 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/parisc/README.dino |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/pci/quirks.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/parisc/README.dino b/drivers/parisc/README.dino
-index 097324f..8194037 100644
---- a/drivers/parisc/README.dino
-+++ b/drivers/parisc/README.dino
-@@ -10,8 +10,7 @@
- ** PCI bus. HP-supplied graphics cards that utilize the PCI bus are
- ** not affected."
- **
--** REVISIT: "go/pci_defect" link below is stale.
--**	HP Internal can use <http://hpfcdma.fc.hp.com:80/Dino/>
-+** http://www.hp.com/#Product 
- **
- **	Product		First Good Serial Number
- **  C200/C240 (US)	US67350000
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 89ed181..58fc076 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -205,7 +205,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 	PCI_DEVICE_ID_INTEL_82439TX, 	quir
+ /*
+  *	VIA Apollo KT133 needs PCI latency patch
+  *	Made according to a windows driver based patch by George E. Breese
+- *	see PCI Latency Adjust on http://www.viahardware.com/download/viatweak.shtm
++ *	see PCI Latency Adjust on http://www.sudhian.com/ 
+  *      Also see http://www.au-ja.org/review-kt133a-1-en.phtml for
+  *      the info on which Mr Breese based his work.
+  *
+@@ -996,7 +996,7 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_TOSHIBA,	0x605,	quirk_transparent_bridge)
+ /*
+  * Common misconfiguration of the MediaGX/Geode PCI master that will
+  * reduce PCI bandwidth from 70MB/s to 25MB/s.  See the GXM/GXLV/GX1
+- * datasheets found at http://www.national.com/ds/GX for info on what
++ * datasheets found at http://www.national.com/analog for info on what
+  * these bits do.  <christer@weinigel.se>
+  */
+ static void quirk_mediagx_master(struct pci_dev *dev)
 -- 
 1.7.2.1
 
