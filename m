@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab0IIWxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:53:42 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42850 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757142Ab0IIWnQ (ORCPT
+	id S933006Ab0IIWx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:53:56 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57020 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757212Ab0IIWnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:43:16 -0400
+	Thu, 9 Sep 2010 18:43:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=tNRErc9ej2PjDx0jGLFOepbJo5WZ20v2NqinC8JY3DDDg4MBi9NbrxL87dozUG+3tE
-         wPSPAxYivCAkkgP+Tfaj9j/anksa5t2ESLePoeimvSxfWIJuAxat5QEdY2/f9uKMJ6KJ
-         4rfe9hpg7uxJy4eVPgs+VI0D+GUvcxE07rkOI=
+        b=ltCkifqwWrSUqcm/fRbflrAZcixtHuf39/LAkoxX+fy5M6XwiNIpMDgYaqah3EWUmr
+         0ndesxJpEMFc2+nKT5k7sBQ5ZXG/Xpw65zLs/Yb1PLdol2SZKC13dOslshhpIceUDzUr
+         sx8HIIF3DhPAADq3NYNqI9JWAZlR2gjMUVCPo=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 177/223]drivers/staging/comedi/drivers/addi-data/APCI1710_82x54.h Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:43:12 -0700
-Message-Id: <1284072195-8345-12-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 174/223]drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.h Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:43:09 -0700
+Message-Id: <1284072195-8345-9-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284072195-8345-1-git-send-email-justinmattock@gmail.com>
 References: <1284072195-8345-1-git-send-email-justinmattock@gmail.com>
@@ -33,13 +33,13 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- .../comedi/drivers/addi-data/APCI1710_82x54.h      |    2 +-
+ .../comedi/drivers/addi-data/addi_amcc_S5920.h     |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/APCI1710_82x54.h b/drivers/staging/comedi/drivers/addi-data/APCI1710_82x54.h
-index 9698ae1..81346db 100644
---- a/drivers/staging/comedi/drivers/addi-data/APCI1710_82x54.h
-+++ b/drivers/staging/comedi/drivers/addi-data/APCI1710_82x54.h
+diff --git a/drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.h b/drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.h
+index 622a4ac..9afdb13 100644
+--- a/drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.h
++++ b/drivers/staging/comedi/drivers/addi-data/addi_amcc_S5920.h
 @@ -6,7 +6,7 @@
   *	D-77833 Ottersweier
   *	Tel: +19(0)7223/9493-0
