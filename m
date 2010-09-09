@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab0IIPzG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 11:55:06 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:58706 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751624Ab0IIPzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 11:55:04 -0400
-Date: Thu, 9 Sep 2010 08:55:02 -0700
-From: Arthur Kepner <akepner@sgi.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
-Subject: Re: [RFC/PATCH] notify user-level IRQ balancer when kernel assigns
-	IRQ affinity
-Message-ID: <20100909155502.GB17836@sgi.com>
-References: <20100903210554.GO2464@sgi.com> <alpine.LFD.2.00.1009091050370.2477@localhost6.localdomain6>
+	id S1755300Ab0IIQFY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 12:05:24 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:51234 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958Ab0IIQFV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 12:05:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=QwZKRIHXVZ/h+fvJlykI/+bWo8lRStiQwDZ277twkSWgoI2avN7Bgsqj0GABY4j+LM
+         jf9e7Fz5xPr71VwCihQ5NIZOvbTJonrLzWZ2iJd6y+zKLrDEqLSF9odXVQHsggbcNC66
+         ryjw4a+YqsEhg5TBMu2SCMQsLt6MxW7Eu+eRg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1009091050370.2477@localhost6.localdomain6>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20100909082331.7278e76b.randy.dunlap@oracle.com>
+References: <AANLkTi=uzLJxDbd+uJAww-b5aP10gd8gbGVG19HS46ue@mail.gmail.com>
+	<20100909082331.7278e76b.randy.dunlap@oracle.com>
+Date: Thu, 9 Sep 2010 18:05:20 +0200
+Message-ID: <AANLkTi=iVDfmCSmHSW2ArZ4MO0k+zDQU9WMy7TvSwhBe@mail.gmail.com>
+Subject: Re: mm/Kconfig: warning: (COMPACTION && EXPERIMENTAL && HUGETLB_PAGE
+ && MMU) selects MIGRATION which has unmet direct dependencies (NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 10:54:50AM +0200, Thomas Gleixner wrote:
-> On Fri, 3 Sep 2010, Arthur Kepner wrote:
-> 
-> It might be helpful to cc the maintainer of kernel/irq on patches
-> which affect that area.
+Hey Randy!
 
-It wasn't (and after revieweing the MAINTAINERS file, still isn't) 
-clear to me that you're the maintainer there, but I'll cc you on 
-this topic in the future.
+thanks for the quick response... wanted to start a new build :-).
 
-> 
-> > 
-> > We've run into situations where a CPU runs out of interrupt 
-> > vectors, because all the interrupts are getting the default 
-> > affinity (and the interrupt balancer hasn't yet run).
-> > 
-> > The following emits a netlink message whenever an interrupt 
-> > is given a default CPU affinity. A user-level IRQ balancer 
-> > can use those messages to decide if, and how to reassign 
-> > affinities. This should allow us to avoid running out of 
-> > vectors on any particular CPU (or at least make it far less 
-> > likely).
-> 
-> Errm. If the irq balancer has not been run, then why should some new
-> irq balancer be up and running at this time. In the worst case you
-> need to sort that out during boot _before_ you even hit userspace.
+- Sedat -
 
-David M. made the same point.
-
-I've got a new scheme in the works here:
-
-http://marc.info/?l=linux-kernel&m=128381632020999&w=2
-
-When I get some time on a big NUMA system, I'll test the latest 
-iteration of that, and post an update.
-
--- 
-Arthur
+On Thu, Sep 9, 2010 at 5:23 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> On Thu, 9 Sep 2010 17:10:34 +0200 Sedat Dilek wrote:
+>
+>> Hi,
+>>
+>> while build latest 2.6.36-rc3 I get this warning:
+>>
+>> [ build.log]
+>> ...
+>> warning: (COMPACTION && EXPERIMENTAL && HUGETLB_PAGE && MMU) selects
+>> MIGRATION which has unmet direct dependencies (NUMA ||
+>> ARCH_ENABLE_MEMORY_HOTREMOVE)
+>> ...
+>>
+>> Here the excerpt of...
+>>
+>> [ mm/Kconfig ]
+>> ...
+>> # support for memory compaction
+>> config COMPACTION
+>>         bool "Allow for memory compaction"
+>>         select MIGRATION
+>>         depends on EXPERIMENTAL && HUGETLB_PAGE && MMU
+>>         help
+>>           Allows the compaction of memory for the allocation of huge pages.
+>> ...
+>>
+>> I have set the following kernel-config parameters:
+>>
+>> $ egrep 'COMPACTION|HUGETLB_PAGE|MMU|MIGRATION|NUMA|ARCH_ENABLE_MEMORY_HOTREMOVE'
+>> linux-2.6.36-rc3/debian/build/build_i386_none_686/.config
+>> CONFIG_MMU=y
+>> # CONFIG_IOMMU_HELPER is not set
+>> CONFIG_IOMMU_API=y
+>> CONFIG_COMPACTION=y
+>> CONFIG_MIGRATION=y
+>> CONFIG_MMU_NOTIFIER=y
+>> CONFIG_HUGETLB_PAGE=y
+>> # CONFIG_IOMMU_STRESS is not set
+>>
+>> Looks like I have no NUMA or ARCH_ENABLE_MEMORY_HOTREMOVE set.
+>>
+>> Ok, it is a *warning*...
+>
+>
+> Andrea Arcangeli posted a patch for this on linux-mm on 2010-SEP-03.
+> (below)
+>
+> ---
+> From: Andrea Arcangeli <aarcange@redhat.com>
+>
+> COMPACTION enables MIGRATION, but MIGRATION spawns a warning if numa
+> or memhotplug aren't selected. However MIGRATION doesn't depend on
+> them. I guess it's just trying to be strict doing a double check on
+> who's enabling it, but it doesn't know that compaction also enables
+> MIGRATION.
+>
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> ---
+>
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -189,7 +189,7 @@ config COMPACTION
+>  config MIGRATION
+>        bool "Page migration"
+>        def_bool y
+> -       depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE
+> +       depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE || COMPACTION
+>        help
+>          Allows the migration of the physical location of pages of processes
+>          while the virtual addresses are not changed. This is useful in
+>
