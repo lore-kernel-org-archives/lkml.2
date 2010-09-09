@@ -1,81 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab0IIJ3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 05:29:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34833 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab0IIJ3N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 05:29:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=ELmk3d3/MuboWRnHZU8gNTshuuNsHdXQThYfk0aGGsXKc6FOpk6xtQskhX9bj7Gq4y
-         eO2+yX7n8XA+Fy73HMs+6YgcAVyRzvkThwmRlVdT5V0WxVw7CJRVrvosq2Z8znW8tj1c
-         lmP8t0VoM2sYMpCGgyllYrstW8MtsCCGYjbTM=
-Date: Thu, 9 Sep 2010 11:29:35 +0200
-From: Charles =?iso-8859-1?Q?Cl=E9ment?= <caratorn@gmail.com>
-To: Nikitas Angelinas <nikitasangelinas@gmail.com>
-Cc: gregkh@suse.de, more.andres@gmail.com, lieb@canonical.com,
-        forest@alittletooquiet.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8] drivers/staging/vt6656: use ARRAY_SIZE macro in
- channel.c
-Message-ID: <20100909092915.GA4994@air>
-References: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
- <1283981275-5098-1-git-send-email-nikitasangelinas@gmail.com>
+	id S1754141Ab0IIJc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 05:32:28 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:36993 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753890Ab0IIJcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 05:32:25 -0400
+Date: Thu, 9 Sep 2010 10:32:11 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 10/10] vmscan: Kick flusher threads to clean pages when
+	reclaim is encountering dirty pages
+Message-ID: <20100909093211.GM29263@csn.ul.ie>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie> <1283770053-18833-11-git-send-email-mel@csn.ul.ie> <20100909122228.3db2b95c.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1283981275-5098-1-git-send-email-nikitasangelinas@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100909122228.3db2b95c.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think this definition is not used anywhere in the driver and thus can
-be removed.
+On Thu, Sep 09, 2010 at 12:22:28PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Mon,  6 Sep 2010 11:47:33 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+> > There are a number of cases where pages get cleaned but two of concern
+> > to this patch are;
+> >   o When dirtying pages, processes may be throttled to clean pages if
+> >     dirty_ratio is not met.
+> >   o Pages belonging to inodes dirtied longer than
+> >     dirty_writeback_centisecs get cleaned.
+> > 
+> > The problem for reclaim is that dirty pages can reach the end of the LRU if
+> > pages are being dirtied slowly so that neither the throttling or a flusher
+> > thread waking periodically cleans them.
+> > 
+> > Background flush is already cleaning old or expired inodes first but the
+> > expire time is too far in the future at the time of page reclaim. To mitigate
+> > future problems, this patch wakes flusher threads to clean 4M of data -
+> > an amount that should be manageable without causing congestion in many cases.
+> > 
+> > Ideally, the background flushers would only be cleaning pages belonging
+> > to the zone being scanned but it's not clear if this would be of benefit
+> > (less IO) or not (potentially less efficient IO if an inode is scattered
+> > across multiple zones).
+> > 
+> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > ---
+> >  mm/vmscan.c |   32 ++++++++++++++++++++++++++++++--
+> >  1 files changed, 30 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 408c101..33d27a4 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -148,6 +148,18 @@ static DECLARE_RWSEM(shrinker_rwsem);
+> >  /* Direct lumpy reclaim waits up to five seconds for background cleaning */
+> >  #define MAX_SWAP_CLEAN_WAIT 50
+> >  
+> > +/*
+> > + * When reclaim encounters dirty data, wakeup flusher threads to clean
+> > + * a maximum of 4M of data.
+> > + */
+> > +#define MAX_WRITEBACK (4194304UL >> PAGE_SHIFT)
+> > +#define WRITEBACK_FACTOR (MAX_WRITEBACK / SWAP_CLUSTER_MAX)
+> > +static inline long nr_writeback_pages(unsigned long nr_dirty)
+> > +{
+> > +	return laptop_mode ? 0 :
+> > +			min(MAX_WRITEBACK, (nr_dirty * WRITEBACK_FACTOR));
+> > +}
+> > +
+> >  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
+> >  						  struct scan_control *sc)
+> >  {
+> > @@ -686,12 +698,14 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
+> >   */
+> >  static unsigned long shrink_page_list(struct list_head *page_list,
+> >  					struct scan_control *sc,
+> > +					int file,
+> >  					unsigned long *nr_still_dirty)
+> >  {
+> >  	LIST_HEAD(ret_pages);
+> >  	LIST_HEAD(free_pages);
+> >  	int pgactivate = 0;
+> >  	unsigned long nr_dirty = 0;
+> > +	unsigned long nr_dirty_seen = 0;
+> >  	unsigned long nr_reclaimed = 0;
+> >  
+> >  	cond_resched();
+> > @@ -790,6 +804,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  		}
+> >  
+> >  		if (PageDirty(page)) {
+> > +			nr_dirty_seen++;
+> > +
+> >  			/*
+> >  			 * Only kswapd can writeback filesystem pages to
+> >  			 * avoid risk of stack overflow
+> > @@ -923,6 +939,18 @@ keep_lumpy:
+> >  
+> >  	list_splice(&ret_pages, page_list);
+> >  
+> > +	/*
+> > +	 * If reclaim is encountering dirty pages, it may be because
+> > +	 * dirty pages are reaching the end of the LRU even though the
+> > +	 * dirty_ratio may be satisified. In this case, wake flusher
+> > +	 * threads to pro-actively clean up to a maximum of
+> > +	 * 4 * SWAP_CLUSTER_MAX amount of data (usually 1/2MB) unless
+> > +	 * !may_writepage indicates that this is a direct reclaimer in
+> > +	 * laptop mode avoiding disk spin-ups
+> > +	 */
+> > +	if (file && nr_dirty_seen && sc->may_writepage)
+> > +		wakeup_flusher_threads(nr_writeback_pages(nr_dirty));
+> > +
+> 
+> Thank you. Ok, I'll check what happens in memcg.
+> 
 
-On Wed, Sep 08, 2010 at 10:27:55PM +0100, Nikitas Angelinas wrote:
-> Replace (sizeof(ChannelRuleTab) / sizeof(ChannelRuleTab[0])) with
-> ARRAY_SIZE(ChannelRuleTab) in drivers/staging/vt6656/channel.c
+Thanks
+
+> Can I add
+> 	if (sc->memcg) {
+> 		memcg_check_flusher_wakeup()
+> 	}
+> or some here ?
 > 
-> Signed-off-by: Nikitas Angelinas <nikitasangelinas@gmail.com>
-> ---
->  drivers/staging/vt6656/channel.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+
+It seems reasonable.
+
+> Hm, maybe memcg should wake up flusher at starting try_to_free_memory_cgroup_pages().
 > 
-> diff --git a/drivers/staging/vt6656/channel.c b/drivers/staging/vt6656/channel.c
-> index 6ad03e4..a2460ae 100644
-> --- a/drivers/staging/vt6656/channel.c
-> +++ b/drivers/staging/vt6656/channel.c
-> @@ -34,6 +34,7 @@
->   *
->   */
->  
-> +#include <linux/kernel.h>
->  #include "country.h"
->  #include "channel.h"
->  #include "rf.h"
-> @@ -367,7 +368,7 @@ static  struct
->  /*                                           1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38  39  40  41  42  43  44  45  46  47  48  49  50  51  52  53  54  55  56  */
->  };
->  
-> -#define NUM_RULES	(sizeof(ChannelRuleTab) / sizeof(ChannelRuleTab[0]))
-> +#define NUM_RULES	ARRAY_SIZE(ChannelRuleTab)
->  
->  /*---------------------  Export function  -------------------------*/
->  /************************************************************************
-> -- 
-> 1.7.2.3
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+
+I'm afraid I cannot make a judgement call on which is the best as I am
+not very familiar with how cgroups behave in comparison to normal
+reclaim. There could easily be a follow-on patch though that was cgroup
+specific?
 
 -- 
-Charles Clément
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
