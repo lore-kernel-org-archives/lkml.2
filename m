@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab0IIJgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 05:36:12 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37805 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab0IIJgK (ORCPT
+	id S1754052Ab0IIJiR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 05:38:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45312 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750895Ab0IIJiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 05:36:10 -0400
-Message-ID: <4C88AA27.5070206@mvista.com>
-Date: Thu, 09 Sep 2010 13:34:31 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
+	Thu, 9 Sep 2010 05:38:15 -0400
+Date: Thu, 9 Sep 2010 10:38:10 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Tony Lindgren <tony@atomide.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Sundar Iyer <sundar.iyer@stericsson.com>,
+        Daniel Mack <daniel@caiaq.de>, Pierre Ossman <pierre@ossman.eu>,
+        Matt Fleming <matt@console-pimps.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Cliff Brake <cbrake@bec-systems.com>,
+        "Lavinen Jarkko (Nokia-MS/Helsinki)" <jarkko.lavinen@nokia.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] MMC: move regulator handling closer to core v3
+Message-ID: <20100909093810.GA1988@rakim.wolfsonmicro.main>
+References: <1283677538-31121-1-git-send-email-linus.walleij@stericsson.com>
+ <20100908155114.880463fc.akpm@linux-foundation.org>
+ <4C887837.6060508@nokia.com>
 MIME-Version: 1.0
-To: Kevin Cernekee <cernekee@gmail.com>
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] MIPS: DMA: Add plat_extra_sync_for_cpu()
-References: <064bb0722da5d8c271c2bd9fe0a521cc@localhost> <99a0868bdbcfa8785a92b4af4f6d9b99@localhost>
-In-Reply-To: <99a0868bdbcfa8785a92b4af4f6d9b99@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C887837.6060508@nokia.com>
+X-Cookie: Many suitcases look alike.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu, Sep 09, 2010 at 09:01:27AM +0300, Adrian Hunter wrote:
 
-On 09-09-2010 3:02, Kevin Cernekee wrote:
+> As an aside, I would like to enhance the regulator framework to
+> enable boards to hook their code directly into the regulator.
 
-> On noncoherent processors with a readahead cache, an extra platform-
-> specific invalidation is required during the dma_sync_*_for_cpu()
-> operations to keep drivers from seeing stale prefetched data.
+What do you mean when you say that you would like boards to "hook
+directly into the regulator" - what do you want to be able to do?
+Is this the notifiers?  Do you need more of them?
 
-> Signed-off-by: Kevin Cernekee<cernekee@gmail.com>
-[...]
-> diff --git a/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h b/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
-> index 17d5794..8192683 100644
-> --- a/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
-> +++ b/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
-> @@ -52,6 +52,19 @@ static inline void plat_extra_sync_for_device(struct device *dev)
->   	mb();
->   }
->
-> +static inline void plat_extra_sync_for_cpu(struct device *dev,
-> +	dma_addr_t dma_handle, unsigned long offset, size_t size,
-> +	enum dma_data_direction direction)
-> +{
-> +	return;
+> Arguably this is essential to allow pbias configuration (without
+> which the board may be damaged) so that regulator_enable/disable
+> can be used independently of the board, or for example to allow
 
-    Why not just empty function bodies?
+I can't parse this at all I'm afraid.  Could you be more specific about
+what you mean by using enable and disable independantly of the board -
+clearly the consumer drivers are already able to be board independant?
 
-WBR, Sergei
+> the regulator core to turn the regulator on/off at initialisation.
+
+The regulator core already supports enabling or disabling regulators
+from the machine constraints which I *think* is what you're looking for
+but since I can't follow what you're saying above I'm not sure.
