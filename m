@@ -1,193 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab0IIFoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 01:44:21 -0400
-Received: from tuxonice.net ([74.207.252.127]:33374 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752392Ab0IIFoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 01:44:15 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C88742A.6000406@tuxonice.net>
-Date: Thu, 09 Sep 2010 15:44:10 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
+	id S1753292Ab0IIFwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 01:52:05 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48544 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149Ab0IIFv7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 01:51:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=G/L3mhfInnepAlRQVqbfMxfGy+B3WjBM0aINZ5mnm4goDdwLnMzIntjFy417uRLMYE
+         n6LL2lRC2gaFOSNIwBfp8FVv3czqWMNKuZ5XW22c9Nw5JdXzEYQ1h19sEKWa2nZ71axn
+         6+6tZ/aeVhgUJqs9IYLroGQsjjy470brVKqM4=
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Andrea Gelmini <andrea.gelmini@gmail.com>,
-        Balbir Singh <balbir@in.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH 2/4] swap: prevent reuse during hibernation
-References: <alpine.LSU.2.00.1009060104410.13600@sister.anvils> <alpine.LSU.2.00.1009060111220.13600@sister.anvils> <20100907132036.03428c47.akpm@linux-foundation.org> <alpine.LSU.2.00.1009071336240.1839@sister.anvils>
-In-Reply-To: <alpine.LSU.2.00.1009071336240.1839@sister.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100909035951.GA3945@kroah.com>
+References: <09f59cd98b59bf521a5866ab58c216e0a0347a6c.1283862780.git.ext-andriy.shevchenko@nokia.com>
+	<ba5173c9b420d9554c83965f47d0b5cba642743a.1283862780.git.ext-andriy.shevchenko@nokia.com>
+	<d7cf4d98c6e0396da903c2e49b028f240853bfc2.1283862780.git.ext-andriy.shevchenko@nokia.com>
+	<20100907152753.4726c076.akpm@linux-foundation.org>
+	<20100907225843.GA26240@void.printf.net>
+	<20100909035951.GA3945@kroah.com>
+Date: Thu, 9 Sep 2010 08:51:58 +0300
+Message-ID: <AANLkTin-RiDEnKWh_9xT-ssNhgX94mRkx5+gHxoNv_uU@mail.gmail.com>
+Subject: Re: [PATCHv6 3/3] mmc_test: collect data and show it via sysfs by demand
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hunter Adrian <adrian.hunter@nokia.com>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Thu, Sep 9, 2010 at 6:59 AM, Greg KH <greg@kroah.com> wrote:
+> Why is this in sysfs at all anyway?
+I don't know. The author of module should be asked.
 
-On 08/09/10 07:38, Hugh Dickins wrote:
-> On Tue, 7 Sep 2010, Andrew Morton wrote:
->> On Mon, 6 Sep 2010 01:12:38 -0700 (PDT)
->> Hugh Dickins<hughd@google.com>  wrote:
->>
->>> Move the hibernation check from scan_swap_map() into try_to_free_swap():
->>
->> Well, it doesn't really "move" anything.  It removes one test (usage ==
->> SWAP_HAS_CACHE) and adds a quite different one (gfp_allowed_mask&
->> __GFP_IO).
->
-> Okay, replaces a peculiar check for hibernation in scan_swap_map()
-> by a more general check for hibernation inside try_to_free_swap().
->
->>
->>> to catch not only the common case when hibernation's allocation itself
->>> triggers swap reuse, but also the less likely case when concurrent page
->>> reclaim (shrink_page_list) might happen to try_to_free_swap from a page.
->>>
->>> Hibernation already clears __GFP_IO from the gfp_allowed_mask, to stop
->>> reclaim from going to swap: check that to prevent swap reuse too.
->>>
->>> Signed-off-by: Hugh Dickins<hughd@google.com>
->>> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->>> Cc: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
->>> Cc: "Rafael J. Wysocki"<rjw@sisk.pl>
->>> Cc: Ondrej Zary<linux@rainbow-software.org>
->>> Cc: Andrea Gelmini<andrea.gelmini@gmail.com>
->>> Cc: Balbir Singh<balbir@in.ibm.com>
->>> Cc: Andrea Arcangeli<aarcange@redhat.com>
->>> Cc: Nigel Cunningham<nigel@tuxonice.net>
->>> Cc: stable@kernel.org
->
-> I put Cc: stable@kernel.org in the list here, so that they'd be notified
-> when the patch reaches Linus's tree: I thought it would just be noise to
-> Cc them on earlier mails - but I've not removed the Cc you've now added!
->
->>> ---
->>>
->>>   mm/swapfile.c |   24 ++++++++++++++++++++----
->>>   1 file changed, 20 insertions(+), 4 deletions(-)
->>>
->>> --- swap1/mm/swapfile.c	2010-09-05 22:37:07.000000000 -0700
->>> +++ swap2/mm/swapfile.c	2010-09-05 22:45:54.000000000 -0700
->>> @@ -318,10 +318,8 @@ checks:
->>>   	if (offset>  si->highest_bit)
->>>   		scan_base = offset = si->lowest_bit;
->>>
->>> -	/* reuse swap entry of cache-only swap if not hibernation. */
->>> -	if (vm_swap_full()
->>> -		&&  usage == SWAP_HAS_CACHE
->>> -		&&  si->swap_map[offset] == SWAP_HAS_CACHE) {
->>> +	/* reuse swap entry of cache-only swap if not busy. */
->>> +	if (vm_swap_full()&&  si->swap_map[offset] == SWAP_HAS_CACHE) {
->>>   		int swap_was_freed;
->>>   		spin_unlock(&swap_lock);
->>>   		swap_was_freed = __try_to_reclaim_swap(si, offset);
->>
->> This hunk is already present in 2.6.35.
->
-> That hunk is already present in 2.6.35, but it's been replaced by the
-> usage == SWAP_HAS_CACHE hunk in 2.6.35.4 (or earlier), so this part of
-> the patch reverts 2.6.35.4 back to how 2.6.35 was.  (An extra test here
-> does no harm, and is even a more efficient way of preventing the
-> issue where it's most likely to occur; but I thought it better to
-> handle the issue just in one place, with a longish comment.)
->
->>
->>> @@ -688,6 +686,24 @@ int try_to_free_swap(struct page *page)
->>>   	if (page_swapcount(page))
->>>   		return 0;
->>>
->>> +	/*
->>> +	 * Once hibernation has begun to create its image of memory,
->>> +	 * there's a danger that one of the calls to try_to_free_swap()
->>> +	 * - most probably a call from __try_to_reclaim_swap() while
->>> +	 * hibernation is allocating its own swap pages for the image,
->>> +	 * but conceivably even a call from memory reclaim - will free
->>> +	 * the swap from a page which has already been recorded in the
->>> +	 * image as a clean swapcache page, and then reuse its swap for
->>> +	 * another page of the image.  On waking from hibernation, the
->>> +	 * original page might be freed under memory pressure, then
->>> +	 * later read back in from swap, now with the wrong data.
->>> +	 *
->>> +	 * Hibernation clears bits from gfp_allowed_mask to prevent
->>> +	 * memory reclaim from writing to disk, so check that here.
->>> +	 */
->>> +	if (!(gfp_allowed_mask&  __GFP_IO))
->>> +		return 0;
->>> +
->>>   	delete_from_swap_cache(page);
->>>   	SetPageDirty(page);
->>>   	return 1;
->>
->> This is the good bit.  I guess the (unCc:ed!) -stable guys would like a
->> standalone patch.
->
-> They do need both hunks (well, nobody *needs* the first part, but it's
-> tidier to restore the original code and keep tracking mainline).
->
->>
->> Also, are patches [3/4] and [4/4] really -stable material??
->
-> I'm sure that 3/4, the one that removes the BLKDEV_IFL_BARRIER from the
-> BLKDEV_IFL_WAITing swap discards, is -stable material; and it's not at
-> all dependent on Christoph's and Tejun's ongoing barrier changes.
->
-> (An alternative for -stable might have been to remove the BLKDEV_IFL_WAITs
-> instead, going back more to 2.6.34: except I cannot vouch for the stability
-> of that change - what of intervening mods at the block layer? - and it
-> would go against the remove-barriers direction we're moving for 2.6.37.)
->
-> Nigel saw a terrible pause in hibernation (originally with TuxOnIce, but
-> he then checked swsusp too): he reported "The patch reduces the pause
-> from minutes to a matter of seconds (with 4GB of swap), but it is still
-> there (there was previously no discernable delay)".
->
-> I've not noticed such an outstanding effect in ordinary swapping, where
-> other things are going on; but the patch can easily halve the length of
-> a run when swapping to some SSDs.
->
-> But is 4/4 (SWAP_FLAG_DISCARD) really -stable material?  I think so
-> (Nigel still sees a pause of seconds without it, and I see some swapping
-> tests - on some SSDs - take three times as long without it), but it's more
-> questionable: I was rather hoping to provoke a reaction with it.  And it
-> will need swapon(2 and 8) manual page updates and util-linux-ng swapon
-> support (latter ready but waiting to see when the kernel end goes in),
-> if it's to amount to anything more than removing discard from swapping.
-> Perhaps wait for more comment on it before pushing it to stable?
+> Why not put it in debugfs?
+I thought about this. I even have somewhere a draft patch.
 
-Just to back up what Hugh's saying, here's part of the original report:
+> And for every sysfs file, you need to have a Documenation/ABI/ entry.
+>
+> Remember, sysfs is "one value per file".  Does that work with this file?
+> At first glance, it doesn't look like it.
+>
+> Please use debugfs instead.
+I guess to optimize a work I may do another patch which shifts from
+sysfs to debugfs.
 
-Adding a printk in discard swap cluster gives the following:
-
-[   46.758330] Discarding 256 pages from bdev 800003 beginning at page 
-640377.
-[   47.003363] Discarding 256 pages from bdev 800003 beginning at page 
-640633.
-[   47.246514] Discarding 256 pages from bdev 800003 beginning at page 
-640889.
-
-...
-
-[  221.877465] Discarding 256 pages from bdev 800003 beginning at page 
-826745.
-[  222.121284] Discarding 256 pages from bdev 800003 beginning at page 
-827001.
-[  222.365908] Discarding 256 pages from bdev 800003 beginning at page 
-827257.
-[  222.610311] Discarding 256 pages from bdev 800003 beginning at page 
-827513.
-
-So allocating 4GB of swap on my SSD now takes 176 seconds instead of 
-virtually no time at all.
-
-Regards,
-
-Nigel
+-- 
+With Best Regards,
+Andy Shevchenko
