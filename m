@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab0IILZR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 07:25:17 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:48057 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752906Ab0IILZP (ORCPT
+	id S1753100Ab0IIL3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 07:29:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52153 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab0IIL3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 07:25:15 -0400
-Date: Thu, 9 Sep 2010 13:25:12 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Tim Blechmann <tim@klingt.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-        fabio de francesco <fabio@metanix.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [process scheduler] Possible bug in context_swich()?
-Message-ID: <20100909112512.GA2228@osiris.boeblingen.de.ibm.com>
-References: <201009081728.18227.fabio@metanix.org>
- <1283999539.9103.54.camel@marge.simson.net>
- <1284028746.23762.54.camel@laptop>
- <201009091312.25424.tim@klingt.org>
+	Thu, 9 Sep 2010 07:29:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IkSXJpCvc6Pg73BkeCpgvH2YNdUnh/ZXUCL1AfKq4ZY0ClnaelBAmXgqPZ6CLo8UXK
+         BkylR3k4+HPmGSocsGPCdFVJiPMs4ZWNLImoo3Zy1IM1/ARgGoNUAH9e8HqlNoB1phFd
+         DuGI3dsQdFleKSLn7hXYneF+idSokSHoMN8KE=
+Date: Thu, 9 Sep 2010 13:29:42 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Harald Gustafsson <hgu1972@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        Song Yuan <song.yuan@ericsson.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: perf events over (net) console?
+Message-ID: <20100909112940.GA5267@nowhere>
+References: <AANLkTi=yeHyOeewm9tdsHRtj+=d+vE5=NRKGaPyq_yGH@mail.gmail.com> <1284031141.402.1.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201009091312.25424.tim@klingt.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1284031141.402.1.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 01:12:18PM +0200, Tim Blechmann wrote:
-> On Thursday, September 09, 2010 12:39:06 pm Peter Zijlstra wrote:
-> > On Thu, 2010-09-09 at 04:32 +0200, Mike Galbraith wrote:
-> > > On Wed, 2010-09-08 at 17:54 +0200, Peter Zijlstra wrote:
-> > > > On Wed, 2010-09-08 at 17:28 +0200, fabio de francesco wrote:
-> > > > > In context_switch() (in linux/kernel/sched.c), starting with release
-> > > > > 2.6.33, two "unlikely" macro  have been changed to "likely". I think
-> > > > > the previous logic was right while the latter is wrong.
-> > > > > 
-> > > > > In case I am missing something I, please, ask someone to explain the
-> > > > > above mentioned inversion of logic through releases.
-> > > > 
-> > > > It helps if you CC people, LKML alone is a bit of a gamble.
-> > > > 
-> > > > git blame kernel/sched.c, will tell you that the change you refer to
-> > > > comes from:
-> > > > 
-> > > > commit 710390d90f143a9ebb87a475215140f426792efd
-> > > > Author: Tim Blechmann <tim@klingt.org>
-> > > > Date:   Tue Nov 24 11:55:27 2009 +0100
-> > > > 
-> > > >     sched: Optimize branch hint in context_switch()
-> > > >     
-> > > >     Branch hint profiling on my nehalem machine showed over 90%
-> > > 
-> > > >     incorrect branch hints:
-> > > That change never made any sense to me, seems Tim must have been
-> > > measuring a kthread load.  I benched at the time, and saw absolutely
-> > > zero difference one way or the other wrt max ctx rate on my Q6600.
+On Thu, Sep 09, 2010 at 01:19:01PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-09-09 at 13:06 +0200, Harald Gustafsson wrote:
+> > Hi,
 > > 
-> > One option is to simply remove the whole branch hint.. But lets ask Tim
-> > what kind of workload he used..
+> > We would like to monitor the perf events continuously on a remote
+> > machine. Does it exist a solution (in the kernel) to direct the output
+> > to a console or maybe even a netconsole? We would like to avoid a user
+> > space application to transfer it, due to that the machine will be
+> > running a test which will heavily load it and we want to avoid as many
+> > unrelated user space tasks as possible. If not mainlined does anyone
+> > have a patch for this?
 > 
-> i was using a standard desktop workload, nothing special ...
+> No, and its a daft requirement.
+> 
+> You need a process context anyway to read the data and send it to
+> whatever place you want it.
+> 
+> Putting that in-kernel serves no purpose what so ever.
 
-Just out of curiosity I tried this with two kernel builds on a six way
-machine with latest git head and got these numbers:
 
- correct incorrect  %        Function                  File              Line
- ------- ---------  -        --------                  ----              ----
-  644387   484258  42 context_switch                 sched.c              2851
-  677534   451199  39 context_switch                 sched.c              2858
+But if we bring the splice support, that can be done with minimal userspace
+noise. Plus that would work with the usual sockets but not limited to that.
 
-So the hints seem to be rather pointless.
+trace-cmd does that to carry the traces over the network.
+
