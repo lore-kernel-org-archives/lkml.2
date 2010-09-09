@@ -1,60 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab0IIUFq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 16:05:46 -0400
-Received: from mail.perches.com ([173.55.12.10]:1579 "EHLO mail.perches.com"
+	id S1755534Ab0IIUKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 16:10:13 -0400
+Received: from www.tglx.de ([62.245.132.106]:33571 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032Ab0IIUFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 16:05:46 -0400
-Subject: Re: [rfc patch] treewide: Convert "static const char <*> foo[] ="
- to "static const char <*> const foo[] ="
-From: Joe Perches <joe@perches.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTinDTkW9oAG_i30YHc_Ox8ZmWU6YcNouKWYrU=Zr@mail.gmail.com>
-References: <1284056536.24986.182.camel@Joe-Laptop>
-	 <AANLkTimAuA1oYyoaKsFTPEifdDsz9h=EzTB8gKudyAJk@mail.gmail.com>
-	 <1284058127.24986.199.camel@Joe-Laptop>
-	 <AANLkTimzAOvP62VnhpSmKoazKkPc30-YTy09g2eYPGBg@mail.gmail.com>
-	 <1284060808.24986.231.camel@Joe-Laptop>
-	 <AANLkTikm_ROCEZco0UMX47aD28O0EALh=WYfNwSX=fVa@mail.gmail.com>
-	 <1284061730.24986.238.camel@Joe-Laptop>
-	 <AANLkTinDTkW9oAG_i30YHc_Ox8ZmWU6YcNouKWYrU=Zr@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Sep 2010 13:05:44 -0700
-Message-ID: <1284062744.24986.244.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753111Ab0IIUKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 16:10:11 -0400
+Date: Thu, 9 Sep 2010 22:10:01 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Richard Cochran <richardcochran@gmail.com>
+cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] posix clocks: introduce a syscall for clock
+ tuning.
+In-Reply-To: <20100909133449.GB2823@riccoc20.at.omicron.at>
+Message-ID: <alpine.LFD.2.00.1009092102150.2477@localhost6.localdomain6>
+References: <cover.1283504065.git.richard.cochran@omicron.at> <7f4815cdfcf5bc49df4bdd09d59a4f56ca2598f5.1283504065.git.richard.cochran@omicron.at> <alpine.LFD.2.00.1009091159260.2477@localhost6.localdomain6> <20100909133449.GB2823@riccoc20.at.omicron.at>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-09 at 15:50 -0400, Mike Frysinger wrote:
-> On Thu, Sep 9, 2010 at 15:48, Joe Perches wrote:
-> > On Thu, 2010-09-09 at 15:40 -0400, Mike Frysinger wrote:
-> >> On Thu, Sep 9, 2010 at 15:33, Joe Perches wrote:
-> >> > On Thu, 2010-09-09 at 15:16 -0400, Mike Frysinger wrote:
-> >> >> i dont think you even need to check the contents.  just match the base:
-> >> >> char foo[]
-> >> >> const char *foo[]
-> >> >> we want to catch these even if it isnt static, and catching the
-> >> >> forward decl would be useful too.
-> >> > I think that's not so good.
-> >> > There are times when a default is used but then modified.
-> >> > For instance:
-> >> > drivers/staging/comedi/drivers/comedi_bond.c:           char file[] = "/dev/comediXXXXXX";
-> >> how many hits of non-static (i.e. ones that are extern) that should be
-> >> const but arent ?
-> > Count them and see.
-> you already have the #, so it's easier for you to just give it up.
+Richard,
 
-No, I don't have that #.
+On Thu, 9 Sep 2010, Richard Cochran wrote:
 
-To determine it, you'll probably have to convert the
-non static/non const char */char [] to [static] const.
-Likely it might be easiest to see if the compiler complains
-about any modifications of const data.
+> On Thu, Sep 09, 2010 at 12:49:27PM +0200, Thomas Gleixner wrote:
+> > On Fri, 3 Sep 2010, Richard Cochran wrote:
+> > > In addition, the POSIX clock code has been augmented to offer a
+> > > dynamic clock creation method. Instead of registering a hard
+> > > coded clock ID, modules may call create_posix_clock(), which
+> > > returns a new clock ID.
+> > 
+> > This has been discussed for years and I still fail to see the
+> > requirement for this. The only result is that it allows folks to
+> > create their special purpose clock stuff and keep it out of tree
+> > instead of fixing the problems they have with the existing clock
+> > infrastructure in the kernel.
+> 
+> Do you have any pointers to this discussion?
 
-Good luck, do let me know what you find.
+Not out of the box. Need to ask the oracle of google [ I wonder if
+this expression is politically correct today :) ]
 
+My personal stance on this is clear: Assign fixed ID.
+
+The point is, that if we provide something like CLOCK_PTP, then we can
+abstract the real hardware drivers behind this clock id and we get a
+consistent feature set for these drivers and a consistent behaviour on
+the user space interface. There still might be a hardware driver which
+cannot provide a specific feature, but there is nothing wrong to
+return -ENOSYS in such a case.
+
+> There isn't really anything wrong with the existing clock
+> infrastructure, in my view. I think the stumbling block is the idea
+> that there can be more than one clock in a computer system, and that
+> user space needs access to more than just one of them.
+> 
+> It is a fact that PTP hardware clocks are separate from the system
+> clock, and this situation will presist for some time, if not
+> indefinitely. It is ironic that the very best PTP clocks, the PHY
+> clocks, are the farthest away from the system clock.
+
+In terms of hardware, yes.
+ 
+> Using PTP (or any disributed time protocol, eg NTP) involves a number
+> of options and choices. This complexity belongs in user space. The
+> kernel should simply offer a way to access the hardware clocks
+> (mechanism, not policy). For NTP, the kernel has to have a special
+
+I completely agree with that.
+
+> role running the clock servo, but this is an exception.
+> 
+> Of course, the kernel wants to present a consistent system time to
+> user space, hiding the ugly clock details. However, when it comes to
+> PTP hardware clocks, the kernel needs a little help.  Only one
+> program, lets call it the ptpd, needs to know about the PTP
+> clock. What this program does depends on the operational mode and on
+> the user's preferences.
+
+No objections
+ 
+> What follows uses the posix clock api idea just to illustrate. You
+> could just as well use chardev ioctls. I am not arguing about the
+> API. Rather I am trying to explain why the kernel must expose multiple
+> clocks to user space.
+> 
+> 1. Master with external time source (like GPS)
+> 2. Master with PTP clock as time source
+> 3. Master with kernel as time source
+> 4. Slave with PPS hook
+
+Ok, that makes a lot of sense now. Thanks for taking the time and
+shedding some light on me!
+
+So you want to utilize the posix-timer infrastructure to make all this
+happen. This new clock basically needs clock_[get|set]time plus the
+new clock_adjust syscall, nothing more. The normal application stuff
+will still use what's already there, right ?
+
+If that's the case, then I'm not going to stand in the way, except for
+some implementation details like the new syscall clock_adjust: 
+
+Please make this thing new from ground up and not just a modified copy
+of sys_adjtimex.
+
+ 1) This avoids the compat syscall crap
+
+ 2) It allows you to add the extra control stuff for your PTP magic
+     (PPS, whatever) which you would need to expose by some other
+     means otherwise.
+
+Thanks,
+
+	tglx
