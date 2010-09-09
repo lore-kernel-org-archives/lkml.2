@@ -1,96 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab0IIR2c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 13:28:32 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:40333 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab0IIR22 convert rfc822-to-8bit (ORCPT
+	id S1755144Ab0IIR3R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 13:29:17 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:44813 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753041Ab0IIR3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 13:28:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dAFfte39c2lhuKVWlEfQirW8H9EHqD5N1qMjgxWULUzwKxCuSBPJEcCj6sssyZ43Bb
-         ljGYNRrewj3WvvplELRO0QFGY4hx9Hfa1CzeBKKXhIarjpycW5438NxfB5AXpYgWHIQg
-         gDCIn7zNLKyG5B+zZx3+t9415i3n5d66DfNsw=
-MIME-Version: 1.0
-In-Reply-To: <20100909060110.GC9098@legolas.emea.dhcp.ti.com>
-References: <AANLkTinnHiCodvHrSxiMCAQXAETczRiZ+sDu2aQXSeG0@mail.gmail.com>
-	<AANLkTiksb1AudCzs8-TWdXb11T-QcPx1G_qu6eUtJ74C@mail.gmail.com>
-	<AANLkTin7eVyosgK4XhuB_yqR2ao=YJGVidHB1x2802cr@mail.gmail.com>
-	<AANLkTinrecJXH+uDxtBsskFLpBCz0VSZMtSiWGFW9YCr@mail.gmail.com>
-	<AANLkTinkhY-y6Qv6HJnGbggksdEmULgQ9DTOrNmu1tLp@mail.gmail.com>
-	<AANLkTikZK=8HCtXDR_2dSBce1E10xNfBtyXGOJqykV83@mail.gmail.com>
-	<AANLkTin8bXvPqdkYQq++wf0iCK=ZAfZ2jnqbgL=xj8yq@mail.gmail.com>
-	<AANLkTimwMiOfvCpUfeXPSF8zh3t3YsM_8nDZbuWFcKM4@mail.gmail.com>
-	<AANLkTimBBRC7-kg_L7FpS1E5i63NPMi08g9rrG=jtWeD@mail.gmail.com>
-	<20100909060110.GC9098@legolas.emea.dhcp.ti.com>
-Date: Fri, 10 Sep 2010 02:28:27 +0900
-Message-ID: <AANLkTin87OTkBrqvStrk61jj8=z75ARBszituZdOQqWE@mail.gmail.com>
-Subject: Re: [PATCH] USB: otg: twl4030: fix phy initialization(v1)
-From: venki kaps <venkiece2005@gmail.com>
-To: balbi@ti.com
-Cc: Ming Lei <tom.leiming@gmail.com>, "greg@kroah.com" <greg@kroah.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+	Thu, 9 Sep 2010 13:29:14 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>, James Bottomley <James.Bottomley@suse.de>,
+        bo yang <boyang1288@gmail.com>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <me@felipebalbi.com>, "Gadiyar, Anand" <gadiyar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Date: Thu, 9 Sep 2010 11:28:45 -0600
+Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
+ MegaRAID SAS driver
+Thread-Topic: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset
+ to MegaRAID SAS driver
+Thread-Index: ActNJMv9FbPAvOJTSaaA3BWfoXrvtQBfvm8AAALt1mAAZTiY4A==
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3DC0D4B41@cosmail02.lsi.com>
+References: <AANLkTiktJycDkXu+FHQanTNe-djvvTe9V=9KfSkLcXZd@mail.gmail.com>
+ <1283709850.15944.1277.camel@mulgrave.site>  
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o89HTPBd021835
 
-Venkii,
+James,
 
-On Thu, Sep 9, 2010 at 3:01 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Wed, Sep 08, 2010 at 08:49:08PM -0500, Ming Lei wrote:
->>
->> 2010/9/8 venki kaps <venkiece2005@gmail.com>:
->>
->>>  To resolve the above issue, we have made "PHY power on" in battery
->>> adc on function
->>>  and "PHY power down" in battery adc off function.
->>
->> Good news, the temperature is bad value from battery adc if otg phy is
->> power
->> down. Maybe you only need to power on otg phy before reading battery adc,
->> then
->> power down otg phy after the reading if no usb calbe is connected with
->> musb
->> for decreasing power consumption. (I am not familiar with battery adc,
->> just
->> for your refrerence)
->
-> I think you only need the usb3v1 regulator. And it can even be in sleep
-> mode, it doens't have to be on. What I would suggest is that usb3v1
-> never to be turned off, only .
+Do you have any feedback for the patches?
 
-If usb3v1 put in sleep mode, then
-how about VUSB3V1 real activation?
-I have tried to put in sleep by using
-"twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 1, VUSB_DEDICATED2);"
-but still, i have been facing the issue with battery.
+Thanks,
 
-one thing i have not understood, why it requires to power down when
-the device is booted without
-a USB cable?
+Bo Yang
 
-I have not faced any issue with Kernel 2.6.29 + same hardware
-+ the same driver but the problem is facing with Kernel 2.6.32.
+-----Original Message-----
+From: Yang, Bo 
+Sent: Tuesday, September 07, 2010 1:12 PM
+To: Yang, Bo; 'James Bottomley'; 'bo yang'
+Cc: 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'; Daftardar, Jayant
+Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
 
-I strongly suspecting the problem with PMIC regulator frame work/Power
-Management
-since in off mode, it is getting very good power results but if system
-hits INACTIVE to RETENTION during playback then power numbers will be
-more
-when it is booted without USB cable.
+James,
 
-After booting, just attach/detach the usb cable, then i have not seen
-any issue with power numbers in off mode, RETENTION and active states.
+Those were corrected and submitted.  
 
-> --
-> balbi
->
+Thanks,
+
+Bo Yang
+
+-----Original Message-----
+From: Yang, Bo 
+Sent: Tuesday, September 07, 2010 11:54 AM
+To: 'James Bottomley'; bo yang
+Cc: linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Daftardar, Jayant
+Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
+
+Thanks James,
+
+The e-mail broken lines of the description.  I am changing the description to avoid re-submit all the patches(5 of them).
+
+Also 
+
+>  megasas_complete_cmd(struct megasas_instance *instance, struct
+> megasas_cmd *cmd,
+>  		     u8 alt_status);
+
+Not patch line(already in the src, but more than 80 chars).
+
+Regards,
+
+Bo Yang    
+
+-----Original Message-----
+From: James Bottomley [mailto:James.Bottomley@suse.de] 
+Sent: Sunday, September 05, 2010 2:04 PM
+To: bo yang
+Cc: Yang, Bo; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Daftardar, Jayant
+Subject: Re: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
+
+On Wed, 2010-08-11 at 16:45 -0400, bo yang wrote:
+> To add the Online Controller Reset  (OCR) support, driver need to do:
+> 		a). reset the controller chips -- Xscale and Gen2 which will change
+> the function calls and add the reset function
+> 		related to this two chips.
+> 		
+> 		b). during the reset, driver will store the pending cmds which not
+> returned by FW to driver's pending queue.  Driver
+> 		will re-issue those pending cmds again to FW after the OCR finished.
+> 		
+> 		c). In driver's timeout routine, driver will report to OS as reset.
+> Also driver's queue routine will block the
+> 		cmds until the OCR finished.
+> 		
+> 		d). in Driver's ISR routine, if driver get the FW state as state
+> change, FW in Failure status and FW support online controller
+> 		reset (OCR), driver will start to do the controller reset.
+> 		
+> 		e). In driver's IOCTL routine, the application cmds will wait for
+> the OCR to finish, then issue the cmds to FW.
+> 
+> Signed-off-by Bo Yang<bo.yang@lsi.com>
+
+This patch is full of line breaks which prevent application, like this
+one:
+
+> diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas
+> new/Documentation/scsi/ChangeLog.megaraid_sas
+> --- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
+> 04:58:36.000000000 -0400
+> +++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
+> 04:56:30.000000000 -0400
+> @@ -1,3 +1,36 @@
+> +1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
+> +			(emaild-id:megaraidlinux@lsi.com)
+> +			Bo Yang
+[snip]
+
+and this one
+> diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
+> new/drivers/scsi/megaraid/megaraid_sas.c
+> --- old/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:55:41.000000000 -0400
+> +++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:56:30.000000000 -0400
+> @@ -107,6 +107,12 @@ static void
+>  megasas_complete_cmd(struct megasas_instance *instance, struct
+> megasas_cmd *cmd,
+>  		     u8 alt_status);
+
+Since not every long line is broken, this looks like some type of cut
+and paste error ... anyway, could you fix it up, please?
+
+Thanks,
+
+James
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
