@@ -1,120 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab0IIKq5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 06:46:57 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:37728 "EHLO e4.ny.us.ibm.com"
+	id S1754787Ab0IIKtn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 06:49:43 -0400
+Received: from www.tglx.de ([62.245.132.106]:54159 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753840Ab0IIKqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 06:46:54 -0400
-Date: Thu, 9 Sep 2010 16:16:30 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Izik Eidus <ieidus@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: Transparent Hugepage Support #30
-Message-ID: <20100909104630.GO4443@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100901190859.GA20316@random.random>
+	id S1753840Ab0IIKtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 06:49:41 -0400
+Date: Thu, 9 Sep 2010 12:49:27 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Richard Cochran <richardcochran@gmail.com>
+cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] posix clocks: introduce a syscall for clock
+ tuning.
+In-Reply-To: <7f4815cdfcf5bc49df4bdd09d59a4f56ca2598f5.1283504065.git.richard.cochran@omicron.at>
+Message-ID: <alpine.LFD.2.00.1009091159260.2477@localhost6.localdomain6>
+References: <cover.1283504065.git.richard.cochran@omicron.at> <7f4815cdfcf5bc49df4bdd09d59a4f56ca2598f5.1283504065.git.richard.cochran@omicron.at>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100901190859.GA20316@random.random>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andrea Arcangeli <aarcange@redhat.com> [2010-09-01 21:08:59]:
+On Fri, 3 Sep 2010, Richard Cochran wrote:
 
-> http://www.linux-kvm.org/wiki/images/9/9e/2010-forum-thp.pdf
-> 
-> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
-> 
-> first: git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
-> or first: git clone --reference linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
-> later: git fetch; git checkout -f origin/master
-> 
-> The tree is rebased and git pull won't work.
-> 
-> http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.36-rc3/transparent_hugepage-30/
-> http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.36-rc3/transparent_hugepage-30.gz
-> 
-> Diff #29 -> #30:
-> 
->  b/compaction-migration-warning               |   25 +++
-> 
-> Avoid MIGRATION config warning when COMPACTION is selected but numa
-> and memhotplug aren't.
-> 
->  do_swap_page-VM_FAULT_WRITE                  |   21 --
->  kvm-huge-spte-wrprotect                      |   48 ------
->  kvm-mmu-notifier-huge-spte                   |   29 ---
->  root_anon_vma-anon_vma_lock                  |  208 ---------------------------
->  root_anon_vma-avoid-ksm-hang                 |   30 ---
->  root_anon_vma-bugchecks                      |   37 ----
->  root_anon_vma-in_vma                         |   27 ---
->  root_anon_vma-ksm_refcount                   |  169 ---------------------
->  root_anon_vma-lock_root                      |  127 ----------------
->  root_anon_vma-memory-compaction              |   36 ----
->  root_anon_vma-mm_take_all_locks              |   81 ----------
->  root_anon_vma-oldest_root                    |   81 ----------
->  root_anon_vma-refcount                       |   29 ---
->  root_anon_vma-swapin                         |   91 -----------
->  root_anon_vma-use-root                       |   66 --------
->  root_anon_vma-vma_lock_anon_vma              |   94 ------------
-> 
-> merged upstream.
-> 
->  b/memcg_compound                             |  166 ++++++++++-----------
->  b/memcg_compound_tail                        |   31 +---
->  b/memcg_consume_stock                        |   31 ++--
->  memcg_check_room                             |   88 -----------
->  memcg_oom                                    |   34 ----
-> 
-> These had heavy rejects, the last two patches and other bits got
-> removed. memcg code is rewritten so fast it's hard to justify to keep
-> up with it. It's simpler and less time consuming to fix it just once
-> than over and over again. Likely memcg in this release isn't too
-> stable with THP on (it'll definitely work fine if you disable THP at
-> compile time or at boot time with the kernel parameter). Especially
-> all get_css/put_css will have to be re-audited after these new
-> changes. For now it builds just fine and the basics to support THP and
-> to show the direction are in. Nevertheless I welcome patches to fix
-> this up.
-> 
-> btw, memcg developers could already support THP inside memcg even if
-> THP is not included yet without any sort of problem, so it's also
+This patch needs to be split in pieces. The syscall change is totally
+unrelated to the dynamic clock id creation. Though I do not like
+either of them. :)
 
-Could you elaborate by what you mean here?
+> A new syscall is introduced that allows tuning of a POSIX clock. The
+> syscall is implemented for four architectures: arm, blackfin, powerpc,
+> and x86.
+> 
+> The new syscall, clock_adjtime, takes two parameters, the clock ID,
+> and a pointer to a struct timex. The semantics of the timex struct
+> have been expanded by one additional mode flag, which allows an
+> absolute offset correction. When specificied, the clock offset is
+> immediately corrected by skipping to the new time value.
 
-> partly up to them to want to support THP in memcg, but it's also
-> perfectly ok to catch up with memcg externally, but it'd be also nice
-> to know when memcg reaches a milestone and so when it's time to
-> re-audit it all for THP.
->
+And why do we need a separate syscall for this?
 
-We try not to change too drastically, but several of the current
-changes are fixes, we are currently contemplating some more changes to
-support the I/O control. Some of the recent changes have been driven
-by tracing. We will pay closer attention to THP changes, thanks for
-bring your concern to our notice.
+> In addition, the POSIX clock code has been augmented to offer a
+> dynamic clock creation method. Instead of registering a hard
+> coded clock ID, modules may call create_posix_clock(), which
+> returns a new clock ID.
 
--- 
-	Three Cheers,
-	Balbir
+This has been discussed for years and I still fail to see the
+requirement for this. The only result is that it allows folks to
+create their special purpose clock stuff and keep it out of tree
+instead of fixing the problems they have with the existing clock
+infrastructure in the kernel.
+
+As far as I understood from the previous discussions, the final goal
+is to provide PTP support, right?
+
+But what I see is an approach which tries to implement disconnected
+special purpose clocks which have the ability to be adjusted
+independently. What's the purpose of this ? Why can't we just use the
+existing clocks and make PTP work on them ?
+
+I know that lots of embedded folks think that they need their special
+timers and extra magic to make stuff work, but that's the wrong
+approach.
+
+What's wrong with the existing clocks? Nothing, except that we have no
+way to sync CLOCK_MONOTONIC across several machines. And that's what
+you really want if you try to do distributed control and data
+acquisition stuff.
+
+That's a single CLOCK_MONOTONIC_GLOBAL and not a bunch of completely
+disconnected clock implementations with random clock ids and random
+feature sets.
+
+Thoughts ?
+
+
+	 tglx
