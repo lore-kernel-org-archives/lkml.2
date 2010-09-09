@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab0IIPGP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 11:06:15 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:44778 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751233Ab0IIPGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 11:06:12 -0400
-Date: Thu, 9 Sep 2010 16:05:58 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@linux.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
-	direct reclaim allocation fails
-Message-ID: <20100909150558.GB340@csn.ul.ie>
-References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie> <1283504926-2120-4-git-send-email-mel@csn.ul.ie> <20100908163956.C930.A69D9226@jp.fujitsu.com> <20100909124138.GQ29263@csn.ul.ie> <alpine.DEB.2.00.1009090843480.18975@router.home> <20100909135523.GA340@csn.ul.ie> <alpine.DEB.2.00.1009090931360.18975@router.home>
+	id S1752972Ab0IIPKi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 11:10:38 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:37946 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab0IIPKf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 11:10:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:content-type;
+        b=CO46N695VeOFS1La3BkIDMLoMYhtN02syrp2LZm5oBlWdXyqdg8b1rNH3xN8bLwc/v
+         j6f8am/6N5UZTBoZ3lH2v+c/eGAE0fvJ5Sydu0kFLI2ND9mHlGO0qgWOWE7yhlSE9Kie
+         qGj71Mg/NfcKyYVKg1SV+jBBTrDQ2r1IxBepg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1009090931360.18975@router.home>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Reply-To: sedat.dilek@gmail.com
+Date: Thu, 9 Sep 2010 17:10:34 +0200
+Message-ID: <AANLkTi=uzLJxDbd+uJAww-b5aP10gd8gbGVG19HS46ue@mail.gmail.com>
+Subject: mm/Kconfig: warning: (COMPACTION && EXPERIMENTAL && HUGETLB_PAGE &&
+ MMU) selects MIGRATION which has unmet direct dependencies (NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 09:32:52AM -0500, Christoph Lameter wrote:
-> On Thu, 9 Sep 2010, Mel Gorman wrote:
-> 
-> > > This will have the effect of never sending IPIs for slab allocations since
-> > > they do not do allocations for orders > PAGE_ALLOC_COSTLY_ORDER.
-> > >
-> >
-> > The question is how severe is that? There is somewhat of an expectation
-> > that the lower orders free naturally so it the IPI justified? That said,
-> > our historical behaviour would have looked like
-> >
-> > if (!page && !drained && order) {
-> > 	drain_all_pages();
-> > 	draiained = true;
-> > 	goto retry;
-> > }
-> >
-> > Play it safe for now and go with that?
-> 
-> I am fine with no IPIs for order <= COSTLY. Just be aware that this is
-> a change that may have some side effects.
+Hi,
 
-I made the choice consciously. I felt that if slab or slub were depending on
-IPIs to make successful allocations in low-memory conditions that it would
-experience varying stalls on bigger machines due to increased interrupts that
-might be difficult to diagnose while not necessarily improving allocation
-success rates. I also considered that if the machine is under pressure then
-slab and slub may also be releasing pages of the same order and effectively
-recycling their pages without depending on IPIs.
+while build latest 2.6.36-rc3 I get this warning:
 
-> Lets run some tests and see
-> how it affect the issues that we are seeing.
-> 
+[ build.log]
+...
+warning: (COMPACTION && EXPERIMENTAL && HUGETLB_PAGE && MMU) selects
+MIGRATION which has unmet direct dependencies (NUMA ||
+ARCH_ENABLE_MEMORY_HOTREMOVE)
+...
 
-Perfect, thanks.
+Here the excerpt of...
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+[ mm/Kconfig ]
+...
+# support for memory compaction
+config COMPACTION
+        bool "Allow for memory compaction"
+        select MIGRATION
+        depends on EXPERIMENTAL && HUGETLB_PAGE && MMU
+        help
+          Allows the compaction of memory for the allocation of huge pages.
+...
+
+I have set the following kernel-config parameters:
+
+$ egrep 'COMPACTION|HUGETLB_PAGE|MMU|MIGRATION|NUMA|ARCH_ENABLE_MEMORY_HOTREMOVE'
+linux-2.6.36-rc3/debian/build/build_i386_none_686/.config
+CONFIG_MMU=y
+# CONFIG_IOMMU_HELPER is not set
+CONFIG_IOMMU_API=y
+CONFIG_COMPACTION=y
+CONFIG_MIGRATION=y
+CONFIG_MMU_NOTIFIER=y
+CONFIG_HUGETLB_PAGE=y
+# CONFIG_IOMMU_STRESS is not set
+
+Looks like I have no NUMA or ARCH_ENABLE_MEMORY_HOTREMOVE set.
+
+Ok, it is a *warning*...
+
+Kind Regards,
+- Sedat -
