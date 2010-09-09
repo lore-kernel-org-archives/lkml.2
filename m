@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751289Ab0IISxP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 14:53:15 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:20895
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752711Ab0IISxN (ORCPT
+	id S1753951Ab0IISzY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 14:55:24 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54865 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab0IISzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 14:53:13 -0400
-X-SpamScore: -21
-X-BigFish: VPS-21(zzbb2cK936eK1432N98dN4015Lzz1202hzz8275dh8275chz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L8HTKE-02-QJD-02
-X-M-MSG: 
-Date: Thu, 9 Sep 2010 20:48:12 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        Andi Kleen <andi@firstfloor.org>,
-        Patrick Simmons <linuxrocks123@netscape.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add Support for Intel CPU Family 6 / Model 22 (Intel
- Celeron 540)
-Message-ID: <20100909184812.GT13563@erda.amd.com>
-References: <4C879EF4.90509@netscape.net>
- <20100909123102.GQ13563@erda.amd.com>
+	Thu, 9 Sep 2010 14:55:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=N45AytBadk79BSsCMvDQ+GP0UR2fTXUJ3/Mn3zIVPs2o6R7Y3/riUUtTcAzjcLpGPE
+         Qqt+EoX+mpklw6BXh3700Bbgc9iQqJ8wN5ViS+OUdr2XlgK2rXzzNnvhHKvVmKlx7Ggj
+         DoFX2rgsHXTv67gyapeq47qQHXF+n4aKhKR4Q=
+Date: Thu, 9 Sep 2010 19:56:00 +0100
+From: Nikitas Angelinas <nikitasangelinas@gmail.com>
+To: Charles =?utf-8?Q?Cl=C3=A9ment?= <caratorn@gmail.com>
+Cc: gregkh@suse.de, more.andres@gmail.com, lieb@canonical.com,
+        forest@alittletooquiet.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8] drivers/staging/vt6656: use ARRAY_SIZE macro in
+ channel.c
+Message-ID: <20100909185600.GA2252@vostro.config>
+References: <1283979457-4649-1-git-send-email-nikitasangelinas@gmail.com>
+ <1283981275-5098-1-git-send-email-nikitasangelinas@gmail.com>
+ <20100909092915.GA4994@air>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100909123102.GQ13563@erda.amd.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100909092915.GA4994@air>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.09.10 14:31:02, Robert Richter wrote:
-> On 08.09.10 10:34:28, Patrick Simmons wrote:
-> > This patch adds CPU type detection for the Intel Celeron 540, which is 
-> > part of the Core 2 family according to Wikipedia; the family and ID pair 
-> > is absent from the Volume 3B table referenced in the source code 
-> > comments.  I have tested this patch on an Intel Celeron 540 machine 
-> > reporting itself as Family 6 Model 22, and OProfile runs on the machine 
-> > without issue.  The patch was made against Linux version 2.6.35.4 but is 
-> > so trivial that it should apply cleanly to anything relevant.  Please CC 
-> > me with any comments or questions as I am not subscribed to the list.
+On Thu, Sep 09, 2010 at 11:29:35AM +0200, Charles Clément wrote:
+> I think this definition is not used anywhere in the driver and thus can
+> be removed.
+> 
+> On Wed, Sep 08, 2010 at 10:27:55PM +0100, Nikitas Angelinas wrote:
+> > Replace (sizeof(ChannelRuleTab) / sizeof(ChannelRuleTab[0])) with
+> > ARRAY_SIZE(ChannelRuleTab) in drivers/staging/vt6656/channel.c
 > > 
-> > --Patrick
+> > Signed-off-by: Nikitas Angelinas <nikitasangelinas@gmail.com>
+> > ---
+> >  drivers/staging/vt6656/channel.c |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
 > > 
-> > Signed-off-by: Patrick Simmons <linuxrocks123@netscape.net>
-> 
-> Applied to oprofile/urgent.
-
-Ingo,
-
-please pull this update for tip/perf/urgent from:
-
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
-
-Thanks,
-
--Robert
-
-> 
+> > diff --git a/drivers/staging/vt6656/channel.c b/drivers/staging/vt6656/channel.c
+> > index 6ad03e4..a2460ae 100644
+> > --- a/drivers/staging/vt6656/channel.c
+> > +++ b/drivers/staging/vt6656/channel.c
+> > @@ -34,6 +34,7 @@
+> >   *
+> >   */
+> >  
+> > +#include <linux/kernel.h>
+> >  #include "country.h"
+> >  #include "channel.h"
+> >  #include "rf.h"
+> > @@ -367,7 +368,7 @@ static  struct
+> >  /*                                           1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38  39  40  41  42  43  44  45  46  47  48  49  50  51  52  53  54  55  56  */
+> >  };
+> >  
+> > -#define NUM_RULES	(sizeof(ChannelRuleTab) / sizeof(ChannelRuleTab[0]))
+> > +#define NUM_RULES	ARRAY_SIZE(ChannelRuleTab)
+> >  
+> >  /*---------------------  Export function  -------------------------*/
+> >  /************************************************************************
+> > -- 
+> > 1.7.2.3
 > > 
-> > --- linux/arch/x86/oprofile/nmi_int.c.orig    2010-09-08 
-> > 08:01:56.000000000 -0600
-> > +++ linux/arch/x86/oprofile/nmi_int.c    2010-09-08 05:57:18.000000000 -0600
-> > @@ -664,7 +664,7 @@ static int __init ppro_init(char **cpu_t
-> >       case 14:
-> >           *cpu_type = "i386/core";
-> >           break;
-> > -    case 15: case 23:
-> > +    case 15: case 22: case 23:
+> > _______________________________________________
+> > devel mailing list
+> > devel@linuxdriverproject.org
+> > http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
 > 
-> I slightly modified the change:
-> 
-> -       case 15: case 23:
-> +       case 0x0f:
-> +       case 0x16:
-> +       case 0x17:
-> 
-> Thanks Patrick.
-> 
-> -Robert
-> 
-> >           *cpu_type = "i386/core_2";
-> >           break;
-> >       case 0x1a:
-> > 
-> > 
+> -- 
+> Charles Clément
+Yup, doesn't seem to be used anywhere; the file also has some coding
+style issues, so perhaps removing the macro can be part of a cleanup
+patch for whoever may carry out that task.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+In that case, I guess reverting the patch from staging-next might be an
+option, but I think what's really needed is for someone to go through
+the driver source and do what's necessary... At first glance, it seems
+possible that the macro (NUM_RULES) may indeed have to be used as a 
+replacement for the hard-coded CB_MAX_CHANNEL, but the author may not 
+have gotten around to it or didn't make use of it for some other reason.
