@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab0IISKb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 14:10:31 -0400
-Received: from mail.cybernet.com.pl ([195.117.60.252]:58222 "EHLO
-	mail.cybernet.com.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586Ab0IISKa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 14:10:30 -0400
-X-Greylist: delayed 1134 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Sep 2010 14:10:30 EDT
-Message-ID: <4C891E9F.3040006@multivision.pl>
-Date: Thu, 09 Sep 2010 19:51:27 +0200
-From: Lech Perczak <lech.perczak@multivision.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
+	id S1755338Ab0IISLB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 14:11:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9370 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753666Ab0IISK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 14:10:56 -0400
+Date: Thu, 9 Sep 2010 20:10:46 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] trace: funcgraph tracer - adding funcgraph-irq option
+Message-ID: <20100909181046.GB1963@jolsa.brq.redhat.com>
+References: <1278951670-8133-1-git-send-email-jolsa@redhat.com>
+ <1279828821.3319.23.camel@gandalf.stny.rr.com>
+ <20100723131913.GB1829@jolsa.brq.redhat.com>
+ <1283876920.5133.125.camel@gandalf.stny.rr.com>
+ <20100909144430.GG20955@cmpxchg.org>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [Patch 1/1] hid: Fix for A4Tech RP-649 horizontal scrollwheel
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100909144430.GG20955@cmpxchg.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  From: Lech Perczak <lech.perczak@multivision.pl>
+On Thu, Sep 09, 2010 at 04:44:30PM +0200, Johannes Weiner wrote:
+> Hi Guys,
+> 
+> On Tue, Sep 07, 2010 at 12:28:40PM -0400, Steven Rostedt wrote:
+> > On Fri, 2010-07-23 at 15:19 +0200, Jiri Olsa wrote:
+> > > On Thu, Jul 22, 2010 at 04:00:21PM -0400, Steven Rostedt wrote:
+> > > > On Mon, 2010-07-12 at 18:21 +0200, Jiri Olsa wrote:
+> > > > 
+> > > SNIP
+> > > 
+> > > > 
+> > > > What happens if we lose the return event? That is, due to buffer
+> > > > overruns, the return of the trace is lost. Then we lose out on all
+> > > > events until another event of the same IRQ happens and its return is not
+> > > > lost.
+> > > > 
+> > > > You should save the depth instead of the function. When you are in a
+> > > > interrupt, record the depth. Then when the depth is less than or equal
+> > > > to the recorded depth you can restart printing. This may still suffer
+> > > > from missed returns, but it would not have as much of a consequence when
+> > > > it happens.
+> > > hi,
+> > > you're right, changed patch is attached
+> > > 
+> > > thanks,
+> > > jirka
+> > > 
+> > > ---
+> > > Adding funcgraph-irq option for function graph tracer.
+> > > 
+> > > It's handy to be able to disable the irq related output
+> > > and not to have to jump over each irq related code, when
+> > > you have no interrest in it.
+> 
+> Although greatly reduced, I still see the following noise in the trace
+> output with the IRQ filtering enabled:
+> 
+>  1)               |    wakeup_flusher_threads() {
+>  1)   0.205 us    |      __rcu_read_lock();
+>  1)   0.271 us    |      bdi_has_dirty_io();
+>  1)   0.287 us    |      bdi_has_dirty_io();
+>  1)   0.217 us    |      bdi_has_dirty_io();
+>  1)               |      bdi_has_dirty_io() {
+>  1)               |        smp_invalidate_interrupt() {
+>  1)   0.220 us    |          native_apic_mem_write();
+>  1)   0.794 us    |        } /* smp_invalidate_interrupt */
+>  1)   1.413 us    |      } /* bdi_has_dirty_io */
+>  1)   0.218 us    |      bdi_has_dirty_io();
+>  1)   0.213 us    |      bdi_has_dirty_io();
+>  1)   0.215 us    |      bdi_has_dirty_io();
+>  1)               |      smp_invalidate_interrupt() {
+>  1)   0.234 us    |        native_apic_mem_write();
+>  1)   0.819 us    |      } /* smp_invalidate_interrupt */
+>  1)   0.240 us    |      bdi_has_dirty_io();
+>  1)   0.259 us    |      bdi_has_dirty_io();
+>
+hi,
 
-- Barely add USB device ID of A4Tech RF mouse receiver (09da:001a) used 
-with RP-649(Z) mice to enable fix for their horizontal scroll wheel 
-behaviour, and associate it with B8 hack.
+both smp_invalidate_interrupt and native_apic_mem_write are not put
+into __irqentry_text code location, so the logic misses them.
 
-Signed-off-by: Lech Perczak<lech.perczak@multivision.pl>
----
-diff -up hid/hid-a4tech.c.orig hid/hid-a4tech.c
---- hid/hid-a4tech.c.orig	2010-08-02 00:11:14.000000000 +0200
-+++ hid/hid-a4tech.c	2010-09-09 17:51:23.000000000 +0200
-@@ -133,6 +133,8 @@
-  		.driver_data = A4_2WHEEL_MOUSE_HACK_7 },
-  	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_X5_005D),
-  		.driver_data = A4_2WHEEL_MOUSE_HACK_B8 },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_RP_649),
-+		.driver_data = A4_2WHEEL_MOUSE_HACK_B8 },
-  	{ }
-  };
-  MODULE_DEVICE_TABLE(hid, a4_devices);
-diff -up hid/hid-ids.h.orig hid/hid-ids.h
---- hid/hid-ids.h.orig	2010-09-09 17:48:28.000000000 +0200
-+++ hid/hid-ids.h	2010-09-09 17:41:09.000000000 +0200
-@@ -25,6 +25,7 @@
-  #define USB_VENDOR_ID_A4TECH		0x09da
-  #define USB_DEVICE_ID_A4TECH_WCP32PU	0x0006
-  #define USB_DEVICE_ID_A4TECH_X5_005D	0x000a
-+#define USB_DEVICE_ID_A4TECH_RP_649	0x001a
+I'm not sure how such functions could be caught besides function
+pointer check..
 
-  #define USB_VENDOR_ID_AASHIMA		0x06d6
-  #define USB_DEVICE_ID_AASHIMA_GAMEPAD	0x0025
+It looks like smp_invalidate_interrupt is used for TLB mainating,
+which I know nothing about.. :) anyone knows wether it would make
+sense to put those function to __irqentry_text area?
 
-
+thanks,
+jirka
