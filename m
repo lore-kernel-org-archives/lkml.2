@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab0IIE57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 00:57:59 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60306
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750905Ab0IIE5w (ORCPT
+	id S1752046Ab0IIFBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 01:01:45 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46014 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab0IIFBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 00:57:52 -0400
-Date: Wed, 08 Sep 2010 21:58:09 -0700 (PDT)
-Message-Id: <20100908.215809.232892441.davem@davemloft.net>
-To: mchan@broadcom.com
-Cc: shawn.bohrer@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [BUG] 2.6.32.21 bnx2_napi->hw_tx_cons_ptr NULL pointer
- dereference
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <C27F8246C663564A84BB7AB3439772421B9134BA2E@IRVEXCHCCR01.corp.ad.broadcom.com>
-References: <20100909013437.GA6400@lintop>
-	<C27F8246C663564A84BB7AB3439772421B9134BA2E@IRVEXCHCCR01.corp.ad.broadcom.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 9 Sep 2010 01:01:38 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Roland McGrath <roland@redhat.com>
+Subject: [PATCH 0/2] execve memory exhaust of argument-copying fixes
+Cc: kosaki.motohiro@jp.fujitsu.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
+        Solar Designer <solar@openwall.com>,
+        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu,
+        "Brad Spengler <spender@grsecurity.net>, Eugene Teo" 
+	<eugene@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100908023417.8B055401AF@magilla.sf.frob.com>
+References: <20100830100616.78971400D9@magilla.sf.frob.com> <20100908023417.8B055401AF@magilla.sf.frob.com>
+Message-Id: <20100909134842.C93F.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  9 Sep 2010 14:01:33 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael Chan" <mchan@broadcom.com>
-Date: Wed, 8 Sep 2010 21:55:29 -0700
+> This is my take on parts of the execve large arguments copying issues
+> that Kees posted about, and Brad and others have been discussing.
+> I've only looked at the narrow area of the argument copying code
+> itself.  I think these are good and necessary fixes.  But I'm not
+> addressing the whole OOM killer/mm accounting issue, which also needs
+> to be fixed (and I have the impression others are already looking into that).
 
-> Shawn Bohrer wrote:
-> 
->> Is there any reason these can't/shouldn't be applied to the 2.6.32.y
->> stable series?  It looks like they apply cleanly.
->>
-> 
-> No reason.  I just didn't know how far back to apply these patches.
-> The crash was triggered by changes in netpoll some time ago and
-> the problem has been present for some time.
+Now, we have two OOM-Killer/mm acounting problem.
+ 1) OOM-killer doesn't track nascent mm and It may kill innocent task
+ 2) When execve argument-copying, our __vm_enough_memory() doesn't
+    protect any wrong plenty argument. then, execve() invoke OOM instead
+    return failure value when larger argument than system memory.
 
-Michael, please submit these to -stable then, thanks!
+The patch series addressed this two issue.
+
+
+
