@@ -1,81 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab0IITsK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 15:48:10 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:42473 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755569Ab0IITsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 15:48:07 -0400
-Subject: Re: [patch -rc] oom: always return a badness score of non-zero for
- eligible tasks
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Minchan Kim <minchan.kim@gmail.com>, Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1009091152090.5556@chino.kir.corp.google.com>
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
-	 <1284053081.7586.7910.camel@nimitz>
-	 <alpine.DEB.2.00.1009091152090.5556@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Thu, 09 Sep 2010 12:48:03 -0700
-Message-ID: <1284061683.7586.8100.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1755877Ab0IITsm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 15:48:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:32976 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755535Ab0IITsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 15:48:40 -0400
+Date: Thu, 9 Sep 2010 19:48:20 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Unindent labels
+Message-ID: <tip-9ed6060d286b1eb55974d09080f442f809408c42@git.kernel.org>
+Git-Commit-ID: 9ed6060d286b1eb55974d09080f442f809408c42
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Sep 2010 19:48:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-09 at 12:07 -0700, David Rientjes wrote:
-> On Thu, 9 Sep 2010, Dave Hansen wrote:
-> 
-> > Hi Nitin,
-> > 
-> > I've been playing with using zram (from -staging) to back some qemu
-> > guest memory directly.  Basically mmap()'ing the device in instead of
-> > using anonymous memory.  The old code with the backing swap devices
-> > seemed to work pretty well, but I'm running into a problem with the new
-> > code.
-> > 
-> > I have plenty of swap on the system, and I'd been running with compcache
-> > nicely for a while.  But, I went to go tar up (and gzip) a pretty large
-> > directory in my qemu guest.  It panic'd the qemu host system:
-> > 
-> > [703826.003126] Kernel panic - not syncing: Out of memory and no killable processes...
-> > [703826.003127] 
-> > [703826.012350] Pid: 25508, comm: cat Not tainted 2.6.36-rc3-00114-g9b9913d #29
-> 
-> I'm curious why there are no killable processes on the system; it seems 
-> like the triggering task here, cat, would at least be killable itself.  
-> Could you post the tasklist dump that preceeds this (or, if you've 
-> disabled it try echo 1 > /proc/sys/vm/oom_dump_tasks first)?
+Commit-ID:  9ed6060d286b1eb55974d09080f442f809408c42
+Gitweb:     http://git.kernel.org/tip/9ed6060d286b1eb55974d09080f442f809408c42
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Fri, 11 Jun 2010 17:36:35 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 9 Sep 2010 20:46:28 +0200
 
-That was one odd part here.  I didn't disable the tasklist dump, and
-there was none in the dump.
+perf: Unindent labels
 
-> It's possible that if you have enough swap that none of the eligible tasks 
-> actually have non-zero badness scores either because they are being run as 
-> root or because the amount of RAM or swap is sufficiently high such that 
-> (task's rss + swap) / (total rss + swap) is never non-zero.  And, since 
-> root tasks have a 3% bonus, it's possible these are all root tasks and no 
-> single task uses more than 3% of rss and swap.
+Fixup random annoying style bits.
 
-It's a 64GB machine with ~30GB of swap and very little RSS.  Your
-hypothesis seems correct.  Just grepping through /proc/[0-9]*/oom_score
-shows nothing other than 0's.
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: paulus <paulus@samba.org>
+LKML-Reference: <new-submission>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |   43 ++++++++++++++++++++++++-------------------
+ 1 files changed, 24 insertions(+), 19 deletions(-)
 
-Trying this again, I just hung the system instead of OOM'ing straight
-away like last time.
-
-Your patch makes a lot of sense to me in any case where there aren't
-large-RSS tasks around using memory.  That definitely applies here
-because of the amount in the compcache store and might also apply with
-ramfs and hugetlbfs.
-
--- Dave
-
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 288ce43..149ca18 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -147,7 +147,7 @@ perf_lock_task_context(struct task_struct *task, unsigned long *flags)
+ 	struct perf_event_context *ctx;
+ 
+ 	rcu_read_lock();
+- retry:
++retry:
+ 	ctx = rcu_dereference(task->perf_event_ctxp);
+ 	if (ctx) {
+ 		/*
+@@ -619,7 +619,7 @@ void perf_event_disable(struct perf_event *event)
+ 		return;
+ 	}
+ 
+- retry:
++retry:
+ 	task_oncpu_function_call(task, __perf_event_disable, event);
+ 
+ 	raw_spin_lock_irq(&ctx->lock);
+@@ -849,7 +849,7 @@ static void __perf_install_in_context(void *info)
+ 	if (!err && !ctx->task && cpuctx->max_pertask)
+ 		cpuctx->max_pertask--;
+ 
+- unlock:
++unlock:
+ 	perf_enable();
+ 
+ 	raw_spin_unlock(&ctx->lock);
+@@ -922,10 +922,12 @@ static void __perf_event_mark_enabled(struct perf_event *event,
+ 
+ 	event->state = PERF_EVENT_STATE_INACTIVE;
+ 	event->tstamp_enabled = ctx->time - event->total_time_enabled;
+-	list_for_each_entry(sub, &event->sibling_list, group_entry)
+-		if (sub->state >= PERF_EVENT_STATE_INACTIVE)
++	list_for_each_entry(sub, &event->sibling_list, group_entry) {
++		if (sub->state >= PERF_EVENT_STATE_INACTIVE) {
+ 			sub->tstamp_enabled =
+ 				ctx->time - sub->total_time_enabled;
++		}
++	}
+ }
+ 
+ /*
+@@ -991,7 +993,7 @@ static void __perf_event_enable(void *info)
+ 		}
+ 	}
+ 
+- unlock:
++unlock:
+ 	raw_spin_unlock(&ctx->lock);
+ }
+ 
+@@ -1032,7 +1034,7 @@ void perf_event_enable(struct perf_event *event)
+ 	if (event->state == PERF_EVENT_STATE_ERROR)
+ 		event->state = PERF_EVENT_STATE_OFF;
+ 
+- retry:
++retry:
+ 	raw_spin_unlock_irq(&ctx->lock);
+ 	task_oncpu_function_call(task, __perf_event_enable, event);
+ 
+@@ -1052,7 +1054,7 @@ void perf_event_enable(struct perf_event *event)
+ 	if (event->state == PERF_EVENT_STATE_OFF)
+ 		__perf_event_mark_enabled(event, ctx);
+ 
+- out:
++out:
+ 	raw_spin_unlock_irq(&ctx->lock);
+ }
+ 
+@@ -1092,17 +1094,19 @@ static void ctx_sched_out(struct perf_event_context *ctx,
+ 	if (!ctx->nr_active)
+ 		goto out_enable;
+ 
+-	if (event_type & EVENT_PINNED)
++	if (event_type & EVENT_PINNED) {
+ 		list_for_each_entry(event, &ctx->pinned_groups, group_entry)
+ 			group_sched_out(event, cpuctx, ctx);
++	}
+ 
+-	if (event_type & EVENT_FLEXIBLE)
++	if (event_type & EVENT_FLEXIBLE) {
+ 		list_for_each_entry(event, &ctx->flexible_groups, group_entry)
+ 			group_sched_out(event, cpuctx, ctx);
++	}
+ 
+  out_enable:
+ 	perf_enable();
+- out:
++out:
+ 	raw_spin_unlock(&ctx->lock);
+ }
+ 
+@@ -1341,9 +1345,10 @@ ctx_flexible_sched_in(struct perf_event_context *ctx,
+ 		if (event->cpu != -1 && event->cpu != smp_processor_id())
+ 			continue;
+ 
+-		if (group_can_go_on(event, cpuctx, can_add_hw))
++		if (group_can_go_on(event, cpuctx, can_add_hw)) {
+ 			if (group_sched_in(event, cpuctx, ctx))
+ 				can_add_hw = 0;
++		}
+ 	}
+ }
+ 
+@@ -1373,7 +1378,7 @@ ctx_sched_in(struct perf_event_context *ctx,
+ 		ctx_flexible_sched_in(ctx, cpuctx);
+ 
+ 	perf_enable();
+- out:
++out:
+ 	raw_spin_unlock(&ctx->lock);
+ }
+ 
+@@ -1714,7 +1719,7 @@ static void perf_event_enable_on_exec(struct task_struct *task)
+ 	raw_spin_unlock(&ctx->lock);
+ 
+ 	perf_event_task_sched_in(task);
+- out:
++out:
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -2053,7 +2058,7 @@ static struct perf_event_context *find_get_context(pid_t pid, int cpu)
+ 	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+ 		goto errout;
+ 
+- retry:
++retry:
+ 	ctx = perf_lock_task_context(task, &flags);
+ 	if (ctx) {
+ 		unclone_ctx(ctx);
+@@ -2081,7 +2086,7 @@ static struct perf_event_context *find_get_context(pid_t pid, int cpu)
+ 	put_task_struct(task);
+ 	return ctx;
+ 
+- errout:
++errout:
+ 	put_task_struct(task);
+ 	return ERR_PTR(err);
+ }
+@@ -3264,7 +3269,7 @@ again:
+ 	if (handle->wakeup != local_read(&buffer->wakeup))
+ 		perf_output_wakeup(handle);
+ 
+- out:
++out:
+ 	preempt_enable();
+ }
+ 
+@@ -4562,7 +4567,7 @@ static int swevent_hlist_get_cpu(struct perf_event *event, int cpu)
+ 		rcu_assign_pointer(cpuctx->swevent_hlist, hlist);
+ 	}
+ 	cpuctx->hlist_refcount++;
+- exit:
++exit:
+ 	mutex_unlock(&cpuctx->hlist_mutex);
+ 
+ 	return err;
+@@ -4587,7 +4592,7 @@ static int swevent_hlist_get(struct perf_event *event)
+ 	put_online_cpus();
+ 
+ 	return 0;
+- fail:
++fail:
+ 	for_each_possible_cpu(cpu) {
+ 		if (cpu == failed_cpu)
+ 			break;
