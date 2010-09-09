@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab0IIHs1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 03:48:27 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45873 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751465Ab0IIHsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 03:48:21 -0400
-Date: Thu, 9 Sep 2010 09:48:13 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Cliff Wickman <cpw@sgi.com>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: copy_oldmem_page using cached addressing
-Message-ID: <20100909074813.GA8355@elte.hu>
-References: <E1OtMLz-0001yp-Ia@eag09.americas.sgi.com>
- <m1eid4gi0g.fsf@fess.ebiederm.org>
+	id S1752802Ab0IIHw0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 03:52:26 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52128 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab0IIHwV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 03:52:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=wXCYqd6Yo2UKNrCG5Pd9YKwFr45HYxp9q41odcUQG0blhvJGF8YupNoYjT+rF3KS7n
+         H7Msuj+lyxNDLLsSMaQCku8vp/Wb0E1mZDXiymVwg+9PGeT4ornCORT1rQv2PlMmgSLR
+         VLV4fGhZ+sHUCk/v2mFkwxIBLUcGWZ8kmNdjs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1eid4gi0g.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
-	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
-	[score: 0.0954]
+In-Reply-To: <4C888FA7.9090402@canonical.com>
+References: <4C888FA7.9090402@canonical.com>
+Date: Thu, 9 Sep 2010 09:52:20 +0200
+Message-ID: <AANLkTikog39Co8SYiapnF8+n_Evng8UBz6kRSa=YnvF8@mail.gmail.com>
+Subject: Re: asus-laptop kill wifi when initital
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: acpi4asus-user@lists.sourceforge.net,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 9, 2010 at 9:41 AM, Ike Panhc <ike.pan@canonical.com> wrote:
+> Hi,
+>
+> I have a report[1] that user has to blacklist the asus-laptop otherwise wifi
+> can not work. I copied asus-laptop.c from 2.6.32 kernel and remove two
+> lines[2] that set WLED/BLED on. The modified driver works fine.
+>
+> User uses 2.6.32 based kernel and when 2.6.34, a module parameter
+> "wifi_status" is added[3] to let user choose what he want to do on WLED/BLED
+> when initial. So I guess there are some reports tells the parameter for
+> WLED/BLED maybe changed. Since the default action is still on because some
+> machine need to enable WLED/BLED when booting. Any idea for the future
+> change? For example telling user add an options on /etc/modprobe.d, or try
+> to have a list of machine that not to set WLED/BLED to 1 when booting?
 
-* Eric W. Biederman <ebiederm@xmission.com> wrote:
+You can help me fill the acpi4asus wiki [1]. If we manage to get a real
+list of laptop where we should not write in WLED/BLED, then we can
+try to implement a black list.
 
-> Cliff Wickman <cpw@sgi.com> writes:
-> 
-> > From: Cliff Wickman <cpw@sgi.com>
-> >
-> > The copy of /proc/vmcore to a user buffer proceeds much faster
-> > if the kernel addresses memory as cached.
-> >
-> > With this patch we have seen an increase in transfer rate from less than
-> > 15MB/s to 80-460MB/s, depending on size of the transfer.  This makes
-> > a big difference in time needed to save a system dump.
-> >
-> > (Does anyone know of a reason why copy_oldmem_page() would need
-> >  to use uncached addresses?)
-> >
-> > Diffed against 2.6.36-rc3
-> 
-> I believe this code simply predates being able to specify the
-> caching attributes at ioremap time.  Being cached in this case
-> actually looks more correct, as that is the default for RAM
-> and we are talking about RAM.
-> 
-> Ultimately either there is another cpu running wild with these pages
-> mapped with some random set of attributes, and we cannot get the
-> permissions right or we have captured all of the cpus and this is the
-> only mapping so it doesn't matter.
-> 
-> Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+WLED/BLED/WAPF never worked well, mainly because the behavior
+seems to be completly inconsistant between laptops. You may try to
+ask Asus about that, but they never answered to me :/. But again, the
+wiki could help us, we just need to find out how  HWRS, RSTS, SFUN
+and WAPF really work.
 
-Applied, thanks guys. Note, i also added a -stable tag, as kdump is 
-typically used with enterprise setups and we want this (low-risk, 
-high-impact) improvement to be propagated far back the -stable series.
+[1] http://dev.iksaif.net/projects/acpi4asus/wiki
 
-Thanks,
 
-	Ingo
+
+-- 
+Corentin Chary
+http://xf.iksaif.net
