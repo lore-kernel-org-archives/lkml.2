@@ -1,148 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab0IIR3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 13:29:17 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:44813 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753041Ab0IIR3O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 13:29:14 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>, James Bottomley <James.Bottomley@suse.de>,
-        bo yang <boyang1288@gmail.com>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Thu, 9 Sep 2010 11:28:45 -0600
-Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
- MegaRAID SAS driver
-Thread-Topic: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset
- to MegaRAID SAS driver
-Thread-Index: ActNJMv9FbPAvOJTSaaA3BWfoXrvtQBfvm8AAALt1mAAZTiY4A==
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3DC0D4B41@cosmail02.lsi.com>
-References: <AANLkTiktJycDkXu+FHQanTNe-djvvTe9V=9KfSkLcXZd@mail.gmail.com>
- <1283709850.15944.1277.camel@mulgrave.site>  
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1755237Ab0IIRaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 13:30:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41288 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752216Ab0IIRaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 13:30:19 -0400
+Subject: Re: 2.6.36-rc3: EIP is at scsi_init_io+...
+From: James Bottomley <James.Bottomley@suse.de>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C88D841.3070100@fusionio.com>
+References: <20100830184620.GA4818@core2.telecom.by>
+	 <AANLkTikyv10vkg1g+G3LW+nu=0omBpc40KehOUH=YXk2@mail.gmail.com>
+	 <1284036441.20480.2.camel@mulgrave.site>  <4C88D841.3070100@fusionio.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Sep 2010 12:30:09 -0500
+Message-ID: <1284053409.20480.62.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o89HTPBd021835
 
-James,
-
-Do you have any feedback for the patches?
-
-Thanks,
-
-Bo Yang
-
------Original Message-----
-From: Yang, Bo 
-Sent: Tuesday, September 07, 2010 1:12 PM
-To: Yang, Bo; 'James Bottomley'; 'bo yang'
-Cc: 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'; Daftardar, Jayant
-Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
-
-James,
-
-Those were corrected and submitted.  
-
-Thanks,
-
-Bo Yang
-
------Original Message-----
-From: Yang, Bo 
-Sent: Tuesday, September 07, 2010 11:54 AM
-To: 'James Bottomley'; bo yang
-Cc: linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Daftardar, Jayant
-Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
-
-Thanks James,
-
-The e-mail broken lines of the description.  I am changing the description to avoid re-submit all the patches(5 of them).
-
-Also 
-
->  megasas_complete_cmd(struct megasas_instance *instance, struct
-> megasas_cmd *cmd,
->  		     u8 alt_status);
-
-Not patch line(already in the src, but more than 80 chars).
-
-Regards,
-
-Bo Yang    
-
------Original Message-----
-From: James Bottomley [mailto:James.Bottomley@suse.de] 
-Sent: Sunday, September 05, 2010 2:04 PM
-To: bo yang
-Cc: Yang, Bo; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Daftardar, Jayant
-Subject: Re: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
-
-On Wed, 2010-08-11 at 16:45 -0400, bo yang wrote:
-> To add the Online Controller Reset  (OCR) support, driver need to do:
-> 		a). reset the controller chips -- Xscale and Gen2 which will change
-> the function calls and add the reset function
-> 		related to this two chips.
-> 		
-> 		b). during the reset, driver will store the pending cmds which not
-> returned by FW to driver's pending queue.  Driver
-> 		will re-issue those pending cmds again to FW after the OCR finished.
-> 		
-> 		c). In driver's timeout routine, driver will report to OS as reset.
-> Also driver's queue routine will block the
-> 		cmds until the OCR finished.
-> 		
-> 		d). in Driver's ISR routine, if driver get the FW state as state
-> change, FW in Failure status and FW support online controller
-> 		reset (OCR), driver will start to do the controller reset.
-> 		
-> 		e). In driver's IOCTL routine, the application cmds will wait for
-> the OCR to finish, then issue the cmds to FW.
+On Thu, 2010-09-09 at 14:51 +0200, Jens Axboe wrote:
+> On 2010-09-09 14:47, James Bottomley wrote:
+> > On Wed, 2010-09-08 at 17:12 -0700, Linus Torvalds wrote:
+> >> Hmm. No noise about this one.
+> >>
+> >> Jens, Fujita, James, any comments?
+> >>
+> >> On Mon, Aug 30, 2010 at 11:46 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+> >>> Not much of a calltrace, it scrolled away because of hardlockup detector.
+> >>> On the bright side, radeon KMS worked correctly and actually showed it.
+> >>>
+> >>> $ addr2line -e vmlinux ffffffff812d207b
+> >>> drivers/scsi/scsi_lib.c:1015
+> >>>
+> >>>  1012  err_exit:
+> >>>  1013          scsi_release_buffers(cmd);
+> >>>  1014          scsi_put_command(cmd);
+> >>>  1015  ===>    cmd->request->special = NULL; <===
+> >>>  1016          return error;
+> >>>  1017  }
+> >>>  1018  EXPORT_SYMBOL(scsi_init_io);
+> >>
+> >> I do have to say that it looks rather wrong that it accesses "cmd"
+> >> after it has done the "scsi_put_command(cmd)" on it.
+> >>
+> >> I also note that that was introduced pretty recently by commit
+> >> 610a63498f7 ("scsi: fix discard page leak"), merged during this merge
+> >> window. That does look suspicious to me.
+> > 
+> > It's a use after free:  The put actually frees the cmnd and then we use
+> > it to get to the request.  Most of the time nothing notices, but if you
+> > have poison on free enabled, we may see the problem.  The fix is just to
+> > reverse the put and the set.
 > 
-> Signed-off-by Bo Yang<bo.yang@lsi.com>
+> You are right, I misspoke in my original reply. It's clearing the
+> request field, not the command field (which would be bogus of course).
 
-This patch is full of line breaks which prevent application, like this
-one:
+Embarrassingly enough, Tejun spotted this a month ago, and I actually
+created a patch and then forgot to apply it.  I've just pushed it out to
+the rc-fixes branch:
 
-> diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas
-> new/Documentation/scsi/ChangeLog.megaraid_sas
-> --- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
-> 04:58:36.000000000 -0400
-> +++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
-> 04:56:30.000000000 -0400
-> @@ -1,3 +1,36 @@
-> +1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
-> +			(emaild-id:megaraidlinux@lsi.com)
-> +			Bo Yang
-[snip]
-
-and this one
-> diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
-> new/drivers/scsi/megaraid/megaraid_sas.c
-> --- old/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:55:41.000000000 -0400
-> +++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:56:30.000000000 -0400
-> @@ -107,6 +107,12 @@ static void
->  megasas_complete_cmd(struct megasas_instance *instance, struct
-> megasas_cmd *cmd,
->  		     u8 alt_status);
-
-Since not every long line is broken, this looks like some type of cut
-and paste error ... anyway, could you fix it up, please?
-
-Thanks,
+http://marc.info/?l=linux-scsi&m=128197119525504
 
 James
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
