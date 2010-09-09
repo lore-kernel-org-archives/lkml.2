@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933306Ab0IIWp2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:45:28 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57020 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933259Ab0IIWpB (ORCPT
+	id S933213Ab0IIWom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:44:42 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42850 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933186Ab0IIWoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:45:01 -0400
+	Thu, 9 Sep 2010 18:44:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=HIplWUPfaEjMQfjI/m421Rm7JmjSm8HYF5YawLoIZv+P/hjnuGciTLYuTeUhHqzpmS
-         0n0+R+n7nR4ET4inf7PMedHaxbwIcMm1Jm/V9VrC5vGUQWNbx0AeUkINxihm41QZvKF+
-         4TiYaknTBhf/EwjI30ziHg54oLAolBmbrKRZk=
+        b=b9tgSdEortYqflEHA572lNP0V783KzOy5kAF9fIaoZTMBieK+kkKIZMOmFn2YLfZfW
+         wBegIyanXm0OtajrcCbz0y5Ef0yBYHZ47nbSdRxtkJjo5cp7BMWWJOeI9Bbp9A+MflYx
+         FkGCGQ16IiIXMRW8FHJVYSF5ms43LicWuukhU=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 204/223]drivers/usb/serial/mct_u232.h Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:45:03 -0700
-Message-Id: <1284072309-8452-9-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 195/223]drivers/staging/go7007/go7007.txt Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:44:13 -0700
+Message-Id: <1284072253-8390-15-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1284072309-8452-1-git-send-email-justinmattock@gmail.com>
-References: <1284072309-8452-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1284072253-8390-1-git-send-email-justinmattock@gmail.com>
+References: <1284072253-8390-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,37 +33,30 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/usb/serial/mct_u232.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/staging/go7007/go7007.txt |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/serial/mct_u232.h b/drivers/usb/serial/mct_u232.h
-index 3a3f5e6..850a152 100644
---- a/drivers/usb/serial/mct_u232.h
-+++ b/drivers/usb/serial/mct_u232.h
-@@ -10,10 +10,10 @@
-  *
-  * This driver is for the device MCT USB-RS232 Converter (25 pin, Model No.
-  * U232-P25) from Magic Control Technology Corp. (there is also a 9 pin
-- * Model No. U232-P9). See http://www.mct.com.tw/p_u232.html for further
-+ * Model No. U232-P9). See http://www.mct.com.tw/ for further
-  * information. The properties of this device are listed at the end of this
-- * file. This device is available from various distributors. I know Hana,
-- * http://www.hana.de and D-Link, http://www.dlink.com/products/usb/dsbs25.
-+ * file. This device is available from various distributors.
-+ * D-Link, http://www.dlink.com/products/usb/dsbs25.
-  *
-  * All of the information about the device was acquired by using SniffUSB
-  * on Windows98. The technical details of the reverse engineering are
-@@ -457,8 +457,8 @@ static int mct_u232_calculate_baud_rate(struct usb_serial *serial,
-  * USB endpoint chip and a Philips P87C52UBAA microcontroller with
-  * embedded UART.  Exhaustive documentation for these is available at:
-  *
-+ *   http://www.nxp.com/ 
-  *   http://www.semiconductors.philips.com/pip/p87c52ubaa
-- *   http://www.semiconductors.philips.com/pip/pdiusbd12
-  *
-  * Thanks to Julian Highfield for the pointer to the Philips database.
-  *
+diff --git a/drivers/staging/go7007/go7007.txt b/drivers/staging/go7007/go7007.txt
+index 06a76da..c053a1d 100644
+--- a/drivers/staging/go7007/go7007.txt
++++ b/drivers/staging/go7007/go7007.txt
+@@ -414,11 +414,11 @@ in the TDA8290/TDA8275 tuner driver.
+ 
+ The following patches must be downloaded from Gerd Knorr's website and
+ applied in the order listed:
+-
+-	http://dl.bytesex.org/patches/2.6.11-2/i2c-tuner
+-	http://dl.bytesex.org/patches/2.6.11-2/i2c-tuner2
+-	http://dl.bytesex.org/patches/2.6.11-2/v4l2-api-mpeg
+-	http://dl.bytesex.org/patches/2.6.11-2/saa7134-update
++	
++	http://dl.bytesex.org/patches/`uname -r`/i2c-tuner
++	*i2c-tuner2
++	*v4l2-api-mpeg
++	*saa7134-update
+ 
+ The following patches are included with this SDK and can be applied in any
+ order:
 -- 
 1.7.2.1
 
