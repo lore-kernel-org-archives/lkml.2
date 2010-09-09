@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab0IIRaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 13:30:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41288 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752216Ab0IIRaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 13:30:19 -0400
-Subject: Re: 2.6.36-rc3: EIP is at scsi_init_io+...
-From: James Bottomley <James.Bottomley@suse.de>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C88D841.3070100@fusionio.com>
-References: <20100830184620.GA4818@core2.telecom.by>
-	 <AANLkTikyv10vkg1g+G3LW+nu=0omBpc40KehOUH=YXk2@mail.gmail.com>
-	 <1284036441.20480.2.camel@mulgrave.site>  <4C88D841.3070100@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Sep 2010 12:30:09 -0500
-Message-ID: <1284053409.20480.62.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1753963Ab0IIRlb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 13:41:31 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:58805 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab0IIRl3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 13:41:29 -0400
+Message-Id: <201009091741.o89HfPfM011522@d03av02.boulder.ibm.com>
+Subject: [PATCH 1/1] block: Range check cpu in blk_cpu_to_group
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
+From: Brian King <brking@linux.vnet.ibm.com>
+Date: Thu, 09 Sep 2010 12:41:31 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-09 at 14:51 +0200, Jens Axboe wrote:
-> On 2010-09-09 14:47, James Bottomley wrote:
-> > On Wed, 2010-09-08 at 17:12 -0700, Linus Torvalds wrote:
-> >> Hmm. No noise about this one.
-> >>
-> >> Jens, Fujita, James, any comments?
-> >>
-> >> On Mon, Aug 30, 2010 at 11:46 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> >>> Not much of a calltrace, it scrolled away because of hardlockup detector.
-> >>> On the bright side, radeon KMS worked correctly and actually showed it.
-> >>>
-> >>> $ addr2line -e vmlinux ffffffff812d207b
-> >>> drivers/scsi/scsi_lib.c:1015
-> >>>
-> >>>  1012  err_exit:
-> >>>  1013          scsi_release_buffers(cmd);
-> >>>  1014          scsi_put_command(cmd);
-> >>>  1015  ===>    cmd->request->special = NULL; <===
-> >>>  1016          return error;
-> >>>  1017  }
-> >>>  1018  EXPORT_SYMBOL(scsi_init_io);
-> >>
-> >> I do have to say that it looks rather wrong that it accesses "cmd"
-> >> after it has done the "scsi_put_command(cmd)" on it.
-> >>
-> >> I also note that that was introduced pretty recently by commit
-> >> 610a63498f7 ("scsi: fix discard page leak"), merged during this merge
-> >> window. That does look suspicious to me.
-> > 
-> > It's a use after free:  The put actually frees the cmnd and then we use
-> > it to get to the request.  Most of the time nothing notices, but if you
-> > have poison on free enabled, we may see the problem.  The fix is just to
-> > reverse the put and the set.
-> 
-> You are right, I misspoke in my original reply. It's clearing the
-> request field, not the command field (which would be bogus of course).
 
-Embarrassingly enough, Tejun spotted this a month ago, and I actually
-created a patch and then forgot to apply it.  I've just pushed it out to
-the rc-fixes branch:
+While testing CPU DLPAR, the following problem was discovered.
+We were DLPAR removing the first CPU, which in this case was
+logical CPUs 0-3. CPUs 0-2 were already marked offline and
+we were in the process of offlining CPU 3. After marking
+the CPU inactive and offline in cpu_disable, but before the
+cpu was completely idle (cpu_die), we ended up in __make_request
+on CPU 3. There we looked at the topology map to see which CPU
+to complete the I/O on and found no CPUs in the cpu_sibling_map.
+This resulted in the block layer setting the completion cpu
+to be NR_CPUS, which then caused an oops when we tried to
+complete the I/O.
 
-http://marc.info/?l=linux-scsi&m=128197119525504
+Fix this by sanity checking the value we return from blk_cpu_to_group
+to be a valid cpu value.
 
-James
+Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+---
 
+ block/blk.h |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-
+diff -puN block/blk.h~blk_cpu_to_group_range_fix block/blk.h
+--- linux-2.6/block/blk.h~blk_cpu_to_group_range_fix	2010-08-31 09:12:18.000000000 -0500
++++ linux-2.6-bjking1/block/blk.h	2010-08-31 16:48:17.000000000 -0500
+@@ -142,14 +142,19 @@ static inline int queue_congestion_off_t
+ 
+ static inline int blk_cpu_to_group(int cpu)
+ {
++	int group = NR_CPUS;
+ #ifdef CONFIG_SCHED_MC
+ 	const struct cpumask *mask = cpu_coregroup_mask(cpu);
+-	return cpumask_first(mask);
++	group = cpumask_first(mask);
+ #elif defined(CONFIG_SCHED_SMT)
+-	return cpumask_first(topology_thread_cpumask(cpu));
++	group = cpumask_first(topology_thread_cpumask(cpu));
+ #else
+ 	return cpu;
+ #endif
++
++	if (likely(group < NR_CPUS))
++		return group;
++	return cpu;
+ }
+ 
+ /*
+_
