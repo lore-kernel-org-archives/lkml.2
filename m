@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab0IIXnZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 19:43:25 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40259 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab0IIXnY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 19:43:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ddm6nyhGZeaOVPtPr8InhZgaxhipNGTHBx8qxEy/lrM66yNfLKHuyUtT7ozblrzngt
-         T2bJ74/9RkMIaGKQ+pSbHddIw+CjmJuhf1IxpjQoiZ3vumob39rPoZ8tSpMxTTuU0wD/
-         iWLcLhbajFbV18aA0JXs/Sf1TgFBQek6xyjGs=
+	id S1754525Ab0IIXmg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 19:42:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753284Ab0IIXmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 19:42:35 -0400
+Date: Fri, 10 Sep 2010 01:40:08 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Izik Eidus <ieidus@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: Transparent Hugepage Support #30
+Message-ID: <20100909234008.GS8925@random.random>
+References: <20100901190859.GA20316@random.random>
+ <20100909104630.GO4443@balbir.in.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <4C895028.3010609@zytor.com>
-References: <1283563039-3466-1-git-send-email-brgerst@gmail.com>
-	<1283563039-3466-8-git-send-email-brgerst@gmail.com>
-	<4C895028.3010609@zytor.com>
-Date: Thu, 9 Sep 2010 19:43:22 -0400
-Message-ID: <AANLkTim17SC==8Tm6=vMwRa6_ddpo2VcVjQqJAen7bHW@mail.gmail.com>
-Subject: Re: [PATCH 07/12] x86-64: Simplify constraints for fxsave/fxtstor
-From: Brian Gerst <brgerst@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, penberg@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100909104630.GO4443@balbir.in.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 9, 2010 at 5:22 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 09/03/2010 06:17 PM, Brian Gerst wrote:
->> Use the "R" constraint (legacy register) instead of listing all the
->> possible registers.  Clean up the comments as well.
->>
->> Signed-off-by: Brian Gerst <brgerst@gmail.com>
->
-> Hi Brian,
->
-> Have you tested this on *old* versions of gcc?  Since the whole point of
-> that butt-ugly code sequence is to support now-historic versions of
-> binutils, we need to make sure that "R" was supposed on the
-> corresponding gcc versions...
+Hello,
 
-It's documented as far back as the GCC 3.1.1 manual.  Whether it
-actually works or not on older compilers I have no way of testing.
+On Thu, Sep 09, 2010 at 04:16:30PM +0530, Balbir Singh wrote:
+> * Andrea Arcangeli <aarcange@redhat.com> [2010-09-01 21:08:59]:
+> > btw, memcg developers could already support THP inside memcg even if
+> > THP is not included yet without any sort of problem, so it's also
+> 
+> Could you elaborate by what you mean here?
 
---
-Brian Gerst
+Ok, what I mean is that you could already stop assuming the "page"
+passed as parameter to memcg is PAGE_SIZE in size. It would still work
+fine. The check should later be done with PageTransCompound as that
+will be optimized away at compile time when
+CONFIG_TRANSPARENT_HUGEPAGE=n. But in the meantime PageCompund shall
+work fine.
+
+One nasty detail to pay attention to later (which isn't possible to
+implement until compound_lock is defined), is that at times we may
+also need to take the compound_lock to avoid the size of the page to
+change from under us (it should only be needed if PageTransCompound
+returns true so it won't affect the regular paths and it won't be
+built if THP is off at compile time). The collapsing takes the
+mmap_sem write mode which normally won't risk to run in parallel,
+furthermore the collapsing isn't done in place so it's unlikely to
+give issues. So only the transition from transcompound to regular
+page, is likely to require special care.
+
+> We try not to change too drastically, but several of the current
+> changes are fixes, we are currently contemplating some more changes to
+> support the I/O control. Some of the recent changes have been driven
+> by tracing. We will pay closer attention to THP changes, thanks for
+> bring your concern to our notice.
+
+Thanks a lot. I can already start looking more closely into the memcg
+of current upstream myself, if this is a good time and there are no
+more big changes planned or already queued in some git tree waiting to
+be pulled.
