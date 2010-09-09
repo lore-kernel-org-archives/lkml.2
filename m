@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab0IIRG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 13:06:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38053 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab0IIRG6 (ORCPT
+	id S1755334Ab0IIRHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 13:07:07 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36348 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab0IIRHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 13:06:58 -0400
+	Thu, 9 Sep 2010 13:07:02 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/5] tracing/kprobe: Fix a memory leak in error case
-Date: Thu,  9 Sep 2010 14:06:41 -0300
-Message-Id: <1284052005-25658-2-git-send-email-acme@infradead.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 3/5] perf probe: Fix handling of arguments names
+Date: Thu,  9 Sep 2010 14:06:43 -0300
+Message-Id: <1284052005-25658-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1284052005-25658-1-git-send-email-acme@infradead.org>
 References: <1284052005-25658-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,47 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Fix a memory leak which happens when a field name conflicts with others. In
-error case, free_trace_probe() will free all arguments until nr_args, so this
-increments nr_args the begining of the loop instead of the end.
+Don't make argument names from raw parameters (means the parameters are written
+in kprobe-tracer syntax), because the argument syntax may include special
+characters.  Just leave it, then kprobe-tracer gives a new name.
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-LKML-Reference: <20100827113846.22882.12670.stgit@ltc236.sdl.hitachi.co.jp>
+LKML-Reference: <20100827113859.22882.75598.stgit@ltc236.sdl.hitachi.co.jp>
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- kernel/trace/trace_kprobe.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/util/probe-finder.c |   32 +++++++++++++++++++-------------
+ 1 files changed, 19 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 8b27c98..0116c03 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -992,6 +992,9 @@ static int create_trace_probe(int argc, char **argv)
- 	/* parse arguments */
- 	ret = 0;
- 	for (i = 0; i < argc && i < MAX_TRACE_ARGS; i++) {
-+		/* Increment count for freeing args in error case */
-+		tp->nr_args++;
-+
- 		/* Parse argument name */
- 		arg = strchr(argv[i], '=');
- 		if (arg)
-@@ -1021,11 +1024,8 @@ static int create_trace_probe(int argc, char **argv)
- 		ret = parse_probe_arg(arg, tp, &tp->args[i], is_return);
- 		if (ret) {
- 			pr_info("Parse error at argument%d. (%d)\n", i, ret);
--			kfree(tp->args[i].name);
- 			goto error;
- 		}
--
--		tp->nr_args++;
- 	}
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 9b0e1b1..32b81f7 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -686,6 +686,25 @@ static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 	char buf[32], *ptr;
+ 	int ret, nscopes;
  
- 	ret = register_trace_probe(tp);
++	if (!is_c_varname(pf->pvar->var)) {
++		/* Copy raw parameters */
++		pf->tvar->value = strdup(pf->pvar->var);
++		if (pf->tvar->value == NULL)
++			return -ENOMEM;
++		if (pf->pvar->type) {
++			pf->tvar->type = strdup(pf->pvar->type);
++			if (pf->tvar->type == NULL)
++				return -ENOMEM;
++		}
++		if (pf->pvar->name) {
++			pf->tvar->name = strdup(pf->pvar->name);
++			if (pf->tvar->name == NULL)
++				return -ENOMEM;
++		} else
++			pf->tvar->name = NULL;
++		return 0;
++	}
++
+ 	if (pf->pvar->name)
+ 		pf->tvar->name = strdup(pf->pvar->name);
+ 	else {
+@@ -700,19 +719,6 @@ static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 	if (pf->tvar->name == NULL)
+ 		return -ENOMEM;
+ 
+-	if (!is_c_varname(pf->pvar->var)) {
+-		/* Copy raw parameters */
+-		pf->tvar->value = strdup(pf->pvar->var);
+-		if (pf->tvar->value == NULL)
+-			return -ENOMEM;
+-		if (pf->pvar->type) {
+-			pf->tvar->type = strdup(pf->pvar->type);
+-			if (pf->tvar->type == NULL)
+-				return -ENOMEM;
+-		}
+-		return 0;
+-	}
+-
+ 	pr_debug("Searching '%s' variable in context.\n",
+ 		 pf->pvar->var);
+ 	/* Search child die for local variables and parameters. */
 -- 
 1.6.2.5
 
