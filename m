@@ -1,116 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab0IIC42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 22:56:28 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:43277 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab0IIC4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 22:56:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=skR5UqlfP7iaTh/FRIv9x2jgU5Wnbf7PgFb6kmaRABS8Ndf/gdc1no5XNo/1VfI1wZ
-         mI0S25F2oLQ/f/mlnfNmnjAg/QPFEhZt71FIROJH0Hwg8jcH1yn8S1SDGimkFM9k3V77
-         Bqq3NR9YsYfl1OJK32EzU86fZJgXXEDAw7ttQ=
-Date: Wed, 8 Sep 2010 19:56:19 -0700
-From: mark gross <markgross@thegnar.org>
+	id S1752452Ab0IIC6w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 22:58:52 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44663 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751873Ab0IIC6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 22:58:45 -0400
+Date: Thu, 9 Sep 2010 12:58:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: markgross@thegnar.org, Dan Carpenter <error27@gmail.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] pm_qos_params: cleanup: terminate a string
-Message-ID: <20100909025619.GA5049@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <20100903124105.GJ5437@bicker>
- <20100907062227.GB25651@gvim.org>
- <20100907133805.GA20050@gvim.org>
- <201009090014.00158.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009090014.00158.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bojan Smojver <bojan@rexursive.com>
+Subject: linux-next: build failure after merge of the final tree (suspend
+ tree related)
+Message-Id: <20100909125838.6c82edc4.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__9_Sep_2010_12_58_38_+1000_+od2_IVNiLLHl4nL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 12:13:59AM +0200, Rafael J. Wysocki wrote:
-> On Tuesday, September 07, 2010, mark gross wrote:
-> > On Mon, Sep 06, 2010 at 11:22:27PM -0700, mark gross wrote:
-> > > On Fri, Sep 03, 2010 at 02:41:06PM +0200, Dan Carpenter wrote:
-> ...
-> > 
-> > updated patch 
-> > 
-> > Signed-off-by: mark gross <markgross@thegnar.org>
-> > 
-> > --mgross 
-> > 
-> > Subject: [PATCH] correct some pr_debug misuse and add a stronger parrameter check to
-> >  pm_qos_write for the ascii hex value case.  Thanks to Dan Carpenter for
-> >  pointing out the problem!
-> > 
-> > ---
-> >  kernel/pm_qos_params.c |    6 ++++--
-> >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> > index f42d3f7..aae58d2 100644
-> > --- a/kernel/pm_qos_params.c
-> > +++ b/kernel/pm_qos_params.c
-> > @@ -155,7 +155,7 @@ static void update_target(int pm_qos_class)
-> >  		call_notifier = 1;
-> >  		atomic_set(&pm_qos_array[pm_qos_class]->target_value,
-> >  				extreme_value);
-> > -		pr_debug(KERN_ERR "new target for qos %d is %d\n", pm_qos_class,
-> > +		pr_debug("new target for qos %d is %d\n", pm_qos_class,
-> >  			atomic_read(&pm_qos_array[pm_qos_class]->target_value));
-> >  	}
-> >  	spin_unlock_irqrestore(&pm_qos_lock, flags);
-> 
-> The above doesn't apply to the Linus' tree any more.  Care to fix?
-> 
-> Rafael
+--Signature=_Thu__9_Sep_2010_12_58_38_+1000_+od2_IVNiLLHl4nL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-no problem.  (I screwed up on my fetch and forgot to merge the linus
-remote....) This bit doesn't apply post 2.6.35.
---mgross
+Hi Rafael,
 
-Signed-off-by: mark gross <markgross@thegnar.org)
+After merging the final tree, today's linux-next build (powerpc allyesconfi=
+g)
+failed like this:
 
+kernel/power/swap.c: In function 'save_image_lzo':
+kernel/power/swap.c:447: error: implicit declaration of function 'vmalloc'
+kernel/power/swap.c:447: warning: assignment makes pointer from integer wit=
+hout a cast
+kernel/power/swap.c:454: warning: assignment makes pointer from integer wit=
+hout a cast
+kernel/power/swap.c:457: error: implicit declaration of function 'vfree'
+kernel/power/swap.c:462: warning: assignment makes pointer from integer wit=
+hout a cast
+kernel/power/swap.c: In function 'load_image_lzo':
+kernel/power/swap.c:767: warning: assignment makes pointer from integer wit=
+hout a cast
+kernel/power/swap.c:774: warning: assignment makes pointer from integer wit=
+hout a cast
 
->From 64753f68e2baaef21783192566469abc54aca90d Mon Sep 17 00:00:00 2001
-From: mgross <mgross@mgross-laptop.(none)>
-Date: Wed, 8 Sep 2010 19:52:39 -0700
-Subject: [PATCH] make it harder to misuse the pm_qos user mode api.
+Caused by commit 2b2609c19ff19361360552786bd252ef40dfe5ce ("PM /
+Hibernate: Compress hibernation image with LZO").
 
----
- kernel/pm_qos_params.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+See Rule 1 in Documentation/SubmitChecklist.  There is a missing include
+of linux/vmalloc.h.
 
-diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-index b7e4c36..645e541 100644
---- a/kernel/pm_qos_params.c
-+++ b/kernel/pm_qos_params.c
-@@ -389,10 +389,12 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
- 	} else if (count == 11) { /* len('0x12345678/0') */
- 		if (copy_from_user(ascii_value, buf, 11))
- 			return -EFAULT;
-+		if (strlen(ascii_value) != 10)
-+			return -EINVAL;
- 		x = sscanf(ascii_value, "%x", &value);
- 		if (x != 1)
- 			return -EINVAL;
--		pr_debug(KERN_ERR "%s, %d, 0x%x\n", ascii_value, x, value);
-+		pr_debug("%s, %d, 0x%x\n", ascii_value, x, value);
- 	} else
- 		return -EINVAL;
- 
--- 
-1.7.0.4
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Thu__9_Sep_2010_12_58_38_+1000_+od2_IVNiLLHl4nL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMiE1eAAoJEDMEi1NhKgbsEOsH/iU1jjKH94H4ZWGXm+1Qc1Wj
+/E1WvTQpUmZibauZC2riCkS9y9PykOEYsZu4rzHkE8vnZYS5XJzDlBRDw4rV4icp
+BeVNQnYofoYLovvdVoMqocplU7rop2VzNwUJfjVw9bJIRePHk+Hqu7ful4u4AIuG
+BH1m8Dh7htVrJ1xmUUxigAqzZ2M3CReT3MCfShGO1Hs1cmHaO3u2DxJg0PZXWZ/I
+qcOu53R0kV0IRgLvwOeKs7c16sFPaXcocjHTLUE7jIoNdLQ9fs2sfFLnNmGsO6rk
+IPmokcRPJ16X4f7Qg4+5PrjlAvXcIk2mDdxoXb8z3OAtx4Ap1Mcm2GXN7sXgXjg=
+=Cww5
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__9_Sep_2010_12_58_38_+1000_+od2_IVNiLLHl4nL--
