@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab0IIRms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 13:42:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35185 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab0IIRmo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 13:42:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=P8lEs3NzqP1Mi/vAOR/dmPK3uCrMDZw+U8pApjx8JUkXptN57p0cEQZ7D9AFiYesbS
-         nb+gBwTjyl6/SVET1ZbmMsftBoztMP6O8NDbUJVLFefW3KHzkGpU2F4beAbRdb1R3Vll
-         R16kzCaRlulsTfLDow8nYHT12wkxe8Z0hJRDE=
+	id S1754869Ab0IIRz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 13:55:59 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:56658 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752831Ab0IIRz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 13:55:57 -0400
+Date: Thu, 9 Sep 2010 10:55:37 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>
+Subject: Re: [lm-sensors] [PATCH] lm75: some optimisations
+Message-ID: <20100909175537.GA16681@ericsson.com>
+References: <1284052336-25864-1-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20100909144106.GC4155@ghostprotocols.net>
-References: <20100909132057.GA5259@nowhere>
-	<20100909144106.GC4155@ghostprotocols.net>
-Date: Thu, 9 Sep 2010 19:42:44 +0200
-Message-ID: <AANLkTintNLXNYaZ0UjjUPkAEyq6Rf9psM80+gn8Jk2mK@mail.gmail.com>
-Subject: Re: perf events over (net) console?
-From: Harald Gustafsson <hgu1972@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        Song Yuan <song.yuan@ericsson.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1284052336-25864-1-git-send-email-shubhrajyoti@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/9 Arnaldo Carvalho de Melo <acme@ghostprotocols.net>:
-> Isn't this what Tom Zanussi's live mode, that we have already special
-> casing 'perf record -' does?
+General comments:
 
-> Harald, can you please take a look at the comment for these commits:
->
-> commit 454c407ec17a0c63e4023ac0877d687945a7df4a
-> Author: Tom Zanussi <tzanussi@gmail.com>
-> Date:   Sat May 1 01:41:20 2010 -0500
->
->    perf: add perf-inject builtin
->
-> commit 529870e37473a9fc609078f03cc5b4148cf06a87
-> Author: Tom Zanussi <tzanussi@gmail.com>
-> Date:   Thu Apr 1 23:59:16 2010 -0500
->
->    perf record: Introduce special handling for pipe output
->
-> commit 8dc58101f2c838355d44402aa77646649d10dbec
-> Author: Tom Zanussi <tzanussi@gmail.com>
-> Date:   Thu Apr 1 23:59:15 2010 -0500
->
->    perf: Add pipe-specific header read/write and event processing code
->
-> Using live mode you can stream to a perf.data for later analisys or do
-> it live, piping it to trace scripts, etc.
+- Please select a more descriptive headline, such as
+	hwmon: lm75: Add __devinit and __devexit section initializers
 
-I took a quick look and it seems promising, thanks for the info, I'll
-do some tests tomorrow and get back with some results.
+- It is useful to provide the patch version to reduce confusion and enable
+  version tracking.
+  Example:
+	[PATCH v3] hwmon: lm75: Add __devinit and __devexit section initializers
 
-/Harald
+- Please cc linux-kernel@vger.kernel.org and Jean Delvare <khali@linux-fr.org>.
 
-> Doing it using splice, talking directly to an in kernel mini-server, etc
-> are all optimizations that we should think about, but if you can try
-> using the live mode and see if it is ok, that would be good.
->
-> A mini binary with just record can come in handy if you like and should
-> be rather easy to build, please let me know if you think it is a good
-> idea and if you need help, lemme know.
->
-> - Arnaldo
->
+On Thu, Sep 09, 2010 at 01:12:16PM -0400, Shubhrajyoti D wrote:
+> - updating with Guenter's comments
+> 
+This and other patch version related comments should be below the --- line.
+Otherwise, it will end up in the commit log, which isn't really useful.
+
+> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+
+Assuming you make above changes and resubmit, feel free to add
+	Reviewed-by: Guenter Roeck <guenter.roeck@ericsson.com>
+
+Guenter
+
+> ---
+>  drivers/hwmon/lm75.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/hwmon/lm75.c b/drivers/hwmon/lm75.c
+> index ab5b87a..028f961 100644
+> --- a/drivers/hwmon/lm75.c
+> +++ b/drivers/hwmon/lm75.c
+> @@ -134,7 +134,7 @@ static const struct attribute_group lm75_group = {
+>  
+>  /* device probe and removal */
+>  
+> -static int
+> +static int __devinit
+>  lm75_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>  {
+>  	struct lm75_data *data;
+> @@ -196,7 +196,7 @@ exit_free:
+>  	return status;
+>  }
+>  
+> -static int lm75_remove(struct i2c_client *client)
+> +static int __devexit lm75_remove(struct i2c_client *client)
+>  {
+>  	struct lm75_data *data = i2c_get_clientdata(client);
+>  
+> @@ -325,7 +325,7 @@ static struct i2c_driver lm75_driver = {
+>  		.pm	= LM75_DEV_PM_OPS,
+>  	},
+>  	.probe		= lm75_probe,
+> -	.remove		= lm75_remove,
+> +	.remove		=  __devexit_p(lm75_remove),
+>  	.id_table	= lm75_ids,
+>  	.detect		= lm75_detect,
+>  	.address_list	= normal_i2c,
+> -- 
+> 1.7.0.4
+> 
+> 
+> _______________________________________________
+> lm-sensors mailing list
+> lm-sensors@lm-sensors.org
+> http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
