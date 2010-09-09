@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab0IIJqY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 05:46:24 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64857 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab0IIJqV (ORCPT
+	id S1754165Ab0IIJyF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 05:54:05 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:56820 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab0IIJyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 05:46:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=qaFj9oIMjTrjxZRsoCbY13rDrmzqkwqZBWtSNupj36RQfePwZXJfV4xi9DUmW2XVKm
-         HsOxpDmxeBlsB1/AGrnR7SwaKI/bdpl8S24pBMhYF4feGiwMnFCQv8Mej7idnFnK1uf/
-         KNc2G2oupqTHuc//h+Jgpl2rl8b6cV/Hd4l3Q=
-Subject: [PATCH] ASoC: ad1980 - set reg_cache_default to ad1980_reg
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Roy Huang <roy.huang@analog.com>, Cliff Cai <cliff.cai@analog.com>
-Content-Type: text/plain
-Date: Thu, 09 Sep 2010 17:50:56 +0800
-Message-Id: <1284025856.14894.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Sep 2010 05:54:04 -0400
+Date: Thu, 9 Sep 2010 11:53:59 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] MIPS: Allow UserLocal on MIPS_R1 processors
+Message-ID: <20100909095359.GA27815@linux-mips.org>
+References: <064bb0722da5d8c271c2bd9fe0a521cc@localhost>
+ <d57a8d9cc346a9235a93e528beac4c40@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <d57a8d9cc346a9235a93e528beac4c40@localhost>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/ad1980.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Wed, Sep 08, 2010 at 04:02:14PM -0700, Kevin Cernekee wrote:
 
-diff --git a/sound/soc/codecs/ad1980.c b/sound/soc/codecs/ad1980.c
-index 2b9331a..d36bd1c 100644
---- a/sound/soc/codecs/ad1980.c
-+++ b/sound/soc/codecs/ad1980.c
-@@ -247,6 +247,7 @@ static struct snd_soc_codec_driver soc_codec_dev_ad1980 = {
- 	.remove = 	ad1980_soc_remove,
- 	.reg_cache_size = ARRAY_SIZE(ad1980_reg),
- 	.reg_word_size = sizeof(u16),
-+	.reg_cache_default = ad1980_reg,
- 	.reg_cache_step = 2,
- 	.write = ac97_write,
- 	.read = ac97_read,
--- 
-1.7.2
+> Some MIPS32R1 processors implement UserLocal (RDHWR $29) to accelerate
+> programs that make extensive use of thread-local storage.  Therefore,
+> setting up the HWRENA register should not depend on cpu_has_mips_r2.
 
+Interesting - which R1 processor has RDHWR?  When UserLocal was conceived
+R2 was already long released.
 
-
+  Ralf
