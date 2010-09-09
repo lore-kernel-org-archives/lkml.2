@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab0IIJWW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 05:22:22 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:35195 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753890Ab0IIJWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 05:22:17 -0400
-Date: Thu, 9 Sep 2010 10:22:03 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 05/10] vmscan: Synchrounous lumpy reclaim use
-	lock_page() instead trylock_page()
-Message-ID: <20100909092203.GL29263@csn.ul.ie>
-References: <20100909120448.58acc9a6.kamezawa.hiroyu@jp.fujitsu.com> <20100909121547.2e69735a.kamezawa.hiroyu@jp.fujitsu.com> <20100909131211.C93C.A69D9226@jp.fujitsu.com>
+	id S1754182Ab0IIJ3V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 05:29:21 -0400
+Received: from mtagate7.de.ibm.com ([195.212.17.167]:32897 "EHLO
+	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987Ab0IIJ3R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 05:29:17 -0400
+Date: Thu, 9 Sep 2010 11:29:06 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: Anil kumar <anils_r@yahoo.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: scsi_cmnd data_buffer checksum
+Message-ID: <20100909092906.GA21760@schmichrtp.mainz.de.ibm.com>
+References: <20100909085142.GA15327@schmichrtp.mainz.de.ibm.com>
+ <215508.92384.qm@web32402.mail.mud.yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100909131211.C93C.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <215508.92384.qm@web32402.mail.mud.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 01:13:22PM +0900, KOSAKI Motohiro wrote:
-> > On Thu, 9 Sep 2010 12:04:48 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > 
-> > > On Mon,  6 Sep 2010 11:47:28 +0100
-> > > Mel Gorman <mel@csn.ul.ie> wrote:
-> > > 
-> > > > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > > > 
-> > > > With synchrounous lumpy reclaim, there is no reason to give up to reclaim
-> > > > pages even if page is locked. This patch uses lock_page() instead of
-> > > > trylock_page() in this case.
-> > > > 
-> > > > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > > 
-> > > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > > 
-> > Ah......but can't this change cause dead lock ??
+On Thu, Sep 09, 2010 at 02:09:28AM -0700, Anil kumar wrote:
+> I quickly tried copying the data buffer to local buffers as follows:
 > 
-> Yes, this patch is purely crappy. please drop. I guess I was poisoned
-> by poisonous mushroom of Mario Bros.
+> In Queuecommand:
 > 
+> cmd->local_write_buf = pci_alloc_consistent(...);
+> cmd->write_buf = (u8 *)(kmap_atomic(sg->page, KM_IRQ0) + sg->offset);
+> 
+> memcpy(cmd->local_write_buf, cmd->write_buf, scsibufflen(scsi_cmnd));
+> 
+> Now I calculate checksums of cmd->write_buf and my local cmd->local_write_buf
+> 
+> and the checksum fails. Am I doing something wrong here?
 
-Lets be clear on what the exact dead lock conditions are. The ones I had
-thought about when I felt this patch was ok were;
+Are you only copying one element of the sg list? Are you sure that
+there is only one element? If not, you have to use something like
+scsi_kmap_atomic_sg and create a copy of each element (maybe use
+scsi_for_each_sg).
 
-o We are not holding the LRU lock (or any lock, we just called cond_resched())
-o We do not have another page locked because we cannot lock multiple pages
-o Kswapd will never be in LUMPY_MODE_SYNC so it is not getting blocked
-o lock_page() itself is not allocating anything that we could recurse on
+Or maybe there is another problem... hard to guess from the distance.
 
-One potential dead lock would be if the direct reclaimer held a page
-lock and ended up here but is that situation even allowed? I did not
-think of an obvious example of when this would happen. Similarly,
-deadlock situations with mmap_sem shouldn't happen unless multiple page
-locks are being taken.
-
-(prepares to feel foolish)
-
-What did I miss?
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Christof
