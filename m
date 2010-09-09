@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab0IIU6r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 16:58:47 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:61280 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab0IIU6p (ORCPT
+	id S1755602Ab0IIVBF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 17:01:05 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:6285 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab0IIVBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 16:58:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=pk4rarUU5YJ9hKuXT2l8UcE/mBCyRx05k2DDkSTpDxovFWxzRpaZ8yEvInMIq+dfbL
-         W/LOauXeZfP2CyJqfAfnBBSFhBbeKqQbDgx8z2BuTfruVPghOykhyDzqX6c7QszKfTRb
-         5QGP1G2fNT7uBsK7wB7JeezVS/vgZ3eM1WT0U=
+	Thu, 9 Sep 2010 17:01:03 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=EobZmVHQ5bIxhjgV7AmQMHZghvTBwY5whHpCoubbHYIphQEoXBoJYP0JdRqNgGgPW
+	m4EWsT5JOC3vQEkTGhQ+w==
+Date: Thu, 9 Sep 2010 14:00:54 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Minchan Kim <minchan.kim@gmail.com>, Greg KH <greg@kroah.com>,
+        Linux Driver Project <devel@driverdev.osuosl.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [patch -rc] oom: always return a badness score of non-zero for
+ eligible tasks
+In-Reply-To: <1284061683.7586.8100.camel@nimitz>
+Message-ID: <alpine.DEB.2.00.1009091351090.19800@chino.kir.corp.google.com>
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org> <1284053081.7586.7910.camel@nimitz> <alpine.DEB.2.00.1009091152090.5556@chino.kir.corp.google.com> <1284061683.7586.8100.camel@nimitz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <000a01cb4b2b$f03c6d40$66f8800a@maildom.okisemi.com>
-References: <000a01cb4b2b$f03c6d40$66f8800a@maildom.okisemi.com>
-Date: Thu, 9 Sep 2010 22:58:38 +0200
-Message-ID: <AANLkTimTumguZ7Tm1-zGb=D+0gghsA-b-RyhRDTQieFR@mail.gmail.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, meego-dev@meego.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
-        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        arjan@linux.intel.com, gregkh@suse.de,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/3 Masayuki Ohtake <masa-korg@dsn.okisemi.com>:
+On Thu, 9 Sep 2010, Dave Hansen wrote:
 
-> Each instance of our SPI device has the same vendor ID and device ID.
-> Thus, I think it is impossible to be called probe() for each instance.
+> > I'm curious why there are no killable processes on the system; it seems 
+> > like the triggering task here, cat, would at least be killable itself.  
+> > Could you post the tasklist dump that preceeds this (or, if you've 
+> > disabled it try echo 1 > /proc/sys/vm/oom_dump_tasks first)?
+> 
+> That was one odd part here.  I didn't disable the tasklist dump, and
+> there was none in the dump.
+> 
 
-Looking at you latest patch it appears you could :-)
-That solves the problem pretty nicely.
-If you incluse ChangeLogs it's easier to follow the development,
-thanks.
+Hmm, could you very that /proc/sys/vm/oom_dump_tasks is set?  Perhaps it's 
+getting cleared by something else before you use zram.  The sysctl should 
+default to on as of 2.6.36-rc1.
 
-Linus Walleij
+> > It's possible that if you have enough swap that none of the eligible tasks 
+> > actually have non-zero badness scores either because they are being run as 
+> > root or because the amount of RAM or swap is sufficiently high such that 
+> > (task's rss + swap) / (total rss + swap) is never non-zero.  And, since 
+> > root tasks have a 3% bonus, it's possible these are all root tasks and no 
+> > single task uses more than 3% of rss and swap.
+> 
+> It's a 64GB machine with ~30GB of swap and very little RSS.  Your
+> hypothesis seems correct.  Just grepping through /proc/[0-9]*/oom_score
+> shows nothing other than 0's.
+> 
+
+Presumably you're not using a large amount of swap, either, or that would 
+be accounted for in oom_score.
+
+> Trying this again, I just hung the system instead of OOM'ing straight
+> away like last time.
+> 
+
+with the patch, you should still be calling the oom killer and instead of 
+panicking it will go on a serial killing spree because everything that it 
+wasn't judging as a candidate before (oom_score of 0) now is if it's truly 
+killable (oom_score of 1).  The patch is definitely needed for correctness 
+since an oom_score of 0 implies the task is unkillable.
+
+We're apparently hanging in the exit path for the oom killed task or 
+something is constantly respawning threads that repeatedly get killed.  It 
+appears as though nothing is actually a worthwhile target for the oom 
+killer, however, and this is a bad configuration.
+
+> Your patch makes a lot of sense to me in any case where there aren't
+> large-RSS tasks around using memory.  That definitely applies here
+> because of the amount in the compcache store and might also apply with
+> ramfs and hugetlbfs.
+> 
+
+Agreed, we'll need to address hugepages specifically because they don't 
+get accounted for in rss but do free memory when the task is killed.
