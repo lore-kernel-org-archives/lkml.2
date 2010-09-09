@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab0IIHzZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 03:55:25 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:40869 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753712Ab0IIHzV (ORCPT
+	id S1753712Ab0IIIAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 04:00:35 -0400
+Received: from mtagate3.de.ibm.com ([195.212.17.163]:59323 "EHLO
+	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab0IIIAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 03:55:21 -0400
-Message-ID: <4C8892D0.4070303@nokia.com>
-Date: Thu, 09 Sep 2010 10:54:56 +0300
-From: Adrian Hunter <adrian.hunter@nokia.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Thu, 9 Sep 2010 04:00:30 -0400
+Date: Thu, 9 Sep 2010 10:00:28 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: Anil kumar <anils_r@yahoo.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: scsi_cmnd data_buffer checksum
+Message-ID: <20100909080028.GA4880@schmichrtp.mainz.de.ibm.com>
+References: <35352.83946.qm@web32402.mail.mud.yahoo.com>
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: Olof Johansson <olof@lixom.net>, Kay Sievers <kay.sievers@vrfy.org>,
-        Lei Wen <adrian.wenl@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mandeep Baines <msb@chromium.org>
-Subject: Re: [PATCH] mmc_block: Allow more than 8 partitions per card
-References: <AANLkTinUNpWsu=AY+1EeG8xznPaESL8XnjGo7613yoMt@mail.gmail.com> <1283964637-28246-1-git-send-email-ccross@android.com>
-In-Reply-To: <1283964637-28246-1-git-send-email-ccross@android.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Sep 2010 07:54:56.0840 (UTC) FILETIME=[4B8DF480:01CB4FF4]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <35352.83946.qm@web32402.mail.mud.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ext Colin Cross wrote:
-> Set the GENHD_FL_EXT_DEVT flag, which will allocate minor numbers
-> in major 259 for partitions past disk->minors.
+On Wed, Sep 08, 2010 at 08:36:32PM -0700, Anil kumar wrote:
 > 
-> Also remove the use of disk_devt to determine devidx from md->disk.
-> md->disk->first_minor is always initialized from devidx and can
-> always be used to recover it.
-
-Yeah, but it is a bit weird.  It seems to me that devidx should just
-be a member of struct mmc_blk_data.
-
-Doesn't look like devidx is cleared in all the error paths out of
-mmc_blk_alloc() either, if you want something else to do ;-)
-
+> I am writing a checksum calculation of scsi_cmnd data buffer in the driver. 
 > 
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  drivers/mmc/card/block.c |    7 ++-----
->  1 files changed, 2 insertions(+), 5 deletions(-)
+> I calculate the checksum of the scsi_cmd data buffer(request_buffer) in driver queuecommand.
 > 
-> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-> index d545f79..07d8eb0 100644
-> --- a/drivers/mmc/card/block.c
-> +++ b/drivers/mmc/card/block.c
-> @@ -87,11 +87,7 @@ static void mmc_blk_put(struct mmc_blk_data *md)
->  	mutex_lock(&open_lock);
->  	md->usage--;
->  	if (md->usage == 0) {
-> -		int devmaj = MAJOR(disk_devt(md->disk));
-> -		int devidx = MINOR(disk_devt(md->disk)) >> MMC_SHIFT;
-> -
-> -		if (!devmaj)
-> -			devidx = md->disk->first_minor >> MMC_SHIFT;
-> +		int devidx = md->disk->first_minor >> MMC_SHIFT;
->  
->  		blk_cleanup_queue(md->queue.queue);
->  
-> @@ -607,6 +603,7 @@ static struct mmc_blk_data *mmc_blk_alloc(struct mmc_card *card)
->  	md->disk->private_data = md;
->  	md->disk->queue = md->queue.queue;
->  	md->disk->driverfs_dev = &card->dev;
-> +	md->disk->flags = GENHD_FL_EXT_DEVT;
->  
->  	/*
->  	 * As discussed on lkml, GENHD_FL_REMOVABLE should:
+> Now when the command is completed from the hardware and before driver sends it back to mid-layer, I calculate the checksum again of the same scsi_cmd data_buffer again.
+> 
+> Sometimes the checksums don't match. I mean somehow looks like OS changed the scsi_cmd data_buffer(request_buffer) in the meantime when driver is working on the command.
+> I print the address of the scsi_cmd data_buffer (virtual address) and its same and the contents of the buffer is also same during both the calculations.
+> 
+> Can this happen?
 
+Yes. While a write I/O is being processed in Linux or in flight, the
+data buffers can change. This causes problems for other checksums as
+well; i ran into this when looking at the DIF/DIX checksums for SCSI
+commands.
+
+At the moment, this problem can be avoided e.g. by running only direct
+I/O on the xfs filesystem. There have been discussions about this, a
+short summary is here, look for "stable pages":
+http://lwn.net/Articles/399148/
+
+Christof
