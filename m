@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933279Ab0IIWpQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:45:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57182 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933267Ab0IIWpI (ORCPT
+	id S933414Ab0IIWrf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:47:35 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:46296 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933353Ab0IIWp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:45:08 -0400
+	Thu, 9 Sep 2010 18:45:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Q46mKiNB1ecHv6QkI7MzrCyfLjBk/qMjNrfzTbU5MqH747hUfs5GnTqucPHNCjoBTO
-         Ufn+Uvv4u52lLrMadf22mtgkp1IaVUaxcrIrSuN9q1uV/ZviCxlFWVm7OWoHEL6uGCMz
-         RuoKdcDfmtKxw701PK6PaW75EhzEWEJXewkcg=
+        b=fk9w8jsFLuD4efdfM0RDN+qulvo8RknWwla9jR+nykjjOXJx73rTkGXziDBENFzbne
+         efT+jhyviOfNfHbdlzwWWw59oz4fFMfQr+JjAd8chXvorc9kPV7QCkhLw5YrgCV0c5s+
+         yBJnogMchqeD3QYGyemRkUlIMGbIxrGzvsDo0=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 206/223]drivers/usb/serial/Kconfig Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:45:05 -0700
-Message-Id: <1284072309-8452-11-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 218/223]drivers/video/arcfb.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:46:02 -0700
+Message-Id: <1284072367-8485-8-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1284072309-8452-1-git-send-email-justinmattock@gmail.com>
-References: <1284072309-8452-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1284072367-8485-1-git-send-email-justinmattock@gmail.com>
+References: <1284072367-8485-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,40 +33,21 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/usb/serial/Kconfig |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/video/arcfb.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/serial/Kconfig b/drivers/usb/serial/Kconfig
-index 916b2b6..de86d92 100644
---- a/drivers/usb/serial/Kconfig
-+++ b/drivers/usb/serial/Kconfig
-@@ -176,7 +176,7 @@ config USB_SERIAL_VISOR
- 	help
- 	  Say Y here if you want to connect to your HandSpring Visor, Palm
- 	  m500 or m505 through its USB docking station. See
--	  <http://usbvisor.sourceforge.net/> for more information on using this
-+	  <http://usbvisor.sourceforge.net/index.php3> for more information on using this
- 	  driver.
- 
- 	  To compile this driver as a module, choose M here: the
-@@ -264,7 +264,7 @@ config USB_SERIAL_IUU
- 	help
- 	  Say Y here if you want to use a IUU in phoenix mode and get
- 	  an extra ttyUSBx device. More information available on
--	  http://eczema.ecze.com/iuu_phoenix.html
-+	  http://www.opensc-project.org/openct/wiki/wbeiuu 
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called iuu_phoenix.o
-@@ -289,8 +289,6 @@ config USB_SERIAL_KEYSPAN
- 	  and was developed with their support.  You must also include
- 	  firmware to support your particular device(s).
- 
--	  See <http://misc.nu/hugh/keyspan.html> for more information.
--
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called keyspan.
- 
+diff --git a/drivers/video/arcfb.c b/drivers/video/arcfb.c
+index f3d7440..3ec4923 100644
+--- a/drivers/video/arcfb.c
++++ b/drivers/video/arcfb.c
+@@ -2,7 +2,6 @@
+  * linux/drivers/video/arcfb.c -- FB driver for Arc monochrome LCD board
+  *
+  * Copyright (C) 2005, Jaya Kumar <jayalk@intworks.biz>
+- * http://www.intworks.biz/arclcd
+  *
+  * This file is subject to the terms and conditions of the GNU General Public
+  * License. See the file COPYING in the main directory of this archive for
 -- 
 1.7.2.1
 
