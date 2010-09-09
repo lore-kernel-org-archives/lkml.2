@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab0IIUWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 16:22:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58196 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab0IIUWw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 16:22:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH] Add Support for Intel CPU Family 6 / Model 22 (Intel Celeron 540)
-Date: Thu, 9 Sep 2010 22:22:32 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-next-20100907+; KDE/4.5.1; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        Andi Kleen <andi@firstfloor.org>,
-        Patrick Simmons <linuxrocks123@netscape.net>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <4C879EF4.90509@netscape.net> <20100909123102.GQ13563@erda.amd.com> <20100909184812.GT13563@erda.amd.com>
-In-Reply-To: <20100909184812.GT13563@erda.amd.com>
+	id S1754387Ab0IIU1G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 16:27:06 -0400
+Received: from ackle.nomi.cz ([81.31.33.35]:43866 "EHLO ackle.nomi.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752754Ab0IIU1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 16:27:05 -0400
+X-Greylist: delayed 2041 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Sep 2010 16:27:04 EDT
+Date: Thu, 9 Sep 2010 21:53:01 +0200
+From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+To: Greg KH <greg@kroah.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, mingo@redhat.com,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, glommer@redhat.com,
+        alan@lxorguk.ukuu.org.uk, zamsden@redhat.com, stable@kernel.org,
+        mtosatti@redhat.com, gregkh@suse.de, peter@palfrader.org,
+        tglx@linutronix.de, avi@redhat.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [stable] [tip:x86/urgent] x86: Add memory modify constraints
+	to xchg() and cmpxchg()
+Message-ID: <20100909195301.GA18291@nomi.cz>
+References: <4C4F7277.8050306@zytor.com> <tip-113fc5a6e8c2288619ff7e8187a6f556b7e0d372@git.kernel.org> <4C5759FF.1000807@goop.org> <20100802235950.GA662@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009092222.33178.arnd@arndb.de>
-X-Provags-ID: V02:K0:sBhiSZWeXS6SMPa/JjF9JlqudcrxikKGTGjMZsU0Afd
- VbJv5xS26ANPDiM88izHm/Z3HUqhiQX/hiG8EOmpr9HRxPQCRM
- MNajj5zEnu32l9SQQpvT1+FsFN7HCrlCGbikkSlUjOJL9XyMNi
- YfQ0Wj9MyewtYQcCvg6q3YAEITBFhUygsH88aCYFmEq4BGdcD6
- Ik92hDdsRrkynHuZWPhlQ==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100802235950.GA662@kroah.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 September 2010 20:48:12 Robert Richter wrote:
-> On 09.09.10 14:31:02, Robert Richter wrote:
-> > On 08.09.10 10:34:28, Patrick Simmons wrote:
-> > > This patch adds CPU type detection for the Intel Celeron 540, which is 
-> > > part of the Core 2 family according to Wikipedia; the family and ID pair 
-> > > is absent from the Volume 3B table referenced in the source code 
-> > > comments.  I have tested this patch on an Intel Celeron 540 machine 
-> > > reporting itself as Family 6 Model 22, and OProfile runs on the machine 
-> > > without issue.  The patch was made against Linux version 2.6.35.4 but is 
-> > > so trivial that it should apply cleanly to anything relevant.  Please CC 
-> > > me with any comments or questions as I am not subscribed to the list.
+Hello,
 
-The patch looks fine, but please note that only some Celeron 540 use this,
-while others are model 15. However all Core 2 Solo U2xxx and all desktop
-Celeron 2xx/4xx are model 22 as well.
+2.6.32.21 does not boot on my HP Compaq nx7300. I bisected it to this patch:
 
-	Arnd
+On Mon, Aug 02, 2010 at 04:59:50PM -0700, Greg KH wrote:
+> On Mon, Aug 02, 2010 at 04:51:27PM -0700, Jeremy Fitzhardinge wrote:
+> >  On 07/27/2010 10:33 PM, tip-bot for H. Peter Anvin wrote:
+> > >Commit-ID:  113fc5a6e8c2288619ff7e8187a6f556b7e0d372
+> > >Gitweb:     http://git.kernel.org/tip/113fc5a6e8c2288619ff7e8187a6f556b7e0d372
+> > >Author:     H. Peter Anvin<hpa@zytor.com>
+> > >AuthorDate: Tue, 27 Jul 2010 17:01:49 -0700
+> > >Committer:  H. Peter Anvin<hpa@zytor.com>
+> > >CommitDate: Tue, 27 Jul 2010 17:14:02 -0700
+> > >
+> > >x86: Add memory modify constraints to xchg() and cmpxchg()
+> > 
+> > Here's the 2.6.32 version for stable.
+> 
+> Thanks, I'll queue it up when it hits Linus's tree.
+
+Here's a video of the crash: http://store.lisk.in/tmp/09092010019.mp4
+With boot_delay=30, it sometimes just reboots and sometimes prints the trace.
+Without it, it always prints the trace. The crash occurs during the
+initialization of intel-agp (which explains why I can't reproduce it in qemu).
+More details in the video.
+
+The system boots and works just fine with 2.6.32.21 with the patch reverted.
+v2.6.36-rc3-185-gd56557a works fine as well, perhaps there were other fixes
+that didn't get to stable (e.g. 4532b30).
+
+I'm compiling the kernel with the latest gcc in Debian (-dumpversion says
+4.4.5, dpkg reports 4:4.4.4-2). Shall I post dmesg/lspci as well?
+
+Since I have an easy workaround and other things to do, I won't spend time
+trying to backport those other fixes myself, but if you're going to fix this,
+I will help with testing.
+
+Regards,
+-- 
+Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
