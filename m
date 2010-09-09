@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab0IIWcc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:32:32 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58149 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757034Ab0IIWcY (ORCPT
+	id S932570Ab0IIW3k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:29:40 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:36303 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932537Ab0IIW3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:32:24 -0400
+	Thu, 9 Sep 2010 18:29:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ZK80U+SywKaqzLm7gT2ExpDlcRWnxpoQtzihzENYLdd9GuoubzfrBu+mgR+rHbtPWk
-         VsHg+VzZa9gyzsI6y6AJHZt/9NHVuXZyX37plZUhtnvM6KjzwYdkycblAhpHT8n4ApZl
-         FkWOBM2Zu2Pt4lI6a4ZQ9g831yVNMHvNDR7cA=
+        b=P1bO7PV3xKQmDneIhvuleaKwEAxW5VjICqVFmc4pX2tHdCDb/iL3weBjPh726utuun
+         OBAF/EZLLYi+/5zGsLCLyfKDqgBJ7I9stxy0jiGsiekDRh1IHB/Rk4hVocqAZHmqBTtq
+         6JTCmmVX70JKjpnJkHvj6ZiBatKSLP2XeRjEg=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 094/223]drivers/net/tulip/Kconfig Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:32:37 -0700
-Message-Id: <1284071562-7948-4-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 087/223]drivers/net/lne390.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:29:31 -0700
+Message-Id: <1284071374-7867-12-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1284071562-7948-1-git-send-email-justinmattock@gmail.com>
-References: <1284071562-7948-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1284071374-7867-1-git-send-email-justinmattock@gmail.com>
+References: <1284071374-7867-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,22 +33,24 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/net/tulip/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/lne390.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/tulip/Kconfig b/drivers/net/tulip/Kconfig
-index 516713f..14c02e1 100644
---- a/drivers/net/tulip/Kconfig
-+++ b/drivers/net/tulip/Kconfig
-@@ -151,7 +151,7 @@ config ULI526X
- 	select CRC32
- 	---help---
- 	  This driver is for ULi M5261/M5263 10/100M Ethernet Controller
--	  (<http://www.uli.com.tw/>).
-+	  (<http://www.nvidia.com/page/uli_drivers.html>).
+diff --git a/drivers/net/lne390.c b/drivers/net/lne390.c
+index 8a1097c..a154ca4 100644
+--- a/drivers/net/lne390.c
++++ b/drivers/net/lne390.c
+@@ -23,8 +23,8 @@
+ 	The shared memory address selection is also slightly different.
+ 	Note that shared memory address > 1MB are supported with this driver.
  
- 	  To compile this driver as a module, choose M here. The module will
- 	  be called uli526x.
+-	You can try <http://www.mylex.com> if you want more info, as I've
+-	never even seen one of these cards.  :)
++	You can try <http://web.archive.org/web/*/http://www.mylex.com>
++	if you want more info, as I've never even seen one of these cards.  :)
+ 
+ 	Arnaldo Carvalho de Melo <acme@conectiva.com.br> - 2000/09/01
+ 	- get rid of check_region
 -- 
 1.7.2.1
 
