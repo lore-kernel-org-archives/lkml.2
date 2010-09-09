@@ -1,200 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab0IIXTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 19:19:15 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:31553 "HELO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753530Ab0IIXTM (ORCPT
+	id S1756386Ab0IIXYw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 19:24:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64808 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756279Ab0IIXYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 19:19:12 -0400
-Message-ID: <4C896B11.6030705@snapgear.com>
-Date: Fri, 10 Sep 2010 09:17:37 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Thu, 9 Sep 2010 19:24:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=AqdFa5DG14yvaBg3NUCwBmSn0fMEsmPd+4KlA+LI0QVUmBqrC1rz2sdf5sbWWalcjs
+         Ao0C9B0SH2Ihb1rMXRoeg2t1BZQPvpjtJgPlgR/TFx2aJ5CdPoDPOcPtO9YB4UpkLASm
+         a/ghNjGBGnmbM4Qz1iMCr6gDWy/+MK4P8/Sl8=
+Message-ID: <4C896CE6.50100@gmail.com>
+Date: Thu, 09 Sep 2010 16:25:26 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
 MIME-Version: 1.0
-To: Kyle McMartin <kyle@mcmartin.ca>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
-        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
-        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
-        linux-arch@vger.kernel.org
-Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
- __do_IRQ() code
-References: <20100908152036.643594727@linutronix.de> <4C888AFF.80304@snapgear.com> <20100909140926.GH24791@bombadil.infradead.org>
-In-Reply-To: <20100909140926.GH24791@bombadil.infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 217/223]drivers/video/Kconfig Update broken web addresses.
+References: <1284072367-8485-1-git-send-email-justinmattock@gmail.com> <1284072367-8485-7-git-send-email-justinmattock@gmail.com> <20100909155540.78b771ba.rdunlap@xenotime.net>
+In-Reply-To: <20100909155540.78b771ba.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Sep 2010 23:18:14.0155 (UTC) FILETIME=[46ED65B0:01CB5075]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Kyle,
-
-Kyle McMartin wrote:
-> On Thu, Sep 09, 2010 at 05:21:35PM +1000, Greg Ungerer wrote:
->> The m68knommu arch should be easy to fix up. Here is a first pass
->> patch. Tested and working on 1 board so far. I need to check all
->> the processor types, and test a few more to be sure :-)
+On 09/09/2010 03:55 PM, Randy Dunlap wrote:
+> On Thu,  9 Sep 2010 15:46:01 -0700 Justin P. Mattock wrote:
+>
+>> Below you will find an Update to a broken web address.
+>> Please let me know if this needs to be changed.
 >>
-> 
-> Dunno if you noticed, Greg, but you've already had a removal patch
-> submitted some time ago...
-
-I had forgotten about that patch... But if you follow the email
-trail I had to drop it soon after, it caused user space to lock
-up. I let Steven know (in that same thread) but he never came
-back with any fixes/updates.
-
-(That patch also added support for edge triggered GPIO interrupts,
-and that may well have been the source of the problems).
-
-Thanks
-Greg
-
-
-> Date: Wed, 16 Dec 2009 19:15:39 -0800                                                                                                                                              
-> From: Steven King <sfking@fdwdc.com>                                                                                                                                               
-> To: Greg Ungerer <gerg@snapgear.com>                                                                                                                                               
-> Subject: [PATCH] m68knommu: get rid of __do_IRQ and add support for
->  using gpio irqs.       
-> 
-> (noticed this while searching for __do_IRQ related stuff in my email
-> last night.)
-> 
-> regards, Kyle
-> 
->> Regards
->> Greg
+>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
 >>
->>
->> -- 
->> ------------------------------------------------------------------------
->> Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
->> SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
->> 8 Gardner Close                             FAX:         +61 7 3217 5323
->> Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
-> 
->> m68knommu: stop using __do_IRQ
->>
->> The use of __do_IRQ is deprecated, so lets stop using it.
->> Generally the interrupts on the supported processors here are
->> level triggered, so this is strait forward to switch over to
->> using the standard handle_level_irq flow handler.
->>
->> Signed-off-by: Greg Ungerer <gerg@uclinux.org>
 >> ---
->>  arch/m68knommu/Kconfig                       |    4 ++++
->>  arch/m68knommu/platform/5272/intc.c          |    1 +
->>  arch/m68knommu/platform/68328/ints.c         |    1 +
->>  arch/m68knommu/platform/68360/ints.c         |    1 +
->>  arch/m68knommu/platform/coldfire/intc-2.c    |    1 +
->>  arch/m68knommu/platform/coldfire/intc-simr.c |    1 +
->>  arch/m68knommu/platform/coldfire/intc.c      |    1 +
->>  7 files changed, 10 insertions(+), 0 deletions(-)
+>>   drivers/video/Kconfig |   10 +++++-----
+>>   1 files changed, 5 insertions(+), 5 deletions(-)
 >>
->> diff --git a/arch/m68knommu/Kconfig b/arch/m68knommu/Kconfig
->> index 2609c39..fd28178 100644
->> --- a/arch/m68knommu/Kconfig
->> +++ b/arch/m68knommu/Kconfig
->> @@ -59,6 +59,10 @@ config GENERIC_HARDIRQS
->>  	bool
->>  	default y
->>  
->> +config GENERIC_HARDIRQS_NO__DO_IRQ
->> +	bool
->> +	default y
->> +
->>  config GENERIC_CALIBRATE_DELAY
->>  	bool
->>  	default y
->> diff --git a/arch/m68knommu/platform/5272/intc.c b/arch/m68knommu/platform/5272/intc.c
->> index 7081e0a..e9da6f1 100644
->> --- a/arch/m68knommu/platform/5272/intc.c
->> +++ b/arch/m68knommu/platform/5272/intc.c
->> @@ -133,6 +133,7 @@ void __init init_IRQ(void)
->>  		irq_desc[irq].depth = 1;
->>  		irq_desc[irq].chip = &intc_irq_chip;
->>  		intc_irq_set_type(irq, 0);
->> +		set_irq_handler(irq, handle_level_irq);
->>  	}
->>  }
->>  
->> diff --git a/arch/m68knommu/platform/68328/ints.c b/arch/m68knommu/platform/68328/ints.c
->> index b91ee85..90516ee 100644
->> --- a/arch/m68knommu/platform/68328/ints.c
->> +++ b/arch/m68knommu/platform/68328/ints.c
->> @@ -183,6 +183,7 @@ void __init init_IRQ(void)
->>  		irq_desc[i].action = NULL;
->>  		irq_desc[i].depth = 1;
->>  		irq_desc[i].chip = &intc_irq_chip;
->> +		set_irq_handler(irq, handle_level_irq);
->>  	}
->>  }
->>  
->> diff --git a/arch/m68knommu/platform/68360/ints.c b/arch/m68knommu/platform/68360/ints.c
->> index 6f22970..cdf691e 100644
->> --- a/arch/m68knommu/platform/68360/ints.c
->> +++ b/arch/m68knommu/platform/68360/ints.c
->> @@ -136,6 +136,7 @@ void init_IRQ(void)
->>  		irq_desc[i].action = NULL;
->>  		irq_desc[i].depth = 1;
->>  		irq_desc[i].chip = &intc_irq_chip;
->> +		set_irq_handler(irq, handle_level_irq);
->>  	}
->>  }
->>  
->> diff --git a/arch/m68knommu/platform/coldfire/intc-2.c b/arch/m68knommu/platform/coldfire/intc-2.c
->> index 5598c8b..6410f7e 100644
->> --- a/arch/m68knommu/platform/coldfire/intc-2.c
->> +++ b/arch/m68knommu/platform/coldfire/intc-2.c
->> @@ -88,6 +88,7 @@ void __init init_IRQ(void)
->>  		irq_desc[irq].action = NULL;
->>  		irq_desc[irq].depth = 1;
->>  		irq_desc[irq].chip = &intc_irq_chip;
->> +		set_irq_handler(irq, handle_level_irq);
->>  	}
->>  }
->>  
->> diff --git a/arch/m68knommu/platform/coldfire/intc-simr.c b/arch/m68knommu/platform/coldfire/intc-simr.c
->> index 1b01e79..7f4abb3 100644
->> --- a/arch/m68knommu/platform/coldfire/intc-simr.c
->> +++ b/arch/m68knommu/platform/coldfire/intc-simr.c
->> @@ -73,6 +73,7 @@ void __init init_IRQ(void)
->>  		irq_desc[irq].depth = 1;
->>  		irq_desc[irq].chip = &intc_irq_chip;
->>  		intc_irq_set_type(irq, 0);
->> +		set_irq_handler(irq, handle_level_irq);
->>  	}
->>  }
->>  
->> diff --git a/arch/m68knommu/platform/coldfire/intc.c b/arch/m68knommu/platform/coldfire/intc.c
->> index a4560c8..40b9e8d 100644
->> --- a/arch/m68knommu/platform/coldfire/intc.c
->> +++ b/arch/m68knommu/platform/coldfire/intc.c
->> @@ -148,6 +148,7 @@ void __init init_IRQ(void)
->>  		irq_desc[irq].depth = 1;
->>  		irq_desc[irq].chip = &intc_irq_chip;
->>  		intc_irq_set_type(irq, 0);
->> +		set_irq_handler(irq, handle_level_irq);
->>  	}
->>  }
->>  
-> 
-> 
+>> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+>> index 8b31fdf..a15a092 100644
+>> --- a/drivers/video/Kconfig
+>> +++ b/drivers/video/Kconfig
+>> @@ -49,7 +49,7 @@ menuconfig FB
+>>   	  You need an utility program called fbset to make full use of frame
+>>   	  buffer devices. Please read<file:Documentation/fb/framebuffer.txt>
+>>   	and the Framebuffer-HOWTO at
+>> -	<http://www.munted.org.uk/programming/Framebuffer-HOWTO-1.2.html>  for more
+>> +	<http://www.faqs.org/docs/Linux-HOWTO/Framebuffer-HOWTO.html>  for more
+>>   	  information.
+>
+> http://www.munted.org.uk/programming/Framebuffer-HOWTO-1.3.html
+>
+> although this is a tar.gz file in reality.  :(
+>
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
 
+alright... think I posted this one in the past in Doc/* but cant 
+remember(the patch is on my other machine to check). Ill have to check 
+this one again..(so many of them..(dont think I want to see a web 
+address for a while...))
 
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+:-)
+
+Justin P. Mattock
