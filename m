@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab0IILkv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 07:40:51 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41606 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910Ab0IILku (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 07:40:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TeO6qW99Wk/GTliBBNwKmALHwxyeIl66Vc0SL6qUKqSl/KdRm4Pn26YpHkVchoC9p9
-         D5F1b/8uawrNEu89KzGraCLK2hrrpuCRFrOdSOFiOqsiW9I1qdiGv3Cd7qtPH0taiZS2
-         9kTa1kW2w5r3JWABxL8JZT3ljAAWfhzOtg6fk=
-Date: Thu, 9 Sep 2010 13:40:59 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Harald Gustafsson <hgu1972@gmail.com>,
+	id S1754359Ab0IILlE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 07:41:04 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46066 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753055Ab0IILlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 07:41:02 -0400
+Date: Thu, 9 Sep 2010 13:40:53 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Harald Gustafsson <hgu1972@gmail.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Harald Gustafsson <harald.gustafsson@ericsson.com>,
         Song Yuan <song.yuan@ericsson.com>,
         Steven Rostedt <rostedt@goodmis.org>
 Subject: Re: perf events over (net) console?
-Message-ID: <20100909114057.GB5267@nowhere>
-References: <AANLkTi=yeHyOeewm9tdsHRtj+=d+vE5=NRKGaPyq_yGH@mail.gmail.com> <1284031141.402.1.camel@laptop> <20100909112940.GA5267@nowhere> <1284032142.402.5.camel@laptop>
+Message-ID: <20100909114053.GA15140@elte.hu>
+References: <AANLkTi=yeHyOeewm9tdsHRtj+=d+vE5=NRKGaPyq_yGH@mail.gmail.com>
+ <1284031141.402.1.camel@laptop>
+ <20100909112940.GA5267@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1284032142.402.5.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100909112940.GA5267@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0008]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 01:35:42PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-09-09 at 13:29 +0200, Frederic Weisbecker wrote:
-> > But if we bring the splice support,
+
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> On Thu, Sep 09, 2010 at 01:19:01PM +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-09-09 at 13:06 +0200, Harald Gustafsson wrote:
+> > > Hi,
+> > > 
+> > > We would like to monitor the perf events continuously on a remote 
+> > > machine. Does it exist a solution (in the kernel) to direct the 
+> > > output to a console or maybe even a netconsole? We would like to 
+> > > avoid a user space application to transfer it, due to that the 
+> > > machine will be running a test which will heavily load it and we 
+> > > want to avoid as many unrelated user space tasks as possible. If 
+> > > not mainlined does anyone have a patch for this?
+> > 
+> > No, and its a daft requirement.
+> > 
+> > You need a process context anyway to read the data and send it to 
+> > whatever place you want it.
+> > 
+> > Putting that in-kernel serves no purpose what so ever.
 > 
-> Even simply write() from the mmap() buffer isn't terribly expensive. But
-> yeah, once we fix splice not to always copy that could be even better.
-> 
-> Splice() is on the todo list, but it needs significant user-interface
-> work and I'm rather busy..
+> But if we bring the splice support, that can be done with minimal 
+> userspace noise. Plus that would work with the usual sockets but not 
+> limited to that.
 
+Yes. If we can transform the data over the network without it touching 
+disk, then that would be a sufficiently 'does not disturb other tasks' 
+measurement method.
 
-Yeah sure, that wasn't a citicism, just an idea on how that kind of
-minimal userspace noise state can be achieved in the future :)
+Thanks,
 
+	Ingo
