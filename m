@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab0IIOsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 10:48:24 -0400
-Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:44921 "EHLO
-	homiemail-a60.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753286Ab0IIOsV (ORCPT
+	id S1755127Ab0IIOxL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 10:53:11 -0400
+Received: from mail2.microsoft.com ([131.107.115.215]:8891 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286Ab0IIOxJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 10:48:21 -0400
-Subject: [PATCH] perf: Fix crash when vmlinux_path__exit().
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: a.p.zijlstra@chello.nl, acme@redhat.com, mingo@elte.hu
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Sep 2010 10:48:10 -0400
-Message-ID: <1284043690.2000.8.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Sep 2010 10:53:09 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "Hank Janssen" <hjanssen@microsoft.com>
+Subject: RE: [PATCH 1/1] staging: hv: Convert vmbus driver interface
+ function pointer table to constant
+Thread-Topic: [PATCH 1/1] staging: hv: Convert vmbus driver interface
+ function pointer table to constant
+Thread-Index: ActQLpKWkH6pOyCTToqeu+wzUKGkuA==
+Date: Thu, 9 Sep 2010 14:53:03 +0000
+Message-ID: <1FB5E1D5CA062146B38059374562DF72854C94CE@TK5EX14MBXC130.redmond.corp.microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH] perf: Fix crash when vmlinux_path__exit()
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Wednesday, September 08, 2010 6:44 PM
+> > Convert vmbus driver interface function pointer table to constant
+> > The vmbus interface functions are assigned to a constant - vmbus_ops.
+> 
+> You also remove a function pointer in this patch, why?  Please break up
+> the patch into logical parts, one patch, one thing.
+> 
+> This looks like it should be 2 patches, right?
 
-When running perf {timechart,sched} record an incorrect freeing occurs after Ctrl-C'ing to
-exit the application, the following is seen:
+Because the vmbus interface function pointer table is converted to a
+constant variable -- vmbus_ops, the function GetChannelInterface(),
+VmbusGetChannelInterface() and pointer GetChannelInterface are no longer
+in use. The deprecated function's work is done by the initialization of
+the newly added constant variable vmbus_ops.
 
-*** glibc detected *** ./perf: free(): invalid pointer: 0x00000000016459e0 ***
-======= Backtrace: =========
-/lib/libc.so.6(+0x775b6)[0x7f2333e935b6]
-/lib/libc.so.6(cfree+0x73)[0x7f2333e99e53]
-./perf[0x42a58f]
-./perf[0x40f791]
-./perf[0x40c7f0]
-./perf[0x405da1]
-./perf[0x4067c3]
-/lib/libc.so.6(__libc_start_main+0xfd)[0x7f2333e3ac4d]
-./perf[0x405b49]
-======= Memory map: ========
-00400000-0046b000 r-xp 00000000 08:01 8804505                            /home/dave/projects/linux-git/tools/perf/perf
-0066a000-0066b000 r--p 0006a000 08:01 8804505                            /home/dave/projects/linux-git/tools/perf/perf
-0066b000-00672000 rw-p 0006b000 08:01 8804505                            /home/dave/projects/linux-git/tools/perf/perf
-00672000-00947000 rw-p 00000000 00:00 0
-01645000-01892000 rw-p 00000000 00:00 0                                  [heap]
-7f232c000000-7f232c021000 rw-p 00000000 00:00 0
-7f232c021000-7f2330000000 ---p 00000000 00:00 0
-7f23331d8000-7f23331ee000 r-xp 00000000 08:01 7602255                    /lib/libgcc_s.so.1
-...
+I created the new constant variable vmbus_ops and removed the deprecated
+function pointer GetChannelInterface in one patch.
 
-By doing some debugging I found that the vmlinux_path__nr_entries getting bigger than 5 (max amount of entries), usually 10.
-This does not happen when not combining commands (using sched, timechart, record, etc. alone). It would seem that the the amount is always being duplicated when
-combining commands. I do not have much experience in perf, but here is a patch that would seem to solve the problem.
+Thanks,
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- tools/perf/util/symbol.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 1a36773..4a9ebc0 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -26,6 +26,8 @@
- #define NT_GNU_BUILD_ID 3
- #endif
- 
-+#define VMLINUX_PATH_MAX_ENTRIES 5
-+
- static bool dso__build_id_equal(const struct dso *self, u8 *build_id);
- static int elf_read_build_id(Elf *elf, void *bf, size_t size);
- static void dsos__add(struct list_head *head, struct dso *dso);
-@@ -2197,7 +2199,10 @@ static int vmlinux_path__init(void)
- 	if (uname(&uts) < 0)
- 		return -1;
- 
--	vmlinux_path = malloc(sizeof(char *) * 5);
-+	if (vmlinux_path__nr_entries == VMLINUX_PATH_MAX_ENTRIES)
-+		return 0; /* array already populated, do nothing */
-+
-+	vmlinux_path = malloc(sizeof(char *) * VMLINUX_PATH_MAX_ENTRIES);
- 	if (vmlinux_path == NULL)
- 		return -1;
- 
--- 
-1.7.0.4
-
-
+- Haiyang
 
