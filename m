@@ -1,99 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab0IIMWN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 08:22:13 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32770 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab0IIMWL (ORCPT
+	id S1754635Ab0IIMWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 08:22:34 -0400
+Received: from lechat.rtp-net.org ([88.191.19.38]:39084 "EHLO
+	lechat.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551Ab0IIMWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 08:22:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KFqv/tInZ0NC3OHSLqdS+8f/2sHaUSMhqBlqElxCh3gkRgc+Uc+TgTQO1cyvoGj4sK
-         6vDwaNyGORcH8+unopIZhzchrzSsLZf35DJmUL++Be+sv1SrzEiP4CePnmpB+7nBzKk2
-         Pd9lrto8t5ZZgbyaz9jtWw+drHsImRgDYJ5dM=
-Date: Thu, 9 Sep 2010 14:21:56 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, john stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH 0/2] [RFC] posix clock tuning
-Message-ID: <20100909122156.GA2823@riccoc20.at.omicron.at>
-References: <cover.1283504065.git.richard.cochran@omicron.at>
- <alpine.LFD.2.00.1009091152300.2477@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1009091152300.2477@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 9 Sep 2010 08:22:30 -0400
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Sep 2010 08:22:30 EDT
+Message-Id: <20100909121040.781762033@rtp-net.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 09 Sep 2010 14:10:33 +0200
+From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Arnaud Patard <apatard@mandriva.com>
+Subject: [patch 1/1] Change my mail address
+References: <20100909121032.713581987@rtp-net.org>
+Content-Disposition: inline; filename=mail_change.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 11:58:09AM +0200, Thomas Gleixner wrote:
-> On Fri, 3 Sep 2010, Richard Cochran wrote:
-> 
-> > Recently on the lkml, we discussed how to allow adjustment of posix
-> > clocks. I have tried to understand and implement the ideas expressed
-> > in the various threads.
-> 
-> Cc'ing the relevant maintainers to such discussions and patches might
-> be helpful. Seems I need to do some archive digging.
+Like other coworkers, I'm about leave Mandriva/Edge-It so I'm changing
+my mail address to use my personal one.
 
-Sorry about that. Still learning how to work on the list.  The story
-so far is...
+Signed-off-by: Arnaud Patard <arnaud.patard@rtp-net.org>
+Signed-off-by: Arnaud Patard <apatard@mandriva.com>
+Index: sound-2.6/drivers/staging/xgifb/TODO
+===================================================================
+--- sound-2.6.orig/drivers/staging/xgifb/TODO	2010-09-08 16:11:56.000000000 +0200
++++ sound-2.6/drivers/staging/xgifb/TODO	2010-09-08 16:12:08.000000000 +0200
+@@ -12,4 +12,4 @@
+ - get rid of non-linux related stuff
+ 
+ Please send patches to:
+-Arnaud Patard <apatard@mandriva.com>
++Arnaud Patard <arnaud.patard@rtp-net.org>
+Index: sound-2.6/sound/soc/codecs/cs42l51.c
+===================================================================
+--- sound-2.6.orig/sound/soc/codecs/cs42l51.c	2010-09-08 16:08:37.000000000 +0200
++++ sound-2.6/sound/soc/codecs/cs42l51.c	2010-09-08 16:08:56.000000000 +0200
+@@ -649,6 +649,6 @@
+ }
+ module_exit(cs42l51_exit);
+ 
+-MODULE_AUTHOR("Arnaud Patard <apatard@mandriva.com>");
++MODULE_AUTHOR("Arnaud Patard <arnaud.patard@rtp-net.org>");
+ MODULE_DESCRIPTION("Cirrus Logic CS42L51 ALSA SoC Codec Driver");
+ MODULE_LICENSE("GPL");
+Index: sound-2.6/sound/soc/kirkwood/kirkwood-dma.c
+===================================================================
+--- sound-2.6.orig/sound/soc/kirkwood/kirkwood-dma.c	2010-09-08 16:10:19.000000000 +0200
++++ sound-2.6/sound/soc/kirkwood/kirkwood-dma.c	2010-09-08 16:10:50.000000000 +0200
+@@ -2,6 +2,7 @@
+  * kirkwood-dma.c
+  *
+  * (c) 2010 Arnaud Patard <apatard@mandriva.com>
++ * (c) 2010 Arnaud Patard <arnaud.patard@rtp-net.org>
+  *
+  *  This program is free software; you can redistribute  it and/or modify it
+  *  under  the terms of  the GNU General  Public License as published by the
+@@ -397,7 +398,7 @@
+ }
+ module_exit(kirkwood_pcm_exit);
+ 
+-MODULE_AUTHOR("Arnaud Patard <apatard@mandriva.com>");
++MODULE_AUTHOR("Arnaud Patard <arnaud.patard@rtp-net.org>");
+ MODULE_DESCRIPTION("Marvell Kirkwood Audio DMA module");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:kirkwood-pcm-audio");
+Index: sound-2.6/sound/soc/kirkwood/kirkwood-i2s.c
+===================================================================
+--- sound-2.6.orig/sound/soc/kirkwood/kirkwood-i2s.c	2010-09-08 16:09:07.000000000 +0200
++++ sound-2.6/sound/soc/kirkwood/kirkwood-i2s.c	2010-09-08 16:10:11.000000000 +0200
+@@ -2,6 +2,7 @@
+  * kirkwood-i2s.c
+  *
+  * (c) 2010 Arnaud Patard <apatard@mandriva.com>
++ * (c) 2010 Arnaud Patard <arnaud.patard@rtp-net.org>
+  *
+  *  This program is free software; you can redistribute  it and/or modify it
+  *  under  the terms of  the GNU General  Public License as published by the
+@@ -495,7 +496,7 @@
+ module_exit(kirkwood_i2s_exit);
+ 
+ /* Module information */
+-MODULE_AUTHOR("Arnaud Patard, <apatard@mandriva.com>");
++MODULE_AUTHOR("Arnaud Patard, <arnaud.patard@rtp-net.org>");
+ MODULE_DESCRIPTION("Kirkwood I2S SoC Interface");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:kirkwood-i2s");
+Index: sound-2.6/sound/soc/kirkwood/kirkwood-openrd.c
+===================================================================
+--- sound-2.6.orig/sound/soc/kirkwood/kirkwood-openrd.c	2010-09-08 16:10:58.000000000 +0200
++++ sound-2.6/sound/soc/kirkwood/kirkwood-openrd.c	2010-09-08 16:11:28.000000000 +0200
+@@ -2,6 +2,7 @@
+  * kirkwood-openrd.c
+  *
+  * (c) 2010 Arnaud Patard <apatard@mandriva.com>
++ * (c) 2010 Arnaud Patard <arnaud.patard@rtp-net.org>
+  *
+  *  This program is free software; you can redistribute  it and/or modify it
+  *  under  the terms of  the GNU General  Public License as published by the
+@@ -113,7 +114,7 @@
+ module_exit(openrd_client_exit);
+ 
+ /* Module information */
+-MODULE_AUTHOR("Arnaud Patard <apatard@mandriva.com>");
++MODULE_AUTHOR("Arnaud Patard <arnaud.patard@rtp-net.org>");
+ MODULE_DESCRIPTION("ALSA SoC OpenRD Client");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:soc-audio");
 
-** PTP hardware clock as a character device (54 messages)
 
-   http://lkml.org/lkml/2010/8/16/90
-
-   The general mood of this was something like: "You have made a
-   chardev for PTP clocks. The ioctls look similar to the posix clock
-   api. Why not just use the posix api?"
-
-** posix clock tuning syscall, static clockid (13 messages)
-
-   http://lkml.org/lkml/2010/8/23/49
-
-   The general mood of this one was: "I don't like a static clockid
-   for PTP clocks. But a dynamic id would be just fine."
-
-** posix clock tuning syscall, dynamic clockid (16 messages)
-
-   http://lkml.org/lkml/2010/9/3/119 (This thread)
-
-   The mood seems to be, "why not use a chardev for that?"
-
->From my point of view, the discussion is going round in circles. There
-seems to be agreement that supporting PTP hardware clocks is a good
-idea. The objections seem to be about the form of the API. In general,
-there are three avenues.
-
-1. character device (like hpet)
-2. posix clock api
-3. sysfs
-
-Or possibly some combination of the three.
-
-I have my preference, but I am willing to work it according to
-taste. Would you have some preference?
-
-> > If there is agreement on this approach, I will resubmit these two
-> > patches as part of a longer series, including support for a new kind
-> > of hardware clock, so you can see how it all fits together. But first,
-> > I would like to concentrate on the new syscall itself.
-> > 
-> > The patches are against a recent net-next tree. Please don't worry if
-> > the syscall tables are not quite up to date. I can fix that later.
-> 
-> How is this related to net-next ? 
-
-The whole hardware timestamping and PTP clock issue is somewhat
-network related. In particular, needed to start there to get some
-background support for timestamping within PHY devices.
-
-Thanks,
-
-Richard
