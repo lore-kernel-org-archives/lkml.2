@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab0IIWZo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:25:44 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49828 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756682Ab0IIWZl (ORCPT
+	id S1756785Ab0IIWZt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:25:49 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:39116 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756709Ab0IIWZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:25:41 -0400
+	Thu, 9 Sep 2010 18:25:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=a2pHYjVbNBBnjV6WzJENYWm/Wu2fEzvMFijCX+AQolP2zIZbYbsuXaavgGR3a7wxjR
-         o/Dw47aBF4NNZy/dSxhAvM0E11DgHiIXFwrcT51KvjpjxKKIC3Cgo/TO/A3Pmq4lseIg
-         EB2jx1lyqgs4OfVBIhtu8WOIoTpma1Lu1VI6A=
+        b=Z4F2aDl9tWso/OlKe97w93555Nl6lQmCl/1NFVsdzePyBu6o7uZbc/xDC75pP6bsiw
+         H7YB6BBeuAYazmK3VKF6tM9KhEwCHv7pobje7nWJ91oz1ub6OmDLqmsXfg5zPzUlh1qd
+         yr4wX9P6eby5bVPV9tRFy3rlxJxv771LAMxD0=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 023/223]drivers/hwmon/adm1025.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:25:42 -0700
-Message-Id: <1284071149-7723-8-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 024/223]drivers/hwmon/f75375s.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:25:43 -0700
+Message-Id: <1284071149-7723-9-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071149-7723-1-git-send-email-justinmattock@gmail.com>
 References: <1284071149-7723-1-git-send-email-justinmattock@gmail.com>
@@ -33,22 +33,26 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/hwmon/adm1025.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/hwmon/f75375s.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hwmon/adm1025.c b/drivers/hwmon/adm1025.c
-index 251b631..7b7f9c2 100644
---- a/drivers/hwmon/adm1025.c
-+++ b/drivers/hwmon/adm1025.c
-@@ -12,7 +12,7 @@
-  * resolution of about 0.5% of the nominal value). Temperature values are
-  * reported with a 1 deg resolution and a 3 deg accuracy. Complete
-  * datasheet can be obtained from Analog's website at:
-- *   http://www.analog.com/Analog_Root/productPage/productHome/0,2121,ADM1025,00.html
-+ *  http://www.analog.com/en/content/Parts_List_Sold_to_On_Semiconductor/fca.html 
+diff --git a/drivers/hwmon/f75375s.c b/drivers/hwmon/f75375s.c
+index 0f58ecc..3e2e100 100644
+--- a/drivers/hwmon/f75375s.c
++++ b/drivers/hwmon/f75375s.c
+@@ -6,10 +6,10 @@
+  * Datasheets available at:
   *
-  * This driver also supports the ADM1025A, which differs from the ADM1025
-  * only in that it has "open-drain VID inputs while the ADM1025 has
+  * f75375:
+- * http://www.fintek.com.tw/files/productfiles/2005111152950.pdf
++ * http://www.fintek.com.tw/files/productfiles/F75375_V026P.pdf 
+  *
+  * f75373:
+- * http://www.fintek.com.tw/files/productfiles/2005111153128.pdf
++ * http://www.fintek.com.tw/files/productfiles/F75373_V025P.pdf
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
 -- 
 1.7.2.1
 
