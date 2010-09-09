@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933112Ab0IIWxG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:53:06 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57020 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757057Ab0IIWnS (ORCPT
+	id S933279Ab0IIWpQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:45:16 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57182 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933267Ab0IIWpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:43:18 -0400
+	Thu, 9 Sep 2010 18:45:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=DVaLD8khGmpz98wM49nOpLo4qiORtF55jy2DYWGQEKHLzqGXF74f27n6OH+Hhc7RVs
-         cWhLuu2JunsxZncPREa3MbYa26ZNVQo00L5HSPgeiHxt6/g6CPQlYr8cRhg98qqnpMZ2
-         T6+idd1JfSdYOWbqxed9msqiyztvFpc2q/hpg=
+        b=Q46mKiNB1ecHv6QkI7MzrCyfLjBk/qMjNrfzTbU5MqH747hUfs5GnTqucPHNCjoBTO
+         Ufn+Uvv4u52lLrMadf22mtgkp1IaVUaxcrIrSuN9q1uV/ZviCxlFWVm7OWoHEL6uGCMz
+         RuoKdcDfmtKxw701PK6PaW75EhzEWEJXewkcg=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 178/223]drivers/staging/comedi/drivers/addi-data/APCI1710_INCCPT.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:43:13 -0700
-Message-Id: <1284072195-8345-13-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 206/223]drivers/usb/serial/Kconfig Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:45:05 -0700
+Message-Id: <1284072309-8452-11-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1284072195-8345-1-git-send-email-justinmattock@gmail.com>
-References: <1284072195-8345-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1284072309-8452-1-git-send-email-justinmattock@gmail.com>
+References: <1284072309-8452-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,22 +33,40 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- .../comedi/drivers/addi-data/APCI1710_INCCPT.c     |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/usb/serial/Kconfig |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/APCI1710_INCCPT.c b/drivers/staging/comedi/drivers/addi-data/APCI1710_INCCPT.c
-index 0e498e9..14b13ea 100644
---- a/drivers/staging/comedi/drivers/addi-data/APCI1710_INCCPT.c
-+++ b/drivers/staging/comedi/drivers/addi-data/APCI1710_INCCPT.c
-@@ -8,7 +8,7 @@ Copyright (C) 2004,2005  ADDI-DATA GmbH for the source code of this module.
- 	D-77833 Ottersweier
- 	Tel: +19(0)7223/9493-0
- 	Fax: +49(0)7223/9493-92
--	http://www.addi-data-com
-+	http://www.addi-data.com
- 	info@addi-data.com
+diff --git a/drivers/usb/serial/Kconfig b/drivers/usb/serial/Kconfig
+index 916b2b6..de86d92 100644
+--- a/drivers/usb/serial/Kconfig
++++ b/drivers/usb/serial/Kconfig
+@@ -176,7 +176,7 @@ config USB_SERIAL_VISOR
+ 	help
+ 	  Say Y here if you want to connect to your HandSpring Visor, Palm
+ 	  m500 or m505 through its USB docking station. See
+-	  <http://usbvisor.sourceforge.net/> for more information on using this
++	  <http://usbvisor.sourceforge.net/index.php3> for more information on using this
+ 	  driver.
  
- This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+ 	  To compile this driver as a module, choose M here: the
+@@ -264,7 +264,7 @@ config USB_SERIAL_IUU
+ 	help
+ 	  Say Y here if you want to use a IUU in phoenix mode and get
+ 	  an extra ttyUSBx device. More information available on
+-	  http://eczema.ecze.com/iuu_phoenix.html
++	  http://www.opensc-project.org/openct/wiki/wbeiuu 
+ 
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called iuu_phoenix.o
+@@ -289,8 +289,6 @@ config USB_SERIAL_KEYSPAN
+ 	  and was developed with their support.  You must also include
+ 	  firmware to support your particular device(s).
+ 
+-	  See <http://misc.nu/hugh/keyspan.html> for more information.
+-
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called keyspan.
+ 
 -- 
 1.7.2.1
 
