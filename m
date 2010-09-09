@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab0IIWgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:36:41 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47134 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932736Ab0IIWgg (ORCPT
+	id S932785Ab0IIWgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:36:47 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:48051 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932736Ab0IIWgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:36:36 -0400
+	Thu, 9 Sep 2010 18:36:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=gVT8MQ3fRMg2WFI4mL5XDeL5VqV32SKzoaguGV+8yIVfdDx6F7GkrOp9xnd9I/lpmE
-         v2fQ7IJq3Zv7fCmogAvwEey6X6DrA2l40GZmdYTlUUXSBf/lq8CIWcAREjlnMZjL6STc
-         ZE/CiHu5J2yGGDVHTwqsZ+WoqiGHICskghWBs=
+        b=dMh8pkhhKJijH/8XMSjq4sUKQBT/Wkm5SE1eHEeXNzNBmO3YWia9vKkn7Rvwl3/Y1O
+         5A13e+aBXgAdgpnlyb55YN1ACNPO4rKbiy+4Zh3rZ1W9mydy5PdA1o2NfEnCL9lMTq2a
+         xZkX6k9LBQuO0TfJ050ltS6hVTpSOGAozKj4c=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 111/223]drivers/net/wan/sbni.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:36:40 -0700
-Message-Id: <1284071809-8149-6-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 113/223]drivers/net/wan/cosa.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:36:42 -0700
+Message-Id: <1284071809-8149-8-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071809-8149-1-git-send-email-justinmattock@gmail.com>
 References: <1284071809-8149-1-git-send-email-justinmattock@gmail.com>
@@ -33,22 +33,23 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/net/wan/sbni.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/wan/cosa.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wan/sbni.c b/drivers/net/wan/sbni.c
-index cff13a9..e8e77e9 100644
---- a/drivers/net/wan/sbni.c
-+++ b/drivers/net/wan/sbni.c
-@@ -8,7 +8,7 @@
-  *	Driver supports SBNI12-02,-04,-05,-10,-11 cards, single and
-  *	double-channel, PCI and ISA modifications.
-  *	More info and useful utilities to work with SBNI12 cards you can find
-- *	at http://www.granch.com (English) or http://www.granch.ru (Russian)
-+ *	at http://web.archive.org/web/*/http://www.granch.com 
+diff --git a/drivers/net/wan/cosa.c b/drivers/net/wan/cosa.c
+index 04c6cd4..bc8b3fa 100644
+--- a/drivers/net/wan/cosa.c
++++ b/drivers/net/wan/cosa.c
+@@ -28,8 +28,7 @@
+  * Masaryk University (http://www.ics.muni.cz/). The hardware is
+  * developed by Jiri Novotny <novotny@ics.muni.cz>. More information
+  * and the photo of both cards is available at
+- * http://www.pavoucek.cz/cosa.html. The card documentation, firmwares
+- * and other goods can be downloaded from ftp://ftp.ics.muni.cz/pub/cosa/.
++ * http://web.archive.org/web/20010412025813/http://www.pavoucek.cz/cosa.html.
+  * For Linux-specific utilities, see below in the "Software info" section.
+  * If you want to order the card, contact Jiri Novotny.
   *
-  *	This software may be used and distributed according to the terms
-  *	of the GNU General Public License.
 -- 
 1.7.2.1
 
