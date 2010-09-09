@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab0IIHyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 03:54:33 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47728 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751285Ab0IIHy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 03:54:27 -0400
-Date: Thu, 9 Sep 2010 09:54:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jean Pihet <jean.pihet@newoldbits.com>
-Cc: Thomas Renninger <trenn@suse.de>, Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, discuss@lesswatts.org,
-        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] tracing, perf: add more power related events
-Message-ID: <20100909075403.GA10798@elte.hu>
-References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
- <20100908065333.GG3439@elte.hu>
- <AANLkTikpwSA411XRTi7Ybj_19URnW0mEMrf6pFYNpxVF@mail.gmail.com>
+	id S1753682Ab0IIHzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 03:55:15 -0400
+Received: from rcsinet14.oracle.com ([148.87.113.126]:21118 "EHLO
+	rcsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab0IIHzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 03:55:08 -0400
+X-Greylist: delayed 1644 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Sep 2010 03:55:07 EDT
+Message-ID: <4C888B8B.5020304@kernel.org>
+Date: Thu, 09 Sep 2010 00:23:55 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikpwSA411XRTi7Ybj_19URnW0mEMrf6pFYNpxVF@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0450]
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] x86, setup: fix earlyprintk=serial,0x3f8,115200
+References: <AANLkTinRRiW1VUzS+3T82=q8PsoRn78Cgn_X8gSduM0U@mail.gmail.com> <AANLkTi=652CHVZz8TAqCOiOLO2XyUHd6_i3vWNgbVzKA@mail.gmail.com> <4C7B0578.8090807@kernel.org> <4C7B05A6.4010801@kernel.org> <4C880001.8000908@zytor.com>
+In-Reply-To: <4C880001.8000908@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/08/2010 02:28 PM, H. Peter Anvin wrote:
+> On 08/29/2010 06:13 PM, Yinghai Lu wrote:
+>>
+>> earlyprintk could take io port.
+>>
+>> So we need to handle this case in setup code too, otherwise 0x3f8
+>> will be treated as baud rate.
+>>
+> 
+> What about a non-hexadecimal port?  It seems more logical to me to move
+> the strncmp() up and test that before using simple_strtoull().
 
-* Jean Pihet <jean.pihet@newoldbits.com> wrote:
+non-hex is not supported...
 
-> On Wed, Sep 8, 2010 at 8:53 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Jean Pihet <jean.pihet@newoldbits.com> wrote:
-> >
-> >> Hi,
-> >>
-> >> Here is a patch proposal for adding new trace events for power management.
-> >> Note: thread restarted after the initial discussions on LKML.
-> >
-> > Also mind including the ACPI tracepoints we talked about? That way a lot
-> > more people could test it, etc.
->
-> I think the ACPI tracepoints can be added on top of the proposed 
-> patch. Is that ok?
+in arch/x86/kernel/early_printk.c
+static __init void early_serial_init(char *s)
+{
+        unsigned char c;
+        unsigned divisor;
+        unsigned baud = DEFAULT_BAUD;
+        char *e;
 
-Yeah - and the OMAP thing can be split up too if the OMAP folks prefer 
-it that way, but we still want to _see_ all the patches in this thread 
-together so that we have a critical mass of people interested in all 
-this ...
+        if (*s == ',')
+                ++s;
 
-Thanks,
+        if (*s) {
+                unsigned port;
+                if (!strncmp(s, "0x", 2)) {
+                        early_serial_base = simple_strtoul(s, &e, 16);
+                } else {
+                        static const int __initconst bases[] = { 0x3f8, 0x2f8 };
 
-	Ingo
+                        if (!strncmp(s, "ttyS", 4))
+                                s += 4;
+                        port = simple_strtoul(s, &e, 10);
+                        if (port > 1 || s == e)
+                                port = 0;
+                        early_serial_base = bases[port];
+                }
+                s += strcspn(s, ",");
+                if (*s == ',')
+                        s++;
+        }
+
+so it check 0x too.
+
+
+Yinghai
