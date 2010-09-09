@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751171Ab0IIENk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 00:13:40 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44697 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856Ab0IIENe (ORCPT
+	id S1751249Ab0IIE3b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 00:29:31 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50720
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750958Ab0IIE3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 00:13:34 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 05/10] vmscan: Synchrounous lumpy reclaim use lock_page() instead trylock_page()
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20100909121547.2e69735a.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100909120448.58acc9a6.kamezawa.hiroyu@jp.fujitsu.com> <20100909121547.2e69735a.kamezawa.hiroyu@jp.fujitsu.com>
-Message-Id: <20100909131211.C93C.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Thu, 9 Sep 2010 00:29:24 -0400
+Date: Wed, 08 Sep 2010 21:29:41 -0700 (PDT)
+Message-Id: <20100908.212941.241936726.davem@davemloft.net>
+To: linux@rainbow-software.org
+Cc: greg@kroah.com, simon@fire.lp0.eu, dbrownell@users.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] cxacru: ignore cx82310_eth devices
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201009082252.15865.linux@rainbow-software.org>
+References: <201009052212.37015.linux@rainbow-software.org>
+	<20100908.131227.28827971.davem@davemloft.net>
+	<201009082252.15865.linux@rainbow-software.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  9 Sep 2010 13:13:22 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 9 Sep 2010 12:04:48 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Wed, 8 Sep 2010 22:52:12 +0200
+
+> Ignore ADSL routers, which can have the same vendor and product IDs
+> as ADSL modems but should be handled by the cx82310_eth driver.
 > 
-> > On Mon,  6 Sep 2010 11:47:28 +0100
-> > Mel Gorman <mel@csn.ul.ie> wrote:
-> > 
-> > > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > > 
-> > > With synchrounous lumpy reclaim, there is no reason to give up to reclaim
-> > > pages even if page is locked. This patch uses lock_page() instead of
-> > > trylock_page() in this case.
-> > > 
-> > > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > 
-> > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> Ah......but can't this change cause dead lock ??
+> This intentionally ignores device IDs that aren't currently handled
+> by cx82310_eth. There may be other device IDs that perhaps shouldn't
+> be claimed by cxacru.
+> 
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
 
-Yes, this patch is purely crappy. please drop. I guess I was poisoned
-by poisonous mushroom of Mario Bros.
-
-
-
-
+Applied with some minor comment formatting fixes, thanks!
