@@ -1,118 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab0IITHx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 15:07:53 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:38872 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab0IITHv (ORCPT
+	id S1755409Ab0IITQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 15:16:53 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47122 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754421Ab0IITQv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 15:07:51 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=s3l/bHc/5FCxaIjZqtwSaiVHHYeLRMM1b5xAE1xJH96EDwTjUo1Vo53KTZ2CtEMhL
-	decTP43EwQwqEPRpBb2xA==
-Date: Thu, 9 Sep 2010 12:07:43 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-cc: Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Minchan Kim <minchan.kim@gmail.com>, Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [patch -rc] oom: always return a badness score of non-zero for
- eligible tasks
-In-Reply-To: <1284053081.7586.7910.camel@nimitz>
-Message-ID: <alpine.DEB.2.00.1009091152090.5556@chino.kir.corp.google.com>
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org> <1284053081.7586.7910.camel@nimitz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 9 Sep 2010 15:16:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=D3+d8R0krYMlFMjenNNeE63n+AOrsjqxUvr31oBO/UeCEttI8MGHeJY9YL2najS5Fd
+         Kf1Rrjtw5V4a4HFsYrMiu0s14knhE4t5/zrmnoNg7dG7FU1i2a6KOQrKptYC5Qot4Gdb
+         t+EPaGbsKB/QvtvpZM3WIgl0o1CluEBJ/iMIM=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <1284058127.24986.199.camel@Joe-Laptop>
+References: <1284056536.24986.182.camel@Joe-Laptop> <AANLkTimAuA1oYyoaKsFTPEifdDsz9h=EzTB8gKudyAJk@mail.gmail.com>
+ <1284058127.24986.199.camel@Joe-Laptop>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 9 Sep 2010 15:16:29 -0400
+Message-ID: <AANLkTimzAOvP62VnhpSmKoazKkPc30-YTy09g2eYPGBg@mail.gmail.com>
+Subject: Re: [rfc patch] treewide: Convert "static const char <*> foo[] =" to
+ "static const char <*> const foo[] ="
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Sep 2010, Dave Hansen wrote:
+On Thu, Sep 9, 2010 at 14:48, Joe Perches wrote:
+> On Thu, 2010-09-09 at 14:29 -0400, Mike Frysinger wrote:
+>> this is going to keep
+>> creeping back in with new drivers unless we have something like
+>> checkpatch.pl catching it ...
+>
+> These are added pretty slowly, but both of
+>
+>        static char foo[] = "bar"
+> and
+>        static const char *foo[] = {"bar"}
+>
+> could be warned by checkpatch
 
-> Hi Nitin,
-> 
-> I've been playing with using zram (from -staging) to back some qemu
-> guest memory directly.  Basically mmap()'ing the device in instead of
-> using anonymous memory.  The old code with the backing swap devices
-> seemed to work pretty well, but I'm running into a problem with the new
-> code.
-> 
-> I have plenty of swap on the system, and I'd been running with compcache
-> nicely for a while.  But, I went to go tar up (and gzip) a pretty large
-> directory in my qemu guest.  It panic'd the qemu host system:
-> 
-> [703826.003126] Kernel panic - not syncing: Out of memory and no killable processes...
-> [703826.003127] 
-> [703826.012350] Pid: 25508, comm: cat Not tainted 2.6.36-rc3-00114-g9b9913d #29
+i dont think you even need to check the contents.  just match the base:
+char foo[]
+const char *foo[]
 
-I'm curious why there are no killable processes on the system; it seems 
-like the triggering task here, cat, would at least be killable itself.  
-Could you post the tasklist dump that preceeds this (or, if you've 
-disabled it try echo 1 > /proc/sys/vm/oom_dump_tasks first)?
+we want to catch these even if it isnt static, and catching the
+forward decl would be useful too.
 
-It's possible that if you have enough swap that none of the eligible tasks 
-actually have non-zero badness scores either because they are being run as 
-root or because the amount of RAM or swap is sufficiently high such that 
-(task's rss + swap) / (total rss + swap) is never non-zero.  And, since 
-root tasks have a 3% bonus, it's possible these are all root tasks and no 
-single task uses more than 3% of rss and swap.
+>> where is the actual patch ?
+>
+> On my computer.  300KB is pretty big to post.
+> I'll sent it to you separately.
 
-While this may not be the issue in your case, and can be confirmed with 
-the tasklist dump if you can get it, we need to protect against these 
-situations where eligible tasks may not be killed.
+thanks.  for reviewing/merging, probably be best to split up by
+subsystem.  the MTD parts look straight forward (part probe types), so
+that'd be one big change.  i'd even include the board changes in that
+one commit.
 
-Andrew, I'd like to propose this patch for 2.6.36-rc-series since the 
-worst case is that the machine will panic if there are an exceptionally 
-large number of tasks, each with little memory usage at the time of oom.
+same goes for the ASoC changes (most everything under sound/).  looks
+sane, so make one chunk for that and send to the ASoC guys.
 
-
-
-oom: always return a badness score of non-zero for eligible tasks
-
-A task's badness score is roughly a proportion of its rss and swap
-compared to the system's capacity.  The scale ranges from 0 to 1000 with
-the highest score chosen for kill.  Thus, this scale operates on a
-resolution of 0.1% of RAM + swap.  Admin tasks are also given a 3% bonus,
-so the badness score of an admin task using 3% of memory, for example,
-would still be 0.
-
-It's possible that an exceptionally large number of tasks will combine to 
-exhaust all resources but never have a single task that uses more than
-0.1% of RAM and swap (or 3.0% for admin tasks).
-
-This patch ensures that the badness score of any eligible task is never 0
-so the machine doesn't unnecessarily panic because it cannot find a task
-to kill.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/oom_kill.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -208,8 +208,13 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
- 	 */
- 	points += p->signal->oom_score_adj;
- 
--	if (points < 0)
--		return 0;
-+	/*
-+	 * Never return 0 for an eligible task that may be killed since it's
-+	 * possible that no single user task uses more than 0.1% of memory and
-+	 * no single admin tasks uses more than 3.0%.
-+	 */
-+	if (points <= 0)
-+		return 1;
- 	return (points < 1000) ? points : 1000;
- }
- 
+your perl hack isnt quite right.  the change to
+drivers/mtd/maps/ixp2000.c and intel_vr_nor.c incorrectly ate leading
+whitespace.  how about making a coccinelle patch ?  then you could add
+it to scripts/coccinelle/ for other people to use in the future, and
+hopefully these style changes wouldnt be broken in the process.
+-mike
