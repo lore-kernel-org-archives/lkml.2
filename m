@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab0IIQ6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 12:58:21 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:46691 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609Ab0IIQ6T convert rfc822-to-8bit (ORCPT
+	id S1753286Ab0IIQ74 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 12:59:56 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58825 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab0IIQ7y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 12:58:19 -0400
-X-IronPort-AV: E=Sophos;i="4.56,340,1280732400"; 
-   d="scan'208";a="446662115"
-Subject: Re: [REGRESSION PATCH] NFS: let NFS_V4 and NFSD_V4 enforce CRYPTO
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>
-In-Reply-To: <1282727119-8295-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <20100825084912.GA10293@pengutronix.de>
-	 <1282727119-8295-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 9 Sep 2010 12:59:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=k2oHhvNnVDBOazylMYsm+6/8wwkrHcShRrFwiKbi0omRpJAVCG05Z9DbqiqVzbpF1B
+         bxxaMmgopnfFC2atTmKqePTV7PIHYQ7WAkHa7j/glF6rvK/ZSSobN8uPCUReYn1KchWH
+         q7Fo/rOh2aa7U+gOm5hdT/YqUGfiDJKsx6Tlo=
+MIME-Version: 1.0
+In-Reply-To: <1283963539-4039-1-git-send-email-mjg@redhat.com>
+References: <1283963539-4039-1-git-send-email-mjg@redhat.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 9 Sep 2010 12:59:33 -0400
+Message-ID: <AANLkTinD82aK3BWe8JXiF_hHBzH3e=k8ncFpGdUZ2edE@mail.gmail.com>
+Subject: Re: [PATCH] Backlight: Add backlight type
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Thu, 09 Sep 2010 12:57:28 -0400
-Message-ID: <1284051448.6977.6.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-X-OriginalArrivalTime: 09 Sep 2010 16:58:18.0920 (UTC) FILETIME=[33E89280:01CB5040]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-25 at 11:05 +0200, Uwe Kleine-König wrote:
-> This is a follow up to
-> 
-> 	df486a2 (NFS: Fix the selection of security flavours in Kconfig)
-> 
-> which broke (among others) arm/mx1_defconfig.
-> 
-> Moreover let NFS_V4 select RPCSEC_GSS_KRB5 again as it was before
-> df486a2.  This make the dependency more explicit than relying on the no
-> prompt + default y if !(NFS_V4 || NFSD_V4).
+On Wed, Sep 8, 2010 at 12:32, Matthew Garrett <mjg@redhat.com> wrote:
+> There may be multiple ways of controlling the backlight on a given machine.
+> Allow drivers to expose the type of interface they are providing, making
+> it possible for userspace to make appropriate policy decisions.
 
-Hi Uwe,
+maybe i missed something, but i dont see the core validating the .type
+value at registration time.  since the value is then used later as an
+index into an array, shouldnt it verify that it is valid ?
 
-Having looked more closely at the actual dependencies in the NFSv4
-client and server (see the changelog below), I believe the following is
-the correct patch. It ensures that the RPCSEC_GSS module is always
-selected, and does not introduce any unnecessary dependencies on CRYPTO.
+do you want to force everyone to declare they're "raw" ?  or just go
+with the memset default to have people start with "raw" ?  otherwise
+it might make sense to have the first enum be BACKLIGHT_UNKNOWN and
+have the core warn when it hits that.
 
-Cheers
-  Trond
+> --- a/drivers/video/backlight/backlight.c
+> +++ b/drivers/video/backlight/backlight.c
+>
+> +static const char *backlight_types[] = {
+> +       [BACKLIGHT_RAW] = "raw",
+> +       [BACKLIGHT_PLATFORM] = "platform",
+> +       [BACKLIGHT_FIRMWARE] = "firmware",
+> +};
 
------------------------------------------------------------------------
-SUNRPC: Fix the NFSv4 and RPCSEC_GSS Kconfig dependencies
-
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-The NFSv4 client's callback server calls svc_gss_principal(), which
-is defined in the auth_rpcgss.ko
-
-The NFSv4 server has the same dependency, and in addition calls
-svcauth_gss_flavor(), gss_mech_get_by_pseudoflavor(),
-gss_pseudoflavor_to_service() and gss_mech_put() from the same module.
-
-The module auth_rpcgss itself has no dependencies aside from sunrpc,
-so we only need to select RPCSEC_GSS.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
-
- fs/nfs/Kconfig  |    1 +
- fs/nfsd/Kconfig |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
-
-
-diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
-index 6c2aad4..f7e13db 100644
---- a/fs/nfs/Kconfig
-+++ b/fs/nfs/Kconfig
-@@ -63,6 +63,7 @@ config NFS_V3_ACL
- config NFS_V4
- 	bool "NFS client support for NFS version 4"
- 	depends on NFS_FS
-+	select SUNRPC_GSS
- 	help
- 	  This option enables support for version 4 of the NFS protocol
- 	  (RFC 3530) in the kernel's NFS client.
-diff --git a/fs/nfsd/Kconfig b/fs/nfsd/Kconfig
-index 95932f5..4264377 100644
---- a/fs/nfsd/Kconfig
-+++ b/fs/nfsd/Kconfig
-@@ -69,6 +69,7 @@ config NFSD_V4
- 	depends on NFSD && PROC_FS && EXPERIMENTAL
- 	select NFSD_V3
- 	select FS_POSIX_ACL
-+	select SUNRPC_GSS
- 	help
- 	  This option enables support in your system's NFS server for
- 	  version 4 of the NFS protocol (RFC 3530).
-
+const char * const backlight_types[] ?
+-mke
