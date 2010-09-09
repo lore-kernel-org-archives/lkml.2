@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab0IIEuX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 00:50:23 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60877 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab0IIEuU (ORCPT
+	id S1751605Ab0IIEzp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 00:55:45 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2697 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882Ab0IIEzl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 00:50:20 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 9 Sep 2010 13:44:59 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+	Thu, 9 Sep 2010 00:55:41 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+From: "Michael Chan" <mchan@broadcom.com>
+To: "'Shawn Bohrer'" <shawn.bohrer@gmail.com>
+cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        gthelen@google.com, Munehiro Ikeda <m-ikeda@ds.jp.nec.com>,
-        menage@google.com, "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
-Subject: Re: [PATCH 0/5] memcg: towards I/O aware memcg v7.
-Message-Id: <20100909134459.361a0f61.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100901153951.bc82c021.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100901153951.bc82c021.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        "stable@kernel.org" <stable@kernel.org>
+Date: Wed, 8 Sep 2010 21:55:29 -0700
+Subject: Re: [BUG] 2.6.32.21 bnx2_napi->hw_tx_cons_ptr NULL pointer
+ dereference
+Thread-Topic: [BUG] 2.6.32.21 bnx2_napi->hw_tx_cons_ptr NULL pointer
+ dereference
+Thread-Index: ActPvzZmICmAJ64ORbGgC9RB8ndjeAAG2vxQ
+Message-ID: <C27F8246C663564A84BB7AB3439772421B9134BA2E@IRVEXCHCCR01.corp.ad.broadcom.com>
+In-Reply-To: <20100909013437.GA6400@lintop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+X-WSS-ID: 6096B74B3ES9471485-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Sep 2010 15:39:51 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Shawn Bohrer wrote:
 
-> 
-> Major changes from v6 is
->  a) added documentation about CSS ID.
->  b) fixed typos and bugs.
->  c) refleshed some comments
-> 
-> based on mmotm-2010-08-27
-> 
-> Patch brief view:
->  1. changes css ID allocation in kernel/cgroup.c
->  2. use ID-array in memcg.
->  3. record ID to page_cgroup rather than pointer.
->  4. make update_file_mapped to be RCU aware routine instead of spinlock.
->  5. make update_file_mapped as general-purpose function.
-> 
-> 
+> On Wed, Sep 08, 2010 at 03:58:12PM -0700, Michael Chan wrote:
+> >
+> > On Wed, 2010-09-08 at 15:44 -0700, Shawn Bohrer wrote:
+> > > Hello,
+> > >
+> > > While testing 2.6.32.21 I had the following Oops occur on
+> one of my
+> > > machines:
+> >
+> > This has been fixed by this patch:
+> >
+> > commit 4327ba435a56ada13eedf3eb332e583c7a0586a9
+> >
+> >     bnx2: Fix netpoll crash.
+> >
+> > But it caused a regression which was later fixed by this patch:
+> >
+> > commit f048fa9c8686119c3858a463cab6121dced7c0bf
+> >
+> >     bnx2: Fix hang during rmmod bnx2.
+> >
+> > Both patches are in 2.6.34.2.  Thanks.
+>
+> Is there any reason these can't/shouldn't be applied to the 2.6.32.y
+> stable series?  It looks like they apply cleanly.
+>
 
-It seems that it will be better to re-order this series into
-
- A-part: lockless update of stats.
- B-part: ID managenet.
-
-2 series. (to get ack.) Thank you for all helps.
-BTW, what's the problem with ID patches ?
-
-Thanks,
--Kame
+No reason.  I just didn't know how far back to apply these patches.
+The crash was triggered by changes in netpoll some time ago and
+the problem has been present for some time.
 
