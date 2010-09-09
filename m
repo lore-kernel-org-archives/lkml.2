@@ -1,289 +1,379 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab0IIICm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 04:02:42 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:32784 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751925Ab0IIICf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 04:02:35 -0400
-Date: Thu, 9 Sep 2010 10:02:29 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH UPDATED] workqueue: add documentation
-Message-ID: <20100909100229.250900f0@schatten.dmk.lab>
-In-Reply-To: <4C87B101.2080608@kernel.org>
-References: <4C87AE52.70401@kernel.org>
-	<4C87B101.2080608@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753884Ab0IIIFa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 04:05:30 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:57757 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751311Ab0IIIFQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 04:05:16 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-mmc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <akpm@linux-foundation.org>, Linus Walleij <linus.walleij@stericsson.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Sundar Iyer <sundar.iyer@stericsson.com>,
+        Daniel Mack <daniel@caiaq.de>, Pierre Ossman <pierre@ossman.eu>,
+        Matt Fleming <matt@console-pimps.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Cliff Brake <cbrake@bec-systems.com>,
+        Jarkko Lavinen <jarkko.lavinen@nokia.com>
+Subject: [PATCH] MMC: move regulator handling closer to core v4
+Date: Thu, 9 Sep 2010 10:03:06 +0200
+Message-ID: <1284019386-26972-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.3.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun!
-Perfect timing. Just enough for the details to get a little foggy, 
-while still knowing a little bit what you want to talk about. 
-:-)
+After discovering a problem in regulator reference counting I
+took Mark Brown's advice to move the reference count into the
+MMC core by making the regulator status a member of
+struct mmc_host.
 
-On Wed, 08 Sep 2010 17:40:02 +0200 Tejun Heo <tj@kernel.org> wrote:
+I took this opportunity to also implement NULL versions of
+the regulator functions so as to rid the driver code from
+some ugly #ifdef CONFIG_REGULATOR clauses.
 
-> +
-> +1. Why cmwq?
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Sundar Iyer <sundar.iyer@stericsson.com>
+Cc: Daniel Mack <daniel@caiaq.de>
+Cc: Pierre Ossman <pierre@ossman.eu>
+Cc: Matt Fleming <matt@console-pimps.org>
+Cc: David Brownell <dbrownell@users.sourceforge.net>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Cliff Brake <cbrake@bec-systems.com>
+Cc: Jarkko Lavinen <jarkko.lavinen@nokia.com>
+Cc: linux-mmc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+Changes v3->v4:
 
-Perhaps better to begin with an introduction:
+Propagate errors from regulator_set_ocr() properly in the
+pxamci and mmci drivers, as far as is possible until we hit the
+fact that mmc_set_ios() returns void and cannot handle error
+codes.
 
-1. Introduction
+Switched a pr_debug() in the PXA driver to a dev_dbg() as well
+because it was disturbing to see it.
 
-> +
-> +There are many cases where an asynchronous process execution context
-> +is needed and the workqueue (wq)  is the most commonly used mechanism
-> +for such cases.  
+Andrew, if you want me to go in and fix the mmc_host_struct
+.set_ios() member to supply and handle an int return value then I
+can make a go, but is it OK to take this patch first and then fix
+up that MMC core issue on top of this patch then?
+---
+ drivers/mmc/core/core.c       |   26 ++++++++++++++++----------
+ drivers/mmc/host/mmci.c       |   28 ++++++++++++++++++----------
+ drivers/mmc/host/omap_hsmmc.c |   21 +++++++++++++--------
+ drivers/mmc/host/pxamci.c     |   41 +++++++++++++++++++++++++++++++++--------
+ include/linux/mmc/host.h      |   22 +++++++++++++++++++++-
+ 5 files changed, 101 insertions(+), 37 deletions(-)
 
-There are many cases where an asynchronous process execution context is
-needed and the workqueue (wq) API is the most commonly used mechanism
-for such cases. 
-
-> A work item describing which function to execute is
-> +queued on a workqueue which executes the work item in a process
-> +context asynchronously.
-
-When such an asynchronous execution context is needed, a work item
-describing which function to execute is put on a queue. An independent
-thread serves as the asynchronous execution context. The queue is
-called workqueue and the thread is called worker. 
-
-While there are work items on the workqueue the worker executes
-the functions associated with the work items one after the other. 
-When there is no work item left on the workqueue the worker
-becomes idle. When a new work item gets queued, the worker begins
-executing again.
-
-2. Why cmwq?
-
-> +
-> +In the original wq implementation, a multi threaded (MT) wq had one
-> +worker thread per CPU and a single threaded (ST) wq had one worker
-> +thread system-wide.  A single MT wq needed to keep around the same
-> +number of workers as the number of CPUs.  The kernel grew a lot of MT
-> +wq users over the years and with the number of CPU cores continuously
-> +rising, some systems saturated the default 32k PID space just booting
-> +up.
-> +
-> +Although MT wq wasted a lot of resource, the level of concurrency
-> +provided was unsatisfactory.  The limitation was common to both ST and
-> +MT wq albeit less severe on MT.  Each wq maintained its own separate
-> +worker pool.  A MT wq could provide only one execution context per CPU
-> +while a ST wq one for the whole system.  Work items had to compete for
-> +those very limited execution contexts leading to various problems
-> +including proneness to deadlocks around the single execution context.
-> +
-> +The tension between the provided level of concurrency and resource
-> +usage also forced its users to make unnecessary tradeoffs like libata
-> +choosing to use ST wq for polling PIOs and accepting an unnecessary
-> +limitation that no two polling PIOs can progress at the same time.  As
-> +MT wq don't provide much better concurrency, users which require
-> +higher level of concurrency, like async or fscache, had to implement
-> +their own thread pool.
-> +
-> +Concurrency Managed Workqueue (cmwq) is a reimplementation of wq with
-> +focus on the following goals.
-> +
-> +* Maintain compatibility with the original workqueue API.
-> +
-> +* Use per-CPU unified worker pools shared by all wq to provide
-> +  flexible level of concurrency on demand without wasting a lot of
-> +  resource.
-> +
-> +* Automatically regulate worker pool and level of concurrency so that
-> +  the API users don't need to worry about such details.
-> +
-> +
-
-
-
-> +2. The Design
-
-Now it get's a little bit rougher:
-
-> +
-> +There's a single global cwq (gcwq) for each possible CPU and a pseudo
-> +CPU for unbound wq.  A gcwq manages and serves out all the execution
-> +contexts on the associated CPU.  cpu_workqueue's (cwq) of each wq are
-> +mostly simple frontends to the associated gcwq.  When a work item is
-> +queued, it's queued to the unified worklist of the target gcwq.  Each
-> +gcwq maintains pool of workers used to process the worklist.
-
-Hm. That hurt my brain a little. :) 
-What about smth along the lines:
-
-In order to ease the asynchronous execution of functions a new
-abstraction, the work item, is introduced.
-
-A work item is a simple struct that holds a pointer to the
-function that is to be executed asynchronously. Whenever a driver or
-subsystem wants a function to be executed asynchronously it has to set
-up a work item pointing to that function and queue that work item on a
-workqueue.
-
-Special purpose threads, called worker threads,  execute the functions
-off of the queue, one after the other. If no work is queued, the worker
-threads become idle.
-
-These worker threads are managed in so called thread-pools.
-
-The cmwq design differentiates between the user-facing workqueues that
-subsystems and drivers queue work items on and what queues the 
-thread-pools actually work on.
-
-There are worker-thread-pools for each possible CPU and one
-worker-thread-pool whose threads are not bound to any specific CPU. Each
-worker-thread-pool has it's own queue (called gcwq) from which it
-executes work-items.  
-
-When a driver or subsystem creates a workqueue it is
-automatically associated with one of the gcwq's. For CPU-bound
-workqueues they are associated to that specific CPU's gcwq. For
-unbound workqueues, they are queued to the gcwq of the global
-thread-pool. 
-
-[Btw, I realized, now that I read the guidelines below, that this last
-paragraph is probably incorrect? Is there an association or does the
-enqueue-API automatically determine the CPU it needs to queue the work
-item on?]
-
-> +For any worker pool implementation, managing the concurrency level (how
-> +many execution contexts are active) is an important issue.  cmwq tries
-> +to keep the concurrency at minimal but sufficient level.
-> +
-> +Each gcwq bound to an actual CPU implements concurrency management by
-> +hooking into the scheduler.  The gcwq is notified whenever an active
-> +worker wakes up or sleeps and keeps track of the number of the
-> +currently runnable workers.  Generally, work items are not expected to
-> +hog CPU cycle and maintaining just enough concurrency to prevent work
-> +processing from stalling should be optimal.  As long as there is one
-> +or more runnable workers on the CPU, the gcwq doesn't start execution
-> +of a new work, but, when the last running worker goes to sleep, it
-> +immediately schedules a new worker so that the CPU doesn't sit idle
-> +while there are pending work items.  This allows using minimal number
-> +of workers without losing execution bandwidth.
-> +
-> +Keeping idle workers around doesn't cost other than the memory space
-> +for kthreads, so cmwq holds onto idle ones for a while before killing
-> +them.
-> +
-> +For an unbound wq, the above concurrency management doesn't apply and
-> +the gcwq for the pseudo unbound CPU tries to start executing all work
-> +items as soon as possible.  The responsibility of regulating
-> +concurrency level is on the users.  There is also a flag to mark a
-> +bound wq to ignore the concurrency management.  Please refer to the
-> +Workqueue Attributes section for details.
-> +
-> +Forward progress guarantee relies on that workers can be created when
-> +more execution contexts are necessary, which in turn is guaranteed
-> +through the use of rescue workers.  
-
-> +All wq which might be used in
-> +memory reclamation path are required to have a rescuer reserved for
-> +execution of the wq under memory pressure so that memory reclamation
-> +for worker creation doesn't deadlock waiting for execution contexts to
-> +free up.
-
-All work items which might be used on code paths that handle memory 
-reclaim are required to be queued on wq's that have a rescue-worker 
-reserved for execution under memory pressure. Else it is possible that 
-the thread-pool deadlocks waiting for execution contexts to free up.
-
-
-> +
-> +
-> +3. Workqueue Attributes
-> +
-
-3. Application Programming Interface (API)
-
-> +alloc_workqueue() allocates a wq.  The original create_*workqueue()
-> +functions are deprecated and scheduled for removal.  alloc_workqueue()
-> +takes three arguments - @name, @flags and @max_active.  @name is the
-> +name of the wq and also used as the name of the rescuer thread if
-> +there is one.
-> +
-> +A wq no longer manages execution resources but serves as a domain for
-> +forward progress guarantee, flush and work item attributes.  @flags
-> +and @max_active control how work items are assigned execution
-> +resources, scheduled and executed.
-[snip]
-
-I think it is worth mentioning all functions that are considered to be
-part of the API here. 
-
-[snip]
-
-> +5. Guidelines
-> +
-> +* Do not forget to use WQ_RESCUER if a wq may process work items which
-> +  are used during memory reclamation.  Each wq with WQ_RESCUER set has
-
-hmm.. it's not "reclamation". But I can't say the correct term either. 
-
-I'd say:
-".. are used during memory reclaim."
-
-> +  one rescuer thread reserved for it.  If there is dependency among
-> +  multiple work items used during memory reclamation, they should be
-
-"during memory reclaim" 
-
-> +  queued to separate wq each with WQ_RESCUER.
-> +
-> +* Unless strict ordering is required, there is no need to use ST wq.
-> +
-> +* Unless there is a specific need, using 0 for @nr_active is
-> +  recommended.  In most use cases, concurrency level usually stays
-> +  well under the default limit.
-> +
-> +* A wq serves as a domain for forward progress guarantee (WQ_RESCUER),
-> +  flush and work item attributes.  Work items which are not involved
-> +  in memory reclamation and don't need to be flushed as a part of a
-
-see above (-> memory reclaim)
-
-> +  group of work items, and don't require any special attribute, can
-> +  use one of the system wq.  There is no difference in execution
-> +  characteristics between using a dedicated wq and a system wq.
-> +
-> +* Unless work items are expected to consume huge amount of CPU cycles,
-> +  using bound wq is usually beneficial due to increased level of
-> +  locality in wq operations and work item execution.
-
-"Unless work items are expected to consume a huge amount of CPU
-cycles, using a bound wq is usually beneficial due to the increased
-level of locality in wq operations and work item exection. "
-
-Btw, it is not clear to me, what you mean with "wq operations". 
-Do the enqueuing API functions automatically determine the cpu they are
-executed on and queue the workitem to the corresponding gcwq? Or do you
-need to explicitly queue to a specific CPU?
-
-Either you mean the operations that lead to the enqueueing of the
-work-item, or you mean the operations done by the thread-pool?
-
-
-... after thinking a bit, the wq implementation should obviously do the
-automatic enqueuing on the nearest gcwq thingy... But that should
-probably be mentioned in the API description. 
-Although I have to admit I only skimmed over the flag description
-above it seems you only mention the UNBOUND case and not the default
-one?
-
-
-Cheers,
-Flo
-
-
-
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 5db49b1..2d47467 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -771,8 +771,9 @@ EXPORT_SYMBOL(mmc_regulator_get_ocrmask);
+ 
+ /**
+  * mmc_regulator_set_ocr - set regulator to match host->ios voltage
+- * @vdd_bit: zero for power off, else a bit number (host->ios.vdd)
++ * @mmc: the host to regulate
+  * @supply: regulator to use
++ * @vdd_bit: zero for power off, else a bit number (host->ios.vdd)
+  *
+  * Returns zero on success, else negative errno.
+  *
+@@ -780,15 +781,12 @@ EXPORT_SYMBOL(mmc_regulator_get_ocrmask);
+  * a particular supply voltage.  This would normally be called from the
+  * set_ios() method.
+  */
+-int mmc_regulator_set_ocr(struct regulator *supply, unsigned short vdd_bit)
++int mmc_regulator_set_ocr(struct mmc_host *mmc,
++			struct regulator *supply,
++			unsigned short vdd_bit)
+ {
+ 	int			result = 0;
+ 	int			min_uV, max_uV;
+-	int			enabled;
+-
+-	enabled = regulator_is_enabled(supply);
+-	if (enabled < 0)
+-		return enabled;
+ 
+ 	if (vdd_bit) {
+ 		int		tmp;
+@@ -819,17 +817,25 @@ int mmc_regulator_set_ocr(struct regulator *supply, unsigned short vdd_bit)
+ 		else
+ 			result = 0;
+ 
+-		if (result == 0 && !enabled)
++		if (result == 0 && !mmc->regulator_enabled) {
+ 			result = regulator_enable(supply);
+-	} else if (enabled) {
++			if (!result)
++				mmc->regulator_enabled = true;
++		}
++	} else if (mmc->regulator_enabled) {
+ 		result = regulator_disable(supply);
++		if (result == 0)
++			mmc->regulator_enabled = false;
+ 	}
+ 
++	if (result)
++		dev_err(mmc_dev(mmc),
++			"could not set regulator OCR (%d)\n", result);
+ 	return result;
+ }
+ EXPORT_SYMBOL(mmc_regulator_set_ocr);
+ 
+-#endif
++#endif /* CONFIG_REGULATOR */
+ 
+ /*
+  * Mask off any voltages we don't support and select
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index 1932e9c..f716e3c 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -523,19 +523,27 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	struct mmci_host *host = mmc_priv(mmc);
+ 	u32 pwr = 0;
+ 	unsigned long flags;
++	int ret;
+ 
+ 	switch (ios->power_mode) {
+ 	case MMC_POWER_OFF:
+-		if(host->vcc &&
+-		   regulator_is_enabled(host->vcc))
+-			regulator_disable(host->vcc);
++		if (host->vcc)
++			ret = mmc_regulator_set_ocr(mmc, host->vcc, 0);
+ 		break;
+ 	case MMC_POWER_UP:
+-#ifdef CONFIG_REGULATOR
+-		if (host->vcc)
+-			/* This implicitly enables the regulator */
+-			mmc_regulator_set_ocr(host->vcc, ios->vdd);
+-#endif
++		if (host->vcc) {
++			ret = mmc_regulator_set_ocr(mmc, host->vcc, ios->vdd);
++			if (ret) {
++				dev_err(mmc_dev(mmc), "unable to set OCR\n");
++				/*
++				 * The .set_ios() function in the mmc_host_ops
++				 * struct return void, and failing to set the
++				 * power should be rare so we print an error
++				 * and return here.
++				 */
++				return;
++			}
++		}
+ 		if (host->plat->vdd_handler)
+ 			pwr |= host->plat->vdd_handler(mmc_dev(mmc), ios->vdd,
+ 						       ios->power_mode);
+@@ -843,8 +851,8 @@ static int __devexit mmci_remove(struct amba_device *dev)
+ 		clk_disable(host->clk);
+ 		clk_put(host->clk);
+ 
+-		if (regulator_is_enabled(host->vcc))
+-			regulator_disable(host->vcc);
++		if (host->vcc)
++			mmc_regulator_set_ocr(mmc, host->vcc, 0);
+ 		regulator_put(host->vcc);
+ 
+ 		mmc_free_host(mmc);
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 4a8776f..14598ca 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -250,9 +250,9 @@ static int omap_hsmmc_1_set_power(struct device *dev, int slot, int power_on,
+ 		mmc_slot(host).before_set_reg(dev, slot, power_on, vdd);
+ 
+ 	if (power_on)
+-		ret = mmc_regulator_set_ocr(host->vcc, vdd);
++		ret = mmc_regulator_set_ocr(host->mmc, host->vcc, vdd);
+ 	else
+-		ret = mmc_regulator_set_ocr(host->vcc, 0);
++		ret = mmc_regulator_set_ocr(host->mmc, host->vcc, 0);
+ 
+ 	if (mmc_slot(host).after_set_reg)
+ 		mmc_slot(host).after_set_reg(dev, slot, power_on, vdd);
+@@ -291,18 +291,23 @@ static int omap_hsmmc_23_set_power(struct device *dev, int slot, int power_on,
+ 	 * chips/cards need an interface voltage rail too.
+ 	 */
+ 	if (power_on) {
+-		ret = mmc_regulator_set_ocr(host->vcc, vdd);
++		ret = mmc_regulator_set_ocr(host->mmc, host->vcc, vdd);
+ 		/* Enable interface voltage rail, if needed */
+ 		if (ret == 0 && host->vcc_aux) {
+ 			ret = regulator_enable(host->vcc_aux);
+ 			if (ret < 0)
+-				ret = mmc_regulator_set_ocr(host->vcc, 0);
++				ret = mmc_regulator_set_ocr(host->mmc,
++							host->vcc, 0);
+ 		}
+ 	} else {
++		/* Shut down the rail */
+ 		if (host->vcc_aux)
+ 			ret = regulator_disable(host->vcc_aux);
+-		if (ret == 0)
+-			ret = mmc_regulator_set_ocr(host->vcc, 0);
++		if (!ret) {
++			/* Then proceed to shut down the local regulator */
++			ret = mmc_regulator_set_ocr(host->mmc,
++						host->vcc, 0);
++		}
+ 	}
+ 
+ 	if (mmc_slot(host).after_set_reg)
+@@ -343,9 +348,9 @@ static int omap_hsmmc_23_set_sleep(struct device *dev, int slot, int sleep,
+ 	if (cardsleep) {
+ 		/* VCC can be turned off if card is asleep */
+ 		if (sleep)
+-			err = mmc_regulator_set_ocr(host->vcc, 0);
++			err = mmc_regulator_set_ocr(host->mmc, host->vcc, 0);
+ 		else
+-			err = mmc_regulator_set_ocr(host->vcc, vdd);
++			err = mmc_regulator_set_ocr(host->mmc, host->vcc, vdd);
+ 	} else
+ 		err = regulator_set_mode(host->vcc, mode);
+ 	if (err)
+diff --git a/drivers/mmc/host/pxamci.c b/drivers/mmc/host/pxamci.c
+index 0a4e43f..7609385 100644
+--- a/drivers/mmc/host/pxamci.c
++++ b/drivers/mmc/host/pxamci.c
+@@ -99,14 +99,25 @@ static inline void pxamci_init_ocr(struct pxamci_host *host)
+ 	}
+ }
+ 
+-static inline void pxamci_set_power(struct pxamci_host *host, unsigned int vdd)
++static inline int pxamci_set_power(struct pxamci_host *host,
++				    unsigned char power_mode,
++				    unsigned int vdd)
+ {
+ 	int on;
+ 
+-#ifdef CONFIG_REGULATOR
+-	if (host->vcc)
+-		mmc_regulator_set_ocr(host->vcc, vdd);
+-#endif
++	if (host->vcc) {
++		int ret;
++
++		if (power_mode == MMC_POWER_UP) {
++			ret = mmc_regulator_set_ocr(host->mmc, host->vcc, vdd);
++			if (ret)
++				return ret;
++		} else if (power_mode == MMC_POWER_OFF) {
++			ret = mmc_regulator_set_ocr(host->mmc, host->vcc, 0);
++			if (ret)
++				return ret;
++		}
++	}
+ 	if (!host->vcc && host->pdata &&
+ 	    gpio_is_valid(host->pdata->gpio_power)) {
+ 		on = ((1 << vdd) & host->pdata->ocr_mask);
+@@ -115,6 +126,8 @@ static inline void pxamci_set_power(struct pxamci_host *host, unsigned int vdd)
+ 	}
+ 	if (!host->vcc && host->pdata && host->pdata->setpower)
+ 		host->pdata->setpower(mmc_dev(host->mmc), vdd);
++
++	return 0;
+ }
+ 
+ static void pxamci_stop_clock(struct pxamci_host *host)
+@@ -490,9 +503,21 @@ static void pxamci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	}
+ 
+ 	if (host->power_mode != ios->power_mode) {
++		int ret;
++
+ 		host->power_mode = ios->power_mode;
+ 
+-		pxamci_set_power(host, ios->vdd);
++		ret = pxamci_set_power(host, ios->power_mode, ios->vdd);
++		if (ret) {
++			dev_err(mmc_dev(mmc), "unable to set power\n");
++			/*
++			 * The .set_ios() function in the mmc_host_ops
++			 * struct return void, and failing to set the
++			 * power should be rare so we print an error and
++			 * return here.
++			 */
++			return;
++		}
+ 
+ 		if (ios->power_mode == MMC_POWER_ON)
+ 			host->cmdat |= CMDAT_INIT;
+@@ -503,8 +528,8 @@ static void pxamci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	else
+ 		host->cmdat &= ~CMDAT_SD_4DAT;
+ 
+-	pr_debug("PXAMCI: clkrt = %x cmdat = %x\n",
+-		 host->clkrt, host->cmdat);
++	dev_dbg(mmc_dev(mmc), "PXAMCI: clkrt = %x cmdat = %x\n",
++		host->clkrt, host->cmdat);
+ }
+ 
+ static void pxamci_enable_sdio_irq(struct mmc_host *host, int enable)
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index 1575b52..d009d73 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -212,6 +212,10 @@ struct mmc_host {
+ 	struct led_trigger	*led;		/* activity led */
+ #endif
+ 
++#ifdef CONFIG_REGULATOR
++	bool			regulator_enabled; /* regulator state */
++#endif
++
+ 	struct dentry		*debugfs_root;
+ 
+ 	unsigned long		private[0] ____cacheline_aligned;
+@@ -250,8 +254,24 @@ static inline void mmc_signal_sdio_irq(struct mmc_host *host)
+ 
+ struct regulator;
+ 
++#ifdef CONFIG_REGULATOR
+ int mmc_regulator_get_ocrmask(struct regulator *supply);
+-int mmc_regulator_set_ocr(struct regulator *supply, unsigned short vdd_bit);
++int mmc_regulator_set_ocr(struct mmc_host *mmc,
++			struct regulator *supply,
++			unsigned short vdd_bit);
++#else
++int inline mmc_regulator_get_ocrmask(struct regulator *supply)
++{
++	return 0;
++}
++
++int inline mmc_regulator_set_ocr(struct mmc_host *mmc,
++				 struct regulator *supply,
++				 unsigned short vdd_bit)
++{
++	return 0;
++}
++#endif
+ 
+ int mmc_card_awake(struct mmc_host *host);
+ int mmc_card_sleep(struct mmc_host *host);
+-- 
+1.6.3.3
 
