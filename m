@@ -1,117 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab0IINUy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 09:20:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59089 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab0IINUv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 09:20:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sxytnFSSFCtIpL0tGM0Ry3lWgMVDJfDCJ4m8oW4EwIz15UdO09OIKYksgKuSYNpF5f
-         jVSVvu1NpqYaPau6hDjWN4lKZ/YzpV09MiliwElugIlOG2GeeoijVv3PbvNDBVWOrnav
-         e7nGdMX5/8JL3F4DG0R3AEAEj60nEVpK3J+Lo=
-Date: Thu, 9 Sep 2010 15:21:00 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        Song Yuan <song.yuan@ericsson.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: perf events over (net) console?
-Message-ID: <20100909132057.GA5259@nowhere>
-References: <AANLkTi=yeHyOeewm9tdsHRtj+=d+vE5=NRKGaPyq_yGH@mail.gmail.com> <1284031141.402.1.camel@laptop> <20100909112940.GA5267@nowhere> <20100909114053.GA15140@elte.hu> <AANLkTikuqHFdOoiB4ejRygi3EV3p4HN2jgjJwM6Sw+31@mail.gmail.com> <1284036453.402.11.camel@laptop> <20100909130723.GA20470@elte.hu>
+	id S1753674Ab0IINWK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 09:22:10 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:58428 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752080Ab0IINWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 09:22:08 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH v2 5/7] hwmon: (lm90) Introduce 3rd set of upper temperature limits
+Date: Thu, 9 Sep 2010 06:25:48 -0700
+Message-ID: <1284038750-8833-6-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.0.87.g0901d
+In-Reply-To: <1284038750-8833-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1284038750-8833-1-git-send-email-guenter.roeck@ericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100909130723.GA20470@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 03:07:23PM +0200, Ingo Molnar wrote:
-> 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Thu, 2010-09-09 at 14:31 +0200, Harald Gustafsson wrote:
-> > 
-> > > Sorry for being daft...
-> > 
-> > No worries, I'm sure we all qualify at times ;-)
-> > 
-> > > >> >
-> > > >> > You need a process context anyway to read the data and send it to
-> > > >> > whatever place you want it.
-> > > >> >
-> > > >> > Putting that in-kernel serves no purpose what so ever.
-> > > >>
-> > > >> But if we bring the splice support, that can be done with minimal
-> > > >> userspace noise. Plus that would work with the usual sockets but not
-> > > >> limited to that.
-> > > >
-> > > > Yes. If we can transform the data over the network without it touching
-> > > > disk, then that would be a sufficiently 'does not disturb other tasks'
-> > > > measurement method.
-> > > 
-> > > Thanks for the pointers to more information, and yes my thoughts was 
-> > > more about avoiding the data copy then avoiding any processing 
-> > > context at all.
-> > 
-> > Right, currently you get a single copy with mmap() + write(), once we 
-> > manage to fix splice() and actually provide perf-splice() you'd be 
-> > able to do zero-copy.
-> 
-> I think it would also be very useful to have some sort of tooling help 
-> for "low overhead/impact perf recording".
-> 
-> If there's a 'target box' and a different 'host box' (where most of 
-> development is done, etc.), then there might not be any NFS connection 
-> set up to make zero-copy file transfer easy. Doing it over ssh would add 
-> overhead.
-> 
-> One possible workflow would be to run this on the target/remote box:
-> 
->   perf remote
-> 
-> And as long as that command is running there, it could be used from the 
-> development box (over a trusted local network), using something like:
-> 
->   perf --remote <hostname> record sleep 60
->   perf --remote <hostname> stat -a sleep 1
-> 
-> these would all do the measurements on the remote box, and the resulting 
-> perf.data would be created on the desktop box. Communication would be 
-> done via some well-known port.
-> 
-> etc.
-> 
-> An alternative implementation would be to drive this on the assumption 
-> that an ssh connection can be established with the target box - but 
-> followup high-volume data transfer would be done over an ordinary TCP 
-> connection.
-> 
-> I.e. the workflow would be even simpler, something like:
-> 
->   perf --remote user@hostname record sleep 60
->   perf --remote user@hostname stat -a sleep 1
-> 
-> Internally it would work by executing those commands on the remote box 
-> via ssh, and redirecting the output via a TCP connection. (some other 
-> details might be needed as well for splice to be usable in such a setup)
-> 
-> Would anyone be interested in having (and implementing ;-) this?
-> 
-> 	Ingo
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+ drivers/hwmon/lm90.c |   34 ++++++++++++++++++++++++++++++++--
+ 1 files changed, 32 insertions(+), 2 deletions(-)
 
-
-
-In the beginning this could wrap into perf record - | perf pipe | netcat
-and so, until we get the splice support.
+diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+index 11b5701..d2bcb47 100644
+--- a/drivers/hwmon/lm90.c
++++ b/drivers/hwmon/lm90.c
+@@ -147,6 +147,7 @@ enum chips { lm90, adm1032, lm99, lm86, max6657, adt7461, max6680, max6646,
+ #define	LM90_HAVE_OFFSET	0x02	/* temperature offset register	*/
+ #define	LM90_HAVE_LOCAL_EXT	0x04	/* extended local temperature	*/
+ #define	LM90_HAVE_REM_LIMIT_EXT	0x08	/* extended remote limit	*/
++#define	LM90_HAVE_EMERGENCY	0x10	/* 3rd upper (emergency) limit	*/
+ 
+ /*
+  * Functions declaration
+@@ -213,10 +214,12 @@ struct lm90_data {
+ 	u8 alert_alarms;	/* Which alarm bits trigger ALERT# */
+ 
+ 	/* registers values */
+-	s8 temp8[4];	/* 0: local low limit
++	s8 temp8[6];	/* 0: local low limit
+ 			   1: local high limit
+ 			   2: local critical limit
+-			   3: remote critical limit */
++			   3: remote critical limit
++			   4: local emergency limit
++			   5: remote emergency limit */
+ 	s16 temp11[5];	/* 0: remote input
+ 			   1: remote low limit
+ 			   2: remote high limit
+@@ -608,6 +611,24 @@ static const struct attribute_group lm90_group = {
+ 	.attrs = lm90_attributes,
+ };
+ 
++/*
++ * Additional attributes for devices with emergency sensors
++ */
++static SENSOR_DEVICE_ATTR(temp1_emergency, S_IWUSR | S_IRUGO, show_temp8,
++	set_temp8, 4);
++static SENSOR_DEVICE_ATTR(temp2_emergency, S_IWUSR | S_IRUGO, show_temp8,
++	set_temp8, 5);
++
++static struct attribute *lm90_emergency_attributes[] = {
++	&sensor_dev_attr_temp1_emergency.dev_attr.attr,
++	&sensor_dev_attr_temp2_emergency.dev_attr.attr,
++	NULL
++};
++
++static const struct attribute_group lm90_emergency_group = {
++	.attrs = lm90_emergency_attributes,
++};
++
+ /* pec used for ADM1032 only */
+ static ssize_t show_pec(struct device *dev, struct device_attribute *dummy,
+ 			char *buf)
+@@ -818,6 +839,9 @@ static int lm90_detect(struct i2c_client *new_client,
+ 
+ static void lm90_remove_files(struct i2c_client *client, struct lm90_data *data)
+ {
++	if (data->flags & LM90_HAVE_EMERGENCY)
++		sysfs_remove_group(&client->dev.kobj,
++				   &lm90_emergency_group);
+ 	if (data->flags & LM90_HAVE_OFFSET)
+ 		device_remove_file(&client->dev,
+ 				   &sensor_dev_attr_temp2_offset.dev_attr);
+@@ -889,6 +913,12 @@ static int lm90_probe(struct i2c_client *new_client,
+ 		if (err)
+ 			goto exit_remove_files;
+ 	}
++	if (data->flags & LM90_HAVE_EMERGENCY) {
++		err = sysfs_create_group(&new_client->dev.kobj,
++					 &lm90_emergency_group);
++		if (err)
++			goto exit_remove_files;
++	}
+ 
+ 	data->hwmon_dev = hwmon_device_register(&new_client->dev);
+ 	if (IS_ERR(data->hwmon_dev)) {
+-- 
+1.7.0.87.g0901d
 
