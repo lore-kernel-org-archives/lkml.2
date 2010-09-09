@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751249Ab0IIE3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 00:29:31 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50720
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750958Ab0IIE3Y (ORCPT
+	id S1751647Ab0IIEuX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 00:50:23 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60877 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab0IIEuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 00:29:24 -0400
-Date: Wed, 08 Sep 2010 21:29:41 -0700 (PDT)
-Message-Id: <20100908.212941.241936726.davem@davemloft.net>
-To: linux@rainbow-software.org
-Cc: greg@kroah.com, simon@fire.lp0.eu, dbrownell@users.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] cxacru: ignore cx82310_eth devices
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201009082252.15865.linux@rainbow-software.org>
-References: <201009052212.37015.linux@rainbow-software.org>
-	<20100908.131227.28827971.davem@davemloft.net>
-	<201009082252.15865.linux@rainbow-software.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 9 Sep 2010 00:50:20 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 9 Sep 2010 13:44:59 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        gthelen@google.com, Munehiro Ikeda <m-ikeda@ds.jp.nec.com>,
+        menage@google.com, "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>
+Subject: Re: [PATCH 0/5] memcg: towards I/O aware memcg v7.
+Message-Id: <20100909134459.361a0f61.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100901153951.bc82c021.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100901153951.bc82c021.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ondrej Zary <linux@rainbow-software.org>
-Date: Wed, 8 Sep 2010 22:52:12 +0200
+On Wed, 1 Sep 2010 15:39:51 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> Ignore ADSL routers, which can have the same vendor and product IDs
-> as ADSL modems but should be handled by the cx82310_eth driver.
 > 
-> This intentionally ignores device IDs that aren't currently handled
-> by cx82310_eth. There may be other device IDs that perhaps shouldn't
-> be claimed by cxacru.
+> Major changes from v6 is
+>  a) added documentation about CSS ID.
+>  b) fixed typos and bugs.
+>  c) refleshed some comments
 > 
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
+> based on mmotm-2010-08-27
+> 
+> Patch brief view:
+>  1. changes css ID allocation in kernel/cgroup.c
+>  2. use ID-array in memcg.
+>  3. record ID to page_cgroup rather than pointer.
+>  4. make update_file_mapped to be RCU aware routine instead of spinlock.
+>  5. make update_file_mapped as general-purpose function.
+> 
+> 
 
-Applied with some minor comment formatting fixes, thanks!
+It seems that it will be better to re-order this series into
+
+ A-part: lockless update of stats.
+ B-part: ID managenet.
+
+2 series. (to get ack.) Thank you for all helps.
+BTW, what's the problem with ID patches ?
+
+Thanks,
+-Kame
+
