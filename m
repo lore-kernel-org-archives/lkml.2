@@ -1,69 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab0IIL62 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 07:58:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34227 "EHLO hera.kernel.org"
+	id S1754328Ab0IIMAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 08:00:54 -0400
+Received: from bar.sig21.net ([80.81.252.164]:47176 "EHLO bar.sig21.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752109Ab0IIL6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 07:58:24 -0400
-Date: Thu, 9 Sep 2010 11:57:57 GMT
-From: tip-bot for Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, cpw@sgi.com,
-        tglx@linutronix.de, mingo@elte.hu, ebiederm@xmission.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cpw@sgi.com, tglx@linutronix.de, ebiederm@xmission.com, mingo@elte.hu
-In-Reply-To: <E1OtMLz-0001yp-Ia@eag09.americas.sgi.com>
-References: <E1OtMLz-0001yp-Ia@eag09.americas.sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, kdump: Change copy_oldmem_page() to use cached addressing
-Message-ID: <tip-37a2f9f30a360fb03522d15c85c78265ccd80287@git.kernel.org>
-Git-Commit-ID: 37a2f9f30a360fb03522d15c85c78265ccd80287
-X-Mailer: tip-git-log-daemon
+	id S1754073Ab0IIMAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 08:00:53 -0400
+Date: Thu, 9 Sep 2010 14:00:44 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: block cache replacement strategy?
+Message-ID: <20100909120044.GA27765@sig21.net>
+References: <20100907133429.GB3430@sig21.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Sep 2010 11:57:58 +0000 (UTC)
+In-Reply-To: <20100907133429.GB3430@sig21.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.8 (---)
+X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.602,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  37a2f9f30a360fb03522d15c85c78265ccd80287
-Gitweb:     http://git.kernel.org/tip/37a2f9f30a360fb03522d15c85c78265ccd80287
-Author:     Cliff Wickman <cpw@sgi.com>
-AuthorDate: Wed, 8 Sep 2010 10:14:27 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 9 Sep 2010 09:46:23 +0200
+On Tue, Sep 07, 2010 at 03:34:29PM +0200, Johannes Stezenbach wrote:
+> 
+> during some simple disk read throughput testing I observed
+> caching behaviour that doesn't seem right.  The machine
+> has 2G of RAM and AMD Athlon 4850e, x86_64 kernel but 32bit
+> userspace, Linux 2.6.35.4.  It seems that contents of the
+> block cache are not evicted to make room for other blocks.
+> (Or something like that, I have no real clue about this.)
+> 
+> Since this is a rather artificial test I'm not too worried,
+> but it looks strange to me so I thought I better report it.
 
-x86, kdump: Change copy_oldmem_page() to use cached addressing
+C'mon guys, please comment.  Is this a bug or not?
+Or is my question too silly?
 
-The copy of /proc/vmcore to a user buffer proceeds much faster
-if the kernel addresses memory as cached.
 
-With this patch we have seen an increase in transfer rate from
-less than 15MB/s to 80-460MB/s, depending on size of the
-transfer. This makes a big difference in time needed to save a
-system dump.
+Johannes
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: kexec@lists.infradead.org
-Cc: <stable@kernel.org> # as far back as it would apply
-LKML-Reference: <E1OtMLz-0001yp-Ia@eag09.americas.sgi.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/crash_dump_64.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/crash_dump_64.c b/arch/x86/kernel/crash_dump_64.c
-index 045b36c..bf43188 100644
---- a/arch/x86/kernel/crash_dump_64.c
-+++ b/arch/x86/kernel/crash_dump_64.c
-@@ -34,7 +34,7 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
- 	if (!csize)
- 		return 0;
- 
--	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
-+	vaddr = ioremap_cache(pfn << PAGE_SHIFT, PAGE_SIZE);
- 	if (!vaddr)
- 		return -ENOMEM;
- 
+> zzz:~# echo 3 >/proc/sys/vm/drop_caches 
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 13.9454 s, 75.2 MB/s
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 0.92799 s, 1.1 GB/s
+> 
+> OK, seems like the blocks are cached. But:
+> 
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 13.8375 s, 75.8 MB/s
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 13.8429 s, 75.7 MB/s
+> 
+> Even if I let 15min pass and repeat the dd command
+> several times, I cannot see any caching effects, it
+> stays at ~75 MB/s.
+> 
+> zzz:~# cat /proc/meminfo 
+> MemTotal:        1793272 kB
+> MemFree:           15216 kB
+> Buffers:         1378820 kB
+> Cached:            20080 kB
+> SwapCached:            0 kB
+> Active:           792720 kB
+> Inactive:         758832 kB
+> Active(anon):      91716 kB
+> Inactive(anon):    64652 kB
+> Active(file):     701004 kB
+> Inactive(file):   694180 kB
+> 
+> But then:
+> 
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 5.23983 s, 200 MB/s
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 0.908284 s, 1.2 GB/s
+> 
+> zzz:~# cat /proc/meminfo 
+> MemTotal:        1793272 kB
+> MemFree:           16168 kB
+> Buffers:         1377308 kB
+> Cached:            20660 kB
+> SwapCached:            0 kB
+> Active:          1140384 kB
+> Inactive:         410236 kB
+> Active(anon):      91716 kB
+> Inactive(anon):    64652 kB
+> Active(file):    1048668 kB
+> Inactive(file):   345584 kB
+> 
+> 
+> And finally:
+> 
+> zzz:~# echo 3 >/proc/sys/vm/drop_caches
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 13.948 s, 75.2 MB/s
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 0.985031 s, 1.1 GB/s
+> 
+> 
+> Now these blocks get cached but then the others don't:
+> 
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 13.9394 s, 75.2 MB/s
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 13.9403 s, 75.2 MB/s
