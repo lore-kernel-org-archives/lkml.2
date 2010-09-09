@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab0IIJ6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 05:58:15 -0400
-Received: from www.tglx.de ([62.245.132.106]:41020 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751348Ab0IIJ6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 05:58:13 -0400
-Date: Thu, 9 Sep 2010 11:58:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Cochran <richardcochran@gmail.com>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH 0/2] [RFC] posix clock tuning
-In-Reply-To: <cover.1283504065.git.richard.cochran@omicron.at>
-Message-ID: <alpine.LFD.2.00.1009091152300.2477@localhost6.localdomain6>
-References: <cover.1283504065.git.richard.cochran@omicron.at>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754381Ab0IIKBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 06:01:54 -0400
+Received: from mx.ij.cx ([212.13.201.15]:53346 "EHLO wes.ijneb.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754321Ab0IIKBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 06:01:52 -0400
+Date: Thu, 9 Sep 2010 11:01:45 +0100 (BST)
+From: Mark Hills <mark@pogo.org.uk>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com
+Subject: Re: cgroup: rmdir() does not complete
+In-Reply-To: <20100902084200.e9b773cf.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.NEB.2.01.1009091051400.17759@jrf.vwaro.pbz>
+References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz> <20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp> <20100827113506.2bbbb7b9.kamezawa.hiroyu@jp.fujitsu.com> <20100827123948.b4427a15.nishimura@mxp.nes.nec.co.jp> <20100827144225.3190167a.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.NEB.2.01.1009011200050.6596@jrf.vwaro.pbz> <20100902084200.e9b773cf.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mark@pogo.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Sep 2010, Richard Cochran wrote:
+On Thu, 2 Sep 2010, KAMEZAWA Hiroyuki wrote:
 
-> Recently on the lkml, we discussed how to allow adjustment of posix
-> clocks. I have tried to understand and implement the ideas expressed
-> in the various threads.
+[...]
+> But hmm...it's curious who holds mutex and what happens.
 
-Cc'ing the relevant maintainers to such discussions and patches might
-be helpful. Seems I need to do some archive digging.
+I have a system showing the failure case (but still do not have a way to 
+reliably repeat it)
 
-> If there is agreement on this approach, I will resubmit these two
-> patches as part of a longer series, including support for a new kind
-> of hardware clock, so you can see how it all fits together. But first,
-> I would like to concentrate on the new syscall itself.
-> 
-> The patches are against a recent net-next tree. Please don't worry if
-> the syscall tables are not quite up to date. I can fix that later.
+Here are the two processes:
 
-How is this related to net-next ? 
+23586 pts/0    RL+  5059:18 /net/homes/mhills/tmp/soaked-cgroup
+23685 pts/6    DL+    0:00 /net/homes/mhills/tmp/soaked-cgroup
 
-Thanks,
+23586 spends almost all of its time in 'RL+' status, occasionally it is 
+seen in 'DL+' status.
 
-	tglx
+>From my analysis before, both are blocked on rmdir(), but one is spinning, 
+holding the lock on the /cgroup, and the other is waiting for the lock. If 
+I strace 23586 then the rmdir() fails with EINTR.
+
+How best to capture information which might show why the process spins?
+
+-- 
+Mark
