@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab0IIW12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:27:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58564 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944Ab0IIW1Y (ORCPT
+	id S1756981Ab0IIW1f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:27:35 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61018 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756949Ab0IIW13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:27:24 -0400
+	Thu, 9 Sep 2010 18:27:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ViRslz7ggQyKhXr1U8cQ00hSyv6ueOjVArMdNkQG1v6dvYDcaSeBD3+pYlMNYBF4Jh
-         0CHi7ZqRs136QgO87UcL0ms3y5zTLcq5c34SwuNINHICnmYOcqIjP6zHW7wz8Aj1pMGO
-         FHfFoakaR23MjEIRNKWBhxkHCWAibYNMBDp9Q=
+        b=RwvmkoX/9Js/YvAKZzGY+2MBsjfLO07tsUV5W5f6lPGgXcP31KpiEAu0hg6pNrUwtb
+         rjuptiic7r+Rarovg08DkBnPIOq0URZqPbjW7piRG9/FDbwOZ5S2San2tmvT39a3rAJ4
+         MaxdprItMv6v3OxAwdb67jocAxS7iqv+qTYis=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 049/223]drivers/media/video/mxb.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:27:32 -0700
-Message-Id: <1284071263-7789-4-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 051/223]drivers/media/video/cx23885/cx23885-417.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:27:34 -0700
+Message-Id: <1284071263-7789-6-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071263-7789-1-git-send-email-justinmattock@gmail.com>
 References: <1284071263-7789-1-git-send-email-justinmattock@gmail.com>
@@ -33,22 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/media/video/mxb.c |    2 +-
+ drivers/media/video/cx23885/cx23885-417.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/media/video/mxb.c b/drivers/media/video/mxb.c
-index ef0c817..b1dbcf1 100644
---- a/drivers/media/video/mxb.c
-+++ b/drivers/media/video/mxb.c
-@@ -3,7 +3,7 @@
- 
-     Copyright (C) 1998-2006 Michael Hunold <michael@mihu.de>
- 
--    Visit http://www.mihu.de/linux/saa7146/mxb/
-+    Visit http://www.themm.net/~mihu/linux/saa7146/mxb.html 
-     for further details about this card.
- 
-     This program is free software; you can redistribute it and/or modify
+diff --git a/drivers/media/video/cx23885/cx23885-417.c b/drivers/media/video/cx23885/cx23885-417.c
+index abd64e8..64ae3f9 100644
+--- a/drivers/media/video/cx23885/cx23885-417.c
++++ b/drivers/media/video/cx23885/cx23885-417.c
+@@ -7,7 +7,7 @@
+  *    (c) 2008 Steven Toth <stoth@linuxtv.org>
+  *      - CX23885/7/8 support
+  *
+- *  Includes parts from the ivtv driver( http://ivtv.sourceforge.net/),
++ *  Includes parts from the ivtv driver(http://ivtvdriver.org/index.php/Main_Page),
+  *
+  *  This program is free software; you can redistribute it and/or modify
+  *  it under the terms of the GNU General Public License as published by
 -- 
 1.7.2.1
 
