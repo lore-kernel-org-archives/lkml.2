@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932483Ab0IIW2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:28:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58564 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932439Ab0IIW2p (ORCPT
+	id S932496Ab0IIW2u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:28:50 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36527 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932467Ab0IIW2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:28:45 -0400
+	Thu, 9 Sep 2010 18:28:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=q0GQ+tkKLhP9r2oIPwcl1gvsZnLuDry+pCMSpu4QKCgRmU3rDXsjig2ZsXm0S+X9VH
-         F1FJU0o0yI5i8sAjlpf9NQYDrNJAIPfBXU0KzVbkkjaqHztxAcOOb1QuCE18y9fVBvlh
-         K+hHUCzZjocMRGW3x5Arrrpwqap5kplsgN2Tg=
+        b=habow1y7jdn8vOXAOMpusKm6izRDjy91wkl651s3XQlQRyaPVh4XzO5LuwYwll7FtH
+         vG1SQd4f43EnHXiKlvs4i6CkAyf00wpFHcJHfaGJ73PzZwN4PnnmefmsskLjz94URb0N
+         I9FMsjizniN08/nTfuK0aN7jlnNrv6kZjVdpA=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 075/223]drivers/misc/Kconfig Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:28:36 -0700
-Message-Id: <1284071316-7834-15-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 074/223]drivers/media/dvb/frontends/mt312.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:28:35 -0700
+Message-Id: <1284071316-7834-14-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071316-7834-1-git-send-email-justinmattock@gmail.com>
 References: <1284071316-7834-1-git-send-email-justinmattock@gmail.com>
@@ -33,24 +33,25 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/misc/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/media/dvb/frontends/mt312.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 0b591b6..c6744ea 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -112,8 +112,8 @@ config IBM_ASM
+diff --git a/drivers/media/dvb/frontends/mt312.c b/drivers/media/dvb/frontends/mt312.c
+index 472907d..5172311 100644
+--- a/drivers/media/dvb/frontends/mt312.c
++++ b/drivers/media/dvb/frontends/mt312.c
+@@ -20,8 +20,9 @@
+     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  
- 	  WARNING: This software may not be supported or function
- 	  correctly on your IBM server. Please consult the IBM ServerProven
--	  website <http://www.pc.ibm.com/ww/eserver/xseries/serverproven> for
--	  information on the specific driver level and support statement
-+	  website <http://www-03.ibm.com/systems/info/x86servers/serverproven/compat/us/> 
-+	  for information on the specific driver level and support statement
- 	  for your IBM server.
+     References:
+-    http://products.zarlink.com/product_profiles/MT312.htm
+-    http://products.zarlink.com/product_profiles/SL1935.htm
++    http://www.zarlink.com/zarlink/hs/71.htm 
++    http://www.chipcatalog.com/Zarlink/MT312.htm
++    http://www.chipcatalog.com/Zarlink/SL1935.htm
+ */
  
- config PHANTOM
+ #include <linux/delay.h>
 -- 
 1.7.2.1
 
