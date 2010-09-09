@@ -1,90 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab0IIM6W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 08:58:22 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:47766 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab0IIM6V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 08:58:21 -0400
-Message-ID: <4C88D97F.2080804@nokia.com>
-Date: Thu, 09 Sep 2010 15:56:31 +0300
-From: Adrian Hunter <adrian.hunter@nokia.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1752793Ab0IINHd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 09:07:33 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48494 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752080Ab0IINHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 09:07:31 -0400
+Date: Thu, 9 Sep 2010 15:07:23 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Harald Gustafsson <hgu1972@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        Song Yuan <song.yuan@ericsson.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: perf events over (net) console?
+Message-ID: <20100909130723.GA20470@elte.hu>
+References: <AANLkTi=yeHyOeewm9tdsHRtj+=d+vE5=NRKGaPyq_yGH@mail.gmail.com>
+ <1284031141.402.1.camel@laptop>
+ <20100909112940.GA5267@nowhere>
+ <20100909114053.GA15140@elte.hu>
+ <AANLkTikuqHFdOoiB4ejRygi3EV3p4HN2jgjJwM6Sw+31@mail.gmail.com>
+ <1284036453.402.11.camel@laptop>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Tony Lindgren <tony@atomide.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Sundar Iyer <sundar.iyer@stericsson.com>,
-        Daniel Mack <daniel@caiaq.de>, Pierre Ossman <pierre@ossman.eu>,
-        Matt Fleming <matt@console-pimps.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Cliff Brake <cbrake@bec-systems.com>,
-        "Lavinen Jarkko (Nokia-MS/Helsinki)" <jarkko.lavinen@nokia.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] MMC: move regulator handling closer to core v3
-References: <1283677538-31121-1-git-send-email-linus.walleij@stericsson.com> <20100908155114.880463fc.akpm@linux-foundation.org> <4C887837.6060508@nokia.com> <20100909093810.GA1988@rakim.wolfsonmicro.main>
-In-Reply-To: <20100909093810.GA1988@rakim.wolfsonmicro.main>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Sep 2010 12:56:32.0288 (UTC) FILETIME=[6D483200:01CB501E]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284036453.402.11.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
-> On Thu, Sep 09, 2010 at 09:01:27AM +0300, Adrian Hunter wrote:
-> 
->> As an aside, I would like to enhance the regulator framework to
->> enable boards to hook their code directly into the regulator.
-> 
-> What do you mean when you say that you would like boards to "hook
-> directly into the regulator" - what do you want to be able to do?
-> Is this the notifiers?  Do you need more of them?
 
-There would need to be notifiers before and after any change to the
-voltage.  However the notifiers would have to be set up before or
-during regulator initialisation because initialisation already can
-change the voltage e.g. in set_machine_constraints.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
+> On Thu, 2010-09-09 at 14:31 +0200, Harald Gustafsson wrote:
 > 
->> Arguably this is essential to allow pbias configuration (without
->> which the board may be damaged) so that regulator_enable/disable
->> can be used independently of the board, or for example to allow
+> > Sorry for being daft...
 > 
-> I can't parse this at all I'm afraid.  Could you be more specific about
-> what you mean by using enable and disable independantly of the board -
-> clearly the consumer drivers are already able to be board independant?
-
-For OMAP3 (and OMAP2 in some cases) the 1st SD/SDIO/MMC controller
-can operate at either 1.8V or 3V, however at 3V the board must apply
-voltage level shifting (PBIAS configuation).  Currently the
-level-shifting is done by board code that must be called before and
-after the voltage changes.  The omap_hsmmc driver calls the board
-code via callbacks in platform data (.before_set_reg and
-.after_set_reg).
-
+> No worries, I'm sure we all qualify at times ;-)
 > 
->> the regulator core to turn the regulator on/off at initialisation.
+> > >> >
+> > >> > You need a process context anyway to read the data and send it to
+> > >> > whatever place you want it.
+> > >> >
+> > >> > Putting that in-kernel serves no purpose what so ever.
+> > >>
+> > >> But if we bring the splice support, that can be done with minimal
+> > >> userspace noise. Plus that would work with the usual sockets but not
+> > >> limited to that.
+> > >
+> > > Yes. If we can transform the data over the network without it touching
+> > > disk, then that would be a sufficiently 'does not disturb other tasks'
+> > > measurement method.
+> > 
+> > Thanks for the pointers to more information, and yes my thoughts was 
+> > more about avoiding the data copy then avoiding any processing 
+> > context at all.
 > 
-> The regulator core already supports enabling or disabling regulators
-> from the machine constraints which I *think* is what you're looking for
-> but since I can't follow what you're saying above I'm not sure.
+> Right, currently you get a single copy with mmap() + write(), once we 
+> manage to fix splice() and actually provide perf-splice() you'd be 
+> able to do zero-copy.
 
-Yes that is what I would like, but it won't work at present because
-the core does not do the PBIAS configuration.
+I think it would also be very useful to have some sort of tooling help 
+for "low overhead/impact perf recording".
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+If there's a 'target box' and a different 'host box' (where most of 
+development is done, etc.), then there might not be any NFS connection 
+set up to make zero-copy file transfer easy. Doing it over ssh would add 
+overhead.
 
+One possible workflow would be to run this on the target/remote box:
+
+  perf remote
+
+And as long as that command is running there, it could be used from the 
+development box (over a trusted local network), using something like:
+
+  perf --remote <hostname> record sleep 60
+  perf --remote <hostname> stat -a sleep 1
+
+these would all do the measurements on the remote box, and the resulting 
+perf.data would be created on the desktop box. Communication would be 
+done via some well-known port.
+
+etc.
+
+An alternative implementation would be to drive this on the assumption 
+that an ssh connection can be established with the target box - but 
+followup high-volume data transfer would be done over an ordinary TCP 
+connection.
+
+I.e. the workflow would be even simpler, something like:
+
+  perf --remote user@hostname record sleep 60
+  perf --remote user@hostname stat -a sleep 1
+
+Internally it would work by executing those commands on the remote box 
+via ssh, and redirecting the output via a TCP connection. (some other 
+details might be needed as well for splice to be usable in such a setup)
+
+Would anyone be interested in having (and implementing ;-) this?
+
+	Ingo
