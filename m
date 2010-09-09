@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933115Ab0IIWns (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:43:48 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42850 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933108Ab0IIWnp (ORCPT
+	id S1757180Ab0IIWm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:42:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45143 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757150Ab0IIWmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:43:45 -0400
+	Thu, 9 Sep 2010 18:42:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Zw/rqaBa92vDv53LckNG0TwLiDdgISrs8pKNoZHKygrvh8XwA6cF9OJdKv31R1c2+3
-         ceaFUh/l3J62e5H9jcTlTz8cMDV5PWKf5oUoorSJ0N/d2rgeCA84nOTlq0hYewCQ94Nl
-         ZaFMMaXGWviq8kSlIWUXUqXLJWPJpj+jIiS1w=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=C7V01jmlyJlSVZMqrEzzfGYz66mOl+DmkcgHTdrIaXL+ekVEf1apFORemvXRgj+MxE
+         yy7anGdOBHYx61JKo1PWAM8njICJortJlgvEGudTLWwxBXXNPw8Wn19PJiVgtX+mE0LV
+         T2vZn4Tw1oTMlb0Qv2ECX6/9HOwxpebkYiBk8=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 181/223]drivers/staging/comedi/drivers/addi-data/hwdrv_apci2200.h Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:43:59 -0700
-Message-Id: <1284072253-8390-1-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 167/223]drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.h  Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:43:02 -0700
+Message-Id: <1284072195-8345-2-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
+In-Reply-To: <1284072195-8345-1-git-send-email-justinmattock@gmail.com>
+References: <1284072195-8345-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,13 +33,13 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- .../comedi/drivers/addi-data/hwdrv_apci2200.h      |    2 +-
+ .../comedi/drivers/addi-data/hwdrv_apci3200.h      |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci2200.h b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci2200.h
-index 63e5f1f..83f42af 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci2200.h
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci2200.h
+diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.h b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.h
+index f3e7ebf..812a9c4 100644
+--- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.h
++++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.h
 @@ -6,7 +6,7 @@
   *	D-77833 Ottersweier
   *	Tel: +19(0)7223/9493-0
