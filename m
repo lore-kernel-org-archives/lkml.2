@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487Ab0IIWd1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:33:27 -0400
+	id S932649Ab0IIWds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:33:48 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:61959 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757067Ab0IIWc3 (ORCPT
+	with ESMTP id S1752083Ab0IIWcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:32:29 -0400
+	Thu, 9 Sep 2010 18:32:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=M93m7rIyi/rAwdfDgZUIrGC6qmc7TSxZPv15hbnKYZboLAPE3fvBKafasVin17txfQ
-         eeH3uVoACNiIkYOF7ldmJ3dLM10BbrlOTezNsYNXB/d7kiEw2bqpHzwwxTOwlOBPiSUb
-         mu/AJbXFoSsw2IfbfQnlg0VrhpSGGKg/inlgw=
+        b=tp1axCWCGZ+7SoT2iFvw28yehdVegWX7lcVvrY+RqnarwspkyZKW33WegVYRbwf8XY
+         +XexdiMsTiHFgDQaLpHkIbABEu/40+4NnzLCnufzmDC77khqaSHH3XEf4PGDa01aHkjL
+         14SO95xsp1HE7GXnyo2Yh+q91qkbfF0+TP7FQ=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 096/223]drivers/net/wireless/hostap/hostap_cs.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:32:39 -0700
-Message-Id: <1284071562-7948-6-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 092/223]drivers/net/sis900.h Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:32:35 -0700
+Message-Id: <1284071562-7948-2-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071562-7948-1-git-send-email-justinmattock@gmail.com>
 References: <1284071562-7948-1-git-send-email-justinmattock@gmail.com>
@@ -33,23 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/net/wireless/hostap/hostap_cs.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/net/sis900.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/wireless/hostap/hostap_cs.c b/drivers/net/wireless/hostap/hostap_cs.c
-index ba54d1b..813518a 100644
---- a/drivers/net/wireless/hostap/hostap_cs.c
-+++ b/drivers/net/wireless/hostap/hostap_cs.c
-@@ -214,8 +214,7 @@ static int prism2_pccard_card_present(local_info_t *local)
+diff --git a/drivers/net/sis900.h b/drivers/net/sis900.h
+index 150511a..41f6d03 100644
+--- a/drivers/net/sis900.h
++++ b/drivers/net/sis900.h
+@@ -7,7 +7,7 @@
+  *	preliminary Rev. 1.0 Nov. 10, 1998
+  *   SiS 7014 Single Chip 100BASE-TX/10BASE-T Physical Layer Solution,
+  *	preliminary Rev. 1.0 Jan. 18, 1998
+- *   http://www.sis.com.tw/support/databook.htm
++ *   http://www.sis.com.tw/
+  */
  
  /*
-  * SanDisk CompactFlash WLAN Flashcard - Product Manual v1.0
-- * Document No. 20-10-00058, January 2004
-- * http://www.sandisk.com/pdf/industrial/ProdManualCFWLANv1.0.pdf
-+ * http://www.sandisk.com
-  */
- #define SANDISK_WLAN_ACTIVATION_OFF 0x40
- #define SANDISK_HCR_OFF 0x42
 -- 
 1.7.2.1
 
