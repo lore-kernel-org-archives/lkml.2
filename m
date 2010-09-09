@@ -1,50 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab0IINWU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 09:22:20 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:58431 "EHLO imr3.ericy.com"
+	id S1754505Ab0IINWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 09:22:37 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:58440 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753945Ab0IINWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 09:22:17 -0400
+	id S1754331Ab0IINWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 09:22:35 -0400
 From: Guenter Roeck <guenter.roeck@ericsson.com>
 To: Jean Delvare <khali@linux-fr.org>
 CC: Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH v2 0/7] hwmon: Add support for MAX6695/6696 to lm90 driver
-Date: Thu, 9 Sep 2010 06:25:43 -0700
-Message-ID: <1284038750-8833-1-git-send-email-guenter.roeck@ericsson.com>
+Subject: [PATCH v2 4/7] hwmon: (lm90) Simplify set_temp11 register calculations
+Date: Thu, 9 Sep 2010 06:25:47 -0700
+Message-ID: <1284038750-8833-5-git-send-email-guenter.roeck@ericsson.com>
 X-Mailer: git-send-email 1.7.0.87.g0901d
+In-Reply-To: <1284038750-8833-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1284038750-8833-1-git-send-email-guenter.roeck@ericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset cleans up the lm90 driver and adds support for
-Maxim MAX6695/6696 temperature sensors.
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+ drivers/hwmon/lm90.c |   55 +++++++++++++++++++++++++------------------------
+ 1 files changed, 28 insertions(+), 27 deletions(-)
 
-In detail,
-- Add support for tempX_emergency_alarm ABI attribute
-- Introduce device feature bits to reduce runtime overhead
-- Introduce function to delete sysfs files
-- Simplify calculations in set_temp11()
-- Introduce 3rd set of upper temperature limits (named 'emergency' limits)
-- Add max6659 support for those limits, and add support for max6659 address 0x4e
-- Add max6695/96 support
+diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+index f21dde5..11b5701 100644
+--- a/drivers/hwmon/lm90.c
++++ b/drivers/hwmon/lm90.c
+@@ -418,7 +418,7 @@ static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+ static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+ 			   char *buf)
+ {
+-	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+ 	struct lm90_data *data = lm90_update_device(dev);
+ 	int temp;
+ 
+@@ -439,19 +439,20 @@ static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+ 			  const char *buf, size_t count)
+ {
+-	static const u8 reg[6] = {
+-		LM90_REG_W_REMOTE_LOWH,
+-		LM90_REG_W_REMOTE_LOWL,
+-		LM90_REG_W_REMOTE_HIGHH,
+-		LM90_REG_W_REMOTE_HIGHL,
+-		LM90_REG_W_REMOTE_OFFSH,
+-		LM90_REG_W_REMOTE_OFFSL,
++	struct {
++		u8 high;
++		u8 low;
++	} reg[3] = {
++		{ LM90_REG_W_REMOTE_LOWH, LM90_REG_W_REMOTE_LOWL },
++		{ LM90_REG_W_REMOTE_HIGHH, LM90_REG_W_REMOTE_HIGHL },
++		{ LM90_REG_W_REMOTE_OFFSH, LM90_REG_W_REMOTE_OFFSL }
+ 	};
+ 
+-	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct lm90_data *data = i2c_get_clientdata(client);
+-	int nr = attr->index;
++	int nr = attr->nr;
++	int index = attr->index;
+ 	long val;
+ 	int err;
+ 
+@@ -460,24 +461,24 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+ 		return err;
+ 
+ 	/* +16 degrees offset for temp2 for the LM99 */
+-	if (data->kind == lm99 && attr->index <= 2)
++	if (data->kind == lm99 && index <= 2)
+ 		val -= 16000;
+ 
+ 	mutex_lock(&data->update_lock);
+ 	if (data->kind == adt7461)
+-		data->temp11[nr] = temp_to_u16_adt7461(data, val);
++		data->temp11[index] = temp_to_u16_adt7461(data, val);
+ 	else if (data->kind == max6646)
+-		data->temp11[nr] = temp_to_u8(val) << 8;
++		data->temp11[index] = temp_to_u8(val) << 8;
+ 	else if (!(data->flags & LM90_HAVE_REM_LIMIT_EXT))
+-		data->temp11[nr] = temp_to_s8(val) << 8;
++		data->temp11[index] = temp_to_s8(val) << 8;
+ 	else
+-		data->temp11[nr] = temp_to_s16(val);
++		data->temp11[index] = temp_to_s16(val);
+ 
+-	i2c_smbus_write_byte_data(client, reg[(nr - 1) * 2],
+-				  data->temp11[nr] >> 8);
++	i2c_smbus_write_byte_data(client, reg[nr].high,
++				  data->temp11[index] >> 8);
+ 	if (data->flags & LM90_HAVE_REM_LIMIT_EXT)
+-		i2c_smbus_write_byte_data(client, reg[(nr - 1) * 2 + 1],
+-					  data->temp11[nr] & 0xff);
++		i2c_smbus_write_byte_data(client, reg[nr].low,
++					  data->temp11[index] & 0xff);
+ 	mutex_unlock(&data->update_lock);
+ 	return count;
+ }
+@@ -549,16 +550,16 @@ static ssize_t show_alarm(struct device *dev, struct device_attribute
+ 	return sprintf(buf, "%d\n", (data->alarms >> bitnr) & 1);
+ }
+ 
+-static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp11, NULL, 4);
+-static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, show_temp11, NULL, 0);
++static SENSOR_DEVICE_ATTR_2(temp1_input, S_IRUGO, show_temp11, NULL, 0, 4);
++static SENSOR_DEVICE_ATTR_2(temp2_input, S_IRUGO, show_temp11, NULL, 0, 0);
+ static SENSOR_DEVICE_ATTR(temp1_min, S_IWUSR | S_IRUGO, show_temp8,
+ 	set_temp8, 0);
+-static SENSOR_DEVICE_ATTR(temp2_min, S_IWUSR | S_IRUGO, show_temp11,
+-	set_temp11, 1);
++static SENSOR_DEVICE_ATTR_2(temp2_min, S_IWUSR | S_IRUGO, show_temp11,
++	set_temp11, 0, 1);
+ static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_temp8,
+ 	set_temp8, 1);
+-static SENSOR_DEVICE_ATTR(temp2_max, S_IWUSR | S_IRUGO, show_temp11,
+-	set_temp11, 2);
++static SENSOR_DEVICE_ATTR_2(temp2_max, S_IWUSR | S_IRUGO, show_temp11,
++	set_temp11, 1, 2);
+ static SENSOR_DEVICE_ATTR(temp1_crit, S_IWUSR | S_IRUGO, show_temp8,
+ 	set_temp8, 2);
+ static SENSOR_DEVICE_ATTR(temp2_crit, S_IWUSR | S_IRUGO, show_temp8,
+@@ -566,8 +567,8 @@ static SENSOR_DEVICE_ATTR(temp2_crit, S_IWUSR | S_IRUGO, show_temp8,
+ static SENSOR_DEVICE_ATTR(temp1_crit_hyst, S_IWUSR | S_IRUGO, show_temphyst,
+ 	set_temphyst, 2);
+ static SENSOR_DEVICE_ATTR(temp2_crit_hyst, S_IRUGO, show_temphyst, NULL, 3);
+-static SENSOR_DEVICE_ATTR(temp2_offset, S_IWUSR | S_IRUGO, show_temp11,
+-	set_temp11, 3);
++static SENSOR_DEVICE_ATTR_2(temp2_offset, S_IWUSR | S_IRUGO, show_temp11,
++	set_temp11, 2, 3);
+ 
+ /* Individual alarm files */
+ static SENSOR_DEVICE_ATTR(temp1_crit_alarm, S_IRUGO, show_alarm, NULL, 0);
+-- 
+1.7.0.87.g0901d
 
-The patchset depends on the previously submitted lm90 driver cleanup patch.
-
-v2 changes:
-- Split patch into multiple parts
-- Add support for max6659 address 0x4e and extra features
-- Improved max6695/96 device detection code
-- max6695/96 does not support extended external limits, so don't try to
-  read them for the 3rd sensor
-- Other changes to address review feedback
-  - Updated Documentation/hwmon/lm90 and drivers/hwmon/Kconfig.
-  - Fixed alert_alarms comment
-  - remote offset register not supported on max6658 (fixed comment)
-  - rewrote set_temp11()
-  - Added tempX_emergency_alarm
-  - Some code alignment fixes
