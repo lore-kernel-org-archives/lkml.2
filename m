@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab0IIJiR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 05:38:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45312 "EHLO
+	id S1754099Ab0IIJl0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 05:41:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43035 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750895Ab0IIJiP (ORCPT
+	by vger.kernel.org with ESMTP id S1752443Ab0IIJlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 05:38:15 -0400
-Date: Thu, 9 Sep 2010 10:38:10 +0100
+	Thu, 9 Sep 2010 05:41:22 -0400
+Date: Thu, 9 Sep 2010 10:41:20 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Adrian Hunter <adrian.hunter@nokia.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Tony Lindgren <tony@atomide.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Sundar Iyer <sundar.iyer@stericsson.com>,
-        Daniel Mack <daniel@caiaq.de>, Pierre Ossman <pierre@ossman.eu>,
-        Matt Fleming <matt@console-pimps.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Cliff Brake <cbrake@bec-systems.com>,
-        "Lavinen Jarkko (Nokia-MS/Helsinki)" <jarkko.lavinen@nokia.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] MMC: move regulator handling closer to core v3
-Message-ID: <20100909093810.GA1988@rakim.wolfsonmicro.main>
-References: <1283677538-31121-1-git-send-email-linus.walleij@stericsson.com>
- <20100908155114.880463fc.akpm@linux-foundation.org>
- <4C887837.6060508@nokia.com>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: Igor Grinberg <grinberg@compulab.co.il>,
+        linux-arm-kernel@lists.infradead.org, vapier@gentoo.org,
+        khilman@deeprootsystems.com, dmitry.torokhov@gmail.com,
+        linux-kernel@vger.kernel.org, pavel@ucw.cz,
+        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v2] Input: Make ADS7846 independent on regulator
+Message-ID: <20100909094120.GB1988@rakim.wolfsonmicro.main>
+References: <1280560182-7071-1-git-send-email-marek.vasut@gmail.com>
+ <4C862EB3.4080006@compulab.co.il>
+ <20100907125335.GD25830@sirena.org.uk>
+ <201009091027.18176.marek.vasut@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4C887837.6060508@nokia.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201009091027.18176.marek.vasut@gmail.com>
 X-Cookie: Many suitcases look alike.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 09:01:27AM +0300, Adrian Hunter wrote:
+On Thu, Sep 09, 2010 at 10:27:17AM +0200, Marek Vasut wrote:
+> Dne Út 7. září 2010 14:53:35 Mark Brown napsal(a):
 
-> As an aside, I would like to enhance the regulator framework to
-> enable boards to hook their code directly into the regulator.
+> > From a regulator API usage point of view a separate implementation of
+> > the same thing was nacked - there are regulator API facilties for hiding
+> > missing regulators from drivers when needed to get systems going, unless
+> > the device genuinely can cope without supplies it should be relying on
+> > those.
 
-What do you mean when you say that you would like boards to "hook
-directly into the regulator" - what do you want to be able to do?
-Is this the notifiers?  Do you need more of them?
+> Maybe these platforms should have been fixed prior to applying the patch adding 
+> regulator goo into ads7846 driver then. What's the way to go now then ?
 
-> Arguably this is essential to allow pbias configuration (without
-> which the board may be damaged) so that regulator_enable/disable
-> can be used independently of the board, or for example to allow
-
-I can't parse this at all I'm afraid.  Could you be more specific about
-what you mean by using enable and disable independantly of the board -
-clearly the consumer drivers are already able to be board independant?
-
-> the regulator core to turn the regulator on/off at initialisation.
-
-The regulator core already supports enabling or disabling regulators
-from the machine constraints which I *think* is what you're looking for
-but since I can't follow what you're saying above I'm not sure.
+Fix the platforms and use the dummy regulators to keep them going until
+that happens.  It's trivial to do the hookup in the platforms.
