@@ -1,163 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab0IIK52 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 06:57:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55398 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab0IIK5Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 06:57:24 -0400
-Message-ID: <4C88BD8F.5080208@monstr.eu>
-Date: Thu, 09 Sep 2010 12:57:19 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1754888Ab0IILBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 07:01:13 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:46424 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753840Ab0IILBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 07:01:10 -0400
+Message-ID: <4C88BE6B.6000006@fusionio.com>
+Date: Thu, 09 Sep 2010 13:00:59 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 08/43] memblock/microblaze: Use new accessors
-References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>	 <1281071724-28740-9-git-send-email-benh@kernel.crashing.org>	 <4C5BCD41.3040501@monstr.eu> <1281135046.2168.40.camel@pasglop>
-In-Reply-To: <1281135046.2168.40.camel@pasglop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Alexey Dobriyan <adobriyan@gmail.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.36-rc3: EIP is at scsi_init_io+...
+References: <20100830184620.GA4818@core2.telecom.by> <AANLkTikyv10vkg1g+G3LW+nu=0omBpc40KehOUH=YXk2@mail.gmail.com>
+In-Reply-To: <AANLkTikyv10vkg1g+G3LW+nu=0omBpc40KehOUH=YXk2@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt wrote:
-> On Fri, 2010-08-06 at 10:52 +0200, Michal Simek wrote:
->> Benjamin Herrenschmidt wrote:
->>> CC: Michal Simek <monstr@monstr.eu>
->>> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> This patch remove bug which I reported but there is another place which 
->> needs to be changed.
->>
->> I am not sure if my patch is correct but at least point you on places 
->> which is causing compilation errors.
->>
->> I tested your memblock branch with this fix and microblaze can boot.
+On 2010-09-09 02:12, Linus Torvalds wrote:
+> Hmm. No noise about this one.
 > 
-> Ok, that's missing in my initial rename patch. I'll fix it up. Thanks.
+> Jens, Fujita, James, any comments?
 > 
-> Cheers,
-> Ben.
-
-I don't know why but this unfixed old patch is in linux-next today. Not 
-sure which tree contains it.
-
-Thanks,
-Michal
-
+> On Mon, Aug 30, 2010 at 11:46 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+>> Not much of a calltrace, it scrolled away because of hardlockup detector.
+>> On the bright side, radeon KMS worked correctly and actually showed it.
 >>
->>    CC      arch/microblaze/mm/init.o
->> arch/microblaze/mm/init.c: In function 'mm_cmdline_setup':
->> arch/microblaze/mm/init.c:236: error: 'struct memblock_type' has no 
->> member named 'region'
->> arch/microblaze/mm/init.c: In function 'mmu_init':
->> arch/microblaze/mm/init.c:279: error: 'struct memblock_type' has no 
->> member named 'region'
->> arch/microblaze/mm/init.c:284: error: 'struct memblock_type' has no 
->> member named 'region'
->> arch/microblaze/mm/init.c:285: error: 'struct memblock_type' has no 
->> member named 'region'
->> arch/microblaze/mm/init.c:286: error: 'struct memblock_type' has no 
->> member named 'region'
->> make[1]: *** [arch/microblaze/mm/init.o] Error 1
->> make: *** [arch/microblaze/mm] Error 2
+>> $ addr2line -e vmlinux ffffffff812d207b
+>> drivers/scsi/scsi_lib.c:1015
 >>
->>
->> diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
->> index 32a702b..a9d7b9b 100644
->> --- a/arch/microblaze/mm/init.c
->> +++ b/arch/microblaze/mm/init.c
->> @@ -233,7 +233,7 @@ static void mm_cmdline_setup(void)
->>                  if (maxmem && memory_size > maxmem) {
->>                          memory_size = maxmem;
->>                          memory_end = memory_start + memory_size;
->> -                       memblock.memory.region[0].size = memory_size;
->> +                       memblock.memory.regions[0].size = memory_size;
->>                  }
->>          }
->>   }
->> @@ -276,14 +276,14 @@ asmlinkage void __init mmu_init(void)
->>                  machine_restart(NULL);
->>          }
->>
->> -       if ((u32) memblock.memory.region[0].size < 0x1000000) {
->> +       if ((u32) memblock.memory.regions[0].size < 0x1000000) {
->>                  printk(KERN_EMERG "Memory must be greater than 16MB\n");
->>                  machine_restart(NULL);
->>          }
->>          /* Find main memory where the kernel is */
->> -       memory_start = (u32) memblock.memory.region[0].base;
->> -       memory_end = (u32) memblock.memory.region[0].base +
->> -                               (u32) memblock.memory.region[0].size;
->> +       memory_start = (u32) memblock.memory.regions[0].base;
->> +       memory_end = (u32) memblock.memory.regions[0].base +
->> +                               (u32) memblock.memory.regions[0].size;
->>          memory_size = memory_end - memory_start;
->>
->>          mm_cmdline_setup(); /* FIXME parse args from command line - not 
->> used */
->>
->>
->>
->>> ---
->>>  arch/microblaze/mm/init.c |   20 +++++++++-----------
->>>  1 files changed, 9 insertions(+), 11 deletions(-)
->>>
->>> diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
->>> index afd6494..32a702b 100644
->>> --- a/arch/microblaze/mm/init.c
->>> +++ b/arch/microblaze/mm/init.c
->>> @@ -70,16 +70,16 @@ static void __init paging_init(void)
->>>  
->>>  void __init setup_memory(void)
->>>  {
->>> -	int i;
->>>  	unsigned long map_size;
->>> +	struct memblock_region *reg;
->>> +
->>>  #ifndef CONFIG_MMU
->>>  	u32 kernel_align_start, kernel_align_size;
->>>  
->>>  	/* Find main memory where is the kernel */
->>> -	for (i = 0; i < memblock.memory.cnt; i++) {
->>> -		memory_start = (u32) memblock.memory.regions[i].base;
->>> -		memory_end = (u32) memblock.memory.regions[i].base
->>> -				+ (u32) memblock.memory.region[i].size;
->>> +	for_each_memblock(memory, reg) {
->>> +		memory_start = (u32)reg->base;
->>> +		memory_end = (u32) reg->base + reg->size;
->>>  		if ((memory_start <= (u32)_text) &&
->>>  					((u32)_text <= memory_end)) {
->>>  			memory_size = memory_end - memory_start;
->>> @@ -147,12 +147,10 @@ void __init setup_memory(void)
->>>  	free_bootmem(memory_start, memory_size);
->>>  
->>>  	/* reserve allocate blocks */
->>> -	for (i = 0; i < memblock.reserved.cnt; i++) {
->>> -		pr_debug("reserved %d - 0x%08x-0x%08x\n", i,
->>> -			(u32) memblock.reserved.region[i].base,
->>> -			(u32) memblock_size_bytes(&memblock.reserved, i));
->>> -		reserve_bootmem(memblock.reserved.region[i].base,
->>> -			memblock_size_bytes(&memblock.reserved, i) - 1, BOOTMEM_DEFAULT);
->>> +	for_each_memblock(reserved, reg) {
->>> +		pr_debug("reserved - 0x%08x-0x%08x\n",
->>> +			 (u32) reg->base, (u32) reg->size);
->>> +		reserve_bootmem(reg->base, reg->size, BOOTMEM_DEFAULT);
->>>  	}
->>>  #ifdef CONFIG_MMU
->>>  	init_bootmem_done = 1;
->>
+>>  1012  err_exit:
+>>  1013          scsi_release_buffers(cmd);
+>>  1014          scsi_put_command(cmd);
+>>  1015  ===>    cmd->request->special = NULL; <===
+>>  1016          return error;
+>>  1017  }
+>>  1018  EXPORT_SYMBOL(scsi_init_io);
 > 
+> I do have to say that it looks rather wrong that it accesses "cmd"
+> after it has done the "scsi_put_command(cmd)" on it.
 > 
+> I also note that that was introduced pretty recently by commit
+> 610a63498f7 ("scsi: fix discard page leak"), merged during this merge
+> window. That does look suspicious to me.
 
+Agree, that's clearly a bug. That assignment should just go away.
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Jens Axboe
+
