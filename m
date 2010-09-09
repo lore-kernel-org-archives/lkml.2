@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941Ab0IIW1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:27:24 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:48692 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253Ab0IIW1U (ORCPT
+	id S932277Ab0IIW12 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:27:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58564 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756944Ab0IIW1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:27:20 -0400
+	Thu, 9 Sep 2010 18:27:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=a96aS0U81KFBmo8rss1yEbq9+zXRg6lWC/Sj9SK0XlECA33Ljyvg2ouSGYyg6+2ubI
-         bOgG4ST5uhYmG8EosfymNzZ0rIzImbEg6gl+CQXv9EIw1aowviMrV/3YeUCtoY4aKteG
-         OtIpdYutHp0iKbmJyxIAvZdjxAcgqcg4DNXP0=
+        b=ViRslz7ggQyKhXr1U8cQ00hSyv6ueOjVArMdNkQG1v6dvYDcaSeBD3+pYlMNYBF4Jh
+         0CHi7ZqRs136QgO87UcL0ms3y5zTLcq5c34SwuNINHICnmYOcqIjP6zHW7wz8Aj1pMGO
+         FHfFoakaR23MjEIRNKWBhxkHCWAibYNMBDp9Q=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 047/223]drivers/media/video/gspca/ov534.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:27:30 -0700
-Message-Id: <1284071263-7789-2-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 049/223]drivers/media/video/mxb.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:27:32 -0700
+Message-Id: <1284071263-7789-4-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071263-7789-1-git-send-email-justinmattock@gmail.com>
 References: <1284071263-7789-1-git-send-email-justinmattock@gmail.com>
@@ -33,21 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/media/video/gspca/ov534.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/media/video/mxb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/media/video/gspca/ov534.c b/drivers/media/video/gspca/ov534.c
-index 96cb3a9..c807cb5 100644
---- a/drivers/media/video/gspca/ov534.c
-+++ b/drivers/media/video/gspca/ov534.c
-@@ -7,6 +7,7 @@
-  *
-  * Based on a prototype written by Mark Ferrell <majortrips@gmail.com>
-  * USB protocol reverse engineered by Jim Paris <jim@jtan.com>
-+ * Note:web cache still works..
-  * https://jim.sh/svn/jim/devl/playstation/ps3/eye/test/
-  *
-  * PS3 Eye camera enhanced by Richard Kaswy http://kaswy.free.fr
+diff --git a/drivers/media/video/mxb.c b/drivers/media/video/mxb.c
+index ef0c817..b1dbcf1 100644
+--- a/drivers/media/video/mxb.c
++++ b/drivers/media/video/mxb.c
+@@ -3,7 +3,7 @@
+ 
+     Copyright (C) 1998-2006 Michael Hunold <michael@mihu.de>
+ 
+-    Visit http://www.mihu.de/linux/saa7146/mxb/
++    Visit http://www.themm.net/~mihu/linux/saa7146/mxb.html 
+     for further details about this card.
+ 
+     This program is free software; you can redistribute it and/or modify
 -- 
 1.7.2.1
 
