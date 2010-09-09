@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab0IIANe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 20:13:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37256 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751385Ab0IIAN1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 20:13:27 -0400
+	id S1756267Ab0IIAR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 20:17:56 -0400
+Received: from ironport.bytemobile.com ([12.153.136.13]:48482 "EHLO
+	ironport.bytemobile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab0IIARv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Sep 2010 20:17:51 -0400
+X-IronPort-AV: E=Sophos;i="4.56,336,1280732400"; 
+   d="scan'208";a="4085892"
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <20100830184620.GA4818@core2.telecom.by>
-References: <20100830184620.GA4818@core2.telecom.by>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 8 Sep 2010 17:12:37 -0700
-Message-ID: <AANLkTikyv10vkg1g+G3LW+nu=0omBpc40KehOUH=YXk2@mail.gmail.com>
-Subject: Re: 2.6.36-rc3: EIP is at scsi_init_io+...
-To: Alexey Dobriyan <adobriyan@gmail.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Jens Axboe <jaxboe@fusionio.com>
-Cc: akpm@linux-foundation.org, James.Bottomley@suse.de,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: how to tell if you are executing in soft IRQ context
+Date: Wed, 8 Sep 2010 17:17:49 -0700
+Message-ID: <6F5DE7538AFCDA45A114F5E7510424A7020CCDC0@hq-exchange01.bytemobile.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: how to tell if you are executing in soft IRQ context
+Thread-Index: ActPtG+c4okp0l1WRfGrZE1SJurUYQ==
+From: "Jeff Haran" <jharan@bytemobile.com>
+To: <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm. No noise about this one.
+Hi,
 
-Jens, Fujita, James, any comments?
+Is there a function that can be called to determine if you are executing
+in soft IRQ context in kernel version 2.6.31?
 
-On Mon, Aug 30, 2010 at 11:46 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> Not much of a calltrace, it scrolled away because of hardlockup detector.
-> On the bright side, radeon KMS worked correctly and actually showed it.
->
-> $ addr2line -e vmlinux ffffffff812d207b
-> drivers/scsi/scsi_lib.c:1015
->
->  1012  err_exit:
->  1013          scsi_release_buffers(cmd);
->  1014          scsi_put_command(cmd);
->  1015  ===>    cmd->request->special = NULL; <===
->  1016          return error;
->  1017  }
->  1018  EXPORT_SYMBOL(scsi_init_io);
+Note I've already tried in_softirq(). That doesn't work since it also
+returns non-zero if you are running in process context but have disabled
+bottom halves.
 
-I do have to say that it looks rather wrong that it accesses "cmd"
-after it has done the "scsi_put_command(cmd)" on it.
+Thanks,
 
-I also note that that was introduced pretty recently by commit
-610a63498f7 ("scsi: fix discard page leak"), merged during this merge
-window. That does look suspicious to me.
+Jeff Haran
 
-                    Linus
+http://www.bytemobile.com/blog 
+
+This e-mail and any attachments may contain confidential and privileged information. If you are not the intended recipient, please notify the sender immediately by return e-mail, do not forward this email to any other person, delete this e-mail and destroy all copies. Any dissemination or use of this information by a person other than the intended recipient is unauthorized and may be illegal.
+
