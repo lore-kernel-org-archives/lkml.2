@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab0IIIoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 04:44:16 -0400
-Received: from MAILER.EUN.EG ([193.227.1.3]:42866 "EHLO mailer.eun.eg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752658Ab0IIIoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 04:44:13 -0400
-Message-ID: <43477.150.214.94.101.1284020579.squirrel@127.0.0.1>
-Date: Thu, 9 Sep 2010 10:22:59 +0200 (CEST)
-Subject: Frau  Valentina Lopez
-From: "Frau  Valentina Lopez" <valentina.lopez.vl@gmail.com>
-Reply-To: valentina.lopez@1email.eu
-User-Agent: SquirrelMail/1.4.4-rc1
+	id S1754059Ab0IIIvs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 04:51:48 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:55916 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658Ab0IIIvp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 04:51:45 -0400
+Date: Thu, 9 Sep 2010 10:51:43 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: Anil kumar <anils_r@yahoo.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: scsi_cmnd data_buffer checksum
+Message-ID: <20100909085142.GA15327@schmichrtp.mainz.de.ibm.com>
+References: <20100909080028.GA4880@schmichrtp.mainz.de.ibm.com>
+ <534531.52796.qm@web32407.mail.mud.yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534531.52796.qm@web32407.mail.mud.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 09, 2010 at 01:35:02AM -0700, Anil kumar wrote:
+> Hi Christof,
+> 
+> Thanks for the response.
+> 
+> I am running mkfs.ext3 command.
+> 
+> I am doing the following in the driver for write(10):
+> 
+> Queuecommand:
+> 
+> sg = scsi_sglist(cmd->scsi_cmd);
+> cmd->write_buf = (u8 *)(kmap_atomic(sg->page, KM_IRQ0) + sg->offset);
+> Calculate checksum for write_buf
+> 
+> Write Done:
+> Calculate checksum for cmd->write_buf
+> 
+> and checksums don't match. I am wondering how come OS changed the cmd->write_buf when I have not even unmapped the buffer. Is filesystem changing this cmd->write_buf pages when driver/HW is working on it?
 
+Yes, the driver has direct access to the data. Usually, the data is
+not copied for I/O requests. The driver gets one sg list that points
+to the data pages of file system (or whatever the data source is).
+When the filesystem decides to change the data, this single data
+buffer is changed.
 
+> Is there anyway I can avoid this. How about if we allocate a local buffer(kmalloc/pci_alloc_consistent) and memcpy kmap_atomic to that local buffer and then calculate checksum on that local buffer. Will this help?
 
-Gruﬂe,
-Guten Tag, ich bin Frau Valentina Lopez, Personlicher Referent von
-Mr.Mikhail Khodorkowski.  Ich habe einen geschaftlichen Vorschlag von  Ä
-46Mio fur Sie aus meinem Unternehmen (Yukos Oil Russland). Wenn Sie
-intresse daran haben,  kann ich Ihnen mehr Einzelheiten aufzeigen. Sie
-koennen deteils unter dem link http: / / www.supportmbk.com finden
-Email: valentina.lopez@1email.eu
-Hochachtungsvoll
-Frau  Valentina Lopez
+Sure, you can create copies of data buffers in the driver, calculate
+the checksum of the copy and submit the data copy with the checksum to
+the hardware controller. This is usually not done for performance
+reasons, and you probably should keep a mempool to be able to issue
+I/Os when memory is low.
 
+Christof
