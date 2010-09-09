@@ -1,194 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab0IIHXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 03:23:44 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:28437 "HELO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750870Ab0IIHXi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 03:23:38 -0400
-Message-ID: <4C888AFF.80304@snapgear.com>
-Date: Thu, 9 Sep 2010 17:21:35 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
-        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
-        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
-        linux-arch@vger.kernel.org
-Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
- __do_IRQ() code
-References: <20100908152036.643594727@linutronix.de>
-In-Reply-To: <20100908152036.643594727@linutronix.de>
-Content-Type: multipart/mixed;
-	boundary="------------010606090302060609020406"
-X-OriginalArrivalTime: 09 Sep 2010 07:21:59.0296 (UTC) FILETIME=[B0D8B000:01CB4FEF]
+	id S1753661Ab0IIHiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 03:38:12 -0400
+Received: from mail.perches.com ([173.55.12.10]:1545 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521Ab0IIHiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 03:38:07 -0400
+Subject: [PATCH] include/linux/pci.h: Make struct pci_driver.name const
+ char *
+From: Joe Perches <joe@perches.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-pci <linux-pci@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Sep 2010 00:38:04 -0700
+Message-ID: <1284017884.24986.93.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------010606090302060609020406
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+As far as I can tell, name is never modified.
 
-Thomas Gleixner wrote:
-> __do_IRQ() has been deprecated after a two years migration phase in
-> commit 0e57aa1. Since then another 18 month have gone by.
-> 
-> So here's the status three and a half years after the flow based
-> infrastructure was merged:
-> 
->  The following architectures are fully converted to the new flow
->  handler code:
-> 
->   arm, avr32, blackfin, frv, microblaze, mips, mn10300, powerpc, score, sh,
->   sparc 64bit, tile, x86, xtensa
-> 
->   (avr32 and xtensa should set CONFIG_GENERIC_HARDIRQS_NO__DO_IRQ
->   though)
-> 
->  The following architectures are not using the generic interrupt
->  infrastructure at all and are therefor unaffected:
-> 
->   s390, m68k, sparc 32bit
-> 
->  The following architectures are still using __do_IRQ():
-> 
->   alpha, cris, ia64, h8300, m32r, m68knommu, parisc, um
+This would allow names to be assigned
+from variables in non-writable sections.
 
-The m68knommu arch should be easy to fix up. Here is a first pass
-patch. Tested and working on 1 board so far. I need to check all
-the processor types, and test a few more to be sure :-)
+static const foo[] = "bar";
 
-Regards
-Greg
+struct pci_driver baz = {
+	.name = foo;
+};
 
-
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
-
---------------010606090302060609020406
-Content-Type: text/x-patch; name="m68knommu-stop-using-__do_IRQ.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline; filename="m68knommu-stop-using-__do_IRQ.patch"
-
-m68knommu: stop using __do_IRQ
-
-The use of __do_IRQ is deprecated, so lets stop using it.
-Generally the interrupts on the supported processors here are
-level triggered, so this is strait forward to switch over to
-using the standard handle_level_irq flow handler.
-
-Signed-off-by: Greg Ungerer <gerg@uclinux.org>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/m68knommu/Kconfig                       |    4 ++++
- arch/m68knommu/platform/5272/intc.c          |    1 +
- arch/m68knommu/platform/68328/ints.c         |    1 +
- arch/m68knommu/platform/68360/ints.c         |    1 +
- arch/m68knommu/platform/coldfire/intc-2.c    |    1 +
- arch/m68knommu/platform/coldfire/intc-simr.c |    1 +
- arch/m68knommu/platform/coldfire/intc.c      |    1 +
- 7 files changed, 10 insertions(+), 0 deletions(-)
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index b1d1795..acdd032 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -541,7 +541,7 @@ struct pci_error_handlers {
+ struct module;
+ struct pci_driver {
+ 	struct list_head node;
+-	char *name;
++	const char *name;
+ 	const struct pci_device_id *id_table;	/* must be non-NULL for probe to be called */
+ 	int  (*probe)  (struct pci_dev *dev, const struct pci_device_id *id);	/* New device inserted */
+ 	void (*remove) (struct pci_dev *dev);	/* Device removed (NULL if not a hot-plug capable driver) */
 
-diff --git a/arch/m68knommu/Kconfig b/arch/m68knommu/Kconfig
-index 2609c39..fd28178 100644
---- a/arch/m68knommu/Kconfig
-+++ b/arch/m68knommu/Kconfig
-@@ -59,6 +59,10 @@ config GENERIC_HARDIRQS
- 	bool
- 	default y
- 
-+config GENERIC_HARDIRQS_NO__DO_IRQ
-+	bool
-+	default y
-+
- config GENERIC_CALIBRATE_DELAY
- 	bool
- 	default y
-diff --git a/arch/m68knommu/platform/5272/intc.c b/arch/m68knommu/platform/5272/intc.c
-index 7081e0a..e9da6f1 100644
---- a/arch/m68knommu/platform/5272/intc.c
-+++ b/arch/m68knommu/platform/5272/intc.c
-@@ -133,6 +133,7 @@ void __init init_IRQ(void)
- 		irq_desc[irq].depth = 1;
- 		irq_desc[irq].chip = &intc_irq_chip;
- 		intc_irq_set_type(irq, 0);
-+		set_irq_handler(irq, handle_level_irq);
- 	}
- }
- 
-diff --git a/arch/m68knommu/platform/68328/ints.c b/arch/m68knommu/platform/68328/ints.c
-index b91ee85..90516ee 100644
---- a/arch/m68knommu/platform/68328/ints.c
-+++ b/arch/m68knommu/platform/68328/ints.c
-@@ -183,6 +183,7 @@ void __init init_IRQ(void)
- 		irq_desc[i].action = NULL;
- 		irq_desc[i].depth = 1;
- 		irq_desc[i].chip = &intc_irq_chip;
-+		set_irq_handler(irq, handle_level_irq);
- 	}
- }
- 
-diff --git a/arch/m68knommu/platform/68360/ints.c b/arch/m68knommu/platform/68360/ints.c
-index 6f22970..cdf691e 100644
---- a/arch/m68knommu/platform/68360/ints.c
-+++ b/arch/m68knommu/platform/68360/ints.c
-@@ -136,6 +136,7 @@ void init_IRQ(void)
- 		irq_desc[i].action = NULL;
- 		irq_desc[i].depth = 1;
- 		irq_desc[i].chip = &intc_irq_chip;
-+		set_irq_handler(irq, handle_level_irq);
- 	}
- }
- 
-diff --git a/arch/m68knommu/platform/coldfire/intc-2.c b/arch/m68knommu/platform/coldfire/intc-2.c
-index 5598c8b..6410f7e 100644
---- a/arch/m68knommu/platform/coldfire/intc-2.c
-+++ b/arch/m68knommu/platform/coldfire/intc-2.c
-@@ -88,6 +88,7 @@ void __init init_IRQ(void)
- 		irq_desc[irq].action = NULL;
- 		irq_desc[irq].depth = 1;
- 		irq_desc[irq].chip = &intc_irq_chip;
-+		set_irq_handler(irq, handle_level_irq);
- 	}
- }
- 
-diff --git a/arch/m68knommu/platform/coldfire/intc-simr.c b/arch/m68knommu/platform/coldfire/intc-simr.c
-index 1b01e79..7f4abb3 100644
---- a/arch/m68knommu/platform/coldfire/intc-simr.c
-+++ b/arch/m68knommu/platform/coldfire/intc-simr.c
-@@ -73,6 +73,7 @@ void __init init_IRQ(void)
- 		irq_desc[irq].depth = 1;
- 		irq_desc[irq].chip = &intc_irq_chip;
- 		intc_irq_set_type(irq, 0);
-+		set_irq_handler(irq, handle_level_irq);
- 	}
- }
- 
-diff --git a/arch/m68knommu/platform/coldfire/intc.c b/arch/m68knommu/platform/coldfire/intc.c
-index a4560c8..40b9e8d 100644
---- a/arch/m68knommu/platform/coldfire/intc.c
-+++ b/arch/m68knommu/platform/coldfire/intc.c
-@@ -148,6 +148,7 @@ void __init init_IRQ(void)
- 		irq_desc[irq].depth = 1;
- 		irq_desc[irq].chip = &intc_irq_chip;
- 		intc_irq_set_type(irq, 0);
-+		set_irq_handler(irq, handle_level_irq);
- 	}
- }
- 
 
---------------010606090302060609020406--
