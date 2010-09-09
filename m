@@ -1,144 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab0IITRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 15:17:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45563 "EHLO mx1.redhat.com"
+	id S1755510Ab0IITR4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 15:17:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26215 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752657Ab0IITRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 15:17:48 -0400
+	id S1755374Ab0IITRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 15:17:49 -0400
 From: Peter Jones <pjones@redhat.com>
 To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Luke Macken <lmacken@redhat.com>, Peter Jones <pjones@redhat.com>
-Subject: [PATCH 2/2] efifb: support the EFI framebuffer on more Apple hardware
-Date: Thu,  9 Sep 2010 15:16:49 -0400
-Message-Id: <1284059809-9973-2-git-send-email-pjones@redhat.com>
-In-Reply-To: <1284059809-9973-1-git-send-email-pjones@redhat.com>
-References: <1284059809-9973-1-git-send-email-pjones@redhat.com>
+        Peter Jones <pjones@redhat.com>
+Subject: [PATCH 1/2] Make efifb check that the base address is plausible on pci systems.
+Date: Thu,  9 Sep 2010 15:16:48 -0400
+Message-Id: <1284059809-9973-1-git-send-email-pjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luke Macken <lmacken@redhat.com>
+Some Apple machines have identical DMI data but different memory
+configurations for the video. Given that, check that the address in our
+table is actually within the range of a PCI BAR on a VGA deivce in the
+machine.
 
-This patch enables the EFI framebuffer on 14 more Macs, including the
-iMac11,1 iMac10,1 iMac8,1 Macmini3,1 Macmini4,1 MacBook5,1 MacBook6,1
-MacBook7,1 MacBookPro2,2 MacBookPro5,2 MacBookPro5,3 MacBookPro6,1
-MacBookPro6,2 and MacBookPro7,1
+This also fixes up the return value from set_system(), which has
+always been wrong, but never resulted in bad behavior since there's only
+ever been one matching entry in the dmi table.
 
-Information gathered from various user submissions.
+This also adds me as the efifb maintainer, since I've effectively been
+acting as such for quite some time.
 
-    https://bugzilla.redhat.com/show_bug.cgi?id=528232
-    http://ubuntuforums.org/showthread.php?t=1557326
-
-Signed-off-by: Luke Macken <lmacken@redhat.com>
 Signed-off-by: Peter Jones <pjones@redhat.com>
 ---
- drivers/video/efifb.c |   42 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 42 insertions(+), 0 deletions(-)
+ MAINTAINERS           |    6 +++++
+ drivers/video/efifb.c |   61 +++++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 55 insertions(+), 12 deletions(-)
 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 087912a..431280f 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2189,6 +2189,12 @@ W:	http://acpi4asus.sf.net
+ S:	Maintained
+ F:	drivers/platform/x86/eeepc-laptop.c
+ 
++EFIFB FRAMEBUFFER DRIVER
++L:	linux-fbdev@vger.kernel.org
++M:	Peter Jones <pjones@redhat.com>
++S:	Maintained
++F:	drivers/video/efifb.c
++
+ EFS FILESYSTEM
+ W:	http://aeschi.ch.eu.org/efs/
+ S:	Orphan
 diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-index c082b61..254b282 100644
+index 815f84b..c082b61 100644
 --- a/drivers/video/efifb.c
 +++ b/drivers/video/efifb.c
-@@ -39,17 +39,31 @@ enum {
- 	M_I20,		/* 20-Inch iMac */
- 	M_I20_SR,	/* 20-Inch iMac (Santa Rosa) */
- 	M_I24,		/* 24-Inch iMac */
-+	M_I24_8_1,	/* 24-Inch iMac, 8,1th gen */
-+	M_I24_10_1,	/* 24-Inch iMac, 10,1th gen */
-+	M_I27_11_1,	/* 27-Inch iMac, 11,1th gen */
- 	M_MINI,		/* Mac Mini */
-+	M_MINI_3_1,	/* Mac Mini, 3,1th gen */
-+	M_MINI_4_1,	/* Mac Mini, 4,1th gen */
- 	M_MB,		/* MacBook */
- 	M_MB_2,		/* MacBook, 2nd rev. */
- 	M_MB_3,		/* MacBook, 3rd rev. */
-+	M_MB_5_1,	/* MacBook, 5th rev. */
-+	M_MB_6_1,	/* MacBook, 6th rev. */
-+	M_MB_7_1,	/* MacBook, 7th rev. */
- 	M_MB_SR,	/* MacBook, 2nd gen, (Santa Rosa) */
- 	M_MBA,		/* MacBook Air */
- 	M_MBP,		/* MacBook Pro */
- 	M_MBP_2,	/* MacBook Pro 2nd gen */
-+	M_MBP_2_2,	/* MacBook Pro 2,2nd gen */
- 	M_MBP_SR,	/* MacBook Pro (Santa Rosa) */
- 	M_MBP_4,	/* MacBook Pro, 4th gen */
- 	M_MBP_5_1,    /* MacBook Pro, 5,1th gen */
-+	M_MBP_5_2,	/* MacBook Pro, 5,2th gen */
-+	M_MBP_5_3,	/* MacBook Pro, 5,3rd gen */
-+	M_MBP_6_1,	/* MacBook Pro, 6,1th gen */
-+	M_MBP_6_2,	/* MacBook Pro, 6,2th gen */
-+	M_MBP_7_1,	/* MacBook Pro, 7,1th gen */
- 	M_UNKNOWN	/* placeholder */
- };
+@@ -13,7 +13,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/screen_info.h>
+ #include <linux/dmi.h>
+-
++#include <linux/pci.h>
+ #include <video/vga.h>
  
-@@ -64,14 +78,28 @@ static struct efifb_dmi_info {
- 	[M_I20] = { "i20", 0x80010000, 1728 * 4, 1680, 1050 }, /* guess */
- 	[M_I20_SR] = { "imac7", 0x40010000, 1728 * 4, 1680, 1050 },
- 	[M_I24] = { "i24", 0x80010000, 2048 * 4, 1920, 1200 }, /* guess */
-+	[M_I24_8_1] = { "imac8", 0xc0060000, 2048 * 4, 1920, 1200 },
-+	[M_I24_10_1] = { "imac10", 0xc0010000, 2048 * 4, 1920, 1080 },
-+	[M_I27_11_1] = { "imac11", 0xc0010000, 2560 * 4, 2560, 1440 },
- 	[M_MINI]= { "mini", 0x80000000, 2048 * 4, 1024, 768 },
-+	[M_MINI_3_1]= { "mini31", 0x40010000, 1024 * 4, 1024, 768 },
-+	[M_MINI_4_1]= { "mini41", 0xc0010000, 2048 * 4, 1920, 1200 },
- 	[M_MB] = { "macbook", 0x80000000, 2048 * 4, 1280, 800 },
-+	[M_MB_5_1] = { "macbook51", 0x80010000, 2048 * 4, 1280, 800 },
-+	[M_MB_6_1] = { "macbook61", 0x80010000, 2048 * 4, 1280, 800 },
-+	[M_MB_7_1] = { "macbook71", 0x80010000, 2048 * 4, 1280, 800 },
- 	[M_MBA] = { "mba", 0x80000000, 2048 * 4, 1280, 800 },
- 	[M_MBP] = { "mbp", 0x80010000, 1472 * 4, 1440, 900 },
- 	[M_MBP_2] = { "mbp2", 0, 0, 0, 0 }, /* placeholder */
-+	[M_MBP_2_2] = { "mbp22", 0x80010000, 1472 * 4, 1440, 900 },
- 	[M_MBP_SR] = { "mbp3", 0x80030000, 2048 * 4, 1440, 900 },
- 	[M_MBP_4] = { "mbp4", 0xc0060000, 2048 * 4, 1920, 1200 },
- 	[M_MBP_5_1] = { "mbp51", 0xc0010000, 2048 * 4, 1440, 900 },
-+	[M_MBP_5_2] = { "mbp52", 0xc0010000, 2048 * 4, 1920, 1200 },
-+	[M_MBP_5_3] = { "mbp53", 0xd0010000, 2048 * 4, 1440, 900 },
-+	[M_MBP_6_1] = { "mbp61", 0x90030000, 2048 * 4, 1920, 1200 },
-+	[M_MBP_6_2] = { "mbp62", 0x90030000, 2048 * 4, 1680, 1050 },
-+	[M_MBP_7_1] = { "mbp71", 0xc0010000, 2048 * 4, 1280, 800 },
- 	[M_UNKNOWN] = { NULL, 0, 0, 0, 0 }
- };
+ static struct fb_var_screeninfo efifb_defined __devinitdata = {
+@@ -116,7 +116,7 @@ static int set_system(const struct dmi_system_id *id)
+ {
+ 	struct efifb_dmi_info *info = id->driver_data;
+ 	if (info->base == 0)
+-		return -ENODEV;
++		return 0;
  
-@@ -92,7 +120,12 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac6,1", M_I24),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac6,1", M_I24),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac7,1", M_I20_SR),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac8,1", M_I24_8_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac10,1", M_I24_10_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "iMac11,1", M_I27_11_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "Macmini1,1", M_MINI),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini3,1", M_MINI_3_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "Macmini4,1", M_MINI_4_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook1,1", M_MB),
- 	/* At least one of these two will be right; maybe both? */
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook2,1", M_MB),
-@@ -101,14 +134,23 @@ static const struct dmi_system_id dmi_system_table[] __initconst = {
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBook3,1", M_MB),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook3,1", M_MB),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook4,1", M_MB),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook5,1", M_MB_5_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook6,1", M_MB_6_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBook7,1", M_MB_7_1),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookAir1,1", M_MBA),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro1,1", M_MBP),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,1", M_MBP_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro2,2", M_MBP_2_2),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro2,1", M_MBP_2),
- 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "MacBookPro3,1", M_MBP_SR),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro3,1", M_MBP_SR),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro4,1", M_MBP_4),
- 	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,1", M_MBP_5_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,2", M_MBP_5_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro5,3", M_MBP_5_3),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,1", M_MBP_6_1),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro6,2", M_MBP_6_2),
-+	EFIFB_DMI_SYSTEM_ID("Apple Inc.", "MacBookPro7,1", M_MBP_7_1),
- 	{},
- };
+ 	printk(KERN_INFO "efifb: dmi detected %s - framebuffer at %p "
+ 			 "(%dx%d, stride %d)\n", id->ident,
+@@ -124,18 +124,55 @@ static int set_system(const struct dmi_system_id *id)
+ 			 info->stride);
  
+ 	/* Trust the bootloader over the DMI tables */
+-	if (screen_info.lfb_base == 0)
++	if (screen_info.lfb_base == 0) {
++#if defined(CONFIG_PCI)
++		struct pci_dev *dev = NULL;
++		int found_bar = 0;
++#endif
+ 		screen_info.lfb_base = info->base;
+-	if (screen_info.lfb_linelength == 0)
+-		screen_info.lfb_linelength = info->stride;
+-	if (screen_info.lfb_width == 0)
+-		screen_info.lfb_width = info->width;
+-	if (screen_info.lfb_height == 0)
+-		screen_info.lfb_height = info->height;
+-	if (screen_info.orig_video_isVGA == 0)
+-		screen_info.orig_video_isVGA = VIDEO_TYPE_EFI;
+ 
+-	return 0;
++#if defined(CONFIG_PCI)
++		/* make sure that the address in the table is actually on a
++		 * VGA device's PCI BAR */
++
++		for_each_pci_dev(dev) {
++			int i;
++			if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
++				continue;
++			for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
++				resource_size_t start, end;
++
++				start = pci_resource_start(dev, i);
++				if (start == 0)
++					break;
++				end = pci_resource_end(dev, i);
++				if (screen_info.lfb_base >= start &&
++						screen_info.lfb_base < end) {
++					found_bar = 1;
++				}
++			}
++		}
++		if (!found_bar)
++			screen_info.lfb_base = 0;
++#endif
++	}
++	if (screen_info.lfb_base) {
++		if (screen_info.lfb_linelength == 0)
++			screen_info.lfb_linelength = info->stride;
++		if (screen_info.lfb_width == 0)
++			screen_info.lfb_width = info->width;
++		if (screen_info.lfb_height == 0)
++			screen_info.lfb_height = info->height;
++		if (screen_info.orig_video_isVGA == 0)
++			screen_info.orig_video_isVGA = VIDEO_TYPE_EFI;
++	} else {
++		screen_info.lfb_linelength = 0;
++		screen_info.lfb_width = 0;
++		screen_info.lfb_height = 0;
++		screen_info.orig_video_isVGA = 0;
++		return 0;
++	}
++	return 1;
+ }
+ 
+ static int efifb_setcolreg(unsigned regno, unsigned red, unsigned green,
 -- 
 1.7.2.2
 
