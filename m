@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab0IIW67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:58:59 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:34018 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab0IIW6z (ORCPT
+	id S932330Ab0IIWhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:37:25 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33063 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab0IIWhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:58:55 -0400
-Date: Fri, 10 Sep 2010 07:56:57 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/10] Hugepage migration (v5)
-Message-ID: <20100909225657.GA2790@spritzera.linux.bs1.fc.nec.co.jp>
-References: <1283908781-13810-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20100909123306.32134d5e@basil.nowhere.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Disposition: inline
-In-Reply-To: <20100909123306.32134d5e@basil.nowhere.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Thu, 9 Sep 2010 18:37:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=TSKqwVYNblb+/wUrfBBPpa7MaBDrjS5EPbNExYOM/8QsmKWapA8UEE1wqW9LQtB8F7
+         Z+vCNppUXwc/D1KD6mKiJwMsfo/QpNepLyX2T5pLYsogMnuMFrebmay7tqIhH3oDwRMe
+         9F2Q5htKu1OrCE94tY3XZtGXCPNtSZeSxdef8=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 122/223]drivers/parisc/README.dino Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:37:29 -0700
+Message-Id: <1284071862-8194-2-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.2.1
+In-Reply-To: <1284071862-8194-1-git-send-email-justinmattock@gmail.com>
+References: <1284071862-8194-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 12:33:06PM +0200, Andi Kleen wrote:
-> 
-> I went over this patchkit again and it all looks good to me.
-> I plan to merge it through my hwpoison tree.
+Below you will find an Update to a broken web address.
+Please let me know if this needs to be changed.
 
-Thank you.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-> As far as I understand all earlier comments have been addressed
-> with this revision, correct?
+---
+ drivers/parisc/README.dino |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Yes. I've reflected all given comments.
+diff --git a/drivers/parisc/README.dino b/drivers/parisc/README.dino
+index 097324f..8194037 100644
+--- a/drivers/parisc/README.dino
++++ b/drivers/parisc/README.dino
+@@ -10,8 +10,7 @@
+ ** PCI bus. HP-supplied graphics cards that utilize the PCI bus are
+ ** not affected."
+ **
+-** REVISIT: "go/pci_defect" link below is stale.
+-**	HP Internal can use <http://hpfcdma.fc.hp.com:80/Dino/>
++** http://www.hp.com/#Product 
+ **
+ **	Product		First Good Serial Number
+ **  C200/C240 (US)	US67350000
+-- 
+1.7.2.1
 
-> I am considering to fast track 10/10 (the page-types fix). 
-> 
-> I think the other bug fixes in the series are only for bugs added
-> earlier in the series, correct?
-
-Correct.
-
-Thanks,
-Naoya Horiguchi
