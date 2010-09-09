@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab0IIO1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 10:27:51 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35453 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753924Ab0IIO1t (ORCPT
+	id S1755019Ab0IIOdA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 10:33:00 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:37672 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753423Ab0IIOc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 10:27:49 -0400
-Date: Thu, 9 Sep 2010 15:47:57 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Stephane Grosjean" <grosjean@iphase.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: PROBLEM: tty_buffer_request_room() vs. ppp_sync_input(): a
- single  buffer may contains several frames
-Message-ID: <20100909154757.075f675a@lxorguk.ukuu.org.uk>
-In-Reply-To: <0D81855AB9880044B3FD8FE8A7B520595B040D@EXMAIL.interphase.iphase.com>
-References: <0D81855AB9880044B3FD8FE8A7B520595B040D@EXMAIL.interphase.iphase.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Sep 2010 10:32:59 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: NAhE4QQVM1lMwbHu1Hv9g22Z4F8Ff2T30RCL_Nk4mznKa4x
+ BvCY3ArEVU1S9AZDVXhgq0Py0CfP.Dc19mCeCbEpuipapjC91pMnlDUp1a04
+ W8wi3WP06KtzKZV1be91LSlDDNrPLDKBaEtRTl4d3QlqZ.PnwutbWEO..jP4
+ ce5bueu5J8A860Mq8txIJROPnCOjs.yGCVykb63j6AliDeRvoA158vqoyZWY
+ PsXfSb6hmi.WlCFbzvxFYi0Y27Dmn
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 9 Sep 2010 09:32:52 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after direct
+ reclaim allocation fails
+In-Reply-To: <20100909135523.GA340@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1009090931360.18975@router.home>
+References: <1283504926-2120-1-git-send-email-mel@csn.ul.ie> <1283504926-2120-4-git-send-email-mel@csn.ul.ie> <20100908163956.C930.A69D9226@jp.fujitsu.com> <20100909124138.GQ29263@csn.ul.ie> <alpine.DEB.2.00.1009090843480.18975@router.home>
+ <20100909135523.GA340@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> My problem is that the "tty_buffer_request_room()" function may use the
-> same buffer (the tail) if it finds enough place to store the incoming
-> frame in.
+On Thu, 9 Sep 2010, Mel Gorman wrote:
 
-Correct. The tty layer doesn't preserve record boundaries.
+> > This will have the effect of never sending IPIs for slab allocations since
+> > they do not do allocations for orders > PAGE_ALLOC_COSTLY_ORDER.
+> >
+>
+> The question is how severe is that? There is somewhat of an expectation
+> that the lower orders free naturally so it the IPI justified? That said,
+> our historical behaviour would have looked like
+>
+> if (!page && !drained && order) {
+> 	drain_all_pages();
+> 	draiained = true;
+> 	goto retry;
+> }
+>
+> Play it safe for now and go with that?
 
-> Please let me know if I'm right and if this fix is the only way to pass
-> synchronous frames to upper layers.
-
-The tty buffer system is not intended for framed data. It doesn't handle
-all sorts of cases of it and will split buffers and pack them as it sees
-fit.
-
-There is a limited provision for tty style handling of such interfaces
-because some hardware is dual mode but it requires you don't use the tty
-buffering helpers.
-
-If your hardware is a straight sync board you probably want to look at
-drivers/net/wan/hdlc*c which provides the interfaces so you can just
-throw frames straight off a card into the network layer and appear as a
-network stack. Unlike n_syncppp it also supports other protocols pretty
-much for free (Cisco HDLC etc)
-
-Alan
+I am fine with no IPIs for order <= COSTLY. Just be aware that this is
+a change that may have some side effects. Lets run some tests and see
+how it affect the issues that we are seeing.
