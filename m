@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359Ab0IILlE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 07:41:04 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:46066 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab0IILlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 07:41:02 -0400
-Date: Thu, 9 Sep 2010 13:40:53 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>,
-        Song Yuan <song.yuan@ericsson.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: perf events over (net) console?
-Message-ID: <20100909114053.GA15140@elte.hu>
-References: <AANLkTi=yeHyOeewm9tdsHRtj+=d+vE5=NRKGaPyq_yGH@mail.gmail.com>
- <1284031141.402.1.camel@laptop>
- <20100909112940.GA5267@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100909112940.GA5267@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0008]
+	id S1754205Ab0IILuf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 07:50:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57611 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab0IILud convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 07:50:33 -0400
+Subject: Re: cgroup: rmdir() does not complete
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mark Hills <mark@pogo.org.uk>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.NEB.2.01.1009091234230.26366@jrf.vwaro.pbz>
+References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
+	 <20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
+	 <20100827113506.2bbbb7b9.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100827123948.b4427a15.nishimura@mxp.nes.nec.co.jp>
+	 <20100827144225.3190167a.kamezawa.hiroyu@jp.fujitsu.com>
+	 <alpine.NEB.2.01.1009011200050.6596@jrf.vwaro.pbz>
+	 <20100902084200.e9b773cf.kamezawa.hiroyu@jp.fujitsu.com>
+	 <alpine.NEB.2.01.1009091051400.17759@jrf.vwaro.pbz>
+	 <20100909100909.GM4443@balbir.in.ibm.com>
+	 <alpine.NEB.2.01.1009091234230.26366@jrf.vwaro.pbz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 09 Sep 2010 13:50:17 +0200
+Message-ID: <1284033017.402.8.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-09-09 at 12:36 +0100, Mark Hills wrote:
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> I am still finding the problem incredibly hard to reproduce, so I'd like 
+> to observe as much data as possible from the current case before 
+> rebooting. If I could capture some kind of stack trace in the kernel for 
+> the running process that would be great, any suggestions appreciated.
 
-> On Thu, Sep 09, 2010 at 01:19:01PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2010-09-09 at 13:06 +0200, Harald Gustafsson wrote:
-> > > Hi,
-> > > 
-> > > We would like to monitor the perf events continuously on a remote 
-> > > machine. Does it exist a solution (in the kernel) to direct the 
-> > > output to a console or maybe even a netconsole? We would like to 
-> > > avoid a user space application to transfer it, due to that the 
-> > > machine will be running a test which will heavily load it and we 
-> > > want to avoid as many unrelated user space tasks as possible. If 
-> > > not mainlined does anyone have a patch for this?
-> > 
-> > No, and its a daft requirement.
-> > 
-> > You need a process context anyway to read the data and send it to 
-> > whatever place you want it.
-> > 
-> > Putting that in-kernel serves no purpose what so ever.
-> 
-> But if we bring the splice support, that can be done with minimal 
-> userspace noise. Plus that would work with the usual sockets but not 
-> limited to that.
+echo l > /proc/sysrq-trigger
 
-Yes. If we can transform the data over the network without it touching 
-disk, then that would be a sufficiently 'does not disturb other tasks' 
-measurement method.
-
-Thanks,
-
-	Ingo
+another thing you can do is run something like: perf record -gp $pid
+which will give you a profile of that task.
