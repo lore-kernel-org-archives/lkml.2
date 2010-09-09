@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab0IIRJH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 13:09:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40529 "EHLO mx2.suse.de"
+	id S1755352Ab0IIRJs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 13:09:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29677 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751558Ab0IIRJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 13:09:06 -0400
-Date: Thu, 9 Sep 2010 10:09:38 -0700
-From: Greg KH <gregkh@suse.de>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for September 6 (drivers/base/core)
-Message-ID: <20100909170938.GA6958@suse.de>
-References: <20100906141727.646c68e7.sfr@canb.auug.org.au> <20100906164918.56487d92.randy.dunlap@oracle.com> <20100907001407.GA10273@suse.de> <20100909084822.543b0268.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100909084822.543b0268.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1752068Ab0IIRJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 13:09:45 -0400
+Message-Id: <8u3s94$gfdh5f@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,340,1280732400"; 
+   d="scan'208";a="553043119"
+Date: Thu, 09 Sep 2010 18:09:40 +0100
+To: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [Intel-gfx] [PATCH] i915: Add native backlight control
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Matthew Garrett <mjg@redhat.com>
+References: <1283963539-4039-1-git-send-email-mjg@redhat.com> <1283963539-4039-2-git-send-email-mjg@redhat.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <1283963539-4039-2-git-send-email-mjg@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 08:48:22AM -0700, Randy Dunlap wrote:
-> On Mon, 6 Sep 2010 17:14:07 -0700 Greg KH wrote:
-> 
-> > On Mon, Sep 06, 2010 at 04:49:18PM -0700, Randy Dunlap wrote:
-> > > On Mon, 6 Sep 2010 14:17:27 +1000 Stephen Rothwell wrote:
-> > > 
-> > > > Hi all,
-> > > > 
-> > > > Changes since 20100903:
-> > > > 
-> > > > The powerpc tree still has its build failure for which I applied a patch.
-> > > > 
-> > > > I still have a patch to the drivers-x86 tree to remove a Kconfig warning.
-> > > > 
-> > > > ----------------------------------------------------------------------------
-> > > 
-> > > 
-> > > when CONFIG_BLOCK is not enabled:
-> > > 
-> > > drivers/base/core.c:622: error: 'block_class' undeclared (first use in this function)
-> > > drivers/base/core.c:712: error: 'block_class' undeclared (first use in this function)
-> > > drivers/base/core.c:742: error: 'block_class' undeclared (first use in this function)
-> > 
-> > Ah, due to the CONFIG_SYSFS_DEPRECATED stuff.  I'll work on this later
-> > today if Kay doesn't beat me to it...
-> 
-> 
-> Still broken on 2010-SEP-09.
+On Wed,  8 Sep 2010 12:32:18 -0400, Matthew Garrett <mjg@redhat.com> wrote:
+> Not all systems expose a firmware or platform mechanism for changing the
+> backlight intensity on i915, so add native driver support.
 
-Yup, still travelling at the moment, been in Tiawan for the week, give
-me a chance to fix this issue that no real user of the kernel will ever
-see :)
+This will conflict with a similar patch I have in drm-intel-next to unify
+the various bits of code that were attempting to modify the BLC PWM, each
+in their own unique fashion.
 
-thanks,
+I'll respin this native interface on top of that. Do you want to add a
+native RAW interface all in one go, or to base it on the current
+backlight_device and then to add the RAW property with this patch set?
+-Chris
 
-greg k-h
+-- 
+Chris Wilson, Intel Open Source Technology Centre
