@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526Ab0IIXEL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 19:04:11 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61018 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756992Ab0IIW1j (ORCPT
+	id S1756963Ab0IIW1d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:27:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58564 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756575Ab0IIW1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:27:39 -0400
+	Thu, 9 Sep 2010 18:27:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=dejtB6ugzpu1hsy1XHWkgIwkkIwhO/grCNScWna0bME1skEwREzuWleA9gClY5lJLK
-         S1CJ2A41/3bU4KbnrlTlkoLHhYkJlqCNWZLAQ2IB3/mKpGMJGLwpqWZlpbXQAX2TrmMs
-         naX4cYHF+BLNPU8qaIn+zBSziiWVuaE7A51Z0=
+        b=aKckfK5k7Kr9rQUDNbu2gs8huRmx3eBKz6Wb5wQaRHrhpxDfYKQUOaocT9mpyTFQSq
+         NUljim2wNTZk8ovbNFDtBOJDh86ph3KPzC+bpqulwIW0doPtj6pierZkUFfmr4jB3nJw
+         RP711pQAI+wYNFZEv1B8LlOFd2hBwCcIg9PzU=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 055/223]drivers/media/video/cafe_ccic.c  Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:27:38 -0700
-Message-Id: <1284071263-7789-10-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 052/223]drivers/media/video/Kconfig Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:27:35 -0700
+Message-Id: <1284071263-7789-7-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071263-7789-1-git-send-email-justinmattock@gmail.com>
 References: <1284071263-7789-1-git-send-email-justinmattock@gmail.com>
@@ -33,22 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/media/video/cafe_ccic.c |    2 +-
+ drivers/media/video/Kconfig |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/media/video/cafe_ccic.c b/drivers/media/video/cafe_ccic.c
-index be35e69..15cb0e1 100644
---- a/drivers/media/video/cafe_ccic.c
-+++ b/drivers/media/video/cafe_ccic.c
-@@ -4,7 +4,7 @@
-  * sensor.
-  *
-  * The data sheet for this device can be found at:
-- *    http://www.marvell.com/products/pcconn/88ALP01.jsp
-+ *   http://www.marvell.com/products/pc_connectivity/88alp01/ 
-  *
-  * Copyright 2006 One Laptop Per Child Association, Inc.
-  * Copyright 2006-7 Jonathan Corbet <corbet@lwn.net>
+diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
+index f6e4d04..0f669ee 100644
+--- a/drivers/media/video/Kconfig
++++ b/drivers/media/video/Kconfig
+@@ -978,7 +978,7 @@ config USB_STKWEBCAM
+ 	  Supported devices are typically found in some Asus laptops,
+ 	  with USB id 174f:a311 and 05e1:0501. Other Syntek cameras
+ 	  may be supported by the stk11xx driver, from which this is
+-	  derived, see http://stk11xx.sourceforge.net
++	  derived, see http://sourceforge.net/projects/syntekdriver/ 
+ 
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called stkwebcam.
 -- 
 1.7.2.1
 
