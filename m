@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460Ab0IIW33 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:29:29 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48162 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932458Ab0IIW30 (ORCPT
+	id S932556Ab0IIW3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 18:29:34 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44570 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932537Ab0IIW33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:29:26 -0400
+	Thu, 9 Sep 2010 18:29:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=qPKaCR9D9FjiBPLadtROX6n46Jh3H0lur8I35gfFy8gCtjrhEWQjFxtNPGrBF6AxqU
-         HLcC/cnGQu6gPp8hiZh1eDBvCWWIbbnIQN7cS5pFx+UsU7hNz9F7lB9EtYMGpceOSyZ5
-         0HFU8rVFB9lJnjNR4LVuQR7syngdvO+/kDMOU=
+        b=N5kYs+4/spnnZSeIfEuEemYm3mYJrfeJb7H0hqXw+HLCJdkpr26RlOMEQ+vE23qmoE
+         N2643OO7PaIXk/RPb/Hul8fu3q6ix4Ato+EgvtCo2zV2K4BHFwMqUGJePev2WvXa1Ggl
+         yhmCa0EbU57pBI6Z5lVr3c7J4/+UoDLKFQ/ZA=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 083/223]drivers/mtd/devices/lart.c Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:29:27 -0700
-Message-Id: <1284071374-7867-8-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 084/223]drivers/mtd/Kconfig Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:29:28 -0700
+Message-Id: <1284071374-7867-9-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071374-7867-1-git-send-email-justinmattock@gmail.com>
 References: <1284071374-7867-1-git-send-email-justinmattock@gmail.com>
@@ -33,22 +33,25 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/mtd/devices/lart.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mtd/Kconfig |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mtd/devices/lart.c b/drivers/mtd/devices/lart.c
-index f4359fe..56599e8 100644
---- a/drivers/mtd/devices/lart.c
-+++ b/drivers/mtd/devices/lart.c
-@@ -17,7 +17,7 @@
-  *           - January 2000
-  *
-  *    [2] MTD internal API documentation
-- *           - http://www.linux-mtd.infradead.org/tech/
-+ *           - http://www.linux-mtd.infradead.org/
-  *
-  * Limitations:
-  *
+diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
+index 1e2cbf5..6f08a26 100644
+--- a/drivers/mtd/Kconfig
++++ b/drivers/mtd/Kconfig
+@@ -292,9 +292,9 @@ config RFD_FTL
+ 	---help---
+ 	  This provides support for the flash translation layer known
+ 	  as the Resident Flash Disk (RFD), as used by the Embedded BIOS
+-	  of General Software. There is a blurb at:
++	  of General Software. 
+ 
+-		http://www.gensw.com/pages/prod/bios/rfd.htm
++		http://www.phoenix.com/	
+ 
+ config SSFDC
+ 	tristate "NAND SSFDC (SmartMedia) read only translation layer"
 -- 
 1.7.2.1
 
