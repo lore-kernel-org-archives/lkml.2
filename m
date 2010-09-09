@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab0IIVSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 17:18:40 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:23974 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab0IIVSi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 17:18:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=sXirkG2PFWglLRWYaZFL7+JzTD7H0nXmKZMccMWlZBlTewQyI6DnBXeVba9qaPlsYQ
-         1phV23XBnENWER97yx/w==
+	id S1755941Ab0IIVWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 17:22:07 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39293 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753111Ab0IIVWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 17:22:06 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bojan Smojver <bojan@rexursive.com>
+Subject: Re: linux-next: build failure after merge of the final tree (suspend tree related)
+Date: Thu, 9 Sep 2010 23:20:55 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20100909125838.6c82edc4.sfr@canb.auug.org.au> <1284002036.2614.39.camel@shrek.rexursive.com>
+In-Reply-To: <1284002036.2614.39.camel@shrek.rexursive.com>
 MIME-Version: 1.0
-Date: Thu, 9 Sep 2010 16:18:35 -0500
-Message-ID: <AANLkTimXnjnkNgwtEVpXKYMxXgmBdye=Gtjeggd4N9UA@mail.gmail.com>
-Subject: [PATCH] Move "struct net" declaration inside the __KERNEL__ macro guard
-From: Ollie Wild <aaw@google.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009092320.55966.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch reduces namespace pollution by moving the "struct net" declaration
-out of the userspace-facing portion of linux/netlink.h.  It has no impact on
-the kernel, and the declaration is not referenced anywhere outside the
-__KERNEL__ macro guard.
+On Thursday, September 09, 2010, Bojan Smojver wrote:
+> On Thu, 2010-09-09 at 12:58 +1000, Stephen Rothwell wrote:
+> > Caused by commit 2b2609c19ff19361360552786bd252ef40dfe5ce ("PM /
+> > Hibernate: Compress hibernation image with LZO").
+> > 
+> > See Rule 1 in Documentation/SubmitChecklist.  There is a missing
+> > include of linux/vmalloc.h. 
+> 
+> Thanks. I see I succeeded - first patch broke the build - yay! ;-)
+> 
+> Rafael,
+> 
+> Can you please add vmalloc.h to the thingy. I don't have commit access,
+> obviously.
 
-(This came up because we have several C++ applications which use "net" as a
-namespace name.)
+Fixed and pushed back.
 
-Ollie
-
----
- include/linux/netlink.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/netlink.h b/include/linux/netlink.h
-index 59d0669..1235669 100644
---- a/include/linux/netlink.h
-+++ b/include/linux/netlink.h
-@@ -27,8 +27,6 @@
-
- #define MAX_LINKS 32
-
--struct net;
--
- struct sockaddr_nl {
-       sa_family_t     nl_family;      /* AF_NETLINK   */
-       unsigned short  nl_pad;         /* zero         */
-@@ -151,6 +149,8 @@ struct nlattr {
- #include <linux/capability.h>
- #include <linux/skbuff.h>
-
-+struct net;
-+
- static inline struct nlmsghdr *nlmsg_hdr(const struct sk_buff *skb)
- {
-       return (struct nlmsghdr *)skb->data;
---
-1.7.0.4
+Thanks,
+Rafael
