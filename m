@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab0IIDxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 23:53:06 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37941
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751486Ab0IIDxD (ORCPT
+	id S1751171Ab0IIENk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 00:13:40 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44697 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab0IIENe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 23:53:03 -0400
-Date: Wed, 08 Sep 2010 20:53:20 -0700 (PDT)
-Message-Id: <20100908.205320.191416862.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: arnd@arndb.de, fweisbec@gmail.com, tglx@linutronix.de, jkacur@redhat.com,
-        sam@ravnborg.org, jblunck@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] annotating the remaining BKL users
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTikfLb+kDZN8aodPwxFuL_VOuyb7AH=eF60MwrWG@mail.gmail.com>
-References: <201009082255.33035.arnd@arndb.de>
-	<AANLkTikfLb+kDZN8aodPwxFuL_VOuyb7AH=eF60MwrWG@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 9 Sep 2010 00:13:34 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 05/10] vmscan: Synchrounous lumpy reclaim use lock_page() instead trylock_page()
+Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20100909121547.2e69735a.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100909120448.58acc9a6.kamezawa.hiroyu@jp.fujitsu.com> <20100909121547.2e69735a.kamezawa.hiroyu@jp.fujitsu.com>
+Message-Id: <20100909131211.C93C.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  9 Sep 2010 13:13:22 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 8 Sep 2010 17:20:57 -0700
+> On Thu, 9 Sep 2010 12:04:48 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > On Mon,  6 Sep 2010 11:47:28 +0100
+> > Mel Gorman <mel@csn.ul.ie> wrote:
+> > 
+> > > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > 
+> > > With synchrounous lumpy reclaim, there is no reason to give up to reclaim
+> > > pages even if page is locked. This patch uses lock_page() instead of
+> > > trylock_page() in this case.
+> > > 
+> > > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > 
+> > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> Ah......but can't this change cause dead lock ??
 
-> That said, I'd also like to see a comment _why_ the architectures in
-> question depends on the BKL. Some of those look pretty historical (the
-> sparc32 register window spill code? Does it _really_ need the BKL at
-> all, or is that just a remnant of "let's get the BKL at each kernel
-> entry").
+Yes, this patch is purely crappy. please drop. I guess I was poisoned
+by poisonous mushroom of Mario Bros.
 
-It probably doesn't or can be trivially removed.
 
-I'll have a go at this.
+
+
