@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963Ab0IIW1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 18:27:33 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58564 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756575Ab0IIW1b (ORCPT
+	id S1757550Ab0IIXEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 19:04:31 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61018 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756575Ab0IIW1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 18:27:31 -0400
+	Thu, 9 Sep 2010 18:27:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=aKckfK5k7Kr9rQUDNbu2gs8huRmx3eBKz6Wb5wQaRHrhpxDfYKQUOaocT9mpyTFQSq
-         NUljim2wNTZk8ovbNFDtBOJDh86ph3KPzC+bpqulwIW0doPtj6pierZkUFfmr4jB3nJw
-         RP711pQAI+wYNFZEv1B8LlOFd2hBwCcIg9PzU=
+        b=ciyrRXuY9QQF83wp3psgGcOi/eyA+MzUDuuAOE3qe6L9wEFWrB9enau+LckbVOLhTJ
+         EBlHHIdCwlwdUO82MRyAg7gz5O/SiKZgkQ7K8KFF9ZrzSI/6JLEF4cOynFZHepGaJbbN
+         avogjm1MSkgC0cEfOOoT5oyexnxgozjoqWDIw=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 052/223]drivers/media/video/Kconfig Update broken web addresses.
-Date: Thu,  9 Sep 2010 15:27:35 -0700
-Message-Id: <1284071263-7789-7-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 053/223]drivers/media/video/sn9c102/sn9c102_pas202bcb.c Update broken web addresses.
+Date: Thu,  9 Sep 2010 15:27:36 -0700
+Message-Id: <1284071263-7789-8-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284071263-7789-1-git-send-email-justinmattock@gmail.com>
 References: <1284071263-7789-1-git-send-email-justinmattock@gmail.com>
@@ -33,22 +33,21 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/media/video/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/media/video/sn9c102/sn9c102_pas202bcb.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
-index f6e4d04..0f669ee 100644
---- a/drivers/media/video/Kconfig
-+++ b/drivers/media/video/Kconfig
-@@ -978,7 +978,7 @@ config USB_STKWEBCAM
- 	  Supported devices are typically found in some Asus laptops,
- 	  with USB id 174f:a311 and 05e1:0501. Other Syntek cameras
- 	  may be supported by the stk11xx driver, from which this is
--	  derived, see http://stk11xx.sourceforge.net
-+	  derived, see http://sourceforge.net/projects/syntekdriver/ 
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called stkwebcam.
+diff --git a/drivers/media/video/sn9c102/sn9c102_pas202bcb.c b/drivers/media/video/sn9c102/sn9c102_pas202bcb.c
+index 2782f94..2e86fdc 100644
+--- a/drivers/media/video/sn9c102/sn9c102_pas202bcb.c
++++ b/drivers/media/video/sn9c102/sn9c102_pas202bcb.c
+@@ -4,7 +4,6 @@
+  *                                                                         *
+  * Copyright (C) 2004 by Carlos Eduardo Medaglia Dyonisio                  *
+  *                       <medaglia@undl.org.br>                            *
+- *                       http://cadu.homelinux.com:8080/                   *
+  *                                                                         *
+  * Support for SN9C103, DAC Magnitude, exposure and green gain controls    *
+  * added by Luca Risolia <luca.risolia@studio.unibo.it>                    *
 -- 
 1.7.2.1
 
