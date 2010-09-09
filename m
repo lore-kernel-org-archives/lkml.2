@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab0IISvC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 14:51:02 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:58538 "EHLO mx01.d-labs.de"
+	id S1752980Ab0IISwH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 14:52:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55688 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751289Ab0IISu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 14:50:58 -0400
-Date: Thu, 9 Sep 2010 20:50:56 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH UPDATED] workqueue: add documentation
-Message-ID: <20100909205056.1ac7989a@schatten.dmk.lab>
-In-Reply-To: <4C88B55E.90203@kernel.org>
-References: <4C87AE52.70401@kernel.org>
-	<4C87B101.2080608@kernel.org>
-	<20100909100229.250900f0@schatten.dmk.lab>
-	<4C88B55E.90203@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751289Ab0IISwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 14:52:06 -0400
+Date: Thu, 9 Sep 2010 18:51:48 GMT
+From: tip-bot for Miroslav Lichvar <mlichvar@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mlichvar@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, johnstul@us.ibm.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, mlichvar@redhat.com,
+        linux-kernel@vger.kernel.org, johnstul@us.ibm.com, tglx@linutronix.de
+In-Reply-To: <1283870626-9472-1-git-send-email-mlichvar@redhat.com>
+References: <1283870626-9472-1-git-send-email-mlichvar@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] ntp: Clamp PLL update interval
+Message-ID: <tip-8af3c153baf95374eff20a37f00c59a295b52756@git.kernel.org>
+Git-Commit-ID: 8af3c153baf95374eff20a37f00c59a295b52756
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Sep 2010 18:51:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 09 Sep 2010 12:22:22 +0200
-Tejun Heo <tj@kernel.org> wrote:
+Commit-ID:  8af3c153baf95374eff20a37f00c59a295b52756
+Gitweb:     http://git.kernel.org/tip/8af3c153baf95374eff20a37f00c59a295b52756
+Author:     Miroslav Lichvar <mlichvar@redhat.com>
+AuthorDate: Tue, 7 Sep 2010 16:43:46 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 9 Sep 2010 20:48:37 +0200
 
-> The backend mechanism is called Global CPU Workqueue (gcwq).  There is
+ntp: Clamp PLL update interval
 
-I tried to avoid that name. It somehow is confusing to me . Global/Local
-in context of CPU is somehow associated with CPU locality in my mind.
-Also the name doesn't fit for the unbound gcwq. 
-I know what you mean by it, but I don't think it's a self explanatory
-name. That was why I just said "they are called gcwq". But I'm ok with
-it either way. After all, that _is_ how they are called. :) 
+Clamp update interval to reduce PLL gain with low sampling rate (e.g.
+intermittent network connection) to avoid instability.
 
+The clamp roughly corresponds to the loop time constant, it's 8 * poll
+interval for SHIFT_PLL 2 and 32 * poll interval for SHIFT_PLL 4. This
+gives good results without affecting the gain in normal conditions where
+ntpd skips only up to seven consecutive samples.
 
-> > 
-> > I think it is worth mentioning all functions that are considered to be
-> > part of the API here. 
-> 
-> Yeah, that would be nice but a slightly larger task that I would like
-> to postpone at this point.  :-)
+Signed-off-by: Miroslav Lichvar <mlichvar@redhat.com>
+Acked-by: john stultz <johnstul@us.ibm.com>
+LKML-Reference: <1283870626-9472-1-git-send-email-mlichvar@redhat.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/ntp.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
 
-Ah well, I may just give it a go then... 
-
-> 
-> > "Unless work items are expected to consume a huge amount of CPU
-> > cycles, using a bound wq is usually beneficial due to the increased
-> > level of locality in wq operations and work item exection. "
-> 
-> So updated.
-> 
-> > Btw, it is not clear to me, what you mean with "wq operations". 
-> 
-> Queueing, dispatching and other book keeping operations.
-
-Yes. That makes sense. 
-
-> 
-> > Do the enqueuing API functions automatically determine the cpu they are
-> > executed on and queue the workitem to the corresponding gcwq? Or do you
-> > need to explicitly queue to a specific CPU?
-> > 
-> > Either you mean the operations that lead to the enqueueing of the
-> > work-item, or you mean the operations done by the thread-pool?
-> > 
-> > ... after thinking a bit, the wq implementation should obviously do the
-> > automatic enqueuing on the nearest gcwq thingy... But that should
-> > probably be mentioned in the API description. 
-> > Although I have to admit I only skimmed over the flag description
-> > above it seems you only mention the UNBOUND case and not the default
-> > one?
-> 
-> Yeah, queue_work() queues works on the gcwq of the local CPU.  It can
-> be overridden by queue_work_on().  The unbound is special case where
-> the workqueue always sends works to the unbound gcwq which is served
-> by unbound workers.  Did the update in the design section explain
-> enough or do you think there needs to be more explanation?
-
-I'm looking forward to reading the new version en
-bloc, but if I can trust my gut feeling, I'm ok with it now. :)
-
-Let's see if someone else with more kernel-experience has something to
-add, but here you've got my
-
-Reviewed-By: Florian Mickler <florian@mickler.org>
-
-in any case.
-
-Cheers,
-Flo
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index c631168..d232189 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -149,10 +149,18 @@ static void ntp_update_offset(long offset)
+ 	time_reftime = get_seconds();
+ 
+ 	offset64    = offset;
+-	freq_adj    = (offset64 * secs) <<
+-			(NTP_SCALE_SHIFT - 2 * (SHIFT_PLL + 2 + time_constant));
++	freq_adj    = ntp_update_offset_fll(offset64, secs);
+ 
+-	freq_adj    += ntp_update_offset_fll(offset64, secs);
++	/*
++	 * Clamp update interval to reduce PLL gain with low
++	 * sampling rate (e.g. intermittent network connection)
++	 * to avoid instability.
++	 */
++	if (unlikely(secs > 1 << (SHIFT_PLL + 1 + time_constant)))
++		secs = 1 << (SHIFT_PLL + 1 + time_constant);
++
++	freq_adj    += (offset64 * secs) <<
++			(NTP_SCALE_SHIFT - 2 * (SHIFT_PLL + 2 + time_constant));
+ 
+ 	freq_adj    = min(freq_adj + time_freq, MAXFREQ_SCALED);
+ 
