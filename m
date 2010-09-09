@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab0IIQFY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 12:05:24 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:51234 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958Ab0IIQFV convert rfc822-to-8bit (ORCPT
+	id S1754732Ab0IIQQi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 12:16:38 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34266 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927Ab0IIQQg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 12:05:21 -0400
+	Thu, 9 Sep 2010 12:16:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=googlemail.com; s=gamma;
         h=mime-version:reply-to:in-reply-to:references:date:message-id
          :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=QwZKRIHXVZ/h+fvJlykI/+bWo8lRStiQwDZ277twkSWgoI2avN7Bgsqj0GABY4j+LM
-         jf9e7Fz5xPr71VwCihQ5NIZOvbTJonrLzWZ2iJd6y+zKLrDEqLSF9odXVQHsggbcNC66
-         ryjw4a+YqsEhg5TBMu2SCMQsLt6MxW7Eu+eRg=
+        b=SMVdZtRCyL1cAg0Xh8rgKP7XO4jyC7mYvROcQQXa6Rrqnv0Vckewu/cNFdzVukHewD
+         IMnu6qKatij4j/Z/6oRRf5OFx5Z3GVYOMTfhyqc9qg2hsJBrzHP+426b63SaJpmb6Z8F
+         8vrdot2UK+mPXqD14C+KIIGLbby064MK23ZME=
 MIME-Version: 1.0
 Reply-To: sedat.dilek@gmail.com
 In-Reply-To: <20100909082331.7278e76b.randy.dunlap@oracle.com>
 References: <AANLkTi=uzLJxDbd+uJAww-b5aP10gd8gbGVG19HS46ue@mail.gmail.com>
 	<20100909082331.7278e76b.randy.dunlap@oracle.com>
-Date: Thu, 9 Sep 2010 18:05:20 +0200
-Message-ID: <AANLkTi=iVDfmCSmHSW2ArZ4MO0k+zDQU9WMy7TvSwhBe@mail.gmail.com>
+Date: Thu, 9 Sep 2010 18:16:04 +0200
+Message-ID: <AANLkTi=KQ1HJ8s7NcTGHRKsj+wriH4uqWUi43LZnqUFv@mail.gmail.com>
 Subject: Re: mm/Kconfig: warning: (COMPACTION && EXPERIMENTAL && HUGETLB_PAGE
  && MMU) selects MIGRATION which has unmet direct dependencies (NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE)
 From: Sedat Dilek <sedat.dilek@googlemail.com>
@@ -31,12 +31,6 @@ Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Hey Randy!
-
-thanks for the quick response... wanted to start a new build :-).
-
-- Sedat -
 
 On Thu, Sep 9, 2010 at 5:23 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
 > On Thu, 9 Sep 2010 17:10:34 +0200 Sedat Dilek wrote:
@@ -111,3 +105,11 @@ On Thu, Sep 9, 2010 at 5:23 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
 >          Allows the migration of the physical location of pages of processes
 >          while the virtual addresses are not changed. This is useful in
 >
+
+Below is the URL for...
+
+"[PATCH] avoid warning when COMPACTION is selected"
+
+- Sedat -
+
+[1] http://marc.info/?l=linux-mm&m=128352833826498&w=2
