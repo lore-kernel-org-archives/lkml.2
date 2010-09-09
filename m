@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab0IIRlb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 13:41:31 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:58805 "EHLO
+	id S1755167Ab0IIRmQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 13:42:16 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:58993 "EHLO
 	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752106Ab0IIRl3 (ORCPT
+	with ESMTP id S1752101Ab0IIRmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 13:41:29 -0400
-Message-Id: <201009091741.o89HfPfM011522@d03av02.boulder.ibm.com>
-Subject: [PATCH 1/1] block: Range check cpu in blk_cpu_to_group
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
-From: Brian King <brking@linux.vnet.ibm.com>
-Date: Thu, 09 Sep 2010 12:41:31 -0500
+	Thu, 9 Sep 2010 13:42:13 -0400
+Subject: Re: System time drifts when processor idle.
+From: john stultz <johnstul@us.ibm.com>
+To: jean-philippe francois <jp.francois@cynove.com>
+Cc: Lin Ming <lin@ming.vg>, venki@google.com, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        jslaby@suse.cz
+In-Reply-To: <AANLkTina8xAwnGVuPKywsf1qEzpu+rWNbv7JjqAgLqp1@mail.gmail.com>
+References: <AANLkTi=ivkOHRYwLy5FDg3RnK18+opjGd9XsxC7yZqi7@mail.gmail.com>
+	 <AANLkTik0ZGs3i_mHtB0s6iT6X0cLgxMjRN7Hi9FK_ZLF@mail.gmail.com>
+	 <AANLkTikTF9uvKw+48_jJKLAwqp7MJnypvvUsHN3qQ58+@mail.gmail.com>
+	 <AANLkTin80q4tGPZ1FefWCUMmhpNKj3_-KZZB12gZvwSA@mail.gmail.com>
+	 <AANLkTin5cLQG9ApxhCs92Twm958MP0J+u4GdBysJ3aNk@mail.gmail.com>
+	 <AANLkTikWTLeDLbWWi-LJDD5SRAFN60v5065Vc_wGoY5N@mail.gmail.com>
+	 <1282932708.1946.8.camel@work-vm>
+	 <AANLkTina8xAwnGVuPKywsf1qEzpu+rWNbv7JjqAgLqp1@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Sep 2010 10:42:05 -0700
+Message-ID: <1284054125.2762.47.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-09-03 at 14:23 +0200, jean-philippe francois wrote:
+> 2010/8/27 john stultz <johnstul@us.ibm.com>:
+> > On Fri, 2010-08-27 at 16:12 +0200, jean-philippe francois wrote:
+> >> My Timekeeping bug is still present, here is an updated script and log.
+> >> I am willing to make test, but I don't know what kind of debugging
+> >> info is needed.
+> >>
+> >> cat /sys/devices/system/clocksource/clocksource0/available_clocksource
+> >> hpet acpi_pm
+> >> cat /sys/devices/system/clocksource/clocksource0/current_clocksource
+> >> hpet
+> >
+> > Huh. hpet was not what I would have expected.
+> >
+> >
+> > So first, two experiments:
+> >
+> > 1) Does booting with "clock=acpi_pm" cause the issue to disappear?
+> >
+> 
+> Hi,
+> 
+> The same bug happens with clock=acpi_pm.
+> My apologies for a previous mail where I said it was not hapenning with acpi_pm.
+> 
+> With both clock, the timekeeping gap augments by amount of 5 minutes.
 
-While testing CPU DLPAR, the following problem was discovered.
-We were DLPAR removing the first CPU, which in this case was
-logical CPUs 0-3. CPUs 0-2 were already marked offline and
-we were in the process of offlining CPU 3. After marking
-the CPU inactive and offline in cpu_disable, but before the
-cpu was completely idle (cpu_die), we ended up in __make_request
-on CPU 3. There we looked at the topology map to see which CPU
-to complete the I/O on and found no CPUs in the cpu_sibling_map.
-This resulted in the block layer setting the completion cpu
-to be NR_CPUS, which then caused an oops when we tried to
-complete the I/O.
+Huh. So this still seems strange, but assuming we're still using the
+hpet for irqs, its possible the event somehow gets pushed back 5 minutes
+and we miss an timekeeping interval accumulation (with acpi_pm, the
+counter wraps ever 5 seconds or so, so we could miss many accumulation
+intervals and still be 5 minutes off if the tick timer was late).
 
-Fix this by sanity checking the value we return from blk_cpu_to_group
-to be a valid cpu value.
+Again, seeing if the issue goes away with nohz=off would be helpful.
 
-Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
----
+thanks
+-john
 
- block/blk.h |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff -puN block/blk.h~blk_cpu_to_group_range_fix block/blk.h
---- linux-2.6/block/blk.h~blk_cpu_to_group_range_fix	2010-08-31 09:12:18.000000000 -0500
-+++ linux-2.6-bjking1/block/blk.h	2010-08-31 16:48:17.000000000 -0500
-@@ -142,14 +142,19 @@ static inline int queue_congestion_off_t
- 
- static inline int blk_cpu_to_group(int cpu)
- {
-+	int group = NR_CPUS;
- #ifdef CONFIG_SCHED_MC
- 	const struct cpumask *mask = cpu_coregroup_mask(cpu);
--	return cpumask_first(mask);
-+	group = cpumask_first(mask);
- #elif defined(CONFIG_SCHED_SMT)
--	return cpumask_first(topology_thread_cpumask(cpu));
-+	group = cpumask_first(topology_thread_cpumask(cpu));
- #else
- 	return cpu;
- #endif
-+
-+	if (likely(group < NR_CPUS))
-+		return group;
-+	return cpu;
- }
- 
- /*
-_
