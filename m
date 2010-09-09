@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab0IIFBp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 01:01:45 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46014 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab0IIFBi (ORCPT
+	id S1752093Ab0IIFB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 01:01:59 -0400
+Received: from ossa.mas.viperplatform.net.au ([202.147.75.25]:37815 "EHLO
+	ossa.mas.viperplatform.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750905Ab0IIFBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 01:01:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Roland McGrath <roland@redhat.com>
-Subject: [PATCH 0/2] execve memory exhaust of argument-copying fixes
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu,
-        "Brad Spengler <spender@grsecurity.net>, Eugene Teo" 
-	<eugene@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100908023417.8B055401AF@magilla.sf.frob.com>
-References: <20100830100616.78971400D9@magilla.sf.frob.com> <20100908023417.8B055401AF@magilla.sf.frob.com>
-Message-Id: <20100909134842.C93F.A69D9226@jp.fujitsu.com>
+	Thu, 9 Sep 2010 01:01:55 -0400
+Date: Thu, 9 Sep 2010 15:01:37 +1000
+From: Stuart Longland <redhatter@gentoo.org>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: Voltage/current/sensor monitoring interface and Wiegand
+Message-ID: <20100909050137.GR14056@atomos.longlandclan.yi.org>
+References: <20100909000245.GK14056@atomos.longlandclan.yi.org>
+ <4C884AFA.20604@bluewatersys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  9 Sep 2010 14:01:33 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C884AFA.20604@bluewatersys.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This is my take on parts of the execve large arguments copying issues
-> that Kees posted about, and Brad and others have been discussing.
-> I've only looked at the narrow area of the argument copying code
-> itself.  I think these are good and necessary fixes.  But I'm not
-> addressing the whole OOM killer/mm accounting issue, which also needs
-> to be fixed (and I have the impression others are already looking into that).
+On Thu, Sep 09, 2010 at 02:48:26PM +1200, Ryan Mallon wrote:
+> On 09/09/2010 12:02 PM, Stuart Longland wrote:
+> > How are voltage *monitors* normally written?  (note, not voltage
+> > *regulators*... this thing does not alter the voltage rails.)  I tried
+> > to make sense of lm-sensors, but that seems very ad-hoc (maybe I missed
+> > some document that explains it) to me.  It's hard to be clear on what is
+> > the *right* way to report a voltage or current reading to userspace.
+> 
+> Depending on your particular application it might make sense to use the
+> power supply class (see Documentation/power/power_supply_class.txt) for
+> the voltage/current monitoring. If the temperature sensor is related to
+> a power supply monitor, then it could also go there.
 
-Now, we have two OOM-Killer/mm acounting problem.
- 1) OOM-killer doesn't track nascent mm and It may kill innocent task
- 2) When execve argument-copying, our __vm_enough_memory() doesn't
-    protect any wrong plenty argument. then, execve() invoke OOM instead
-    return failure value when larger argument than system memory.
+Ahh okay, I'll have a look there..  The temperature isn't related to the
+power supply, so I might continue a searchfor its rightful place, but
+that class of devices seems like a good fit.
+-- 
+Stuart Longland (aka Redhatter, VK4MSL)      .'''.
+Gentoo Linux/MIPS Cobalt and Docs Developer  '.'` :
+. . . . . . . . . . . . . . . . . . . . . .   .'.'
+http://dev.gentoo.org/~redhatter             :.'
 
-The patch series addressed this two issue.
-
-
-
+I haven't lost my mind...
+  ...it's backed up on a tape somewhere.
