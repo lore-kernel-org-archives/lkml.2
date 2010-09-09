@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab0IIDPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Sep 2010 23:15:19 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:24949 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526Ab0IIDPO (ORCPT
+	id S1753071Ab0IIDTg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Sep 2010 23:19:36 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43612 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614Ab0IIDT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Sep 2010 23:15:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6099"; a="53715449"
-Message-ID: <4C885134.3070703@codeaurora.org>
-Date: Wed, 08 Sep 2010 20:15:00 -0700
-From: Jeff Ohlstein <johlstei@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Gregory Bean <gbean@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Steve Muckle <smuckle@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Brian Swetland <swetland@google.com>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 09/24] msm: MSM8X60 RUMI3 board support
-References: <1282712273-344-1-git-send-email-johlstei@codeaurora.org> <1282712273-344-10-git-send-email-johlstei@codeaurora.org> <20100902110850.GV26319@n2100.arm.linux.org.uk>
-In-Reply-To: <20100902110850.GV26319@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 8 Sep 2010 23:19:29 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 9 Sep 2010 12:14:15 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 06/10] vmscan: Narrow the scenarios lumpy reclaim uses
+ synchrounous reclaim
+Message-Id: <20100909121415.a1c05a45.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1283770053-18833-7-git-send-email-mel@csn.ul.ie>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
+	<1283770053-18833-7-git-send-email-mel@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux wrote:
-> On Tue, Aug 24, 2010 at 09:57:38PM -0700, Jeff Ohlstein wrote:
->   
->> +
->> +extern struct sys_timer msm_timer;
->> +void __iomem *gic_cpu_base_addr;
->>     
-> Please move to a header file.
->   
-I can move the extern to a header, not sure about the gic_cpu_base_addr. 
-Seems like other machine types have it in C code. Even with a prototype 
-in a header I need to define it somewhere.
+On Mon,  6 Sep 2010 11:47:29 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> shrink_page_list() can decide to give up reclaiming a page under a
+> number of conditions such as
+> 
+>   1. trylock_page() failure
+>   2. page is unevictable
+>   3. zone reclaim and page is mapped
+>   4. PageWriteback() is true
+>   5. page is swapbacked and swap is full
+>   6. add_to_swap() failure
+>   7. page is dirty and gfpmask don't have GFP_IO, GFP_FS
+>   8. page is pinned
+>   9. IO queue is congested
+>  10. pageout() start IO, but not finished
+> 
+> When lumpy reclaim, all of failure result in entering synchronous lumpy
+> reclaim but this can be unnecessary.  In cases (2), (3), (5), (6), (7) and
+> (8), there is no point retrying.  This patch causes lumpy reclaim to abort
+> when it is known it will fail.
+> 
+> Case (9) is more interesting. current behavior is,
+>   1. start shrink_page_list(async)
+>   2. found queue_congested()
+>   3. skip pageout write
+>   4. still start shrink_page_list(sync)
+>   5. wait on a lot of pages
+>   6. again, found queue_congested()
+>   7. give up pageout write again
+> 
+> So, it's meaningless time wasting. However, just skipping page reclaim is
+> also not a good as as x86 allocating a huge page needs 512 pages for example.
+> It can have more dirty pages than queue congestion threshold (~=128).
+> 
+> After this patch, pageout() behaves as follows;
+> 
+>  - If order > PAGE_ALLOC_COSTLY_ORDER
+> 	Ignore queue congestion always.
+>  - If order <= PAGE_ALLOC_COSTLY_ORDER
+> 	skip write page and disable lumpy reclaim.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+
+seems nice.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
 
