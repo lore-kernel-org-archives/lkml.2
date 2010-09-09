@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab0IITwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 15:52:42 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33245 "EHLO hera.kernel.org"
+	id S1756104Ab0IITxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 15:53:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54367 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753108Ab0IITwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 15:52:41 -0400
-Date: Thu, 9 Sep 2010 19:52:14 GMT
+	id S1753432Ab0IITxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 15:53:07 -0400
+Date: Thu, 9 Sep 2010 19:52:36 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
         mingo@redhat.com, eranian@googlemail.com, a.p.zijlstra@chello.nl,
@@ -21,28 +21,28 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Move some code around
-Message-ID: <tip-97dee4f3206622f31396dede2b5ddb8670458f56@git.kernel.org>
-Git-Commit-ID: 97dee4f3206622f31396dede2b5ddb8670458f56
+Subject: [tip:perf/core] perf: Clean up perf_event_context allocation
+Message-ID: <tip-eb184479874238393ac186c4e054d24311c34aaa@git.kernel.org>
+Git-Commit-ID: eb184479874238393ac186c4e054d24311c34aaa
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Sep 2010 19:52:15 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 09 Sep 2010 19:52:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  97dee4f3206622f31396dede2b5ddb8670458f56
-Gitweb:     http://git.kernel.org/tip/97dee4f3206622f31396dede2b5ddb8670458f56
+Commit-ID:  eb184479874238393ac186c4e054d24311c34aaa
+Gitweb:     http://git.kernel.org/tip/eb184479874238393ac186c4e054d24311c34aaa
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 7 Sep 2010 15:35:33 +0200
+AuthorDate: Tue, 7 Sep 2010 15:55:13 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Thu, 9 Sep 2010 20:46:33 +0200
 
-perf: Move some code around
+perf: Clean up perf_event_context allocation
 
-Move all inherit code near each other.
+Unify the two perf_event_context allocation sites.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: paulus <paulus@samba.org>
@@ -54,224 +54,109 @@ Cc: Yanmin <yanmin_zhang@linux.intel.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/perf_event.c |  200 +++++++++++++++++++++++++-------------------------
- 1 files changed, 100 insertions(+), 100 deletions(-)
+ kernel/perf_event.c |   41 ++++++++++++++++++++++++++---------------
+ 1 files changed, 26 insertions(+), 15 deletions(-)
 
 diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 8ca6e69..dae0e2f 100644
+index dae0e2f..13d98d7 100644
 --- a/kernel/perf_event.c
 +++ b/kernel/perf_event.c
-@@ -5556,106 +5556,6 @@ err:
- }
- EXPORT_SYMBOL_GPL(perf_event_create_kernel_counter);
- 
--/*
-- * inherit a event from parent task to child task:
-- */
--static struct perf_event *
--inherit_event(struct perf_event *parent_event,
--	      struct task_struct *parent,
--	      struct perf_event_context *parent_ctx,
--	      struct task_struct *child,
--	      struct perf_event *group_leader,
--	      struct perf_event_context *child_ctx)
--{
--	struct perf_event *child_event;
--
--	/*
--	 * Instead of creating recursive hierarchies of events,
--	 * we link inherited events back to the original parent,
--	 * which has a filp for sure, which we use as the reference
--	 * count:
--	 */
--	if (parent_event->parent)
--		parent_event = parent_event->parent;
--
--	child_event = perf_event_alloc(&parent_event->attr,
--					   parent_event->cpu,
--					   group_leader, parent_event,
--					   NULL);
--	if (IS_ERR(child_event))
--		return child_event;
--	get_ctx(child_ctx);
--
--	/*
--	 * Make the child state follow the state of the parent event,
--	 * not its attr.disabled bit.  We hold the parent's mutex,
--	 * so we won't race with perf_event_{en, dis}able_family.
--	 */
--	if (parent_event->state >= PERF_EVENT_STATE_INACTIVE)
--		child_event->state = PERF_EVENT_STATE_INACTIVE;
--	else
--		child_event->state = PERF_EVENT_STATE_OFF;
--
--	if (parent_event->attr.freq) {
--		u64 sample_period = parent_event->hw.sample_period;
--		struct hw_perf_event *hwc = &child_event->hw;
--
--		hwc->sample_period = sample_period;
--		hwc->last_period   = sample_period;
--
--		local64_set(&hwc->period_left, sample_period);
--	}
--
--	child_event->ctx = child_ctx;
--	child_event->overflow_handler = parent_event->overflow_handler;
--
--	/*
--	 * Link it up in the child's context:
--	 */
--	add_event_to_ctx(child_event, child_ctx);
--
--	/*
--	 * Get a reference to the parent filp - we will fput it
--	 * when the child event exits. This is safe to do because
--	 * we are in the parent and we know that the filp still
--	 * exists and has a nonzero count:
--	 */
--	atomic_long_inc(&parent_event->filp->f_count);
--
--	/*
--	 * Link this into the parent event's child list
--	 */
--	WARN_ON_ONCE(parent_event->ctx->parent_ctx);
--	mutex_lock(&parent_event->child_mutex);
--	list_add_tail(&child_event->child_list, &parent_event->child_list);
--	mutex_unlock(&parent_event->child_mutex);
--
--	return child_event;
--}
--
--static int inherit_group(struct perf_event *parent_event,
--	      struct task_struct *parent,
--	      struct perf_event_context *parent_ctx,
--	      struct task_struct *child,
--	      struct perf_event_context *child_ctx)
--{
--	struct perf_event *leader;
--	struct perf_event *sub;
--	struct perf_event *child_ctr;
--
--	leader = inherit_event(parent_event, parent, parent_ctx,
--				 child, NULL, child_ctx);
--	if (IS_ERR(leader))
--		return PTR_ERR(leader);
--	list_for_each_entry(sub, &parent_event->sibling_list, group_entry) {
--		child_ctr = inherit_event(sub, parent, parent_ctx,
--					    child, leader, child_ctx);
--		if (IS_ERR(child_ctr))
--			return PTR_ERR(child_ctr);
--	}
--	return 0;
--}
--
- static void sync_child_event(struct perf_event *child_event,
- 			       struct task_struct *child)
+@@ -1959,9 +1959,7 @@ exit_put:
+ /*
+  * Initialize the perf_event context in a task_struct:
+  */
+-static void
+-__perf_event_init_context(struct perf_event_context *ctx,
+-			    struct task_struct *task)
++static void __perf_event_init_context(struct perf_event_context *ctx)
  {
-@@ -5844,6 +5744,106 @@ again:
- 	put_ctx(ctx);
+ 	raw_spin_lock_init(&ctx->lock);
+ 	mutex_init(&ctx->mutex);
+@@ -1969,7 +1967,25 @@ __perf_event_init_context(struct perf_event_context *ctx,
+ 	INIT_LIST_HEAD(&ctx->flexible_groups);
+ 	INIT_LIST_HEAD(&ctx->event_list);
+ 	atomic_set(&ctx->refcount, 1);
+-	ctx->task = task;
++}
++
++static struct perf_event_context *
++alloc_perf_context(struct pmu *pmu, struct task_struct *task)
++{
++	struct perf_event_context *ctx;
++
++	ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
++	if (!ctx)
++		return NULL;
++
++	__perf_event_init_context(ctx);
++	if (task) {
++		ctx->task = task;
++		get_task_struct(task);
++	}
++	ctx->pmu = pmu;
++
++	return ctx;
  }
  
-+/*
-+ * inherit a event from parent task to child task:
-+ */
-+static struct perf_event *
-+inherit_event(struct perf_event *parent_event,
-+	      struct task_struct *parent,
-+	      struct perf_event_context *parent_ctx,
-+	      struct task_struct *child,
-+	      struct perf_event *group_leader,
-+	      struct perf_event_context *child_ctx)
-+{
-+	struct perf_event *child_event;
+ static struct perf_event_context *
+@@ -2036,22 +2052,22 @@ retry:
+ 	}
+ 
+ 	if (!ctx) {
+-		ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
++		ctx = alloc_perf_context(pmu, task);
+ 		err = -ENOMEM;
+ 		if (!ctx)
+ 			goto errout;
+-		__perf_event_init_context(ctx, task);
+-		ctx->pmu = pmu;
 +
-+	/*
-+	 * Instead of creating recursive hierarchies of events,
-+	 * we link inherited events back to the original parent,
-+	 * which has a filp for sure, which we use as the reference
-+	 * count:
-+	 */
-+	if (parent_event->parent)
-+		parent_event = parent_event->parent;
+ 		get_ctx(ctx);
 +
-+	child_event = perf_event_alloc(&parent_event->attr,
-+					   parent_event->cpu,
-+					   group_leader, parent_event,
-+					   NULL);
-+	if (IS_ERR(child_event))
-+		return child_event;
-+	get_ctx(child_ctx);
-+
-+	/*
-+	 * Make the child state follow the state of the parent event,
-+	 * not its attr.disabled bit.  We hold the parent's mutex,
-+	 * so we won't race with perf_event_{en, dis}able_family.
-+	 */
-+	if (parent_event->state >= PERF_EVENT_STATE_INACTIVE)
-+		child_event->state = PERF_EVENT_STATE_INACTIVE;
-+	else
-+		child_event->state = PERF_EVENT_STATE_OFF;
-+
-+	if (parent_event->attr.freq) {
-+		u64 sample_period = parent_event->hw.sample_period;
-+		struct hw_perf_event *hwc = &child_event->hw;
-+
-+		hwc->sample_period = sample_period;
-+		hwc->last_period   = sample_period;
-+
-+		local64_set(&hwc->period_left, sample_period);
-+	}
-+
-+	child_event->ctx = child_ctx;
-+	child_event->overflow_handler = parent_event->overflow_handler;
-+
-+	/*
-+	 * Link it up in the child's context:
-+	 */
-+	add_event_to_ctx(child_event, child_ctx);
-+
-+	/*
-+	 * Get a reference to the parent filp - we will fput it
-+	 * when the child event exits. This is safe to do because
-+	 * we are in the parent and we know that the filp still
-+	 * exists and has a nonzero count:
-+	 */
-+	atomic_long_inc(&parent_event->filp->f_count);
-+
-+	/*
-+	 * Link this into the parent event's child list
-+	 */
-+	WARN_ON_ONCE(parent_event->ctx->parent_ctx);
-+	mutex_lock(&parent_event->child_mutex);
-+	list_add_tail(&child_event->child_list, &parent_event->child_list);
-+	mutex_unlock(&parent_event->child_mutex);
-+
-+	return child_event;
-+}
-+
-+static int inherit_group(struct perf_event *parent_event,
-+	      struct task_struct *parent,
-+	      struct perf_event_context *parent_ctx,
-+	      struct task_struct *child,
-+	      struct perf_event_context *child_ctx)
-+{
-+	struct perf_event *leader;
-+	struct perf_event *sub;
-+	struct perf_event *child_ctr;
-+
-+	leader = inherit_event(parent_event, parent, parent_ctx,
-+				 child, NULL, child_ctx);
-+	if (IS_ERR(leader))
-+		return PTR_ERR(leader);
-+	list_for_each_entry(sub, &parent_event->sibling_list, group_entry) {
-+		child_ctr = inherit_event(sub, parent, parent_ctx,
-+					    child, leader, child_ctx);
-+		if (IS_ERR(child_ctr))
-+			return PTR_ERR(child_ctr);
-+	}
-+	return 0;
-+}
-+
- static int
- inherit_task_group(struct perf_event *event, struct task_struct *parent,
- 		   struct perf_event_context *parent_ctx,
+ 		if (cmpxchg(&task->perf_event_ctxp, NULL, ctx)) {
+ 			/*
+ 			 * We raced with some other task; use
+ 			 * the context they set.
+ 			 */
++			put_task_struct(task);
+ 			kfree(ctx);
+ 			goto retry;
+ 		}
+-		get_task_struct(task);
+ 	}
+ 
+ 	put_task_struct(task);
+@@ -5044,7 +5060,7 @@ int perf_pmu_register(struct pmu *pmu)
+ 		struct perf_cpu_context *cpuctx;
+ 
+ 		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
+-		__perf_event_init_context(&cpuctx->ctx, NULL);
++		__perf_event_init_context(&cpuctx->ctx);
+ 		cpuctx->ctx.pmu = pmu;
+ 		cpuctx->timer_interval = TICK_NSEC;
+ 		hrtimer_init(&cpuctx->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+@@ -5866,15 +5882,11 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
+ 		 * child.
+ 		 */
+ 
+-		child_ctx = kzalloc(sizeof(struct perf_event_context),
+-				    GFP_KERNEL);
++		child_ctx = alloc_perf_context(event->pmu, child);
+ 		if (!child_ctx)
+ 			return -ENOMEM;
+ 
+-		__perf_event_init_context(child_ctx, child);
+-		child_ctx->pmu = event->pmu;
+ 		child->perf_event_ctxp = child_ctx;
+-		get_task_struct(child);
+ 	}
+ 
+ 	ret = inherit_group(event, parent, parent_ctx,
+@@ -5886,7 +5898,6 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
+ 	return ret;
+ }
+ 
+-
+ /*
+  * Initialize the perf_event context in task_struct
+  */
