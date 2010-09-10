@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab0IJXgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 19:36:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54932 "EHLO hera.kernel.org"
+	id S1755301Ab0IJXiI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 19:38:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56585 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753841Ab0IJXf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 19:35:59 -0400
-Message-ID: <4C8AC0F5.5080206@kernel.org>
-Date: Sat, 11 Sep 2010 01:36:21 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
+	id S1753172Ab0IJXiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 19:38:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,348,1280732400"; 
+   d="scan'208";a="656227380"
+From: Seth Heasley <seth.heasley@intel.com>
+Organization: Intel Corporation
+To: perex@perex.cz
+Subject: [PATCH 2.6.35.4] hda_intel: ALSA HD Audio patch for Intel Patsburg DeviceIDs
+Date: Fri, 10 Sep 2010 16:29:56 -0700
+User-Agent: KMail/1.10.3 (Linux/2.6.27.7-9-default; KDE/4.1.3; x86_64; ; )
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org, tiwai@suse.de,
+        seth.heasley@intel.com
+References: <201001121703.36016.seth.heasley@intel.com>
+In-Reply-To: <201001121703.36016.seth.heasley@intel.com>
 MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>
-CC: Mike Snitzer <snitzer@redhat.com>, agk@redhat.com, jaxboe@fusionio.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-raid@vger.kernel.org, dm-devel@redhat.com, hch@lst.de,
-        konishi.ryusuke@lab.ntt.co.jp, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com, vst@vlnb.net,
-        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
-        rusty@rustcorp.com.au, mst@redhat.com, k-ueda@ct.jp.nec.com
-Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
- dm
-References: <1283509796-1510-1-git-send-email-tj@kernel.org> <1283509796-1510-24-git-send-email-tj@kernel.org> <Pine.LNX.4.64.1009101410570.7839@hs20-bc2-1.build.redhat.com> <20100910184652.GA24470@redhat.com> <Pine.LNX.4.64.1009101456220.21834@hs20-bc2-1.build.redhat.com> <20100910192403.GA24582@redhat.com> <Pine.LNX.4.64.1009101554300.5286@hs20-bc2-1.build.redhat.com>
-In-Reply-To: <Pine.LNX.4.64.1009101554300.5286@hs20-bc2-1.build.redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Sep 2010 23:35:25 +0000 (UTC)
+Content-Disposition: inline
+Message-Id: <201009101629.56579.seth.heasley@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2010 10:06 PM, Mikulas Patocka wrote:
-> But I have my work rules that I learned: I use no git kernels and no 
-> external patches (except Alasdair's patchset that I want to test). I only 
-> use -rc or final kernels. I need a stable computer --- I don't want to 
-> solve problems like "does it crash because I pulled something or does it 
-> crash because I made a bug in my code?" So, put that into 2.6.37-rc1 and 
-> I'll optimize flushes in dm for -rc2 or -rc3.
+This patch adds the Intel Patsburg (PCH) HD Audio Controller DeviceIDs.
+ 
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 
-Alright, I'm sorry but this is as far as I would go for dm conversion
-patches.  If you wanna split it further or do it your way, please feel
-free to.  I think it would be beneficial to do things now but, hey,
-you guys are maintaining dm part of the kernel, so it's up to you
-guys.  But, I think it would be silly for everyone else to wait for
-the rather special requirement for dm, so if we have to go forward
-without dm updates, I suppose we will have to.  Jens, please feel free
-to drop dm conversion patches.
-
-Thanks.
-
--- 
-tejun
+--- linux-2.6.35.4/sound/pci/hda/hda_intel.c.orig	2010-08-26 16:47:12.000000000 -0700
++++ linux-2.6.35.4/sound/pci/hda/hda_intel.c	2010-09-01 13:25:54.429224879 -0700
+@@ -126,6 +126,7 @@
+ 			 "{Intel, ICH10},"
+ 			 "{Intel, PCH},"
+ 			 "{Intel, CPT},"
++			 "{Intel, PBG},"
+ 			 "{Intel, SCH},"
+ 			 "{ATI, SB450},"
+ 			 "{ATI, SB600},"
+@@ -2748,6 +2749,8 @@
+ 	{ PCI_DEVICE(0x8086, 0x3b57), .driver_data = AZX_DRIVER_ICH },
+ 	/* CPT */
+ 	{ PCI_DEVICE(0x8086, 0x1c20), .driver_data = AZX_DRIVER_PCH },
++	/* PBG */
++	{ PCI_DEVICE(0x8086, 0x1d20), .driver_data = AZX_DRIVER_PCH },
+ 	/* SCH */
+ 	{ PCI_DEVICE(0x8086, 0x811b), .driver_data = AZX_DRIVER_SCH },
+ 	/* ATI SB 450/600 */
