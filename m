@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab0IJOyh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 10:54:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65334 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab0IJOyf (ORCPT
+	id S1754046Ab0IJOzA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 10:55:00 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:56702 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab0IJOy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 10:54:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=H7RijoevD+KCCFb4Lw26lNxcTlBqLfuhGDQGlyfGO4KQMQTeRytRB54i63+ohYITm5
-         epXP2ZLOTUcAPXZSP9hwYtJ1e4e9Zf+RVOtSdKNCMFjsTcR7ddMm/OvOjruQgBXFryYs
-         1glN6z299xhR3onVXHEACQwqalcHKW52X4uQQ=
-Date: Fri, 10 Sep 2010 16:54:29 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, eranian@googlemail.com,
-        a.p.zijlstra@chello.nl, yanmin_zhang@linux.intel.com,
-        robert.richter@amd.com, ming.m.lin@intel.com, tglx@linutronix.de,
-        mingo@elte.hu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf: Per-pmu-per-cpu contexts
-Message-ID: <20100910145426.GA5618@nowhere>
-References: <tip-108b02cfce04ee90b0a07ee0b104baffd39f5934@git.kernel.org>
+	Fri, 10 Sep 2010 10:54:59 -0400
+Date: Fri, 10 Sep 2010 23:54:51 +0900
+From: Norbert Preining <preining@logic.at>
+To: "Shi, Alex" <alex.shi@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "arjan@infradead.org" <arjan@infradead.org>,
+        "efault@gmx.de" <efault@gmx.de>, "Li, Shaohua" <shaohua.li@intel.com>,
+        tglx <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: high power consumption in recent kernels
+Message-ID: <20100910145451.GB21450@gamma.logic.tuwien.ac.at>
+References: <1283840425.26157.6486.camel@debian> <20100909093140.GC29648@gamma.logic.tuwien.ac.at> <EA929A9653AAE14F841771FB1DE5A1366008738EC2@rrsmsx501.amr.corp.intel.com> <20100909205115.GD11053@gamma.logic.tuwien.ac.at> <1284107099.402.30.camel@laptop> <6E3BC7F7C9A4BF4286DD4C043110F30B2991AF14FD@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <tip-108b02cfce04ee90b0a07ee0b104baffd39f5934@git.kernel.org>
+In-Reply-To: <6E3BC7F7C9A4BF4286DD4C043110F30B2991AF14FD@shsmsx502.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 07:51:53PM +0000, tip-bot for Peter Zijlstra wrote:
-> @@ -3745,18 +3757,20 @@ static void perf_event_task_ctx(struct perf_event_context *ctx,
->  
->  static void perf_event_task_event(struct perf_task_event *task_event)
->  {
-> -	struct perf_cpu_context *cpuctx;
->  	struct perf_event_context *ctx = task_event->task_ctx;
-> +	struct perf_cpu_context *cpuctx;
-> +	struct pmu *pmu;
->  
-> -	rcu_read_lock();
-> -	cpuctx = &get_cpu_var(perf_cpu_context);
-> -	perf_event_task_ctx(&cpuctx->ctx, task_event);
-> +	rcu_read_lock_sched();
-> +	list_for_each_entry_rcu(pmu, &pmus, entry) {
-> +		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-> +		perf_event_task_ctx(&cpuctx->ctx, task_event);
-> +	}
->  	if (!ctx)
->  		ctx = rcu_dereference(current->perf_event_ctxp);
+On Fr, 10 Sep 2010, Shi, Alex wrote:
+> In the powertop source code, the "extra timer interrupt" come from /proc/timer_stats. If my understanding is correct, so many "extra timer interrupt" and the nohz_ratemlimit checking make your system can not go to deep C states. but don't know what the effect for "load balancing tick" come from "extra timer interrupt". So maybe reduce the "extra timer interrupt" is  helpful on your system. Could you like to try this? 
 
+Can you be more specific how to do that?
 
+- revert the nohz patch (can you send me a patch for that)
+- how to reduce the "extra timer interrupt"?
 
-So, you say below that it works because synchronize_srcu(), that
-waits for qs after touching pmus, implies synchronize_sched(), right?
+Thanks
 
-And I guess you picked rcu_read_lock_sched() here because that preempt_disable()
-at the same time.
+Best wishes
 
-That looks complicated but I guess that works.
-
-That said there is also this rcu_dereference(current->perf_event_ctxp).
-Now, this ctx is released after srcu barrier right? So this should
-be srcu_dereference(). But then you seem to actually use rcu_read_lock_sched()
-as it's compatible, so this should be rcu_dereference_sched() ?
-
-With the current state, rcu will whine.
-Moreover there seem to be too much game between the different rcu
-flavours here, and that breaks the reviewers parsing.
-
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+CAIRNPAT (n.)
+A large piece of dried dung found in mountainous terrain above the
+cowline which leads the experienced tracker to believe that hikers
+have recently passed.
+			--- Douglas Adams, The Meaning of Liff
