@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab0IJXTS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 19:19:18 -0400
+	id S1755198Ab0IJXTZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 19:19:25 -0400
 Received: from mail-qy0-f174.google.com ([209.85.216.174]:35247 "EHLO
 	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab0IJXTR (ORCPT
+	with ESMTP id S1751618Ab0IJXTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 19:19:17 -0400
+	Fri, 10 Sep 2010 19:19:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=DydxPc4d/UDY1opkskMaiJcIUQZWGzjtAnFty2MpycPpw4c4ndhKz2RsBMd6AZtccz
-         RuFGheSb8IfHweVGhEw2G3N8ulnrzst57m3lQauYd0EcwgKfMo37l9tWxNK1my+3qfgJ
-         z62wyPWStwtIdKfBYlh8S2KN4PI1nd8NMF2C8=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=uni4/ppwCU0EYBJtN/ZoELIeJDsAJP8K49iPBR+wHfot14mO8RhnfZ4zexVThWyjz0
+         a03CXsJWR8wjDFqMEfk1m/Z6V8I/dE0qe2Gh2i9ra3Xvomr4IM2+dVGYyu8tC3ir5BOF
+         m9g8hRmz/IU3/2QRUe/7YqXhI2/AJBq8YdVSE=
 From: wellsk40@gmail.com
 To: linus.walleij@stericsson.com, spi-devel-general@lists.sourceforge.net
 Cc: sameo@linux.intel.com, rabin.vincent@stericsson.com,
@@ -20,42 +20,44 @@ Cc: sameo@linux.intel.com, rabin.vincent@stericsson.com,
         linux@arm.linux.org.uk, u.kleine-koenig@pengutronix.de,
         linux-arm-kernel@lists.infradead.org, tj@kernel.org,
         grant.likely@secretlab.ca, Lukasz.Baj@tieto.com,
-        quentinyang05@gmail.com
-Subject: amba_pl022 spi->mode fix/cleanup patches
-Date: Fri, 10 Sep 2010 09:19:34 -0700
-Message-Id: <1284135579-13578-1-git-send-email-wellsk40@gmail.com>
+        quentinyang05@gmail.com, Kevin Wells <wellsk40@gmail.com>
+Subject: [PATCH 1/5] mfd/ab8500: Setup SPI transfer for 24 bits
+Date: Fri, 10 Sep 2010 09:19:35 -0700
+Message-Id: <1284135579-13578-2-git-send-email-wellsk40@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1284135579-13578-1-git-send-email-wellsk40@gmail.com>
+References: <1284135579-13578-1-git-send-email-wellsk40@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series updates drivers and platforms that depend on the
-amba_pl022 driver and use the pl022_config_chip structure for
-setting up the SPI mode and data transfer width.
+From: Kevin Wells <wellsk40@gmail.com>
 
-The SPI configuration (CPOL/CPHA mode, bit send order, data bits per
-word, and loopback mode) were previously setup as part of board
-specific data in the pl022_config_chip structure. This has been
-changed to now use the .mode field in spi_board_info structure (or
-drivers that setup the mode). The SPI transfer's data width is now
-configured from spi->bits_per_word.
+The data bit transfer size should be part of the driver using the
+SPI interface. This was previously setup in the AMBA PL022 driver
+from board specific configuration data.
 
-The SPI driver changes have been previously submitted to the SPI ML.
-This patch series need to be layered on that patch series.
+Signed-off-by: Kevin Wells <wellsk40@gmail.com>
+---
+ drivers/mfd/ab8500-spi.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-These changes add or fix the .mode field in the plats/boards that use the
-driver (u300, ux500, lpc32xx). The patches also move the data width
-from the board specific area to the driver for mfd/ab8500. As the
-fields in the pl022_config_chip structure are no longer needed, they
-are removed in the last patch.
+diff --git a/drivers/mfd/ab8500-spi.c b/drivers/mfd/ab8500-spi.c
+index e1c8b62..01b6d58 100644
+--- a/drivers/mfd/ab8500-spi.c
++++ b/drivers/mfd/ab8500-spi.c
+@@ -83,6 +83,11 @@ static int __devinit ab8500_spi_probe(struct spi_device *spi)
+ 	struct ab8500 *ab8500;
+ 	int ret;
+ 
++	spi->bits_per_word = 24;
++	ret = spi_setup(spi);
++	if (ret < 0)
++		return ret;
++
+ 	ab8500 = kzalloc(sizeof *ab8500, GFP_KERNEL);
+ 	if (!ab8500)
+ 		return -ENOMEM;
+-- 
+1.7.2.2
 
-These changes have been tested on the phy3250 platform (lpc32xx). I
-was able to test the ab8500 driver to some degree, but I only have a
-standard pl022. I am unable to test u300 and ux500 changes, but the
-u300 changes compiled fine.
-
-[PATCH 1/5] mfd/ab8500: Setup SPI transfer for 24 bits
-[PATCH 2/5] ARM: LPC32XX: Add missing SPI mode and remove unused fields
-[PATCH 3/5] ARM: U300: spi->mode and spi_bits_per_words updates
-[PATCH 4/5] ARM: Ux500: Change SPI mode and remove unused fields
-[PATCH 5/5] spi: amba_pl022: Remove unused fields from pl022_config_chip
