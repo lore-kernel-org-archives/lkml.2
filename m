@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab0IJPHR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 11:07:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51531 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754286Ab0IJPHP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 11:07:15 -0400
+	id S1754356Ab0IJPIL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 11:08:11 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:46839 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754312Ab0IJPIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 11:08:10 -0400
+Date: Fri, 10 Sep 2010 10:08:08 -0500
+From: Jack Steiner <steiner@sgi.com>
+To: mingo@elte.hu, tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, UV: Fix initialization of max_pnode
+Message-ID: <20100910150808.GA19802@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <20100909140439.C945.A69D9226@jp.fujitsu.com>
-References: <20100908023417.8B055401AF@magilla.sf.frob.com>
- <20100909134842.C93F.A69D9226@jp.fujitsu.com> <20100909140439.C945.A69D9226@jp.fujitsu.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 10 Sep 2010 08:06:41 -0700
-Message-ID: <AANLkTik=ZpiCN-5YfWJ6zejSJBknL8Sj4Vtc+X_XpS71@mail.gmail.com>
-Subject: Re: [PATCH 2/2] execve: check the VM has enough memory at first
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu,
-        "Brad Spengler <spender@grsecurity.net>, Eugene Teo" 
-	<eugene@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 8, 2010 at 10:04 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->
-> After this patch, execve() expand stack at first and receive to
-> check vm_enough_memory() properly. then, too long argument of
-> execve() than the machine memory return EFAULT properly.
+Fix calculation of "max_pnode" for systems where the the highest blade
+has neither cpus or memory. (And, yes, although rare this does occur).
 
-This is horrible. We don't want to walk the arguments one more time
-just for this. Let's just improve the checks that we do as we go
-along.
+Signed-off-by: Jack Steiner <steiner@sgi.com>
 
-                            Linus
+
+---
+ arch/x86/kernel/apic/x2apic_uv_x.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c	2010-09-10 10:01:06.365597713 -0500
++++ linux/arch/x86/kernel/apic/x2apic_uv_x.c	2010-09-10 10:01:23.993663058 -0500
+@@ -698,9 +698,11 @@ void __init uv_system_init(void)
+ 		for (j = 0; j < 64; j++) {
+ 			if (!test_bit(j, &present))
+ 				continue;
+-			uv_blade_info[blade].pnode = (i * 64 + j);
++			pnode = (i * 64 + j);
++			uv_blade_info[blade].pnode = pnode;
+ 			uv_blade_info[blade].nr_possible_cpus = 0;
+ 			uv_blade_info[blade].nr_online_cpus = 0;
++			max_pnode = max(pnode, max_pnode);
+ 			blade++;
+ 		}
+ 	}
+@@ -738,7 +740,6 @@ void __init uv_system_init(void)
+ 		uv_cpu_hub_info(cpu)->scir.offset = uv_scir_offset(apicid);
+ 		uv_node_to_blade[nid] = blade;
+ 		uv_cpu_to_blade[cpu] = blade;
+-		max_pnode = max(pnode, max_pnode);
+ 	}
+ 
+ 	/* Add blade/pnode info for nodes without cpus */
+@@ -750,7 +751,6 @@ void __init uv_system_init(void)
+ 		pnode = (paddr >> m_val) & pnode_mask;
+ 		blade = boot_pnode_to_blade(pnode);
+ 		uv_node_to_blade[nid] = blade;
+-		max_pnode = max(pnode, max_pnode);
+ 	}
+ 
+ 	map_gru_high(max_pnode);
