@@ -1,43 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785Ab0IJTHN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 15:07:13 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:62326 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab0IJTHM convert rfc822-to-8bit (ORCPT
+	id S1752567Ab0IJTKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 15:10:51 -0400
+Received: from smtp126.sbc.mail.sp1.yahoo.com ([69.147.65.185]:25540 "HELO
+	smtp126.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752180Ab0IJTKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 15:07:12 -0400
-MIME-Version: 1.0
-X-Originating-IP: [192.94.94.105]
-In-Reply-To: <20100910143813.4af0a3ce@lxorguk.ukuu.org.uk>
-References: <AANLkTikTBdr4U1bPtfXWhgLgdvWDMPJrFjBCktPL40dg@mail.gmail.com>
-	<20100910143813.4af0a3ce@lxorguk.ukuu.org.uk>
-Date: Fri, 10 Sep 2010 14:07:11 -0500
-Message-ID: <AANLkTikXFmaZs+XzrOWjWoLPhyUy0CEXfOQMqP=Xp1cO@mail.gmail.com>
-Subject: Re: Request for input regarding new driver in MFD for
- GPS_Bluetooth_FM controller CG2900
-From: Pavan Savoy <pavan_savoy@sify.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: pghatwork@gmail.com, par-gunnar.p.hjalmdahl@stericsson.com,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linus.walleij@stericsson.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Sep 2010 15:10:50 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: PGkh.5AVM1mcLDQn7tfJvZnkQ2JJSHejaNq7XC5eNGeQ7O7
+ KcFWOCnzB5Uwqjtj7vfep6zeKwny8FqqjNIsYsjhklhFFj2FaVT5RaFtysG9
+ cOJCfgZj7HtFRX6iBooEcex77P9WkYhHR3akjWr1kK24FRyvFVvvierb8ecM
+ d06D_3B4nsafI17jnZSeOVEfYYX4q5tr9WqkoFiJ..zjLKWLUw__SyQAKpDP
+ _HKpxaHVQPkeFpfAE7ifmLlHBhPM7nKCpkCTR69FVkLYOiFJII3VzrmaZISP
+ f2CPNfUnoRww31vnpkguW6Wu4i7Jc41sNAlTxVo7aPZyK5w.gDyH4xB_b
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [RFC 02/22] configfs: Add struct
+	configfs_item_operations->check_link() in configfs_unlink()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Joel Becker <Joel.Becker@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <20100910152802.GG885@mail.oracle.com>
+References: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
+	 <20100902064814.GB27904@mail.oracle.com>
+	 <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
+	 <201009071701.02847.konrad@darnok.org>
+	 <20100907224413.GC21935@mail.oracle.com>
+	 <1283911739.556.420.camel@haakon2.linux-iscsi.org>
+	 <20100908192639.GD29545@mail.oracle.com>
+	 <1283979207.556.510.camel@haakon2.linux-iscsi.org>
+	 <20100910152802.GG885@mail.oracle.com>
+Content-Type: text/plain
+Date: Fri, 10 Sep 2010 12:06:46 -0700
+Message-Id: <1284145606.19890.68.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you directly make use of the ti-st driver which is currently staged?
-It has _EXACTLY_ the same thing.... which is REALLY REALLY surprising !!!
+On Fri, 2010-09-10 at 08:28 -0700, Joel Becker wrote:
+> On Wed, Sep 08, 2010 at 01:53:27PM -0700, Nicholas A. Bellinger wrote:
+> > On Wed, 2010-09-08 at 12:26 -0700, Joel Becker wrote:
+> > So after re-running this again, I was a bit off about where the OOOPs is
+> > actually occuring.  So, the OOPs does not occur during in the simple
+> > example here with the first unlink(2):
+> > 
+> > 	unlink sub_child/group1/src_0/src_link
+> > 
+> > but rather after the second unlink(2) is called after the first for
+> > src_link occurs:
+> > 
+> > 	unlink sub_child/group2/dst_0/dst_link
+> > 
+> > So back to the OOPs with the current TCM code example, on v2.6.36-rc3
+> > this actually triggers a SLUB warning "Object already free" from inside
+> > of TCM code. This is attributed to the releasing a specific LUN ACLs
+> > from the second unlink(2)'s struct config_item_operations->drop_link(),
+> > that the first unlink had already released.  This is because the first
+> > unlink(2) will currently assume that the remaining LUN ACLs are safe to
+> > release because, it still assumes the disabled check_link call.
+> 
+> 	The trivial solution is to refcount your ACLs.  You get both
+> allow_link() calls, so you should be able to increment a counter there,
+> and then drop them when the last drop_link() call is made.  That will
+> keep your consumer structures around until all links are exhausted.
+> 
 
-On Fri, Sep 10, 2010 at 8:38 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->>  - Is it OK to dynamically use the channels either from Kernel or User space?
->
-> Quite a few devices do this. In most cases it makes no sense to burden
-> the user with channel management so its only natural that opening the tty
-> or direct interfaces should "just work"
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Hi Joel,
+
+So I am a bit confused wrt to this last response..  The ->check_link()
+patch and it's use in the fabric independent code within
+target_core_fabric_configfs.c does exactly this for the 'MappedLUN'
+symlink case, eg: requires the consumer to do the allow_link() +
+drop_link() refcounting, and add the
+API check into fs/configfs/symlink.c:configfs_unlink()
+
+Is there another form of configfs consumer refcounting that you had in
+mind beyond using an atomic_t for this with ->check_link() here..?
+
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/target_core_fabric_configfs.c;hb=refs/heads/lio-4.0#l675
+
+So beyond a configfs consumer solution, what do you think about checking
+for the sub_child/group2/dst_0/dst_link style of symlink
+in fs/configfs/symlink.c:configfs_symlink() in order to add some form of
+internal refcount when the symlink source is within the same consumer
+LKM, but outside of the parent struct config_group..?
+
+This would involve the conversion of fs/configfs/symlink.c:
+configfs_unlink() path to check for the existence of this internal
+refcount and returning -EPERM when any sub_child/group2/dst_0/dst_link
+exist when 'unlink sub_child/group1/src_0/src_link' is attempted.
+
+What do you think..?
+
+Thanks!
+
+--nab
+
