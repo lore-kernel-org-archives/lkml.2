@@ -1,188 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab0IJNfN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 09:35:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55458 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008Ab0IJNfL convert rfc822-to-8bit (ORCPT
+	id S1754133Ab0IJNlA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 09:41:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39498 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754068Ab0IJNk6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 09:35:11 -0400
-Subject: Re: [PATCH 0/3 v2] nmi perf fixes
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, robert.richter@amd.com, gorcunov@gmail.com,
-        fweisbec@gmail.com, linux-kernel@vger.kernel.org, ying.huang@intel.com,
-        ming.m.lin@intel.com, yinghai@kernel.org, andi@firstfloor.org,
-        eranian@google.com
-In-Reply-To: <1284118900.402.35.camel@laptop>
-References: <1283454469-1909-1-git-send-email-dzickus@redhat.com>
-	 <1284118900.402.35.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 10 Sep 2010 09:40:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,346,1280732400"; 
+   d="scan'208";a="553315683"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
+        "jdike@linux.intel.com" <jdike@linux.intel.com>
+Date: Fri, 10 Sep 2010 21:40:51 +0800
+Subject: RE: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+Thread-Topic: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+Thread-Index: ActNtR+uQvbWPZRgSsWQthsUVTZ+wwDKrubA
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D79280489A9C9@shsmsx502.ccr.corp.intel.com>
+References: <1281086624-5765-5-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-6-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-7-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-8-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-9-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-10-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-11-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-12-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-13-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-14-git-send-email-xiaohui.xin@intel.com>
+ <20100906111126.GA15608@redhat.com>
+In-Reply-To: <20100906111126.GA15608@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 10 Sep 2010 15:34:53 +0200
-Message-ID: <1284125693.402.58.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-10 at 13:41 +0200, Peter Zijlstra wrote:
-> On Thu, 2010-09-02 at 15:07 -0400, Don Zickus wrote:
-> > Fixes to allow unknown nmis to pass through the perf nmi handler instead
-> > of being swallowed.  Contains patches that are already in Ingo's tree.  Added
-> > here for completeness.  Based on ingo/tip
+Michael,
+Sorry to reply the mail late.
 
-> Both Ingo and I are getting Dazed and confused on our AMD machines, it
-> started before yesterday (that is, after backing out all my recent
-> changes it still gets dazed), so I suspect this set.
-> 
-> I'll look at getting a trace of the thing, but if any of you has a
-> bright idea...
+>So - does this driver help reduce service demand signifiantly?
 
+I'm looking at the performance now.
 
-           <...>-2155  [000]    57.298895: perf_event_nmi_handler: NMI-handled(1): 5735 0 0
-           <...>-2155  [000]    57.298896: perf_event_nmi_handler: NMI-stop: 5735 0 0
-           <...>-2155  [000]    57.298898: perf_event_nmi_handler: NMI: 5736 0 0
-           <...>-2155  [000]    57.298898: x86_pmu_handle_irq: OVERFLOW: 0
-           <...>-2155  [000]    57.298899: x86_pmu_handle_irq: HANDLED: 1
-           <...>-2155  [000]    57.298901: x86_pmu_handle_irq: OVERFLOW: 2
-           <...>-2155  [000]    57.298901: x86_pmu_handle_irq: OVERFLOW: 3
-           <...>-2155  [000]    57.298902: perf_event_nmi_handler: NMI-handled(1): 5736 0 0
-           <...>-2155  [000]    57.298903: perf_event_nmi_handler: NMI-stop: 5736 0 0
-           <...>-2155  [000]    57.298905: perf_event_nmi_handler: NMI: 5737 0 0
-           <...>-2155  [000]    57.298905: x86_pmu_handle_irq: OVERFLOW: 0
-           <...>-2155  [000]    57.298906: x86_pmu_handle_irq: HANDLED: 1
-           <...>-2155  [000]    57.298908: x86_pmu_handle_irq: OVERFLOW: 2
-           <...>-2155  [000]    57.298908: x86_pmu_handle_irq: OVERFLOW: 3
-           <...>-2155  [000]    57.298909: perf_event_nmi_handler: NMI-handled(1): 5737 0 0
-           <...>-2155  [000]    57.298909: perf_event_nmi_handler: NMI-stop: 5737 0 0
-           <...>-2155  [000]    57.298911: perf_event_nmi_handler: NMI: 5738 0 0
-           <...>-2155  [000]    57.298912: x86_pmu_handle_irq: OVERFLOW: 0
-           <...>-2155  [000]    57.298913: x86_pmu_handle_irq: HANDLED: 1
-           <...>-2155  [000]    57.298915: x86_pmu_handle_irq: OVERFLOW: 2
-           <...>-2155  [000]    57.298916: x86_pmu_handle_irq: OVERFLOW: 3
-           <...>-2155  [000]    57.298916: perf_event_nmi_handler: NMI-handled(1): 5738 0 0
-           <...>-2155  [000]    57.298917: perf_event_nmi_handler: NMI-stop: 5738 0 0
-           <...>-2155  [000]    57.298919: perf_event_nmi_handler: NMI: 5739 0 0
-           <...>-2155  [000]    57.298920: x86_pmu_handle_irq: OVERFLOW: 0
-           <...>-2155  [000]    57.298921: x86_pmu_handle_irq: OVERFLOW: 2
-           <...>-2155  [000]    57.298921: x86_pmu_handle_irq: OVERFLOW: 3
-           <...>-2155  [000]    57.298922: perf_event_nmi_handler: NMI-handled(0): 5739 0 0
-           <...>-2155  [000]    57.298923: perf_event_nmi_handler: NMI: 5739 0 0
-           <...>-2155  [000]    57.298924: x86_pmu_handle_irq: OVERFLOW: 0
-           <...>-2155  [000]    57.298925: x86_pmu_handle_irq: OVERFLOW: 2
-           <...>-2155  [000]    57.298925: x86_pmu_handle_irq: OVERFLOW: 3
-           <...>-2155  [000]    57.298926: perf_event_nmi_handler: NMI-handled(0): 5739 0 0
-           <...>-2155  [000]    57.298927: perf_event_nmi_handler: NMI: 5739 0 0
-           <...>-2155  [000]    57.298928: perf_event_nmi_handler: NMI-fail
+>Some comments from looking at the code:
+>
+>On Fri, Aug 06, 2010 at 05:23:41PM +0800, xiaohui.xin@intel.com wrote:
+>> +static struct page_info *alloc_page_info(struct page_ctor *ctor,
+>> +		struct kiocb *iocb, struct iovec *iov,
+>> +		int count, struct frag *frags,
+>> +		int npages, int total)
+>> +{
+>> +	int rc;
+>> +	int i, j, n = 0;
+>> +	int len;
+>> +	unsigned long base, lock_limit;
+>> +	struct page_info *info = NULL;
+>> +
+>> +	lock_limit = current->signal->rlim[RLIMIT_MEMLOCK].rlim_cur;
+>> +	lock_limit >>= PAGE_SHIFT;
+>
+>Playing with rlimit on data path, transparently to the application in this way
+>looks strange to me, I suspect this has unexpected security implications.
+>Further, applications may have other uses for locked memory
+>besides mpassthru - you should not just take it because it's there.
+>
+>Can we have an ioctl that lets userspace configure how much
+>memory to lock? This ioctl will decrement the rlimit and store
+>the data in the device structure so we can do accounting
+>internally. Put it back on close or on another ioctl.
 
+Yes, we can decrement the rlimit in ioctl in one time to avoid
+data path.
 
-Which suggests that 5738 was a good NMI, 5739 is an unhandled NMI, we
-see it twice, once through DIE_NMI once through DIE_NMIUNKNOWN.
+>Need to be careful for when this operation gets called
+>again with 0 or another small value while we have locked memory -
+>maybe just fail with EBUSY?  or wait until it gets unlocked?
+>Maybe 0 can be special-cased and deactivate zero-copy?.
+>
+In fact, if we choose RLIMIT_MEMLOCK to limit the lock memory,
+the default value is only 16 pages. It's too small to make the device to 
+work. So we always to configure it with a large value. 
+I think, if rlimit value after decrement is < 0, then deactivate zero-copy 
+is better. 0 maybe ok.
 
-The problem seems to be that we don't tag it because handled isn't
-larger than 1.
+>> +
+>> +	if (ctor->lock_pages + count > lock_limit && npages) {
+>> +		printk(KERN_INFO "exceed the locked memory rlimit.");
+>> +		return NULL;
+>> +	}
+>> +
+>> +	info = kmem_cache_zalloc(ext_page_info_cache, GFP_KERNEL);
+>
+>You seem to fill in all memory, why zalloc? this is data path ...
 
-Its easy to reproduce on my opteron, simply run: 
-  pref record -fg ./hackbench 50
-a few times.
+Ok, Let me check this.
 
-I'll try and reset the PMU on init to clear some of those OVERFLOW msgs
-(hmm, maybe also read the ctrl word and check EN and INT before doing
-the overflow check)..
+>
+>> +
+>> +	if (!info)
+>> +		return NULL;
+>> +
+>> +	for (i = j = 0; i < count; i++) {
+>> +		base = (unsigned long)iov[i].iov_base;
+>> +		len = iov[i].iov_len;
+>> +
+>> +		if (!len)
+>> +			continue;
+>> +		n = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
+>> +
+>> +		rc = get_user_pages_fast(base, n, npages ? 1 : 0,
+>
+>npages controls whether this is a write? Why?
 
----
- arch/x86/kernel/cpu/perf_event.c |   34 +++++++++++++++++++++++++++++++++-
- 1 files changed, 33 insertions(+), 1 deletions(-)
+We use npages as a flag here. In mp_sendmsg(), we called alloc_page_info() with npages = 0.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index de6569c..9aff608 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1127,6 +1127,15 @@ static void x86_pmu_disable(struct perf_event *event)
- 	perf_event_update_userpage(event);
- }
- 
-+static int pmc_overflow(int idx)
-+{
-+	u64 val;
-+
-+	rdmsrl(x86_pmu.perfctr + idx, val);
-+
-+	return !!(val & (1ULL << (x86_pmu.cntval_bits - 1)));
-+}
-+
- static int x86_pmu_handle_irq(struct pt_regs *regs)
- {
- 	struct perf_sample_data data;
-@@ -1141,6 +1150,8 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
- 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
-+		if (pmc_overflow(idx))
-+			trace_printk("OVERFLOW: %d\n", idx);
- 		if (!test_bit(idx, cpuc->active_mask))
- 			continue;
- 
-@@ -1154,6 +1165,7 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
- 		/*
- 		 * event overflow
- 		 */
-+		trace_printk("HANDLED: %d\n", idx);
- 		handled++;
- 		data.period	= event->hw.last_period;
- 
-@@ -1215,6 +1227,11 @@ perf_event_nmi_handler(struct notifier_block *self,
- 	unsigned int this_nmi;
- 	int handled;
- 
-+	trace_printk("NMI: %d %d %d\n",
-+			percpu_read(irq_stat.__nmi_count),
-+			__get_cpu_var(pmu_nmi).marked,
-+			__get_cpu_var(pmu_nmi).handled);
-+
- 	if (!atomic_read(&active_events))
- 		return NOTIFY_DONE;
- 
-@@ -1224,9 +1241,12 @@ perf_event_nmi_handler(struct notifier_block *self,
- 		break;
- 	case DIE_NMIUNKNOWN:
- 		this_nmi = percpu_read(irq_stat.__nmi_count);
--		if (this_nmi != __get_cpu_var(pmu_nmi).marked)
-+		if (this_nmi != __get_cpu_var(pmu_nmi).marked) {
-+			trace_printk("NMI-fail\n");
- 			/* let the kernel handle the unknown nmi */
- 			return NOTIFY_DONE;
-+		}
-+		trace_printk("NMI-consume\n");
- 		/*
- 		 * This one is a PMU back-to-back nmi. Two events
- 		 * trigger 'simultaneously' raising two back-to-back
-@@ -1242,6 +1262,13 @@ perf_event_nmi_handler(struct notifier_block *self,
- 	apic_write(APIC_LVTPC, APIC_DM_NMI);
- 
- 	handled = x86_pmu.handle_irq(args->regs);
-+
-+	trace_printk("NMI-handled(%d): %d %d %d\n",
-+			handled,
-+			percpu_read(irq_stat.__nmi_count),
-+			__get_cpu_var(pmu_nmi).marked,
-+			__get_cpu_var(pmu_nmi).handled);
-+
- 	if (!handled)
- 		return NOTIFY_DONE;
- 
-@@ -1264,6 +1291,11 @@ perf_event_nmi_handler(struct notifier_block *self,
- 		__get_cpu_var(pmu_nmi).handled	= handled;
- 	}
- 
-+	trace_printk("NMI-stop: %d %d %d\n",
-+			percpu_read(irq_stat.__nmi_count),
-+			__get_cpu_var(pmu_nmi).marked,
-+			__get_cpu_var(pmu_nmi).handled);
-+
- 	return NOTIFY_STOP;
- }
- 
+>
+>> +				&info->pages[j]);
+>> +		if (rc != n)
+>> +			goto failed;
+>> +
+>> +		while (n--) {
+>> +			frags[j].offset = base & ~PAGE_MASK;
+>> +			frags[j].size = min_t(int, len,
+>> +					PAGE_SIZE - frags[j].offset);
+>> +			len -= frags[j].size;
+>> +			base += frags[j].size;
+>> +			j++;
+>> +		}
+>> +	}
+>> +
+>> +#ifdef CONFIG_HIGHMEM
+>> +	if (npages && !(dev->features & NETIF_F_HIGHDMA)) {
+>> +		for (i = 0; i < j; i++) {
+>> +			if (PageHighMem(info->pages[i]))
+>> +				goto failed;
+>> +		}
+>> +	}
+>> +#endif
+>
+>Are non-highdma devices worth bothering with? If yes -
+>are there other limitations devices might have that we need to handle?
+>E.g. what about non-s/g devices or no checksum offloading?.
 
+Basically I think there is no limitations for both, but let me have a check.
+
+>
+>> +		skb_push(skb, ETH_HLEN);
+>> +
+>> +		if (skb_is_gso(skb)) {
+>> +			hdr.hdr.hdr_len = skb_headlen(skb);
+>> +			hdr.hdr.gso_size = shinfo->gso_size;
+>> +			if (shinfo->gso_type & SKB_GSO_TCPV4)
+>> +				hdr.hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
+>> +			else if (shinfo->gso_type & SKB_GSO_TCPV6)
+>> +				hdr.hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
+>> +			else if (shinfo->gso_type & SKB_GSO_UDP)
+>> +				hdr.hdr.gso_type = VIRTIO_NET_HDR_GSO_UDP;
+>> +			else
+>> +				BUG();
+>> +			if (shinfo->gso_type & SKB_GSO_TCP_ECN)
+>> +				hdr.hdr.gso_type |= VIRTIO_NET_HDR_GSO_ECN;
+>> +
+>> +		} else
+>> +			hdr.hdr.gso_type = VIRTIO_NET_HDR_GSO_NONE;
+>> +
+>> +		if (skb->ip_summed == CHECKSUM_PARTIAL) {
+>> +			hdr.hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
+>> +			hdr.hdr.csum_start =
+>> +				skb->csum_start - skb_headroom(skb);
+>> +			hdr.hdr.csum_offset = skb->csum_offset;
+>> +		}
+>
+>We have this code in tun, macvtap and packet socket already.
+>Could this be a good time to move these into networking core?
+>I'm not asking you to do this right now, but could this generic
+>virtio-net to skb stuff be encapsulated in functions?
+
+It seems reasonable.
+
+>
+>--
+>MST
