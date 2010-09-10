@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab0IJLL4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 07:11:56 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:33493 "EHLO mx01.d-labs.de"
+	id S1751587Ab0IJLPd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 07:15:33 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:33595 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752834Ab0IJLLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 07:11:55 -0400
-Date: Fri, 10 Sep 2010 13:11:53 +0200
+	id S1750873Ab0IJLPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 07:15:32 -0400
+Date: Fri, 10 Sep 2010 13:15:30 +0200
 From: Florian Mickler <florian@mickler.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
         "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
         "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
  default
-Message-ID: <20100910131153.56419f17@schatten.dmk.lab>
-In-Reply-To: <1284111767.1783.35.camel@Joe-Laptop>
+Message-ID: <20100910131530.688c1a1d@schatten.dmk.lab>
+In-Reply-To: <20100910110425.GD23903@sirena.org.uk>
 References: <1284111212-10659-1-git-send-email-florian@mickler.org>
 	<1284111767.1783.35.camel@Joe-Laptop>
+	<20100910123040.5a6f0128@schatten.dmk.lab>
+	<20100910110425.GD23903@sirena.org.uk>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -27,33 +29,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010 02:42:47 -0700
-Joe Perches <joe@perches.com> wrote:
+On Fri, 10 Sep 2010 12:04:31 +0100
+Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
 
-> On Fri, 2010-09-10 at 11:33 +0200, florian@mickler.org wrote:
-> > The script get_maintainer.pl is a very useful tool for deploying changes
-> > made to the kernel. Among others it searches not only the MAINTAINERS
-> > file but also the git history for people to send patches to.\
-> []
-> > By appending a  a note of the reason for the cc in the name, the reason
-> > becomes clear and the receiving side is relieved from feeling obliged to
-> > check the patch  while the sending side has a chance to adapt the
-> > cc'list to their liking.
+> On Fri, Sep 10, 2010 at 12:30:40PM +0200, Florian Mickler wrote:
 > 
-> I don't like reading annotated email names myself.
+> > People that get angered by being cc'd a lot as commit_signers can always
+> > filter their mail for that. 
+> > But I don't think it is the major part of kernel hackers that get angry
+> > when they are cc'd. Most kernel hackers _love_ getting mail, or not? :) 
+> > At least they should.
+> 
+> Consider what happens if someone does lots of kernel wide changes or
+> generic code cleanup work like the pattern matching cleanups.  As
+> someone who gets some of this sort of stuff I find it's quite confusing
+> when I get patches sent to me and I have to figure out what I'm supposed
+> to do about them.
 
-Btw, why? I think it is a great way to show that it was done in an
-automated fashion. 
+Yes, absolutely. That was what the patch was motivated by. 
 
-I wondered if tagging another way would be useful but thought the
-role:what could be used to allow better filtering on the receiving
-side. 
+> 
+> > I think the --git thing is great, as it really get's patches into the
+> > kernel vs letting them rot on some mailinglist.
+> 
+> It's a very useful tool - the issue is with people not realising that
+> it's not infalible and taking the results blindly.
 
-It also would show how many people used get_maintainer.pl. 
+Yeah. I agree. That's why I think that making the "blindly take the
+results" visible somehow would be nice. 
 
-Maybe some people want to suppress the name-tagging via a cmdline, but
-then I think the tagging should be default on or it could backpack on
-the --git/--nogit option. 
+After all, if you can easy determine (or even have it filtered away)
+that you were cc'd automatically it would spare you some time. 
 
-Cheers,
-Flo
+I would probably don't have those mails be sent to my mobile device.
+While I probably want things I'm cc'd manually tho. 
+
