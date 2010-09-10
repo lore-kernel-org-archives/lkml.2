@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab0IJIwA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 04:52:00 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50479 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754033Ab0IJIv6 (ORCPT
+	id S1756060Ab0IJIwh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 04:52:37 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34641 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033Ab0IJIwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 04:51:58 -0400
+	Fri, 10 Sep 2010 04:52:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=WCukTuHeeW9Wtr/J1DRPMHnvXBrqldXoVmet0X++wtgsmqqdLXdceBKt6zbQLWsVCf
-         MI3/j1cC3m3LoVgqv+waTN+ZVgPZfNWpg9FMbLqIeI3PlTlMCjv9xKfuyiEsjg78gfrX
-         nEeL2ACqu16VGKXecMSfk8Sr2RU10JFRKJTUY=
-Message-ID: <4C89F1AB.3070701@warmcat.com>
-Date: Fri, 10 Sep 2010 09:51:55 +0100
-From: Andy Green <andy@warmcat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc14 Thunderbird/3.1
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=nGKnbEZyMzEJ8YXNxtd7wOYZjTjyfkms4FnEdh89ri8VtKpxAYppFRyq7AbXwexxGE
+         qlc5hJZ+dfqiV2ZVgFnl2/FWp1sClU74gubQVr35oQTKa7eliMzd8hWWhlH6qwgo9QiS
+         t9wamnTyCcRFahXJKeiCJ0KquzbmlQpQrGU6Y=
+Message-ID: <4C89F1CE.4050302@gmail.com>
+Date: Fri, 10 Sep 2010 10:52:30 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Generic GPIO on USB / hotpluggable gpiolib device
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stephane Eranian <eranian@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        robert.richter@amd.com, acme@redhat.com
+Subject: [PATCH percpu#for-next] percpu: clear memory allocated with the km
+ allocator
+References: <4c88dca1.44e7d80a.577e.3592@mx.google.com>	 <1284040322.2589.174.camel@edumazet-laptop>	 <AANLkTimHwiXa62GhHA0hQ0AOcDaxgqRcV+O63G_qoZW8@mail.gmail.com> <1284106566.402.26.camel@laptop> <4C89EF37.5080803@kernel.org>
+In-Reply-To: <4C89EF37.5080803@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi -
+Percpu allocator should clear memory before returning it but the km
+allocator forgot to do it.  Fix it.
 
-I just wrote a small driver that exposes a USB device's IO as generic 
-GPIO using a little protocol.  I often needed a simple way to bitbang 
-something from my laptop and this is going to be very useful to 
-implement it.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Spotted-by: Peter Zijlstra <peterz@infradead.org>
+---
+ mm/percpu-km.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-It works fine with dynamic GPIO allocation and so on, but I maybe 
-realized at the end why nobody did this until now, in gpiolib it says...
+diff --git a/mm/percpu-km.c b/mm/percpu-km.c
+index 7037bc7..89633fe 100644
+--- a/mm/percpu-km.c
++++ b/mm/percpu-km.c
+@@ -35,7 +35,11 @@
 
-/**
-  * gpiochip_remove() - unregister a gpio_chip
-  * @chip: the chip to unregister
-  *
-  * A gpio_chip with any GPIOs still requested may not be removed.
-  */
-int gpiochip_remove(struct gpio_chip *chip)
-{
-...
-	for (id = chip->base; id < chip->base + chip->ngpio; id++) {
-		if (test_bit(FLAG_REQUESTED, &gpio_desc[id].flags)) {
-			status = -EBUSY;
-			break;
-		}
-	}
-...
+ static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
+ {
+-	/* noop */
++	unsigned int cpu;
++
++	for_each_possible_cpu(cpu)
++		memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
++
+ 	return 0;
+ }
 
-In short gpiolib doesn't have the concept that the chip can be 
-hot(un)plugged randomly, including at times when something has requested 
-the GPIO.
+-- 
+1.7.1
 
-I am quite certain that USB generic GPIO would be something very nice 
-for end users, to be able to casually plug in even the cheapest USB 
-micro and bitbang as much GPIO as you like from userspace in a 
-standardized way (including being able to exploit the existing bitbang 
-protocol drivers on the exposed GPIO) would be very handy.  The protocol 
-is simple and flexible (1 x IN endpoint and 1 x OUT endpoint, only one 
-packet per call, device announces number of GPIO it supports).
-
-What'd be the feeling if I enhanced gpiolib a bit along the lines of:
-
-  - changing the chip set() function to be able to return errors, at the 
-moment it's void return from that
-
-  - adding a flag marking a chip as "dead", causing all IO via it to 
-fail immediately and it to be auto-removed when the last request goes
-
-Does this seem workable?  What to do about say SPI bitbang protocol 
-driver instance that sees its generic gpio calls started failing?
-
--Andy
