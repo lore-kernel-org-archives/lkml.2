@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab0IJEj6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 00:39:58 -0400
-Received: from ozlabs.org ([203.10.76.45]:43462 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476Ab0IJEj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 00:39:57 -0400
-Date: Fri, 10 Sep 2010 14:39:52 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: stephane eranian <eranian@googlemail.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Yanmin <yanmin_zhang@linux.intel.com>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
-        Michael Cree <mcree@orcon.net.nz>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 00/19] perf pmu interface changes -v4
-Message-ID: <20100910043952.GA9100@drongo>
-References: <20100907164633.879932949@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753205Ab0IJExg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 00:53:36 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:25603 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751794Ab0IJExc (ORCPT
+	<rfc822;groupwise-jlee@novell.com:4:2>);
+	Fri, 10 Sep 2010 00:53:32 -0400
+Message-Id: <4C8A4668020000230002021A@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Thu, 09 Sep 2010 22:53:28 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <gregkh@suse.de>
+Cc: <mjg@redhat.com>, <mjg59@srcf.ucam.org>, <trenn@suse.de>,
+        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <Dennis.Jansen@web.de>
+Subject: Re: [PATCH] Add Intel Poulsbo Stub Driver
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Disposition: inline
-In-Reply-To: <20100907164633.879932949@chello.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 07, 2010 at 06:46:33PM +0200, Peter Zijlstra wrote:
+Hi Greg, 
 
-> These patches prepare the perf code for multiple PMUs.
+於 三，2010-09-01 於 08:00 -0700，Greg KH 提到：
+> On Wed, Sep 01, 2010 at 05:08:39PM +0800, Lee, Chun-Yi wrote:
+> > +static struct pci_device_id pciidlist[] = {
+> > +	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
+> > +	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
+> > +	{0, 0, 0}
+> > +};
 > 
-> About the first half of these patches deals with removing all the weak
-> functions, the second half provides per pmu contexts.
+> Now that you have this, just use:
+> 	MODULE_DEVICE_TABLE(pci, pciidlist);
+> instead of:
 > 
-> New to the first half is Alpha, which got merged into mainline recently.
+> > +MODULE_ALIAS("pci:v00008086d00008108sv*sd*bc*sc*i*");
+> > +MODULE_ALIAS("pci:v00008086d00008109sv*sd*bc*sc*i*");
 > 
-> The second half is completely new and lightly tested, one known breakage is
-> that it currently doesn't allow to mix software and hardware events into a
-> single group (should be fixed soon).
+> As the proper alias will automatically get generated from the
+> MODULE_DEVICE_TABLE() macro.
+> 
 
-I see Ingo committed this series into the tip perf/core branch.  Did
-this problem get fixed before that, or does it still need to be fixed?
+Thank's for your review and kindly suggestion.
+It's useful to me! :-)
 
-Paul.
+And it works fine on my Poulsbo machine, I will use:
+	MODULE_DEVICE_TABLE(pci, pciidlist);
+
+
+Thank's a lot!
+Joey Lee
+
