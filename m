@@ -1,43 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab0IJNRk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 09:17:40 -0400
-Received: from 63.mail-out.ovh.net ([91.121.185.56]:43572 "HELO
-	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753673Ab0IJNRj (ORCPT
+	id S1753947Ab0IJNRz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 09:17:55 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51104 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753905Ab0IJNRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 09:17:39 -0400
-Date: Fri, 10 Sep 2010 15:16:43 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andrew Victor <linux@maxim.org.za>
-Subject: Re: [GIT PULL]
-Message-ID: <20100910131643.GE21361@game.jcrosoft.org>
-References: <4C8A2A1A.1070806@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C8A2A1A.1070806@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 3453979441154927468
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Fri, 10 Sep 2010 09:17:53 -0400
+Date: Fri, 10 Sep 2010 14:38:13 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: pghatwork@gmail.com
+Cc: par-gunnar.p.hjalmdahl@stericsson.com, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linus.walleij@stericsson.com
+Subject: Re: Request for input regarding new driver in MFD for
+ GPS_Bluetooth_FM controller CG2900
+Message-ID: <20100910143813.4af0a3ce@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTikTBdr4U1bPtfXWhgLgdvWDMPJrFjBCktPL40dg@mail.gmail.com>
+References: <AANLkTikTBdr4U1bPtfXWhgLgdvWDMPJrFjBCktPL40dg@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:52 Fri 10 Sep     , Nicolas Ferre wrote:
-> Hi Linus,
-> 
-> Can you please pull ARM/AT91 little fixes from:
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>  - Is it OK to dynamically use the channels either from Kernel or User space?
 
-Best Regards,
-J.
+Quite a few devices do this. In most cases it makes no sense to burden
+the user with channel management so its only natural that opening the tty
+or direct interfaces should "just work"
