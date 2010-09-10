@@ -1,165 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab0IJSsZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 14:48:25 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40039 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753913Ab0IJSrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 14:47:55 -0400
-From: pavan_savoy@ti.com
-To: gregkh@suse.de, alan@lxorguk.ukuu.org.uk
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Pavan Savoy <pavan_savoy@ti.com>
-Subject: [RFC 3/3] include:linux: make ti_wilink_st like the rest
-Date: Fri, 10 Sep 2010 15:58:58 -0400
-Message-Id: <1284148738-21643-5-git-send-email-pavan_savoy@ti.com>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1284148738-21643-4-git-send-email-pavan_savoy@ti.com>
-References: <1284148738-21643-1-git-send-email-pavan_savoy@ti.com>
- <1284148738-21643-2-git-send-email-pavan_savoy@ti.com>
- <1284148738-21643-3-git-send-email-pavan_savoy@ti.com>
- <1284148738-21643-4-git-send-email-pavan_savoy@ti.com>
+	id S1754290Ab0IJS7n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 14:59:43 -0400
+Received: from straum.hexapodia.org ([207.7.131.186]:54413 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753186Ab0IJS7m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 14:59:42 -0400
+Date: Fri, 10 Sep 2010 11:59:42 -0700
+From: Andy Isaacson <adi@hexapodia.org>
+To: "Matti J. Aaltonen" <matti.j.aaltonen@nokia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "akpm@kernel.org" <akpm@kernel.org>
+Subject: Re: [PATCH RFC 1/1] MISC: Broadcom BCM4751 GPS driver
+Message-ID: <20100910185942.GB17794@hexapodia.org>
+References: <1282572026-14905-1-git-send-email-matti.j.aaltonen@nokia.com> <1282572026-14905-2-git-send-email-matti.j.aaltonen@nokia.com> <1283512047.26985.119.camel@masi.mnp.nokia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283512047.26985.119.camel@masi.mnp.nokia.com>
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
+On Fri, Sep 03, 2010 at 02:07:27PM +0300, Matti J. Aaltonen wrote:
+> On Mon, 2010-08-23 at 16:00 +0200, Aaltonen Matti.J (Nokia-MS/Tampere)
+> wrote:
+> > Driver for Broadcom BCM4751 GPS chip.
+> 
+> I sent this a while ago but didn't get any comments about the code. What
+> do you think should something be changed or is it ready to get accepted?
 
-ti_wilink_st.h now is similar to other headers in include/linux.
-The st_ll dependency on ti_wilink_st is also fixed.
+It's unlikely to get merged if there's no public documentation of the
+protocol it exposes, and no free codebase using the interface.
 
-Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
----
- drivers/staging/ti-st/st_ll.c |    2 +
- include/linux/ti_wilink_st.h  |   51 +++++++++++++++++++++++-----------------
- 2 files changed, 31 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/staging/ti-st/st_ll.c b/drivers/staging/ti-st/st_ll.c
-index e899920..15e4028 100644
---- a/drivers/staging/ti-st/st_ll.c
-+++ b/drivers/staging/ti-st/st_ll.c
-@@ -19,6 +19,8 @@
-  */
- 
- #define pr_fmt(fmt) "(stll) :" fmt
-+#include <linux/module.h>
-+#include <linux/skbuff.h>
- #include <linux/ti_wilink_st.h>
- 
- /**********************************************************************/
-diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
-index df8d2ee..a563e09 100644
---- a/include/linux/ti_wilink_st.h
-+++ b/include/linux/ti_wilink_st.h
-@@ -26,12 +26,18 @@
- #ifndef ST_H
- #define ST_H
- 
--#include <linux/skbuff.h>
-+#ifdef __KERNEL__
-+#include <linux/skbuff.h>	/* for sk_buff */
-+#include <linux/rfkill.h>	/* for rfkill */
-+#include <linux/tty.h>		/* for tty_struct */
-+#include <linux/tty_ldisc.h>	/* for tty_ldisc_ops */
-+
-+#endif
- 
- /* TODO:
-  * Move the following to tty.h upon acceptance
-  */
--#define N_TI_WL	20	/* Ldisc for TI's WL BT, FM, GPS combo chips */
-+#define N_TI_WL	22	/* Ldisc for TI's WL BT, FM, GPS combo chips */
- 
- /**
-  * enum kim_gpio_state - Few protocols such as FM have ACTIVE LOW
-@@ -292,10 +298,10 @@ void kim_st_list_protocols(struct st_data_s *, void *);
-  *	relevant procedure to be called.
-  */
- struct bts_header {
--	uint32_t magic;
--	uint32_t version;
--	uint8_t future[24];
--	uint8_t actions[0];
-+	unsigned long magic;
-+	unsigned long version;
-+	unsigned char future[24];
-+	unsigned char actions[0];
- } __attribute__ ((packed));
- 
- /**
-@@ -303,28 +309,28 @@ struct bts_header {
-  *	data.
-  */
- struct bts_action {
--	uint16_t type;
--	uint16_t size;
--	uint8_t data[0];
-+	unsigned short type;
-+	unsigned short size;
-+	unsigned char data[0];
- } __attribute__ ((packed));
- 
- struct bts_action_send {
--	uint8_t data[0];
-+	unsigned char data[0];
- } __attribute__ ((packed));
- 
- struct bts_action_wait {
--	uint32_t msec;
--	uint32_t size;
--	uint8_t data[0];
-+	unsigned long msec;
-+	unsigned long size;
-+	unsigned char data[0];
- } __attribute__ ((packed));
- 
- struct bts_action_delay {
--	uint32_t msec;
-+	unsigned long msec;
- } __attribute__ ((packed));
- 
- struct bts_action_serial {
--	uint32_t baud;
--	uint32_t flow_control;
-+	unsigned long baud;
-+	unsigned long flow_control;
- } __attribute__ ((packed));
- 
- /**
-@@ -334,10 +340,10 @@ struct bts_action_serial {
-  *	when it receives request from KIM for ldisc installation.
-  */
- struct hci_command {
--	uint8_t prefix;
--	uint16_t opcode;
--	uint8_t plen;
--	uint32_t speed;
-+	unsigned char prefix;
-+	unsigned short opcode;
-+	unsigned char plen;
-+	unsigned long speed;
- } __attribute__ ((packed));
- 
- /**
-@@ -386,6 +392,7 @@ void st_ll_wakeup(struct st_data_s *);
- 
- /**
-  * structures and declarations used by the st_core for FM packets
-+ * and GPS packets
-  */
- struct fm_event_hdr {
- 	unsigned char plen;
-@@ -397,8 +404,8 @@ struct fm_event_hdr {
- 
- /* gps stuff */
- struct gps_event_hdr {
--unsigned char opcode;
--unsigned short plen;
-+	unsigned char opcode;
-+	unsigned short plen;
- } __attribute__ ((packed));
- 
- #endif /* ST_H */
--- 
-1.6.5
-
+-andy
