@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab0IJPfW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 11:35:22 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:33667 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754648Ab0IJPcv (ORCPT
+	id S1754787Ab0IJPfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 11:35:39 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:46392 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717Ab0IJPfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 11:32:51 -0400
+	Fri, 10 Sep 2010 11:35:34 -0400
 X-SpamScore: 9
-X-BigFish: VS9(zz78fbpzz1202hzz8275bhz32i2a8h87h62h)
-X-Spam-TCS-SCL: 1:0
+X-BigFish: VS9(zz78fbpzz1202hzz8275bhz32i87h2a8h61h)
+X-Spam-TCS-SCL: 0:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8JF40-02-JPX-02
+X-WSS-ID: 0L8JF40-01-7OL-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 05/29] KVM: MMU: Introduce get_cr3 function pointer
-Date: Fri, 10 Sep 2010 17:30:42 +0200
-Message-ID: <1284132667-18620-6-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 07/29] KVM: MMU: Introduce kvm_init_shadow_mmu helper function
+Date: Fri, 10 Sep 2010 17:30:44 +0200
+Message-ID: <1284132667-18620-8-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1284132667-18620-1-git-send-email-joerg.roedel@amd.com>
 References: <1284132667-18620-1-git-send-email-joerg.roedel@amd.com>
@@ -30,91 +30,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function pointer in the MMU context is required to
-implement Nested Nested Paging.
+Some logic of the init_kvm_softmmu function is required to
+build the Nested Nested Paging context. So factor the
+required logic into a seperate function and export it.
+Also make the whole init path suitable for more than one mmu
+context.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/mmu.c              |    9 ++++++++-
- arch/x86/kvm/paging_tmpl.h      |    4 ++--
- 3 files changed, 11 insertions(+), 3 deletions(-)
+ arch/x86/kvm/mmu.c |   60 ++++++++++++++++++++++++++++++---------------------
+ arch/x86/kvm/mmu.h |    1 +
+ 2 files changed, 36 insertions(+), 25 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index aeeea9c..ab708ee 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -237,6 +237,7 @@ struct kvm_pio_request {
- struct kvm_mmu {
- 	void (*new_cr3)(struct kvm_vcpu *vcpu);
- 	void (*set_cr3)(struct kvm_vcpu *vcpu, unsigned long root);
-+	unsigned long (*get_cr3)(struct kvm_vcpu *vcpu);
- 	int (*page_fault)(struct kvm_vcpu *vcpu, gva_t gva, u32 err);
- 	void (*free)(struct kvm_vcpu *vcpu);
- 	gpa_t (*gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t gva, u32 access,
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a55f8d5..e4a7de4 100644
+index a751dfc..9e48a77 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -2365,7 +2365,7 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
- 	int direct = 0;
- 	u64 pdptr;
- 
--	root_gfn = vcpu->arch.cr3 >> PAGE_SHIFT;
-+	root_gfn = vcpu->arch.mmu.get_cr3(vcpu) >> PAGE_SHIFT;
- 
- 	if (vcpu->arch.mmu.shadow_root_level == PT64_ROOT_LEVEL) {
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
-@@ -2562,6 +2562,11 @@ static void paging_new_cr3(struct kvm_vcpu *vcpu)
+@@ -2532,10 +2532,9 @@ static void nonpaging_free(struct kvm_vcpu *vcpu)
  	mmu_free_roots(vcpu);
  }
  
-+static unsigned long get_cr3(struct kvm_vcpu *vcpu)
-+{
-+	return vcpu->arch.cr3;
-+}
-+
- static void inject_page_fault(struct kvm_vcpu *vcpu,
- 			      u64 addr,
- 			      u32 err_code)
-@@ -2715,6 +2720,7 @@ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
- 	context->root_hpa = INVALID_PAGE;
- 	context->direct_map = true;
- 	context->set_cr3 = kvm_x86_ops->set_tdp_cr3;
-+	context->get_cr3 = get_cr3;
+-static int nonpaging_init_context(struct kvm_vcpu *vcpu)
++static int nonpaging_init_context(struct kvm_vcpu *vcpu,
++				  struct kvm_mmu *context)
+ {
+-	struct kvm_mmu *context = &vcpu->arch.mmu;
+-
+ 	context->new_cr3 = nonpaging_new_cr3;
+ 	context->page_fault = nonpaging_page_fault;
+ 	context->gva_to_gpa = nonpaging_gva_to_gpa;
+@@ -2595,9 +2594,10 @@ static bool is_rsvd_bits_set(struct kvm_vcpu *vcpu, u64 gpte, int level)
+ #include "paging_tmpl.h"
+ #undef PTTYPE
  
- 	if (!is_paging(vcpu)) {
+-static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu, int level)
++static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu,
++				  struct kvm_mmu *context,
++				  int level)
+ {
+-	struct kvm_mmu *context = &vcpu->arch.mmu;
+ 	int maxphyaddr = cpuid_maxphyaddr(vcpu);
+ 	u64 exb_bit_rsvd = 0;
+ 
+@@ -2656,9 +2656,11 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu, int level)
+ 	}
+ }
+ 
+-static int paging64_init_context_common(struct kvm_vcpu *vcpu, int level)
++static int paging64_init_context_common(struct kvm_vcpu *vcpu,
++					struct kvm_mmu *context,
++					int level)
+ {
+-	struct kvm_mmu *context = &vcpu->arch.mmu;
++	reset_rsvds_bits_mask(vcpu, context, level);
+ 
+ 	ASSERT(is_pae(vcpu));
+ 	context->new_cr3 = paging_new_cr3;
+@@ -2675,17 +2677,17 @@ static int paging64_init_context_common(struct kvm_vcpu *vcpu, int level)
+ 	return 0;
+ }
+ 
+-static int paging64_init_context(struct kvm_vcpu *vcpu)
++static int paging64_init_context(struct kvm_vcpu *vcpu,
++				 struct kvm_mmu *context)
+ {
+-	reset_rsvds_bits_mask(vcpu, PT64_ROOT_LEVEL);
+-	return paging64_init_context_common(vcpu, PT64_ROOT_LEVEL);
++	return paging64_init_context_common(vcpu, context, PT64_ROOT_LEVEL);
+ }
+ 
+-static int paging32_init_context(struct kvm_vcpu *vcpu)
++static int paging32_init_context(struct kvm_vcpu *vcpu,
++				 struct kvm_mmu *context)
+ {
+-	struct kvm_mmu *context = &vcpu->arch.mmu;
++	reset_rsvds_bits_mask(vcpu, context, PT32_ROOT_LEVEL);
+ 
+-	reset_rsvds_bits_mask(vcpu, PT32_ROOT_LEVEL);
+ 	context->new_cr3 = paging_new_cr3;
+ 	context->page_fault = paging32_page_fault;
+ 	context->gva_to_gpa = paging32_gva_to_gpa;
+@@ -2700,10 +2702,10 @@ static int paging32_init_context(struct kvm_vcpu *vcpu)
+ 	return 0;
+ }
+ 
+-static int paging32E_init_context(struct kvm_vcpu *vcpu)
++static int paging32E_init_context(struct kvm_vcpu *vcpu,
++				  struct kvm_mmu *context)
+ {
+-	reset_rsvds_bits_mask(vcpu, PT32E_ROOT_LEVEL);
+-	return paging64_init_context_common(vcpu, PT32E_ROOT_LEVEL);
++	return paging64_init_context_common(vcpu, context, PT32E_ROOT_LEVEL);
+ }
+ 
+ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+@@ -2727,15 +2729,15 @@ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
  		context->gva_to_gpa = nonpaging_gva_to_gpa;
-@@ -2755,6 +2761,7 @@ static int init_kvm_softmmu(struct kvm_vcpu *vcpu)
+ 		context->root_level = 0;
+ 	} else if (is_long_mode(vcpu)) {
+-		reset_rsvds_bits_mask(vcpu, PT64_ROOT_LEVEL);
++		reset_rsvds_bits_mask(vcpu, context, PT64_ROOT_LEVEL);
+ 		context->gva_to_gpa = paging64_gva_to_gpa;
+ 		context->root_level = PT64_ROOT_LEVEL;
+ 	} else if (is_pae(vcpu)) {
+-		reset_rsvds_bits_mask(vcpu, PT32E_ROOT_LEVEL);
++		reset_rsvds_bits_mask(vcpu, context, PT32E_ROOT_LEVEL);
+ 		context->gva_to_gpa = paging64_gva_to_gpa;
+ 		context->root_level = PT32E_ROOT_LEVEL;
+ 	} else {
+-		reset_rsvds_bits_mask(vcpu, PT32_ROOT_LEVEL);
++		reset_rsvds_bits_mask(vcpu, context, PT32_ROOT_LEVEL);
+ 		context->gva_to_gpa = paging32_gva_to_gpa;
+ 		context->root_level = PT32_ROOT_LEVEL;
+ 	}
+@@ -2743,24 +2745,32 @@ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
+ 	return 0;
+ }
+ 
+-static int init_kvm_softmmu(struct kvm_vcpu *vcpu)
++int kvm_init_shadow_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context)
+ {
+ 	int r;
+-
+ 	ASSERT(vcpu);
+ 	ASSERT(!VALID_PAGE(vcpu->arch.mmu.root_hpa));
+ 
+ 	if (!is_paging(vcpu))
+-		r = nonpaging_init_context(vcpu);
++		r = nonpaging_init_context(vcpu, context);
+ 	else if (is_long_mode(vcpu))
+-		r = paging64_init_context(vcpu);
++		r = paging64_init_context(vcpu, context);
+ 	else if (is_pae(vcpu))
+-		r = paging32E_init_context(vcpu);
++		r = paging32E_init_context(vcpu, context);
+ 	else
+-		r = paging32_init_context(vcpu);
++		r = paging32_init_context(vcpu, context);
+ 
  	vcpu->arch.mmu.base_role.cr4_pae = !!is_pae(vcpu);
  	vcpu->arch.mmu.base_role.cr0_wp  = is_write_protection(vcpu);
++
++	return r;
++}
++EXPORT_SYMBOL_GPL(kvm_init_shadow_mmu);
++
++static int init_kvm_softmmu(struct kvm_vcpu *vcpu)
++{
++	int r = kvm_init_shadow_mmu(vcpu, &vcpu->arch.mmu);
++
  	vcpu->arch.mmu.set_cr3           = kvm_x86_ops->set_cr3;
-+	vcpu->arch.mmu.get_cr3           = get_cr3;
+ 	vcpu->arch.mmu.get_cr3           = get_cr3;
+ 	vcpu->arch.mmu.inject_page_fault = kvm_inject_page_fault;
+diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+index f05a03d..7086ca8 100644
+--- a/arch/x86/kvm/mmu.h
++++ b/arch/x86/kvm/mmu.h
+@@ -49,6 +49,7 @@
+ #define PFERR_FETCH_MASK (1U << 4)
  
- 	return r;
- }
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index e4ad3dc..13d0c06 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -130,7 +130,7 @@ walk:
- 	present = true;
- 	eperm = rsvd_fault = false;
- 	walker->level = vcpu->arch.mmu.root_level;
--	pte = vcpu->arch.cr3;
-+	pte = vcpu->arch.mmu.get_cr3(vcpu);
- #if PTTYPE == 64
- 	if (vcpu->arch.mmu.root_level == PT32E_ROOT_LEVEL) {
- 		pte = kvm_pdptr_read(vcpu, (addr >> 30) & 3);
-@@ -143,7 +143,7 @@ walk:
- 	}
- #endif
- 	ASSERT((!is_long_mode(vcpu) && is_pae(vcpu)) ||
--	       (vcpu->arch.cr3 & CR3_NONPAE_RESERVED_BITS) == 0);
-+	       (vcpu->arch.mmu.get_cr3(vcpu) & CR3_NONPAE_RESERVED_BITS) == 0);
+ int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4]);
++int kvm_init_shadow_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context);
  
- 	pt_access = ACC_ALL;
- 
+ static inline unsigned int kvm_mmu_available_pages(struct kvm *kvm)
+ {
 -- 
 1.7.0.4
 
