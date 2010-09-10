@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab0IJUzI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 16:55:08 -0400
-Received: from lo.gmane.org ([80.91.229.12]:52860 "EHLO lo.gmane.org"
+	id S1754834Ab0IJVCG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 17:02:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13957 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075Ab0IJUzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 16:55:06 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: Re: Voltage/current/sensor monitoring interface and Wiegand
-Date: Fri, 10 Sep 2010 20:47:13 +0000 (UTC)
-Message-ID: <loom.20100910T224602-978@post.gmane.org>
-References: <20100909000245.GK14056@atomos.longlandclan.yi.org> <4C884AFA.20604@bluewatersys.com> <20100909050137.GR14056@atomos.longlandclan.yi.org>
+	id S1754579Ab0IJVCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 17:02:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,347,1280732400"; 
+   d="scan'208";a="836676734"
+Subject: Re: [PATCH] x86, tsc: Fix a preemption leak in
+ restore_sched_clock_state()
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
+        Nico Schottelius <nico-nospam@schottelius.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Nico Schottelius <nico-linux-20100709@schottelius.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Florian Pritz <flo@xssn.at>, "stable@kernel.org" <stable@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "Brown, Len" <lenb@kernel.org>
+In-Reply-To: <1284150773.402.122.camel@laptop>
+References: <Pine.LNX.4.64.1009101324280.3056@boston.corp.fedex.com>
+	 <1284104920.402.21.camel@laptop>
+	 <AANLkTinBwfLXi0Bv0_gzSWRsdDPzHFQFZFwEYjbwkNs4@mail.gmail.com>
+	 <1284120353.402.39.camel@laptop>
+	 <AANLkTikKmsM2kunB_ocwRawLUiuP4-_nz-mPsiapw7TJ@mail.gmail.com>
+	 <1284150773.402.122.camel@laptop>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Fri, 10 Sep 2010 14:01:31 -0700
+Message-Id: <1284152491.2681.3.camel@sbsiddha-MOBL3.sc.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 129.192.170.250 (Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100825 Ubuntu/10.04 (lucid) Firefox/3.6.9)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stuart Longland <redhatter <at> gentoo.org> writes:
-
+On Fri, 2010-09-10 at 13:32 -0700, Peter Zijlstra wrote:
+> D'0h !! *facepalm*
 > 
-> On Thu, Sep 09, 2010 at 02:48:26PM +1200, Ryan Mallon wrote:
-> > On 09/09/2010 12:02 PM, Stuart Longland wrote:
-> > > How are voltage *monitors* normally written?  (note, not voltage
-> > > *regulators*... this thing does not alter the voltage rails.)  I tried
-> > > to make sense of lm-sensors, but that seems very ad-hoc (maybe I missed
-> > > some document that explains it) to me.  It's hard to be clear on what is
-> > > the *right* way to report a voltage or current reading to userspace.
-> > 
-> > Depending on your particular application it might make sense to use the
-> > power supply class (see Documentation/power/power_supply_class.txt) for
-> > the voltage/current monitoring. If the temperature sensor is related to
-> > a power supply monitor, then it could also go there.
+> Shame on me for not spotting that sooner.
 > 
-> Ahh okay, I'll have a look there..  The temperature isn't related to the
-> power supply, so I might continue a searchfor its rightful place, but
-> that class of devices seems like a good fit.
+> ---
+> Subject: x86, tsc: Fix a preemption leak in restore_sched_clock_state()
+> 
+> A real life genuine preemption leak..
+> 
+> Reported-by: Jeff Chua <jeff.chua.linux@gmail.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  arch/x86/kernel/tsc.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index 873a321..4496315 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -655,7 +655,7 @@ void restore_sched_clock_state(void)
+>  
+>  	local_irq_save(flags);
+>  
+> -	get_cpu_var(cyc2ns_offset) = 0;
+> +	__get_cpu_var(cyc2ns_offset) = 0;
+>  	offset = cyc2ns_suspend - sched_clock();
+>  
+>  	for_each_possible_cpu(cpu)
 
-For voltage, current, and temperature monitoring, you should really look into
-using using hwmon. The power supply class doesn't make sense to me, unless you
-are actually monitoring a power supply and not a voltage. For multi-function
-devices, you might also want to look into mfd for higher level access control.
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-If you have problems understanding what needs to be done, feel free to get in
-touch. If the sysfs ABI is insufficient for your needs, just drop an e-mail to
-the lm-sensors mailing list. Easier to extend an existing ABI than to write a
-new one.
+Before heading for lunch, I was scratching my head and thinking that I
+might be doing something wrong with the local_irq_disable() and
+local_irq_enable() in that patch. But you got it right.
 
-Guenter
+Thanks for looking at this and thanks to Jeff for reporting.
 
+Original patch was marked as stable for 2.6.32+, so we need to make sure
+that Greg picks up this piece too along with the original patch.
 
