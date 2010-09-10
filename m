@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab0IJSrx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 14:47:53 -0400
-Received: from straum.hexapodia.org ([207.7.131.186]:38882 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746Ab0IJSrw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 14:47:52 -0400
-Date: Fri, 10 Sep 2010 11:47:51 -0700
-From: Andy Isaacson <adi@hexapodia.org>
-To: Norbert Preining <preining@logic.at>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
-Subject: Re: after closing the lid and reopening it the screen remains blank
-Message-ID: <20100910184751.GA17794@hexapodia.org>
-References: <20100909224117.GA30000@gamma.logic.tuwien.ac.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100909224117.GA30000@gamma.logic.tuwien.ac.at>
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754228Ab0IJSr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 14:47:59 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50616 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753824Ab0IJSrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 14:47:55 -0400
+From: pavan_savoy@ti.com
+To: gregkh@suse.de, alan@lxorguk.ukuu.org.uk
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH] drivers:staging:ti-st: fix kim platform device id
+Date: Fri, 10 Sep 2010 15:58:55 -0400
+Message-Id: <1284148738-21643-2-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1284148738-21643-1-git-send-email-pavan_savoy@ti.com>
+References: <1284148738-21643-1-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 07:41:17AM +0900, Norbert Preining wrote:
-> running: 2.6.36-rc3+ (from git) on Integrated Graphics Chipset: Intel(R) GM45
-> (Sony Vaio Z11)
-> Debian/unstable, so xserver 1.7.7, intel driver: 2.12.0
-> 
-> since some recent kernel I have the following problem: When closing the
-> lid on power, so the machine does not suspend, the backlight is properly
-> turned off.
-> 
-> But when I open the lid again the backlight goes on, but there is nothing
-> to see: No screensaver, no activity, nothing. Switching to Console in
-> blind didn't work either.
-> 
-> The machine is still responsible (Sysrq, but also CapsLock), and 
-> killing the X process with Ctrl-Alt-Backspace gets me back a working
-> X.
-> 
-> I am quite sure that it *was* working in former time, but cannot
-> pinpoint eaxactely when the problems started.
-> 
-> If you need any further information or testing, please let me know.
-> But it will take some time until I am back somewhere where I can
-> ssh into my machine (or try if I can ssh into).
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-FWIW, 2.6.36-rc3-00396-gbe6200a suspend-to-ram works for me on GM45
-(Dell E4300).  I am running Ubuntu with xorg-edgers from a few months
-ago:
+Platform devices tend to have id as -1 when only 1 device exist and
+a value >=0 when multiple devices exist, since we plan to store all
+these platform devices if multiple exist, there was a requirement to
+have id to be >=0.
+The patch fixes this problem.
 
-xserver-xorg-core 2:1.6.5+git20091107+server-1.6-branch.2dbcb06a-0ubuntu0sarvatt~karmic
-xserver-xorg-video-intel 2:2.11.0+git20100415.c374c94e-0ubuntu0sarvatt~karmic
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/staging/ti-st/st_kim.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-There are several regression fixes pulled after 2.6.36-rc3 in merge
-commit 4eab8a5717f5, can you try current linux-2.6.git ?
+diff --git a/drivers/staging/ti-st/st_kim.c b/drivers/staging/ti-st/st_kim.c
+index 9e99463..be18c7a 100644
+--- a/drivers/staging/ti-st/st_kim.c
++++ b/drivers/staging/ti-st/st_kim.c
+@@ -638,7 +638,14 @@ static int kim_probe(struct platform_device *pdev)
+ 	long *gpios = pdev->dev.platform_data;
+ 	struct kim_data_s	*kim_gdata;
+ 
+-	st_kim_devices[pdev->id] = pdev;
++	if ((pdev->id != -1) && (pdev->id < MAX_ST_DEVICES)) {
++		/* multiple devices could exist */
++		st_kim_devices[pdev->id] = pdev;
++	} else {
++		/* platform's sure about existance of 1 device */
++		st_kim_devices[0] = pdev;
++	}
++
+ 	kim_gdata = kzalloc(sizeof(struct kim_data_s), GFP_ATOMIC);
+ 	if (!kim_gdata) {
+ 		pr_err("no mem to allocate");
+-- 
+1.6.5
 
-If it still fails, please post
- - lspci -vvv
- - /var/log/Xorg.0.log from after the failure
- - dmesg
-
--andy
