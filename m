@@ -1,154 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab0IJN6H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 09:58:07 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:43314 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754140Ab0IJN6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 09:58:06 -0400
-Date: Fri, 10 Sep 2010 06:56:57 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        lm-sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH v2] x86/therm_throt.c: Fix error handling in
- thermal_throttle_add_dev
-Message-ID: <20100910135657.GE20082@ericsson.com>
-References: <1283905550-18571-1-git-send-email-fenghua.yu@intel.com>
- <20100910101937.373d8a16@hyperion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100910101937.373d8a16@hyperion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754225Ab0IJODL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 10:03:11 -0400
+Received: from server109-228-6-235.live-servers.net ([109.228.6.235]:57536
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754182Ab0IJODJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 10:03:09 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] drm/i915: Expose a native backlight device
+Date: Fri, 10 Sep 2010 14:38:03 +0100
+Message-Id: <1284125883-1456-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1283963539-4039-2-git-send-email-mjg@redhat.com>
+References: <1283963539-4039-2-git-send-email-mjg@redhat.com>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 04:19:37AM -0400, Jean Delvare wrote:
-> On Tue,  7 Sep 2010 17:25:50 -0700, Fenghua Yu wrote:
-> > From: Fenghua Yu <fenghua.yu@intel.com>
-> > 
-> > When sysfs_add_file_to_group fails, thermal_throttle_add_dev removes the
-> > created group and returns with the error code and the driver cleans up and
-> > returns with the error code. Thus the driver either installs all devices
-> > successfully or doesn't install any device at all.
-> 
-> I don't think this makes any sense. While I generally agree with the
-> idea that a given device (actually, CPU feature) should either be fully
-> available or not available at all, I don't get the point of preventing
-> the driver from loading because one device couldn't be initialized for
-> whatever reason. I don't know of any other driver behaving this way.
-> 
-> What's the rationale? I think Ingo's wording was inaccurate and when he
-> wrote "we should either initialize a driver fully - or not intialize it
-> at all" he really meant "device" not "driver. Ingo?
-> 
+Based on an original patch by Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/gpu/drm/i915/intel_dp.c    |    7 ++++-
+ drivers/gpu/drm/i915/intel_drv.h   |   19 +++++++++++++
+ drivers/gpu/drm/i915/intel_lvds.c  |    4 +++
+ drivers/gpu/drm/i915/intel_panel.c |   50 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 79 insertions(+), 1 deletions(-)
 
-Question is what happens if an error is returned from device initialization.
-If it causes the driver not to be loaded, it will have to clean up first.
-To avoid that, it would have to drop the error from individual device
-initializations, like it did before.
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index b9efeaf..537375d 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -1522,8 +1522,10 @@ static int intel_dp_get_modes(struct drm_connector *connector)
+ }
+ 
+ static void
+-intel_dp_destroy (struct drm_connector *connector)
++intel_dp_destroy(struct drm_connector *connector)
+ {
++	intel_panel_backlight_destroy(to_intel_connector(connector));
++
+ 	drm_sysfs_connector_remove(connector);
+ 	drm_connector_cleanup(connector);
+ 	kfree(connector);
+@@ -1729,4 +1731,7 @@ intel_dp_init(struct drm_device *dev, int output_reg)
+ 		u32 temp = I915_READ(PEG_BAND_GAP_DATA);
+ 		I915_WRITE(PEG_BAND_GAP_DATA, (temp & ~0xf) | 0xd);
+ 	}
++
++	if (IS_eDP(intel_dp))
++	    intel_panel_backlight_create(intel_connector);
+ }
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 1ada684..5b6f9f7 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -28,6 +28,7 @@
+ #include <linux/i2c.h>
+ #include <linux/i2c-id.h>
+ #include <linux/i2c-algo-bit.h>
++#include <linux/backlight.h>
+ #include "i915_drv.h"
+ #include "drm_crtc.h"
+ #include "drm_crtc_helper.h"
+@@ -151,6 +152,9 @@ struct intel_encoder {
+ struct intel_connector {
+ 	struct drm_connector base;
+ 	struct intel_encoder *encoder;
++
++	/* expose a RAW native backlight interface */
++	struct backlight_device *backlight;
+ };
+ 
+ struct intel_crtc {
+@@ -229,6 +233,21 @@ extern u32 intel_panel_get_max_backlight(struct drm_device *dev);
+ extern u32 intel_panel_get_backlight(struct drm_device *dev);
+ extern void intel_panel_set_backlight(struct drm_device *dev, u32 level);
+ 
++#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
++extern int intel_panel_backlight_create(struct intel_connector *connector);
++extern void intel_panel_backlight_destroy(struct intel_connector *connector);
++#else
++static inline int intel_panel_backlight_create(struct intel_connector *connector)
++{
++	return -ENODEV;
++}
++
++static inline void intel_panel_backlight_destroy(struct intel_connector *connector)
++{
++	return;
++}
++#endif
++
+ extern int intel_panel_fitter_pipe (struct drm_device *dev);
+ extern void intel_crtc_load_lut(struct drm_crtc *crtc);
+ extern void intel_encoder_prepare (struct drm_encoder *encoder);
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index 93a711d..65d3e66 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -541,6 +541,8 @@ static void intel_lvds_destroy(struct drm_connector *connector)
+ 	struct drm_device *dev = connector->dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
++	intel_panel_backlight_destroy(to_intel_connector(connector));
++
+ 	if (dev_priv->lid_notifier.notifier_call)
+ 		acpi_lid_notifier_unregister(&dev_priv->lid_notifier);
+ 	drm_sysfs_connector_remove(connector);
+@@ -964,6 +966,8 @@ out:
+ 	/* keep the LVDS connector */
+ 	dev_priv->int_lvds_connector = connector;
+ 	drm_sysfs_connector_add(connector);
++
++	intel_panel_backlight_create(intel_connector);
+ 	return;
+ 
+ failed:
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index 30abe7a..ec7d38e 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -218,3 +218,53 @@ void intel_panel_set_backlight(struct drm_device *dev, u32 level)
+ 		tmp &= ~BACKLIGHT_DUTY_CYCLE_MASK;
+ 	I915_WRITE(BLC_PWM_CTL, tmp | level);
+ }
++
++#ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
++static int intel_backlight_update_status(struct backlight_device *bd)
++{
++	struct intel_connector *connector = bl_get_data(bd);
++	intel_panel_set_backlight(connector->base.dev, bd->props.brightness);
++	return 0;
++}
++
++static int intel_backlight_get_brightness(struct backlight_device *bd)
++{
++	struct intel_connector *connector = bl_get_data(bd);
++	return intel_panel_get_backlight(connector->base.dev);
++}
++
++static const struct backlight_ops intel_backlight_ops = {
++	.update_status = intel_backlight_update_status,
++	.get_brightness = intel_backlight_get_brightness,
++};
++
++int intel_panel_backlight_create(struct intel_connector *connector)
++{
++	struct drm_device *dev = connector->base.dev;
++	struct backlight_properties props;
++
++	props.type = BACKLIGHT_RAW;
++	props.max_brightness = intel_panel_get_max_backlight(dev);
++	connector->backlight =
++		backlight_device_register("intel_backlight",
++					  &connector->base.kdev,
++					  connector,
++					  &intel_backlight_ops,
++					  &props);
++	if (IS_ERR(connector->backlight)) {
++		int ret = PTR_ERR(connector->backlight);
++		DRM_ERROR("Failed to register backlight: %d\n", ret);
++		connector->backlight = NULL;
++		return ret;
++	}
++
++	connector->backlight->props.brightness = intel_panel_get_backlight(dev);
++	return 0;
++}
++
++void intel_panel_backlight_destroy(struct intel_connector *connector)
++{
++	if (connector->backlight)
++		backlight_device_unregister(connector->backlight);
++}
++#endif
+-- 
+1.7.1
 
-As such, it really comes down to philosophy and personal preference.
-Mine would be to return the error and fail driver installation (after all,
-something must really be wrong for that to happen), but then philosopy
-isn't really my field ... so I'll yield to others.
-
-Guenter
-
-> > 
-> > Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-> > ---
-> >  arch/x86/kernel/cpu/mcheck/therm_throt.c |   36 ++++++++++++++++++++++++++---
-> >  1 files changed, 32 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> > index c2a8b26..5099e90 100644
-> > --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> > +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> > @@ -211,19 +211,33 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev)
-> >  	if (err)
-> >  		return err;
-> >  
-> > -	if (cpu_has(c, X86_FEATURE_PLN))
-> > +	if (cpu_has(c, X86_FEATURE_PLN)) {
-> >  		err = sysfs_add_file_to_group(&sys_dev->kobj,
-> >  					      &attr_core_power_limit_count.attr,
-> >  					      thermal_attr_group.name);
-> > -	if (cpu_has(c, X86_FEATURE_PTS))
-> > +		if (err)
-> > +			goto error;
-> > +	}
-> > +
-> > +	if (cpu_has(c, X86_FEATURE_PTS)) {
-> >  		err = sysfs_add_file_to_group(&sys_dev->kobj,
-> >  					      &attr_package_throttle_count.attr,
-> >  					      thermal_attr_group.name);
-> > -		if (cpu_has(c, X86_FEATURE_PLN))
-> > +		if (err)
-> > +			goto error;
-> > +
-> > +		if (cpu_has(c, X86_FEATURE_PLN)) {
-> >  			err = sysfs_add_file_to_group(&sys_dev->kobj,
-> >  					&attr_package_power_limit_count.attr,
-> >  					thermal_attr_group.name);
-> > +			if (err)
-> > +				goto error;
-> > +		}
-> > +	}
-> >  
-> > +	return 0;
-> > +error:
-> > +	sysfs_remove_group(&sys_dev->kobj, &thermal_attr_group);
-> >  	return err;
-> >  }
-> >  
-> 
-> I'm fine with the above...
-> 
-> > @@ -275,6 +289,7 @@ static struct notifier_block thermal_throttle_cpu_notifier __cpuinitdata =
-> >  static __init int thermal_throttle_init_device(void)
-> >  {
-> >  	unsigned int cpu = 0;
-> > +	int i;
-> >  	int err;
-> >  
-> >  	if (!atomic_read(&therm_throt_en))
-> > @@ -288,13 +303,26 @@ static __init int thermal_throttle_init_device(void)
-> >  	/* connect live CPUs to sysfs */
-> >  	for_each_online_cpu(cpu) {
-> >  		err = thermal_throttle_add_dev(get_cpu_sysdev(cpu));
-> > -		WARN_ON(err);
-> > +		if (err)
-> > +			goto error;
-> >  	}
-> >  #ifdef CONFIG_HOTPLUG_CPU
-> >  	mutex_unlock(&therm_cpu_lock);
-> >  #endif
-> >  
-> >  	return 0;
-> > +error:
-> > +	WARN_ON(err);
-> > +
-> > +	/* cleanup. */
-> > +	for (i = 0; i < cpu; i++)
-> > +		thermal_throttle_remove_dev(get_cpu_sysdev(i));
-> > +#ifdef CONFIG_HOTPLUG_CPU
-> > +	mutex_unlock(&therm_cpu_lock);
-> > +#endif
-> > +	unregister_hotcpu_notifier(&thermal_throttle_cpu_notifier);
-> > +
-> > +	return err;
-> >  }
-> >  device_initcall(thermal_throttle_init_device);
-> >  
-> 
-> ... but not with this!
-> 
-> -- 
-> Jean Delvare
