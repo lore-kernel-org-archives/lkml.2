@@ -1,34 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab0IJGM7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 02:12:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53691 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974Ab0IJGM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 02:12:58 -0400
+	id S1752194Ab0IJGSk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 02:18:40 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:60320 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750974Ab0IJGSj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 02:18:39 -0400
+Date: Fri, 10 Sep 2010 16:17:46 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after
+ direct reclaim allocation fails
+Message-ID: <20100910061746.GE705@dastard>
+References: <20100905015400.GA10714@localhost>
+ <20100905021555.GG705@dastard>
+ <20100905060539.GA17450@localhost>
+ <20100905131447.GJ705@dastard>
+ <20100905134554.GA7083@localhost>
+ <20100906040243.GA7362@dastard>
+ <20100906084015.GJ8384@csn.ul.ie>
+ <20100906215023.GC7362@dastard>
+ <20100908084923.GW705@dastard>
+ <20100909123910.GP29263@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-X-Fcc: ~/Mail/linus
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] exec: don't turn PF_KTHREAD off when command not found
-In-Reply-To: KOSAKI Motohiro's message of  Thursday, 9 September 2010 18:03:30 +0900 <20100909180236.C94C.A69D9226@jp.fujitsu.com>
-References: <20100909180236.C94C.A69D9226@jp.fujitsu.com>
-X-Shopping-List: (1) Missing sunburnt invasions
-   (2) Lucky colliders
-   (3) Porous complicators
-   (4) Spherical piano ignorers
-   (5) Persistent accusers
-Message-Id: <20100910061255.6C09844197@magilla.sf.frob.com>
-Date: Thu,  9 Sep 2010 23:12:55 -0700 (PDT)
+Content-Disposition: inline
+In-Reply-To: <20100909123910.GP29263@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That looks reasonable to me too.
+On Thu, Sep 09, 2010 at 01:39:10PM +0100,  wrote:
+> It has been pointed out that the fix potentially increases the number of
+> IPIs sent. On larger machines, I worry that these delays could be severe
+> and we'll see other problems down the line. Hence, I'd like to reduce
+> the number of calls to drain_all_pages() without eliminating them
+> entirely. I'm currently in the process of testing the following patch
+> but can you try it as well please?
+> 
+> In particular, I am curious to see if the performance of fs_mark
+> improves any and if the interrupt counts drop as a result of the patch.
 
+The interrupt counts have definitely dropped - this is after
+creating 200M inodes and then removing them all:
 
-Thanks,
-Roland
+CAL:      11154 10596 11804 15366 10048 12916 13049 9864
+
+That's in the same ballpark as a single 50M inode create run without
+the patch.
+
+Performance seems a bit lower, though (2-3% maybe less), and CPU
+usage seems a bit higher (stays much closer to 800% than 700-750%
+without the patch). Those are subjective observations from watching
+graphs and counters, so take them with a grain of salt.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
