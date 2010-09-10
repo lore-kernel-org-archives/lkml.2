@@ -1,59 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab0IJKWQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 06:22:16 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:40343 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891Ab0IJKWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 06:22:15 -0400
-Date: Fri, 10 Sep 2010 12:22:13 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Joe Perches <joe@perches.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
-        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
- default
-Message-ID: <20100910122213.30caee89@schatten.dmk.lab>
-In-Reply-To: <1284113066.1783.69.camel@Joe-Laptop>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	<1284111767.1783.35.camel@Joe-Laptop>
-	<20100910095259.GC23903@sirena.org.uk>
-	<1284113066.1783.69.camel@Joe-Laptop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752584Ab0IJKZu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 06:25:50 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:50105 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab0IJKZs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 06:25:48 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 05/10] vmscan: Synchrounous lumpy reclaim use lock_page() instead trylock_page()
+Cc: kosaki.motohiro@jp.fujitsu.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20100909092203.GL29263@csn.ul.ie>
+References: <20100909131211.C93C.A69D9226@jp.fujitsu.com> <20100909092203.GL29263@csn.ul.ie>
+Message-Id: <20100909182649.C94F.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 10 Sep 2010 19:25:43 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010 03:04:26 -0700
-Joe Perches <joe@perches.com> wrote:
-
-> On Fri, 2010-09-10 at 10:53 +0100, Mark Brown wrote:
-> > On Fri, Sep 10, 2010 at 02:42:47AM -0700, Joe Perches wrote:
-> > > As the coverage of file patterns in MAINTAINERS is
-> > > now pretty good, the --git results are less useful.
-> > It's pretty good for subsystems and PC drivers but for embedded stuff it
-> > is much more patchy and fairly unlikely to find someone who actually
-> > knows about the specific hardware.
+> On Thu, Sep 09, 2010 at 01:13:22PM +0900, KOSAKI Motohiro wrote:
+> > > On Thu, 9 Sep 2010 12:04:48 +0900
+> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > 
+> > > > On Mon,  6 Sep 2010 11:47:28 +0100
+> > > > Mel Gorman <mel@csn.ul.ie> wrote:
+> > > > 
+> > > > > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > > > 
+> > > > > With synchrounous lumpy reclaim, there is no reason to give up to reclaim
+> > > > > pages even if page is locked. This patch uses lock_page() instead of
+> > > > > trylock_page() in this case.
+> > > > > 
+> > > > > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > > > 
+> > > > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > > 
+> > > Ah......but can't this change cause dead lock ??
+> > 
+> > Yes, this patch is purely crappy. please drop. I guess I was poisoned
+> > by poisonous mushroom of Mario Bros.
+> > 
 > 
-> Especially not so good for ARM stuff.
+> Lets be clear on what the exact dead lock conditions are. The ones I had
+> thought about when I felt this patch was ok were;
 > 
-> It'd be great if the ARM/embedded folk would spend
-> some effort improving the MAINTAINERS file pattern
-> coverage.
+> o We are not holding the LRU lock (or any lock, we just called cond_resched())
+> o We do not have another page locked because we cannot lock multiple pages
+> o Kswapd will never be in LUMPY_MODE_SYNC so it is not getting blocked
+> o lock_page() itself is not allocating anything that we could recurse on
 
-hm.. not likely to happen.
+True, all.
 
-> One possible improvement that get_maintainers could
-> add is to [optionally] CC the author of the first
-> commit when there's no listed maintainer.
 > 
+> One potential dead lock would be if the direct reclaimer held a page
+> lock and ended up here but is that situation even allowed?
 
-I don't think the first commit has any special significance 
-in general. 
+example, 
+
+__do_fault()
+{
+(snip)
+        if (unlikely(!(ret & VM_FAULT_LOCKED)))
+                lock_page(vmf.page);
+        else
+                VM_BUG_ON(!PageLocked(vmf.page));
+
+        /*
+         * Should we do an early C-O-W break?
+         */
+        page = vmf.page;
+        if (flags & FAULT_FLAG_WRITE) {
+                if (!(vma->vm_flags & VM_SHARED)) {
+                        anon = 1;
+                        if (unlikely(anon_vma_prepare(vma))) {
+                                ret = VM_FAULT_OOM;
+                                goto out;
+                        }
+                        page = alloc_page_vma(GFP_HIGHUSER_MOVABLE,
+                                                vma, address);
+
+
+Afaik, detailed rule is,
+
+o kswapd can call lock_page() because they never take page lock outside vmscan
+o if try_lock() is successed, we can call lock_page_nosync() against its page after unlock.
+  because the task have gurantee of no lock taken.
+o otherwise, direct reclaimer can't call lock_page(). the task may have a lock already.
+
+I think.
+
+
+>  I did not
+> think of an obvious example of when this would happen. Similarly,
+> deadlock situations with mmap_sem shouldn't happen unless multiple page
+> locks are being taken.
+> 
+> (prepares to feel foolish)
+> 
+> What did I miss?
+
+
+
+
 
