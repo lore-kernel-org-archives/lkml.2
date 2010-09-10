@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab0IJUYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 16:24:17 -0400
-Received: from borg.org ([64.105.205.123]:49505 "EHLO borg.org"
+	id S1755238Ab0IJU35 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 16:29:57 -0400
+Received: from kroah.org ([198.145.64.141]:50600 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754059Ab0IJUYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 16:24:16 -0400
-X-Greylist: delayed 1793 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Sep 2010 16:24:16 EDT
-Message-ID: <4C8A8CE8.90600@borg.org>
-Date: Fri, 10 Sep 2010 15:54:16 -0400
-From: Kent Borg <kentborg@borg.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1751453Ab0IJU3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 16:29:54 -0400
+Date: Fri, 10 Sep 2010 13:29:43 -0700
+From: Greg KH <greg@kroah.com>
+To: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Shevchenko Andriy (EXT-Teleca/Helsinki)" 
+	<ext-andriy.shevchenko@nokia.com>
+Subject: Re: [PATCH] mmc_test: move files from sysfs to debugfs
+Message-ID: <20100910202943.GB9862@kroah.com>
+References: <1284102650-15044-1-git-send-email-ext-andriy.shevchenko@nokia.com>
+ <4C89DC01.6000601@nokia.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: git-p4 
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C89DC01.6000601@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a git-p4 question: I work in a Perforce shop and am doing Linux
-kernel work, I need to share that work with colleagues who see the world
-as a Perforce place.  The kernel I have came from Linus' tree and has a
-lot of history.  When I try to do my first a "git p4 submit" it chokes
-as it looks back in the entire git history until it fails looking for
-the ancestor of the first commit (linux-2.6.12-rc2!), I think it is
-looking for the last time it did a git-p4 submit so it knows how far
-back to go--but it has never done a submit in this new relationship
-between p4 and git.  There is plenty of git history that is not
-reflected in p4, and I don't want it in p4, I just want new work in p4.
+On Fri, Sep 10, 2010 at 10:19:29AM +0300, Adrian Hunter wrote:
+> Andy Shevchenko wrote:
+> >As proposed by Greg the more logically is to keep files for mmc_test driver
+> >under debugfs.
+> 
+> What happens if debugfs is not enabled in config?  Should there be
+> some kind of dependency there?  At least an error message would be
+> good - see below.
 
-I fear that git-p4 is for git people to contribute to bits natively
-p4-homed code, not this case where the code is natively git-homed code
-and it is the p4 people who will be contributing bits. 
+That would be good, but note that all major distros now enable it, so
+it's less and less of an issue these days.
 
-My attempt at a work around was this:
+thanks,
 
- - create a director on the p4 side, and from the p4 side submit the
-files that match my latest git submit.
-
- - sync with git-p4
-
- - try to submit a file with git-p4...and that fails as it runs all the
-way back through the history.  (Thank goodness it didn't succeed in
-submitting kernel activity since 2005!)
-
-
-I was hoping I could merge the p4/master with master to force a stopping
-point in the git-p4 submit, but that doesn't work, it is searching
-through git history to find the stopping point.  What might I put in the
-git history to force the stop (or maybe make a change to git-p4 to help
-my plight along)?
-
-
-Thanks,
-
--kb, the Kent who has always hated Perforce, alas.
-
+greg k-h
