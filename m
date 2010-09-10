@@ -1,88 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab0IJE0s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 00:26:48 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:47223 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab0IJE0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 00:26:45 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, linux-mm <linux-mm@kvack.org>
-Subject: [PATCH 3/4] hugetlb, rmap: fix confusing page locking in hugetlb_cow()
-Date: Fri, 10 Sep 2010 13:23:05 +0900
-Message-Id: <1284092586-1179-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1284092586-1179-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1284092586-1179-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1751690Ab0IJEg7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 00:36:59 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:28155 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751508Ab0IJEg5 (ORCPT
+	<rfc822;groupwise-jlee@novell.com:5:2>);
+	Fri, 10 Sep 2010 00:36:57 -0400
+Message-Id: <4C8A4285020000230002020B@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Thu, 09 Sep 2010 22:36:53 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <randy.dunlap@oracle.com>
+Cc: <mjg@redhat.com>, <mjg59@srcf.ucam.org>, <gregkh@suse.de>, <trenn@suse.de>,
+        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <Dennis.Jansen@web.de>
+Subject: Re: [PATCH] Add Intel Poulsbo Stub Driver
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if(!trylock_page) block in avoidcopy path of hugetlb_cow() looks confusing
-and is buggy.  Originally this trylock_page() is intended to make sure
-that old_page is locked even when old_page != pagecache_page, because then
-only pagecache_page is locked.
-This patch fixes it by moving page locking into hugetlb_fault().
+Hi Randy, 
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- mm/hugetlb.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+First, thank's for your review!
+And, sorry I am late to reply the mail.
 
-diff --git v2.6.36-rc3/mm/hugetlb.c v2.6.36-rc3/mm/hugetlb.c
-index 9519f3f..2e17e0e 100644
---- v2.6.36-rc3/mm/hugetlb.c
-+++ v2.6.36-rc3/mm/hugetlb.c
-@@ -2324,11 +2324,8 @@ retry_avoidcopy:
- 	 * and just make the page writable */
- 	avoidcopy = (page_mapcount(old_page) == 1);
- 	if (avoidcopy) {
--		if (!trylock_page(old_page)) {
--			if (PageAnon(old_page))
--				page_move_anon_rmap(old_page, vma, address);
--		} else
--			unlock_page(old_page);
-+		if (PageAnon(old_page))
-+			page_move_anon_rmap(old_page, vma, address);
- 		set_huge_ptep_writable(vma, address, ptep);
- 		return 0;
- 	}
-@@ -2631,10 +2628,14 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 								vma, address);
- 	}
- 
--	if (!pagecache_page) {
--		page = pte_page(entry);
-+	/*
-+	 * hugetlb_cow() requires page locks of pte_page(entry) and
-+	 * pagecache_page, so here we need take the former one
-+	 * when page != pagecache_page or !pagecache_page.
-+	 */
-+	page = pte_page(entry);
-+	if (page != pagecache_page)
- 		lock_page(page);
--	}
- 
- 	spin_lock(&mm->page_table_lock);
- 	/* Check for a racing update before calling hugetlb_cow */
-@@ -2661,9 +2662,8 @@ out_page_table_lock:
- 	if (pagecache_page) {
- 		unlock_page(pagecache_page);
- 		put_page(pagecache_page);
--	} else {
--		unlock_page(page);
- 	}
-+	unlock_page(page);
- 
- out_mutex:
- 	mutex_unlock(&hugetlb_instantiation_mutex);
--- 
-1.7.2.2
+於 三，2010-09-01 於 10:11 -0700，Randy Dunlap 提到：
+> On Wed,  1 Sep 2010 17:08:39 +0800 Lee, Chun-Yi wrote:
+> 
+> > Currently, there have no Poulsbo native video driver to support
+> > intel opregion. So, use this stub driver to enable the acpi backlight
+> > control sysfs entry files by requrest acpi_video_register.
+> > 
+> > Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+> > ---
+> >  drivers/gpu/Makefile       |    2 +-
+> >  drivers/gpu/stub/Kconfig   |   13 +++++++++
+> >  drivers/gpu/stub/Makefile  |    1 +
+> >  drivers/gpu/stub/poulsbo.c |   64 ++++++++++++++++++++++++++++++++++++++++++++
+> >  drivers/video/Kconfig      |    2 +
+> >  5 files changed, 81 insertions(+), 1 deletions(-)
+> >  create mode 100644 drivers/gpu/stub/Kconfig
+> >  create mode 100644 drivers/gpu/stub/Makefile
+> >  create mode 100644 drivers/gpu/stub/poulsbo.c
+> > 
+> > diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
+> > index 30879df..cc92778 100644
+> > --- a/drivers/gpu/Makefile
+> > +++ b/drivers/gpu/Makefile
+> > @@ -1 +1 @@
+> > -obj-y			+= drm/ vga/
+> > +obj-y			+= drm/ vga/ stub/
+> > diff --git a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig
+> > new file mode 100644
+> > index 0000000..c564140
+> > --- /dev/null
+> > +++ b/drivers/gpu/stub/Kconfig
+> > @@ -0,0 +1,13 @@
+> > +config STUB_POULSBO
+> > +	tristate "Intel Poulsbo Stub Driver"
+> > +        default m
+> 
+> Drop the "default m".
+> 
+
+Thank's! Will drop "default m".
+
+> > +        # Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
+> > +        # but for select to work, need to select ACPI_VIDEO's dependencies, ick
+> > +        select ACPI_VIDEO if ACPI
+> 
+> What does it do when ACPI is not enabled?  Does the driver even build
+> when APCI is not enabled?  (given the acpi_video* calls in it)
+> 
+
+This driver will not do anything if API is not enabled. It only call
+acpi_video_register/acpi_video_unregister, and acpi/video.h handle it
+like the following:
+
+#if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
+extern int acpi_video_register(void);
+extern void acpi_video_unregister(void);
+extern int acpi_video_get_edid(struct acpi_device *device, int type,
+                               int device_id, void **edid);
+#else
+static inline int acpi_video_register(void) { return 0; }
+static inline void acpi_video_unregister(void) { return; }
+static inline int acpi_video_get_edid(struct acpi_device *device, int
+type,
+                                      int device_id, void **edid)
+{
+        return -ENODEV;
+}
+#endif
+
+So, I think don't need add "depends on ACPI_VIDEO". How do you think?
+
+> It also has pci_* calls in it, so it looks like it needs to depend
+> on PCI && ACPI, or at least on PCI.
+> 
+> 
+Yes, thank's for your review, I will add:
+	depends on PCI
+
+
+Thank's a lot!
+Joey Lee
 
