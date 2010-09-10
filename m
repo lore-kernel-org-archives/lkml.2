@@ -1,52 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab0IJPVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 11:21:16 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40545 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751325Ab0IJPVP (ORCPT
+	id S1753810Ab0IJPa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 11:30:26 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46035 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab0IJPaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 11:21:15 -0400
-Date: Fri, 10 Sep 2010 11:21:13 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] PM / Wakeup: Introduce wakeup source objects and
- event statistics (was: Re: Wakeup-events implementation)
-In-Reply-To: <201009080151.43047.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1009101119060.1651-100000@iolanthe.rowland.org>
+	Fri, 10 Sep 2010 11:30:24 -0400
+Date: Fri, 10 Sep 2010 08:28:02 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC 02/22] configfs: Add struct
+ configfs_item_operations->check_link() in configfs_unlink()
+Message-ID: <20100910152802.GG885@mail.oracle.com>
+Mail-Followup-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+	Konrad Rzeszutek Wilk <konrad@darnok.org>,
+	linux-scsi <linux-scsi@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+	Mike Christie <michaelc@cs.wisc.edu>,
+	Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+	James Bottomley <James.Bottomley@suse.de>,
+	Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+	Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+References: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
+ <20100902064814.GB27904@mail.oracle.com>
+ <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
+ <201009071701.02847.konrad@darnok.org>
+ <20100907224413.GC21935@mail.oracle.com>
+ <1283911739.556.420.camel@haakon2.linux-iscsi.org>
+ <20100908192639.GD29545@mail.oracle.com>
+ <1283979207.556.510.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283979207.556.510.camel@haakon2.linux-iscsi.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Sep 2010, Rafael J. Wysocki wrote:
+On Wed, Sep 08, 2010 at 01:53:27PM -0700, Nicholas A. Bellinger wrote:
+> On Wed, 2010-09-08 at 12:26 -0700, Joel Becker wrote:
+> So after re-running this again, I was a bit off about where the OOOPs is
+> actually occuring.  So, the OOPs does not occur during in the simple
+> example here with the first unlink(2):
+> 
+> 	unlink sub_child/group1/src_0/src_link
+> 
+> but rather after the second unlink(2) is called after the first for
+> src_link occurs:
+> 
+> 	unlink sub_child/group2/dst_0/dst_link
+> 
+> So back to the OOPs with the current TCM code example, on v2.6.36-rc3
+> this actually triggers a SLUB warning "Object already free" from inside
+> of TCM code. This is attributed to the releasing a specific LUN ACLs
+> from the second unlink(2)'s struct config_item_operations->drop_link(),
+> that the first unlink had already released.  This is because the first
+> unlink(2) will currently assume that the remaining LUN ACLs are safe to
+> release because, it still assumes the disabled check_link call.
 
-> +struct wakeup_source *wakeup_source_create(const char *name)
-> +{
-> +	struct wakeup_source *ws;
-> +
-> +	ws = kzalloc(sizeof(*ws), GFP_KERNEL);
-> +	if (!ws)
-> +		return NULL;
-> +
-> +	if (name) {
-> +		int len = strlen(name);
-> +		char *s = kzalloc(len + 1, GFP_KERNEL);
-> +		if (s) {
-> +			strncpy(s, name, len);
-> +			ws->name = s;
-> +		}
-> +	}
-> +
-> +	return ws;
-> +}
+	The trivial solution is to refcount your ACLs.  You get both
+allow_link() calls, so you should be able to increment a counter there,
+and then drop them when the last drop_link() call is made.  That will
+keep your consumer structures around until all links are exhausted.
 
-Forget what I wrote earlier; it was stupid.  Just use kstrdup.
+Joel
 
-Alan Stern
+-- 
 
+"I'm so tired of being tired,
+ Sure as night will follow day.
+ Most things I worry about
+ Never happen anyway."
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
