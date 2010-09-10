@@ -1,58 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab0IJXDW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 19:03:22 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:36550 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586Ab0IJXDV (ORCPT
+	id S1755101Ab0IJXKJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 19:10:09 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:46525 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991Ab0IJXKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 19:03:21 -0400
-Date: Sat, 11 Sep 2010 08:03:33 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: linux-next: manual merge of the s5p tree with the arm-current tree
-In-reply-to: <20100910111023.671fdba7.sfr@canb.auug.org.au>
-To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Russell King'" <rmk@arm.linux.org.uk>
-Message-id: <002401cb513c$66c31660$34494320$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: ActQhPjI7s/tg3lNQtqLTbniTOcOSgAtzOPA
-References: <20100910111023.671fdba7.sfr@canb.auug.org.au>
+	Fri, 10 Sep 2010 19:10:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
+	:date:message-id:mime-version:content-type; q=dns; s=sasl; b=w0O
+	rhrsV22cQOcTytg2c1v81un2t+htu17hZzISaNp007u4JKy+1G7E520MQ5/5G9I4
+	ABzEOTCNRTYDr94vBjSHobKyrqQ8Rv9K2qq+XdwPInKiGC+X/ArhFl5i2KXU3KTu
+	5prJMclolUwh3yDsEWz4MJziuJMe+mfvwj2CYNWg=
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.3.rc1
+From: Junio C Hamano <gitster@pobox.com>
+Date: Fri, 10 Sep 2010 16:09:59 -0700
+Message-ID: <7vvd6dfb5k.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 8BCE9E56-BD30-11DF-8697-030CEE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> 
-> Hi Kukjin,
-> 
-Hi :-)
+A release candidate Git 1.7.3.rc1 is available at the usual places
+for testing:
 
-> Today's linux-next merge of the s5p tree got a conflict in
-> arch/arm/Kconfig between commit 9e84ed63dc71e13b62cea5ec6b0049260cca0b7a
-> ("ARM: Partially revert "Auto calculate ZRELADDR and provide option for
-> exceptions"") from the arm-current tree and commit
-> 03c1ebb0c4e84c4de78f522a73fe1e813b9a1fc1 ("ARM: S5P64X0: Update Kconfig
-> and Makefile") from the s5p tree.
-> 
-Oh, ok...thanks for your information.
+  http://www.kernel.org/pub/software/scm/git/
 
-> I used the arm-current version, but there may be some fix required for
-> the s5p tree.
-> 
-Sure, I fixed my tree for it.
+  git-1.7.3.rc1.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-1.7.3.rc1.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-1.7.3.rc1.tar.{gz,bz2}		(preformatted docs)
 
-Have a nice weekend ;-)
+The RPM binary packages for a few architectures are found in:
 
-Thanks.
+  testing/git-*-1.7.3.rc1-1.fc11.$arch.rpm	(RPM)
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
 
+
+Git v1.7.3 Release Notes (draft)
+================================
+
+Updates since v1.7.2
+--------------------
+
+ * git-gui got various updates and a new maintainer, Pat Thoyts.
+
+ * Gitweb allows its configuration to change per each request; it used to
+   read the configuration once upon startup.
+
+ * When git finds a corrupt object, it now reports the file that contains
+   it.
+
+ * "git checkout -B <it>" is a shorter way to say "git branch -f <it>"
+   followed by "git checkout <it>".
+
+ * When "git checkout" or "git merge" refuse to proceed in order to
+   protect local modification to your working tree, they used to stop
+   after showing just one path that might be lost.  They now show all,
+   in a format that is easier to read.
+
+ * "git clean" learned "-e" ("--exclude") option.
+
+ * Hunk headers produced for C# files by "git diff" and friends show more
+   relevant context than before.
+
+ * diff.ignoresubmodules configuration variable can be used to squelch the
+   differences in submodules reported when running commands (e.g. "diff",
+   "status", etc.) at the superproject level.
+
+ * http.useragent configuration can be used to lie who you are to your
+   restrictive firewall.
+
+ * "git rebase --strategy <s>" learned "-X" option to pass extra options
+   that are understood by the chosen merge strategy.
+
+ * "git rebase -i" learned "exec" that you can insert into the insn sheet
+   to run a command between its steps.
+
+ * "git rebase" between branches that have many binary changes that do
+   not conflict should be faster.
+
+ * "git rebase -i" peeks into rebase.autosquash configuration and acts as
+   if you gave --autosquash from the command line.
+
+
+Also contains various documentation updates.
+
+
+Fixes since v1.7.2
+------------------
+
+All of the fixes in v1.7.2.X maintenance series are included in this
+release, unless otherwise noted.
+
+ * "git merge -s recursive" (which is the default) did not handle cases
+   where a directory becomes a file (or vice versa) very well.
+
+ * "git fetch" and friends were accidentally broken for url with "+" in
+   its path, e.g. "git://git.gnome.org/gtk+".
+
+ * "git fetch $url" (i.e. without refspecs) was broken for quite some
+   time, if the current branch happen to be tracking some remote.
+
+ * "git note remove" created unnecessary extra commit when named object
+   did not have any note to begin with.
+
+ * "git -c foo=bar subcmd" did not work well for subcmd that is not
+   implemented as a built-in command.
