@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab0IJXro (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 19:47:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53460 "EHLO mga09.intel.com"
+	id S1755428Ab0IJXsy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 19:48:54 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:36829 "EHLO vps.mortis.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755007Ab0IJXrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 19:47:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,348,1280732400"; 
-   d="scan'208";a="553476452"
-From: Seth Heasley <seth.heasley@intel.com>
-Organization: Intel Corporation
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 2.6.35.4] ata_piix: IDE Mode SATA patch for Intel Patsburg DeviceIDs
-Date: Fri, 10 Sep 2010 16:39:28 -0700
-User-Agent: KMail/1.10.3 (Linux/2.6.27.7-9-default; KDE/4.1.3; x86_64; ; )
-References: <201001121701.28589.seth.heasley@intel.com> <201009090942.40760.seth.heasley@intel.com>
-In-Reply-To: <201009090942.40760.seth.heasley@intel.com>
+	id S1755007Ab0IJXsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 19:48:53 -0400
+Date: Sat, 11 Sep 2010 01:48:52 +0200
+From: Giel van Schijndel <me@mortis.eu>
+To: Lutz Ballaschke <vegan.grindcore@googlemail.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] watchdog: add f71862fg support
+Message-ID: <20100910234852.GB18142@salidar.me.mortis.eu>
+References: <20100906132434.GA17730@kreios.titan>
+ <20100907131837.GH6114@salidar.me.mortis.eu>
+ <20100910090301.GS354@infomag.iguana.be>
+ <20100910232407.GA13116@kreios.titan>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dTy3Mrz/UPE2dbVg"
 Content-Disposition: inline
-Message-Id: <201009101639.28973.seth.heasley@intel.com>
+In-Reply-To: <20100910232407.GA13116@kreios.titan>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Intel Patsburg (PCH) IDE mode SATA Controller DeviceIDs.
- 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 
---- linux-2.6.35.4/drivers/ata/ata_piix.c.orig	2010-08-26 16:47:12.000000000 -0700
-+++ linux-2.6.35.4/drivers/ata/ata_piix.c	2010-08-31 17:29:43.697162374 -0700
-@@ -302,6 +302,10 @@
- 	{ 0x8086, 0x1c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (CPT) */
- 	{ 0x8086, 0x1c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (PBG) */
-+	{ 0x8086, 0x1d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	/* SATA Controller IDE (PBG) */
-+	{ 0x8086, 0x1d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	{ }	/* terminate list */
- };
- 
+--dTy3Mrz/UPE2dbVg
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Sat, Sep 11, 2010 at 01:24:07 +0200, Lutz Ballaschke wrote:
+> On Fri, Sep 10, 2010 at 11:03:01 +0200, Wim Van Sebroeck wrote:
+>>> Given that the F71862 has *two* pins assignable to the WDTRST#
+>>> signal, please document that fact, and the reason for choosing this
+>>> one in the code.
+>>>=20
+>>> Perhaps it might even be desirable to insert a printk there.  This
+>>> to make the user aware of the fact that this driver might not work
+>>> if the pin configuration of their hardware doesn't match the
+>>> assumption you make about it in this code.
+>>=20
+>> I propose to Document it in the code and add a module-parameter so
+>> that it is selectable.
+>=20
+> I agree. I will post the patch again (missing parts will follow soon).=20
+> I placed printk in watchdog_start(). Since this means printk output=20
+> everytime /dev/watchdog is opened I'm not sure whether i like it there.=
+=20
+> Maybe it fits better in f71808e_find(). But this would require
+> additional if / else and stuff.=20
+
+Can't you fit that printk in the switch(devid) block?  That wouldn't
+require additional logic.  In fact, if you make the selected pin
+configurable I wouldn't consider a printk explaining the current
+policy/config assumptions necessary because that way there aren't any
+policy-related assumptions made in the driver anymore.
+
+--=20
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
+--
+"It would seem that perfection is attained not when no more can be
+ added, but when no more can be removed."
+  -- Antoine de Saint Exup=C3=A9ry
+
+--dTy3Mrz/UPE2dbVg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkyKw+QACgkQZBYm/87l50J9lgCfYoGK7MFL7mPu7rFK2yazOBn4
+jVwAoMhRJM6vrC5a+/R+Q8AjOrFlGYoU
+=FwIZ
+-----END PGP SIGNATURE-----
+
+--dTy3Mrz/UPE2dbVg--
