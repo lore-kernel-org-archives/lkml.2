@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab0IJRAE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 13:00:04 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55818 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755078Ab0IJRAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 13:00:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,347,1280732400"; 
-   d="scan'208";a="323232481"
-Date: Fri, 10 Sep 2010 19:00:22 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
-Cc: w.sang@pengutronix.de, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, rabin.vincent@stericsson.com,
-        linus.walleij@stericsson.com
-Subject: Re: [PATCH] stmpe-gpio: Handle platform data with no gpio base
-Message-ID: <20100910170021.GP2561@sortiz-mobl>
-References: <1283229296-16733-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
+	id S1753988Ab0IJRP6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 13:15:58 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64600 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab0IJRP5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 13:15:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=GsQOKqoaikCaDKFkrOoHeyECfaZ3sSXXWzxFQrphV4eEIKGX2KGcKQ7EXkKiSSORI8
+         wHAXdav6xSu6LQpAdx9k0VzgFRTPSWfCwLHQ/vAfGL5yrN4ZH3Gy33pJcQD3/TA0Ss1Z
+         t3pym/ekPfk2O65MFeyfHdk+/Py+Z7k9wjgig=
+Date: Fri, 10 Sep 2010 10:15:46 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+X-X-Sender: torvalds@i5.linux-foundation.org
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 3/4] hugetlb, rmap: fix confusing page locking in
+ hugetlb_cow()
+In-Reply-To: <1284092586-1179-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+Message-ID: <alpine.LFD.2.00.1009101011140.9670@i5.linux-foundation.org>
+References: <1284092586-1179-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1284092586-1179-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283229296-16733-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 31, 2010 at 10:04:56AM +0530, Virupax Sadashivpetimath wrote:
-> This patch removes the requirement that gpio base be supplied in
-> platform data.
-Patch applied to my for-next branch, unless David wants to take it.
 
-Cheers,
-Samuel.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+On Fri, 10 Sep 2010, Naoya Horiguchi wrote:
+>  
+> -	if (!pagecache_page) {
+> -		page = pte_page(entry);
+> +	/*
+> +	 * hugetlb_cow() requires page locks of pte_page(entry) and
+> +	 * pagecache_page, so here we need take the former one
+> +	 * when page != pagecache_page or !pagecache_page.
+> +	 */
+> +	page = pte_page(entry);
+> +	if (page != pagecache_page)
+>  		lock_page(page);
+
+Why isn't this a potential deadlock? You have two pages, and lock them 
+both. Is there some ordering guarantee that says that 'pagecache_page' and 
+'page' will always be in a certain relationship so that you cannot get 
+A->B and B->A lock ordering?
+
+Please document that ordering rule if so.
+
+			Linus
