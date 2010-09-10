@@ -1,34 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab0IJE7q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 00:59:46 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58576
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752586Ab0IJE7p (ORCPT
+	id S1754309Ab0IJFQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 01:16:26 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45094 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab0IJFQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 00:59:45 -0400
-Date: Thu, 09 Sep 2010 22:00:03 -0700 (PDT)
-Message-Id: <20100909.220003.57449843.davem@davemloft.net>
-To: mst@redhat.com
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL net-2.6] vhost-net: 2.6.36 regression fixes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100906113606.GA16143@redhat.com>
-References: <20100906113606.GA16143@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Sep 2010 01:16:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mqCly9YIghGCjKfgNfCVRu1QoY0QxBU0xXwAr6MLkT4KAgr8+4e3YJAGsuqGxPxi9k
+         SuPzgo8UQM+5Jm5FT5HfFZck/93TRec+O5UYHtZIYgwHS8tjLBbPiGUi1c3mz3HkNLTd
+         R4xztXTpPwC3rcLKTLYyDt3Te46rORXUm4W8U=
+Date: Thu, 9 Sep 2010 22:16:19 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 036/223]drivers/input/touchscreen/mk712.c Update broken
+ web addresses.
+Message-ID: <20100910051619.GA31128@core.coreip.homeip.net>
+References: <1284071205-7756-1-git-send-email-justinmattock@gmail.com>
+ <1284071205-7756-6-git-send-email-justinmattock@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284071205-7756-6-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Mon, 6 Sep 2010 14:36:06 +0300
+On Thu, Sep 09, 2010 at 03:26:36PM -0700, Justin P. Mattock wrote:
+> Below you will find an Update to a broken web address.
+> Please let me know if this needs to be changed.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  drivers/input/touchscreen/mk712.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/mk712.c b/drivers/input/touchscreen/mk712.c
+> index efd3aeb..76f373a 100644
+> --- a/drivers/input/touchscreen/mk712.c
+> +++ b/drivers/input/touchscreen/mk712.c
+> @@ -17,7 +17,7 @@
+>   * found in Gateway AOL Connected Touchpad computers.
+>   *
+>   * Documentation for ICS MK712 can be found at:
+> - *	http://www.icst.com/pdf/mk712.pdf
+> + * http://web.archive.org/web/*/http://www.icst.com/pdf/mk712.pdf	
 
-> The following tree includes more regression fixes for vhost-net
-> in 2.6.36.  It is on top of net-2.6.
-> Please merge it for 2.6.36.
+Shouldn't it be
 
-Pulled, thanks Michael.
+http://www.idt.com/products/getDoc.cfm?docID=18713923
+
+?
+
+-- 
+Dmitry
