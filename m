@@ -1,100 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab0IJHi7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 03:38:59 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49425 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958Ab0IJHi6 (ORCPT
+	id S1754385Ab0IJHmM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 03:42:12 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:39946 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145Ab0IJHmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 03:38:58 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 10 Sep 2010 16:33:54 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mark Hills <mark@pogo.org.uk>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org
-Subject: Re: cgroup: rmdir() does not complete
-Message-Id: <20100910163354.1f719c0d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.LNX.2.01.1009100818480.5721@vega.localdomain>
-References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
-	<20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
-	<20100827113506.2bbbb7b9.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100827123948.b4427a15.nishimura@mxp.nes.nec.co.jp>
-	<20100827144225.3190167a.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.NEB.2.01.1009011200050.6596@jrf.vwaro.pbz>
-	<20100902084200.e9b773cf.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.NEB.2.01.1009091051400.17759@jrf.vwaro.pbz>
-	<20100909100909.GM4443@balbir.in.ibm.com>
-	<alpine.NEB.2.01.1009091234230.26366@jrf.vwaro.pbz>
-	<1284033017.402.8.camel@laptop>
-	<alpine.NEB.2.01.1009091416100.26432@jrf.vwaro.pbz>
-	<20100910111646.a03ed3ba.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.LNX.2.01.1009100818480.5721@vega.localdomain>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Sep 2010 03:42:11 -0400
+To: Artur Skawina <art.08.09@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Damien Wyart <damien.wyart@free.fr>,
+        John Drescher <drescherjm@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [BISECTED] 2.6.35.*: horrible (exponential? >linear) slowdown to unusability (HPET)
+References: <87zkvx2ese.fsf@spindle.srvr.nix>
+	<20100906053255.GA23340@brouette> <87iq2gyllg.fsf@spindle.srvr.nix>
+	<87wrqu8s1u.fsf_-_@spindle.srvr.nix> <4C8982EF.8030705@gmail.com>
+From: Nix <nix@esperi.org.uk>
+Emacs: is that a Lisp interpreter in your editor, or are you just happy to see me?
+Date: Fri, 10 Sep 2010 08:42:00 +0100
+In-Reply-To: <4C8982EF.8030705@gmail.com> (Artur Skawina's message of "Fri, 10 Sep 2010 02:59:27 +0200")
+Message-ID: <87eid282pj.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-DCC-URT-Metrics: spindle 1060; Body=6 Fuz1=6 Fuz2=6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010 08:28:00 +0100 (BST)
-Mark Hills <mark@pogo.org.uk> wrote:
+On 10 Sep 2010, Artur Skawina spake thusly:
+> I'm seeing this too, except here it happens every couple of days of uptime,
+> lasts for a few minutes, and then goes away. Which made bisecting a bit
+> impractical... Thank you for doing it. 
 
-> On Fri, 10 Sep 2010, KAMEZAWA Hiroyuki wrote:
-> 
-> > On Fri, 10 Sep 2010 00:04:31 +0100 (BST)
-> > Mark Hills <mark@pogo.org.uk> wrote:
-> > > The report on the spinning process (23586) is dominated by calls from 
-> > > mem_cgroup_force_empty.
-> > > 
-> > > It seems to show lru_add_drain_all and drain_all_stock_sync are causing 
-> > > the load (I assume drain_all_stock_sync has been optimised out). But I 
-> > > don't think this is as important as what causes the spin.
-> > > 
-> > 
-> > I noticed you use FUSE and it seems there is a problem in FUSE v.s. memcg.
-> > I wrote a patch (onto 2.6.36 but can be applied..)
-> > 
-> > Could you try this ? I'm sorry I don't use FUSE system and can't test
-> > right now.
-> 
-> What makes you conclude that FUSE is in use? I do not think this is the 
-> case. Or do you mean that it is a problem that the kernel is built with 
-> FUSE support?
-> 
-You wrote 
-> The test case I was running is similar to the above. With the Lustre 
-> filesystem the problem takes 4 hours or more to show itself. Recently I 
-> ran 4 threads for over 24 hours without it being seen -- I suspect some 
-> external factor is involved.
+I just happened to be the lucky sod for whom it was consistently going
+wrong. :)
 
-I think Lustre FS is using FUSE. I'm wrong ?
+> HW is similar; x64 and X58/82801JI/ICH10, tsc clocksrc.
+> Did that printk trigger?
 
+No.
 
-> I _can_ test the patch, but I still cannot reliably reproduce the problem 
-> so it will be hard to conclude whether the patch works or not. Is there a 
-> way to build a test case for this?
-> 
+(hm, odd.
 
-I'm sorry I'm not sure yet. But from your report, you have 6 pages of charge
-which cannot be found by force_empty(). And I found FUSE's pipe copy code
-inserts a page cache into radix-tree but not move them onto LRU.
+spindle:~# cat /sys/devices/system/clocksource/clocksource0/current_clocksource
+tsc
 
-So,
-  - There are remaining pages which is out-of-LRU
-  - FUSE's "move" code does something curious, add_to_page_cache() but not LRU.
-  - You reporeted you use Lustre FS.
+spindle:~# grep -i tsc /proc/timer_list
+spindle:~# grep -i hpet /proc/timer_list
+Clock Event Device: hpet
+ set_next_event: hpet_legacy_next_event
+ set_mode:       hpet_legacy_set_mode
 
-Then, I ask you. To test this, I have to study FUSE to write test module...
-Maybe adding printk() to where I added gfp_mask modification of fuse/dev.c
-can show something but...
-
-We may have something other problem, but it seems this is one of them.
-
-Thanks,
--Kame
-
+I suspect current_clocksource doesn't do what we think it does, or the
+clocksource and 'clock event device' are not the same.)
