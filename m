@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab0IJCp4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 22:45:56 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41067 "EHLO smtps.tip.net.au"
+	id S1755603Ab0IJCvN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 22:51:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56172 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752006Ab0IJCpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 22:45:55 -0400
-Date: Fri, 10 Sep 2010 12:45:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Brian Gerst <brgerst@gmail.com>
-Subject: linux-next: build failure after merge of the percpu tree
-Message-Id: <20100910124543.3e8604fd.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__10_Sep_2010_12_45_43_+1000_FcSJPfi709VqS__O"
+	id S1752006Ab0IJCvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 22:51:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,344,1280732400"; 
+   d="scan'208";a="655886350"
+From: Huang Ying <ying.huang@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Huang Ying <ying.huang@intel.com>
+Subject: [RFC 3/6] x86, NMI, Rename memory parity error to PCI SERR error
+Date: Fri, 10 Sep 2010 10:51:02 +0800
+Message-Id: <1284087065-32722-3-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
+References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__10_Sep_2010_12_45_43_+1000_FcSJPfi709VqS__O
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+memory parity error is only valid for IBM PC-AT, newer machine use 7
+bit (0x80) of 0x61 port for PCI SERR. While memory error is usually
+reported via MCE. So corresponding function name and kernel log string
+is changed.
 
-Hi all,
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ arch/x86/include/asm/mach_traps.h |    6 +++---
+ arch/x86/kernel/traps.c           |   24 ++++++------------------
+ 2 files changed, 9 insertions(+), 21 deletions(-)
 
-After merging the percpu tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-In file included from drivers/vhost/net.c:26:
-include/linux/if_macvlan.h: In function 'macvlan_count_rx':
-include/linux/if_macvlan.h:69: error: read-only variable 'tcp_ptr__' used a=
-s 'asm' output
-In file included from drivers/net/macvlan.c:30:
-include/linux/if_macvlan.h: In function 'macvlan_count_rx':
-include/linux/if_macvlan.h:69: error: read-only variable 'tcp_ptr__' used a=
-s 'asm' output
-In file included from drivers/net/macvtap.c:2:
-include/linux/if_macvlan.h: In function 'macvlan_count_rx':
-include/linux/if_macvlan.h:69: error: read-only variable 'tcp_ptr__' used a=
-s 'asm' output
-
-Caused by commit 7f56c13698abfb1bdf6cf2b5cfcd80626d44c12e ("x86, percpu:
-Optimize this_cpu_ptr").
-
-That line in if_macvlan.h is:
-
-	rx_stats =3D this_cpu_ptr(vlan->rx_stats);
-
-Where vlan is a "const struct macvlan_dev *".
-
-I have used the percpu tree from next-20100909 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__10_Sep_2010_12_45_43_+1000_FcSJPfi709VqS__O
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMiZvXAAoJEDMEi1NhKgbsu5AH/2toM5MGQZ31QanJ6zKqJ8CN
-Zfty1Q9JoitPFNOLALIChMF458DVbPXxWO1hqpmqDGuEk7UT5omD96heB75D5sWk
-KpjFEaEHTEmIbN9JVIMinZ0nSRCWIvUtN4ZzIWKBY6rPMtH15w+uFkPRA5S0dIQC
-/ulBrpuKv3WcTAyR0mftofrt6yzha3GYP4MvnPPEeqJy9NStLGHd2ykQrWh/Etz6
-uCsYTnBOGRcwQH1tMeHWvZeAOSmsvmKcsaBe0CDCUgpB7ncpCMFrTgD+3vV0W7Tg
-gdAuKmwfv2SqNe4tJME9IRUL28QJho5Nh8mAHLpbkCGaDOSIXIEn8LmYxp6r0Ow=
-=AAsN
------END PGP SIGNATURE-----
-
---Signature=_Fri__10_Sep_2010_12_45_43_+1000_FcSJPfi709VqS__O--
+--- a/arch/x86/include/asm/mach_traps.h
++++ b/arch/x86/include/asm/mach_traps.h
+@@ -9,11 +9,11 @@
+ 
+ #define NMI_REASON_PORT		0x61
+ 
+-#define NMI_REASON_MEMPAR	0x80
++#define NMI_REASON_SERR		0x80
+ #define NMI_REASON_IOCHK	0x40
+-#define NMI_REASON_MASK		(NMI_REASON_MEMPAR | NMI_REASON_IOCHK)
++#define NMI_REASON_MASK		(NMI_REASON_SERR | NMI_REASON_IOCHK)
+ 
+-#define NMI_REASON_CLEAR_MEMPAR	0x04
++#define NMI_REASON_CLEAR_SERR	0x04
+ #define NMI_REASON_CLEAR_IOCHK	0x08
+ #define NMI_REASON_CLEAR_MASK	0x0f
+ 
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -301,29 +301,17 @@ gp_in_kernel:
+ }
+ 
+ static notrace __kprobes void
+-mem_parity_error(unsigned char reason, struct pt_regs *regs)
++pci_serr_error(unsigned char reason, struct pt_regs *regs)
+ {
+-	printk(KERN_EMERG
+-		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+-			reason, smp_processor_id());
+-
+-	printk(KERN_EMERG
+-		"You have some hardware problem, likely on the PCI bus.\n");
+-
+-#if defined(CONFIG_EDAC)
+-	if (edac_handler_set()) {
+-		edac_atomic_assert_error();
+-		return;
+-	}
+-#endif
++	printk(KERN_EMERG "NMI: PCI system error (SERR).\n");
+ 
+ 	if (panic_on_unrecovered_nmi)
+ 		panic("NMI: Not continuing");
+ 
+ 	printk(KERN_EMERG "Dazed and confused, but trying to continue\n");
+ 
+-	/* Clear and disable the memory parity error line. */
+-	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_MEMPAR;
++	/* Clear and disable the PCI SERR error line. */
++	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_SERR;
+ 	outb(reason, NMI_REASON_PORT);
+ }
+ 
+@@ -420,8 +408,8 @@ static notrace __kprobes void default_do
+ 		return;
+ 
+ 	/* AK: following checks seem to be broken on modern chipsets. FIXME */
+-	if (reason & NMI_REASON_MEMPAR)
+-		mem_parity_error(reason, regs);
++	if (reason & NMI_REASON_SERR)
++		pci_serr_error(reason, regs);
+ 	if (reason & NMI_REASON_IOCHK)
+ 		io_check_error(reason, regs);
+ #ifdef CONFIG_X86_32
