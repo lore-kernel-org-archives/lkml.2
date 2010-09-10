@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab0IJAhP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 20:37:15 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:56648 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752285Ab0IJAhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 20:37:13 -0400
-Date: Fri, 10 Sep 2010 10:37:06 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: xfs@oss.sgi.com, Alex Elder <aelder@sgi.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC PATCH] fs,xfs: Use __GFP_MOVABLE for XFS buffers
-Message-ID: <20100910003706.GC7032@dastard>
-References: <20100909111131.GO29263@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100909111131.GO29263@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755251Ab0IJAtb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 20:49:31 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48867 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754614Ab0IJAta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 20:49:30 -0400
+Date: Fri, 10 Sep 2010 10:49:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: unable to fetch the limits tree
+Message-Id: <20100910104925.329bdba6.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__10_Sep_2010_10_49_25_+1000_qRXW=W=Ee=iB2bZ7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 12:11:32PM +0100, Mel Gorman wrote:
-> Fragmentation avoidance in the kernel depends on reclaimable and movable
-> allocations being marked-up at page allocation time. Reclaimable allocations
-> refer to slab caches such as inode caches which can be reclaimed although
-> not necessarily in a targetted fashion. Movable pages are those pages that
-> can be moved to backing storage (during page reclaim) or migrated.
-> 
-> When testing against XFS, it was noticed that large page allocation rates
-> against XFS were far lower than expected in comparison to ext3. Investigation
-> showed that buffer pages allocated by XFS are placed on the LRU but not
-> marked __GFP_MOVABLE at allocation time.
-> 
-> This patch updates xb_to_gfp() to specify __GFP_MOVABLE and is correct iff
-> all pages allocated from a mask derived from xb_to_gfp() are guaranteed to
-> be movable be it via page reclaim or page migration. It needs an XFS expert
-> to make that determination but when applied, huge page allocation success
-> rates are similar to those seen on tests backed by ext3.
-> 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+--Signature=_Fri__10_Sep_2010_10_49_25_+1000_qRXW=W=Ee=iB2bZ7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't see any problems with this, but I don't think it's going to
-be useful for very long given the work I'm doing on the XFS buffer
-cache right now - converting it to caching buffers with a shrinker
-traversed LRU for reclaim instead of using the page cache and hoping
-reclaim doesn't trash the working set.
+Hi Jiri,
 
-I'm hoping to have it done in time for the .37 merge window, so
-adding __GFP_MOVEABLE now might not to even see a release....
+For the past couple of days, I have been getting this error when fetching
+the limits tree:
 
+decibel.fi.muni.cz[0: 147.251.50.163]: errno=3DConnection refused
+
+Just letting you know.
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--Signature=_Fri__10_Sep_2010_10_49_25_+1000_qRXW=W=Ee=iB2bZ7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMiYCVAAoJEDMEi1NhKgbstD0H/AvLHWh7xPCwqbeNSntgkiD5
+DwJSf9z3Q99/crBfs6qe23aXJJsrogGPh8IPaXwjra1jWKRlWQJ3r1DpeHNpO+qZ
+GNS76zXT3FukfR4mXqYUBeK9h6F0BerTuIQPEQvJoALQhXJ3/l8OUCnTSRvtE9r7
+6cNVmWZQzSyx1MbVjJOJwxQ0ffxsx5Z/XqDuglDGmakjcp4vG+9ZFaJC4Ba335C9
+C3qbidmpYGR/UnOvJk3NsQECD36VmAOlUgv4tzASR3ggqPKBH3D7Y56ugtA4zRLi
+AlQJJagg5Qlxk5Wa9aUkRzkbyOie+/HYk+iT0HwCVHXH0lonoLkZnbIMmhFjjUU=
+=+k8h
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__10_Sep_2010_10_49_25_+1000_qRXW=W=Ee=iB2bZ7--
