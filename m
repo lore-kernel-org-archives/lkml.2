@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab0IJVgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 17:36:13 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:43984 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753045Ab0IJVgM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 17:36:12 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: David Brownell <david-b@pacbell.net>
-Subject: [PATCH v2] usbnet: do not count empty skbs as errors in rx_process()
-Date: Fri, 10 Sep 2010 23:35:58 +0200
-User-Agent: KMail/1.9.10
-Cc: David Brownell <dbrownell@users.sourceforge.net>, netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <436709.64173.qm@web180305.mail.gq1.yahoo.com>
-In-Reply-To: <436709.64173.qm@web180305.mail.gq1.yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	id S1754637Ab0IJVj4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 17:39:56 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:34741 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752840Ab0IJVjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 17:39:55 -0400
+Date: Fri, 10 Sep 2010 23:39:52 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>,
+        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
+        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+Message-ID: <20100910233952.5a769a79@schatten.dmk.lab>
+In-Reply-To: <20100910140404.372bac58.akpm@linux-foundation.org>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	<1284111767.1783.35.camel@Joe-Laptop>
+	<20100910123040.5a6f0128@schatten.dmk.lab>
+	<20100910140404.372bac58.akpm@linux-foundation.org>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201009102336.00722.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If rx_fixup() returns an empty skb (because it consumed all data inside), do
-not count it as error.
+On Fri, 10 Sep 2010 14:04:04 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-This is needed for cx82310_eth. It also may allow other usbnet minidrivers'
-rx_fixup() functions to be simplified (no need to leave the last packet in the
-skb anymore).
+> On Fri, 10 Sep 2010 12:30:40 +0200
+> Florian Mickler <florian@mickler.org> wrote:
+> 
+> > People that get angered by being cc'd a lot as commit_signers can always
+> > filter their mail for that. 
+> 
+> People who get angry at an unexpected cc need to get a clue.  Or
+> get slapped.
+> 
+> I mean really, it's not a big deal.  And the addition of the occasional
+> inappropriate cc is a far less serious problem than the omission of
+> someone who might have been interested in the change.
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
----
-The patch does not pass checkpatch.pl because the function calls match the
-style used in usbnet.c.
+Indeed. So what is your opinion on the patch? 
+In my opinion it is a net win, because realistically we can not go
+around and slap them... can we? 
 
---- linux-2.6.36-rc3-orig/drivers/net/usb/usbnet.c	2010-08-29 17:36:04.000000000 +0200
-+++ linux-2.6.36-rc3/drivers/net/usb/usbnet.c	2010-09-10 20:10:10.000000000 +0200
-@@ -387,17 +387,11 @@
- {
- 	if (dev->driver_info->rx_fixup &&
- 	    !dev->driver_info->rx_fixup (dev, skb))
--		goto error;
--	// else network stack removes extra byte if we forced a short packet
--
--	if (skb->len)
--		usbnet_skb_return (dev, skb);
--	else {
--		netif_dbg(dev, rx_err, dev->net, "drop\n");
--error:
- 		dev->net->stats.rx_errors++;
--		skb_queue_tail (&dev->done, skb);
--	}
-+	else if (skb->len)
-+		return usbnet_skb_return (dev, skb);
-+
-+	skb_queue_tail (&dev->done, skb);
- }
- 
- /*-------------------------------------------------------------------------*/
+So this change might enable those who really have a problem with it, to
+filter for it. 
+Anybody who cares on the sending side, can edit it out, or perhaps,
+when we make it optional, opt out of it. 
 
+I personally would like such annotations on the sending side, because I
+don't wanna anger people, and would perhaps when in doubt, trim the cc
+list. But the annotation enables me to say: Hey, it was an
+automatic cc'list. So you could have filtered it out. Don't be angry
+with me! 
 
--- 
-Ondrej Zary
+While on the receiving side, I might prioritize mails I get as an
+maintainer (not that I am a maintainer.. but..), while other mail goes
+to the read-on-a-rainy-day-mailbox. 
+
+Cheers,
+Flo
+
