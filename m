@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab0IJXvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 19:51:19 -0400
-Received: from ns2.cypress.com ([157.95.67.5]:33826 "EHLO ns2.cypress.com"
+	id S1755470Ab0IJXxJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 19:53:09 -0400
+Received: from ns2.cypress.com ([157.95.67.5]:33866 "EHLO ns2.cypress.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755038Ab0IJXvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 19:51:17 -0400
-Subject: [PATCH] west bridge, Kconfig fix
+	id S1755038Ab0IJXxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 19:53:08 -0400
+Subject: [PATCH] west bridge block fix
 From: David Cross <david.cross@cypress.com>
 Reply-To: david.cross@cypress.com
 To: greg@kroah.com
 Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain
 Organization: Cypress
-Date: Fri, 10 Sep 2010 16:51:05 -0700
-Message-Id: <1284162665.16135.3.camel@odc-laptop>
+Date: Fri, 10 Sep 2010 16:52:56 -0700
+Message-Id: <1284162776.16135.5.camel@odc-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.26.1 
 Content-Transfer-Encoding: 7bit
@@ -25,66 +25,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the currently broken Kconfig for west bridge by
-introducing a dependency on a valid HAL Layer for the driver build.
+This patch contains an update for cyasblkdev_queue.c which is needed for
+the kernel update from 2.6.35 to 2.6.36.
 
 Signed-off-by: David Cross <david.cross@cypress.com>
 ---
-diff -uprN -X linux-next-vanilla/Documentation/dontdiff linux-next-vanilla/drivers/staging/westbridge/Kconfig linux-next-incremen/drivers/staging/westbridge/Kconfig
---- linux-next-vanilla/drivers/staging/westbridge/Kconfig	2010-08-31 19:32:51.000000000 -0700
-+++ linux-next-incremen/drivers/staging/westbridge/Kconfig	2010-09-09 19:12:18.000000000 -0700
-@@ -4,7 +4,7 @@
+diff -uprN -X linux-next-vanilla/Documentation/dontdiff linux-next-vanilla/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c linux-next-incremen/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c
+--- linux-next-vanilla/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c	2010-09-01 15:56:46.000000000 -0700
++++ linux-next-incremen/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c	2010-09-10 13:58:24.000000000 -0700
+@@ -95,7 +95,7 @@ static int cyasblkdev_prep_request(
+ 	DBGPRN_FUNC_NAME;
  
- menuconfig WESTBRIDGE
- 	tristate "West Bridge support"
--	depends on HAS_IOMEM && BROKEN
-+	depends on WESTBRIDGE_HAL_SELECTED
- 	help
- 	  This selects West Bridge Peripheral controller support.
- 
-@@ -12,7 +12,7 @@ menuconfig WESTBRIDGE
- 
- menuconfig WESTBRIDGE_ASTORIA
- 	bool "West Bridge Astoria support"
--	depends on WESTBRIDGE != n
-+	depends on WESTBRIDGE != n && WESTBRIDGE_HAL_SELECTED
- 	help
- 		This option enables support for West Bridge Astoria
- 
-@@ -20,11 +20,30 @@ if WESTBRIDGE_ASTORIA
- source "drivers/staging/westbridge/astoria/Kconfig"
- endif #WESTBRIDGE_ASTORIA
- 
--menuconfig MACH_OMAP3_WESTBRIDGE_AST_PNAND_HAL
-+config	WESTBRIDGE_HAL_SELECTED
-+	boolean
-+
-+choice
-+	prompt "West Bridge HAL"
-+	help
-+	   West Bridge HAL/processor interface to be used
-+
-+#
-+# HAL Layers
-+#
-+
-+config MACH_OMAP3_WESTBRIDGE_AST_PNAND_HAL
- 	bool "WESTBRIDGE OMAP3430 Astoria PNAND HAL"
--	depends on ARCH_OMAP3 && WESTBRIDGE_ASTORIA
-+	depends on ARCH_OMAP3
-+	select WESTBRIDGE_HAL_SELECTED
-+	help
-+	   Include the OMAP3430 HAL for PNAND interface
-+
-+config MACH_NO_WESTBRIDGE
-+	bool "no West Bridge HAL selected"
- 	help
--		Include the OMAP3430 Linux Based HAL
-+	   Do not include any HAL layer(de-activates West Bridge option)
-+endchoice
- 
- config WESTBRIDGE_DEBUG
- 	bool "West Bridge debugging"
+ 	/* we only like normal block requests.*/
+-	if (!blk_fs_request(req)) {
++	if (req->cmd_type != REQ_TYPE_FS && !(req->cmd_flags & REQ_DISCARD)) {
+ 		#ifndef WESTBRIDGE_NDEBUG
+ 		cy_as_hal_print_message("%s:%x bad request received\n",
+ 			__func__, current->pid) ;
 
 
 ---------------------------------------------------------------
