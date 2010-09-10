@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab0IJVj4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 17:39:56 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:34741 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752840Ab0IJVjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 17:39:55 -0400
-Date: Fri, 10 Sep 2010 23:39:52 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>,
-        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
-        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
- default
-Message-ID: <20100910233952.5a769a79@schatten.dmk.lab>
-In-Reply-To: <20100910140404.372bac58.akpm@linux-foundation.org>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	<1284111767.1783.35.camel@Joe-Laptop>
-	<20100910123040.5a6f0128@schatten.dmk.lab>
-	<20100910140404.372bac58.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755232Ab0IJVk6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 17:40:58 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:38813 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753223Ab0IJVk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 17:40:57 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201009102140.o8ALeu1o011316@stout.americas.sgi.com>
+Date: Fri, 10 Sep 2010 16:40:56 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update #2 for 2.6.36-rc4
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.4 7/29/08
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010 14:04:04 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Two more XFS changes for 2.6.36--one fixes a security problem
+and the other addresses a regression due to the recent
+workqueue updates.
 
-> On Fri, 10 Sep 2010 12:30:40 +0200
-> Florian Mickler <florian@mickler.org> wrote:
-> 
-> > People that get angered by being cc'd a lot as commit_signers can always
-> > filter their mail for that. 
-> 
-> People who get angry at an unexpected cc need to get a clue.  Or
-> get slapped.
-> 
-> I mean really, it's not a big deal.  And the addition of the occasional
-> inappropriate cc is a far less serious problem than the omission of
-> someone who might have been interested in the change.
+					-Alex
 
-Indeed. So what is your opinion on the patch? 
-In my opinion it is a net win, because realistically we can not go
-around and slap them... can we? 
+The following changes since commit df423dc7f2a801b9a45d7c501a8eb5c529455ea1:
 
-So this change might enable those who really have a problem with it, to
-filter for it. 
-Anybody who cares on the sending side, can edit it out, or perhaps,
-when we make it optional, opt out of it. 
+  Merge branch 'upstream-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev (2010-09-09 20:28:19 -0700)
 
-I personally would like such annotations on the sending side, because I
-don't wanna anger people, and would perhaps when in doubt, trim the cc
-list. But the annotation enables me to say: Hey, it was an
-automatic cc'list. So you could have filtered it out. Don't be angry
-with me! 
+are available in the git repository at:
 
-While on the receiving side, I might prioritize mails I get as an
-maintainer (not that I am a maintainer.. but..), while other mail goes
-to the read-on-a-rainy-day-mailbox. 
+  git://oss.sgi.com/xfs/xfs for-linus
 
-Cheers,
-Flo
+Dan Rosenberg (1):
+      xfs: prevent reading uninitialized stack memory
 
+Dave Chinner (1):
+      xfs: log IO completion workqueue is a high priority queue
+
+ fs/xfs/linux-2.6/xfs_buf.c   |    3 ++-
+ fs/xfs/linux-2.6/xfs_ioctl.c |    2 ++
+ 2 files changed, 4 insertions(+), 1 deletions(-)
