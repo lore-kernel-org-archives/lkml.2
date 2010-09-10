@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab0IJJJV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 05:09:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52617 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab0IJJJU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 05:09:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=UgiLaYkNBexCF8nrMG7hc3AAjflGJn/yJ2q+P4KVS3AHnE5qeL0itc2QZdHmTka8Ey
-         YBg9pHyBumdkSHob+Ss4m93Dt9b6tHBK6mNN1XOo4NIe4aT+teVh03sj9jX9EMwSZ1Xd
-         57DPrwyJYUPRQGPG35R5+1Zj4kRJaisOnis9E=
-Subject: Re: [PATCH] percpu: update comments to reflect that percpu
- allocations are always zero-filled
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        robert.richter@amd.com, acme@redhat.com
-In-Reply-To: <4C89F47D.20309@kernel.org>
-References: <4c88dca1.44e7d80a.577e.3592@mx.google.com>
-	 <1284040322.2589.174.camel@edumazet-laptop>
-	 <AANLkTimHwiXa62GhHA0hQ0AOcDaxgqRcV+O63G_qoZW8@mail.gmail.com>
-	 <1284106566.402.26.camel@laptop>	<4C89EF37.5080803@kernel.org>
-	 <AANLkTi=7PJPCwrnK+4ejX7RHC-sautVgK-_+kpoT27k5@mail.gmail.com>
-	 <4C89F47D.20309@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Sep 2010 11:09:14 +0200
-Message-ID: <1284109754.24675.0.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1756629Ab0IJJMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 05:12:30 -0400
+Received: from server.mail.localsever ([85.95.236.5]:4347 "EHLO
+	mail.localhost.local.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754579Ab0IJJM3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 05:12:29 -0400
+X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Sep 2010 05:12:28 EDT
+Reply-To: maksoy@msn.com
+Message-ID: <3c77916130aac89c418bde153e07cfdb@msn.com>
+From: "MELISSA AKSOY" <maksoy@msn.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-9?B?3m9rIGVkZW4gcmVmZXJhbmR1bSBhZmn+aSAhISFtYWlsaWtheWRlZGluLiEhIQ==?=
+Date: Fri, 10 Sep 2010 12:06:10 +0300
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-9"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 10 septembre 2010 Ã  11:03 +0200, Tejun Heo a Ã©crit :
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Stephane Eranian <eranian@google.com>
-> ---
+Þok eden referandum afiþi !!!
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Arkadaþlar üyesi olduðum siyasiforumdaki haberi sizinle paylaþmak istedim.Malum referanduma 
 
+az kaldý herkes oyunun rengini belli ediyor ve ülkemizde kýran kýrana evet ve hayýr 
+
+tartýþmalarý yaþanýyor.Ýstanbul ve Ankaradaki billboardlara yapýþtýrýlan ve daðýtýldýðý 
+
+söylenen afiþlerde "HAYIR" ve "EVET" cephelerini desteklediði iddia edilen kiþiler var. 
+
+Görünce þok oldum resmen! Bu afiþ çok konuþulacaða benziyor...
+
+Afiþ resimleri forum sitesinde yer almaktadýr.
+
+http://www.siyasiforum.net/viewtopic.php?f=1&t=9035
+
+Ayrýca afiþ linkleri:
+
+http://img695.imageshack.us/i/35318189.jpg/
+http://img651.imageshack.us/i/52413274.jpg/
+http://img192.imageshack.us/i/17858625.jpg/
+http://img196.imageshack.us/i/47603535.jpg/
+http://img269.imageshack.us/i/52505860.jpg/
+
+Ben bu afiþlerle ilgili düþüncelerimi foruma yazdým sizde yazabilirsiniz.
+
+Cengiz AKSOY
 
