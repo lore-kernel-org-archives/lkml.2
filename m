@@ -1,163 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab0IJHtc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 03:49:32 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43328 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099Ab0IJHtb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 03:49:31 -0400
-Subject: Re: 2.6.36-rc3 suspend issue (was: 2.6.35-rc4 / X201 issues)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Nico Schottelius <nico-nospam@schottelius.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Nico Schottelius <nico-linux-20100709@schottelius.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Florian Pritz <flo@xssn.at>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        stable@kernel.org, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <Pine.LNX.4.64.1009101324280.3056@boston.corp.fedex.com>
-References: <Pine.LNX.4.64.1009101324280.3056@boston.corp.fedex.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 10 Sep 2010 09:48:40 +0200
-Message-ID: <1284104920.402.21.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754944Ab0IJHv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 03:51:57 -0400
+Received: from mx.ij.cx ([212.13.201.15]:63473 "EHLO wes.ijneb.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754148Ab0IJHv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 03:51:56 -0400
+Date: Fri, 10 Sep 2010 08:51:51 +0100 (BST)
+From: Mark Hills <mark@pogo.org.uk>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: cgroup: rmdir() does not complete
+In-Reply-To: <20100910163354.1f719c0d.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.NEB.2.01.1009100845090.28193@jrf.vwaro.pbz>
+References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz> <20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp> <20100827113506.2bbbb7b9.kamezawa.hiroyu@jp.fujitsu.com> <20100827123948.b4427a15.nishimura@mxp.nes.nec.co.jp> <20100827144225.3190167a.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.NEB.2.01.1009011200050.6596@jrf.vwaro.pbz> <20100902084200.e9b773cf.kamezawa.hiroyu@jp.fujitsu.com> <alpine.NEB.2.01.1009091051400.17759@jrf.vwaro.pbz> <20100909100909.GM4443@balbir.in.ibm.com> <alpine.NEB.2.01.1009091234230.26366@jrf.vwaro.pbz>
+ <1284033017.402.8.camel@laptop> <alpine.NEB.2.01.1009091416100.26432@jrf.vwaro.pbz> <20100910111646.a03ed3ba.kamezawa.hiroyu@jp.fujitsu.com> <alpine.LNX.2.01.1009100818480.5721@vega.localdomain> <20100910163354.1f719c0d.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mark@pogo.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-10 at 13:36 +0800, Jeff Chua wrote:
+On Fri, 10 Sep 2010, KAMEZAWA Hiroyuki wrote:
 
+> On Fri, 10 Sep 2010 08:28:00 +0100 (BST)
+> Mark Hills <mark@pogo.org.uk> wrote:
 > 
-> I've bisected and it's pointing to the following commit causing the 
-> errors after resume. Reverting the commit solves the problem.
+> > On Fri, 10 Sep 2010, KAMEZAWA Hiroyuki wrote:
+> > 
+> > > On Fri, 10 Sep 2010 00:04:31 +0100 (BST)
+> > > Mark Hills <mark@pogo.org.uk> wrote:
+> > > > The report on the spinning process (23586) is dominated by calls from 
+> > > > mem_cgroup_force_empty.
+> > > > 
+> > > > It seems to show lru_add_drain_all and drain_all_stock_sync are causing 
+> > > > the load (I assume drain_all_stock_sync has been optimised out). But I 
+> > > > don't think this is as important as what causes the spin.
+> > > > 
+> > > 
+> > > I noticed you use FUSE and it seems there is a problem in FUSE v.s. memcg.
+> > > I wrote a patch (onto 2.6.36 but can be applied..)
+> > > 
+> > > Could you try this ? I'm sorry I don't use FUSE system and can't test
+> > > right now.
+> > 
+> > What makes you conclude that FUSE is in use? I do not think this is the 
+> > case. Or do you mean that it is a problem that the kernel is built with 
+> > FUSE support?
+> > 
+> You wrote 
+> > The test case I was running is similar to the above. With the Lustre 
+> > filesystem the problem takes 4 hours or more to show itself. Recently I 
+> > ran 4 threads for over 24 hours without it being seen -- I suspect some 
+> > external factor is involved.
+> 
+> I think Lustre FS is using FUSE. I'm wrong ?
 
-"the errors" being those at the end of this email?
+Lustre does not use FUSE. But the client is a set of kernel modules, so 
+these could do anything.
 
-> commit cd7240c0b900eb6d690ccee088a6c9b46dae815a
-> Author: Suresh Siddha <suresh.b.siddha@intel.com>
-> Date:   Thu Aug 19 17:03:38 2010 -0700
+> > I _can_ test the patch, but I still cannot reliably reproduce the problem 
+> > so it will be hard to conclude whether the patch works or not. Is there a 
+> > way to build a test case for this?
+> > 
 > 
->      x86, tsc, sched: Recompute cyc2ns_offset's during resume from sleep states
+> I'm sorry I'm not sure yet. But from your report, you have 6 pages of charge
+> which cannot be found by force_empty(). And I found FUSE's pipe copy code
+> inserts a page cache into radix-tree but not move them onto LRU.
 > 
+> So,
+>   - There are remaining pages which is out-of-LRU
+>   - FUSE's "move" code does something curious, add_to_page_cache() but not LRU.
+>   - You reporeted you use Lustre FS.
+> 
+> Then, I ask you. To test this, I have to study FUSE to write test module...
+> Maybe adding printk() to where I added gfp_mask modification of fuse/dev.c
+> can show something but...
+> 
+> We may have something other problem, but it seems this is one of them.
 
-> diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
-> index c042729..1ca132f 100644
-> --- a/arch/x86/include/asm/tsc.h
-> +++ b/arch/x86/include/asm/tsc.h
-> @@ -59,5 +59,7 @@ extern void check_tsc_sync_source(int cpu);
->   extern void check_tsc_sync_target(void);
-> 
->   extern int notsc_setup(char *);
-> +extern void save_sched_clock_state(void);
-> +extern void restore_sched_clock_state(void);
-> 
->   #endif /* _ASM_X86_TSC_H */
-> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> index ce8e502..d632934 100644
-> --- a/arch/x86/kernel/tsc.c
-> +++ b/arch/x86/kernel/tsc.c
-> @@ -626,6 +626,44 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
->   	local_irq_restore(flags);
->   }
-> 
-> +static unsigned long long cyc2ns_suspend;
-> +
-> +void save_sched_clock_state(void)
-> +{
-> +	if (!sched_clock_stable)
-> +		return;
-> +
-> +	cyc2ns_suspend = sched_clock();
-> +}
-> +
-> +/*
-> + * Even on processors with invariant TSC, TSC gets reset in some the
-> + * ACPI system sleep states. And in some systems BIOS seem to reinit TSC to
-> + * arbitrary value (still sync'd across cpu's) during resume from such sleep
-> + * states. To cope up with this, recompute the cyc2ns_offset for each cpu so
-> + * that sched_clock() continues from the point where it was left off during
-> + * suspend.
-> + */
-> +void restore_sched_clock_state(void)
-> +{
-> +	unsigned long long offset;
-> +	unsigned long flags;
-> +	int cpu;
-> +
-> +	if (!sched_clock_stable)
-> +		return;
-> +
-> +	local_irq_save(flags);
-> +
-> +	get_cpu_var(cyc2ns_offset) = 0;
-> +	offset = cyc2ns_suspend - sched_clock();
-> +
-> +	for_each_possible_cpu(cpu)
-> +		per_cpu(cyc2ns_offset, cpu) = offset;
-> +
-> +	local_irq_restore(flags);
-> +}
-> +
->   #ifdef CONFIG_CPU_FREQ
-> 
->   /* Frequency scaling support. Adjust the TSC based timer when the cpu frequency
-> diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-> index e7e8c5f..87bb35e 100644
-> --- a/arch/x86/power/cpu.c
-> +++ b/arch/x86/power/cpu.c
-> @@ -113,6 +113,7 @@ static void __save_processor_state(struct saved_context *ctxt)
->   void save_processor_state(void)
->   {
->   	__save_processor_state(&saved_context);
-> +	save_sched_clock_state();
->   }
->   #ifdef CONFIG_X86_32
->   EXPORT_SYMBOL(save_processor_state);
-> @@ -229,6 +230,7 @@ static void __restore_processor_state(struct saved_context *ctxt)
->   void restore_processor_state(void)
->   {
->   	__restore_processor_state(&saved_context);
-> +	restore_sched_clock_state();
->   }
->   #ifdef CONFIG_X86_32
->   EXPORT_SYMBOL(restore_processor_state);
-> 
-> 
-> 
-> 
-> Errors like the one below:
-> 
-> cpi_ds_exec_end_op+0x8e/0x3cd
->   [<ffffffff8121497d>] ? acpi_ps_parse_loop+0x7dd/0x96c
->   [<ffffffff81213af7>] ? acpi_ps_parse_aml+0x8e/0x29a
->   [<ffffffff8121512e>] ? acpi_ps_execute_method+0x1bf/0x28d
->   [<ffffffff81210741>] ? acpi_ns_evaluate+0xdd/0x19a
->   [<ffffffff812101f3>] ? acpi_evaluate_object+0x145/0x246
->   [<ffffffff811f79b2>] ? acpi_os_signal_semaphore+0x23/0x27
->   [<ffffffff811fa41e>] ? acpi_device_resume+0x0/0x2b
->   [<ffffffff81222892>] ? acpi_battery_get_state+0x7f/0x121
->   [<ffffffff812118c2>] ? acpi_get_handle+0x7b/0x99
->   [<ffffffff81222b99>] ? acpi_battery_update+0x265/0x26e
->   [<ffffffff81222c70>] ? acpi_battery_resume+0x25/0x2a
->   [<ffffffff81295c8d>] ? legacy_resume+0x1e/0x55
->   [<ffffffff81295d24>] ? device_resume+0x60/0xdd
->   [<ffffffff811c2102>] ? kobject_get+0x12/0x17
->   [<ffffffff812963e1>] ? dpm_resume_end+0xf2/0x349
->   [<ffffffff8105c9a4>] ? suspend_devices_and_enter+0x15b/0x188
->   [<ffffffff8105ca6a>] ? enter_state+0x99/0xcb
->   [<ffffffff8105c2da>] ? state_store+0xb1/0xcf
->   [<ffffffff810e9f0f>] ? sysfs_write_file+0xd6/0x112
->   [<ffffffff810a2f82>] ? vfs_write+0xad/0x132
->   [<ffffffff810a30bd>] ? sys_write+0x45/0x6e
->   [<ffffffff81001f02>] ? system_call_fastpath+0x16/0x1b
-> BUG: scheduling while atomic: lid/2486/0x00000002
-> 
+Okay, it sounds like perhaps I need to investigate Lustre, I will do this 
+next week. But I think FUSE can be ruled out.
 
-That just doesn't make any sense, the TSC restore code doesn't involve
-acpi, nor does it actually schedule.
+Thanks again
 
+-- 
+Mark
