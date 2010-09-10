@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab0IJPdU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 11:33:20 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:40862 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754597Ab0IJPdR (ORCPT
+	id S1754876Ab0IJPdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 11:33:51 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:11480 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754279Ab0IJPds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 11:33:17 -0400
+	Fri, 10 Sep 2010 11:33:48 -0400
 X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h43h61h)
+X-BigFish: VS1(zzzz1202hzz8275bhz32i2a8h87h61h)
 X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L8JF40-02-JQ1-02
+X-WSS-ID: 0L8JF41-02-JQ5-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 11/29] KVM: MMU: Add infrastructure for two-level page walker
-Date: Fri, 10 Sep 2010 17:30:48 +0200
-Message-ID: <1284132667-18620-12-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 21/29] KVM: MMU: Introduce kvm_pdptr_read_mmu
+Date: Fri, 10 Sep 2010 17:30:58 +0200
+Message-ID: <1284132667-18620-22-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1284132667-18620-1-git-send-email-joerg.roedel@amd.com>
 References: <1284132667-18620-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Reverse-DNS: unknown
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a mmu-callback to translate gpa
-addresses in the walk_addr code. This is later used to
-translate l2_gpa addresses into l1_gpa addresses.
+This function is implemented to load the pdptr pointers of
+the currently running guest (l1 or l2 guest). Therefore it
+takes care about the current paging mode and can read pdptrs
+out of l2 guest physical memory.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/x86.c              |    6 ++++++
- include/linux/kvm_host.h        |    5 +++++
- 3 files changed, 12 insertions(+), 0 deletions(-)
+ arch/x86/kvm/kvm_cache_regs.h |    7 +++++++
+ arch/x86/kvm/mmu.c            |    2 +-
+ arch/x86/kvm/paging_tmpl.h    |    2 +-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 235023e..7f95260 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -243,6 +243,7 @@ struct kvm_mmu {
- 	void (*free)(struct kvm_vcpu *vcpu);
- 	gpa_t (*gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t gva, u32 access,
- 			    u32 *error);
-+	gpa_t (*translate_gpa)(struct kvm_vcpu *vcpu, gpa_t gpa, u32 access);
- 	void (*prefetch_page)(struct kvm_vcpu *vcpu,
- 			      struct kvm_mmu_page *page);
- 	int (*sync_page)(struct kvm_vcpu *vcpu,
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 57c97a4..d29ae19 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3434,6 +3434,11 @@ void kvm_get_segment(struct kvm_vcpu *vcpu,
- 	kvm_x86_ops->get_segment(vcpu, var, seg);
+diff --git a/arch/x86/kvm/kvm_cache_regs.h b/arch/x86/kvm/kvm_cache_regs.h
+index a37abe2..975bb45 100644
+--- a/arch/x86/kvm/kvm_cache_regs.h
++++ b/arch/x86/kvm/kvm_cache_regs.h
+@@ -45,6 +45,13 @@ static inline u64 kvm_pdptr_read(struct kvm_vcpu *vcpu, int index)
+ 	return vcpu->arch.walk_mmu->pdptrs[index];
  }
  
-+static gpa_t translate_gpa(struct kvm_vcpu *vcpu, gpa_t gpa, u32 access)
++static inline u64 kvm_pdptr_read_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu, int index)
 +{
-+	return gpa;
++	load_pdptrs(vcpu, mmu, mmu->get_cr3(vcpu));
++
++	return mmu->pdptrs[index];
 +}
 +
- gpa_t kvm_mmu_gva_to_gpa_read(struct kvm_vcpu *vcpu, gva_t gva, u32 *error)
+ static inline ulong kvm_read_cr0_bits(struct kvm_vcpu *vcpu, ulong mask)
  {
- 	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
-@@ -5645,6 +5650,7 @@ int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
+ 	ulong tmask = mask & KVM_POSSIBLE_CR0_GUEST_BITS;
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index a26f13b..a25173a 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2398,7 +2398,7 @@ static int mmu_alloc_roots(struct kvm_vcpu *vcpu)
  
- 	vcpu->arch.emulate_ctxt.ops = &emulate_ops;
- 	vcpu->arch.mmu.root_hpa = INVALID_PAGE;
-+	vcpu->arch.mmu.translate_gpa = translate_gpa;
- 	if (!irqchip_in_kernel(kvm) || kvm_vcpu_is_bsp(vcpu))
- 		vcpu->arch.mp_state = KVM_MP_STATE_RUNNABLE;
- 	else
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index f2ecdd5..917e68f 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -534,6 +534,11 @@ static inline gpa_t gfn_to_gpa(gfn_t gfn)
- 	return (gpa_t)gfn << PAGE_SHIFT;
- }
+ 		ASSERT(!VALID_PAGE(root));
+ 		if (vcpu->arch.mmu.root_level == PT32E_ROOT_LEVEL) {
+-			pdptr = kvm_pdptr_read(vcpu, i);
++			pdptr = kvm_pdptr_read_mmu(vcpu, &vcpu->arch.mmu, i);
+ 			if (!is_present_gpte(pdptr)) {
+ 				vcpu->arch.mmu.pae_root[i] = 0;
+ 				continue;
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index f4e09d3..a28f09b 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -137,7 +137,7 @@ walk:
  
-+static inline gfn_t gpa_to_gfn(gpa_t gpa)
-+{
-+	return (gfn_t)(gpa >> PAGE_SHIFT);
-+}
-+
- static inline hpa_t pfn_to_hpa(pfn_t pfn)
- {
- 	return (hpa_t)pfn << PAGE_SHIFT;
+ #if PTTYPE == 64
+ 	if (walker->level == PT32E_ROOT_LEVEL) {
+-		pte = kvm_pdptr_read(vcpu, (addr >> 30) & 3);
++		pte = kvm_pdptr_read_mmu(vcpu, mmu, (addr >> 30) & 3);
+ 		trace_kvm_mmu_paging_element(pte, walker->level);
+ 		if (!is_present_gpte(pte)) {
+ 			present = false;
 -- 
 1.7.0.4
 
