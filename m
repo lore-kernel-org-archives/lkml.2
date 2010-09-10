@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490Ab0IJJak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 05:30:40 -0400
-Received: from mail.perches.com ([173.55.12.10]:1615 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750973Ab0IJJaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 05:30:39 -0400
-Subject: Re: [PATCH] scripts/checkpatch.pl: Add warnings for static char
- that could be static const char
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Mike Frysinger <vapier.adi@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20100910090615.GA3644@shadowen.org>
-References: <1284056536.24986.182.camel@Joe-Laptop>
-	 <AANLkTimAuA1oYyoaKsFTPEifdDsz9h=EzTB8gKudyAJk@mail.gmail.com>
-	 <1284060106.24986.215.camel@Joe-Laptop>
-	 <AANLkTin+twU1y_C6jfNDXruuoVncEivRO=2=1Jg69Xe=@mail.gmail.com>
-	 <20100910090615.GA3644@shadowen.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Sep 2010 02:30:37 -0700
-Message-ID: <1284111038.1783.18.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751638Ab0IJJbr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 05:31:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57891 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab0IJJbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 05:31:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=iURrJoL6MVfRm5Dyo7fhtEtGBmBjLmyJlrzS+Jn8zfK9Lhe7TKyagBtLugJ5gqjufI
+         8TiuXrBhEHXOmc1INd2ZmZFUn4+dYCv6LpHYsIBizSJoioQpO5wmVMu691WArL62T8aQ
+         NFQIA1Cwr7StAftBK0CKaOKoirYMYwvLAQ0A8=
+Date: Fri, 10 Sep 2010 11:31:35 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH 2/2] posix clocks: introduce a sysfs presence.
+Message-ID: <20100910093135.GB10179@riccoc20.at.omicron.at>
+References: <cover.1283504065.git.richard.cochran@omicron.at>
+ <84124d2479b8967cac2b35f852fc0fcae6ad9444.1283504065.git.richard.cochran@omicron.at>
+ <20100910000008.1483fdd7@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100910000008.1483fdd7@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-10 at 10:06 +0100, Andy Whitcroft wrote:
-> On Thu, Sep 09, 2010 at 03:24:14PM -0400, Mike Frysinger wrote:
-> > On Thu, Sep 9, 2010 at 15:21, Joe Perches wrote:
-> > > Add warnings for possible missing const uses of
-> > >        static char foo[] = "bar"
-> > >    that could be
-> > >        static const char foo[] = "bar"
-> > > and
-> > >        static const char *foo[] = {"bar", "baz"}
-> > >    that could be
-> > >        static const char * const foo[] = {"bar", "baz"}
-> > guess you missed my last e-mail about not bothering checking the
-> > static or the contents :)
-> > > +               if ($line =~ /\bconst\s+char\s*\*\s*(\w+)\s*\[\s*\]/) {
-> > -mike
-> Could you elucidate on that comment Mike, perhaps copy those comments
-> here.
+On Fri, Sep 10, 2010 at 12:00:08AM +0100, Alan Cox wrote:
+> Also we have existing time sources that don't follow the poxix clock
+> model - I can open /dev/rtc and I can open the hpet and so on.
+> 
+> I like /sys/class/time* *but* you need to be able to open the sysfs
+> device and apply operations to it in order for it to work when your closk
+> can be dynamically created and destroyed and to get a sane Unix API.
+> 
+> To start with try applying permissions to clock sources via the POSIX
+> API. That is something that will be required for some applications.
+> 
+> I need to be able to open sys/clock/foo/something and get a meaningful
+> handle. Sure it's quite likely the operations it supports are related to
+> the POSIX timer ops.
 
-Mike thinks that any time there is a char array declaration
-with a default value like
-	[static] char foo[] = "bar";
-or
-	[static] [const] char *foo[] = {"bar", ...};
+Do you mean this:
 
-checkpatch should issue a "use const" warning.
+   id = read(/sys/clock/foo/lock); /* clock is busy, cannot be removed */
+   ...
+   clock_gettime(id, ts);
+   ...
+   write(/sys/clock/foo/release, id); /* all done with clock */
 
-http://lkml.org/lkml/2010/9/9/205
+I am not sure what you are describing. Can you give an example, like
+pseudocode or something?
 
-Maybe.  Maybe not.  I don't like unnecessary warnings for
-functional code.  I think it depends on how often those
-initialized strings are actually modified post declaration.
-
-If it's a _really_ high percentage, then OK, sure.
-
-
+Thanks,
+Richard
