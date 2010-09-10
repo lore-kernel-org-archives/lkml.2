@@ -1,49 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab0IJBae (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 21:30:34 -0400
-Received: from mail.perches.com ([173.55.12.10]:1593 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753000Ab0IJBad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 21:30:33 -0400
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-From: Joe Perches <joe@perches.com>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>, meego-dev@meego.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
-        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        arjan@linux.intel.com, gregkh@suse.de,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Woodhouse <dwmw2@infradead.org>
-In-Reply-To: <000c01cb507e$e8d0a3c0$66f8800a@maildom.okisemi.com>
-References: <000a01cb4b2b$f03c6d40$66f8800a@maildom.okisemi.com>
-	 <AANLkTimTumguZ7Tm1-zGb=D+0gghsA-b-RyhRDTQieFR@mail.gmail.com>
-	 <000c01cb507e$e8d0a3c0$66f8800a@maildom.okisemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Sep 2010 18:30:29 -0700
-Message-ID: <1284082229.24986.253.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756782Ab0IJBjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 21:39:14 -0400
+Received: from mail04.svc.cra.dublin.eircom.net ([159.134.118.20]:35738 "HELO
+	mail04.svc.cra.dublin.eircom.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754180Ab0IJBjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 21:39:12 -0400
+Date: Fri, 10 Sep 2010 02:39:07 +0100 (IST)
+From: Web Oil <bernardkearney99@eircom.net>
+Reply-To: "royal.dutchonline1@9.cn" <royal.dutchonline1@9.cn>
+Message-ID: <22737136.4921284082747887.JavaMail.root@webmailbox302.eircom.net>
+Subject: *Grant Award*
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [189.17.177.120]
+X-Mailer: Zimbra 5.0.21_GA_3151.RHEL4 (ZimbraWebClient - FF3.0 (Win)/5.0.21_GA_3151.RHEL4)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-10 at 09:27 +0900, Masayuki Ohtake wrote:
-> > If you incluse ChangeLogs it's easier to follow the development,
-> > thanks.
-> The latest patch has included the following Changelog.
 
-I believe Linus is asking for the same thing as I did.
 
-Some means to track your the changes in your multiple submissions
-of the same files.
-
-Typically, this would be a git repository where people can
-read the delta patches instead of entire unversioned files.
-
-cheers, Joe
-
+($1,500,000.00 US Dollars) has been awarded to you in the 2010 ROYAL DUTCH 
+SHELL send your 
+Name:.. 
+Age:.. 
+Sex::.. 
+Address:.. 
+Tel.. 
+Occupation:.. 
+Country:.. 
