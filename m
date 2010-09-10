@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594Ab0IJBsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 21:48:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40179 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757351Ab0IJBs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 21:48:28 -0400
-Date: Fri, 10 Sep 2010 01:47:12 GMT
-From: tip-bot for Brian Gerst <brgerst@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        brgerst@gmail.com, penberg@kernel.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        brgerst@gmail.com, penberg@kernel.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1283563039-3466-5-git-send-email-brgerst@gmail.com>
-References: <1283563039-3466-5-git-send-email-brgerst@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/fpu] x86, fpu: Merge __save_init_fpu()
-Message-ID: <tip-bfd946cb891800d408decaae268a3480775178a3@git.kernel.org>
-Git-Commit-ID: bfd946cb891800d408decaae268a3480775178a3
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Sep 2010 01:47:13 +0000 (UTC)
+	id S1755277Ab0IJBxM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 21:53:12 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58923 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab0IJBxK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 21:53:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:x-mailer:mime-version:content-type
+         :content-transfer-encoding;
+        b=t1oMV+23ZrKI9mDXs3FTIhpT0dlAF/xhs6mbNOKgymA7B50f/H3+91qA3vqDvyAgYO
+         w4refUwoecwoLKHik5Yaiw5GqbvASZMYKc6r7DfkoZ5UM/0hDExbXy4HZZug43VkR3Zz
+         6DD/drrrhtcfBOky+4Vpw+zuMwPFBHJmSOheU=
+Date: Fri, 10 Sep 2010 09:53:10 +0800
+From: "hacklu" <embedway.linux@gmail.com>
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: how to understand powerpc's BRx ORx
+Message-ID: <201009100953083354338@gmail.com>
+X-mailer: Foxmail 6, 15, 201, 22 [cn]
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bfd946cb891800d408decaae268a3480775178a3
-Gitweb:     http://git.kernel.org/tip/bfd946cb891800d408decaae268a3480775178a3
-Author:     Brian Gerst <brgerst@gmail.com>
-AuthorDate: Fri, 3 Sep 2010 21:17:11 -0400
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 9 Sep 2010 14:16:30 -0700
+         I didn't understand the address mask.
+it's said that: BR[BA] is the base address,the OR[AM] is the  address mask,
+"Provides masking for corresponding BRx bits. By masking address 
+bits independently, SDRAM devices of different size address ranges can be used. Clearing 
+bits masks the corresponding address bit. Setting bits causes the corresponding address 
+bit to be compared with the address pins. Address mask bits can be set or cleared in any 
+order, allowing a resource to reside in more than one area of the address map. SDAM can 
+be read or written at any time."
 
-x86, fpu: Merge __save_init_fpu()
+how to understand it?
+for instance, if my BR0[BA]=0111_0000_0000_0000_0, OR0[AM]=1111_1111_1111
+if I want to access the 0x70000000 or the 0x71000001.what address calculate will be taken?
 
-__save_init_fpu() is identical for 32-bit and 64-bit.
+thanks all
+ 				
+--------------
+hacklu
+2010-09-10
 
-Signed-off-by: Brian Gerst <brgerst@gmail.com>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <1283563039-3466-5-git-send-email-brgerst@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/i387.h |   11 ++---------
- 1 files changed, 2 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index 5d8f9a7..88065e3 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -197,12 +197,6 @@ static inline void fpu_save_init(struct fpu *fpu)
- 	fpu_clear(fpu);
- }
- 
--static inline void __save_init_fpu(struct task_struct *tsk)
--{
--	fpu_save_init(&tsk->thread.fpu);
--	task_thread_info(tsk)->status &= ~TS_USEDFPU;
--}
--
- #else  /* CONFIG_X86_32 */
- 
- #ifdef CONFIG_MATH_EMULATION
-@@ -285,15 +279,14 @@ end:
- 	;
- }
- 
-+#endif	/* CONFIG_X86_64 */
-+
- static inline void __save_init_fpu(struct task_struct *tsk)
- {
- 	fpu_save_init(&tsk->thread.fpu);
- 	task_thread_info(tsk)->status &= ~TS_USEDFPU;
- }
- 
--
--#endif	/* CONFIG_X86_64 */
--
- static inline int fpu_fxrstor_checking(struct fpu *fpu)
- {
- 	return fxrstor_checking(&fpu->state->fxsave);
