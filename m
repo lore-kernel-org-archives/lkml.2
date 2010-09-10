@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab0IJLXK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 07:23:10 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54536 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191Ab0IJLXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 07:23:09 -0400
-Message-ID: <4C8A151B.2070903@kernel.dk>
-Date: Fri, 10 Sep 2010 13:23:07 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
+	id S1752934Ab0IJLYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 07:24:06 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53774 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751191Ab0IJLYE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 07:24:04 -0400
+Date: Fri, 10 Sep 2010 12:44:08 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Joe Perches <joe@perches.com>, florian@mickler.org,
         Andrew Morton <akpm@linux-foundation.org>,
+        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
+        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] generic-ipi: fix deadlock in __smp_call_function_single
-References: <20100909135050.GB2228@osiris.boeblingen.de.ibm.com> <1284116817.402.33.camel@laptop>
-In-Reply-To: <1284116817.402.33.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+Message-ID: <20100910124408.633afc48@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100910101818.GF3068@rakim.wolfsonmicro.main>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	<1284111767.1783.35.camel@Joe-Laptop>
+	<20100910095259.GC23903@sirena.org.uk>
+	<1284113066.1783.69.camel@Joe-Laptop>
+	<20100910101818.GF3068@rakim.wolfsonmicro.main>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-10 13:06, Peter Zijlstra wrote:
-> On Thu, 2010-09-09 at 15:50 +0200, Heiko Carstens wrote:
->> From: Heiko Carstens <heiko.carstens@de.ibm.com>
->>
->> Just got my 6 way machine to a state where cpu 0 is in an endless loop
->> within __smp_call_function_single.
->> All other cpus are idle.
->>
->> The call trace on cpu 0 looks like this:
->>
->> __smp_call_function_single
->> scheduler_tick
->> update_process_times
->> tick_sched_timer
->> __run_hrtimer
->> hrtimer_interrupt
->> clock_comparator_work
->> do_extint
->> ext_int_handler
->> ----> timer irq
->> cpu_idle
->>
->> __smp_call_function_single got called from nohz_balancer_kick (inlined)
->> with the remote cpu being 1, wait being 0 and the per cpu variable
->> remote_sched_softirq_cb (call_single_data) of the current cpu (0).
->>
->> Then it loops forever when it tries to grab the lock of the
->> call_single_data, since it is already locked and enqueued on cpu 0.
->>
->> My theory how this could have happened: for some reason the scheduler
->> decided to call __smp_call_function_single on it's own cpu, and sends
->> an IPI to itself. The interrupt stays pending since IRQs are disabled.
->> If then the hypervisor schedules the cpu away it might happen that upon
->> rescheduling both the IPI and the timer IRQ are pending.
->> If then interrupts are enabled again it depends which one gets scheduled
->> first.
->> If the timer interrupt gets delivered first we end up with the local
->> deadlock as seen in the calltrace above.
->>
->> Let's make __smp_call_function_single check if the target cpu is the
->> current cpu and execute the function immediately just like
->> smp_call_function_single does. That should prevent at least the
->> scenario described here.
->>
->> It might also be that the scheduler is not supposed to call
->> __smp_call_function_single with the remote cpu being the current cpu,
->> but that is a different issue.
->>
->> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > One possible improvement that get_maintainers could
+> > add is to [optionally] CC the author of the first
+> > commit when there's no listed maintainer.
 > 
-> Right, so it looks like all other users of __smp_call_function_single()
-> do indeed ensure not to call it on self, but your patch does make sense.
+> That might be a nice option (though it will still give false positives).
+> Something based on percentage of the driver written rather than log
+> entry counts might also be interesting.
 
-I guess it depends on whether how bullet proof you want that (core) API
-to be. We've traditionally had this kind of support in similar functions
-so the caller doesn't have to check, so I guess the patch is fine with
-me too.
+Within a time limit yes.
 
-For extra credit, the function documentation should be modified as well:
+I'd guess a heuristic along the lines of
 
- * __smp_call_function_single(): Run a function on another CPU
+original committer && has committed in the past 6 months
 
-Acked-by: Jens Axboe <jaxboe@fusionio.com>
+might work rather well - and you could probably walk up the list of
+signed-off-by this way with the same rule and take a fair shot at a
+maintainer.
 
--- 
-Jens Axboe
+Trouble is for a lot of other stuff beyond that you need to hit the
+person whose signoff is on most of the submits to that file/subtree in the
+past six months but not count wide cross tree commits
 
+That gets a bit harder to compute.
+
+Seems like there is a social sciences or systems research project here
+to do some graph theory and modelling into "who really maintains the Linux
+kernel"
+
+Alan
