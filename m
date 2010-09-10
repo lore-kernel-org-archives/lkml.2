@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab0IJKT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 06:19:58 -0400
-Received: from 68.mail-out.ovh.net ([91.121.185.69]:55302 "HELO
-	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752710Ab0IJKT5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 06:19:57 -0400
-Date: Fri, 10 Sep 2010 12:19:01 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        avictor.za@gmail.com
-Subject: Re: [PATCH] AT91: dm9000 initialization update
-Message-ID: <20100910101901.GQ9112@game.jcrosoft.org>
-References: <1284113629-13768-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284113629-13768-1-git-send-email-nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 452611763582446444
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	id S1752597Ab0IJKWQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 06:22:16 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:40343 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750891Ab0IJKWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 06:22:15 -0400
+Date: Fri, 10 Sep 2010 12:22:13 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Joe Perches <joe@perches.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
+        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+Message-ID: <20100910122213.30caee89@schatten.dmk.lab>
+In-Reply-To: <1284113066.1783.69.camel@Joe-Laptop>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	<1284111767.1783.35.camel@Joe-Laptop>
+	<20100910095259.GC23903@sirena.org.uk>
+	<1284113066.1783.69.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12:13 Fri 10 Sep     , Nicolas Ferre wrote:
-> Add information in dm9000 mac/phy chip initialization:
-> - irq resource details
-> - platform data details
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+On Fri, 10 Sep 2010 03:04:26 -0700
+Joe Perches <joe@perches.com> wrote:
 
-Best Regards,
-J.
+> On Fri, 2010-09-10 at 10:53 +0100, Mark Brown wrote:
+> > On Fri, Sep 10, 2010 at 02:42:47AM -0700, Joe Perches wrote:
+> > > As the coverage of file patterns in MAINTAINERS is
+> > > now pretty good, the --git results are less useful.
+> > It's pretty good for subsystems and PC drivers but for embedded stuff it
+> > is much more patchy and fairly unlikely to find someone who actually
+> > knows about the specific hardware.
+> 
+> Especially not so good for ARM stuff.
+> 
+> It'd be great if the ARM/embedded folk would spend
+> some effort improving the MAINTAINERS file pattern
+> coverage.
+
+hm.. not likely to happen.
+
+> One possible improvement that get_maintainers could
+> add is to [optionally] CC the author of the first
+> commit when there's no listed maintainer.
+> 
+
+I don't think the first commit has any special significance 
+in general. 
+
