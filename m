@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567Ab0IJTKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 15:10:51 -0400
-Received: from smtp126.sbc.mail.sp1.yahoo.com ([69.147.65.185]:25540 "HELO
-	smtp126.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752180Ab0IJTKu (ORCPT
+	id S1753299Ab0IJTR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 15:17:58 -0400
+Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:30148 "HELO
+	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751618Ab0IJTR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 15:10:50 -0400
+	Fri, 10 Sep 2010 15:17:57 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: PGkh.5AVM1mcLDQn7tfJvZnkQ2JJSHejaNq7XC5eNGeQ7O7
- KcFWOCnzB5Uwqjtj7vfep6zeKwny8FqqjNIsYsjhklhFFj2FaVT5RaFtysG9
- cOJCfgZj7HtFRX6iBooEcex77P9WkYhHR3akjWr1kK24FRyvFVvvierb8ecM
- d06D_3B4nsafI17jnZSeOVEfYYX4q5tr9WqkoFiJ..zjLKWLUw__SyQAKpDP
- _HKpxaHVQPkeFpfAE7ifmLlHBhPM7nKCpkCTR69FVkLYOiFJII3VzrmaZISP
- f2CPNfUnoRww31vnpkguW6Wu4i7Jc41sNAlTxVo7aPZyK5w.gDyH4xB_b
+X-YMail-OSG: NsikUZoVM1nk7XC5slg.oVmpxb9BLvL6nrFUgSOVQKGl_1n
+ 9l5wMLf5Sn56njR9ReMDX42yR04q00AlW9kGbFLKPqjr4xihvuiFXuXhgG6d
+ I6RLBv5FNnlRVl1vM0aP.7_ceQ3LZK.r1yiinG44YGfoMt2wDjQ9PIA7Jj9m
+ MDdogJBg34BvrLi0iHw_D9v7FIra3KftGMTVLzBbb2LGvSLYuw2l4NbgC3wS
+ tc6tIVAUwLpPlo2JXuzEXTQ6hQMtHa_F6e2dgPFNlt14.YSpVLZWoumikWvj
+ rKTxu58_aeRIPXNnKwqYx0WaQ1I361PgMU4azBdSNrp9viqvLCWeo9hqs8rX
+ 9M287NI.8fNToLyTUfw--
 X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [RFC 02/22] configfs: Add struct
-	configfs_item_operations->check_link() in configfs_unlink()
+Subject: Re: [PATCH] tcm: Convert to cpu_relax() for atomic_read() in tight
+	loops
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Joel Becker <Joel.Becker@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
         FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
         James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <20100910152802.GG885@mail.oracle.com>
-References: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
-	 <20100902064814.GB27904@mail.oracle.com>
-	 <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
-	 <201009071701.02847.konrad@darnok.org>
-	 <20100907224413.GC21935@mail.oracle.com>
-	 <1283911739.556.420.camel@haakon2.linux-iscsi.org>
-	 <20100908192639.GD29545@mail.oracle.com>
-	 <1283979207.556.510.camel@haakon2.linux-iscsi.org>
-	 <20100910152802.GG885@mail.oracle.com>
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Richard Sharpe <realrichardsharpe@gmail.com>
+In-Reply-To: <4C89D0E0.4000803@gmail.com>
+References: <1284067768-23863-1-git-send-email-nab@linux-iscsi.org>
+	 <4C89D0E0.4000803@gmail.com>
 Content-Type: text/plain
-Date: Fri, 10 Sep 2010 12:06:46 -0700
-Message-Id: <1284145606.19890.68.camel@haakon2.linux-iscsi.org>
+Date: Fri, 10 Sep 2010 12:13:50 -0700
+Message-Id: <1284146030.19890.77.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
@@ -48,62 +42,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-10 at 08:28 -0700, Joel Becker wrote:
-> On Wed, Sep 08, 2010 at 01:53:27PM -0700, Nicholas A. Bellinger wrote:
-> > On Wed, 2010-09-08 at 12:26 -0700, Joel Becker wrote:
-> > So after re-running this again, I was a bit off about where the OOOPs is
-> > actually occuring.  So, the OOPs does not occur during in the simple
-> > example here with the first unlink(2):
+On Fri, 2010-09-10 at 08:32 +0200, Jiri Slaby wrote:
+> On 09/09/2010 11:29 PM, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
 > > 
-> > 	unlink sub_child/group1/src_0/src_link
+> > Greetings all,
 > > 
-> > but rather after the second unlink(2) is called after the first for
-> > src_link occurs:
+> > This patch converts the following functions from within shutdown and release
+> > path code to use cpu_relax() instead of msleep() while doing atomic_read() in
+> > a tight loop waiting for various PR and MIB reference count(s) to return to zero:
 > > 
-> > 	unlink sub_child/group2/dst_0/dst_link
+> > 	*) core_update_device_list_for_node() + struct se_dev_entry->pr_ref_count
+> > 	*) core_release_port() + struct se_port->sep_tg_pt_ref_cnt
+> > 	*) se_dev_stop() + struct se_hba->dev_mib_access_count
+> > 	*) __core_scsi3_free_registration() + struct t10_pr_registration->pr_res_holders
+> > 	*) core_tpg_wait_for_nacl_pr_ref() + struct se_node_acl->acl_pr_ref_count
+> > 	*) core_tpg_wait_for_mib_ref() + struct se_node_acl->mib_ref_count
+> > 	*) core_tpg_deregister() + struct se_portal_group->tpg_pr_ref_count
+> > 	*) transport_deregister_session() + struct se_session->mib_ref_count
 > > 
-> > So back to the OOPs with the current TCM code example, on v2.6.36-rc3
-> > this actually triggers a SLUB warning "Object already free" from inside
-> > of TCM code. This is attributed to the releasing a specific LUN ACLs
-> > from the second unlink(2)'s struct config_item_operations->drop_link(),
-> > that the first unlink had already released.  This is because the first
-> > unlink(2) will currently assume that the remaining LUN ACLs are safe to
-> > release because, it still assumes the disabled check_link call.
+> > Thanks to Konrad Rzeszutek Wilk for mentioning cpu_relax() usage!
+> > 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > ---
+> >  drivers/target/target_core_device.c    |    6 +++---
+> >  drivers/target/target_core_pr.c        |    2 +-
+> >  drivers/target/target_core_tpg.c       |    6 +++---
+> >  drivers/target/target_core_transport.c |    2 +-
+> >  4 files changed, 8 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+> > index 665b8e2..459f0f8 100644
+> > --- a/drivers/target/target_core_device.c
+> > +++ b/drivers/target/target_core_device.c
+> > @@ -532,7 +532,7 @@ int core_update_device_list_for_node(
+> >  	 */
+> >  	spin_unlock_irq(&nacl->device_list_lock);
+> >  	while (atomic_read(&deve->pr_ref_count) != 0)
+> > -		msleep(100);
+> > +		cpu_relax();
+> >  	spin_lock_irq(&nacl->device_list_lock);
+> >  	/*
+> >  	 * Disable struct se_dev_entry LUN ACL mapping
 > 
-> 	The trivial solution is to refcount your ACLs.  You get both
-> allow_link() calls, so you should be able to increment a counter there,
-> and then drop them when the last drop_link() call is made.  That will
-> keep your consumer structures around until all links are exhausted.
-> 
+> Why would you want to convert those to busy-waiting? This should rather
+> be converted to wait_event/wake_up, right?
 
-Hi Joel,
+Hi Jiri,
 
-So I am a bit confused wrt to this last response..  The ->check_link()
-patch and it's use in the fabric independent code within
-target_core_fabric_configfs.c does exactly this for the 'MappedLUN'
-symlink case, eg: requires the consumer to do the allow_link() +
-drop_link() refcounting, and add the
-API check into fs/configfs/symlink.c:configfs_unlink()
+I agree that this is the one scenario within the msleep() -> cpu_relax()
+conversion patch that involves something besides a simple shortly held
+'non CDB I/O emulation path context ref/deref', and might probably be
+better served by using wait_event/wake_up.
 
-Is there another form of configfs consumer refcounting that you had in
-mind beyond using an atomic_t for this with ->check_link() here..?
+I will take a look at a conversion to use wait_queue_head_t in the near
+future.
 
-http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/target_core_fabric_configfs.c;hb=refs/heads/lio-4.0#l675
-
-So beyond a configfs consumer solution, what do you think about checking
-for the sub_child/group2/dst_0/dst_link style of symlink
-in fs/configfs/symlink.c:configfs_symlink() in order to add some form of
-internal refcount when the symlink source is within the same consumer
-LKM, but outside of the parent struct config_group..?
-
-This would involve the conversion of fs/configfs/symlink.c:
-configfs_unlink() path to check for the existence of this internal
-refcount and returning -EPERM when any sub_child/group2/dst_0/dst_link
-exist when 'unlink sub_child/group1/src_0/src_link' is attempted.
-
-What do you think..?
-
-Thanks!
+Thanks for your comments Jiri!
 
 --nab
+
 
