@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab0IJA1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 20:27:14 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:33094 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753215Ab0IJA1N (ORCPT
+	id S1756312Ab0IJAhP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 20:37:15 -0400
+Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:56648 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752285Ab0IJAhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 20:27:13 -0400
-Message-ID: <000c01cb507e$e8d0a3c0$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Linus Walleij" <linus.ml.walleij@gmail.com>
-Cc: "Grant Likely" <grant.likely@secretlab.ca>, <meego-dev@meego.com>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "David Brownell" <dbrownell@users.sourceforge.net>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
-        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
-        <gregkh@suse.de>, "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "David Woodhouse" <dwmw2@infradead.org>
-References: <000a01cb4b2b$f03c6d40$66f8800a@maildom.okisemi.com> <AANLkTimTumguZ7Tm1-zGb=D+0gghsA-b-RyhRDTQieFR@mail.gmail.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-Date: Fri, 10 Sep 2010 09:27:05 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 2
+	Thu, 9 Sep 2010 20:37:13 -0400
+Date: Fri, 10 Sep 2010 10:37:06 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: xfs@oss.sgi.com, Alex Elder <aelder@sgi.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC PATCH] fs,xfs: Use __GFP_MOVABLE for XFS buffers
+Message-ID: <20100910003706.GC7032@dastard>
+References: <20100909111131.GO29263@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100909111131.GO29263@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Sep 09, 2010 at 12:11:32PM +0100, Mel Gorman wrote:
+> Fragmentation avoidance in the kernel depends on reclaimable and movable
+> allocations being marked-up at page allocation time. Reclaimable allocations
+> refer to slab caches such as inode caches which can be reclaimed although
+> not necessarily in a targetted fashion. Movable pages are those pages that
+> can be moved to backing storage (during page reclaim) or migrated.
+> 
+> When testing against XFS, it was noticed that large page allocation rates
+> against XFS were far lower than expected in comparison to ext3. Investigation
+> showed that buffer pages allocated by XFS are placed on the LRU but not
+> marked __GFP_MOVABLE at allocation time.
+> 
+> This patch updates xb_to_gfp() to specify __GFP_MOVABLE and is correct iff
+> all pages allocated from a mask derived from xb_to_gfp() are guaranteed to
+> be movable be it via page reclaim or page migration. It needs an XFS expert
+> to make that determination but when applied, huge page allocation success
+> rates are similar to those seen on tests backed by ext3.
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 
-Thank you for your checking.
+I don't see any problems with this, but I don't think it's going to
+be useful for very long given the work I'm doing on the XFS buffer
+cache right now - converting it to caching buffers with a shrinker
+traversed LRU for reclaim instead of using the page cache and hoping
+reclaim doesn't trash the working set.
 
-> If you incluse ChangeLogs it's easier to follow the development,
-> thanks.
+I'm hoping to have it done in time for the .37 merge window, so
+adding __GFP_MOVEABLE now might not to even see a release....
 
-The latest patch has included the following Changelog.
+Cheers,
 
-> Topcliff PCH is the platform controller hub that is going to be used in
-> Intel's upcoming general embedded platform. All IO peripherals in
-> Topcliff PCH are actually devices sitting on AMBA bus.
-> Topcliff PCH has SPI I/F. Using this I/F, it is able to access system
-> devices connected to SPI.
-
-Do you mean the above our Changelog is lack of something ?
-
-Thanks, Ohtake(OKISemi)
-
------ Original Message ----- 
-From: "Linus Walleij" <linus.ml.walleij@gmail.com>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Cc: "Grant Likely" <grant.likely@secretlab.ca>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "David
-Brownell" <dbrownell@users.sourceforge.net>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
-<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Tomoya MORINAGA"
-<morinaga526@dsn.okisemi.com>; "Thomas Gleixner" <tglx@linutronix.de>; "David Woodhouse" <dwmw2@infradead.org>
-Sent: Friday, September 10, 2010 5:58 AM
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-
-
-> 2010/9/3 Masayuki Ohtake <masa-korg@dsn.okisemi.com>:
->
-> > Each instance of our SPI device has the same vendor ID and device ID.
-> > Thus, I think it is impossible to be called probe() for each instance.
->
-> Looking at you latest patch it appears you could :-)
-> That solves the problem pretty nicely.
-> If you incluse ChangeLogs it's easier to follow the development,
-> thanks.
->
-> Linus Walleij
->
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
