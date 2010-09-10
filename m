@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225Ab0IJUNh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 16:13:37 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:46547 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938Ab0IJUNg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 16:13:36 -0400
-To: Artur Skawina <art.08.09@gmail.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Damien Wyart <damien.wyart@free.fr>,
-        John Drescher <drescherjm@gmail.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [BISECTED] 2.6.35.*: horrible (exponential? >linear) slowdown to unusability (HPET)
-References: <87eid282pj.fsf@spindle.srvr.nix>
-	<alpine.LFD.2.00.1009101022400.2477@localhost6.localdomain6>
-	<4C89FD56.6060505@gmail.com> <4C8A3131.7030003@gmail.com>
-From: Nix <nix@esperi.org.uk>
-Emacs: a compelling argument for pencil and paper.
-Date: Fri, 10 Sep 2010 21:13:19 +0100
-In-Reply-To: <4C8A3131.7030003@gmail.com> (Artur Skawina's message of "Fri, 10 Sep 2010 15:22:57 +0200")
-Message-ID: <8762yd8ihs.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
+	id S1755228Ab0IJUYR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 16:24:17 -0400
+Received: from borg.org ([64.105.205.123]:49505 "EHLO borg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754059Ab0IJUYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 16:24:16 -0400
+X-Greylist: delayed 1793 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Sep 2010 16:24:16 EDT
+Message-ID: <4C8A8CE8.90600@borg.org>
+Date: Fri, 10 Sep 2010 15:54:16 -0400
+From: Kent Borg <kentborg@borg.org>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-DCC-URT-Metrics: spindle 1060; Body=9 Fuz1=9 Fuz2=9
+To: linux-kernel@vger.kernel.org
+Subject: git-p4 
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 Sep 2010, Artur Skawina outgrape:
+I have a git-p4 question: I work in a Perforce shop and am doing Linux
+kernel work, I need to share that work with colleagues who see the world
+as a Perforce place.  The kernel I have came from Linus' tree and has a
+lot of history.  When I try to do my first a "git p4 submit" it chokes
+as it looks back in the entire git history until it fails looking for
+the ancestor of the first commit (linux-2.6.12-rc2!), I think it is
+looking for the last time it did a git-p4 submit so it knows how far
+back to go--but it has never done a submit in this new relationship
+between p4 and git.  There is plenty of git history that is not
+reflected in p4, and I don't want it in p4, I just want new work in p4.
 
-> On 09/10/10 11:41, Jiri Slaby wrote:
->> AFAIU, clocksource=jiffies shouldn't fix this issue. If that's the case
->> we have another 2.6.32->2.6.33 regression (and I will report it
->> separately). People report the system is unusable (sleepers are not
->> woken), unless clocksource=jiffies, clocksource=tsc or nolapic_timer is
->> used or a key pressed (i.e. some HW interrupt):
->> https://bugzilla.novell.com/show_bug.cgi?id=579932
->> (there is also a report with 2.6.35.3 vanilla)
->
-> I saw this first in v2.6.35-rc4. The symptom is that suddenly everything
-> stops and the only way to make things progress is to generate some events.
-> Apps that are waiting for a timeout aren't woken up unless you press a key
-> etc. After a few minutes (and lots of key presses ;) ) the machine usually
-> recovers, leaving no trace in logs.
+I fear that git-p4 is for git people to contribute to bits natively
+p4-homed code, not this case where the code is natively git-homed code
+and it is the p4 people who will be contributing bits. 
 
-In NOHZ mode, my (consistently affected) system never recovers. In !NOHZ
-mode, it never locks up, although timings are shot all to hell.
+My attempt at a work around was this:
+
+ - create a director on the p4 side, and from the p4 side submit the
+files that match my latest git submit.
+
+ - sync with git-p4
+
+ - try to submit a file with git-p4...and that fails as it runs all the
+way back through the history.  (Thank goodness it didn't succeed in
+submitting kernel activity since 2005!)
+
+
+I was hoping I could merge the p4/master with master to force a stopping
+point in the git-p4 submit, but that doesn't work, it is searching
+through git history to find the stopping point.  What might I put in the
+git history to force the stop (or maybe make a change to git-p4 to help
+my plight along)?
+
+
+Thanks,
+
+-kb, the Kent who has always hated Perforce, alas.
+
