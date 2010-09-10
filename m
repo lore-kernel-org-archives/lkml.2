@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab0IJBKg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 21:10:36 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46907 "EHLO smtps.tip.net.au"
+	id S1756526Ab0IJBae (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 21:30:34 -0400
+Received: from mail.perches.com ([173.55.12.10]:1593 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753659Ab0IJBKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 21:10:34 -0400
-Date: Fri, 10 Sep 2010 11:10:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the s5p tree with the arm-current tree
-Message-Id: <20100910111023.671fdba7.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1753000Ab0IJBad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 21:30:33 -0400
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+From: Joe Perches <joe@perches.com>
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>, meego-dev@meego.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
+        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        arjan@linux.intel.com, gregkh@suse.de,
+        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Woodhouse <dwmw2@infradead.org>
+In-Reply-To: <000c01cb507e$e8d0a3c0$66f8800a@maildom.okisemi.com>
+References: <000a01cb4b2b$f03c6d40$66f8800a@maildom.okisemi.com>
+	 <AANLkTimTumguZ7Tm1-zGb=D+0gghsA-b-RyhRDTQieFR@mail.gmail.com>
+	 <000c01cb507e$e8d0a3c0$66f8800a@maildom.okisemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Sep 2010 18:30:29 -0700
+Message-ID: <1284082229.24986.253.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__10_Sep_2010_11_10_23_+1000_433dw75kxY_t2ZWx"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__10_Sep_2010_11_10_23_+1000_433dw75kxY_t2ZWx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2010-09-10 at 09:27 +0900, Masayuki Ohtake wrote:
+> > If you incluse ChangeLogs it's easier to follow the development,
+> > thanks.
+> The latest patch has included the following Changelog.
 
-Hi Kukjin,
+I believe Linus is asking for the same thing as I did.
 
-Today's linux-next merge of the s5p tree got a conflict in
-arch/arm/Kconfig between commit 9e84ed63dc71e13b62cea5ec6b0049260cca0b7a
-("ARM: Partially revert "Auto calculate ZRELADDR and provide option for
-exceptions"") from the arm-current tree and commit
-03c1ebb0c4e84c4de78f522a73fe1e813b9a1fc1 ("ARM: S5P64X0: Update Kconfig
-and Makefile") from the s5p tree.
+Some means to track your the changes in your multiple submissions
+of the same files.
 
-I used the arm-current version, but there may be some fix required for
-the s5p tree.
+Typically, this would be a git repository where people can
+read the delta patches instead of entire unversioned files.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+cheers, Joe
 
---Signature=_Fri__10_Sep_2010_11_10_23_+1000_433dw75kxY_t2ZWx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMiYV/AAoJEDMEi1NhKgbsnU4H+wQ5qZJFPUf7Er+Z78l4r2gX
-j01JCsJrX+n9lF/4uGY3mhYgyf6pGbqAp+z0J05pR2H4gh7X/sxDHZ1f0ytTqvoS
-9Hhop2L+h9Knu01WMAK3Nfq4H2fZYq+hML4BXMlfJ5qYYY95pdsUJiY8uvyGUsp7
-Av9pztEblC7Cdh7wUFlqeAHowHr4TAkFdtYOvIOwFozdomsQEpKNAzw6avxkSdkq
-I1PVxdECkI1G+jfWKTohHxpnbzCCEj7wsTdI1+8MkACUee3iCzfrNjh20EuwskHl
-/YK6UOb0BvQkrQMcJlZwXxqr9CvJsEUDrCezEaFZzYKwLaZLI5psBzjnUEfNnTw=
-=GQGj
------END PGP SIGNATURE-----
-
---Signature=_Fri__10_Sep_2010_11_10_23_+1000_433dw75kxY_t2ZWx--
