@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757657Ab0IJGJj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 02:09:39 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59900 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962Ab0IJGJh (ORCPT
+	id S1757712Ab0IJGKR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 02:10:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59091 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757665Ab0IJGKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 02:09:37 -0400
-Message-ID: <4C89CB9D.6010005@in.ibm.com>
-Date: Fri, 10 Sep 2010 11:39:33 +0530
-From: Sachin Sant <sachinp@in.ibm.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+	Fri, 10 Sep 2010 02:10:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=tFf9QvS0tRtOZdCtrwUN398f2T2fy8idLgjrltVfJ7T1fvoWQyFjzP78Cc4aDsCPdv
+         rOPHlIUtlj8sbucpQmuYYiVOhaisG3z6K695FgDduah/SL+Rh1iUj7n2y231YPJIMaAs
+         mP8dz+apCG1zzclmXWEwhtwlHHjsddlf53Z7Q=
+Message-ID: <4C89CBC1.1030602@gmail.com>
+Date: Fri, 10 Sep 2010 08:10:09 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        linux-s390@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [-next Sept 9] S309 Build break (mm/percpu.c)
-References: <4C88D48A.3070702@in.ibm.com> <4C88EE00.70004@kernel.org>
-In-Reply-To: <4C88EE00.70004@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: unable to fetch the limits tree
+References: <20100910104925.329bdba6.sfr@canb.auug.org.au>
+In-Reply-To: <20100910104925.329bdba6.sfr@canb.auug.org.au>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
-> Commit bbddff05 (percpu: use percpu allocator on UP too) incorrectly
-> excluded pcpu_build_alloc_info() on SMP configurations which use
-> generic setup_per_cpu_area() like s390.  The config ifdefs are
-> becoming confusing.  Fix and clean it up by,
->
-> * Move pcpu_build_alloc_info() right on top of its two users -
->   pcpu_{embed|page}_first_chunk() which are already in CONFIG_SMP
->   block.
->
-> * Define BUILD_{EMBED|PAGE}_FIRST_CHUNK which indicate whether each
->   first chunk function needs to be included and use them to control
->   inclusion of the three functions to reduce confusion.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Sachin Sant <sachinp@in.ibm.com>
-> ---
-> Can you please test this patch?
->   
-Tested the patch against yesterday's next release(20100909). Works fine.
+On 09/10/2010 02:49 AM, Stephen Rothwell wrote:
+> Hi Jiri,
+> 
+> For the past couple of days, I have been getting this error when fetching
+> the limits tree:
+> 
+> decibel.fi.muni.cz[0: 147.251.50.163]: errno=Connection refused
 
-Thanks Tejun.
+Hi Stephen, thanks for letting me know. Feel free to drop it anyway, as
+it was merged, it is empty now.
 
-Regards
--Sachin
-
+thanks,
 -- 
-
----------------------------------
-Sachin Sant
-IBM Linux Technology Center
-India Systems and Technology Labs
-Bangalore, India
----------------------------------
-
+js
