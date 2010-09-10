@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab0IJS1d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 14:27:33 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50225 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751774Ab0IJS1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 14:27:32 -0400
-Subject: Combined storage tree
-From: James Bottomley <James.Bottomley@suse.de>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-ide <linux-ide@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        dm-devel@redhat.com
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Sep 2010 13:27:27 -0500
-Message-ID: <1284143247.6551.23.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1753511Ab0IJS1t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 14:27:49 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:48836 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753426Ab0IJS1r convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 14:27:47 -0400
+From: Mattias WALLIN <mattias.wallin@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 10 Sep 2010 20:27:38 +0200
+Subject: SV: SV: [PATCH 2/3] MFD: AB8500 debugfs
+Thread-Topic: SV: [PATCH 2/3] MFD: AB8500 debugfs
+Thread-Index: ActRE+FwOsH3afq+QNSjUZEATbA3ZQAAR9am
+Message-ID: <33A307AF30D7BF4F811B1568FE7A9B181C357DCE@EXDCVYMBSTM006.EQ1STM.local>
+References: <1284134031-8979-1-git-send-email-mattias.wallin@stericsson.com>
+ <20100910164352.GG23903@sirena.org.uk>
+ <33A307AF30D7BF4F811B1568FE7A9B181C357DCD@EXDCVYMBSTM006.EQ1STM.local>,<20100910181325.GA11584@rakim.wolfsonmicro.main>
+In-Reply-To: <20100910181325.GA11584@rakim.wolfsonmicro.main>
+Accept-Language: sv-SE, en-US
+Content-Language: sv-SE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: sv-SE, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of the requests from LSF10 in August was the production of a
-combined storage tree.  This is now ready at
+>Pretty much; probably needs to be slightly more involved than that to
+>make sure the selection lines up with the core but certainly the same
+>effect for users.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/storage-tree
-
-It's actually a nightly built merge tree consisting of
-
-scsi-misc; scsi-rc-fixes
-libata#upstream-fixes, libata#upstream
-block#for-linus, block#for-next
-and the dm quilt (which is empty at the moment).
-
-I haven't yet added vfs or any of the fs trees, but if necessary, I can.
-
-Note, because it's built nightly, like linux-next, it's hard (but not
-impossible) to use it as a basis for git trees (it is much easier to use
-it as a basis for quilts).
-
-If there are any cross-tree patch sets, I can add them in for this too.
-
-The trees are labelled <linux-tree>-stor<n>
-
-You can find the combined diffs to the base linus tree here:
-
-http://www.kernel.org/pub/linux/kernel/people/jejb/storage-tree
-
-(The build script and driving file are in the parent directory).
-
-Any build cockups or missing trees, please let me know.
-
-James
-
-
+Sorry I don't follow.
+But after thinking about it I realize that only changing the Makefile is not a good idea
+I need ifdefs in the .c file for avoiding build problems. Isn't the first solution with Kconfig better?
