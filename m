@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757723Ab0IJBy3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 21:54:29 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48312 "EHLO hera.kernel.org"
+	id S1757351Ab0IJBxr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 21:53:47 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48280 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757092Ab0IJByZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 21:54:25 -0400
-Date: Fri, 10 Sep 2010 01:47:56 GMT
+	id S1754356Ab0IJBxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 21:53:45 -0400
+Date: Fri, 10 Sep 2010 01:50:02 GMT
 From: tip-bot for Brian Gerst <brgerst@gmail.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         brgerst@gmail.com, penberg@kernel.org, suresh.b.siddha@intel.com,
@@ -14,71 +14,124 @@ Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         brgerst@gmail.com, penberg@kernel.org, suresh.b.siddha@intel.com,
         tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1283563039-3466-7-git-send-email-brgerst@gmail.com>
-References: <1283563039-3466-7-git-send-email-brgerst@gmail.com>
+In-Reply-To: <1283563039-3466-13-git-send-email-brgerst@gmail.com>
+References: <1283563039-3466-13-git-send-email-brgerst@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/fpu] x86-64, fpu: Fix %cs value in convert_from_fxsr()
-Message-ID: <tip-10c11f304986a1f84201c2261a428701f9d2dffc@git.kernel.org>
-Git-Commit-ID: 10c11f304986a1f84201c2261a428701f9d2dffc
+Subject: [tip:x86/fpu] x86, fpu: Merge fpu_save_init()
+Message-ID: <tip-b2b57fe053c9cf8b8af5a0e826a465996afed0ff@git.kernel.org>
+Git-Commit-ID: b2b57fe053c9cf8b8af5a0e826a465996afed0ff
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Sep 2010 01:47:56 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Sep 2010 01:50:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  10c11f304986a1f84201c2261a428701f9d2dffc
-Gitweb:     http://git.kernel.org/tip/10c11f304986a1f84201c2261a428701f9d2dffc
+Commit-ID:  b2b57fe053c9cf8b8af5a0e826a465996afed0ff
+Gitweb:     http://git.kernel.org/tip/b2b57fe053c9cf8b8af5a0e826a465996afed0ff
 Author:     Brian Gerst <brgerst@gmail.com>
-AuthorDate: Fri, 3 Sep 2010 21:17:13 -0400
+AuthorDate: Fri, 3 Sep 2010 21:17:19 -0400
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 9 Sep 2010 14:16:58 -0700
+CommitDate: Thu, 9 Sep 2010 14:17:36 -0700
 
-x86-64, fpu: Fix %cs value in convert_from_fxsr()
+x86, fpu: Merge fpu_save_init()
 
-While %ds still contains the userspace selector, %cs is KERNEL_CS at
-this point.  Always get %cs from pt_regs even for the current task.
+Make 64-bit use the 32-bit version of fpu_save_init().  Remove
+unused clear_fpu_state().
 
 Signed-off-by: Brian Gerst <brgerst@gmail.com>
 Acked-by: Pekka Enberg <penberg@kernel.org>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <1283563039-3466-7-git-send-email-brgerst@gmail.com>
+LKML-Reference: <1283563039-3466-13-git-send-email-brgerst@gmail.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/i387.c |   18 ++++++++----------
- 1 files changed, 8 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/i387.h |   48 +++---------------------------------------
+ 1 files changed, 4 insertions(+), 44 deletions(-)
 
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 8216651..f3775f5 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -389,19 +389,17 @@ convert_from_fxsr(struct user_i387_ia32_struct *env, struct task_struct *tsk)
- #ifdef CONFIG_X86_64
- 	env->fip = fxsave->rip;
- 	env->foo = fxsave->rdp;
-+	/*
-+	 * should be actually ds/cs at fpu exception time, but
-+	 * that information is not available in 64bit mode.
-+	 */
-+	env->fcs = task_pt_regs(tsk)->cs;
- 	if (tsk == current) {
--		/*
--		 * should be actually ds/cs at fpu exception time, but
--		 * that information is not available in 64bit mode.
--		 */
--		asm("mov %%ds, %[fos]" : [fos] "=r" (env->fos));
--		asm("mov %%cs, %[fcs]" : [fcs] "=r" (env->fcs));
-+		savesegment(ds, env->fos);
- 	} else {
--		struct pt_regs *regs = task_pt_regs(tsk);
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index b45abef..70626ed 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -105,36 +105,6 @@ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
+ 	return err;
+ }
+ 
+-/* AMD CPUs don't save/restore FDP/FIP/FOP unless an exception
+-   is pending. Clear the x87 state here by setting it to fixed
+-   values. The kernel data segment can be sometimes 0 and sometimes
+-   new user value. Both should be ok.
+-   Use the PDA as safe address because it should be already in L1. */
+-static inline void fpu_clear(struct fpu *fpu)
+-{
+-	struct xsave_struct *xstate = &fpu->state->xsave;
+-	struct i387_fxsave_struct *fx = &fpu->state->fxsave;
 -
--		env->fos = 0xffff0000 | tsk->thread.ds;
--		env->fcs = regs->cs;
-+		env->fos = tsk->thread.ds;
- 	}
-+	env->fos |= 0xffff0000;
- #else
- 	env->fip = fxsave->fip;
- 	env->fcs = (u16) fxsave->fcs | ((u32) fxsave->fop << 16);
+-	/*
+-	 * xsave header may indicate the init state of the FP.
+-	 */
+-	if (use_xsave() &&
+-	    !(xstate->xsave_hdr.xstate_bv & XSTATE_FP))
+-		return;
+-
+-	if (unlikely(fx->swd & X87_FSW_ES))
+-		asm volatile("fnclex");
+-	alternative_input(ASM_NOP8 ASM_NOP2,
+-			  "    emms\n"		/* clear stack tags */
+-			  "    fildl %%gs:0",	/* load to clear state */
+-			  X86_FEATURE_FXSAVE_LEAK);
+-}
+-
+-static inline void clear_fpu_state(struct task_struct *tsk)
+-{
+-	fpu_clear(&tsk->thread.fpu);
+-}
+-
+ static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
+ {
+ 	int err;
+@@ -188,16 +158,6 @@ static inline void fpu_fxsave(struct fpu *fpu)
+ 		     : [fx] "R" (&fpu->state->fxsave));
+ }
+ 
+-static inline void fpu_save_init(struct fpu *fpu)
+-{
+-	if (use_xsave())
+-		fpu_xsave(fpu);
+-	else
+-		fpu_fxsave(fpu);
+-
+-	fpu_clear(fpu);
+-}
+-
+ #else  /* CONFIG_X86_32 */
+ 
+ /* perform fxrstor iff the processor has extended states, otherwise frstor */
+@@ -222,6 +182,8 @@ static inline void fpu_fxsave(struct fpu *fpu)
+ 		     : [fx] "=m" (fpu->state->fxsave));
+ }
+ 
++#endif	/* CONFIG_X86_64 */
++
+ /* We need a safe address that is cheap to find and that is already
+    in L1 during context switch. The best choices are unfortunately
+    different for UP and SMP */
+@@ -259,15 +221,13 @@ static inline void fpu_save_init(struct fpu *fpu)
+ 	   is pending.  Clear the x87 state here by setting it to fixed
+ 	   values. safe_address is a random variable that should be in L1 */
+ 	alternative_input(
+-		GENERIC_NOP8 GENERIC_NOP2,
++		ASM_NOP8 ASM_NOP2,
+ 		"emms\n\t"	  	/* clear stack tags */
+-		"fildl %[addr]", 	/* set F?P to defined value */
++		"fildl %P[addr]",	/* set F?P to defined value */
+ 		X86_FEATURE_FXSAVE_LEAK,
+ 		[addr] "m" (safe_address));
+ }
+ 
+-#endif	/* CONFIG_X86_64 */
+-
+ static inline void __save_init_fpu(struct task_struct *tsk)
+ {
+ 	fpu_save_init(&tsk->thread.fpu);
