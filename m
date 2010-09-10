@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab0IJFUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 01:20:00 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:50904 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab0IJFT6 (ORCPT
+	id S1756608Ab0IJFVf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 01:21:35 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54707 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754184Ab0IJFVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 01:19:58 -0400
+	Fri, 10 Sep 2010 01:21:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JtMwGGL/7BD99O52kQLVh/EK1sZE5ZAEtq07jmMfN0jmmzPK5VPmgxtmsPC8wKNN8q
-         p1qtDgcV1V5oTWze2+r9QfE+9Gi8EfQ5pz67fEoashEMf+p5W9YboAx5BxJD5c1cYbIh
-         4jNhsq9Zj3Z+k3s3M0Fr84lYjzqgSl8RwVR8o=
-Date: Thu, 9 Sep 2010 22:19:46 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 038/223]drivers/input/joystick/gamecon.c Update broken
- web addresses.
-Message-ID: <20100910051946.GB31128@core.coreip.homeip.net>
-References: <1284071205-7756-1-git-send-email-justinmattock@gmail.com>
- <1284071205-7756-8-git-send-email-justinmattock@gmail.com>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=FFhTNA7bZd8fd70j4M2Q5Lvf+SPVErpvnO5DHBCpsRxGSgRGz0uhDUU+cJMcKfq3YQ
+         HLm91WogXXJAdyZlQlfQicJCucOdHmcXplxcTPYh8pOOK7YhEuQW2KYq7LPkzp8RKEy9
+         raBJV65YNI/9hFDts+gC88oIHPRV5z7F9eqto=
+Message-ID: <4C89C080.6080607@gmail.com>
+Date: Thu, 09 Sep 2010 22:22:08 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284071205-7756-8-git-send-email-justinmattock@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 036/223]drivers/input/touchscreen/mk712.c Update broken
+ web addresses.
+References: <1284071205-7756-1-git-send-email-justinmattock@gmail.com> <1284071205-7756-6-git-send-email-justinmattock@gmail.com> <20100910051619.GA31128@core.coreip.homeip.net>
+In-Reply-To: <20100910051619.GA31128@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 03:26:38PM -0700, Justin P. Mattock wrote:
-> Below you will find an Update to a broken web address.
-> Please let me know if this needs to be changed.
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
->  drivers/input/joystick/gamecon.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/input/joystick/gamecon.c b/drivers/input/joystick/gamecon.c
-> index 0ffaf2c..2463b95 100644
-> --- a/drivers/input/joystick/gamecon.c
-> +++ b/drivers/input/joystick/gamecon.c
-> @@ -521,9 +521,8 @@ static void gc_multi_process_packet(struct gc *gc)
->   * PSX support
->   *
->   * See documentation at:
-> - *	http://www.dim.com/~mackys/psxmemcard/ps-eng2.txt
-> + *	http://forethought.net/	
+On 09/09/2010 10:16 PM, Dmitry Torokhov wrote:
+> On Thu, Sep 09, 2010 at 03:26:36PM -0700, Justin P. Mattock wrote:
+>> Below you will find an Update to a broken web address.
+>> Please let me know if this needs to be changed.
+>>
+>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>
+>> ---
+>>   drivers/input/touchscreen/mk712.c |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/input/touchscreen/mk712.c b/drivers/input/touchscreen/mk712.c
+>> index efd3aeb..76f373a 100644
+>> --- a/drivers/input/touchscreen/mk712.c
+>> +++ b/drivers/input/touchscreen/mk712.c
+>> @@ -17,7 +17,7 @@
+>>    * found in Gateway AOL Connected Touchpad computers.
+>>    *
+>>    * Documentation for ICS MK712 can be found at:
+>> - *	http://www.icst.com/pdf/mk712.pdf
+>> + * http://web.archive.org/web/*/http://www.icst.com/pdf/mk712.pdf	
+>
+> Shouldn't it be
+>
+> http://www.idt.com/products/getDoc.cfm?docID=18713923
+>
+> ?
+>
 
-Seems to be an ISP adreess... not sure what it has to do with gamecon...
+ahh...(gets a bit schizo looking at web addresses all day!!) I'll add 
+that to the bunch..
 
--- 
-Dmitry
+Thanks!!
+
+Justin P. Mattock
