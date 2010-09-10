@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab0IJJGT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 05:06:19 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:50937 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756098Ab0IJJGS (ORCPT
+	id S1756520Ab0IJJH3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 05:07:29 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:47420 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab0IJJH1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 05:06:18 -0400
-Date: Fri, 10 Sep 2010 10:06:15 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] scripts/checkpatch.pl: Add warnings for static char
- that could be static const char
-Message-ID: <20100910090615.GA3644@shadowen.org>
-References: <1284056536.24986.182.camel@Joe-Laptop>
- <AANLkTimAuA1oYyoaKsFTPEifdDsz9h=EzTB8gKudyAJk@mail.gmail.com>
- <1284060106.24986.215.camel@Joe-Laptop>
- <AANLkTin+twU1y_C6jfNDXruuoVncEivRO=2=1Jg69Xe=@mail.gmail.com>
+	Fri, 10 Sep 2010 05:07:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=sN6oFtxyNp/gCAgPner4yqGytOBjNWRyP15bT+2xSErmRLr0uwYIgLoiZLOMPYDJHq
+         /SCrYfyUS1+oohzfShxg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTin+twU1y_C6jfNDXruuoVncEivRO=2=1Jg69Xe=@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C89F47D.20309@kernel.org>
+References: <4c88dca1.44e7d80a.577e.3592@mx.google.com>
+	<1284040322.2589.174.camel@edumazet-laptop>
+	<AANLkTimHwiXa62GhHA0hQ0AOcDaxgqRcV+O63G_qoZW8@mail.gmail.com>
+	<1284106566.402.26.camel@laptop>
+	<4C89EF37.5080803@kernel.org>
+	<AANLkTi=7PJPCwrnK+4ejX7RHC-sautVgK-_+kpoT27k5@mail.gmail.com>
+	<4C89F47D.20309@kernel.org>
+Date: Fri, 10 Sep 2010 11:07:25 +0200
+Message-ID: <AANLkTinP4QJNe9zqTMsW+AuvaMvZoxpwLZ_wL3rqonh=@mail.gmail.com>
+Subject: Re: [PATCH] percpu: update comments to reflect that percpu
+ allocations are always zero-filled
+From: Stephane Eranian <eranian@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        robert.richter@amd.com, acme@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 03:24:14PM -0400, Mike Frysinger wrote:
-> On Thu, Sep 9, 2010 at 15:21, Joe Perches wrote:
-> > Add warnings for possible missing const uses of
-> >        static char foo[] = "bar"
-> >    that could be
-> >        static const char foo[] = "bar"
-> > and
-> >        static const char *foo[] = {"bar", "baz"}
-> >    that could be
-> >        static const char * const foo[] = {"bar", "baz"}
-> 
-> guess you missed my last e-mail about not bothering checking the
-> static or the contents :)
-> 
-> > +               if ($line =~ /\bconst\s+char\s*\*\s*(\w+)\s*\[\s*\]/) {
-> -mike
+Thanks
 
-Could you elucidate on that comment Mike, perhaps copy those comments
-here.
-
--apw
+On Fri, Sep 10, 2010 at 11:03 AM, Tejun Heo <tj@kernel.org> wrote:
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Stephane Eranian <eranian@google.com>
+> ---
+> Â mm/percpu.c | Â  11 ++++++-----
+> Â 1 files changed, 6 insertions(+), 5 deletions(-)
+>
+> diff --git a/mm/percpu.c b/mm/percpu.c
+> index 0cd4bf6..12dea33 100644
+> --- a/mm/percpu.c
+> +++ b/mm/percpu.c
+> @@ -826,8 +826,8 @@ fail_unlock_mutex:
+> Â * @size: size of area to allocate in bytes
+> Â * @align: alignment of area (max PAGE_SIZE)
+> Â *
+> - * Allocate percpu area of @size bytes aligned at @align. Â Might
+> - * sleep. Â Might trigger writeouts.
+> + * Allocate zero-filled percpu area of @size bytes aligned at @align.
+> + * Might sleep. Â Might trigger writeouts.
+> Â *
+> Â * CONTEXT:
+> Â * Does GFP_KERNEL allocation.
+> @@ -846,9 +846,10 @@ EXPORT_SYMBOL_GPL(__alloc_percpu);
+> Â * @size: size of area to allocate in bytes
+> Â * @align: alignment of area (max PAGE_SIZE)
+> Â *
+> - * Allocate percpu area of @size bytes aligned at @align from reserved
+> - * percpu area if arch has set it up; otherwise, allocation is served
+> - * from the same dynamic area. Â Might sleep. Â Might trigger writeouts.
+> + * Allocate zero-filled percpu area of @size bytes aligned at @align
+> + * from reserved percpu area if arch has set it up; otherwise,
+> + * allocation is served from the same dynamic area. Â Might sleep.
+> + * Might trigger writeouts.
+> Â *
+> Â * CONTEXT:
+> Â * Does GFP_KERNEL allocation.
+> --
+> 1.7.1
+>
+>
