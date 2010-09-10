@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab0IJXKJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 19:10:09 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:46525 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991Ab0IJXKI (ORCPT
+	id S1754633Ab0IJXTS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 19:19:18 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35247 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab0IJXTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 19:10:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
-	:date:message-id:mime-version:content-type; q=dns; s=sasl; b=w0O
-	rhrsV22cQOcTytg2c1v81un2t+htu17hZzISaNp007u4JKy+1G7E520MQ5/5G9I4
-	ABzEOTCNRTYDr94vBjSHobKyrqQ8Rv9K2qq+XdwPInKiGC+X/ArhFl5i2KXU3KTu
-	5prJMclolUwh3yDsEWz4MJziuJMe+mfvwj2CYNWg=
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.3.rc1
-From: Junio C Hamano <gitster@pobox.com>
-Date: Fri, 10 Sep 2010 16:09:59 -0700
-Message-ID: <7vvd6dfb5k.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 8BCE9E56-BD30-11DF-8697-030CEE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
+	Fri, 10 Sep 2010 19:19:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=DydxPc4d/UDY1opkskMaiJcIUQZWGzjtAnFty2MpycPpw4c4ndhKz2RsBMd6AZtccz
+         RuFGheSb8IfHweVGhEw2G3N8ulnrzst57m3lQauYd0EcwgKfMo37l9tWxNK1my+3qfgJ
+         z62wyPWStwtIdKfBYlh8S2KN4PI1nd8NMF2C8=
+From: wellsk40@gmail.com
+To: linus.walleij@stericsson.com, spi-devel-general@lists.sourceforge.net
+Cc: sameo@linux.intel.com, rabin.vincent@stericsson.com,
+        srinidhi.kasagar@stericsson.com, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, u.kleine-koenig@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, tj@kernel.org,
+        grant.likely@secretlab.ca, Lukasz.Baj@tieto.com,
+        quentinyang05@gmail.com
+Subject: amba_pl022 spi->mode fix/cleanup patches
+Date: Fri, 10 Sep 2010 09:19:34 -0700
+Message-Id: <1284135579-13578-1-git-send-email-wellsk40@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A release candidate Git 1.7.3.rc1 is available at the usual places
-for testing:
+This patch series updates drivers and platforms that depend on the
+amba_pl022 driver and use the pl022_config_chip structure for
+setting up the SPI mode and data transfer width.
 
-  http://www.kernel.org/pub/software/scm/git/
+The SPI configuration (CPOL/CPHA mode, bit send order, data bits per
+word, and loopback mode) were previously setup as part of board
+specific data in the pl022_config_chip structure. This has been
+changed to now use the .mode field in spi_board_info structure (or
+drivers that setup the mode). The SPI transfer's data width is now
+configured from spi->bits_per_word.
 
-  git-1.7.3.rc1.tar.{gz,bz2}			(source tarball)
-  git-htmldocs-1.7.3.rc1.tar.{gz,bz2}		(preformatted docs)
-  git-manpages-1.7.3.rc1.tar.{gz,bz2}		(preformatted docs)
+The SPI driver changes have been previously submitted to the SPI ML.
+This patch series need to be layered on that patch series.
 
-The RPM binary packages for a few architectures are found in:
+These changes add or fix the .mode field in the plats/boards that use the
+driver (u300, ux500, lpc32xx). The patches also move the data width
+from the board specific area to the driver for mfd/ab8500. As the
+fields in the pl022_config_chip structure are no longer needed, they
+are removed in the last patch.
 
-  testing/git-*-1.7.3.rc1-1.fc11.$arch.rpm	(RPM)
+These changes have been tested on the phy3250 platform (lpc32xx). I
+was able to test the ab8500 driver to some degree, but I only have a
+standard pl022. I am unable to test u300 and ux500 changes, but the
+u300 changes compiled fine.
 
-
-
-Git v1.7.3 Release Notes (draft)
-================================
-
-Updates since v1.7.2
---------------------
-
- * git-gui got various updates and a new maintainer, Pat Thoyts.
-
- * Gitweb allows its configuration to change per each request; it used to
-   read the configuration once upon startup.
-
- * When git finds a corrupt object, it now reports the file that contains
-   it.
-
- * "git checkout -B <it>" is a shorter way to say "git branch -f <it>"
-   followed by "git checkout <it>".
-
- * When "git checkout" or "git merge" refuse to proceed in order to
-   protect local modification to your working tree, they used to stop
-   after showing just one path that might be lost.  They now show all,
-   in a format that is easier to read.
-
- * "git clean" learned "-e" ("--exclude") option.
-
- * Hunk headers produced for C# files by "git diff" and friends show more
-   relevant context than before.
-
- * diff.ignoresubmodules configuration variable can be used to squelch the
-   differences in submodules reported when running commands (e.g. "diff",
-   "status", etc.) at the superproject level.
-
- * http.useragent configuration can be used to lie who you are to your
-   restrictive firewall.
-
- * "git rebase --strategy <s>" learned "-X" option to pass extra options
-   that are understood by the chosen merge strategy.
-
- * "git rebase -i" learned "exec" that you can insert into the insn sheet
-   to run a command between its steps.
-
- * "git rebase" between branches that have many binary changes that do
-   not conflict should be faster.
-
- * "git rebase -i" peeks into rebase.autosquash configuration and acts as
-   if you gave --autosquash from the command line.
-
-
-Also contains various documentation updates.
-
-
-Fixes since v1.7.2
-------------------
-
-All of the fixes in v1.7.2.X maintenance series are included in this
-release, unless otherwise noted.
-
- * "git merge -s recursive" (which is the default) did not handle cases
-   where a directory becomes a file (or vice versa) very well.
-
- * "git fetch" and friends were accidentally broken for url with "+" in
-   its path, e.g. "git://git.gnome.org/gtk+".
-
- * "git fetch $url" (i.e. without refspecs) was broken for quite some
-   time, if the current branch happen to be tracking some remote.
-
- * "git note remove" created unnecessary extra commit when named object
-   did not have any note to begin with.
-
- * "git -c foo=bar subcmd" did not work well for subcmd that is not
-   implemented as a built-in command.
+[PATCH 1/5] mfd/ab8500: Setup SPI transfer for 24 bits
+[PATCH 2/5] ARM: LPC32XX: Add missing SPI mode and remove unused fields
+[PATCH 3/5] ARM: U300: spi->mode and spi_bits_per_words updates
+[PATCH 4/5] ARM: Ux500: Change SPI mode and remove unused fields
+[PATCH 5/5] spi: amba_pl022: Remove unused fields from pl022_config_chip
