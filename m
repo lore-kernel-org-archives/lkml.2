@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab0IJU35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 16:29:57 -0400
-Received: from kroah.org ([198.145.64.141]:50600 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453Ab0IJU3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 16:29:54 -0400
-Date: Fri, 10 Sep 2010 13:29:43 -0700
-From: Greg KH <greg@kroah.com>
-To: Adrian Hunter <adrian.hunter@nokia.com>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Shevchenko Andriy (EXT-Teleca/Helsinki)" 
-	<ext-andriy.shevchenko@nokia.com>
-Subject: Re: [PATCH] mmc_test: move files from sysfs to debugfs
-Message-ID: <20100910202943.GB9862@kroah.com>
-References: <1284102650-15044-1-git-send-email-ext-andriy.shevchenko@nokia.com>
- <4C89DC01.6000601@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C89DC01.6000601@nokia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755254Ab0IJUdO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 16:33:14 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51566 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218Ab0IJUdL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 16:33:11 -0400
+Subject: [PATCH] x86, tsc: Fix a preemption leak in
+ restore_sched_clock_state()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: Nico Schottelius <nico-nospam@schottelius.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Nico Schottelius <nico-linux-20100709@schottelius.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Florian Pritz <flo@xssn.at>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        stable@kernel.org, Ingo Molnar <mingo@elte.hu>,
+        "Brown, Len" <lenb@kernel.org>
+In-Reply-To: <AANLkTikKmsM2kunB_ocwRawLUiuP4-_nz-mPsiapw7TJ@mail.gmail.com>
+References: <Pine.LNX.4.64.1009101324280.3056@boston.corp.fedex.com>
+	 <1284104920.402.21.camel@laptop>
+	 <AANLkTinBwfLXi0Bv0_gzSWRsdDPzHFQFZFwEYjbwkNs4@mail.gmail.com>
+	 <1284120353.402.39.camel@laptop>
+	 <AANLkTikKmsM2kunB_ocwRawLUiuP4-_nz-mPsiapw7TJ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Sep 2010 22:32:53 +0200
+Message-ID: <1284150773.402.122.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 10:19:29AM +0300, Adrian Hunter wrote:
-> Andy Shevchenko wrote:
-> >As proposed by Greg the more logically is to keep files for mmc_test driver
-> >under debugfs.
-> 
-> What happens if debugfs is not enabled in config?  Should there be
-> some kind of dependency there?  At least an error message would be
-> good - see below.
 
-That would be good, but note that all major distros now enable it, so
-it's less and less of an issue these days.
+D'0h !! *facepalm*
 
-thanks,
+Shame on me for not spotting that sooner.
 
-greg k-h
+---
+Subject: x86, tsc: Fix a preemption leak in restore_sched_clock_state()
+
+A real life genuine preemption leak..
+
+Reported-by: Jeff Chua <jeff.chua.linux@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ arch/x86/kernel/tsc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 873a321..4496315 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -655,7 +655,7 @@ void restore_sched_clock_state(void)
+ 
+ 	local_irq_save(flags);
+ 
+-	get_cpu_var(cyc2ns_offset) = 0;
++	__get_cpu_var(cyc2ns_offset) = 0;
+ 	offset = cyc2ns_suspend - sched_clock();
+ 
+ 	for_each_possible_cpu(cpu)
+
