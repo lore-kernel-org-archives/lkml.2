@@ -1,51 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab0IJLHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 07:07:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45906 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752898Ab0IJLHo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 07:07:44 -0400
-Date: Fri, 10 Sep 2010 12:07:42 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Joe Perches <joe@perches.com>
-Cc: florian@mickler.org, Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
- default
-Message-ID: <20100910110742.GC7259@rakim.wolfsonmicro.main>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
- <1284111767.1783.35.camel@Joe-Laptop>
- <20100910095259.GC23903@sirena.org.uk>
- <1284113066.1783.69.camel@Joe-Laptop>
- <20100910101818.GF3068@rakim.wolfsonmicro.main>
- <1284115665.1783.144.camel@Joe-Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284115665.1783.144.camel@Joe-Laptop>
-X-Cookie: The more the merrier.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752842Ab0IJLIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 07:08:41 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:41127 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752630Ab0IJLIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 07:08:40 -0400
+Date: Fri, 10 Sep 2010 06:01:01 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: devicetree-discuss@lists.ozlabs.org
+Cc: x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        Mitch Bradley <wmb@laptop.org>, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca,
+        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+Subject: [PATCH 1/2] x86: of: remove references to NO_IRQ in
+ drivers/of/platform.c
+Message-ID: <20100910060101.26c7e61c@debxo>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 03:47:45AM -0700, Joe Perches wrote:
-> On Fri, 2010-09-10 at 11:18 +0100, Mark Brown wrote:
 
-> > That might be a nice option (though it will still give false positives).
+Instead of referencing NO_IRQ in platform.c, define some helper functions
+in irq.c to call instead from platform.c.  Keep NO_IRQ usage local to
+irq.c, and define NO_IRQ if not defined in headers.
 
-> Anything that uses git will give false positives.
-> Anything that uses MAINTAINERS will give false positives.
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/of/irq.c       |   39 +++++++++++++++++++++++++++++++++++++++
+ drivers/of/platform.c  |   10 +++-------
+ include/linux/of_irq.h |    3 +++
+ 3 files changed, 45 insertions(+), 7 deletions(-)
 
-Agreed, the main problem here is people thinking the tool is more magic
-than it actually is rather than a problem in the tool itself.
+diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+index 6e595e5..75b0d3c 100644
+--- a/drivers/of/irq.c
++++ b/drivers/of/irq.c
+@@ -24,6 +24,11 @@
+ #include <linux/of_irq.h>
+ #include <linux/string.h>
+ 
++/* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
++#ifndef NO_IRQ
++#define NO_IRQ 0
++#endif
++
+ /**
+  * irq_of_parse_and_map - Parse and map an interrupt into linux virq space
+  * @device: Device node of the device whose interrupt is to be mapped
+@@ -347,3 +352,37 @@ int of_irq_to_resource(struct device_node *dev, int index, struct resource *r)
+ 	return irq;
+ }
+ EXPORT_SYMBOL_GPL(of_irq_to_resource);
++
++/**
++ * of_irq_count - Count the number of IRQs a node uses
++ * @dev: pointer to device tree node
++ */
++int of_irq_count(struct device_node *dev)
++{
++	int nr = 0;
++
++	while (of_irq_to_resource(dev, nr, NULL) != NO_IRQ)
++		nr++;
++
++	return nr;
++}
++
++/**
++ * of_irq_to_resource_table - Fill in resource table with node's IRQ info
++ * @dev: pointer to device tree node
++ * @res: array of resources to fill in
++ * @nr_irqs: the number of IRQs (and upper bound for num of @res elements)
++ *
++ * Returns the size of the filled in table (up to @nr_irqs).
++ */
++int of_irq_to_resource_table(struct device_node *dev, struct resource *res,
++		int nr_irqs)
++{
++	int i;
++
++	for (i = 0; i < nr_irqs; i++, res++)
++		if (of_irq_to_resource(dev, i, res) == NO_IRQ)
++			break;
++
++	return i;
++}
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index bb72223..30726c8 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -584,14 +584,13 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ 				  struct device *parent)
+ {
+ 	struct platform_device *dev;
+-	int rc, i, num_reg = 0, num_irq = 0;
++	int rc, i, num_reg = 0, num_irq;
+ 	struct resource *res, temp_res;
+ 
+ 	/* First count how many resources are needed */
+ 	while (of_address_to_resource(np, num_reg, &temp_res) == 0)
+ 		num_reg++;
+-	while (of_irq_to_resource(np, num_irq, &temp_res) != NO_IRQ)
+-		num_irq++;
++	num_irq = of_irq_count(np);
+ 
+ 	/* Allocate memory for both the struct device and the resource table */
+ 	dev = kzalloc(sizeof(*dev) + (sizeof(*res) * (num_reg + num_irq)),
+@@ -608,10 +607,7 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ 			rc = of_address_to_resource(np, i, res);
+ 			WARN_ON(rc);
+ 		}
+-		for (i = 0; i < num_irq; i++, res++) {
+-			rc = of_irq_to_resource(np, i, res);
+-			WARN_ON(rc == NO_IRQ);
+-		}
++		WARN_ON(of_irq_to_resource_table(np, res, num_irq) != num_irq);
+ 	}
+ 
+ 	dev->dev.of_node = of_node_get(np);
+diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
+index 5929781..090cbaa 100644
+--- a/include/linux/of_irq.h
++++ b/include/linux/of_irq.h
+@@ -64,6 +64,9 @@ extern unsigned int irq_create_of_mapping(struct device_node *controller,
+ 					  unsigned int intsize);
+ extern int of_irq_to_resource(struct device_node *dev, int index,
+ 			      struct resource *r);
++extern int of_irq_count(struct device_node *dev);
++extern int of_irq_to_resource_table(struct device_node *dev,
++		struct resource *res, int nr_irqs);
+ 
+ #endif /* CONFIG_OF_IRQ */
+ #endif /* CONFIG_OF */
+-- 
+1.5.6.5
 
-> Maybe --rolestats should be extended to include line counts
-> if --git-blame is used.
-
-> --git-blame can be very slow, it shouldn't be a default option.
-
-Yes, agreed.
