@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab0IJCv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 22:51:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56172 "EHLO mga02.intel.com"
+	id S1755126Ab0IJCze (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 22:55:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13671 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753711Ab0IJCvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 22:51:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,344,1280732400"; 
-   d="scan'208";a="655886345"
-From: Huang Ying <ying.huang@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Huang Ying <ying.huang@intel.com>
-Subject: [RFC 2/6] x86, NMI, Add touch_nmi_watchdog to io_check_error delay
-Date: Fri, 10 Sep 2010 10:51:01 +0800
-Message-Id: <1284087065-32722-2-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
-References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
+	id S1753711Ab0IJCzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 22:55:32 -0400
+Date: Thu, 9 Sep 2010 22:55:24 -0400
+From: Dave Jones <davej@redhat.com>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Serious problem with ticket spinlocks on ia64
+Message-ID: <20100910025523.GC31280@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Petr Tesarik <ptesarik@suse.cz>, Tony Luck <tony.luck@intel.com>,
+	"linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <201008271537.35709.ptesarik@suse.cz>
+ <AANLkTimCOWvBs1pdWeMZD9DR=u2ioFPXt7Jja73VQaZn@mail.gmail.com>
+ <201009031104.38433.ptesarik@suse.cz>
+ <201009031635.25093.ptesarik@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009031635.25093.ptesarik@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent the long delay in io_check_error make NMI watchdog timeout.
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- arch/x86/kernel/traps.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -342,9 +342,11 @@ io_check_error(unsigned char reason, str
- 	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_IOCHK;
- 	outb(reason, NMI_REASON_PORT);
+On Fri, Sep 03, 2010 at 04:35:23PM +0200, Petr Tesarik wrote:
  
--	i = 2000;
--	while (--i)
--		udelay(1000);
-+	i = 20000;
-+	while (--i) {
-+		touch_nmi_watchdog();
-+		udelay(100);
-+	}
- 
- 	reason &= ~NMI_REASON_CLEAR_IOCHK;
- 	outb(reason, NMI_REASON_PORT);
+ > I didn't see values around zero on any other CPU in the system. So, either 
+ > there is something seriously broken in hardware, or I made a silly mistake in 
+ > the monitoring code.
+
+ ...
+
+ > 	memset(dbr, sizeof dbr, 0);
+                    ^^^^^^^^^^^^^
+swapped arguments.  Perhaps unrelated to the problem, but still silly :)
+
+	Dave
+
