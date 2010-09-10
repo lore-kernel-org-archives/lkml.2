@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab0IJIdX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 04:33:23 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:46968 "EHLO gir.skynet.ie"
+	id S1755792Ab0IJIe6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 04:34:58 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49199 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755807Ab0IJIdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 04:33:19 -0400
-Date: Fri, 10 Sep 2010 09:33:04 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Dave Chinner <david@fromorbit.com>
-Cc: xfs@oss.sgi.com, Alex Elder <aelder@sgi.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC PATCH] fs,xfs: Use __GFP_MOVABLE for XFS buffers
-Message-ID: <20100910083304.GD340@csn.ul.ie>
-References: <20100909111131.GO29263@csn.ul.ie> <20100910003706.GC7032@dastard>
+	id S1755661Ab0IJIe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 04:34:56 -0400
+Message-ID: <4C89EDA7.8020506@kernel.org>
+Date: Fri, 10 Sep 2010 10:34:47 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100910003706.GC7032@dastard>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Brian Gerst <brgerst@gmail.com>
+CC: linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] x86, percpu: Fix __this_cpu_ptr with const pointers
+References: <20100910124543.3e8604fd.sfr@canb.auug.org.au> <1284096664-4539-1-git-send-email-brgerst@gmail.com>
+In-Reply-To: <1284096664-4539-1-git-send-email-brgerst@gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Sep 2010 08:34:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 10:37:06AM +1000, Dave Chinner wrote:
-> On Thu, Sep 09, 2010 at 12:11:32PM +0100, Mel Gorman wrote:
-> > Fragmentation avoidance in the kernel depends on reclaimable and movable
-> > allocations being marked-up at page allocation time. Reclaimable allocations
-> > refer to slab caches such as inode caches which can be reclaimed although
-> > not necessarily in a targetted fashion. Movable pages are those pages that
-> > can be moved to backing storage (during page reclaim) or migrated.
-> > 
-> > When testing against XFS, it was noticed that large page allocation rates
-> > against XFS were far lower than expected in comparison to ext3. Investigation
-> > showed that buffer pages allocated by XFS are placed on the LRU but not
-> > marked __GFP_MOVABLE at allocation time.
-> > 
-> > This patch updates xb_to_gfp() to specify __GFP_MOVABLE and is correct iff
-> > all pages allocated from a mask derived from xb_to_gfp() are guaranteed to
-> > be movable be it via page reclaim or page migration. It needs an XFS expert
-> > to make that determination but when applied, huge page allocation success
-> > rates are similar to those seen on tests backed by ext3.
-> > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> 
-> I don't see any problems with this, but I don't think it's going to
-> be useful for very long given the work I'm doing on the XFS buffer
-> cache right now - converting it to caching buffers with a shrinker
-> traversed LRU for reclaim instead of using the page cache and hoping
-> reclaim doesn't trash the working set.
-> 
+I folded the fix into the original patch and also updated the address
+space casting for sparse.
 
-THat's ok. After I sent the patch, I ran another test with just this
-patch applied and the success rates are still much lower than ext3. My
-initial results had other patches in the mix confusing the results.
-There also appears to be allocations that should have got
-__GFP_RECLAIMABLE.
+Thanks.
 
-> I'm hoping to have it done in time for the .37 merge window, so
-> adding __GFP_MOVEABLE now might not to even see a release....
-> 
+>From 9c5b46f782cde2c88a5e4f02a6112bfcfb105f8f Mon Sep 17 00:00:00 2001
+From: Brian Gerst <brgerst@gmail.com>
+Date: Thu, 9 Sep 2010 18:17:26 +0200
+Subject: [PATCH] x86, percpu: Optimize this_cpu_ptr
 
-I'll revisit it later so and see can I spot what allocations need to be
-marked up to play nicely with fragmentation avoidance. Thanks
+Allow arches to implement __this_cpu_ptr, and provide an x86 version.
 
+Before:
+	movq $foo, %rax
+	movq %gs:this_cpu_off, %rdx
+	addq %rdx, %rax
+
+After:
+	movq $foo, %rax
+	addq %gs:this_cpu_off, %rax
+
+The benefit is doing it in one less instruction and not clobbering
+a temporary register.
+
+tj: * Beefed up the comment a bit and renamed in-macro temp variable
+      to match neighboring macros.
+
+    * Folded fix for const pointer case found in linux-next.
+
+    * Fixed sparse notation.
+
+Signed-off-by: Brian Gerst <brgerst@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ arch/x86/include/asm/percpu.h |   14 ++++++++++++++
+ include/asm-generic/percpu.h  |    9 +++++++--
+ 2 files changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index cd28f9a..f899e01 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -47,6 +47,20 @@
+ #ifdef CONFIG_SMP
+ #define __percpu_arg(x)		"%%"__stringify(__percpu_seg)":%P" #x
+ #define __my_cpu_offset		percpu_read(this_cpu_off)
++
++/*
++ * Compared to the generic __my_cpu_offset version, the following
++ * saves one instruction and avoids clobbering a temp register.
++ */
++#define __this_cpu_ptr(ptr)				\
++({							\
++	unsigned long tcp_ptr__;			\
++	__verify_pcpu_ptr(ptr);				\
++	asm volatile("add " __percpu_arg(1) ", %0"	\
++		     : "=r" (tcp_ptr__)			\
++		     : "m" (this_cpu_off), "0" (ptr));	\
++	(typeof(*(ptr)) __kernel __force *)tcp_ptr__;	\
++})
+ #else
+ #define __percpu_arg(x)		"%P" #x
+ #endif
+diff --git a/include/asm-generic/percpu.h b/include/asm-generic/percpu.h
+index 08923b6..ec64311 100644
+--- a/include/asm-generic/percpu.h
++++ b/include/asm-generic/percpu.h
+@@ -60,9 +60,14 @@ extern unsigned long __per_cpu_offset[NR_CPUS];
+ #define __raw_get_cpu_var(var) \
+ 	(*SHIFT_PERCPU_PTR(&(var), __my_cpu_offset))
+
+-#define this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, my_cpu_offset)
++#ifndef __this_cpu_ptr
+ #define __this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, __my_cpu_offset)
+-
++#endif
++#ifdef CONFIG_DEBUG_PREEMPT
++#define this_cpu_ptr(ptr) SHIFT_PERCPU_PTR(ptr, my_cpu_offset)
++#else
++#define this_cpu_ptr(ptr) __this_cpu_ptr(ptr)
++#endif
+
+ #ifdef CONFIG_HAVE_SETUP_PER_CPU_AREA
+ extern void setup_per_cpu_areas(void);
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.7.1
+
