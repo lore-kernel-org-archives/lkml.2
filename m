@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab0IJIZz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 04:25:55 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:58128 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754605Ab0IJIZx (ORCPT
+	id S1755714Ab0IJIdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 04:33:06 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54792 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755299Ab0IJIdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 04:25:53 -0400
-Date: Fri, 10 Sep 2010 10:26:23 +0200
-From: Nico Schottelius <nico-linux-20100709@schottelius.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Nico Schottelius <nico-linux-20100709@schottelius.org>,
-        Jeff Chua <jeff.chua.linux@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.36-rc3 suspend issue (was: 2.6.35-rc4 / X201 issues)
-Message-ID: <20100910082623.GA2795@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20100709@schottelius.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Jeff Chua <jeff.chua.linux@gmail.com>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20100709170432.GA7691@schottelius.org>
- <201009072348.41344.rjw@sisk.pl>
- <20100907225004.GA2805@schottelius.org>
- <201009080128.52849.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
-Content-Disposition: inline
-In-Reply-To: <201009080128.52849.rjw@sisk.pl>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: kr (Linux 2.6.34 x86_64)
+	Fri, 10 Sep 2010 04:33:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=OclcF4G3O/4zzydEs1PF8o++FE6/QUmZIrT+P3ZJtEExeZ8pvQ6jHFotLa4YcHDILw
+         Q3z6hbjjrosy3XyJxbxu2LjEFBulU8MZooX/EIpQsRfWkDqvdVtPffAtChFypz6gWW01
+         il7wbqT9CKup6x9WD76DdF1Q7ZKuuw+iJI7mQ=
+From: Stephen Boyd <bebarino@gmail.com>
+To: linux-kbuild@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        Nir Tzachar <nir.tzachar@gmail.com>
+Subject: [PATCH] nconfig: Fix help for choice menus
+Date: Fri, 10 Sep 2010 01:32:50 -0700
+Message-Id: <1284107570-17124-1-git-send-email-bebarino@gmail.com>
+X-Mailer: git-send-email 1.7.2.3.313.gcd15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When getting the help for a choice menu with a help section (for example
+the "Choose SLAB allocator" menu) nconfig pops up a window with nothing
+inside it. This is due to show_help() passing an empty string to
+show_scroll_win()'s 3rd argument. The option really does have help
+though, but it isn't a config symbol, so just add the help text for
+the option, and don't try to add anything else like the config option
+name.
 
---cNdxnHkX5QqsyA0e
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Stephen Boyd <bebarino@gmail.com>
+Cc: Nir Tzachar <nir.tzachar@gmail.com>
+---
+ scripts/kconfig/nconf.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Rafael J. Wysocki [Wed, Sep 08, 2010 at 01:28:52AM +0200]:
-> For me -rc3 is pretty much usable already.
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+index 2ba71bc..19d3401 100644
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -1252,6 +1252,8 @@ static void show_help(struct menu *menu)
+ 			str_append(&help, _(menu_get_help(menu)));
+ 			str_append(&help, "\n");
+ 			get_symbol_str(&help, menu->sym);
++		} else {
++			str_append(&help, _(menu_get_help(menu)));
+ 		}
+ 	} else {
+ 		str_append(&help, nohelp_text);
+-- 
+1.7.2.3.313.gcd15
 
-Update: vmlinuz-2.6.36-rc3-00185-gd56557a behaves identical,
-black screen on resume, X201 dead.
-
-Cheers,
-
-Nico
-
---=20
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
-
---cNdxnHkX5QqsyA0e
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkyJ668ACgkQ19zI5DGHffAueACdFwhDN6J5ySZ8rFsPmwG6IZlC
-1vwAoM5O8WkVO8xxuh75PjU2i0K5exnc
-=owg/
------END PGP SIGNATURE-----
-
---cNdxnHkX5QqsyA0e--
