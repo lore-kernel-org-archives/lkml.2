@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab0IJLJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 07:09:30 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:41136 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737Ab0IJLJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 07:09:29 -0400
-Date: Fri, 10 Sep 2010 06:01:51 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        Mitch Bradley <wmb@laptop.org>, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca,
-        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
-Subject: [PATCH 2/2] x86: of: define irq functions to allow drivers/of/* to
- build on x86
-Message-ID: <20100910060151.6613e9c3@debxo>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753012Ab0IJLKY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 07:10:24 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:4101 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758Ab0IJLKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 07:10:23 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=eE5yzWZcoX+CtM4P68h0AJt/Kv8lsZYHcG4aiLPFyhWvZtu/7N612VS6QTiWx3gAF
+	ynP9yvTXXc4BQORh5qsFQ==
+Message-ID: <4c8a121b.0e28e30a.4dc9.718d@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Fri, 10 Sep 2010 13:09:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        eranian@google.com, robert.richter@amd.com, dzickus@redhat.com
+Subject: [PATCH] perf_events: fix BTS interrupt handling to avoid being dazed by NMI
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix a bug introduced with commit de725de and the change in the meaning of the
+return value of intel_pmu_handle_irq(). With the current code, when you are
+using the BTS, you get 'dazed by NMI' each time the BTS buffer fills up.
 
- - Define a stub irq_create_of_mapping for x86 as a stop-gap solution until
-   drivers/of/irq is further along.
- - Define irq_dispose_mapping for x86 to appease of_i2c.c
+BTS does interrupt on the PMU vector, thus NMI. You need to take this
+into account in the return value of the function.
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- arch/x86/include/asm/irq.h |    3 +++
- arch/x86/kernel/irq.c      |    8 ++++++++
- include/linux/of_irq.h     |    1 +
- 3 files changed, 12 insertions(+), 0 deletions(-)
+Signed-off-by: Stephane Eranian <eranian@google.com>
+--
 
-diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
-index 5458380..8ffa06f 100644
---- a/arch/x86/include/asm/irq.h
-+++ b/arch/x86/include/asm/irq.h
-@@ -10,6 +10,9 @@
- #include <asm/apicdef.h>
- #include <asm/irq_vectors.h>
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index ee05c90..b4d2e1c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -713,18 +713,18 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	struct cpu_hw_events *cpuc;
+ 	int bit, loops;
+ 	u64 status;
+-	int handled = 0;
++	int handled;
  
-+/* Even though we don't support this, supply it to appease OF */
-+static inline void irq_dispose_mapping(unsigned int virq) { }
-+
- static inline int irq_canonicalize(int irq)
- {
- 	return ((irq == 2) ? 9 : irq);
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 91fd0c7..b78bb6f 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -4,6 +4,7 @@
- #include <linux/cpu.h>
- #include <linux/interrupt.h>
- #include <linux/kernel_stat.h>
-+#include <linux/of.h>
- #include <linux/seq_file.h>
- #include <linux/smp.h>
- #include <linux/ftrace.h>
-@@ -275,6 +276,13 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
+ 	perf_sample_data_init(&data, 0);
  
- EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
  
-+unsigned int irq_create_of_mapping(struct device_node *controller,
-+		const u32 *intspec, unsigned int intsize)
-+{
-+	return intspec[0] + 1;
-+}
-+EXPORT_SYMBOL_GPL(irq_create_of_mapping);
-+
- #ifdef CONFIG_HOTPLUG_CPU
- /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
- void fixup_irqs(void)
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index 090cbaa..109e013 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -5,6 +5,7 @@
- struct of_irq;
- #include <linux/types.h>
- #include <linux/errno.h>
-+#include <linux/irq.h>
- #include <linux/ioport.h>
- #include <linux/of.h>
+ 	intel_pmu_disable_all();
+-	intel_pmu_drain_bts_buffer();
++	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+ 	if (!status) {
+ 		intel_pmu_enable_all(0);
+-		return 0;
++		return handled;
+ 	}
  
--- 
-1.5.6.5
-
+ 	loops = 0;
