@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab0IJDYO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 23:24:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60319 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab0IJDYN (ORCPT
+	id S1756277Ab0IJDd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 23:33:58 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62153 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753465Ab0IJDdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 23:24:13 -0400
-X-Authority-Analysis: v=1.1 cv=wzyXQce4f/sB7S4CXh7s7HNi1LDwQ/VYTdqot4lsObg= c=1 sm=0 a=I9jzT8ZWCyQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=xn_2uDM6AAAA:8 a=1XWaLZrsAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=2niUiYxm5_X9GpK37HgA:9 a=hbyIB03sRtfZeAUNYQMA:7 a=ZHPkAU_GWA2ea9-XN1BatS676iIA:4 a=PUjeQqilurYA:10 a=AlnqcuNMsHEA:10 a=UTB_XpHje0EA:10 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH][GIT PULL][v2.6.36] tracing: t_start: reset
- FTRACE_ITER_HASH in case of seek/pread
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Robert Swiecki <swiecki@google.com>,
-        Eugene Teo <eugene@redhat.com>, stable@kernel.org,
-        Chris Wright <chrisw@sous-sol.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 09 Sep 2010 23:24:08 -0400
-Message-ID: <1284089048.5786.752.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Sep 2010 23:33:42 -0400
+To: Anil kumar <anils_r@yahoo.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: scsi_cmnd data_buffer checksum
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <198194.69355.qm@web32407.mail.mud.yahoo.com>
+Date: Thu, 09 Sep 2010 23:33:34 -0400
+In-Reply-To: <198194.69355.qm@web32407.mail.mud.yahoo.com> (Anil kumar's
+	message of "Thu, 9 Sep 2010 12:34:55 -0700 (PDT)")
+Message-ID: <yq1iq2es25t.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>> "Anil" == Anil kumar <anils_r@yahoo.com> writes:
 
-Ingo,
+Anil> But I had a quick question, isn't that drive has to support
+Anil> "protection enable" also.
 
-The previous fixed only fixed lseek, Chris's fix also handles pread().
-
-Please pull the latest tip/perf/urgent tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/perf/urgent
+Just register DIX Type 0 in the host's protection mask.  That'll enable
+protected transfer to the HBA only.
 
 
-Chris Wright (1):
-      tracing: t_start: reset FTRACE_ITER_HASH in case of seek/pread
+Anil> Also, does Controller FW need to do anything extra to send DIF
+Anil> block down to drive. Ideally we will be sending 512 byte blocks
+Anil> down to drive.
 
-----
- kernel/trace/ftrace.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
----------------------------
-commit df09162550fbb53354f0c88e85b5d0e6129ee9cc
-Author: Chris Wright <chrisw@sous-sol.org>
-Date:   Thu Sep 9 16:34:59 2010 -0700
+	http://oss.oracle.com/~mkp/docs/dix-draft.pdf
 
-    tracing: t_start: reset FTRACE_ITER_HASH in case of seek/pread
-    
-    Be sure to avoid entering t_show() with FTRACE_ITER_HASH set without
-    having properly started the iterator to iterate the hash.  This case is
-    degenerate and, as discovered by Robert Swiecki, can cause t_hash_show()
-    to misuse a pointer.  This causes a NULL ptr deref with possible security
-    implications.  Tracked as CVE-2010-3079.
-    
-    Cc: Robert Swiecki <swiecki@google.com>
-    Cc: Eugene Teo <eugene@redhat.com>
-    Cc: <stable@kernel.org>
-    Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 83a16e9..fa7ece6 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1510,6 +1510,8 @@ static void *t_start(struct seq_file *m, loff_t *pos)
- 		if (*pos > 0)
- 			return t_hash_start(m, pos);
- 		iter->flags |= FTRACE_ITER_PRINTALL;
-+		/* reset in case of seek/pread */
-+		iter->flags &= ~FTRACE_ITER_HASH;
- 		return iter;
- 	}
- 
-
-
+-- 
+Martin K. Petersen	Oracle Linux Engineering
