@@ -1,46 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab0IJIQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 04:16:30 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40451 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754737Ab0IJIQZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 04:16:25 -0400
-Subject: Re: [RFC PATCH 1/2] perf_events: add support for per-cpu
- per-cgroup monitoring (v3)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        robert.richter@amd.com, acme@redhat.com, Tejun Heo <tj@kernel.org>
-In-Reply-To: <AANLkTimHwiXa62GhHA0hQ0AOcDaxgqRcV+O63G_qoZW8@mail.gmail.com>
-References: <4c88dca1.44e7d80a.577e.3592@mx.google.com>
-	 <1284040322.2589.174.camel@edumazet-laptop>
-	 <AANLkTimHwiXa62GhHA0hQ0AOcDaxgqRcV+O63G_qoZW8@mail.gmail.com>
+	id S1755380Ab0IJISG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 04:18:06 -0400
+Received: from gate.crashing.org ([63.228.1.57]:35520 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753522Ab0IJISD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 04:18:03 -0400
+Subject: Re: [PATCH 08/43] memblock/microblaze: Use new accessors
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: monstr@monstr.eu
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <4C88BD8F.5080208@monstr.eu>
+References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
+	 <1281071724-28740-9-git-send-email-benh@kernel.crashing.org>
+	 <4C5BCD41.3040501@monstr.eu> <1281135046.2168.40.camel@pasglop>
+	 <4C88BD8F.5080208@monstr.eu>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 10 Sep 2010 10:16:06 +0200
-Message-ID: <1284106566.402.26.camel@laptop>
+Date: Fri, 10 Sep 2010 18:17:37 +1000
+Message-ID: <1284106657.6515.45.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-09 at 23:41 +0200, Stephane Eranian wrote:
-> > alloc_percpu() is zalloc_percpu() in fact, memory is already cleared.
-> >
-> I remember thinking about this and trying to trace to the code down
-> to figure this out. But it is rather complicated. If alloc_percpu() always
-> clears the memory, then I think that calling is zalloc_percpu()
-> would be more helpful.... 
+On Thu, 2010-09-09 at 12:57 +0200, Michal Simek wrote:
+> Benjamin Herrenschmidt wrote:
+> > On Fri, 2010-08-06 at 10:52 +0200, Michal Simek wrote:
+> >> Benjamin Herrenschmidt wrote:
+> >>> CC: Michal Simek <monstr@monstr.eu>
+> >>> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> >> This patch remove bug which I reported but there is another place which 
+> >> needs to be changed.
+> >>
+> >> I am not sure if my patch is correct but at least point you on places 
+> >> which is causing compilation errors.
+> >>
+> >> I tested your memblock branch with this fix and microblaze can boot.
+> > 
+> > Ok, that's missing in my initial rename patch. I'll fix it up. Thanks.
+> > 
+> > Cheers,
+> > Ben.
+> 
+> I don't know why but this unfixed old patch is in linux-next today. Not 
+> sure which tree contains it.
 
-pcpu_populate_chunk() in mm/percpu-vm.c does indeed do that memset, the
-one in mm/percpu-km.c does not.
+I'm pretty sure I had all that fixed up including the ARM stuff. I
+wonder if Ingo picked my latest stuff (or maybe I failed to push it
+out).
 
-It is not obviously clear to me the -km allocator does indeed result in
-zero filled memory.
+I'm still travelling, I'll be back next week at which point I can have a
+look.
 
-Tejun?
+Cheers,
+Ben.
+
+> Thanks,
+> Michal
+> 
+> >>
+> >>    CC      arch/microblaze/mm/init.o
+> >> arch/microblaze/mm/init.c: In function 'mm_cmdline_setup':
+> >> arch/microblaze/mm/init.c:236: error: 'struct memblock_type' has no 
+> >> member named 'region'
+> >> arch/microblaze/mm/init.c: In function 'mmu_init':
+> >> arch/microblaze/mm/init.c:279: error: 'struct memblock_type' has no 
+> >> member named 'region'
+> >> arch/microblaze/mm/init.c:284: error: 'struct memblock_type' has no 
+> >> member named 'region'
+> >> arch/microblaze/mm/init.c:285: error: 'struct memblock_type' has no 
+> >> member named 'region'
+> >> arch/microblaze/mm/init.c:286: error: 'struct memblock_type' has no 
+> >> member named 'region'
+> >> make[1]: *** [arch/microblaze/mm/init.o] Error 1
+> >> make: *** [arch/microblaze/mm] Error 2
+> >>
+> >>
+> >> diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
+> >> index 32a702b..a9d7b9b 100644
+> >> --- a/arch/microblaze/mm/init.c
+> >> +++ b/arch/microblaze/mm/init.c
+> >> @@ -233,7 +233,7 @@ static void mm_cmdline_setup(void)
+> >>                  if (maxmem && memory_size > maxmem) {
+> >>                          memory_size = maxmem;
+> >>                          memory_end = memory_start + memory_size;
+> >> -                       memblock.memory.region[0].size = memory_size;
+> >> +                       memblock.memory.regions[0].size = memory_size;
+> >>                  }
+> >>          }
+> >>   }
+> >> @@ -276,14 +276,14 @@ asmlinkage void __init mmu_init(void)
+> >>                  machine_restart(NULL);
+> >>          }
+> >>
+> >> -       if ((u32) memblock.memory.region[0].size < 0x1000000) {
+> >> +       if ((u32) memblock.memory.regions[0].size < 0x1000000) {
+> >>                  printk(KERN_EMERG "Memory must be greater than 16MB\n");
+> >>                  machine_restart(NULL);
+> >>          }
+> >>          /* Find main memory where the kernel is */
+> >> -       memory_start = (u32) memblock.memory.region[0].base;
+> >> -       memory_end = (u32) memblock.memory.region[0].base +
+> >> -                               (u32) memblock.memory.region[0].size;
+> >> +       memory_start = (u32) memblock.memory.regions[0].base;
+> >> +       memory_end = (u32) memblock.memory.regions[0].base +
+> >> +                               (u32) memblock.memory.regions[0].size;
+> >>          memory_size = memory_end - memory_start;
+> >>
+> >>          mm_cmdline_setup(); /* FIXME parse args from command line - not 
+> >> used */
+> >>
+> >>
+> >>
+> >>> ---
+> >>>  arch/microblaze/mm/init.c |   20 +++++++++-----------
+> >>>  1 files changed, 9 insertions(+), 11 deletions(-)
+> >>>
+> >>> diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
+> >>> index afd6494..32a702b 100644
+> >>> --- a/arch/microblaze/mm/init.c
+> >>> +++ b/arch/microblaze/mm/init.c
+> >>> @@ -70,16 +70,16 @@ static void __init paging_init(void)
+> >>>  
+> >>>  void __init setup_memory(void)
+> >>>  {
+> >>> -	int i;
+> >>>  	unsigned long map_size;
+> >>> +	struct memblock_region *reg;
+> >>> +
+> >>>  #ifndef CONFIG_MMU
+> >>>  	u32 kernel_align_start, kernel_align_size;
+> >>>  
+> >>>  	/* Find main memory where is the kernel */
+> >>> -	for (i = 0; i < memblock.memory.cnt; i++) {
+> >>> -		memory_start = (u32) memblock.memory.regions[i].base;
+> >>> -		memory_end = (u32) memblock.memory.regions[i].base
+> >>> -				+ (u32) memblock.memory.region[i].size;
+> >>> +	for_each_memblock(memory, reg) {
+> >>> +		memory_start = (u32)reg->base;
+> >>> +		memory_end = (u32) reg->base + reg->size;
+> >>>  		if ((memory_start <= (u32)_text) &&
+> >>>  					((u32)_text <= memory_end)) {
+> >>>  			memory_size = memory_end - memory_start;
+> >>> @@ -147,12 +147,10 @@ void __init setup_memory(void)
+> >>>  	free_bootmem(memory_start, memory_size);
+> >>>  
+> >>>  	/* reserve allocate blocks */
+> >>> -	for (i = 0; i < memblock.reserved.cnt; i++) {
+> >>> -		pr_debug("reserved %d - 0x%08x-0x%08x\n", i,
+> >>> -			(u32) memblock.reserved.region[i].base,
+> >>> -			(u32) memblock_size_bytes(&memblock.reserved, i));
+> >>> -		reserve_bootmem(memblock.reserved.region[i].base,
+> >>> -			memblock_size_bytes(&memblock.reserved, i) - 1, BOOTMEM_DEFAULT);
+> >>> +	for_each_memblock(reserved, reg) {
+> >>> +		pr_debug("reserved - 0x%08x-0x%08x\n",
+> >>> +			 (u32) reg->base, (u32) reg->size);
+> >>> +		reserve_bootmem(reg->base, reg->size, BOOTMEM_DEFAULT);
+> >>>  	}
+> >>>  #ifdef CONFIG_MMU
+> >>>  	init_bootmem_done = 1;
+> >>
+> > 
+> > 
+> 
+> 
+
+
