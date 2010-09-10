@@ -1,54 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293Ab0IJJ1A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 05:27:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22973 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915Ab0IJJ05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 05:26:57 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-X-Fcc: ~/Mail/linus
-Cc: Brad Spengler <spender@grsecurity.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu,
-        Brad Spengler <spender@grsecurity.net>, Eugene Teo <eugene@redhat.com>
-Subject: Re: [PATCH 1/3] setup_arg_pages: diagnose excessive argument size
-In-Reply-To: KOSAKI Motohiro's message of  Thursday, 9 September 2010 14:31:18 +0900 <20100909141534.C948.A69D9226@jp.fujitsu.com>
-References: <20100908023549.BFFA8401AF@magilla.sf.frob.com>
-	<20100908115728.GB11762@grsecurity.net>
-	<20100909141534.C948.A69D9226@jp.fujitsu.com>
-X-Zippy-Says: C'MON, everybody!!  I've flown in LESLIE GORE and two dozen KOSHER
-    BUTCHERS!  They'll be doing intricate MILITARY MANEUVERS to the
-    soundtrack from "OKLAHOMA"!!
-Message-Id: <20100910092541.2864A405D5@magilla.sf.frob.com>
-Date: Fri, 10 Sep 2010 02:25:41 -0700 (PDT)
+	id S1751215Ab0IJJ0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 05:26:53 -0400
+Received: from smtp104.sbc.mail.re3.yahoo.com ([66.196.96.80]:30629 "HELO
+	smtp104.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751145Ab0IJJ0u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 05:26:50 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: 46yKZaAVM1nm0YLzgR7GM8Ar5Zr6MoPgllChcYHXCAO408j
+ 9020ukO.9KwogVH9J9vXJ0.vyE2aMssGz56HNKVNwmVRyaDV3OlaAINDqekw
+ wj6e9EekgSLoF3GYTXTvskzLajn_hzn6GxmmTU22kgBSCtX_3Iv9VM2IQ1Gn
+ Xojz7pkZJGf4l7VQMzaFJCA1QvapZgc2MNPJ6QmyJU9Xygug3EaDgRRbR4LN
+ .8SlF0CncYtyhx_6lRxD4c2G89ozzSDlKodLua_IxbzXDSKbwwSakAL6ya.o
+ bPzLCOXyUhr960QBedWE94iNCuS0JN0Xx2tNYR_01imHSmSMu97opuW0LMzL
+ rSVsu.ebTd66NO6W8oCelvWr6p5bIWRsziy5uZB5Ldl4FXcWFQoqc3OLUiTT
+ fCTK0XeUr_clz42cbwUav1zScVfSIBff2qpW6ozQjp0WNumAmBiFWvLWgdKO
+ VWn6Ld1MBM7z6
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Joe Eykholt <jeykholt@cisco.com>
+Cc: Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 2/4] tcm_loop: Convert to pre-allocated struct se_cmd descriptors
+Date: Fri, 10 Sep 2010 02:26:45 -0700
+Message-Id: <1284110805-337-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Brad, sorry, I have bad news. glibc sysconf(_SC_ARG_MAX) is implemented
-> by hard coded RLIMIT_STACK/4 heuristics. That said, at least _now_, we
-> can't change this even though you disliked. That said, we can't break
-> userland even though userland library is very crazy.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-I'm sorry you think it's "very crazy" to implement the required
-functionality in the only way available.  POSIX requires that execve
-fail with E2BIG when the ARG_MAX limit is exceeded.  sysconf has to
-return the correct actual limit that execve will enforce so that a
-conforming application knows how much it can safely attempt to use.
-Since the kernel uses the hard-coded RLIMIT_STACK/4 heuristic and does
-not expose the true manifest limit any other way, sysconf has to
-parallel the kernel's calculation.
+This patch converts the TCM_Loop fabric module to use pre-allocated struct se_cmd
+descriptors and sense data buffer located at struct tcm_loop_cmd->tl_se_cmd and
+struct tcm_loop_cmd->tl_sense_buf respectively.
 
+This includes updating tcm_loop_allocate_core_cmd() to use transport_init_se_cmd()
+for the main tcm_loop_queuecommand() entry point, as well as the same conversion
+in tcm_loop_device_reset() for TMR LUN_RESET.
 
-Thanks,
-Roland
+This also includes the conversion of a number of functions to use container_of()
+instead of struct se_cmd->se_fabric_cmd_ptr to locate the struct tcm_loop_cmd *.
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/tcm_loop/tcm_loop_core.h        |    6 ++-
+ drivers/target/tcm_loop/tcm_loop_fabric.c      |   12 ++++----
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |   37 +++++++++++-------------
+ 3 files changed, 27 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/target/tcm_loop/tcm_loop_core.h b/drivers/target/tcm_loop/tcm_loop_core.h
+index 69906b7..821d73c 100644
+--- a/drivers/target/tcm_loop/tcm_loop_core.h
++++ b/drivers/target/tcm_loop/tcm_loop_core.h
+@@ -29,9 +29,11 @@ struct tcm_loop_cmd {
+ 	u32 sc_cmd_state;
+ 	/* Pointer to the CDB+Data descriptor from Linux/SCSI subsystem */
+ 	struct scsi_cmnd *sc;
+-	/* Pointer to the TCM allocated struct se_cmd */
+-	struct se_cmd *tl_se_cmd;
+ 	struct list_head *tl_cmd_list;
++	/* The TCM I/O descriptor that is accessed via container_of() */
++	struct se_cmd tl_se_cmd;
++	/* Sense buffer that will be mapped into outgoing status */
++	unsigned char tl_sense_buf[TRANSPORT_SENSE_BUFFER];
+ };
+ 
+ struct tcm_loop_tmr {
+diff --git a/drivers/target/tcm_loop/tcm_loop_fabric.c b/drivers/target/tcm_loop/tcm_loop_fabric.c
+index abd643d..b12a760 100644
+--- a/drivers/target/tcm_loop/tcm_loop_fabric.c
++++ b/drivers/target/tcm_loop/tcm_loop_fabric.c
+@@ -305,8 +305,8 @@ u32 tcm_loop_get_task_tag(struct se_cmd *se_cmd)
+ 
+ int tcm_loop_get_cmd_state(struct se_cmd *se_cmd)
+ {
+-	struct tcm_loop_cmd *tl_cmd =
+-			(struct tcm_loop_cmd *)se_cmd->se_fabric_cmd_ptr;
++	struct tcm_loop_cmd *tl_cmd = container_of(se_cmd,
++			struct tcm_loop_cmd, tl_se_cmd);
+ 
+ 	return tl_cmd->sc_cmd_state;
+ }
+@@ -376,8 +376,8 @@ int tcm_loop_write_pending_status(struct se_cmd *se_cmd)
+ 
+ int tcm_loop_queue_data_in(struct se_cmd *se_cmd)
+ {
+-	struct tcm_loop_cmd *tl_cmd =
+-			(struct tcm_loop_cmd *)se_cmd->se_fabric_cmd_ptr;
++	struct tcm_loop_cmd *tl_cmd = container_of(se_cmd,
++				struct tcm_loop_cmd, tl_se_cmd);
+ 	struct scsi_cmnd *sc = tl_cmd->sc;
+ 
+ 	TL_CDB_DEBUG( "tcm_loop_queue_data_in() called for scsi_cmnd: %p"
+@@ -398,8 +398,8 @@ int tcm_loop_queue_data_in(struct se_cmd *se_cmd)
+ 
+ int tcm_loop_queue_status(struct se_cmd *se_cmd)
+ {
+-	struct tcm_loop_cmd *tl_cmd =
+-			(struct tcm_loop_cmd *)se_cmd->se_fabric_cmd_ptr;
++	struct tcm_loop_cmd *tl_cmd = container_of(se_cmd,
++				struct tcm_loop_cmd, tl_se_cmd);
+ 	struct scsi_cmnd *sc = tl_cmd->sc;
+ 
+ 	TL_CDB_DEBUG("tcm_loop_queue_status() called for scsi_cmnd: %p"
+diff --git a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+index 46d24b4..fee70fe 100644
+--- a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
++++ b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+@@ -100,17 +100,14 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
+ 		}
+ 	} else
+ 		sam_task_attr = TASK_ATTR_SIMPLE;
++
++	se_cmd = &tl_cmd->tl_se_cmd;
+ 	/*
+-	 * Allocate the struct se_cmd descriptor from target_core_mod infrastructure
++	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
+ 	 */
+-	tl_cmd->tl_se_cmd = transport_alloc_se_cmd(se_tpg->se_tpg_tfo,
+-			se_sess, (void *)tl_cmd, scsi_bufflen(sc),
+-			data_direction, sam_task_attr);
+-	if (!(tl_cmd->tl_se_cmd)) {
+-		kmem_cache_free(tcm_loop_cmd_cache, tl_cmd);
+-		return NULL;
+-	}
+-	se_cmd = tl_cmd->tl_se_cmd;
++	transport_init_se_cmd(se_cmd, se_tpg->se_tpg_tfo, se_sess,
++			scsi_bufflen(sc), data_direction, sam_task_attr,
++			&tl_cmd->tl_sense_buf[0]);
+ 	/*
+ 	 * Locate the struct se_lun pointer and attach it to struct se_cmd
+ 	 */
+@@ -136,7 +133,8 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
+  */
+ int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
+ {
+-	struct tcm_loop_cmd *tl_cmd = se_cmd->se_fabric_cmd_ptr;
++	struct tcm_loop_cmd *tl_cmd = container_of(se_cmd,
++				struct tcm_loop_cmd, tl_se_cmd);
+ 	struct scsi_cmnd *sc = tl_cmd->sc;
+ 	void *mem_ptr;
+ 	int ret;
+@@ -206,12 +204,12 @@ void tcm_loop_check_stop_free(struct se_cmd *se_cmd)
+ }
+ 
+ /*
+- * Called from struct target_core_fabric_ops->releastruct se_cmdo_pool()
++ * Called from struct target_core_fabric_ops->release_cmd_to_pool()
+  */
+ void tcm_loop_deallocate_core_cmd(struct se_cmd *se_cmd)
+ {
+-	struct tcm_loop_cmd *tl_cmd =
+-			(struct tcm_loop_cmd *)se_cmd->se_fabric_cmd_ptr;
++	struct tcm_loop_cmd *tl_cmd = container_of(se_cmd,
++				struct tcm_loop_cmd, tl_se_cmd);
+ 
+ 	kmem_cache_free(tcm_loop_cmd_cache, tl_cmd);
+ }
+@@ -417,15 +415,14 @@ static int tcm_loop_device_reset(struct scsi_cmnd *sc)
+ 		goto release;
+ 	}
+ 	init_waitqueue_head(&tl_tmr->tl_tmr_wait);
++
++	se_cmd = &tl_cmd->tl_se_cmd;
+ 	/*
+-	 * Allocate the struct se_cmd for a LUN_RESET TMR
++	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
+ 	 */
+-	tl_cmd->tl_se_cmd = transport_alloc_se_cmd(se_tpg->se_tpg_tfo,
+-			se_sess, (void *)tl_cmd, 0, SE_DIRECTION_NONE,
+-			TASK_ATTR_SIMPLE);
+-	if (!(tl_cmd->tl_se_cmd))
+-		goto release;
+-	se_cmd = tl_cmd->tl_se_cmd;
++	transport_init_se_cmd(se_cmd, se_tpg->se_tpg_tfo, se_sess, 0,
++				SE_DIRECTION_NONE, TASK_ATTR_SIMPLE,
++				&tl_cmd->tl_sense_buf[0]);
+ 	/*
+ 	 * Allocate the LUN_RESET TMR
+ 	 */
+-- 
+1.5.6.5
+
