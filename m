@@ -1,32 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab0IJPIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 11:08:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42322 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754375Ab0IJPIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 11:08:19 -0400
-Date: Fri, 10 Sep 2010 16:08:17 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Roy Huang <roy.huang@analog.com>,
-        Cliff Cai <cliff.cai@analog.com>
-Subject: Re: [PATCH] ASoC: ad1980 - set reg_cache_default to ad1980_reg
-Message-ID: <20100910150817.GP7259@rakim.wolfsonmicro.main>
-References: <1284025856.14894.1.camel@mola>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284025856.14894.1.camel@mola>
-X-Cookie: The more the merrier.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754381Ab0IJPMk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 11:12:40 -0400
+Received: from mail.perches.com ([173.55.12.10]:1640 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754338Ab0IJPMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 11:12:39 -0400
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+From: Joe Perches <joe@perches.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
+        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100910131153.56419f17@schatten.dmk.lab>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	 <1284111767.1783.35.camel@Joe-Laptop>
+	 <20100910131153.56419f17@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Sep 2010 08:12:37 -0700
+Message-ID: <1284131557.1783.150.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 09, 2010 at 05:50:56PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Fri, 2010-09-10 at 13:11 +0200, Florian Mickler wrote:
+> On Fri, 10 Sep 2010 02:42:47 -0700
+> Joe Perches <joe@perches.com> wrote:
+> > On Fri, 2010-09-10 at 11:33 +0200, florian@mickler.org wrote:
+> > > The script get_maintainer.pl is a very useful tool for deploying changes
+> > > made to the kernel. Among others it searches not only the MAINTAINERS
+> > > file but also the git history for people to send patches to.\
+> > []
+> > > By appending a  a note of the reason for the cc in the name, the reason
+> > > becomes clear and the receiving side is relieved from feeling obliged to
+> > > check the patch  while the sending side has a chance to adapt the
+> > > cc'list to their liking.
+> > I don't like reading annotated email names myself.
+> Btw, why? I think it is a great way to show that it was done in an
+> automated fashion. 
 
-Applied, thanks.
+More stuff than necessary to read, requires effort to find next.
+Fewer names in visual field.
+
+Also, it can affect systems that automatically add email addresses
+to an address directory as it could store the entire content
+before the < as the name.
+
+
