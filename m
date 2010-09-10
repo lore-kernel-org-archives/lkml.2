@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab0IJImd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 04:42:33 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37963 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754281Ab0IJImb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 04:42:31 -0400
-Message-ID: <4C89EF37.5080803@kernel.org>
-Date: Fri, 10 Sep 2010 10:41:27 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
+	id S1756043Ab0IJImj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 04:42:39 -0400
+Received: from smtprelay04.ispgateway.de ([80.67.31.42]:52310 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756033Ab0IJImh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 04:42:37 -0400
+Message-ID: <4C89EE46.8030701@ladisch.de>
+Date: Fri, 10 Sep 2010 10:37:26 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Stephane Eranian <eranian@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        robert.richter@amd.com, acme@redhat.com
-Subject: Re: [RFC PATCH 1/2] perf_events: add support for per-cpu per-cgroup
- monitoring (v3)
-References: <4c88dca1.44e7d80a.577e.3592@mx.google.com>	 <1284040322.2589.174.camel@edumazet-laptop>	 <AANLkTimHwiXa62GhHA0hQ0AOcDaxgqRcV+O63G_qoZW8@mail.gmail.com> <1284106566.402.26.camel@laptop>
-In-Reply-To: <1284106566.402.26.camel@laptop>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
+To: steve@fl-eng.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: ### DMA_ALLOC_COHERENT question
+References: <234ad71a39aa28e71c3fccd1f16fd1f3.squirrel@webmail.fl-eng.com>
+In-Reply-To: <234ad71a39aa28e71c3fccd1f16fd1f3.squirrel@webmail.fl-eng.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Sep 2010 08:41:32 +0000 (UTC)
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 09/10/2010 10:16 AM, Peter Zijlstra wrote:
-> On Thu, 2010-09-09 at 23:41 +0200, Stephane Eranian wrote:
->>> alloc_percpu() is zalloc_percpu() in fact, memory is already cleared.
->>>
->> I remember thinking about this and trying to trace to the code down
->> to figure this out. But it is rather complicated. If alloc_percpu() always
->> clears the memory, then I think that calling is zalloc_percpu()
->> would be more helpful.... 
-
-Maybe but at this point it might be a bit too late.  The allocator has
-been that way since the beginning.
-
-> pcpu_populate_chunk() in mm/percpu-vm.c does indeed do that memset, the
-> one in mm/percpu-km.c does not.
+steve spano wrote:
+> I have a 2.6.30.2 kernel running with a custom device driver for a
+> multi-channel sound card via PCI-Express. Interrupts,DMA, everything is
+> working fine.
 > 
-> It is not obviously clear to me the -km allocator does indeed result in
-> zero filled memory.
+> We allocate a very small 64KB buffer for our DMA actions using
+> dma_alloc_coherent.
 
-Nice catch.  Fortunately, the -km allocator isn't currently being used
-in upstrea although it was enabled for linux-next a couple of days
-ago.  I'll fix it up.
+Assuming that the sound driver is using the ALSA framework, why don't
+you use snd_pcm_lib_malloc_pages like most of the other PCI sound
+drivers?
 
-Thank you.
+> At 256MB of ram, dma_alloc_coherent gets us an address within the first
+> 128MB of ram, near the upper 1/2 of the 256MB actually.
+> 
+> Then at 1GB, we get an address near the upper 1/2 again (512MB)
+> Then at 2GB, we get an address near the upper 1/2 again (1GB)
+> 
+> This causes a problem on the sound card board because we need to then map
+> in nearly all 2GB of address space across the PCI bar registers so we can
+> access our tiny 64KB dma address range sitting up near the 1GB boundary.
 
--- 
-tejun
+What have the PCI BARs to do with this?  If your PCIe device wants to do
+DMA from/to the computer's main memory, no BARs are involved.
+
+BARs are used to map memory located in the device into the CPU's address
+space.
+
+> Ideally, we would get a non-cached block of ram that we can DMA to and the
+> processor can access.
+
+"Coherent" means that the CPU cache works correctly in the presence
+of DMA.
+
+> This block would ideally always be located near the base of ram (maybe
+> right after the kernel?). That way we can open a 128MB window into the
+> system ram from PCI-Express and always be sure to be able to access
+> our DMA buffer.
+
+What do you mean with "open a window"?  PCIe devices always can access
+the entire adress space.
+
+> Should we just put an "unsigned char []" of 64k in the driver?
+
+The memory that modules are loaded into is not DMAable on many
+architectures.
+
+> Im sure there is something simple we can do.
+
+Show the source code.  :)
+
+
+Regards,
+Clemens
