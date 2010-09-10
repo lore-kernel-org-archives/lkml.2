@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab0IJVCG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 17:02:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13957 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754579Ab0IJVCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 17:02:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,347,1280732400"; 
-   d="scan'208";a="836676734"
-Subject: Re: [PATCH] x86, tsc: Fix a preemption leak in
- restore_sched_clock_state()
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
-        Nico Schottelius <nico-nospam@schottelius.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Nico Schottelius <nico-linux-20100709@schottelius.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Florian Pritz <flo@xssn.at>, "stable@kernel.org" <stable@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, "Brown, Len" <lenb@kernel.org>
-In-Reply-To: <1284150773.402.122.camel@laptop>
-References: <Pine.LNX.4.64.1009101324280.3056@boston.corp.fedex.com>
-	 <1284104920.402.21.camel@laptop>
-	 <AANLkTinBwfLXi0Bv0_gzSWRsdDPzHFQFZFwEYjbwkNs4@mail.gmail.com>
-	 <1284120353.402.39.camel@laptop>
-	 <AANLkTikKmsM2kunB_ocwRawLUiuP4-_nz-mPsiapw7TJ@mail.gmail.com>
-	 <1284150773.402.122.camel@laptop>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Fri, 10 Sep 2010 14:01:31 -0700
-Message-Id: <1284152491.2681.3.camel@sbsiddha-MOBL3.sc.intel.com>
+	id S1754998Ab0IJVE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 17:04:57 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54129 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754699Ab0IJVE4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 17:04:56 -0400
+Date: Fri, 10 Sep 2010 14:04:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Florian Mickler <florian@mickler.org>
+Cc: Joe Perches <joe@perches.com>,
+        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
+        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+Message-Id: <20100910140404.372bac58.akpm@linux-foundation.org>
+In-Reply-To: <20100910123040.5a6f0128@schatten.dmk.lab>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	<1284111767.1783.35.camel@Joe-Laptop>
+	<20100910123040.5a6f0128@schatten.dmk.lab>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-10 at 13:32 -0700, Peter Zijlstra wrote:
-> D'0h !! *facepalm*
-> 
-> Shame on me for not spotting that sooner.
-> 
-> ---
-> Subject: x86, tsc: Fix a preemption leak in restore_sched_clock_state()
-> 
-> A real life genuine preemption leak..
-> 
-> Reported-by: Jeff Chua <jeff.chua.linux@gmail.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  arch/x86/kernel/tsc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> index 873a321..4496315 100644
-> --- a/arch/x86/kernel/tsc.c
-> +++ b/arch/x86/kernel/tsc.c
-> @@ -655,7 +655,7 @@ void restore_sched_clock_state(void)
->  
->  	local_irq_save(flags);
->  
-> -	get_cpu_var(cyc2ns_offset) = 0;
-> +	__get_cpu_var(cyc2ns_offset) = 0;
->  	offset = cyc2ns_suspend - sched_clock();
->  
->  	for_each_possible_cpu(cpu)
+On Fri, 10 Sep 2010 12:30:40 +0200
+Florian Mickler <florian@mickler.org> wrote:
 
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> People that get angered by being cc'd a lot as commit_signers can always
+> filter their mail for that. 
 
-Before heading for lunch, I was scratching my head and thinking that I
-might be doing something wrong with the local_irq_disable() and
-local_irq_enable() in that patch. But you got it right.
+People who get angry at an unexpected cc need to get a clue.  Or
+get slapped.
 
-Thanks for looking at this and thanks to Jeff for reporting.
-
-Original patch was marked as stable for 2.6.32+, so we need to make sure
-that Greg picks up this piece too along with the original patch.
-
+I mean really, it's not a big deal.  And the addition of the occasional
+inappropriate cc is a far less serious problem than the omission of
+someone who might have been interested in the change.
