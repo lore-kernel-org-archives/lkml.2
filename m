@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab0IJTpE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 15:45:04 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:49737 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab0IJTpC (ORCPT
+	id S1754732Ab0IJTr3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 15:47:29 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31146 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753548Ab0IJTr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 15:45:02 -0400
-Date: Fri, 10 Sep 2010 16:45:09 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Mat Martineau <mathewm@codeaurora.org>
-Cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, marcel@holtmann.org, davem@davemloft.net
-Subject: Re: Possible regression with skb_clone() in 2.6.36
-Message-ID: <20100910194509.GC19693@vigoh>
-References: <1283988727-1456-1-git-send-email-padovan@profusion.mobi>
- <alpine.DEB.2.00.1009100920270.14322@linux-sea-02>
+	Fri, 10 Sep 2010 15:47:27 -0400
+Date: Fri, 10 Sep 2010 12:44:04 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC 02/22] configfs: Add struct
+ configfs_item_operations->check_link() in configfs_unlink()
+Message-ID: <20100910194404.GJ885@mail.oracle.com>
+Mail-Followup-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+	Konrad Rzeszutek Wilk <konrad@darnok.org>,
+	linux-scsi <linux-scsi@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+	Mike Christie <michaelc@cs.wisc.edu>,
+	Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+	James Bottomley <James.Bottomley@suse.de>,
+	Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+	Linux-fsdevel <linux-fsdevel@vger.kernel.org>
+References: <1283160025-6598-1-git-send-email-nab@linux-iscsi.org>
+ <20100902064814.GB27904@mail.oracle.com>
+ <1283456440.5598.108.camel@haakon2.linux-iscsi.org>
+ <201009071701.02847.konrad@darnok.org>
+ <20100907224413.GC21935@mail.oracle.com>
+ <1283911739.556.420.camel@haakon2.linux-iscsi.org>
+ <20100908192639.GD29545@mail.oracle.com>
+ <1283979207.556.510.camel@haakon2.linux-iscsi.org>
+ <20100910152802.GG885@mail.oracle.com>
+ <1284145606.19890.68.camel@haakon2.linux-iscsi.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1009100920270.14322@linux-sea-02>
+In-Reply-To: <1284145606.19890.68.camel@haakon2.linux-iscsi.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mat,
+On Fri, Sep 10, 2010 at 12:06:46PM -0700, Nicholas A. Bellinger wrote:
+> On Fri, 2010-09-10 at 08:28 -0700, Joel Becker wrote:
+> > 	The trivial solution is to refcount your ACLs.  You get both
+> > allow_link() calls, so you should be able to increment a counter there,
+> > and then drop them when the last drop_link() call is made.  That will
+> > keep your consumer structures around until all links are exhausted.
+> > 
+> 
+> So I am a bit confused wrt to this last response..  The ->check_link()
+> patch and it's use in the fabric independent code within
+> target_core_fabric_configfs.c does exactly this for the 'MappedLUN'
+> symlink case, eg: requires the consumer to do the allow_link() +
+> drop_link() refcounting, and add the
+> API check into fs/configfs/symlink.c:configfs_unlink()
 
-* Mat Martineau <mathewm@codeaurora.org> [2010-09-10 09:53:31 -0700]:
+	You can refcount without check_link().
+ 
+> Is there another form of configfs consumer refcounting that you had in
+> mind beyond using an atomic_t for this with ->check_link() here..?
 
-> 
-> Gustavo -
-> 
-> I'm not sure why the streaming code used to work, but this does not 
-> look like an skb_clone() problem.  Your patch to remove the 
-> skb_clone() call in l2cap_streaming_send() addresses the root cause of 
-> this crash.
-> 
-> On Wed, 8 Sep 2010, Gustavo F. Padovan wrote:
-> 
-> > I've been experiencing some problems when running the L2CAP Streaming mode in
-> > 2.6.36. The system quickly runs in an Out Of Memory condition and crash. That
-> > wasn't happening before, so I think we may have a regression here (I didn't
-> > find where yet). The crash log is below.
-> >
-> > The following patch does not fix the regression, but shows that removing the
-> > skb_clone() call from l2cap_streaming_send() we workaround the problem. The
-> > patch is good anyway because it saves memory and time.
-> >
-> > By now I have no idea on how to fix this.
-> >
-> > <snip>
-> 
-> This has to do with the sk->sk_wmem_alloc accounting that controls the 
-> amount of write buffer space used on the socket.
-> 
-> When the L2CAP streaming mode socket segments its data, it allocates 
-> memory using sock_alloc_send_skb() (via bt_skb_send_alloc()).  Before 
-> that allocation call returns, skb_set_owner_w() is called on the new 
-> skb.  This adds to sk->sk_wmem_alloc and sets skb->destructor so that 
-> sk->sk_wmem_alloc is correctly updated when the skb is freed.
-> 
-> When that skb is cloned, the clone is not "owned" by the write buffer. 
-> The clone's destructor is set to NULL in __skb_clone().  The version 
-> of l2cap_streaming_send() that runs out of memory is passing the 
-> non-owned skb clone down to the HCI layer.  The original skb (the one 
-> that's "owned by w") is immediately freed, which adjusts 
-> sk->sk_wmem_alloc back down - the socket thinks it has unlimited write 
-> buffer space.  As a result, bt_skb_send_alloc() never blocks waiting 
-> for buffer space (or returns EAGAIN for nonblocking writes) and the 
-> HCI send queue keeps growing.
+	I'm saying that you won't crash if you don't free the ACLs on
+the first drop_link().  That is, the drop_link() goes through as
+configfs wants it to, but you don't crash.
 
-If the problem is what you are saying, add a skb_set_owner_w(skb, sk) on
-the cloned skb should solve the problem, but it doesn't. That's exactly
-what tcp_transmit_skb() does. Also that just appeared in 2.6.36, is was
-working fine before, i.e, we have a regression here. 
-
+> So beyond a configfs consumer solution, what do you think about checking
+> for the sub_child/group2/dst_0/dst_link style of symlink
+> in fs/configfs/symlink.c:configfs_symlink() in order to add some form of
+> internal refcount when the symlink source is within the same consumer
+> LKM, but outside of the parent struct config_group..?
 > 
-> This isn't a problem for the ERTM sends, because the original skbs are 
-> kept in the ERTM tx queue until they are acked.  Once they're acked, 
-> the write buffer space is freed and additional skbs can be allocated.
+> This would involve the conversion of fs/configfs/symlink.c:
+> configfs_unlink() path to check for the existence of this internal
+> refcount and returning -EPERM when any sub_child/group2/dst_0/dst_link
+> exist when 'unlink sub_child/group1/src_0/src_link' is attempted.
 
-It affects ERTM as well, but in that case the kernel doesn't crash
-because ERTM block on sending trying to allocate memory. Then we are not
-able to receive any ack (everything stays queued in sk_backlog_queue as
-the sk is owned by the user) and ERTM stalls.
+	You're still fighting allowing the links to go away.  You
+haven't explained why that is necessary.  You had a problem with a crash
+because you expected one reference to your ACLs and actually have two,
+but you can fix that without modifying configfs.
+
+Joel
 
 -- 
-Gustavo F. Padovan
-ProFUSION embedded systems - http://profusion.mobi
+
+"I have never let my schooling interfere with my education."
+        - Mark Twain
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
