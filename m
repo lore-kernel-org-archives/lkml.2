@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab0IJKNJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 06:13:09 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:43678 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751941Ab0IJKNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 06:13:08 -0400
-Message-ID: <4C8A04B3.4030406@kernel.dk>
-Date: Fri, 10 Sep 2010 12:13:07 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1751066Ab0IJKPl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 06:15:41 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36631 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab0IJKPj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 06:15:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:in-reply-to:user-agent;
+        b=HAv3M0CGf8dP4XbkPcgD0/A2xi0eq8uRWLT1r1pWZWs9qlGL3PeiT90goR7wrS8iJx
+         ZcYF7w0GS1f041ldMTQ/M30WJqnO+Q+YycD7q5si9YnILWxCdAbe2dulmWrjznQwN+ZL
+         QO2c7sDNx52bs9lT9jIR+oqA24pWn+jCugjAk=
+Date: Fri, 10 Sep 2010 10:15:33 +0000
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, marcel@holtmann.org,
+        davem@davemloft.net, linux-bluetooth@vger.kernel.org
+Subject: Re: Possible regression with skb_clone() in 2.6.36
+Message-ID: <20100910101533.GA21844@ff.dom.local>
 MIME-Version: 1.0
-To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-CC: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
-Subject: Re: [PATCH 00/13] cciss: clean up cciss_ioctl()
-References: <20100826185315.9067.25060.stgit@beardog.cce.hp.com>
-In-Reply-To: <20100826185315.9067.25060.stgit@beardog.cce.hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283988727-1456-1-git-send-email-padovan@profusion.mobi>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-26 20:55, Stephen M. Cameron wrote:
-> This series of patches factors out all of cases of the giant
-> switch statement in cciss_ioctl into separate functions.  And
-> there's one patch at the end that gets rid of some superfluous
-> if statements in the big passthru path.
+On 2010-09-09 01:32, Gustavo F. Padovan wrote:
+> I've been experiencing some problems when running the L2CAP Streaming mode in
+> 2.6.36. The system quickly runs in an Out Of Memory condition and crash. That
+> wasn't happening before, so I think we may have a regression here (I didn't
+> find where yet). The crash log is below.
 > 
-> I've run test programs that exercise all these ioctls and they
-> appear to still work.
-> ---
+> The following patch does not fix the regression, but shows that removing the
+> skb_clone() call from l2cap_streaming_send() we workaround the problem. The
+> patch is good anyway because it saves memory and time.
 > 
-> Stephen M. Cameron (13):
->       cciss: factor out cciss_getpciinfo
->       cciss: factor out cciss_getintinfo
->       cciss: factor out cciss_setintinfo
->       cciss: factor out cciss_getnodename
->       cciss: factor out cciss_setnodename
->       cciss: factor out cciss_getheartbeat
->       cciss: factor out cciss_getbustypes
->       cciss: factor out cciss_getfirmver
->       cciss: factor out cciss_getdrivver
->       cciss: factor out cciss_getluninfo
->       cciss: factor out cciss_passthru
->       cciss: factor out cciss_big_passthru
->       cciss: remove some superfluous tests from cciss_bigpassthru()
+> By now I have no idea on how to fix this.
 
-Thanks, applied to for-2.6.37/drivers
+My suggestion is to check the length of conn->data_q in hci_send_acl()
+while this happens, and maybe try to set some limit here.
 
--- 
-Jens Axboe
-
+Jarek P.
