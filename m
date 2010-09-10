@@ -1,114 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab0IJUGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 16:06:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39111 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520Ab0IJUGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 16:06:37 -0400
-Date: Fri, 10 Sep 2010 16:06:01 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Mike Snitzer <snitzer@redhat.com>
-cc: Tejun Heo <tj@kernel.org>, agk@redhat.com, jaxboe@fusionio.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-raid@vger.kernel.org, dm-devel@redhat.com, hch@lst.de,
-        konishi.ryusuke@lab.ntt.co.jp, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com, vst@vlnb.net,
-        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
-        rusty@rustcorp.com.au, mst@redhat.com, k-ueda@ct.jp.nec.com
-Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
- dm
-In-Reply-To: <20100910192403.GA24582@redhat.com>
-Message-ID: <Pine.LNX.4.64.1009101554300.5286@hs20-bc2-1.build.redhat.com>
-References: <1283509796-1510-1-git-send-email-tj@kernel.org>
- <1283509796-1510-24-git-send-email-tj@kernel.org>
- <Pine.LNX.4.64.1009101410570.7839@hs20-bc2-1.build.redhat.com>
- <20100910184652.GA24470@redhat.com> <Pine.LNX.4.64.1009101456220.21834@hs20-bc2-1.build.redhat.com>
- <20100910192403.GA24582@redhat.com>
+	id S1755213Ab0IJUMp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 16:12:45 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:46533 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab0IJUMn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 16:12:43 -0400
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Artur Skawina <art.08.09@gmail.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Damien Wyart <damien.wyart@free.fr>,
+        John Drescher <drescherjm@gmail.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [BISECTED] 2.6.35.*: horrible (exponential? >linear) slowdown to unusability (HPET)
+References: <87eid282pj.fsf@spindle.srvr.nix>
+	<alpine.LFD.2.00.1009101022400.2477@localhost6.localdomain6>
+	<4C89FD56.6060505@gmail.com>
+From: Nix <nix@esperi.org.uk>
+Emacs: because editing your files should be a traumatic experience.
+Date: Fri, 10 Sep 2010 21:12:21 +0100
+In-Reply-To: <4C89FD56.6060505@gmail.com> (Jiri Slaby's message of "Fri, 10 Sep 2010 11:41:42 +0200")
+Message-ID: <87aanp8ije.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+X-DCC-URT-Metrics: spindle 1060; Body=9 Fuz1=9 Fuz2=9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10 Sep 2010, Jiri Slaby spake thusly:
 
+> On 09/10/2010 10:37 AM, Thomas Gleixner wrote:
+>> HPET provides both functionalities.
+>> 
+>> The patch you bisected is affecting the clock events part of the
+>> HPET. So yes, it's not a clock source problem.
+>
+> AFAIU, clocksource=jiffies shouldn't fix this issue. If that's the case
+> we have another 2.6.32->2.6.33 regression (and I will report it
 
-On Fri, 10 Sep 2010, Mike Snitzer wrote:
+What? This is a 2.6.35 regression from 2.6.34 (and all previous kernels).
+clocksource=jiffies has never yet been mentioned (I could try it, but
+I think I know what the result would be).
 
-> On Fri, Sep 10 2010 at  3:05pm -0400,
-> Mikulas Patocka <mpatocka@redhat.com> wrote:
-> 
-> > 
-> > 
-> > On Fri, 10 Sep 2010, Mike Snitzer wrote:
-> > > And in fact, this first patch basically is as minimal as it gets
-> > > relative to bio-based DM's conversion to FLUSH+FUA.
-> > > 
-> > > Please direct your energy and talent in a positive way rather than
-> > > starting a potential flame.
-> > > 
-> > > Thanks,
-> > > Mike
-> > 
-> > I don't want to flame. I mean this:
-> > 
-> > * person X writes a patch P.
-> > * person Y reads P, sees that the condition C is true and writes patch Q 
-> > that dependes on condition C.
-> > * person X changes a patch P, so that the patch is correct but condition C 
-> > is no longer true.
-> > 
-> > Now, there is a bug in the patch Q and NEITHER X NOR Y can find out about 
-> > that bug.
-> > 
-> > That's why parallel development doesn't work.
-> > 
-> > If you develop on things in the kernel, it is different.
-> > * person X writes a patch P and puts it in the kernel.
-> > * person Y reads the kernel code, sees that the condition C is true and 
-> > writes a patch Q that assumes that the condition C is true. He puts this 
-> > patch to the kernel too.
-> > * person X wants to change his code so that the condition C isn't true, 
-> > but it is now his responsibility to search the rest of the kernel to see 
-> > if it depends on the condition C. He searches the code and finds Q.
-> > 
-> > This is not a flamewar, just a technical explanation, why I don't want to 
-> > develop on interfaces that are not in the kernel.
-> 
-> We're reasonable people and can certainly prevent a flamewar but what
-> you're doing is an elaborate distraction.  The energy it took you to
-> write and reason through your logic above could've been used to just
-> review the DM FLUSH+FUA patches.
+2.6.32 and 2.6.33 both worked fine.
 
-No. If I reviewed 40 patches perfectly, I would take long long time (the 
-previous 2-line patch that I reviewed took me a week to review --- but I 
-found a flaw that the other people who reviewed it quickly didn't find). 
+> separately). People report the system is unusable (sleepers are not
+> woken), unless clocksource=jiffies, clocksource=tsc or nolapic_timer is
+> used or a key pressed (i.e. some HW interrupt):
+> https://bugzilla.novell.com/show_bug.cgi?id=579932
 
-So I reviewed only "dm" patch and found out that it is too big.
+This is similar, but not identical: this particular bug is only fixed by
+keypresses in the early stages (in NOHZ mode) and *interferes* with all
+responsiveness including keystroke response both in NOHZ and !NOHZ mode.
 
-Make a smaller patch with barrier -> FLUSH logic only. And then you can 
-make additional patches with function/variable renames or logic changes.
-
-> The various interfaces are hardened now and staged for inclussion in
-> 2.6.37.  Jens has already pulled the entire 40+ patchset into his
-> for-next branch for wider linux-next testing.
-> 
-> Tejun, Christoph and others have done an amazing job with this
-> conversion.  The fact that Tejun tackled the heavy lifting of DM's
-> conversion was unexpected but 100% appreciated (by me and I assume
-> others).  Please don't dismiss, or misrepresent the status of, this
-> FLUSH+FUA work.
-
-I am not dismissing anything. I agree with barrier -> flush change. It 
-simplifies things a lot.
-
-But I have my work rules that I learned: I use no git kernels and no 
-external patches (except Alasdair's patchset that I want to test). I only 
-use -rc or final kernels. I need a stable computer --- I don't want to 
-solve problems like "does it crash because I pulled something or does it 
-crash because I made a bug in my code?" So, put that into 2.6.37-rc1 and 
-I'll optimize flushes in dm for -rc2 or -rc3.
-
-Mikulas
+It's probably another HPET timer problem, though, but that doesn't mean
+it necessarily has the same cause.
