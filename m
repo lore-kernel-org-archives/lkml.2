@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab0IJC5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 22:57:05 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38245 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab0IJC5C (ORCPT
+	id S1754679Ab0IJDYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 23:24:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60319 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab0IJDYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 22:57:02 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 3/3] mm: page allocator: Drain per-cpu lists after direct reclaim allocation fails
-Cc: kosaki.motohiro@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100909150558.GB340@csn.ul.ie>
-References: <alpine.DEB.2.00.1009090931360.18975@router.home> <20100909150558.GB340@csn.ul.ie>
-Message-Id: <20100910115503.C95E.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Thu, 9 Sep 2010 23:24:13 -0400
+X-Authority-Analysis: v=1.1 cv=wzyXQce4f/sB7S4CXh7s7HNi1LDwQ/VYTdqot4lsObg= c=1 sm=0 a=I9jzT8ZWCyQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=xn_2uDM6AAAA:8 a=1XWaLZrsAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=2niUiYxm5_X9GpK37HgA:9 a=hbyIB03sRtfZeAUNYQMA:7 a=ZHPkAU_GWA2ea9-XN1BatS676iIA:4 a=PUjeQqilurYA:10 a=AlnqcuNMsHEA:10 a=UTB_XpHje0EA:10 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH][GIT PULL][v2.6.36] tracing: t_start: reset
+ FTRACE_ITER_HASH in case of seek/pread
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Robert Swiecki <swiecki@google.com>,
+        Eugene Teo <eugene@redhat.com>, stable@kernel.org,
+        Chris Wright <chrisw@sous-sol.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 09 Sep 2010 23:24:08 -0400
+Message-ID: <1284089048.5786.752.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 10 Sep 2010 11:56:59 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Sep 09, 2010 at 09:32:52AM -0500, Christoph Lameter wrote:
-> > On Thu, 9 Sep 2010, Mel Gorman wrote:
-> > 
-> > > > This will have the effect of never sending IPIs for slab allocations since
-> > > > they do not do allocations for orders > PAGE_ALLOC_COSTLY_ORDER.
-> > > >
-> > >
-> > > The question is how severe is that? There is somewhat of an expectation
-> > > that the lower orders free naturally so it the IPI justified? That said,
-> > > our historical behaviour would have looked like
-> > >
-> > > if (!page && !drained && order) {
-> > > 	drain_all_pages();
-> > > 	draiained = true;
-> > > 	goto retry;
-> > > }
-> > >
-> > > Play it safe for now and go with that?
-> > 
-> > I am fine with no IPIs for order <= COSTLY. Just be aware that this is
-> > a change that may have some side effects.
-> 
-> I made the choice consciously. I felt that if slab or slub were depending on
-> IPIs to make successful allocations in low-memory conditions that it would
-> experience varying stalls on bigger machines due to increased interrupts that
-> might be difficult to diagnose while not necessarily improving allocation
-> success rates. I also considered that if the machine is under pressure then
-> slab and slub may also be releasing pages of the same order and effectively
-> recycling their pages without depending on IPIs.
 
-+1.
+Ingo,
 
-In these days, average numbers of CPUs are increasing. So we need to be afraid
-IPI storm than past.
+The previous fixed only fixed lseek, Chris's fix also handles pread().
 
+Please pull the latest tip/perf/urgent tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/urgent
+
+
+Chris Wright (1):
+      tracing: t_start: reset FTRACE_ITER_HASH in case of seek/pread
+
+----
+ kernel/trace/ftrace.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+---------------------------
+commit df09162550fbb53354f0c88e85b5d0e6129ee9cc
+Author: Chris Wright <chrisw@sous-sol.org>
+Date:   Thu Sep 9 16:34:59 2010 -0700
+
+    tracing: t_start: reset FTRACE_ITER_HASH in case of seek/pread
+    
+    Be sure to avoid entering t_show() with FTRACE_ITER_HASH set without
+    having properly started the iterator to iterate the hash.  This case is
+    degenerate and, as discovered by Robert Swiecki, can cause t_hash_show()
+    to misuse a pointer.  This causes a NULL ptr deref with possible security
+    implications.  Tracked as CVE-2010-3079.
+    
+    Cc: Robert Swiecki <swiecki@google.com>
+    Cc: Eugene Teo <eugene@redhat.com>
+    Cc: <stable@kernel.org>
+    Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 83a16e9..fa7ece6 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1510,6 +1510,8 @@ static void *t_start(struct seq_file *m, loff_t *pos)
+ 		if (*pos > 0)
+ 			return t_hash_start(m, pos);
+ 		iter->flags |= FTRACE_ITER_PRINTALL;
++		/* reset in case of seek/pread */
++		iter->flags &= ~FTRACE_ITER_HASH;
+ 		return iter;
+ 	}
+ 
 
 
