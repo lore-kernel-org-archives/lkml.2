@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412Ab0IJKHy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 06:07:54 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:50152 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798Ab0IJKHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 06:07:53 -0400
-Message-ID: <4C8A0375.4080503@kernel.dk>
-Date: Fri, 10 Sep 2010 12:07:49 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752287Ab0IJKLB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 06:11:01 -0400
+Received: from correo.zonafrancacadiz.com ([195.177.220.32]:12989 "EHLO
+	correo.zonafrancacadiz.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751542Ab0IJKLA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 06:11:00 -0400
+X-Greylist: delayed 912 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Sep 2010 06:11:00 EDT
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Brian King <brking@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] block: Range check cpu in blk_cpu_to_group
-References: <201009091741.o89HfPfM011522@d03av02.boulder.ibm.com>
-In-Reply-To: <201009091741.o89HfPfM011522@d03av02.boulder.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Subject: YOU HAVE WON!! PLEASE REPLY TO THIS EMAIL: officer_charles_walker01@yahoo.com.hk
+Date: Fri, 10 Sep 2010 11:58:56 +0200
+Message-ID: <46CC9EEE3C2ED0429B3BBFE35298F39E238744@intmail.zonafrancacadiz.int>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: YOU HAVE WON!! PLEASE REPLY TO THIS EMAIL: officer_charles_walker01@yahoo.com.hk
+Thread-Index: ActQzsRpkiHVT95bQ5mz170Wurz/0Q==
+From: =?iso-8859-1?Q?Buz=F3n_para_Centro_de_Servicios_Empresariales?= 
+	<cse@zonafrancacadiz.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2010 07:41 PM, Brian King wrote:
-> While testing CPU DLPAR, the following problem was discovered.
-> We were DLPAR removing the first CPU, which in this case was
-> logical CPUs 0-3. CPUs 0-2 were already marked offline and
-> we were in the process of offlining CPU 3. After marking
-> the CPU inactive and offline in cpu_disable, but before the
-> cpu was completely idle (cpu_die), we ended up in __make_request
-> on CPU 3. There we looked at the topology map to see which CPU
-> to complete the I/O on and found no CPUs in the cpu_sibling_map.
-> This resulted in the block layer setting the completion cpu
-> to be NR_CPUS, which then caused an oops when we tried to
-> complete the I/O.
-> 
-> Fix this by sanity checking the value we return from blk_cpu_to_group
-> to be a valid cpu value.
-> 
-> Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-
-Thanks Brian, applied.
-
--- 
-Jens Axboe
-
+ 
+ 
+Powerball Wheel Email-games 2010 has awared to your Email-id identified with coupon No.PBL2348974321. You have being approved the sum of  £253.000.00 pound. For claims send us your
+1.Full Name.2.Occupation.3.Address.4.sex.5.Age.6.Phone/Fax.
+Mr Charles Walker Contact Email: officer_charles_walker01@yahoo.com.hk <mailto:officer_charles_walker01@yahoo.com.hk> 
+Email: officer_powerball0174@yahoo.com.hk <mailto:officer_powerball0174@yahoo.com.hk> 
+Telephone: +447045728850
