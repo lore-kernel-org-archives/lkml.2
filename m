@@ -1,617 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab0IJG7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 02:59:45 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58776 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751258Ab0IJG7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 02:59:44 -0400
-Date: Fri, 10 Sep 2010 08:59:30 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jack Steiner <steiner@sgi.com>, John Stultz <johnstul@us.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, UV: Improve access time to RTC clock in node
- controller
-Message-ID: <20100910065930.GE31090@elte.hu>
-References: <20100909193613.GA6062@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100909193613.GA6062@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753099Ab0IJHK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 03:10:57 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64932 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004Ab0IJHK4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 03:10:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ILlbLf0C3lUSg1PP8lEZvNaZVZrfgpDCQT4D2lt1WEVFFmFi0sUlXF+CAyzOxDOO2q
+         ZhW8gfO9Xe1/KWetYiMzjcUzEiTW0DUBS5jVS3i0h6f4766wlcAbadMjsbQFuU+ljH5W
+         K1Mwf7E8KTQ5zEgv5B+GcvYFq9pk/3Lu/XccU=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Hunter Adrian <adrian.hunter@nokia.com>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Subject: [PATCH] mmc_test: move files from sysfs to debugfs
+Date: Fri, 10 Sep 2010 10:10:50 +0300
+Message-Id: <1284102650-15044-1-git-send-email-ext-andriy.shevchenko@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As proposed by Greg the more logically is to keep files for mmc_test driver
+under debugfs.
 
-* Jack Steiner <steiner@sgi.com> wrote:
+Additionally this patch brings seq_file API for show() method. It allows to
+write unlimited data to the file.
 
-> UV has a globally synchronized clock (UV RTC) that is located in the node
-> controller chip of each blade. Although any cpu can access it's own RTC
-> without making offnode references, access to a register in the node
-> controller still requires a few hundred nsec.  This is problematic for
-> some workloads.
-> 
-> This patch changes the clock code so that the RTC value is calculated
-> based on the in-core TSC clock. Access to the TSC is much faster than
-> access to the RTC.
-> 	OLD: 292 nsec
-> 	NEW:  18 nsec
+Example of usage:
+  # mount -t debugfs none /sys/kernel/debug
+  # modprobe mmc_test
+    [  581.395843] mmc_test mmc0:0001: Card claimed for testing.
+  # echo 25 > /sys/kernel/debug/mmc0/mmc0\:0001/test
+    [  604.568542] mmc0: Starting tests of card mmc0:0001...
+    [  604.582733] mmc0: Test case 25. Best-case read performance into scattered pages...
+    [  604.923553] mmc0: Transfer of 8192 sectors (4096 KiB) took 0.124664314 seconds (33644 kB/s, 32856 KiB/s)
+    [  604.933227] mmc0: Result: OK
+    [  604.936248] mmc0: Tests completed.
+  # cat /sys/kernel/debug/mmc0/mmc0\:0001/test
+    Test 25: 0
+    1 8192 0.124664314 33644784
 
-Impressive speedup!
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+---
+ drivers/mmc/card/mmc_test.c |  138 ++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 103 insertions(+), 35 deletions(-)
 
-> 
-> 
-> Periodically, a pair of TSC/RTC values is read. New requests to read the
-> RTC will read the current TSC, then calculate an RTC value
-> based on the TSC delta from the last sync point and the ratio of TSC to
-> RTC frequencies.
-> 
-> Signed-off-by: Jack Steiner <steiner@sgi.com>
-> Reviewed-by: Robin Holt <holt@sgi.com>
-> 
-> ---
->  arch/x86/kernel/uv_time.c |  494 ++++++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 473 insertions(+), 21 deletions(-)
-> 
-> Index: linux/arch/x86/kernel/uv_time.c
-> ===================================================================
-> --- linux.orig/arch/x86/kernel/uv_time.c	2010-09-09 14:02:09.000000000 -0500
-> +++ linux/arch/x86/kernel/uv_time.c	2010-09-09 14:03:32.302037155 -0500
-> @@ -15,12 +15,14 @@
->   *  along with this program; if not, write to the Free Software
->   *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
->   *
-> - *  Copyright (c) 2009 Silicon Graphics, Inc.  All Rights Reserved.
-> + *  Copyright (c) 2009-2010 Silicon Graphics, Inc.  All Rights Reserved.
->   *  Copyright (c) Dimitri Sivanich
->   */
->  #include <linux/clockchips.h>
->  #include <linux/slab.h>
-> +#include <linux/sysfs.h>
->  
-> +#include <asm/timer.h>
->  #include <asm/uv/uv_mmrs.h>
->  #include <asm/uv/uv_hub.h>
->  #include <asm/uv/bios.h>
-> @@ -29,8 +31,137 @@
->  #include <asm/cpu.h>
->  
->  #define RTC_NAME		"sgi_rtc"
-> +#define RTC_NAME_CALC		"sgi_rtc_calc"
-> +
-> +/*
-> + * On UV, the latency to read the hardware RTC clock is ~300 nsec.
-> + * Numerous workloads show this to be a performance issue.
-> + *
-> + * The following code changes the RTC access code to read the TSC
-> + * instead of the RTC. Based on the current TSC and the ratio
-> + * of TSC to RTC frequency, the code calculates the RTC value.
-> + *
-> + * The following are the requirements for the algorithms that
-> + * calculate the RTC value:
-> + *	- a cpu will never see it's own RTC value go backward
-> + *	- the error in the calculation of the RTC value must be
-> + *	  less than the time required to bounce a cacheline between
-> + *	  cpus. For example cpu A must not be allowed to
-> + *		- read a RTC value
-> + *		- write it to memory
-> + *		- have cpu B read A's RTC value
-> + *		- cpu B read it's own RTC value
-> + *		- B's RTC is less than A's
-> + *	  Or saying this another way, no pair of cpus can
-> + *	  perceive time to go backward.
-> + *
-> + * Assumptions:
-> + *	- RTCs are synchronized across all blades. Any cpu reading
-> + *	  it's own RTC will see the same value.
-> + *	- TSCs on a blade are synchronized
-> + *	- TSCs on different blades are NOT synchronized
-> + *	- TSCs on different blades may run at different frequencies
-> + *	  (UV supports SSIs with mixed processor types & running
-> + *	  at different core frequencies)
-> + *	- clock frequencies of TSC vs RTC may drift but at a
-> + *	  slow rate. No significant change over a period of a
-> + *	  few 10's of seconds.
-> + *	- don't do divide instructions in the critical path
-> + *
-> + * Tables:
-> + *
-> + *      RTC Blade Control (RBC) - Per blade tables allocated blade local
-> + *                      (2 processor sockets on each blade)
-> + *
-> + *               +-----------+                  +-----------+
-> + *               '    RBC    '                  '   RBC     '
-> + *               '           '                  '           '
-> + *               +-----------+                  +-----------+
-> + *                ^    ^   ^                     ^    ^    ^
-> + *               /     |    \                   /     |     \
-> + *              /      |     \                 /      |      \
-> + *             /       |      \               /       |       \
-> + *        +-----+   +------  -------      +-----+   +-----+   +-----+
-> + *        ' RCC '   ' RCC '  ' RCC '      ' RCC '   ' RCC '   ' RCC '
-> + *        +-----+   +-----+  +-----+      +-----+   +-----+   +-----+
-> + *
-> + *      RTC Cpu Control (RCC) - Per-cpu tables allocated socket-local
-> + *
-> + *
-> + *   RBC contain per-blade state:
-> + *	- recent RTC/TSC pair. Current RTC value is
-> + *	  calculated by reading the live TSC, then calculating
-> + *	  the current RTC value based on the TSC delta.
-> + *	- fixed-point (32.32) multiplier:
-> + *		rtc_delta = (tsc delta) * fixmult
-> + *	- RTC/TSC pair for time when fixmult was last calculated
-> + *	- TSC intervals for resyncing the recent RTC/TSC pair
-> + *	  or for recalculating the fixmult multiplier
-> + *
-> + *   RCC contain per-cpu state for estimating the RTC value
-> + *	- pointer to the RBC structure for all cpus on the blade
-> + *	- last_rtc_value returned on this cpu. This is used to
-> + *	  make sure time never goes backward.
-> + *
-> + *  Implementation Notes:
-> + *	- I tried making the RBC table a per-socket table instead of a
-> + *	  per-blade table. That did not work & a pair of cpus could see
-> + *	  time go backward. Cachelines bounce between sockets faster
-> + *	  than the the accuracy of the RTC calculation.
-> + *	- the most critical inter-cpu timing is for passing RTC
-> + *	  values between HT threads in the same core. Other inter-cpu
-> + *	  times are much larger.
-> + */
-> +
-> +/*
-> + * The following structures are used to manage the per-node UV RTC
-> + * structures used to calculate RTC values from the local RTC. Access
-> + * to the local TSC is much faster than a RTC access.
-> + *
-> + */
-> +
-> +/* Maximum attempts to read a TSC/RTC pair before giving up */
-> +#define MAXREADS	 			10
-> +
-> +/* Maximum TSC nsec to read a TSC/RTC pair. Try again if exceeded. */
-> +#define DEFAULT_MAX_READCLOCKS_TSC_NSEC		10000
-> +
-> +/* Reread a TSC/RTC pair if it is older than the following. */
-> +#define DEFAULT_RESYNC_CLOCKS_MSEC		2000
-> +
-> +/* Recalculate fixmult if it is older than the following. */
-> +#define DEFAULT_RECALC_DRIFT_MSEC		20000
-> +
-> +static long resync_clocks_msec = DEFAULT_RESYNC_CLOCKS_MSEC;
-> +static long recalc_drift_msec = DEFAULT_RECALC_DRIFT_MSEC;
-> +static long max_readclocks_tsc_nsec = DEFAULT_MAX_READCLOCKS_TSC_NSEC;
-> +
-> +static atomic_t resync_clocks_failures;
+diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
+index 58d746b..e59bb02 100644
+--- a/drivers/mmc/card/mmc_test.c
++++ b/drivers/mmc/card/mmc_test.c
+@@ -19,6 +19,10 @@
+ #include <linux/swap.h>		/* For nr_free_buffer_pages() */
+ #include <linux/list.h>
+ 
++#include <linux/debugfs.h>
++#include <asm/uaccess.h>
++#include <linux/seq_file.h>
++
+ #define RESULT_OK		0
+ #define RESULT_FAIL		1
+ #define RESULT_UNSUP_HOST	2
+@@ -106,6 +110,18 @@ struct mmc_test_general_result {
+ };
+ 
+ /**
++ * struct mmc_test_dbgfs_file - debugfs related file.
++ * @link: double-linked list
++ * @card: card under test
++ * @file: file created under debugfs
++ */
++struct mmc_test_dbgfs_file {
++	struct list_head link;
++	struct mmc_card *card;
++	struct dentry *file;
++};
++
++/**
+  * struct mmc_test_card - test information.
+  * @card: card under test
+  * @scratch: transfer buffer
+@@ -2037,14 +2053,12 @@ static void mmc_test_free_result(struct mmc_card *card)
+ 	mutex_unlock(&mmc_test_lock);
+ }
+ 
+-static ssize_t mmc_test_show(struct device *dev,
+-	struct device_attribute *attr, char *buf)
++static LIST_HEAD(mmc_test_file_test);
++
++static int mtf_test_show(struct seq_file *sf, void *data)
+ {
+-	struct mmc_card *card = mmc_dev_to_card(dev);
++	struct mmc_card *card = (struct mmc_card *)sf->private;
+ 	struct mmc_test_general_result *gr;
+-	char *p = buf;
+-	size_t len = PAGE_SIZE;
+-	int ret;
+ 
+ 	mutex_lock(&mmc_test_lock);
+ 
+@@ -2054,49 +2068,44 @@ static ssize_t mmc_test_show(struct device *dev,
+ 		if (gr->card != card)
+ 			continue;
+ 
+-		ret = snprintf(p, len, "Test %d: %d\n", gr->testcase + 1,
+-			gr->result);
+-		if (ret < 0)
+-			goto err;
+-		if (ret >= len) {
+-			ret = -ENOBUFS;
+-			goto err;
+-		}
+-		p += ret;
+-		len -= ret;
++		seq_printf(sf, "Test %d: %d\n", gr->testcase + 1, gr->result);
+ 
+ 		list_for_each_entry(tr, &gr->tr_lst, link) {
+-			ret = snprintf(p, len, "%u %d %lu.%09lu %u\n",
++			seq_printf(sf, "%u %d %lu.%09lu %u\n",
+ 				tr->count, tr->sectors,
+ 				(unsigned long)tr->ts.tv_sec,
+ 				(unsigned long)tr->ts.tv_nsec,
+ 				tr->rate);
+-			if (ret < 0)
+-				goto err;
+-			if (ret >= len) {
+-				ret = -ENOBUFS;
+-				goto err;
+-			}
+-			p += ret;
+-			len -= ret;
+ 		}
+ 	}
+ 
+-	ret = PAGE_SIZE - len;
+-err:
+ 	mutex_unlock(&mmc_test_lock);
+ 
+-	return ret;
++	return 0;
+ }
+ 
+-static ssize_t mmc_test_store(struct device *dev,
+-	struct device_attribute *attr, const char *buf, size_t count)
++static int mtf_test_open(struct inode *inode, struct file *file)
+ {
+-	struct mmc_card *card = mmc_dev_to_card(dev);
++	return single_open(file, mtf_test_show, inode->i_private);
++}
++
++static ssize_t mtf_test_write(struct file *file, const char __user *buf,
++	size_t count, loff_t *pos)
++{
++	struct seq_file *sf = (struct seq_file *)file->private_data;
++	struct mmc_card *card = (struct mmc_card *)sf->private;
+ 	struct mmc_test_card *test;
++	char lbuf[12];
+ 	long testcase;
+ 
+-	if (strict_strtol(buf, 10, &testcase))
++	if (count >= sizeof(lbuf))
++		return -EINVAL;
++
++	if (copy_from_user(lbuf, buf, count))
++		return -EFAULT;
++	lbuf[count] = '\0';
++
++	if (strict_strtol(lbuf, 10, &testcase))
+ 		return -EINVAL;
+ 
+ 	test = kzalloc(sizeof(struct mmc_test_card), GFP_KERNEL);
+@@ -2135,7 +2144,65 @@ static ssize_t mmc_test_store(struct device *dev,
+ 	return count;
+ }
+ 
+-static DEVICE_ATTR(test, S_IWUSR | S_IRUGO, mmc_test_show, mmc_test_store);
++static const struct file_operations mmc_test_fops_test = {
++	.open		= mtf_test_open,
++	.read		= seq_read,
++	.write		= mtf_test_write,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static void mmc_test_free_file_test(struct mmc_card *card)
++{
++	struct mmc_test_dbgfs_file *df, *dfs;
++
++	mutex_lock(&mmc_test_lock);
++
++	list_for_each_entry_safe(df, dfs, &mmc_test_file_test, link) {
++		if (card && df->card != card)
++			continue;
++		debugfs_remove(df->file);
++		list_del(&df->link);
++		kfree(df);
++	}
++
++	mutex_unlock(&mmc_test_lock);
++}
++
++static int mmc_test_register_file_test(struct mmc_card *card)
++{
++	struct dentry *file = NULL;
++	struct mmc_test_dbgfs_file *df;
++	int ret = 0;
++
++	mutex_lock(&mmc_test_lock);
++
++	if (card->debugfs_root)
++		file = debugfs_create_file("test", S_IWUSR, card->debugfs_root,
++			card, &mmc_test_fops_test);
++
++	if (IS_ERR_OR_NULL(file)) {
++		ret = -ENODEV;
++		goto err;
++	}
++
++	df = kmalloc(sizeof(struct mmc_test_dbgfs_file), GFP_KERNEL);
++	if (!df) {
++		debugfs_remove(file);
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	df->card = card;
++	df->file = file;
++
++	list_add(&df->link, &mmc_test_file_test);
++
++err:
++	mutex_unlock(&mmc_test_lock);
++
++	return ret;
++}
+ 
+ static int mmc_test_probe(struct mmc_card *card)
+ {
+@@ -2144,7 +2211,7 @@ static int mmc_test_probe(struct mmc_card *card)
+ 	if (!mmc_card_mmc(card) && !mmc_card_sd(card))
+ 		return -ENODEV;
+ 
+-	ret = device_create_file(&card->dev, &dev_attr_test);
++	ret = mmc_test_register_file_test(card);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -2156,7 +2223,7 @@ static int mmc_test_probe(struct mmc_card *card)
+ static void mmc_test_remove(struct mmc_card *card)
+ {
+ 	mmc_test_free_result(card);
+-	device_remove_file(&card->dev, &dev_attr_test);
++	mmc_test_free_file_test(card);
+ }
+ 
+ static struct mmc_driver mmc_driver = {
+@@ -2176,6 +2243,7 @@ static void __exit mmc_test_exit(void)
+ {
+ 	/* Clear stalled data if card is still plugged */
+ 	mmc_test_free_result(NULL);
++	mmc_test_free_file_test(NULL);
+ 
+ 	mmc_unregister_driver(&mmc_driver);
+ }
+-- 
+1.6.3.3
 
-Do you want all these to end up the same cacheline and bounce around nodes?
-
-If not then judicious application of __read_mostly and 
-__cacheline_aligned ought to cure it.
-
-> +
-> +#define ZZMAXDELTA	1000		//ZZZ debug
-> +atomic_t zzdelta[ZZMAXDELTA + 1];	//ZZZ debug
-
-We dont want any of the ZZZ things upstream, right?
-
->  /*
-> + * Atomic cmpxchg of a 128-bit value (pair of DW)
-> + */
-> +static inline int uv_cmpxchg128(void *p, unsigned long oldhi, unsigned long oldlo,
-> +			unsigned long newhi, unsigned long newlo)
-> +{
-> +	unsigned char ret;
-> +
-> +	asm volatile(   "lock; cmpxchg16b (%1)\n\t"
-> +			"sete %0\n\t"
-> +			: "=qm" (ret)
-> +			: "r"(p), "d"(oldhi), "a"(oldlo), "c"(newhi), "b"(newlo)
-> +			: "memory", "cc");
-> +	return ret;
-> +}
-
-That's a rather interesting piece of code that is not UV specific at 
-all, so it should move into the appropriate arch/x86/include/asm/ header 
-file.
-
-> +
-> +
-
--ETOOMANYNEWLINES
-
-> +/*
-> + * Atomic read of 128 bit value (pair of DW)
-> + */
-> +static inline void uv_read128(unsigned long *wd,
-> +				unsigned long *hi, unsigned long *lo)
-
-Should move into a header file too.
-
-> +{
-> +	unsigned long t0, t1, t0x;
-> +
-> +	do {
-> +		barrier();
-> +		t0 = wd[0];
-> +		barrier();
-> +		t1 = wd[1];
-> +		barrier();
-> +		t0x = wd[0];
-> +	} while (t0 != t0x);
-> +	*hi = t1;
-> +	*lo = t0;
-> +}
-> +
-> +/*
-> + * Convert a nsec/msec to a TSC delta for the specified cpu
-> + */
-> +static unsigned long long uv_nsec_2_cycles(unsigned long nsec, int cpu)
-> +{
-> +	unsigned long long cyc;
-> +	cyc = (nsec << CYC2NS_SCALE_FACTOR) / (per_cpu(cyc2ns, cpu));
-> +	return cyc;
-
--ETOOFEWNEWLINES
-
-Also, there doesnt seem to be anything UV specific about this, right?
-
-> +}
-> +
-> +static unsigned long long uv_msec_2_cycles(unsigned long msec, int cpu)
-> +{
-> +	return uv_nsec_2_cycles(msec * 1000000, cpu);
-> +}
-> +
-> +/*
-> + * Atomically read the RTC & TSC. For accuracy, if it
-> + * takes too long to access the RTC, try again. It is imporatnt that
-> + * the TSC/RTC values be read as close as possible at the same time.
-> + * Under certain pathological workloads, it can take a long time to
-> + * read the RTC. Be paranoid - after a few attempts at reading a
-> + * RTC/TSC pair, return a failure. Caller can try again later.
-> + */
-> +static noinline int uv_readclocks(struct uv_rtc_cpu_control *rcc,
-> +				unsigned long *tsc, unsigned long *rtc)
-> +{
-> +	unsigned long z, flags, delta, rtc0, tsc0, tsc1;
-> +	unsigned volatile long *myrtcp = rcc->myrtcp;
-> +
-> +	int cnt = MAXREADS;
-> +
-> +	do {
-> +		local_irq_save(flags);
-> +		mb();
-> +		rdtscll(tsc0);
-> +		mb();
-> +		rtc0 = *myrtcp;
-> +		mb();
-
-Note, we have rdtsc_barrier() for such purposes. Beyond being faster 
-it's even self-documenting. (unlike standalone mb()s)
-
-> +		rdtscll(tsc1);
-> +		local_irq_restore(flags);
-> +		delta = tsc1 - tsc0;
-> +		cnt--;
-> +		z = delta / 100;		//ZZZZZZZZZ debug
-> +		if (z > ZZMAXDELTA)		//ZZZZZZZZZ debug
-> +			z = ZZMAXDELTA;		//ZZZZZZZZZ debug
-> +		atomic_inc(&zzdelta[z]);	//ZZZZZZZZZ debug
-
-And we dont want ZZZZZZZZZ's (and C++ comments) upstream either, right?
-
-> +		if (cnt == 0)
-> +			return -1;
-> +	} while (delta > rcc->max_readclocks_tsc_delta);
-> +	*rtc = rtc0;
-> +	*tsc = tsc1;
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Read the current RTC value. RTC access is several hundred nsec &
-> + * can be a performance issue. In most cases, the current RTC value
-> + * is calculated based on the current TSC value (fast access) and the
-> + * TSC delta since a TSC/RTC pair was last read..
-> + */
-> +static cycle_t uv_read_rtc_calc(struct clocksource *cs)
-> +{
-> +	struct uv_rtc_cpu_control *rcc = __get_cpu_var(uv_rtc_cpu_control);
-> +	struct uv_rtc_blade_control *rbc = rcc->rbc;
-> +	unsigned long rtc, tsc, rtcx, tscx, rtc0m, tsc0m, rtc0, tsc0;
-> +	unsigned long fixmult;
-> +	unsigned long adj;
-> +
-> +	uv_read128(&rbc->rtc0, &tsc0, &rtc0);
-> +	rdtscll(tsc);
-> +	fixmult = rbc->fixmult;
-> +
-> +	if (unlikely((tsc0 + rcc->max_tsc_delta < tsc) || fixmult == 0))
-> +		goto resync;
-> +
-> +	/*
-> +	 * Cast to long to get sign extension on the shift  - delta might
-> +	 * be negative
-> +	 */
-> +	adj = ((long)((tsc - tsc0) * fixmult)) >> 32;
-> +	rtc = rtc0 + adj;
-> +
-> +done:
-> +	/*
-> +	 * Don't return a rtc value less than the previous. Note: optimized
-> +	 * for typical case where last_rtc must be updated. Other case
-> +	 * rarely happens.
-> +	 */
-> +	rtc = max(rcc->last_rtc_value, rtc);
-> +	rcc->last_rtc_value = rtc;
-> +	return rtc;
-> +
-> +resync:
-> +	/*
-> +	 * Periodically, reread a TSC/RTC pair. This prevents cumulative
-> +	 * clock drift from causing incorect values to be calculated.
-> +	 * If unable to read a TSC/RTC pair, disable RTC calculation
-> +	 * and read it directly.
-> +	 */
-> +
-> +	if (unlikely(uv_readclocks(rcc, &tsc0, &rtc0) < 0))
-> +		goto syncfail;
-> +	uv_cmpxchg128(&rbc->rtc0, rbc->tsc0, rbc->rtc0, tsc0, rtc0);
-> +	uv_read128(&rbc->rtc0m, &tsc0m, &rtc0m);
-> +	if (unlikely(tsc0m + rcc->recalc_drift_tsc_delta < tsc0 ||
-> +					tsc0m == 0)) {
-> +		uv_cmpxchg128(&rbc->rtc0m, tsc0m, rtc0m, tsc0, rtc0);
-> +		if (tsc0m) {
-> +			rtcx = rtc0 - rtc0m;
-> +			tscx = tsc0 - tsc0m;
-> +			while (tscx > 0x7fffffff || rtcx > 0x7fffffff) {
-> +				tscx >>= 1;
-> +				rtcx >>= 1;
-> +			}
-> +			rbc->fixmult = (rtcx << 32) / tscx;
-> +		}
-> +	}
-> +	rtc = rtc0;
-> +	goto done;
-> +
-> +syncfail:
-> +	/*
-> +	 * Unable to read a TSC/RTC pair. Disable dynamic calculation
-> +	 * of the RTC value until a pair can be read.
-> +	 */
-> +	rbc->tsc0m = 0;
-> +	rbc->fixmult = 0;
-> +	rtc = *rcc->myrtcp;
-> +	atomic_inc(&resync_clocks_failures);
-> +	goto done;
-> +}
-
--EFUNCTIONTOOLONG
-
-The goto maze is pretty disgusting as well - splitting the function will 
-help that problem too.
-
-> +
-> +static cycle_t uv_read_rtc(struct clocksource *cs)
-> +{
-> +	struct uv_rtc_cpu_control *rcc = __get_cpu_var(uv_rtc_cpu_control);
-> +
-> +	return *rcc->myrtcp;
-> +}
-> +
-> +/*
->   * Setup the RTC timer in oneshot mode
->   */
->  static void uv_rtc_timer_setup(enum clock_event_mode mode,
-> @@ -354,6 +675,108 @@ static int __init uv_enable_evt_rtc(char
->  }
->  __setup("uvrtcevt", uv_enable_evt_rtc);
->  
-> +
-> +#define UVCLK_ATTR(_name) \
-> +	static struct kobj_attribute uv_##_name##_attr = \
-> +		__ATTR(_name, 0644, uv_##_name##_show, uv_##_name##_store)
-> +
-> +#define UVCLK_ATTR_RO(_name) \
-> +	static struct kobj_attribute uv_##_name##_attr = \
-> +		__ATTR(_name, 0444, uv_##_name##_show, NULL)
-> +
-> +static void uv_update_all_blade_control(void)
-> +{
-> +	struct uv_rtc_cpu_control *rcc;
-> +	int cpu;
-> +
-> +	for_each_online_cpu(cpu) {
-> +		rcc = per_cpu(uv_rtc_cpu_control, cpu);
-> +		rcc->recalc_drift_tsc_delta = uv_msec_2_cycles(recalc_drift_msec, cpu);
-> +		rcc->max_tsc_delta = uv_msec_2_cycles(resync_clocks_msec, cpu);
-> +		rcc->max_readclocks_tsc_delta = uv_nsec_2_cycles(max_readclocks_tsc_nsec, cpu);
-> +	}
-> +}
-> +
-> +static ssize_t uv_recalculate_drift_msec_show(struct kobject *kobj,
-> +			struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "%lu\n", recalc_drift_msec);
-> +}
-> +static ssize_t uv_recalculate_drift_msec_store(struct kobject *kobj,
-> +		struct kobj_attribute *attr, const char *buf, size_t count)
-> +{
-> +	unsigned long input;
-> +
-> +	if (strict_strtoul(buf, 10, &input))
-> +		return 0;
-> +
-> +	recalc_drift_msec = input;
-> +	uv_update_all_blade_control();
-> +
-> +	return count;
-> +}
-> +UVCLK_ATTR(recalculate_drift_msec);
-> +
-> +static ssize_t uv_resync_clocks_msec_show(struct kobject *kobj,
-> +			struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "%lu\n", resync_clocks_msec);
-> +}
-> +static ssize_t uv_resync_clocks_msec_store(struct kobject *kobj,
-> +		struct kobj_attribute *attr, const char *buf, size_t count)
-> +{
-> +	unsigned long input;
-> +
-> +	if (strict_strtoul(buf, 10, &input))
-> +		return 0;
-> +
-> +	resync_clocks_msec = input;
-> +	uv_update_all_blade_control();
-> +
-> +	return count;
-> +}
-> +UVCLK_ATTR(resync_clocks_msec);
-> +
-> +static ssize_t uv_max_readclocks_tsc_nsec_show(struct kobject *kobj,
-> +			struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "%lu\n", max_readclocks_tsc_nsec);
-> +}
-> +static ssize_t uv_max_readclocks_tsc_nsec_store(struct kobject *kobj,
-> +		struct kobj_attribute *attr, const char *buf, size_t count)
-> +{
-> +	unsigned long input;
-> +
-> +	if (strict_strtoul(buf, 10, &input))
-> +		return 0;
-> +
-> +	max_readclocks_tsc_nsec = input;
-> +	uv_update_all_blade_control();
-> +
-> +	return count;
-> +}
-> +UVCLK_ATTR(max_readclocks_tsc_nsec);
-> +
-> +static ssize_t uv_resync_clocks_failures_show(struct kobject *kobj,
-> +			struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "%u\n", atomic_read(&resync_clocks_failures));
-> +}
-> +UVCLK_ATTR_RO(resync_clocks_failures);
-> +
-> +static struct attribute *uv_rtc_attrs[] = {
-> +	&uv_recalculate_drift_msec_attr.attr,
-> +	&uv_resync_clocks_msec_attr.attr,
-> +	&uv_max_readclocks_tsc_nsec_attr.attr,
-> +	&uv_resync_clocks_failures_attr.attr,
-> +	NULL,
-> +};
-> +
-> +static struct attribute_group uv_rtc_attr_group = {
-> +	.attrs = uv_rtc_attrs,
-> +	.name = "sgi_rtc",
-> +};
-> +
->  static __init void uv_rtc_register_clockevents(struct work_struct *dummy)
->  {
->  	struct clock_event_device *ced = &__get_cpu_var(cpu_ced);
-> @@ -365,29 +788,57 @@ static __init void uv_rtc_register_clock
->  
->  static __init int uv_rtc_setup_clock(void)
->  {
-> -	int rc;
-> +	struct uv_rtc_cpu_control *rcc = __get_cpu_var(uv_rtc_cpu_control);
-> +	struct uv_rtc_blade_control *rbc, **rbcp;
-> +	struct clocksource *cs;
-> +	int b, rc, node, cpu, csi, numblades;
->  
->  	if (!is_uv_system())
->  		return -ENODEV;
->  
-> -	clocksource_uv.mult = clocksource_hz2mult(sn_rtc_cycles_per_second,
-> -				clocksource_uv.shift);
-> +	/* Allocate per node structures for RTC */
-> +	numblades = uv_num_possible_blades();
-> +	rbcp = kzalloc(sizeof(void *) * numblades, GFP_ATOMIC);
-> +	for_each_online_node(node) {
-> +		b = uv_node_to_blade_id(node);
-> +		if (!rbcp[b])
-> +			rbcp[b] = kzalloc_node(sizeof(*rbc), GFP_ATOMIC, node);
-> +		rbc = rbcp[b];
-> +		for_each_online_cpu(cpu)
-> +			if (cpu_to_node(cpu) == node) {
-> +				rcc = kzalloc_node(sizeof(*rcc), GFP_ATOMIC,
-> +									node);
-
-Ignore checkpatch in cases where the solution to a warning is an uglie 
-like this one.
-
-> +				rcc->rbc = rbc;
-> +				rcc->myrtcp = uv_raw_rtc_address(cpu);
-> +				per_cpu(uv_rtc_cpu_control, cpu) = rcc;
-> +			}
-> +	}
-> +	uv_update_all_blade_control();
-> +	kfree(rbcp);
->  
-> -	/* If single blade, prefer tsc */
-> -	if (uv_num_possible_blades() == 1)
-> -		clocksource_uv.rating = 250;
-> +	for (csi = 0; csi < ARRAY_SIZE(clocksources); csi++) {
-> +		cs = clocksources[csi];
-> +		cs->mult = clocksource_hz2mult(sn_rtc_cycles_per_second,
-> +				cs->shift);
-> +
-> +		/* If single blade, prefer tsc */
-> +		if (uv_num_possible_blades() == 1)
-> +			cs->rating = 250;
-> +		rc = clocksource_register(cs);
-> +		if (rc)
-> +			goto error;
-> +	}
->  
-> -	rc = clocksource_register(&clocksource_uv);
-> -	if (rc)
-> -		printk(KERN_INFO "UV RTC clocksource failed rc %d\n", rc);
-> -	else
-> -		printk(KERN_INFO "UV RTC clocksource registered freq %lu MHz\n",
-> -			sn_rtc_cycles_per_second/(unsigned long)1E6);
-> +	printk(KERN_INFO "UV RTC clocksource registered freq %lu MHz\n",
-> +		sn_rtc_cycles_per_second/(unsigned long)1E6);
->  
-> -	if (rc || !uv_rtc_evt_enable || x86_platform_ipi_callback)
-> -		return rc;
-> +	if (sysfs_create_group(kernel_kobj, &uv_rtc_attr_group))
-> +		printk(KERN_INFO "UV RTC - unable to create /sys files\n");
->  
->  	/* Setup and register clockevents */
-> +	if (!uv_rtc_evt_enable)
-> +		return 0;
-> +
->  	rc = uv_rtc_allocate_timers();
->  	if (rc)
->  		goto error;
-> @@ -415,8 +866,9 @@ static __init int uv_rtc_setup_clock(voi
->  	return 0;
->  
->  error:
-> -	clocksource_unregister(&clocksource_uv);
->  	printk(KERN_INFO "UV RTC clockevents failed rc %d\n", rc);
-> +	for (csi = csi - 1; csi >= 0; csi--)
-> +		clocksource_unregister(clocksources[csi]);
->  
->  	return rc;
->  }
-
-Probably: -EFUNCTIONTOOBIG.
-
-Thanks,
-
-	Ingo
