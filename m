@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab0IJX1Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 19:27:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41834 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab0IJX1Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 19:27:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=hOYpfSWPE9Abs+B7aA9PTaOvdqln421nbkfNEpZTgtYn1UCW6PE3MREkKvrcJ91URZ
-         gIPCqR9pzPZndwY3/Y2m23QcPj23v+/Xju0rVX0DKVLd8+38NnOGx+KyXoyhGIVKO3yj
-         m7mx+NqzoZa+JBpWnnYcTmHPsLHyolqJGI2qs=
-Message-ID: <4C8ABF15.8000108@gmail.com>
-Date: Sat, 11 Sep 2010 01:28:21 +0200
-From: Tejun Heo <htejun@gmail.com>
+	id S1755262Ab0IJXgA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 19:36:00 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54932 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753841Ab0IJXf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 19:35:59 -0400
+Message-ID: <4C8AC0F5.5080206@kernel.org>
+Date: Sat, 11 Sep 2010 01:36:21 +0200
+From: Tejun Heo <tj@kernel.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
-        acme@redhat.com
-Subject: Re: [PATCH percpu#for-next] percpu: clear memory allocated with the
- km allocator
-References: <4c88dca1.44e7d80a.577e.3592@mx.google.com> <1284040322.2589.174.camel@edumazet-laptop> <AANLkTimHwiXa62GhHA0hQ0AOcDaxgqRcV+O63G_qoZW8@mail.gmail.com> <1284106566.402.26.camel@laptop> <4C89EF37.5080803@kernel.org> <4C89F1CE.4050302@gmail.com> <1284108918.402.31.camel@laptop> <20100910093115.2f0859af.randy.dunlap@oracle.com> <20100910164525.GA11188@elte.hu>
-In-Reply-To: <20100910164525.GA11188@elte.hu>
+To: Mikulas Patocka <mpatocka@redhat.com>
+CC: Mike Snitzer <snitzer@redhat.com>, agk@redhat.com, jaxboe@fusionio.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-raid@vger.kernel.org, dm-devel@redhat.com, hch@lst.de,
+        konishi.ryusuke@lab.ntt.co.jp, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com, vst@vlnb.net,
+        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
+        rusty@rustcorp.com.au, mst@redhat.com, k-ueda@ct.jp.nec.com
+Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
+ dm
+References: <1283509796-1510-1-git-send-email-tj@kernel.org> <1283509796-1510-24-git-send-email-tj@kernel.org> <Pine.LNX.4.64.1009101410570.7839@hs20-bc2-1.build.redhat.com> <20100910184652.GA24470@redhat.com> <Pine.LNX.4.64.1009101456220.21834@hs20-bc2-1.build.redhat.com> <20100910192403.GA24582@redhat.com> <Pine.LNX.4.64.1009101554300.5286@hs20-bc2-1.build.redhat.com>
+In-Reply-To: <Pine.LNX.4.64.1009101554300.5286@hs20-bc2-1.build.redhat.com>
 X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Sep 2010 23:35:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2010 06:45 PM, Ingo Molnar wrote:
-> 
-> * Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> 
->> On Fri, 10 Sep 2010 10:55:18 +0200 Peter Zijlstra wrote:
->>
->>> On Fri, 2010-09-10 at 10:52 +0200, Tejun Heo wrote:
->>>> Percpu allocator should clear memory before returning it but the km
->>>> allocator forgot to do it.  Fix it.
->>>>
->>>> Signed-off-by: Tejun Heo <tj@kernel.org>
->>>> Spotted-by: Peter Zijlstra <peterz@infradead.org>
->>>
->>> (fwiw, -tip uses Reported-by)
->>
->> fyi, Documentation/SubmittingPatches does also.
-> 
-> Yeah, and, FYI, there's observed strong correlation between the 
-> maintenance policies of -tip and Documentation/SubmittingPatches.
-> [i'd even venture so far to claim causation]
+On 09/10/2010 10:06 PM, Mikulas Patocka wrote:
+> But I have my work rules that I learned: I use no git kernels and no 
+> external patches (except Alasdair's patchset that I want to test). I only 
+> use -rc or final kernels. I need a stable computer --- I don't want to 
+> solve problems like "does it crash because I pulled something or does it 
+> crash because I made a bug in my code?" So, put that into 2.6.37-rc1 and 
+> I'll optimize flushes in dm for -rc2 or -rc3.
 
-Oh, I already updated it to be Reported-by.  I use Spotted-by when to
-distinguish the cases where the root cause is diagnosed by the
-reporter as opposed to when the reporter just reported a bug but I
-suppose it's just causing more confusion.  I'll just use Reproted-by
-from now on.
+Alright, I'm sorry but this is as far as I would go for dm conversion
+patches.  If you wanna split it further or do it your way, please feel
+free to.  I think it would be beneficial to do things now but, hey,
+you guys are maintaining dm part of the kernel, so it's up to you
+guys.  But, I think it would be silly for everyone else to wait for
+the rather special requirement for dm, so if we have to go forward
+without dm updates, I suppose we will have to.  Jens, please feel free
+to drop dm conversion patches.
 
-Thank you.
+Thanks.
 
 -- 
 tejun
