@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab0IJKCy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 06:02:54 -0400
-Received: from lo.gmane.org ([80.91.229.12]:32946 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751689Ab0IJKCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 06:02:53 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Florian Mickler <florian@mickler.org>
-Subject: Re: block cache replacement strategy?
-Date: Fri, 10 Sep 2010 12:02:35 +0200
-Message-ID: <20100910120235.455962c4@schatten.dmk.lab>
-References: <20100907133429.GB3430@sig21.net>
-	<20100909120044.GA27765@sig21.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: f053214237.adsl.alicedsl.de
-In-Reply-To: <20100909120044.GA27765@sig21.net>
-X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+	id S1752107Ab0IJKDt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 06:03:49 -0400
+Received: from 87-119-183-14.tll.elisa.ee ([87.119.183.14]:4024 "EHLO
+	bazspaz.fatphil.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751353Ab0IJKDs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 06:03:48 -0400
+X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Sep 2010 06:03:48 EDT
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: mingo@elte.hu, gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, travis@sgi.com, akataria@vmware.com
+Subject: [RFC 0/3] Improve fallback LPJ calculation
+Date: Fri, 10 Sep 2010 12:54:25 +0300
+Message-Id: <1284112468-18498-1-git-send-email-ext-phil.2.carmody@nokia.com>
+X-Mailer: git-send-email 1.7.2.rc1.37.gf8c40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Sep 2010 14:00:44 +0200
-Johannes Stezenbach <js@sig21.net> wrote:
 
-> On Tue, Sep 07, 2010 at 03:34:29PM +0200, Johannes Stezenbach wrote:
-> > 
-> > during some simple disk read throughput testing I observed
-> > caching behaviour that doesn't seem right.  The machine
-> > has 2G of RAM and AMD Athlon 4850e, x86_64 kernel but 32bit
-> > userspace, Linux 2.6.35.4.  It seems that contents of the
-> > block cache are not evicted to make room for other blocks.
-> > (Or something like that, I have no real clue about this.)
-> > 
-> > Since this is a rather artificial test I'm not too worried,
-> > but it looks strange to me so I thought I better report it.
-> 
-> C'mon guys, please comment.  Is this a bug or not?
-> Or is my question too silly?
-> 
-> 
-> Johannes
+The motivation for patch 2/3 is that currently our OMAP calibrates
+itself using the trial-and-error binary chop fallback that some other
+architectures no longer need to perform. This is a lengthy process, 
+taking 0.2s in an environment where boot time is of great interest.
 
-Well I personally have  no clue about the block caching, but perhaps
-that is an heuristic to prevent the cache from fluctuating too much?
-Some minimum time a block is hold... in a big linear read the cache is
-useless anyway most of the time, so it could make some sense...
+The patch has two optimisations. Firstly, it replaces the initial 
+repeated-doubling to find the relevant power of 2 with a tight loop 
+that just does as much as it can in a jiffy. Secondly, it doesn't 
+binary chop over an entire power of 2 range, it choses a much smaller
+range based on how much it squeezed in, and failed to squeeze in, 
+during the first stage. Both are significant optimisations, and 
+bring our calibration down from 23 jiffies to 6, and, in the process,
+arrive at a more accurate lpj value.
 
-You could try accessing random files after filling up the cache and
-check if those evict the the cache.  That should rule out any
-linear-read-detection heuristic. 
+The 'bands' and 'sub-logarithmic' growth may look over-engineered,
+but they cost a small level of in inaccuracy of the initial guess
+(for all architectures) in order to avoid the very large inaccuracies 
+that appeared during testing (on x86_64 architectures, and presumably 
+others with less metronomic operation). Note that due to the existence
+of the TSC and other timers, the x86_64 doesn't use this fallback 
+routine, but I wanted to code defensively, able to cope with all kinds
+of processor behaviours.
+
+1/3 is simply cosmetic to prepare for 2/3. 
+3/3 is simply to assist testing and not intended for integration.
+
+I would appreciate it if people with exotic or unusual architectures
+could help test this.
 
 Cheers,
-Flo
-
+Phil
