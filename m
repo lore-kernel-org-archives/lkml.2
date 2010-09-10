@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab0IJSrV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 14:47:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16847 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753331Ab0IJSrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 14:47:19 -0400
-Date: Fri, 10 Sep 2010 14:46:52 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, agk@redhat.com, jaxboe@fusionio.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-raid@vger.kernel.org, dm-devel@redhat.com, hch@lst.de,
-        konishi.ryusuke@lab.ntt.co.jp, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com, vst@vlnb.net,
-        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
-        rusty@rustcorp.com.au, mst@redhat.com, k-ueda@ct.jp.nec.com
-Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
- dm
-Message-ID: <20100910184652.GA24470@redhat.com>
-References: <1283509796-1510-1-git-send-email-tj@kernel.org>
- <1283509796-1510-24-git-send-email-tj@kernel.org>
- <Pine.LNX.4.64.1009101410570.7839@hs20-bc2-1.build.redhat.com>
+	id S1754028Ab0IJSrx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 14:47:53 -0400
+Received: from straum.hexapodia.org ([207.7.131.186]:38882 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753746Ab0IJSrw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 14:47:52 -0400
+Date: Fri, 10 Sep 2010 11:47:51 -0700
+From: Andy Isaacson <adi@hexapodia.org>
+To: Norbert Preining <preining@logic.at>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
+Subject: Re: after closing the lid and reopening it the screen remains blank
+Message-ID: <20100910184751.GA17794@hexapodia.org>
+References: <20100909224117.GA30000@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1009101410570.7839@hs20-bc2-1.build.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100909224117.GA30000@gamma.logic.tuwien.ac.at>
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10 2010 at  2:25pm -0400,
-Mikulas Patocka <mpatocka@redhat.com> wrote:
+On Fri, Sep 10, 2010 at 07:41:17AM +0900, Norbert Preining wrote:
+> running: 2.6.36-rc3+ (from git) on Integrated Graphics Chipset: Intel(R) GM45
+> (Sony Vaio Z11)
+> Debian/unstable, so xserver 1.7.7, intel driver: 2.12.0
+> 
+> since some recent kernel I have the following problem: When closing the
+> lid on power, so the machine does not suspend, the backlight is properly
+> turned off.
+> 
+> But when I open the lid again the backlight goes on, but there is nothing
+> to see: No screensaver, no activity, nothing. Switching to Console in
+> blind didn't work either.
+> 
+> The machine is still responsible (Sysrq, but also CapsLock), and 
+> killing the X process with Ctrl-Alt-Backspace gets me back a working
+> X.
+> 
+> I am quite sure that it *was* working in former time, but cannot
+> pinpoint eaxactely when the problems started.
+> 
+> If you need any further information or testing, please let me know.
+> But it will take some time until I am back somewhere where I can
+> ssh into my machine (or try if I can ssh into).
 
-> I quite disagree with the patch. It changes too many things.
-> 
-> What I said and what I want to see:
-> 
-> Take dm code as is. Treat FLUSH requests as empty barriers.
-> 
-> 
-> So I want to see a patch that only changes:
-> 
-> bio_empty_barrier(bio)  ->  bio->bi_rw & REQ_FLUSH
-> WRITE_BARRIER -> WRITE_FLUSH
-> etc.
-> 
-> so that the code compiles and works.
-> 
-> DON'T CHANGE ANYTHING ELSE.
-> 
-> Requirements of flushes are subset of requirements of barriers, so if you 
-> send flush and it is treated as a barrier inside DM, there's no problem. 
-> DM code that I wrote only sends out zero-data barriers and already treats 
-> them as flushes (it doesn't rely on ordering), so there's no problem with 
-> sent requests too.
-> 
-> Once fluges get into kernel, I'll clean it up to allow parallel flushes 
-> and requests, etc. But not before. I don't want to work on an interface 
-> that is under development and may be changed.
+FWIW, 2.6.36-rc3-00396-gbe6200a suspend-to-ram works for me on GM45
+(Dell E4300).  I am running Ubuntu with xorg-edgers from a few months
+ago:
 
-Mikulas,
+xserver-xorg-core 2:1.6.5+git20091107+server-1.6-branch.2dbcb06a-0ubuntu0sarvatt~karmic
+xserver-xorg-video-intel 2:2.11.0+git20100415.c374c94e-0ubuntu0sarvatt~karmic
 
-I agree that it is unfortunate that we're having to explore this level
-of change to DM's flush support.  Especially given how recently your
-barrier code was added.
+There are several regression fixes pulled after 2.6.36-rc3 in merge
+commit 4eab8a5717f5, can you try current linux-2.6.git ?
 
-But the work has already been done.  Rather than putting up artificial
-barriers (no pun intended) it'd be great if you took the time to just
-review the changes.
+If it still fails, please post
+ - lspci -vvv
+ - /var/log/Xorg.0.log from after the failure
+ - dmesg
 
-The patch header enumerates and describes the various changes quite
-clearly.
-
-And in fact, this first patch basically is as minimal as it gets
-relative to bio-based DM's conversion to FLUSH+FUA.
-
-Please direct your energy and talent in a positive way rather than
-starting a potential flame.
-
-Thanks,
-Mike
+-andy
