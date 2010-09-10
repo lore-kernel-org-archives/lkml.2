@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab0IJExg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 00:53:36 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:25603 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751794Ab0IJExc (ORCPT
-	<rfc822;groupwise-jlee@novell.com:4:2>);
-	Fri, 10 Sep 2010 00:53:32 -0400
-Message-Id: <4C8A4668020000230002021A@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Thu, 09 Sep 2010 22:53:28 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <gregkh@suse.de>
-Cc: <mjg@redhat.com>, <mjg59@srcf.ucam.org>, <trenn@suse.de>,
-        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <Dennis.Jansen@web.de>
-Subject: Re: [PATCH] Add Intel Poulsbo Stub Driver
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1753424Ab0IJE4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 00:56:04 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:35042 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab0IJE4C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 00:56:02 -0400
+Date: Thu, 9 Sep 2010 22:55:58 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>, meego-dev@meego.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
+        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        arjan@linux.intel.com, gregkh@suse.de,
+        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
+Message-ID: <20100910045558.GA8436@angua.secretlab.ca>
+References: <000a01cb4b2b$f03c6d40$66f8800a@maildom.okisemi.com>
+ <AANLkTimTumguZ7Tm1-zGb=D+0gghsA-b-RyhRDTQieFR@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <AANLkTimTumguZ7Tm1-zGb=D+0gghsA-b-RyhRDTQieFR@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg, 
-
-於 三，2010-09-01 於 08:00 -0700，Greg KH 提到：
-> On Wed, Sep 01, 2010 at 05:08:39PM +0800, Lee, Chun-Yi wrote:
-> > +static struct pci_device_id pciidlist[] = {
-> > +	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
-> > +	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
-> > +	{0, 0, 0}
-> > +};
+On Thu, Sep 09, 2010 at 10:58:38PM +0200, Linus Walleij wrote:
+> 2010/9/3 Masayuki Ohtake <masa-korg@dsn.okisemi.com>:
 > 
-> Now that you have this, just use:
-> 	MODULE_DEVICE_TABLE(pci, pciidlist);
-> instead of:
+> > Each instance of our SPI device has the same vendor ID and device ID.
+> > Thus, I think it is impossible to be called probe() for each instance.
 > 
-> > +MODULE_ALIAS("pci:v00008086d00008108sv*sd*bc*sc*i*");
-> > +MODULE_ALIAS("pci:v00008086d00008109sv*sd*bc*sc*i*");
-> 
-> As the proper alias will automatically get generated from the
-> MODULE_DEVICE_TABLE() macro.
-> 
+> Looking at you latest patch it appears you could :-)
+> That solves the problem pretty nicely.
 
-Thank's for your review and kindly suggestion.
-It's useful to me! :-)
+Actually, it doesn't look like he did.  It looks to me that the
+ability to support multiple spi bus instances on a single PCI device
+has simply been removed.  I don't know if that is because it simply
+isn't needed yet, or if it is because Ohtake-san doesn't quite
+understand what were suggesting.
 
-And it works fine on my Poulsbo machine, I will use:
-	MODULE_DEVICE_TABLE(pci, pciidlist);
+Regardless it doesn't matter.  When or if the driver does need to be
+modified to support multiple instances, it is a relatively straight
+forward matter to refactor the current code into a platform_driver,
+and create a new pci_driver that simply registers the matching
+platform_device for each spi bus instance supported by the device.
 
-
-Thank's a lot!
-Joey Lee
-
+g.
