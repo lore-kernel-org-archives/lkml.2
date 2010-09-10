@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab0IJJYj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 05:24:39 -0400
-Received: from 29.mail-out.ovh.net ([87.98.216.213]:40049 "HELO
-	29.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756378Ab0IJJYi (ORCPT
+	id S1750931Ab0IJJ0c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 05:26:32 -0400
+Received: from smtp103.sbc.mail.re3.yahoo.com ([66.196.96.86]:24536 "HELO
+	smtp103.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750728Ab0IJJ0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 05:24:38 -0400
-Date: Fri, 10 Sep 2010 11:23:44 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        avictor.za@gmail.com
-Subject: Re: [PATCH] AT91: dm9000 initialization update
-Message-ID: <20100910092344.GN9112@game.jcrosoft.org>
-References: <1284113629-13768-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284113629-13768-1-git-send-email-nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 17965703339299548012
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Fri, 10 Sep 2010 05:26:30 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: 1G.Ou4MVM1kN9c.Nin0xDDZ8WGnvikvn1Lcd9evDlIYyHwn
+ 2TC1BZptWj5QtZFms08AMtrA4nG3IVe2JwJVBNYWuTH0.42CBVUCkGtoLVGJ
+ CO57cq8z1R_L0BfsBFtHNIOltH4RMTDVILCv_KL6RPoY8lYZwVySq5Sd9UwJ
+ I9qhTJXw1__p0fguOZ6nhwhBRadiMyjp5m_vFHQNPvsbNvGqsuFaCOx8txra
+ s0sjG0kKaaIvHa7ZOTjq34HJZflRBZmqk1mRrlZwuHGOgtlUz4dZe
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Joe Eykholt <jeykholt@cisco.com>
+Cc: Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 0/4] tcm: Add pre-allocated struct se_cmd descriptor support
+Date: Fri, 10 Sep 2010 02:26:24 -0700
+Message-Id: <1284110784-32763-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12:13 Fri 10 Sep     , Nicolas Ferre wrote:
-> Add information in dm9000 mac/phy chip initialization:
-> - irq resource details
-> - platform data details
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->  arch/arm/mach-at91/board-sam9261ek.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/board-sam9261ek.c b/arch/arm/mach-at91/board-sam9261ek.c
-> index c4c8865..b4307ab 100644
-> --- a/arch/arm/mach-at91/board-sam9261ek.c
-> +++ b/arch/arm/mach-at91/board-sam9261ek.c
-> @@ -93,11 +93,12 @@ static struct resource dm9000_resource[] = {
->  		.start	= AT91_PIN_PC11,
->  		.end	= AT91_PIN_PC11,
->  		.flags	= IORESOURCE_IRQ
-> +			| IORESOURCE_IRQ_LOWEDGE | IORESOURCE_IRQ_HIGHEDGE,
-both?
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Best Regards,
-J.
+Greetings Joe and Co,
+
+This patch series adds support to TCM Core for allowing TCM fabric modules to use
+pre-allocated struct se_cmd descriptors and sense data buffers living within
+fabric module dependent data structures.  This patch series was orginally inspiried
+as a future TCM v4.1 optimization by Joe Eykholt in a thread here:
+
+http://groups.google.com/group/linux-iscsi-target-dev/browse_thread/thread/88a6434fa9cad163
+
+The first patch adds the necessary TCM Core infrastructure to support the
+initialization and proper release of struct se_cmd living within TCM fabric
+module dependent data structures.  This includes the conversion of existing logic
+and the addition of the new transport_init_se_cmd() EXPORT_SYMBOL() code.
+
+The second patch converts the TCM_Loop fabric module to use
+struct tcm_loop_cmd->tl_se_cmd and struct tcm_loop_cmd->tl_sense_buf.
+
+The third patch converts the LIO-Target fabric module to use
+struct iscsi_cmd->se_cmd and struct iscsi_cmd->sense_buffer.
+
+The forth patch converts the Open-FCoE.org / TCM_FC fabric module to
+use struct ft_cmd->se_cmd and struct ft_cmd->ft_sense_buffer.
+
+So far this has been lightly tested with TCM_Loop and LIO-Target fabric
+modules on v2.6.36-rc3 HVM x86 guest, and will require more testing
+to properly ensure the patch series is functionally correct, and that
+other new TCM modules are still 100% functional using the existing
+*transport_alloc_se_cmd() callers.
+
+Many thanks again to Joe for noticing the oppourtunity for improvement
+within the per I/O descriptor path and making this astute suggestion!!
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+
+Nicholas Bellinger (4):
+  tcm: Add support for fabric module provided struct se_cmd descriptors
+  tcm_loop: Convert to pre-allocated struct se_cmd descriptors
+  lio-target: Convert to use pre-allocated struct se_cmd descriptors
+  tcm_fc: Convert to use pre-allocated struct se_cmd descriptors
+
+ drivers/target/lio-target/iscsi_target.c       |   27 +++--
+ drivers/target/lio-target/iscsi_target_core.h  |   10 ++-
+ drivers/target/lio-target/iscsi_target_erl1.c  |    8 +-
+ drivers/target/lio-target/iscsi_target_tmr.c   |   23 ++---
+ drivers/target/lio-target/iscsi_target_util.c  |   44 ++++----
+ drivers/target/target_core_transport.c         |  131 +++++++++++++++++++-----
+ drivers/target/tcm_fc/tcm_fc.h                 |    3 +-
+ drivers/target/tcm_fc/tfc_cmd.c                |   59 +++++------
+ drivers/target/tcm_fc/tfc_io.c                 |    4 +-
+ drivers/target/tcm_loop/tcm_loop_core.h        |    6 +-
+ drivers/target/tcm_loop/tcm_loop_fabric.c      |   12 +-
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |   37 +++----
+ include/target/target_core_base.h              |    3 +
+ include/target/target_core_transport.h         |    4 +
+ 14 files changed, 226 insertions(+), 145 deletions(-)
+
