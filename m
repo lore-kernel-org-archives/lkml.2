@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab0IJJTw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 05:19:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754579Ab0IJJTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 05:19:51 -0400
+	id S1756756Ab0IJJXR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 05:23:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51459 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab0IJJXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 05:23:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gDfiCsyP1tKuZ5svjlBVR5GiRt09FJgi3ey0f9CkTRBzu9RRX6YJDEucY/9FJ/hwf7
+         zDFCBRrJUvj8fTI2fXfhO+vZH0So782sBAzZNTMZrXtp4nXsQBMUa0iTPI3u5Gj3U6mC
+         0Tf9n2SsLguGNqs3QOK5KMBxsjWnJPqQJ/6+c=
+Date: Fri, 10 Sep 2010 11:23:03 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-api@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] posix clocks: introduce a syscall for clock tuning.
+Message-ID: <20100910092303.GA10179@riccoc20.at.omicron.at>
+References: <cover.1283504065.git.richard.cochran@omicron.at>
+ <7f4815cdfcf5bc49df4bdd09d59a4f56ca2598f5.1283504065.git.richard.cochran@omicron.at>
+ <alpine.LFD.2.00.1009091159260.2477@localhost6.localdomain6>
+ <20100909133449.GB2823@riccoc20.at.omicron.at>
+ <alpine.LFD.2.00.1009092102150.2477@localhost6.localdomain6>
+ <alpine.LFD.2.00.1009092244390.2477@localhost6.localdomain6>
+ <1284072793.2762.259.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Brad Spengler <spender@grsecurity.net>
-X-Fcc: ~/Mail/linus
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-fsdevel@vger.kernel.org,
-        pageexec@freemail.hu,
-        "Brad Spengler <spender@grsecurity.net> Eugene Teo" 
-	<eugene@redhat.com>
-Subject: Re: [PATCH 1/3] setup_arg_pages: diagnose excessive argument size
-In-Reply-To: Brad Spengler's message of  Wednesday, 8 September 2010 07:57:28 -0400 <20100908115728.GB11762@grsecurity.net>
-References: <20100827220258.GF4703@outflux.net>
-	<20100830005648.431B7400D9@magilla.sf.frob.com>
-	<20100830032331.GA22773@openwall.com>
-	<20100830100616.78971400D9@magilla.sf.frob.com>
-	<20100908023417.8B055401AF@magilla.sf.frob.com>
-	<20100908023549.BFFA8401AF@magilla.sf.frob.com>
-	<20100908115728.GB11762@grsecurity.net>
-X-Antipastobozoticataclysm: Bariumenemanilow
-Message-Id: <20100910091830.F0893405D5@magilla.sf.frob.com>
-Date: Fri, 10 Sep 2010 02:18:30 -0700 (PDT)
+Content-Disposition: inline
+In-Reply-To: <1284072793.2762.259.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I still don't think this addresses the whole problem.  
+On Thu, Sep 09, 2010 at 03:53:13PM -0700, john stultz wrote:
+> The only problem there is from the examples, it seems some PTP hardware
+> can be fairly self-contained. So its a actual ns clock that can be freq
+> adjusted in hardware, not a constant freq counter that is then converted
+> to nanoseconds and freq managed in software. So the interface probably
+> can't be quite as low-level as the clocksource/clockevent structures.
+> 
+> In fact, from the example drivers posted already, it looks like the
+> k_clock structure maps fairly close to what the hardware uses.
 
-You're responding to one of three patches, and I said to begin with that
-all together they only address part of the problem (not the OOM part).
-So the import of this remark is somewhat mysterious.
+Yes, thats right. The PTP hardware clocks of which I know all follow
+the same pattern.
 
-> Without question, the rlimit / 4 check is bogus.  
+> Other clock types that we may want to expose, such as the RTC also can
+> map fairly close to k_clock. The audio clocks may need some research, as
+> I suspect they're just a clocksource style counter, so some additional
+> software cycle->ns layering similar to the timekeeping core (but likely
+> much simpler) may be needed.
 
-I question that assertion.  For a non-RLIM_INFINITY limit, there is nothing
-in particular wrong with it.  The kernel is free to pick its upper bound
-for ARG_MAX by whatever method.  I don't see anything much to object to
-about the rlimit/4 method.  It has no useful effect for RLIM_INFINITY and
-IMHO should not try to impose any limit in that case.  But that's the only
-thing I see a reason to change.
+We may also find clocks that are free running counters which can
+timestamp network packets. In that case, one would also need software
+support to implement rate adjustment. I have not seen that yet among
+PTP hardware clocks, so I think we should cross that bridge when we
+come to it. In any case, the proposed infrastructure does not exclude
+the possibility to support that kind of clock.
 
-> If nobody agrees with the intent of that check, then it should be
-> removed, but I think the better solution is to fix the check so that it
-> matches its original intent: let the initial stack setup be up to 1/Xth
-> of the min(rlimit, TASK_SIZE dependent upon personality), which allows
-> space for additional stack setup in the ELF loader and then further
-> growth once the process is live.  
+> So the question to Richard is, what does the above k_clock not provide
+> that the PTP driver needs?
 
-I see no reason to suspect this was the "original intent".  It seems most
-likely to me that the original intent was 1/4th the RLIMIT_STACK size, and
-just nobody thought about what that meant when RLIMIT_STACK was RLIM_INFINITY.
+Yes.
 
-> If that amount is overstepped, then the exec will return an error to the
-> calling process instead of being terminated.
+> If you've already made some stabs at it,
+> seeing an example of the generic header and a trivial example driver
+> that includes the k_clock structure, so we can see what it removed from
+> your earlier chardev implementation would be helpful.
 
-That's what happens now when RLIMIT_STACK is smaller, and that's what
-people really care about.  What you suggest would require some more
-significant changes to the exec code path, touching all the binfmt modules
-(though probably only binfmt_elf matters).  
-
-In the current structure of the code, the arch-dependent SET_PERSONALITY
-macro used by {compat_,}binfmt_elf is the only place that knows what arch
-bits to set for the new address space size.  This is itself destructive,
-but also runs after flush_old_exec (the point of no return).  So you'd have
-to reorganize things significantly, or add an entirely new arch macro tied
-into struct binfmt somehow, or something like that.
-
-> It might be useful to consult with the people who introduced/approved 
-> the check in the first place, as they seemed to have reasons for 
-> implementing it.
-
-This was done in commit b6a2fea by Ollie Wild <aaw@google.com>:
-	mm: variable length argument support
-It was part of going from a fixed maximum to no fixed maximum.
-The log includes:
-    [a.p.zijlstra@chello.nl: limit stack size]
-So perhaps it was Peter who devised the rlimit/4 idea.
-
+Okay, it seems that we are gradually coming around to a workable
+solution. I will repost the posix clock idea including the PTP clock
+drivers, so you all can see how it would fit together.
 
 Thanks,
-Roland
+Richard
