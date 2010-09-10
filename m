@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab0IJBrs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 21:47:48 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54055 "EHLO hera.kernel.org"
+	id S1757469Ab0IJBsL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 21:48:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40159 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756865Ab0IJBrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 21:47:47 -0400
-Date: Fri, 10 Sep 2010 01:46:31 GMT
+	id S1753948Ab0IJBsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 21:48:08 -0400
+Date: Fri, 10 Sep 2010 01:46:51 GMT
 From: tip-bot for Brian Gerst <brgerst@gmail.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         brgerst@gmail.com, penberg@kernel.org, suresh.b.siddha@intel.com,
@@ -14,137 +14,85 @@ Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         brgerst@gmail.com, penberg@kernel.org, suresh.b.siddha@intel.com,
         tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1283563039-3466-3-git-send-email-brgerst@gmail.com>
-References: <1283563039-3466-3-git-send-email-brgerst@gmail.com>
+In-Reply-To: <1283563039-3466-4-git-send-email-brgerst@gmail.com>
+References: <1283563039-3466-4-git-send-email-brgerst@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/fpu] x86, fpu: Merge fpu_init()
-Message-ID: <tip-6ac8bac2684235f4caf22a410549c582aa7327d6@git.kernel.org>
-Git-Commit-ID: 6ac8bac2684235f4caf22a410549c582aa7327d6
+Subject: [tip:x86/fpu] x86, fpu: Merge tolerant_fwait()
+Message-ID: <tip-51115d4d45700fc7c08306f7ba6e68551f526ae5@git.kernel.org>
+Git-Commit-ID: 51115d4d45700fc7c08306f7ba6e68551f526ae5
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Sep 2010 01:46:31 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Sep 2010 01:46:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6ac8bac2684235f4caf22a410549c582aa7327d6
-Gitweb:     http://git.kernel.org/tip/6ac8bac2684235f4caf22a410549c582aa7327d6
+Commit-ID:  51115d4d45700fc7c08306f7ba6e68551f526ae5
+Gitweb:     http://git.kernel.org/tip/51115d4d45700fc7c08306f7ba6e68551f526ae5
 Author:     Brian Gerst <brgerst@gmail.com>
-AuthorDate: Fri, 3 Sep 2010 21:17:09 -0400
+AuthorDate: Fri, 3 Sep 2010 21:17:10 -0400
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 9 Sep 2010 14:16:20 -0700
+CommitDate: Thu, 9 Sep 2010 14:16:25 -0700
 
-x86, fpu: Merge fpu_init()
+x86, fpu: Merge tolerant_fwait()
 
-Make fpu_init() handle 32-bit setup.
+Commit e2e75c91 merged the math exception handler, allowing both 32-bit
+and 64-bit to handle math exceptions from kernel mode.  Switch to using
+the 64-bit version of tolerant_fwait() without fnclex, which simply
+ignores the exception if one is still pending from userspace.
 
 Signed-off-by: Brian Gerst <brgerst@gmail.com>
 Acked-by: Pekka Enberg <penberg@kernel.org>
 Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <1283563039-3466-3-git-send-email-brgerst@gmail.com>
+LKML-Reference: <1283563039-3466-4-git-send-email-brgerst@gmail.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/cpu/common.c |    7 -------
- arch/x86/kernel/i387.c       |   30 ++++++++++++++----------------
- arch/x86/kernel/traps.c      |   12 ------------
- 3 files changed, 14 insertions(+), 35 deletions(-)
+ arch/x86/include/asm/i387.h |   19 ++++---------------
+ 1 files changed, 4 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 490dac6..f9e23e8 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1264,13 +1264,6 @@ void __cpuinit cpu_init(void)
- 	clear_all_debug_regs();
- 	dbg_restore_debug_regs();
- 
--	/*
--	 * Force FPU initialization:
--	 */
--	current_thread_info()->status = 0;
--	clear_used_math();
--	mxcsr_feature_mask_init();
--
- 	fpu_init();
- 	xsave_init();
- }
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 2605c50..8216651 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -85,7 +85,6 @@ static void __cpuinit init_thread_xstate(void)
- #endif
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index a73a8d5..5d8f9a7 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -77,15 +77,6 @@ static inline void sanitize_i387_state(struct task_struct *tsk)
  }
  
--#ifdef CONFIG_X86_64
- /*
-  * Called at bootup to set up the initial FPU state that is later cloned
-  * into all processes.
-@@ -93,12 +92,21 @@ static void __cpuinit init_thread_xstate(void)
- 
- void __cpuinit fpu_init(void)
- {
--	unsigned long oldcr0 = read_cr0();
+ #ifdef CONFIG_X86_64
 -
--	set_in_cr4(X86_CR4_OSFXSR);
--	set_in_cr4(X86_CR4_OSXMMEXCPT);
-+	unsigned long cr0;
-+	unsigned long cr4_mask = 0;
- 
--	write_cr0(oldcr0 & ~(X86_CR0_TS|X86_CR0_EM)); /* clear TS and EM */
-+	if (cpu_has_fxsr)
-+		cr4_mask |= X86_CR4_OSFXSR;
-+	if (cpu_has_xmm)
-+		cr4_mask |= X86_CR4_OSXMMEXCPT;
-+	if (cr4_mask)
-+		set_in_cr4(cr4_mask);
-+
-+	cr0 = read_cr0();
-+	cr0 &= ~(X86_CR0_TS|X86_CR0_EM); /* clear TS and EM */
-+	if (!HAVE_HWFP)
-+		cr0 |= X86_CR0_EM;
-+	write_cr0(cr0);
- 
- 	if (!smp_processor_id())
- 		init_thread_xstate();
-@@ -109,16 +117,6 @@ void __cpuinit fpu_init(void)
- 	clear_used_math();
- }
- 
--#else	/* CONFIG_X86_64 */
--
--void __cpuinit fpu_init(void)
+-/* Ignore delayed exceptions from user space */
+-static inline void tolerant_fwait(void)
 -{
--	if (!smp_processor_id())
--		init_thread_xstate();
+-	asm volatile("1: fwait\n"
+-		     "2:\n"
+-		     _ASM_EXTABLE(1b, 2b));
 -}
 -
--#endif	/* CONFIG_X86_32 */
--
- void fpu_finit(struct fpu *fpu)
+ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
  {
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 60788de..d0029eb 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -881,18 +881,6 @@ void __init trap_init(void)
+ 	int err;
+@@ -220,11 +211,6 @@ extern void finit_soft_fpu(struct i387_soft_struct *soft);
+ static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
  #endif
  
- #ifdef CONFIG_X86_32
--	if (cpu_has_fxsr) {
--		printk(KERN_INFO "Enabling fast FPU save and restore... ");
--		set_in_cr4(X86_CR4_OSFXSR);
--		printk("done.\n");
--	}
--	if (cpu_has_xmm) {
--		printk(KERN_INFO
--			"Enabling unmasked SIMD FPU exception support... ");
--		set_in_cr4(X86_CR4_OSXMMEXCPT);
--		printk("done.\n");
--	}
+-static inline void tolerant_fwait(void)
+-{
+-	asm volatile("fnclex ; fwait");
+-}
 -
- 	set_system_trap_gate(SYSCALL_VECTOR, &system_call);
- 	set_bit(SYSCALL_VECTOR, used_vectors);
- #endif
+ /* perform fxrstor iff the processor has extended states, otherwise frstor */
+ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
+ {
+@@ -344,7 +330,10 @@ static inline void __unlazy_fpu(struct task_struct *tsk)
+ static inline void __clear_fpu(struct task_struct *tsk)
+ {
+ 	if (task_thread_info(tsk)->status & TS_USEDFPU) {
+-		tolerant_fwait();
++		/* Ignore delayed exceptions from user space */
++		asm volatile("1: fwait\n"
++			     "2:\n"
++			     _ASM_EXTABLE(1b, 2b));
+ 		task_thread_info(tsk)->status &= ~TS_USEDFPU;
+ 		stts();
+ 	}
