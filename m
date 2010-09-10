@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab0IJPDu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 11:03:50 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60886 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670Ab0IJPDs (ORCPT
+	id S1754307Ab0IJPHR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 11:07:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51531 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754286Ab0IJPHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 11:03:48 -0400
-Message-ID: <4C8A4871.9040103@oracle.com>
-Date: Fri, 10 Sep 2010 08:02:09 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Fri, 10 Sep 2010 11:07:15 -0400
 MIME-Version: 1.0
-To: Joey Lee <jlee@novell.com>
-CC: mjg@redhat.com, mjg59@srcf.ucam.org, gregkh@suse.de, trenn@suse.de,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dennis.Jansen@web.de
-Subject: Re: [PATCH] Add Intel Poulsbo Stub Driver
-References: <4C8A4285020000230002020B@novprvlin0050.provo.novell.com>
-In-Reply-To: <4C8A4285020000230002020B@novprvlin0050.provo.novell.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100909140439.C945.A69D9226@jp.fujitsu.com>
+References: <20100908023417.8B055401AF@magilla.sf.frob.com>
+ <20100909134842.C93F.A69D9226@jp.fujitsu.com> <20100909140439.C945.A69D9226@jp.fujitsu.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 10 Sep 2010 08:06:41 -0700
+Message-ID: <AANLkTik=ZpiCN-5YfWJ6zejSJBknL8Sj4Vtc+X_XpS71@mail.gmail.com>
+Subject: Re: [PATCH 2/2] execve: check the VM has enough memory at first
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Roland McGrath <roland@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
+        Solar Designer <solar@openwall.com>,
+        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu,
+        "Brad Spengler <spender@grsecurity.net>, Eugene Teo" 
+	<eugene@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/10 21:36, Joey Lee wrote:
->>> +        # Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
->>> +        # but for select to work, need to select ACPI_VIDEO's dependencies, ick
->>> +        select ACPI_VIDEO if ACPI
->>
->> What does it do when ACPI is not enabled?  Does the driver even build
->> when APCI is not enabled?  (given the acpi_video* calls in it)
->>
-> 
-> This driver will not do anything if API is not enabled. It only call
-> acpi_video_register/acpi_video_unregister, and acpi/video.h handle it
-> like the following:
-> 
-> #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
-> extern int acpi_video_register(void);
-> extern void acpi_video_unregister(void);
-> extern int acpi_video_get_edid(struct acpi_device *device, int type,
->                                int device_id, void **edid);
-> #else
-> static inline int acpi_video_register(void) { return 0; }
-> static inline void acpi_video_unregister(void) { return; }
-> static inline int acpi_video_get_edid(struct acpi_device *device, int
-> type,
->                                       int device_id, void **edid)
-> {
->         return -ENODEV;
-> }
-> #endif
-> 
-> So, I think don't need add "depends on ACPI_VIDEO". How do you think?
+On Wed, Sep 8, 2010 at 10:04 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>
+> After this patch, execve() expand stack at first and receive to
+> check vm_enough_memory() properly. then, too long argument of
+> execve() than the machine memory return EFAULT properly.
 
-Yes, OK, I see.  Thanks.
+This is horrible. We don't want to walk the arguments one more time
+just for this. Let's just improve the checks that we do as we go
+along.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+                            Linus
