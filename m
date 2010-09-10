@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab0IJJ1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 05:27:12 -0400
-Received: from smtp101.sbc.mail.re3.yahoo.com ([66.196.96.84]:40903 "HELO
-	smtp101.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751344Ab0IJJ1I (ORCPT
+	id S1751091Ab0IJJ13 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 05:27:29 -0400
+Received: from smtp110.sbc.mail.mud.yahoo.com ([68.142.198.206]:20343 "HELO
+	smtp110.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750992Ab0IJJ07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 05:27:08 -0400
+	Fri, 10 Sep 2010 05:26:59 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: gALHD7IVM1lEE9GAoD1N7oAA4bSS4wep6DnL1d78xwNiIok
- 8eqSyjjWT5lWRexv4CKDQKNrjNRB9Kraj9dGH5LsYsYlFT.7JVkqeI0mByLG
- nsa0dHGNRu4FJkvA67e4upuX5aXd7lCR.QbZv6x6SUiKiSpskSD6W9Qg5XNm
- I2h7b9dqbYdfyx7JKIS7YJtAYCTka4IznvjHlz4D8Ntuj9v5xvO6kBw7GGJZ
- rRaYO0JcGhl4fiVfIUzrrO6H7KAq.0JYzOsVLd9ZxBh4lK2azQKh7ct17jvA
- wXmrjYwxAYc6CvMH4_BJ8_UpEze_54R2epsvcjfEslpZwzYlnd694ucI0Jdq
- _nqPlVyb.JYW3EvcEWCsHthuU2IrXu19e9NS4vMF_p6f4UyzzD99v8CEWBu8
- 7SvICD_UwmA2wsG4XX5dxpzo26QcWaBto2yta81QB.qo1DwLBVU0KIAyp6rO
- MblHTImDRuKJa
+X-YMail-OSG: GrkJoD0VM1k4scGMTuaXtyszo0S0MabvSRmyJgUuinoVtEd
+ 0_uM_z3uVVLW25v3k1y9EZpnxxlgvW5wQ3tRHsL9kzh_6C6Uj6EVpHNLAUHO
+ RFdPGwAl052HOZt97iyANb11B69_251v_hjVgaFnz3pZB28kcPKTMAwLpDHg
+ BT4bmanmRFDf8sAOnulnrtU.Wdlby1kKaiTv1r4qE6.8fmLJKCUc.cyrFwit
+ QcTUuP1WmZX8ke_zPkcUbZ8dI_NHQkLLkN_ltuoqkx8c2Qd._r.liDMnEPre
+ xsxDpNsKZ1vbsostsvH2ghsZFahh08rBgcAE1yNryOnslQBaOi1c-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -30,9 +27,9 @@ Cc: Christoph Hellwig <hch@lst.de>,
         Boaz Harrosh <bharrosh@panasas.com>,
         Richard Sharpe <realrichardsharpe@gmail.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 4/4] tcm_fc: Convert to use pre-allocated struct se_cmd descriptors
-Date: Fri, 10 Sep 2010 02:27:03 -0700
-Message-Id: <1284110823-384-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 3/4] lio-target: Convert to use pre-allocated struct se_cmd descriptors
+Date: Fri, 10 Sep 2010 02:26:54 -0700
+Message-Id: <1284110814-361-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -40,236 +37,368 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch converts the Open-FCoE.org / TCM_FC fabric module to use pre-allocated
-struct se_cmd descriptors and sense data buffer located at struct ft_cmd->se_cmd
-and struct ft_cmd->ft_sense_buffer respectively.
+This patch converts the LIO-Target fabric module to use pre-allocated struct se_cmd
+descriptors and sense data buffer located at struct iscsi_cmd->se_cmd and
+struct iscsi_cmd->sense_buffer respectively.
 
-This includes updating ft_send_cmd() to use transport_init_se_cmd() for the main
-FCoE CDB RX side entry point.  It also includes the conversion of a number of
-functions to use container_of() instead of struct se_cmd->se_fabric_cmd_ptr to
-locate the struct ft_cmd, and the addition of the assignment operator when
-accessing struct ft_cmd->se_cmd within per I/O context operation.
+This includes updating iscsi_allocate_se_cmd() to use transport_init_se_cmd() for
+the main iSCSI CDB RX side entry point.  It also includes some special case handling
+in the struct iscsi_cmd I/O descriptor release path where previously assuming a NULL
+struct iscsi_cmd->se_cmd in iscsi_target_tx_thread() and iscsi_release_commands_from_conn()
+meant the struct iscsi_cmd is an iSCSI level PDU, and does not contain an
+transport_init_se_cmd() initialized struct iscsi_cmd->se_cmd.
+
+This also includes the conversion of a number of functions to use container_of()
+instead of struct se_cmd->se_fabric_cmd_ptr to locate the struct iscsi_cmd.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/tcm_fc/tcm_fc.h  |    3 +-
- drivers/target/tcm_fc/tfc_cmd.c |   59 ++++++++++++++++++--------------------
- drivers/target/tcm_fc/tfc_io.c  |    4 +-
- 3 files changed, 32 insertions(+), 34 deletions(-)
+ drivers/target/lio-target/iscsi_target.c      |   27 +++++++++------
+ drivers/target/lio-target/iscsi_target_core.h |   10 ++++-
+ drivers/target/lio-target/iscsi_target_erl1.c |    8 ++--
+ drivers/target/lio-target/iscsi_target_tmr.c  |   23 ++++---------
+ drivers/target/lio-target/iscsi_target_util.c |   44 ++++++++++++-------------
+ 5 files changed, 57 insertions(+), 55 deletions(-)
 
-diff --git a/drivers/target/tcm_fc/tcm_fc.h b/drivers/target/tcm_fc/tcm_fc.h
-index 8d59800..210c33e 100644
---- a/drivers/target/tcm_fc/tcm_fc.h
-+++ b/drivers/target/tcm_fc/tcm_fc.h
-@@ -147,11 +147,12 @@ struct ft_cmd {
- 	u16 lun;			/* LUN from request */
- 	struct ft_sess *sess;		/* session held for cmd */
- 	struct fc_seq *seq;		/* sequence in exchange mgr */
--	struct se_cmd *se_cmd;
-+	struct se_cmd se_cmd;		/* Local TCM I/O descriptor */
- 	struct fc_frame *req_frame;
- 	unsigned char *cdb;		/* pointer to CDB inside frame */
- 	u32 write_data_len;		/* data received on writes */
- 	struct se_queue_req se_req;
-+	unsigned char ft_sense_buffer[TRANSPORT_SENSE_BUFFER]; /* Local sense buffer */
- };
+diff --git a/drivers/target/lio-target/iscsi_target.c b/drivers/target/lio-target/iscsi_target.c
+index 2228e45..1b51c0e 100644
+--- a/drivers/target/lio-target/iscsi_target.c
++++ b/drivers/target/lio-target/iscsi_target.c
+@@ -1170,18 +1170,22 @@ char *iscsi_get_fabric_name(void)
  
- extern struct list_head ft_lport_list;
-diff --git a/drivers/target/tcm_fc/tfc_cmd.c b/drivers/target/tcm_fc/tfc_cmd.c
-index 7c3340e..a3a3e78 100644
---- a/drivers/target/tcm_fc/tfc_cmd.c
-+++ b/drivers/target/tcm_fc/tfc_cmd.c
-@@ -64,7 +64,7 @@ void ft_dump_cmd(struct ft_cmd *cmd, const char *caller)
- 	if (!(ft_debug_logging & FT_DEBUG_IO))
- 		return;
- 
--	se_cmd = cmd->se_cmd;
-+	se_cmd = &cmd->se_cmd;
- 	printk(KERN_INFO "%s: cmd %p state %d sess %p seq %p se_cmd %p\n",
- 		caller, cmd, cmd->state, cmd->sess, cmd->seq, se_cmd);
- 	printk(KERN_INFO "%s: cmd %p cdb %p\n",
-@@ -113,7 +113,7 @@ static int ft_get_lun_for_cmd(struct ft_cmd *cmd, u8 *lunp)
- 	if (lun >= TRANSPORT_MAX_LUNS_PER_TPG)
- 		return -1;
- 	cmd->lun = lun;
--	return transport_get_lun_for_cmd(cmd->se_cmd, NULL, lun);
-+	return transport_get_lun_for_cmd(&cmd->se_cmd, NULL, lun);
- }
- 
- static void ft_queue_cmd(struct ft_sess *sess, struct ft_cmd *cmd)
-@@ -164,7 +164,7 @@ static void ft_free_cmd(struct ft_cmd *cmd)
- 
- void ft_release_cmd(struct se_cmd *se_cmd)
+ struct iscsi_cmd *iscsi_get_cmd(struct se_cmd *se_cmd)
  {
--	struct ft_cmd *cmd = se_cmd->se_fabric_cmd_ptr;
-+	struct ft_cmd *cmd = container_of(se_cmd, struct ft_cmd, se_cmd);
- 
- 	ft_free_cmd(cmd);
+-	return (struct iscsi_cmd *)se_cmd->se_fabric_cmd_ptr;
++	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
++
++	return cmd;
  }
-@@ -179,7 +179,7 @@ void ft_check_stop_free(struct se_cmd *se_cmd)
+ 
+ u32 iscsi_get_task_tag(struct se_cmd *se_cmd)
+ {
+-	struct iscsi_cmd *cmd = (struct iscsi_cmd *)se_cmd->se_fabric_cmd_ptr;
++	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
++
+ 	return cmd->init_task_tag;
+ }
+ 
+ int iscsi_get_cmd_state(struct se_cmd *se_cmd)
+ {
+-	struct iscsi_cmd *cmd = (struct iscsi_cmd *)se_cmd->se_fabric_cmd_ptr;
++	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
++
+ 	return cmd->i_state;
+ }
+ 
+@@ -4294,6 +4298,7 @@ int iscsi_target_tx_thread(void *arg)
+ 	struct iscsi_cmd *cmd = NULL;
+ 	struct iscsi_conn *conn;
+ 	struct iscsi_queue_req *qr = NULL;
++	struct se_cmd *se_cmd;
+ 	struct se_thread_set *ts = (struct se_thread_set *) arg;
+ 	struct se_unmap_sg unmap_sg;
+ 
+@@ -4352,11 +4357,12 @@ get_immediate:
+ 				 * Determine if a struct se_cmd is assoicated with
+ 				 * this struct iscsi_cmd.
+ 				 */
+-				if (!(SE_CMD(cmd)))
++				if (!(SE_CMD(cmd)->se_cmd_flags & SCF_SE_LUN_CMD) &&
++				    !(cmd->tmr_req))
+ 					iscsi_release_cmd_to_pool(cmd);
+ 				else
+-					transport_generic_free_cmd(
+-							SE_CMD(cmd), 1, 1, 0);
++					transport_generic_free_cmd(SE_CMD(cmd),
++								1, 1, 0);
+ 				goto get_immediate;
+ 			case ISTATE_SEND_NOPIN_WANT_RESPONSE:
+ 				spin_unlock_bh(&cmd->istate_lock);
+@@ -4491,8 +4497,10 @@ check_rsp_state:
+ 				goto transport_err;
+ 			}
+ 
++			se_cmd = &cmd->se_cmd;
++
+ 			if (map_sg && !CONN_OPS(conn)->IFMarker &&
+-			    T_TASK(cmd->se_cmd)->t_tasks_se_num) {
++			    T_TASK(se_cmd)->t_tasks_se_num) {
+ 				SE_CMD(cmd)->transport_map_SG_segments(&unmap_sg);
+ 				if (iscsi_fe_sendpage_sg(&unmap_sg, conn) < 0) {
+ 					conn->tx_response_queue = 0;
+@@ -4816,10 +4824,9 @@ static void iscsi_release_commands_from_conn(struct iscsi_conn *conn)
+ 			 * transport_get_lun_for_cmd() failing from
+ 			 * iscsi_get_lun_for_cmd() in iscsi_handle_scsi_cmd().
+ 			 */
+-			if (cmd->tmr_req && se_cmd &&
+-			    se_cmd->transport_wait_for_tasks)
++			if (cmd->tmr_req && se_cmd->transport_wait_for_tasks)
+ 				se_cmd->transport_wait_for_tasks(se_cmd, 1, 1);
+-			else if (se_cmd)
++			else if (SE_CMD(cmd)->se_cmd_flags & SCF_SE_LUN_CMD)
+ 				transport_release_cmd_to_pool(se_cmd);
+ 			else
+ 				__iscsi_release_cmd_to_pool(cmd, sess);
+diff --git a/drivers/target/lio-target/iscsi_target_core.h b/drivers/target/lio-target/iscsi_target_core.h
+index 418c425..7fa24b1 100644
+--- a/drivers/target/lio-target/iscsi_target_core.h
++++ b/drivers/target/lio-target/iscsi_target_core.h
+@@ -5,6 +5,7 @@
+ #include <linux/configfs.h>
+ #include <net/sock.h>
+ #include <net/tcp.h>
++#include <scsi/scsi_cmnd.h>
+ #include <iscsi_target_version.h>	    /* get version definition */
+ 
+ #include <target/target_core_base.h>
+@@ -29,6 +30,8 @@
+ #define ISCSI_MAX_TPGS			64
+ /* Size of the Network Device Name Buffer */
+ #define ISCSI_NETDEV_NAME_SIZE		12
++/* Size of iSCSI specific sense buffer */
++#define ISCSI_SENSE_BUFFER_LEN		TRANSPORT_SENSE_BUFFER + 2
+ 
+ #include <iscsi_target_mib.h>
+ 
+@@ -487,10 +490,13 @@ struct iscsi_cmd {
+ 	struct iscsi_cmd	*t_next;
+ 	/* Previous command in DAS transport list */
+ 	struct iscsi_cmd	*t_prev;
+-	struct se_cmd		*se_cmd;
++	/* The TCM I/O descriptor that is accessed via container_of() */
++	struct se_cmd		se_cmd;
++	/* Sense buffer that will be mapped into outgoing status */
++	unsigned char		sense_buffer[ISCSI_SENSE_BUFFER_LEN];
+ }  ____cacheline_aligned;
+ 
+-#define SE_CMD(cmd)		((struct se_cmd *)(cmd)->se_cmd)
++#define SE_CMD(cmd)		(&(cmd)->se_cmd)
+ 
+ #include <iscsi_seq_and_pdu_list.h>
+ 
+diff --git a/drivers/target/lio-target/iscsi_target_erl1.c b/drivers/target/lio-target/iscsi_target_erl1.c
+index 6b6ad6d..6de09e1 100644
+--- a/drivers/target/lio-target/iscsi_target_erl1.c
++++ b/drivers/target/lio-target/iscsi_target_erl1.c
+@@ -443,7 +443,7 @@ static inline int iscsi_handle_recovery_datain(
+ {
+ 	struct iscsi_conn *conn = CONN(cmd);
+ 	struct iscsi_datain_req *dr;
+-	struct se_cmd *se_cmd = cmd->se_cmd;
++	struct se_cmd *se_cmd = &cmd->se_cmd;
+ 
+ 	if (!(atomic_read(&T_TASK(se_cmd)->t_transport_complete))) {
+ 		printk(KERN_ERR "Ignoring ITT: 0x%08x Data SNACK\n",
+@@ -991,7 +991,7 @@ int iscsi_execute_ooo_cmdsns(struct iscsi_session *sess)
   */
- int ft_queue_status(struct se_cmd *se_cmd)
+ int iscsi_execute_cmd(struct iscsi_cmd *cmd, int ooo)
  {
--	struct ft_cmd *cmd = se_cmd->se_fabric_cmd_ptr;
-+	struct ft_cmd *cmd = container_of(se_cmd, struct ft_cmd, se_cmd);
- 	struct fc_frame *fp;
- 	struct fcp_resp_with_ext *fcp;
- 	struct fc_lport *lport;
-@@ -232,7 +232,7 @@ int ft_queue_status(struct se_cmd *se_cmd)
+-	struct se_cmd *se_cmd = cmd->se_cmd;
++	struct se_cmd *se_cmd = &cmd->se_cmd;
+ 	int lr = 0;
  
- int ft_write_pending_status(struct se_cmd *se_cmd)
- {
--	struct ft_cmd *cmd = se_cmd->se_fabric_cmd_ptr;
-+	struct ft_cmd *cmd = container_of(se_cmd, struct ft_cmd, se_cmd);
+ 	spin_lock_bh(&cmd->istate_lock);
+@@ -1040,7 +1040,7 @@ int iscsi_execute_cmd(struct iscsi_cmd *cmd, int ooo)
+ 			if (cmd->cmd_flags & ICF_GOT_LAST_DATAOUT) {
+ 				spin_unlock_bh(&cmd->istate_lock);
+ 				return transport_generic_handle_data(
+-						cmd->se_cmd);
++						&cmd->se_cmd);
+ 			}
+ 			spin_unlock_bh(&cmd->istate_lock);
  
- 	return cmd->write_data_len != se_cmd->data_length;
- }
-@@ -242,7 +242,7 @@ int ft_write_pending_status(struct se_cmd *se_cmd)
-  */
- int ft_write_pending(struct se_cmd *se_cmd)
- {
--	struct ft_cmd *cmd = se_cmd->se_fabric_cmd_ptr;
-+	struct ft_cmd *cmd = container_of(se_cmd, struct ft_cmd, se_cmd);
- 	struct fc_frame *fp;
- 	struct fcp_txrdy *txrdy;
- 	struct fc_lport *lport;
-@@ -270,14 +270,14 @@ int ft_write_pending(struct se_cmd *se_cmd)
- 
- u32 ft_get_task_tag(struct se_cmd *se_cmd)
- {
--	struct ft_cmd *cmd = se_cmd->se_fabric_cmd_ptr;
-+	struct ft_cmd *cmd = container_of(se_cmd, struct ft_cmd, se_cmd);
- 
- 	return fc_seq_exch(cmd->seq)->rxid;
- }
- 
- int ft_get_cmd_state(struct se_cmd *se_cmd)
- {
--	struct ft_cmd *cmd = se_cmd->se_fabric_cmd_ptr;
-+	struct ft_cmd *cmd = container_of(se_cmd, struct ft_cmd, se_cmd);
- 
- 	return cmd->state;
- }
-@@ -303,9 +303,9 @@ static void ft_recv_seq(struct fc_seq *sp, struct fc_frame *fp, void *arg)
- 
- 	if (IS_ERR(fp)) {
- 		/* XXX need to find cmd if queued */
--		cmd->se_cmd->t_state = TRANSPORT_REMOVE;
-+		cmd->se_cmd.t_state = TRANSPORT_REMOVE;
- 		cmd->seq = NULL;
--		transport_generic_free_cmd(cmd->se_cmd, 0, 1, 0);
-+		transport_generic_free_cmd(&cmd->se_cmd, 0, 1, 0);
- 		return;
- 	}
- 
-@@ -322,7 +322,7 @@ static void ft_recv_seq(struct fc_seq *sp, struct fc_frame *fp, void *arg)
- 		printk(KERN_INFO "%s: unhandled frame r_ctl %x\n",
- 		       __func__, fh->fh_r_ctl);
- 		fc_frame_free(fp);
--		transport_generic_free_cmd(cmd->se_cmd, 0, 1, 0);
-+		transport_generic_free_cmd(&cmd->se_cmd, 0, 1, 0);
- 		break;
- 	}
- }
-@@ -397,8 +397,8 @@ static void ft_send_tm(struct ft_cmd *cmd)
- 		tm_func = LUN_RESET;
- 		if (ft_get_lun_for_cmd(cmd, fcp->fc_lun) < 0) {
- 			ft_dump_cmd(cmd, __func__);
--			transport_send_check_condition_and_sense(cmd->se_cmd,
--				cmd->se_cmd->scsi_sense_reason, 0);
-+			transport_send_check_condition_and_sense(&cmd->se_cmd,
-+				cmd->se_cmd.scsi_sense_reason, 0);
- 			ft_sess_put(cmd->sess);
- 			return;
+@@ -1079,7 +1079,7 @@ int iscsi_execute_cmd(struct iscsi_cmd *cmd, int ooo)
+ 			iscsi_start_dataout_timer(cmd, CONN(cmd));
+ 			spin_unlock_bh(&cmd->dataout_timeout_lock);
  		}
-@@ -426,14 +426,14 @@ static void ft_send_tm(struct ft_cmd *cmd)
+-		return transport_generic_handle_cdb(cmd->se_cmd);
++		return transport_generic_handle_cdb(&cmd->se_cmd);
+ 
+ 	case ISCSI_INIT_NOP_OUT:
+ 	case ISCSI_INIT_TEXT_CMND:
+diff --git a/drivers/target/lio-target/iscsi_target_tmr.c b/drivers/target/lio-target/iscsi_target_tmr.c
+index 21d62db..8a62939 100644
+--- a/drivers/target/lio-target/iscsi_target_tmr.c
++++ b/drivers/target/lio-target/iscsi_target_tmr.c
+@@ -71,11 +71,6 @@ u8 iscsi_tmr_abort_task(
+ 			(hdr->ref_cmd_sn <= SESS(conn)->max_cmd_sn)) ?
+ 				FUNCTION_COMPLETE : TASK_DOES_NOT_EXIST;
+ 	}
+-	if (!(ref_cmd->se_cmd)) {
+-		printk(KERN_ERR "ref_cmd->se_cmd for RefTaskTag: 0x%08x is"
+-			" NULL!\n", hdr->ref_task_tag);
+-		return TASK_DOES_NOT_EXIST;
+-	}
+ 	if (ref_cmd->cmd_sn != hdr->ref_cmd_sn) {
+ 		printk(KERN_ERR "RefCmdSN 0x%08x does not equal"
+ 			" task's CmdSN 0x%08x. Rejecting ABORT_TASK.\n",
+@@ -84,7 +79,7 @@ u8 iscsi_tmr_abort_task(
  	}
  
- 	FT_TM_DBG("alloc tm cmd fn %d\n", tm_func);
--	tmr = core_tmr_alloc_req(cmd->se_cmd, cmd, tm_func);
-+	tmr = core_tmr_alloc_req(&cmd->se_cmd, cmd, tm_func);
- 	if (!tmr) {
- 		FT_TM_DBG("alloc failed\n");
- 		ft_send_resp_code(cmd, FCP_TMF_FAILED);
- 		return;
+ 	se_tmr->ref_task_tag		= hdr->ref_task_tag;
+-	se_tmr->ref_cmd			= ref_cmd->se_cmd;
++	se_tmr->ref_cmd			= &ref_cmd->se_cmd;
+ 	se_tmr->ref_task_lun		= hdr->lun;
+ 	tmr_req->ref_cmd_sn		= hdr->ref_cmd_sn;
+ 	tmr_req->exp_data_sn		= hdr->exp_data_sn;
+@@ -182,10 +177,6 @@ u8 iscsi_tmr_task_reassign(
+ 			" connection recovery command list.\n",
+ 				hdr->ref_task_tag);
+ 		return TASK_DOES_NOT_EXIST;
+-	} else if (!(ref_cmd->se_cmd)) {
+-		printk(KERN_ERR "ref_cmd->se_cmd for RefTaskTag: 0x%08x is"
+-			" NULL!\n", hdr->ref_task_tag);
+-		return TASK_DOES_NOT_EXIST;
  	}
--	cmd->se_cmd->se_tmr_req = tmr;
--	transport_generic_handle_tmr(cmd->se_cmd);
-+	cmd->se_cmd.se_tmr_req = tmr;
-+	transport_generic_handle_tmr(&cmd->se_cmd);
+ 	/*
+ 	 * Temporary check to prevent connection recovery for
+@@ -200,7 +191,7 @@ u8 iscsi_tmr_task_reassign(
+ 	}
+ 
+ 	se_tmr->ref_task_tag		= hdr->ref_task_tag;
+-	se_tmr->ref_cmd			= ref_cmd->se_cmd;
++	se_tmr->ref_cmd			= &ref_cmd->se_cmd;
+ 	se_tmr->ref_task_lun		= hdr->lun;
+ 	tmr_req->ref_cmd_sn		= hdr->ref_cmd_sn;
+ 	tmr_req->exp_data_sn		= hdr->exp_data_sn;
+@@ -247,7 +238,7 @@ static int iscsi_task_reassign_complete_nop_out(
+ {
+ 	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
+ 	struct se_cmd *se_cmd = se_tmr->ref_cmd;
+-	struct iscsi_cmd *cmd = (struct iscsi_cmd *)se_cmd->se_fabric_cmd_ptr;
++	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
+ 	struct iscsi_conn_recovery *cr;
+ 
+ 	if (!cmd->cr) {
+@@ -433,7 +424,7 @@ static int iscsi_task_reassign_complete_scsi_cmnd(
+ {
+ 	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
+ 	struct se_cmd *se_cmd = se_tmr->ref_cmd;
+-	struct iscsi_cmd *cmd = (struct iscsi_cmd *)se_cmd->se_fabric_cmd_ptr;
++	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
+ 	struct iscsi_conn_recovery *cr;
+ 
+ 	if (!cmd->cr) {
+@@ -493,7 +484,7 @@ static int iscsi_task_reassign_complete(
+ 		return -1;
+ 	}
+ 	se_cmd = se_tmr->ref_cmd;
+-	cmd = se_cmd->se_fabric_cmd_ptr;
++	cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
+ 
+ 	cmd->conn = conn;
+ 
+@@ -633,7 +624,7 @@ int iscsi_task_reassign_prepare_write(
+ {
+ 	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
+ 	struct se_cmd *se_cmd = se_tmr->ref_cmd;
+-	struct iscsi_cmd *cmd = (struct iscsi_cmd *)se_cmd->se_fabric_cmd_ptr;
++	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
+ 	struct iscsi_pdu *pdu = NULL;
+ 	struct iscsi_r2t *r2t = NULL, *r2t_tmp;
+ 	int first_incomplete_r2t = 1, i = 0;
+@@ -869,7 +860,7 @@ int iscsi_check_task_reassign_expdatasn(
+ {
+ 	struct se_tmr_req *se_tmr = tmr_req->se_tmr_req;
+ 	struct se_cmd *se_cmd = se_tmr->ref_cmd;
+-	struct iscsi_cmd *ref_cmd = (struct iscsi_cmd *)se_cmd->se_fabric_cmd_ptr;
++	struct iscsi_cmd *ref_cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
+ 
+ 	if (ref_cmd->iscsi_opcode != ISCSI_INIT_SCSI_CMND)
+ 		return 0;
+diff --git a/drivers/target/lio-target/iscsi_target_util.c b/drivers/target/lio-target/iscsi_target_util.c
+index ad05952..91bbf80 100644
+--- a/drivers/target/lio-target/iscsi_target_util.c
++++ b/drivers/target/lio-target/iscsi_target_util.c
+@@ -277,6 +277,7 @@ struct iscsi_cmd *iscsi_allocate_se_cmd(
+ 	int iscsi_task_attr)
+ {
+ 	struct iscsi_cmd *cmd;
++	struct se_cmd *se_cmd;
+ 	int sam_task_attr;
+ 
+ 	cmd = iscsi_allocate_cmd(conn);
+@@ -302,21 +303,15 @@ struct iscsi_cmd *iscsi_allocate_se_cmd(
+ 			" TASK_ATTR_SIMPLE\n", iscsi_task_attr);
+ 		sam_task_attr = TASK_ATTR_SIMPLE;
+ 	}
++
++	se_cmd = &cmd->se_cmd;
+ 	/*
+-	 * Use struct target_fabric_configfs->tf_ops for
+-	 * lio_target_fabric_configfs
++	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
+ 	 */
+-	cmd->se_cmd = transport_alloc_se_cmd(
+-			&lio_target_fabric_configfs->tf_ops,
+-			SESS(conn)->se_sess, (void *)cmd, data_length,
+-			data_direction, sam_task_attr);
+-	if (!(cmd->se_cmd))
+-		goto out;
+-
++	transport_init_se_cmd(se_cmd, &lio_target_fabric_configfs->tf_ops,
++			SESS(conn)->se_sess, data_length, data_direction,
++			sam_task_attr, &cmd->sense_buffer[0]);
+ 	return cmd;
+-out:
+-	iscsi_release_cmd_to_pool(cmd);
+-	return NULL;
  }
  
- /*
-@@ -441,7 +441,7 @@ static void ft_send_tm(struct ft_cmd *cmd)
-  */
- int ft_queue_tm_resp(struct se_cmd *se_cmd)
+ /*	iscsi_allocate_tmr_req():
+@@ -328,7 +323,7 @@ struct iscsi_cmd *iscsi_allocate_se_cmd_for_tmr(
+ 	u8 function)
  {
--	struct ft_cmd *cmd = se_cmd->se_fabric_cmd_ptr;
-+	struct ft_cmd *cmd = container_of(se_cmd, struct ft_cmd, se_cmd);
- 	struct se_tmr_req *tmr = se_cmd->se_tmr_req;
- 	enum fcp_resp_rsp_codes code;
+ 	struct iscsi_cmd *cmd;
+-	struct se_cmd *se_cmd = NULL;
++	struct se_cmd *se_cmd;
  
-@@ -570,18 +570,15 @@ static void ft_send_cmd(struct ft_cmd *cmd)
- 		cmd->cdb = fcp->fc_cdb;
- 	}
+ 	cmd = iscsi_allocate_cmd(conn);
+ 	if (!(cmd))
+@@ -349,14 +344,13 @@ struct iscsi_cmd *iscsi_allocate_se_cmd_for_tmr(
+ 	if (function == TASK_REASSIGN)
+ 		return cmd;
  
--	se_cmd = transport_alloc_se_cmd(&ft_configfs->tf_ops,
--					cmd->sess->se_sess, cmd, data_len,
--					data_dir, task_attr);
--	if (!se_cmd) {
--		FT_IO_DBG("se_cmd allocation failure - sending BUSY\n");
--		ft_send_resp_status(cmd->sess->tport->lport, cmd->req_frame,
--				    SAM_STAT_BUSY, 0);
--		ft_free_cmd(cmd);
--		return;
--	}
--	cmd->se_cmd = se_cmd;
+-	cmd->se_cmd = transport_alloc_se_cmd(
+-				&lio_target_fabric_configfs->tf_ops,
+-				SESS(conn)->se_sess, (void *)cmd, 0,
+-				SE_DIRECTION_NONE, TASK_ATTR_SIMPLE);
+-	if (!(cmd->se_cmd))
+-		goto out;
 -
+-	se_cmd = cmd->se_cmd;
 +	se_cmd = &cmd->se_cmd;
 +	/*
 +	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
 +	 */
-+	transport_init_se_cmd(se_cmd, &ft_configfs->tf_ops, cmd->sess->se_sess,
-+			data_len, data_dir, task_attr, &cmd->ft_sense_buffer[0]);
-+	/*
-+	 * Check for FCP task management flags
-+	 */
- 	if (fcp->fc_tm_flags) {
- 		ft_send_tm(cmd);
- 		return;
-@@ -592,8 +589,8 @@ static void ft_send_cmd(struct ft_cmd *cmd)
- 	ret = ft_get_lun_for_cmd(cmd, fcp->fc_lun);
- 	if (ret < 0) {
- 		ft_dump_cmd(cmd, __func__);
--		transport_send_check_condition_and_sense(cmd->se_cmd,
--			cmd->se_cmd->scsi_sense_reason, 0);
-+		transport_send_check_condition_and_sense(&cmd->se_cmd,
-+			cmd->se_cmd.scsi_sense_reason, 0);
- 		return;
- 	}
++	transport_init_se_cmd(se_cmd, &lio_target_fabric_configfs->tf_ops,
++				SESS(conn)->se_sess, 0, SE_DIRECTION_NONE,
++				TASK_ATTR_SIMPLE, &cmd->sense_buffer[0]);
  
-diff --git a/drivers/target/tcm_fc/tfc_io.c b/drivers/target/tcm_fc/tfc_io.c
-index f473782..2080891 100644
---- a/drivers/target/tcm_fc/tfc_io.c
-+++ b/drivers/target/tcm_fc/tfc_io.c
-@@ -64,7 +64,7 @@
-  */
- int ft_queue_data_in(struct se_cmd *se_cmd)
+ 	se_cmd->se_tmr_req = core_tmr_alloc_req(se_cmd,
+ 				(void *)cmd->tmr_req, function);
+@@ -1030,7 +1024,9 @@ void iscsi_release_cmd_direct(struct iscsi_cmd *cmd)
+ 
+ void lio_release_cmd_direct(struct se_cmd *se_cmd)
  {
--	struct ft_cmd *cmd = se_cmd->se_fabric_cmd_ptr;
-+	struct ft_cmd *cmd = container_of(se_cmd, struct ft_cmd, se_cmd);
- 	struct se_transport_task *task;
- 	struct fc_frame *fp = NULL;
- 	struct fc_exch *ep;
-@@ -187,7 +187,7 @@ int ft_queue_data_in(struct se_cmd *se_cmd)
-  */
- void ft_recv_write_data(struct ft_cmd *cmd, struct fc_frame *fp)
+-	iscsi_release_cmd_direct((struct iscsi_cmd *)se_cmd->se_fabric_cmd_ptr);
++	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
++
++	iscsi_release_cmd_direct(cmd);
+ }
+ 
+ /*	__iscsi_release_cmd_to_pool():
+@@ -1074,7 +1070,9 @@ void iscsi_release_cmd_to_pool(struct iscsi_cmd *cmd)
+ 
+ void lio_release_cmd_to_pool(struct se_cmd *se_cmd)
  {
--	struct se_cmd *se_cmd = cmd->se_cmd;
-+	struct se_cmd *se_cmd = &cmd->se_cmd;
- 	struct se_transport_task *task;
- 	struct fc_frame_header *fh;
- 	struct se_mem *mem;
+-	iscsi_release_cmd_to_pool((struct iscsi_cmd *)se_cmd->se_fabric_cmd_ptr);
++	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
++
++	iscsi_release_cmd_to_pool(cmd);
+ }
+ 
+ /*	iscsi_pack_lun():
 -- 
 1.5.6.5
 
