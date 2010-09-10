@@ -1,116 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab0IJTF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 15:05:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33518 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801Ab0IJTFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 15:05:53 -0400
-Date: Fri, 10 Sep 2010 15:05:23 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Mike Snitzer <snitzer@redhat.com>
-cc: Tejun Heo <tj@kernel.org>, agk@redhat.com, jaxboe@fusionio.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-raid@vger.kernel.org, dm-devel@redhat.com, hch@lst.de,
-        konishi.ryusuke@lab.ntt.co.jp, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com, vst@vlnb.net,
-        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
-        rusty@rustcorp.com.au, mst@redhat.com, k-ueda@ct.jp.nec.com
-Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
- dm
-In-Reply-To: <20100910184652.GA24470@redhat.com>
-Message-ID: <Pine.LNX.4.64.1009101456220.21834@hs20-bc2-1.build.redhat.com>
-References: <1283509796-1510-1-git-send-email-tj@kernel.org>
- <1283509796-1510-24-git-send-email-tj@kernel.org>
- <Pine.LNX.4.64.1009101410570.7839@hs20-bc2-1.build.redhat.com>
- <20100910184652.GA24470@redhat.com>
+	id S1751785Ab0IJTHN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 15:07:13 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:62326 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab0IJTHM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 15:07:12 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [192.94.94.105]
+In-Reply-To: <20100910143813.4af0a3ce@lxorguk.ukuu.org.uk>
+References: <AANLkTikTBdr4U1bPtfXWhgLgdvWDMPJrFjBCktPL40dg@mail.gmail.com>
+	<20100910143813.4af0a3ce@lxorguk.ukuu.org.uk>
+Date: Fri, 10 Sep 2010 14:07:11 -0500
+Message-ID: <AANLkTikXFmaZs+XzrOWjWoLPhyUy0CEXfOQMqP=Xp1cO@mail.gmail.com>
+Subject: Re: Request for input regarding new driver in MFD for
+ GPS_Bluetooth_FM controller CG2900
+From: Pavan Savoy <pavan_savoy@sify.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: pghatwork@gmail.com, par-gunnar.p.hjalmdahl@stericsson.com,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linus.walleij@stericsson.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Can you directly make use of the ti-st driver which is currently staged?
+It has _EXACTLY_ the same thing.... which is REALLY REALLY surprising !!!
 
-
-On Fri, 10 Sep 2010, Mike Snitzer wrote:
-
-> On Fri, Sep 10 2010 at  2:25pm -0400,
-> Mikulas Patocka <mpatocka@redhat.com> wrote:
-> 
-> > I quite disagree with the patch. It changes too many things.
-> > 
-> > What I said and what I want to see:
-> > 
-> > Take dm code as is. Treat FLUSH requests as empty barriers.
-> > 
-> > 
-> > So I want to see a patch that only changes:
-> > 
-> > bio_empty_barrier(bio)  ->  bio->bi_rw & REQ_FLUSH
-> > WRITE_BARRIER -> WRITE_FLUSH
-> > etc.
-> > 
-> > so that the code compiles and works.
-> > 
-> > DON'T CHANGE ANYTHING ELSE.
-> > 
-> > Requirements of flushes are subset of requirements of barriers, so if you 
-> > send flush and it is treated as a barrier inside DM, there's no problem. 
-> > DM code that I wrote only sends out zero-data barriers and already treats 
-> > them as flushes (it doesn't rely on ordering), so there's no problem with 
-> > sent requests too.
-> > 
-> > Once fluges get into kernel, I'll clean it up to allow parallel flushes 
-> > and requests, etc. But not before. I don't want to work on an interface 
-> > that is under development and may be changed.
-> 
-> Mikulas,
-> 
-> I agree that it is unfortunate that we're having to explore this level
-> of change to DM's flush support.  Especially given how recently your
-> barrier code was added.
-> 
-> But the work has already been done.  Rather than putting up artificial
-> barriers (no pun intended) it'd be great if you took the time to just
-> review the changes.
+On Fri, Sep 10, 2010 at 8:38 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>>  - Is it OK to dynamically use the channels either from Kernel or User space?
 >
-> The patch header enumerates and describes the various changes quite
-> clearly.
-> 
-> And in fact, this first patch basically is as minimal as it gets
-> relative to bio-based DM's conversion to FLUSH+FUA.
-> 
-> Please direct your energy and talent in a positive way rather than
-> starting a potential flame.
-> 
-> Thanks,
-> Mike
-
-I don't want to flame. I mean this:
-
-* person X writes a patch P.
-* person Y reads P, sees that the condition C is true and writes patch Q 
-that dependes on condition C.
-* person X changes a patch P, so that the patch is correct but condition C 
-is no longer true.
-
-Now, there is a bug in the patch Q and NEITHER X NOR Y can find out about 
-that bug.
-
-That's why parallel development doesn't work.
-
-If you develop on things in the kernel, it is different.
-* person X writes a patch P and puts it in the kernel.
-* person Y reads the kernel code, sees that the condition C is true and 
-writes a patch Q that assumes that the condition C is true. He puts this 
-patch to the kernel too.
-* person X wants to change his code so that the condition C isn't true, 
-but it is now his responsibility to search the rest of the kernel to see 
-if it depends on the condition C. He searches the code and finds Q.
-
-This is not a flamewar, just a technical explanation, why I don't want to 
-develop on interfaces that are not in the kernel.
-
-Mikulas
+> Quite a few devices do this. In most cases it makes no sense to burden
+> the user with channel management so its only natural that opening the tty
+> or direct interfaces should "just work"
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
