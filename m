@@ -1,78 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab0IJQdU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 12:33:20 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52421 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab0IJQdT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 12:33:19 -0400
-Date: Fri, 10 Sep 2010 09:31:15 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <htejun@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        robert.richter@amd.com, acme@redhat.com
-Subject: Re: [PATCH percpu#for-next] percpu: clear memory allocated with the
- km allocator
-Message-Id: <20100910093115.2f0859af.randy.dunlap@oracle.com>
-In-Reply-To: <1284108918.402.31.camel@laptop>
-References: <4c88dca1.44e7d80a.577e.3592@mx.google.com>
-	<1284040322.2589.174.camel@edumazet-laptop>
-	<AANLkTimHwiXa62GhHA0hQ0AOcDaxgqRcV+O63G_qoZW8@mail.gmail.com>
-	<1284106566.402.26.camel@laptop>
-	<4C89EF37.5080803@kernel.org>
-	<4C89F1CE.4050302@gmail.com>
-	<1284108918.402.31.camel@laptop>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755613Ab0IJQgD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 12:36:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15748 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755503Ab0IJQgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 12:36:00 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 02/17] Blackfin: Split the BF532 BFIN_*_FIO_FLAG() functions
+	to their own header
+To: linux-arch@vger.kernel.org
+Cc: torvalds@osdl.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Fri, 10 Sep 2010 17:10:12 +0100
+Message-ID: <20100910161012.20226.65749.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20100910161002.20226.27995.stgit@warthog.procyon.org.uk>
+References: <20100910161002.20226.27995.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010 10:55:18 +0200 Peter Zijlstra wrote:
+Split the BF532 machine type BFIN_*_FIO_FLAG() functions to their own header
+file to avoid circular #include problems as these functions require IRQ flag
+handling, which requires asm/blackfin.h, which otherwise requires the header
+file that defines these functions.
 
-> On Fri, 2010-09-10 at 10:52 +0200, Tejun Heo wrote:
-> > Percpu allocator should clear memory before returning it but the km
-> > allocator forgot to do it.  Fix it.
-> > 
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Spotted-by: Peter Zijlstra <peterz@infradead.org>
-> 
-> (fwiw, -tip uses Reported-by)
+For good measure, also get rid of the inclusion of asm/blackfin.h from
+mach/cdefBF532.h (which is circular) and defBF532.h (which is included by
+asm/blackfin.h before including this header).
 
-fyi, Documentation/SubmittingPatches does also.
-
-
-> Acked-by: Peter Zijlstra <peterz@infradead.org>
-> 
-> > ---
-> >  mm/percpu-km.c |    6 +++++-
-> >  1 files changed, 5 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/mm/percpu-km.c b/mm/percpu-km.c
-> > index 7037bc7..89633fe 100644
-> > --- a/mm/percpu-km.c
-> > +++ b/mm/percpu-km.c
-> > @@ -35,7 +35,11 @@
-> > 
-> >  static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
-> >  {
-> > -	/* noop */
-> > +	unsigned int cpu;
-> > +
-> > +	for_each_possible_cpu(cpu)
-> > +		memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
-> > +
-> >  	return 0;
-> >  }
-
-
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+ arch/blackfin/mach-bf533/boards/blackstamp.c      |    1 
+ arch/blackfin/mach-bf533/boards/ip0x.c            |    1 
+ arch/blackfin/mach-bf533/boards/stamp.c           |    1 
+ arch/blackfin/mach-bf533/include/mach/cdefBF532.h |   47 ------------------
+ arch/blackfin/mach-bf533/include/mach/fio_flag.h  |   55 +++++++++++++++++++++
+ 5 files changed, 58 insertions(+), 47 deletions(-)
+ create mode 100644 arch/blackfin/mach-bf533/include/mach/fio_flag.h
+
+diff --git a/arch/blackfin/mach-bf533/boards/blackstamp.c b/arch/blackfin/mach-bf533/boards/blackstamp.c
+index 842b4fa..84a06f6 100644
+--- a/arch/blackfin/mach-bf533/boards/blackstamp.c
++++ b/arch/blackfin/mach-bf533/boards/blackstamp.c
+@@ -25,6 +25,7 @@
+ #include <asm/bfin5xx_spi.h>
+ #include <asm/portmux.h>
+ #include <asm/dpmc.h>
++#include <mach/fio_flag.h>
+ 
+ /*
+  * Name the Board for the /proc/cpuinfo
+diff --git a/arch/blackfin/mach-bf533/boards/ip0x.c b/arch/blackfin/mach-bf533/boards/ip0x.c
+index 7349970..b8474ca 100644
+--- a/arch/blackfin/mach-bf533/boards/ip0x.c
++++ b/arch/blackfin/mach-bf533/boards/ip0x.c
+@@ -22,6 +22,7 @@
+ #include <asm/dma.h>
+ #include <asm/bfin5xx_spi.h>
+ #include <asm/portmux.h>
++#include <mach/fio_flag.h>
+ 
+ /*
+  * Name the Board for the /proc/cpuinfo
+diff --git a/arch/blackfin/mach-bf533/boards/stamp.c b/arch/blackfin/mach-bf533/boards/stamp.c
+index c457eaa..29c219e 100644
+--- a/arch/blackfin/mach-bf533/boards/stamp.c
++++ b/arch/blackfin/mach-bf533/boards/stamp.c
+@@ -24,6 +24,7 @@
+ #include <asm/reboot.h>
+ #include <asm/portmux.h>
+ #include <asm/dpmc.h>
++#include <mach/fio_flag.h>
+ 
+ /*
+  * Name the Board for the /proc/cpuinfo
+diff --git a/arch/blackfin/mach-bf533/include/mach/cdefBF532.h b/arch/blackfin/mach-bf533/include/mach/cdefBF532.h
+index 8edad6d..401e524 100644
+--- a/arch/blackfin/mach-bf533/include/mach/cdefBF532.h
++++ b/arch/blackfin/mach-bf533/include/mach/cdefBF532.h
+@@ -7,11 +7,6 @@
+ #ifndef _CDEF_BF532_H
+ #define _CDEF_BF532_H
+ 
+-#include <asm/blackfin.h>
+-
+-/*include all Core registers and bit definitions*/
+-#include "defBF532.h"
+-
+ /*include core specific register pointer definitions*/
+ #include <asm/cdef_LPBlackfin.h>
+ 
+@@ -655,46 +650,4 @@
+ /* These need to be last due to the cdef/linux inter-dependencies */
+ #include <asm/irq.h>
+ 
+-#if ANOMALY_05000311
+-#define BFIN_WRITE_FIO_FLAG(name) \
+-static inline void bfin_write_FIO_FLAG_##name(unsigned short val) \
+-{ \
+-	unsigned long flags; \
+-	local_irq_save_hw(flags); \
+-	bfin_write16(FIO_FLAG_##name, val); \
+-	bfin_read_CHIPID(); \
+-	local_irq_restore_hw(flags); \
+-}
+-BFIN_WRITE_FIO_FLAG(D)
+-BFIN_WRITE_FIO_FLAG(C)
+-BFIN_WRITE_FIO_FLAG(S)
+-BFIN_WRITE_FIO_FLAG(T)
+-
+-#define BFIN_READ_FIO_FLAG(name) \
+-static inline u16 bfin_read_FIO_FLAG_##name(void) \
+-{ \
+-	unsigned long flags; \
+-	u16 ret; \
+-	local_irq_save_hw(flags); \
+-	ret = bfin_read16(FIO_FLAG_##name); \
+-	bfin_read_CHIPID(); \
+-	local_irq_restore_hw(flags); \
+-	return ret; \
+-}
+-BFIN_READ_FIO_FLAG(D)
+-BFIN_READ_FIO_FLAG(C)
+-BFIN_READ_FIO_FLAG(S)
+-BFIN_READ_FIO_FLAG(T)
+-
+-#else
+-#define bfin_write_FIO_FLAG_D(val)           bfin_write16(FIO_FLAG_D, val)
+-#define bfin_write_FIO_FLAG_C(val)           bfin_write16(FIO_FLAG_C, val)
+-#define bfin_write_FIO_FLAG_S(val)           bfin_write16(FIO_FLAG_S, val)
+-#define bfin_write_FIO_FLAG_T(val)           bfin_write16(FIO_FLAG_T, val)
+-#define bfin_read_FIO_FLAG_T()               bfin_read16(FIO_FLAG_T)
+-#define bfin_read_FIO_FLAG_C()               bfin_read16(FIO_FLAG_C)
+-#define bfin_read_FIO_FLAG_S()               bfin_read16(FIO_FLAG_S)
+-#define bfin_read_FIO_FLAG_D()               bfin_read16(FIO_FLAG_D)
+-#endif
+-
+ #endif				/* _CDEF_BF532_H */
+diff --git a/arch/blackfin/mach-bf533/include/mach/fio_flag.h b/arch/blackfin/mach-bf533/include/mach/fio_flag.h
+new file mode 100644
+index 0000000..b81905a
+--- /dev/null
++++ b/arch/blackfin/mach-bf533/include/mach/fio_flag.h
+@@ -0,0 +1,55 @@
++/*
++ * Copyright 2005-2008 Analog Devices Inc.
++ *
++ * Licensed under the GPL-2 or later
++ */
++
++#ifndef _MACH_FIO_FLAG_H
++#define _MACH_FIO_FLAG_H
++
++#include <asm/blackfin.h>
++#include <asm/irqflags.h>
++
++#if ANOMALY_05000311
++#define BFIN_WRITE_FIO_FLAG(name) \
++static inline void bfin_write_FIO_FLAG_##name(unsigned short val) \
++{ \
++	unsigned long flags; \
++	local_irq_save_hw(flags); \
++	bfin_write16(FIO_FLAG_##name, val); \
++	bfin_read_CHIPID(); \
++	local_irq_restore_hw(flags); \
++}
++BFIN_WRITE_FIO_FLAG(D)
++BFIN_WRITE_FIO_FLAG(C)
++BFIN_WRITE_FIO_FLAG(S)
++BFIN_WRITE_FIO_FLAG(T)
++
++#define BFIN_READ_FIO_FLAG(name) \
++static inline u16 bfin_read_FIO_FLAG_##name(void) \
++{ \
++	unsigned long flags; \
++	u16 ret; \
++	local_irq_save_hw(flags); \
++	ret = bfin_read16(FIO_FLAG_##name); \
++	bfin_read_CHIPID(); \
++	local_irq_restore_hw(flags); \
++	return ret; \
++}
++BFIN_READ_FIO_FLAG(D)
++BFIN_READ_FIO_FLAG(C)
++BFIN_READ_FIO_FLAG(S)
++BFIN_READ_FIO_FLAG(T)
++
++#else
++#define bfin_write_FIO_FLAG_D(val)           bfin_write16(FIO_FLAG_D, val)
++#define bfin_write_FIO_FLAG_C(val)           bfin_write16(FIO_FLAG_C, val)
++#define bfin_write_FIO_FLAG_S(val)           bfin_write16(FIO_FLAG_S, val)
++#define bfin_write_FIO_FLAG_T(val)           bfin_write16(FIO_FLAG_T, val)
++#define bfin_read_FIO_FLAG_T()               bfin_read16(FIO_FLAG_T)
++#define bfin_read_FIO_FLAG_C()               bfin_read16(FIO_FLAG_C)
++#define bfin_read_FIO_FLAG_S()               bfin_read16(FIO_FLAG_S)
++#define bfin_read_FIO_FLAG_D()               bfin_read16(FIO_FLAG_D)
++#endif
++
++#endif /* _MACH_FIO_FLAG_H */
+
