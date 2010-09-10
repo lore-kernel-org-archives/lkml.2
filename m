@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab0IJTYf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 15:24:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27658 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753556Ab0IJTYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 15:24:33 -0400
-Date: Fri, 10 Sep 2010 15:24:04 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, agk@redhat.com, jaxboe@fusionio.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-raid@vger.kernel.org, dm-devel@redhat.com, hch@lst.de,
-        konishi.ryusuke@lab.ntt.co.jp, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com, vst@vlnb.net,
-        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
-        rusty@rustcorp.com.au, mst@redhat.com, k-ueda@ct.jp.nec.com
-Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
- dm
-Message-ID: <20100910192403.GA24582@redhat.com>
-References: <1283509796-1510-1-git-send-email-tj@kernel.org>
- <1283509796-1510-24-git-send-email-tj@kernel.org>
- <Pine.LNX.4.64.1009101410570.7839@hs20-bc2-1.build.redhat.com>
- <20100910184652.GA24470@redhat.com>
- <Pine.LNX.4.64.1009101456220.21834@hs20-bc2-1.build.redhat.com>
+	id S1754429Ab0IJTZr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 15:25:47 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48690 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754178Ab0IJTZp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 15:25:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1009101456220.21834@hs20-bc2-1.build.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.94.94.105]
+In-Reply-To: <AANLkTikXFmaZs+XzrOWjWoLPhyUy0CEXfOQMqP=Xp1cO@mail.gmail.com>
+References: <AANLkTikTBdr4U1bPtfXWhgLgdvWDMPJrFjBCktPL40dg@mail.gmail.com>
+	<20100910143813.4af0a3ce@lxorguk.ukuu.org.uk>
+	<AANLkTikXFmaZs+XzrOWjWoLPhyUy0CEXfOQMqP=Xp1cO@mail.gmail.com>
+Date: Fri, 10 Sep 2010 14:25:44 -0500
+Message-ID: <AANLkTinctyN3d4o8vq-8pAH67FaoAXOiX3=kobWkNTms@mail.gmail.com>
+Subject: Re: Request for input regarding new driver in MFD for
+ GPS_Bluetooth_FM controller CG2900
+From: Pavan Savoy <pavan_savoy@sify.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
+        par-gunnar.p.hjalmdahl@stericsson.com
+Cc: pghatwork@gmail.com, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10 2010 at  3:05pm -0400,
-Mikulas Patocka <mpatocka@redhat.com> wrote:
+ok bit more of information ....
+We don;t use the hciattach, instead we have our own daemon which opens
+up the UART and installs the line discipline (not N_HCI, but similar
+one called N_SHARED) when the hciconfig hci0 up happens or even when
+/dev/radio0 (FM V4L2 device) happens or when generic GPS character
+device (/dev/tigps) happens...
 
-> 
-> 
-> On Fri, 10 Sep 2010, Mike Snitzer wrote:
-> > And in fact, this first patch basically is as minimal as it gets
-> > relative to bio-based DM's conversion to FLUSH+FUA.
-> > 
-> > Please direct your energy and talent in a positive way rather than
-> > starting a potential flame.
-> > 
-> > Thanks,
-> > Mike
-> 
-> I don't want to flame. I mean this:
-> 
-> * person X writes a patch P.
-> * person Y reads P, sees that the condition C is true and writes patch Q 
-> that dependes on condition C.
-> * person X changes a patch P, so that the patch is correct but condition C 
-> is no longer true.
-> 
-> Now, there is a bug in the patch Q and NEITHER X NOR Y can find out about 
-> that bug.
-> 
-> That's why parallel development doesn't work.
-> 
-> If you develop on things in the kernel, it is different.
-> * person X writes a patch P and puts it in the kernel.
-> * person Y reads the kernel code, sees that the condition C is true and 
-> writes a patch Q that assumes that the condition C is true. He puts this 
-> patch to the kernel too.
-> * person X wants to change his code so that the condition C isn't true, 
-> but it is now his responsibility to search the rest of the kernel to see 
-> if it depends on the condition C. He searches the code and finds Q.
-> 
-> This is not a flamewar, just a technical explanation, why I don't want to 
-> develop on interfaces that are not in the kernel.
+There is non-mailine driver which gets modified to get into mainline @
+http://git.omapzoom.org/?p=kernel/omap.git;a=tree;f=drivers/misc/ti-st;h=028ff4a739d7b59b94d0c613b5ef510ff338b65d;hb=refs/heads/p-android-omap-2.6.32
 
-We're reasonable people and can certainly prevent a flamewar but what
-you're doing is an elaborate distraction.  The energy it took you to
-write and reason through your logic above could've been used to just
-review the DM FLUSH+FUA patches.
+feel free to have a look at it...
+Yes our solution too works with BlueZ and non-exactly a MFD driver but
+it is a simple platform device driver .. by looks of things the driver
+can run as is for your chip too .. (except for the firmware search and
+download part .. may be...).
 
-The various interfaces are hardened now and staged for inclussion in
-2.6.37.  Jens has already pulled the entire 40+ patchset into his
-for-next branch for wider linux-next testing.
+and note when we would want to support SPI transport for the same, we
+plan a SPI-TTY driver ('ala usb-serial) where-in we can install this
+N_TI_WL line discipline on that /dev/ttySPI0 device, and the SPI
+related stuff to be handled by the spi-tty.c which registers itself as
+a tty_device and a tty_driver ....
 
-Tejun, Christoph and others have done an amazing job with this
-conversion.  The fact that Tejun tackled the heavy lifting of DM's
-conversion was unexpected but 100% appreciated (by me and I assume
-others).  Please don't dismiss, or misrepresent the status of, this
-FLUSH+FUA work.
+regards,
+Pavan
 
-Mike
+On Fri, Sep 10, 2010 at 2:07 PM, Pavan Savoy <pavan_savoy@sify.com> wrote:
+> Can you directly make use of the ti-st driver which is currently staged?
+> It has _EXACTLY_ the same thing.... which is REALLY REALLY surprising !!!
+>
+> On Fri, Sep 10, 2010 at 8:38 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>>>  - Is it OK to dynamically use the channels either from Kernel or User space?
+>>
+>> Quite a few devices do this. In most cases it makes no sense to burden
+>> the user with channel management so its only natural that opening the tty
+>> or direct interfaces should "just work"
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
