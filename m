@@ -1,74 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab0IJIhz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 04:37:55 -0400
-Received: from www.tglx.de ([62.245.132.106]:45030 "EHLO www.tglx.de"
+	id S1755965Ab0IJIj4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 04:39:56 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56245 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754007Ab0IJIhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 04:37:53 -0400
-Date: Fri, 10 Sep 2010 10:37:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Nix <nix@esperi.org.uk>
-cc: Artur Skawina <art.08.09@gmail.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Damien Wyart <damien.wyart@free.fr>,
-        John Drescher <drescherjm@gmail.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [BISECTED] 2.6.35.*: horrible (exponential? >linear) slowdown
- to unusability (HPET)
-In-Reply-To: <87eid282pj.fsf@spindle.srvr.nix>
-Message-ID: <alpine.LFD.2.00.1009101022400.2477@localhost6.localdomain6>
-References: <87eid282pj.fsf@spindle.srvr.nix>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754007Ab0IJIjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 04:39:54 -0400
+Subject: Re: [PATCH 08/43] memblock/microblaze: Use new accessors
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Michal Simek <monstr@monstr.eu>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>
+In-Reply-To: <20100909115445.GB16157@elte.hu>
+References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
+	 <1281071724-28740-9-git-send-email-benh@kernel.crashing.org>
+	 <4C5BCD41.3040501@monstr.eu> <1281135046.2168.40.camel@pasglop>
+	 <4C88BD8F.5080208@monstr.eu>  <20100909115445.GB16157@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Sep 2010 18:18:31 +1000
+Message-ID: <1284106711.6515.46.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010, Nix wrote:
-
-> On 10 Sep 2010, Artur Skawina spake thusly:
-> > I'm seeing this too, except here it happens every couple of days of uptime,
-> > lasts for a few minutes, and then goes away. Which made bisecting a bit
-> > impractical... Thank you for doing it. 
+On Thu, 2010-09-09 at 13:54 +0200, Ingo Molnar wrote:
+> * Michal Simek <monstr@monstr.eu> wrote:
 > 
-> I just happened to be the lucky sod for whom it was consistently going
-> wrong. :)
+> > Benjamin Herrenschmidt wrote:
+> > >On Fri, 2010-08-06 at 10:52 +0200, Michal Simek wrote:
+> > >>Benjamin Herrenschmidt wrote:
+> > >>>CC: Michal Simek <monstr@monstr.eu>
+> > >>>Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > >>This patch remove bug which I reported but there is another
+> > >>place which needs to be changed.
+> > >>
+> > >>I am not sure if my patch is correct but at least point you on
+> > >>places which is causing compilation errors.
+> > >>
+> > >>I tested your memblock branch with this fix and microblaze can boot.
+> > >
+> > >Ok, that's missing in my initial rename patch. I'll fix it up. Thanks.
+> > >
+> > >Cheers,
+> > >Ben.
+> > 
+> > I don't know why but this unfixed old patch is in linux-next today.
 > 
-> > HW is similar; x64 and X58/82801JI/ICH10, tsc clocksrc.
-> > Did that printk trigger?
+> Yep, i asked benh to have a look (see the mail below) but got no 
+> response, as i assumed it had all been taken care of.
+
+Sorry, I must have been confused... I had pushed out a git branch a
+while back with those updates and the ARM bits, at least I think I
+did :-) I might have FAILed there. I'll check next week, I'm about to
+board on a plane right now.
+
+Cheers,
+Ben.
+
+> Ben, Peter?
 > 
-> No.
+> 	Ingo
 > 
-> (hm, odd.
+> ----- Forwarded message from Ingo Molnar <mingo@elte.hu> -----
 > 
-> spindle:~# cat /sys/devices/system/clocksource/clocksource0/current_clocksource
-> tsc
+> Date: Tue, 31 Aug 2010 09:29:47 +0200
+> From: Ingo Molnar <mingo@elte.hu>
+> To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+> 	tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+> Subject: Re: [tip:core/memblock] memblock: Rename memblock_region to
+> 	memblock_type and memblock_property to memblock_region
 > 
-> spindle:~# grep -i tsc /proc/timer_list
-> spindle:~# grep -i hpet /proc/timer_list
-> Clock Event Device: hpet
->  set_next_event: hpet_legacy_next_event
->  set_mode:       hpet_legacy_set_mode
 > 
-> I suspect current_clocksource doesn't do what we think it does, or the
-> clocksource and 'clock event device' are not the same.)
+> * Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+> 
+> > On Sat, 2010-08-28 at 00:37 +0000, tip-bot for Benjamin Herrenschmidt
+> > wrote:
+> > > Commit-ID:  e3239ff92a17976ac5d26fa0fe40ef3a9daf2523
+> > > Gitweb:     http://git.kernel.org/tip/e3239ff92a17976ac5d26fa0fe40ef3a9daf2523
+> > > Author:     Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > > AuthorDate: Wed, 4 Aug 2010 14:06:41 +1000
+> > > Committer:  Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > > CommitDate: Wed, 4 Aug 2010 14:21:49 +1000
+> > > 
+> > > memblock: Rename memblock_region to memblock_type and memblock_property to memblock_region
+> > 
+> > He, I was just about to rebase them :-)
+> > 
+> > Do you still need me to do that ?
+> 
+> Btw., because this is an older base, before we can push this to 
+> linux-next i suspect we'll need fixes for those architectures that did a 
+> memblock conversion in this cycle?
+> 
+> Thanks,
+> 
+> 	Ingo
+> 	
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Right, they are not the same. clocksource provides us a read out
-device for timekeeping (usually a simple increasing counter). clock
-event device is used to generate timer interrupts.
 
-HPET provides both functionalities.
-
-The patch you bisected is affecting the clock events part of the
-HPET. So yes, it's not a clock source problem.
-
-I'm a bit at a loss here. We need information from Intel.
-
-@hpa, suresh - can you please have a look at this ?
-
-Thanks,
-
-	tglx
