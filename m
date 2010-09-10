@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab0IJQ13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 12:27:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1030 "EHLO mx1.redhat.com"
+	id S1755631Ab0IJQZJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 12:25:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62935 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755664Ab0IJQZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 12:25:16 -0400
+	id S1755604Ab0IJQZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 12:25:06 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 08/17] MIPS: TX49xx: rename ARCH_KMALLOC_MINALIGN to
-	ARCH_DMA_MINALIGN
+Subject: [PATCH 04/17] Blackfin: Add missing dep to asm/irqflags.h
 To: linux-arch@vger.kernel.org
 Cc: torvalds@osdl.org, linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-Date: Fri, 10 Sep 2010 17:24:48 +0100
-Message-ID: <20100910162448.20817.26804.stgit@warthog.procyon.org.uk>
+        David Howells <dhowells@redhat.com>
+Date: Fri, 10 Sep 2010 17:24:28 +0100
+Message-ID: <20100910162428.20817.84805.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20100910162407.20817.34359.stgit@warthog.procyon.org.uk>
 References: <20100910162407.20817.34359.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -29,30 +27,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Add a missing dependency (mach/blackfin.h) to asm/irqflags.h so that
+bfin_read_IMASK() can be used by inline functions.
 
-Architectures need to set ARCH_DMA_MINALIGN to the minimum DMA
-alignment (the commit
-a6eb9fe105d5de0053b261148cee56c94b4720ca). Defining
-ARCH_KMALLOC_MINALIGN doesn't work anymore.
-
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Acked-by: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/mips/include/asm/mach-tx49xx/kmalloc.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/blackfin/include/asm/irqflags.h |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/arch/mips/include/asm/mach-tx49xx/kmalloc.h b/arch/mips/include/asm/mach-tx49xx/kmalloc.h
-index b74caf6..ff9a8b8 100644
---- a/arch/mips/include/asm/mach-tx49xx/kmalloc.h
-+++ b/arch/mips/include/asm/mach-tx49xx/kmalloc.h
-@@ -1,6 +1,6 @@
- #ifndef __ASM_MACH_TX49XX_KMALLOC_H
- #define __ASM_MACH_TX49XX_KMALLOC_H
+diff --git a/arch/blackfin/include/asm/irqflags.h b/arch/blackfin/include/asm/irqflags.h
+index 813a1af..f3ed931 100644
+--- a/arch/blackfin/include/asm/irqflags.h
++++ b/arch/blackfin/include/asm/irqflags.h
+@@ -8,6 +8,8 @@
+ #ifndef __ASM_BFIN_IRQFLAGS_H__
+ #define __ASM_BFIN_IRQFLAGS_H__
  
--#define ARCH_KMALLOC_MINALIGN	L1_CACHE_BYTES
-+#define ARCH_DMA_MINALIGN L1_CACHE_BYTES
++#include <mach/blackfin.h>
++
+ #ifdef CONFIG_SMP
+ # include <asm/pda.h>
+ # include <asm/processor.h>
+@@ -185,7 +187,12 @@ static inline void raw_local_irq_enable(void)
+ 	bfin_sti(bfin_irq_flags);
+ }
  
- #endif /* __ASM_MACH_TX49XX_KMALLOC_H */
+-#define raw_local_save_flags(flags) do { (flags) = bfin_read_IMASK(); } while (0)
++static inline unsigned long arch_local_save_flags(void)
++{
++	return bfin_read_IMASK();
++}
++
++#define raw_local_save_flags(flags) do { (flags) = arch_local_save_flags(); } while (0)
+ 
+ #define raw_irqs_disabled_flags(flags) (((flags) & ~0x3f) == 0)
+ 
 
