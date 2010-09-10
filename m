@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab0IJLgW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 07:36:22 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:9203 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752424Ab0IJLgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 07:36:21 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        avictor.za@gmail.com
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] AT91: at91sam9261ek: remove C99 comments but keep information
-Date: Fri, 10 Sep 2010 14:42:25 +0200
-Message-Id: <1284122545-14715-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <4C8A15AB.4030209@atmel.com>
-References: <4C8A15AB.4030209@atmel.com>
+	id S1753213Ab0IJLkY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 07:40:24 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:59751 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752737Ab0IJLkX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 07:40:23 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1+yodEEU16ydWaHQJnNRLpIMW3worX2rFRGSoQ+GD
+	xLsaZPd4VOHr0Q
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: [Resend] uml build error for kernel v2.6.36-rc3-337-g48d00d6
+Date: Fri, 10 Sep 2010 13:40:16 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35.4; KDE/4.4.5; i686; ; )
+Cc: user-mode-linux-devel@lists.sourceforge.net
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201009101340.18552.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/board-sam9261ek.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+Hello,
 
-diff --git a/arch/arm/mach-at91/board-sam9261ek.c b/arch/arm/mach-at91/board-sam9261ek.c
-index 19d4d2c..65eb094 100644
---- a/arch/arm/mach-at91/board-sam9261ek.c
-+++ b/arch/arm/mach-at91/board-sam9261ek.c
-@@ -351,16 +351,14 @@ static struct spi_board_info ek_spi_devices[] = {
- };
- 
- #else /* CONFIG_SPI_ATMEL_* */
-+/* spi0 and mmc/sd share the same PIO pins: cannot be used at the same time */
- 
- /*
-  * MCI (SD/MMC)
-- * spi0 and mmc/sd share the same PIO pins: cannot be used at the same time
-+ * det_pin, wp_pin and vcc_pin are not connected
-  */
- static struct at91_mmc_data __initdata ek_mmc_data = {
- 	.wire4		= 1,
--//	.det_pin	= ... not connected
--//	.wp_pin		= ... not connected
--//	.vcc_pin	= ... not connected
- };
- 
- #endif /* CONFIG_SPI_ATMEL_* */
+(had have problems with my mailer therefore probably you got this mail 
+already)
+
+The uml build is broken since some revisions, a build gives :
+
+...
+  CC      arch/um/drivers/hostaudio_kern.o
+arch/um/drivers/hostaudio_kern.c: In function ‘hostaudio_open’:
+arch/um/drivers/hostaudio_kern.c:204: error: ‘__param_dsp’ undeclared (first 
+use in this function)
+arch/um/drivers/hostaudio_kern.c:204: error: (Each undeclared identifier is 
+reported only once
+arch/um/drivers/hostaudio_kern.c:204: error: for each function it appears in.)
+arch/um/drivers/hostaudio_kern.c: In function ‘hostmixer_open_mixdev’:
+arch/um/drivers/hostaudio_kern.c:265: error: ‘__param_mixer’ undeclared (first 
+use in this function)
+arch/um/drivers/hostaudio_kern.c:272: error: ‘__param_dsp’ undeclared (first 
+use in this function)
+make[1]: *** [arch/um/drivers/hostaudio_kern.o] Error 1
+make: *** [arch/um/drivers] Error 2
+
+
 -- 
-1.5.6.5
+MfG/Kind regards
+Toralf Förster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+0351d6a13e12f11697112d3c674bef5e
+bd6a850f405771645536622adcd78f4cbe0edb9477040cef310e15e13282339d
 
