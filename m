@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab0IJVk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 17:40:58 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:38813 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753223Ab0IJVk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 17:40:57 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201009102140.o8ALeu1o011316@stout.americas.sgi.com>
-Date: Fri, 10 Sep 2010 16:40:56 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update #2 for 2.6.36-rc4
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.4 7/29/08
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751808Ab0IJVoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 17:44:06 -0400
+Received: from mail.perches.com ([173.55.12.10]:1646 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750936Ab0IJVoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 17:44:05 -0400
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Florian Mickler <florian@mickler.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100910140404.372bac58.akpm@linux-foundation.org>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	 <1284111767.1783.35.camel@Joe-Laptop>
+	 <20100910123040.5a6f0128@schatten.dmk.lab>
+	 <20100910140404.372bac58.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Sep 2010 14:44:02 -0700
+Message-ID: <1284155042.1783.183.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two more XFS changes for 2.6.36--one fixes a security problem
-and the other addresses a regression due to the recent
-workqueue updates.
+On Fri, 2010-09-10 at 14:04 -0700, Andrew Morton wrote:
+> People who get angry at an unexpected cc need to get a clue.
+> I mean really, it's not a big deal.  And the addition of the occasional
+> inappropriate cc is a far less serious problem than the omission of
+> someone who might have been interested in the change.
 
-					-Alex
+I agree and I don't much like the suggested patch.
 
-The following changes since commit df423dc7f2a801b9a45d7c501a8eb5c529455ea1:
+I get some of these even though all I ever do is
+trivial stuff.
 
-  Merge branch 'upstream-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev (2010-09-09 20:28:19 -0700)
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Dan Rosenberg (1):
-      xfs: prevent reading uninitialized stack memory
-
-Dave Chinner (1):
-      xfs: log IO completion workqueue is a high priority queue
-
- fs/xfs/linux-2.6/xfs_buf.c   |    3 ++-
- fs/xfs/linux-2.6/xfs_ioctl.c |    2 ++
- 2 files changed, 4 insertions(+), 1 deletions(-)
