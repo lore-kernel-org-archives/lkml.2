@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112Ab0IJSN3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 14:13:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46401 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751067Ab0IJSN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 14:13:28 -0400
-Date: Fri, 10 Sep 2010 19:13:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mattias WALLIN <mattias.wallin@stericsson.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: SV: [PATCH 2/3] MFD: AB8500 debugfs
-Message-ID: <20100910181325.GA11584@rakim.wolfsonmicro.main>
-References: <1284134031-8979-1-git-send-email-mattias.wallin@stericsson.com>
- <20100910164352.GG23903@sirena.org.uk>
- <33A307AF30D7BF4F811B1568FE7A9B181C357DCD@EXDCVYMBSTM006.EQ1STM.local>
+	id S1752768Ab0IJSP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 14:15:27 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56802 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751774Ab0IJSP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 14:15:26 -0400
+Date: Fri, 10 Sep 2010 20:14:58 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Andres Salomon <dilinger@queued.net>, devicetree-discuss@lists.ozlabs.org,
+        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        Mitch Bradley <wmb@laptop.org>, linux-kernel@vger.kernel.org,
+        Stephen Neuendorffer <stephen.neuendorffer@xilinx.com>
+Subject: Re: [PATCH 2/2] x86: of: define irq functions to allow drivers/of/*
+ to build on x86
+Message-ID: <20100910181458.GA7243@elte.hu>
+References: <20100910060151.6613e9c3@debxo>
+ <20100910172538.GC11284@angua.secretlab.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <33A307AF30D7BF4F811B1568FE7A9B181C357DCD@EXDCVYMBSTM006.EQ1STM.local>
-X-Cookie: Trap full -- please empty.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100910172538.GC11284@angua.secretlab.ca>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0365]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 08:11:48PM +0200, Mattias WALLIN wrote:
+
+* Grant Likely <grant.likely@secretlab.ca> wrote:
+
+> On Fri, Sep 10, 2010 at 06:01:51AM -0700, Andres Salomon wrote:
+> > 
+> >  - Define a stub irq_create_of_mapping for x86 as a stop-gap solution until
+> >    drivers/of/irq is further along.
+> >  - Define irq_dispose_mapping for x86 to appease of_i2c.c
+> > 
+> > Signed-off-by: Andres Salomon <dilinger@queued.net>
 > 
-> > Might it be sensible to just unconditionally enable this if debugfs is
-> > enabled?
+> Applied to my test-devicetree branch.  I'll need an ack from the x86 
+> maintainers before I put it into my -next branch.
 
-> Do you mean remove the Kconfig part and instead have a Makefile with:
+The purpose of the patch is not clear to me. What does it do and why? 
+The changelog says it's a stopgap measure - what exactly is the long 
+term plan and how long will it take?
 
-> +obj-$(CONFIG_DEBUG_FS)     += ab8500-debugfs.o
+Thanks,
 
-> If so it is ok with me.
-
-Pretty much; probably needs to be slightly more involved than that to
-make sure the selection lines up with the core but certainly the same
-effect for users.
+	Ingo
