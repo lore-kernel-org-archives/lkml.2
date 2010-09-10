@@ -1,59 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab0IJLZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 07:25:44 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:10428 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab0IJLZn (ORCPT
+	id S1753073Ab0IJL3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 07:29:16 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:54947 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759Ab0IJL3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 07:25:43 -0400
-Message-ID: <4C8A15AB.4030209@atmel.com>
-Date: Fri, 10 Sep 2010 13:25:31 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>, avictor.za@gmail.com
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] AT91: at91sam9261ek board: remove warnings related to
- use of SPI or SD/MMC
-References: <1284113629-13768-1-git-send-email-nicolas.ferre@atmel.com> <1284113629-13768-2-git-send-email-nicolas.ferre@atmel.com> <4C8A07BA.9090805@ru.mvista.com> <20100910110632.GT9112@game.jcrosoft.org>
-In-Reply-To: <20100910110632.GT9112@game.jcrosoft.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Sep 2010 07:29:15 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=pfT69382ziERlc6dsnIVO6HfcDT1lxrmAr0is5UnoJ78hYwgyi0VWjyHzhmFG+lEV
+	nK5akefQbGWnwTL4ghxkA==
+Message-ID: <4c8a1686.aae9d80a.5aa4.5e35@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Fri, 10 Sep 2010 13:28:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        eranian@google.com, robert.richter@amd.com, dzickus@redhat.com
+Subject: [PATCH] perf_events: fix BTS interrupt handling to avoid being dazed by NMI (v2)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 10/09/2010 13:06, Jean-Christophe PLAGNIOL-VILLARD :
->>>   * ADS7846 Touchscreen
->>> @@ -357,6 +350,21 @@ static struct spi_board_info ek_spi_devices[] = {
->>>  #endif
->>>  };
->>>
->>> +#else /* CONFIG_SPI_ATMEL_* */
->>> +
->>> +/*
->>> + * MCI (SD/MMC)
->>> + * spi0 and mmc/sd share the same PIO pins: cannot be used at the same time
->>> + */
->>> +static struct at91_mmc_data __initdata ek_mmc_data = {
->>> +	.wire4		= 1,
->>> +//	.det_pin	= ... not connected
->>> +//	.wp_pin		= ... not connected
->>> +//	.vcc_pin	= ... not connected
->>
->>    The coding style document forbids C99 style // comments. Could
->> replace with normal comment or #if 0...
-> no dead code please
+Fix a bug introduced with commit de725de and the change in the meaning of the
+return value of intel_pmu_handle_irq(). With the current code, when you are
+using the BTS, you get 'dazed by NMI' each time the BTS buffer fills up.
 
-I kept those comments because it is just a move of code.
+BTS does interrupt on the PMU vector, thus NMI. You need to take this
+into account in the return value of the function.
 
-But ok, it seem that they are not liked by several people. As I am in a
-"tiny fixes" mood, I post an additional patch to remove them ;-)
+This version fixes initial patch which was missing changes to
+perf_event_intel_ds.c.
 
-Cheers,
--- 
-Nicolas Ferre
+Signed-off-by: Stephane Eranian <eranian@google.com>
+--
 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index ee05c90..b4d2e1c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -713,18 +713,18 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	struct cpu_hw_events *cpuc;
+ 	int bit, loops;
+ 	u64 status;
+-	int handled = 0;
++	int handled;
+ 
+ 	perf_sample_data_init(&data, 0);
+ 
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+ 	intel_pmu_disable_all();
+-	intel_pmu_drain_bts_buffer();
++	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+ 	if (!status) {
+ 		intel_pmu_enable_all(0);
+-		return 0;
++		return handled;
+ 	}
+ 
+ 	loops = 0;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 18018d1..44c8cfd 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -214,7 +214,7 @@ static void intel_pmu_disable_bts(void)
+ 	update_debugctlmsr(debugctlmsr);
+ }
+ 
+-static void intel_pmu_drain_bts_buffer(void)
++static int intel_pmu_drain_bts_buffer(void)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+@@ -231,16 +231,16 @@ static void intel_pmu_drain_bts_buffer(void)
+ 	struct pt_regs regs;
+ 
+ 	if (!event)
+-		return;
++		return 0;
+ 
+ 	if (!ds)
+-		return;
++		return 0;
+ 
+ 	at  = (struct bts_record *)(unsigned long)ds->bts_buffer_base;
+ 	top = (struct bts_record *)(unsigned long)ds->bts_index;
+ 
+ 	if (top <= at)
+-		return;
++		return 0;
+ 
+ 	ds->bts_index = ds->bts_buffer_base;
+ 
+@@ -256,7 +256,7 @@ static void intel_pmu_drain_bts_buffer(void)
+ 	perf_prepare_sample(&header, &data, event, &regs);
+ 
+ 	if (perf_output_begin(&handle, event, header.size * (top - at), 1, 1))
+-		return;
++		return 1;
+ 
+ 	for (; at < top; at++) {
+ 		data.ip		= at->from;
+@@ -270,6 +270,7 @@ static void intel_pmu_drain_bts_buffer(void)
+ 	/* There's new data available. */
+ 	event->hw.interrupts++;
+ 	event->pending_kill = POLL_IN;
++	return 1;
+ }
+ 
+ /*
