@@ -1,63 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab0IJMmV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 08:42:21 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39571 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524Ab0IJMmT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 08:42:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=sdMNTavgme0SRhEzA5MNUTagZs45CQKCztiXDqfCm0YnaOtgqmowKa3BaRKbPyYPNe
-         t1TiWDSnnVBgGfQeIioWgkNXlTbTMVaOKNzvKQGJ9XvTqGFvEpUWBVpfdHjCiPux2spT
-         fyHyCgEvUe8jp5xZWQWmN/y32AhyEpDo0nmP4=
-Subject: [PATCH] USB: r8a66597-udc: Initialize uninitialized variable, fix
- compile warning
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <damm@opensource.se>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Sep 2010 08:42:08 -0400
-Message-ID: <1284122528.6726.4.camel@lenovo>
+	id S1753654Ab0IJMnM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 08:43:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35792 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753544Ab0IJMnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 08:43:10 -0400
+Date: Fri, 10 Sep 2010 08:46:29 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 15/30] smbfs: Convert server->sem to mutex
+Message-ID: <20100910084629.239dc62f@corrin.poochiereds.net>
+In-Reply-To: <20100907125056.136212826@linutronix.de>
+References: <20100907124636.880953480@linutronix.de>
+	<20100907125056.136212826@linutronix.de>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In today linux-next I got a compile warning due a possible uninitialized variable
+On Tue, 07 Sep 2010 14:32:52 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-This patch solves the issue initializing the variable
+> server->sem is used as mutex so make it a mutex.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: linux-fsdevel@vger.kernel.org
+> 
+> ---
+>  fs/smbfs/inode.c          |    2 +-
+>  include/linux/smb_fs_sb.h |    8 ++++----
+>  2 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> Index: linux-2.6/fs/smbfs/inode.c
+> ===================================================================
+> --- linux-2.6.orig/fs/smbfs/inode.c
+> +++ linux-2.6/fs/smbfs/inode.c
+> @@ -536,7 +536,7 @@ static int smb_fill_super(struct super_b
+>  	server->mnt = NULL;
+>  	server->sock_file = NULL;
+>  	init_waitqueue_head(&server->conn_wq);
+> -	init_MUTEX(&server->sem);
+> +	mutex_init(&server->mutex);
+>  	INIT_LIST_HEAD(&server->entry);
+>  	INIT_LIST_HEAD(&server->xmitq);
+>  	INIT_LIST_HEAD(&server->recvq);
+> Index: linux-2.6/include/linux/smb_fs_sb.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/smb_fs_sb.h
+> +++ linux-2.6/include/linux/smb_fs_sb.h
+> @@ -58,7 +58,7 @@ struct smb_sb_info {
+>  	struct smb_conn_opt opt;
+>  	wait_queue_head_t conn_wq;
+>  	int conn_complete;
+> -	struct semaphore sem;
+> +	struct mutex mutex;
+>  
+>  	unsigned char      header[SMB_HEADER_LEN + 20*2 + 2];
+>  	u32                header_len;
+> @@ -82,19 +82,19 @@ struct smb_sb_info {
+>  static inline int
+>  smb_lock_server_interruptible(struct smb_sb_info *server)
+>  {
+> -	return down_interruptible(&(server->sem));
+> +	return mutex_lock_interruptible(&server->mutex);
+>  }
+>  
+>  static inline void
+>  smb_lock_server(struct smb_sb_info *server)
+>  {
+> -	down(&(server->sem));
+> +	mutex_lock(&server->mutex);
+>  }
+>  
+>  static inline void
+>  smb_unlock_server(struct smb_sb_info *server)
+>  {
+> -	up(&(server->sem));
+> +	mutex_unlock(&server->mutex);
+>  }
+>  
+>  #endif
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Thanks a lot
 
-Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
----
- drivers/usb/gadget/r8a66597-udc.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Seems harmless...
 
-diff --git a/drivers/usb/gadget/r8a66597-udc.h b/drivers/usb/gadget/r8a66597-udc.h
-index f763b51..5fc22e0 100644
---- a/drivers/usb/gadget/r8a66597-udc.h
-+++ b/drivers/usb/gadget/r8a66597-udc.h
-@@ -136,7 +136,7 @@ static inline void r8a66597_read_fifo(struct r8a66597 *r8a66597,
- 				      int len)
- {
- 	void __iomem *fifoaddr = r8a66597->reg + offset;
--	unsigned int data;
-+	unsigned int data = 0;
- 	int i;
- 
- 	if (r8a66597->pdata->on_chip) {
--- 
-1.7.0.4
-
-
-
+Acked-by: Jeff Layton <jlayton@redhat.com>
