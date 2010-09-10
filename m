@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab0IJBl2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 21:41:28 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46374 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab0IJBl1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 21:41:27 -0400
-X-User-Agent: K-9 Mail for Android
-References: <000a01cb4b2b$f03c6d40$66f8800a@maildom.okisemi.com> <AANLkTimTumguZ7Tm1-zGb=D+0gghsA-b-RyhRDTQieFR@mail.gmail.com> <000c01cb507e$e8d0a3c0$66f8800a@maildom.okisemi.com> <1284082229.24986.253.camel@Joe-Laptop>
-In-Reply-To: <1284082229.24986.253.camel@Joe-Laptop>
+	id S1755221Ab0IJBrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 21:47:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54039 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753711Ab0IJBr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Sep 2010 21:47:29 -0400
+Date: Fri, 10 Sep 2010 01:46:10 GMT
+From: tip-bot for Brian Gerst <brgerst@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        brgerst@gmail.com, penberg@kernel.org, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        brgerst@gmail.com, penberg@kernel.org, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1283563039-3466-2-git-send-email-brgerst@gmail.com>
+References: <1283563039-3466-2-git-send-email-brgerst@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/fpu] x86: Use correct type for %cr4
+Message-ID: <tip-2df7a6e9e8e67c19e5fe2eac3f2d2223b7bb4a7b@git.kernel.org>
+Git-Commit-ID: 2df7a6e9e8e67c19e5fe2eac3f2d2223b7bb4a7b
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_SPI driver to 2.6.35
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 09 Sep 2010 19:41:46 -0600
-To: Joe Perches <joe@perches.com>, Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-CC: Linus Walleij <linus.ml.walleij@gmail.com>, meego-dev@meego.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>, qi.wang@intel.com,
-        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        arjan@linux.intel.com, gregkh@suse.de,
-        Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Woodhouse <dwmw2@infradead.org>
-Message-ID: <e313fc89-de12-41fd-8f36-edd9b5dd6906@email.android.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 10 Sep 2010 01:46:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  2df7a6e9e8e67c19e5fe2eac3f2d2223b7bb4a7b
+Gitweb:     http://git.kernel.org/tip/2df7a6e9e8e67c19e5fe2eac3f2d2223b7bb4a7b
+Author:     Brian Gerst <brgerst@gmail.com>
+AuthorDate: Fri, 3 Sep 2010 21:17:08 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 9 Sep 2010 14:16:13 -0700
 
+x86: Use correct type for %cr4
 
-"Joe Perches" <joe@perches.com> wrote:
+%cr4 is 64-bit in 64-bit mode (although the upper 32-bits are currently reserved).
+Use unsigned long for the temporary variable to get the right size.
 
->On Fri, 2010-09-10 at 09:27 +0900, Masayuki Ohtake wrote:
->> > If you incluse ChangeLogs it's easier to follow the development,
->> > thanks.
->> The latest patch has included the following Changelog.
->
->I believe Linus is asking for the same thing as I did.
->
->Some means to track your the changes in your multiple submissions
->of the same files.
->
->Typically, this would be a git repository where people can
->read the delta patches instead of entire unversioned files.
+Signed-off-by: Brian Gerst <brgerst@gmail.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+LKML-Reference: <1283563039-3466-2-git-send-email-brgerst@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/processor.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Nah, that's unnecessary overkill.  A short description in the changelog about what has changed between each posted version of the patch is sufficient.  I certainly don't ask anybody else to publish a git tree.
-
-g.
-
->
->cheers, Joe
->
-
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 325b7bd..396b80f 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -602,7 +602,7 @@ extern unsigned long		mmu_cr4_features;
+ 
+ static inline void set_in_cr4(unsigned long mask)
+ {
+-	unsigned cr4;
++	unsigned long cr4;
+ 
+ 	mmu_cr4_features |= mask;
+ 	cr4 = read_cr4();
+@@ -612,7 +612,7 @@ static inline void set_in_cr4(unsigned long mask)
+ 
+ static inline void clear_in_cr4(unsigned long mask)
+ {
+-	unsigned cr4;
++	unsigned long cr4;
+ 
+ 	mmu_cr4_features &= ~mask;
+ 	cr4 = read_cr4();
