@@ -1,283 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab0IJHU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 03:20:56 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:36327 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958Ab0IJHUz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 03:20:55 -0400
-Message-ID: <4C89DC01.6000601@nokia.com>
-Date: Fri, 10 Sep 2010 10:19:29 +0300
-From: Adrian Hunter <adrian.hunter@nokia.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1754213Ab0IJHXt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 03:23:49 -0400
+Received: from www.tglx.de ([62.245.132.106]:52400 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753530Ab0IJHXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 03:23:48 -0400
+Date: Fri, 10 Sep 2010 09:21:14 +0200
+From: "Hans J. Koch" <hjk@linutronix.de>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 202/223]drivers/uio/Kconfig Update broken web addresses.
+Message-ID: <20100910072114.GA20747@local>
+References: <1284072309-8452-1-git-send-email-justinmattock@gmail.com>
+ <1284072309-8452-7-git-send-email-justinmattock@gmail.com>
 MIME-Version: 1.0
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        "Shevchenko Andriy (EXT-Teleca/Helsinki)" 
-	<ext-andriy.shevchenko@nokia.com>
-Subject: Re: [PATCH] mmc_test: move files from sysfs to debugfs
-References: <1284102650-15044-1-git-send-email-ext-andriy.shevchenko@nokia.com>
-In-Reply-To: <1284102650-15044-1-git-send-email-ext-andriy.shevchenko@nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Sep 2010 07:19:31.0986 (UTC) FILETIME=[8374B720:01CB50B8]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284072309-8452-7-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Shevchenko wrote:
-> As proposed by Greg the more logically is to keep files for mmc_test driver
-> under debugfs.
+On Thu, Sep 09, 2010 at 03:45:01PM -0700, Justin P. Mattock wrote:
+> Below you will find an Update to a broken web address.
+> Please let me know if this needs to be changed.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-What happens if debugfs is not enabled in config?  Should there be
-some kind of dependency there?  At least an error message would be
-good - see below.
+Acked-by: Hans J. Koch <hjk@linutronix.de>
 
 > 
-> Additionally this patch brings seq_file API for show() method. It allows to
-> write unlimited data to the file.
-> 
-> Example of usage:
->   # mount -t debugfs none /sys/kernel/debug
->   # modprobe mmc_test
->     [  581.395843] mmc_test mmc0:0001: Card claimed for testing.
->   # echo 25 > /sys/kernel/debug/mmc0/mmc0\:0001/test
->     [  604.568542] mmc0: Starting tests of card mmc0:0001...
->     [  604.582733] mmc0: Test case 25. Best-case read performance into scattered pages...
->     [  604.923553] mmc0: Transfer of 8192 sectors (4096 KiB) took 0.124664314 seconds (33644 kB/s, 32856 KiB/s)
->     [  604.933227] mmc0: Result: OK
->     [  604.936248] mmc0: Tests completed.
->   # cat /sys/kernel/debug/mmc0/mmc0\:0001/test
->     Test 25: 0
->     1 8192 0.124664314 33644784
-> 
-> Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
 > ---
->  drivers/mmc/card/mmc_test.c |  138 ++++++++++++++++++++++++++++++++-----------
->  1 files changed, 103 insertions(+), 35 deletions(-)
+>  drivers/uio/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
-> index 58d746b..e59bb02 100644
-> --- a/drivers/mmc/card/mmc_test.c
-> +++ b/drivers/mmc/card/mmc_test.c
-> @@ -19,6 +19,10 @@
->  #include <linux/swap.h>		/* For nr_free_buffer_pages() */
->  #include <linux/list.h>
+> diff --git a/drivers/uio/Kconfig b/drivers/uio/Kconfig
+> index 1da73ec..e8cb825 100644
+> --- a/drivers/uio/Kconfig
+> +++ b/drivers/uio/Kconfig
+> @@ -19,7 +19,7 @@ config UIO_CIF
+>  	  Driver for Hilscher CIF DeviceNet and Profibus cards.  This
+>  	  driver requires a userspace component that handles all of the
+>  	  heavy lifting and can be found at:
+> -	  	http://www.osadl.org/projects/downloads/UIO/user/cif-*
+> +	  http://www.osadl.org/projects/downloads/UIO/user/	
 >  
-> +#include <linux/debugfs.h>
-> +#include <asm/uaccess.h>
-> +#include <linux/seq_file.h>
-> +
->  #define RESULT_OK		0
->  #define RESULT_FAIL		1
->  #define RESULT_UNSUP_HOST	2
-> @@ -106,6 +110,18 @@ struct mmc_test_general_result {
->  };
->  
->  /**
-> + * struct mmc_test_dbgfs_file - debugfs related file.
-> + * @link: double-linked list
-> + * @card: card under test
-> + * @file: file created under debugfs
-> + */
-> +struct mmc_test_dbgfs_file {
-> +	struct list_head link;
-> +	struct mmc_card *card;
-> +	struct dentry *file;
-> +};
-> +
-> +/**
->   * struct mmc_test_card - test information.
->   * @card: card under test
->   * @scratch: transfer buffer
-> @@ -2037,14 +2053,12 @@ static void mmc_test_free_result(struct mmc_card *card)
->  	mutex_unlock(&mmc_test_lock);
->  }
->  
-> -static ssize_t mmc_test_show(struct device *dev,
-> -	struct device_attribute *attr, char *buf)
-> +static LIST_HEAD(mmc_test_file_test);
-> +
-> +static int mtf_test_show(struct seq_file *sf, void *data)
->  {
-> -	struct mmc_card *card = mmc_dev_to_card(dev);
-> +	struct mmc_card *card = (struct mmc_card *)sf->private;
->  	struct mmc_test_general_result *gr;
-> -	char *p = buf;
-> -	size_t len = PAGE_SIZE;
-> -	int ret;
->  
->  	mutex_lock(&mmc_test_lock);
->  
-> @@ -2054,49 +2068,44 @@ static ssize_t mmc_test_show(struct device *dev,
->  		if (gr->card != card)
->  			continue;
->  
-> -		ret = snprintf(p, len, "Test %d: %d\n", gr->testcase + 1,
-> -			gr->result);
-> -		if (ret < 0)
-> -			goto err;
-> -		if (ret >= len) {
-> -			ret = -ENOBUFS;
-> -			goto err;
-> -		}
-> -		p += ret;
-> -		len -= ret;
-> +		seq_printf(sf, "Test %d: %d\n", gr->testcase + 1, gr->result);
->  
->  		list_for_each_entry(tr, &gr->tr_lst, link) {
-> -			ret = snprintf(p, len, "%u %d %lu.%09lu %u\n",
-> +			seq_printf(sf, "%u %d %lu.%09lu %u\n",
->  				tr->count, tr->sectors,
->  				(unsigned long)tr->ts.tv_sec,
->  				(unsigned long)tr->ts.tv_nsec,
->  				tr->rate);
-> -			if (ret < 0)
-> -				goto err;
-> -			if (ret >= len) {
-> -				ret = -ENOBUFS;
-> -				goto err;
-> -			}
-> -			p += ret;
-> -			len -= ret;
->  		}
->  	}
->  
-> -	ret = PAGE_SIZE - len;
-> -err:
->  	mutex_unlock(&mmc_test_lock);
->  
-> -	return ret;
-> +	return 0;
->  }
->  
-> -static ssize_t mmc_test_store(struct device *dev,
-> -	struct device_attribute *attr, const char *buf, size_t count)
-> +static int mtf_test_open(struct inode *inode, struct file *file)
->  {
-> -	struct mmc_card *card = mmc_dev_to_card(dev);
-> +	return single_open(file, mtf_test_show, inode->i_private);
-> +}
-> +
-> +static ssize_t mtf_test_write(struct file *file, const char __user *buf,
-> +	size_t count, loff_t *pos)
-> +{
-> +	struct seq_file *sf = (struct seq_file *)file->private_data;
-> +	struct mmc_card *card = (struct mmc_card *)sf->private;
->  	struct mmc_test_card *test;
-> +	char lbuf[12];
->  	long testcase;
->  
-> -	if (strict_strtol(buf, 10, &testcase))
-> +	if (count >= sizeof(lbuf))
-> +		return -EINVAL;
-> +
-> +	if (copy_from_user(lbuf, buf, count))
-> +		return -EFAULT;
-> +	lbuf[count] = '\0';
-> +
-> +	if (strict_strtol(lbuf, 10, &testcase))
->  		return -EINVAL;
->  
->  	test = kzalloc(sizeof(struct mmc_test_card), GFP_KERNEL);
-> @@ -2135,7 +2144,65 @@ static ssize_t mmc_test_store(struct device *dev,
->  	return count;
->  }
->  
-> -static DEVICE_ATTR(test, S_IWUSR | S_IRUGO, mmc_test_show, mmc_test_store);
-> +static const struct file_operations mmc_test_fops_test = {
-> +	.open		= mtf_test_open,
-> +	.read		= seq_read,
-> +	.write		= mtf_test_write,
-> +	.llseek		= seq_lseek,
-> +	.release	= single_release,
-> +};
-> +
-> +static void mmc_test_free_file_test(struct mmc_card *card)
-> +{
-> +	struct mmc_test_dbgfs_file *df, *dfs;
-> +
-> +	mutex_lock(&mmc_test_lock);
-> +
-> +	list_for_each_entry_safe(df, dfs, &mmc_test_file_test, link) {
-> +		if (card && df->card != card)
-> +			continue;
-> +		debugfs_remove(df->file);
-> +		list_del(&df->link);
-> +		kfree(df);
-> +	}
-> +
-> +	mutex_unlock(&mmc_test_lock);
-> +}
-> +
-> +static int mmc_test_register_file_test(struct mmc_card *card)
-> +{
-> +	struct dentry *file = NULL;
-> +	struct mmc_test_dbgfs_file *df;
-> +	int ret = 0;
-> +
-> +	mutex_lock(&mmc_test_lock);
-> +
-> +	if (card->debugfs_root)
-> +		file = debugfs_create_file("test", S_IWUSR, card->debugfs_root,
-> +			card, &mmc_test_fops_test);
-> +
-> +	if (IS_ERR_OR_NULL(file)) {
-
-Perhaps a error message should be printed here.
-
-> +		ret = -ENODEV;
-> +		goto err;
-> +	}
-> +
-> +	df = kmalloc(sizeof(struct mmc_test_dbgfs_file), GFP_KERNEL);
-> +	if (!df) {
-> +		debugfs_remove(file);
-> +		ret = -ENOMEM;
-> +		goto err;
-> +	}
-> +
-> +	df->card = card;
-> +	df->file = file;
-> +
-> +	list_add(&df->link, &mmc_test_file_test);
-> +
-> +err:
-> +	mutex_unlock(&mmc_test_lock);
-> +
-> +	return ret;
-> +}
->  
->  static int mmc_test_probe(struct mmc_card *card)
->  {
-> @@ -2144,7 +2211,7 @@ static int mmc_test_probe(struct mmc_card *card)
->  	if (!mmc_card_mmc(card) && !mmc_card_sd(card))
->  		return -ENODEV;
->  
-> -	ret = device_create_file(&card->dev, &dev_attr_test);
-> +	ret = mmc_test_register_file_test(card);
->  	if (ret)
->  		return ret;
->  
-> @@ -2156,7 +2223,7 @@ static int mmc_test_probe(struct mmc_card *card)
->  static void mmc_test_remove(struct mmc_card *card)
->  {
->  	mmc_test_free_result(card);
-> -	device_remove_file(&card->dev, &dev_attr_test);
-> +	mmc_test_free_file_test(card);
->  }
->  
->  static struct mmc_driver mmc_driver = {
-> @@ -2176,6 +2243,7 @@ static void __exit mmc_test_exit(void)
->  {
->  	/* Clear stalled data if card is still plugged */
->  	mmc_test_free_result(NULL);
-> +	mmc_test_free_file_test(NULL);
->  
->  	mmc_unregister_driver(&mmc_driver);
->  }
-
+>  	  To compile this driver as a module, choose M here: the module
+>  	  will be called uio_cif.
+> -- 
+> 1.7.2.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
