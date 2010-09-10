@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab0IJVu3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 17:50:29 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:37760 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab0IJVu2 convert rfc822-to-8bit (ORCPT
+	id S1753464Ab0IJVxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 17:53:36 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42242 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab0IJVxc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 17:50:28 -0400
-Date: Fri, 10 Sep 2010 23:50:22 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/4] hugetlb, rmap: always use anon_vma root pointer
-Message-ID: <20100910235022.74ec04de@basil.nowhere.org>
-In-Reply-To: <AANLkTikV9nXxMW8X9Wq+wGaJfzMEAmzTFrDNf8Aq4cTs@mail.gmail.com>
-References: <1284092586-1179-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1284092586-1179-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<AANLkTikV9nXxMW8X9Wq+wGaJfzMEAmzTFrDNf8Aq4cTs@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	Fri, 10 Sep 2010 17:53:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=kij5Uf70MPHFFhCQQW2ekzo0qNcnrX4HYdArNcfgkLEanZPoViR3A14W1Jikp06lda
+         oM3wsy5jUAj1xAnrXK5bWfblIfKBeoeC4b9E6ZDSLN5yNFoJ8qAFGx3HfOiwOJVf9rE9
+         knoXzvb9Il7vkJoA33n/8QA9aE4WX+FUagwZ4=
+Date: Fri, 10 Sep 2010 23:53:23 +0200
+From: Alejandro Riveira =?UTF-8?B?RmVybsOhbmRleg==?= 
+	<ariveira@gmail.com>
+To: Kent Borg <kentborg@borg.org>
+Cc: linux-kernel@vger.kernel.org, git@vger.kernel.org
+Subject: Re: git-p4
+Message-ID: <20100910235323.773d2c5b@varda>
+In-Reply-To: <4C8A8CE8.90600@borg.org>
+References: <4C8A8CE8.90600@borg.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
@@ -31,37 +31,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010 10:19:24 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+El Fri, 10 Sep 2010 15:54:16 -0400
+Kent Borg <kentborg@borg.org> escribió:
 
-> On Thu, Sep 9, 2010 at 9:23 PM, Naoya Horiguchi
-> <n-horiguchi@ah.jp.nec.com> wrote:
-> > This patch applies Andrea's fix given by the following patch into
-> > hugepage rmapping code:
-> >
-> >  commit 288468c334e98aacbb7e2fb8bde6bc1adcd55e05
-> >  Author: Andrea Arcangeli <aarcange@redhat.com>
-> >  Date:   Mon Aug 9 17:19:09 2010 -0700
-> >
-> > This patch uses anon_vma->root and avoids unnecessary overwriting
-> > when anon_vma is already set up.
+ [ CCing git mailing list. Looks like a better place to ask this question]
+
+> I have a git-p4 question: I work in a Perforce shop and am doing Linux
+> kernel work, I need to share that work with colleagues who see the world
+> as a Perforce place.  The kernel I have came from Linus' tree and has a
+> lot of history.  When I try to do my first a "git p4 submit" it chokes
+> as it looks back in the entire git history until it fails looking for
+> the ancestor of the first commit (linux-2.6.12-rc2!), I think it is
+> looking for the last time it did a git-p4 submit so it knows how far
+> back to go--but it has never done a submit in this new relationship
+> between p4 and git.  There is plenty of git history that is not
+> reflected in p4, and I don't want it in p4, I just want new work in p4.
 > 
-> Btw, why isn't the code in __page_set_anon_rmap() also doing this
-> cleaner version (ie a single "if (PageAnon(page)) return;" up front)?
-
-Perhaps I misunderstand the question, but __page_set_anon_rmap
-should handle Anon pages, shouldn't it?
-
+> I fear that git-p4 is for git people to contribute to bits natively
+> p4-homed code, not this case where the code is natively git-homed code
+> and it is the p4 people who will be contributing bits. 
 > 
-> The comments in that function are also some alien language translated
-> to english by some broken automatic translation service. Could
-> somebody clean up that function and come up with a comment that
-> actually parses as English and makes sense?
-
-I'll do that.
-
--Andi
-
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+> My attempt at a work around was this:
+> 
+>  - create a director on the p4 side, and from the p4 side submit the
+> files that match my latest git submit.
+> 
+>  - sync with git-p4
+> 
+>  - try to submit a file with git-p4...and that fails as it runs all the
+> way back through the history.  (Thank goodness it didn't succeed in
+> submitting kernel activity since 2005!)
+> 
+> 
+> I was hoping I could merge the p4/master with master to force a stopping
+> point in the git-p4 submit, but that doesn't work, it is searching
+> through git history to find the stopping point.  What might I put in the
+> git history to force the stop (or maybe make a change to git-p4 to help
+> my plight along)?
+> 
+> 
+> Thanks,
+> 
+> -kb, the Kent who has always hated Perforce, alas.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
