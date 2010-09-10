@@ -1,99 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab0IJCLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Sep 2010 22:11:12 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:53753 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754712Ab0IJCLL (ORCPT
+	id S1755321Ab0IJCVw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Sep 2010 22:21:52 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36543 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747Ab0IJCVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Sep 2010 22:11:11 -0400
-Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Ben Herrenchmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Liu Hui <r64343@freescale.com>
-In-Reply-To: <20100613222349.GD31045@fluff.org.uk>
-References: <1275636608.606606.450179637764.0.gpush@pororo>
-	 <1275636608.607067.417709988883.1.gpush@pororo>
-	 <20100611042046.GA31045@fluff.org.uk>
-	 <201006111557.12249.jeremy.kerr@canonical.com>
-	 <20100613222349.GD31045@fluff.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Sep 2010 10:10:55 +0800
-Message-ID: <1284084655.2877.23.camel@pororo>
+	Thu, 9 Sep 2010 22:21:51 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 10 Sep 2010 11:16:46 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mark Hills <mark@pogo.org.uk>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: cgroup: rmdir() does not complete
+Message-Id: <20100910111646.a03ed3ba.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.NEB.2.01.1009091416100.26432@jrf.vwaro.pbz>
+References: <alpine.NEB.2.01.1008261415240.8857@jrf.vwaro.pbz>
+	<20100827095639.6e7297de.nishimura@mxp.nes.nec.co.jp>
+	<20100827113506.2bbbb7b9.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100827123948.b4427a15.nishimura@mxp.nes.nec.co.jp>
+	<20100827144225.3190167a.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.NEB.2.01.1009011200050.6596@jrf.vwaro.pbz>
+	<20100902084200.e9b773cf.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.NEB.2.01.1009091051400.17759@jrf.vwaro.pbz>
+	<20100909100909.GM4443@balbir.in.ibm.com>
+	<alpine.NEB.2.01.1009091234230.26366@jrf.vwaro.pbz>
+	<1284033017.402.8.camel@laptop>
+	<alpine.NEB.2.01.1009091416100.26432@jrf.vwaro.pbz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
-
-> > > > +#define INIT_CLK(name, o) \
-> > > > +	{ .ops = &o, .enable_count = 0, \
-> > > > +		.mutex = __MUTEX_INITIALIZER(name.mutex) }
-> > > 
-> > > how about doing the mutex initinitialisation at registration
-> > > time, will save a pile of non-zero code in the image to mess up
-> > > the compression.
-> > 
-> > I've just yesterday added the following to my tree, to allow dynamic 
-> > initialisation:
-> > 
-> > static inline void clk_init(struct clk *clk, const struct clk_ops *ops)
-> > {
-> > 	clk->ops = ops;
-> > 	clk->enable_count = 0;
-> > 	mutex_init(&clk->mutex);
-> > }
-> > 
-> > So we can do this either way.
+On Fri, 10 Sep 2010 00:04:31 +0100 (BST)
+Mark Hills <mark@pogo.org.uk> wrote:
+> The report on the spinning process (23586) is dominated by calls from 
+> mem_cgroup_force_empty.
 > 
-> the above is in my view better.
+> It seems to show lru_add_drain_all and drain_all_stock_sync are causing 
+> the load (I assume drain_all_stock_sync has been optimised out). But I 
+> don't think this is as important as what causes the spin.
+> 
 
-After implementing this, it turns out it won't work - we don't have
-access to all clocks in order to do the mutex init (thanks to Jason Hui
-for pointing this out).
+I noticed you use FUSE and it seems there is a problem in FUSE v.s. memcg.
+I wrote a patch (onto 2.6.36 but can be applied..)
 
-At present, I'm calling clk_init_common() (which initialises the mutex)
-from clkdev_add, but there are clocks that don't get initialised. For
-example:
+Could you try this ? I'm sorry I don't use FUSE system and can't test
+right now.
 
-	struct clk_fixed parent_clk = INIT_CLK(32768);
-	struct clk_foo child_clk = INIT_CLK_FOO(parent.clk);
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-	struct clk_lookup lookup = {
-		.dev_id = "foo",
-		.clk = child_clk,
-	};
+memory cgroup catches all pages which is added to radix-tree and
+assumes the pages will be added to LRU, somewhere.
+But there are pages which not on LRU but on radix-tree. Then,
+force_empty cannot find them and cannot finish ->pre_destroy(), rmdir
+operations.
 
-	function platform_clk_init(void)
-	{
-		clkdev_add(lookup);
-	}
+This patch adds __GFP_NOMEMCGROUP and avoids unnecessary, out-of-control
+pages are registered to memory cgroup. 
 
-In this case, the child_clk's mutex will get initialised, but
-parent_clk's won't. We can't walk the parents of child_clk and
-initialise, as we may re-initialise the mutexes of parents with > 1
-child.
+Note: This gfp flag can be used for shmem handling, which now uses
+      complicated heuristics.
 
-Now, we *could* do the clk_common_init() from board-specific code, and
-require that that code guarantees to call clk_common_init() on every
-clock defined. I think that's a recipe for pain, as there will
-undoubtedly be clocks missed, causing an oops when the clock is first
-used.
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ fs/fuse/dev.c       |   11 ++++++++++-
+ include/linux/gfp.h |    7 +++++++
+ mm/memcontrol.c     |    2 +-
+ 3 files changed, 18 insertions(+), 2 deletions(-)
 
-So I think the solution will have to be to do the mutex initialisation
-statically. I'm planning to leave clk_common_init() available for clocks
-initalised at runtime, but it will no longer be called automatically
-from core code.
-
-Any thoughts?
-
-Cheers,
-
-
-Jeremy
+Index: linux-2.6.36-rc3/fs/fuse/dev.c
+===================================================================
+--- linux-2.6.36-rc3.orig/fs/fuse/dev.c
++++ linux-2.6.36-rc3/fs/fuse/dev.c
+@@ -19,6 +19,7 @@
+ #include <linux/pipe_fs_i.h>
+ #include <linux/swap.h>
+ #include <linux/splice.h>
++#include <linux/memcontrol.h>
+ 
+ MODULE_ALIAS_MISCDEV(FUSE_MINOR);
+ MODULE_ALIAS("devname:fuse");
+@@ -683,6 +684,7 @@ static int fuse_try_move_page(struct fus
+ 	struct pipe_buffer *buf = cs->pipebufs;
+ 	struct address_space *mapping;
+ 	pgoff_t index;
++	gfp_t mask = GFP_KERNEL;
+ 
+ 	unlock_request(cs->fc, cs->req);
+ 	fuse_copy_finish(cs);
+@@ -732,7 +734,14 @@ static int fuse_try_move_page(struct fus
+ 	remove_from_page_cache(oldpage);
+ 	page_cache_release(oldpage);
+ 
+-	err = add_to_page_cache_locked(newpage, mapping, index, GFP_KERNEL);
++	/*
++	 * not-on-LRU pages are out of control. So, add to root cgroup.
++ 	 * See mm/memcontrol.c for details.
++	 */
++	if (buf->flags & PIPE_BUF_FLAG_LRU)
++		mask |= __GFP_NOMEMCGROUP;
++
++	err = add_to_page_cache_locked(newpage, mapping, index, mask);
+ 	if (err) {
+ 		printk(KERN_WARNING "fuse_try_move_page: failed to add page");
+ 		goto out_fallback_unlock;
+Index: linux-2.6.36-rc3/include/linux/gfp.h
+===================================================================
+--- linux-2.6.36-rc3.orig/include/linux/gfp.h
++++ linux-2.6.36-rc3/include/linux/gfp.h
+@@ -60,6 +60,13 @@ struct vm_area_struct;
+ #define __GFP_NOTRACK	((__force gfp_t)0)
+ #endif
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++#define __GFP_NOMEMCGROUP	((__force gfp_t)0x400000u)
++	/* Don't track by memory cgroup */
++#else
++#define __GFP_NOMEMCGROUP	((__force gfp_t)0)
++#endif
++
+ /*
+  * This may seem redundant, but it's a way of annotating false positives vs.
+  * allocations that simply cannot be supported (e.g. page tables).
+Index: linux-2.6.36-rc3/mm/memcontrol.c
+===================================================================
+--- linux-2.6.36-rc3.orig/mm/memcontrol.c
++++ linux-2.6.36-rc3/mm/memcontrol.c
+@@ -2114,7 +2114,7 @@ int mem_cgroup_cache_charge(struct page 
+ 
+ 	if (mem_cgroup_disabled())
+ 		return 0;
+-	if (PageCompound(page))
++	if (PageCompound(page) || (gfp_mask & __GFP_NOMEMCGROUP))
+ 		return 0;
+ 	/*
+ 	 * Corner case handling. This is called from add_to_page_cache()
 
