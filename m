@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab0IJOmJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 10:42:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53242 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751808Ab0IJOmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 10:42:08 -0400
-Message-ID: <4C8A43A9.2030907@redhat.com>
-Date: Fri, 10 Sep 2010 10:41:45 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 3/4] hugetlb, rmap: fix confusing page locking in hugetlb_cow()
-References: <1284092586-1179-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1284092586-1179-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1284092586-1179-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1753261Ab0IJOmQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 10:42:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64985 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908Ab0IJOmL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 10:42:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=JzoJYwo1vXkNQiNm4SvfdNIk2t3qt4QoGVGsYiqbLGSfO81TGxC8jjCkhFF1mRTNdk
+         TYtF0feZdEcyxMbdeCj0yP6BwEe3nJPE4Gv4lsqUJHyha/Nz+0AtVo+JVhw3mVueG7Yo
+         HiypvMtrjS4dPyKypUtk3KyPpqNh/aKVV/8Sk=
+Subject: [PATCH] fs/btrfs/ordered-data.c: fixed compiler warnings for using
+ uninitialized variable
+From: Frank Morales II <altf2o@gmail.com>
+To: chris.mason@oracle.com, josef@redhat.com, zheng.yan@oracle.com,
+        jens.axboe@oracle.com, tj@kernel.org
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Sep 2010 07:42:04 -0700
+Message-ID: <1284129724.23418.27.camel@ubuntu1004pl>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2010 12:23 AM, Naoya Horiguchi wrote:
-> if(!trylock_page) block in avoidcopy path of hugetlb_cow() looks confusing
-> and is buggy.  Originally this trylock_page() is intended to make sure
-> that old_page is locked even when old_page != pagecache_page, because then
-> only pagecache_page is locked.
-> This patch fixes it by moving page locking into hugetlb_fault().
->
-> Signed-off-by: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
+>From 1c304defc543738f82ccb18fe10b558dd2098d74 Mon Sep 17 00:00:00 2001
+From: Frank Morales II <altf2o@gmail.com>
+Date: Fri, 10 Sep 2010 07:34:23 -0700
+Subject: [PATCH] fs/btrfs/ordered-data.c: fixed compiler warnings for using uninitialized variable
 
-Acked-by: Rik van Riel <riel@redhat.com>
+In the function tree_search, the variable prev was used without first
+being initialized, causing compiler warning messages. Initializing
+prev to NULL resolved the issue.
 
+Kernal patched against: 2.6.36-rc3 (df423dc7)
+
+Signed-off-by: Frank Morales II <altf2o@gmail.com>
+---
+ fs/btrfs/ordered-data.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/btrfs/ordered-data.c b/fs/btrfs/ordered-data.c
+index e56c72b..fad2616 100644
+--- a/fs/btrfs/ordered-data.c
++++ b/fs/btrfs/ordered-data.c
+@@ -141,7 +141,7 @@ static inline struct rb_node *tree_search(struct btrfs_ordered_inode_tree *tree,
+ 					  u64 file_offset)
+ {
+ 	struct rb_root *root = &tree->tree;
+-	struct rb_node *prev;
++	struct rb_node *prev = NULL;
+ 	struct rb_node *ret;
+ 	struct btrfs_ordered_extent *entry;
+ 
 -- 
-All rights reversed
+1.7.0.4
+
+
+
