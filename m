@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab0IJQvs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 12:51:48 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56183 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755943Ab0IJQvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 12:51:47 -0400
-Date: Fri, 10 Sep 2010 18:51:26 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "eranian@google.com" <eranian@google.com>
-Subject: Re: [PATCH 0/3 v2] nmi perf fixes
-Message-ID: <20100910165126.GA11908@elte.hu>
-References: <1283454469-1909-1-git-send-email-dzickus@redhat.com>
- <1284118900.402.35.camel@laptop>
- <20100910132741.GB4879@redhat.com>
- <20100910144634.GA1060@elte.hu>
- <20100910151735.GC13563@erda.amd.com>
- <20100910163727.GB10036@elte.hu>
+	id S1756001Ab0IJQxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 12:53:36 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:46826 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755943Ab0IJQxe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 12:53:34 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6102"; a="53919840"
+Date: Fri, 10 Sep 2010 09:53:31 -0700 (PDT)
+From: Mat Martineau <mathewm@codeaurora.org>
+X-X-Sender: mathewm@linux-sea-02
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, marcel@holtmann.org, davem@davemloft.net
+Subject: Re: Possible regression with skb_clone() in 2.6.36
+In-Reply-To: <1283988727-1456-1-git-send-email-padovan@profusion.mobi>
+Message-ID: <alpine.DEB.2.00.1009100920270.14322@linux-sea-02>
+References: <1283988727-1456-1-git-send-email-padovan@profusion.mobi>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100910163727.GB10036@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.3234]
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+Gustavo -
 
-> > > It happens easily here - just running something like:
-> > > 
-> > >    perf record -g ./hackbench 10
-> > 
-> > I try to reproduce it, which systems are affected?
-> 
-> This is an older Barcelona box, will send you a dump of details off-list.
+I'm not sure why the streaming code used to work, but this does not 
+look like an skb_clone() problem.  Your patch to remove the 
+skb_clone() call in l2cap_streaming_send() addresses the root cause of 
+this crash.
 
-Note, i tried to trigger it again after a fresh reboot into tip:88a377e, 
-and this time 3 runs of hackbench didnt trigger the message, but the 
-first 'perf top' did. YMMV.
+On Wed, 8 Sep 2010, Gustavo F. Padovan wrote:
 
-	Ingo
+> I've been experiencing some problems when running the L2CAP Streaming mode in
+> 2.6.36. The system quickly runs in an Out Of Memory condition and crash. That
+> wasn't happening before, so I think we may have a regression here (I didn't
+> find where yet). The crash log is below.
+>
+> The following patch does not fix the regression, but shows that removing the
+> skb_clone() call from l2cap_streaming_send() we workaround the problem. The
+> patch is good anyway because it saves memory and time.
+>
+> By now I have no idea on how to fix this.
+>
+> <snip>
+
+This has to do with the sk->sk_wmem_alloc accounting that controls the 
+amount of write buffer space used on the socket.
+
+When the L2CAP streaming mode socket segments its data, it allocates 
+memory using sock_alloc_send_skb() (via bt_skb_send_alloc()).  Before 
+that allocation call returns, skb_set_owner_w() is called on the new 
+skb.  This adds to sk->sk_wmem_alloc and sets skb->destructor so that 
+sk->sk_wmem_alloc is correctly updated when the skb is freed.
+
+When that skb is cloned, the clone is not "owned" by the write buffer. 
+The clone's destructor is set to NULL in __skb_clone().  The version 
+of l2cap_streaming_send() that runs out of memory is passing the 
+non-owned skb clone down to the HCI layer.  The original skb (the one 
+that's "owned by w") is immediately freed, which adjusts 
+sk->sk_wmem_alloc back down - the socket thinks it has unlimited write 
+buffer space.  As a result, bt_skb_send_alloc() never blocks waiting 
+for buffer space (or returns EAGAIN for nonblocking writes) and the 
+HCI send queue keeps growing.
+
+This isn't a problem for the ERTM sends, because the original skbs are 
+kept in the ERTM tx queue until they are acked.  Once they're acked, 
+the write buffer space is freed and additional skbs can be allocated.
+
+Regards,
+
+--
+Mat Martineau
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
