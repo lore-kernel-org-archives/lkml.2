@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab0IJIGi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 04:06:38 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57962 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab0IJIGg (ORCPT
+	id S1755346Ab0IJIQa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 04:16:30 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40451 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754737Ab0IJIQZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 04:06:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ktnoMKrUJ1Mcm/ypuTuHe/EdBD2zOEIl8KUSYSmXcl87OMrWrvOeHtbSrcnvnizlJs
-         UbAGFOc22znRApZjapIBr2OthZl0z397FneH6998fOerDFYN5Ck0W41dX3x6ymkAnldN
-         iRh6/YGa/HmunjODUhmRoBl3VRsVrJIvO7tYI=
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: akpm@linux-foundation.org, mjg@redhat.com
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, jlee@novell.com,
-        mzxreary@0pointer.de, linux-acpi@vger.kernel.org
-Subject: [PATCH] Change MSI LAPTOP driver maintainer to Lee, Chun-Yi
-Date: Fri, 10 Sep 2010 16:04:19 +0800
-Message-Id: <1284105859-10010-1-git-send-email-jlee@novell.com>
-X-Mailer: git-send-email 1.6.0.2
+	Fri, 10 Sep 2010 04:16:25 -0400
+Subject: Re: [RFC PATCH 1/2] perf_events: add support for per-cpu
+ per-cgroup monitoring (v3)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        robert.richter@amd.com, acme@redhat.com, Tejun Heo <tj@kernel.org>
+In-Reply-To: <AANLkTimHwiXa62GhHA0hQ0AOcDaxgqRcV+O63G_qoZW8@mail.gmail.com>
+References: <4c88dca1.44e7d80a.577e.3592@mx.google.com>
+	 <1284040322.2589.174.camel@edumazet-laptop>
+	 <AANLkTimHwiXa62GhHA0hQ0AOcDaxgqRcV+O63G_qoZW8@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 10 Sep 2010 10:16:06 +0200
+Message-ID: <1284106566.402.26.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change MSI LAPTOP driver maintainer from Lennart Poettering to Lee, Chun-Yi.
+On Thu, 2010-09-09 at 23:41 +0200, Stephane Eranian wrote:
+> > alloc_percpu() is zalloc_percpu() in fact, memory is already cleared.
+> >
+> I remember thinking about this and trying to trace to the code down
+> to figure this out. But it is rather complicated. If alloc_percpu() always
+> clears the memory, then I think that calling is zalloc_percpu()
+> would be more helpful.... 
 
-MSI is a Taiwan OEM company, Lee, Chun-Yi can more easy to contact with MSI
-and maintain msi-laptop driver.
-Thank's for Lennart Poettering's contribute, Lee, Chun-Yi will base on his
-article to continue maintain the msi-laptop driver.
+pcpu_populate_chunk() in mm/percpu-vm.c does indeed do that memset, the
+one in mm/percpu-km.c does not.
 
-Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
----
- MAINTAINERS |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+It is not obviously clear to me the -km allocator does indeed result in
+zero filled memory.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 5fa8451..d3996e6 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3879,10 +3879,8 @@ F:	Documentation/serial/moxa-smartio
- F:	drivers/char/mxser.*
- 
- MSI LAPTOP SUPPORT
--M:	Lennart Poettering <mzxreary@0pointer.de>
-+M:	Lee, Chun-Yi <jlee@novell.com>
- L:	platform-driver-x86@vger.kernel.org
--W:	https://tango.0pointer.de/mailman/listinfo/s270-linux
--W:	http://0pointer.de/lennart/tchibo.html
- S:	Maintained
- F:	drivers/platform/x86/msi-laptop.c
- 
--- 
-1.6.0.2
-
+Tejun?
