@@ -1,211 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613Ab0IJQgD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 12:36:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15748 "EHLO mx1.redhat.com"
+	id S1755671Ab0IJQhv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 12:37:51 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48154 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755503Ab0IJQgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 12:36:00 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 02/17] Blackfin: Split the BF532 BFIN_*_FIO_FLAG() functions
-	to their own header
-To: linux-arch@vger.kernel.org
-Cc: torvalds@osdl.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 10 Sep 2010 17:10:12 +0100
-Message-ID: <20100910161012.20226.65749.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20100910161002.20226.27995.stgit@warthog.procyon.org.uk>
-References: <20100910161002.20226.27995.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1755587Ab0IJQhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 12:37:50 -0400
+Date: Fri, 10 Sep 2010 18:37:27 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "eranian@google.com" <eranian@google.com>
+Subject: Re: [PATCH 0/3 v2] nmi perf fixes
+Message-ID: <20100910163727.GB10036@elte.hu>
+References: <1283454469-1909-1-git-send-email-dzickus@redhat.com>
+ <1284118900.402.35.camel@laptop>
+ <20100910132741.GB4879@redhat.com>
+ <20100910144634.GA1060@elte.hu>
+ <20100910151735.GC13563@erda.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100910151735.GC13563@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the BF532 machine type BFIN_*_FIO_FLAG() functions to their own header
-file to avoid circular #include problems as these functions require IRQ flag
-handling, which requires asm/blackfin.h, which otherwise requires the header
-file that defines these functions.
 
-For good measure, also get rid of the inclusion of asm/blackfin.h from
-mach/cdefBF532.h (which is circular) and defBF532.h (which is included by
-asm/blackfin.h before including this header).
+* Robert Richter <robert.richter@amd.com> wrote:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+> On 10.09.10 10:46:34, Ingo Molnar wrote:
+> > 
+> > * Don Zickus <dzickus@redhat.com> wrote:
+> > 
+> > > On Fri, Sep 10, 2010 at 01:41:40PM +0200, Peter Zijlstra wrote:
+> > > > On Thu, 2010-09-02 at 15:07 -0400, Don Zickus wrote:
+> > > > > Fixes to allow unknown nmis to pass through the perf nmi handler instead
+> > > > > of being swallowed.  Contains patches that are already in Ingo's tree.  Added
+> > > > > here for completeness.  Based on ingo/tip
+> > > > > 
+> > > > > Tested on intel/amd
+> > > > > 
+> > > > > v2: patch cleanups and consolidation, no code changes
+> > > > > 
+> > > > > Don Zickus (1):
+> > > > >   perf, x86: Fix accidentally ack'ing a second event on intel perf
+> > > > >     counter
+> > > > > 
+> > > > > Peter Zijlstra (1):
+> > > > >   perf, x86: Fix handle_irq return values
+> > > > > 
+> > > > > Robert Richter (1):
+> > > > >   perf, x86: Try to handle unknown nmis with an enabled PMU
+> > > > > 
+> > > > >  arch/x86/kernel/cpu/perf_event.c       |   59 +++++++++++++++++++++++++-------
+> > > > >  arch/x86/kernel/cpu/perf_event_intel.c |   15 +++++---
+> > > > >  arch/x86/kernel/cpu/perf_event_p4.c    |    2 +-
+> > > > >  3 files changed, 56 insertions(+), 20 deletions(-)
+> > > > 
+> > > > Both Ingo and I are getting Dazed and confused on our AMD machines, it
+> > > > started before yesterday (that is, after backing out all my recent
+> > > > changes it still gets dazed), so I suspect this set.
+> > > > 
+> > > > I'll look at getting a trace of the thing, but if any of you has a
+> > > > bright idea...
+> > > 
+> > > What are you running to create the problem?  I can try and duplicate 
+> > > it here.
+> > 
+> > It happens easily here - just running something like:
+> > 
+> >    perf record -g ./hackbench 10
+> 
+> I try to reproduce it, which systems are affected?
 
- arch/blackfin/mach-bf533/boards/blackstamp.c      |    1 
- arch/blackfin/mach-bf533/boards/ip0x.c            |    1 
- arch/blackfin/mach-bf533/boards/stamp.c           |    1 
- arch/blackfin/mach-bf533/include/mach/cdefBF532.h |   47 ------------------
- arch/blackfin/mach-bf533/include/mach/fio_flag.h  |   55 +++++++++++++++++++++
- 5 files changed, 58 insertions(+), 47 deletions(-)
- create mode 100644 arch/blackfin/mach-bf533/include/mach/fio_flag.h
+This is an older Barcelona box, will send you a dump of details off-list.
 
-diff --git a/arch/blackfin/mach-bf533/boards/blackstamp.c b/arch/blackfin/mach-bf533/boards/blackstamp.c
-index 842b4fa..84a06f6 100644
---- a/arch/blackfin/mach-bf533/boards/blackstamp.c
-+++ b/arch/blackfin/mach-bf533/boards/blackstamp.c
-@@ -25,6 +25,7 @@
- #include <asm/bfin5xx_spi.h>
- #include <asm/portmux.h>
- #include <asm/dpmc.h>
-+#include <mach/fio_flag.h>
- 
- /*
-  * Name the Board for the /proc/cpuinfo
-diff --git a/arch/blackfin/mach-bf533/boards/ip0x.c b/arch/blackfin/mach-bf533/boards/ip0x.c
-index 7349970..b8474ca 100644
---- a/arch/blackfin/mach-bf533/boards/ip0x.c
-+++ b/arch/blackfin/mach-bf533/boards/ip0x.c
-@@ -22,6 +22,7 @@
- #include <asm/dma.h>
- #include <asm/bfin5xx_spi.h>
- #include <asm/portmux.h>
-+#include <mach/fio_flag.h>
- 
- /*
-  * Name the Board for the /proc/cpuinfo
-diff --git a/arch/blackfin/mach-bf533/boards/stamp.c b/arch/blackfin/mach-bf533/boards/stamp.c
-index c457eaa..29c219e 100644
---- a/arch/blackfin/mach-bf533/boards/stamp.c
-+++ b/arch/blackfin/mach-bf533/boards/stamp.c
-@@ -24,6 +24,7 @@
- #include <asm/reboot.h>
- #include <asm/portmux.h>
- #include <asm/dpmc.h>
-+#include <mach/fio_flag.h>
- 
- /*
-  * Name the Board for the /proc/cpuinfo
-diff --git a/arch/blackfin/mach-bf533/include/mach/cdefBF532.h b/arch/blackfin/mach-bf533/include/mach/cdefBF532.h
-index 8edad6d..401e524 100644
---- a/arch/blackfin/mach-bf533/include/mach/cdefBF532.h
-+++ b/arch/blackfin/mach-bf533/include/mach/cdefBF532.h
-@@ -7,11 +7,6 @@
- #ifndef _CDEF_BF532_H
- #define _CDEF_BF532_H
- 
--#include <asm/blackfin.h>
--
--/*include all Core registers and bit definitions*/
--#include "defBF532.h"
--
- /*include core specific register pointer definitions*/
- #include <asm/cdef_LPBlackfin.h>
- 
-@@ -655,46 +650,4 @@
- /* These need to be last due to the cdef/linux inter-dependencies */
- #include <asm/irq.h>
- 
--#if ANOMALY_05000311
--#define BFIN_WRITE_FIO_FLAG(name) \
--static inline void bfin_write_FIO_FLAG_##name(unsigned short val) \
--{ \
--	unsigned long flags; \
--	local_irq_save_hw(flags); \
--	bfin_write16(FIO_FLAG_##name, val); \
--	bfin_read_CHIPID(); \
--	local_irq_restore_hw(flags); \
--}
--BFIN_WRITE_FIO_FLAG(D)
--BFIN_WRITE_FIO_FLAG(C)
--BFIN_WRITE_FIO_FLAG(S)
--BFIN_WRITE_FIO_FLAG(T)
--
--#define BFIN_READ_FIO_FLAG(name) \
--static inline u16 bfin_read_FIO_FLAG_##name(void) \
--{ \
--	unsigned long flags; \
--	u16 ret; \
--	local_irq_save_hw(flags); \
--	ret = bfin_read16(FIO_FLAG_##name); \
--	bfin_read_CHIPID(); \
--	local_irq_restore_hw(flags); \
--	return ret; \
--}
--BFIN_READ_FIO_FLAG(D)
--BFIN_READ_FIO_FLAG(C)
--BFIN_READ_FIO_FLAG(S)
--BFIN_READ_FIO_FLAG(T)
--
--#else
--#define bfin_write_FIO_FLAG_D(val)           bfin_write16(FIO_FLAG_D, val)
--#define bfin_write_FIO_FLAG_C(val)           bfin_write16(FIO_FLAG_C, val)
--#define bfin_write_FIO_FLAG_S(val)           bfin_write16(FIO_FLAG_S, val)
--#define bfin_write_FIO_FLAG_T(val)           bfin_write16(FIO_FLAG_T, val)
--#define bfin_read_FIO_FLAG_T()               bfin_read16(FIO_FLAG_T)
--#define bfin_read_FIO_FLAG_C()               bfin_read16(FIO_FLAG_C)
--#define bfin_read_FIO_FLAG_S()               bfin_read16(FIO_FLAG_S)
--#define bfin_read_FIO_FLAG_D()               bfin_read16(FIO_FLAG_D)
--#endif
--
- #endif				/* _CDEF_BF532_H */
-diff --git a/arch/blackfin/mach-bf533/include/mach/fio_flag.h b/arch/blackfin/mach-bf533/include/mach/fio_flag.h
-new file mode 100644
-index 0000000..b81905a
---- /dev/null
-+++ b/arch/blackfin/mach-bf533/include/mach/fio_flag.h
-@@ -0,0 +1,55 @@
-+/*
-+ * Copyright 2005-2008 Analog Devices Inc.
-+ *
-+ * Licensed under the GPL-2 or later
-+ */
-+
-+#ifndef _MACH_FIO_FLAG_H
-+#define _MACH_FIO_FLAG_H
-+
-+#include <asm/blackfin.h>
-+#include <asm/irqflags.h>
-+
-+#if ANOMALY_05000311
-+#define BFIN_WRITE_FIO_FLAG(name) \
-+static inline void bfin_write_FIO_FLAG_##name(unsigned short val) \
-+{ \
-+	unsigned long flags; \
-+	local_irq_save_hw(flags); \
-+	bfin_write16(FIO_FLAG_##name, val); \
-+	bfin_read_CHIPID(); \
-+	local_irq_restore_hw(flags); \
-+}
-+BFIN_WRITE_FIO_FLAG(D)
-+BFIN_WRITE_FIO_FLAG(C)
-+BFIN_WRITE_FIO_FLAG(S)
-+BFIN_WRITE_FIO_FLAG(T)
-+
-+#define BFIN_READ_FIO_FLAG(name) \
-+static inline u16 bfin_read_FIO_FLAG_##name(void) \
-+{ \
-+	unsigned long flags; \
-+	u16 ret; \
-+	local_irq_save_hw(flags); \
-+	ret = bfin_read16(FIO_FLAG_##name); \
-+	bfin_read_CHIPID(); \
-+	local_irq_restore_hw(flags); \
-+	return ret; \
-+}
-+BFIN_READ_FIO_FLAG(D)
-+BFIN_READ_FIO_FLAG(C)
-+BFIN_READ_FIO_FLAG(S)
-+BFIN_READ_FIO_FLAG(T)
-+
-+#else
-+#define bfin_write_FIO_FLAG_D(val)           bfin_write16(FIO_FLAG_D, val)
-+#define bfin_write_FIO_FLAG_C(val)           bfin_write16(FIO_FLAG_C, val)
-+#define bfin_write_FIO_FLAG_S(val)           bfin_write16(FIO_FLAG_S, val)
-+#define bfin_write_FIO_FLAG_T(val)           bfin_write16(FIO_FLAG_T, val)
-+#define bfin_read_FIO_FLAG_T()               bfin_read16(FIO_FLAG_T)
-+#define bfin_read_FIO_FLAG_C()               bfin_read16(FIO_FLAG_C)
-+#define bfin_read_FIO_FLAG_S()               bfin_read16(FIO_FLAG_S)
-+#define bfin_read_FIO_FLAG_D()               bfin_read16(FIO_FLAG_D)
-+#endif
-+
-+#endif /* _MACH_FIO_FLAG_H */
+> > a couple of times triggers it. Note, unlike with the earlier bug, 
+> > the NMIs are not permanently 'stuck' - and everything continues 
+> > working. Obviously the messages are nasty looking so this is a 
+> > regression we need to fix.
+> 
+> The patch below adds ratelimits.
 
+This doesnt solve things though - even one unnecessary message will 
+confuse users.
+
+	Ingo
