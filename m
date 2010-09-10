@@ -1,103 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab0IJTWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 15:22:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38617 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab0IJTWG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 15:22:06 -0400
-Message-ID: <4C8A8504.9000606@kernel.org>
-Date: Fri, 10 Sep 2010 12:20:36 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1754315Ab0IJTYf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 15:24:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27658 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753556Ab0IJTYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 15:24:33 -0400
+Date: Fri, 10 Sep 2010 15:24:04 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, agk@redhat.com, jaxboe@fusionio.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-raid@vger.kernel.org, dm-devel@redhat.com, hch@lst.de,
+        konishi.ryusuke@lab.ntt.co.jp, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com, vst@vlnb.net,
+        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
+        rusty@rustcorp.com.au, mst@redhat.com, k-ueda@ct.jp.nec.com
+Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
+ dm
+Message-ID: <20100910192403.GA24582@redhat.com>
+References: <1283509796-1510-1-git-send-email-tj@kernel.org>
+ <1283509796-1510-24-git-send-email-tj@kernel.org>
+ <Pine.LNX.4.64.1009101410570.7839@hs20-bc2-1.build.redhat.com>
+ <20100910184652.GA24470@redhat.com>
+ <Pine.LNX.4.64.1009101456220.21834@hs20-bc2-1.build.redhat.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] acpi: handle ACPI0007 Device in acpi_early_set_pdc
-References: <4C89906B.1050406@kernel.org> <201009101210.31942.bjorn.helgaas@hp.com>
-In-Reply-To: <201009101210.31942.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1009101456220.21834@hs20-bc2-1.build.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2010 11:10 AM, Bjorn Helgaas wrote:
-> On Thursday, September 09, 2010 07:56:59 pm Yinghai Lu wrote:
->>
->> When bios switch to use Device object instead of Processor statement.
->>
->> the SSDT for Pstate/Cstate/Tstate can not be loaded dynamically.
->>
->> So try to scan ACPI0007 in addition to Processor.
->>
->> this fix regression: 2.6.32 is ok.
-> 
-> Can you include the URL of the regression bug report?  And maybe
-> the commit that introduced the regression?
-
-the commit should be
-
-commit d8191fa4a33fdc817277da4f2b7f771ff605a41c
-Author: Alex Chiang <achiang@hp.com>
-Date:   Mon Feb 22 12:11:39 2010 -0700
-
-    ACPI: processor: driver doesn't need to evaluate _PDC
-    
-    Now that the early _PDC evaluation path knows how to correctly
-    evaluate _PDC on only physically present processors, there's no
-    need for the processor driver to evaluate it later when it loads.
-    
-    To cover the hotplug case, push _PDC evaluation down into the
-    hotplug paths.
-    
-    Cc: x86@kernel.org
-    Cc: Tony Luck <tony.luck@intel.com>
-    Acked-by: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
-    Signed-off-by: Alex Chiang <achiang@hp.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-that is between 2.6.34-rc1 and 2.6.34-rc2.
-
-So we need put this patch in stable tree for 2.6.34, .35, .36
-
-Yinghai
+On Fri, Sep 10 2010 at  3:05pm -0400,
+Mikulas Patocka <mpatocka@redhat.com> wrote:
 
 > 
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
->> ---
->>  drivers/acpi/processor_core.c |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> Index: linux-2.6/drivers/acpi/processor_core.c
->> ===================================================================
->> --- linux-2.6.orig/drivers/acpi/processor_core.c
->> +++ linux-2.6/drivers/acpi/processor_core.c
->> @@ -352,4 +352,5 @@ void __init acpi_early_processor_set_pdc
->>  	acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
->>  			    ACPI_UINT32_MAX,
->>  			    early_init_pdc, NULL, NULL, NULL);
->> +	acpi_get_devices("ACPI0007", early_init_pdc, NULL, NULL);
 > 
-> I hate having to walk the namespace.  Usually that's a clue that
-> there's something wrong with our ACPI device model, because it'd
-> be better to handle everything in a driver .add() method.  But
-> maybe this early _PDC thing is so special that it can't be helped
-> in this case.
+> On Fri, 10 Sep 2010, Mike Snitzer wrote:
+> > And in fact, this first patch basically is as minimal as it gets
+> > relative to bio-based DM's conversion to FLUSH+FUA.
+> > 
+> > Please direct your energy and talent in a positive way rather than
+> > starting a potential flame.
+> > 
+> > Thanks,
+> > Mike
 > 
-> But I do think you could probably fix this to walk the namespace
-> once rather than twice.  Maybe you could use something like
-> acpi_walk_namespace(ACPI_TYPE_ANY, ...) with a callback that
-> recognizes both ACPI_TYPE_PROCESSOR and "ACPI_TYPE_DEVICE with
-> HID ACPI0007".
+> I don't want to flame. I mean this:
 > 
-> Bjorn
+> * person X writes a patch P.
+> * person Y reads P, sees that the condition C is true and writes patch Q 
+> that dependes on condition C.
+> * person X changes a patch P, so that the patch is correct but condition C 
+> is no longer true.
+> 
+> Now, there is a bug in the patch Q and NEITHER X NOR Y can find out about 
+> that bug.
+> 
+> That's why parallel development doesn't work.
+> 
+> If you develop on things in the kernel, it is different.
+> * person X writes a patch P and puts it in the kernel.
+> * person Y reads the kernel code, sees that the condition C is true and 
+> writes a patch Q that assumes that the condition C is true. He puts this 
+> patch to the kernel too.
+> * person X wants to change his code so that the condition C isn't true, 
+> but it is now his responsibility to search the rest of the kernel to see 
+> if it depends on the condition C. He searches the code and finds Q.
+> 
+> This is not a flamewar, just a technical explanation, why I don't want to 
+> develop on interfaces that are not in the kernel.
 
+We're reasonable people and can certainly prevent a flamewar but what
+you're doing is an elaborate distraction.  The energy it took you to
+write and reason through your logic above could've been used to just
+review the DM FLUSH+FUA patches.
+
+The various interfaces are hardened now and staged for inclussion in
+2.6.37.  Jens has already pulled the entire 40+ patchset into his
+for-next branch for wider linux-next testing.
+
+Tejun, Christoph and others have done an amazing job with this
+conversion.  The fact that Tejun tackled the heavy lifting of DM's
+conversion was unexpected but 100% appreciated (by me and I assume
+others).  Please don't dismiss, or misrepresent the status of, this
+FLUSH+FUA work.
+
+Mike
