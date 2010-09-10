@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab0IJJoL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 05:44:11 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54849 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab0IJJoJ (ORCPT
+	id S1751903Ab0IJJqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 05:46:44 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49124 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab0IJJqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 05:44:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Roland McGrath <roland@redhat.com>
-Subject: Re: [PATCH 1/3] setup_arg_pages: diagnose excessive argument size
-Cc: kosaki.motohiro@jp.fujitsu.com, Brad Spengler <spender@grsecurity.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-fsdevel@vger.kernel.org, pageexec@freemail.hu,
-        Eugene Teo <eugene@redhat.com>
-In-Reply-To: <20100910092541.2864A405D5@magilla.sf.frob.com>
-References: <20100909141534.C948.A69D9226@jp.fujitsu.com> <20100910092541.2864A405D5@magilla.sf.frob.com>
-Message-Id: <20100910183309.C975.A69D9226@jp.fujitsu.com>
+	Fri, 10 Sep 2010 05:46:43 -0400
+Date: Fri, 10 Sep 2010 11:46:33 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Joe Perches <joe@perches.com>
+Cc: florian@mickler.org, Andrew Morton <akpm@linux-foundation.org>,
+        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+Message-ID: <20100910094633.GD3865@pengutronix.de>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+ <1284111767.1783.35.camel@Joe-Laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 10 Sep 2010 18:43:57 +0900 (JST)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9dgjiU4MmWPVapMU"
+Content-Disposition: inline
+In-Reply-To: <1284111767.1783.35.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Brad, sorry, I have bad news. glibc sysconf(_SC_ARG_MAX) is implemented
-> > by hard coded RLIMIT_STACK/4 heuristics. That said, at least _now_, we
-> > can't change this even though you disliked. That said, we can't break
-> > userland even though userland library is very crazy.
-> 
-> I'm sorry you think it's "very crazy" to implement the required
-> functionality in the only way available.  POSIX requires that execve
-> fail with E2BIG when the ARG_MAX limit is exceeded.  sysconf has to
-> return the correct actual limit that execve will enforce so that a
-> conforming application knows how much it can safely attempt to use.
-> Since the kernel uses the hard-coded RLIMIT_STACK/4 heuristic and does
-> not expose the true manifest limit any other way, sysconf has to
-> parallel the kernel's calculation.
 
-Hmm...
-Probably my poor english leaded to misunderstood. I didn't intent glibc
-is very crazy. I only intended to "even if userland is crazy, I disagree
-to break userland".
+--9dgjiU4MmWPVapMU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And yes, we obviously need to expose ARG_MAX limit to libc. a duplicated
-heuristic code easily makes confusion and mistake. nobody want such 
-fragile state. however, it's a bit offtopic. anyway.
+On Fri, Sep 10, 2010 at 02:42:47AM -0700, Joe Perches wrote:
+> On Fri, 2010-09-10 at 11:33 +0200, florian@mickler.org wrote:
+> > The script get_maintainer.pl is a very useful tool for deploying changes
+> > made to the kernel. Among others it searches not only the MAINTAINERS
+> > file but also the git history for people to send patches to.\
+> []
+> > By appending a  a note of the reason for the cc in the name, the reason
+> > becomes clear and the receiving side is relieved from feeling obliged to
+> > check the patch  while the sending side has a chance to adapt the
+> > cc'list to their liking.
+>=20
+> I don't like reading annotated email names myself.
+>=20
+> As the coverage of file patterns in MAINTAINERS is
+> now pretty good, the --git results are less useful.
+>=20
+> I'd much rather turn off --git as a default, or change
+> get_maintainers to add git signers only when there's no
+> specifically listed maintainer for a particular file.
 
++1
 
-Thanks.
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
+--9dgjiU4MmWPVapMU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkyJ/nkACgkQD27XaX1/VRstmACgyMXegFu6uQlsxg75lFPoCkZj
+ZCcAoJotCZ+ndBidO20roxBm08RSE+e2
+=ex9o
+-----END PGP SIGNATURE-----
+
+--9dgjiU4MmWPVapMU--
