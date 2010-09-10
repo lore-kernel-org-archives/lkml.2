@@ -1,714 +1,397 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab0IJWDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 18:03:42 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:39289 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab0IJWDk (ORCPT
+	id S1754541Ab0IJWEW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 18:04:22 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:56423 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453Ab0IJWEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 18:03:40 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6102"; a="53954807"
-From: Gregory Bean <gbean@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Ryan Mallon <ryan@bluewatersys.com>, Ben Dooks <ben-linux@fluff.org>
-Subject: [PATCH 1/2 v4] msm: add gpio driver for single-core SoCs.
-Date: Fri, 10 Sep 2010 15:03:36 -0700
-Message-Id: <1284156217-7278-1-git-send-email-gbean@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 10 Sep 2010 18:04:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=CdzLMhEDN4jAO1Is9vU1EBUsRiqUJg2ZW6QbpkJtLXAXSVFOzv+ZbO7c/IJK++vPWg
+         mqgjqrKG7UA2C0JCE/CQ8yPBp/9/TRMGc3dq2kRCnn4JwYl+M8YKpQ7GDHTjQBOtWby7
+         GsLd58ev2dTWCSK+3OG67Oohr2CJY5+DD6QU0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinvdy2fCREqsBCLSA2EVF6J6kvmBSLwMYwv7Odq@mail.gmail.com>
+References: <AANLkTi=OCjV2DF9XAobz_B5Jy_ZQF1j=sBxUkyOc1Q5V@mail.gmail.com>
+	<AANLkTinvdy2fCREqsBCLSA2EVF6J6kvmBSLwMYwv7Odq@mail.gmail.com>
+Date: Sat, 11 Sep 2010 00:04:18 +0200
+Message-ID: <AANLkTi=tfxaNnhSEpSF3g__WZcMD8aZFkML5h0Ha9tgh@mail.gmail.com>
+Subject: Re: 2458 days of Linux development - some stats and thoughts
+From: Jan III Sobieski <jan3sobi3ski@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001485f876fea4d83b048feeed77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Install a gpiolib driver supporting the on-chip gpios for
-single-core MSMs in the 7x00 family, including 7x00A, 7x25, 7x27,
-7x30, 8x50, and 8x50a.
+--001485f876fea4d83b048feeed77
+Content-Type: text/plain; charset=ISO-8859-1
 
-As part of the ongoing effort to converge on a common code base,
-this driver is based on the Google-Android msmgpio driver, whose
-authors include Brian Swetland and Arve Hjønnevåg.
+I added regressions stats - total number of regressions for each
+kernel and number of regressions not fixed yet. It is interesting that
+the number of not fixed regressions is really low.
 
-Cc: Arve Hjønnevåg <arve@android.com>
-Cc: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Ryan Mallon <ryan@bluewatersys.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Signed-off-by: Gregory Bean <gbean@codeaurora.org>
----
- arch/arm/mach-msm/Makefile  |    3 +
- arch/arm/mach-msm/gpio.c    |  358 +++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-msm/gpio_hw.h |  278 +++++++++++++++++++++++++++++++++
- 3 files changed, 639 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-msm/gpio.c
- create mode 100644 arch/arm/mach-msm/gpio_hw.h
-
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 2263b8f..c95d19a 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -22,3 +22,6 @@ obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
- obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-7x30.o gpiomux-v1.o gpiomux.o
- obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o gpiomux-v1.o gpiomux.o
- obj-$(CONFIG_ARCH_MSM8X60) += gpiomux-8x60.o gpiomux-v2.o gpiomux.o
-+ifndef CONFIG_MSM_V2_TLMM
-+obj-y	+= gpio.o
-+endif
-diff --git a/arch/arm/mach-msm/gpio.c b/arch/arm/mach-msm/gpio.c
-new file mode 100644
-index 0000000..5040f1c
---- /dev/null
-+++ b/arch/arm/mach-msm/gpio.c
-@@ -0,0 +1,358 @@
-+/* linux/arch/arm/mach-msm/gpio.c
-+ *
-+ * Copyright (C) 2007 Google, Inc.
-+ * Copyright (c) 2009-2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/bitops.h>
-+#include <linux/gpio.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/module.h>
-+#include "gpio_hw.h"
-+
-+#define FIRST_GPIO_IRQ MSM_GPIO_TO_INT(0)
-+
-+#define MSM_GPIO_BANK(bank, first, last)				\
-+	{								\
-+		.regs = {						\
-+			.out =         MSM_GPIO_OUT_##bank,		\
-+			.in =          MSM_GPIO_IN_##bank,		\
-+			.int_status =  MSM_GPIO_INT_STATUS_##bank,	\
-+			.int_clear =   MSM_GPIO_INT_CLEAR_##bank,	\
-+			.int_en =      MSM_GPIO_INT_EN_##bank,		\
-+			.int_edge =    MSM_GPIO_INT_EDGE_##bank,	\
-+			.int_pos =     MSM_GPIO_INT_POS_##bank,		\
-+			.oe =          MSM_GPIO_OE_##bank,		\
-+		},							\
-+		.chip = {						\
-+			.base = (first),				\
-+			.ngpio = (last) - (first) + 1,			\
-+			.get = msm_gpio_get,				\
-+			.set = msm_gpio_set,				\
-+			.direction_input = msm_gpio_direction_input,	\
-+			.direction_output = msm_gpio_direction_output,	\
-+			.to_irq = msm_gpio_to_irq,			\
-+		}							\
-+	}
-+
-+#define MSM_GPIO_BROKEN_INT_CLEAR 1
-+
-+struct msm_gpio_regs {
-+	void __iomem *out;
-+	void __iomem *in;
-+	void __iomem *int_status;
-+	void __iomem *int_clear;
-+	void __iomem *int_en;
-+	void __iomem *int_edge;
-+	void __iomem *int_pos;
-+	void __iomem *oe;
-+};
-+
-+struct msm_gpio_chip {
-+	spinlock_t		lock;
-+	struct gpio_chip	chip;
-+	struct msm_gpio_regs	regs;
-+#if MSM_GPIO_BROKEN_INT_CLEAR
-+	unsigned                int_status_copy;
-+#endif
-+	unsigned int            both_edge_detect;
-+	unsigned int            int_enable[2]; /* 0: awake, 1: sleep */
-+};
-+
-+static int msm_gpio_write(struct msm_gpio_chip *msm_chip,
-+			  unsigned offset, unsigned on)
-+{
-+	unsigned mask = BIT(offset);
-+	unsigned val;
-+
-+	val = readl(msm_chip->regs.out);
-+	if (on)
-+		writel(val | mask, msm_chip->regs.out);
-+	else
-+		writel(val & ~mask, msm_chip->regs.out);
-+	return 0;
-+}
-+
-+static void msm_gpio_update_both_edge_detect(struct msm_gpio_chip *msm_chip)
-+{
-+	int loop_limit = 100;
-+	unsigned pol, val, val2, intstat;
-+	do {
-+		val = readl(msm_chip->regs.in);
-+		pol = readl(msm_chip->regs.int_pos);
-+		pol = (pol & ~msm_chip->both_edge_detect) |
-+		      (~val & msm_chip->both_edge_detect);
-+		writel(pol, msm_chip->regs.int_pos);
-+		intstat = readl(msm_chip->regs.int_status);
-+		val2 = readl(msm_chip->regs.in);
-+		if (((val ^ val2) & msm_chip->both_edge_detect & ~intstat) == 0)
-+			return;
-+	} while (loop_limit-- > 0);
-+	printk(KERN_ERR "msm_gpio_update_both_edge_detect, "
-+	       "failed to reach stable state %x != %x\n", val, val2);
-+}
-+
-+static int msm_gpio_clear_detect_status(struct msm_gpio_chip *msm_chip,
-+					unsigned offset)
-+{
-+	unsigned bit = BIT(offset);
-+
-+#if MSM_GPIO_BROKEN_INT_CLEAR
-+	/* Save interrupts that already triggered before we loose them. */
-+	/* Any interrupt that triggers between the read of int_status */
-+	/* and the write to int_clear will still be lost though. */
-+	msm_chip->int_status_copy |= readl(msm_chip->regs.int_status);
-+	msm_chip->int_status_copy &= ~bit;
-+#endif
-+	writel(bit, msm_chip->regs.int_clear);
-+	msm_gpio_update_both_edge_detect(msm_chip);
-+	return 0;
-+}
-+
-+static int msm_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct msm_gpio_chip *msm_chip;
-+	unsigned long irq_flags;
-+
-+	msm_chip = container_of(chip, struct msm_gpio_chip, chip);
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	writel(readl(msm_chip->regs.oe) & ~BIT(offset), msm_chip->regs.oe);
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+	return 0;
-+}
-+
-+static int
-+msm_gpio_direction_output(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct msm_gpio_chip *msm_chip;
-+	unsigned long irq_flags;
-+
-+	msm_chip = container_of(chip, struct msm_gpio_chip, chip);
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	msm_gpio_write(msm_chip, offset, value);
-+	writel(readl(msm_chip->regs.oe) | BIT(offset), msm_chip->regs.oe);
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+	return 0;
-+}
-+
-+static int msm_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct msm_gpio_chip *msm_chip;
-+
-+	msm_chip = container_of(chip, struct msm_gpio_chip, chip);
-+	return (readl(msm_chip->regs.in) & (1U << offset)) ? 1 : 0;
-+}
-+
-+static void msm_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+{
-+	struct msm_gpio_chip *msm_chip;
-+	unsigned long irq_flags;
-+
-+	msm_chip = container_of(chip, struct msm_gpio_chip, chip);
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	msm_gpio_write(msm_chip, offset, value);
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+}
-+
-+static int msm_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	return MSM_GPIO_TO_INT(chip->base + offset);
-+}
-+
-+struct msm_gpio_chip msm_gpio_chips[] = {
-+#if defined(CONFIG_ARCH_MSM7X00A)
-+	MSM_GPIO_BANK(0,   0,  15),
-+	MSM_GPIO_BANK(1,  16,  42),
-+	MSM_GPIO_BANK(2,  43,  67),
-+	MSM_GPIO_BANK(3,  68,  94),
-+	MSM_GPIO_BANK(4,  95, 106),
-+	MSM_GPIO_BANK(5, 107, 121),
-+#elif defined(CONFIG_ARCH_MSM7X25) || defined(CONFIG_ARCH_MSM7X27)
-+	MSM_GPIO_BANK(0,   0,  15),
-+	MSM_GPIO_BANK(1,  16,  42),
-+	MSM_GPIO_BANK(2,  43,  67),
-+	MSM_GPIO_BANK(3,  68,  94),
-+	MSM_GPIO_BANK(4,  95, 106),
-+	MSM_GPIO_BANK(5, 107, 132),
-+#elif defined(CONFIG_ARCH_MSM7X30)
-+	MSM_GPIO_BANK(0,   0,  15),
-+	MSM_GPIO_BANK(1,  16,  43),
-+	MSM_GPIO_BANK(2,  44,  67),
-+	MSM_GPIO_BANK(3,  68,  94),
-+	MSM_GPIO_BANK(4,  95, 106),
-+	MSM_GPIO_BANK(5, 107, 133),
-+	MSM_GPIO_BANK(6, 134, 150),
-+	MSM_GPIO_BANK(7, 151, 181),
-+#elif defined(CONFIG_ARCH_QSD8X50)
-+	MSM_GPIO_BANK(0,   0,  15),
-+	MSM_GPIO_BANK(1,  16,  42),
-+	MSM_GPIO_BANK(2,  43,  67),
-+	MSM_GPIO_BANK(3,  68,  94),
-+	MSM_GPIO_BANK(4,  95, 103),
-+	MSM_GPIO_BANK(5, 104, 121),
-+	MSM_GPIO_BANK(6, 122, 152),
-+	MSM_GPIO_BANK(7, 153, 164),
-+#endif
-+};
-+
-+static void msm_gpio_irq_ack(unsigned int irq)
-+{
-+	unsigned long irq_flags;
-+	struct msm_gpio_chip *msm_chip = get_irq_chip_data(irq);
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	msm_gpio_clear_detect_status(msm_chip,
-+				     irq - gpio_to_irq(msm_chip->chip.base));
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+}
-+
-+static void msm_gpio_irq_mask(unsigned int irq)
-+{
-+	unsigned long irq_flags;
-+	struct msm_gpio_chip *msm_chip = get_irq_chip_data(irq);
-+	unsigned offset = irq - gpio_to_irq(msm_chip->chip.base);
-+
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	/* level triggered interrupts are also latched */
-+	if (!(readl(msm_chip->regs.int_edge) & BIT(offset)))
-+		msm_gpio_clear_detect_status(msm_chip, offset);
-+	msm_chip->int_enable[0] &= ~BIT(offset);
-+	writel(msm_chip->int_enable[0], msm_chip->regs.int_en);
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+}
-+
-+static void msm_gpio_irq_unmask(unsigned int irq)
-+{
-+	unsigned long irq_flags;
-+	struct msm_gpio_chip *msm_chip = get_irq_chip_data(irq);
-+	unsigned offset = irq - gpio_to_irq(msm_chip->chip.base);
-+
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	/* level triggered interrupts are also latched */
-+	if (!(readl(msm_chip->regs.int_edge) & BIT(offset)))
-+		msm_gpio_clear_detect_status(msm_chip, offset);
-+	msm_chip->int_enable[0] |= BIT(offset);
-+	writel(msm_chip->int_enable[0], msm_chip->regs.int_en);
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+}
-+
-+static int msm_gpio_irq_set_wake(unsigned int irq, unsigned int on)
-+{
-+	unsigned long irq_flags;
-+	struct msm_gpio_chip *msm_chip = get_irq_chip_data(irq);
-+	unsigned offset = irq - gpio_to_irq(msm_chip->chip.base);
-+
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+
-+	if (on)
-+		msm_chip->int_enable[1] |= BIT(offset);
-+	else
-+		msm_chip->int_enable[1] &= ~BIT(offset);
-+
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+	return 0;
-+}
-+
-+static int msm_gpio_irq_set_type(unsigned int irq, unsigned int flow_type)
-+{
-+	unsigned long irq_flags;
-+	struct msm_gpio_chip *msm_chip = get_irq_chip_data(irq);
-+	unsigned offset = irq - gpio_to_irq(msm_chip->chip.base);
-+	unsigned val, mask = BIT(offset);
-+
-+	spin_lock_irqsave(&msm_chip->lock, irq_flags);
-+	val = readl(msm_chip->regs.int_edge);
-+	if (flow_type & IRQ_TYPE_EDGE_BOTH) {
-+		writel(val | mask, msm_chip->regs.int_edge);
-+		irq_desc[irq].handle_irq = handle_edge_irq;
-+	} else {
-+		writel(val & ~mask, msm_chip->regs.int_edge);
-+		irq_desc[irq].handle_irq = handle_level_irq;
-+	}
-+	if ((flow_type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH) {
-+		msm_chip->both_edge_detect |= mask;
-+		msm_gpio_update_both_edge_detect(msm_chip);
-+	} else {
-+		msm_chip->both_edge_detect &= ~mask;
-+		val = readl(msm_chip->regs.int_pos);
-+		if (flow_type & (IRQF_TRIGGER_RISING | IRQF_TRIGGER_HIGH))
-+			writel(val | mask, msm_chip->regs.int_pos);
-+		else
-+			writel(val & ~mask, msm_chip->regs.int_pos);
-+	}
-+	spin_unlock_irqrestore(&msm_chip->lock, irq_flags);
-+	return 0;
-+}
-+
-+static void msm_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
-+{
-+	int i, j, mask;
-+	unsigned val;
-+
-+	for (i = 0; i < ARRAY_SIZE(msm_gpio_chips); i++) {
-+		struct msm_gpio_chip *msm_chip = &msm_gpio_chips[i];
-+		val = readl(msm_chip->regs.int_status);
-+		val &= msm_chip->int_enable[0];
-+		while (val) {
-+			mask = val & -val;
-+			j = fls(mask) - 1;
-+			/* printk("%s %08x %08x bit %d gpio %d irq %d\n",
-+				__func__, v, m, j, msm_chip->chip.start + j,
-+				FIRST_GPIO_IRQ + msm_chip->chip.start + j); */
-+			val &= ~mask;
-+			generic_handle_irq(FIRST_GPIO_IRQ +
-+					   msm_chip->chip.base + j);
-+		}
-+	}
-+	desc->chip->ack(irq);
-+}
-+
-+static struct irq_chip msm_gpio_irq_chip = {
-+	.name      = "msmgpio",
-+	.ack       = msm_gpio_irq_ack,
-+	.mask      = msm_gpio_irq_mask,
-+	.unmask    = msm_gpio_irq_unmask,
-+	.set_wake  = msm_gpio_irq_set_wake,
-+	.set_type  = msm_gpio_irq_set_type,
-+};
-+
-+static int __init msm_init_gpio(void)
-+{
-+	int i, j = 0;
-+
-+	for (i = FIRST_GPIO_IRQ; i < FIRST_GPIO_IRQ + NR_GPIO_IRQS; i++) {
-+		if (i - FIRST_GPIO_IRQ >=
-+			msm_gpio_chips[j].chip.base +
-+			msm_gpio_chips[j].chip.ngpio)
-+			j++;
-+		set_irq_chip_data(i, &msm_gpio_chips[j]);
-+		set_irq_chip(i, &msm_gpio_irq_chip);
-+		set_irq_handler(i, handle_edge_irq);
-+		set_irq_flags(i, IRQF_VALID);
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(msm_gpio_chips); i++) {
-+		spin_lock_init(&msm_gpio_chips[i].lock);
-+		writel(0, msm_gpio_chips[i].regs.int_en);
-+		gpiochip_add(&msm_gpio_chips[i].chip);
-+	}
-+
-+	set_irq_chained_handler(INT_GPIO_GROUP1, msm_gpio_irq_handler);
-+	set_irq_chained_handler(INT_GPIO_GROUP2, msm_gpio_irq_handler);
-+	set_irq_wake(INT_GPIO_GROUP1, 1);
-+	set_irq_wake(INT_GPIO_GROUP2, 2);
-+	return 0;
-+}
-+
-+postcore_initcall(msm_init_gpio);
-diff --git a/arch/arm/mach-msm/gpio_hw.h b/arch/arm/mach-msm/gpio_hw.h
-new file mode 100644
-index 0000000..6b50660
---- /dev/null
-+++ b/arch/arm/mach-msm/gpio_hw.h
-@@ -0,0 +1,278 @@
-+/* arch/arm/mach-msm/gpio_hw.h
-+ *
-+ * Copyright (C) 2007 Google, Inc.
-+ * Author: Brian Swetland <swetland@google.com>
-+ * Copyright (c) 2008-2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef __ARCH_ARM_MACH_MSM_GPIO_HW_H
-+#define __ARCH_ARM_MACH_MSM_GPIO_HW_H
-+
-+#include <mach/msm_iomap.h>
-+
-+/* see 80-VA736-2 Rev C pp 695-751
-+**
-+** These are actually the *shadow* gpio registers, since the
-+** real ones (which allow full access) are only available to the
-+** ARM9 side of the world.
-+**
-+** Since the _BASE need to be page-aligned when we're mapping them
-+** to virtual addresses, adjust for the additional offset in these
-+** macros.
-+*/
-+
-+#if defined(CONFIG_ARCH_MSM7X30)
-+#define MSM_GPIO1_REG(off) (MSM_GPIO1_BASE + (off))
-+#define MSM_GPIO2_REG(off) (MSM_GPIO2_BASE + 0x400 + (off))
-+#else
-+#define MSM_GPIO1_REG(off) (MSM_GPIO1_BASE + 0x800 + (off))
-+#define MSM_GPIO2_REG(off) (MSM_GPIO2_BASE + 0xC00 + (off))
-+#endif
-+
-+#if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_MSM7X25) ||\
-+    defined(CONFIG_ARCH_MSM7X27)
-+
-+/* output value */
-+#define MSM_GPIO_OUT_0         MSM_GPIO1_REG(0x00)  /* gpio  15-0  */
-+#define MSM_GPIO_OUT_1         MSM_GPIO2_REG(0x00)  /* gpio  42-16 */
-+#define MSM_GPIO_OUT_2         MSM_GPIO1_REG(0x04)  /* gpio  67-43 */
-+#define MSM_GPIO_OUT_3         MSM_GPIO1_REG(0x08)  /* gpio  94-68 */
-+#define MSM_GPIO_OUT_4         MSM_GPIO1_REG(0x0C)  /* gpio 106-95 */
-+#define MSM_GPIO_OUT_5         MSM_GPIO1_REG(0x50)  /* gpio 107-121 */
-+
-+/* same pin map as above, output enable */
-+#define MSM_GPIO_OE_0          MSM_GPIO1_REG(0x10)
-+#define MSM_GPIO_OE_1          MSM_GPIO2_REG(0x08)
-+#define MSM_GPIO_OE_2          MSM_GPIO1_REG(0x14)
-+#define MSM_GPIO_OE_3          MSM_GPIO1_REG(0x18)
-+#define MSM_GPIO_OE_4          MSM_GPIO1_REG(0x1C)
-+#define MSM_GPIO_OE_5          MSM_GPIO1_REG(0x54)
-+
-+/* same pin map as above, input read */
-+#define MSM_GPIO_IN_0          MSM_GPIO1_REG(0x34)
-+#define MSM_GPIO_IN_1          MSM_GPIO2_REG(0x20)
-+#define MSM_GPIO_IN_2          MSM_GPIO1_REG(0x38)
-+#define MSM_GPIO_IN_3          MSM_GPIO1_REG(0x3C)
-+#define MSM_GPIO_IN_4          MSM_GPIO1_REG(0x40)
-+#define MSM_GPIO_IN_5          MSM_GPIO1_REG(0x44)
-+
-+/* same pin map as above, 1=edge 0=level interrup */
-+#define MSM_GPIO_INT_EDGE_0    MSM_GPIO1_REG(0x60)
-+#define MSM_GPIO_INT_EDGE_1    MSM_GPIO2_REG(0x50)
-+#define MSM_GPIO_INT_EDGE_2    MSM_GPIO1_REG(0x64)
-+#define MSM_GPIO_INT_EDGE_3    MSM_GPIO1_REG(0x68)
-+#define MSM_GPIO_INT_EDGE_4    MSM_GPIO1_REG(0x6C)
-+#define MSM_GPIO_INT_EDGE_5    MSM_GPIO1_REG(0xC0)
-+
-+/* same pin map as above, 1=positive 0=negative */
-+#define MSM_GPIO_INT_POS_0     MSM_GPIO1_REG(0x70)
-+#define MSM_GPIO_INT_POS_1     MSM_GPIO2_REG(0x58)
-+#define MSM_GPIO_INT_POS_2     MSM_GPIO1_REG(0x74)
-+#define MSM_GPIO_INT_POS_3     MSM_GPIO1_REG(0x78)
-+#define MSM_GPIO_INT_POS_4     MSM_GPIO1_REG(0x7C)
-+#define MSM_GPIO_INT_POS_5     MSM_GPIO1_REG(0xBC)
-+
-+/* same pin map as above, interrupt enable */
-+#define MSM_GPIO_INT_EN_0      MSM_GPIO1_REG(0x80)
-+#define MSM_GPIO_INT_EN_1      MSM_GPIO2_REG(0x60)
-+#define MSM_GPIO_INT_EN_2      MSM_GPIO1_REG(0x84)
-+#define MSM_GPIO_INT_EN_3      MSM_GPIO1_REG(0x88)
-+#define MSM_GPIO_INT_EN_4      MSM_GPIO1_REG(0x8C)
-+#define MSM_GPIO_INT_EN_5      MSM_GPIO1_REG(0xB8)
-+
-+/* same pin map as above, write 1 to clear interrupt */
-+#define MSM_GPIO_INT_CLEAR_0   MSM_GPIO1_REG(0x90)
-+#define MSM_GPIO_INT_CLEAR_1   MSM_GPIO2_REG(0x68)
-+#define MSM_GPIO_INT_CLEAR_2   MSM_GPIO1_REG(0x94)
-+#define MSM_GPIO_INT_CLEAR_3   MSM_GPIO1_REG(0x98)
-+#define MSM_GPIO_INT_CLEAR_4   MSM_GPIO1_REG(0x9C)
-+#define MSM_GPIO_INT_CLEAR_5   MSM_GPIO1_REG(0xB4)
-+
-+/* same pin map as above, 1=interrupt pending */
-+#define MSM_GPIO_INT_STATUS_0  MSM_GPIO1_REG(0xA0)
-+#define MSM_GPIO_INT_STATUS_1  MSM_GPIO2_REG(0x70)
-+#define MSM_GPIO_INT_STATUS_2  MSM_GPIO1_REG(0xA4)
-+#define MSM_GPIO_INT_STATUS_3  MSM_GPIO1_REG(0xA8)
-+#define MSM_GPIO_INT_STATUS_4  MSM_GPIO1_REG(0xAC)
-+#define MSM_GPIO_INT_STATUS_5  MSM_GPIO1_REG(0xB0)
-+
-+#endif
-+
-+#if defined(CONFIG_ARCH_QSD8X50)
-+/* output value */
-+#define MSM_GPIO_OUT_0         MSM_GPIO1_REG(0x00)  /* gpio  15-0   */
-+#define MSM_GPIO_OUT_1         MSM_GPIO2_REG(0x00)  /* gpio  42-16  */
-+#define MSM_GPIO_OUT_2         MSM_GPIO1_REG(0x04)  /* gpio  67-43  */
-+#define MSM_GPIO_OUT_3         MSM_GPIO1_REG(0x08)  /* gpio  94-68  */
-+#define MSM_GPIO_OUT_4         MSM_GPIO1_REG(0x0C)  /* gpio 103-95  */
-+#define MSM_GPIO_OUT_5         MSM_GPIO1_REG(0x10)  /* gpio 121-104 */
-+#define MSM_GPIO_OUT_6         MSM_GPIO1_REG(0x14)  /* gpio 152-122 */
-+#define MSM_GPIO_OUT_7         MSM_GPIO1_REG(0x18)  /* gpio 164-153 */
-+
-+/* same pin map as above, output enable */
-+#define MSM_GPIO_OE_0          MSM_GPIO1_REG(0x20)
-+#define MSM_GPIO_OE_1          MSM_GPIO2_REG(0x08)
-+#define MSM_GPIO_OE_2          MSM_GPIO1_REG(0x24)
-+#define MSM_GPIO_OE_3          MSM_GPIO1_REG(0x28)
-+#define MSM_GPIO_OE_4          MSM_GPIO1_REG(0x2C)
-+#define MSM_GPIO_OE_5          MSM_GPIO1_REG(0x30)
-+#define MSM_GPIO_OE_6          MSM_GPIO1_REG(0x34)
-+#define MSM_GPIO_OE_7          MSM_GPIO1_REG(0x38)
-+
-+/* same pin map as above, input read */
-+#define MSM_GPIO_IN_0          MSM_GPIO1_REG(0x50)
-+#define MSM_GPIO_IN_1          MSM_GPIO2_REG(0x20)
-+#define MSM_GPIO_IN_2          MSM_GPIO1_REG(0x54)
-+#define MSM_GPIO_IN_3          MSM_GPIO1_REG(0x58)
-+#define MSM_GPIO_IN_4          MSM_GPIO1_REG(0x5C)
-+#define MSM_GPIO_IN_5          MSM_GPIO1_REG(0x60)
-+#define MSM_GPIO_IN_6          MSM_GPIO1_REG(0x64)
-+#define MSM_GPIO_IN_7          MSM_GPIO1_REG(0x68)
-+
-+/* same pin map as above, 1=edge 0=level interrup */
-+#define MSM_GPIO_INT_EDGE_0    MSM_GPIO1_REG(0x70)
-+#define MSM_GPIO_INT_EDGE_1    MSM_GPIO2_REG(0x50)
-+#define MSM_GPIO_INT_EDGE_2    MSM_GPIO1_REG(0x74)
-+#define MSM_GPIO_INT_EDGE_3    MSM_GPIO1_REG(0x78)
-+#define MSM_GPIO_INT_EDGE_4    MSM_GPIO1_REG(0x7C)
-+#define MSM_GPIO_INT_EDGE_5    MSM_GPIO1_REG(0x80)
-+#define MSM_GPIO_INT_EDGE_6    MSM_GPIO1_REG(0x84)
-+#define MSM_GPIO_INT_EDGE_7    MSM_GPIO1_REG(0x88)
-+
-+/* same pin map as above, 1=positive 0=negative */
-+#define MSM_GPIO_INT_POS_0     MSM_GPIO1_REG(0x90)
-+#define MSM_GPIO_INT_POS_1     MSM_GPIO2_REG(0x58)
-+#define MSM_GPIO_INT_POS_2     MSM_GPIO1_REG(0x94)
-+#define MSM_GPIO_INT_POS_3     MSM_GPIO1_REG(0x98)
-+#define MSM_GPIO_INT_POS_4     MSM_GPIO1_REG(0x9C)
-+#define MSM_GPIO_INT_POS_5     MSM_GPIO1_REG(0xA0)
-+#define MSM_GPIO_INT_POS_6     MSM_GPIO1_REG(0xA4)
-+#define MSM_GPIO_INT_POS_7     MSM_GPIO1_REG(0xA8)
-+
-+/* same pin map as above, interrupt enable */
-+#define MSM_GPIO_INT_EN_0      MSM_GPIO1_REG(0xB0)
-+#define MSM_GPIO_INT_EN_1      MSM_GPIO2_REG(0x60)
-+#define MSM_GPIO_INT_EN_2      MSM_GPIO1_REG(0xB4)
-+#define MSM_GPIO_INT_EN_3      MSM_GPIO1_REG(0xB8)
-+#define MSM_GPIO_INT_EN_4      MSM_GPIO1_REG(0xBC)
-+#define MSM_GPIO_INT_EN_5      MSM_GPIO1_REG(0xC0)
-+#define MSM_GPIO_INT_EN_6      MSM_GPIO1_REG(0xC4)
-+#define MSM_GPIO_INT_EN_7      MSM_GPIO1_REG(0xC8)
-+
-+/* same pin map as above, write 1 to clear interrupt */
-+#define MSM_GPIO_INT_CLEAR_0   MSM_GPIO1_REG(0xD0)
-+#define MSM_GPIO_INT_CLEAR_1   MSM_GPIO2_REG(0x68)
-+#define MSM_GPIO_INT_CLEAR_2   MSM_GPIO1_REG(0xD4)
-+#define MSM_GPIO_INT_CLEAR_3   MSM_GPIO1_REG(0xD8)
-+#define MSM_GPIO_INT_CLEAR_4   MSM_GPIO1_REG(0xDC)
-+#define MSM_GPIO_INT_CLEAR_5   MSM_GPIO1_REG(0xE0)
-+#define MSM_GPIO_INT_CLEAR_6   MSM_GPIO1_REG(0xE4)
-+#define MSM_GPIO_INT_CLEAR_7   MSM_GPIO1_REG(0xE8)
-+
-+/* same pin map as above, 1=interrupt pending */
-+#define MSM_GPIO_INT_STATUS_0  MSM_GPIO1_REG(0xF0)
-+#define MSM_GPIO_INT_STATUS_1  MSM_GPIO2_REG(0x70)
-+#define MSM_GPIO_INT_STATUS_2  MSM_GPIO1_REG(0xF4)
-+#define MSM_GPIO_INT_STATUS_3  MSM_GPIO1_REG(0xF8)
-+#define MSM_GPIO_INT_STATUS_4  MSM_GPIO1_REG(0xFC)
-+#define MSM_GPIO_INT_STATUS_5  MSM_GPIO1_REG(0x100)
-+#define MSM_GPIO_INT_STATUS_6  MSM_GPIO1_REG(0x104)
-+#define MSM_GPIO_INT_STATUS_7  MSM_GPIO1_REG(0x108)
-+
-+#endif
-+
-+#if defined(CONFIG_ARCH_MSM7X30)
-+
-+/* output value */
-+#define MSM_GPIO_OUT_0         MSM_GPIO1_REG(0x00)   /* gpio  15-0   */
-+#define MSM_GPIO_OUT_1         MSM_GPIO2_REG(0x00)   /* gpio  43-16  */
-+#define MSM_GPIO_OUT_2         MSM_GPIO1_REG(0x04)   /* gpio  67-44  */
-+#define MSM_GPIO_OUT_3         MSM_GPIO1_REG(0x08)   /* gpio  94-68  */
-+#define MSM_GPIO_OUT_4         MSM_GPIO1_REG(0x0C)   /* gpio 106-95  */
-+#define MSM_GPIO_OUT_5         MSM_GPIO1_REG(0x50)   /* gpio 133-107 */
-+#define MSM_GPIO_OUT_6         MSM_GPIO1_REG(0xC4)   /* gpio 150-134 */
-+#define MSM_GPIO_OUT_7         MSM_GPIO1_REG(0x214)  /* gpio 181-151 */
-+
-+/* same pin map as above, output enable */
-+#define MSM_GPIO_OE_0          MSM_GPIO1_REG(0x10)
-+#define MSM_GPIO_OE_1          MSM_GPIO2_REG(0x08)
-+#define MSM_GPIO_OE_2          MSM_GPIO1_REG(0x14)
-+#define MSM_GPIO_OE_3          MSM_GPIO1_REG(0x18)
-+#define MSM_GPIO_OE_4          MSM_GPIO1_REG(0x1C)
-+#define MSM_GPIO_OE_5          MSM_GPIO1_REG(0x54)
-+#define MSM_GPIO_OE_6          MSM_GPIO1_REG(0xC8)
-+#define MSM_GPIO_OE_7          MSM_GPIO1_REG(0x218)
-+
-+/* same pin map as above, input read */
-+#define MSM_GPIO_IN_0          MSM_GPIO1_REG(0x34)
-+#define MSM_GPIO_IN_1          MSM_GPIO2_REG(0x20)
-+#define MSM_GPIO_IN_2          MSM_GPIO1_REG(0x38)
-+#define MSM_GPIO_IN_3          MSM_GPIO1_REG(0x3C)
-+#define MSM_GPIO_IN_4          MSM_GPIO1_REG(0x40)
-+#define MSM_GPIO_IN_5          MSM_GPIO1_REG(0x44)
-+#define MSM_GPIO_IN_6          MSM_GPIO1_REG(0xCC)
-+#define MSM_GPIO_IN_7          MSM_GPIO1_REG(0x21C)
-+
-+/* same pin map as above, 1=edge 0=level interrup */
-+#define MSM_GPIO_INT_EDGE_0    MSM_GPIO1_REG(0x60)
-+#define MSM_GPIO_INT_EDGE_1    MSM_GPIO2_REG(0x50)
-+#define MSM_GPIO_INT_EDGE_2    MSM_GPIO1_REG(0x64)
-+#define MSM_GPIO_INT_EDGE_3    MSM_GPIO1_REG(0x68)
-+#define MSM_GPIO_INT_EDGE_4    MSM_GPIO1_REG(0x6C)
-+#define MSM_GPIO_INT_EDGE_5    MSM_GPIO1_REG(0xC0)
-+#define MSM_GPIO_INT_EDGE_6    MSM_GPIO1_REG(0xD0)
-+#define MSM_GPIO_INT_EDGE_7    MSM_GPIO1_REG(0x240)
-+
-+/* same pin map as above, 1=positive 0=negative */
-+#define MSM_GPIO_INT_POS_0     MSM_GPIO1_REG(0x70)
-+#define MSM_GPIO_INT_POS_1     MSM_GPIO2_REG(0x58)
-+#define MSM_GPIO_INT_POS_2     MSM_GPIO1_REG(0x74)
-+#define MSM_GPIO_INT_POS_3     MSM_GPIO1_REG(0x78)
-+#define MSM_GPIO_INT_POS_4     MSM_GPIO1_REG(0x7C)
-+#define MSM_GPIO_INT_POS_5     MSM_GPIO1_REG(0xBC)
-+#define MSM_GPIO_INT_POS_6     MSM_GPIO1_REG(0xD4)
-+#define MSM_GPIO_INT_POS_7     MSM_GPIO1_REG(0x228)
-+
-+/* same pin map as above, interrupt enable */
-+#define MSM_GPIO_INT_EN_0      MSM_GPIO1_REG(0x80)
-+#define MSM_GPIO_INT_EN_1      MSM_GPIO2_REG(0x60)
-+#define MSM_GPIO_INT_EN_2      MSM_GPIO1_REG(0x84)
-+#define MSM_GPIO_INT_EN_3      MSM_GPIO1_REG(0x88)
-+#define MSM_GPIO_INT_EN_4      MSM_GPIO1_REG(0x8C)
-+#define MSM_GPIO_INT_EN_5      MSM_GPIO1_REG(0xB8)
-+#define MSM_GPIO_INT_EN_6      MSM_GPIO1_REG(0xD8)
-+#define MSM_GPIO_INT_EN_7      MSM_GPIO1_REG(0x22C)
-+
-+/* same pin map as above, write 1 to clear interrupt */
-+#define MSM_GPIO_INT_CLEAR_0   MSM_GPIO1_REG(0x90)
-+#define MSM_GPIO_INT_CLEAR_1   MSM_GPIO2_REG(0x68)
-+#define MSM_GPIO_INT_CLEAR_2   MSM_GPIO1_REG(0x94)
-+#define MSM_GPIO_INT_CLEAR_3   MSM_GPIO1_REG(0x98)
-+#define MSM_GPIO_INT_CLEAR_4   MSM_GPIO1_REG(0x9C)
-+#define MSM_GPIO_INT_CLEAR_5   MSM_GPIO1_REG(0xB4)
-+#define MSM_GPIO_INT_CLEAR_6   MSM_GPIO1_REG(0xDC)
-+#define MSM_GPIO_INT_CLEAR_7   MSM_GPIO1_REG(0x230)
-+
-+/* same pin map as above, 1=interrupt pending */
-+#define MSM_GPIO_INT_STATUS_0  MSM_GPIO1_REG(0xA0)
-+#define MSM_GPIO_INT_STATUS_1  MSM_GPIO2_REG(0x70)
-+#define MSM_GPIO_INT_STATUS_2  MSM_GPIO1_REG(0xA4)
-+#define MSM_GPIO_INT_STATUS_3  MSM_GPIO1_REG(0xA8)
-+#define MSM_GPIO_INT_STATUS_4  MSM_GPIO1_REG(0xAC)
-+#define MSM_GPIO_INT_STATUS_5  MSM_GPIO1_REG(0xB0)
-+#define MSM_GPIO_INT_STATUS_6  MSM_GPIO1_REG(0xE0)
-+#define MSM_GPIO_INT_STATUS_7  MSM_GPIO1_REG(0x234)
-+
-+#endif
-+
-+#endif
 -- 
-1.7.0.4
+Jan III Sobieski
 
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+--001485f876fea4d83b048feeed77
+Content-Type: application/vnd.oasis.opendocument.spreadsheet; 
+	name="stats.ods"
+Content-Disposition: attachment; filename="stats.ods"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gdxle2wp1
+
+UEsDBBQAAAgAAA2wKj2FbDmKLgAAAC4AAAAIAAAAbWltZXR5cGVhcHBsaWNhdGlvbi92bmQub2Fz
+aXMub3BlbmRvY3VtZW50LnNwcmVhZHNoZWV0UEsDBBQAAAgAAA2wKj0AAAAAAAAAAAAAAAAaAAAA
+Q29uZmlndXJhdGlvbnMyL3N0YXR1c2Jhci9QSwMEFAAICAgADbAqPQAAAAAAAAAAAAAAACcAAABD
+b25maWd1cmF0aW9uczIvYWNjZWxlcmF0b3IvY3VycmVudC54bWwDAFBLBwgAAAAAAgAAAAAAAABQ
+SwMEFAAACAAADbAqPQAAAAAAAAAAAAAAABgAAABDb25maWd1cmF0aW9uczIvZmxvYXRlci9QSwME
+FAAACAAADbAqPQAAAAAAAAAAAAAAABoAAABDb25maWd1cmF0aW9uczIvcG9wdXBtZW51L1BLAwQU
+AAAIAAANsCo9AAAAAAAAAAAAAAAAHAAAAENvbmZpZ3VyYXRpb25zMi9wcm9ncmVzc2Jhci9QSwME
+FAAACAAADbAqPQAAAAAAAAAAAAAAABgAAABDb25maWd1cmF0aW9uczIvbWVudWJhci9QSwMEFAAA
+CAAADbAqPQAAAAAAAAAAAAAAABgAAABDb25maWd1cmF0aW9uczIvdG9vbGJhci9QSwMEFAAACAAA
+DbAqPQAAAAAAAAAAAAAAAB8AAABDb25maWd1cmF0aW9uczIvaW1hZ2VzL0JpdG1hcHMvUEsDBBQA
+CAgIAA2wKj0AAAAAAAAAAAAAAAALAAAAY29udGVudC54bWztXetuI7ly/p+nMBxskEAjq0k2L+2s
+5+Bkd06QYHcSZPcAARYHQY/UtoXVDWppPLNPk2fJk4VkSXJRUnu6LLJtCP4znqL68nVV9cfipaq/
+/9OX6eTic7Wsx/PZzSW7yi4vqtlwPhrP7m4u//rrX/rm8k/v/+77+e3teFhdj+bD9bSarfrD+Wxl
+/17Ys2f1Nfx6c7lezq7nZT2ur2fltKqvV8Pr+aKabc+6xkdf+3tBS736Oml9uj8Yn72qvqzanuyO
+Dc4tP7W/sz8Ynz1alg9tT3bHWqXi02/nbU/+Uk/6t3Or9emiXI33UHyZjGe/31zer1aL68Hg4eHh
+6kFczZd3A1YUxcD/ugM83B23WC8n/qjRcFBNKnezesCu2GB77LRalW3xuWMxpNl6+qlatlZNuSoP
+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
+RWJP8TMc6V8uPi0EDBwZGZTKYK//g1r6r0bs8coOJ0+sZiFH0pmQxyHLCLWlU2NQuxdGDrqa/vbS
+fIwum7/ljpAavb26uroM+8JGUvaC0Mu9zqO9sqmEofZ+cOnVsXHeb5TgBfKaR028HgG3sfXYkg1I
+WGOdsJ8kEQ4i+Vhw3zef3k7EdjmIrb3/M32RaUKfGW7veY1TVLE2pH5+MQhEx1NHZLqo5x3GKTI5
+WcG85kCBmeDhtSSKoyBaBTFUURwvotVCSxoWGrj90bOEgX0UreH38pUjPVZAXX7fsKq8sA00Lz7b
+1aoNrGVfqfrC8Y4Px//La/sPUEsHCDVOibUOBgAAMhsAAFBLAwQUAAAIAAANsCo9/VF23pEDAACR
+AwAACAAAAG1ldGEueG1sPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPG9m
+ZmljZTpkb2N1bWVudC1tZXRhIHhtbG5zOm9mZmljZT0idXJuOm9hc2lzOm5hbWVzOnRjOm9wZW5k
+b2N1bWVudDp4bWxuczpvZmZpY2U6MS4wIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcv
+MTk5OS94bGluayIgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIiB4
+bWxuczptZXRhPSJ1cm46b2FzaXM6bmFtZXM6dGM6b3BlbmRvY3VtZW50OnhtbG5zOm1ldGE6MS4w
+IiB4bWxuczpvb289Imh0dHA6Ly9vcGVub2ZmaWNlLm9yZy8yMDA0L29mZmljZSIgeG1sbnM6Z3Jk
+ZGw9Imh0dHA6Ly93d3cudzMub3JnLzIwMDMvZy9kYXRhLXZpZXcjIiBvZmZpY2U6dmVyc2lvbj0i
+MS4yIiBncmRkbDp0cmFuc2Zvcm1hdGlvbj0iaHR0cDovL2RvY3Mub2FzaXMtb3Blbi5vcmcvb2Zm
+aWNlLzEuMi94c2x0L29kZjJyZGYueHNsIj48b2ZmaWNlOm1ldGE+PG1ldGE6Y3JlYXRpb24tZGF0
+ZT4yMDEwLTA5LTEwVDIwOjU1OjA1LjIwPC9tZXRhOmNyZWF0aW9uLWRhdGU+PGRjOmRhdGU+MjAx
+MC0wOS0xMVQwMDowMDoyNy4xOTwvZGM6ZGF0ZT48bWV0YTplZGl0aW5nLWR1cmF0aW9uPlBUMDJI
+NDdNMDhTPC9tZXRhOmVkaXRpbmctZHVyYXRpb24+PG1ldGE6ZWRpdGluZy1jeWNsZXM+NjQ8L21l
+dGE6ZWRpdGluZy1jeWNsZXM+PG1ldGE6Z2VuZXJhdG9yPk9wZW5PZmZpY2Uub3JnLzMuMiRXaW4z
+MiBPcGVuT2ZmaWNlLm9yZ19wcm9qZWN0LzMyMG0xMiRCdWlsZC05NDgzPC9tZXRhOmdlbmVyYXRv
+cj48bWV0YTpkb2N1bWVudC1zdGF0aXN0aWMgbWV0YTp0YWJsZS1jb3VudD0iMyIgbWV0YTpjZWxs
+LWNvdW50PSI1MjMiIG1ldGE6b2JqZWN0LWNvdW50PSIwIi8+PC9vZmZpY2U6bWV0YT48L29mZmlj
+ZTpkb2N1bWVudC1tZXRhPlBLAwQUAAgICAANsCo9AAAAAAAAAAAAAAAAGAAAAFRodW1ibmFpbHMv
+dGh1bWJuYWlsLnBuZ215Z1hTW7c1XVoEBKkSuqDSIRQJQpDeAyjSQuhNWqiBI6FIkd47CISOggpI
+b9KL0qUFkN6kg3Ry8977vO93zv3u/rP3j7nWnmutOcYcY+93utoqAHJmcjw8PICaqqIe7r6Ah4eP
+R0qAe9JXNqfAw2NFqylCDHyzd81kvI/UaV//uEjjpHF7FWQUxM6B2KZUyI6nSUzIoxYtiVWVf/LJ
+8Ndz9hqGANn1Ua6Y1qkcCMCT+GxAQTmm9WtgeVkl1qzKEC68uYQyY2iHT3d87Gcnd9Eigbo5iUYE
+myRB6DCZlAW/flpTE9c9DOGrBzEp/idkxOW79TM5PE2fJtVbUsRVXIBsbGf38lFa22l4d2nOwaDs
+C0DHIgM2y3J1/GvK5Y6Hlz8PlvLEWCzjrOfqGls97mXnD45SWbry8Wo/0WU1AT54SdXc3LwqE1ZR
+ZdMYgLqT/gFvzFdcEDgLa33Ym2peBzv8Y1kualvNpPlCq/tYyPHFum9Qv+GMEtY0DKoRMG3DDpuV
+Tl4T0H8xLCh0aie7HdMmQJW/0baVcu0f7/Sd/8EQ3lHaRZLtSB1QlF+GPZct6aTkvKHxQX+zY+j+
+vmsfVV+VTs2sQj2p4PHN1YVnC334UFJ/++0Oykjzi3TVUcnQ3BpekzWX9k2rGv34tsVM2kXbcnh9
+040H0wuBdYtuDcIIG6RIZW+z+vfwp/WJWDzER+RMdsnUjmBG3NgikEWwtTJq2bVtKitH+2iAzvWl
+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
+AwAAgUkAAAAA
+--001485f876fea4d83b048feeed77--
