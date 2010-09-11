@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab0IKApt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 20:45:49 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45235 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab0IKApr (ORCPT
+	id S1755971Ab0IKAqV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 20:46:21 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56298 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755910Ab0IKAqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 20:45:47 -0400
+	Fri, 10 Sep 2010 20:46:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=faKLM8VlpQGRW+vCYD+MtM/ahZf7DrIiXB5OKMsDUjpFlW4NNsrGfdhv3G2Kbwpaos
-         pr7BYlDBjh8WDRr2dlJ18/E6ESzJES/ydy3LtYaWFODXBJZL7CGO33B9bjHrbi4f5Ps6
-         KpK3cE/Xdin7WMgf8THrJVmbqAdRfcESX6QvQ=
-Subject: [PATCH] FS: cifs: Fix compile warning
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-To: Steve French <sfrench@samba.org>, Jeff Layton <jlayton@redhat.com>,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Sep 2010 20:45:42 -0400
-Message-ID: <1284165942.4009.5.camel@lenovo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=OvatyXwd0hY4JDIDj21sJ+8dZyrf5EvH8xbFIWgd8CAZl1GwygEKGyM91bQo2vS44r
+         XeAKEjBbeWHVZCnTPqlu9eItvvwyHVhwy+hgzkMdq/fGJCYwOhwoq2FcoVbW7GExZHuk
+         5inKWlIRNoDOCyso792NiWuSSYCLkvhRpIEs0=
+Message-ID: <4C8AD17B.6000407@gmail.com>
+Date: Fri, 10 Sep 2010 17:46:51 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
+MIME-Version: 1.0
+To: Andy Isaacson <adi@hexapodia.org>
+CC: Norbert Preining <preining@logic.at>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.sourceforge.net
+Subject: Re: after closing the lid and reopening it the screen remains blank
+References: <20100909224117.GA30000@gamma.logic.tuwien.ac.at> <20100910184751.GA17794@hexapodia.org> <20100910234448.GB9848@gamma.logic.tuwien.ac.at> <20100911003459.GW23291@hexapodia.org>
+In-Reply-To: <20100911003459.GW23291@hexapodia.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In today linux-next I got a compile warning due a possibly uninitialized variable
+On 09/10/2010 05:34 PM, Andy Isaacson wrote:
+> On Sat, Sep 11, 2010 at 08:44:48AM +0900, Norbert Preining wrote:
+>> On Fr, 10 Sep 2010, Andy Isaacson wrote:
+>>> FWIW, 2.6.36-rc3-00396-gbe6200a suspend-to-ram works for me on GM45
+>>
+>> I never said that it has anything to do with suspend to ram.
+>
+> Ah, sorry for misunderstanding.  My GM45 system is configured to
+> automatically S2R on lid close so I tend to conflate the two...
+>
+>> In fact, suspend to ram works perfectly without any problems. I only
+>> reboot after I installed a new kernel ...
+>>
+>> I will try some older kernels and see if it is a kernel or userspace
+>> issue.
+>
+> Do try the current tip and/or describe which post-rc3 kernel fails for
+> you, just to verify.  Also, is there anything in Xorg.0.log from when it
+> fails to restore the video?
+>
+> Thanks for reporting the regression, it'll be good to get it fixed ASAP.
+>
+> -andy
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-This trivial patch solves the issue
 
-Thanks a lot
+over here:
+cat /etc/acpi/sleep.sh
 
-Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
----
- fs/cifs/cifssmb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+if grep -q close /proc/acpi/button/lid/LID0/state
+then
+/usr/sbin/s2ram
+fi
 
-diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
-index c65c341..ee1bba4 100644
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -3079,7 +3079,7 @@ CIFSSMBGetCIFSACL(const int xid, struct cifsTconInfo *tcon, __u16 fid,
- 		__u32 parm_len;
- 		__u32 acl_len;
- 		struct smb_com_ntransact_rsp *pSMBr;
--		char *pdata;
-+		char *pdata = NULL;
- 
- /* validate_nttransact */
- 		rc = validate_ntransact(iov[0].iov_base, (char **)&parm,
--- 
-1.7.0.4
+works reliably over here(knock on wood..)with radeon not sure
+with intel cards..
 
-
-
-
+Justin P. Mattock
