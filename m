@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab0IKAKA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 20:10:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61214 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755490Ab0IKAJ6 (ORCPT
+	id S1755565Ab0IKAOA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 20:14:00 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:48147 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755038Ab0IKAN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 20:09:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=axxL0WbeRT10vzXewdL35HKmV19HyUJGNuoN+f/tRhXKDG34KslkDd1IIGuZ55KRXh
-         nBgqIPtaL/eTzrzcA+z78VKYNLrGYvlKcY7Lqo4VOfmTqov0W3WoRH4W3T2NAcRg70dJ
-         RBEI0ub3q25t7W6ZGBfx4gMbYCamjqt8FQaVE=
-Date: Sat, 11 Sep 2010 02:11:48 +0200
-From: Lutz Ballaschke <vegan.grindcore@googlemail.com>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
+	Fri, 10 Sep 2010 20:13:59 -0400
+Date: Fri, 10 Sep 2010 20:13:50 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Joe Perches <joe@perches.com>
+Cc: florian@mickler.org, Andrew Morton <akpm@linux-foundation.org>,
+        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
+        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv2 0/3] watchdog: add f71862fg support
-Message-ID: <20100911001148.GB13116@kreios.titan>
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+Message-ID: <20100911001350.GA11478@infradead.org>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+ <1284111767.1783.35.camel@Joe-Laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1284111767.1783.35.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Fri, Sep 10, 2010 at 02:42:47AM -0700, Joe Perches wrote:
+> I don't like reading annotated email names myself.
+> 
+> As the coverage of file patterns in MAINTAINERS is
+> now pretty good, the --git results are less useful.
+> 
+> I'd much rather turn off --git as a default, or change
+> get_maintainers to add git signers only when there's no
+> specifically listed maintainer for a particular file.
 
-this patch adds support for the watchdog included in Fintek f71862fg
-Super-I/O chip to the f71808e_wdt driver and adds WDIOC_GETTIMELEFT
-ioctl which i found very helpful. 
+Whoever made --git the default was on crack and this needs to be
+reverted ASAP.  Just because people do global API changes it doesn't
+mean they need to be cced on every second pathc to the kernel tree.
 
-Differences to PATCHv1 are
- * module parameter for WDTRST# pin configuration added
- * checking/printk of WDTRST# pin config 
- * removing int typecast
+We already have a mailinglist for that purpose.
 
-This patch comes in three parts:
-1/3: add f71862fg support
-2/3: add WDIOC_GETTIMELEFT ioctl and helper function
-3/3: clean up/replace some magic numbers/constants
-
-Thanks for the comments,
-
-Lutz Ballaschke
-
- drivers/watchdog/f71808e_wdt.c |   66 +++++++++++++++++++++++++++++++++++++---
- 1 files changed, 61 insertions(+), 5 deletions(-)
