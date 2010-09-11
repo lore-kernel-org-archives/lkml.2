@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab0IKN4k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 09:56:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57791 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752460Ab0IKN4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 09:56:39 -0400
-Subject: Re: [PATCH] drivers: scsi: remove private hex_to_bin()
- implementation
-From: James Bottomley <James.Bottomley@suse.de>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-In-Reply-To: <1284212280-25944-1-git-send-email-andy.shevchenko@gmail.com>
-References: <1284212280-25944-1-git-send-email-andy.shevchenko@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 11 Sep 2010 08:56:35 -0500
-Message-ID: <1284213395.2986.9.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1752802Ab0IKOAW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 10:00:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61490 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab0IKOAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 10:00:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=uNOnxu/+9GkCGGHi+G9Xgde4YQwiTQOZZqCvPcUIwCAUkxe9hGT1NNFcrzWrX6NstB
+         bxgRU7cfeJsdp34u+flcwaVyJoqwMydhNbE3dDPf4h7eEvQLeId3gKcw9UtnZpd1ztjt
+         VWPlFlGtgmXhAvw/APAN8n1nwXag8R/GHyUhY=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>
+Subject: [PATCH 1/2] dvb: mantis: use '%pM' format to print MAC address
+Date: Sat, 11 Sep 2010 16:59:58 +0300
+Message-Id: <a548f44961f97f81054fc877aaef068f936c5ca2.1284213506.git.andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-11 at 16:38 +0300, Andy Shevchenko wrote:
-> Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-> Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
-> Cc: linux-scsi@vger.kernel.org
-> ---
->  drivers/scsi/libsas/sas_scsi_host.c |   10 +++-------
->  1 files changed, 3 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/scsi/libsas/sas_scsi_host.c b/drivers/scsi/libsas/sas_scsi_host.c
-> index f0cfba9..527dcf7 100644
-> --- a/drivers/scsi/libsas/sas_scsi_host.c
-> +++ b/drivers/scsi/libsas/sas_scsi_host.c
-> @@ -1078,14 +1078,10 @@ void sas_target_destroy(struct scsi_target *starget)
->  static void sas_parse_addr(u8 *sas_addr, const char *p)
->  {
->  	int i;
-> -	for (i = 0; i < SAS_ADDR_SIZE; i++) {
-> +	for (i = 0; i < SAS_ADDR_SIZE && *p; i++) {
->  		u8 h, l;
-> -		if (!*p)
-> -			break;
-> -		h = isdigit(*p) ? *p-'0' : toupper(*p)-'A'+10;
-> -		p++;
-> -		l = isdigit(*p) ? *p-'0' : toupper(*p)-'A'+10;
-> -		p++;
-> +		h = hex_to_bin(*p++);
-> +		l = hex_to_bin(*p++);
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+---
+ drivers/media/dvb/mantis/mantis_core.c |    5 +----
+ drivers/media/dvb/mantis/mantis_ioc.c  |    9 +--------
+ 2 files changed, 2 insertions(+), 12 deletions(-)
 
-the hex_to_bin() is really to prevent open coded mistakes.  When the
-open coding pre-dates the hex_to_bin macro, I'm inclined to leave it
-alone unless it contains an actual bug.
-
-James
-
+diff --git a/drivers/media/dvb/mantis/mantis_core.c b/drivers/media/dvb/mantis/mantis_core.c
+index 8113b23..0163e8e 100644
+--- a/drivers/media/dvb/mantis/mantis_core.c
++++ b/drivers/media/dvb/mantis/mantis_core.c
+@@ -91,10 +91,7 @@ static int get_mac_address(struct mantis_pci *mantis)
+ 		return err;
+ 	}
+ 	dprintk(verbose, MANTIS_ERROR, 0,
+-		"    MAC Address=[%02x:%02x:%02x:%02x:%02x:%02x]\n",
+-		mantis->mac_address[0], mantis->mac_address[1],
+-		mantis->mac_address[2],	mantis->mac_address[3],
+-		mantis->mac_address[4], mantis->mac_address[5]);
++		"    MAC Address=[%pM]\n", &mantis->mac_address[0]);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/media/dvb/mantis/mantis_ioc.c b/drivers/media/dvb/mantis/mantis_ioc.c
+index de148de..8932f34 100644
+--- a/drivers/media/dvb/mantis/mantis_ioc.c
++++ b/drivers/media/dvb/mantis/mantis_ioc.c
+@@ -68,14 +68,7 @@ int mantis_get_mac(struct mantis_pci *mantis)
+ 		return err;
+ 	}
+ 
+-	dprintk(MANTIS_ERROR, 0,
+-		"    MAC Address=[%02x:%02x:%02x:%02x:%02x:%02x]\n",
+-		mac_addr[0],
+-		mac_addr[1],
+-		mac_addr[2],
+-		mac_addr[3],
+-		mac_addr[4],
+-		mac_addr[5]);
++	dprintk(MANTIS_ERROR, 0, "    MAC Address=[%pM]\n", &mac_addr[0]);
+ 
+ 	return 0;
+ }
+-- 
+1.7.2.2
 
