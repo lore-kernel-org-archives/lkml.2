@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab0IKE1s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 00:27:48 -0400
+	id S1751357Ab0IKE1k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 00:27:40 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:55211 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754542Ab0IKE1q (ORCPT
+	with ESMTP id S1752742Ab0IKE1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 00:27:46 -0400
+	Sat, 11 Sep 2010 00:27:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=AoTfbOQjpgzHtzQlX//sSFmrsLDHG8xKskz+Gp/RMyArSVUTvSHH5T9NzpOwd8LbjV
-         TTsxc93BDXbhAor+McI/QtCMa8/CI4yQ2ZoKj3lwWajvcgcWtvg8xrBHlKsBEWv5d60s
-         xAFYr5EHDt4m9QnHMuAlW98xSxl/w5n+T1XKs=
+        b=oyG+OgV7/z8hYeCyNuYAiwOvKIxnyeiaqNdOyRVysUb+NUPGjD7vy4yZSQkBrVv/Fy
+         GQbHYTzJ2KZD9GY0wrFui1Mqhj2c/lgnlspv/HoV1gw8OHzQr7IbvRnPpIJIm2Uhc+W9
+         hPS/M6LdrzqU17bxsAhaYBna01sOLoPxjhyUs=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 09/10]include/scsi/sg.h Update broken web addresses.
-Date: Fri, 10 Sep 2010 21:27:56 -0700
-Message-Id: <1284179277-7788-9-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 05/10]include/linux/fdreg.h Update broken web addresses.
+Date: Fri, 10 Sep 2010 21:27:52 -0700
+Message-Id: <1284179277-7788-5-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284179277-7788-1-git-send-email-justinmattock@gmail.com>
 References: <1284179277-7788-1-git-send-email-justinmattock@gmail.com>
@@ -33,44 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- include/scsi/sg.h |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ include/linux/fdreg.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/scsi/sg.h b/include/scsi/sg.h
-index a9f3c6f..19d4d85 100644
---- a/include/scsi/sg.h
-+++ b/include/scsi/sg.h
-@@ -16,7 +16,7 @@ Version 2 and 3 extensions to driver:
-     Version: 3.5.34 (20060920)
-     This version is for 2.6 series kernels.
+diff --git a/include/linux/fdreg.h b/include/linux/fdreg.h
+index c2eeb63..b153223 100644
+--- a/include/linux/fdreg.h
++++ b/include/linux/fdreg.h
+@@ -89,7 +89,7 @@
+ /* the following commands are new in the 82078. They are not used in the
+  * floppy driver, except the first three. These commands may be useful for apps
+  * which use the FDRAWCMD interface. For doc, get the 82078 spec sheets at
+- * http://www-techdoc.intel.com/docs/periph/fd_contr/datasheets/ */
++ * http://www.intel.com/p/en_US/business/design */
  
--    For a full changelog see http://www.torque.net/sg
-+    For a full changelog see http://web.archive.org/web/*/http://www.torque.net/sg 
- 
- Map of SG verions to the Linux kernels in which they appear:
-        ----------        ----------------------------------
-@@ -52,17 +52,17 @@ Major new features in SG 3.x driver (cf SG 2.x drivers)
-  Documentation
-  =============
-  A web site for the SG device driver can be found at:
--	http://www.torque.net/sg  [alternatively check the MAINTAINERS file]
-+	http://web.archive.org/web/*/http://www.torque.net/sg	
-  The documentation for the sg version 3 driver can be found at:
-- 	http://www.torque.net/sg/p/sg_v3_ho.html
-+ 	http://web.archive.org/web/*/http://www.torque.net/sg/p/sg_v3_ho.html
-  This is a rendering from DocBook source [change the extension to "sgml"
-  or "xml"]. There are renderings in "ps", "pdf", "rtf" and "txt" (soon).
-  The SG_IO ioctl is now found in other parts kernel (e.g. the block layer).
-  For more information see http://www.torque.net/sg/sg_io.html
- 
-  The older, version 2 documents discuss the original sg interface in detail:
--	http://www.torque.net/sg/p/scsi-generic.txt
--	http://www.torque.net/sg/p/scsi-generic_long.txt
-+	http://web.archive.org/web/*/http://www.torque.net/sg/p/scsi-generic.txt
-+	http://web.archive.org/web/*/http://www.torque.net/sg/p/scsi-generic_long.txt
-  Also available: <kernel_source>/Documentation/scsi/scsi-generic.txt
- 
-  Utility and test programs are available at the sg web site. They are 
+ #define FD_PARTID		0x18	/* part id ("extended" version cmd) */
+ #define FD_SAVE			0x2e	/* save fdc regs for later restore */
 -- 
 1.7.2.1
 
