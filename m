@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab0IKFqA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 01:46:00 -0400
+	id S1754470Ab0IKFqU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 01:46:20 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:44991 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755178Ab0IKFp7 (ORCPT
+	with ESMTP id S1755276Ab0IKFpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 01:45:59 -0400
+	Sat, 11 Sep 2010 01:45:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=dMmb/+riE/W7OTMkexRD0FPU9JEMiIBhh7vwIpbZTd988hf9HyGs73lzrqNzfex+07
-         Zo773N/HnJVON5F/r44InjCW0LFHY6eKx4yQH+Nq2I+9VGOKmRh3REhMe3zP1txNkVHR
-         lWPAGOX9dtzWWNRmQkBx2En/N65Fza/QIdo9M=
+        b=aHqMQVS6T7+SR6Pnfpqhsr8WhUAJwI8hTdpdbzlzd0QGVAZF89JFbaIRyGvZaLQUDV
+         +5WsLW9kQXKu2EjsdhQs0T88LOUrmo5lGZIFQiotGNqefRNZFI7uPnVvHpA8T0B1g+x4
+         uOP23dksHDgu9JCSgx6MhPK28wNdHDkkrWdwQ=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 11/11]net/netfilter/nf_conntrack_proto_tcp.c Update broken web addresses.
-Date: Fri, 10 Sep 2010 22:46:03 -0700
-Message-Id: <1284183963-8474-11-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 10/11]net/ipv4/tcp_westwood.c Update broken web addresses.
+Date: Fri, 10 Sep 2010 22:46:02 -0700
+Message-Id: <1284183963-8474-10-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284183963-8474-1-git-send-email-justinmattock@gmail.com>
 References: <1284183963-8474-1-git-send-email-justinmattock@gmail.com>
@@ -33,24 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- net/netfilter/nf_conntrack_proto_tcp.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/tcp_westwood.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
-index c4c885d..a695842 100644
---- a/net/netfilter/nf_conntrack_proto_tcp.c
-+++ b/net/netfilter/nf_conntrack_proto_tcp.c
-@@ -329,8 +329,8 @@ static unsigned int get_conntrack_index(const struct tcphdr *tcph)
- /* TCP connection tracking based on 'Real Stateful TCP Packet Filtering
-    in IP Filter' by Guido van Rooij.
- 
--   http://www.nluug.nl/events/sane2000/papers.html
--   http://www.iae.nl/users/guido/papers/tcp_filtering.ps.gz
-+   http://www.sane.nl/events/sane2000/papers.html 
-+   http://www.darkart.com/mirrors/www.obfuscation.org/ipf/
- 
-    The boundaries and the conditions are changed according to RFC793:
-    the packet must intersect the window (i.e. segments may be
+diff --git a/net/ipv4/tcp_westwood.c b/net/ipv4/tcp_westwood.c
+index 20151d6..bbf0e99 100644
+--- a/net/ipv4/tcp_westwood.c
++++ b/net/ipv4/tcp_westwood.c
+@@ -3,7 +3,7 @@
+  *
+  *      Angelo Dell'Aera: author of the first version of TCP Westwood+ in Linux 2.4
+  *
+- * Support at http://c3lab.poliba.it/index.php/Westwood
++ * Support at http://www.cs.ucla.edu/NRL/hpi/tcpw/ 
+  * Main references in literature:
+  *
+  * - Mascolo S, Casetti, M. Gerla et al.
 -- 
 1.7.2.1
 
