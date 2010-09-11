@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab0IKBpN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 21:45:13 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:43424 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab0IKBpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 21:45:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=eTTlyGQ3DOjfqdLgcZROiHIhzvJN19q+rydnrgC1KxXD54QTDxf8AgVkryBcLWLxm1
-         wEcJLJnfz8DAEKIDgyfsyOLncU9VbzFXqI3afE73lb/wP0TfI0eVWrtqAtUa1C56y4Ce
-         WOs7SyoPM88nRLauZ00X08WUIgV7CDhPDyHeU=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]firmware/keyspan_pda/ Update brokwn web addresses.
-Date: Fri, 10 Sep 2010 18:45:40 -0700
-Message-Id: <1284169540-6225-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.2.1
+	id S1754137Ab0IKBqp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 21:46:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56302 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751024Ab0IKBqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 21:46:43 -0400
+Date: Fri, 10 Sep 2010 21:46:12 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, agk@redhat.com, jaxboe@fusionio.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-raid@vger.kernel.org, dm-devel@redhat.com, hch@lst.de,
+        konishi.ryusuke@lab.ntt.co.jp, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com, vst@vlnb.net,
+        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
+        rusty@rustcorp.com.au, mst@redhat.com, k-ueda@ct.jp.nec.com
+Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
+ dm
+Message-ID: <20100911014612.GA26517@redhat.com>
+References: <1283509796-1510-1-git-send-email-tj@kernel.org>
+ <1283509796-1510-24-git-send-email-tj@kernel.org>
+ <Pine.LNX.4.64.1009101410570.7839@hs20-bc2-1.build.redhat.com>
+ <20100910184652.GA24470@redhat.com>
+ <Pine.LNX.4.64.1009101456220.21834@hs20-bc2-1.build.redhat.com>
+ <20100910192403.GA24582@redhat.com>
+ <Pine.LNX.4.64.1009101554300.5286@hs20-bc2-1.build.redhat.com>
+ <4C8AC0F5.5080206@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C8AC0F5.5080206@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below updates the broken web addresses(but not really broken, just not there)
-to the proper address.(from reading anchorchips is now cypress semiconductor).
+On Fri, Sep 10 2010 at  7:36pm -0400,
+Tejun Heo <tj@kernel.org> wrote:
 
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> On 09/10/2010 10:06 PM, Mikulas Patocka wrote:
+> > But I have my work rules that I learned: I use no git kernels and no 
+> > external patches (except Alasdair's patchset that I want to test). I only 
+> > use -rc or final kernels. I need a stable computer --- I don't want to 
+> > solve problems like "does it crash because I pulled something or does it 
+> > crash because I made a bug in my code?" So, put that into 2.6.37-rc1 and 
+> > I'll optimize flushes in dm for -rc2 or -rc3.
+> 
+> Alright, I'm sorry but this is as far as I would go for dm conversion
+> patches.  If you wanna split it further or do it your way, please feel
+> free to.  I think it would be beneficial to do things now but, hey,
+> you guys are maintaining dm part of the kernel, so it's up to you
+> guys.  But, I think it would be silly for everyone else to wait for
+> the rather special requirement for dm, so if we have to go forward
+> without dm updates, I suppose we will have to.  Jens, please feel free
+> to drop dm conversion patches.
 
----
- firmware/keyspan_pda/keyspan_pda.S |    2 +-
- firmware/keyspan_pda/xircom_pgs.S  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Tejun,
 
-diff --git a/firmware/keyspan_pda/keyspan_pda.S b/firmware/keyspan_pda/keyspan_pda.S
-index 418fe69..f3acc19 100644
---- a/firmware/keyspan_pda/keyspan_pda.S
-+++ b/firmware/keyspan_pda/keyspan_pda.S
-@@ -74,7 +74,7 @@
-  *  recognizes the new device ID and glues it to the real serial driver code.
-  *
-  * USEFUL DOCS:
-- *  EzUSB Technical Reference Manual: <http://www.anchorchips.com>
-+ *  EzUSB Technical Reference Manual: <http://www.cypress.com/>
-  *  8051 manuals: everywhere, but try www.dalsemi.com because the EzUSB is
-  *   basically the Dallas enhanced 8051 code. Remember that the EzUSB IO ports
-  *   use totally different registers!
-diff --git a/firmware/keyspan_pda/xircom_pgs.S b/firmware/keyspan_pda/xircom_pgs.S
-index 05d99dd..0b79bbf 100644
---- a/firmware/keyspan_pda/xircom_pgs.S
-+++ b/firmware/keyspan_pda/xircom_pgs.S
-@@ -74,7 +74,7 @@
-  *  recognizes the new device ID and glues it to the real serial driver code.
-  *
-  * USEFUL DOCS:
-- *  EzUSB Technical Reference Manual: <http://www.anchorchips.com>
-+ *  EzUSB Technical Reference Manual: <http://www.cypress.com/>
-  *  8051 manuals: everywhere, but try www.dalsemi.com because the EzUSB is
-  *   basically the Dallas enhanced 8051 code. Remember that the EzUSB IO ports
-  *   use totally different registers!
--- 
-1.7.2.1
+Mikulas doesn't speak for Alasdair or the rest of the DM developers.  He
+speaks for himself.  He, like me, is a member of the team that helps
+maintain DM.  But Alasdair is the upstream DM maintainer.
 
+Please don't latch on to Mikulas' disruptive stone-walling.  As I shared
+in my previous reply: your FLUSH+FUA contributions to DM are very much
+appreciated!  Kiyoshi, Jun'ichi and myself have all worked with you
+effectively and so far the end result DM conversion has proven quite
+stable and correct.  Wider testing via linux-next is an important next
+step.
+
+Jens, please don't drop the DM FLUSH+FUA conversion patches from your
+'for-next' branch.  Mikulas has yet to offer a single substantive
+criticism of the code in question.
+
+Alasdair, please advise ASAP.
+
+Thanks,
+Mike
