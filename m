@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab0IKUxa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 16:53:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47893 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752161Ab0IKUx3 (ORCPT
+	id S1752646Ab0IKVPd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 17:15:33 -0400
+Received: from n6-vm0.bullet.mail.gq1.yahoo.com ([98.137.26.79]:20289 "HELO
+	n6-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752434Ab0IKVPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 16:53:29 -0400
+	Sat, 11 Sep 2010 17:15:32 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 831983.78325.bm@omp120.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=N43N+P4TWPoficxi7Z5JQUNjBmggHShrB9qBktaVcqzx4N5n8DT0RIolVBGL0GwwjbPIIaVvUKEl8anwrKSbOkqPOC9l65yZ6xMk6O6Nw6v9C4bNxSzKlhCNVcpQyDy0iBMez0cZt7c0qDEPUDfyQloJhanut9MCJj8iuGeZTVE=;
+Message-ID: <749423.9282.qm@web180313.mail.gq1.yahoo.com>
+X-YMail-OSG: Xv0W_McVM1k_ASX5nHAL2g6yaEEaa5GzLixnia03A_nxdif
+ 6UO7divoW6H_8nYS17gFjgXGEHIC05HB3zhVyA2f8SjWkaPbj44h7BXagap8
+ JWLaaqXyH8vZcDOtrdU_PeirZ_uNHjAp87JD50IVViZo3FYpqi1gbZRdufgz
+ AjtRtucf5SAI7bcneP73HOar2HYj.kEd2Ke5tDRGRL7b77Tz3sXkW3dF15M1
+ P1ZOYtj.xsbaMo75tRce6w_GrFvdanH0g0VRUs5gvYCcaccL8omHkAd27n2w
+ 8rAFaykW4PMNDnnKpOQ--
+X-Mailer: YahooMailClassic/11.4.7 YahooMailWebService/0.8.105.279950
+Date: Sat, 11 Sep 2010 14:15:29 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH v2] usbnet: do not count empty skbs as errors in rx_process()
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+In-Reply-To: <201009112222.06149.linux@rainbow-software.org>
 MIME-Version: 1.0
-In-Reply-To: <1284237950.2251.59.camel@laptop>
-References: <20100911173732.551632040@efficios.com> <20100911174003.051303123@efficios.com>
- <1284231470.2251.52.camel@laptop> <AANLkTin0LOuTOcJPiZcZGeZMdqsy2dohyrREw2GGhddJ@mail.gmail.com>
- <1284237380.2251.56.camel@laptop> <1284237950.2251.59.camel@laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 11 Sep 2010 13:52:40 -0700
-Message-ID: <AANLkTimmkmeyFg6wSw4Ej=gqLAHgcB5puRxvAa_14eZp@mail.gmail.com>
-Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with nr_running
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 11, 2010 at 1:45 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Sat, 2010-09-11 at 22:36 +0200, Peter Zijlstra wrote:
->>
->> But if you want us to change the scheduler to be more latency sensitive
->> and trade in throughput for other benchmarks, we can do that.
->
-> Really, just say "latency trumps throughput" and we'll make it so.
 
-Nothing is ever that black-and-white.
 
-But latency really _is_ important. And it's often overlooked, because
-few benchmarks actually test it. So when somebody sends you actual
-measured latency numbers, you shouldn't be so cavalier. And you
-shouldn't say "trumps throughput", since it's clearly a matter of
-balancing, and quite frankly, Mathieu's patch does seem to try to
-balance things.
+--- On Sat, 9/11/10, Ondrej Zary wrote:
 
-As mentioned, it does seem to make tons of conceptual sense to take
-the number of running threads into account for the whole scheduling
-granularity decision. After all, we already do that for the other
-important numbers (the scheduling period and time slice).
+> Date: Saturday, September 11, 2010, 1:22 PM
+> On Saturday 11 September 2010
+> 21:07:59 David Brownell wrote:
+> 
+> > NAK to this backwards-incompatible change.
+> >
+> > >
+> > > This is needed for cx82310_eth.
 
-So to me it looks like you're just being negative, without actually
-looking at the patch and giving it some fair thought. That's what I'm
-objecting to.
+Backwards-incompatible changes are NOT "needed"
+> >
+> > I'd far rather see that driver fixed, than see
+> > the core usbnet framework broken to avoid such
+> > fixes to a very new driver ...
+> 
+> I already tried to explain that the driver is not broken
 
-                              Linus
+Yet you keep saying it doesn't work right, which
+is the classic definition of "broken, needs fix".
+
+
+> and so it cannot be 
+> fixed. It's the way the hardware works and usbnet
+> is not > ready for it.
+
+And when we went over this before, I said how
+to resolve this:   a *BACKWARD-COMPATIBLE change
+that adds a new return state to rx_fixup(), used
+in the cx82310 code.  Why didn't you try that?
+
+This proposed patch doesn't do it, since it punts
+on backwards compatibility ... which is a HUGE issue
+when we can't easily test all the permutations.
+Best to not risk breaking things; and in this case
+there's not even any need to take such risks.
+
+- Dave
+
+
