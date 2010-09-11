@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab0IKQfv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 12:35:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57387 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab0IKQfQ (ORCPT
+	id S1754227Ab0IKQfx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 12:35:53 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56856 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840Ab0IKQfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 12:35:16 -0400
+	Sat, 11 Sep 2010 12:35:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=G/J7e9UpSVuy4upsRAbGd8OvBOe9AcvCYyNMFv7yQzzA7U5d5lbC6bSZhgs80aInrc
-         7zivUOH2q34yTsz3BOKkMhB33sjDdEgTCIdrrUvkksmlEr+bgo61rvdMOEfBBxmHAL3P
-         rzz/wR55KBEQpQqg5vdmY5ACrIKVIZv8TGLLs=
+        b=F/+zlREG8W26VF3SCIAouhdTFpwjbv9baX3LvVLXUxiszF5qQvzMFfNenidWEx6Swl
+         244PqzmmLqcSal+BjDHLBTxwI0v0D0pAbnNkL/qqFs/ReIU1slfFK0nWbLo8cvuyiP6L
+         tZCLunoWtfwdmGVvvCXm1ViohfQrm3Ll0Amak=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 8/8]sound/pci/ac97/ac97_patch.c Update broken web addresses.
-Date: Sat, 11 Sep 2010 09:35:28 -0700
-Message-Id: <1284222928-4150-8-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 7/8]sound/pci/intel8x0.c Update broken web addresses.
+Date: Sat, 11 Sep 2010 09:35:27 -0700
+Message-Id: <1284222928-4150-7-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284222928-4150-1-git-send-email-justinmattock@gmail.com>
 References: <1284222928-4150-1-git-send-email-justinmattock@gmail.com>
@@ -33,22 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- sound/pci/ac97/ac97_patch.c |    2 +-
+ sound/pci/intel8x0.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/sound/pci/ac97/ac97_patch.c b/sound/pci/ac97/ac97_patch.c
-index e68c98e..de4641c 100644
---- a/sound/pci/ac97/ac97_patch.c
-+++ b/sound/pci/ac97/ac97_patch.c
-@@ -3874,7 +3874,7 @@ static int patch_lm4550(struct snd_ac97 *ac97)
- }
- 
- /* 
-- *  UCB1400 codec (http://www.semiconductors.philips.com/acrobat_download/datasheets/UCB1400-02.pdf)
-+ *  UCB1400 codec (http://web.archive.org/web/*/http://www.semiconductors.philips.com/acrobat_download/datasheets/UCB1400-02.pdf)
+diff --git a/sound/pci/intel8x0.c b/sound/pci/intel8x0.c
+index 4677492..56fbf3a 100644
+--- a/sound/pci/intel8x0.c
++++ b/sound/pci/intel8x0.c
+@@ -716,7 +716,7 @@ static void snd_intel8x0_setup_periods(struct intel8x0 *chip, struct ichdev *ich
+  * Intel 82443MX running a 100MHz processor system bus has a hardware bug,
+  * which aborts PCI busmaster for audio transfer.  A workaround is to set
+  * the pages as non-cached.  For details, see the errata in
+- *	http://www.intel.com/design/chipsets/specupdt/245051.htm
++ *	http://www.intel.com/p/en_US/business/design	
   */
- static const struct snd_kcontrol_new snd_ac97_controls_ucb1400[] = {
- /* enable/disable headphone driver which allows direct connection to
+ static void fill_nocache(void *buf, int size, int nocache)
+ {
 -- 
 1.7.2.1
 
