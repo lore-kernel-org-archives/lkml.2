@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab0IKUs3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 16:48:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45634 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752186Ab0IKUs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 16:48:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] PM fixes for 2.6.36
-Date: Sat, 11 Sep 2010 22:47:15 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        mark gross <markgross@thegnar.org>, Colin Cross <ccross@android.com>
+	id S1752632Ab0IKUsx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 16:48:53 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50593 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752380Ab0IKUsw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 16:48:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009112247.15602.rjw@sisk.pl>
+In-Reply-To: <1284237380.2251.56.camel@laptop>
+References: <20100911173732.551632040@efficios.com> <20100911174003.051303123@efficios.com>
+ <1284231470.2251.52.camel@laptop> <AANLkTin0LOuTOcJPiZcZGeZMdqsy2dohyrREw2GGhddJ@mail.gmail.com>
+ <1284237380.2251.56.camel@laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 11 Sep 2010 13:48:29 -0700
+Message-ID: <AANLkTi=a91QX-FLURFWNsjbCS1bDLr6GqSpC4_uzm3ta@mail.gmail.com>
+Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with nr_running
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sat, Sep 11, 2010 at 1:36 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>From what I can make up:
+>
+>  LAT=`cat /proc/sys/kernel/sched_latency_ns`;
+>  echo $((LAT/8)) > /proc/sys/kernel/sched_min_granularity_ns
+>
+> will give you pretty much the same result as Mathieu's patch.
 
-Please pull power management fixes for 2.6.36 from:
+Or perhaps not. The point being that Mathieu's patch seems to do this
+dynamically based on number of runnable threads per cpu. Which seems
+to be a good idea.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
+IOW, this part:
 
-They include:
+-       if (delta_exec < sysctl_sched_min_granularity)
++       if (delta_exec < __sched_gran(cfs_rq->nr_running))
 
- * Device suspend error code path fix related to asynchronous suspend/resume
-   from Colin Cross.
+seems to be a rather fundamental change, and looks at least
+potentially interesting. It seems to make conceptual sense to take the
+number of running tasks into account at that point, no?
 
- * PM QoS fix from Mark Gross.
+And I don't like how you dismissed the measured latency improvement.
+And yes, I do think latency matters. A _lot_.
 
- * Hibernate fix affecting systems with lots of highmem.
+And no, I'm not saying that Mathieu's patch is necessarily good. I
+haven't tried it myself. I don't have _that_ kind of opinion. The
+opinion I do have is that I think it's sad how you dismissed things
+out of hand - and seem to _continue_ to dismiss them without
+apparently actually having looked at the patch at all.
 
-
- drivers/base/power/main.c |    1 +
- kernel/pm_qos_params.c    |    4 ++-
- kernel/power/snapshot.c   |   85 ++++++++++++++++++++++++++++++++++----------
- 3 files changed, 69 insertions(+), 21 deletions(-)
-
----------------
-
-Colin Cross (1):
-      PM: Prevent waiting forever on asynchronous resume after failing suspend
-
-Rafael J. Wysocki (1):
-      PM / Hibernate: Avoid hitting OOM during preallocation of memory
-
-mark gross (1):
-      PM QoS: Correct pr_debug() misuse and improve parameter checks
-
+                                    Linus
