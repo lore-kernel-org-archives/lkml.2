@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab0IKW5p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 18:57:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21882 "EHLO
+	id S1753320Ab0IKXAI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 19:00:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24269 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab0IKW5o (ORCPT
+	with ESMTP id S1752784Ab0IKXAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 18:57:44 -0400
-Date: Sat, 11 Sep 2010 15:55:26 -0700
+	Sat, 11 Sep 2010 19:00:06 -0400
+Date: Sat, 11 Sep 2010 15:57:20 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] docbook: skip files with no docs since they generate scary
- warnings
-Message-Id: <20100911155526.92760a0a.randy.dunlap@oracle.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org
+Subject: [PATCH] PM_SLEEP_SMP: fix kconfig warning
+Message-Id: <20100911155720.c4fe6b4b.randy.dunlap@oracle.com>
 Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
@@ -25,46 +24,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Fix docbook templates that reference files that do not
-contain the expected kernel-doc notation.
+Fix kconfig unmet dependency warning:
 
-Fixes these warnings:
-
-Warning(arch/x86/include/asm/unaligned.h): no structured comments found
-Warning(lib/vsprintf.c): no structured comments found
-
-These cause errors in the generated html output, like below,
-so drop these lines.
-
-Name
-lnx-2636-rc3//arch/x86/include/asm/unaligned.h - Document generation inconsistency
-Oops
-Warning
-The template for this document tried to insert the structured comment from the file lnx-2636-rc3//arch/x86/include/asm/unaligned.h at this point, but none was found. This dummy section is inserted to allow generation to continue.
+warning: (PM_SLEEP_SMP && SMP && (ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE) && PM_SLEEP) selects HOTPLUG_CPU which has unmet direct dependencies (SMP && HOTPLUG)
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
- Documentation/DocBook/device-drivers.tmpl |    1 -
- Documentation/DocBook/kernel-api.tmpl     |    1 -
- 2 files changed, 2 deletions(-)
+ kernel/power/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- lnx-2636-rc3.orig/Documentation/DocBook/device-drivers.tmpl
-+++ lnx-2636-rc3/Documentation/DocBook/device-drivers.tmpl
-@@ -46,7 +46,6 @@
+--- linux-next-20100908.orig/kernel/power/Kconfig
++++ linux-next-20100908/kernel/power/Kconfig
+@@ -83,7 +83,7 @@ config PM_TRACE_RTC
  
-      <sect1><title>Atomic and pointer manipulation</title>
- !Iarch/x86/include/asm/atomic.h
--!Iarch/x86/include/asm/unaligned.h
-      </sect1>
- 
-      <sect1><title>Delaying, scheduling, and timer routines</title>
---- lnx-2636-rc3.orig/Documentation/DocBook/kernel-api.tmpl
-+++ lnx-2636-rc3/Documentation/DocBook/kernel-api.tmpl
-@@ -57,7 +57,6 @@
-      </para>
- 
-      <sect1><title>String Conversions</title>
--!Ilib/vsprintf.c
- !Elib/vsprintf.c
-      </sect1>
-      <sect1><title>String Manipulation</title>
+ config PM_SLEEP_SMP
+ 	bool
+-	depends on SMP
++	depends on SMP && HOTPLUG
+ 	depends on ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE
+ 	depends on PM_SLEEP
+ 	select HOTPLUG_CPU
