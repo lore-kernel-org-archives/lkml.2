@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693Ab0IKTWE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 15:22:04 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58848 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750977Ab0IKTWD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 15:22:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <1284231470.2251.52.camel@laptop>
-References: <20100911173732.551632040@efficios.com> <20100911174003.051303123@efficios.com>
- <1284231470.2251.52.camel@laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 11 Sep 2010 12:21:06 -0700
-Message-ID: <AANLkTin0LOuTOcJPiZcZGeZMdqsy2dohyrREw2GGhddJ@mail.gmail.com>
-Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with nr_running
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751993Ab0IKTW0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 15:22:26 -0400
+Received: from mail.perches.com ([173.55.12.10]:1692 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751659Ab0IKTWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 15:22:25 -0400
+Subject: [PATCH] Documentation/SubmittingPatches: Add and describe
+ scripts/get_maintainer.pl
+From: Joe Perches <joe@perches.com>
+To: Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100911120243.7cce451e@schatten.dmk.lab>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	 <1284111767.1783.35.camel@Joe-Laptop>
+	 <20100910095259.GC23903@sirena.org.uk>
+	 <1284113066.1783.69.camel@Joe-Laptop>
+	 <20100910101818.GF3068@rakim.wolfsonmicro.main>
+	 <1284115665.1783.144.camel@Joe-Laptop>
+	 <1284164541.1783.204.camel@Joe-Laptop>
+	 <20100911113811.7c685c6d@schatten.dmk.lab>
+	 <1284198750.12180.18.camel@Joe-Laptop>
+	 <20100911120243.7cce451e@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 11 Sep 2010 12:22:23 -0700
+Message-ID: <1284232943.12180.97.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 11, 2010 at 11:57 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> Not at all charmed, this look like random changes without conceptual
-> integrity.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ Documentation/SubmittingPatches |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-I wish people actually looked at the _numbers_ and reacted to them,
-rather than argue theory.
+diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+index 689e237..bb318f9 100644
+--- a/Documentation/SubmittingPatches
++++ b/Documentation/SubmittingPatches
+@@ -176,6 +176,23 @@ discussed should the patch then be submitted to Linus.
+ 
+ 6) Select your CC (e-mail carbon copy) list.
+ 
++Use
++	"./scripts/get_maintainer.pl --nogit --roles <patch>"
++to find the appropriate maintainers and mailing lists to CC.
++
++If the output email addresses doesn't show a "supporter" or "maintainer",
++you can expand the search to include git history with:
++
++	"./scripts/get_maintainer.pl --roles <patch>"
++
++Searching git history can often list individuals that may not be
++particularly interested in your patch, so use the list of names
++judiciously.
++
++./scripts/get_maintainers.pl options "--rolestats" and "--git-blame"
++can show a bit more information and might help you select the appropriate
++parties to CC.
++
+ Unless you have a reason NOT to do so, CC linux-kernel@vger.kernel.org.
+ 
+ Other kernel developers besides Linus need to be aware of your change,
 
-Guys, we have cases of bad latency under load. That's a pretty
-undeniable fact. Arguing against a patch because of some theoretical
-issue without at all even acknowledging the latency improvements is, I
-think, really bad form.
 
-So please. Acknowledge the latency issue. And come up with better
-patches, rather than just shoot down alternatives. Because if the
-answer is just NAK with no alternative, then that answer is worthless.
-No?
-
-                       Linus
