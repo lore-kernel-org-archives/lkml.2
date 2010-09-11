@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab0IKNkN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 09:40:13 -0400
-Received: from r00tworld.com ([212.85.137.21]:37925 "EHLO r00tworld.com"
+	id S1752755Ab0IKNz1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 09:55:27 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50367 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752436Ab0IKNkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 09:40:11 -0400
-From: pageexec@freemail.hu
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Roland McGrath <roland@redhat.com>
-Date: Sat, 11 Sep 2010 15:39:30 +0200
-MIME-Version: 1.0
-Subject: Re: [PATCH 1/3] setup_arg_pages: diagnose excessive argument size
-Reply-to: pageexec@freemail.hu
-CC: Brad Spengler <spender@grsecurity.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-fsdevel@vger.kernel.org, Eugene Teo <eugene@redhat.com>
-Message-ID: <4C8B8692.7649.3E0895B@pageexec.freemail.hu>
-In-reply-to: <20100910092541.2864A405D5@magilla.sf.frob.com>
-References: <20100908023549.BFFA8401AF@magilla.sf.frob.com>, <KOSAKI Motohiro's message of  Thursday, 9 September 2010 14:31:18 +0900 <20100909141534.C948.A69D9226@jp.fujitsu.com>>, <20100910092541.2864A405D5@magilla.sf.frob.com>
-X-mailer: Pegasus Mail for Windows (4.52)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.21]); Sat, 11 Sep 2010 15:39:13 +0200 (CEST)
+	id S1752577Ab0IKNzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 09:55:24 -0400
+Subject: Re: Combined storage tree
+From: James Bottomley <James.Bottomley@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-ide <linux-ide@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        dm-devel@redhat.com, linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100911082054.GF705@dastard>
+References: <1284143247.6551.23.camel@mulgrave.site>
+	 <20100911082054.GF705@dastard>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 11 Sep 2010 08:55:16 -0500
+Message-ID: <1284213316.2986.7.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 Sep 2010 at 2:25, Roland McGrath wrote:
-
-> > Brad, sorry, I have bad news. glibc sysconf(_SC_ARG_MAX) is implemented
-> > by hard coded RLIMIT_STACK/4 heuristics. That said, at least _now_, we
-> > can't change this even though you disliked. That said, we can't break
-> > userland even though userland library is very crazy.
+On Sat, 2010-09-11 at 18:20 +1000, Dave Chinner wrote:
+> On Fri, Sep 10, 2010 at 01:27:27PM -0500, James Bottomley wrote:
+> > One of the requests from LSF10 in August was the production of a
+> > combined storage tree.  This is now ready at
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/storage-tree
+> > 
+> > It's actually a nightly built merge tree consisting of
+> > 
+> > scsi-misc; scsi-rc-fixes
+> > libata#upstream-fixes, libata#upstream
+> > block#for-linus, block#for-next
+> > and the dm quilt (which is empty at the moment).
+> > 
+> > I haven't yet added vfs or any of the fs trees, but if necessary, I can.
+> > 
+> > Note, because it's built nightly, like linux-next, it's hard (but not
+> > impossible) to use it as a basis for git trees (it is much easier to use
+> > it as a basis for quilts).
 > 
-> I'm sorry you think it's "very crazy" to implement the required
-> functionality in the only way available.  POSIX requires that execve
-> fail with E2BIG when the ARG_MAX limit is exceeded.  sysconf has to
-> return the correct actual limit that execve will enforce so that a
-> conforming application knows how much it can safely attempt to use.
-> Since the kernel uses the hard-coded RLIMIT_STACK/4 heuristic and does
-> not expose the true manifest limit any other way, sysconf has to
-> parallel the kernel's calculation.
+> Hmmm. I was kind of hoping for an upstream maintainer tree, kind of
+> like the netdev tree.  I really don't see a tree like this getting
+> wide use - if I enjoyed the pain of rebasing against throw-away
+> merge trees every day, then I'd already be using linux-next....
 
-no it doesn't have to, similarly to how it doesn't have to hardcode
-_SC_PAGESIZE either, AT_PAGESZ tells userland what it needs to know
-and i think AT_ARGMAX could exist just as well.
+Well, to be honest, that's what people wanted when the issue was raised
+at LSF10.  However, unlike net, storage has never had a single
+maintainer, so it's a bit more political than just doing that by fiat,
+plus not all of the current maintainers with storage trees were there.
+So we agreed (reluctantly) to start with an automatic tree and see how
+much of the current problem that solved.  If the automatic tree turns
+out not to be very useful, we can revisit the idea of a storage
+maintainer.
+
+The reason for being storage only rather than saying just use linux-next
+(which was mentioned) is that next is a much bigger tree, so it's harder
+to follow.  The diffs to mainline in the current storage tree are still
+under a megabyte.
+
+James
+
 
