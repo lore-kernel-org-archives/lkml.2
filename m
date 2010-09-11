@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab0IKE1l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 00:27:41 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:55585 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154Ab0IKE1k (ORCPT
+	id S1755169Ab0IKE1u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 00:27:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55211 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073Ab0IKE1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 00:27:40 -0400
+	Sat, 11 Sep 2010 00:27:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=AXEqiLmEXpKQ+N4sE7Wm9ICGrbkg13LXMsQjr+jlD/tmoV7z/ADy0NW7rbKyGJ6fJY
-         B5tabmE3jV5si0SHqSpuXXUVWifM7bqsqtmL7/9iXX0UNg7alHepUYLjcmzjN0L2pA50
-         J00aqSr6rpLVa3bCrx5HVuDOwf13zlY3dmx7k=
+        b=o53IC97E0YkxO0CbcG8VBG1OtOep8gc8PJBogQjdVl79kls+Z+qE56nyKGnYbKcMMR
+         Qcb8P/YZAylX+RUXpkeGTQzOgI6UKsYUNjQRMATZsI42EE65GBBCLg130a8KeDXgVAje
+         kp4svR+EDblo4lQZhM0PG+y9tfl0jPrapBUP4=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 06/10]include/linux/edd.h Update broken web addresses.
-Date: Fri, 10 Sep 2010 21:27:53 -0700
-Message-Id: <1284179277-7788-6-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 10/10]include/video/vga.h Update broken web addresses.
+Date: Fri, 10 Sep 2010 21:27:57 -0700
+Message-Id: <1284179277-7788-10-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284179277-7788-1-git-send-email-justinmattock@gmail.com>
 References: <1284179277-7788-1-git-send-email-justinmattock@gmail.com>
@@ -33,25 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- include/linux/edd.h |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ include/video/vga.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/edd.h b/include/linux/edd.h
-index 4cbd0fe..557227c 100644
---- a/include/linux/edd.h
-+++ b/include/linux/edd.h
-@@ -6,8 +6,9 @@
-  * structures and definitions for the int 13h, ax={41,48}h
-  * BIOS Enhanced Disk Drive Services
-  * This is based on the T13 group document D1572 Revision 0 (August 14 2002)
-- * available at http://www.t13.org/docs2002/d1572r0.pdf.  It is
-- * very similar to D1484 Revision 3 http://www.t13.org/docs2002/d1484r3.pdf
-+ * available at http://web.archive.org/web/*/http://www.t13.org/docs2002/d1572r0.pdf.
-+ * It is very similar to D1484 Revision 3 
-+ * http://web.archive.org/web/*/http://www.t13.org/docs2002/d1484r3.pdf
+diff --git a/include/video/vga.h b/include/video/vga.h
+index b49a512..2b8691f 100644
+--- a/include/video/vga.h
++++ b/include/video/vga.h
+@@ -5,7 +5,7 @@
+  * 
+  * Copyright history from vga16fb.c:
+  *	Copyright 1999 Ben Pfaff and Petr Vandrovec
+- *	Based on VGA info at http://www.goodnet.com/~tinara/FreeVGA/home.htm
++ *	Based on VGA info at http://www.osdever.net/FreeVGA/home.htm 
+  *	Based on VESA framebuffer (c) 1998 Gerd Knorr
   *
-  * In a nutshell, arch/{i386,x86_64}/boot/setup.S populates a scratch
-  * table in the boot_params that contains a list of BIOS-enumerated
+  * This file is subject to the terms and conditions of the GNU General
 -- 
 1.7.2.1
 
