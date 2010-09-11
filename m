@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab0IKJmb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 05:42:31 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33551 "EHLO mx2.mail.elte.hu"
+	id S1754065Ab0IKJmw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 05:42:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48888 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753752Ab0IKJm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 05:42:29 -0400
-Date: Sat, 11 Sep 2010 11:41:57 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+	id S1751521Ab0IKJmt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 05:42:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,351,1280732400"; 
+   d="scan'208";a="553563804"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "eranian@google.com" <eranian@google.com>
-Subject: Re: [PATCH] x86: fix duplicate calls of the nmi handler
-Message-ID: <20100911094157.GA11521@elte.hu>
-References: <1283454469-1909-1-git-send-email-dzickus@redhat.com>
- <1284118900.402.35.camel@laptop>
- <20100910132741.GB4879@redhat.com>
- <20100910144634.GA1060@elte.hu>
- <20100910155659.GD13563@erda.amd.com>
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
+        "jdike@linux.intel.com" <jdike@linux.intel.com>
+Date: Sat, 11 Sep 2010 17:42:30 +0800
+Subject: RE: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+Thread-Topic: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+Thread-Index: ActNtR+uQvbWPZRgSsWQthsUVTZ+wwDKrubAAC1OA1A=
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D79280489AA0C@shsmsx502.ccr.corp.intel.com>
+References: <1281086624-5765-5-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-6-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-7-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-8-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-9-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-10-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-11-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-12-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-13-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-14-git-send-email-xiaohui.xin@intel.com>
+ <20100906111126.GA15608@redhat.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D79280489A9C9@shsmsx502.ccr.corp.intel.com>
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D79280489A9C9@shsmsx502.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100910155659.GD13563@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.3092]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> +
+>>> +	if (ctor->lock_pages + count > lock_limit && npages) {
+>>> +		printk(KERN_INFO "exceed the locked memory rlimit.");
+>>> +		return NULL;
+>>> +	}
+>>> +
+>>> +	info = kmem_cache_zalloc(ext_page_info_cache, GFP_KERNEL);
+>>
+>>You seem to fill in all memory, why zalloc? this is data path ...
+>
+>Ok, Let me check this.
 
-* Robert Richter <robert.richter@amd.com> wrote:
+It's mainly for info->next and info->prev, these two fields will be used in hash functions.
+But you are right, since most fields will be refilled. The new version includes the fix. 
 
-> On 10.09.10 10:46:34, Ingo Molnar wrote:
-> > > > I'll look at getting a trace of the thing, but if any of you has a
-> > > > bright idea...
-> 
-> I found another patch in my queue, which fixes a duplicate call of the 
-> nmi handler. Since I could not yet reproduce the bug, I am not sure if 
-> this fixes the problem, but it is worth a try.
-
-Robert, can you reproduce the problem? It triggers rather easily on both 
-Peter's and my AMD systems.
-
-	Ingo
+Thanks
+Xiaohui
