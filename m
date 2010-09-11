@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682Ab0IKTnd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 15:43:33 -0400
-Received: from mail.perches.com ([173.55.12.10]:1698 "EHLO mail.perches.com"
+	id S1751802Ab0IKTpi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 15:45:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60004 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751379Ab0IKTnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 15:43:33 -0400
-Subject: [PATCH V2] Documentation/SubmittingPatches: Add and describe
- scripts/get_maintainer.pl
-From: Joe Perches <joe@perches.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1284232943.12180.97.camel@Joe-Laptop>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	 <1284111767.1783.35.camel@Joe-Laptop>
-	 <20100910095259.GC23903@sirena.org.uk>
-	 <1284113066.1783.69.camel@Joe-Laptop>
-	 <20100910101818.GF3068@rakim.wolfsonmicro.main>
-	 <1284115665.1783.144.camel@Joe-Laptop>
-	 <1284164541.1783.204.camel@Joe-Laptop>
-	 <20100911113811.7c685c6d@schatten.dmk.lab>
-	 <1284198750.12180.18.camel@Joe-Laptop>
-	 <20100911120243.7cce451e@schatten.dmk.lab>
-	 <1284232943.12180.97.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 11 Sep 2010 12:43:31 -0700
-Message-ID: <1284234211.12180.106.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751427Ab0IKTph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 15:45:37 -0400
+Message-Id: <89kc63$i1vccu@fmsmga002.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,352,1280732400"; 
+   d="scan'208";a="606056862"
+Date: Sat, 11 Sep 2010 20:45:34 +0100
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Subject: Re: i915 blank screen and crash
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        David Airlie <airlied@linux.ie>
+References: <20100911184646.GA27154@ioremap.net>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <20100911184646.GA27154@ioremap.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- Documentation/SubmittingPatches |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+On Sat, 11 Sep 2010 22:46:46 +0400, Evgeniy Polyakov <zbr@ioremap.net> wrote:
+> I use the latest git tree as well as 2.6.35, 2.6.32 (both ubuntu lucid)
+> and various 26-rc candidates with the same problem on Dell E4310 laptop:
+> screen blanks when getting to X start. System works ok, but without
+> screen (switch to text console does not help).
 
-diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-index 689e237..bb318f9 100644
---- a/Documentation/SubmittingPatches
-+++ b/Documentation/SubmittingPatches
-@@ -176,6 +176,23 @@ discussed should the patch then be submitted to Linus.
- 
- 6) Select your CC (e-mail carbon copy) list.
- 
-+Use
-+	"./scripts/get_maintainer.pl --nogit --roles <patch>"
-+to find the appropriate maintainers and mailing lists to CC.
-+
-+If the output email addresses doesn't show a "supporter" or "maintainer",
-+you can expand the search to include git history with:
-+
-+	"./scripts/get_maintainer.pl --roles <patch>"
-+
-+Searching git history can often list individuals that may not be
-+particularly interested in your patch, so use the list of names
-+judiciously.
-+
-+./scripts/get_maintainer.pl options "--rolestats" and "--git-blame"
-+can show a bit more information and might help you select the appropriate
-+parties to CC.
-+
- Unless you have a reason NOT to do so, CC linux-kernel@vger.kernel.org.
- 
- Other kernel developers besides Linus need to be aware of your change,
+An eDP panel, yes we are indeed continuing to debug the link configuration
+on those machines.
 
+The current set of patches we have for eDP are available at
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git
+
+in the drm-intel-next branch. Jesse insists that he has a working eDP
+machine on his desk, so maybe there is hope yet.
+-Chris
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
