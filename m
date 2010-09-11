@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab0IKE1u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 00:27:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55211 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab0IKE1t (ORCPT
+	id S1755328Ab0IKE2M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 00:28:12 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:64352 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754765Ab0IKE1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 00:27:49 -0400
+	Sat, 11 Sep 2010 00:27:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=o53IC97E0YkxO0CbcG8VBG1OtOep8gc8PJBogQjdVl79kls+Z+qE56nyKGnYbKcMMR
-         Qcb8P/YZAylX+RUXpkeGTQzOgI6UKsYUNjQRMATZsI42EE65GBBCLg130a8KeDXgVAje
-         kp4svR+EDblo4lQZhM0PG+y9tfl0jPrapBUP4=
+        b=VSMtJCt+F7qC60DpfqC7ZaqbWypJdfWi3IPtMmNWrz9049zKIoAfh/iFkkU6BYFgGw
+         F3gNsm2oIhSRJx6wm34mg+N8zK8R3qqbnsPAtuo9/aiiS1h8L+iije6YdY/MKDEpx0Tb
+         0afVF7/8S/ZD/hQgMUzaSIrlhWspr1WusO/2M=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 10/10]include/video/vga.h Update broken web addresses.
-Date: Fri, 10 Sep 2010 21:27:57 -0700
-Message-Id: <1284179277-7788-10-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 08/10]include/linux/ixjuser.h Update broken web addresses.
+Date: Fri, 10 Sep 2010 21:27:55 -0700
+Message-Id: <1284179277-7788-8-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284179277-7788-1-git-send-email-justinmattock@gmail.com>
 References: <1284179277-7788-1-git-send-email-justinmattock@gmail.com>
@@ -33,22 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- include/video/vga.h |    2 +-
+ include/linux/ixjuser.h |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/video/vga.h b/include/video/vga.h
-index b49a512..2b8691f 100644
---- a/include/video/vga.h
-+++ b/include/video/vga.h
-@@ -5,7 +5,7 @@
-  * 
-  * Copyright history from vga16fb.c:
-  *	Copyright 1999 Ben Pfaff and Petr Vandrovec
-- *	Based on VGA info at http://www.goodnet.com/~tinara/FreeVGA/home.htm
-+ *	Based on VGA info at http://www.osdever.net/FreeVGA/home.htm 
-  *	Based on VESA framebuffer (c) 1998 Gerd Knorr
+diff --git a/include/linux/ixjuser.h b/include/linux/ixjuser.h
+index 88b4589..594d871 100644
+--- a/include/linux/ixjuser.h
++++ b/include/linux/ixjuser.h
+@@ -25,7 +25,7 @@
+  *                  Mike Preston, <mpreston@quicknet.net>
   *
-  * This file is subject to the terms and conditions of the GNU General
+  * More information about the hardware related to this driver can be found
+- * at our website:    http://www.quicknet.net
++ * at our website:   http://www.qn.net/ 
+  *
+  * Fixes:
+  *
 -- 
 1.7.2.1
 
