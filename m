@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab0IKI3J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 04:29:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56155 "EHLO mga11.intel.com"
+	id S1755383Ab0IKIea (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 04:34:30 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39260 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753289Ab0IKI3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 04:29:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,351,1280732400"; 
-   d="scan'208";a="836781803"
-Subject: Re: [PATCH] ihex: Add support for CS:IP/EIP records
-From: David Woodhouse <David.Woodhouse@intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@opensource.wolfsonmicro.com" 
-	<patches@opensource.wolfsonmicro.com>
-In-Reply-To: <1284039626-30394-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1284039626-30394-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation
-Date: Sat, 11 Sep 2010 09:29:04 +0100
-Message-ID: <1284193744.20200.13.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.31.92 
-Content-Transfer-Encoding: 7bit
+	id S1754899Ab0IKIe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 04:34:28 -0400
+Date: Sat, 11 Sep 2010 08:34:01 GMT
+From: tip-bot for Michal Simek <monstr@monstr.eu>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinghai@kernel.org, benh@kernel.crashing.org, monstr@monstr.eu,
+        tglx@linutronix.de, sfr@canb.auug.org.au, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, benh@kernel.crashing.org, monstr@monstr.eu,
+        tglx@linutronix.de, sfr@canb.auug.org.au, mingo@elte.hu
+In-Reply-To: <4C8B2A9A.1040303@kernel.org>
+References: <4C8B2A9A.1040303@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/memblock] memblock, microblaze: Fix memblock API change fallout
+Message-ID: <tip-da5ab11cdfdf496448e0e9cdbbc2dfe207a96c94@git.kernel.org>
+Git-Commit-ID: da5ab11cdfdf496448e0e9cdbbc2dfe207a96c94
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 11 Sep 2010 08:34:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-09 at 14:40 +0100, Mark Brown wrote:
-> ihex firmwares can include a jump address for starting execution. Add
-> a -j option which will cause this to be written into the generated
-> file as a record with address zero and data consisting of the address
-> to jump to, allowing drivers to make use of this information.
+Commit-ID:  da5ab11cdfdf496448e0e9cdbbc2dfe207a96c94
+Gitweb:     http://git.kernel.org/tip/da5ab11cdfdf496448e0e9cdbbc2dfe207a96c94
+Author:     Michal Simek <monstr@monstr.eu>
+AuthorDate: Sat, 11 Sep 2010 00:07:06 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 11 Sep 2010 10:30:28 +0200
 
-Some questions...
+memblock, microblaze: Fix memblock API change fallout
 
-- Which firmware blobs that are *already* in the kernel would need this?
-  Remember, we're not adding new crap to the kernel source tree; new
-  firmware images get added to linux-firmware.git instead.
+Adopt Microblaze to the memblock API changes, to fix this
+build failure:
 
-- Why make the include_jump code optional? When would we ever *not* want
-  to include such a record -- when does the input ihex file contain such
-  a record that the kernel driver *must* not see because it can't cope
-  with it?
+  CC      arch/microblaze/mm/init.o
+ arch/microblaze/mm/init.c: In function 'mm_cmdline_setup':
+ arch/microblaze/mm/init.c:236: error: 'struct memblock_type' has no member named 'region'
+ ...
 
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-mm@kvack.org
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+LKML-Reference: <4C8B2A9A.1040303@kernel.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/microblaze/mm/init.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
+diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
+index 840026c..c843786 100644
+--- a/arch/microblaze/mm/init.c
++++ b/arch/microblaze/mm/init.c
+@@ -228,7 +228,7 @@ static void mm_cmdline_setup(void)
+ 		if (maxmem && memory_size > maxmem) {
+ 			memory_size = maxmem;
+ 			memory_end = memory_start + memory_size;
+-			memblock.memory.region[0].size = memory_size;
++			memblock.memory.regions[0].size = memory_size;
+ 		}
+ 	}
+ }
+@@ -271,14 +271,14 @@ asmlinkage void __init mmu_init(void)
+ 		machine_restart(NULL);
+ 	}
+ 
+-	if ((u32) memblock.memory.region[0].size < 0x1000000) {
++	if ((u32) memblock.memory.regions[0].size < 0x1000000) {
+ 		printk(KERN_EMERG "Memory must be greater than 16MB\n");
+ 		machine_restart(NULL);
+ 	}
+ 	/* Find main memory where the kernel is */
+-	memory_start = (u32) memblock.memory.region[0].base;
+-	memory_end = (u32) memblock.memory.region[0].base +
+-				(u32) memblock.memory.region[0].size;
++	memory_start = (u32) memblock.memory.regions[0].base;
++	memory_end = (u32) memblock.memory.regions[0].base +
++				(u32) memblock.memory.regions[0].size;
+ 	memory_size = memory_end - memory_start;
+ 
+ 	mm_cmdline_setup(); /* FIXME parse args from command line - not used */
