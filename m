@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab0IKAfA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 20:35:00 -0400
-Received: from straum.hexapodia.org ([207.7.131.186]:48330 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755337Ab0IKAe7 (ORCPT
+	id S1755891Ab0IKApt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 20:45:49 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45235 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755723Ab0IKApr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 20:34:59 -0400
-Date: Fri, 10 Sep 2010 17:34:59 -0700
-From: Andy Isaacson <adi@hexapodia.org>
-To: Norbert Preining <preining@logic.at>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
-Subject: Re: after closing the lid and reopening it the screen remains blank
-Message-ID: <20100911003459.GW23291@hexapodia.org>
-References: <20100909224117.GA30000@gamma.logic.tuwien.ac.at> <20100910184751.GA17794@hexapodia.org> <20100910234448.GB9848@gamma.logic.tuwien.ac.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100910234448.GB9848@gamma.logic.tuwien.ac.at>
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 10 Sep 2010 20:45:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=faKLM8VlpQGRW+vCYD+MtM/ahZf7DrIiXB5OKMsDUjpFlW4NNsrGfdhv3G2Kbwpaos
+         pr7BYlDBjh8WDRr2dlJ18/E6ESzJES/ydy3LtYaWFODXBJZL7CGO33B9bjHrbi4f5Ps6
+         KpK3cE/Xdin7WMgf8THrJVmbqAdRfcESX6QvQ=
+Subject: [PATCH] FS: cifs: Fix compile warning
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+To: Steve French <sfrench@samba.org>, Jeff Layton <jlayton@redhat.com>,
+        Suresh Jayaraman <sjayaraman@suse.de>,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Sep 2010 20:45:42 -0400
+Message-ID: <1284165942.4009.5.camel@lenovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 11, 2010 at 08:44:48AM +0900, Norbert Preining wrote:
-> On Fr, 10 Sep 2010, Andy Isaacson wrote:
-> > FWIW, 2.6.36-rc3-00396-gbe6200a suspend-to-ram works for me on GM45
-> 
-> I never said that it has anything to do with suspend to ram.
+In today linux-next I got a compile warning due a possibly uninitialized variable
 
-Ah, sorry for misunderstanding.  My GM45 system is configured to
-automatically S2R on lid close so I tend to conflate the two...
+This trivial patch solves the issue
 
-> In fact, suspend to ram works perfectly without any problems. I only
-> reboot after I installed a new kernel ...
-> 
-> I will try some older kernels and see if it is a kernel or userspace
-> issue.
+Thanks a lot
 
-Do try the current tip and/or describe which post-rc3 kernel fails for
-you, just to verify.  Also, is there anything in Xorg.0.log from when it
-fails to restore the video?
+Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+---
+ fs/cifs/cifssmb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks for reporting the regression, it'll be good to get it fixed ASAP.
+diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
+index c65c341..ee1bba4 100644
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -3079,7 +3079,7 @@ CIFSSMBGetCIFSACL(const int xid, struct cifsTconInfo *tcon, __u16 fid,
+ 		__u32 parm_len;
+ 		__u32 acl_len;
+ 		struct smb_com_ntransact_rsp *pSMBr;
+-		char *pdata;
++		char *pdata = NULL;
+ 
+ /* validate_nttransact */
+ 		rc = validate_ntransact(iov[0].iov_base, (char **)&parm,
+-- 
+1.7.0.4
 
--andy
+
+
+
