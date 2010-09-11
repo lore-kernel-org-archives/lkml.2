@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab0IKHuZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 03:50:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39754 "EHLO hera.kernel.org"
+	id S1755241Ab0IKIQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 04:16:27 -0400
+Received: from mx9.orcon.net.nz ([219.88.242.59]:35890 "EHLO mx9.orcon.net.nz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753806Ab0IKHuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 03:50:24 -0400
-Date: Sat, 11 Sep 2010 07:49:07 GMT
-From: tip-bot for Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, nico-linux-20100709@schottelius.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, flo@xssn.at,
-        lenb@kernel.org, jbarnes@virtuousgeek.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, rjw@sisk.pl, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, nico-linux-20100709@schottelius.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, flo@xssn.at,
-        lenb@kernel.org, jbarnes@virtuousgeek.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, rjw@sisk.pl, mingo@elte.hu
-In-Reply-To: <1284150773.402.122.camel@laptop>
-References: <1284150773.402.122.camel@laptop>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] x86, tsc: Fix a preemption leak in restore_sched_clock_state()
-Message-ID: <tip-55496c896b8a695140045099d4e0175cf09d4eae@git.kernel.org>
-Git-Commit-ID: 55496c896b8a695140045099d4e0175cf09d4eae
-X-Mailer: tip-git-log-daemon
+	id S1753289Ab0IKIQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 04:16:24 -0400
+Message-ID: <4C8B3AD3.5050309@orcon.net.nz>
+Date: Sat, 11 Sep 2010 20:16:19 +1200
+From: Michael Cree <mcree@orcon.net.nz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 11 Sep 2010 07:49:11 +0000 (UTC)
+To: mingo@redhat.com, dengcheng.zhu@gmail.com, a.p.zijlstra@chello.nl,
+        yanmin_zhang@linux.intel.com, gorcunov@gmail.com, fweisbec@gmail.com,
+        robert.richter@amd.com, ming.m.lin@intel.com, tglx@linutronix.de,
+        hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+        eranian@googlemail.com, will.deacon@arm.com, lethal@linux-sh.org,
+        davem@davemloft.net, mingo@elte.hu
+CC: linux-alpha@vger.kernel.org
+Subject: Re: [tip:perf/core] perf: Rework the PMU methods
+References: <new-submission> <tip-a4eaf7f14675cb512d69f0c928055e73d0c6d252@git.kernel.org>
+In-Reply-To: <tip-a4eaf7f14675cb512d69f0c928055e73d0c6d252@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-DSPAM-Check: by mx9.orcon.net.nz on Sat, 11 Sep 2010 20:16:20 +1200
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Sat Sep 11 20:16:22 2010
+X-DSPAM-Confidence: 0.7616
+X-DSPAM-Probability: 0.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  55496c896b8a695140045099d4e0175cf09d4eae
-Gitweb:     http://git.kernel.org/tip/55496c896b8a695140045099d4e0175cf09d4eae
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Fri, 10 Sep 2010 22:32:53 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sat, 11 Sep 2010 09:47:07 +0200
+On 10/09/10 07:50, tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  a4eaf7f14675cb512d69f0c928055e73d0c6d252
+> Gitweb:     http://git.kernel.org/tip/a4eaf7f14675cb512d69f0c928055e73d0c6d252
+> Author:     Peter Zijlstra<a.p.zijlstra@chello.nl>
+> AuthorDate: Wed, 16 Jun 2010 14:37:10 +0200
+> Committer:  Ingo Molnar<mingo@elte.hu>
+> CommitDate: Thu, 9 Sep 2010 20:46:30 +0200
+>
+> perf: Rework the PMU methods
+>
+> Replace pmu::{enable,disable,start,stop,unthrottle} with
+> pmu::{add,del,start,stop}, all of which take a flags argument.
 
-x86, tsc: Fix a preemption leak in restore_sched_clock_state()
+Regarding the new function alpha_pmu_stop() in 
+arch/alpha/kernel/perf_event.c:
 
-Doh, a real life genuine preemption leak..
+> -static void alpha_pmu_unthrottle(struct perf_event *event)
+> +static void alpha_pmu_stop(struct perf_event *event, int flags)
+>   {
+>   	struct hw_perf_event *hwc =&event->hw;
+>   	struct cpu_hw_events *cpuc =&__get_cpu_var(cpu_hw_events);
+>
+> +	if (!(hwc->state&  PERF_HES_STOPPED)) {
+> +		cpuc->idx_mask&= !(1UL<<hwc->idx);
+                                  ^
+Presumably ones complement (rather than logical not) is meant.
 
-This caused a suspend failure.
+> +		hwc->state |= PERF_HES_STOPPED;
+> +	}
+> +
+> +	if ((flags&  PERF_EF_UPDATE)&&  !(hwc->state&  PERF_HES_UPTODATE)) {
+> +		alpha_perf_event_update(event, hwc, hwc->idx, 0);
+> +		hwc->state |= PERF_HES_UPTODATE;
+> +	}
+> +
+> +	if (cpuc->enabled)
+> +		wrperfmon(PERFMON_CMD_ENABLE, (1UL<<hwc->idx));
 
-Reported-bisected-and-tested-by-the-invaluable: Jeff Chua <jeff.chua.linux@gmail.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Nico Schottelius <nico-linux-20100709@schottelius.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Florian Pritz <flo@xssn.at>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: <stable@kernel.org> # Greg, please apply after: cd7240c ("x86, tsc, sched: Recompute cyc2ns_offset's during resume from")
-sleep states
-LKML-Reference: <1284150773.402.122.camel@laptop>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/tsc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+By the name of the function (alpha_pmu_stop) I assume that the intent is 
+to stop the specific PMC here.  The above fails to do that.  When 
+wrperfmon() is used with PERFMON_CMD_ENABLE it enables the PMCs with set 
+bits in the second argument.  It does not stop the others.  To do that 
+wrperfmon() must be called with PERFMON_CMD_DISABLE and the 
+corresponding PMC bits set to disable the PMC.
 
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index d632934..26a863a 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -655,7 +655,7 @@ void restore_sched_clock_state(void)
- 
- 	local_irq_save(flags);
- 
--	get_cpu_var(cyc2ns_offset) = 0;
-+	__get_cpu_var(cyc2ns_offset) = 0;
- 	offset = cyc2ns_suspend - sched_clock();
- 
- 	for_each_possible_cpu(cpu)
+Cheers
+Michael.
