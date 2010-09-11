@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047Ab0IKE1d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 00:27:33 -0400
+	id S1754910Ab0IKE1o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 00:27:44 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:55211 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab0IKE1c (ORCPT
+	with ESMTP id S1754542Ab0IKE1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 00:27:32 -0400
+	Sat, 11 Sep 2010 00:27:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ry+1O5wbKP4RplABuYCe6a315dkCbZ3ehpSvX9KxghwsfFAJsltq0J1qqV+GPDcze8
-         bxi9o4oN2frNimWHXQl/mL0aU4qBoy8vPW5KxZwiQDL7VD+84B54Wl4lcXUNXHjon1zO
-         qVN3MiHeBCLPhJKU6RWOkauOLF2o+GepaYXvU=
+        b=JJHfPm7yeodrW74mPNjEEuihqF5atEBFdnyuB+99pytCgBBqS9y5fBmOzPfMCfqi2+
+         vkte3Gk7WSmxYbCm6xdE3XjPVnoj/9l97pU1Spmmdd+e0W7TSGIUnz5F3MPUjCUame46
+         FiTWsk/T96rTFfQhgYr7HZ4DNJp+mC7u/mAJY=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 02/10]include/crypto/gf128mul.h Update broken web addresses.
-Date: Fri, 10 Sep 2010 21:27:49 -0700
-Message-Id: <1284179277-7788-2-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 07/10]include/linux/if_infiniband.h Update broken web addresses.
+Date: Fri, 10 Sep 2010 21:27:54 -0700
+Message-Id: <1284179277-7788-7-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1284179277-7788-1-git-send-email-justinmattock@gmail.com>
 References: <1284179277-7788-1-git-send-email-justinmattock@gmail.com>
@@ -33,33 +33,22 @@ Please let me know if this needs to be changed.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- include/crypto/gf128mul.h |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ include/linux/if_infiniband.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/crypto/gf128mul.h b/include/crypto/gf128mul.h
-index 4086b8e..7021c6c 100644
---- a/include/crypto/gf128mul.h
-+++ b/include/crypto/gf128mul.h
-@@ -4,7 +4,7 @@
-  * Copyright (c) 2006 Rik Snel <rsnel@cube.dyndns.org>
+diff --git a/include/linux/if_infiniband.h b/include/linux/if_infiniband.h
+index 3e659ec..6c9f662 100644
+--- a/include/linux/if_infiniband.h
++++ b/include/linux/if_infiniband.h
+@@ -5,7 +5,7 @@
+  * <http://www.fsf.org/copyleft/gpl.html>, or the OpenIB.org BSD
+  * license, available in the LICENSE.TXT file accompanying this
+  * software.  These details are also available at
+- * <http://openib.org/license.html>.
++ * <http://www.openfabrics.org/>.
   *
-  * Based on Dr Brian Gladman's (GPL'd) work published at
-- * http://fp.gladman.plus.com/cryptography_technology/index.htm
-+ * http://www.gladman.me.uk/ 
-  * See the original copyright notice below.
-  *
-  * This program is free software; you can redistribute it and/or modify it
-@@ -54,8 +54,8 @@
- 
- /* Comment by Rik:
-  *
-- * For some background on GF(2^128) see for example: http://-
-- * csrc.nist.gov/CryptoToolkit/modes/proposedmodes/gcm/gcm-revised-spec.pdf
-+ * For some background on GF(2^128) see for example: 
-+ * http://www.cryptobarn.com/papers/gcm-spec.pdf 
-  *
-  * The elements of GF(2^128) := GF(2)[X]/(X^128-X^7-X^2-X^1-1) can
-  * be mapped to computer memory in a variety of ways. Let's examine
+  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 -- 
 1.7.2.1
 
