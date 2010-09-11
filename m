@@ -1,37 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab0IKAJm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 20:09:42 -0400
-Received: from kroah.org ([198.145.64.141]:55268 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755337Ab0IKAJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 20:09:41 -0400
-Date: Fri, 10 Sep 2010 17:10:05 -0700
-From: Greg KH <greg@kroah.com>
-To: David Cross <david.cross@cypress.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] west bridge, Kconfig fix
-Message-ID: <20100911001005.GA20027@kroah.com>
-References: <1284162665.16135.3.camel@odc-laptop>
+	id S1755586Ab0IKAKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 20:10:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61214 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755490Ab0IKAJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 20:09:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=axxL0WbeRT10vzXewdL35HKmV19HyUJGNuoN+f/tRhXKDG34KslkDd1IIGuZ55KRXh
+         nBgqIPtaL/eTzrzcA+z78VKYNLrGYvlKcY7Lqo4VOfmTqov0W3WoRH4W3T2NAcRg70dJ
+         RBEI0ub3q25t7W6ZGBfx4gMbYCamjqt8FQaVE=
+Date: Sat, 11 Sep 2010 02:11:48 +0200
+From: Lutz Ballaschke <vegan.grindcore@googlemail.com>
+To: Giel van Schijndel <me@mortis.eu>
+Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2 0/3] watchdog: add f71862fg support
+Message-ID: <20100911001148.GB13116@kreios.titan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1284162665.16135.3.camel@odc-laptop>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 04:51:05PM -0700, David Cross wrote:
-> This patch fixes the currently broken Kconfig for west bridge by
-> introducing a dependency on a valid HAL Layer for the driver build.
-> 
-> Signed-off-by: David Cross <david.cross@cypress.com>
+Hi everyone,
 
-Which order do these 4 patches need to be applied in?  Please read
-section 15 in Documentation/SubmittingPatches for details as to how to
-properly format things.
+this patch adds support for the watchdog included in Fintek f71862fg
+Super-I/O chip to the f71808e_wdt driver and adds WDIOC_GETTIMELEFT
+ioctl which i found very helpful. 
 
-thanks,
+Differences to PATCHv1 are
+ * module parameter for WDTRST# pin configuration added
+ * checking/printk of WDTRST# pin config 
+ * removing int typecast
 
-greg k-h
+This patch comes in three parts:
+1/3: add f71862fg support
+2/3: add WDIOC_GETTIMELEFT ioctl and helper function
+3/3: clean up/replace some magic numbers/constants
+
+Thanks for the comments,
+
+Lutz Ballaschke
+
+ drivers/watchdog/f71808e_wdt.c |   66 +++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 61 insertions(+), 5 deletions(-)
