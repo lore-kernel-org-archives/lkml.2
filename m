@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751105Ab0IKJ26 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 05:28:58 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:49153 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911Ab0IKJ25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 05:28:57 -0400
-Date: Sat, 11 Sep 2010 11:28:55 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
-        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
- default
-Message-ID: <20100911112855.6ee6e929@schatten.dmk.lab>
-In-Reply-To: <20100911004550.GA30584@infradead.org>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	<1284111767.1783.35.camel@Joe-Laptop>
-	<20100911001350.GA11478@infradead.org>
-	<1284165074.1783.213.camel@Joe-Laptop>
-	<20100911004550.GA30584@infradead.org>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	id S1751180Ab0IKJcd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 05:32:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60876 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066Ab0IKJcc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 05:32:32 -0400
+Subject: Re: [PATCH] sched: Increment cache_nice_tries only on periodic lb
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>, Gregory Haskins <ghaskins@novell.com>
+In-Reply-To: <1284167957-3675-1-git-send-email-venki@google.com>
+References: <1284167957-3675-1-git-send-email-venki@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 11 Sep 2010 11:32:21 +0200
+Message-ID: <1284197541.2251.23.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010 20:45:51 -0400
-Christoph Hellwig <hch@infradead.org> wrote:
-
-> On Fri, Sep 10, 2010 at 05:31:14PM -0700, Joe Perches wrote:
-> > If you don't like it, you could use a .get_maintainer.conf
-> > file entry until some consensus is reached later.
+On Fri, 2010-09-10 at 18:19 -0700, Venkatesh Pallipadi wrote:
+> scheduler uses cache_nice_tries as an indicator to do cache_hot and active
+> load balance, when normal load balance fails. Currently, this value is changed
+> on any failed load balance attempt. That ends up being not so nice to workloads
+> that enter/exit idle often, as they do more frequent new_idle balance and
+> that pretty soon results in cache hot tasks being pulled in.
 > 
-> I don't use the pice of junk at all.  What really pisses me off is that
-> I get spamed by all by tons of utterly useless cleanups patches (and
-> some useful but not at all interesting to me patches) because some
-> idiot made the bloody script return my address just because I touched a
-> file.  If it goes on like that I'll simply have to add a mail filter to
-> throw away all patches sent directly to me instead of a mailinglist.
-> 
+> Making the cache_nice_tries ignore failed new_idle balance seems to make
+> better sense. With that only the failed load balance in periodic load balance
+> gets accounted and the rate of accumulation of cache_nice_tries will not
+> depend on idle entry/exit (short running sleep-wakeup kind of tasks). This
+> reduces movement of cache_hot tasks.
 
-But would you also have the same attitude towards these specific
-'spams' if it were made clear in the email adress field that you were
-cc'd as a commit_signer  (vs maintainer)?
+Seems to make sense..
 
-I know it is a bit hackisch to have stuff in the name field, but it is
-rfc conform, it is even proposed for redirected email '(by way of...)'. 
+I've also wondered if it would make sense to restore 0437e109e (sched:
+zap the migration init / cache-hot balancing code), esp because what the
+comment says isn't actually true anymore, we don't use the tree for
+load-balancing.
 
-Cheers,
-Flo
+But even if we were, the left size of the tree isn't the cold side, nor
+would I guess the right side be.. tricky stuff that.
+
+I know Gregory Haskins has played with restoring it, and I think he
+found some benefit from it, although he didn't pursue it, it might be
+worth seeing if it does for your workloads.
+
+I've queued the patch, thanks!
