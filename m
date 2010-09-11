@@ -1,71 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab0IKBYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 21:24:48 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59424 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab0IKBYr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 21:24:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=SWECwmDFDcpDuybSx9O/DLXmFb59V/stnb3ANHeX+y9mPmAO5JPHqCX1RZO3Qk2W7
-	bWgp6xcGpvG/Bkve3fMVQ==
-From: David Sharp <dhsharp@google.com>
-To: rostedt@goodmis.org
-Cc: mrubin@google.com, linux-kernel@vger.kernel.org,
-        David Sharp <dhsharp@google.com>
-Subject: [PATCH] trace-cmd: Use lseek64 and off64_t in tracecmd_append_cpu_data().
-Date: Fri, 10 Sep 2010 18:24:18 -0700
-Message-Id: <1284168258-24287-1-git-send-email-dhsharp@google.com>
-X-Mailer: git-send-email 1.7.1
+	id S1751902Ab0IKBjJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 21:39:09 -0400
+Received: from d1.icnet.pl ([212.160.220.21]:43523 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750801Ab0IKBjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 21:39:08 -0400
+To: Richard Purdie <rpurdie@rpsys.net>
+Subject: [RESEND][PATCH] LEDS: Add output invertion option to backlight trigger
+Cc: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, e3-hacking@earth.li
+Content-Disposition: inline
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+MIME-Version: 1.0
+Date: Sat, 11 Sep 2010 03:38:39 +0200
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009110338.40879.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lseek64 returns 64-bit, but was being truncated to int. Large offsets would
-cause the subsequent error checking to fail spuriously, leaving behind a bad
-trace.dat and a collection of trace.dat.cpuX files.
+This patch extends the LED backlight tirgger driver with an option that allows 
+for inverting the trigger output polarity.
+
+Whith the invertion option provided, I (ab)use the backlight trigger for 
+driving a led that indicates LCD display blank condtition on my Amstrad Delta 
+videophone. Since the machine has no dedicated power LED, it was not possible 
+to distinguish if its display was blanked or it was turned off, without 
+touching it.
+
+The invert sysfs control is modeled after a similiar function provided by the 
+gpio trigger driver.
+
+Created and tested against linux-2.6.35-rc3 on Amstrad Delta.
+Re-tested against linux-2.6.36-rc3.
+
+Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
 ---
- trace-output.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/leds/ledtrig-backlight.c |   59 ++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 55 insertions(+), 4 deletions(-)
 
-diff --git a/trace-output.c b/trace-output.c
-index 89b3954..0730a1e 100644
---- a/trace-output.c
-+++ b/trace-output.c
-@@ -705,9 +705,9 @@ out_free:
- int tracecmd_append_cpu_data(struct tracecmd_output *handle,
- 			     int cpus, char * const *cpu_data_files)
- {
--	unsigned long long *offsets = NULL;
-+	off64_t *offsets = NULL;
- 	unsigned long long *sizes = NULL;
--	unsigned long long offset;
-+	off64_t offset;
- 	unsigned long long endian8;
- 	off64_t check_size;
- 	char *file;
-@@ -733,7 +733,7 @@ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
- 	if (!sizes)
- 		goto out_free;
+diff -uprN git/drivers/leds/ledtrig-backlight.c git/drivers/leds/ledtrig-backlight.c
+--- git/drivers/leds/ledtrig-backlight.c	2010-06-15 18:01:50.000000000 +0200
++++ git/drivers/leds/ledtrig-backlight.c	2010-06-23 02:48:44.000000000 +0200
+@@ -26,6 +26,7 @@ struct bl_trig_notifier {
+ 	int brightness;
+ 	int old_status;
+ 	struct notifier_block notifier;
++	unsigned invert;
+ };
  
--	offset = lseek(handle->fd, 0, SEEK_CUR);
-+	offset = lseek64(handle->fd, 0, SEEK_CUR);
+ static int fb_notifier_callback(struct notifier_block *p,
+@@ -39,13 +40,15 @@ static int fb_notifier_callback(struct n
  
- 	/* hold any extra data for data */
- 	offset += cpus * (16);
-@@ -761,8 +761,8 @@ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
- 
- 	for (i = 0; i < cpus; i++) {
- 		fprintf(stderr, "offset=%llx\n", offsets[i]);
--		ret = lseek64(handle->fd, offsets[i], SEEK_SET);
--		if (ret < 0) {
-+		offset = lseek64(handle->fd, offsets[i], SEEK_SET);
-+		if (offset == (off64_t)-1) {
- 			warning("could not seek to %lld\n", offsets[i]);
- 			goto out_free;
+ 	switch (event) {
+ 	case FB_EVENT_BLANK :
+-		if (*blank && n->old_status == UNBLANK) {
++		if ((!n->invert && *blank && n->old_status == UNBLANK) ||
++			    (n->invert && !*blank && n->old_status == BLANK)) {
+ 			n->brightness = led->brightness;
+ 			led_set_brightness(led, LED_OFF);
+-			n->old_status = BLANK;
+-		} else if (!*blank && n->old_status == BLANK) {
++			n->old_status = n->invert ? UNBLANK : BLANK;
++		} else if ((!n->invert && !*blank && n->old_status == BLANK) ||
++			    (n->invert && *blank && n->old_status == UNBLANK)) {
+ 			led_set_brightness(led, n->brightness);
+-			n->old_status = UNBLANK;
++			n->old_status = n->invert ? BLANK : UNBLANK;
  		}
--- 
-1.7.1
-
+ 		break;
+ 	}
+@@ -53,6 +56,43 @@ static int fb_notifier_callback(struct n
+ 	return 0;
+ }
+ 
++static ssize_t bl_trig_invert_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct led_classdev *led = dev_get_drvdata(dev);
++	struct bl_trig_notifier *n = led->trigger_data;
++
++	return sprintf(buf, "%s\n", n->invert ? "yes" : "no");
++}
++
++static ssize_t bl_trig_invert_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t num)
++{
++	struct led_classdev *led = dev_get_drvdata(dev);
++	struct bl_trig_notifier *n = led->trigger_data;
++	unsigned invert;
++	int ret;
++
++	ret = sscanf(buf, "%u", &invert);
++	if (ret < 1) {
++		dev_err(dev, "invalid value\n");
++		return -EINVAL;
++	}
++
++	n->invert = !!invert;
++
++	/* After inverting, we need to update the LED. */
++	if ((!n->invert && n->old_status == UNBLANK) ||
++			(n->invert && n->old_status == BLANK))
++		led_set_brightness(led, n->brightness);
++	else if ((!n->invert && n->old_status == BLANK) ||
++			(n->invert && n->old_status == UNBLANK))
++		led_set_brightness(led, LED_OFF);
++
++	return num;
++}
++static DEVICE_ATTR(invert, 0644, bl_trig_invert_show, bl_trig_invert_store);
++
+ static void bl_trig_activate(struct led_classdev *led)
+ {
+ 	int ret;
+@@ -66,6 +106,10 @@ static void bl_trig_activate(struct led_
+ 		return;
+ 	}
+ 
++	ret = device_create_file(led->dev, &dev_attr_invert);
++	if (ret)
++		goto err_invert;
++
+ 	n->led = led;
+ 	n->brightness = led->brightness;
+ 	n->old_status = UNBLANK;
+@@ -74,6 +118,12 @@ static void bl_trig_activate(struct led_
+ 	ret = fb_register_client(&n->notifier);
+ 	if (ret)
+ 		dev_err(led->dev, "unable to register backlight trigger\n");
++
++	return;
++
++err_invert:
++	led->trigger_data = NULL;
++	kfree(n);
+ }
+ 
+ static void bl_trig_deactivate(struct led_classdev *led)
+@@ -82,6 +132,7 @@ static void bl_trig_deactivate(struct le
+ 		(struct bl_trig_notifier *) led->trigger_data;
+ 
+ 	if (n) {
++		device_remove_file(led->dev, &dev_attr_invert);
+ 		fb_unregister_client(&n->notifier);
+ 		kfree(n);
+ 	}
