@@ -1,111 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab0IKBT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 21:19:56 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:2159 "EHLO
+	id S1754868Ab0IKBYs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 21:24:48 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:59424 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab0IKBTz (ORCPT
+	with ESMTP id S1751353Ab0IKBYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 21:19:55 -0400
+	Fri, 10 Sep 2010 21:24:47 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:x-system-of-record;
-	b=MfmFSJTzGOclWuYCcDA3rGbqjVp3FpHEzzFFpQI+nFIVA459DoXlCkbB1PqIK/OdH
-	p0TpYnzr7r5qppZT192NQ==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>, Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH] sched: Increment cache_nice_tries only on periodic lb
-Date: Fri, 10 Sep 2010 18:19:17 -0700
-Message-Id: <1284167957-3675-1-git-send-email-venki@google.com>
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=SWECwmDFDcpDuybSx9O/DLXmFb59V/stnb3ANHeX+y9mPmAO5JPHqCX1RZO3Qk2W7
+	bWgp6xcGpvG/Bkve3fMVQ==
+From: David Sharp <dhsharp@google.com>
+To: rostedt@goodmis.org
+Cc: mrubin@google.com, linux-kernel@vger.kernel.org,
+        David Sharp <dhsharp@google.com>
+Subject: [PATCH] trace-cmd: Use lseek64 and off64_t in tracecmd_append_cpu_data().
+Date: Fri, 10 Sep 2010 18:24:18 -0700
+Message-Id: <1284168258-24287-1-git-send-email-dhsharp@google.com>
 X-Mailer: git-send-email 1.7.1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scheduler uses cache_nice_tries as an indicator to do cache_hot and active
-load balance, when normal load balance fails. Currently, this value is changed
-on any failed load balance attempt. That ends up being not so nice to workloads
-that enter/exit idle often, as they do more frequent new_idle balance and
-that pretty soon results in cache hot tasks being pulled in.
-
-Making the cache_nice_tries ignore failed new_idle balance seems to make
-better sense. With that only the failed load balance in periodic load balance
-gets accounted and the rate of accumulation of cache_nice_tries will not
-depend on idle entry/exit (short running sleep-wakeup kind of tasks). This
-reduces movement of cache_hot tasks.
-
-schedstat diff (after-before) excerpt from a workload that has frequent and
-short wakeup-idle pattern (:2 in cpu col below refers to NEWIDLE idx)
-This snapshot was across ~400 seconds.
-
-Without this change:
-domainstats:  domain0
- cpu     cnt      bln      fld      imb     gain    hgain  nobusyq  nobusyg
- 0:2  306487   219575    73167  110069413    44583    19070     1172   218403
- 1:2  292139   194853    81421  120893383    50745    21902     1259   193594
- 2:2  283166   174607    91359  129699642    54931    23688     1287   173320
- 3:2  273998   161788    93991  132757146    57122    24351     1366   160422
- 4:2  289851   215692    62190  83398383    36377    13680      851   214841
- 5:2  316312   222146    77605  117582154    49948    20281      988   221158
- 6:2  297172   195596    83623  122133390    52801    21301      929   194667
- 7:2  283391   178078    86378  126622761    55122    22239      928   177150
- 8:2  297655   210359    72995  110246694    45798    19777     1125   209234
- 9:2  297357   202011    79363  119753474    50953    22088     1089   200922
-10:2  278797   178703    83180  122514385    52969    22726     1128   177575
-11:2  272661   167669    86978  127342327    55857    24342     1195   166474
-12:2  293039   204031    73211  110282059    47285    19651      948   203083
-13:2  289502   196762    76803  114712942    49339    20547     1016   195746
-14:2  264446   169609    78292  115715605    50459    21017      982   168627
-15:2  260968   163660    80142  116811793    51483    21281     1064   162596
-
-With this change:
-domainstats:  domain0
- cpu     cnt      bln      fld      imb     gain    hgain  nobusyq  nobusyg
- 0:2  272347   187380    77455  105420270    24975        1      953   186427
- 1:2  267276   172360    86234  116242264    28087        6     1028   171332
- 2:2  259769   156777    93281  123243134    30555        1     1043   155734
- 3:2  250870   143129    97627  127370868    32026        6     1188   141941
- 4:2  248422   177116    64096  78261112    22202        2      757   176359
- 5:2  275595   180683    84950  116075022    29400        6      778   179905
- 6:2  262418   162609    88944  119256898    31056        4      817   161792
- 7:2  252204   147946    92646  122388300    32879        4      824   147122
- 8:2  262335   172239    81631  110477214    26599        4      864   171375
- 9:2  261563   164775    88016  117203621    28331        3      849   163926
-10:2  243389   140949    93379  121353071    29585        2      909   140040
-11:2  242795   134651    98310  124768957    30895        2     1016   133635
-12:2  255234   166622    79843  104696912    26483        4      746   165876
-13:2  244944   151595    83855  109808099    27787        3      801   150794
-14:2  241301   140982    89935  116954383    30403        6      845   140137
-15:2  232271   128564    92821  119185207    31207        4     1416   127148
-
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+lseek64 returns 64-bit, but was being truncated to int. Large offsets would
+cause the subsequent error checking to fail spuriously, leaving behind a bad
+trace.dat and a collection of trace.dat.cpuX files.
 ---
- kernel/sched_fair.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ trace-output.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 134f7ed..522e4c5 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3033,7 +3033,14 @@ redo:
+diff --git a/trace-output.c b/trace-output.c
+index 89b3954..0730a1e 100644
+--- a/trace-output.c
++++ b/trace-output.c
+@@ -705,9 +705,9 @@ out_free:
+ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
+ 			     int cpus, char * const *cpu_data_files)
+ {
+-	unsigned long long *offsets = NULL;
++	off64_t *offsets = NULL;
+ 	unsigned long long *sizes = NULL;
+-	unsigned long long offset;
++	off64_t offset;
+ 	unsigned long long endian8;
+ 	off64_t check_size;
+ 	char *file;
+@@ -733,7 +733,7 @@ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
+ 	if (!sizes)
+ 		goto out_free;
  
- 	if (!ld_moved) {
- 		schedstat_inc(sd, lb_failed[idle]);
--		sd->nr_balance_failed++;
-+		/*
-+		 * Increment the failure counter only on periodic balance.
-+		 * We do not want newidle balance, which can be very
-+		 * frequent, pollute the failure counter causing
-+		 * excessive cache_hot migrations and active balances.
-+		 */
-+		if (idle != CPU_NEWLY_IDLE)
-+			sd->nr_balance_failed++;
+-	offset = lseek(handle->fd, 0, SEEK_CUR);
++	offset = lseek64(handle->fd, 0, SEEK_CUR);
  
- 		if (need_active_balance(sd, sd_idle, idle, cpu_of(busiest),
- 					this_cpu)) {
+ 	/* hold any extra data for data */
+ 	offset += cpus * (16);
+@@ -761,8 +761,8 @@ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
+ 
+ 	for (i = 0; i < cpus; i++) {
+ 		fprintf(stderr, "offset=%llx\n", offsets[i]);
+-		ret = lseek64(handle->fd, offsets[i], SEEK_SET);
+-		if (ret < 0) {
++		offset = lseek64(handle->fd, offsets[i], SEEK_SET);
++		if (offset == (off64_t)-1) {
+ 			warning("could not seek to %lld\n", offsets[i]);
+ 			goto out_free;
+ 		}
 -- 
 1.7.1
 
