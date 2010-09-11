@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab0IKAqV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 20:46:21 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56298 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755910Ab0IKAqQ (ORCPT
+	id S1755944Ab0IKAqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 20:46:12 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58922 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755910Ab0IKAp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 20:46:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=OvatyXwd0hY4JDIDj21sJ+8dZyrf5EvH8xbFIWgd8CAZl1GwygEKGyM91bQo2vS44r
-         XeAKEjBbeWHVZCnTPqlu9eItvvwyHVhwy+hgzkMdq/fGJCYwOhwoq2FcoVbW7GExZHuk
-         5inKWlIRNoDOCyso792NiWuSSYCLkvhRpIEs0=
-Message-ID: <4C8AD17B.6000407@gmail.com>
-Date: Fri, 10 Sep 2010 17:46:51 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
+	Fri, 10 Sep 2010 20:45:58 -0400
+Date: Fri, 10 Sep 2010 20:45:51 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Joe Perches <joe@perches.com>
+Cc: Christoph Hellwig <hch@infradead.org>, florian@mickler.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
+        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+Message-ID: <20100911004550.GA30584@infradead.org>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+ <1284111767.1783.35.camel@Joe-Laptop>
+ <20100911001350.GA11478@infradead.org>
+ <1284165074.1783.213.camel@Joe-Laptop>
 MIME-Version: 1.0
-To: Andy Isaacson <adi@hexapodia.org>
-CC: Norbert Preining <preining@logic.at>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.sourceforge.net
-Subject: Re: after closing the lid and reopening it the screen remains blank
-References: <20100909224117.GA30000@gamma.logic.tuwien.ac.at> <20100910184751.GA17794@hexapodia.org> <20100910234448.GB9848@gamma.logic.tuwien.ac.at> <20100911003459.GW23291@hexapodia.org>
-In-Reply-To: <20100911003459.GW23291@hexapodia.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284165074.1783.213.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2010 05:34 PM, Andy Isaacson wrote:
-> On Sat, Sep 11, 2010 at 08:44:48AM +0900, Norbert Preining wrote:
->> On Fr, 10 Sep 2010, Andy Isaacson wrote:
->>> FWIW, 2.6.36-rc3-00396-gbe6200a suspend-to-ram works for me on GM45
->>
->> I never said that it has anything to do with suspend to ram.
->
-> Ah, sorry for misunderstanding.  My GM45 system is configured to
-> automatically S2R on lid close so I tend to conflate the two...
->
->> In fact, suspend to ram works perfectly without any problems. I only
->> reboot after I installed a new kernel ...
->>
->> I will try some older kernels and see if it is a kernel or userspace
->> issue.
->
-> Do try the current tip and/or describe which post-rc3 kernel fails for
-> you, just to verify.  Also, is there anything in Xorg.0.log from when it
-> fails to restore the video?
->
-> Thanks for reporting the regression, it'll be good to get it fixed ASAP.
->
-> -andy
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+On Fri, Sep 10, 2010 at 05:31:14PM -0700, Joe Perches wrote:
+> If you don't like it, you could use a .get_maintainer.conf
+> file entry until some consensus is reached later.
 
+I don't use the pice of junk at all.  What really pisses me off is that
+I get spamed by all by tons of utterly useless cleanups patches (and
+some useful but not at all interesting to me patches) because some
+idiot made the bloody script return my address just because I touched a
+file.  If it goes on like that I'll simply have to add a mail filter to
+throw away all patches sent directly to me instead of a mailinglist.
 
-over here:
-cat /etc/acpi/sleep.sh
-
-if grep -q close /proc/acpi/button/lid/LID0/state
-then
-/usr/sbin/s2ram
-fi
-
-works reliably over here(knock on wood..)with radeon not sure
-with intel cards..
-
-Justin P. Mattock
