@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab0IKFz4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 01:55:56 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:50217 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab0IKFzz (ORCPT
+	id S1754259Ab0IKHHl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 03:07:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49395 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754069Ab0IKHHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 01:55:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=I1BdRh56wo2eJwOvR596mGQJxzNCkQ5GtZYWx4XsCEugePayXK3547nAd0Vqrpg1A7
-         gTOhFLq1tBD5wYU4lbvNbXMFs/lJsFOECwS2RoPlymSO/DdyrZ29NPe32UL9d5dvevK8
-         h+beej+Q1c/dUC/rxEbiTDZl9kvLp0bd9c7Oc=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]scripts/kconfig/gconf.glade Update broken web addresses.
-Date: Fri, 10 Sep 2010 22:56:24 -0700
-Message-Id: <1284184584-8647-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.2.1
+	Sat, 11 Sep 2010 03:07:40 -0400
+Message-ID: <4C8B2A9A.1040303@kernel.org>
+Date: Sat, 11 Sep 2010 00:07:06 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Michal Simek <monstr@monstr.eu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH] microblaze, memblock: fix compiling
+References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>	 <1281071724-28740-9-git-send-email-benh@kernel.crashing.org>	 <4C5BCD41.3040501@monstr.eu> <1281135046.2168.40.camel@pasglop>	 <4C88BD8F.5080208@monstr.eu>  <20100909115445.GB16157@elte.hu> <1284106711.6515.46.camel@pasglop>
+In-Reply-To: <1284106711.6515.46.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below fixes a broken web address. Note: not sure if this is correct
-or not.. Let me know..
+From: Michal Simek <monstr@monstr.eu>
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+  CC      arch/microblaze/mm/init.o
+arch/microblaze/mm/init.c: In function 'mm_cmdline_setup':
+arch/microblaze/mm/init.c:236: error: 'struct memblock_type' has no member named 'region'
+arch/microblaze/mm/init.c: In function 'mmu_init':
+arch/microblaze/mm/init.c:279: error: 'struct memblock_type' has no member named 'region'
+arch/microblaze/mm/init.c:284: error: 'struct memblock_type' has no member named 'region'
+arch/microblaze/mm/init.c:285: error: 'struct memblock_type' has no member named 'region'
+arch/microblaze/mm/init.c:286: error: 'struct memblock_type' has no member named 'region'
+make[1]: *** [arch/microblaze/mm/init.o] Error 1
+make: *** [arch/microblaze/mm] Error 2
 
----
- scripts/kconfig/gconf.glade |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+with this fix and microblaze can boot
 
-diff --git a/scripts/kconfig/gconf.glade b/scripts/kconfig/gconf.glade
-index d52b0a7..8092dcf 100644
---- a/scripts/kconfig/gconf.glade
-+++ b/scripts/kconfig/gconf.glade
-@@ -1,5 +1,5 @@
- <?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
--<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
-+<!DOCTYPE glade-interface SYSTEM "http://library.gnome.org/devel/libglade/unstable/libglade-dtd.html">
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+Index: linux-2.6/arch/microblaze/mm/init.c
+===================================================================
+--- linux-2.6.orig/arch/microblaze/mm/init.c
++++ linux-2.6/arch/microblaze/mm/init.c
+@@ -228,7 +228,7 @@ static void mm_cmdline_setup(void)
+ 		if (maxmem && memory_size > maxmem) {
+ 			memory_size = maxmem;
+ 			memory_end = memory_start + memory_size;
+-			memblock.memory.region[0].size = memory_size;
++			memblock.memory.regions[0].size = memory_size;
+ 		}
+ 	}
+ }
+@@ -271,14 +271,14 @@ asmlinkage void __init mmu_init(void)
+ 		machine_restart(NULL);
+ 	}
  
- <glade-interface>
+-	if ((u32) memblock.memory.region[0].size < 0x1000000) {
++	if ((u32) memblock.memory.regions[0].size < 0x1000000) {
+ 		printk(KERN_EMERG "Memory must be greater than 16MB\n");
+ 		machine_restart(NULL);
+ 	}
+ 	/* Find main memory where the kernel is */
+-	memory_start = (u32) memblock.memory.region[0].base;
+-	memory_end = (u32) memblock.memory.region[0].base +
+-				(u32) memblock.memory.region[0].size;
++	memory_start = (u32) memblock.memory.regions[0].base;
++	memory_end = (u32) memblock.memory.regions[0].base +
++				(u32) memblock.memory.regions[0].size;
+ 	memory_size = memory_end - memory_start;
  
--- 
-1.7.2.1
-
+ 	mm_cmdline_setup(); /* FIXME parse args from command line - not used */
