@@ -1,177 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab0IKBS0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 21:18:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63912 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab0IKBSZ (ORCPT
+	id S1753722Ab0IKBT4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 21:19:56 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:2159 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab0IKBTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 21:18:25 -0400
-X-Authority-Analysis: v=1.1 cv=2UVid5d+x37NY9sg6AthlbJk7luIC5bYp3eyRq7Iv0o= c=1 sm=0 a=Ot0fQfLCyksA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=2zZSigKMjKZzpbo2P9wA:9 a=H-eGcl1lO3rXBuSDWoBQ5AGspqgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCHv2] trace: funcgraph tracer - adding funcgraph-irq option
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100909144430.GG20955@cmpxchg.org>
-References: <1278951670-8133-1-git-send-email-jolsa@redhat.com>
-	 <1279828821.3319.23.camel@gandalf.stny.rr.com>
-	 <20100723131913.GB1829@jolsa.brq.redhat.com>
-	 <1283876920.5133.125.camel@gandalf.stny.rr.com>
-	 <20100909144430.GG20955@cmpxchg.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 10 Sep 2010 21:18:15 -0400
-Message-ID: <1284167895.5786.2365.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Sep 2010 21:19:55 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:x-system-of-record;
+	b=MfmFSJTzGOclWuYCcDA3rGbqjVp3FpHEzzFFpQI+nFIVA459DoXlCkbB1PqIK/OdH
+	p0TpYnzr7r5qppZT192NQ==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>, Venkatesh Pallipadi <venki@google.com>
+Subject: [PATCH] sched: Increment cache_nice_tries only on periodic lb
+Date: Fri, 10 Sep 2010 18:19:17 -0700
+Message-Id: <1284167957-3675-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
+scheduler uses cache_nice_tries as an indicator to do cache_hot and active
+load balance, when normal load balance fails. Currently, this value is changed
+on any failed load balance attempt. That ends up being not so nice to workloads
+that enter/exit idle often, as they do more frequent new_idle balance and
+that pretty soon results in cache hot tasks being pulled in.
 
-On Thu, 2010-09-09 at 16:44 +0200, Johannes Weiner wrote:
+Making the cache_nice_tries ignore failed new_idle balance seems to make
+better sense. With that only the failed load balance in periodic load balance
+gets accounted and the rate of accumulation of cache_nice_tries will not
+depend on idle entry/exit (short running sleep-wakeup kind of tasks). This
+reduces movement of cache_hot tasks.
 
-> Although greatly reduced, I still see the following noise in the trace
-> output with the IRQ filtering enabled:
-> 
->  1)               |    wakeup_flusher_threads() {
->  1)   0.205 us    |      __rcu_read_lock();
->  1)   0.271 us    |      bdi_has_dirty_io();
->  1)   0.287 us    |      bdi_has_dirty_io();
->  1)   0.217 us    |      bdi_has_dirty_io();
->  1)               |      bdi_has_dirty_io() {
->  1)               |        smp_invalidate_interrupt() {
->  1)   0.220 us    |          native_apic_mem_write();
->  1)   0.794 us    |        } /* smp_invalidate_interrupt */
->  1)   1.413 us    |      } /* bdi_has_dirty_io */
->  1)   0.218 us    |      bdi_has_dirty_io();
->  1)   0.213 us    |      bdi_has_dirty_io();
->  1)   0.215 us    |      bdi_has_dirty_io();
->  1)               |      smp_invalidate_interrupt() {
->  1)   0.234 us    |        native_apic_mem_write();
->  1)   0.819 us    |      } /* smp_invalidate_interrupt */
->  1)   0.240 us    |      bdi_has_dirty_io();
->  1)   0.259 us    |      bdi_has_dirty_io();
+schedstat diff (after-before) excerpt from a workload that has frequent and
+short wakeup-idle pattern (:2 in cpu col below refers to NEWIDLE idx)
+This snapshot was across ~400 seconds.
 
+Without this change:
+domainstats:  domain0
+ cpu     cnt      bln      fld      imb     gain    hgain  nobusyq  nobusyg
+ 0:2  306487   219575    73167  110069413    44583    19070     1172   218403
+ 1:2  292139   194853    81421  120893383    50745    21902     1259   193594
+ 2:2  283166   174607    91359  129699642    54931    23688     1287   173320
+ 3:2  273998   161788    93991  132757146    57122    24351     1366   160422
+ 4:2  289851   215692    62190  83398383    36377    13680      851   214841
+ 5:2  316312   222146    77605  117582154    49948    20281      988   221158
+ 6:2  297172   195596    83623  122133390    52801    21301      929   194667
+ 7:2  283391   178078    86378  126622761    55122    22239      928   177150
+ 8:2  297655   210359    72995  110246694    45798    19777     1125   209234
+ 9:2  297357   202011    79363  119753474    50953    22088     1089   200922
+10:2  278797   178703    83180  122514385    52969    22726     1128   177575
+11:2  272661   167669    86978  127342327    55857    24342     1195   166474
+12:2  293039   204031    73211  110282059    47285    19651      948   203083
+13:2  289502   196762    76803  114712942    49339    20547     1016   195746
+14:2  264446   169609    78292  115715605    50459    21017      982   168627
+15:2  260968   163660    80142  116811793    51483    21281     1064   162596
 
-You could also try the below patch. When you set funcgraph-irqs to 0,
-the function tracer will stop recording inside interrupts (except for
-the part before it calls irq_enter()). But that's still good, because
-you can still see where interrupts happened.
+With this change:
+domainstats:  domain0
+ cpu     cnt      bln      fld      imb     gain    hgain  nobusyq  nobusyg
+ 0:2  272347   187380    77455  105420270    24975        1      953   186427
+ 1:2  267276   172360    86234  116242264    28087        6     1028   171332
+ 2:2  259769   156777    93281  123243134    30555        1     1043   155734
+ 3:2  250870   143129    97627  127370868    32026        6     1188   141941
+ 4:2  248422   177116    64096  78261112    22202        2      757   176359
+ 5:2  275595   180683    84950  116075022    29400        6      778   179905
+ 6:2  262418   162609    88944  119256898    31056        4      817   161792
+ 7:2  252204   147946    92646  122388300    32879        4      824   147122
+ 8:2  262335   172239    81631  110477214    26599        4      864   171375
+ 9:2  261563   164775    88016  117203621    28331        3      849   163926
+10:2  243389   140949    93379  121353071    29585        2      909   140040
+11:2  242795   134651    98310  124768957    30895        2     1016   133635
+12:2  255234   166622    79843  104696912    26483        4      746   165876
+13:2  244944   151595    83855  109808099    27787        3      801   150794
+14:2  241301   140982    89935  116954383    30403        6      845   140137
+15:2  232271   128564    92821  119185207    31207        4     1416   127148
 
-Here's how to use it:
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+---
+ kernel/sched_fair.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-# echo 0 > tracing_on
-# echo function_graph > current_tracer
-# echo 0 > options/funcgraph-irqs
-# echo 1 > tracing_on
-<run-stuff>
-
-When you cat the trace file, it wont have the irqs on because of Jiri's
-patch. But..
-
- # echo 1 > options/funcgraph-irqs
- # echo 1 > options/latency-format
- # cat trace
-# tracer: function_graph
-#
-#      _-----=> irqs-off        
-#     / _----=> need-resched    
-#    | / _---=> hardirq/softirq 
-#    || / _--=> preempt-depth   
-#    ||| / _-=> lock-depth      
-#    |||| /                     
-# CPU|||||  DURATION                  FUNCTION CALLS
-# |  |||||   |   |                     |   |   |   |
- 1)  d..1.  3.090 us    |  }
- 1)  d..1.              |  mwait_idle() {
- 1)   ==========> |
- 1)  d..1.              |    smp_apic_timer_interrupt() {
- 1)  d..1.  0.483 us    |      native_apic_mem_write();
- 1)  d..1.              |      exit_idle() {
- 1)  d..1.  0.511 us    |        __rcu_read_lock();
- 1)  d..1.  0.445 us    |        __rcu_read_unlock();
- 1)  d..1.  3.903 us    |      }
- 1)  d..1.              |      irq_enter() {
- 1)  d..1.  0.562 us    |        rcu_irq_enter();
- 1)  d..1.  0.461 us    |        idle_cpu();
- 1)  d.h1.  9.337 us    |      }
- 1)  d..2.              |      do_softirq() {
- 1)  d..2.              |        __do_softirq() {
-
-That's because it uses "if (in_irq())" which in_irq() returns true after
-irq_enter() and set to false again in irq_exit(), which is not shown,
-because it was skipping them.  But softirqs are still displayed, and
-here it was run from the interrupt context itself before going back to
-whatever it interrupted.
-
--- Steve
-
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 8674750..02c708a 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -15,6 +15,9 @@
- #include "trace.h"
- #include "trace_output.h"
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 134f7ed..522e4c5 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3033,7 +3033,14 @@ redo:
  
-+/* When set, irq functions will be ignored */
-+static int ftrace_graph_skip_irqs;
-+
- struct fgraph_cpu_data {
- 	pid_t		last_pid;
- 	int		depth;
-@@ -208,6 +211,14 @@ int __trace_graph_entry(struct trace_array *tr,
- 	return 1;
- }
+ 	if (!ld_moved) {
+ 		schedstat_inc(sd, lb_failed[idle]);
+-		sd->nr_balance_failed++;
++		/*
++		 * Increment the failure counter only on periodic balance.
++		 * We do not want newidle balance, which can be very
++		 * frequent, pollute the failure counter causing
++		 * excessive cache_hot migrations and active balances.
++		 */
++		if (idle != CPU_NEWLY_IDLE)
++			sd->nr_balance_failed++;
  
-+static inline int ftrace_graph_ignore_irqs(void)
-+{
-+	if (!ftrace_graph_skip_irqs)
-+		return 0;
-+
-+	return in_irq();
-+}
-+
- int trace_graph_entry(struct ftrace_graph_ent *trace)
- {
- 	struct trace_array *tr = graph_array;
-@@ -222,7 +233,8 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
- 		return 0;
- 
- 	/* trace it when it is-nested-in or is a function enabled. */
--	if (!(trace->depth || ftrace_graph_addr(trace->func)))
-+	if (!(trace->depth || ftrace_graph_addr(trace->func)) ||
-+	      ftrace_graph_ignore_irqs())
- 		return 0;
- 
- 	local_irq_save(flags);
-@@ -1334,6 +1346,14 @@ void graph_trace_close(struct trace_iterator *iter)
- 	}
- }
- 
-+static int func_graph_set_flag(u32 old_flags, u32 bit, int set)
-+{
-+	if (bit == TRACE_GRAPH_PRINT_IRQS)
-+		ftrace_graph_skip_irqs = !set;
-+
-+	return 0;
-+}
-+
- static struct trace_event_functions graph_functions = {
- 	.trace		= print_graph_function_event,
- };
-@@ -1360,6 +1380,7 @@ static struct tracer graph_trace __read_mostly = {
- 	.print_line	= print_graph_function,
- 	.print_header	= print_graph_headers,
- 	.flags		= &tracer_flags,
-+	.set_flag	= func_graph_set_flag,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest	= trace_selftest_startup_function_graph,
- #endif
-
+ 		if (need_active_balance(sd, sd_idle, idle, cpu_of(busiest),
+ 					this_cpu)) {
+-- 
+1.7.1
 
