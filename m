@@ -1,81 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293Ab0IKJeI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 05:34:08 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:38980 "EHLO mx01.d-labs.de"
+	id S1751386Ab0IKJgm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 05:36:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50447 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122Ab0IKJeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 05:34:06 -0400
-Date: Sat, 11 Sep 2010 11:34:03 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
-        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
- default
-Message-ID: <20100911113403.17003faf@schatten.dmk.lab>
-In-Reply-To: <1284131557.1783.150.camel@Joe-Laptop>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	<1284111767.1783.35.camel@Joe-Laptop>
-	<20100910131153.56419f17@schatten.dmk.lab>
-	<1284131557.1783.150.camel@Joe-Laptop>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1750970Ab0IKJgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 05:36:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,351,1280732400"; 
+   d="scan'208";a="605970578"
+From: xiaohui.xin@intel.com
+To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+Subject: [RFC PATCH v10 00/16] Provide a zero-copy method on KVM virtio-net.
+Date: Sat, 11 Sep 2010 17:52:53 +0800
+Message-Id: <1284198789-5358-1-git-send-email-xiaohui.xin@intel.com>
+X-Mailer: git-send-email 1.5.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010 08:12:37 -0700
-Joe Perches <joe@perches.com> wrote:
+We provide an zero-copy method which driver side may get external
+buffers to DMA. Here external means driver don't use kernel space
+to allocate skb buffers. Currently the external buffer can be from
+guest virtio-net driver.
 
-> On Fri, 2010-09-10 at 13:11 +0200, Florian Mickler wrote:
-> > On Fri, 10 Sep 2010 02:42:47 -0700
-> > Joe Perches <joe@perches.com> wrote:
-> > > On Fri, 2010-09-10 at 11:33 +0200, florian@mickler.org wrote:
-> > > > The script get_maintainer.pl is a very useful tool for deploying changes
-> > > > made to the kernel. Among others it searches not only the MAINTAINERS
-> > > > file but also the git history for people to send patches to.\
-> > > []
-> > > > By appending a  a note of the reason for the cc in the name, the reason
-> > > > becomes clear and the receiving side is relieved from feeling obliged to
-> > > > check the patch  while the sending side has a chance to adapt the
-> > > > cc'list to their liking.
-> > > I don't like reading annotated email names myself.
-> > Btw, why? I think it is a great way to show that it was done in an
-> > automated fashion. 
-> 
-> More stuff than necessary to read, requires effort to find next. 
+The idea is simple, just to pin the guest VM user space and then
+let host NIC driver has the chance to directly DMA to it. 
+The patches are based on vhost-net backend driver. We add a device
+which provides proto_ops as sendmsg/recvmsg to vhost-net to
+send/recv directly to/from the NIC driver. KVM guest who use the
+vhost-net backend may bind any ethX interface in the host side to
+get copyless data transfer thru guest virtio-net frontend.
 
-next what? 
+patch 01-10:  	net core and kernel changes.
+patch 11-13:  	new device as interface to mantpulate external buffers.
+patch 14: 	for vhost-net.
+patch 15:	An example on modifying NIC driver to using napi_gro_frags().
+patch 16:	An example how to get guest buffers based on driver
+		who using napi_gro_frags().
 
-I think the normal case is to ignore the name tag. It is only if you
-really get many many emails that you will begin to filter for these
-role-tags. And then you will probably do it in an automated fashion.
+The guest virtio-net driver submits multiple requests thru vhost-net
+backend driver to the kernel. And the requests are queued and then
+completed after corresponding actions in h/w are done.
 
+For read, user space buffers are dispensed to NIC driver for rx when
+a page constructor API is invoked. Means NICs can allocate user buffers
+from a page constructor. We add a hook in netif_receive_skb() function
+to intercept the incoming packets, and notify the zero-copy device.
 
+For write, the zero-copy deivce may allocates a new host skb and puts
+payload on the skb_shinfo(skb)->frags, and copied the header to skb->data.
+The request remains pending until the skb is transmitted by h/w.
 
-> Fewer names in visual field.
+We provide multiple submits and asynchronous notifiicaton to 
+vhost-net too.
 
-ok. But anybody who cares about his patch submission deeply can edit
-the cc'list before sending. And then he is also likely to trim the
-cc'list by leaving out people that did only trivial spelling fixes or
-renamed stuff, or flamed them the last time.
+Our goal is to improve the bandwidth and reduce the CPU usage.
+Exact performance data will be provided later.
 
+What we have not done yet:
+	Performance tuning
 
-> 
-> Also, it can affect systems that automatically add email addresses
-> to an address directory as it could store the entire content
-> before the < as the name.
+what we have done in v1:
+	polish the RCU usage
+	deal with write logging in asynchroush mode in vhost
+	add notifier block for mp device
+	rename page_ctor to mp_port in netdevice.h to make it looks generic
+	add mp_dev_change_flags() for mp device to change NIC state
+	add CONIFG_VHOST_MPASSTHRU to limit the usage when module is not load
+	a small fix for missing dev_put when fail
+	using dynamic minor instead of static minor number
+	a __KERNEL__ protect to mp_get_sock()
 
-I think any system that relies on input it can not control has to deal
-with these kind of stuff anyway. (Be it typo's or just plain wrong
-names, or surename<->name switcheroos...)
-So I don't think this is that big a concern.
+what we have done in v2:
+	
+	remove most of the RCU usage, since the ctor pointer is only
+	changed by BIND/UNBIND ioctl, and during that time, NIC will be
+	stopped to get good cleanup(all outstanding requests are finished),
+	so the ctor pointer cannot be raced into wrong situation.
 
+	Remove the struct vhost_notifier with struct kiocb.
+	Let vhost-net backend to alloc/free the kiocb and transfer them
+	via sendmsg/recvmsg.
 
-Cheers,
-Flo
+	use get_user_pages_fast() and set_page_dirty_lock() when read.
+
+	Add some comments for netdev_mp_port_prep() and handle_mpassthru().
+
+what we have done in v3:
+	the async write logging is rewritten 
+	a drafted synchronous write function for qemu live migration
+	a limit for locked pages from get_user_pages_fast() to prevent Dos
+	by using RLIMIT_MEMLOCK
+	
+
+what we have done in v4:
+	add iocb completion callback from vhost-net to queue iocb in mp device
+	replace vq->receiver by mp_sock_data_ready()
+	remove stuff in mp device which access structures from vhost-net
+	modify skb_reserve() to ignore host NIC driver reserved space
+	rebase to the latest vhost tree
+	split large patches into small pieces, especially for net core part.
+	
+
+what we have done in v5:
+	address Arnd Bergmann's comments
+		-remove IFF_MPASSTHRU_EXCL flag in mp device
+		-Add CONFIG_COMPAT macro
+		-remove mp_release ops
+	move dev_is_mpassthru() as inline func
+	fix a bug in memory relinquish
+	Apply to current git (2.6.34-rc6) tree.
+
+what we have done in v6:
+	move create_iocb() out of page_dtor which may happen in interrupt context
+	-This remove the potential issues which lock called in interrupt context
+	make the cache used by mp, vhost as static, and created/destoryed during
+	modules init/exit functions.
+	-This makes multiple mp guest created at the same time.
+
+what we have done in v7:
+	some cleanup prepared to suppprt PS mode
+
+what we have done in v8:
+	discarding the modifications to point skb->data to guest buffer directly.
+	Add code to modify driver to support napi_gro_frags() with Herbert's comments.
+	To support PS mode.
+	Add mergeable buffer support in mp device.
+	Add GSO/GRO support in mp deice.
+	Address comments from Eric Dumazet about cache line and rcu usage.
+
+what we have done in v9:
+	v8 patch is based on a fix in dev_gro_receive().
+	But Herbert did not agree with the fix we have sent out.
+	And he suggest another fix. v9 is modified to base on that fix.
+	
+
+what we have done in v10:
+	Fix a partial csum error.
+	Cleanup some unused fields with struct page_info{} in mp device.
+	Modify kmem_cache_zalloc() to kmem_cache_alloc() based on Michael S. Thirkin.
+
+Performance:
+	We have seen the performance data request from mailling-list.
+	And we are now looking into this.
