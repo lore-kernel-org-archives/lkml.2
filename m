@@ -1,184 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab0IKBQc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 21:16:32 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:63095 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925Ab0IKBQH (ORCPT
+	id S1752988Ab0IKBS0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 21:18:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63912 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab0IKBSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 21:16:07 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
-	references:x-system-of-record;
-	b=NdeDx9digXK/Nl2BXU4JS9vEcEtvgtPkqvhIWrH/fofJahjuNyokBypZHgen9D7ST
-	Lu956ZttfJemozNBBOGvw==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mark Langsdorf <mark.langsdorf@amd.com>, linux-kernel@vger.kernel.org,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 2/2] x86: Support mtrr lookup for range spanning across MTRR range
-Date: Fri, 10 Sep 2010 18:15:33 -0700
-Message-Id: <1284167733-2683-3-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1284167733-2683-1-git-send-email-venki@google.com>
-References: <1284167733-2683-1-git-send-email-venki@google.com>
-X-System-Of-Record: true
+	Fri, 10 Sep 2010 21:18:25 -0400
+X-Authority-Analysis: v=1.1 cv=2UVid5d+x37NY9sg6AthlbJk7luIC5bYp3eyRq7Iv0o= c=1 sm=0 a=Ot0fQfLCyksA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=2zZSigKMjKZzpbo2P9wA:9 a=H-eGcl1lO3rXBuSDWoBQ5AGspqgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCHv2] trace: funcgraph tracer - adding funcgraph-irq option
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100909144430.GG20955@cmpxchg.org>
+References: <1278951670-8133-1-git-send-email-jolsa@redhat.com>
+	 <1279828821.3319.23.camel@gandalf.stny.rr.com>
+	 <20100723131913.GB1829@jolsa.brq.redhat.com>
+	 <1283876920.5133.125.camel@gandalf.stny.rr.com>
+	 <20100909144430.GG20955@cmpxchg.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 10 Sep 2010 21:18:15 -0400
+Message-ID: <1284167895.5786.2365.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mtrr_type_lookup [start:end] looked up the resultant MTRR type for that
-range, based on fixed and all variable MTRR ranges. It did check for multiple
-MTRR var ranges overlapping [start:end] and returned the net type.
+Hi Johannes,
 
-However, if the [start:end] range spanned across any var MTRR range,
-mtrr_type_lookup would return an error return of 0xFE. This was based on
-typical usage of mtrr_type_lookup in PAT mapping, where region being
-mapped would not normally span across MTRR ranges and also trying
-to keep the code simple.
+On Thu, 2010-09-09 at 16:44 +0200, Johannes Weiner wrote:
 
-Mark recently reported the problem with this limitation. When there are
-two continguous MTRR's of type "writeback" and if there is a memory mapping
-over a region starting in one MTRR range and ending in another MTRR range,
-such mapping will fallback to "uncached" due to the above limitation.
+> Although greatly reduced, I still see the following noise in the trace
+> output with the IRQ filtering enabled:
+> 
+>  1)               |    wakeup_flusher_threads() {
+>  1)   0.205 us    |      __rcu_read_lock();
+>  1)   0.271 us    |      bdi_has_dirty_io();
+>  1)   0.287 us    |      bdi_has_dirty_io();
+>  1)   0.217 us    |      bdi_has_dirty_io();
+>  1)               |      bdi_has_dirty_io() {
+>  1)               |        smp_invalidate_interrupt() {
+>  1)   0.220 us    |          native_apic_mem_write();
+>  1)   0.794 us    |        } /* smp_invalidate_interrupt */
+>  1)   1.413 us    |      } /* bdi_has_dirty_io */
+>  1)   0.218 us    |      bdi_has_dirty_io();
+>  1)   0.213 us    |      bdi_has_dirty_io();
+>  1)   0.215 us    |      bdi_has_dirty_io();
+>  1)               |      smp_invalidate_interrupt() {
+>  1)   0.234 us    |        native_apic_mem_write();
+>  1)   0.819 us    |      } /* smp_invalidate_interrupt */
+>  1)   0.240 us    |      bdi_has_dirty_io();
+>  1)   0.259 us    |      bdi_has_dirty_io();
 
-Change below adds support for such lookups spanning multiple MTRR ranges.
-We now have a wrapper mtrr_type_lookup that dynamically splits such a region
-into smaller chunks that fit within one MTRR range and does a
-__mtrr_type_lookup on it and combine the results later.
 
-Reported-by: Mark Langsdorf <mark.langsdorf@amd.com>
+You could also try the below patch. When you set funcgraph-irqs to 0,
+the function tracer will stop recording inside interrupts (except for
+the part before it calls irq_enter()). But that's still good, because
+you can still see where interrupts happened.
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-Reviewed-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/kernel/cpu/mtrr/generic.c |   84 +++++++++++++++++++++++++++++++++---
- 1 files changed, 77 insertions(+), 7 deletions(-)
+Here's how to use it:
 
-diff --git a/arch/x86/kernel/cpu/mtrr/generic.c b/arch/x86/kernel/cpu/mtrr/generic.c
-index 14f4f0c..3555e54 100644
---- a/arch/x86/kernel/cpu/mtrr/generic.c
-+++ b/arch/x86/kernel/cpu/mtrr/generic.c
-@@ -64,6 +64,18 @@ static inline void k8_check_syscfg_dram_mod_en(void)
+# echo 0 > tracing_on
+# echo function_graph > current_tracer
+# echo 0 > options/funcgraph-irqs
+# echo 1 > tracing_on
+<run-stuff>
+
+When you cat the trace file, it wont have the irqs on because of Jiri's
+patch. But..
+
+ # echo 1 > options/funcgraph-irqs
+ # echo 1 > options/latency-format
+ # cat trace
+# tracer: function_graph
+#
+#      _-----=> irqs-off        
+#     / _----=> need-resched    
+#    | / _---=> hardirq/softirq 
+#    || / _--=> preempt-depth   
+#    ||| / _-=> lock-depth      
+#    |||| /                     
+# CPU|||||  DURATION                  FUNCTION CALLS
+# |  |||||   |   |                     |   |   |   |
+ 1)  d..1.  3.090 us    |  }
+ 1)  d..1.              |  mwait_idle() {
+ 1)   ==========> |
+ 1)  d..1.              |    smp_apic_timer_interrupt() {
+ 1)  d..1.  0.483 us    |      native_apic_mem_write();
+ 1)  d..1.              |      exit_idle() {
+ 1)  d..1.  0.511 us    |        __rcu_read_lock();
+ 1)  d..1.  0.445 us    |        __rcu_read_unlock();
+ 1)  d..1.  3.903 us    |      }
+ 1)  d..1.              |      irq_enter() {
+ 1)  d..1.  0.562 us    |        rcu_irq_enter();
+ 1)  d..1.  0.461 us    |        idle_cpu();
+ 1)  d.h1.  9.337 us    |      }
+ 1)  d..2.              |      do_softirq() {
+ 1)  d..2.              |        __do_softirq() {
+
+That's because it uses "if (in_irq())" which in_irq() returns true after
+irq_enter() and set to false again in irq_exit(), which is not shown,
+because it was skipping them.  But softirqs are still displayed, and
+here it was run from the interrupt context itself before going back to
+whatever it interrupted.
+
+-- Steve
+
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 8674750..02c708a 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -15,6 +15,9 @@
+ #include "trace.h"
+ #include "trace_output.h"
+ 
++/* When set, irq functions will be ignored */
++static int ftrace_graph_skip_irqs;
++
+ struct fgraph_cpu_data {
+ 	pid_t		last_pid;
+ 	int		depth;
+@@ -208,6 +211,14 @@ int __trace_graph_entry(struct trace_array *tr,
+ 	return 1;
+ }
+ 
++static inline int ftrace_graph_ignore_irqs(void)
++{
++	if (!ftrace_graph_skip_irqs)
++		return 0;
++
++	return in_irq();
++}
++
+ int trace_graph_entry(struct ftrace_graph_ent *trace)
+ {
+ 	struct trace_array *tr = graph_array;
+@@ -222,7 +233,8 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
+ 		return 0;
+ 
+ 	/* trace it when it is-nested-in or is a function enabled. */
+-	if (!(trace->depth || ftrace_graph_addr(trace->func)))
++	if (!(trace->depth || ftrace_graph_addr(trace->func)) ||
++	      ftrace_graph_ignore_irqs())
+ 		return 0;
+ 
+ 	local_irq_save(flags);
+@@ -1334,6 +1346,14 @@ void graph_trace_close(struct trace_iterator *iter)
  	}
  }
  
-+/* Get the size of contiguous MTRR range */
-+static u64 get_mtrr_size(u64 mask)
++static int func_graph_set_flag(u32 old_flags, u32 bit, int set)
 +{
-+	u64 size;
++	if (bit == TRACE_GRAPH_PRINT_IRQS)
++		ftrace_graph_skip_irqs = !set;
 +
-+	mask >>= PAGE_SHIFT;
-+	mask |= size_or_mask;
-+	size = -mask;
-+	size <<= PAGE_SHIFT;
-+	return size;
++	return 0;
 +}
 +
- /*
-  * Check and return the effective type for MTRR-MTRR type overlap.
-  * Returns 1 if the effective type is UNCACHEABLE, else returns 0
-@@ -92,17 +104,19 @@ static int check_type_overlap(u8 *prev, u8 *curr)
- }
- 
- /*
-- * Returns the effective MTRR type for the region
-- * Error returns:
-- * - 0xFE - when the range is "not entirely covered" by _any_ var range MTRR
-- * - 0xFF - when MTRR is not enabled
-+ * Error/Semi-error returns:
-+ * 0xFF - when MTRR is not enabled
-+ * *repeat == 1 implies [start:end] spanned across MTRR range and type returned
-+ * 		corresponds only to [start:*partial_end].
-+ * 		Caller has to lookup again for [*partial_end:end].
-  */
--u8 mtrr_type_lookup(u64 start, u64 end)
-+static u8 __mtrr_type_lookup(u64 start, u64 end, u64 *partial_end, int *repeat)
- {
- 	int i;
- 	u64 base, mask;
- 	u8 prev_match, curr_match;
- 
-+	*repeat = 0;
- 	if (!mtrr_state_set)
- 		return 0xFF;
- 
-@@ -153,8 +167,34 @@ u8 mtrr_type_lookup(u64 start, u64 end)
- 
- 		start_state = ((start & mask) == (base & mask));
- 		end_state = ((end & mask) == (base & mask));
--		if (start_state != end_state)
--			return 0xFE;
-+
-+		if (start_state != end_state) {
-+			/*
-+			 * We have start:end spanning across an MTRR.
-+			 * We split the region into
-+			 * either
-+			 * (start:mtrr_end) (mtrr_end:end)
-+			 * or
-+			 * (start:mtrr_start) (mtrr_start:end)
-+			 * depending on kind of overlap.
-+			 * Return the type for first region and a pointer to
-+			 * the start of second region so that caller will
-+			 * lookup again on the second region.
-+			 * Note: This way we handle multiple overlaps as well.
-+			 */
-+			if (start_state)
-+				*partial_end = base + get_mtrr_size(mask);
-+			else
-+				*partial_end = base;
-+
-+			if (unlikely(*partial_end <= start)) {
-+				WARN_ON(1);
-+				*partial_end = start + PAGE_SIZE;
-+			}
-+
-+			end = *partial_end - 1; /* end is inclusive */
-+			*repeat = 1;
-+		}
- 
- 		if ((start & mask) != (base & mask))
- 			continue;
-@@ -180,6 +220,36 @@ u8 mtrr_type_lookup(u64 start, u64 end)
- 	return mtrr_state.def_type;
- }
- 
-+/*
-+ * Returns the effective MTRR type for the region
-+ * Error return:
-+ * 0xFF - when MTRR is not enabled
-+ */
-+u8 mtrr_type_lookup(u64 start, u64 end)
-+{
-+	u8 type, prev_type;
-+	int repeat;
-+	u64 partial_end;
-+
-+	type = __mtrr_type_lookup(start, end, &partial_end, &repeat);
-+
-+	/*
-+	 * Common path is with repeat = 0.
-+	 * However, we can have cases where [start:end] spans across some
-+	 * MTRR range. Do repeated lookups for that case here.
-+	 */
-+	while (repeat) {
-+		prev_type = type;
-+		start = partial_end;
-+		type = __mtrr_type_lookup(start, end, &partial_end, &repeat);
-+
-+		if (check_type_overlap(&prev_type, &type))
-+			return type;
-+	}
-+
-+	return type;
-+}
-+
- /* Get the MSR pair relating to a var range */
- static void
- get_mtrr_var_range(unsigned int index, struct mtrr_var_range *vr)
--- 
-1.7.1
+ static struct trace_event_functions graph_functions = {
+ 	.trace		= print_graph_function_event,
+ };
+@@ -1360,6 +1380,7 @@ static struct tracer graph_trace __read_mostly = {
+ 	.print_line	= print_graph_function,
+ 	.print_header	= print_graph_headers,
+ 	.flags		= &tracer_flags,
++	.set_flag	= func_graph_set_flag,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest	= trace_selftest_startup_function_graph,
+ #endif
+
 
