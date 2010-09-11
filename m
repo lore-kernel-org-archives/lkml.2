@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab0IKUqH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 16:46:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60940 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab0IKUqG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 16:46:06 -0400
-Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
- nr_running
-From: Peter Zijlstra <peterz@infradead.org>
+	id S1752546Ab0IKUs3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 16:48:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45634 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752186Ab0IKUs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 16:48:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-In-Reply-To: <1284237380.2251.56.camel@laptop>
-References: <20100911173732.551632040@efficios.com>
-	 <20100911174003.051303123@efficios.com> <1284231470.2251.52.camel@laptop>
-	 <AANLkTin0LOuTOcJPiZcZGeZMdqsy2dohyrREw2GGhddJ@mail.gmail.com>
-	 <1284237380.2251.56.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 11 Sep 2010 22:45:50 +0200
-Message-ID: <1284237950.2251.59.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Subject: [GIT PULL] PM fixes for 2.6.36
+Date: Sat, 11 Sep 2010 22:47:15 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        mark gross <markgross@thegnar.org>, Colin Cross <ccross@android.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009112247.15602.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-11 at 22:36 +0200, Peter Zijlstra wrote:
-> 
-> But if you want us to change the scheduler to be more latency sensitive
-> and trade in throughput for other benchmarks, we can do that.
+Hi Linus,
 
-Really, just say "latency trumps throughput" and we'll make it so.
+Please pull power management fixes for 2.6.36 from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
+
+They include:
+
+ * Device suspend error code path fix related to asynchronous suspend/resume
+   from Colin Cross.
+
+ * PM QoS fix from Mark Gross.
+
+ * Hibernate fix affecting systems with lots of highmem.
+
+
+ drivers/base/power/main.c |    1 +
+ kernel/pm_qos_params.c    |    4 ++-
+ kernel/power/snapshot.c   |   85 ++++++++++++++++++++++++++++++++++----------
+ 3 files changed, 69 insertions(+), 21 deletions(-)
+
+---------------
+
+Colin Cross (1):
+      PM: Prevent waiting forever on asynchronous resume after failing suspend
+
+Rafael J. Wysocki (1):
+      PM / Hibernate: Avoid hitting OOM during preallocation of memory
+
+mark gross (1):
+      PM QoS: Correct pr_debug() misuse and improve parameter checks
+
