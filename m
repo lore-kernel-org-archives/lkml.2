@@ -1,62 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab0IKMTA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 08:19:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796Ab0IKMS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 08:18:58 -0400
-Message-ID: <4C8B73D5.8000600@redhat.com>
-Date: Sat, 11 Sep 2010 08:19:33 -0400
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+	id S1752107Ab0IKMf0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 08:35:26 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57887 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab0IKMfY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 08:35:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=bYsmIswSERARgoB6Fn15Fdux/0cJJOoDEIoCKVtuu+GfWUnYaXVqXKEJTnEZXk76SR
+         pEkLokzaeG2GBDRldbK3r2Tt6Kc6QJgCn7cZhOoWUr6aYcy55befCZATxs8FAdFlIt7Y
+         hRq6NCpaE5PoXYFz0zhi/E7LjNrAjDulOkHRU=
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        agk@redhat.com, jaxboe@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-raid@vger.kernel.org,
-        dm-devel@redhat.com, hch@lst.de, konishi.ryusuke@lab.ntt.co.jp,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, vst@vlnb.net, jack@suse.cz, hare@suse.de,
-        neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        k-ueda@ct.jp.nec.com
-Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
- dm
-References: <1283509796-1510-1-git-send-email-tj@kernel.org> <1283509796-1510-24-git-send-email-tj@kernel.org> <Pine.LNX.4.64.1009101410570.7839@hs20-bc2-1.build.redhat.com> <20100910184652.GA24470@redhat.com> <Pine.LNX.4.64.1009101456220.21834@hs20-bc2-1.build.redhat.com> <20100910192403.GA24582@redhat.com> <Pine.LNX.4.64.1009101554300.5286@hs20-bc2-1.build.redhat.com> <4C8AC0F5.5080206@kernel.org>
-In-Reply-To: <4C8AC0F5.5080206@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <19595.23873.90306.656565@pilspetsen.it.uu.se>
+References: <AANLkTimMxQXxC354V=qVOrdUYFSrpJ-RZeKJfQEx0KPN@mail.gmail.com>
+	<19595.23873.90306.656565@pilspetsen.it.uu.se>
+Date: Sat, 11 Sep 2010 18:05:23 +0530
+Message-ID: <AANLkTinQVQsjxJLpZQiP5V56o7quGPY6G0ZOnvwPAKbx@mail.gmail.com>
+Subject: Re: How to determine the information about SATA controller
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/10/2010 07:36 PM, Tejun Heo wrote:
-> On 09/10/2010 10:06 PM, Mikulas Patocka wrote:
->> But I have my work rules that I learned: I use no git kernels and no
->> external patches (except Alasdair's patchset that I want to test). I only
->> use -rc or final kernels. I need a stable computer --- I don't want to
->> solve problems like "does it crash because I pulled something or does it
->> crash because I made a bug in my code?" So, put that into 2.6.37-rc1 and
->> I'll optimize flushes in dm for -rc2 or -rc3.
-> Alright, I'm sorry but this is as far as I would go for dm conversion
-> patches.  If you wanna split it further or do it your way, please feel
-> free to.  I think it would be beneficial to do things now but, hey,
-> you guys are maintaining dm part of the kernel, so it's up to you
-> guys.  But, I think it would be silly for everyone else to wait for
-> the rather special requirement for dm, so if we have to go forward
-> without dm updates, I suppose we will have to.  Jens, please feel free
-> to drop dm conversion patches.
+Hello,
+
+On Sat, Sep 11, 2010 at 4:13 PM, Mikael Pettersson <mikpe@it.uu.se> wrote:
+> Jaswinder Singh Rajput writes:
+>  > Hello,
+>  >
+>  > My old IDE hard disk is broken so I installed new SATA drive on my box with F13:
+>  >
+>  > dmesg :
+>  > http://userweb.kernel.org/~jaswinder/P4_HT/dmesg_2633_fc13.txt
+>  >
+>  > lsmod:
+>  > http://userweb.kernel.org/~jaswinder/P4_HT/lsmod_2633_fc13.txt
+>  >
+>  > lspci:
+>  > 00:00.0 Host bridge: Intel Corporation 82865G/PE/P DRAM
+>  > Controller/Host-Hub Interface (rev 02)
+>  > 00:02.0 VGA compatible controller: Intel Corporation 82865G Integrated
+>  > Graphics Controller (rev 02)
+>  > 00:06.0 System peripheral: Intel Corporation 82865G/PE/P Processor to
+>  > I/O Memory Interface (rev 02)
+>  > 00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev c2)
+>  > 00:1f.0 ISA bridge: Intel Corporation 82801EB/ER (ICH5/ICH5R) LPC
+>  > Interface Bridge (rev 02)
+>  > 00:1f.1 IDE interface: Intel Corporation 82801EB/ER (ICH5/ICH5R) IDE
+>  > Controller (rev 02)
+>  > 00:1f.2 IDE interface: Intel Corporation 82801EB (ICH5) SATA Controller (rev 02)
+>  >
+>  > I am trying to build the kernel with this config:
+>  > http://userweb.kernel.org/~jaswinder/P4_HT/config-ht-test.txt
+>  >
+>  > But I am getting error :
+>  >
+>  > No root device found.
+>  > Boot has failed, sleeping forever
+>  >
+>  > I am trying to determine the information about the SATA controller so
+>  > that I can choose the appropriate controller for SATA in kernel
+>  > config. I am not able to figure out the SATA information from above
+>  > dmesg and lsmod. How can I do so.
 >
-> Thanks.
+> In your working dmesg the disks are controlled by ata_piix,
+> but you've disabled CONFIG_ATA_PIIX in the config you're trying.
+> So it's not surprising that you can't boot.
+>
+> 1) re-enable CONFIG_ATA_PIIX and disable CONFIG_IDE
+
+I have enabled CONFIG_ATA_PIIX
+and disabled CONFIG_IDE
+
+but still getting same error :
+
+No root device found.
+Boot has failed, sleeping forever
+
+Am I missing some more options.
+
+> or
+> 2) go into the bios and change the option that says whether to run
+>   the ATA controller in legacy/compatible mode or enhanced/ahci mode,
+>   you want ahci mode
 >
 
-I think that we certainly want to continue to fix the whole path - including dm 
-- so we do not end up with the fragmented set of works here/doesn't work there 
-situation we had for several years. If Mikulas has better patches, he should 
-post them for review.
+In my case, BIOS options are enhanced / legacy / disabled. I tried all
+but of no use. So I am using enhanced to boot Fedora 13 kernel.
 
-Thanks!
-
-Ric
-
+Thanks,
+--
+Jawinder Singh.
