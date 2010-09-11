@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750984Ab0IKJUz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 05:20:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47699 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab0IKJUy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 05:20:54 -0400
-Subject: Re: [PATCH] generic-ipi: fix deadlock in __smp_call_function_single
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <20100910172805.a4fe5c7f.akpm@linux-foundation.org>
-References: <20100909135050.GB2228@osiris.boeblingen.de.ibm.com>
-	 <1284116817.402.33.camel@laptop>
-	 <20100910172805.a4fe5c7f.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 11 Sep 2010 11:20:38 +0200
-Message-ID: <1284196838.2251.12.camel@laptop>
+	id S1751105Ab0IKJ26 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 05:28:58 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:49153 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750911Ab0IKJ25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 05:28:57 -0400
+Date: Sat, 11 Sep 2010 11:28:55 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
+        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+Message-ID: <20100911112855.6ee6e929@schatten.dmk.lab>
+In-Reply-To: <20100911004550.GA30584@infradead.org>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	<1284111767.1783.35.camel@Joe-Laptop>
+	<20100911001350.GA11478@infradead.org>
+	<1284165074.1783.213.camel@Joe-Laptop>
+	<20100911004550.GA30584@infradead.org>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-10 at 17:28 -0700, Andrew Morton wrote:
-> Where is this scheduler bug?  Did it occur because someone didn't
-> understand __smp_call_function_single()?  Or did it occur because the
-> scheduler code is doing something which its implementors did not expect
-> or intend? 
+On Fri, 10 Sep 2010 20:45:51 -0400
+Christoph Hellwig <hch@infradead.org> wrote:
 
+> On Fri, Sep 10, 2010 at 05:31:14PM -0700, Joe Perches wrote:
+> > If you don't like it, you could use a .get_maintainer.conf
+> > file entry until some consensus is reached later.
+> 
+> I don't use the pice of junk at all.  What really pisses me off is that
+> I get spamed by all by tons of utterly useless cleanups patches (and
+> some useful but not at all interesting to me patches) because some
+> idiot made the bloody script return my address just because I touched a
+> file.  If it goes on like that I'll simply have to add a mail filter to
+> throw away all patches sent directly to me instead of a mailinglist.
+> 
 
-It comes from 83cd4fe2 (sched: Change nohz idle load balancing logic to
-push model), where nohz_balance_kick() simply needs to kick the
-designated driver into action.
+But would you also have the same attitude towards these specific
+'spams' if it were made clear in the email adress field that you were
+cc'd as a commit_signer  (vs maintainer)?
 
-I take it Venki assumed __smp_call_function_single() works like
-smp_call_function_single() where you can use it for the local cpu as
-well.
+I know it is a bit hackisch to have stuff in the name field, but it is
+rfc conform, it is even proposed for redirected email '(by way of...)'. 
 
-I guess we could do something like the below as well, which would be
-slightly faster since we don't actually need to call raise_softirq()
-since we already set it for self a bit earlier in order to have it do
-the regular load-balance actions.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/sched_fair.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 9b5b4f8..c8ca1cb 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3404,11 +3404,13 @@ static void nohz_balancer_kick(int cpu)
- 	}
- 
- 	if (!cpu_rq(ilb_cpu)->nohz_balance_kick) {
--		struct call_single_data *cp;
--
- 		cpu_rq(ilb_cpu)->nohz_balance_kick = 1;
--		cp = &per_cpu(remote_sched_softirq_cb, cpu);
--		__smp_call_function_single(ilb_cpu, cp, 0);
-+
-+		if (ilb_cpu != cpu) {
-+			struct call_single_data *cp;
-+			cp = &per_cpu(remote_sched_softirq_cb, cpu);
-+			__smp_call_function_single(ilb_cpu, cp, 0);
-+		}
- 	}
- 	return;
- }
-
+Cheers,
+Flo
