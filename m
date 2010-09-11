@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab0IKNhA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 09:37:00 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64062 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab0IKNg7 (ORCPT
+	id S1752652Ab0IKNiS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 09:38:18 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63483 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab0IKNiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 09:36:59 -0400
+	Sat, 11 Sep 2010 09:38:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=GYGV9GGDGfIXcDbcARtgMn0uVV46vP9hus9T70H0vYlhcCqeCRwmDJ/uf0++WcAJKK
-         4niU/LJfUAo/dk0SittjqbTxMTsG/J5ISnCpYT4tyBhpFFtGtr68jzOR1pO0+XEsBZCl
-         sm+BlWSe3d2bDuv2BnqV91PAuFA10gupBpvak=
+        b=uGxQwP7Vel0zGe/G5RO4NadwDC1Bg4i1YuYVMxfuzL0Hub6+qf9LHYMnCBK+QdR+rb
+         HtjL1BUXp+G7jQLRwZ3LM0fGV82kBZVS38UQ2tt/gtROlg0eg+1trw/lzOG7N7sarY/5
+         NIR8QH0GIrEAqPljIJe8iuQXYABkplFvZGPfY=
 From: Andy Shevchenko <andy.shevchenko@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Subject: [PATCH] drivers: s390: remove custom implementation of hex_to_bin()
-Date: Sat, 11 Sep 2010 16:36:38 +0300
-Message-Id: <1284212198-25849-1-git-send-email-andy.shevchenko@gmail.com>
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH] drivers: scsi: remove private hex_to_bin() implementation
+Date: Sat, 11 Sep 2010 16:38:00 +0300
+Message-Id: <1284212280-25944-1-git-send-email-andy.shevchenko@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: linux-scsi@vger.kernel.org
 ---
- drivers/s390/cio/blacklist.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+ drivers/scsi/libsas/sas_scsi_host.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/s390/cio/blacklist.c b/drivers/s390/cio/blacklist.c
-index 13cb601..76058a5 100644
---- a/drivers/s390/cio/blacklist.c
-+++ b/drivers/s390/cio/blacklist.c
-@@ -79,17 +79,15 @@ static int pure_hex(char **cp, unsigned int *val, int min_digit,
- 		    int max_digit, int max_val)
+diff --git a/drivers/scsi/libsas/sas_scsi_host.c b/drivers/scsi/libsas/sas_scsi_host.c
+index f0cfba9..527dcf7 100644
+--- a/drivers/scsi/libsas/sas_scsi_host.c
++++ b/drivers/scsi/libsas/sas_scsi_host.c
+@@ -1078,14 +1078,10 @@ void sas_target_destroy(struct scsi_target *starget)
+ static void sas_parse_addr(u8 *sas_addr, const char *p)
  {
- 	int diff;
--	unsigned int value;
- 
- 	diff = 0;
- 	*val = 0;
- 
--	while (isxdigit(**cp) && (diff <= max_digit)) {
-+	while (diff <= max_digit) {
-+		int value = hex_to_bin(**cp);
- 
--		if (isdigit(**cp))
--			value = **cp - '0';
--		else
--			value = tolower(**cp) - 'a' + 10;
-+		if (value < 0)
-+			break;
- 		*val = *val * 16 + value;
- 		(*cp)++;
- 		diff++;
+ 	int i;
+-	for (i = 0; i < SAS_ADDR_SIZE; i++) {
++	for (i = 0; i < SAS_ADDR_SIZE && *p; i++) {
+ 		u8 h, l;
+-		if (!*p)
+-			break;
+-		h = isdigit(*p) ? *p-'0' : toupper(*p)-'A'+10;
+-		p++;
+-		l = isdigit(*p) ? *p-'0' : toupper(*p)-'A'+10;
+-		p++;
++		h = hex_to_bin(*p++);
++		l = hex_to_bin(*p++);
+ 		sas_addr[i] = (h<<4) | l;
+ 	}
+ }
 -- 
 1.7.2.2
 
