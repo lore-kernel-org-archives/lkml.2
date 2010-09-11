@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450Ab0IKPkm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 11:40:42 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:41145 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753171Ab0IKPkb (ORCPT
+	id S1753476Ab0IKPzJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 11:55:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62408 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394Ab0IKPzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 11:40:31 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: David Miller <davem@davemloft.net>
-Subject: [PATCH net-next-2.6] cx82310_eth: allow empty URBs
-Date: Sat, 11 Sep 2010 17:40:16 +0200
-User-Agent: KMail/1.9.10
-Cc: netdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
+	Sat, 11 Sep 2010 11:55:07 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jens Axboe <jaxboe@fusionio.com>
+Subject: [PATCH] loop: fix double BKL lock
+Date: Sat, 11 Sep 2010 17:54:59 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain;
+Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201009111740.18843.linux@rainbow-software.org>
+Message-Id: <201009111754.59381.arnd@arndb.de>
+X-Provags-ID: V02:K0:Zh86vik6gJlWMi5g6SOVmlLfZrsabhX9oxOz0SYKkbR
+ LoGt2FMYxETARXn0WjDAuD9zkEbavsmxHiTgJGVOAAspSJs28i
+ xq5AY13uBwKNLwi9EP1z/6AQkxRK3Dc/swRtWeXSIynnehjkaH
+ kP0mUMzikHX1xjQ9ZGHM4Prjm1sKc4l9Emb3VIgMmwA+y8fFNj
+ SwMUf9aZsPZNr46tsfAEw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Empty received URBs are currently counted as errors but the device sends them
-sometimes as part of regular traffic - so remove this check.
+Patch 6e9624b8c "block: push down BKL into .open and .release"
+accidentally introduced an extra lock_kernel() instead of
+unlock_kernel(). Because of the recursiveness and
+release-while-sleeping properties of the BKL, this did
+not do much harm, but is incorrect nonetheless.
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
 
---- linux-2.6.36-rc3-/drivers/net/usb/cx82310_eth.c	2010-09-11 17:31:44.000000000 +0200
-+++ linux-2.6.36-rc3/drivers/net/usb/cx82310_eth.c	2010-09-11 17:21:22.000000000 +0200
-@@ -150,11 +150,11 @@ static int cx82310_bind(struct usbnet *d
+Please apply before 2.6.36
+
+ drivers/block/loop.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 91797bb..d311e38 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1448,7 +1448,7 @@ static int lo_release(struct gendisk *disk, fmode_t mode)
+ out:
+ 	mutex_unlock(&lo->lo_ctl_mutex);
+ out_unlocked:
+-	lock_kernel();
++	unlock_kernel();
+ 	return 0;
+ }
  
- 	/*
- 	 * this must not include ethernet header as the device can send partial
--	 * packets with no header (URB is at least 2 bytes long, so 2 is OK)
-+	 * packets with no header (and sometimes even empty URBs)
- 	 */
--	dev->net->hard_header_len = 2;
-+	dev->net->hard_header_len = 0;
- 	/* we can send at most 1514 bytes of data (+ 2-byte header) per URB */
--	dev->hard_mtu = CX82310_MTU + dev->net->hard_header_len;
-+	dev->hard_mtu = CX82310_MTU + 2;
- 	/* we can receive URBs up to 4KB from the device */
- 	dev->rx_urb_size = 4096;
- 
-@@ -228,12 +228,6 @@ static int cx82310_rx_fixup(struct usbne
- 			return 1;
- 	}
- 
--	if (skb->len < 2) {
--		dev_err(&dev->udev->dev, "RX frame too short: %d B\n",
--			skb->len);
--		return 0;
--	}
--
- 	/* a skb can contain multiple packets */
- 	while (skb->len > 1) {
- 		/* first two bytes are packet length */
-
-
 -- 
-Ondrej Zary
+1.7.1
+
