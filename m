@@ -1,215 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab0IKAWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 20:22:23 -0400
-Received: from mail.perches.com ([173.55.12.10]:1651 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755622Ab0IKAWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 20:22:23 -0400
-Subject: [PATCH] scripts/get_maintainer.pl: Add --git-blame --rolestats
- "Authored lines" information
-From: Joe Perches <joe@perches.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: florian@mickler.org, Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1284115665.1783.144.camel@Joe-Laptop>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	 <1284111767.1783.35.camel@Joe-Laptop>
-	 <20100910095259.GC23903@sirena.org.uk>
-	 <1284113066.1783.69.camel@Joe-Laptop>
-	 <20100910101818.GF3068@rakim.wolfsonmicro.main>
-	 <1284115665.1783.144.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Sep 2010 17:22:21 -0700
-Message-ID: <1284164541.1783.204.camel@Joe-Laptop>
+	id S1755791Ab0IKA3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 20:29:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48712 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755007Ab0IKA3H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 20:29:07 -0400
+Date: Fri, 10 Sep 2010 17:28:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] generic-ipi: fix deadlock in __smp_call_function_single
+Message-Id: <20100910172805.a4fe5c7f.akpm@linux-foundation.org>
+In-Reply-To: <1284116817.402.33.camel@laptop>
+References: <20100909135050.GB2228@osiris.boeblingen.de.ibm.com>
+	<1284116817.402.33.camel@laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Something based on percentage of the driver written rather than log
-> > entry counts might also be interesting.
-> There is a --git-blame option, but it uses a count of file commits
-> active in the file rather than % of lines authored.
+On Fri, 10 Sep 2010 13:06:57 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-When options --git-blame and --rolestats are specified, add
-the maintainers with the qualifying --git-min-percent amount
-of lines authored of the complete file.  Does not add more
-authors than specified by --git-max-maintainers.
+> On Thu, 2010-09-09 at 15:50 +0200, Heiko Carstens wrote:
+> > From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > 
+> > Just got my 6 way machine to a state where cpu 0 is in an endless loop
+> > within __smp_call_function_single.
+> > All other cpus are idle.
+> > 
+> > The call trace on cpu 0 looks like this:
+> > 
+> > __smp_call_function_single
+> > scheduler_tick
+> > update_process_times
+> > tick_sched_timer
+> > __run_hrtimer
+> > hrtimer_interrupt
+> > clock_comparator_work
+> > do_extint
+> > ext_int_handler
+> > ----> timer irq
+> > cpu_idle
+> > 
+> > __smp_call_function_single got called from nohz_balancer_kick (inlined)
+> > with the remote cpu being 1, wait being 0 and the per cpu variable
+> > remote_sched_softirq_cb (call_single_data) of the current cpu (0).
+> > 
+> > Then it loops forever when it tries to grab the lock of the
+> > call_single_data, since it is already locked and enqueued on cpu 0.
+> > 
+> > My theory how this could have happened: for some reason the scheduler
+> > decided to call __smp_call_function_single on it's own cpu, and sends
+> > an IPI to itself. The interrupt stays pending since IRQs are disabled.
+> > If then the hypervisor schedules the cpu away it might happen that upon
+> > rescheduling both the IPI and the timer IRQ are pending.
+> > If then interrupts are enabled again it depends which one gets scheduled
+> > first.
+> > If the timer interrupt gets delivered first we end up with the local
+> > deadlock as seen in the calltrace above.
+> > 
+> > Let's make __smp_call_function_single check if the target cpu is the
+> > current cpu and execute the function immediately just like
+> > smp_call_function_single does. That should prevent at least the
+> > scenario described here.
+> > 
+> > It might also be that the scheduler is not supposed to call
+> > __smp_call_function_single with the remote cpu being the current cpu,
+> > but that is a different issue.
+> > 
+> > Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> 
+> Right, so it looks like all other users of __smp_call_function_single()
+> do indeed ensure not to call it on self
 
-For anyone using hg, this option works but is _very_ slow.
-It's orders of magnitude slower than git slow.
+Yes, it's a cross-CPU call only.  If the scheduler called it for the
+current CPU then that's a scheduler bug.
 
-The get_maintainer.pl version was incremented to 0.25.
+Where is this scheduler bug?  Did it occur because someone didn't
+understand __smp_call_function_single()?  Or did it occur because the
+scheduler code is doing something which its implementors did not expect
+or intend?
 
-This can be used with or without --git.
+> but your patch does make sense.
 
-For instance:
+Maybe.  Or maybe it papers over a scheduler bug by gratuitously adding
+additional code which no present callsites actually need.
 
-$ ./scripts/get_maintainer.pl --git-blame --nogit --rolestats -f lib/bitmap.c
-Paul Jackson <pj@sgi.com> (authored lines:406/613=66%,commits:7/20=35%)
-Akinobu Mita <mita@miraclelinux.com> (authored lines:87/613=14%,commits:3/20=15%)
-Reinette Chatre <reinette.chatre@linux.intel.com> (authored lines:42/613=7%)
-Andrew Morton <akpm@linux-foundation.org> (commits:16/20=80%)
-Paul Mundt <lethal@linux-sh.org> (commits:3/20=15%)
-Randy Dunlap <randy.dunlap@oracle.com> (commits:2/20=10%)
-
-$ ./scripts/get_maintainer.pl --git-blame --git --rolestats -f lib/bitmap.c
-Andrew Morton <akpm@linux-foundation.org> (commit_signer:4/5=80%,commits:16/20=80%)
-Akinobu Mita <akinobu.mita@gmail.com> (commit_signer:2/5=40%,authored lines:87/613=14%,commits:3/20=15%)
-Jack Steiner <steiner@sgi.com> (commit_signer:1/5=20%)
-Ben Hutchings <ben@decadent.org.uk> (commit_signer:1/5=20%)
-Lee Schermerhorn <lee.schermerhorn@hp.com> (commit_signer:1/5=20%)
-Paul Jackson <pj@sgi.com> (authored lines:406/613=66%,commits:7/20=35%)
-Reinette Chatre <reinette.chatre@linux.intel.com> (authored lines:42/613=7%)
-Paul Mundt <lethal@linux-sh.org> (commits:3/20=15%)
-Randy Dunlap <randy.dunlap@oracle.com> (commits:2/20=10%)
-linux-kernel@vger.kernel.org (open list)
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/get_maintainer.pl |   60 ++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 57 insertions(+), 3 deletions(-)
-
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index b228198..a91ae63 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -13,7 +13,7 @@
- use strict;
- 
- my $P = $0;
--my $V = '0.24';
-+my $V = '0.25';
- 
- use Getopt::Long qw(:config no_auto_abbrev);
- 
-@@ -88,6 +88,7 @@ my %VCS_cmds_git = (
-     "available" => '(which("git") ne "") && (-d ".git")',
-     "find_signers_cmd" => "git log --no-color --since=\$email_git_since -- \$file",
-     "find_commit_signers_cmd" => "git log --no-color -1 \$commit",
-+    "find_commit_author_cmd" => "git log -1 --format=\"%an <%ae>\" \$commit",
-     "blame_range_cmd" => "git blame -l -L \$diff_start,+\$diff_length \$file",
-     "blame_file_cmd" => "git blame -l \$file",
-     "commit_pattern" => "^commit [0-9a-f]{40,40}",
-@@ -101,6 +102,7 @@ my %VCS_cmds_hg = (
- 	"hg log --date=\$email_hg_since" .
- 		" --template='commit {node}\\n{desc}\\n' -- \$file",
-     "find_commit_signers_cmd" => "hg log --template='{desc}\\n' -r \$commit",
-+    "find_commit_author_cmd" => "hg log -l 1 --template='{author}\\n' -r \$commit",
-     "blame_range_cmd" => "",		# not supported
-     "blame_file_cmd" => "hg blame -c \$file",
-     "commit_pattern" => "^commit [0-9a-f]{40,40}",
-@@ -1014,6 +1016,9 @@ sub vcs_find_signers {
-     if (!$email_git_penguin_chiefs) {
- 	@lines = grep(!/${penguin_chiefs}/i, @lines);
-     }
-+
-+    return (0, @lines) if !@lines;
-+
-     # cut -f2- -d":"
-     s/.*:\s*(.+)\s*/$1/ for (@lines);
- 
-@@ -1027,6 +1032,28 @@ sub vcs_find_signers {
-     return ($commits, @lines);
- }
- 
-+sub vcs_find_author {
-+    my ($cmd) = @_;
-+    my @lines = ();
-+
-+    @lines = &{$VCS_cmds{"execute_cmd"}}($cmd);
-+
-+    if (!$email_git_penguin_chiefs) {
-+	@lines = grep(!/${penguin_chiefs}/i, @lines);
-+    }
-+
-+    return @lines if !@lines;
-+
-+## Reformat email addresses (with names) to avoid badly written signatures
-+
-+    foreach my $line (@lines) {
-+	my ($name, $address) = parse_email($line);
-+	$line = format_email($name, $address, 1);
-+    }
-+
-+    return @lines;
-+}
-+
- sub vcs_save_commits {
-     my ($cmd) = @_;
-     my @lines = ();
-@@ -1084,6 +1111,10 @@ sub vcs_blame {
- 	@commits = vcs_save_commits($cmd);
-     }
- 
-+    foreach my $commit (@commits) {
-+	$commit =~ s/^\^//g;
-+    }
-+
-     return @commits;
- }
- 
-@@ -1121,6 +1152,8 @@ sub vcs_assign {
- 	@lines = mailmap(@lines);
-     }
- 
-+    return if (@lines <= 0);
-+
-     @lines = sort(@lines);
- 
-     # uniq -c
-@@ -1165,14 +1198,17 @@ sub vcs_file_blame {
-     my ($file) = @_;
- 
-     my @signers = ();
-+    my @all_commits = ();
-     my @commits = ();
-     my $total_commits;
-+    my $total_lines;
- 
-     return if (!vcs_exists());
- 
--    @commits = vcs_blame($file);
--    @commits = uniq(@commits);
-+    @all_commits = vcs_blame($file);
-+    @commits = uniq(@all_commits);
-     $total_commits = @commits;
-+    $total_lines = @all_commits;
- 
-     foreach my $commit (@commits) {
- 	my $commit_count;
-@@ -1182,10 +1218,28 @@ sub vcs_file_blame {
- 	$cmd =~ s/(\$\w+)/$1/eeg;	#interpolate $cmd
- 
- 	($commit_count, @commit_signers) = vcs_find_signers($cmd);
-+
- 	push(@signers, @commit_signers);
-     }
- 
-     if ($from_filename) {
-+	if ($output_rolestats) {
-+	    my @blame_signers;
-+	    foreach my $commit (@commits) {
-+		my $i;
-+		my $cmd = $VCS_cmds{"find_commit_author_cmd"};
-+		$cmd =~ s/(\$\w+)/$1/eeg;	#interpolate $cmd
-+		my @author = vcs_find_author($cmd);
-+		next if !@author;
-+		my $count = grep(/$commit/, @all_commits);
-+		for ($i = 0; $i < $count ; $i++) {
-+		    push(@blame_signers, $author[0]);
-+		}
-+	    }
-+	    if (@blame_signers) {
-+		vcs_assign("authored lines", $total_lines, @blame_signers);
-+	    }
-+	}
- 	vcs_assign("commits", $total_commits, @signers);
-     } else {
- 	vcs_assign("modified commits", $total_commits, @signers);
+The patch didn't update the __smp_call_function_single() kerneldoc. 
+Compare it with smp_call_function_single() and note the subtle
+difference between "a specific CPU" and the now incorrect "on another CPU".
 
 
