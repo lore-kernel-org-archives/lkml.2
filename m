@@ -1,318 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab0IKJhK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 05:37:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:39559 "EHLO mga11.intel.com"
+	id S1753444Ab0IKJiP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 05:38:15 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:35060 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752842Ab0IKJhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 05:37:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,351,1280732400"; 
-   d="scan'208";a="605970657"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC PATCH v10 15/16] An example how to modifiy NIC driver to use napi_gro_frags() interface
-Date: Sat, 11 Sep 2010 17:53:08 +0800
-Message-Id: <1284198789-5358-16-git-send-email-xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1284198789-5358-15-git-send-email-xiaohui.xin@intel.com>
-References: <1284198789-5358-1-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-2-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-3-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-4-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-5-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-6-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-7-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-8-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-9-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-10-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-11-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-12-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-13-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-14-git-send-email-xiaohui.xin@intel.com>
- <1284198789-5358-15-git-send-email-xiaohui.xin@intel.com>
+	id S1751595Ab0IKJiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 05:38:13 -0400
+Date: Sat, 11 Sep 2010 11:38:11 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Joe Perches <joe@perches.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/get_maintainer.pl: Add --git-blame --rolestats
+ "Authored lines" information
+Message-ID: <20100911113811.7c685c6d@schatten.dmk.lab>
+In-Reply-To: <1284164541.1783.204.camel@Joe-Laptop>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	<1284111767.1783.35.camel@Joe-Laptop>
+	<20100910095259.GC23903@sirena.org.uk>
+	<1284113066.1783.69.camel@Joe-Laptop>
+	<20100910101818.GF3068@rakim.wolfsonmicro.main>
+	<1284115665.1783.144.camel@Joe-Laptop>
+	<1284164541.1783.204.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+On Fri, 10 Sep 2010 17:22:21 -0700
+Joe Perches <joe@perches.com> wrote:
 
-This example is made on ixgbe driver.
-It provides API is_rx_buffer_mapped_as_page() to indicate
-if the driver use napi_gro_frags() interface or not.
-The example allocates 2 pages for DMA for one ring descriptor
-using netdev_alloc_page(). When packets is coming, using
-napi_gro_frags() to allocate skb and to receive the packets.
+> > > Something based on percentage of the driver written rather than log
+> > > entry counts might also be interesting.
+> > There is a --git-blame option, but it uses a count of file commits
+> > active in the file rather than % of lines authored.
+> 
+> When options --git-blame and --rolestats are specified, add
+> the maintainers with the qualifying --git-min-percent amount
+> of lines authored of the complete file.  Does not add more
+> authors than specified by --git-max-maintainers.
+> 
+> For anyone using hg, this option works but is _very_ slow.
+> It's orders of magnitude slower than git slow.
+> 
+> The get_maintainer.pl version was incremented to 0.25.
+> 
+> This can be used with or without --git.
+> 
+> For instance:
+> 
+> $ ./scripts/get_maintainer.pl --git-blame --nogit --rolestats -f lib/bitmap.c
+> Paul Jackson <pj@sgi.com> (authored lines:406/613=66%,commits:7/20=35%)
+> Akinobu Mita <mita@miraclelinux.com> (authored lines:87/613=14%,commits:3/20=15%)
+> Reinette Chatre <reinette.chatre@linux.intel.com> (authored lines:42/613=7%)
+> Andrew Morton <akpm@linux-foundation.org> (commits:16/20=80%)
+> Paul Mundt <lethal@linux-sh.org> (commits:3/20=15%)
+> Randy Dunlap <randy.dunlap@oracle.com> (commits:2/20=10%)
+> 
+> $ ./scripts/get_maintainer.pl --git-blame --git --rolestats -f lib/bitmap.c
+> Andrew Morton <akpm@linux-foundation.org> (commit_signer:4/5=80%,commits:16/20=80%)
+> Akinobu Mita <akinobu.mita@gmail.com> (commit_signer:2/5=40%,authored lines:87/613=14%,commits:3/20=15%)
+> Jack Steiner <steiner@sgi.com> (commit_signer:1/5=20%)
+> Ben Hutchings <ben@decadent.org.uk> (commit_signer:1/5=20%)
+> Lee Schermerhorn <lee.schermerhorn@hp.com> (commit_signer:1/5=20%)
+> Paul Jackson <pj@sgi.com> (authored lines:406/613=66%,commits:7/20=35%)
+> Reinette Chatre <reinette.chatre@linux.intel.com> (authored lines:42/613=7%)
+> Paul Mundt <lethal@linux-sh.org> (commits:3/20=15%)
+> Randy Dunlap <randy.dunlap@oracle.com> (commits:2/20=10%)
+> linux-kernel@vger.kernel.org (open list)
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
----
- drivers/net/ixgbe/ixgbe.h      |    3 +
- drivers/net/ixgbe/ixgbe_main.c |  151 ++++++++++++++++++++++++++++++++--------
- 2 files changed, 125 insertions(+), 29 deletions(-)
+I think this is a good change. I also think this should be made
+default. (linestat is probably more of a hint then nr of commits. 
 
-diff --git a/drivers/net/ixgbe/ixgbe.h b/drivers/net/ixgbe/ixgbe.h
-index 79c35ae..fceffc5 100644
---- a/drivers/net/ixgbe/ixgbe.h
-+++ b/drivers/net/ixgbe/ixgbe.h
-@@ -131,6 +131,9 @@ struct ixgbe_rx_buffer {
- 	struct page *page;
- 	dma_addr_t page_dma;
- 	unsigned int page_offset;
-+	u16 mapped_as_page;
-+	struct page *page_skb;
-+	unsigned int page_skb_offset;
- };
- 
- struct ixgbe_queue_stats {
-diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
-index 6c00ee4..905d6d2 100644
---- a/drivers/net/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ixgbe/ixgbe_main.c
-@@ -688,6 +688,12 @@ static inline void ixgbe_release_rx_desc(struct ixgbe_hw *hw,
- 	IXGBE_WRITE_REG(hw, IXGBE_RDT(rx_ring->reg_idx), val);
- }
- 
-+static bool is_rx_buffer_mapped_as_page(struct ixgbe_rx_buffer *bi,
-+					struct net_device *dev)
-+{
-+	return true;
-+}
-+
- /**
-  * ixgbe_alloc_rx_buffers - Replace used receive buffers; packet split
-  * @adapter: address of board private structure
-@@ -704,13 +710,17 @@ static void ixgbe_alloc_rx_buffers(struct ixgbe_adapter *adapter,
- 	i = rx_ring->next_to_use;
- 	bi = &rx_ring->rx_buffer_info[i];
- 
-+
- 	while (cleaned_count--) {
- 		rx_desc = IXGBE_RX_DESC_ADV(*rx_ring, i);
- 
-+		bi->mapped_as_page =
-+			is_rx_buffer_mapped_as_page(bi, adapter->netdev);
-+
- 		if (!bi->page_dma &&
- 		    (rx_ring->flags & IXGBE_RING_RX_PS_ENABLED)) {
- 			if (!bi->page) {
--				bi->page = alloc_page(GFP_ATOMIC);
-+				bi->page = netdev_alloc_page(adapter->netdev);
- 				if (!bi->page) {
- 					adapter->alloc_rx_page_failed++;
- 					goto no_buffers;
-@@ -727,7 +737,7 @@ static void ixgbe_alloc_rx_buffers(struct ixgbe_adapter *adapter,
- 			                            PCI_DMA_FROMDEVICE);
- 		}
- 
--		if (!bi->skb) {
-+		if (!bi->mapped_as_page && !bi->skb) {
- 			struct sk_buff *skb;
- 			/* netdev_alloc_skb reserves 32 bytes up front!! */
- 			uint bufsz = rx_ring->rx_buf_len + SMP_CACHE_BYTES;
-@@ -747,6 +757,19 @@ static void ixgbe_alloc_rx_buffers(struct ixgbe_adapter *adapter,
- 			                         rx_ring->rx_buf_len,
- 			                         PCI_DMA_FROMDEVICE);
- 		}
-+
-+		if (bi->mapped_as_page && !bi->page_skb) {
-+			bi->page_skb = netdev_alloc_page(adapter->netdev);
-+			if (!bi->page_skb) {
-+				adapter->alloc_rx_page_failed++;
-+				goto no_buffers;
-+			}
-+			bi->page_skb_offset = 0;
-+			bi->dma = pci_map_page(pdev, bi->page_skb,
-+					bi->page_skb_offset,
-+					(PAGE_SIZE / 2),
-+					PCI_DMA_FROMDEVICE);
-+		}
- 		/* Refresh the desc even if buffer_addrs didn't change because
- 		 * each write-back erases this info. */
- 		if (rx_ring->flags & IXGBE_RING_RX_PS_ENABLED) {
-@@ -823,6 +846,13 @@ struct ixgbe_rsc_cb {
- 	dma_addr_t dma;
- };
- 
-+static bool is_no_buffer(struct ixgbe_rx_buffer *rx_buffer_info)
-+{
-+	return (!rx_buffer_info->skb ||
-+		!rx_buffer_info->page_skb) &&
-+		!rx_buffer_info->page;
-+}
-+
- #define IXGBE_RSC_CB(skb) ((struct ixgbe_rsc_cb *)(skb)->cb)
- 
- static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
-@@ -832,6 +862,7 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 	struct ixgbe_adapter *adapter = q_vector->adapter;
- 	struct net_device *netdev = adapter->netdev;
- 	struct pci_dev *pdev = adapter->pdev;
-+	struct napi_struct *napi = &q_vector->napi;
- 	union ixgbe_adv_rx_desc *rx_desc, *next_rxd;
- 	struct ixgbe_rx_buffer *rx_buffer_info, *next_buffer;
- 	struct sk_buff *skb;
-@@ -868,29 +899,71 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 			len = le16_to_cpu(rx_desc->wb.upper.length);
- 		}
- 
-+		if (is_no_buffer(rx_buffer_info))
-+			break;
-+
- 		cleaned = true;
--		skb = rx_buffer_info->skb;
--		prefetch(skb->data);
--		rx_buffer_info->skb = NULL;
- 
--		if (rx_buffer_info->dma) {
--			if ((adapter->flags2 & IXGBE_FLAG2_RSC_ENABLED) &&
--			    (!(staterr & IXGBE_RXD_STAT_EOP)) &&
--				 (!(skb->prev)))
--				/*
--				 * When HWRSC is enabled, delay unmapping
--				 * of the first packet. It carries the
--				 * header information, HW may still
--				 * access the header after the writeback.
--				 * Only unmap it when EOP is reached
--				 */
--				IXGBE_RSC_CB(skb)->dma = rx_buffer_info->dma;
--			else
--				pci_unmap_single(pdev, rx_buffer_info->dma,
--				                 rx_ring->rx_buf_len,
--				                 PCI_DMA_FROMDEVICE);
--			rx_buffer_info->dma = 0;
--			skb_put(skb, len);
-+		if (!rx_buffer_info->mapped_as_page) {
-+			skb = rx_buffer_info->skb;
-+			prefetch(skb->data);
-+			rx_buffer_info->skb = NULL;
-+
-+			if (rx_buffer_info->dma) {
-+				if ((adapter->flags2 &
-+					IXGBE_FLAG2_RSC_ENABLED) &&
-+					(!(staterr & IXGBE_RXD_STAT_EOP)) &&
-+					(!(skb->prev)))
-+					/*
-+					 * When HWRSC is enabled, delay unmapping
-+					 * of the first packet. It carries the
-+					 * header information, HW may still
-+					 * access the header after the writeback.
-+					 * Only unmap it when EOP is reached
-+					 */
-+					IXGBE_RSC_CB(skb)->dma =
-+							rx_buffer_info->dma;
-+				else
-+					pci_unmap_single(pdev,
-+							rx_buffer_info->dma,
-+							rx_ring->rx_buf_len,
-+							PCI_DMA_FROMDEVICE);
-+				rx_buffer_info->dma = 0;
-+				skb_put(skb, len);
-+			}
-+		} else {
-+			skb = napi_get_frags(napi);
-+			prefetch(rx_buffer_info->page_skb_offset);
-+			rx_buffer_info->skb = NULL;
-+			if (rx_buffer_info->dma) {
-+				if ((adapter->flags2 &
-+					IXGBE_FLAG2_RSC_ENABLED) &&
-+					(!(staterr & IXGBE_RXD_STAT_EOP)) &&
-+					(!(skb->prev)))
-+					/*
-+					 * When HWRSC is enabled, delay unmapping
-+					 * of the first packet. It carries the
-+					 * header information, HW may still
-+					 * access the header after the writeback.
-+					 * Only unmap it when EOP is reached
-+					 */
-+					IXGBE_RSC_CB(skb)->dma =
-+						rx_buffer_info->dma;
-+				else
-+					pci_unmap_page(pdev, rx_buffer_info->dma,
-+							PAGE_SIZE / 2,
-+							PCI_DMA_FROMDEVICE);
-+				rx_buffer_info->dma = 0;
-+				skb_fill_page_desc(skb,
-+						skb_shinfo(skb)->nr_frags,
-+						rx_buffer_info->page_skb,
-+						rx_buffer_info->page_skb_offset,
-+						len);
-+				rx_buffer_info->page_skb = NULL;
-+				skb->len += len;
-+				skb->data_len += len;
-+				skb->truesize += len;
-+			}
- 		}
- 
- 		if (upper_len) {
-@@ -956,6 +1029,11 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 				rx_buffer_info->dma = next_buffer->dma;
- 				next_buffer->skb = skb;
- 				next_buffer->dma = 0;
-+				if (rx_buffer_info->mapped_as_page) {
-+					rx_buffer_info->page_skb =
-+							next_buffer->page_skb;
-+					next_buffer->page_skb = NULL;
-+				}
- 			} else {
- 				skb->next = next_buffer->skb;
- 				skb->next->prev = skb;
-@@ -975,7 +1053,8 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 		total_rx_bytes += skb->len;
- 		total_rx_packets++;
- 
--		skb->protocol = eth_type_trans(skb, adapter->netdev);
-+		if (!rx_buffer_info->mapped_as_page)
-+			skb->protocol = eth_type_trans(skb, adapter->netdev);
- #ifdef IXGBE_FCOE
- 		/* if ddp, not passing to ULD unless for FCP_RSP or error */
- 		if (adapter->flags & IXGBE_FLAG_FCOE_ENABLED) {
-@@ -984,7 +1063,14 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 				goto next_desc;
- 		}
- #endif /* IXGBE_FCOE */
--		ixgbe_receive_skb(q_vector, skb, staterr, rx_ring, rx_desc);
-+
-+		if (!rx_buffer_info->mapped_as_page)
-+			ixgbe_receive_skb(q_vector, skb, staterr,
-+						rx_ring, rx_desc);
-+		else {
-+			skb_record_rx_queue(skb, rx_ring->queue_index);
-+			napi_gro_frags(napi);
-+		}
- 
- next_desc:
- 		rx_desc->wb.upper.status_error = 0;
-@@ -3131,9 +3217,16 @@ static void ixgbe_clean_rx_ring(struct ixgbe_adapter *adapter,
- 
- 		rx_buffer_info = &rx_ring->rx_buffer_info[i];
- 		if (rx_buffer_info->dma) {
--			pci_unmap_single(pdev, rx_buffer_info->dma,
--			                 rx_ring->rx_buf_len,
--			                 PCI_DMA_FROMDEVICE);
-+			if (!rx_buffer_info->mapped_as_page) {
-+				pci_unmap_single(pdev, rx_buffer_info->dma,
-+						rx_ring->rx_buf_len,
-+						PCI_DMA_FROMDEVICE);
-+			} else {
-+				pci_unmap_page(pdev, rx_buffer_info->dma,
-+						PAGE_SIZE / 2,
-+						PCI_DMA_FROMDEVICE);
-+				rx_buffer_info->page_skb = NULL;
-+			}
- 			rx_buffer_info->dma = 0;
- 		}
- 		if (rx_buffer_info->skb) {
-@@ -3158,7 +3251,7 @@ static void ixgbe_clean_rx_ring(struct ixgbe_adapter *adapter,
- 			               PAGE_SIZE / 2, PCI_DMA_FROMDEVICE);
- 			rx_buffer_info->page_dma = 0;
- 		}
--		put_page(rx_buffer_info->page);
-+		netdev_free_page(adapter->netdev, rx_buffer_info->page);
- 		rx_buffer_info->page = NULL;
- 		rx_buffer_info->page_offset = 0;
- 	}
--- 
-1.5.4.4
+But I don't think it really solves the same problem as the annotations
+on the name. We really want to show who just used a script to cc people
+and who made an effort to find the right people to send the patch to.
 
+Cheers,
+Flo
