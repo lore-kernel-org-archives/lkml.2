@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab0IKA42 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 20:56:28 -0400
-Received: from mail.perches.com ([173.55.12.10]:1666 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755878Ab0IKA41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 20:56:27 -0400
-Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
- default
-From: Joe Perches <joe@perches.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: florian@mickler.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
-        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100911004550.GA30584@infradead.org>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	 <1284111767.1783.35.camel@Joe-Laptop>
-	 <20100911001350.GA11478@infradead.org>
-	 <1284165074.1783.213.camel@Joe-Laptop>
-	 <20100911004550.GA30584@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Sep 2010 17:56:23 -0700
-Message-ID: <1284166583.1783.220.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755975Ab0IKA7k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 20:59:40 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57544 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755866Ab0IKA7j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 20:59:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=hAKUVJ+k9BF6FTkZQf+97xOT09PMHXUpkEAYuhNQG3DWdX7ew6GPdglV/3envTc6Az
+         6Y9JwPUA+pBTt6wIO5HpovQrI/GR+kGYwzYxDb9/PJlP/NPXwmFVcNrKhKCgwbZtDjnk
+         oy57lMBUVVqaDNhhvrJfTZMfTsGmuW5GFgUIs=
+MIME-Version: 1.0
+In-Reply-To: <1284152491.2681.3.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <Pine.LNX.4.64.1009101324280.3056@boston.corp.fedex.com>
+	<1284104920.402.21.camel@laptop>
+	<AANLkTinBwfLXi0Bv0_gzSWRsdDPzHFQFZFwEYjbwkNs4@mail.gmail.com>
+	<1284120353.402.39.camel@laptop>
+	<AANLkTikKmsM2kunB_ocwRawLUiuP4-_nz-mPsiapw7TJ@mail.gmail.com>
+	<1284150773.402.122.camel@laptop>
+	<1284152491.2681.3.camel@sbsiddha-MOBL3.sc.intel.com>
+Date: Sat, 11 Sep 2010 08:59:37 +0800
+Message-ID: <AANLkTinr-pUYYGhfRoxjN6si294DOBmPrURWD3z+fTU+@mail.gmail.com>
+Subject: Re: [PATCH] x86, tsc: Fix a preemption leak in restore_sched_clock_state()
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Nico Schottelius <nico-nospam@schottelius.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Nico Schottelius <nico-linux-20100709@schottelius.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Florian Pritz <flo@xssn.at>, "stable@kernel.org" <stable@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "Brown, Len" <lenb@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-10 at 20:45 -0400, Christoph Hellwig wrote:
-> What really pisses me off is that
-> I get spamed by all by tons of utterly useless cleanups patches (and
-> some useful but not at all interesting to me patches) because some
-> idiot made the bloody script return my address just because I touched a
-> file.  If it goes on like that I'll simply have to add a mail filter to
-> throw away all patches sent directly to me instead of a mailinglist.
+On Sat, Sep 11, 2010 at 5:01 AM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+> On Fri, 2010-09-10 at 13:32 -0700, Peter Zijlstra wrote:
+>> D'0h !! *facepalm*
+>>
+>> Shame on me for not spotting that sooner.
 
-Seems like I'll have to ask Andrew to slap you next
-time you meet. <That's a joke for those humor impaired>
+It was a hard one to catch.
 
-Your choice, if you do that perhaps you should remove
-your name from MAINTAINERS as well.
+> Thanks for looking at this and thanks to Jeff for reporting.
+>
+> Original patch was marked as stable for 2.6.32+, so we need to make sure
+> that Greg picks up this piece too along with the original patch.
 
-cheers, Joe
+Verified that it indeed fixed the problem!
 
+Thanks for fixing this.
+
+Jeff
