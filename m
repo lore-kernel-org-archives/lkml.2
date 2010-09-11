@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab0IKOTF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 10:19:05 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50581 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab0IKORg (ORCPT
+	id S1753257Ab0IKPGP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 11:06:15 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46982 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab0IKPGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 10:17:36 -0400
+	Sat, 11 Sep 2010 11:06:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=qCo+k23HY2WNWdfSSkeFnwVv1NcZWcnLXSujWyN6o1JH7lAE2P05WPdtK5vH4MEsmH
-         UiBhzO8nP/g1DrYZqPsflWudTmldY8BxG34LnTSq8s3ILYftN9Qo37CF2r6DIkqixBLh
-         BsuTzjCCs9mFJAi4u6htxy2PijNFf5nsNMqHg=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=IRCgUH4t7P6Fot2DlDuEJUEHmsZ+CQwtvMWC9SmUJAJlv28PEI2NCWW7IHtJo4pSIE
+         D4cNyu1b57Fr3dSVC9BSww7IJxCylOISBk2Wkp3ffA5VJRLMcg7biPtewV+XvdyTf7zb
+         tfHRB2k2kYguXZgu9MmPf6CFILaWF5qNX8iSE=
 From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+To: linux-kernel@vger.kernel.org
+Cc: David Vrabel <david.vrabel@csr.com>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
         Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: [PATCH 04/10] staging: cxt1e1: use '%pMF' format to print MAC address
-Date: Sat, 11 Sep 2010 17:17:07 +0300
-Message-Id: <bacc2cf5bd633ae2a0c882c5aad41f194e9730b4.1284214460.git.andy.shevchenko@gmail.com>
+Subject: [PATCH] uwb: use '%pM' format to print MAC address
+Date: Sat, 11 Sep 2010 18:05:46 +0300
+Message-Id: <1284217546-29934-1-git-send-email-andy.shevchenko@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <735b00c1124fd4c2c68dfe9446ac05db9aa72fcd.1284214458.git.andy.shevchenko@gmail.com>
-References: <735b00c1124fd4c2c68dfe9446ac05db9aa72fcd.1284214458.git.andy.shevchenko@gmail.com>
-In-Reply-To: <735b00c1124fd4c2c68dfe9446ac05db9aa72fcd.1284214458.git.andy.shevchenko@gmail.com>
-References: <735b00c1124fd4c2c68dfe9446ac05db9aa72fcd.1284214458.git.andy.shevchenko@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 ---
- drivers/staging/cxt1e1/sbeproc.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/uwb/address.c    |    5 +----
+ drivers/uwb/wlp/wss-lc.c |    8 +++-----
+ 2 files changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/cxt1e1/sbeproc.c b/drivers/staging/cxt1e1/sbeproc.c
-index 4f4dcd3..af8fce4 100644
---- a/drivers/staging/cxt1e1/sbeproc.c
-+++ b/drivers/staging/cxt1e1/sbeproc.c
-@@ -142,9 +142,8 @@ sbecom_proc_get_sbe_info (char *buffer, char **start, off_t offset,
-     len += sprintf (buffer + len, "Board Number:  %d\n", bip->brdno);
-     len += sprintf (buffer + len, "Hardware ID:   0x%02X\n", ci->hdw_bid);
-     len += sprintf (buffer + len, "Board SN:      %06X\n", bip->brd_sn);
--    len += sprintf (buffer + len, "Board MAC:     %02X-%02X-%02X-%02X-%02X-%02X\n",
--           bip->brd_mac_addr[0], bip->brd_mac_addr[1], bip->brd_mac_addr[2],
--          bip->brd_mac_addr[3], bip->brd_mac_addr[4], bip->brd_mac_addr[5]);
-+	len += sprintf(buffer + len, "Board MAC:     %pMF\n",
-+		&bip->brd_mac_addr[0]);
-     len += sprintf (buffer + len, "Ports:         %d\n", ci->max_port);
-     len += sprintf (buffer + len, "Channels:      %d\n", bip->brd_chan_cnt);
- #if 1
+diff --git a/drivers/uwb/address.c b/drivers/uwb/address.c
+index 9733213..0336eab 100644
+--- a/drivers/uwb/address.c
++++ b/drivers/uwb/address.c
+@@ -363,10 +363,7 @@ size_t __uwb_addr_print(char *buf, size_t buf_size, const unsigned char *addr,
+ {
+ 	size_t result;
+ 	if (type)
+-		result = scnprintf(buf, buf_size,
+-				  "%02x:%02x:%02x:%02x:%02x:%02x",
+-				  addr[0], addr[1], addr[2],
+-				  addr[3], addr[4], addr[5]);
++		result = scnprintf(buf, buf_size, "%pM", &addr[0]);
+ 	else
+ 		result = scnprintf(buf, buf_size, "%02x:%02x",
+ 				  addr[1], addr[0]);
+diff --git a/drivers/uwb/wlp/wss-lc.c b/drivers/uwb/wlp/wss-lc.c
+index a005d2a..bb5d2ae 100644
+--- a/drivers/uwb/wlp/wss-lc.c
++++ b/drivers/uwb/wlp/wss-lc.c
+@@ -791,11 +791,9 @@ int wlp_wss_prep_hdr(struct wlp *wlp, struct wlp_eda_node *eda_entry,
+ 	} else {
+ 		if (printk_ratelimit())
+ 			dev_err(dev, "WLP: Destination neighbor (Ethernet: "
+-				"%02x:%02x:%02x:%02x:%02x:%02x, Dev: "
+-				"%02x:%02x) is not connected. \n", eth_addr[0],
+-				eth_addr[1], eth_addr[2], eth_addr[3],
+-				eth_addr[4], eth_addr[5], dev_addr->data[1],
+-				dev_addr->data[0]);
++				"%pM, Dev: %02x:%02x) is not connected.\n",
++				&eth_addr[0],
++				dev_addr->data[1], dev_addr->data[0]);
+ 		result = -EINVAL;
+ 	}
+ 	return result;
 -- 
 1.7.2.2
 
