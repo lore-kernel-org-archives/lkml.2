@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab0IKNTx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 09:19:53 -0400
-Received: from ch-zrh-72-201.trenka.ch ([93.188.72.201]:39517 "EHLO
-	mail.o2s.ch" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751898Ab0IKNTw (ORCPT
+	id S1752279Ab0IKNbX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 09:31:23 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35205 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab0IKNbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 09:19:52 -0400
-X-Greylist: delayed 425 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Sep 2010 09:19:52 EDT
-From: David =?iso-8859-1?q?Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>
-Organization: OpenSourceSupport GmbH
-To: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Importing RPC server bundle
-Date: Sat, 11 Sep 2010 15:16:30 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.32-gentoo-r7; KDE/4.4.5; x86_64; ; )
-X-Face: a023Y#Om+E(<|Tkz7Ae>YeJ\rvY,eXDn^g66`NiaNQ"#xRJ=gr'!V}V#{MN6!YO{s{{)
- =?utf-8?q?=3Bh=0A=09=3Ds?=@Vv%T)fi>gJrAHvijw^ZG9{b1rtf~mn$V^b`:3m>yH=o$Eo')
- =?utf-8?q?Ul8f=7DF=251vdg9=7C52W=3DXs=0A=09rR=5E/E/SPo=5E=7B-R22=5Ba?=
- =?utf-8?q?=7Dc=3F?=@tgfp<I#oOW7r}0We&3g5"2>N5r/Vu|>kWs"|J'XppA;*0A,6>
- =?utf-8?q?=0A=09*GY?=(0=H@>@^vEy]!m\)I42Lu@k~_=:U@/kf8{AO4'F7:Hy_*"5Xf9Vvkqr4E(
- =?utf-8?q?32pVlT=3A=3D=26=0A=09i4l=5B3=25=3FZ?=<zzP~wGSke?1VJj\cd~Z(,Upc;nOR|pqK@<j(`EYFSn,jN)A(~`YwM2nIv,
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart7005810.E5IQ2uPSJs";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009111516.34263.david.lanzendoerfer@o2s.ch>
+	Sat, 11 Sep 2010 09:31:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=lmgdfhOwWtZFtVssCQ1keErArONfvCCBRCADCUVpkfAYqM/67MF++6nlSoTp/D+fTt
+         /X3BI84Aj69uJQygUQC+VKlrYh00y5/ntk+WrydCWt3ZCaX5SFOgMx6iLZV6/5BhmXLB
+         toUIu77t6VL3ZHNo0MtQiWlsr6ea1K754Izmc=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Carlos Corbacho <carlos@strangeworlds.co.uk>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
+Subject: [PATCH] platform: x86: throw away custom methods
+Date: Sat, 11 Sep 2010 16:31:02 +0300
+Message-Id: <1284211862-25553-1-git-send-email-andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart7005810.E5IQ2uPSJs
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+In 2.6.35 the hex_to_bin() was introduced.
 
-Hi
-I made finally USB gadget working by import the rpc server bundle from our
-fork[1] of the android kernel release 2.6.32.
-But GNUtoo asked me, why I imported such an old version, also of AMSS.
-So my question now to you folks:
-I can import it and make it work with a new version again,
-but I need to know, what source and place I shall take it from.
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org
+---
+ drivers/platform/x86/wmi.c |   24 ++++++------------------
+ 1 files changed, 6 insertions(+), 18 deletions(-)
 
-Thx in advance
-	leviathan
+diff --git a/drivers/platform/x86/wmi.c b/drivers/platform/x86/wmi.c
+index b2978a0..4980682 100644
+--- a/drivers/platform/x86/wmi.c
++++ b/drivers/platform/x86/wmi.c
+@@ -128,30 +128,18 @@ static struct acpi_driver acpi_wmi_driver = {
+  */
+ static int wmi_parse_hexbyte(const u8 *src)
+ {
+-	unsigned int x; /* For correct wrapping */
+ 	int h;
++	int value;
+ 
+ 	/* high part */
+-	x = src[0];
+-	if (x - '0' <= '9' - '0') {
+-		h = x - '0';
+-	} else if (x - 'a' <= 'f' - 'a') {
+-		h = x - 'a' + 10;
+-	} else if (x - 'A' <= 'F' - 'A') {
+-		h = x - 'A' + 10;
+-	} else {
++	h = value = hex_to_bin(src[0]);
++	if (value < 0)
+ 		return -1;
+-	}
+-	h <<= 4;
+ 
+ 	/* low part */
+-	x = src[1];
+-	if (x - '0' <= '9' - '0')
+-		return h | (x - '0');
+-	if (x - 'a' <= 'f' - 'a')
+-		return h | (x - 'a' + 10);
+-	if (x - 'A' <= 'F' - 'A')
+-		return h | (x - 'A' + 10);
++	value = hex_to_bin(src[1]);
++	if (value >= 0)
++		return (h << 4) | value;
+ 	return -1;
+ }
+ 
+-- 
+1.7.2.2
 
-[1] http://gitorious.org/htc-msm-2-6-32/leviathan-incoming/commits/msm-gnuconform
-
---nextPart7005810.E5IQ2uPSJs
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-
-iEYEABECAAYFAkyLgTIACgkQAeZw77btGjqeqQCgsJTH3daVAIxc/+zob+dik/DK
-KZkAoKtJ6ds1OxFG4l2g4RCjxFbPh6cz
-=BkOH
------END PGP SIGNATURE-----
-
---nextPart7005810.E5IQ2uPSJs--
