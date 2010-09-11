@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717Ab0IKFn1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 01:43:27 -0400
-Received: from 1wt.eu ([62.212.114.60]:44321 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801Ab0IKFn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 01:43:26 -0400
-Date: Sat, 11 Sep 2010 07:42:55 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: David Miller <davem@davemloft.net>, Greg KH <greg@kroah.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: tcp collapse+splice bug still present in -stable
-Message-ID: <20100911054255.GB29288@1wt.eu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.3i
+	id S1752594Ab0IKFpg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 01:45:36 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56070 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab0IKFpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 01:45:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=RKeoby+MBMM6Th+3VXtSs9mTudHyDeBilJzkzLmJYG8KAT5CP/YHEfh667AmLMkPAY
+         Tgwv0McqWrNCChlgmDQNI5A6fyoP+cBB5nmqy7jH15E/x3KOLQ/BQrvFa3foLPIQE1yW
+         0AsZQpF5+YBmBNbxJOtdz++KqwOVdJKqHGOY8=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 01/11]net/ax25/Kconfig Update broken web addresses.
+Date: Fri, 10 Sep 2010 22:45:53 -0700
+Message-Id: <1284183963-8474-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David, Greg,
+Below you will find an Update to a broken web address.
+Please let me know if this needs to be changed.
 
-one of our customers was encountering frequent kernel panics up to
-2.6.32.21 that were always related to splicing and tcp_collapse().
-I found the precise BUG_ON() line but I've not forgotten it, something
-about ->seq not being OK.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-I found the following fix in 2.6.35 which looked to be related to the
-same issue, and we could verify that it definitely solves it. Could we
-please have it in other stable versions ?
+---
+ net/ax25/Kconfig |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Thanks in advance,
-Willy
-
---
->From baff42ab1494528907bf4d5870359e31711746ae Mon Sep 17 00:00:00 2001
-From: Steven J. Magnani <steve@digidescorp.com>
-Date: Tue, 30 Mar 2010 13:56:01 -0700
-Subject: [PATCH] net: Fix oops from tcp_collapse() when using splice()
-
-tcp_read_sock() can have a eat skbs without immediately advancing copied_seq.
-This can cause a panic in tcp_collapse() if it is called as a result
-of the recv_actor dropping the socket lock.
-
-A userspace program that splices data from a socket to either another
-socket or to a file can trigger this bug.
-
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 6afb6d8..2c75f89 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1368,6 +1368,7 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
- 		sk_eat_skb(sk, skb, 0);
- 		if (!desc->count)
- 			break;
-+		tp->copied_seq = seq;
- 	}
- 	tp->copied_seq = seq;
+diff --git a/net/ax25/Kconfig b/net/ax25/Kconfig
+index 2a72aa9..705e53e 100644
+--- a/net/ax25/Kconfig
++++ b/net/ax25/Kconfig
+@@ -7,7 +7,7 @@ menuconfig HAMRADIO
+ 	bool "Amateur Radio support"
+ 	help
+ 	  If you want to connect your Linux box to an amateur radio, answer Y
+-	  here. You want to read <http://www.tapr.org/tapr/html/pkthome.html>
++	  here. You want to read <http://www.tapr.org/>
+ 	  and more specifically about AX.25 on Linux
+ 	  <http://www.linux-ax25.org/>.
  
+@@ -42,7 +42,7 @@ config AX25
+ 	  check out the file <file:Documentation/networking/ax25.txt> in the
+ 	  kernel source. More information about digital amateur radio in
+ 	  general is on the WWW at
+-	  <http://www.tapr.org/tapr/html/pkthome.html>.
++	  <http://www.tapr.org/>.
+ 
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called ax25.
+@@ -89,7 +89,7 @@ config NETROM
+ 	  <http://www.linux-ax25.org>. You also might want to check out the
+ 	  file <file:Documentation/networking/ax25.txt>. More information about
+ 	  digital amateur radio in general is on the WWW at
+-	  <http://www.tapr.org/tapr/html/pkthome.html>.
++	  <http://www.tapr.org/>.
+ 
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called netrom.
+@@ -108,7 +108,7 @@ config ROSE
+ 	  <http://www.linux-ax25.org>.  You also might want to check out the
+ 	  file <file:Documentation/networking/ax25.txt>. More information about
+ 	  digital amateur radio in general is on the WWW at
+-	  <http://www.tapr.org/tapr/html/pkthome.html>.
++	  <http://www.tapr.org/>.
+ 
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called rose.
+-- 
+1.7.2.1
 
