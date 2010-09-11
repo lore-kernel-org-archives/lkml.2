@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab0IKAqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 20:46:12 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58922 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755910Ab0IKAp6 (ORCPT
+	id S1755920Ab0IKAr5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 20:47:57 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:41430 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755723Ab0IKAr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 20:45:58 -0400
-Date: Fri, 10 Sep 2010 20:45:51 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Joe Perches <joe@perches.com>
-Cc: Christoph Hellwig <hch@infradead.org>, florian@mickler.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
-        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
- default
-Message-ID: <20100911004550.GA30584@infradead.org>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
- <1284111767.1783.35.camel@Joe-Laptop>
- <20100911001350.GA11478@infradead.org>
- <1284165074.1783.213.camel@Joe-Laptop>
+	Fri, 10 Sep 2010 20:47:56 -0400
+Date: Sat, 11 Sep 2010 09:47:54 +0900
+From: Norbert Preining <preining@logic.at>
+To: Andy Isaacson <adi@hexapodia.org>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
+Subject: Re: after closing the lid and reopening it the screen remains blank
+Message-ID: <20100911004754.GA20442@gamma.logic.tuwien.ac.at>
+References: <20100909224117.GA30000@gamma.logic.tuwien.ac.at> <20100910184751.GA17794@hexapodia.org> <20100910234448.GB9848@gamma.logic.tuwien.ac.at> <20100911003459.GW23291@hexapodia.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1284165074.1783.213.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100911003459.GW23291@hexapodia.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 05:31:14PM -0700, Joe Perches wrote:
-> If you don't like it, you could use a .get_maintainer.conf
-> file entry until some consensus is reached later.
+Hi Andy,
 
-I don't use the pice of junk at all.  What really pisses me off is that
-I get spamed by all by tons of utterly useless cleanups patches (and
-some useful but not at all interesting to me patches) because some
-idiot made the bloody script return my address just because I touched a
-file.  If it goes on like that I'll simply have to add a mail filter to
-throw away all patches sent directly to me instead of a mailinglist.
+On Fr, 10 Sep 2010, Andy Isaacson wrote:
+> > I never said that it has anything to do with suspend to ram.
+> 
+> Ah, sorry for misunderstanding.  My GM45 system is configured to
+> automatically S2R on lid close so I tend to conflate the two...
 
+Mine, too, but not when running on AC.
+
+> Do try the current tip and/or describe which post-rc3 kernel fails for
+
+current tip works fine. It seems that I was hit by one of the fixes
+I found in the git log fixed after the build I did 
+(drm/i915: Prevent double dpms on, or drm/i915: Clear the vblank status 
+bit before polling for the next vblank)
+
+> Thanks for reporting the regression, it'll be good to get it fixed ASAP.
+
+Seems to be already fixed. Sorry for not testing the tip first.
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+MOLESBY (n.)
+The kind of family that drives to the seaside and then sits in the car
+with all the windows closed, reading the Sunday Express and wearing
+sidcups (q.v.)
+			--- Douglas Adams, The Meaning of Liff
