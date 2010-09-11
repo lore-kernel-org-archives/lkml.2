@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab0IKJiP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 05:38:15 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:35060 "EHLO mx01.d-labs.de"
+	id S1752726Ab0IKJg6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 05:36:58 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50447 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595Ab0IKJiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 05:38:13 -0400
-Date: Sat, 11 Sep 2010 11:38:11 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Joe Perches <joe@perches.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/get_maintainer.pl: Add --git-blame --rolestats
- "Authored lines" information
-Message-ID: <20100911113811.7c685c6d@schatten.dmk.lab>
-In-Reply-To: <1284164541.1783.204.camel@Joe-Laptop>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	<1284111767.1783.35.camel@Joe-Laptop>
-	<20100910095259.GC23903@sirena.org.uk>
-	<1284113066.1783.69.camel@Joe-Laptop>
-	<20100910101818.GF3068@rakim.wolfsonmicro.main>
-	<1284115665.1783.144.camel@Joe-Laptop>
-	<1284164541.1783.204.camel@Joe-Laptop>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752537Ab0IKJg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 05:36:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,351,1280732400"; 
+   d="scan'208";a="605970633"
+From: xiaohui.xin@intel.com
+To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+Cc: Xin Xiaohui <xiaohui.xin@intel.com>
+Subject: [RFC PATCH v10 10/16] Add a hook to intercept external buffers from NIC driver.
+Date: Sat, 11 Sep 2010 17:53:03 +0800
+Message-Id: <1284198789-5358-11-git-send-email-xiaohui.xin@intel.com>
+X-Mailer: git-send-email 1.5.4.4
+In-Reply-To: <1284198789-5358-10-git-send-email-xiaohui.xin@intel.com>
+References: <1284198789-5358-1-git-send-email-xiaohui.xin@intel.com>
+ <1284198789-5358-2-git-send-email-xiaohui.xin@intel.com>
+ <1284198789-5358-3-git-send-email-xiaohui.xin@intel.com>
+ <1284198789-5358-4-git-send-email-xiaohui.xin@intel.com>
+ <1284198789-5358-5-git-send-email-xiaohui.xin@intel.com>
+ <1284198789-5358-6-git-send-email-xiaohui.xin@intel.com>
+ <1284198789-5358-7-git-send-email-xiaohui.xin@intel.com>
+ <1284198789-5358-8-git-send-email-xiaohui.xin@intel.com>
+ <1284198789-5358-9-git-send-email-xiaohui.xin@intel.com>
+ <1284198789-5358-10-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Sep 2010 17:22:21 -0700
-Joe Perches <joe@perches.com> wrote:
+From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-> > > Something based on percentage of the driver written rather than log
-> > > entry counts might also be interesting.
-> > There is a --git-blame option, but it uses a count of file commits
-> > active in the file rather than % of lines authored.
-> 
-> When options --git-blame and --rolestats are specified, add
-> the maintainers with the qualifying --git-min-percent amount
-> of lines authored of the complete file.  Does not add more
-> authors than specified by --git-max-maintainers.
-> 
-> For anyone using hg, this option works but is _very_ slow.
-> It's orders of magnitude slower than git slow.
-> 
-> The get_maintainer.pl version was incremented to 0.25.
-> 
-> This can be used with or without --git.
-> 
-> For instance:
-> 
-> $ ./scripts/get_maintainer.pl --git-blame --nogit --rolestats -f lib/bitmap.c
-> Paul Jackson <pj@sgi.com> (authored lines:406/613=66%,commits:7/20=35%)
-> Akinobu Mita <mita@miraclelinux.com> (authored lines:87/613=14%,commits:3/20=15%)
-> Reinette Chatre <reinette.chatre@linux.intel.com> (authored lines:42/613=7%)
-> Andrew Morton <akpm@linux-foundation.org> (commits:16/20=80%)
-> Paul Mundt <lethal@linux-sh.org> (commits:3/20=15%)
-> Randy Dunlap <randy.dunlap@oracle.com> (commits:2/20=10%)
-> 
-> $ ./scripts/get_maintainer.pl --git-blame --git --rolestats -f lib/bitmap.c
-> Andrew Morton <akpm@linux-foundation.org> (commit_signer:4/5=80%,commits:16/20=80%)
-> Akinobu Mita <akinobu.mita@gmail.com> (commit_signer:2/5=40%,authored lines:87/613=14%,commits:3/20=15%)
-> Jack Steiner <steiner@sgi.com> (commit_signer:1/5=20%)
-> Ben Hutchings <ben@decadent.org.uk> (commit_signer:1/5=20%)
-> Lee Schermerhorn <lee.schermerhorn@hp.com> (commit_signer:1/5=20%)
-> Paul Jackson <pj@sgi.com> (authored lines:406/613=66%,commits:7/20=35%)
-> Reinette Chatre <reinette.chatre@linux.intel.com> (authored lines:42/613=7%)
-> Paul Mundt <lethal@linux-sh.org> (commits:3/20=15%)
-> Randy Dunlap <randy.dunlap@oracle.com> (commits:2/20=10%)
-> linux-kernel@vger.kernel.org (open list)
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+The hook is called in netif_receive_skb().
+Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
+Reviewed-by: Jeff Dike <jdike@linux.intel.com>
+---
+ net/core/dev.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 35 insertions(+), 0 deletions(-)
 
-I think this is a good change. I also think this should be made
-default. (linestat is probably more of a hint then nr of commits. 
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 636f11b..4b379b1 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2517,6 +2517,37 @@ err:
+ EXPORT_SYMBOL(netdev_mp_port_prep);
+ #endif
+ 
++#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
++/* Add a hook to intercept mediate passthru(zero-copy) packets,
++ * and insert it to the socket queue owned by mp_port specially.
++ */
++static inline struct sk_buff *handle_mpassthru(struct sk_buff *skb,
++					       struct packet_type **pt_prev,
++					       int *ret,
++					       struct net_device *orig_dev)
++{
++	struct mpassthru_port *mp_port = NULL;
++	struct sock *sk = NULL;
++
++	if (!dev_is_mpassthru(skb->dev))
++		return skb;
++	mp_port = skb->dev->mp_port;
++
++	if (*pt_prev) {
++		*ret = deliver_skb(skb, *pt_prev, orig_dev);
++		*pt_prev = NULL;
++	}
++
++	sk = mp_port->sock->sk;
++	skb_queue_tail(&sk->sk_receive_queue, skb);
++	sk->sk_state_change(sk);
++
++	return NULL;
++}
++#else
++#define handle_mpassthru(skb, pt_prev, ret, orig_dev)     (skb)
++#endif
++
+ /**
+  *	netif_receive_skb - process receive buffer from network
+  *	@skb: buffer to process
+@@ -2598,6 +2629,10 @@ int netif_receive_skb(struct sk_buff *skb)
+ ncls:
+ #endif
+ 
++	/* To intercept mediate passthru(zero-copy) packets here */
++	skb = handle_mpassthru(skb, &pt_prev, &ret, orig_dev);
++	if (!skb)
++		goto out;
+ 	skb = handle_bridge(skb, &pt_prev, &ret, orig_dev);
+ 	if (!skb)
+ 		goto out;
+-- 
+1.5.4.4
 
-But I don't think it really solves the same problem as the annotations
-on the name. We really want to show who just used a script to cc people
-and who made an effort to find the right people to send the patch to.
-
-Cheers,
-Flo
