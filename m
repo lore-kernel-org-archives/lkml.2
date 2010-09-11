@@ -1,92 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437Ab0IKSLg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 14:11:36 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51292 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab0IKSLf (ORCPT
+	id S1751746Ab0IKSMm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 14:12:42 -0400
+Received: from t03.superonline.com ([92.45.6.173]:27315 "EHLO
+	smtpout2.superonline.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751110Ab0IKSMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 14:11:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=KdeZLqhSUN2SQW7T3/JfgXB+bnNYelfwGDnj2dyX+cOPwoEkT37IiaJXQlPEB0b21t
-         khr1BSXrl3USF5WK8EMtOL8Cwd9T4WwsCZNR/Cb+mPVJAqS7rWnh6lyPS6u1T0N7nTWC
-         lDL73DDznW1BexPj643Qulkb4ascrz8a47CfM=
+	Sat, 11 Sep 2010 14:12:41 -0400
+Message-ID: <4C8BC68B.8050002@superonline.com>
+Date: Sat, 11 Sep 2010 14:12:27 -0400
+From: "M. Vefa Bicakci" <bicave@superonline.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100821 Icedove/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <20100911191146.7d38eba9@schatten.dmk.lab>
-References: <AANLkTi=OCjV2DF9XAobz_B5Jy_ZQF1j=sBxUkyOc1Q5V@mail.gmail.com>
-	<AANLkTinvdy2fCREqsBCLSA2EVF6J6kvmBSLwMYwv7Odq@mail.gmail.com>
-	<AANLkTi=tfxaNnhSEpSF3g__WZcMD8aZFkML5h0Ha9tgh@mail.gmail.com>
-	<20100911191146.7d38eba9@schatten.dmk.lab>
-Date: Sat, 11 Sep 2010 20:11:34 +0200
-Message-ID: <AANLkTikWb43Vfs4s9ux2jBaLRtMSg+pZ7KEoev3pXMPB@mail.gmail.com>
-Subject: Re: 2458 days of Linux development - some stats and thoughts
-From: Jan III Sobieski <jan3sobi3ski@gmail.com>
-To: Florian Mickler <florian@mickler.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: PATCH: PM / Hibernate: Avoid hitting OOM during preallocationof memory
+References: <201009062043.37819.rjw@sisk.pl> <201009072344.53905.rjw@sisk.pl> <4C878818.1070705@superonline.com> <201009082334.01255.rjw@sisk.pl>
+In-Reply-To: <201009082334.01255.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
+X-SurGATE-Result: Clean (Content eval: -26.00 points)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/11 Florian Mickler <florian@mickler.org>:
-> On Sat, 11 Sep 2010 00:04:18 +0200
-> Jan III Sobieski <jan3sobi3ski@gmail.com> wrote:
->
->> I added regressions stats - total number of regressions for each
->> kernel and number of regressions not fixed yet. It is interesting that
->> the number of not fixed regressions is really low.
+Hello,
+
+Sorry for the late reply. I have been busy the past few days.
+
+On 08/09/10 05:34 PM, Rafael J. Wysocki wrote:
+> On Wednesday, September 08, 2010, M. Vefa Bicakci wrote:
+>> [snip]
 >>
->
-> What should I do with these numbers, when I don't know
-> how they are created? What do they signify? What is their relevance?
-> What uncertainty is connected to these numbers? What follows? Why are
-> they created? How are they related?
+>> I should note a few things though,
+>>
+>> 1) I don't think I ever changed /sys/power/image_size, so we can rule out the
+>> possibility of that option changing the results.
+> 
+> Can you please check what value is there in this file?
 
-This is just simple stat based on diffs. For example - 2.6.32
+It contains 524288000, so I think it is set to 500 MB. I believe that this is
+the default value, but I am not sure.
 
+>> 2) With the patch below, for the *first* hibernation operation, the computer
+>> enters a "thoughtful" state without any disk activity for 6-8 (maybe 10)
+>> seconds after printing "Preallocating image memory". It works properly after
+>> the wait however.
+> 
+> That probably is a result of spending time in the memory allocator trying to
+> reduce the size of the image as much as possible.
 
-32	1096601	534042	315020	228772	781581	305270	1086851	543792	1630643	85
- 	8	882149	463400	1345549	82,52%	160	28
+I am not sure if this is a new thing with the new patch, but the behavior
+seems to continue with the later hibernation operations too, not just the
+first one. I haven't confirmed if I really didn't realize the problem in
+the previous version of the patch, but it is very possible that I didn't
+realize it since I used to automate my tests. (I didn't automate my tests
+this time.)
 
+However, considering that the kernel needs to worry about compacting 1500 MB
+of data when hibernating with my tmpfs-is-full system, I guess these wait
+times are normal, even though a bit inconvenient.
 
-32 - version
-1096601 - insertions for whole 2.6.32 patch
-534042 - deletions for whole 2.6.32 patch
-315020 - insertions in drivers/staging dir
-228772 - deletions in drivers/staging dir
-781581 - insertions in base (without staging - most people doesn't use
-it and doesn't care about this code - it's just a noise in diff's)
-305270 - deletions in base
-1086851 - sum of base insertions and deletions
-543792 - sum of staging insertions and deletions
-1630643 - sum of insertions and deletions in whole patch
-85 - how many days took to develop this kernel
-8 - how many rc's was produced
-882149 - insertions from latest -next tree for 2.6.32
-463400 - deletions from latest -next tree for 2.6.32
-1345549 - sum of above for latest -next tree for 2.6.32
-82,52% - how many changed lines was tested in -next tree
-160	- total number of regressions tracked for 2.6.32
-28 - regressions that are not fixed yet
+>> [snip]
+> 
+>> 4) I made sure that I was not being impatient with the previous snapshot.c
+>> patch, so I tested that on its own once again, and I confirmed that hibernation
+>> hangs with the older version of the snapshot.c patch.
+>>
+>> I am very happy that we are getting closer to a solution. Please let me know
+>> if there is anything I need to test further.
+> 
+> Below is the patch I'd like to apply.  It should work just like the previous
+> one (there are a few fixes that shouldn't affect the functionality in it), but
+> please test it if you can.
 
-I see a trend in the latest kernels (since 2.6.32) to minimize sum of
-changes in base (without drivers/staging) - average is less than
-1086851 lines changed and regressions dropped down bellow 160 for each
-release. From 2.6.24 to 2.6.31 there were a lot more changes in base
-and total number of regressions for each version was above 160 (with
-one exception).
+I am happy to report that it works properly by only itself when applied to
+a clean 2.6.35.4 tree. I haven't had any problems (aside from the "thoughtful
+state" issue I mentioned above) with my 6 consecutive hibernation attempts.
 
-You can also see some dependency between number of regressions and
-percent of changes coveraged in -next tree.
+> I think the slowdown you saw in 2) may be eliminated by increasing the
+> image_size value, so I'm going to prepare a patch that will compute the
+> value automatically during boot so that it's approximately 50% of RAM.
 
-But this is just random stats - you can see whatever you want ;)
+I would be glad to test that patch as well, to see if it brings speed-ups.
+Actually, I might test hibernation with a larger value written to
+/sys/power/image_size when I have time.
 
->
-> Cheers,
-> Flo
->
+> 
+> Thanks,
+> Rafael
 
--- 
-Jan III Sobieski
+I really appreciate your help. Thanks a lot!
+
+M. Vefa Bicakci
+
+> [patch snipped]
