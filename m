@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab0IKAOV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Sep 2010 20:14:21 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42940 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755507Ab0IKAOT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Sep 2010 20:14:19 -0400
-Date: Fri, 10 Sep 2010 17:14:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Jones <pjones@redhat.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Make efifb check that the base address is plausible
- on pci systems.
-Message-Id: <20100910171406.bdb4d90d.akpm@linux-foundation.org>
-In-Reply-To: <1284059809-9973-1-git-send-email-pjones@redhat.com>
-References: <1284059809-9973-1-git-send-email-pjones@redhat.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755651Ab0IKATn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Sep 2010 20:19:43 -0400
+Received: from kroah.org ([198.145.64.141]:43564 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755007Ab0IKATm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Sep 2010 20:19:42 -0400
+Date: Fri, 10 Sep 2010 17:20:20 -0700
+From: Greg KH <greg@kroah.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH 2/2] posix clocks: introduce a sysfs presence.
+Message-ID: <20100911002020.GA20252@kroah.com>
+References: <cover.1283504065.git.richard.cochran@omicron.at> <84124d2479b8967cac2b35f852fc0fcae6ad9444.1283504065.git.richard.cochran@omicron.at> <20100910000008.1483fdd7@lxorguk.ukuu.org.uk> <20100910093135.GB10179@riccoc20.at.omicron.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100910093135.GB10179@riccoc20.at.omicron.at>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  9 Sep 2010 15:16:48 -0400
-Peter Jones <pjones@redhat.com> wrote:
-
-> Some Apple machines have identical DMI data but different memory
-> configurations for the video. Given that, check that the address in our
-> table is actually within the range of a PCI BAR on a VGA deivce in the
-> machine.
+On Fri, Sep 10, 2010 at 11:31:35AM +0200, Richard Cochran wrote:
+> On Fri, Sep 10, 2010 at 12:00:08AM +0100, Alan Cox wrote:
+> > Also we have existing time sources that don't follow the poxix clock
+> > model - I can open /dev/rtc and I can open the hpet and so on.
+> > 
+> > I like /sys/class/time* *but* you need to be able to open the sysfs
+> > device and apply operations to it in order for it to work when your closk
+> > can be dynamically created and destroyed and to get a sane Unix API.
+> > 
+> > To start with try applying permissions to clock sources via the POSIX
+> > API. That is something that will be required for some applications.
+> > 
+> > I need to be able to open sys/clock/foo/something and get a meaningful
+> > handle. Sure it's quite likely the operations it supports are related to
+> > the POSIX timer ops.
 > 
-> This also fixes up the return value from set_system(), which has
-> always been wrong, but never resulted in bad behavior since there's only
-> ever been one matching entry in the dmi table.
+> Do you mean this:
 > 
-> This also adds me as the efifb maintainer, since I've effectively been
-> acting as such for quite some time.
+>    id = read(/sys/clock/foo/lock); /* clock is busy, cannot be removed */
 
-And what is the impact (and importance) of this patch?  Make some
-people's Mac displays work, I'd be guessing?
+That's not for sysfs, if you want to do something like this, create
+clockfs please :)
 
+thanks,
+
+greg k-h
