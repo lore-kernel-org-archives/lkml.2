@@ -1,185 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab0IKHlc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 03:41:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46605 "EHLO mga11.intel.com"
+	id S1755143Ab0IKHuZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 03:50:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39754 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752366Ab0IKHlZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 03:41:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,351,1280732400"; 
-   d="scan'208";a="836777193"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
-        "jdike@linux.intel.com" <jdike@linux.intel.com>
-Date: Sat, 11 Sep 2010 15:41:14 +0800
-Subject: RE: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
-Thread-Topic: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
-Thread-Index: ActNtR+uQvbWPZRgSsWQthsUVTZ+wwDKrubAACjmjzA=
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D79280489AA05@shsmsx502.ccr.corp.intel.com>
-References: <1281086624-5765-5-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-6-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-7-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-8-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-9-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-10-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-11-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-12-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-13-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-14-git-send-email-xiaohui.xin@intel.com>
- <20100906111126.GA15608@redhat.com>
- <F2E9EB7348B8264F86B6AB8151CE2D79280489A9C9@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D79280489A9C9@shsmsx502.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753806Ab0IKHuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 03:50:24 -0400
+Date: Sat, 11 Sep 2010 07:49:07 GMT
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, nico-linux-20100709@schottelius.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, flo@xssn.at,
+        lenb@kernel.org, jbarnes@virtuousgeek.org, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, rjw@sisk.pl, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, nico-linux-20100709@schottelius.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, flo@xssn.at,
+        lenb@kernel.org, jbarnes@virtuousgeek.org, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, rjw@sisk.pl, mingo@elte.hu
+In-Reply-To: <1284150773.402.122.camel@laptop>
+References: <1284150773.402.122.camel@laptop>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] x86, tsc: Fix a preemption leak in restore_sched_clock_state()
+Message-ID: <tip-55496c896b8a695140045099d4e0175cf09d4eae@git.kernel.org>
+Git-Commit-ID: 55496c896b8a695140045099d4e0175cf09d4eae
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 11 Sep 2010 07:49:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>Playing with rlimit on data path, transparently to the application in this way
->>looks strange to me, I suspect this has unexpected security implications.
->>Further, applications may have other uses for locked memory
->>besides mpassthru - you should not just take it because it's there.
->>
->>Can we have an ioctl that lets userspace configure how much
->>memory to lock? This ioctl will decrement the rlimit and store
->>the data in the device structure so we can do accounting
->>internally. Put it back on close or on another ioctl.
->Yes, we can decrement the rlimit in ioctl in one time to avoid
->data path.
->
->>Need to be careful for when this operation gets called
->>again with 0 or another small value while we have locked memory -
->>maybe just fail with EBUSY?  or wait until it gets unlocked?
->>Maybe 0 can be special-cased and deactivate zero-copy?.
->>
+Commit-ID:  55496c896b8a695140045099d4e0175cf09d4eae
+Gitweb:     http://git.kernel.org/tip/55496c896b8a695140045099d4e0175cf09d4eae
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 10 Sep 2010 22:32:53 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 11 Sep 2010 09:47:07 +0200
 
-How about we don't use a new ioctl, but just check the rlimit 
-in one MPASSTHRU_BINDDEV ioctl? If we find mp device
-break the rlimit, then we fail the bind ioctl, and thus can't do 
-zero copy any more.
+x86, tsc: Fix a preemption leak in restore_sched_clock_state()
 
->In fact, if we choose RLIMIT_MEMLOCK to limit the lock memory,
->the default value is only 16 pages. It's too small to make the device to
->work. So we always to configure it with a large value.
->I think, if rlimit value after decrement is < 0, then deactivate zero-copy
->is better. 0 maybe ok.
->
+Doh, a real life genuine preemption leak..
 
->>> +
->>> +	if (ctor->lock_pages + count > lock_limit && npages) {
->>> +		printk(KERN_INFO "exceed the locked memory rlimit.");
->>> +		return NULL;
->>> +	}
->>> +
->>> +	info = kmem_cache_zalloc(ext_page_info_cache, GFP_KERNEL);
->>
->>You seem to fill in all memory, why zalloc? this is data path ...
->
->Ok, Let me check this.
->
->>
->>> +
->>> +	if (!info)
->>> +		return NULL;
->>> +
->>> +	for (i = j = 0; i < count; i++) {
->>> +		base = (unsigned long)iov[i].iov_base;
->>> +		len = iov[i].iov_len;
->>> +
->>> +		if (!len)
->>> +			continue;
->>> +		n = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
->>> +
->>> +		rc = get_user_pages_fast(base, n, npages ? 1 : 0,
->>
->>npages controls whether this is a write? Why?
->
->We use npages as a flag here. In mp_sendmsg(), we called alloc_page_info() with npages =
->0.
->
->>
->>> +				&info->pages[j]);
->>> +		if (rc != n)
->>> +			goto failed;
->>> +
->>> +		while (n--) {
->>> +			frags[j].offset = base & ~PAGE_MASK;
->>> +			frags[j].size = min_t(int, len,
->>> +					PAGE_SIZE - frags[j].offset);
->>> +			len -= frags[j].size;
->>> +			base += frags[j].size;
->>> +			j++;
->>> +		}
->>> +	}
->>> +
->>> +#ifdef CONFIG_HIGHMEM
->>> +	if (npages && !(dev->features & NETIF_F_HIGHDMA)) {
->>> +		for (i = 0; i < j; i++) {
->>> +			if (PageHighMem(info->pages[i]))
->>> +				goto failed;
->>> +		}
->>> +	}
->>> +#endif
->>
->>Are non-highdma devices worth bothering with? If yes -
->>are there other limitations devices might have that we need to handle?
->>E.g. what about non-s/g devices or no checksum offloading?.
->
->Basically I think there is no limitations for both, but let me have a check.
->
->>
->>> +		skb_push(skb, ETH_HLEN);
->>> +
->>> +		if (skb_is_gso(skb)) {
->>> +			hdr.hdr.hdr_len = skb_headlen(skb);
->>> +			hdr.hdr.gso_size = shinfo->gso_size;
->>> +			if (shinfo->gso_type & SKB_GSO_TCPV4)
->>> +				hdr.hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV4;
->>> +			else if (shinfo->gso_type & SKB_GSO_TCPV6)
->>> +				hdr.hdr.gso_type = VIRTIO_NET_HDR_GSO_TCPV6;
->>> +			else if (shinfo->gso_type & SKB_GSO_UDP)
->>> +				hdr.hdr.gso_type = VIRTIO_NET_HDR_GSO_UDP;
->>> +			else
->>> +				BUG();
->>> +			if (shinfo->gso_type & SKB_GSO_TCP_ECN)
->>> +				hdr.hdr.gso_type |= VIRTIO_NET_HDR_GSO_ECN;
->>> +
->>> +		} else
->>> +			hdr.hdr.gso_type = VIRTIO_NET_HDR_GSO_NONE;
->>> +
->>> +		if (skb->ip_summed == CHECKSUM_PARTIAL) {
->>> +			hdr.hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
->>> +			hdr.hdr.csum_start =
->>> +				skb->csum_start - skb_headroom(skb);
->>> +			hdr.hdr.csum_offset = skb->csum_offset;
->>> +		}
->>
->>We have this code in tun, macvtap and packet socket already.
->>Could this be a good time to move these into networking core?
->>I'm not asking you to do this right now, but could this generic
->>virtio-net to skb stuff be encapsulated in functions?
->
->It seems reasonable.
->
->>
->>--
->>MST
->--
->To unsubscribe from this list: send the line "unsubscribe netdev" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This caused a suspend failure.
+
+Reported-bisected-and-tested-by-the-invaluable: Jeff Chua <jeff.chua.linux@gmail.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Nico Schottelius <nico-linux-20100709@schottelius.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Florian Pritz <flo@xssn.at>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Len Brown <lenb@kernel.org>
+Cc: <stable@kernel.org> # Greg, please apply after: cd7240c ("x86, tsc, sched: Recompute cyc2ns_offset's during resume from")
+sleep states
+LKML-Reference: <1284150773.402.122.camel@laptop>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/tsc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index d632934..26a863a 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -655,7 +655,7 @@ void restore_sched_clock_state(void)
+ 
+ 	local_irq_save(flags);
+ 
+-	get_cpu_var(cyc2ns_offset) = 0;
++	__get_cpu_var(cyc2ns_offset) = 0;
+ 	offset = cyc2ns_suspend - sched_clock();
+ 
+ 	for_each_possible_cpu(cpu)
