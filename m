@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab0IKIVD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 04:21:03 -0400
-Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:43710 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753289Ab0IKIVA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 04:21:00 -0400
-Date: Sat, 11 Sep 2010 18:20:54 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-ide <linux-ide@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        dm-devel@redhat.com, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Combined storage tree
-Message-ID: <20100911082054.GF705@dastard>
-References: <1284143247.6551.23.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284143247.6551.23.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755284Ab0IKI3J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 04:29:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56155 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753289Ab0IKI3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Sep 2010 04:29:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,351,1280732400"; 
+   d="scan'208";a="836781803"
+Subject: Re: [PATCH] ihex: Add support for CS:IP/EIP records
+From: David Woodhouse <David.Woodhouse@intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@opensource.wolfsonmicro.com" 
+	<patches@opensource.wolfsonmicro.com>
+In-Reply-To: <1284039626-30394-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1284039626-30394-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation
+Date: Sat, 11 Sep 2010 09:29:04 +0100
+Message-ID: <1284193744.20200.13.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.31.92 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 01:27:27PM -0500, James Bottomley wrote:
-> One of the requests from LSF10 in August was the production of a
-> combined storage tree.  This is now ready at
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/storage-tree
-> 
-> It's actually a nightly built merge tree consisting of
-> 
-> scsi-misc; scsi-rc-fixes
-> libata#upstream-fixes, libata#upstream
-> block#for-linus, block#for-next
-> and the dm quilt (which is empty at the moment).
-> 
-> I haven't yet added vfs or any of the fs trees, but if necessary, I can.
-> 
-> Note, because it's built nightly, like linux-next, it's hard (but not
-> impossible) to use it as a basis for git trees (it is much easier to use
-> it as a basis for quilts).
+On Thu, 2010-09-09 at 14:40 +0100, Mark Brown wrote:
+> ihex firmwares can include a jump address for starting execution. Add
+> a -j option which will cause this to be written into the generated
+> file as a record with address zero and data consisting of the address
+> to jump to, allowing drivers to make use of this information.
 
-Hmmm. I was kind of hoping for an upstream maintainer tree, kind of
-like the netdev tree.  I really don't see a tree like this getting
-wide use - if I enjoyed the pain of rebasing against throw-away
-merge trees every day, then I'd already be using linux-next....
+Some questions...
 
-Cheers,
+- Which firmware blobs that are *already* in the kernel would need this?
+  Remember, we're not adding new crap to the kernel source tree; new
+  firmware images get added to linux-firmware.git instead.
 
-Dave.
+- Why make the include_jump code optional? When would we ever *not* want
+  to include such a record -- when does the input ihex file contain such
+  a record that the kernel driver *must* not see because it can't cope
+  with it?
+
 -- 
-Dave Chinner
-david@fromorbit.com
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
