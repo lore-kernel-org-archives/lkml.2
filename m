@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0ILTOi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 15:14:38 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:38752 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752211Ab0ILTOh (ORCPT
+	id S1753010Ab0ILTWm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 15:22:42 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:53142 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab0ILTWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 15:14:37 -0400
-Date: Sun, 12 Sep 2010 21:14:29 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-perf-users@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: disabling group leader perf_event
-Message-ID: <20100912191429.GA27440@elf.ucw.cz>
-References: <1283774045.1930.341.camel@laptop>
- <4C84D77B.6040600@redhat.com>
- <20100906124330.GA22314@elte.hu>
- <4C84E265.1020402@redhat.com>
- <20100906125905.GA25414@elte.hu>
- <4C850147.8010908@redhat.com>
- <20100906154737.GA4332@elte.hu>
- <20100912064612.GA1582@ucw.cz>
- <4C8D13CD.1060802@redhat.com>
- <20100912184843.GB11165@elte.hu>
+	Sun, 12 Sep 2010 15:22:41 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: miklos@szeredi.hu, hch@infradead.org, viro@zeniv.linux.org.uk,
+        adilger@sun.com, corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
+        hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu,
+        linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V19 00/15] Generic name to handle and open by handle syscalls
+In-Reply-To: <E1OsyA1-0007Ct-KS@pomaz-ex.szeredi.hu>
+References: <1282906982-26918-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <m31v95zweh.fsf@linux.vnet.ibm.com> <E1OswT5-000709-U9@pomaz-ex.szeredi.hu> <m3d3spvhdn.fsf@linux.vnet.ibm.com> <E1OsyA1-0007Ct-KS@pomaz-ex.szeredi.hu>
+User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Mon, 13 Sep 2010 00:52:27 +0530
+Message-ID: <m3r5gyepho.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100912184843.GB11165@elte.hu>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2010-09-12 20:48:43, Ingo Molnar wrote:
-> 
-> * Avi Kivity <avi@redhat.com> wrote:
-> 
-> >  On 09/12/2010 08:46 AM, Pavel Machek wrote:
-> > >  1- Most (least abstract) specific code: a block of bytecode in the form
-> > >     of a simplified, executable, kernel-checked x86 machine code block -
-> > >     this is also the fastest form. [yes, this is actually possible.]
-> > >Well... if we want to be a bit x86-entric.... can we just reuse ACPI
-> > >interpretter?
+On Tue, 07 Sep 2010 15:24:29 +0200, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> On Tue, 07 Sep 2010, Aneesh Kumar K. V wrote:
+> > On Tue, 07 Sep 2010 13:36:03 +0200, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > > On Tue, 07 Sep 2010, Aneesh Kumar K. V wrote:
+> > > > Any update on this. Are you ok with syscall approach which is limitted to
+> > > > CAP_DAC_READ_SEARCH  ?
+> > > 
+> > > My gut reaction is: "not another bunch of xattr syscalls!".  It
+> > > doesn't feel right, this interface is too specialized to warrant a
+> > > full set of filesystem syscalls.
 > > 
-> > I hope this was a joke, ACPI won the academy awards for ugliness, 
-> > ..., bad specification, non-generality, and 
-
-As did i386 instruction set :-).
-
-> It also combines the worst of the two worlds: it's the most specific 
-> type of code (almost like assembly), but has a very slow interpreter.
+> > 
+> > Are you ok with rest of syscalls other than the handle based xattr one ?
 > 
-> With 'x86 bytecode' the main (and pretty much only) point is to be able 
-> to execute the code as-is, once checked.
+> No, not really.  Only xattrs stand out from the rest as the "API that
+> shouldn't be" and adding more to that pile makes me feel especially
+> bad.
 > 
-> But, as i explained it before, i only consider it a theoretical 
-> possibility and i think that abstract code (such as ASCII text C source 
-> code) is a better solution.
+> But xattrs aside, I still don't think we need another interface for
+> file handles that duplicates the existing filesystem APIs.
+> 
 
-Compiler in kernel?
+As per your suggestion i started looking at handlefs details and below
+is my take on the approach.
 
-I'm not sure I like that one. Yes, ACPI interpreter is slow, but it is
-simple, already in kernel, and there are already tools to compile into
-it...
+handlefs would be an internal kernel mount like pipefs and would have
+inode object mapping to the returned file descriptor of
+open_by_handle_at syscall for symlinks. For regular files we can do what
+we already does and for symlinks we will create inodes in handlefs and
+their inode operation will in turn result in call out of inode operations
+of the actual symlinks. Based on the above
 
-While it may be ugly, I believe it is better than either i386
-verifier, compiler in the kernel, or yet another interpretter...
+a) We still need open_by_handle_at syscall
+b) We still need handle based link syscall, because we need to support
+   creating hardlinks based on handle, and the existing linkat syscall
+   takes the oldpath name.
+c) We still need handle based readlink syscall, because the existing
+   readlinkat syscall takes pathname.
+d) we can drop stat, chown and xattr syscall because they are introduced
+   specially for symlinks as we don't allow open on symlinks.
+e) It would be nice to have handle based stat syscall to avoid two
+   syscall overhead for fetching file attributes when implementing a
+   file server, where fetching file attribute is a common operation. 
 
-									Pavel
+With the above from the current patch series we can drop chown and
+xattr syscalls. Would it be ok if we get the series with the those two
+syscall patches dropped upstream as i work on supporting symlinks with
+handlefs approach ?
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+-aneesh
+
