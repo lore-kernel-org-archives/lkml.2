@@ -1,77 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab0INLIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 07:08:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34203 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752412Ab0INLIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 07:08:12 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-Organization: suse.de
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] After swapout/swapin private dirty mappings become clean
-Date: Tue, 14 Sep 2010 16:40:55 +0530
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        balbir@linux.vnet.ibm.com, rguenther@novell.com, matz@novell.com
+	id S1753334Ab0INLKT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 07:10:19 -0400
+Received: from 5.subnet118-97-32.static.astinet.telkom.net.id ([118.97.32.5]:58670
+	"EHLO mail.unm.ac.id" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab0INLKQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 07:10:16 -0400
+X-Greylist: delayed 98328 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Sep 2010 07:10:15 EDT
+Message-ID: <21fb74f19bbd21d201624dce485919a2.squirrel@mail.unm.ac.id>
+Date: Mon, 13 Sep 2010 02:08:53 +0900
+Subject: For your interest
+From: "Srood Sherif" <srood.sheriff@g.pl>
+Reply-To: sherif.srood@g.pl
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009141640.55650.knikanth@suse.de>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/proc/$pid/smaps broken: After swapout/swapin private dirty mappings become
-clean.
 
-When a page with private file mapping becomes dirty, the vma will be in both
-i_mmap tree and anon_vma list. The /proc/$pid/smaps will account these pages
-as dirty and backed by the file.
 
-But when those dirty pages gets swapped out, and when they are read back from
-swap, they would be marked as clean, as it should be, as they are part of swap
-cache now.
 
-But the /proc/$pid/smaps would report the vma as a mapping of a file and it is
-clean. The pages are actually in same state i.e., dirty with respect to file
-still, but which was once reported as dirty is now being reported as clean to
-user-space.
+Greeting,
 
-This confuses tools like gdb which uses this information. Those tools think
-that those pages were never modified and it creates problem when they create
-dumps.
+My name is Mr. Srood A. Sherif, I live and work in
+Abu Dhabi UAE. I have an urgent business which I believe
+will interest you. Find the enclose for details.
 
-The file mapping of the vma also cannot be broken as pages never read earlier,
-will still have to come from the file. Just that those dirty pages have become
-clean anonymous pages.
+I wait for your response, Thank you.
 
-During swaping in, restoring the exact state as dirty file-backed pages before
-swapout would be useless, as there in no real bug. Breaking the vma with only
-anonymous pages as seperate vmas unnecessary may not be a good thing as well.
-So let us just export the information that a file-backed vma has anonymous
-dirty pages.
+Regards
 
-Export this information in smaps by prepending file-names with "[anon]+", when
-some of the pages in a file backed vma become anonymous.
-
-Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
-
----
-
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 439fc1f..68f9806 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -242,6 +242,8 @@ static void show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
- 	 */
- 	if (file) {
- 		pad_len_spaces(m, len);
-+		if (vma->anon_vma)
-+			seq_puts(m, "[anon]+");
- 		seq_path(m, &file->f_path, "\n");
- 	} else {
- 		const char *name = arch_vma_name(vma);
-
+Srood A. Sherif
 
