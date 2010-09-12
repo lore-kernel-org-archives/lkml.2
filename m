@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244Ab0ILIvK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 04:51:10 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:65235 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842Ab0ILIvG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 04:51:06 -0400
-Message-ID: <4C8C9175.5030404@oracle.com>
-Date: Sun, 12 Sep 2010 16:38:13 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752141Ab0ILI5H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 04:57:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50004 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783Ab0ILI5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 04:57:04 -0400
+Message-ID: <4C8C95DB.2030809@redhat.com>
+Date: Sun, 12 Sep 2010 10:56:59 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 02/41] block/loop: queue ordered mode should be DRAIN_FLUSH
-References: <1283509796-1510-1-git-send-email-tj@kernel.org> <1283509796-1510-3-git-send-email-tj@kernel.org>
-In-Reply-To: <1283509796-1510-3-git-send-email-tj@kernel.org>
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/29] Nested Paging Virtualization for KVM v4
+References: <1284132667-18620-1-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1284132667-18620-1-git-send-email-joerg.roedel@amd.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-	Just a small qs about this patch.
-
-On 09/03/2010 06:29 PM, Tejun Heo wrote:
-> loop implements FLUSH using fsync but was incorrectly setting its
-> ordered mode to DRAIN.  Change it to DRAIN_FLUSH.  In practice, this
-> doesn't change anything as loop doesn't make use of the block layer
-> ordered implementation.
-According to Documentation/block/barrier.txt,
-QUEUE_ORDERED_DRAIN
-         Requests are ordered by draining the request queue and cache
-         flushing isn't needed.
-
-         Sequence: drain => barrier
-
-QUEUE_ORDERED_DRAIN_FLUSH
-         Requests are ordered by draining the request queue and both
-         pre-barrier and post-barrier cache flushings are needed.
-
-         Sequence: drain => preflush => barrier => postflush
-
-And for loop device, it call fsync in barrier request. See 
-do_bio_filebacked in drivers/block/loop.c
-bool barrier = !!(bio->bi_rw & REQ_HARDBARRIER);
-                 struct file *file = lo->lo_backing_file;
-
-                 if (barrier) {
-                         if (unlikely(!file->f_op->fsync)) {
-                                 ret = -EOPNOTSUPP;
-                                 goto out;
-                         }
-
-                         ret = vfs_fsync(file, 0);
-                         if (unlikely(ret)) {
-                                 ret = -EIO;
-                                 goto out;
-                         }
-                 }
-
-So actually the sync is done in barrier and no extra flush is needed?
-Or Do I misread the rules in barrier.txt?
-
-Regards,
-Tao
-
+  On 09/10/2010 06:30 PM, Joerg Roedel wrote:
+> Hi Avi, Marcelo,
 >
-> Signed-off-by: Tejun Heo<tj@kernel.org>
-> ---
->   drivers/block/loop.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
+> as promised here is -v4 of my patch-set for virtualizing nested paging in KVM.
+> I addresses all of your review comments in this version and fixed a misbehavior
+> in the nested page-walker code where it would have reported the wrong
+> error-code on an emulated nested page fault.
 >
-> diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-> index f3c636d..c3a4a2e 100644
-> --- a/drivers/block/loop.c
-> +++ b/drivers/block/loop.c
-> @@ -832,7 +832,7 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
->   	lo->lo_queue->unplug_fn = loop_unplug;
+> Here is the complete list of changes:
 >
->   	if (!(lo_flags&  LO_FLAGS_READ_ONLY)&&  file->f_op->fsync)
-> -		blk_queue_ordered(lo->lo_queue, QUEUE_ORDERED_DRAIN);
-> +		blk_queue_ordered(lo->lo_queue, QUEUE_ORDERED_DRAIN_FLUSH);
+> 	* Fixed the bug in the gpa_to_gfn function
+> 	* Made sure that the right fault values are kept in the two-dimensional
+> 	  page-table walker
+> 	* Fixed the return code of x86_decode_insn so that a page-fault within
+> 	  that function can be handled
+> 	* Set vcpu->arch.mmu.direct_map to true for nonpaging mode too
+> 	* Changed code so that the right access-mode is used on nested
+> 	  page-table walks
+> 	* Made the NX mode a capability of the MMU context to distinguish
+> 	  between l1-nx and l2-nx (1 additional patch)
+> 	* Fixed the bug that KVM always reports the SVM flag as supported to
+> 	  userspace, it should only be reported on AMD hardware when nesting is
+> 	  enabled
 >
->   	set_capacity(lo->lo_disk, size);
->   	bd_set_size(bdev, size<<  9);
+> As the patch-set before this one was tested with the same set of combinations
+> too. I found no regressions to current avi/master. This patch-set applies on
+> current avi/master plus the three fixes I sent last week.
+>
+> As with the last version of the patch-set I also pushed this one to a tree on
+> korg. Find it in
+>
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/joro/linux-2.6-kvm.git npt-virt-v4
+>
+> Please review these patches and/or apply them :-) As usual I appreciate your
+> feedback.
+
+All applied, thanks.  I'll go play with my new toy now.
+
+-- 
+error compiling committee.c: too many arguments to function
+
