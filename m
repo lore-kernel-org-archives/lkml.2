@@ -1,33 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397Ab0ILExN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 00:53:13 -0400
-Received: from kari1.ac-grenoble.fr ([193.54.149.71]:55977 "EHLO
-	kari1.ac-grenoble.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165Ab0ILExM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 00:53:12 -0400
-From: <patrick.brunet@ac-grenoble.fr>
-Reply-To: choi_chu223@yahoo.co.jp
-Message-ID: <887e19db7a37f4ac.4c89d29c@ac-grenoble.fr>
-Date: Fri, 10 Sep 2010 06:39:24 -0700
-X-Mailer: Sun Java(tm) System Messenger Express 6.2-3.03 (built Jun 27
- 2005)
-MIME-Version: 1.0
-Content-Language: en
-X-Accept-Language: en
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-To: undisclosed-recipients:;
+	id S1751625Ab0ILFLH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 01:11:07 -0400
+Received: from mail.perches.com ([173.55.12.10]:1714 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751322Ab0ILFLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 01:11:05 -0400
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/11] arch/arm: Remove pr_<level> uses of KERN_<level>
+Date: Sat, 11 Sep 2010 22:10:49 -0700
+Message-Id: <78519236782f0f4a848d67aefb5fe7b3ce375cee.1284267142.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.rc1
+In-Reply-To: <cover.1284267142.git.joe@perches.com>
+References: <cover.1284267142.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ arch/arm/mach-pxa/cpufreq-pxa2xx.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
+diff --git a/arch/arm/mach-pxa/cpufreq-pxa2xx.c b/arch/arm/mach-pxa/cpufreq-pxa2xx.c
+index 50d5939..58093d9 100644
+--- a/arch/arm/mach-pxa/cpufreq-pxa2xx.c
++++ b/arch/arm/mach-pxa/cpufreq-pxa2xx.c
+@@ -312,8 +312,7 @@ static int pxa_set_target(struct cpufreq_policy *policy,
+ 	freqs.cpu = policy->cpu;
+ 
+ 	if (freq_debug)
+-		pr_debug(KERN_INFO "Changing CPU frequency to %d Mhz, "
+-			 "(SDRAM %d Mhz)\n",
++		pr_debug("Changing CPU frequency to %d Mhz, (SDRAM %d Mhz)\n",
+ 			 freqs.new / 1000, (pxa_freq_settings[idx].div2) ?
+ 			 (new_freq_mem / 2000) : (new_freq_mem / 1000));
+ 
+-- 
+1.7.3.rc1
 
-Good day. I have a business proposal of USD $22,500,000.00 only for you to transact with me from my bank to your country. 
-Reply to address:choi_chu223@yahoo.co.jp and I will let you know what is required of you. 
-
-Best Regards, 
-Mr.Vincent Cheng Hoi.
