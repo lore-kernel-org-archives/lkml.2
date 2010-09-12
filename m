@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab0ILSwr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 14:52:47 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32296 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab0ILSwq (ORCPT
+	id S1752238Ab0ILS4j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 14:56:39 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:52144 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751587Ab0ILS4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 14:52:46 -0400
-Message-ID: <4C8D210D.8080307@oracle.com>
-Date: Sun, 12 Sep 2010 11:50:53 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: lkml <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH] PM_SLEEP_SMP: fix kconfig warning
-References: <20100911155720.c4fe6b4b.randy.dunlap@oracle.com> <201009121926.08633.rjw@sisk.pl>
-In-Reply-To: <201009121926.08633.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 12 Sep 2010 14:56:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=fobBBe8dxBbJWe7aEEJzF7ClAOslPKTTr5YM0PsXANNyYaEBUZupu19fWR2t5OYcvm
+         MnXbO1iMkeC6Va+Na3zXTItzpq5xxmHfpbd42Wrqdx9U45iMnrzTE5ZMKplfWzYPp444
+         aV51Iq/DCMZ4qpapdujHdmYnqsG/j3xX69YVg=
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Andrew Lunn <andrew@lunn.ch>,
+        Sven Eckelmann <sven.eckelmann@gmx.de>,
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Andreas Langer <an.langer@gmx.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: batman-adv: check kmalloc() return value
+Date: Sun, 12 Sep 2010 22:56:26 +0400
+Message-Id: <1284317791-4744-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/10 10:26, Rafael J. Wysocki wrote:
-> On Sunday, September 12, 2010, Randy Dunlap wrote:
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->>
->> Fix kconfig unmet dependency warning:
->>
->> warning: (PM_SLEEP_SMP && SMP && (ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE) && PM_SLEEP) selects HOTPLUG_CPU which has unmet direct dependencies (SMP && HOTPLUG)
->>
->> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
->> ---
->>  kernel/power/Kconfig |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> --- linux-next-20100908.orig/kernel/power/Kconfig
->> +++ linux-next-20100908/kernel/power/Kconfig
->> @@ -83,7 +83,7 @@ config PM_TRACE_RTC
->>  
->>  config PM_SLEEP_SMP
->>  	bool
->> -	depends on SMP
->> +	depends on SMP && HOTPLUG
->>  	depends on ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE
->>  	depends on PM_SLEEP
->>  	select HOTPLUG_CPU
-> 
-> I'm afraid that may cause some people to find that suspend is not compiled in
-> to their surprise.
-> 
-> Would it be possible to select both HOTPLUG and HOTPLUG_CPU instead (ie. would
-> that work)?
+kmalloc() may fail, if so drop current packet.
 
-That appears to work in my testing.  I'll ack your patch.
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+---
+ Compile tested.
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+ drivers/staging/batman-adv/routing.c |    6 ++++--
+ drivers/staging/batman-adv/unicast.c |    8 ++++++--
+ drivers/staging/batman-adv/unicast.h |    2 +-
+ 3 files changed, 11 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/staging/batman-adv/routing.c b/drivers/staging/batman-adv/routing.c
+index e12fd99..e545260 100644
+--- a/drivers/staging/batman-adv/routing.c
++++ b/drivers/staging/batman-adv/routing.c
+@@ -1232,8 +1232,10 @@ int recv_ucast_frag_packet(struct sk_buff *skb, struct batman_if *recv_if)
+ 
+ 		orig_node->last_frag_packet = jiffies;
+ 
+-		if (list_empty(&orig_node->frag_list))
+-			create_frag_buffer(&orig_node->frag_list);
++		if (list_empty(&orig_node->frag_list)) {
++			if (create_frag_buffer(&orig_node->frag_list))
++				return NET_RX_DROP;
++		}
+ 
+ 		tmp_frag_entry =
+ 			search_frag_packet(&orig_node->frag_list,
+diff --git a/drivers/staging/batman-adv/unicast.c b/drivers/staging/batman-adv/unicast.c
+index f951abc..f7d2206 100644
+--- a/drivers/staging/batman-adv/unicast.c
++++ b/drivers/staging/batman-adv/unicast.c
+@@ -78,7 +78,7 @@ void create_frag_entry(struct list_head *head, struct sk_buff *skb)
+ 	return;
+ }
+ 
+-void create_frag_buffer(struct list_head *head)
++int create_frag_buffer(struct list_head *head)
+ {
+ 	int i;
+ 	struct frag_packet_list_entry *tfp;
+@@ -86,13 +86,17 @@ void create_frag_buffer(struct list_head *head)
+ 	for (i = 0; i < FRAG_BUFFER_SIZE; i++) {
+ 		tfp = kmalloc(sizeof(struct frag_packet_list_entry),
+ 			GFP_ATOMIC);
++		if (tfp == NULL) {
++			frag_list_free(head);
++			return -ENOMEM;
++		}
+ 		tfp->skb = NULL;
+ 		tfp->seqno = 0;
+ 		INIT_LIST_HEAD(&tfp->list);
+ 		list_add(&tfp->list, head);
+ 	}
+ 
+-	return;
++	return 0;
+ }
+ 
+ struct frag_packet_list_entry *search_frag_packet(struct list_head *head,
+diff --git a/drivers/staging/batman-adv/unicast.h b/drivers/staging/batman-adv/unicast.h
+index 1d5cbeb..7973697 100644
+--- a/drivers/staging/batman-adv/unicast.h
++++ b/drivers/staging/batman-adv/unicast.h
+@@ -30,7 +30,7 @@ struct sk_buff *merge_frag_packet(struct list_head *head,
+ 	struct sk_buff *skb);
+ 
+ void create_frag_entry(struct list_head *head, struct sk_buff *skb);
+-void create_frag_buffer(struct list_head *head);
++int create_frag_buffer(struct list_head *head);
+ struct frag_packet_list_entry *search_frag_packet(struct list_head *head,
+ 	struct unicast_frag_packet *up);
+ void frag_list_free(struct list_head *head);
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.7.0.4
+
