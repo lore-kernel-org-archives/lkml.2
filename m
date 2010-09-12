@@ -1,86 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab0ILPzl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 11:55:41 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33603 "EHLO mga11.intel.com"
+	id S1753777Ab0ILPzo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 11:55:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:6873 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753419Ab0ILPzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 11:55:03 -0400
+	id S1753366Ab0ILPzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 11:55:02 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,355,1280732400"; 
-   d="scan'208";a="606204421"
-Message-Id: <20100912155204.602761236@intel.com>
+   d="scan'208";a="553787502"
+Message-Id: <20100912155204.451611340@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 12 Sep 2010 23:49:58 +0800
+Date: Sun, 12 Sep 2010 23:49:57 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: linux-mm <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Theodore Tso <tytso@mit.edu>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Richard Kennedy <richard@rsk.demon.co.uk>,
-        "Martin J. Bligh" <mbligh@google.com>,
         Wu Fengguang <fengguang.wu@intel.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
-CC: "Theodore Ts'o" <tytso@mit.edu>
-CC: Dave Chinner <david@fromorbit.com>
 CC: Jan Kara <jack@suse.cz>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Rik van Riel <riel@redhat.com>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Chris Mason <chris.mason@oracle.com>
 CC: Christoph Hellwig <hch@lst.de>
 CC: Li Shaohua <shaohua.li@intel.com>
-Subject: [PATCH 13/17] writeback: reduce per-bdi dirty threshold ramp up time
+Subject: [PATCH 12/17] writeback: scale IO chunk size up to device bandwidth
 References: <20100912154945.758129106@intel.com>
-Content-Disposition: inline; filename=writeback-speedup-per-bdi-threshold-ramp-up.patch
+Content-Disposition: inline; filename=writeback-128M-MAX_WRITEBACK_PAGES.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce the dampening for the control system, yielding faster
-convergence.
+Originally, MAX_WRITEBACK_PAGES was hard-coded to 1024 because of a
+concern of not holding I_SYNC for too long.  (At least, that was the
+comment previously.)  This doesn't make sense now because the only
+time we wait for I_SYNC is if we are calling sync or fsync, and in
+that case we need to write out all of the data anyway.  Previously
+there may have been other code paths that waited on I_SYNC, but not
+any more.					    -- Theodore Ts'o
 
-Currently it converges at a snail's pace for slow devices (in order of
-minutes).  For really fast storage, the convergence speed should be fine.
+According to Christoph, the current writeback size is way too small,
+and XFS had a hack that bumped out nr_to_write to four times the value
+sent by the VM to be able to saturate medium-sized RAID arrays.  This
+value was also problematic for ext4 as well, as it caused large files
+to be come interleaved on disk by in 8 megabyte chunks (we bumped up
+the nr_to_write by a factor of two).
 
-It makes sense to make it reasonably fast for typical desktops.
+So remove the MAX_WRITEBACK_PAGES constraint totally. The writeback pages
+will adapt to as large as the storage device can write within 1 second.
 
-After patch, it converges in ~10 seconds for 60MB/s writes and 4GB mem.
-So expect ~1s for a fast 600MB/s storage under 4GB mem, or ~4s under
-16GB mem, which looks good.
+For a typical hard disk, the resulted chunk size will be 32MB or 64MB.
 
-$ while true; do grep BdiDirtyThresh /debug/bdi/8:0/stats; sleep 1; done
-BdiDirtyThresh:            0 kB
-BdiDirtyThresh:       118748 kB
-BdiDirtyThresh:       214280 kB
-BdiDirtyThresh:       303868 kB
-BdiDirtyThresh:       376528 kB
-BdiDirtyThresh:       411180 kB
-BdiDirtyThresh:       448636 kB
-BdiDirtyThresh:       472260 kB
-BdiDirtyThresh:       490924 kB
-BdiDirtyThresh:       499596 kB
-BdiDirtyThresh:       507068 kB
-...
-DirtyThresh:          530392 kB
+http://bugzilla.kernel.org/show_bug.cgi?id=13930
 
+CC: Theodore Ts'o <tytso@mit.edu>
+CC: Dave Chinner <david@fromorbit.com>
+CC: Chris Mason <chris.mason@oracle.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Richard Kennedy <richard@rsk.demon.co.uk>
-CC: Martin J. Bligh <mbligh@google.com>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/page-writeback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/fs-writeback.c |   31 +++++++++++++++++--------------
+ 1 file changed, 17 insertions(+), 14 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2010-08-30 10:24:00.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-08-30 10:27:10.000000000 +0800
-@@ -131,7 +131,7 @@ static int calc_period_shift(void)
- 	else
- 		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
- 				100;
--	return 2 + ilog2(dirty_total - 1);
-+	return ilog2(dirty_total - 1) - 1;
+--- linux-next.orig/fs/fs-writeback.c	2010-09-07 23:26:17.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2010-09-07 23:26:37.000000000 +0800
+@@ -568,15 +568,6 @@ static void __writeback_inodes_sb(struct
+ 	spin_unlock(&inode_lock);
+ }
+ 
+-/*
+- * The maximum number of pages to writeout in a single bdi flush/kupdate
+- * operation.  We do this so we don't hold I_SYNC against an inode for
+- * enormous amounts of time, which would block a userspace task which has
+- * been forced to throttle against that inode.  Also, the code reevaluates
+- * the dirty each time it has written this many pages.
+- */
+-#define MAX_WRITEBACK_PAGES     1024
+-
+ static inline bool over_bground_thresh(void)
+ {
+ 	unsigned long background_thresh, dirty_thresh;
+@@ -588,6 +579,18 @@ static inline bool over_bground_thresh(v
  }
  
  /*
++ * Give each inode a nr_to_write that can complete within 1 second.
++ */
++static unsigned long bdi_writeback_chunk_size(struct backing_dev_info *bdi)
++{
++	unsigned long pages;
++
++	pages = max(bdi->write_bandwidth, 4 << 20) >> PAGE_CACHE_SHIFT;
++
++	return rounddown_pow_of_two(pages);
++}
++
++/*
+  * Explicit flushing or periodic writeback of "old" data.
+  *
+  * Define "old": the first time one of an inode's pages is dirtied, we mark the
+@@ -645,8 +648,8 @@ static long wb_writeback(struct bdi_writ
+ 			break;
+ 
+ 		wbc.more_io = 0;
+-		wbc.per_file_limit = MAX_WRITEBACK_PAGES;
+-		wbc.nr_to_write = MAX_WRITEBACK_PAGES;
++		wbc.per_file_limit = bdi_writeback_chunk_size(wb->bdi);
++		wbc.nr_to_write = wbc.per_file_limit;
+ 		wbc.pages_skipped = 0;
+ 
+ 		trace_wbc_writeback_start(&wbc, wb->bdi);
+@@ -657,8 +660,8 @@ static long wb_writeback(struct bdi_writ
+ 		trace_wbc_writeback_written(&wbc, wb->bdi);
+ 		bdi_update_write_bandwidth(wb->bdi, &bw_time, &bw_written);
+ 
+-		work->nr_pages -= MAX_WRITEBACK_PAGES - wbc.nr_to_write;
+-		wrote += MAX_WRITEBACK_PAGES - wbc.nr_to_write;
++		work->nr_pages	-= wbc.per_file_limit - wbc.nr_to_write;
++		wrote		+= wbc.per_file_limit - wbc.nr_to_write;
+ 
+ 		/*
+ 		 * If we consumed everything, see if we have more
+@@ -673,7 +676,7 @@ static long wb_writeback(struct bdi_writ
+ 		/*
+ 		 * Did we write something? Try for more
+ 		 */
+-		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
++		if (wbc.nr_to_write < wbc.per_file_limit)
+ 			continue;
+ 		/*
+ 		 * Nothing written. Wait for some inode to
 
 
