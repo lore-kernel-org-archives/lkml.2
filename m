@@ -1,97 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab0ILTdK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 15:33:10 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43199 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457Ab0ILTdH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 15:33:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=GzcgcvOuGssmtj3Uo+YEF39pypQST4/SIf54UfvqsDp34MzElCjXRGkyqEP6Zm9Ntg
-         b+NgHNVVKAvAfQNnlBqle/fEmx+F5yX0ZS1T5xVBSKny+wPMJaDiMjT54wRtW0JWdfRU
-         8uYO2L+344KZuDf/KOhGWYUqNEbdxX06Lmw1Y=
-From: Guillaume Chazarain <guichaz@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>, Jiri Kosina <jkosina@suse.cz>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Cc: Guillaume Chazarain <guichaz@gmail.com>
-Subject: [PATCH] Fix hiddev's use of usb_find_interface
-Date: Sun, 12 Sep 2010 21:32:35 +0200
-Message-Id: <1284319955-6014-1-git-send-email-guichaz@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753666Ab0ILThW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 15:37:22 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47508 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752804Ab0ILThV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 15:37:21 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [PATCH] PM_SLEEP_SMP: fix kconfig warning
+Date: Sun, 12 Sep 2010 21:36:11 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
+References: <20100911155720.c4fe6b4b.randy.dunlap@oracle.com> <201009121926.08633.rjw@sisk.pl> <4C8D210D.8080307@oracle.com>
+In-Reply-To: <4C8D210D.8080307@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009122136.11660.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My macbook infrared remote control was broken by commit
-bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a:
-HID: hiddev: use usb_find_interface, get rid of BKL
+On Sunday, September 12, 2010, Randy Dunlap wrote:
+> On 09/12/10 10:26, Rafael J. Wysocki wrote:
+> > On Sunday, September 12, 2010, Randy Dunlap wrote:
+> >> From: Randy Dunlap <randy.dunlap@oracle.com>
+> >>
+> >> Fix kconfig unmet dependency warning:
+> >>
+> >> warning: (PM_SLEEP_SMP && SMP && (ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE) && PM_SLEEP) selects HOTPLUG_CPU which has unmet direct dependencies (SMP && HOTPLUG)
+> >>
+> >> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> >> ---
+> >>  kernel/power/Kconfig |    2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> --- linux-next-20100908.orig/kernel/power/Kconfig
+> >> +++ linux-next-20100908/kernel/power/Kconfig
+> >> @@ -83,7 +83,7 @@ config PM_TRACE_RTC
+> >>  
+> >>  config PM_SLEEP_SMP
+> >>  	bool
+> >> -	depends on SMP
+> >> +	depends on SMP && HOTPLUG
+> >>  	depends on ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE
+> >>  	depends on PM_SLEEP
+> >>  	select HOTPLUG_CPU
+> > 
+> > I'm afraid that may cause some people to find that suspend is not compiled in
+> > to their surprise.
+> > 
+> > Would it be possible to select both HOTPLUG and HOTPLUG_CPU instead (ie. would
+> > that work)?
+> 
+> That appears to work in my testing.  I'll ack your patch.
+> 
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-This device appears in dmesg as:
-apple 0003:05AC:8242.0001: hiddev0,hidraw0: USB HID v1.11 Device
-[Apple Computer, Inc. IR Receiver] on usb-0000:00:1d.2-1/input0
+OK, thanks!
 
-It stopped working as lircd was getting ENODEV when opening /dev/usb/hiddev0.
+Appended for completness, I'm going to put it into my linux-next branch.
 
-AFAICS hiddev_driver is a dummy driver so usb_find_interface(&hiddev_driver)
-does not find anything.
+Rafael
 
-The device is associated with the usbhid driver, so let's do
-usb_find_interface(&hid_driver) instead.
-
-$ ls -l /sys/devices/pci0000:00/0000:00:1d.2/usb7/7-1/7-1:1.0/usb/hiddev0/device/driver
-lrwxrwxrwx 1 root root 0 2010-09-12 16:28 /sys/devices/pci0000:00/0000:00:1d.2/usb7/7-1/7-1:1.0/usb/hiddev0/device/driver -> ../../../../../../bus/usb/drivers/usbhid
-
-Signed-off-by: Guillaume Chazarain <guichaz@gmail.com>
 ---
- drivers/hid/usbhid/hid-core.c |    5 +++++
- drivers/hid/usbhid/hiddev.c   |    2 +-
- drivers/hid/usbhid/usbhid.h   |    1 +
- 3 files changed, 7 insertions(+), 1 deletions(-)
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM: Fix unmet dependency warning from kconfig
 
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index b729c02..7b2f7f6 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -1445,6 +1445,11 @@ static const struct hid_device_id hid_usb_table[] = {
- 	{ }
- };
- 
-+struct usb_interface *usbhid_find_interface(int minor)
-+{
-+	return usb_find_interface(&hid_driver, minor);
-+}
-+
- static struct hid_driver hid_usb_driver = {
- 	.name = "generic-usb",
- 	.id_table = hid_usb_table,
-diff --git a/drivers/hid/usbhid/hiddev.c b/drivers/hid/usbhid/hiddev.c
-index 0a29c51..681e620 100644
---- a/drivers/hid/usbhid/hiddev.c
-+++ b/drivers/hid/usbhid/hiddev.c
-@@ -270,7 +270,7 @@ static int hiddev_open(struct inode *inode, struct file *file)
- 	struct hiddev *hiddev;
- 	int res;
- 
--	intf = usb_find_interface(&hiddev_driver, iminor(inode));
-+	intf = usbhid_find_interface(iminor(inode));
- 	if (!intf)
- 		return -ENODEV;
- 	hid = usb_get_intfdata(intf);
-diff --git a/drivers/hid/usbhid/usbhid.h b/drivers/hid/usbhid/usbhid.h
-index 693fd3e..89d2e84 100644
---- a/drivers/hid/usbhid/usbhid.h
-+++ b/drivers/hid/usbhid/usbhid.h
-@@ -42,6 +42,7 @@ void usbhid_submit_report
- (struct hid_device *hid, struct hid_report *report, unsigned char dir);
- int usbhid_get_power(struct hid_device *hid);
- void usbhid_put_power(struct hid_device *hid);
-+struct usb_interface *usbhid_find_interface(int minor);
- 
- /* iofl flags */
- #define HID_CTRL_RUNNING	1
--- 
-1.7.0.4
+Fix the following build warning:
 
+warning: (PM_SLEEP_SMP && SMP && (ARCH_SUSPEND_POSSIBLE || \
+ARCH_HIBERNATION_POSSIBLE) && PM_SLEEP) selects HOTPLUG_CPU which \
+has unmet direct dependencies (SMP && HOTPLUG)
+
+by selecting HOTPLUG along with CPU_HOTPLUG.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ kernel/power/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-2.6/kernel/power/Kconfig
+===================================================================
+--- linux-2.6.orig/kernel/power/Kconfig
++++ linux-2.6/kernel/power/Kconfig
+@@ -86,6 +86,7 @@ config PM_SLEEP_SMP
+ 	depends on SMP
+ 	depends on ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE
+ 	depends on PM_SLEEP
++	select HOTPLUG
+ 	select HOTPLUG_CPU
+ 	default y
+ 
