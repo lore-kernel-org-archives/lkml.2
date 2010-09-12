@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab0ILUxV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 16:53:21 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48606 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501Ab0ILUxT (ORCPT
+	id S1753947Ab0ILVEm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 17:04:42 -0400
+Received: from torres.zugschlus.de ([85.214.131.164]:55198 "EHLO
+	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753501Ab0ILVEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 16:53:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=doHDEW328Ay5rf1oOmeJgSHgBNOc/6MEBAhgGqex2V+IOUT01DxK90GA7wLLf6vEWw
-         z0mWx98bG/KVT7JmtKPE+ni4XEpnVluQzOfsftsCyIeMwSJu+U1A1AUQJ93VcvSXX9Pv
-         R8S8ioryBS3/1U8jIoSqL+c3TygGTJg7mJjj8=
-Date: Sun, 12 Sep 2010 22:52:49 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Al Cho <acho@novell.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: keucr: check kmalloc() return value
-Message-ID: <20100912205248.GE25351@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Vasiliy Kulikov <segooon@gmail.com>,
-	kernel-janitors@vger.kernel.org,
-	Greg Kroah-Hartman <gregkh@suse.de>, Al Cho <acho@novell.com>,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1284317808-4850-1-git-send-email-segooon@gmail.com>
+	Sun, 12 Sep 2010 17:04:41 -0400
+Date: Sun, 12 Sep 2010 23:04:39 +0200
+From: Marc Haber <mh+linux-kernel@zugschlus.de>
+To: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
+Cc: Linux Kernel Developers <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Subject: Re: No link on e1000e with 2.6.35.3 and ThinkPad T60
+Message-ID: <20100912210439.GA17799@torres.zugschlus.de>
+References: <20100724092644.GA13353@torres.zugschlus.de> <20100824094524.GA17608@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A136600821444B@rrsmsx501.amr.corp.intel.com> <20100826112732.GA15559@torres.zugschlus.de> <20100826171442.GA22941@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A13660082E9090@rrsmsx501.amr.corp.intel.com> <20100904063305.GA18734@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A13660085FFA1B@rrsmsx501.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1284317808-4850-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <EA929A9653AAE14F841771FB1DE5A13660085FFA1B@rrsmsx501.amr.corp.intel.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 12, 2010 at 10:56:43PM +0400, Vasiliy Kulikov wrote:
-> kmalloc() may fail, if so return error code.
-> Also don't alloc 16 bytes from the heap, use stack instead.
+Hi,
 
-I don't have ENE_SendScsiCmd() in my repo, but I think it's a DMA
-function.  You're not supposed to use stack memory for DMA transfers.
-This is documented in:  Documentation/DMA-API-HOWTO.txt
+On Tue, Sep 07, 2010 at 01:05:45PM -0600, Tantilov, Emil S wrote:
+> Marc Haber wrote:
+> > I can give you ssh access to mine if you want to. Do you have IPv6
+> > connectivity? If you want me to, send me your ssh key.
+> 
+> Is your traffic mostly over IPv6? That maybe a clue as there has been
+> a lot of changes in the IPv6 code in recent kernels.
 
-So the original code is correct here (except that there is no error
-handling).
+No, IPv6 is just some kind of luxury. The majority of work is done via
+IPv4. It is just easier to make the box accessible from the outside
+via IPv6 since it's IPv4 connectivity is natted.
 
-regards,
-dan carpenter
+> At this point we need to start looking into details. Especially if you
+> can come up with some sort of test that would consistently reproduce
+> the hang. I should be able to repro it on my system if it is a generic
+> issue.
 
+I will try doing so. At the moment, I am pretty much traveling five
+days a week and do not have much opportunity to use the wired
+Ethernet, but I haven't seen the crashes recently. So it might as well
+be fixed in 2.6.35.4.
 
+> I would also repeat my request to open a bug at e1000.sf.net as there
+> has been a lot of info exchanged in email and it will be easier to
+> follow if it is in one place.
+
+I will do that as soon as I see the issue again.
+
+Greetings
+Marc
+
+-- 
+-----------------------------------------------------------------------------
+Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
+Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 72739834
+Nordisch by Nature |  How to make an American Quilt | Fax: *49 3221 2323190
