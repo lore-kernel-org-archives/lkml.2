@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab0ILT3V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 15:29:21 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47402 "EHLO ogre.sisk.pl"
+	id S1754106Ab0ILT3X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 15:29:23 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47414 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579Ab0ILT2y convert rfc822-to-8bit (ORCPT
+	id S1753491Ab0ILT3U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 15:28:54 -0400
+	Sun, 12 Sep 2010 15:29:20 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Albert Gall" <ss3vdr@gmail.com>,
-        "Alex Deucher" <alexdeucher@gmail.com>,
-        "Dave Airlie" <airlied@redhat.com>,
-        "Jerome Glisse" <jglisse@redhat.com>
+        "H. Peter Anvin" <hpa@zytor.com>, "Nix" <nix@esperi.org.uk>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Venkatesh Pallipadi" <venki@google.com>
 References: <QnCvudbe2FD.A.XiE.DgSjMB@chimera>
 In-Reply-To: <QnCvudbe2FD.A.XiE.DgSjMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -20,10 +19,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <p44oKaOqEDM.A.ztF.ShSjMB@chimera>
-Subject: [Bug #16515] [bisected] Radeon rv280 can't boot on kernel 2.6.35.
+Message-ID: <p44oKaOqEDM.A.vtE.KgSjMB@chimera>
+Subject: [Bug #18272] 2.6.35.*: horrible (exponential? >linear) slowdown to unusability (ACPI idle?)
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 12 Sep 2010 21:08:41 +0200 (CEST)
+Date: Sun, 12 Sep 2010 21:08:45 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,11 +35,12 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16515
-Subject		: [bisected] Radeon rv280 can't boot on kernel 2.6.35.
-Submitter	: Albert Gall <ss3vdr@gmail.com>
-Date		: 2010-08-04 16:10 (40 days old)
-First-Bad-Commit: http://git.kernel.org/linus/https://bugzilla.kernel.org/attachment.cgi?id=27350
-Handled-By	: Alex Deucher <alexdeucher@gmail.com>
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=18272
+Subject		: 2.6.35.*: horrible (exponential? >linear) slowdown to unusability (ACPI idle?)
+Submitter	: Nix <nix@esperi.org.uk>
+Date		: 2010-09-05 0:51 (8 days old)
+First-Bad-Commit: http://git.kernel.org/linus/30a564be9d9554c168a654eddc2165869cc0d7bf
+Message-ID	: <87zkvx2ese.fsf@spindle.srvr.nix>
+References	: http://marc.info/?l=linux-kernel&m=128364994602942&w=2
 
 
