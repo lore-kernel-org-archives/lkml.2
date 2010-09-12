@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab0ILQSK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 12:18:10 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:57111 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752312Ab0ILQSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 12:18:09 -0400
-Date: Sun, 12 Sep 2010 18:18:06 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] Documentation/SubmittingPatches: Add and describe
- scripts/get_maintainer.pl
-Message-ID: <20100912181806.43e2bd2b@schatten.dmk.lab>
-In-Reply-To: <1284234211.12180.106.camel@Joe-Laptop>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
- <1284111767.1783.35.camel@Joe-Laptop>
- <20100910095259.GC23903@sirena.org.uk>
- <1284113066.1783.69.camel@Joe-Laptop>
- <20100910101818.GF3068@rakim.wolfsonmicro.main>
- <1284115665.1783.144.camel@Joe-Laptop>
- <1284164541.1783.204.camel@Joe-Laptop>
- <20100911113811.7c685c6d@schatten.dmk.lab>
- <1284198750.12180.18.camel@Joe-Laptop>
- <20100911120243.7cce451e@schatten.dmk.lab>
- <1284232943.12180.97.camel@Joe-Laptop>
- <1284234211.12180.106.camel@Joe-Laptop>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753432Ab0ILQUi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 12:20:38 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50147 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403Ab0ILQUh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 12:20:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TAG29DKgWKBkQD7XaiG2aORb7edq7MOPc5C3z0MZvyaP06jAI5E5zV1jlLTW+eAUmJ
+         juQw1WQScdWo7C03/jEfs573O2s3blbHYgHfKxrl5c82WjAKQ/xodRMG0oXmo3FRo+RU
+         w92bU+L3s9hDHydzjc7Az4i61QEQCruWTzD4k=
+MIME-Version: 1.0
+In-Reply-To: <20100908151929.2586ace5.akpm@linux-foundation.org>
+References: <1283697637-3117-1-git-send-email-minchan.kim@gmail.com>
+	<20100908054831.GB20955@cmpxchg.org>
+	<20100908154527.GA5936@barrios-desktop>
+	<20100908151929.2586ace5.akpm@linux-foundation.org>
+Date: Mon, 13 Sep 2010 01:20:36 +0900
+Message-ID: <AANLkTi=jmV=x2rJ=G4iicYFO6UqPbfob_VnkY7VNbP3X@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: check all_unreclaimable in direct reclaim path
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "M. Vefa Bicakci" <bicave@superonline.com>, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Sep 2010 12:43:31 -0700
-Joe Perches <joe@perches.com> wrote:
+On Thu, Sep 9, 2010 at 7:19 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Thu, 9 Sep 2010 00:45:27 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> +static inline bool zone_reclaimable(struct zone *zone)
+>> +{
+>> +     return zone->pages_scanned < zone_reclaimable_pages(zone) * 6;
+>> +}
+>> +
+>> +static inline bool all_unreclaimable(struct zonelist *zonelist,
+>> +             struct scan_control *sc)
+>> +{
+>> +     struct zoneref *z;
+>> +     struct zone *zone;
+>> +     bool all_unreclaimable = true;
+>> +
+>> +     if (!scanning_global_lru(sc))
+>> +             return false;
+>> +
+>> +     for_each_zone_zonelist_nodemask(zone, z, zonelist,
+>> +                     gfp_zone(sc->gfp_mask), sc->nodemask) {
+>> +             if (!populated_zone(zone))
+>> +                     continue;
+>> +             if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+>> +                     continue;
+>> +             if (zone_reclaimable(zone)) {
+>> +                     all_unreclaimable = false;
+>> +                     break;
+>> +             }
+>> +     }
+>> +
+>>       return all_unreclaimable;
+>>  }
+>
+> Could we have some comments over these functions please?  Why they
+> exist, what problem they solve, how they solve them, etc.  Stuff which
+> will be needed for maintaining this code three years from now.
+>
+> We may as well remove the `inline's too.  gcc will tkae care of that.
 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  Documentation/SubmittingPatches |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-> index 689e237..bb318f9 100644
-> --- a/Documentation/SubmittingPatches
-> +++ b/Documentation/SubmittingPatches
-> @@ -176,6 +176,23 @@ discussed should the patch then be submitted to Linus.
->  
->  6) Select your CC (e-mail carbon copy) list.
->  
-> +Use
-> +	"./scripts/get_maintainer.pl --nogit --roles <patch>"
-> +to find the appropriate maintainers and mailing lists to CC.
-> +
-> +If the output email addresses doesn't show a "supporter" or "maintainer",
-> +you can expand the search to include git history with:
-> +
-> +	"./scripts/get_maintainer.pl --roles <patch>"
-> +
-> +Searching git history can often list individuals that may not be
-> +particularly interested in your patch, so use the list of names
-> +judiciously.
-> +
-> +./scripts/get_maintainer.pl options "--rolestats" and "--git-blame"
-> +can show a bit more information and might help you select the appropriate
-> +parties to CC.
-> +
->  Unless you have a reason NOT to do so, CC linux-kernel@vger.kernel.org.
->  
->  Other kernel developers besides Linus need to be aware of your change,
-> 
-> 
+Okay. I will resend.
 
-That is more to the point. I.e. it tackles the same problem
-as my patch: The communication disconnect between sender and receiver.
+>
+>> -             if (nr_slab == 0 &&
+>> -                zone->pages_scanned >= (zone_reclaimable_pages(zone) * 6))
+>> +             if (nr_slab == 0 && !zone_reclaimable(zone))
+>
+> Extra marks for working out and documenting how we decided on the value
+> of "6".  Sigh.  It's hopefully in the git record somewhere.
+>
+Originally it is just following as.
 
-But I'm a bit sceptical at how efficient this is. 
+                if (zone->pages_scanned > zone->present_pages * 2)
+                        zone->all_unreclaimable = 1;
 
-Cheers,
-Flo
+Nick change it with remained lru * 4 [1] and increased 6 [2].
+But the description doesn't have why we determine it by "4".
+So I can't handle it in my patch.
 
+I don't like undocumented magic value. :(
+
+[1]
+commit 9d0aa0f7a99c88dd20bc188756b892f174d93fc1
+Author: nickpiggin <nickpiggin>
+Date:   Sun Oct 17 16:20:56 2004 +0000
+
+    [PATCH] kswapd lockup fix
+
+    Fix some bugs in the kswapd logic which can cause kswapd lockups.
+
+
+[2]
+commit 4ff1ffb4870b007b86f21e5f27eeb11498c4c077
+Author: Nick Piggin <npiggin@suse.de>
+Date:   Mon Sep 25 23:31:28 2006 -0700
+
+    [PATCH] oom: reclaim_mapped on oom
+
+-- 
+Kind regards,
+Minchan Kim
