@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab0ILXSM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 19:18:12 -0400
-Received: from mail.uccuyo.edu.ar ([200.123.107.120]:54192 "EHLO
-	mail.uccuyo.edu.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab0ILXSL convert rfc822-to-8bit (ORCPT
+	id S1754126Ab0ILXot (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 19:44:49 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:55877 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754069Ab0ILXoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 19:18:11 -0400
-Message-ID: <20100912181406.g1zc3mzdus48c0ko@www.uccuyo.edu.ar>
-Date: Sun, 12 Sep 2010 18:14:06 -0300
-From: Western Union Money Transfer <info@westernunion.com>
-Reply-to: infowesternunion94@yahoo.com
-To: undisclosed-recipients:;
-Subject: Dear Customer
+	Sun, 12 Sep 2010 19:44:44 -0400
+Date: Sun, 12 Sep 2010 19:44:42 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
+	nr_running
+Message-ID: <20100912234442.GA22778@Krystal>
+References: <20100911173732.551632040@efficios.com> <20100911174003.051303123@efficios.com> <20100912061452.GA3383@elte.hu> <20100912181312.GA32327@Krystal>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.0.3)
+In-Reply-To: <20100912181312.GA32327@Krystal>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 19:40:25 up 233 days,  2:17,  4 users,  load average: 0.12, 0.05,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> * Ingo Molnar (mingo@elte.hu) wrote:
+[...]
+> > I.e. please re-phrase your series as: "what else does it give us beyond 
+> > tuning down the minimum granularity to 33% of its current value?"
+> 
+> That's indeed the nice way to phrase the question. So the added value of my
+> approach is that I don't change the granularity when there are 3 or less tasks
+> running on the system. So, with Peter's approach, I expect that the system
+> throughput will be lower in this scenario, but my approach should keep it at
+> pretty much the same values as the vanilla kernel.
+> 
+> But you are right, I should put some performance measurements too. Let me do a
+> few test runs (I plan to use tbench) and come back with the measurements with
+> nr_running <= 3 for both Peter's approach and mine.
 
+It turns out that tbench is rather more latency-sensitive than
+throughput-sensitive :
 
-Dear Customer,
+tbench 1, on UP 2.0GHz
 
-You have been awarded with the sum of $850,000.00 USD by our office,
-as one of our customers who use Western Union in their business
-transaction.
+* Mainline 2.6.35.2 kernel
+Throughput 184.875 MB/sec  1 clients  1 procs  max_latency=12.158 ms
 
-This award was been selected through the internet, where
-your e-mail address was indicated and notified. Please provide .
-Mr. Joel Davids  with the following details listed below so that your
-fund will be remited to you through Western Union.
+* With my patches (dynamic granularity)
+Throughput 185.99 MB/sec  1 clients  1 procs  max_latency=14.683 ms
 
-Full Name:
-Address:
-Occuptiaon:
-Age:
-Telephone No.:
+* With Peter's approach (smaller granularity)
+Throughput 188.784 MB/sec  1 clients  1 procs  max_latency=8.061 ms
 
-As soon as these details are received and verified, your fund will be
-transferred to you. Thank you, for using western union.
+So as we can see, my approach has a behavior that's much closer to mainline, but
+the tbench workload seems to favor smaller granularity here. I'm open to ideas
+about benchmarks that would test throughput without being so sensitive to
+latency.
 
-Regards,
-Mr. Joel Davids
-WESTERN UNION MONEY TRANSFER
+Thanks,
 
-_________________________________
-Universidad Católica de Cuyo
-www.uccuyo.edu.ar
+Mathieu
 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
