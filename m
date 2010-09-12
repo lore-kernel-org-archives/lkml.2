@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab0ILTEV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 15:04:21 -0400
-Received: from server109-228-6-235.live-servers.net ([109.228.6.235]:58121
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752947Ab0ILTEU (ORCPT
+	id S1753441Ab0ILTE7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 15:04:59 -0400
+Received: from lo.gmane.org ([80.91.229.12]:53153 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913Ab0ILTE6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 15:04:20 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: andi@firstfloor.org
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [PATCH] drm/i915/crt: Downgrade warnings for hotplug failures
-Date: Sun, 12 Sep 2010 20:07:04 +0100
-Message-Id: <1284318424-5512-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <87mxrswddf.fsf@basil.nowhere.org>
-References: <87mxrswddf.fsf@basil.nowhere.org>
-X-Originating-IP: 78.156.66.37
+	Sun, 12 Sep 2010 15:04:58 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Heiko Bauke <heiko.bauke@snafu.de>
+Subject: Realtek Ethernet drivers
+Date: Sun, 12 Sep 2010 21:04:44 +0200
+Message-ID: <20100912210444.76ebeee6@tron.localdomain>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: p54abac24.dip.t-dialin.net
+X-Newsreader: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are not fatal errors, so do not alarm the user by filling the
-logs with *** ERROR ***. Especially as we know that g4x CRT detection
-is a little sticky.
+Dear Kernel-Developers,
 
-On the one hand the errors are valid since they are warning us of a
-stall -- we poll the register whilst holding the mode lock so not even
-the mouse will update. On the other hand, those stalls were already present
-yet nobody complained.
+in the last few weeks I spend quite some time trying to fix a network
+problem on my home server which has two Realtek onboard ethernet cards,
+lspci-output:
 
-Reported-by: Andi Kleen <andi@firstfloor.org>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=18332
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
----
- drivers/gpu/drm/i915/intel_crt.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+00:0c.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL-8110SC/8169SC Gigabit Ethernet (rev 10)
+00:0d.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL-8110SC/8169SC Gigabit Ethernet (rev 10)
 
-diff --git a/drivers/gpu/drm/i915/intel_crt.c b/drivers/gpu/drm/i915/intel_crt.c
-index a02a8df..197d4f3 100644
---- a/drivers/gpu/drm/i915/intel_crt.c
-+++ b/drivers/gpu/drm/i915/intel_crt.c
-@@ -188,7 +188,7 @@ static bool intel_ironlake_crt_detect_hotplug(struct drm_connector *connector)
- 
- 	if (wait_for((I915_READ(PCH_ADPA) & ADPA_CRT_HOTPLUG_FORCE_TRIGGER) == 0,
- 		     1000, 1))
--		DRM_ERROR("timed out waiting for FORCE_TRIGGER");
-+		DRM_DEBUG_KMS("timed out waiting for FORCE_TRIGGER");
- 
- 	if (turn_off_dac) {
- 		I915_WRITE(PCH_ADPA, temp);
-@@ -245,7 +245,7 @@ static bool intel_crt_detect_hotplug(struct drm_connector *connector)
- 		if (wait_for((I915_READ(PORT_HOTPLUG_EN) &
- 			      CRT_HOTPLUG_FORCE_DETECT) == 0,
- 			     1000, 1))
--			DRM_ERROR("timed out waiting for FORCE_DETECT to go off");
-+			DRM_DEBUG_KMS("timed out waiting for FORCE_DETECT to go off");
- 	}
- 
- 	stat = I915_READ(PORT_HOTPLUG_STAT);
+The problem was that sometimes one of the two cards or both obtained
+«no link» status while all cables where pugged in correctly. After
+unplugging the power supply and rebooting or after removing the module
+r8169 and reloading it all links where up again (or maybe not).  
+
+Searching the web I found that many other users have or had the same or
+similar problems with this kind of ethernet card. Some users suggested
+workarounds but none of these did work for me. Only after installing
+drivers [1] as provided by Realtek my «no link» problems disappeared. 
+
+Taking into account that the Realtek divers for RT8168 [2] and RT8169
+[3] cards seem to be more reliable than the drivers in the Linux kernel
+tree and that the Realtek drivers [2, 3] are distributed under the
+terms of the GPL I wonder is there any good reason not to include these
+drivers into the Linux main source tree?
+
+
+	Regrads,
+
+	Heiko
+
+
+P.S. I am running 2.6.32-24-generic on a 32-bit Ubuntu 10.04.1 LTS box.
+
+
+[1] http://www.realtek.com.tw/downloads
+[3] http://www.realtek.com.tw/downloads/downloadsView.aspx?Langid=1&PNid=13&PFid=4&Level=5&Conn=4&DownTypeID=3&GetDown=false&Downloads=true
+[2] http://www.realtek.com.tw/downloads/downloadsView.aspx?Langid=1&PNid=13&PFid=5&Level=5&Conn=4&DownTypeID=3&GetDown=false
+
 -- 
-1.7.1
+-- Man könnte viele Beispiele für unsinnige Ausgaben nennen, aber keines
+-- ist treffender als die Errichtung einer Friedhofsmauer. Die, die
+-- drinnen sind, können sowieso nicht hinaus, und die, die draußen sind,
+-- wollen nicht hinein. (Mark Twain, am. Schriftsteller, 1835-1903)
+
 
