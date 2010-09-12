@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab0ILL4f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 07:56:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24406 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab0ILL4d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 07:56:33 -0400
-Message-ID: <4C8CBFC3.8060706@oracle.com>
-Date: Sun, 12 Sep 2010 19:55:47 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752755Ab0ILMaE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 08:30:04 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:44492 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751823Ab0ILMaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 08:30:03 -0400
+Date: Sun, 12 Sep 2010 14:29:55 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Jaswinder Singh Rajput <jaswinder@infradead.org>
+Cc: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Btrfs: Remove useless condition
+Message-ID: <20100912122955.GA28839@cmpxchg.org>
+References: <1284289340.2650.2.camel@ht.satnam>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 02/41] block/loop: queue ordered mode should be DRAIN_FLUSH
-References: <1283509796-1510-1-git-send-email-tj@kernel.org> <1283509796-1510-3-git-send-email-tj@kernel.org> <4C8C9175.5030404@oracle.com> <4C8CBC50.1070400@kernel.org>
-In-Reply-To: <4C8CBC50.1070400@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284289340.2650.2.camel@ht.satnam>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Sep 12, 2010 at 04:32:20PM +0530, Jaswinder Singh Rajput wrote:
+> 
+> if (ret) is useless as it will be never NULL as in previous statement
+> we are setting ret = prev for !ret
 
+If there is no match and no extent below the given file offset, `prev'
+will be NULL as well, no?
 
-On 09/12/2010 07:41 PM, Tejun Heo wrote:
-> Hello,
->
-> On 09/12/2010 10:38 AM, Tao Ma wrote:
->> According to Documentation/block/barrier.txt,
->> QUEUE_ORDERED_DRAIN
->>          Requests are ordered by draining the request queue and cache
->>          flushing isn't needed.
->>
->>          Sequence: drain =>  barrier
->>
->> QUEUE_ORDERED_DRAIN_FLUSH
->>          Requests are ordered by draining the request queue and both
->>          pre-barrier and post-barrier cache flushings are needed.
->>
->>          Sequence: drain =>  preflush =>  barrier =>  postflush
->>
->> And for loop device, it call fsync in barrier request. See do_bio_filebacked in drivers/block/loop.c
->> bool barrier = !!(bio->bi_rw&  REQ_HARDBARRIER);
->>                  struct file *file = lo->lo_backing_file;
->>
->>                  if (barrier) {
->>                          if (unlikely(!file->f_op->fsync)) {
->>                                  ret = -EOPNOTSUPP;
->>                                  goto out;
->>                          }
->>
->>                          ret = vfs_fsync(file, 0);
->>                          if (unlikely(ret)) {
->>                                  ret = -EIO;
->>                                  goto out;
->>                          }
->>                  }
->>
->> So actually the sync is done in barrier and no extra flush is needed?
->> Or Do I misread the rules in barrier.txt?
->
-> Hmmm... maybe the doc was a bit confusing.  Any device which has
-> writeback cache should have FLUSH in the queue ordered configuration.
-> The loop device used vfs_fsync() for cache flushing and didn't support
-> ordered sequence.  As such, it should use draining for request
-> ordering and suports FLUSH, so the mode to use is DRAIN_FLUSH.
-oh, thanks for the explanation.
+So the check is not useless, it prevents throwing out a cached success
+in case of a lookup failure.
 
-Regards,
-Tao
+> Signed-off-by: Jaswinder Singh Rajput <jaswinderrajput@gmail.com>
+> Cc: Chris Mason <chris.mason@oracle.com>
+> ---
+>  fs/btrfs/ordered-data.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/btrfs/ordered-data.c b/fs/btrfs/ordered-data.c
+> index e56c72b..7b04008 100644
+> --- a/fs/btrfs/ordered-data.c
+> +++ b/fs/btrfs/ordered-data.c
+> @@ -154,8 +154,7 @@ static inline struct rb_node *tree_search(struct btrfs_ordered_inode_tree *tree,
+>  	ret = __tree_search(root, file_offset, &prev);
+>  	if (!ret)
+>  		ret = prev;
+> -	if (ret)
+> -		tree->last = ret;
+> +	tree->last = ret;
+>  	return ret;
+>  }
+>  
+> -- 
+> 1.7.2.2
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
