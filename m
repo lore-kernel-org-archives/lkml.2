@@ -1,33 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab0ILKu6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 06:50:58 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59337 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751563Ab0ILKu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 06:50:57 -0400
-Message-ID: <4C8CB079.40306@kernel.org>
-Date: Sun, 12 Sep 2010 12:50:33 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Florian Mickler <florian@mickler.org>, lkml <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH UPDATED] workqueue: add documentation
-References: <4C87AE52.70401@kernel.org>	<4C87B101.2080608@kernel.org>	<20100909100229.250900f0@schatten.dmk.lab>	<4C88B55E.90203@kernel.org>	<20100909205056.1ac7989a@schatten.dmk.lab>	<4C8A07B3.1050603@kernel.org>	<20100910162658.254b224a@schatten.dmk.lab>	<4C8A46D9.5020303@kernel.org> <20100910104324.6079a0b3.randy.dunlap@oracle.com>
-In-Reply-To: <20100910104324.6079a0b3.randy.dunlap@oracle.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Sep 2010 10:50:36 +0000 (UTC)
+	id S1752014Ab0ILK5U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 06:57:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46121 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab0ILK5T convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 06:57:19 -0400
+Subject: Re: EeePC 900 reboots/hangs when using using perf -a -f -g
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Corentin Chary <corentincj@iksaif.net>, fweisbec <fweisbec@gmail.com>
+In-Reply-To: <20100912102854.GA7359@sucs.org>
+References: <20100912102854.GA7359@sucs.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sun, 12 Sep 2010 12:57:07 +0200
+Message-ID: <1284289027.2251.95.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated accordingly.  Thanks.
+On Sun, 2010-09-12 at 11:28 +0100, Sitsofe Wheeler wrote:
+> Hi,
+> 
+> On an EeePC 900 running 2.6.36rc3 I've been finding that the laptop
+> immediately reboots or hangs forever if I run
+> 
+> perf -a -f -g xset dpms force off
+> 
+> . I've got lockdep checking and stack overflow checking on but these
+> don't make any difference. Using only -a -f doesn't show the problem. I
+> have also found that disabling eeepc-laptop in the kernel config also
+> removes the problem.
+> 
+> Any suggestions?
 
--- 
-tejun
+Bisect it?
+
+Does .35 work? If so, you could try it with the .35 version of
+eeepc-laptop driver to see if its something specific to that driver, or
+if its something we did to the stack unwinding code.
+
+Most curious issue..
