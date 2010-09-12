@@ -1,79 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab0ILWUj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 18:20:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47740 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753892Ab0ILWUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 18:20:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH v3] Gigabit Ethernet driver of Topcliff PCH
-Date: Mon, 13 Sep 2010 00:19:26 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        John Linn <john.linn@xilinx.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        Maxime Bizon <mbizon@freebox.fr>, Greg Rose <gregory.v.rose@intel.com>,
-        ML netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, MeeGo <meego-dev@meego.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Arjan <arjan@linux.intel.com>,
-        Toshiharu Okada <okada533@dsn.okisemi.com>,
-        Takahiro Shimizu <shimizu394@dsn.okisemi.com>,
-        Tomoya Morinaga <morinaga526@dsn.okisemi.com>
-References: <4C89C23A.6090707@dsn.okisemi.com> <4C89EA12.3000409@suse.cz> 
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-2022-jp"
+	id S1754053Ab0ILWhs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 18:37:48 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35420
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753892Ab0ILWhr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 18:37:47 -0400
+Date: Sun, 12 Sep 2010 15:38:05 -0700 (PDT)
+Message-Id: <20100912.153805.226772440.davem@davemloft.net>
+To: debdut@gmail.com
+Cc: jirislaby@gmail.com, ddutt@brocade.com, rmody@brocade.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: bna: potential null dereference
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTi=cZyLYJac8b8MsyAA4HitCvpD3NaH7nifzHDLw@mail.gmail.com>
+References: <4C8242CA.3020906@gmail.com>
+	<20100912.120230.71108625.davem@davemloft.net>
+	<AANLkTi=cZyLYJac8b8MsyAA4HitCvpD3NaH7nifzHDLw@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009130019.27356.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 10, 2010, Rafael J. Wysocki wrote:
-> On Friday, September 10, 2010, Jiri Slaby wrote:
-> > Ccing Rafael (please find pch_gbe_resume here)
+From: Debashis Dutt <debdut@gmail.com>
+Date: Sun, 12 Sep 2010 15:35:41 -0700
 
-Thanks.
+> A patch is on the way by tomorrow. BTW, this is just an unnecessary
+> check that should be removed and not a NULL de-reference.
 
-...
-> > 
-> > > +#ifdef CONFIG_PM
-> > > +static int pch_gbe_resume(struct pci_dev *pdev)
-> > > +{
-> > > +	struct net_device *netdev = pci_get_drvdata(pdev);
-> > > +	struct pch_gbe_adapter *adapter = netdev_priv(netdev);
-> > > +	struct pch_gbe_hw *hw = &adapter->hw;
-> > > +	u32 err;
-> > > +
-> > > +	pci_enable_wake(pdev, PCI_D0, 0);
-> > > +	pci_set_power_state(pdev, PCI_D0);
-> > > +	pci_restore_state(pdev);
-> > > +	err = pci_enable_device(pdev);
-> > > +	if (err) {
-> > > +		pr_err("Cannot enable PCI device from suspend\n");
-> > > +		return err;
-> > > +	}
-> > > +	pci_set_master(pdev);
-> > 
-> > Not sure which of those you need. Rafael may tell you more. You should
-> > not set power state and restore state, but I might be wrong.
+I've already made a fix in the net-next-2.6 tree.
 
-You're basically right.  In fact you're supposed to use struct dev_pm_ops
-for defining PM callbacks and then you don't need do any PCI-specific
-operations directly in the driver.
-
-All of this is described in detail in Documentation/power/pci.txt and you
-can have a look into r8169.c for a reference implementation.
-
-Thanks,
-Rafael
+You should send me fixes like this when you have them and are
+reasonably confident of the change, which for something like
+this should have been a day or two at most, not a week later.
