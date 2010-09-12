@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab0ILUrN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 16:47:13 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36058 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776Ab0ILUrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 16:47:12 -0400
-Date: Mon, 13 Sep 2010 06:46:54 +1000
-From: Neil Brown <neilb@suse.de>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Li Shaohua <shaohua.li@intel.com>
-Subject: Re: [PATCH 05/17] writeback: quit throttling when signal pending
-Message-ID: <20100913064654.3cce885c@notabene>
-In-Reply-To: <20100912155203.355459925@intel.com>
-References: <20100912154945.758129106@intel.com>
-	<20100912155203.355459925@intel.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753905Ab0ILUxV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 16:53:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48606 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753501Ab0ILUxT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 16:53:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=doHDEW328Ay5rf1oOmeJgSHgBNOc/6MEBAhgGqex2V+IOUT01DxK90GA7wLLf6vEWw
+         z0mWx98bG/KVT7JmtKPE+ni4XEpnVluQzOfsftsCyIeMwSJu+U1A1AUQJ93VcvSXX9Pv
+         R8S8ioryBS3/1U8jIoSqL+c3TygGTJg7mJjj8=
+Date: Sun, 12 Sep 2010 22:52:49 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Vasiliy Kulikov <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Al Cho <acho@novell.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: keucr: check kmalloc() return value
+Message-ID: <20100912205248.GE25351@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Vasiliy Kulikov <segooon@gmail.com>,
+	kernel-janitors@vger.kernel.org,
+	Greg Kroah-Hartman <gregkh@suse.de>, Al Cho <acho@novell.com>,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1284317808-4850-1-git-send-email-segooon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284317808-4850-1-git-send-email-segooon@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Sep 2010 23:49:50 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
+On Sun, Sep 12, 2010 at 10:56:43PM +0400, Vasiliy Kulikov wrote:
+> kmalloc() may fail, if so return error code.
+> Also don't alloc 16 bytes from the heap, use stack instead.
 
-> This allows quick response to Ctrl-C etc. for impatient users.
-> 
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  mm/page-writeback.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> --- linux-next.orig/mm/page-writeback.c	2010-09-09 16:01:14.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2010-09-09 16:02:27.000000000 +0800
-> @@ -553,6 +553,9 @@ static void balance_dirty_pages(struct a
->  		__set_current_state(TASK_INTERRUPTIBLE);
->  		io_schedule_timeout(pause);
->  
-> +		if (signal_pending(current))
-> +			break;
-> +
+I don't have ENE_SendScsiCmd() in my repo, but I think it's a DMA
+function.  You're not supposed to use stack memory for DMA transfers.
+This is documented in:  Documentation/DMA-API-HOWTO.txt
 
-Given the patch description,  I think you might want "fatal_signal_pending()"
-here ???
+So the original code is correct here (except that there is no error
+handling).
 
-NeilBrown
+regards,
+dan carpenter
 
->  check_exceeded:
->  		/*
->  		 * The bdi thresh is somehow "soft" limit derived from the
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
