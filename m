@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab0ILS5d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 14:57:33 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:41655 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab0ILS53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753866Ab0ILS53 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 12 Sep 2010 14:57:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Pv3fuKR2hsm2IYR5NoQ83Xi4oBhfUNpg2yF/Yf1ESqe5HtJqztH+EZZL8ga+NfhY0u
-         AMAbVAQHAL/NroeqQetcX9jK5CJlJ1/8WetuZ9Ff+ab528NG7gcZVxAmI5v+xWv///Lr
-         MvDiwEpJJx5nf3dWJQQtejmi5a0Uc9kFypd9I=
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Gregory Bean <gbean@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] gpio: sx150x: fix error code value
-Date: Sun, 12 Sep 2010 22:57:24 +0400
-Message-Id: <1284317845-5181-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57455
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753672Ab0ILS5Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 14:57:25 -0400
+Date: Sun, 12 Sep 2010 11:57:43 -0700 (PDT)
+Message-Id: <20100912.115743.226782545.davem@davemloft.net>
+To: jirislaby@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: sch_atm: null dereference
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C823DA0.3050203@gmail.com>
+References: <4C823DA0.3050203@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The return code of sx150x_get_io() is propagated as error code,
-so it should look like standard code.
+From: Jiri Slaby <jirislaby@gmail.com>
+Date: Sat, 04 Sep 2010 14:37:52 +0200
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> stanse found a potential null dereference:
+> atm_tc_change
+>   -> if (flow)
+>     -> return -EBUSY;
+>   -> flow is NULL now
+>   -> if (classid)
+>     -> if (!list_empty(&flow->list))
+> 
+> Introduced probably in
+>     sch_atm: Convert to use standard list_head facilities.
+> 
+> Could you fix that?
+
+Technically it's an unnecessary test that's been there forever.
+
+I've applied the following to net-2.6, thanks!
+
+--------------------
+sch_atm: Fix potential NULL deref.
+
+The list_head conversion unearther an unnecessary flow
+check.  Since flow is always NULL here we don't need to
+see if a matching flow exists already.
+
+Reported-by: Jiri Slaby <jirislaby@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- Compile tested.
+ net/sched/sch_atm.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
- drivers/gpio/sx150x.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/gpio/sx150x.c b/drivers/gpio/sx150x.c
-index b42f42c..b0eed89 100644
---- a/drivers/gpio/sx150x.c
-+++ b/drivers/gpio/sx150x.c
-@@ -179,7 +179,7 @@ static int sx150x_get_io(struct sx150x_chip *chip, unsigned offset)
- 	sx150x_find_cfg(offset, 1, &reg, &mask, &shift);
- 	err = sx150x_i2c_read(chip->client, reg, &data);
- 	if (err >= 0)
--		err = (data & mask) != 0 ? 1 : 0;
-+		err = (data & mask) != 0 ? -EIO : 0;
- 
- 	return err;
- }
+diff --git a/net/sched/sch_atm.c b/net/sched/sch_atm.c
+index 3406627..6318e11 100644
+--- a/net/sched/sch_atm.c
++++ b/net/sched/sch_atm.c
+@@ -255,10 +255,6 @@ static int atm_tc_change(struct Qdisc *sch, u32 classid, u32 parent,
+ 			error = -EINVAL;
+ 			goto err_out;
+ 		}
+-		if (!list_empty(&flow->list)) {
+-			error = -EEXIST;
+-			goto err_out;
+-		}
+ 	} else {
+ 		int i;
+ 		unsigned long cl;
 -- 
-1.7.0.4
+1.7.2.2
 
