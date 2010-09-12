@@ -1,97 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab0ILThW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 15:37:22 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47508 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752804Ab0ILThV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 15:37:21 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH] PM_SLEEP_SMP: fix kconfig warning
-Date: Sun, 12 Sep 2010 21:36:11 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
-References: <20100911155720.c4fe6b4b.randy.dunlap@oracle.com> <201009121926.08633.rjw@sisk.pl> <4C8D210D.8080307@oracle.com>
-In-Reply-To: <4C8D210D.8080307@oracle.com>
+	id S1753472Ab0ILT6k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 15:58:40 -0400
+Received: from smtp129.mail.ukl.yahoo.com ([77.238.184.60]:42308 "HELO
+	smtp129.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753003Ab0ILT6j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 15:58:39 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.de;
+  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date:User-Agent:Cc:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-Id;
+  b=FdBq8x48aHr/sRrcJisxtuBaAUf1ktdqbMrCOlUz11S3D15Rmoz+tbFjHHK5Z62oWWAaSfs83ZAIBLPK1TIttltyzU87+wx+JDoH1Tx78Hh3w8YMidrIAmla9nCoabrFwXrwKhztAstMcxdHAwa/2XyIcigvtGpeA9BAlm0yXxU=  ;
+X-Yahoo-SMTP: tW.h3tiswBBMXO2coYcbPigGD5Lt6zY_.Zc-
+X-YMail-OSG: 3UtNc6gVM1k6riggvIgT.YsJV0jMjv101WNLITpadUNTDef
+ _RS9Vc40NddJENbwS49tYvE1.ir6cxj73aVCOKMZq0qw.rFC.wiJqK2kJTED
+ .pkfdaPzYdnZkLlDavaW5iuWJy.rKuq_0uzejEV5Tk2c2JxN2nXGegm7W.u1
+ SSlln_T0f6bzQ2F9iAg38KMe6hAcOm5oNgwV9kUrXT.sKFV2UrDh3gwrbJmW
+ C1CcI14ksKvD3_8wgJSYVX29.o7d6NSKCVAEEYCtyAOV3eCH5rx4mQM1G80Z
+ 8Yg--
+X-Yahoo-Newman-Property: ymail-3
+From: Marek Lindner <lindner_marek@yahoo.de>
+To: Vasiliy Kulikov <segooon@gmail.com>
+Subject: Re: [PATCH] staging: batman-adv: check kmalloc() return value
+Date: Sun, 12 Sep 2010 21:57:38 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.32-5-amd64; KDE/4.4.5; x86_64; ; )
+Cc: kernel-janitors@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Andrew Lunn <andrew@lunn.ch>, Sven Eckelmann <sven.eckelmann@gmx.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Andreas Langer <an.langer@gmx.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+References: <1284317791-4744-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1284317791-4744-1-git-send-email-segooon@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009122136.11660.rjw@sisk.pl>
+Message-Id: <201009122157.40497.lindner_marek@yahoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, September 12, 2010, Randy Dunlap wrote:
-> On 09/12/10 10:26, Rafael J. Wysocki wrote:
-> > On Sunday, September 12, 2010, Randy Dunlap wrote:
-> >> From: Randy Dunlap <randy.dunlap@oracle.com>
-> >>
-> >> Fix kconfig unmet dependency warning:
-> >>
-> >> warning: (PM_SLEEP_SMP && SMP && (ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE) && PM_SLEEP) selects HOTPLUG_CPU which has unmet direct dependencies (SMP && HOTPLUG)
-> >>
-> >> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> >> ---
-> >>  kernel/power/Kconfig |    2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> --- linux-next-20100908.orig/kernel/power/Kconfig
-> >> +++ linux-next-20100908/kernel/power/Kconfig
-> >> @@ -83,7 +83,7 @@ config PM_TRACE_RTC
-> >>  
-> >>  config PM_SLEEP_SMP
-> >>  	bool
-> >> -	depends on SMP
-> >> +	depends on SMP && HOTPLUG
-> >>  	depends on ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE
-> >>  	depends on PM_SLEEP
-> >>  	select HOTPLUG_CPU
-> > 
-> > I'm afraid that may cause some people to find that suspend is not compiled in
-> > to their surprise.
-> > 
-> > Would it be possible to select both HOTPLUG and HOTPLUG_CPU instead (ie. would
-> > that work)?
+On Sunday 12 September 2010 20:56:26 Vasiliy Kulikov wrote:
+> kmalloc() may fail, if so drop current packet.
 > 
-> That appears to work in my testing.  I'll ack your patch.
-> 
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 
-OK, thanks!
+Looks good to me. Added this patch to our repos.
 
-Appended for completness, I'm going to put it into my linux-next branch.
-
-Rafael
-
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM: Fix unmet dependency warning from kconfig
-
-Fix the following build warning:
-
-warning: (PM_SLEEP_SMP && SMP && (ARCH_SUSPEND_POSSIBLE || \
-ARCH_HIBERNATION_POSSIBLE) && PM_SLEEP) selects HOTPLUG_CPU which \
-has unmet direct dependencies (SMP && HOTPLUG)
-
-by selecting HOTPLUG along with CPU_HOTPLUG.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- kernel/power/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-Index: linux-2.6/kernel/power/Kconfig
-===================================================================
---- linux-2.6.orig/kernel/power/Kconfig
-+++ linux-2.6/kernel/power/Kconfig
-@@ -86,6 +86,7 @@ config PM_SLEEP_SMP
- 	depends on SMP
- 	depends on ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE
- 	depends on PM_SLEEP
-+	select HOTPLUG
- 	select HOTPLUG_CPU
- 	default y
- 
+Thanks,
+Marek
