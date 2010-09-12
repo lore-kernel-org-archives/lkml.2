@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab0ILNGp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 09:06:45 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59539 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590Ab0ILNGo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 09:06:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=u4Uf/BPeN1io2Z3dNeP43VqFMncdfcZSzQMaeP6cYS0WCjdjXkVAONvuBWO3EmgJ9E
-         JMbSWwQPF+G2KEFdX6ksWsGtm3Q42jaRcmfvr02AgKjLprlNRMOd8T81MIEiTYVdxT26
-         XIEAMeGl6lx+RkQM6953u2mjiGAn4gsi82+6E=
-Date: Sun, 12 Sep 2010 15:06:39 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Corentin Chary <corentincj@iksaif.net>
-Subject: Re: EeePC 900 reboots/hangs when using using perf -a -f -g
-Message-ID: <20100912130637.GB5342@nowhere>
-References: <20100912102854.GA7359@sucs.org> <1284289027.2251.95.camel@laptop> <20100912112105.GA28420@sucs.org>
+	id S1752975Ab0ILNnT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 09:43:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2838 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752652Ab0ILNnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 09:43:18 -0400
+Date: Sun, 12 Sep 2010 15:37:03 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
+        "jdike@linux.intel.com" <jdike@linux.intel.com>
+Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
+Message-ID: <20100912133703.GJ22982@redhat.com>
+References: <1281086624-5765-8-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-9-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-10-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-11-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-12-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-13-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-14-git-send-email-xiaohui.xin@intel.com>
+ <20100906111126.GA15608@redhat.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D79280489A9C9@shsmsx502.ccr.corp.intel.com>
+ <F2E9EB7348B8264F86B6AB8151CE2D79280489AA05@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100912112105.GA28420@sucs.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D79280489AA05@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 12, 2010 at 12:21:05PM +0100, Sitsofe Wheeler wrote:
-> On Sun, Sep 12, 2010 at 12:57:07PM +0200, Peter Zijlstra wrote:
-> > 
-> > Bisect it?
+On Sat, Sep 11, 2010 at 03:41:14PM +0800, Xin, Xiaohui wrote:
+> >>Playing with rlimit on data path, transparently to the application in this way
+> >>looks strange to me, I suspect this has unexpected security implications.
+> >>Further, applications may have other uses for locked memory
+> >>besides mpassthru - you should not just take it because it's there.
+> >>
+> >>Can we have an ioctl that lets userspace configure how much
+> >>memory to lock? This ioctl will decrement the rlimit and store
+> >>the data in the device structure so we can do accounting
+> >>internally. Put it back on close or on another ioctl.
+> >Yes, we can decrement the rlimit in ioctl in one time to avoid
+> >data path.
+> >
+> >>Need to be careful for when this operation gets called
+> >>again with 0 or another small value while we have locked memory -
+> >>maybe just fail with EBUSY?  or wait until it gets unlocked?
+> >>Maybe 0 can be special-cased and deactivate zero-copy?.
+> >>
 > 
-> .35 shows the same issue (although I didn't recompile my perf binary). I
-> don't know if this is a regression - it might always have been there...
+> How about we don't use a new ioctl, but just check the rlimit 
+> in one MPASSTHRU_BINDDEV ioctl? If we find mp device
+> break the rlimit, then we fail the bind ioctl, and thus can't do 
+> zero copy any more.
 
+Yes, and not just check, but decrement as well.
+I think we should give userspace control over
+how much memory we can lock and subtract from the rlimit.
+It's OK to add this as a parameter to MPASSTHRU_BINDDEV.
+Then increment the rlimit back on unbind and on close?
 
-Testing with a software event like page faults will test if it's related
-to hardware events only or some of them.
-For example if it doesn't happen in fault events, then let's try with some
-others, just to see if we can narrow down to some particular events.
+This opens up an interesting condition: process 1
+calls bind, process 2 calls unbind or close.
+This will increment rlimit for process 2.
+Not sure how to fix this properly.
 
-
-If it happens on faults it will be easier to debug because software events
-don't happen in NMI (at least not the faults), so enabling RCU stalls checks
-there will probably success to trigger a backtrace. Perhaps you can profile
-only one CPU for that (-C 1, eeepc 900 are SMT, right?), so that there is
-a free CPU to notice the stall and trigger the backtrace through remote NMIs.
-
+-- 
+MST
