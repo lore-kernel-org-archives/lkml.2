@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846Ab0ILHVU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 03:21:20 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:51377 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751754Ab0ILHVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 03:21:19 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18ndDwf8EsnrOu4ntNVM0xcglWgrcKEg3xmoA0TAY
-	HcS+9iQf/k0DVu
-Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
- nr_running
-From: Mike Galbraith <efault@gmx.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-In-Reply-To: <20100912061452.GA3383@elte.hu>
-References: <20100911173732.551632040@efficios.com>
-	 <20100911174003.051303123@efficios.com>  <20100912061452.GA3383@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 12 Sep 2010 09:21:38 +0200
-Message-Id: <1284276098.9111.24.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S1751884Ab0ILHeb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 03:34:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53316 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751501Ab0ILHea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 03:34:30 -0400
+Date: Sun, 12 Sep 2010 07:34:01 GMT
+From: tip-bot for Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        trivial@kernel.org, joe@perches.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        joe@perches.com, trivial@kernel.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <d40c60f4b036a26db8492848695bdafaa3b42791.1284267142.git.joe@perches.com>
+References: <d40c60f4b036a26db8492848695bdafaa3b42791.1284267142.git.joe@perches.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86: Remove pr_<level> uses of KERN_<level>
+Message-ID: <tip-d0ed0c32662e756e7daf85e70a5a27a9c1111331@git.kernel.org>
+Git-Commit-ID: d0ed0c32662e756e7daf85e70a5a27a9c1111331
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 12 Sep 2010 07:34:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-09-12 at 08:14 +0200, Ingo Molnar wrote:
-> * Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> 
-> > (on a uniprocessor 2.0 GHz Pentium M)
-> > 
-> > * Without the patch:
-> > 
-> >  - wakeup-latency with SIGEV_THREAD in parallel with youtube video and
-> >    make -j10
-> > 
-> > maximum latency: 50107.8 µs
-> > average latency: 6609.2 µs
-> > missed timer events: 0
-> 
-> I tried your patches on a similar UP system, using wakeup-latency.c. I 
-> also measured the vanilla upstream kernel (cced86a) with the default 
-> granularity settings, and also vanilla with a sched_min_granularity/3 
-> tune (patch attached below for that).
-> 
-> I got the following results (make -j10 kbuild load, average of 3 runs):
-> 
->  vanilla: 
-> 
->   maximum latency: 38278.9 µs
->   average latency:  7730.1 µs
-> 
->  mathieu-dyn:
-> 
->   maximum latency: 28698.8 µs
->   average latency:  7757.1 µs
-> 
->  peterz-min_gran/3:
-> 
->   maximum latency: 22702.1 µs
->   average latency:  6684.8 µs
+Commit-ID:  d0ed0c32662e756e7daf85e70a5a27a9c1111331
+Gitweb:     http://git.kernel.org/tip/d0ed0c32662e756e7daf85e70a5a27a9c1111331
+Author:     Joe Perches <joe@perches.com>
+AuthorDate: Sat, 11 Sep 2010 22:10:54 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 12 Sep 2010 09:32:31 +0200
 
-One thing that springs to mind with make is that it does vfork, so kinda
-sorta continues running in drag, so shouldn't get credit for sleeping,
-as that introduces bogus spread.  Post vfork parent notification time
-adjustment may suffice, think I'll try that.
+x86: Remove pr_<level> uses of KERN_<level>
 
-	-Mike
+Signed-off-by: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>
+LKML-Reference: <d40c60f4b036a26db8492848695bdafaa3b42791.1284267142.git.joe@perches.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/apb_timer.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index 8dd7780..4004417 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -398,7 +398,7 @@ static int apbt_cpuhp_notify(struct notifier_block *n,
+ 		}
+ 		break;
+ 	default:
+-		pr_debug(KERN_INFO "APBT notified %lu, no action\n", action);
++		pr_debug("APBT notified %lu, no action\n", action);
+ 	}
+ 	return NOTIFY_OK;
+ }
+@@ -552,7 +552,7 @@ bad_count:
+ 		pr_debug("APB CS going back %lx:%lx:%lx ",
+ 			 t2, last_read, t2 - last_read);
+ bad_count_x3:
+-		pr_debug(KERN_INFO "tripple check enforced\n");
++		pr_debug("triple check enforced\n");
+ 		t0 = apbt_readl(phy_cs_timer_id,
+ 				APBTMR_N_CURRENT_VALUE);
+ 		udelay(1);
