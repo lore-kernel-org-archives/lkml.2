@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab0ILDaz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Sep 2010 23:30:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51510 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab0ILDay (ORCPT
+	id S1751848Ab0ILDcY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Sep 2010 23:32:24 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38183
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751587Ab0ILDcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Sep 2010 23:30:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=goM38x9ShAxB2dp2bSe06Ua5++PXWad15bucEkwMkFhu4+XOoxbw2Q1L1chZVRGVGT
-         tKLjiqOZxWWZTcb+Ccc9SsyxXf6UzCZxyi7vMPVKn6ynrIazcH0wUddMeQ38OcacKF+O
-         OVXX+paBvyGxWaMA2ammyZkdesMuVu7N7TtPU=
-Message-ID: <4C8C4995.9060703@gmail.com>
-Date: Sat, 11 Sep 2010 20:31:33 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
-MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: trivial@kernel.org, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH]crypto/Kconfig update broken web addresses.
-References: <1283833019-26155-1-git-send-email-justinmattock@gmail.com> <20100912024323.GA22244@gondor.apana.org.au>
-In-Reply-To: <20100912024323.GA22244@gondor.apana.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 11 Sep 2010 23:32:23 -0400
+Date: Sat, 11 Sep 2010 20:32:41 -0700 (PDT)
+Message-Id: <20100911.203241.226784531.davem@davemloft.net>
+To: w@1wt.eu
+Cc: greg@kroah.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: tcp collapse+splice bug still present in -stable
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100911054255.GB29288@1wt.eu>
+References: <20100911054255.GB29288@1wt.eu>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2010 07:43 PM, Herbert Xu wrote:
-> On Mon, Sep 06, 2010 at 09:16:59PM -0700, Justin P. Mattock wrote:
->> Below is a patch to update the broken web addresses, in crypto/*
->> that I could locate. Some are just simple typos that needed to be
->> fixed, and some had a change in location altogether..
->> let me know if any of them need to be changed and such.
->>
->> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->
-> Patch applied.  Thanks!
+From: Willy Tarreau <w@1wt.eu>
+Date: Sat, 11 Sep 2010 07:42:55 +0200
 
+> David, Greg,
+> 
+> one of our customers was encountering frequent kernel panics up to
+> 2.6.32.21 that were always related to splicing and tcp_collapse().
+> I found the precise BUG_ON() line but I've not forgotten it, something
+> about ->seq not being OK.
+> 
+> I found the following fix in 2.6.35 which looked to be related to the
+> same issue, and we could verify that it definitely solves it. Could we
+> please have it in other stable versions ?
 
-cool...
+I'll make sure I send this to Greg in my next -stable
+networking batch, thanks!
 
-Justin P. Mattock
+> --
+>>From baff42ab1494528907bf4d5870359e31711746ae Mon Sep 17 00:00:00 2001
+> From: Steven J. Magnani <steve@digidescorp.com>
+> Date: Tue, 30 Mar 2010 13:56:01 -0700
+> Subject: [PATCH] net: Fix oops from tcp_collapse() when using splice()
+> 
+> tcp_read_sock() can have a eat skbs without immediately advancing copied_seq.
+> This can cause a panic in tcp_collapse() if it is called as a result
+> of the recv_actor dropping the socket lock.
+> 
+> A userspace program that splices data from a socket to either another
+> socket or to a file can trigger this bug.
+> 
+> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> 
+> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+> index 6afb6d8..2c75f89 100644
+> --- a/net/ipv4/tcp.c
+> +++ b/net/ipv4/tcp.c
+> @@ -1368,6 +1368,7 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
+>  		sk_eat_skb(sk, skb, 0);
+>  		if (!desc->count)
+>  			break;
+> +		tp->copied_seq = seq;
+>  	}
+>  	tp->copied_seq = seq;
+>  
+> 
