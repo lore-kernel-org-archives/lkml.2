@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab0ILLVI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 07:21:08 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:42124 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab0ILLVH (ORCPT
+	id S1752804Ab0ILLVZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 07:21:25 -0400
+Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:61861 "EHLO
+	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752755Ab0ILLVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 07:21:07 -0400
-Date: Sun, 12 Sep 2010 12:21:05 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Corentin Chary <corentincj@iksaif.net>, fweisbec <fweisbec@gmail.com>
-Subject: Re: EeePC 900 reboots/hangs when using using perf -a -f -g
-Message-ID: <20100912112105.GA28420@sucs.org>
-References: <20100912102854.GA7359@sucs.org> <1284289027.2251.95.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284289027.2251.95.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sun, 12 Sep 2010 07:21:23 -0400
+Subject: Re: [PATCH] libata: reorder ata_queued_cmd to remove alignment
+ padding on 64 bit builds
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Hugo Antunes <hugo.antunes@gmail.com>
+Cc: jgarzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org
+In-Reply-To: <4C8A3F1E.8050400@gmail.com>
+References: <1284117583.1903.8.camel@castor.rsk>
+	 <4C8A3F1E.8050400@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 12 Sep 2010 12:21:21 +0100
+Message-ID: <1284290481.1923.14.camel@castor.rsk>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 12, 2010 at 12:57:07PM +0200, Peter Zijlstra wrote:
+On Fri, 2010-09-10 at 15:22 +0100, Hugo Antunes wrote:
+> Greetings,
 > 
-> Bisect it?
-
-.35 shows the same issue (although I didn't recompile my perf binary). I
-don't know if this is a regression - it might always have been there...
-
-> Does .35 work? If so, you could try it with the .35 version of
-> eeepc-laptop driver to see if its something specific to that driver, or
-> if its something we did to the stack unwinding code.
+> Following the list this pasts days, building a big machine with 45
+> sata2 disks (WD green 1.5TB), Sil3124 4 ports sata2 with 9 port
+> multipliers with 5 each also from Silicom image.
 > 
-> Most curious issue..
+> This machine should smoke but it doesn't, attached is the dmesg dump where it is possible to see the enourmous ammount
+>  of hard and soft resets.Using Ubuntu/server 10.4 2.6.32-25-server x86_64, been questioning if this patch could 
+> make me have better numbers from this system, going to build a debian/ubuntu kernel image with the patch, if anyone 
+> has a link for a deb image with this patch..apreciated.
+> 
+> Keep the good work
+> 
+> Regards,
+> ./hantunes
+Hi,
+I think it's very unlikely that my patch will have any impact on your
+problem, it is only a very minor improvement when creating new ports.
 
-It certainly is weird. When the machine reboots I notice that the
-backlight is not at its normal level as if something was dimming the
-display (perhaps X turns off the backlight and turns off the display
-when powersaving these days?). As the only backlight driver on my system
-is in eeepc-laptop that's why I removed it.
+I didn't get the dmesg attachment so I can't tell what sort of problems
+you are having, but with that many drives I'd start by checking the
+power supplies & cables and then try the latest kernel. 
 
--- 
-Sitsofe | http://sucs.org/~sits/
+regards
+Richard
+
+
+
