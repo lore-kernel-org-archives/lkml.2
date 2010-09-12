@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab0ILKbd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 06:31:33 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:58738 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab0ILKbc (ORCPT
+	id S1752554Ab0ILKgY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 06:36:24 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41682 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729Ab0ILKgW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 06:31:32 -0400
-Date: Sun, 12 Sep 2010 12:31:30 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Louis-David Mitterrand <vindex+lists-linux-kernel@apartia.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ksoftirqd/n permanently eating 60% of a CPU
-Message-ID: <20100912103130.GA21790@rhlx01.hs-esslingen.de>
-Mail-Followup-To: linux-kernel@vger.kernel.org
+	Sun, 12 Sep 2010 06:36:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wfZRcPsmix+TxGxNS+eSqBm1CMQ5feT/Zi27BgO2zDIAaoKHq1jCmn8d9wpRDb6mU3
+         TCfMOx/ZteaXGMLC4bFKEAYx+wz0p/Nu74rmCBLblAPwslwcVi0+gGfG82n+g+I8Op3Q
+         houNwVbD30zWkVIDx8petgWReS6S1Lo76M5jE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100905173905.GA7387@apartia.fr>
-X-Priority: none
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1284129724.23418.27.camel@ubuntu1004pl>
+References: <1284129724.23418.27.camel@ubuntu1004pl>
+Date: Sun, 12 Sep 2010 13:36:21 +0300
+Message-ID: <AANLkTimU2k6=GPgMsabqpv+uwTVWtSoOoUmwOBbSAT4K@mail.gmail.com>
+Subject: Re: [PATCH] fs/btrfs/ordered-data.c: fixed compiler warnings for
+ using uninitialized variable
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Frank Morales II <altf2o@gmail.com>
+Cc: chris.mason@oracle.com, josef@redhat.com, zheng.yan@oracle.com,
+        jens.axboe@oracle.com, tj@kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Sep 10, 2010 at 5:42 PM, Frank Morales II <altf2o@gmail.com> wrote:
+> >From 1c304defc543738f82ccb18fe10b558dd2098d74 Mon Sep 17 00:00:00 2001
+> From: Frank Morales II <altf2o@gmail.com>
+> Date: Fri, 10 Sep 2010 07:34:23 -0700
+> Subject: [PATCH] fs/btrfs/ordered-data.c: fixed compiler warnings for using uninitialized variable
+>
+> In the function tree_search, the variable prev was used without first
+> being initialized, causing compiler warning messages. Initializing
+> prev to NULL resolved the issue.
+>
+> Kernal patched against: 2.6.36-rc3 (df423dc7)
 
-Since there hasn't been a reply in a week, let me try to provide at
-least a semi-useless one ;)
+Signed-of-by: Felipe Contreras <felipe.contreras@gmail.com>
 
-Such high use probably means that something in the kernel keeps retriggering some
-tasklet(?) since it thinks that something hasn't been done yet
-(i.e., the tasklet that got triggered didn't manage to satisfy the success
-criteria of its owner),
-or it means that something "legitimately" uses obscene amounts of
-softirqd activity (perhaps some debug infrastructure such as memory tracing
-or logging or some such).
+I came up with exactly this patch, but this is my commit message:
 
-Thus:
-1. boot with "single" or "init=/bin/bash" kernel commandline and check
-   whether the activity still happens
-2. if not: boot normally, then remove kernel modules via rmmod one at a
-   time, and try shutting down various daemons, to try to find out which
-component exactly messes it up
+    Btrfs: fix compilation warning
 
-And perhaps running powertop would provide some clues as to the origin
-of this CPU hog, despite being a wakeup-specific tracer.
+    fs/btrfs/ordered-data.c: In function ‘tree_search’:
+    fs/btrfs/ordered-data.c:144: warning: ‘prev’ may be used
+uninitialized in this function
+    fs/btrfs/ordered-data.c: In function ‘btrfs_lookup_first_ordered_extent’:
+    fs/btrfs/ordered-data.c:144: warning: ‘prev’ may be used
+uninitialized in this function
+    fs/btrfs/ordered-data.c:144: note: ‘prev’ was declared here
+    fs/btrfs/ordered-data.c: In function ‘btrfs_lookup_ordered_extent’:
+    fs/btrfs/ordered-data.c:144: warning: ‘prev’ may be used
+uninitialized in this function
+    fs/btrfs/ordered-data.c:144: note: ‘prev’ was declared here
+    fs/btrfs/ordered-data.c: In function ‘btrfs_lookup_ordered_range’:
+    fs/btrfs/ordered-data.c:144: warning: ‘prev’ may be used
+uninitialized in this function
+    fs/btrfs/ordered-data.c:144: note: ‘prev’ was declared here
+    fs/btrfs/ordered-data.c: In function ‘btrfs_dec_test_ordered_pending’:
+    fs/btrfs/ordered-data.c:144: warning: ‘prev’ may be used
+uninitialized in this function
+    fs/btrfs/ordered-data.c:144: note: ‘prev’ was declared here
 
-HTH,
+    __tree_search() might not set &prev.
 
-Andreas Mohr
+-- 
+Felipe Contreras
