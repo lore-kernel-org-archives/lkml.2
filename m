@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab0ILK5U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 06:57:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46121 "EHLO
+	id S1752680Ab0ILLE3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 07:04:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33267 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab0ILK5T convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751542Ab0ILLE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 06:57:19 -0400
-Subject: Re: EeePC 900 reboots/hangs when using using perf -a -f -g
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Corentin Chary <corentincj@iksaif.net>, fweisbec <fweisbec@gmail.com>
-In-Reply-To: <20100912102854.GA7359@sucs.org>
-References: <20100912102854.GA7359@sucs.org>
+	Sun, 12 Sep 2010 07:04:28 -0400
+Subject: [PATCH] Btrfs: Remove useless condition
+From: Jaswinder Singh Rajput <jaswinder@infradead.org>
+To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sun, 12 Sep 2010 12:57:07 +0200
-Message-ID: <1284289027.2251.95.camel@laptop>
+Date: Sun, 12 Sep 2010 16:32:20 +0530
+Message-ID: <1284289340.2650.2.camel@ht.satnam>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-09-12 at 11:28 +0100, Sitsofe Wheeler wrote:
-> Hi,
-> 
-> On an EeePC 900 running 2.6.36rc3 I've been finding that the laptop
-> immediately reboots or hangs forever if I run
-> 
-> perf -a -f -g xset dpms force off
-> 
-> . I've got lockdep checking and stack overflow checking on but these
-> don't make any difference. Using only -a -f doesn't show the problem. I
-> have also found that disabling eeepc-laptop in the kernel config also
-> removes the problem.
-> 
-> Any suggestions?
 
-Bisect it?
+if (ret) is useless as it will be never NULL as in previous statement
+we are setting ret = prev for !ret
 
-Does .35 work? If so, you could try it with the .35 version of
-eeepc-laptop driver to see if its something specific to that driver, or
-if its something we did to the stack unwinding code.
+Signed-off-by: Jaswinder Singh Rajput <jaswinderrajput@gmail.com>
+Cc: Chris Mason <chris.mason@oracle.com>
+---
+ fs/btrfs/ordered-data.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Most curious issue..
+diff --git a/fs/btrfs/ordered-data.c b/fs/btrfs/ordered-data.c
+index e56c72b..7b04008 100644
+--- a/fs/btrfs/ordered-data.c
++++ b/fs/btrfs/ordered-data.c
+@@ -154,8 +154,7 @@ static inline struct rb_node *tree_search(struct btrfs_ordered_inode_tree *tree,
+ 	ret = __tree_search(root, file_offset, &prev);
+ 	if (!ret)
+ 		ret = prev;
+-	if (ret)
+-		tree->last = ret;
++	tree->last = ret;
+ 	return ret;
+ }
+ 
+-- 
+1.7.2.2
+
+
+
