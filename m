@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab0ILSr5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 14:47:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18718 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab0ILSrz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 14:47:55 -0400
-Date: Sun, 12 Sep 2010 11:46:13 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH -next] optprobes: fix kconfig depends/selects
-Message-Id: <20100912114613.47bc76fc.randy.dunlap@oracle.com>
-In-Reply-To: <AANLkTikL0JEiWjms9DPYK=jfNmOP78HC7qu+deO5+dP6@mail.gmail.com>
-References: <20100812122641.fe88e846.randy.dunlap@oracle.com>
-	<AANLkTimu4zHZrpGkLVQkxsqax1DDefjZXwTn2cxy4WsL@mail.gmail.com>
-	<4C8D1D50.600@oracle.com>
-	<AANLkTikL0JEiWjms9DPYK=jfNmOP78HC7qu+deO5+dP6@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752630Ab0ILStX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 14:49:23 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60741 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751692Ab0ILStV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 14:49:21 -0400
+Date: Sun, 12 Sep 2010 20:48:43 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: disabling group leader perf_event
+Message-ID: <20100912184843.GB11165@elte.hu>
+References: <4C84D1CE.3070205@redhat.com>
+ <1283774045.1930.341.camel@laptop>
+ <4C84D77B.6040600@redhat.com>
+ <20100906124330.GA22314@elte.hu>
+ <4C84E265.1020402@redhat.com>
+ <20100906125905.GA25414@elte.hu>
+ <4C850147.8010908@redhat.com>
+ <20100906154737.GA4332@elte.hu>
+ <20100912064612.GA1582@ucw.cz>
+ <4C8D13CD.1060802@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C8D13CD.1060802@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.5
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
+	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
+	[score: 0.2817]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Sep 2010 21:41:07 +0300 Felipe Contreras wrote:
 
-> On Sun, Sep 12, 2010 at 9:34 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> > On 09/12/10 03:49, Felipe Contreras wrote:
-> >> On Thu, Aug 12, 2010 at 10:26 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> >>> From: Randy Dunlap <randy.dunlap@oracle.com>
-> >>>
-> >>> KALLSYMS and KALLSYMS_ALL depend on DEBUG_KERNEL, so add that dependency.
-> >>> KALLSYMS_ALL depends on KALLSYMS, so select both of them, not just KALLSYMS_ALL.
-> >>>
-> >>> warning: (OPTPROBES && KPROBES && HAVE_OPTPROBES && !PREEMPT || MTD_UBI_DEBUG && MTD && SYSFS && MTD_UBI || UBIFS_FS_DEBUG && MISC_FILESYSTEMS && UBIFS_FS || LOCKDEP && DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT || LATENCYTOP && HAVE_LATENCYTOP_SUPPORT) selects KALLSYMS_ALL which has unmet direct dependencies (DEBUG_KERNEL && KALLSYMS)
-> >>>
-> >>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> >>> Cc:     Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> >>> Cc:     Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
-> >>> Cc:     "David S. Miller" <davem@davemloft.net>
-> >>> Cc:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> >>> ---
-> >>>  arch/Kconfig |    2 ++
-> >>>  1 file changed, 2 insertions(+)
-> >>>
-> >>> --- linux-next-20100810.orig/arch/Kconfig
-> >>> +++ linux-next-20100810/arch/Kconfig
-> >>> @@ -45,6 +45,8 @@ config OPTPROBES
-> >>>        def_bool y
-> >>>        depends on KPROBES && HAVE_OPTPROBES
-> >>>        depends on !PREEMPT
-> >>> +       depends on DEBUG_KERNEL
-> >>> +       select KALLSYMS
-> >>>        select KALLSYMS_ALL
-> >>>
-> >>>  config HAVE_EFFICIENT_UNALIGNED_ACCESS
-> >>> --
-> >>
-> >> This causes another problem:
-> >>
-> >> arch/Kconfig:33:error: recursive dependency detected!
-> >> arch/Kconfig:33:      symbol KPROBES depends on KALLSYMS
-> >> init/Kconfig:825:     symbol KALLSYMS is selected by OPTPROBES
-> >> arch/Kconfig:44:      symbol OPTPROBES depends on KPROBES
-> >>
-> >> The 'select KALLSYMS' is redundant.
-> >>
-> >> Otherwise: Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> >
-> > Thanks for checking.  I saw this problem just a day or two ago myself.
-> >
-> > Dropping the select does not eliminate the kconfig warning.
-> > I'll try something else.
+* Avi Kivity <avi@redhat.com> wrote:
+
+>  On 09/12/2010 08:46 AM, Pavel Machek wrote:
+> >  1- Most (least abstract) specific code: a block of bytecode in the form
+> >     of a simplified, executable, kernel-checked x86 machine code block -
+> >     this is also the fastest form. [yes, this is actually possible.]
+> >Well... if we want to be a bit x86-entric.... can we just reuse ACPI
+> >interpretter?
 > 
-> Huh? The original warning is gone by just adding 'depends on DEBUG_KERNEL'.
+> I hope this was a joke, ACPI won the academy awards for ugliness, 
+> slowness, low performance, bad specification, non-generality, and 
+> probably five other things I forgot.  Stay away from it as much as you 
+> can.
 
-not so in my testing.
+It also combines the worst of the two worlds: it's the most specific 
+type of code (almost like assembly), but has a very slow interpreter.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+With 'x86 bytecode' the main (and pretty much only) point is to be able 
+to execute the code as-is, once checked.
+
+But, as i explained it before, i only consider it a theoretical 
+possibility and i think that abstract code (such as ASCII text C source 
+code) is a better solution.
+
+Thanks,
+
+	Ingo
