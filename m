@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab0ILNnT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 09:43:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652Ab0ILNnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 09:43:18 -0400
-Date: Sun, 12 Sep 2010 15:37:03 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
-        "jdike@linux.intel.com" <jdike@linux.intel.com>
-Subject: Re: [RFC PATCH v9 12/16] Add mp(mediate passthru) device.
-Message-ID: <20100912133703.GJ22982@redhat.com>
-References: <1281086624-5765-8-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-9-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-10-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-11-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-12-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-13-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-14-git-send-email-xiaohui.xin@intel.com>
- <20100906111126.GA15608@redhat.com>
- <F2E9EB7348B8264F86B6AB8151CE2D79280489A9C9@shsmsx502.ccr.corp.intel.com>
- <F2E9EB7348B8264F86B6AB8151CE2D79280489AA05@shsmsx502.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D79280489AA05@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753006Ab0ILNsg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 09:48:36 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56449 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab0ILNsf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 09:48:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=qp8Yi/DML2ZVrimWUXzH+5BPs61bsT6vf1YNmgazwxT/afQ4lYfdnv7h1415e6rWea
+         /0WKP8BYKtngvHxfciLs9hccbIjRchiEUOwhHWqEOY/ONe8Xf8leLIFZi1VZbFKgD/wC
+         zU4K24syCNZbRWIGOuzC6gwAhrEzHWh4yjFvc=
+Subject: [PATCH] ACPI: apei: Cast u64 to unsigned long, fix compile warning
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+To: Len Brown <lenb@kernel.org>, Huang Ying <ying.huang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 12 Sep 2010 09:48:25 -0400
+Message-ID: <1284299305.7239.4.camel@lenovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 11, 2010 at 03:41:14PM +0800, Xin, Xiaohui wrote:
-> >>Playing with rlimit on data path, transparently to the application in this way
-> >>looks strange to me, I suspect this has unexpected security implications.
-> >>Further, applications may have other uses for locked memory
-> >>besides mpassthru - you should not just take it because it's there.
-> >>
-> >>Can we have an ioctl that lets userspace configure how much
-> >>memory to lock? This ioctl will decrement the rlimit and store
-> >>the data in the device structure so we can do accounting
-> >>internally. Put it back on close or on another ioctl.
-> >Yes, we can decrement the rlimit in ioctl in one time to avoid
-> >data path.
-> >
-> >>Need to be careful for when this operation gets called
-> >>again with 0 or another small value while we have locked memory -
-> >>maybe just fail with EBUSY?  or wait until it gets unlocked?
-> >>Maybe 0 can be special-cased and deactivate zero-copy?.
-> >>
-> 
-> How about we don't use a new ioctl, but just check the rlimit 
-> in one MPASSTHRU_BINDDEV ioctl? If we find mp device
-> break the rlimit, then we fail the bind ioctl, and thus can't do 
-> zero copy any more.
+In today linux-net I got a compile warning in acpi/apei
 
-Yes, and not just check, but decrement as well.
-I think we should give userspace control over
-how much memory we can lock and subtract from the rlimit.
-It's OK to add this as a parameter to MPASSTHRU_BINDDEV.
-Then increment the rlimit back on unbind and on close?
+drivers/acpi/apei/erst.c: In function ‘erst_exec_move_data’:
+drivers/acpi/apei/erst.c:273: warning: cast to pointer from integer of different size
+drivers/acpi/apei/erst.c:274: warning: cast to pointer from integer of different size
 
-This opens up an interesting condition: process 1
-calls bind, process 2 calls unbind or close.
-This will increment rlimit for process 2.
-Not sure how to fix this properly.
+The problem is that apei_exec_context->dst_base type is u64.
+But in 32 bits architecture void * is 32 bits long. 
+Casting it to unsigned long solves the issue
 
+Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+---
+ drivers/acpi/apei/erst.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index a4904f1..37d7a05 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -270,8 +270,8 @@ static int erst_exec_move_data(struct apei_exec_context *ctx,
+ 	rc = __apei_exec_read_register(entry, &offset);
+ 	if (rc)
+ 		return rc;
+-	memmove((void *)ctx->dst_base + offset,
+-		(void *)ctx->src_base + offset,
++	memmove((void *)(unsigned long)ctx->dst_base + offset,
++		(void *)(unsigned long)ctx->src_base + offset,
+ 		ctx->var2);
+ 
+ 	return 0;
 -- 
-MST
+1.7.0.4
+
+
+
