@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab0ILMrD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 08:47:03 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53192 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab0ILMrB (ORCPT
+	id S1752908Ab0ILNGp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 09:06:45 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59539 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab0ILNGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 08:47:01 -0400
+	Sun, 12 Sep 2010 09:06:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=Abq6Z8ptdfbhXYfkAHg4s/gP1pGZwsCm+qEl31kx4F6we4NQqph1TWILQlrEpB/DFH
-         qVDqDiE7bih8p6S7bTMsAbSp9LF3wjkoosTUz4w/E/eb81XuMyAyumquFG0We8jS7el6
-         Jl+edGJ9imq7XgZiq2kQt0RxUezZfbDNhS5N8=
-Date: Sun, 12 Sep 2010 14:46:56 +0200
+        b=u4Uf/BPeN1io2Z3dNeP43VqFMncdfcZSzQMaeP6cYS0WCjdjXkVAONvuBWO3EmgJ9E
+         JMbSWwQPF+G2KEFdX6ksWsGtm3Q42jaRcmfvr02AgKjLprlNRMOd8T81MIEiTYVdxT26
+         XIEAMeGl6lx+RkQM6953u2mjiGAn4gsi82+6E=
+Date: Sun, 12 Sep 2010 15:06:39 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Sitsofe Wheeler <sitsofe@yahoo.com>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Ingo Molnar <mingo@elte.hu>, Corentin Chary <corentincj@iksaif.net>
 Subject: Re: EeePC 900 reboots/hangs when using using perf -a -f -g
-Message-ID: <20100912124653.GA5342@nowhere>
+Message-ID: <20100912130637.GB5342@nowhere>
 References: <20100912102854.GA7359@sucs.org> <1284289027.2251.95.camel@laptop> <20100912112105.GA28420@sucs.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -40,9 +40,15 @@ On Sun, Sep 12, 2010 at 12:21:05PM +0100, Sitsofe Wheeler wrote:
 > don't know if this is a regression - it might always have been there...
 
 
+Testing with a software event like page faults will test if it's related
+to hardware events only or some of them.
+For example if it doesn't happen in fault events, then let's try with some
+others, just to see if we can narrow down to some particular events.
 
-Have you tried different kind of events? By default it records -e instructions
-Can you try with -e faults for example?
 
-Thanks.
+If it happens on faults it will be easier to debug because software events
+don't happen in NMI (at least not the faults), so enabling RCU stalls checks
+there will probably success to trigger a backtrace. Perhaps you can profile
+only one CPU for that (-C 1, eeepc 900 are SMT, right?), so that there is
+a free CPU to notice the stall and trigger the backtrace through remote NMIs.
 
