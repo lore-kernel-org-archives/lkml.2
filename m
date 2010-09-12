@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153Ab0ILIGT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 04:06:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab0ILIGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 04:06:15 -0400
-Message-ID: <4C8C89F1.6020008@redhat.com>
-Date: Sun, 12 Sep 2010 10:06:09 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1752250Ab0ILIGj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 04:06:39 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64751 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab0ILIGS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 04:06:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WHQqNxAYiVTk/mFytjD/zQIcO0ELfsTxj097t1cj/MqCiWRcAHa9yqlNiYLxzZX0ku
+         8Y3/5tkq8mUo27g1xdnBQQ/EOk4C8P5c/yjCnKOyuv6Owi8Dqw1heQb+h8EjuwBIpcoO
+         snVaxHcwnWj4DNFFKSlXIIfRNgd9m79lNN/HA=
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 24/29] KVM: MMU: Track NX state in struct kvm_mmu
-References: <1284132667-18620-1-git-send-email-joerg.roedel@amd.com> <1284132667-18620-25-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1284132667-18620-25-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1284107570-17124-1-git-send-email-bebarino@gmail.com>
+References: <1284107570-17124-1-git-send-email-bebarino@gmail.com>
+Date: Sun, 12 Sep 2010 11:06:16 +0300
+Message-ID: <AANLkTimy0Ygv6rtL7MA+Lf5_AX5F-VFiDeJZ7GMLbLia@mail.gmail.com>
+Subject: Re: [PATCH] nconfig: Fix help for choice menus
+From: Nir Tzachar <nir.tzachar@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bebarino@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/10/2010 06:31 PM, Joerg Roedel wrote:
-> With Nested Paging emulation the NX state between the two
-> MMU contexts may differ. To make sure that always the right
-> fault error code is recorded this patch moves the NX state
-> into struct kvm_mmu so that the code can distinguish between
-> L1 and L2 NX state.
+On Fri, Sep 10, 2010 at 11:32 AM, Stephen Boyd <bebarino@gmail.com> wrote:
+> When getting the help for a choice menu with a help section (for example
+> the "Choose SLAB allocator" menu) nconfig pops up a window with nothing
+> inside it. This is due to show_help() passing an empty string to
+> show_scroll_win()'s 3rd argument. The option really does have help
+> though, but it isn't a config symbol, so just add the help text for
+> the option, and don't try to add anything else like the config option
+> name.
+
+
+Acked-by: Nir Tzachar <nir.tzachar@gmail.com>
+
+> Signed-off-by: Stephen Boyd <bebarino@gmail.com>
+> Cc: Nir Tzachar <nir.tzachar@gmail.com>
+> ---
+>  scripts/kconfig/nconf.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 >
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -259,6 +259,8 @@ struct kvm_mmu {
->   	u64 *lm_root;
->   	u64 rsvd_bits_mask[2][4];
+> diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+> index 2ba71bc..19d3401 100644
+> --- a/scripts/kconfig/nconf.c
+> +++ b/scripts/kconfig/nconf.c
+> @@ -1252,6 +1252,8 @@ static void show_help(struct menu *menu)
+>                        str_append(&help, _(menu_get_help(menu)));
+>                        str_append(&help, "\n");
+>                        get_symbol_str(&help, menu->sym);
+> +               } else {
+> +                       str_append(&help, _(menu_get_help(menu)));
+>                }
+>        } else {
+>                str_append(&help, nohelp_text);
+> --
+> 1.7.2.3.313.gcd15
 >
-> +	bool nx;
-> +
->   	u64 pdptrs[4]; /* pae */
->   };
-
-This is redundant with mmu->base_role.nx.  Please post a follow on patch 
-to use that instead.
-
--- 
-error compiling committee.c: too many arguments to function
-
+>
