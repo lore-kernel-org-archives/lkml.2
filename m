@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab0ILTaD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 15:30:03 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47433 "EHLO ogre.sisk.pl"
+	id S1754278Ab0ILTaA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 15:30:00 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47436 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754119Ab0ILT3a convert rfc822-to-8bit (ORCPT
+	id S1754166Ab0ILT3a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 12 Sep 2010 15:29:30 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>, "zersaa" <zersaa@gmail.com>
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "Mickey86" <mikael.cordon@gmail.com>
 References: <QnCvudbe2FD.A.XiE.DgSjMB@chimera>
 In-Reply-To: <QnCvudbe2FD.A.XiE.DgSjMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -16,8 +17,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <p44oKaOqEDM.A.I2E.VgSjMB@chimera>
-Subject: [Bug #17772] Unable to locate IOAPIC for GSI *
+Message-ID: <p44oKaOqEDM.A.T0E.TgSjMB@chimera>
+Subject: [Bug #17812] Kernel completely frozen when memory is full
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun, 12 Sep 2010 21:08:44 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,9 +33,9 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17772
-Subject		: Unable to locate IOAPIC for GSI *
-Submitter	: zersaa <zersaa@gmail.com>
-Date		: 2010-09-04 21:28 (9 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17812
+Subject		: Kernel completely frozen when memory is full
+Submitter	: Mickey86 <mikael.cordon@gmail.com>
+Date		: 2010-09-05 13:09 (8 days old)
 
 
