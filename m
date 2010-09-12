@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab0ILKld (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 06:41:33 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:49965 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842Ab0ILKlc convert rfc822-to-8bit (ORCPT
+	id S1752449Ab0ILKtK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 06:49:10 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39909 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563Ab0ILKtH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 06:41:32 -0400
-Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
- nr_running
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-In-Reply-To: <20100911195708.GA9273@Krystal>
-References: <20100911173732.551632040@efficios.com>
-	 <20100911174003.051303123@efficios.com> <1284231470.2251.52.camel@laptop>
-	 <20100911195708.GA9273@Krystal>
-Content-Type: text/plain; charset="UTF-8"
+	Sun, 12 Sep 2010 06:49:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ihn866t/Z8b2BRt4ZDVj9zRVWq/4sWTHHjv7ZHKNNRv8/SkB4g6M/m0I9DB93wQ1Vh
+         5SntHpH1qgYAZbCRgsfj2MpCbci8FRgW2izH6f/w77aHclrl5BnW9U2ocPWh5lE8qen7
+         PAsql8CiqQo87/LiTsGqjj9o8SWV0bcKIenuA=
+MIME-Version: 1.0
+In-Reply-To: <20100812122641.fe88e846.randy.dunlap@oracle.com>
+References: <20100812122641.fe88e846.randy.dunlap@oracle.com>
+Date: Sun, 12 Sep 2010 13:49:06 +0300
+Message-ID: <AANLkTimu4zHZrpGkLVQkxsqax1DDefjZXwTn2cxy4WsL@mail.gmail.com>
+Subject: Re: [PATCH -next] optprobes: fix kconfig depends/selects
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        akpm <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Date: Sun, 12 Sep 2010 12:41:12 +0200
-Message-ID: <1284288072.2251.91.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-11 at 15:57 -0400, Mathieu Desnoyers wrote:
-> The interesting part is in the range from 4 to 8 tasks. I diminish the scheduler
-> granularity as the number of tasks increases rather than increasing latency.
-> This leads to more scheduler preemptions than usual, but only in the 4-8 running
-> tasks range. 
+On Thu, Aug 12, 2010 at 10:26 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+>
+> KALLSYMS and KALLSYMS_ALL depend on DEBUG_KERNEL, so add that dependency.
+> KALLSYMS_ALL depends on KALLSYMS, so select both of them, not just KALLSYMS_ALL.
+>
+> warning: (OPTPROBES && KPROBES && HAVE_OPTPROBES && !PREEMPT || MTD_UBI_DEBUG && MTD && SYSFS && MTD_UBI || UBIFS_FS_DEBUG && MISC_FILESYSTEMS && UBIFS_FS || LOCKDEP && DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT || LATENCYTOP && HAVE_LATENCYTOP_SUPPORT) selects KALLSYMS_ALL which has unmet direct dependencies (DEBUG_KERNEL && KALLSYMS)
+>
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc:     Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Cc:     Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+> Cc:     "David S. Miller" <davem@davemloft.net>
+> Cc:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> ---
+>  arch/Kconfig |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> --- linux-next-20100810.orig/arch/Kconfig
+> +++ linux-next-20100810/arch/Kconfig
+> @@ -45,6 +45,8 @@ config OPTPROBES
+>        def_bool y
+>        depends on KPROBES && HAVE_OPTPROBES
+>        depends on !PREEMPT
+> +       depends on DEBUG_KERNEL
+> +       select KALLSYMS
+>        select KALLSYMS_ALL
+>
+>  config HAVE_EFFICIENT_UNALIGNED_ACCESS
+> --
 
-I really don't get it.. that's exactly what it does from the 1..3 range
-too, if you want to extend that, simply set a lower min_gran, it will
-update nr_latency and you get it from 1..(latency/min_gran) range.
+This causes another problem:
 
-And you didn't touch sched_proc_update_handler(), which recomputes
-sched_nr_latency when you change sched_latency or sched_min_gran.
+arch/Kconfig:33:error: recursive dependency detected!
+arch/Kconfig:33:	symbol KPROBES depends on KALLSYMS
+init/Kconfig:825:	symbol KALLSYMS is selected by OPTPROBES
+arch/Kconfig:44:	symbol OPTPROBES depends on KPROBES
 
-So the current stuff is:
+The 'select KALLSYMS' is redundant.
 
-  period := max(latency, min_gran * nr_running)
+Otherwise: Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 
-or, conversely:
-
-  gran := max(min_gran, latency / nr_running)
-
-Which seems to be exactly what you want, no? Its doing that!
-
-Except that in the one place we used 'gran' directly we avoided the
-division and used the minimal value: min_gran in all cases, which is a
-trade-of favouring latency.
-
-
+-- 
+Felipe Contreras
