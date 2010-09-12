@@ -1,93 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab0ILUbs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 16:31:48 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:39379 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776Ab0ILUbq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 16:31:46 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=EGhGoXi/H3WBAn6bz2dubnRmLFRqkwp11hnaLr0xllbSoJIPq4FUffPsIpA37nxHn
-	LpqDin6YS7IEEJXLY0q3g==
-From: Michael Rubin <mrubin@google.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: fengguang.wu@intel.com, jack@suse.cz, riel@redhat.com,
-        akpm@linux-foundation.org, david@fromorbit.com,
-        kosaki.motohiro@jp.fujitsu.com, npiggin@kernel.dk, hch@lst.de,
-        axboe@kernel.dk, Michael Rubin <mrubin@google.com>
-Subject: [PATCH 5/5] writeback: Reporting dirty thresholds in /proc/vmstat
-Date: Sun, 12 Sep 2010 13:30:40 -0700
-Message-Id: <1284323440-23205-6-git-send-email-mrubin@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1284323440-23205-1-git-send-email-mrubin@google.com>
-References: <1284323440-23205-1-git-send-email-mrubin@google.com>
+	id S1753964Ab0ILUdX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 16:33:23 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53161 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753652Ab0ILUdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 16:33:22 -0400
+Date: Sun, 12 Sep 2010 22:32:58 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-perf-users@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: disabling group leader perf_event
+Message-ID: <20100912203258.GC16751@elte.hu>
+References: <4C84D77B.6040600@redhat.com>
+ <20100906124330.GA22314@elte.hu>
+ <4C84E265.1020402@redhat.com>
+ <20100906125905.GA25414@elte.hu>
+ <4C850147.8010908@redhat.com>
+ <20100906154737.GA4332@elte.hu>
+ <20100912064612.GA1582@ucw.cz>
+ <4C8D13CD.1060802@redhat.com>
+ <20100912184843.GB11165@elte.hu>
+ <20100912191429.GA27440@elf.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100912191429.GA27440@elf.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0338]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel already exposes the user desired thresholds in /proc/sys/vm
-with dirty_background_ratio and background_ratio. But the kernel may
-alter the number requested without giving the user any indication that
-is the case.
 
-Knowing the actual ratios the kernel is honoring can help app developers
-understand how their buffered IO will be sent to the disk.
+* Pavel Machek <pavel@ucw.cz> wrote:
 
-        $ grep threshold /proc/vmstat
-        nr_dirty_threshold 409111
-        nr_dirty_background_threshold 818223
+> On Sun 2010-09-12 20:48:43, Ingo Molnar wrote:
+> > 
+> > * Avi Kivity <avi@redhat.com> wrote:
+> > 
+> > >  On 09/12/2010 08:46 AM, Pavel Machek wrote:
+> > > >  1- Most (least abstract) specific code: a block of bytecode in the form
+> > > >     of a simplified, executable, kernel-checked x86 machine code block -
+> > > >     this is also the fastest form. [yes, this is actually possible.]
+> > > >Well... if we want to be a bit x86-entric.... can we just reuse ACPI
+> > > >interpretter?
+> > > 
+> > > I hope this was a joke, ACPI won the academy awards for ugliness, 
+> > > ..., bad specification, non-generality, and 
+> 
+> As did i386 instruction set :-).
 
-Signed-off-by: Michael Rubin <mrubin@google.com>
----
- include/linux/mmzone.h |    2 ++
- mm/vmstat.c            |    4 ++++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+Are you kidding? The i386 instruction set may be ugly, but it's 
+implemented in hardware, which has obvious upsides.
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index d0d7454..1e87936 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -106,6 +106,8 @@ enum zone_stat_item {
- 	NR_SHMEM,		/* shmem pages (included tmpfs/GEM pages) */
- 	NR_FILE_DIRTIED,	/* accumulated dirty pages */
- 	NR_WRITTEN,		/* accumulated written pages */
-+	NR_DIRTY_THRESHOLD,	/* writeback threshold */
-+	NR_DIRTY_BG_THRESHOLD,	/* bg writeback threshold */
- #ifdef CONFIG_NUMA
- 	NUMA_HIT,		/* allocated in intended node */
- 	NUMA_MISS,		/* allocated in non intended node */
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index d448ef4..0c1ddca 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -17,6 +17,7 @@
- #include <linux/vmstat.h>
- #include <linux/sched.h>
- #include <linux/math64.h>
-+#include <linux/writeback.h>
- 
- #ifdef CONFIG_VM_EVENT_COUNTERS
- DEFINE_PER_CPU(struct vm_event_state, vm_event_states) = {{0}};
-@@ -734,6 +735,8 @@ static const char * const vmstat_text[] = {
- 	"nr_shmem",
- 	"nr_dirtied",
- 	"nr_written",
-+	"nr_dirty_threshold",
-+	"nr_dirty_background_threshold",
- 
- #ifdef CONFIG_NUMA
- 	"numa_hit",
-@@ -917,6 +920,7 @@ static void *vmstat_start(struct seq_file *m, loff_t *pos)
- 		return ERR_PTR(-ENOMEM);
- 	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
- 		v[i] = global_page_state(i);
-+	global_dirty_limits(v + NR_DIRTY_BG_THRESHOLD, v + NR_DIRTY_THRESHOLD);
- #ifdef CONFIG_VM_EVENT_COUNTERS
- 	e = v + NR_VM_ZONE_STAT_ITEMS;
- 	all_vm_events(e);
--- 
-1.7.1
+The ACPI AML code is just plain ugly.
 
+	Ingo
