@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab0ILGzZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 02:55:25 -0400
-Received: from [83.228.35.12] ([83.228.35.12]:35167 "EHLO fs.ru.acad.bg"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab0ILGzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 02:55:23 -0400
-Message-ID: <4C8C7957.7080207@fs.uni-ruse.bg>
-Date: Sun, 12 Sep 2010 09:55:19 +0300
-From: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; bg; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1751799Ab0ILHD0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 03:03:26 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48969 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab0ILHDY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 03:03:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=AQkmOWycZX5Vv3tlI6LCCv6ndbqajmQbnYIinx4Orbj5EQ9wEXAHT7s/ROKF0+wubc
+         L5j8Hcmgbqu8E8KdOvTfXVzDBeuNVvmK8LGO6S+hl8+XJ2hn/mvZZNDliBfe+pJpPEzf
+         H9R8+YofrCyIeqyUWVp0M9cpK6UlJ4SeENWLs=
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: David Miller <davem@davemloft.net>, jarkao2@gmail.com,
-        eric.dumazet@gmail.com, herbert@gondor.hengli.com.au,
-        kernel-testers@vger.kernel.org, maciej.rutecki@gmail.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: [Bug #16626] Machine hangs with EIP at skb_copy_and_csum_dev
-References: <1283672983.3402.38.camel@edumazet-laptop> <20100908062004.GA6280@ff.dom.local> <20100908.103256.112592448.davem@davemloft.net> <201009082221.16356.rjw@sisk.pl>
-In-Reply-To: <201009082221.16356.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <19595.34143.859553.402816@pilspetsen.it.uu.se>
+References: <AANLkTimMxQXxC354V=qVOrdUYFSrpJ-RZeKJfQEx0KPN@mail.gmail.com>
+	<19595.23873.90306.656565@pilspetsen.it.uu.se>
+	<AANLkTinQVQsjxJLpZQiP5V56o7quGPY6G0ZOnvwPAKbx@mail.gmail.com>
+	<19595.34143.859553.402816@pilspetsen.it.uu.se>
+Date: Sun, 12 Sep 2010 12:33:22 +0530
+Message-ID: <AANLkTin8F3=VJ1yoOrNR_hP+52ReYCdL7+LCFBjCEv5D@mail.gmail.com>
+Subject: Re: How to determine the information about SATA controller
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-На 08.9.2010 г. 23:21, Rafael J. Wysocki написа:
-> On Wednesday, September 08, 2010, David Miller wrote:
->> From: Jarek Poplawski<jarkao2@gmail.com>
->> Date: Wed, 8 Sep 2010 06:20:04 +0000
->>
->>> We need both of them. I hope David could add this too:
->>>
->>> Tested-by: Plamen Petrov<pvp-lsts@fs.uni-ruse.bg>
->>
->> Done, and applied, thanks :-)
+> �> >
+> �>
+> �> In my case, BIOS options are enhanced / legacy / disabled. I tried all
+> �> but of no use. So I am using enhanced to boot Fedora 13 kernel.
 >
-> Please kindly let me know when Linus gets them, so that I can close the bug.
+> We need to see the complete kernel messages from a failed boot to
+> determine the root cause of that missing root device failure.
 >
-> Rafael
+> I suggest hooking up a null-modem serial cable to a second machine
+> and run minicom on that one to capture boot messages, but there may
+> be other ways to capture boot messages: netconsole? firewire?
+>
 
-Now that both commits that fix my problems are in Linus' tree, the
-bug can be closed, but these fixes should go in 2.6.35.y, too.
-So, CCing -stable.
+Netbook is also using SATA Intel controller :
+http://userweb.kernel.org/~jaswinder/acer_netbook/config-2636rc3-netbook.txt
 
-Fix 1:
-> commit	3d3be4333fdf6faa080947b331a6a19bce1a4f57
->
-> gro: fix different skb headrooms
->
-> Packets entering GRO might have different headrooms, even for a given
-> flow (because of implementation details in drivers, like copybreak).
-> We cant force drivers to deliver packets with a fixed headroom.
->
-> 1) fix skb_segment()
->
-> skb_segment() makes the false assumption headrooms of fragments are same
-> than the head. When CHECKSUM_PARTIAL is used, this can give csum_start
-> errors, and crash later in skb_copy_and_csum_dev()
->
-> 2) allocate a minimal skb for head of frag_list
->
-> skb_gro_receive() uses netdev_alloc_skb(headroom + skb_gro_offset(p)) to
-> allocate a fresh skb. This adds NET_SKB_PAD to a padding already
-> provided by netdevice, depending on various things, like copybreak.
->
-> Use alloc_skb() to allocate an exact padding, to reduce cache line
-> needs:
-> NET_SKB_PAD + NET_IP_ALIGN
->
-> bugzilla : https://bugzilla.kernel.org/show_bug.cgi?id=16626
->
-> Many thanks to Plamen Petrov, testing many debugging patches !
-> With help of Jarek Poplawski.
->
-> Reported-by: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> CC: Jarek Poplawski <jarkao2@gmail.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
+I used netbook config and with little bit modification as CPU and
+network device is changed, I am able to boot the kernel :
 
-Fix 2:
-> commit	64289c8e6851bca0e589e064c9a5c9fbd6ae5dd4
->
-> gro: Re-fix different skb headrooms
->
-> The patch: "gro: fix different skb headrooms" in its part:
-> "2) allocate a minimal skb for head of frag_list" is buggy. The copied
-> skb has p->data set at the ip header at the moment, and skb_gro_offset
-> is the length of ip + tcp headers. So, after the change the length of
-> mac header is skipped. Later skb_set_mac_header() sets it into the
-> NET_SKB_PAD area (if it's long enough) and ip header is misaligned at
-> NET_SKB_PAD + NET_IP_ALIGN offset. There is no reason to assume the
-> original skb was wrongly allocated, so let's copy it as it was.
->
-> bugzilla : https://bugzilla.kernel.org/show_bug.cgi?id=16626
-> fixes commit: 3d3be4333fdf6faa080947b331a6a19bce1a4f57
->
-> Reported-by: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
-> Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
-> CC: Eric Dumazet <eric.dumazet@gmail.com>
-> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Tested-by: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
+dmesg :
+http://userweb.kernel.org/~jaswinder/P4_HT/dmesg_2636_test_netbook.txt
 
-Thanks,
-Plamen
+config:
+http://userweb.kernel.org/~jaswinder/P4_HT/config-ht-test-netbook.txt
+
+Thanks for your help,
+--
+Jaswinder Singh.
