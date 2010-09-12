@@ -1,136 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab0ILPzo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 11:55:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6873 "EHLO mga02.intel.com"
+	id S1753750Ab0ILPzm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 11:55:42 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38548 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753366Ab0ILPzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 11:55:02 -0400
+	id S1753356Ab0ILPzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 11:55:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,355,1280732400"; 
-   d="scan'208";a="553787502"
-Message-Id: <20100912155204.451611340@intel.com>
+   d="scan'208";a="836994007"
+Message-Id: <20100912155204.944256600@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 12 Sep 2010 23:49:57 +0800
+Date: Sun, 12 Sep 2010 23:50:00 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: linux-mm <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Theodore Tso <tytso@mit.edu>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Dave Chinner <david@fromorbit.com>,
         Wu Fengguang <fengguang.wu@intel.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
+CC: "Theodore Ts'o" <tytso@mit.edu>
 CC: Jan Kara <jack@suse.cz>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Rik van Riel <riel@redhat.com>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Chris Mason <chris.mason@oracle.com>
 CC: Christoph Hellwig <hch@lst.de>
 CC: Li Shaohua <shaohua.li@intel.com>
-Subject: [PATCH 12/17] writeback: scale IO chunk size up to device bandwidth
+Subject: [PATCH 15/17] mm: lower soft dirty limits on memory pressure
 References: <20100912154945.758129106@intel.com>
-Content-Disposition: inline; filename=writeback-128M-MAX_WRITEBACK_PAGES.patch
+Content-Disposition: inline; filename=mm-dynamic-dirty-throttle.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally, MAX_WRITEBACK_PAGES was hard-coded to 1024 because of a
-concern of not holding I_SYNC for too long.  (At least, that was the
-comment previously.)  This doesn't make sense now because the only
-time we wait for I_SYNC is if we are calling sync or fsync, and in
-that case we need to write out all of the data anyway.  Previously
-there may have been other code paths that waited on I_SYNC, but not
-any more.					    -- Theodore Ts'o
+When memory pressure increases, the LRU lists will be scanned faster and
+hence more easily to hit dirty pages and trigger undesirable pageout()s.
 
-According to Christoph, the current writeback size is way too small,
-and XFS had a hack that bumped out nr_to_write to four times the value
-sent by the VM to be able to saturate medium-sized RAID arrays.  This
-value was also problematic for ext4 as well, as it caused large files
-to be come interleaved on disk by in 8 megabyte chunks (we bumped up
-the nr_to_write by a factor of two).
+Avoiding pageout() reduces a good number of problems, eg. IO efficiency,
+responsiveness, vmscan efficiency, etc.
 
-So remove the MAX_WRITEBACK_PAGES constraint totally. The writeback pages
-will adapt to as large as the storage device can write within 1 second.
+Introduce vm_dirty_pressure to keep track of the vmscan pressure in
+dirty page out POV. It ranges from VM_DIRTY_PRESSURE to 0. Lower value
+means more pageout() pressure.
 
-For a typical hard disk, the resulted chunk size will be 32MB or 64MB.
+The adaption rules are basically "fast down, slow up".
 
-http://bugzilla.kernel.org/show_bug.cgi?id=13930
+- when encountered dirty pages during vmscan, vm_dirty_pressure will be
+  instantly lowered to
+  - VM_DIRTY_PRESSURE/2 for priority=DEF_PRIORITY
+  - VM_DIRTY_PRESSURE/4 for priority=DEF_PRIORITY-1
+  ...
+  - 0 for priority=3
 
-CC: Theodore Ts'o <tytso@mit.edu>
+- whenever kswapd (of the most pressured node) goes idle, add 1 to
+  vm_dirty_pressure. If that node keeps idle, its kswapd will wakeup
+  every second to increase vm_dirty_pressure over time.
+  
+The vm_dirty_pressure_node trick can avoid it being increased too fast
+in large NUMA. On the other hand, it may still be decreased too much
+when only one node is pressured in large NUMA. (XXX: easy ways to detect
+that?)
+
+The above heuristics will keep vm_dirty_pressure near 512 during a
+simple write test: cp /dev/zero /tmp/. The test box has 4GB memory.
+
+The ratio (vm_dirty_pressure : VM_DIRTY_PRESSURE) will be directly
+multiplied to the _soft_ dirty limits.
+
+- it's able to avoid abrupt change of the applications' progress speed
+
+- it also tries to keep the bdi dirty throttle limit above 1 second
+  worth of dirty pages, to avoid hurting IO efficiency
+
+- the background dirty threshold can reach 0, so that when there are no
+  heavy dirtiers, all dirty pages can be cleaned
+
+Simply lowering the dirty limits may not immediately knock down the
+number of dirty pages (still there are good chances the flusher thread
+is running or will run soon).  The wake up of flusher thread will be
+carried out in more patches -- maybe revised versions of
+
+	http://lkml.org/lkml/2010/7/29/191
+	http://lkml.org/lkml/2010/7/29/189
+
 CC: Dave Chinner <david@fromorbit.com>
-CC: Chris Mason <chris.mason@oracle.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c |   31 +++++++++++++++++--------------
- 1 file changed, 17 insertions(+), 14 deletions(-)
+ fs/fs-writeback.c         |    3 ++
+ include/linux/writeback.h |    4 +++
+ mm/page-writeback.c       |   38 +++++++++++++++++++++++++++++-------
+ mm/vmscan.c               |   18 ++++++++++++++++-
+ 4 files changed, 55 insertions(+), 8 deletions(-)
 
---- linux-next.orig/fs/fs-writeback.c	2010-09-07 23:26:17.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2010-09-07 23:26:37.000000000 +0800
-@@ -568,15 +568,6 @@ static void __writeback_inodes_sb(struct
- 	spin_unlock(&inode_lock);
- }
+--- linux-next.orig/fs/fs-writeback.c	2010-09-11 15:34:38.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2010-09-11 15:35:03.000000000 +0800
+@@ -574,6 +574,9 @@ static inline bool over_bground_thresh(v
  
--/*
-- * The maximum number of pages to writeout in a single bdi flush/kupdate
-- * operation.  We do this so we don't hold I_SYNC against an inode for
-- * enormous amounts of time, which would block a userspace task which has
-- * been forced to throttle against that inode.  Also, the code reevaluates
-- * the dirty each time it has written this many pages.
-- */
--#define MAX_WRITEBACK_PAGES     1024
--
- static inline bool over_bground_thresh(void)
- {
- 	unsigned long background_thresh, dirty_thresh;
-@@ -588,6 +579,18 @@ static inline bool over_bground_thresh(v
+ 	global_dirty_limits(&background_thresh, &dirty_thresh);
+ 
++	background_thresh = background_thresh *
++					vm_dirty_pressure / VM_DIRTY_PRESSURE;
++
+ 	return (global_page_state(NR_FILE_DIRTY) +
+ 		global_page_state(NR_UNSTABLE_NFS) > background_thresh);
  }
+--- linux-next.orig/include/linux/writeback.h	2010-09-11 15:34:37.000000000 +0800
++++ linux-next/include/linux/writeback.h	2010-09-11 15:35:01.000000000 +0800
+@@ -22,6 +22,8 @@ extern struct list_head inode_unused;
+  */
+ #define DIRTY_SOFT_THROTTLE_RATIO	16
+ 
++#define VM_DIRTY_PRESSURE		(1 << 10)
++
+ /*
+  * fs/fs-writeback.c
+  */
+@@ -107,6 +109,8 @@ void throttle_vm_writeout(gfp_t gfp_mask
+ /* These are exported to sysctl. */
+ extern int dirty_background_ratio;
+ extern unsigned long dirty_background_bytes;
++extern int vm_dirty_pressure;
++extern int vm_dirty_pressure_node;
+ extern int vm_dirty_ratio;
+ extern unsigned long vm_dirty_bytes;
+ extern unsigned int dirty_writeback_interval;
+--- linux-next.orig/mm/page-writeback.c	2010-09-11 15:34:38.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-09-11 15:35:01.000000000 +0800
+@@ -62,6 +62,14 @@ unsigned long dirty_background_bytes;
+ int vm_highmem_is_dirtyable;
  
  /*
-+ * Give each inode a nr_to_write that can complete within 1 second.
++ * The vm_dirty_pressure:VM_DIRTY_PRESSURE ratio is used to lower the soft
++ * dirty throttle limits under memory pressure, so as to reduce the number of
++ * dirty pages and hence undesirable pageout() calls in page reclaim.
 + */
-+static unsigned long bdi_writeback_chunk_size(struct backing_dev_info *bdi)
-+{
-+	unsigned long pages;
-+
-+	pages = max(bdi->write_bandwidth, 4 << 20) >> PAGE_CACHE_SHIFT;
-+
-+	return rounddown_pow_of_two(pages);
-+}
++int vm_dirty_pressure = VM_DIRTY_PRESSURE;
++int vm_dirty_pressure_node;
 +
 +/*
-  * Explicit flushing or periodic writeback of "old" data.
-  *
-  * Define "old": the first time one of an inode's pages is dirtied, we mark the
-@@ -645,8 +648,8 @@ static long wb_writeback(struct bdi_writ
+  * The generator of dirty data starts writeback at this percentage
+  */
+ int vm_dirty_ratio = 20;
+@@ -491,6 +499,7 @@ static void balance_dirty_pages(struct a
+ 	unsigned long background_thresh;
+ 	unsigned long dirty_thresh;
+ 	unsigned long bdi_thresh;
++	unsigned long thresh;
+ 	unsigned long pause;
+ 	unsigned long gap;
+ 	unsigned long bw;
+@@ -519,8 +528,9 @@ static void balance_dirty_pages(struct a
+ 		 * catch-up. This avoids (excessively) small writeouts
+ 		 * when the bdi limits are ramping up.
+ 		 */
+-		if (nr_reclaimable + nr_writeback <=
+-				(background_thresh + dirty_thresh) / 2)
++		thresh = (background_thresh + dirty_thresh) / 2;
++		thresh = thresh * vm_dirty_pressure / VM_DIRTY_PRESSURE;
++		if (nr_reclaimable + nr_writeback <= thresh)
  			break;
  
- 		wbc.more_io = 0;
--		wbc.per_file_limit = MAX_WRITEBACK_PAGES;
--		wbc.nr_to_write = MAX_WRITEBACK_PAGES;
-+		wbc.per_file_limit = bdi_writeback_chunk_size(wb->bdi);
-+		wbc.nr_to_write = wbc.per_file_limit;
- 		wbc.pages_skipped = 0;
+ 		task_dirties_fraction(current, &numerator, &denominator);
+@@ -560,8 +570,22 @@ static void balance_dirty_pages(struct a
+ 			break;
+ 		bdi_prev_total = bdi_nr_reclaimable + bdi_nr_writeback;
  
- 		trace_wbc_writeback_start(&wbc, wb->bdi);
-@@ -657,8 +660,8 @@ static long wb_writeback(struct bdi_writ
- 		trace_wbc_writeback_written(&wbc, wb->bdi);
- 		bdi_update_write_bandwidth(wb->bdi, &bw_time, &bw_written);
+-		if (bdi_nr_reclaimable + bdi_nr_writeback <=
+-			bdi_thresh - bdi_thresh / DIRTY_SOFT_THROTTLE_RATIO)
++
++		thresh = bdi_thresh - bdi_thresh / DIRTY_SOFT_THROTTLE_RATIO;
++		/*
++		 * Lower the soft throttle thresh according to dirty pressure,
++		 * but keep a minimal pool of dirty pages that can be written
++		 * within 1 second to prevent hurting IO performance.
++		 */
++		if (vm_dirty_pressure < VM_DIRTY_PRESSURE) {
++			int dp = vm_dirty_pressure;
++			bw = bdi->write_bandwidth >> PAGE_CACHE_SHIFT;
++			if (thresh * dp / VM_DIRTY_PRESSURE > bw)
++				thresh = thresh * dp / VM_DIRTY_PRESSURE;
++			else if (thresh > bw)
++				thresh = bw;
++		}
++		if (bdi_nr_reclaimable + bdi_nr_writeback <= thresh)
+ 			goto check_exceeded;
  
--		work->nr_pages -= MAX_WRITEBACK_PAGES - wbc.nr_to_write;
--		wrote += MAX_WRITEBACK_PAGES - wbc.nr_to_write;
-+		work->nr_pages	-= wbc.per_file_limit - wbc.nr_to_write;
-+		wrote		+= wbc.per_file_limit - wbc.nr_to_write;
+ 		bdi_update_write_bandwidth(bdi, &bw_time, &bw_written);
+@@ -569,8 +593,7 @@ static void balance_dirty_pages(struct a
+ 		gap = bdi_thresh > (bdi_nr_reclaimable + bdi_nr_writeback) ?
+ 		      bdi_thresh - (bdi_nr_reclaimable + bdi_nr_writeback) : 0;
  
- 		/*
- 		 * If we consumed everything, see if we have more
-@@ -673,7 +676,7 @@ static long wb_writeback(struct bdi_writ
- 		/*
- 		 * Did we write something? Try for more
- 		 */
--		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
-+		if (wbc.nr_to_write < wbc.per_file_limit)
- 			continue;
- 		/*
- 		 * Nothing written. Wait for some inode to
+-		bw = bdi->write_bandwidth * gap /
+-				(bdi_thresh / DIRTY_SOFT_THROTTLE_RATIO + 1);
++		bw = bdi->write_bandwidth * gap / (bdi_thresh - thresh + 1);
+ 
+ 		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
+ 		pause = clamp_val(pause, 1, HZ/5);
+@@ -617,7 +640,8 @@ check_exceeded:
+ 	if (writeback_in_progress(bdi))
+ 		return;
+ 
+-	if (nr_reclaimable > background_thresh)
++	if (nr_reclaimable > background_thresh *
++					vm_dirty_pressure / VM_DIRTY_PRESSURE)
+ 		bdi_start_background_writeback(bdi);
+ }
+ 
+--- linux-next.orig/mm/vmscan.c	2010-09-11 15:34:39.000000000 +0800
++++ linux-next/mm/vmscan.c	2010-09-11 15:35:01.000000000 +0800
+@@ -745,6 +745,16 @@ static unsigned long shrink_page_list(st
+ 		}
+ 
+ 		if (PageDirty(page)) {
++
++			if (file && scanning_global_lru(sc)) {
++				int dp = VM_DIRTY_PRESSURE >>
++					(DEF_PRIORITY + 1 - sc->priority);
++				if (vm_dirty_pressure > dp) {
++					vm_dirty_pressure = dp;
++					vm_dirty_pressure_node = numa_node_id();
++				}
++			}
++
+ 			if (references == PAGEREF_RECLAIM_CLEAN)
+ 				goto keep_locked;
+ 			if (!may_enter_fs)
+@@ -2354,8 +2364,14 @@ static int kswapd(void *p)
+ 				 * to sleep until explicitly woken up
+ 				 */
+ 				if (!sleeping_prematurely(pgdat, order, remaining)) {
++					int dp = vm_dirty_pressure;
+ 					trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
+-					schedule();
++					if (dp < VM_DIRTY_PRESSURE &&
++					    vm_dirty_pressure_node == numa_node_id()) {
++						vm_dirty_pressure = dp + 1;
++						schedule_timeout(HZ);
++					} else
++						schedule();
+ 				} else {
+ 					if (remaining)
+ 						count_vm_event(KSWAPD_LOW_WMARK_HIT_QUICKLY);
 
 
