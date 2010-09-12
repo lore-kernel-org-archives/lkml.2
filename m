@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab0ILJte (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 05:49:34 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64655 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab0ILJtd (ORCPT
+	id S1752219Ab0ILJxN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 05:53:13 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:31992 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab0ILJxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 05:49:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=wiEHjPkzNTi2k8SoSv9/e2lDAieu2SWtVIcgWCYfh06fhUzEgzDsMR/vg2s1WKUgT1
-         s7M0C5LxfK0sf/yC+kNP7Y0JO8t1eNxEsmnOxCw+lEM7+Km0ohMMMQrkMwMBC/SeiB9X
-         cTCaqVE90gbm/mDkNvkrk1IOKqghuc375Whqk=
-Subject: [REGRESSION] cdrom drive doesn't detect removal
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 12 Sep 2010 11:49:29 +0200
-Message-ID: <1284284969.2928.18.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 12 Sep 2010 05:53:11 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L8MOQQ-01-F55-02
+X-M-MSG: 
+Date: Sun, 12 Sep 2010 11:52:03 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "eranian@google.com" <eranian@google.com>
+Subject: Re: [PATCH] x86: fix duplicate calls of the nmi handler
+Message-ID: <20100912095202.GF13563@erda.amd.com>
+References: <1283454469-1909-1-git-send-email-dzickus@redhat.com>
+ <1284118900.402.35.camel@laptop>
+ <20100910132741.GB4879@redhat.com>
+ <20100910144634.GA1060@elte.hu>
+ <20100910155659.GD13563@erda.amd.com>
+ <20100911094157.GA11521@elte.hu>
+ <20100911114404.GE13563@erda.amd.com>
+ <20100911124537.GA22850@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100911124537.GA22850@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 11.09.10 08:45:37, Ingo Molnar wrote:
+> 
+> * Robert Richter <robert.richter@amd.com> wrote:
+> 
+> > On 11.09.10 05:41:57, Ingo Molnar wrote:
+> > > Robert, can you reproduce the problem? It triggers rather easily on both 
+> > > Peter's and my AMD systems.
+> > 
+> > I was testing 88a377e and so far it didn't trigger on the system I 
+> > have available, will try other systems too. Can you send me your 
+> > config too?
+> 
+> Sure, attached.
 
-After a switch between hal to devkit stack, a different strategy of
-detecting a cdrom removal was applied.
-Instead of polling it, userspace just tells the kernel not to lock the
-dour (/proc/sys/dev/cdrom/lock) and as soon as user removes the disk,
-udev notifies the userspace and it unmounts it. Since CDROMs are
-readonly this is perfectly safe and fits the same procedure used for all
-other removable disks. (usb, flash cards, etc..)
+No, your config did not trigger it either. We will extend testing to
+more systems, but I cannot start with it before tomorrow.
 
-(Well, most cdroms aren't really read-only these days, but state of
-packet writing is so sad these days that is doesn't matter).
+-Robert
 
-However 2.6.36 doesn't detect that removal.
-According to udevadm monitor --property no uevents are send on removal.
-
-My feeling is that this is BKL fallout.
-I of course use new libata stack, so my cdrom driver is sr.
-
-
-
-Best regards,
-Maxim Levitsky
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
