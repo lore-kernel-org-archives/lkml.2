@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab0ILStX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 14:49:23 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60741 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692Ab0ILStV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 14:49:21 -0400
-Date: Sun, 12 Sep 2010 20:48:43 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-perf-users@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: disabling group leader perf_event
-Message-ID: <20100912184843.GB11165@elte.hu>
-References: <4C84D1CE.3070205@redhat.com>
- <1283774045.1930.341.camel@laptop>
- <4C84D77B.6040600@redhat.com>
- <20100906124330.GA22314@elte.hu>
- <4C84E265.1020402@redhat.com>
- <20100906125905.GA25414@elte.hu>
- <4C850147.8010908@redhat.com>
- <20100906154737.GA4332@elte.hu>
- <20100912064612.GA1582@ucw.cz>
- <4C8D13CD.1060802@redhat.com>
+	id S1751951Ab0ILSwr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 14:52:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32296 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab0ILSwq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 14:52:46 -0400
+Message-ID: <4C8D210D.8080307@oracle.com>
+Date: Sun, 12 Sep 2010 11:50:53 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C8D13CD.1060802@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.2817]
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: lkml <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH] PM_SLEEP_SMP: fix kconfig warning
+References: <20100911155720.c4fe6b4b.randy.dunlap@oracle.com> <201009121926.08633.rjw@sisk.pl>
+In-Reply-To: <201009121926.08633.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Avi Kivity <avi@redhat.com> wrote:
-
->  On 09/12/2010 08:46 AM, Pavel Machek wrote:
-> >  1- Most (least abstract) specific code: a block of bytecode in the form
-> >     of a simplified, executable, kernel-checked x86 machine code block -
-> >     this is also the fastest form. [yes, this is actually possible.]
-> >Well... if we want to be a bit x86-entric.... can we just reuse ACPI
-> >interpretter?
+On 09/12/10 10:26, Rafael J. Wysocki wrote:
+> On Sunday, September 12, 2010, Randy Dunlap wrote:
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> Fix kconfig unmet dependency warning:
+>>
+>> warning: (PM_SLEEP_SMP && SMP && (ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE) && PM_SLEEP) selects HOTPLUG_CPU which has unmet direct dependencies (SMP && HOTPLUG)
+>>
+>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+>> ---
+>>  kernel/power/Kconfig |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> --- linux-next-20100908.orig/kernel/power/Kconfig
+>> +++ linux-next-20100908/kernel/power/Kconfig
+>> @@ -83,7 +83,7 @@ config PM_TRACE_RTC
+>>  
+>>  config PM_SLEEP_SMP
+>>  	bool
+>> -	depends on SMP
+>> +	depends on SMP && HOTPLUG
+>>  	depends on ARCH_SUSPEND_POSSIBLE || ARCH_HIBERNATION_POSSIBLE
+>>  	depends on PM_SLEEP
+>>  	select HOTPLUG_CPU
 > 
-> I hope this was a joke, ACPI won the academy awards for ugliness, 
-> slowness, low performance, bad specification, non-generality, and 
-> probably five other things I forgot.  Stay away from it as much as you 
-> can.
+> I'm afraid that may cause some people to find that suspend is not compiled in
+> to their surprise.
+> 
+> Would it be possible to select both HOTPLUG and HOTPLUG_CPU instead (ie. would
+> that work)?
 
-It also combines the worst of the two worlds: it's the most specific 
-type of code (almost like assembly), but has a very slow interpreter.
+That appears to work in my testing.  I'll ack your patch.
 
-With 'x86 bytecode' the main (and pretty much only) point is to be able 
-to execute the code as-is, once checked.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-But, as i explained it before, i only consider it a theoretical 
-possibility and i think that abstract code (such as ASCII text C source 
-code) is a better solution.
-
-Thanks,
-
-	Ingo
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
