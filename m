@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab0IMPwT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:52:19 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:38996 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab0IMPwR (ORCPT
+	id S1753512Ab0IMPxI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:53:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20991 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab0IMPxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:52:17 -0400
-Message-ID: <4C8E4882.6040600@ru.mvista.com>
-Date: Mon, 13 Sep 2010 19:51:30 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
-MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>
-CC: Sergei Shtylyov <sshtylyov@mvista.com>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Felipe Balbi <balbi@ti.com>, Anand Gadiyar <gadiyar@ti.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [RESEND/PATCH 5/6] USB: musb-gadget: complete request only if
- data is transfered over
-References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>	<1283873014-32511-6-git-send-email-tom.leiming@gmail.com>	<4C8E18AD.8000502@ru.mvista.com> <AANLkTinei3u1OZ-eBiUTDF=PDjwxLcL6rBpt7iNQJgHJ@mail.gmail.com>
-In-Reply-To: <AANLkTinei3u1OZ-eBiUTDF=PDjwxLcL6rBpt7iNQJgHJ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 13 Sep 2010 11:53:07 -0400
+Date: Mon, 13 Sep 2010 08:51:55 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Thomas Renninger <trenn@suse.de>,
+        Jason Baron <jbaron@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the final tree
+ (driver-core tree related)
+Message-Id: <20100913085155.6b73c9cc.randy.dunlap@oracle.com>
+In-Reply-To: <20100907023404.GA11972@kroah.com>
+References: <20100907115426.fc0c3e13.sfr@canb.auug.org.au>
+	<20100907023404.GA11972@kroah.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, 6 Sep 2010 19:34:04 -0700 Greg KH wrote:
 
-Ming Lei wrote:
+> On Tue, Sep 07, 2010 at 11:54:26AM +1000, Stephen Rothwell wrote:
+> > Hi Greg,
+> > 
+> > After merging the final tree, today's linux-next build (powerpc
+> > allnoconfig) produced this warning:
+> > 
+> > kernel/params.c: In function 'parse_args':
+> > kernel/params.c:233: warning: the frame size of 1032 bytes is larger than 1024 bytes
+> > 
+> > Introduced by commit 32e6407e9361cd1aac39ff6b744cad48d1802a08 ("Dynamic
+> > Debug: Introduce global fake module param module.ddebug") which added a
+> > 1024 byte array to the stack ...
+> 
+> Wierd, why didn't this show up yesterday?  The patch was in that tree
+> then, right?
+> 
+> Thomas, care to fix this up?
 
->>   But why not modify the conditional above all that code, just excluding
->> 'is_dma' from it. This conditional already includes (request->actual ==
->> request->length) check. Please recast this patch.
 
-> The two condition is OR relation, not and, so we can't exclude 'is_dma' simply.
+ping.  Is Thomas around??
 
-    Yes, we can. You're clearly handling only the DMA case with your added 
-check, the PIO case was already handled.
-
-> Anyway, the change is not wrong, right?
-
-    Not wrong, but the check is duplicate.
-
-> thanks,
-
-WBR, Sergei
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
