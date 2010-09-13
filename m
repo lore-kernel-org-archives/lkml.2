@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab0IMIrL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 04:47:11 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58900 "EHLO mx2.mail.elte.hu"
+	id S1754782Ab0IMIrq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 04:47:46 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:37580 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754324Ab0IMIrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 04:47:09 -0400
-Date: Mon, 13 Sep 2010 10:46:19 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Nico Schottelius <nico-linux-20100709@schottelius.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, peterz@infradead.org, flo@xssn.at,
-        lenb@kernel.org, jbarnes@virtuousgeek.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, rjw@sisk.pl, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/urgent] x86, tsc: Fix a preemption leak in
- restore_sched_clock_state()
-Message-ID: <20100913084619.GC23741@elte.hu>
-References: <1284150773.402.122.camel@laptop>
- <tip-55496c896b8a695140045099d4e0175cf09d4eae@git.kernel.org>
- <20100913074233.GA2674@schottelius.org>
+	id S1754016Ab0IMIrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 04:47:45 -0400
+Date: Mon, 13 Sep 2010 14:17:41 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        gthelen@google.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        stable@kernel.org
+Subject: Re: [BUGFIX][PATCH] memcg: fix race in file_mapped accouting flag
+ management
+Message-ID: <20100913084741.GD17950@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100913074233.GA2674@schottelius.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-09-13 16:08:22]:
 
-* Nico Schottelius <nico-linux-20100709@schottelius.org> wrote:
-
-> Good morning,
 > 
-> tip-bot for Peter Zijlstra [Sat, Sep 11, 2010 at 07:49:07AM +0000]:
-> > Commit-ID:  55496c896b8a695140045099d4e0175cf09d4eae
-> > Gitweb:     http://git.kernel.org/tip/55496c896b8a695140045099d4e0175cf09d4eae
-> > Author:     Peter Zijlstra <peterz@infradead.org>
-> > AuthorDate: Fri, 10 Sep 2010 22:32:53 +0200
-> > Committer:  Ingo Molnar <mingo@elte.hu>
-> > CommitDate: Sat, 11 Sep 2010 09:47:07 +0200
-> > 
-> > x86, tsc: Fix a preemption leak in restore_sched_clock_state()
+> I think this small race is not very critical but it's bug.
+> We have this race since 2.6.34. 
+> =
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> running 2.6.36-rc3-00464-g84e1d83 now, which includes that fix.
+> Now. memory cgroup accounts file-mapped by counter and flag.
+> counter is working in the same way with zone_stat but FileMapped flag only
+> exists in memcg (for helping move_account).
 > 
-> So far no resume issues, but the backlight does not power on again,
-> if the lid is opened.
-
-That's probably unrelated.
-
-> Manually triggering display backlight increase (via fn-home) changes 
-> it to 100% though.
+> This flag can be updated wrongly in a case. Assume CPU0 and CPU1
+> and a thread mapping a page on CPU0, another thread unmapping it on CPU1.
 > 
-> I've not seen that behaviour for a very long time and never on the 
-> X201. It has been an issue on the X200, which means probably around 
-> 2.6.30.
+>     CPU0                   		CPU1
+> 				rmv rmap (mapcount 1->0)
+>    add rmap (mapcount 0->1) 
+>    lock_page_cgroup()
+>    memcg counter+1		(some delay)
+>    set MAPPED FLAG.
+>    unlock_page_cgroup()
+> 				lock_page_cgroup()
+> 				memcg counter-1
+> 				clear MAPPED flag
+> 
+> In above sequence, counter is properly updated but FLAG is not.
+> This means that representing a state by a flag which is maintained by
+> counter needs some specail care.
 
-Might make sense to bisect it ... as long as you remember to do this at 
-every bisection step that has the hung-suspend bug:
+In the situation above who has the PTE lock? Are we not synchronized
+via the PTE lock such that add rmap and rm rmap, will not happen
+simultaneously?
 
-  git cherry-pick 55496c896b8a695140045099d4e0175cf09d4eae
+> 
+> To handle this, at claering a flag, this patch check mapcount directly and
+                     ^^^^ (clearing)
+> clear the flag only when mapcount == 0. (if mapcount >0, someone will make
+> it to zero later and flag will be cleared.)
+> 
+> Reverse case, dec-after-inc cannot be a problem because page_table_lock()
+> works well for it. (IOW, to make above sequence, 2 processes should touch
+> the same page at once with map/unmap.)
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Thanks,
-
-	Ingo
+-- 
+	Three Cheers,
+	Balbir
