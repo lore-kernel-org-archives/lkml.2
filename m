@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab0IMXBe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 19:01:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40053 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792Ab0IMXBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 19:01:33 -0400
-Date: Mon, 13 Sep 2010 23:00:56 GMT
-From: "tip-bot for basile@opensource.dyc.edu" <basile@opensource.dyc.edu>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        mail@cleeus.de, zorry@gentoo.org, akpm@linux-foundation.org,
-        basile@opensource.dyc.edu, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, zorry@gentoo.org, mail@cleeus.de,
-        basile@opensource.dyc.edu, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20100913101319.748A1148E216@opensource.dyc.edu>
-References: <20100913101319.748A1148E216@opensource.dyc.edu>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, build: Disable -fPIE when compiling with CONFIG_CC_STACKPROTECTOR=y
-Message-ID: <tip-08c2b394b98786ebb067e2a54d08f1f6f0d247da@git.kernel.org>
-Git-Commit-ID: 08c2b394b98786ebb067e2a54d08f1f6f0d247da
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 13 Sep 2010 23:00:57 +0000 (UTC)
+	id S1752250Ab0IMXJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 19:09:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39768 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751708Ab0IMXJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 19:09:17 -0400
+Date: Mon, 13 Sep 2010 16:09:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cong Meng <mcpacino@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: calculate block-size correctly
+Message-Id: <20100913160905.332ff633.akpm@linux-foundation.org>
+In-Reply-To: <20100908100710.GA26365@zhongling.bej.apac.novell.com>
+References: <20100908100710.GA26365@zhongling.bej.apac.novell.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  08c2b394b98786ebb067e2a54d08f1f6f0d247da
-Gitweb:     http://git.kernel.org/tip/08c2b394b98786ebb067e2a54d08f1f6f0d247da
-Author:     basile@opensource.dyc.edu <basile@opensource.dyc.edu>
-AuthorDate: Mon, 13 Sep 2010 06:13:19 -0400
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 13 Sep 2010 15:53:16 -0700
+On Wed, 8 Sep 2010 18:07:10 +0800
+Cong Meng <mcpacino@gmail.com> wrote:
 
-x86, build: Disable -fPIE when compiling with CONFIG_CC_STACKPROTECTOR=y
+> I sent this patch half mount ago, but no response at all. If anything is
+> wrong, please tell me. Thanks a lots. This is my first time to send patch
+> to linux kernel.
+> 
+> The invocation of __getblk(bdev, block, size) will cause kernel stall if
+> the @size parameter is not equal to the blockr-size of @bdev, which is saved
+> in bdev->bd_inode->i_blkbits.
+> 
+> submit_bh() has the similar problem.
+> 
+> This patch calculates the block-size using i_blkbits.
+> So that, for example, __getblk() can get a 4K buffer head while the
+> block-size of @bdev is 1K.
+> 
 
-The arch/x86/Makefile uses scripts/gcc-x86_$(BITS)-has-stack-protector.sh
-to check if cc1 supports -fstack-protector.  When -fPIE is passed to cc1,
-these scripts fail causing stack protection to be disabled even when it
-is available.
+This comes up every couple of years and iirc we always decided that
+it's a bug in the calling code somewhere.  How did you hit it?
 
-This fix is similar to commit c47efe5548abbf53c2f66e06dcb46183b11d6b22
 
-Reported-by: Kai Dietrich <mail@cleeus.de>
-Signed-off-by: Magnus Granberg <zorry@gentoo.org>
-LKML-Reference: <20100913101319.748A1148E216@opensource.dyc.edu>
-Signed-off-by: Anthony G. Basile <basile@opensource.dyc.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -1051,10 +1051,7 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
+>  	pgoff_t index;
+>  	int sizebits;
+>  
+> -	sizebits = -1;
+> -	do {
+> -		sizebits++;
+> -	} while ((size << sizebits) < PAGE_SIZE);
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 8aa1b59..e8c8881 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -74,7 +74,7 @@ endif
- 
- ifdef CONFIG_CC_STACKPROTECTOR
- 	cc_has_sp := $(srctree)/scripts/gcc-x86_$(BITS)-has-stack-protector.sh
--        ifeq ($(shell $(CONFIG_SHELL) $(cc_has_sp) $(CC) $(biarch)),y)
-+        ifeq ($(shell $(CONFIG_SHELL) $(cc_has_sp) $(CC) $(KBUILD_CPPFLAGS) $(biarch)),y)
-                 stackp-y := -fstack-protector
-                 KBUILD_CFLAGS += $(stackp-y)
-         else
+I'm sure the existing code could use __roundup_pow_of_two() here.
+
