@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232Ab0IMOih (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:38:37 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:36502 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab0IMOif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:38:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
-	b=lch5ZWwBAoH2T4bqCYtznwbjQ9uzgdDqnelVFfcQWCJxD9bn9ROzVh+oy9fdoVBbr
-	Y0g4VutpQad6g1RDpv0zA==
-Message-ID: <4c8e3766.991ce30a.32cd.fffff5f0@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Mon, 13 Sep 2010 16:36:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        eranian@google.com, robert.richter@amd.com
-Subject: [PATCH] perf_events: fix NULL point in free_event()
-X-System-Of-Record: true
+	id S1752295Ab0IMOlI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:41:08 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58112 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751815Ab0IMOlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:41:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,359,1280732400"; 
+   d="scan'208";a="837187007"
+Date: Mon, 13 Sep 2010 22:41:01 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 10/10] vmscan: Kick flusher threads to clean pages when
+ reclaim is encountering dirty pages
+Message-ID: <20100913144101.GA15130@localhost>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
+ <1283770053-18833-11-git-send-email-mel@csn.ul.ie>
+ <20100913134845.GB12355@localhost>
+ <20100913141046.GI23508@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100913141046.GI23508@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without the following patch, perf top as non-root and
-paranoid cpu set causes a NULL pointer dereference in
-free_event() because event->ctx is NULL.
+On Mon, Sep 13, 2010 at 10:10:46PM +0800, Mel Gorman wrote:
+> On Mon, Sep 13, 2010 at 09:48:45PM +0800, Wu Fengguang wrote:
+> > > +	/*
+> > > +	 * If reclaim is encountering dirty pages, it may be because
+> > > +	 * dirty pages are reaching the end of the LRU even though the
+> > > +	 * dirty_ratio may be satisified. In this case, wake flusher
+> > > +	 * threads to pro-actively clean up to a maximum of
+> > > +	 * 4 * SWAP_CLUSTER_MAX amount of data (usually 1/2MB) unless
+> > > +	 * !may_writepage indicates that this is a direct reclaimer in
+> > > +	 * laptop mode avoiding disk spin-ups
+> > > +	 */
+> > > +	if (file && nr_dirty_seen && sc->may_writepage)
+> > > +		wakeup_flusher_threads(nr_writeback_pages(nr_dirty));
+> > 
+> > wakeup_flusher_threads() works, but seems not the pertinent one.
+> > 
+> > - locally, it needs some luck to clean the pages that direct reclaim is waiting on
+> 
+> There is a certain amount of luck involved but it's depending on there being a
+> correlation between old inodes and old pages on the LRU list. As long as that
+> correlation is accurate, some relevant pages will get cleaned.  Testing on
+> previously released versions of this patch did show that the percentage of
+> dirty pages encountered during reclaim were reduced as a result of this patch.
 
-free_event() may be called, on the error path, before
-event->ctx is set.
+Yup.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+> > - globally, it cleans up some dirty pages, however some heavy dirtier
+> >   may quickly create new ones..
+> > 
+> > So how about taking the approaches in these patches?
+> > 
+> > - "[PATCH 4/4] vmscan: transfer async file writeback to the flusher"
+> > - "[PATCH 15/17] mm: lower soft dirty limits on memory pressure"
+> > 
+> 
+> There is a lot going on in those patches. It's going to take me a while to
+> figure them out and formulate an opinion.
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index f29b525..a7d5e7a 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -2150,7 +2150,8 @@ static void free_event(struct perf_event *event)
- 	if (event->destroy)
- 		event->destroy(event);
- 
--	put_ctx(event->ctx);
-+	if (event->ctx)
-+		put_ctx(event->ctx);
- 	call_rcu(&event->rcu_head, free_event_rcu);
- }
- 
+OK. I also need some time off for doing other works :)
+
+> > In particular the first patch should work very nicely with memcg, as
+> > all pages of an inode typically belong to the same memcg. So doing
+> > write-around helps clean lots of dirty pages in the target LRU list in
+> > one shot.
+> > 
+> 
+> It might but as there is also a correlation between old dirty inodes and
+> the location of dirty pages, it is tricky to predict if it is better and
+> if so, by how much.
+
+It at least guarantees to clean the one page pageout() is running into :)
+Others will depend on the locality/sequentiality of the workload. But
+as the write-around pages are in the same LRU lists, the vmscan code
+will hit them sooner or later.
+
+Thanks,
+Fengguang
+
