@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab0IMQM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 12:12:57 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:4630 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752191Ab0IMQM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 12:12:57 -0400
-X-IronPort-AV: E=Sophos;i="4.56,359,1280700000"; 
-   d="scan'208";a="59200387"
-Date: Mon, 13 Sep 2010 18:12:55 +0200
-From: Samuel Thibault <Samuel.Thibault@ens-lyon.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Valdis.Kletnieks@vt.edu,
-        =?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>,
-        Len Brown <lenb@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andres Salomon <dilinger@queued.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: EuroBraille/Iris power off
-Message-ID: <20100913161255.GE5364@const.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <Samuel.Thibault@ens-lyon.org>,
-	"H. Peter Anvin" <hpa@zytor.com>, Valdis.Kletnieks@vt.edu,
-	=?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>,
-	Len Brown <lenb@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Andres Salomon <dilinger@queued.net>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <20100825094925.GA3632@pema> <alpine.LFD.2.00.1008261406480.2062@localhost.localdomain> <20100826210815.GA18131@pema> <4C76D9A0.2010907@zytor.com> <20100829205929.GA3309@pema> <20100913100719.GA3903@pema> <54870.1284390647@localhost> <20100913152249.GC5364@const.bordeaux.inria.fr> <4C8E4C0D.6010502@zytor.com>
+	id S1753699Ab0IMQOo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 12:14:44 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3378 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751630Ab0IMQOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 12:14:43 -0400
+Message-ID: <4C8E4DEA.2050406@canonical.com>
+Date: Mon, 13 Sep 2010 10:14:34 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100826 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C8E4C0D.6010502@zytor.com>
-User-Agent: Mutt/1.5.12-2006-07-14
+To: "stable@kernel.org" <stable@kernel.org>
+CC: Heiko Bauke <heiko.bauke@snafu.de>, linux-kernel@vger.kernel.org,
+        romieu@fr.zoreil.com, timo.teras@iki.fi
+Subject: Re: Realtek Ethernet drivers
+References: <20100912210444.76ebeee6@tron.localdomain>	<20100912223724.GA15934@electric-eye.fr.zoreil.com> <20100913095912.74d7f0f1@tron.localdomain>
+In-Reply-To: <20100913095912.74d7f0f1@tron.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H. Peter Anvin, le Mon 13 Sep 2010 09:06:37 -0700, a écrit :
-> On 09/13/2010 08:22 AM, Samuel Thibault wrote:
-> > Again, I'm not sure we really should try hard to make it automatically
-> > detected (and thus always enabled).  Having to pass a kernel parameter
-> > to enable the functionality is completely fine, since installing Linux
-> > on this device requires quite some tinkering already.
-> > 
-> 
-> Could you describe this kind of tinkering?
+On 09/13/2010 01:59 AM, Heiko Bauke wrote:
+> Dear Francois,
+>
+> On Mon, 13 Sep 2010 00:37:25 +0200
+> Francois Romieu<romieu@fr.zoreil.com>  wrote:
+>
+>> It's probably fixed with one of :
+>> - 81a95f049962ec20a9aed888e676208b206f0f2e /
+>> 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e
+>> - 908ba2bfd22253f26fa910cd855e4ccffb1467d0
+>> - 78f1cd02457252e1ffbc6caa44a17424a45286b8
+>>
+>> [...]
+>>> P.S. I am running 2.6.32-24-generic on a 32-bit Ubuntu 10.04.1 LTS
+>>> box.
+>>
+>> Your 2.6.32-24-generic includes :
+>> - 908ba2bfd22253f26fa910cd855e4ccffb1467d0
+>> - 78f1cd02457252e1ffbc6caa44a17424a45286b8
+>>
+>> But it misses 81a95f049962ec20a9aed888e676208b206f0f2e and
+>> 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e
+>
+> I thank you for your reply. If there is time I will try a more recent
+> kernel. (For the moment the Realtek drivers are fine for me.) I
+> know how to (re-)compile distribution kernels and how to compile a
+> vanilla kernel from kernel.org. However, I have no idea what the
+> hex-codes you mentioned mean. Can you give me a hint?
+>
+>
+> 	Regards,
+>
+> 	Heiko
+>
 
-Basically, opening the device to select boot on the external
-CompactFlash reader.
+If not already staged, please consider including these commits for 2.6.32.y:
 
-Samuel
+024a07bacf8287a6ddfa83e9d5b951c5e8b4070e
+81a95f049962ec20a9aed888e676208b206f0f2e
+
+They are already included in 2.6.33.y and up, so its curious that they 
+are not also included in 2.6.32.y as they do apply cleanly.
+
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
