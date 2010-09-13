@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab0IMTwT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:52:19 -0400
-Received: from mail.perches.com ([173.55.12.10]:1891 "EHLO mail.perches.com"
+	id S1755636Ab0IMTwk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:52:40 -0400
+Received: from mail.perches.com ([173.55.12.10]:1889 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755162Ab0IMTsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:48:32 -0400
+	id S1755294Ab0IMTsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 15:48:31 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Amit Kumar Salecha <amit.salecha@qlogic.com>,
-        Anirban Chakraborty <anirban.chakraborty@qlogic.com>,
-        linux-driver@qlogic.com, netdev@vger.kernel.org
-Subject: [PATCH 12/25] drivers/net/qlcnic: Use static const char arrays
-Date: Mon, 13 Sep 2010 12:47:50 -0700
-Message-Id: <4f9ef3036179e7a6cf4d238fad64920d8130015c.1284406638.git.joe@perches.com>
+Cc: Amit Kumar Salecha <amit.salecha@qlogic.com>, netdev@vger.kernel.org
+Subject: [PATCH 11/25] drivers/net/netxen: Use static const char arrays
+Date: Mon, 13 Sep 2010 12:47:49 -0700
+Message-Id: <8a4d5d728bb68e2c69d37e71fe426c525ebd3ee8.1284406638.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.rc1
 In-Reply-To: <cover.1284406638.git.joe@perches.com>
 References: <cover.1284406638.git.joe@perches.com>
@@ -23,35 +21,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/qlcnic/qlcnic.h      |    2 +-
- drivers/net/qlcnic/qlcnic_main.c |    2 +-
+ drivers/net/netxen/netxen_nic.h      |    2 +-
+ drivers/net/netxen/netxen_nic_main.c |    2 +-
  2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/qlcnic/qlcnic.h b/drivers/net/qlcnic/qlcnic.h
-index cc8385a..7effdad 100644
---- a/drivers/net/qlcnic/qlcnic.h
-+++ b/drivers/net/qlcnic/qlcnic.h
-@@ -345,7 +345,7 @@ struct uni_data_desc{
- #define QLCNIC_UNIFIED_ROMIMAGE_NAME	"phanfw.bin"
- #define QLCNIC_FLASH_ROMIMAGE_NAME	"flash"
+diff --git a/drivers/net/netxen/netxen_nic.h b/drivers/net/netxen/netxen_nic.h
+index 6dca357..bd272aa 100644
+--- a/drivers/net/netxen/netxen_nic.h
++++ b/drivers/net/netxen/netxen_nic.h
+@@ -525,7 +525,7 @@ struct uni_data_desc{
+ #define NX_UNIFIED_ROMIMAGE_NAME	"phanfw.bin"
+ #define NX_FLASH_ROMIMAGE_NAME		"flash"
  
--extern char qlcnic_driver_name[];
-+extern const char qlcnic_driver_name[];
+-extern char netxen_nic_driver_name[];
++extern const char netxen_nic_driver_name[];
  
  /* Number of status descriptors to handle per interrupt */
  #define MAX_STATUS_HANDLE	(64)
-diff --git a/drivers/net/qlcnic/qlcnic_main.c b/drivers/net/qlcnic/qlcnic_main.c
-index 5fd2abd..ad40171 100644
---- a/drivers/net/qlcnic/qlcnic_main.c
-+++ b/drivers/net/qlcnic/qlcnic_main.c
-@@ -41,7 +41,7 @@ MODULE_LICENSE("GPL");
- MODULE_VERSION(QLCNIC_LINUX_VERSIONID);
- MODULE_FIRMWARE(QLCNIC_UNIFIED_ROMIMAGE_NAME);
+diff --git a/drivers/net/netxen/netxen_nic_main.c b/drivers/net/netxen/netxen_nic_main.c
+index 73d3145..521cbfe 100644
+--- a/drivers/net/netxen/netxen_nic_main.c
++++ b/drivers/net/netxen/netxen_nic_main.c
+@@ -46,7 +46,7 @@ MODULE_FIRMWARE(NX_P3_CT_ROMIMAGE_NAME);
+ MODULE_FIRMWARE(NX_P3_MN_ROMIMAGE_NAME);
+ MODULE_FIRMWARE(NX_UNIFIED_ROMIMAGE_NAME);
  
--char qlcnic_driver_name[] = "qlcnic";
-+const char qlcnic_driver_name[] = "qlcnic";
- static const char qlcnic_driver_string[] = "QLogic 1/10 GbE "
- 	"Converged/Intelligent Ethernet Driver v" QLCNIC_LINUX_VERSIONID;
+-char netxen_nic_driver_name[] = "netxen_nic";
++const char netxen_nic_driver_name[] = "netxen_nic";
+ static char netxen_nic_driver_string[] = "QLogic/NetXen Network Driver v"
+     NETXEN_NIC_LINUX_VERSIONID;
  
 -- 
 1.7.3.rc1
