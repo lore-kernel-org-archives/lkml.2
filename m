@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab0IMPaH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:30:07 -0400
-Received: from pindarots.xs4all.nl ([80.101.128.228]:41090 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab0IMPaG (ORCPT
+	id S1753070Ab0IMPbj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:31:39 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:3131 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219Ab0IMPbi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:30:06 -0400
-Message-ID: <4C8E437B.1060103@xs4all.nl>
-Date: Mon, 13 Sep 2010 17:30:03 +0200
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+	Mon, 13 Sep 2010 11:31:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=unDD5IA8eKKfN1SKkSzm2Xqm+K5lZ7H/enQwDAXamu/iSvsKvqKsvEhnX0Gio361Sf
+         J5s8sdws3lgKIdBsAj/w==
 MIME-Version: 1.0
-CC: linux-kernel@vger.kernel.org
-Subject: Re: hpet timers gone?
-References: <4BFA52C3.4080006@xs4all.nl>	<20100526120236.4a849b5b.randy.dunlap@oracle.com>	<4C021507.6020703@xs4all.nl>	<4C02B3AB.3040405@gmail.com>	<4C0324B8.8070304@xs4all.nl> <AANLkTikuaPxA9Xnzc1bCJ5YHRlPZ1AcBSrYJ5lqryaMY@mail.gmail.com> <4C8E3ABF.90309@xs4all.nl>
-In-Reply-To: <4C8E3ABF.90309@xs4all.nl>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <1284391480.2275.350.camel@laptop>
+References: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
+	<20100913150914.GA6155@nowhere>
+	<AANLkTi=OR69sDbUMkSnx_-bpF=yHF_xNY1v=-BJgLpp5@mail.gmail.com>
+	<1284391000.2275.338.camel@laptop>
+	<AANLkTin35TXPcs9u3pLfo8QRUmGnftT1DPfswRUVEvJW@mail.gmail.com>
+	<1284391480.2275.350.camel@laptop>
+Date: Mon, 13 Sep 2010 17:31:35 +0200
+Message-ID: <AANLkTik8r4moPy5muNyT2oKGH5aEaMOLL0Zqn=-hkpos@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        robert.richter@amd.com,
+        "markus.t.metzger" <markus.t.metzger@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-13 16:52, Udo van den Heuvel wrote:
-> On 2010-05-31 06:00, Robert Hancock wrote:
->> If they did add an HPET table entry, it should help, yes..
-> 
-> Is there a workaround?
-> VIA was not so helpfull: the bios flash tool they have on the site does
-> not recognise the board as a VIA board.
-> Also they state the latest BIOS will not add HPET to ACPI table.
+On Mon, Sep 13, 2010 at 5:24 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2010-09-13 at 17:20 +0200, Stephane Eranian wrote:
+>
+>> That is the case we the sizes you have chosen today. For DS, we
+>> could round up to one page for now.
+>
+> Markus chose the BTS size, for PEBS a single page was plenty since we do
+> single event things (although we could do multiple for attr.precise_ip <
+> 2).
+>
+> For DS there's:
+>  kmalloc_node(sizeof(struct ds), GFP_KERNEL | __GFP_ZERO, cpu_node(cpu));
+>
+Ok, let try again with alloc_pages_node() + kmalloc_node().
+I think we can stick with kmalloc() for DS because we are far from
+consuming a page.
 
-Could I adapt the old patch for 8237 to force-enable HPET?
-
-If so: I might need to find out in what ways the C700X2 and VT8237
-differ w.r.t. HPET and/or id. Anyone here that could help?
-
-Or should blindly enabling HPET (as in VT8237) help?
-
-Udo
+>
+>
