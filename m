@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab0IMNLK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 09:11:10 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52323 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab0IMNLI convert rfc822-to-8bit (ORCPT
+	id S1753185Ab0IMNM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 09:12:57 -0400
+Received: from usmamail.tilera.com ([72.1.168.231]:44471 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab0IMNM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 09:11:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=iA/fV3ZsMwODXgLhy9o6viXv1Fl9/bw25FdvBfJg6NV2fCyySC+yV1hH57A9yLlQag
-         4CrAi1Spqtjjd4f+deZ0Shic/3ZNA4KPgsvA3SaxBMbWc2mufnFhgQ5p8qNW1dN15AvL
-         6CfK1BMEGyxxi554uG2Cz7AoctBOE+aT5ukBI=
+	Mon, 13 Sep 2010 09:12:56 -0400
+Message-ID: <4C8E2355.60807@tilera.com>
+Date: Mon, 13 Sep 2010 09:12:53 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
 MIME-Version: 1.0
-In-Reply-To: <20100913125140.GH30787@n2100.arm.linux.org.uk>
-References: <AANLkTi=tWwaFHB0DY=j0UaqbYdYJpGJpmWdGC4aMufSw@mail.gmail.com>
-	<4C8E1417.4060204@compulab.co.il>
-	<20100913124049.GG30787@n2100.arm.linux.org.uk>
-	<AANLkTi=dT1uMrRctB4=Hvh35zVc-DtReWmHj-18cd9XT@mail.gmail.com>
-	<20100913125140.GH30787@n2100.arm.linux.org.uk>
-Date: Mon, 13 Sep 2010 15:11:07 +0200
-Message-ID: <AANLkTi=XoouQ7RtcfSHiGG5vVUcuYAZtuhfzYqOaa8aW@mail.gmail.com>
-Subject: Re: ARM target not boot after remap memory
-From: Robin Theunis <robint91@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Vasiliy Kulikov <segooon@gmail.com>
+CC: <kernel-janitors@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Mundt <lethal@linux-sh.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] char: hvc: check for error case
+References: <1284317835-5086-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1284317835-5086-1-git-send-email-segooon@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have tested it.
-
-When I compiled the kernel with debug_LL on the and triggered such an
-error by changing r1 to
-something different. And then I got an error of unsupport machine.
-
-
-2010/9/13 Russell King - ARM Linux <linux@arm.linux.org.uk>
-> On Mon, Sep 13, 2010 at 02:48:18PM +0200, Robin Theunis wrote:
->> Hi Russell,
->>
->> Yes I have tested it. I made a breakpoint at 0x2008000 and viewed that
->> the r1 register and there in I found the correct ID.
+ On 9/12/2010 2:57 PM, Vasiliy Kulikov wrote:
+> hvc_alloc() may fail, if so exit from init() with error.
 >
-> Ensure that CONFIG_DEBUG_LL is enabled, and that it outputs to the correct
-> UART.  The kernel will produce some messages via the DEBUG_LL stuff prior
-> to entering the __error loop.
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+
+Thanks, accepted into my tree (for the next merge window).  In practice all
+this means is in debug mode we'll get a warning from do_one_initcall()
+rather than silence, but you're right, it's technically better. :-)
+
+> ---
+>  I cannot compile this driver at all, so it is not tested.
 >
+>  drivers/char/hvc_tile.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/char/hvc_tile.c b/drivers/char/hvc_tile.c
+> index c4efb55..7a84a05 100644
+> --- a/drivers/char/hvc_tile.c
+> +++ b/drivers/char/hvc_tile.c
+> @@ -61,7 +61,8 @@ console_initcall(hvc_tile_console_init);
+>  
+>  static int __init hvc_tile_init(void)
+>  {
+> -	hvc_alloc(0, 0, &hvc_tile_get_put_ops, 128);
+> -	return 0;
+> +	struct hvc_struct *s;
+> +	s = hvc_alloc(0, 0, &hvc_tile_get_put_ops, 128);
+> +	return IS_ERR(s) ? PTR_ERR(s) : 0;
+>  }
+>  device_initcall(hvc_tile_init);
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
