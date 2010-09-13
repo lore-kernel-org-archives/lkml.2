@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab0IMOoo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:44:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab0IMOon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:44:43 -0400
-Message-ID: <4C8E3853.70702@redhat.com>
-Date: Mon, 13 Sep 2010 10:42:27 -0400
-From: Peter Jones <pjones@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1752141Ab0IMOsU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:48:20 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:33101 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751598Ab0IMOsS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:48:18 -0400
+Date: Mon, 13 Sep 2010 10:48:17 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jiri Slaby <jslaby@suse.cz>
+cc: phil@ipom.com, <stable@kernel.org>, Greg KH <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [34-stable regression] USB delay init quirk causes device events
+ loss
+In-Reply-To: <4C8E33CE.4010105@suse.cz>
+Message-ID: <Pine.LNX.4.44L0.1009131045000.1584-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Make efifb check that the base address is plausible
- on pci systems.
-References: <1284059809-9973-1-git-send-email-pjones@redhat.com> <20100910171406.bdb4d90d.akpm@linux-foundation.org>
-In-Reply-To: <20100910171406.bdb4d90d.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2010 08:14 PM, Andrew Morton wrote:
-> On Thu,  9 Sep 2010 15:16:48 -0400
-> Peter Jones <pjones@redhat.com> wrote:
+On Mon, 13 Sep 2010, Jiri Slaby wrote:
+
+> On 09/13/2010 04:16 PM, Alan Stern wrote:
+> > On Mon, 13 Sep 2010, Jiri Slaby wrote:
+> >> The problem is that the patch shuffles with usb_detect_quirks which used
+> >> to disable autosuspend by default. Apparently it no longer does.
+> > 
+> > I don't see how that patch could have the effect you claim.  
+> > usb_detect_quirks still calls usb_disable_autosuspend.  Can you do a 
+> > little more debugging to find out why it isn't working as expected?  
+> > Reverting the commit is not a good solution.
 > 
->> Some Apple machines have identical DMI data but different memory
->> configurations for the video. Given that, check that the address in our
->> table is actually within the range of a PCI BAR on a VGA deivce in the
->> machine.
->>
->> This also fixes up the return value from set_system(), which has
->> always been wrong, but never resulted in bad behavior since there's only
->> ever been one matching entry in the dmi table.
->>
->> This also adds me as the efifb maintainer, since I've effectively been
->> acting as such for quite some time.
-> 
-> And what is the impact (and importance) of this patch?  Make some
-> people's Mac displays work, I'd be guessing?
-> 
+> Ok, I could, but I have a near-zero knowledge about usb core stuff. What
+> I see is that usb_detect_quirks moved from usb_new_device to
+> hub_port_connect_change. Might that be that there are broken devices
+> which doesn't generate state changes properly?
 
-That's correct.
+No, that's not possible.  That state change comes from the device's 
+parent hub; without it we wouldn't know that the device was plugged 
+in at all.
 
--- 
-        Peter
+> In other words, what I could do is to add some printks into
+> hub_port_connect_change if that's called at all. If you need some
+> thorough debugging printks, please send me a patch to test instead.
 
-Gravity is a habit that is hard to shake off.
-		-- Pratchett
+Hmm.  I'd prefer to explain how it's all supposed to work and let you
+figure out where best to look.  Or try to debug it myself.  Does this
+happen with other sorts of USB devices as well, or just wacom?
 
-01234567890123456789012345678901234567890123456789012345678901234567890123456789
+Alan Stern
+
