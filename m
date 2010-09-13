@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab0IMQYs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 12:24:48 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40730 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752332Ab0IMQYr (ORCPT
+	id S1753747Ab0IMQ1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 12:27:42 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:42886 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab0IMQ1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 12:24:47 -0400
-Date: Mon, 13 Sep 2010 12:24:46 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Phil Dibowitz <phil@ipom.com>
-cc: Greg KH <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>, <stable@kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [34-stable regression] USB delay init quirk causes device events
- loss
-In-Reply-To: <4C8E4B14.7090904@ipom.com>
-Message-ID: <Pine.LNX.4.44L0.1009131219490.1315-100000@iolanthe.rowland.org>
+	Mon, 13 Sep 2010 12:27:40 -0400
+Message-ID: <4C8E50CC.3080705@ru.mvista.com>
+Date: Mon, 13 Sep 2010 20:26:52 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: Ming Lei <tom.leiming@gmail.com>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Felipe Balbi <balbi@ti.com>, Anand Gadiyar <gadiyar@ti.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [RESEND/PATCH 5/6] USB: musb-gadget: complete request only if
+ data is transfered over
+References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>	<1283873014-32511-6-git-send-email-tom.leiming@gmail.com>	<4C8E18AD.8000502@ru.mvista.com> <AANLkTinei3u1OZ-eBiUTDF=PDjwxLcL6rBpt7iNQJgHJ@mail.gmail.com> <4C8E4882.6040600@ru.mvista.com>
+In-Reply-To: <4C8E4882.6040600@ru.mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010, Phil Dibowitz wrote:
+Hello.
 
-> Thanks for figuring this out Alan. I think this is reasonable. However, I
-> think this also went into .32-stable and should probably be reverted there
-> as well.
+I wrote:
 
-I think kernels earlier than .34 will be okay.  The changeover to the
-runtime-PM framework occurred during the .33-.35 timeframe, and so .34
-was in an intermediate state.
+>>>   But why not modify the conditional above all that code, just excluding
+>>> 'is_dma' from it. This conditional already includes (request->actual ==
+>>> request->length) check. Please recast this patch.
 
-Jiri, as a workaround for people using the current 3.6.34.stable, you
-can ask them to do:
+>> The two condition is OR relation, not and, so we can't exclude 
+>> 'is_dma' simply.
 
-	echo on >/sys/bus/usb/devices/.../power/level
+>    Yes, we can. You're clearly handling only the DMA case with your 
+> added check, the PIO case was already handled.
 
-with the "..." filled in appropriately.
+>> Anyway, the change is not wrong, right?
 
-> I'll advise my users to make sure they have at least .35.
+>    Not wrong, but the check is duplicate.
 
-That probably isn't necessary.
+    Oops, I've been too fast and haven't realized that the check done here _is_ 
+actually wrong. It causes ZLP send to trigger too fast in the DMA case. So 
+please fix this patch. Felipe, please drop it for now.
 
-Alan Stern
-
+WBR, Sergei
