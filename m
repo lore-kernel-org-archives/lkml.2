@@ -1,127 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792Ab0IMJOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 05:14:23 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:57164 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970Ab0IMJOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 05:14:20 -0400
-Date: Mon, 13 Sep 2010 10:14:05 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 05/10] vmscan: Synchrounous lumpy reclaim use
-	lock_page() instead trylock_page()
-Message-ID: <20100913091405.GB23508@csn.ul.ie>
-References: <20100909131211.C93C.A69D9226@jp.fujitsu.com> <20100909092203.GL29263@csn.ul.ie> <20100909182649.C94F.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100909182649.C94F.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1751899Ab0IMJPw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 05:15:52 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:60322 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750970Ab0IMJPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 05:15:51 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+xQxpaKIaxn0EG3S+kjjv0eUhxuVm8JPp8Kyt7rK
+	FOWEVQAHlnD6Ek
+Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
+ nr_running
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+In-Reply-To: <1284366936.2275.27.camel@laptop>
+References: <20100911173732.551632040@efficios.com>
+	 <20100911174003.051303123@efficios.com> <20100912061452.GA3383@elte.hu>
+	 <1284276098.9111.24.camel@marge.simson.net>
+	 <20100912181626.GB32327@Krystal>
+	 <1284351183.7321.36.camel@marge.simson.net>
+	 <20100913064153.GB14728@elte.hu>
+	 <1284361716.25120.19.camel@marge.simson.net>
+	 <1284366936.2275.27.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Sep 2010 11:16:13 +0200
+Message-Id: <1284369373.14710.11.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 07:25:43PM +0900, KOSAKI Motohiro wrote:
-> > On Thu, Sep 09, 2010 at 01:13:22PM +0900, KOSAKI Motohiro wrote:
-> > > > On Thu, 9 Sep 2010 12:04:48 +0900
-> > > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > > > 
-> > > > > On Mon,  6 Sep 2010 11:47:28 +0100
-> > > > > Mel Gorman <mel@csn.ul.ie> wrote:
-> > > > > 
-> > > > > > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > > > > > 
-> > > > > > With synchrounous lumpy reclaim, there is no reason to give up to reclaim
-> > > > > > pages even if page is locked. This patch uses lock_page() instead of
-> > > > > > trylock_page() in this case.
-> > > > > > 
-> > > > > > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > > > > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > > > > 
-> > > > > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > > > > 
-> > > > Ah......but can't this change cause dead lock ??
-> > > 
-> > > Yes, this patch is purely crappy. please drop. I guess I was poisoned
-> > > by poisonous mushroom of Mario Bros.
-> > > 
-> > 
-> > Lets be clear on what the exact dead lock conditions are. The ones I had
-> > thought about when I felt this patch was ok were;
-> > 
-> > o We are not holding the LRU lock (or any lock, we just called cond_resched())
-> > o We do not have another page locked because we cannot lock multiple pages
-> > o Kswapd will never be in LUMPY_MODE_SYNC so it is not getting blocked
-> > o lock_page() itself is not allocating anything that we could recurse on
+On Mon, 2010-09-13 at 10:35 +0200, Peter Zijlstra wrote:
+> On Mon, 2010-09-13 at 09:08 +0200, Mike Galbraith wrote:
+> > We need a better fork fairness gizmo.
 > 
-> True, all.
-> 
-> > 
-> > One potential dead lock would be if the direct reclaimer held a page
-> > lock and ended up here but is that situation even allowed?
-> 
-> example, 
-> 
-> __do_fault()
-> {
-> (snip)
->         if (unlikely(!(ret & VM_FAULT_LOCKED)))
->                 lock_page(vmf.page);
->         else
->                 VM_BUG_ON(!PageLocked(vmf.page));
-> 
->         /*
->          * Should we do an early C-O-W break?
->          */
->         page = vmf.page;
->         if (flags & FAULT_FLAG_WRITE) {
->                 if (!(vma->vm_flags & VM_SHARED)) {
->                         anon = 1;
->                         if (unlikely(anon_vma_prepare(vma))) {
->                                 ret = VM_FAULT_OOM;
->                                 goto out;
->                         }
->                         page = alloc_page_vma(GFP_HIGHUSER_MOVABLE,
->                                                 vma, address);
-> 
+> Proper zero-lag insertion would do. Much sadness in that tracking that
+> costs a u64 mult per enqueu/dequeue and using it adds a s64 div.
 
-Correct, this is a problem. I already had dropped the patch but thanks for
-pointing out a deadlock because I was missing this case. Nothing stops the
-page being faulted being sent to shrink_page_list() when alloc_page_vma()
-is called. The deadlock might be hard to hit, but it's there.
+(math _sucks_:)
 
-> 
-> Afaik, detailed rule is,
-> 
-> o kswapd can call lock_page() because they never take page lock outside vmscan
+> But if you want, have a play with:
 
-lock_page_nosync as you point out in your next mail. While it can call
-it, kswapd shouldn't because normally it avoids stalls but it would not
-deadlock as a result of calling it.
+maximum latency: 48475.3 µs
+average latency: 6881.4 µs
+missed timer events: 0
 
-> o if try_lock() is successed, we can call lock_page_nosync() against its page after unlock.
->   because the task have gurantee of no lock taken.
-> o otherwise, direct reclaimer can't call lock_page(). the task may have a lock already.
-> 
+Darn.
 
-I think the safer bet is simply to say "direct reclaimers should not
-call lock_page() because the fault path could be holding a lock on that
-page already".
+make -j3 is gaining a tad over a hog as well, roughly the same as
+turning START_DEBIT off.
 
-Thanks.
+	-Mike
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
