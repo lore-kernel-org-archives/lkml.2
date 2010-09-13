@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab0IMKLM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 06:11:12 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:60366 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab0IMKLK convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Mon, 13 Sep 2010 06:11:10 -0400
-Message-Id: <4C8E14D90200007800015AAE@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 13 Sep 2010 11:11:05 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <khali@linux-fr.org>
-Cc: <fenghua.yu@intel.com>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86/hwmon: avoid deadlock on CPU removal in pkgtemp
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754326Ab0IMKMP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 06:12:15 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:40749 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab0IMKMN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 06:12:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=D6DkZaLWQxDsPDYYbu7ZLaBPGugwTizKhgqJ0VJ/oubiiIVwNFJP1FrRO/MTb7vGHZ
+         5avjcEc3Yfjj1G89wA0NUsWBm64imG1wTXPTx5mMcatQD3+cEcPFEFjAD7m79NNOHXrL
+         t1pcIJhxztAMekfBRbdajDJTOMoU8aA8AnCDo=
+Date: Mon, 13 Sep 2010 14:12:10 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
+        mingo@elte.hu, robert.richter@amd.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, ying.huang@intel.com,
+        ming.m.lin@intel.com, yinghai@kernel.org, andi@firstfloor.org
+Subject: Re: [PATCH 0/3 v2] nmi perf fixes
+Message-ID: <20100913101210.GG5728@lenovo>
+References: <1283454469-1909-1-git-send-email-dzickus@redhat.com> <1284118900.402.35.camel@laptop> <1284125693.402.58.camel@laptop> <1284126770.402.60.camel@laptop> <20100913085515.GC5728@lenovo> <AANLkTi=AceFvNNQmsDYE0MTbOX804P1+mewcr=bAFzXi@mail.gmail.com> <20100913100743.GF5728@lenovo> <AANLkTimLRPe2T7pCo=33MWMjDg1qhAPdSmUA80kYAGrq@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <AANLkTimLRPe2T7pCo=33MWMjDg1qhAPdSmUA80kYAGrq@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pkgtemp_device_remove(), holding the list protecting mutex, calls
-pkgtemp_device_add(), which itself wants to acquire the same mutex.
-Holding the mutex over the entire loop body in pkgtemp_device_remove()
-isn't really necessary, as long as the loop gets exited after
-processing the matched CPU.
+On Mon, Sep 13, 2010 at 12:10:00PM +0200, Stephane Eranian wrote:
+...
+> > Hi Stephane, the hackbench is Ingo's one? I've been using
+> > http://people.redhat.com/mingo/cfs-scheduler/tools/hackbench.c
+> >
+> No, it's one I found via google search:
+> 
+> http://devresources.linuxfoundation.org/craiger/hackbench/
+> 
 
-Once exiting the loop after removing an eventual match, there's no
-need for using the "safe" list iterator anymore.
+ok, tried it as well -- no NMI issue.
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-
----
- drivers/hwmon/pkgtemp.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
---- linux-2.6.36-rc4/drivers/hwmon/pkgtemp.c	2010-09-13 08:45:03.000000000 +0200
-+++ 2.6.36-rc4-x86-pkgtemp-remove-deadlock/drivers/hwmon/pkgtemp.c	2010-09-03 17:54:30.000000000 +0200
-@@ -339,17 +339,18 @@ exit:
- #ifdef CONFIG_HOTPLUG_CPU
- static void pkgtemp_device_remove(unsigned int cpu)
- {
--	struct pdev_entry *p, *n;
-+	struct pdev_entry *p;
- 	unsigned int i;
- 	int err;
- 
- 	mutex_lock(&pdev_list_mutex);
--	list_for_each_entry_safe(p, n, &pdev_list, list) {
-+	list_for_each_entry(p, &pdev_list, list) {
- 		if (p->cpu != cpu)
- 			continue;
- 
- 		platform_device_unregister(p->pdev);
- 		list_del(&p->list);
-+		mutex_unlock(&pdev_list_mutex);
- 		kfree(p);
- 		for_each_cpu(i, cpu_core_mask(cpu)) {
- 			if (i != cpu) {
-@@ -358,7 +359,7 @@ static void pkgtemp_device_remove(unsign
- 					break;
- 			}
- 		}
--		break;
-+		return;
- 	}
- 	mutex_unlock(&pdev_list_mutex);
- }
-
-
-
+	-- Cyrill
