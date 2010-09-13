@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab0IMDVh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 23:21:37 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44931 "EHLO mx1.suse.de"
+	id S1754364Ab0IMDYg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 23:24:36 -0400
+Received: from ozlabs.org ([203.10.76.45]:54531 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754161Ab0IMDVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 23:21:36 -0400
-Date: Mon, 13 Sep 2010 13:21:16 +1000
-From: Neil Brown <neilb@suse.de>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [PATCH 05/17] writeback: quit throttling when signal pending
-Message-ID: <20100913132116.3917e5d5@notabene>
-In-Reply-To: <20100913015529.GB5312@localhost>
-References: <20100912154945.758129106@intel.com>
-	<20100912155203.355459925@intel.com>
-	<20100913064654.3cce885c@notabene>
-	<20100913015529.GB5312@localhost>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754161Ab0IMDYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 23:24:35 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: #2 (Re: More modaliases + patchtool)
+Date: Mon, 13 Sep 2010 12:54:28 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
+Cc: mahatma@eu.by, linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <4C6BE292.3060307@bspu.unibel.by> <201009111144.34078.rusty@rustcorp.com.au> <20100911175118.GA8521@core.coreip.homeip.net>
+In-Reply-To: <20100911175118.GA8521@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009131254.28773.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010 09:55:29 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
-
-> On Mon, Sep 13, 2010 at 04:46:54AM +0800, Neil Brown wrote:
-> > On Sun, 12 Sep 2010 23:49:50 +0800
-> > Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > 
-> > > This allows quick response to Ctrl-C etc. for impatient users.
-> > > 
-> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > ---
-> > >  mm/page-writeback.c |    3 +++
-> > >  1 file changed, 3 insertions(+)
-> > > 
-> > > --- linux-next.orig/mm/page-writeback.c	2010-09-09 16:01:14.000000000 +0800
-> > > +++ linux-next/mm/page-writeback.c	2010-09-09 16:02:27.000000000 +0800
-> > > @@ -553,6 +553,9 @@ static void balance_dirty_pages(struct a
-> > >  		__set_current_state(TASK_INTERRUPTIBLE);
-> > >  		io_schedule_timeout(pause);
+On Sun, 12 Sep 2010 03:21:19 am Dmitry Torokhov wrote:
+> On Sat, Sep 11, 2010 at 11:44:33AM +0930, Rusty Russell wrote:
+> > On Thu, 19 Aug 2010 10:12:36 pm Dzianis Kahanovich wrote:
+> > > diff -pruN a/drivers/char/sysrq.c b/drivers/char/sysrq.c
+> > > --- a/drivers/char/sysrq.c	2010-08-02 01:11:14.000000000 +0300
+> > > +++ b/drivers/char/sysrq.c	2010-08-19 15:23:41.444764991 +0300
+> > > @@ -799,4 +799,9 @@ static int __init sysrq_init(void)
 > > >  
-> > > +		if (signal_pending(current))
-> > > +			break;
+> > >  	return 0;
+> > >  }
 > > > +
+> > > +#ifdef CONFIG_INPUT
+> > > +MODULE_DEVICE_TABLE(input, sysrq_ids);
+> > > +#endif
+> > > +
+> > >  module_init(sysrq_init);
 > > 
-> > Given the patch description,  I think you might want "fatal_signal_pending()"
-> > here ???
+> > Hmm, Dmitry?  Do we want this auto-loaded?
+> > 
 > 
-> __fatal_signal_pending() tests SIGKILL only, while the one often used
-> and need more quick responding is SIGINT..
->
+> Rusty,
+> 
+> CONFIG_MAGIC_SYSRQ is currently a bool and SysRq support can only be
+> built-in.
 
-I thought that at first too....  but I don't think that is the case.
+That seems pretty clear then.
 
-In kernel/signal.c, in complete_signal, we have
-  if (sig_fatal() ...)
-           ....
-		sigaddset(&t->pending.signal, SIGKILL);
-
-where sig_fatal is
-
-#define sig_fatal(t, signr) \
-	(!siginmask(signr, SIG_KERNEL_IGNORE_MASK|SIG_KERNEL_STOP_MASK) && \
-	 (t)->sighand->action[(signr)-1].sa.sa_handler == SIG_DFL)
-
-
-so (if I'm reading the code correctly), if a process receives a signal for
-which the handler is SIG_DFL, then SIGKILL is set in the pending mask, so
-__fatal_signal_pending will be true.
-
-So it fatal_signal_pending should catch any signal that will cause the
-process to exit.  I assume that it what you want...
-
-NeilBrown
+Thanks!
+Rusty.
+PS. Dmitry, maybe a build with allmodconfig would help eliminate some of
+    these?
