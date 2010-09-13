@@ -1,273 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab0IMNpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 09:45:15 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:4488 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab0IMNpN (ORCPT
+	id S1754480Ab0IMNsk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 09:48:40 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:54247 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab0IMNsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 09:45:13 -0400
-Message-ID: <4C8E2AE2.9050309@hp.com>
-Date: Mon, 13 Sep 2010 09:45:06 -0400
-From: Vlad Yasevich <vladislav.yasevich@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100826 Lightning/1.0b1 Thunderbird/3.0.7
+	Mon, 13 Sep 2010 09:48:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EOdCWa6YATbDh1BJsBUQliQGz1V172GpJ/nnAiK/txd5G1woN0yjS24Wg7dmkpawHs
+         NP+aIqJ/hVUDbyWLmGD4pvyn8ozrdUSAOEOlj3PlbDbfiv47+NwX0T5oi2Rs7K+5ov6h
+         UumYcvaOgqWdg6LOP5458WMsq3vpVgSk/+9KA=
+Date: Mon, 13 Sep 2010 16:48:47 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [Bug #16961] kernel BUG at
+ arch/x86/kvm/../../../virt/kvm/kvm_main.c:1978
+Message-ID: <20100913134847.GA5263@swordfish.minsk.epam.com>
+References: <EP3NUDNWMO.A.O0.rrRjMB@chimera>
+ <0c5PAlgnPrH.A.WOC.hsRjMB@chimera>
 MIME-Version: 1.0
-To: Yaogong Wang <ywang15@ncsu.edu>
-CC: linux-sctp@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/5] sctp: implement pluggable multistream scheduling
-References: <AANLkTinaO5Fqn+QJxxkXSCsW0XWvhBc16jK6HGB_0YG0@mail.gmail.com>
-In-Reply-To: <AANLkTinaO5Fqn+QJxxkXSCsW0XWvhBc16jK6HGB_0YG0@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
+Content-Disposition: inline
+In-Reply-To: <0c5PAlgnPrH.A.WOC.hsRjMB@chimera>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One small nit.
 
-On 09/11/2010 09:12 PM, Yaogong Wang wrote:
-> Implement the pluggable multistream scheduling framework.
-> Provide the default first-come-first-serve (FCFS) algorithm.
-> 
-> Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
-> ---
-> diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
-> index 5027b83..d40c5cc 100644
-> --- a/net/sctp/protocol.c
-> +++ b/net/sctp/protocol.c
-> @@ -1157,6 +1157,9 @@ SCTP_STATIC __init int sctp_init(void)
->  	sctp_max_instreams    		= SCTP_DEFAULT_INSTREAMS;
->  	sctp_max_outstreams   		= SCTP_DEFAULT_OUTSTREAMS;
-> 
-> +	/* Initialize default multistream scheduling algorithm to FCFS */
-> +	sctp_default_sched_ops		= &sctp_fcfs;
-> +
->  	/* Initialize handle used for association ids. */
->  	idr_init(&sctp_assocs_id);
-> 
-> @@ -1304,6 +1307,11 @@ SCTP_STATIC __init int sctp_init(void)
->  	if (status)
->  		goto err_v6_add_protocol;
-> 
-> +	/* Add FCFS to sctp_sched_list */
-> +	status = sctp_register_sched(&sctp_fcfs);
-> +	if (status)
-> +		goto err_v6_add_protocol;
-> +
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This needs its own tag that will call sctp_v6_del_protocol().
+On (09/12/10 20:14), Rafael J. Wysocki wrote:
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D16961
+> Subject		: kernel BUG at arch/x86/kvm/../../../virt/kvm/kvm_main.c:1978
+> Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Date		: 2010-08-19 9:54 (25 days old)
+> Message-ID	: <<20100819095429.GA5201@swordfish.minsk.epam.com>>
+> References	: http://marc.info/?l=3Dlinux-kernel&m=3D128221169606214&w=3D2
+> Handled-By	: Avi Kivity <avi@redhat.com>
+>=20
+>=20
 
--vlad
+Hello,
+Fixed by
+commit da908f2fb4e783c2a4de751fb90f11a0dd041161
+Author: Zachary Amsden <zamsden@redhat.com>
 
->  	status = 0;
->  out:
->  	return status;
-> @@ -1348,6 +1356,9 @@ SCTP_STATIC __exit void sctp_exit(void)
->  	 * up all the remaining associations and all that memory.
->  	 */
-> 
-> +	/* Unregister FCFS from sctp_sched_list */
-> +	sctp_unregister_sched(&sctp_fcfs);
-> +
->  	/* Unregister with inet6/inet layers. */
->  	sctp_v6_del_protocol();
->  	sctp_v4_del_protocol();
-> diff --git a/net/sctp/sched.c b/net/sctp/sched.c
-> new file mode 100644
-> index 0000000..3820e3f
-> --- /dev/null
-> +++ b/net/sctp/sched.c
-> @@ -0,0 +1,177 @@
-> +/*
-> + * Plugable SCTP multistream scheduling support and
-> + * the default first-come-first-serve (FCFS) algorithm
-> + *
-> + * Based on ideas from pluggable TCP congestion control
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/types.h>
-> +#include <linux/list.h>
-> +#include <net/sctp/sctp.h>
-> +
-> +static DEFINE_SPINLOCK(sctp_sched_list_lock);
-> +static LIST_HEAD(sctp_sched_list);
-> +
-> +/* Simple linear search, don't expect many entries! */
-> +static struct sctp_sched_ops *sctp_sched_find(const char *name)
-> +{
-> +	struct sctp_sched_ops *e;
-> +
-> +	list_for_each_entry_rcu(e, &sctp_sched_list, list) {
-> +		if (strcmp(e->name, name) == 0)
-> +			return e;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
-> +/*
-> + * Attach new scheduling algorithm to the list
-> + * of available options.
-> + */
-> +int sctp_register_sched(struct sctp_sched_ops *sched)
-> +{
-> +	int ret = 0;
-> +
-> +	/* algorithm must implement required ops */
-> +	if (!sched->init || !sched->release || !sched->is_empty
-> +		|| !sched->enqueue_head_data || !sched->enqueue_tail_data
-> +		|| !sched->dequeue_data) {
-> +		printk(KERN_ERR "SCTP %s does not implement required ops\n",
-> +		       sched->name);
-> +		return -EINVAL;
-> +	}
-> +
-> +	spin_lock(&sctp_sched_list_lock);
-> +	if (sctp_sched_find(sched->name)) {
-> +		printk(KERN_NOTICE "SCTP %s already registered\n", sched->name);
-> +		ret = -EEXIST;
-> +	} else {
-> +		list_add_tail_rcu(&sched->list, &sctp_sched_list);
-> +		printk(KERN_INFO "SCTP %s registered\n", sched->name);
-> +	}
-> +	spin_unlock(&sctp_sched_list_lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(sctp_register_sched);
-> +
-> +/*
-> + * Remove scheduling algorithm, called from
-> + * the module's remove function.  Module ref counts are used
-> + * to ensure that this can't be done till all sockets using
-> + * that method are closed.
-> + */
-> +void sctp_unregister_sched(struct sctp_sched_ops *sched)
-> +{
-> +	spin_lock(&sctp_sched_list_lock);
-> +	list_del_rcu(&sched->list);
-> +	spin_unlock(&sctp_sched_list_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(sctp_unregister_sched);
-> +
-> +/* Manage refcounts on socket close. */
-> +void sctp_cleanup_sched(struct sock *sk)
-> +{
-> +	module_put(sctp_sk(sk)->sched_ops->owner);
-> +}
-> +
-> +/* Change scheduling algorithm for socket */
-> +int sctp_set_sched(struct sock *sk, const char *name)
-> +{
-> +	struct sctp_sock *sp = sctp_sk(sk);
-> +	struct sctp_sched_ops *sched;
-> +	int err = 0;
-> +
-> +	rcu_read_lock();
-> +	sched = sctp_sched_find(name);
-> +
-> +	/* no change asking for existing value */
-> +	if (sched == sp->sched_ops)
-> +		goto out;
-> +
-> +#ifdef CONFIG_MODULES
-> +	/* not found attempt to autoload module */
-> +	if (!sched && capable(CAP_NET_ADMIN)) {
-> +		rcu_read_unlock();
-> +		request_module("sctp_%s", name);
-> +		rcu_read_lock();
-> +		sched = sctp_sched_find(name);
-> +	}
-> +#endif
-> +	if (!sched)
-> +		err = -ENOENT;
-> +
-> +	else if (!try_module_get(sched->owner))
-> +		err = -EBUSY;
-> +
-> +	else {
-> +		sctp_cleanup_sched(sk);
-> +		sp->sched_ops = sched;
-> +	}
-> +out:
-> +	rcu_read_unlock();
-> +	return err;
-> +}
-> +
-> +static int fcfs_init(struct sctp_outq *q, gfp_t gfp)
-> +{
-> +	q->out_chunk_list = kmalloc(sizeof(struct list_head), gfp);
-> +	if (!q->out_chunk_list)
-> +		return -ENOMEM;
-> +	INIT_LIST_HEAD(q->out_chunk_list);
-> +
-> +	return 0;
-> +}
-> +
-> +static void fcfs_release(struct sctp_outq *q)
-> +{
-> +	kfree(q->out_chunk_list);
-> +}
-> +
-> +static void fcfs_enqueue_head_data(struct sctp_outq *q,
-> +					struct sctp_chunk *ch)
-> +{
-> +	list_add(&ch->list, q->out_chunk_list);
-> +	q->out_qlen += ch->skb->len;
-> +	return;
-> +}
-> +
-> +static void fcfs_enqueue_tail_data(struct sctp_outq *q, struct sctp_chunk *ch)
-> +{
-> +	list_add_tail(&ch->list, q->out_chunk_list);
-> +	q->out_qlen += ch->skb->len;
-> +	return;
-> +}
-> +
-> +static struct sctp_chunk *fcfs_dequeue_data(struct sctp_outq *q)
-> +{
-> +	struct sctp_chunk *ch = NULL;
-> +
-> +	if (!list_empty(q->out_chunk_list)) {
-> +		struct list_head *entry = q->out_chunk_list->next;
-> +
-> +		ch = list_entry(entry, struct sctp_chunk, list);
-> +		list_del_init(entry);
-> +		q->out_qlen -= ch->skb->len;
-> +	}
-> +	return ch;
-> +}
-> +
-> +static inline int fcfs_is_empty(struct sctp_outq *q)
-> +{
-> +	return list_empty(q->out_chunk_list);
-> +}
-> +
-> +struct sctp_sched_ops sctp_fcfs = {
-> +	.name			= "fcfs",
-> +	.owner			= THIS_MODULE,
-> +	.init			= fcfs_init,
-> +	.release		= fcfs_release,
-> +	.enqueue_head_data	= fcfs_enqueue_head_data,
-> +	.enqueue_tail_data	= fcfs_enqueue_tail_data,
-> +	.dequeue_data		= fcfs_dequeue_data,
-> +	.is_empty		= fcfs_is_empty,
-> +};
-> diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-> index ca44917..7d461be 100644
-> --- a/net/sctp/socket.c
-> +++ b/net/sctp/socket.c
-> @@ -3644,6 +3644,9 @@ SCTP_STATIC int sctp_init_sock(struct sock *sk)
->  	sp->initmsg.sinit_max_attempts   = sctp_max_retrans_init;
->  	sp->initmsg.sinit_max_init_timeo = sctp_rto_max;
-> 
-> +	/* Initialize default multistream scheduling algorithm */
-> +	sp->sched_ops = sctp_default_sched_ops;
-> +
->  	/* Initialize default RTO related parameters.  These parameters can
->  	 * be modified for with the SCTP_RTOINFO socket option.
->  	 */
 
+	Sergey
+--2oS5YaxWCcQjTEyO
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iJwEAQECAAYFAkyOK78ACgkQfKHnntdSXjTfYQP/YDtBVVkNy2wz54WrtlNx8Ilc
+3D9iWrEj5IIipPa1HUpiKxTMaokSGxKtsB8yDKL6pGT57DHqYZ0GQPBwFGqbKzjF
+WqlFLZQgAUkVOdvKIpk4sivan43hV93RCK4E14f4rWliyMI8GVCsvj8I0ahMft0X
+xsIOZhi3BfX0qenYyBs=
+=iMwO
+-----END PGP SIGNATURE-----
+
+--2oS5YaxWCcQjTEyO--
