@@ -1,45 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab0IMIzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 04:55:23 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54980 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259Ab0IMIzV (ORCPT
+	id S1754724Ab0IMIza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 04:55:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40887 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754671Ab0IMIz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 04:55:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=q7mwqCZoDeAfsZ+UATTquCyBBsYEypruBEMrd+YN1mQv+rJ/ZnUuhjGsvDNlvvd/PJ
-         /sakHCq5rkiim5sarGsbu59fFK8Myh4IsI6ULMjdCh3wrfOWXdfyGiw0ECa1K1zINVc5
-         wXJXluv+ceXUlD93yB7LnjXcV/GaFkAfJWLkY=
-Date: Mon, 13 Sep 2010 12:55:16 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Don Zickus <dzickus@redhat.com>, mingo@elte.hu, robert.richter@amd.com,
-        fweisbec@gmail.com, linux-kernel@vger.kernel.org, ying.huang@intel.com,
-        ming.m.lin@intel.com, yinghai@kernel.org, andi@firstfloor.org,
-        eranian@google.com
-Subject: Re: [PATCH 0/3 v2] nmi perf fixes
-Message-ID: <20100913085515.GC5728@lenovo>
-References: <1283454469-1909-1-git-send-email-dzickus@redhat.com> <1284118900.402.35.camel@laptop> <1284125693.402.58.camel@laptop> <1284126770.402.60.camel@laptop>
+	Mon, 13 Sep 2010 04:55:28 -0400
+Date: Mon, 13 Sep 2010 09:55:26 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mattias Wallin <mattias.wallin@stericsson.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        elinwal <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 2/3] MFD: AB8500 debugfs
+Message-ID: <20100913085526.GE16606@rakim.wolfsonmicro.main>
+References: <4C8DE1BE.30304@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1284126770.402.60.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C8DE1BE.30304@stericsson.com>
+X-Cookie: Go 'way!  You're bothering me!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 03:52:50PM +0200, Peter Zijlstra wrote:
-... 
-> That seems to be clear enough.. no idea where that extra NMI comes from.
-> Robert any clue?
+On Mon, Sep 13, 2010 at 10:33:02AM +0200, Mattias Wallin wrote:
+> This patch adds the possibility to read and write registers
+> via the debug_fs. It also adds ranges of registers sorted by bank
+> which makes it possible to read all defined registers in a bank.
 > 
-...
+> Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
 
-For what is worth, I've tested amd turion box -- not affected.
-
-	-- Cyrill
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
