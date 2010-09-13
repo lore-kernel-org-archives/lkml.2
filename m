@@ -1,276 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab0IMIsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 04:48:11 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:44819 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754486Ab0IMIsJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 04:48:09 -0400
-Date: Mon, 13 Sep 2010 18:45:34 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jens Axboe <jens.axboe@oracle.com>,
+	id S1754594Ab0IMIyh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 04:54:37 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:47885 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754445Ab0IMIyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 04:54:36 -0400
+Date: Mon, 13 Sep 2010 10:54:34 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Joe Perches <joe@perches.com>, "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Hellwig <hch@lst.de>, Li Shaohua <shaohua.li@intel.com>
-Subject: Re: [PATCH 02/17] writeback: IO-less balance_dirty_pages()
-Message-ID: <20100913084534.GE411@dastard>
-References: <20100912154945.758129106@intel.com>
- <20100912155202.887304459@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100912155202.887304459@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+Message-ID: <20100913105434.62b150f7@schatten.dmk.lab>
+In-Reply-To: <1284364665.22185.116.camel@Joe-Laptop>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	<1284111767.1783.35.camel@Joe-Laptop>
+	<20100911001350.GA11478@infradead.org>
+	<1284165074.1783.213.camel@Joe-Laptop>
+	<20100911004550.GA30584@infradead.org>
+	<20100911112855.6ee6e929@schatten.dmk.lab>
+	<m1hbhucdv5.fsf@fess.ebiederm.org>
+	<1284364665.22185.116.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 12, 2010 at 11:49:47PM +0800, Wu Fengguang wrote:
-> As proposed by Chris, Dave and Jan, don't start foreground writeback IO
-> inside balance_dirty_pages(). Instead, simply let it idle sleep for some
-> time to throttle the dirtying task. In the mean while, kick off the
-> per-bdi flusher thread to do background writeback IO.
-> 
-> This patch introduces the basic framework, which will be further
-> consolidated by the next patches.
+On Mon, 13 Sep 2010 00:57:45 -0700
+Joe Perches <joe@perches.com> wrote:
 
-Can you put all this documentation into, say,
-Documentation/filesystems/writeback-throttling-design.txt?
+> On Mon, 2010-09-13 at 00:16 -0700, Eric W. Biederman wrote:
+> > It is trivial for a human to look at a git log and see which changes
+> > were just global cleanups and which changes were actual maintenance.
+> > Apparently get_maintainers doesn't have that ability.
+> 
+> Do you have a useful, trivial or non-trivial algorithm
+> to suggest or is that soft commenting?  All I'll say is
+> AI can be a surprisingly difficult field.
 
-FWIW, I'm reading this and commenting without having looked at the
-code - I want to understand the design, not the implementation ;)
-
-> RATIONALS
-> =========
-> 
-> The current balance_dirty_pages() is rather IO inefficient.
-> 
-> - concurrent writeback of multiple inodes (Dave Chinner)
-> 
->   If every thread doing writes and being throttled start foreground
->   writeback, it leads to N IO submitters from at least N different
->   inodes at the same time, end up with N different sets of IO being
->   issued with potentially zero locality to each other, resulting in
->   much lower elevator sort/merge efficiency and hence we seek the disk
->   all over the place to service the different sets of IO.
->   OTOH, if there is only one submission thread, it doesn't jump between
->   inodes in the same way when congestion clears - it keeps writing to
->   the same inode, resulting in large related chunks of sequential IOs
->   being issued to the disk. This is more efficient than the above
->   foreground writeback because the elevator works better and the disk
->   seeks less.
-> 
-> - small nr_to_write for fast arrays
-> 
->   The write_chunk used by current balance_dirty_pages() cannot be
->   directly set to some large value (eg. 128MB) for better IO efficiency.
->   Because it could lead to more than 1 second user perceivable stalls.
->   This limits current balance_dirty_pages() to small inefficient IOs.
-
-Contrary to popular belief, I don't think nr_to_write is too small.
-It's slow devices that cause problems with large chunks, not fast
-arrays.
-
-> For the above two reasons, it's much better to shift IO to the flusher
-> threads and let balance_dirty_pages() just wait for enough time or progress.
-> 
-> Jan Kara, Dave Chinner and me explored the scheme to let
-> balance_dirty_pages() wait for enough writeback IO completions to
-> safeguard the dirty limit. This is found to have two problems:
-> 
-> - in large NUMA systems, the per-cpu counters may have big accounting
->   errors, leading to big throttle wait time and jitters.
-> 
-> - NFS may kill large amount of unstable pages with one single COMMIT.
->   Because NFS server serves COMMIT with expensive fsync() IOs, it is
->   desirable to delay and reduce the number of COMMITs. So it's not
->   likely to optimize away such kind of bursty IO completions, and the
->   resulted large (and tiny) stall times in IO completion based throttling.
-> 
-> So here is a pause time oriented approach, which tries to control
-> 
-> - the pause time in each balance_dirty_pages() invocations
-> - the number of pages dirtied before calling balance_dirty_pages()
-> 
-> for smooth and efficient dirty throttling:
-> 
-> - avoid useless (eg. zero pause time) balance_dirty_pages() calls
-> - avoid too small pause time (less than  10ms, which burns CPU power)
-
-For fast arrays, 10ms may be to high a lower bound. e.g. at 1GB/s,
-10ms = 10MB written, at 10GB/s it is 100MB, so lower bounds for
-faster arrays might be necessary to prevent unneccessarily long
-wakeup latencies....
-
-> CONTROL SYSTEM
-> ==============
-> 
-> The current task_dirty_limit() adjusts bdi_thresh according to the dirty
-> "weight" of the current task, which is the percent of pages recently
-> dirtied by the task. If 100% pages are recently dirtied by the task, it
-> will lower bdi_thresh by 1/8. If only 1% pages are dirtied by the task,
-> it will return almost unmodified bdi_thresh. In this way, a heavy
-> dirtier will get blocked at (bdi_thresh-bdi_thresh/8) while allowing a
-> light dirtier to progress (the latter won't be blocked because R << B in
-> fig.1).
-> 
-> Fig.1 before patch, a heavy dirtier and a light dirtier
->                                                 R
-> ----------------------------------------------+-o---------------------------*--|
->                                               L A                           B  T
->   T: bdi_dirty_limit
->   L: bdi_dirty_limit - bdi_dirty_limit/8
-> 
->   R: bdi_reclaimable + bdi_writeback
-> 
->   A: bdi_thresh for a heavy dirtier ~= R ~= L
->   B: bdi_thresh for a light dirtier ~= T
-
-Let me get your terminology straight:
-
-	T = throttle threshold
-	L = lower throttle bound
-	R = reclaimable pages
-
-	A/B: two dritying processes
+:) indeed. 
 
 > 
-> If B is a newly started heavy dirtier, then it will slowly gain weight
-> and A will lose weight.  The bdi_thresh for A and B will be approaching
-> the center of region (L, T) and eventually stabilize there.
+> > Have seen some files with something like 5 years of changes without a
+> > single commit by a maintainer and the only changes happening to it are
+> > global cleanup changes.
 > 
-> Fig.2 before patch, two heavy dirtiers converging to the same threshold
->                                                              R
-> ----------------------------------------------+--------------o-*---------------|
->                                               L              A B               T
+> Then likely there's no actual maintainer for that file.
+
+and which means that get_maintainer.pl --git will output either nothing
+(if we somehow get its heuristics to filter correctly) or wrong people. 
+
 > 
-> Now for IO-less balance_dirty_pages(), let's do it in a "bandwidth control"
-> way. In fig.3, a soft dirty limit region (L, A) is introduced. When R enters
-> this region, the task may be throttled for T seconds on every N pages it dirtied.
-> Let's call (N/T) the "throttle bandwidth". It is computed by the following fomula:
+> > If get_maintainers would look at MAINTAINERS and validate or invalidate
+> > that information by looking at git that would be useful.
 > 
-
-Now you've redefined R, L, T and A to mean completely different
-things. That's kind of confusing, because you use them in similar
-graphs
-
->         throttle_bandwidth = bdi_bandwidth * (A - R) / (A - L)
-> where
->         L = A - A/16
-> 	A = T - T/16
-
-That means A and L are constants, so your algorithm comes down to
-a first-order linear system:
-
-	throttle_bandwidth = bdi_bandwidth * (15 - 16R/T)
-
-that will only work in the range of 7/8T < R < 15/16T. That is,
-for R < L, throttle bandwidth will be calculated to be greater than
-bdi_bandwidth, and for R > A, throttle bandwidth will be negative.
-
-> So when there is only one heavy dirtier (fig.3),
+> Some entries in MAINTAINERS are outdated.
+> Validating MAINTAINERS entries is probably best done once.
 > 
->         R ~= L
->         throttle_bandwidth ~= bdi_bandwidth
-> 
-> It's a stable balance:
-> - when R > L, then throttle_bandwidth < bdi_bandwidth, so R will decrease to L
-> - when R < L, then throttle_bandwidth > bdi_bandwidth, so R will increase to L
+> I suggest you try that concept out, see what you get, and
+> make public the results.
 
-That does not imply stability. First-order control algorithms are
-generally unstable - they have trouble with convergence and tend to
-overshoot and oscillate - because you can't easily control the rate
-of change of the controlled variable.
+It is easy to make get_maintainer.pl output less people. 
+What is not easy is to get it to decrease false-positives while
+not decreasing it's detection rate. 
 
-> Fig.3 after patch, one heavy dirtier
-> 
->                                                 |
->     throttle_bandwidth ~= bdi_bandwidth  =>     o
->                                                 | o
->                                                 |   o
->                                                 |     o
->                                                 |       o
->                                                 |         o
->                                               L |           o
-> ----------------------------------------------+-+-------------o----------------|
->                                                 R             A                T
->   T: bdi_dirty_limit
->   A: task_dirty_limit = bdi_dirty_limit - bdi_dirty_limit/16
->   L: task_dirty_limit - task_dirty_limit/16
-> 
->   R: bdi_reclaimable + bdi_writeback ~= L
-> 
-> When there comes a new cp task, its weight will grow from 0 to 50%.
+As far as I can see, Andrew is in favor of not caring about
+false-positives in order to not sacrifice the detection rate of the
+tool. 
 
-While the other decreases from 100% to 50%? What causes this?
+My approach tried to lower the impact of false positives by allowing
+people to filter between "cc'd as maintainer" and "cc'd as
+commit_signer".  The former is pretty much never a false positive (as
+long as MAINTAINERS is up to date) while the latter is more of a
+hit'n'miss kind of method. 
 
-> When the weight is still small, it's considered a light dirtier and it's
-> allowed to dirty pages much faster than the bdi write bandwidth. In fact
-> initially it won't be throttled at all when R < Lb where Lb=B-B/16 and B~=T.
+Don't know. 
 
-I'm missing something - if the task_dirty_limit is T/16, then the
-the first task will have consumed all the dirty pages up to this
-point (i.e. R ~= T/16). The then second task starts, and while it is
-unthrottled, it will push R well past T. That will cause the first
-task to throttle hard almost immediately, and effectively get
-throttled until the weight of the second task passes the "heavy"
-threshold.  The first task won't get unthrottled until R passes back
-down below T. That seems undesirable....
+Regards,
+Flo
 
-> Fig.4 after patch, an old cp + a newly started cp
-> 
->                      (throttle bandwidth) =>    *
->                                                 | *
->                                                 |   *
->                                                 |     *
->                                                 |       *
->                                                 |         *
->                                                 |           *
->                                                 |             *
->                       throttle bandwidth  =>    o               *
->                                                 | o               *
->                                                 |   o               *
->                                                 |     o               *
->                                                 |       o               *
->                                                 |         o               *
->                                                 |           o               *
-> ------------------------------------------------+-------------o---------------*|
->                                                 R             A               BT
-> 
-> So R will quickly grow large (fig.5). As the two heavy dirtiers' weight
-> converge to 50%, the points A, B will go towards each other and
-
-This assumes that the two processes are reaching equal amount sof
-dirty pages in the page cache? (weight is not defined anywhere, so I
-can't tell from reading the document how it is calculated)
-
-> eventually become one in fig.5. R will stabilize around A-A/32 where
-> A=B=T-T/16. throttle_bandwidth will stabilize around bdi_bandwidth/2.
-
-Why? You haven't explained how weight affects any of the defined
-variables
-
-> There won't be big oscillations between A and B, because as long as A
-> coincides with B, their throttle_bandwidth and dirtied pages will be
-> equal, A's weight will stop decreasing and B's weight will stop growing,
-> so the two points won't keep moving and cross each other. So it's a
-> pretty stable control system. The only problem is, it converges a bit
-> slow (except for really fast storage array).
-
-Convergence should really be independent of the write speed,
-otherwise we'll be forever trying to find the "best" value for
-different configurations.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
