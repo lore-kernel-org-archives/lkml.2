@@ -1,128 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab0IMJsO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 05:48:14 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50480 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab0IMJsM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 05:48:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=oyD02R+ELkh3iefKfUL0lYZ49jrZHFMXTI8LfVGPmcOL6WnmbdAyqFChSmsoUUNQE1
-         /BEDuTE5wDe+X9ZqBrI/cR2/88BzepE/RFGuijvRm5cc0QAPg5kxG2bQNUmRxmdfQQii
-         KGrktTtjxH3A/R5WyWElxF8+Td5MuXLP7uhvc=
-MIME-Version: 1.0
-In-Reply-To: <20100913085549.GA23508@csn.ul.ie>
-References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
-	<1283770053-18833-4-git-send-email-mel@csn.ul.ie>
-	<20100907152533.GB4620@barrios-desktop>
-	<20100908110403.GB29263@csn.ul.ie>
-	<20100908145245.GG4620@barrios-desktop>
-	<20100909085436.GJ29263@csn.ul.ie>
-	<20100912153744.GA3563@barrios-desktop>
-	<20100913085549.GA23508@csn.ul.ie>
-Date: Mon, 13 Sep 2010 18:48:10 +0900
-Message-ID: <AANLkTimkSU5G1qO0JDp8An5ofM2BPoPY0SGUOuTvSuOL@mail.gmail.com>
-Subject: Re: [PATCH 03/10] writeback: Do not congestion sleep if there are no
- congested BDIs or significant writeback
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753581Ab0IMJuf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 05:50:35 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:48391 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750920Ab0IMJue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 05:50:34 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/Heh5j5/rHHuDHXdRRLIzfVMizwxYrQW/K25sFXy
+	oHyPpATUPYR/xP
+Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
+ nr_running
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+In-Reply-To: <1284370660.2275.86.camel@laptop>
+References: <20100911173732.551632040@efficios.com>
+	 <20100911174003.051303123@efficios.com> <20100912061452.GA3383@elte.hu>
+	 <1284276098.9111.24.camel@marge.simson.net>
+	 <20100912181626.GB32327@Krystal>
+	 <1284351183.7321.36.camel@marge.simson.net>
+	 <20100913064153.GB14728@elte.hu>
+	 <1284361716.25120.19.camel@marge.simson.net>
+	 <1284366936.2275.27.camel@laptop>
+	 <1284369373.14710.11.camel@marge.simson.net>
+	 <1284370660.2275.86.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Sep 2010 11:50:57 +0200
+Message-Id: <1284371457.14888.9.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 5:55 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> On Mon, Sep 13, 2010 at 12:37:44AM +0900, Minchan Kim wrote:
->> > > > > > <SNIP>
->> > > > > >
->> > > > > > + * in sleeping but cond_resched() is called in case the current process has
->> > > > > > + * consumed its CPU quota.
->> > > > > > + */
->> > > > > > +long wait_iff_congested(struct zone *zone, int sync, long timeout)
->> > > > > > +{
->> > > > > > +   long ret;
->> > > > > > +   unsigned long start = jiffies;
->> > > > > > +   DEFINE_WAIT(wait);
->> > > > > > +   wait_queue_head_t *wqh = &congestion_wqh[sync];
->> > > > > > +
->> > > > > > +   /*
->> > > > > > +    * If there is no congestion, check the amount of writeback. If there
->> > > > > > +    * is no significant writeback and no congestion, just cond_resched
->> > > > > > +    */
->> > > > > > +   if (atomic_read(&nr_bdi_congested[sync]) == 0) {
->> > > > > > +           unsigned long inactive, writeback;
->> > > > > > +
->> > > > > > +           inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
->> > > > > > +                           zone_page_state(zone, NR_INACTIVE_ANON);
->> > > > > > +           writeback = zone_page_state(zone, NR_WRITEBACK);
->> > > > > > +
->> > > > > > +           /*
->> > > > > > +            * If less than half the inactive list is being written back,
->> > > > > > +            * reclaim might as well continue
->> > > > > > +            */
->> > > > > > +           if (writeback < inactive / 2) {
->> > > > >
->> > > > > I am not sure this is best.
->> > > > >
->> > > >
->> > > > I'm not saying it is. The objective is to identify a situation where
->> > > > sleeping until the next write or congestion clears is pointless. We have
->> > > > already identified that we are not congested so the question is "are we
->> > > > writing a lot at the moment?". The assumption is that if there is a lot
->> > > > of writing going on, we might as well sleep until one completes rather
->> > > > than reclaiming more.
->> > > >
->> > > > This is the first effort at identifying pointless sleeps. Better ones
->> > > > might be identified in the future but that shouldn't stop us making a
->> > > > semi-sensible decision now.
->> > >
->> > > nr_bdi_congested is no problem since we have used it for a long time.
->> > > But you added new rule about writeback.
->> > >
->> >
->> > Yes, I'm trying to add a new rule about throttling in the page allocator
->> > and from vmscan. As you can see from the results in the leader, we are
->> > currently sleeping more than we need to.
->>
->> I can see the about avoiding congestion_wait but can't find about
->> (writeback < incative / 2) hueristic result.
->>
->
-> See the leader and each of the report sections entitled
-> "FTrace Reclaim Statistics: congestion_wait". It provides a measure of
-> how sleep times are affected.
->
-> "congest waited" are waits due to calling congestion_wait. "conditional waited"
-> are those related to wait_iff_congested(). As you will see from the reports,
-> sleep times are reduced overall while callers of wait_iff_congested() still
-> go to sleep. The reports entitled "FTrace Reclaim Statistics: vmscan" show
-> how reclaim is behaving and indicators so far are that reclaim is not hurt
-> by introducing wait_iff_congested().
+On Mon, 2010-09-13 at 11:37 +0200, Peter Zijlstra wrote:
+> On Mon, 2010-09-13 at 11:16 +0200, Mike Galbraith wrote:
+> > On Mon, 2010-09-13 at 10:35 +0200, Peter Zijlstra wrote:
+> > > On Mon, 2010-09-13 at 09:08 +0200, Mike Galbraith wrote:
+> > > > We need a better fork fairness gizmo.
+> > > 
+> > > Proper zero-lag insertion would do. Much sadness in that tracking that
+> > > costs a u64 mult per enqueu/dequeue and using it adds a s64 div.
+> > 
+> > (math _sucks_:)
+> > 
+> > > But if you want, have a play with:
+> > 
+> > maximum latency: 48475.3 Âµs
+> > average latency: 6881.4 Âµs
+> > missed timer events: 0
+> > 
+> > Darn.
+> > 
+> > make -j3 is gaining a tad over a hog as well, roughly the same as
+> > turning START_DEBIT off.
+> 
+> 
+> Hrmm,. could it be fair_sleeper muck placing too many tasks too far left
+> on wakeup starving others?
 
-I saw  the result.
-It was a result about effectiveness _both_ nr_bdi_congested and
-(writeback < inactive/2).
-What I mean is just effectiveness (writeback < inactive/2) _alone_.
-If we remove (writeback < inactive / 2) check and unconditionally
-return, how does the behavior changed?
+Yeah, pretty much has to be fair_sleepers holding others off for too
+long.  (A shiny new preemption model is about the only thing that can
+make that go away)  Perhaps lag should be negated if you've received a
+reasonable chunk or something.. but what we really want is a service
+deadline.
 
-Am I misunderstanding your report in leader?
+	-Mike
 
--- 
-Kind regards,
-Minchan Kim
