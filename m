@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab0IMTzc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:55:32 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51542 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754364Ab0IMTzb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:55:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=mdt7RxVjRBc3wZxse3KawYnt1WtoFkK5pjqoUpjJFfXRXsO7H61Y6WVIiP85i/5Uyn
-         rBHkl0Q/ym7tzwJHqzr7jJnVNtLlB5py677ff/llOc5MKQc+Q9S2sGlH6PLfi0vjn4Vu
-         2j1DsEUoMpaknMal8bxsM2f9eHzDOfVhFBCm4=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, mmarek@suse.cz,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH v2] scripts/kconfig/gconf.glade Update broken web addresses.
-Date: Mon, 13 Sep 2010 12:55:56 -0700
-Message-Id: <1284407756-4195-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.2.1
+	id S1755240Ab0IMTs1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:48:27 -0400
+Received: from mail.perches.com ([173.55.12.10]:1866 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755158Ab0IMTsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 15:48:24 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 04/25] drivers/char: Use static const char arrays
+Date: Mon, 13 Sep 2010 12:47:42 -0700
+Message-Id: <a2936d6a439d294efa41dd567d29d0d301e844de.1284406638.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.rc1
+In-Reply-To: <cover.1284406638.git.joe@perches.com>
+References: <cover.1284406638.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As discussed, remove the DOCTYPE declaration since libglade validates
-the file against itself..
-
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- scripts/kconfig/gconf.glade |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/char/hvc_vio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/scripts/kconfig/gconf.glade b/scripts/kconfig/gconf.glade
-index d52b0a7..aa483cb 100644
---- a/scripts/kconfig/gconf.glade
-+++ b/scripts/kconfig/gconf.glade
-@@ -1,5 +1,4 @@
- <?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
--<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
+diff --git a/drivers/char/hvc_vio.c b/drivers/char/hvc_vio.c
+index 27370e9..5e2f52b 100644
+--- a/drivers/char/hvc_vio.c
++++ b/drivers/char/hvc_vio.c
+@@ -39,7 +39,7 @@
  
- <glade-interface>
+ #include "hvc_console.h"
  
+-char hvc_driver_name[] = "hvc_console";
++static const char hvc_driver_name[] = "hvc_console";
+ 
+ static struct vio_device_id hvc_driver_table[] __devinitdata = {
+ 	{"serial", "hvterm1"},
 -- 
-1.7.2.1
+1.7.3.rc1
 
