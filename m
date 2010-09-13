@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415Ab0IMVeh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 17:34:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57059 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab0IMVef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 17:34:35 -0400
-X-Authority-Analysis: v=1.1 cv=2ipXt8Ao/PPbK329gQN1nC6XU/V8QMABDttguNTIlb0= c=1 sm=0 a=tuVigMI4kdkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=7d_E57ReAAAA:8 a=vaDVyjBXZxX6rprOiSsA:9 a=P3Zi4okQCbBzAu_HuRONmOGn3mUA:4 a=PUjeQqilurYA:10 a=D6-X0JM3zdQA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] sched: fix string comparison in features
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Tony Lindgren <tony@atomide.com>
-In-Reply-To: <20100911174400.GA13462@Krystal>
-References: <20100911174400.GA13462@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 13 Sep 2010 17:34:32 -0400
-Message-ID: <1284413672.5701.12.camel@gandalf.stny.rr.com>
+	id S1753453Ab0IMVgB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 17:36:01 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:52599 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751140Ab0IMVf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 17:35:59 -0400
+Subject: Re: [RFC PATCH v9 00/16] Provide a zero-copy method on KVM
+ virtio-net.
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+In-Reply-To: <20100903105233.GA32193@redhat.com>
+References: <1281086624-5765-1-git-send-email-xiaohui.xin@intel.com>
+	 <1281489804.3391.23.camel@localhost.localdomain>
+	 <1281490993.3391.25.camel@localhost.localdomain>
+	 <1281506460.3391.42.camel@localhost.localdomain>
+	 <1281509704.3391.45.camel@localhost.localdomain>
+	 <20100903105233.GA32193@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Sep 2010 14:35:53 -0700
+Message-ID: <1284413753.13351.17.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-11 at 13:44 -0400, Mathieu Desnoyers wrote:
-> Incorrect handling of the following case:
+On Fri, 2010-09-03 at 13:52 +0300, Michael S. Tsirkin wrote:
+> > When binding vhost thread to cpu3, qemu I/O thread to cpu2, macvtap
+> zero
+> > copy patch can get 9.4Gb/s. 
+> > 
+> > TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to
+> 192.168.10.74 (192.168.10.74) port 0 AF_INET : cpu bind
+> > Recv   Send    Send                          Utilization
+> Service Demand
+> > Socket Socket  Message  Elapsed              Send     Recv     Send
+> Recv
+> > Size   Size    Size     Time     Throughput  local    remote   local
+> remote
+> > bytes  bytes   bytes    secs.    10^6bits/s  % S      % S      us/KB
+> us/KB
+> > 
+> >  87380  16384  65536    60.00      9408.19   55.69    8.45     0.970
+> 0.589
+> > 
+> > Shirley
 > 
-> INTERACTIVE
-> INTERACTIVE_SOMETHING_ELSE
-> 
-> The comparison only checks up to each element's length.
+> OTOH CPU utilization is up too.
 
-Replace all your changes with mine, and you have the same effect ;-)
+w/i macvtap zero copy patch, the BW can reach link w/i more cpu usage,
+w/o macvtap zero copy patch, the BW can't be up to link speed. To
+achieve same BW, CPU utilization is lower when using zero copy.
 
--- Steve
-
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> ---
->  kernel/sched.c |   11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6-lttng.git/kernel/sched.c
-> ===================================================================
-> --- linux-2.6-lttng.git.orig/kernel/sched.c
-> +++ linux-2.6-lttng.git/kernel/sched.c
-> @@ -722,7 +722,7 @@ sched_feat_write(struct file *filp, cons
->  {
->  	char buf[64];
->  	char *cmp = buf;
-
--	char *cmp = buf;
-+	char *cmp;
-
-> -	int neg = 0;
-> +	int neg = 0, cmplen;
->  	int i;
->  
->  	if (cnt > 63)
-> @@ -732,15 +732,24 @@ sched_feat_write(struct file *filp, cons
->  		return -EFAULT;
->  
->  	buf[cnt] = 0;
-> +	for (i = 0; i < cnt; i++) {
-> +		if (buf[i] == '\n' || buf[i] == ' ') {
-> +			buf[i] = 0;
-> +			break;
-> +		}
-> +	}
-
-+	cmp = strstrip(buf);
-
->  
->  	if (strncmp(buf, "NO_", 3) == 0) {
->  		neg = 1;
->  		cmp += 3;
->  	}
->  
-> +	cmplen = strlen(cmp);
->  	for (i = 0; sched_feat_names[i]; i++) {
->  		int len = strlen(sched_feat_names[i]);
-
--		int len = strlen(sched_feat_names[i]);
-
->  
-> +		if (cmplen != len)
-> +			continue;
->  		if (strncmp(cmp, sched_feat_names[i], len) == 0) {
-
--		if (strncmp(cmp, sched_feat_names[i], len) == 0) {
-+		if (strcmp(cmp, sched_feat_names[i]) == 0) {
-
->  			if (neg)
->  				sysctl_sched_features &= ~(1UL << i);
-
+Shirley
 
