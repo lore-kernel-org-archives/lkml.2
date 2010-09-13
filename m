@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab0IMTik (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:38:40 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45854 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754796Ab0IMTii (ORCPT
+	id S1754639Ab0IMTnB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:43:01 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:51416 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752833Ab0IMTnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:38:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=hLHEIXt1b+8AY+4+Z+33h1gOhcG4UF2uYdT+PvQBZoUepm0itbrzgg1z3OGeryJH1u
-         vb3/zpewNOk0iY566R4UBH1/cucyvj8lIab8NmFUzKOuGdmtyA+LHrHOj9T/7+f0aI4h
-         PMnM1msAyPm4Rm2Yai8A0z2OdgjCoKCkewRCc=
-Subject: Re: [PATCHv2 0/3] watchdog: add f71862fg support
-From: Lutz Ballaschke <vegan.grindcore@googlemail.com>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100912143037.GA29094@salidar.me.mortis.eu>
-References: <20100911001148.GB13116@kreios.titan>
-	 <20100912143037.GA29094@salidar.me.mortis.eu>
-Content-Type: text/plain
-Date: Mon, 13 Sep 2010 21:38:59 +0200
-Message-Id: <1284406739.11976.16.camel@holmbox.holm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Sep 2010 15:43:00 -0400
+Date: Mon, 13 Sep 2010 15:42:58 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
+        "markus.t.metzger" <markus.t.metzger@intel.com>
+Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
+Message-ID: <20100913194258.GB28294@Krystal>
+References: <1284391000.2275.338.camel@laptop> <AANLkTin35TXPcs9u3pLfo8QRUmGnftT1DPfswRUVEvJW@mail.gmail.com> <1284391480.2275.350.camel@laptop> <AANLkTik8r4moPy5muNyT2oKGH5aEaMOLL0Zqn=-hkpos@mail.gmail.com> <1284392476.2275.369.camel@laptop> <AANLkTimZTzCjea3KFxGcaQ7kscod7sOrz13LkNF_u38w@mail.gmail.com> <1284399329.2275.387.camel@laptop> <AANLkTi=DGnP-r++PhzWFMdwdu_ReUKAmGLCA2zPNBG5J@mail.gmail.com> <20100913193120.GA28294@Krystal> <1284406463.2275.423.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284406463.2275.423.camel@laptop>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 15:42:44 up 233 days, 22:19,  5 users,  load average: 0.03, 0.05,
+	0.05
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 12, 2010, at 16:30 +0200 Giel van Schijndel wrote:
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Mon, 2010-09-13 at 15:31 -0400, Mathieu Desnoyers wrote:
+> > > Ok, so can we play the same trick you're playing with the sampling
+> > > buffer, i.e., you use alloc_pages_node() for one page at a time, and
+> > > then you stitch them on demand via SW?
+> > 
+> > Well, a thought is striking me: it sounds like you are re-doing YAORB (short
+> > for Yet Another Ring Buffer, 
+> 
+> He's not.. the hardware needs a large (virtually) contiguous region to
+> poke data into, we need to read it out from NMI context.
 
-> You might want to add the actual patches themselves
+Ah ok, it's different then.
 
-I do. The plan was to submit them the following day. But then i urgently
-had to leave and will be out of town until next week. I'm sorry for the
-confusion. The patches will follow as soon as possible.
+Thanks,
 
-With kind regards,
+Mathieu
 
-Lutz Ballaschke
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
