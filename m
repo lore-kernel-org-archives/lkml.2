@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab0IMOVm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:21:42 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41187 "EHLO smtps.tip.net.au"
+	id S1752191Ab0IMOVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:21:43 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45494 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176Ab0IMOVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751607Ab0IMOVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Sep 2010 10:21:41 -0400
-Date: Tue, 14 Sep 2010 00:21:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the final tree (maybe
- percpu tree related)
-Message-Id: <20100914002132.bf17c19e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__14_Sep_2010_00_21_32_+1000_ESIOqtaAkNXw0hPH"
+Date: Mon, 13 Sep 2010 16:21:23 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
+ nr_running
+Message-ID: <20100913142123.GA5056@elte.hu>
+References: <1284231470.2251.52.camel@laptop>
+ <AANLkTin0LOuTOcJPiZcZGeZMdqsy2dohyrREw2GGhddJ@mail.gmail.com>
+ <1284237380.2251.56.camel@laptop>
+ <AANLkTi=a91QX-FLURFWNsjbCS1bDLr6GqSpC4_uzm3ta@mail.gmail.com>
+ <1284282392.2251.81.camel@laptop>
+ <1284352547.7321.51.camel@marge.simson.net>
+ <1284367295.2275.31.camel@laptop>
+ <1284385967.17152.13.camel@gandalf.stny.rr.com>
+ <1284386079.2275.290.camel@laptop>
+ <1284386531.2275.297.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284386531.2275.297.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.5
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
+	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
+	[score: 0.2762]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__14_Sep_2010_00_21_32_+1000_ESIOqtaAkNXw0hPH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-After merging the final tree, next-20100909 and next-20100910 builds (alpha
-defconfig) failed like this:
+> IIRC kbuild likes the child to be late, it allows make to spawn more 
+> kids and it'll got sleep on completion once it done anyway.
 
-In file included from mm/percpu.c:71:
-arch/alpha/include/asm/cacheflush.h: In function 'flush_icache_user_range':
-arch/alpha/include/asm/cacheflush.h:53: error: dereferencing pointer to inc=
-omplete type
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Yes - and this is especially true on "make -j<nr_cpus>" types of 
+borderline workloads - the scheduling policy with the highest effective 
+parallelism wins.
 
---Signature=_Tue__14_Sep_2010_00_21_32_+1000_ESIOqtaAkNXw0hPH
-Content-Type: application/pgp-signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMjjNsAAoJEDMEi1NhKgbsvZoH/1RLUgfKE7NGmt7ODzXgtcdN
-o9RxjY/OJpzFqfRPCH3XaU8jD0IWWzTZ6AbjJ7Zqv6gNa1ixiqvBJk+jugI1FNA8
-6ShRtdTOul4yHSlwpyx8zKEk17p2bBzg9VQRBmQdFqS9BX80o/pFvOeWQhnXAtFf
-6RAbL/M6QCyZElvG87V0vh9IIp4Fmj2+hQV9RKfjIG1sctLZdipyrnI9P3WDk50N
-jYEf/GPzBpXUqrkkOHWHpKamin+r7aZdWYu4OZQSW0ZZH/dR0t9smZOvB2yNS3bl
-4wiMTPwbc03Z2tcD0q79gbuHeCP1ZhRP/VRe58pO3/bnLgZVjVw6WG7/pnhmsQY=
-=y2N+
------END PGP SIGNATURE-----
-
---Signature=_Tue__14_Sep_2010_00_21_32_+1000_ESIOqtaAkNXw0hPH--
+	Ingo
