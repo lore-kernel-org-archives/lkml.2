@@ -1,37 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab0IMRsh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 13:48:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45214 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751703Ab0IMRsg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 13:48:36 -0400
+	id S1754470Ab0IMRtE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 13:49:04 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:47647 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753699Ab0IMRtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 13:49:03 -0400
+Date: Mon, 13 Sep 2010 19:48:45 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [GIT PULL 0/1] perf/core ui browser improvement
+Message-ID: <20100913174845.GC18428@elte.hu>
+References: <1284395692-11298-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20100913170515.GA8943@kroah.com>
-References: <20100913170515.GA8943@kroah.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 13 Sep 2010 10:41:37 -0700
-Message-ID: <AANLkTinA30LGPUMrL_5tLaB+rLUAv7AAutZwiZCW2qJJ@mail.gmail.com>
-Subject: Re: Linux 2.6.34.7
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        stable@kernel.org, lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>,
-        Alan Stern <stern@rowland.harvard.edu>, Phil Dibowitz <phil@ipom.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284395692-11298-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0180]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 10:05 AM, Greg KH <gregkh@suse.de> wrote:
->
-> It fixes a single bug that a number of users have reported in that their
-> USB devices no longer work properly.  Sometimes it causes lost
-> keystrokes, and other times X refuses to boot as it can not communicate
-> properly with some tablet devices.
 
-So just out of interest, why is that commit ok and doesn't need to be
-reverted in 36-rc? The comments in the commit message do not explain.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-                                Linus
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> 
+> Hi Ingo,
+> 
+>         Please pull from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+
+Pulled, thanks Arnaldo!
+
+> 	Screenshot showing how it looks like now:
+> 
+> http://vger.kernel.org/~acme/perf/perf-report-tui-no-windows.png
+
+Nice, it's more economic with screen real estate now :-)
+
+btw., a small detail: could we please rename [kernel.kallsyms] to 
+[kernel]? The user is not really interested where the symbols came from 
+(kallsyms or vmlinux), in 99.9% of the cases - and the many repetitive 
+.kallsyms instances look uninformative and somewhat confusing.
+
+Thanks,
+
+	Ingo
