@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab0IMRus (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 13:50:48 -0400
-Received: from mbox2.netikka.net ([213.250.81.203]:43695 "EHLO
-	mbox2.netikka.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab0IMRur (ORCPT
+	id S1754483Ab0IMRwD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 13:52:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38424 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753272Ab0IMRwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 13:50:47 -0400
-Message-ID: <4C8E6476.8010302@mandriva.org>
-Date: Mon, 13 Sep 2010 20:50:46 +0300
-From: Thomas Backlund <tmb@mandriva.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; sv-SE; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
+	Mon, 13 Sep 2010 13:52:01 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: "stable@kernel.org" <stable@kernel.org>,
-        "Larry.Finger@lwfinger.net" <Larry.Finger@lwfinger.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [33-stable regression ssb/broadcom]
-References: <4C8E6192.2010003@mandriva.org> <20100913174207.GA14092@suse.de>
-In-Reply-To: <20100913174207.GA14092@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100913174533.GA15653@Krystal>
+References: <1284231470.2251.52.camel@laptop> <20100911195708.GA9273@Krystal>
+ <1284288072.2251.91.camel@laptop> <20100912203712.GD32327@Krystal>
+ <1284382387.2275.265.camel@laptop> <1284383758.2275.283.camel@laptop>
+ <20100913135621.GA13442@Krystal> <1284387398.2275.311.camel@laptop>
+ <20100913161641.GA28707@Krystal> <AANLkTimB9CjH5SjeY9XmwhTp1tfFPwh-Q1Y4o918h7XD@mail.gmail.com>
+ <20100913174533.GA15653@Krystal>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 13 Sep 2010 10:51:38 -0700
+Message-ID: <AANLkTi=8m4g01wZPacySoF7U0PevTNVgJoZZrHiUD-pN@mail.gmail.com>
+Subject: Re: [RFC PATCH] check_preempt_tick should not compare vruntime with
+ wall time
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH skrev 13.9.2010 20:42:
-> On Mon, Sep 13, 2010 at 08:38:26PM +0300, Thomas Backlund wrote:
->> In Mandriva 2010.1 we noticed that 2.6.33.7 broke ssb/Broadcom lan
->> for several users...
+On Mon, Sep 13, 2010 at 10:45 AM, Mathieu Desnoyers
+<mathieu.desnoyers@efficios.com> wrote:
 >
-> Did you try the later releases which should have fixed this issue?
->
+> FWIW, Xorg and firefox feel _much more_ responsive with the fix I propose when
+> running with a make -j10. The system is even usable with a make -j20 on my UP
+> machine, even though I can start feeling a some lag. This is probably a more
+> important, yet less scientific, result.
 
-Well, 33.7 is the latest 2.6.33-stable kernel, wich MDV 2010.1 got based 
-on, and it wont change to anything > 2.6.33.x
+I'll test that myself (but in a bit - I need to go do voter
+registration and socsec update first, though - I became a US citizen
+last week).
 
-We'll have to issue a new kernel with that one reverted, but as I noted 
-on the 2.6.34 regression thread, you dont like "broken trees out there",
-so I decided to report it even if it's "out of support".
+Because yes, that's the reason I'm personally interested in your
+scheduler latency work: I think our X behavior under load is pitiful
+(I do "make -j16" on my dual-core with HT Core i5, and web browsong
+shouldn't start to lag as much as it does just because I overcommit
+the CPU a bit). So if this makes a noticeable difference, I think it's
+very important.
 
---
-Thomas
+                       Linus
