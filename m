@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab0IMOJT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:09:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9399 "EHLO mga09.intel.com"
+	id S1754977Ab0IMOLD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:11:03 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49355 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754544Ab0IMOJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:09:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,359,1280732400"; 
-   d="scan'208";a="554001042"
-Date: Mon, 13 Sep 2010 16:09:41 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mattias Wallin <mattias.wallin@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 2/3] MFD: AB8500 debugfs
-Message-ID: <20100913140940.GJ2555@sortiz-mobl>
-References: <4C8DE1BE.30304@stericsson.com>
- <20100913132618.GB2555@sortiz-mobl>
- <4C8E2CA2.9020703@stericsson.com>
+	id S1754594Ab0IMOLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:11:00 -0400
+Date: Mon, 13 Sep 2010 15:10:46 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 10/10] vmscan: Kick flusher threads to clean pages when
+	reclaim is encountering dirty pages
+Message-ID: <20100913141046.GI23508@csn.ul.ie>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie> <1283770053-18833-11-git-send-email-mel@csn.ul.ie> <20100913134845.GB12355@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4C8E2CA2.9020703@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100913134845.GB12355@localhost>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 03:52:34PM +0200, Mattias Wallin wrote:
+On Mon, Sep 13, 2010 at 09:48:45PM +0800, Wu Fengguang wrote:
+> > +	/*
+> > +	 * If reclaim is encountering dirty pages, it may be because
+> > +	 * dirty pages are reaching the end of the LRU even though the
+> > +	 * dirty_ratio may be satisified. In this case, wake flusher
+> > +	 * threads to pro-actively clean up to a maximum of
+> > +	 * 4 * SWAP_CLUSTER_MAX amount of data (usually 1/2MB) unless
+> > +	 * !may_writepage indicates that this is a direct reclaimer in
+> > +	 * laptop mode avoiding disk spin-ups
+> > +	 */
+> > +	if (file && nr_dirty_seen && sc->may_writepage)
+> > +		wakeup_flusher_threads(nr_writeback_pages(nr_dirty));
 > 
+> wakeup_flusher_threads() works, but seems not the pertinent one.
 > 
-> On 09/13/2010 03:26 PM, Samuel Ortiz wrote:
-> > Hi Mattias,
-> > 
-> > I have some addtional comments:
-> > 
-> > On Mon, Sep 13, 2010 at 10:33:02AM +0200, Mattias Wallin wrote:
-> >> +static struct platform_driver ab8500_debug_driver = {
-> >> +       .driver = {
-> >> +               .name = "ab8500-debug",
-> >> +               .owner = THIS_MODULE,
-> >> +       },
-> >> +       .probe  = ab8500_debug_probe,
-> >> +       .remove = __devexit_p(ab8500_debug_remove)
-> >> +};
-> >> +
-> >> +static int __init ab8500_debug_init(void)
-> >> +{
-> >> +       return platform_driver_register(&ab8500_debug_driver);
-> >> +}
-> >> +
-> >> +static void __exit ab8500_debug_exit(void)
-> >> +{
-> >> +       platform_driver_unregister(&ab8500_debug_driver);
-> >> +}
-> > It seems a bit awkward to me to have this code as an actual platform driver.
-> > Why not defining ab8500_debug_[probe|remove] in ab8500.h as no-op when
-> > CONFIG_AB8500_DEBUG is not defined and as extern otherwise ?
-> In the register access interface abx500_get_register_interruptible() the first
-> argument is a struct *device. This struct *device needs to be a (platform) device "child" to
-> the ab8500-core (dev->parent is used).
-Obviously. All 3 patches applied, many thanks.
+> - locally, it needs some luck to clean the pages that direct reclaim is waiting on
 
-Cheers,
-Samuel.
+There is a certain amount of luck involved but it's depending on there being a
+correlation between old inodes and old pages on the LRU list. As long as that
+correlation is accurate, some relevant pages will get cleaned.  Testing on
+previously released versions of this patch did show that the percentage of
+dirty pages encountered during reclaim were reduced as a result of this patch.
+
+> - globally, it cleans up some dirty pages, however some heavy dirtier
+>   may quickly create new ones..
+> 
+> So how about taking the approaches in these patches?
+> 
+> - "[PATCH 4/4] vmscan: transfer async file writeback to the flusher"
+> - "[PATCH 15/17] mm: lower soft dirty limits on memory pressure"
+> 
+
+There is a lot going on in those patches. It's going to take me a while to
+figure them out and formulate an opinion.
+
+> In particular the first patch should work very nicely with memcg, as
+> all pages of an inode typically belong to the same memcg. So doing
+> write-around helps clean lots of dirty pages in the target LRU list in
+> one shot.
+> 
+
+It might but as there is also a correlation between old dirty inodes and
+the location of dirty pages, it is tricky to predict if it is better and
+if so, by how much.
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
