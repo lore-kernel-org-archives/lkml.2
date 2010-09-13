@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab0IMThR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:37:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47928 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752715Ab0IMThP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:37:15 -0400
-Date: Mon, 13 Sep 2010 15:36:55 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
- unknown NMI
-Message-ID: <20100913193655.GF26290@redhat.com>
-References: <20100910184039.GK4879@redhat.com>
- <1284344389.3269.82.camel@yhuang-dev.sh.intel.com>
- <20100913141140.GB27371@redhat.com>
- <20100913172438.37443bf7@basil.nowhere.org>
- <20100913154750.GA26290@redhat.com>
- <20100913185721.59ad9b4d@basil.nowhere.org>
- <20100913175346.GC26290@redhat.com>
- <20100913200707.3b31429e@basil.nowhere.org>
- <20100913182354.GE26290@redhat.com>
- <20100913203654.26724055@basil.nowhere.org>
+	id S1755100Ab0IMTiG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:38:06 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53959 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754748Ab0IMTiF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 15:38:05 -0400
+Date: Mon, 13 Sep 2010 21:37:28 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Vasiliy Kulikov <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Luotao Fu <l.fu@pengutronix.de>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpio: stmpe: fix error path
+Message-ID: <20100913193728.GA14993@pengutronix.de>
+References: <1284317840-5131-1-git-send-email-segooon@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
 Content-Disposition: inline
-In-Reply-To: <20100913203654.26724055@basil.nowhere.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1284317840-5131-1-git-send-email-segooon@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 08:36:54PM +0200, Andi Kleen wrote:
-> 
-> > > 
-> > > But if it's generic if not on the screen it should
-> > > be at least in the error serialization data and logged after boot.
-> > 
-> > I guess I don't know what that is, 'error serialization data'.  Is
-> > there somewhere I can read more about it?
-> 
-> That's already supported in MCE -- saving the error record to NVRAM
-> and logging it after reboot. NMI should probably do the same.
-> It's much nicer than getting it from a console.
 
-Hmm, that assumes these boxes have NVRAM.  I am not sure if many of the
-boxes I see with problems have NVRAM on them.
+--ReaqsoxgOBHFXBhH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> > > 
-> > > At least on PCI-E it may be enough to simply dump all recent AER
-> > > data.
-> > 
-> > This assumes AER is supported on the bridge?  Which for newer chips is
-> > probably true, but I wasn't sure about older ones.
-> 
-> Today's servers should usually have AER at least.
-> 
-> For old systems you only can get the few bits in PCI space.
-> 
-> > How would I dump AER data from within the kernel?
-> 
-> Would need a buffer that is dumped for past events and 
-> reading the registers for not yet reported. Right now some
-> infrastructure is needed.
+On Sun, Sep 12, 2010 at 10:57:19PM +0400, Vasiliy Kulikov wrote:
+> Free allocated memory.  Call stmpe_disable() if it was enabled.
+>=20
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> ---
+>  Compile tested.
+>  Maybe It needs better error path.
 
-Oh ok.
+What do you mean here? Looks good to me so far.
 
-Cheers,
-Don
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+
+>=20
+>  drivers/gpio/stmpe-gpio.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/gpio/stmpe-gpio.c b/drivers/gpio/stmpe-gpio.c
+> index 65b9960..6e28afa 100644
+> --- a/drivers/gpio/stmpe-gpio.c
+> +++ b/drivers/gpio/stmpe-gpio.c
+> @@ -317,11 +317,11 @@ static int __devinit stmpe_gpio_probe(struct platfo=
+rm_device *pdev)
+> =20
+>  	ret =3D stmpe_enable(stmpe, STMPE_BLOCK_GPIO);
+>  	if (ret)
+> -		return ret;
+> +		goto out_free;
+> =20
+>  	ret =3D stmpe_gpio_irq_init(stmpe_gpio);
+>  	if (ret)
+> -		goto out_free;
+> +		goto out_disable;
+> =20
+>  	ret =3D request_threaded_irq(irq, NULL, stmpe_gpio_irq, IRQF_ONESHOT,
+>  				   "stmpe-gpio", stmpe_gpio);
+> @@ -347,6 +347,8 @@ out_freeirq:
+>  	free_irq(irq, stmpe_gpio);
+>  out_removeirq:
+>  	stmpe_gpio_irq_remove(stmpe_gpio);
+> +out_disable:
+> +	stmpe_disable(stmpe, STMPE_BLOCK_GPIO);
+>  out_free:
+>  	kfree(stmpe_gpio);
+>  	return ret;
+> --=20
+> 1.7.0.4
+>=20
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--ReaqsoxgOBHFXBhH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkyOfXgACgkQD27XaX1/VRv0YQCgsVJLZtkMr4t4BwK3kMvRLkAg
+oekAn2Ol9HckKn9Uh3u/Aw+eAuV/6zKS
+=3h0p
+-----END PGP SIGNATURE-----
+
+--ReaqsoxgOBHFXBhH--
