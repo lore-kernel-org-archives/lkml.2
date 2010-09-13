@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab0IMOxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:53:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751598Ab0IMOxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:53:41 -0400
-Message-ID: <4C8E3AB1.6010509@redhat.com>
-Date: Mon, 13 Sep 2010 10:52:33 -0400
-From: Peter Jones <pjones@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1752567Ab0IMOzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:55:46 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:46174 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab0IMOzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:55:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=k4NtdMVG3fK0K+bMFLznss8BMcc0L5DO06DrBrnK3hXrUmqJBtoWoibu6GmVu6cLUL
+         XvrLymzXeS6iKbkmjRyT5sTKu4ocWU2/NhOL9pH+MxUVvymSyJXiTmrX+i+s9fd81n3A
+         blUe5jI0BjwH2H7LgZU4gUA9lHNpMwk4Iwv9Y=
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Make efifb check that the base address is plausible
- on pci systems.
-References: <1284059809-9973-1-git-send-email-pjones@redhat.com> <20100910171406.bdb4d90d.akpm@linux-foundation.org> <4C8E3853.70702@redhat.com>
-In-Reply-To: <4C8E3853.70702@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTimNnA=tNCE7pLiibwB66R86dNmCDpCuQMkTvw9J@mail.gmail.com>
+References: <1284135579-13578-1-git-send-email-wellsk40@gmail.com>
+	<1284135579-13578-6-git-send-email-wellsk40@gmail.com>
+	<AANLkTimNnA=tNCE7pLiibwB66R86dNmCDpCuQMkTvw9J@mail.gmail.com>
+Date: Mon, 13 Sep 2010 16:55:43 +0200
+Message-ID: <AANLkTi=pKmP-G8aA4a96KhyNSKcaKrm9S5rnSw-0UyFo@mail.gmail.com>
+Subject: Re: [PATCH 5/5] spi: amba_pl022: Remove unused fields from pl022_config_chip
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: wellsk40@gmail.com
+Cc: spi-devel-general@lists.sourceforge.net, sameo@linux.intel.com,
+        rabin.vincent@stericsson.com, srinidhi.kasagar@stericsson.com,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        u.kleine-koenig@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        tj@kernel.org, grant.likely@secretlab.ca, Lukasz.Baj@tieto.com,
+        quentinyang05@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2010 10:42 AM, Peter Jones wrote:
-> On 09/10/2010 08:14 PM, Andrew Morton wrote:
->> On Thu,  9 Sep 2010 15:16:48 -0400
->> Peter Jones <pjones@redhat.com> wrote:
->>
->>> Some Apple machines have identical DMI data but different memory
->>> configurations for the video. Given that, check that the address in our
->>> table is actually within the range of a PCI BAR on a VGA deivce in the
->>> machine.
->>>
->>> This also fixes up the return value from set_system(), which has
->>> always been wrong, but never resulted in bad behavior since there's only
->>> ever been one matching entry in the dmi table.
->>>
->>> This also adds me as the efifb maintainer, since I've effectively been
->>> acting as such for quite some time.
->>
->> And what is the impact (and importance) of this patch?  Make some
->> people's Mac displays work, I'd be guessing?
->>
-> 
-> That's correct.
+2010/9/13 Linus Walleij <linus.ml.walleij@gmail.com>:
 
-Actually, let me amend that statement to say something entirely different: it
-does two things:
+> I think you have to do a more thorough patch:
 
-1) stops people's machines from crashing when we get their display wrong,
-   which seems to be unfortunately inevitable,
-2) allows us to support identical dmi data with differing video memory
-   configurations
+No, wait it's me. I have to have the old patch first and then this
+on top, sorry.
 
-Sorry about the previous reply, I should have thought through your question
-for longer.
+I'll test again...
 
--- 
-        Peter
-
-Hardware simply does not work like the manual says and no amount
-of Zen contemplation will ever make you at one with a 3c905B ethernet card.
-		-- Alan
-
-01234567890123456789012345678901234567890123456789012345678901234567890123456789
+Linus
