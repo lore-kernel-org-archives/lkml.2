@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab0IMP6X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:58:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41018 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753331Ab0IMP6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:58:22 -0400
-Message-ID: <4C8E49B7.7040104@zytor.com>
-Date: Mon, 13 Sep 2010 08:56:39 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1753184Ab0IMQEv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 12:04:51 -0400
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:57630 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab0IMQEu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 12:04:50 -0400
+X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Sep 2010 12:04:50 EDT
+Message-ID: <4C8E4898.7090407@collabora.co.uk>
+Date: Mon, 13 Sep 2010 16:51:52 +0100
+From: Ian Molton <ian.molton@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: florian@mickler.org, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] x86: don't compile with gcc-3.3.3
-References: <1284366708-30154-1-git-send-email-florian@mickler.org> <1284367195.2275.29.camel@laptop>
-In-Reply-To: <1284367195.2275.29.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Buffer allocation question
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2010 01:39 AM, Peter Zijlstra wrote:
-> On Mon, 2010-09-13 at 10:31 +0200, florian@mickler.org wrote:
->> hpa commented on bug 16506[1] :
->> "Please note that gcc-3.3.3 is known broken on x86; gcc-3.4 is the oldest
->> version which is known to *not* be broken."
->>
->> References: 
->> 	[0]: https://bugzilla.kernel.org/show_bug.cgi?id=16633
->> 	[1]: https://bugzilla.kernel.org/show_bug.cgi?id=16506#c28
->>
->> If that is indeed so, we should abort the build? No?
-> 
-> Does it in fact still build with 3.4? I seem to recall some talk about
-> pushing the minimum version to 4.x for x86, although I can't remember
-> where..
+Hi,
 
-It does indeed still build with 3.4, although it is giving us a bunch of
-headaches to *make it so*, and I would personally be really glad if the
-consensus is we can just axe it.
+I need to allocate some fairly large buffers which will be transferred 
+via virtio to a hypervisor.
 
-The only reason to not abort the build for gcc 3.3.3 is that soem
-"enterprise" distros have been shipping gcc 3.3.3 with backported fixes
-from 3.4, which of course still identifies themselves as gcc 3.3.3, and
-so technically it is iompossioble to tell if any particular "gcc 3.3.3"
-is actually broken or not.
+the pages dont have to be contiguous physically and aside from the first 
+page int he transfer, the kernel wont really care about the contents of 
+the buffer.
 
-However, as far as I can tell, most of the people who build current x86
-kernels with gcc 3.x are people who are testing building current kernels
-with gcc 3.x.  Some of the embedded systems are different, because for
-some strange reasons most of the embedded world seem stuck on gcc 3.4 or so.
+the pages do need to be mapped into userspace contiguously, however. 
+They are also often dynamically resized.
 
-	-hpa
+the buffers can be quite large, and there can be several in flight at a 
+given time. They must always be present in physical space (or virtio 
+gets upset)
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Obviously kmalloc() is out of the question, and given the size / 
+quantity of the buffers, vmalloc() space is getting tight.
 
+I'm struggling to find a good example of how this should be done.
+
+the buffers will usually be filled all in one go, so it seems silly to 
+fault them in a page at a time.
+
+my first thought (before realising how limited vmalloc space is) was to 
+vmalloc() them in my mmap() function, but this approach ran into trouble 
+when I discovered that the mmap() call does not get called if the vma 
+grows, so I cant then hook in and allocate more vmalloc() space.
+
+It seems like it would be sensible to let userspace allocate the memory 
+and then mmap() that range, but I've been told this is a bad idea.
+
+Whats the best approach here? With the buffers being large I dont really 
+want to transmit them in tiny bits either.
+
+-Ian
