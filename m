@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab0IMP46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:56:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54074 "EHLO mx2.suse.de"
+	id S1753558Ab0IMP6G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:58:06 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47906 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab0IMP45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:56:57 -0400
-Message-ID: <4C8E49C8.6090003@suse.cz>
-Date: Mon, 13 Sep 2010 17:56:56 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
+	id S1752250Ab0IMP6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 11:58:04 -0400
+Date: Mon, 13 Sep 2010 08:56:08 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jiri Slaby <jslaby@suse.cz>, phil@ipom.com, stable@kernel.org,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [34-stable regression] USB delay init quirk causes device
+ events loss
+Message-ID: <20100913155608.GA27853@suse.de>
+References: <4C8E3C40.50808@suse.cz>
+ <Pine.LNX.4.44L0.1009131118180.1315-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]scripts/kconfig/gconf.glade Update broken web addresses.
-References: <1284184584-8647-1-git-send-email-justinmattock@gmail.com>
-In-Reply-To: <1284184584-8647-1-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1009131118180.1315-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.9.2010 07:56, Justin P. Mattock wrote:
-> Below fixes a broken web address. Note: not sure if this is correct
-> or not.. Let me know..
+On Mon, Sep 13, 2010 at 11:37:49AM -0400, Alan Stern wrote:
+> On Mon, 13 Sep 2010, Jiri Slaby wrote:
 > 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> > On 09/13/2010 04:48 PM, Alan Stern wrote:
+> > > On Mon, 13 Sep 2010, Jiri Slaby wrote:
+> > >> In other words, what I could do is to add some printks into
+> > >> hub_port_connect_change if that's called at all. If you need some
+> > >> thorough debugging printks, please send me a patch to test instead.
+> > > 
+> > > Hmm.  I'd prefer to explain how it's all supposed to work and let you
+> > > figure out where best to look.  Or try to debug it myself.  Does this
+> > > happen with other sorts of USB devices as well, or just wacom?
+> > 
+> > With some sort of devices (I cannot reproduce myself). It's unrelated to
+> > wacom -- people with wacom were unable to even start X with this kernel.
+> > If you look at the bugreport, there are several examples:
+> > ID 046d:c517 Logitech, Inc. LX710 Cordless Desktop Laser defunct
+> > Microsoft USB keyboard defunct x Logitech mice OK
+> > 046a:0021 Cherry GmbH keyboard defunct
+> > logitech wireless laptop mouse defunct
+> > A$Tech wireless laptop mouse defunct
+> > TypeMatrix USB 2030 (ID : 1e54:2030) defunct
 > 
-> ---
->  scripts/kconfig/gconf.glade |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Okay, I see the problem.  By moving usb_detect_quirks earlier, we end 
+> up calling usb_disable_autosuspend too soon -- before the 
+> pm_runtime_enable call in usb_new_device.  In 2.6.35 this doesn't 
+> matter because the implementation of usb_autosuspend_device has 
+> changed.
 > 
-> diff --git a/scripts/kconfig/gconf.glade b/scripts/kconfig/gconf.glade
-> index d52b0a7..8092dcf 100644
-> --- a/scripts/kconfig/gconf.glade
-> +++ b/scripts/kconfig/gconf.glade
-> @@ -1,5 +1,5 @@
->  <?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
-> -<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
-> +<!DOCTYPE glade-interface SYSTEM "http://library.gnome.org/devel/libglade/unstable/libglade-dtd.html">
+> So yes, in the end it looks like the best course is to revert this
+> patch from 2.6.34.stable.  This is unfortunate but I don't see any way
+> around it without making changes that aren't present in the current
+> kernel. For example, the pm_runtime_set_active and pm_runtime_enable
+> calls could also be moved from usb_new_device into
+> hub_port_connect_change.
 
-This URL does not host the dtd itself, so we can as well remove the
-DOCTYPE declaration alltogether. I guess libglade validates the file
-against it's own schema anyway.
+Ok, I'll go revert that from the .34-stable tree and do a new release,
+as it's not nice to have a broken tree out there.
 
-Michal
+thanks,
+
+greg k-h
