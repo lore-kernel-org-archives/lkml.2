@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab0IMQgq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 12:36:46 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48028 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab0IMQgo (ORCPT
+	id S1754039Ab0IMQiY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 12:38:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60450 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752611Ab0IMQiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 12:36:44 -0400
-Date: Mon, 13 Sep 2010 17:33:22 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: florian@mickler.org, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] x86: don't compile with gcc-3.3.3
-Message-ID: <20100913163322.GA3819@n2100.arm.linux.org.uk>
-References: <1284366708-30154-1-git-send-email-florian@mickler.org> <1284367195.2275.29.camel@laptop>
+	Mon, 13 Sep 2010 12:38:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284367195.2275.29.camel@laptop>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100913161641.GA28707@Krystal>
+References: <20100911173732.551632040@efficios.com> <20100911174003.051303123@efficios.com>
+ <1284231470.2251.52.camel@laptop> <20100911195708.GA9273@Krystal>
+ <1284288072.2251.91.camel@laptop> <20100912203712.GD32327@Krystal>
+ <1284382387.2275.265.camel@laptop> <1284383758.2275.283.camel@laptop>
+ <20100913135621.GA13442@Krystal> <1284387398.2275.311.camel@laptop> <20100913161641.GA28707@Krystal>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 13 Sep 2010 09:36:56 -0700
+Message-ID: <AANLkTimB9CjH5SjeY9XmwhTp1tfFPwh-Q1Y4o918h7XD@mail.gmail.com>
+Subject: Re: [RFC PATCH] check_preempt_tick should not compare vruntime with
+ wall time
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 10:39:55AM +0200, Peter Zijlstra wrote:
-> On Mon, 2010-09-13 at 10:31 +0200, florian@mickler.org wrote:
-> > hpa commented on bug 16506[1] :
-> > "Please note that gcc-3.3.3 is known broken on x86; gcc-3.4 is the oldest
-> > version which is known to *not* be broken."
-> > 
-> > References: 
-> > 	[0]: https://bugzilla.kernel.org/show_bug.cgi?id=16633
-> > 	[1]: https://bugzilla.kernel.org/show_bug.cgi?id=16506#c28
-> > 
-> > If that is indeed so, we should abort the build? No?
-> 
-> Does it in fact still build with 3.4? I seem to recall some talk about
-> pushing the minimum version to 4.x for x86, although I can't remember
-> where..
+On Mon, Sep 13, 2010 at 9:16 AM, Mathieu Desnoyers
+<mathieu.desnoyers@efficios.com> wrote:
+>
+> OK, the long IRC discussions we just had convinced me that the current scheme
+> takes things into account by adapting the granularity dynamically, but also got
+> me to notice that check_preempt seems to compare vruntime with wall time, which
+> is utterly incorrect. So maybe all my patch was doing was to expose this bug:
 
-I'm still building kernels with gcc 3.4.3 (for the ARMs which don't
-require a later compiler) or gcc 4.3.2+patches for those which do.
+Do you have latency numbers for this patch?
 
-ARM gcc 3.4.3 is certainly noticably faster than gcc 4.3.2 even on
-x86 - and as long as ARM gcc 3.4.3 works, and there's not great pain
-in allowing it to build the arch-independent stuff, I see no reason
-to deny it across the entire kernel build.
-
-I think we should have a minimum compiler version for the generic
-kernel, and individual minimum compiler versions for the architectures,
-so that arches can specify a higher minimum compiler version if they
-have specific problems there.
+                    Linus
