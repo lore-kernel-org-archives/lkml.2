@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab0IMVRX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 17:17:23 -0400
-Received: from mail.perches.com ([173.55.12.10]:1960 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752533Ab0IMVRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 17:17:22 -0400
-Subject: Re: [PATCH 18/25] drivers/serial/suncore.c: Use static const char
- arrays
-From: Joe Perches <joe@perches.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-In-Reply-To: <20100913211106.GA4200@elliptictech.com>
-References: <cover.1284406638.git.joe@perches.com>
-	 <0ab674aa32a5fcc364982c78efdf44864a61523b.1284406639.git.joe@perches.com>
-	 <20100913213613.223e10a5@lxorguk.ukuu.org.uk>
-	 <1284409338.26719.47.camel@Joe-Laptop>
-	 <20100913211106.GA4200@elliptictech.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Sep 2010 14:17:20 -0700
-Message-ID: <1284412640.26719.95.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755124Ab0IMVSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 17:18:09 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:33996 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab0IMVSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 17:18:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=B/GTGINYosZoFdrUa9vYZSGpzX1wWP23PaFi2WLl774rgFDjXhqm/KB2j95ye+18Op
+         9ZOfzhL+1t0jWEqys44e74x7lApwC2a7H6zlJyfXF0cORN4LE4uDkPJ279MfCI9eO7RC
+         fGzRxZ11dCaIEOzuMbQbM7lNlKuVfI2wsPiSc=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikQsu4qo=nkcr2N=_GLmtCgh8wmoRcZFaUJbwAs@mail.gmail.com>
+References: <1284319955-6014-1-git-send-email-guichaz@gmail.com>
+	<201009131325.01768.arnd@arndb.de>
+	<alpine.LNX.2.00.1009131327060.26813@pobox.suse.cz>
+	<AANLkTikQsu4qo=nkcr2N=_GLmtCgh8wmoRcZFaUJbwAs@mail.gmail.com>
+Date: Mon, 13 Sep 2010 23:18:06 +0200
+Message-ID: <AANLkTinvTQa8BPeT8shAB4Qt3eyepYeyG29oCugXzgw6@mail.gmail.com>
+Subject: Re: [PATCH] Fix hiddev's use of usb_find_interface
+From: Guillaume Chazarain <guichaz@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-13 at 17:11 -0400, Nick Bowler wrote:
-> On 2010-09-13 13:22 -0700, Joe Perches wrote:
-> > It tries to standardize the style use and it avoids possible
-> > future checkpatch warnings of:
-> > 	char foo[] = "bar"
-> > char array could possibly be static const.
-> Whoa, back up a second here.  I've seen patches to avoid questionable
-> checkpatch warnings before, but I think this is the first time I've seen
-> a patch to avoid *hypothetical checkpatch warnings that don't even
-> exist*!
+On Mon, Sep 13, 2010 at 1:38 PM, Guillaume Chazarain <guichaz@gmail.com> wrote:
+> I also saw the problem with 2.6.36-rc3.
 
-Pretty cool huh?  cheers, Joe
+For completeness, I also reproduced the problem with 2.6.36-rc4. Not
+being familiar with the driver model, I'm not attached to the approach
+I took in the patch, but it solves a real regression: hiddev not
+working.
 
+-- 
+Guillaume
