@@ -1,41 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab0IMTWO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:22:14 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59674
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752936Ab0IMTWN (ORCPT
+	id S1754986Ab0IMTW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:22:56 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46294 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754871Ab0IMTWz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:22:13 -0400
-Date: Mon, 13 Sep 2010 12:22:31 -0700 (PDT)
-Message-Id: <20100913.122231.183042924.davem@davemloft.net>
-To: tim.gardner@canonical.com
-Cc: stable@kernel.org, heiko.bauke@snafu.de, linux-kernel@vger.kernel.org,
-        romieu@fr.zoreil.com, timo.teras@iki.fi
-Subject: Re: Realtek Ethernet drivers
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4C8E4DEA.2050406@canonical.com>
-References: <20100912223724.GA15934@electric-eye.fr.zoreil.com>
-	<20100913095912.74d7f0f1@tron.localdomain>
-	<4C8E4DEA.2050406@canonical.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 13 Sep 2010 15:22:55 -0400
+Subject: Re: linux-next: build failure after merge of the final tree (tip
+ tree related)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <20100913191729.GA6440@console-pimps.org>
+References: <20100914000613.51fdba90.sfr@canb.auug.org.au>
+	 <20100913191729.GA6440@console-pimps.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 13 Sep 2010 21:22:42 +0200
+Message-ID: <1284405762.2275.422.camel@laptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Gardner <tim.gardner@canonical.com>
-Date: Mon, 13 Sep 2010 10:14:34 -0600
-
-> If not already staged, please consider including these commits for
-> 2.6.32.y:
+On Mon, 2010-09-13 at 20:17 +0100, Matt Fleming wrote:
+> 3f6da390 ("perf: Rework and fix the arch CPU-hotplug hooks") introduced
+> this breakage. sh_pmu_setup() is missing an opening curly brace, e.g.
 > 
-> 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e
-> 81a95f049962ec20a9aed888e676208b206f0f2e
-> 
-> They are already included in 2.6.33.y and up, so its curious that they
-> are not also included in 2.6.32.y as they do apply cleanly.
+> diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
+> index cf39c48..036f7a9 100644
+> --- a/arch/sh/kernel/perf_event.c
+> +++ b/arch/sh/kernel/perf_event.c
+> @@ -338,7 +338,7 @@ static struct pmu pmu = {
+>  };
+>  
+>  static void sh_pmu_setup(int cpu)
+> -
+> +{
+>         struct cpu_hw_events *cpuhw = &per_cpu(cpu_hw_events, cpu);
+>  
+>         memset(cpuhw, 0, sizeof(struct cpu_hw_events)); 
 
-I'll take care of queueing these up to -stable, thanks.
+
+Gah, that's actually breakage from b0a873ebbf8 (perf: Register PMU
+implementations), which has the below fudge:
+
+
++static struct pmu pmu = {
++       .event_init     = sh_pmu_event_init,
++       .enable         = sh_pmu_enable,
++       .disable        = sh_pmu_disable,
++       .read           = sh_pmu_read,
++};
++
+ static void sh_pmu_setup(int cpu)
+-{
++
+        struct cpu_hw_events *cpuhw = &per_cpu(cpu_hw_events, cpu);
+ 
+        memset(cpuhw, 0, sizeof(struct cpu_hw_events));
+
+
+Ingo, could you back-merge this?
