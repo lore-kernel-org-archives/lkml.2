@@ -1,96 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab0IMVIr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 17:08:47 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38764 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754578Ab0IMVIq (ORCPT
+	id S1755334Ab0IMVLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 17:11:12 -0400
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:47762 "EHLO
+	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754359Ab0IMVLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 17:08:46 -0400
-Date: Mon, 13 Sep 2010 14:08:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        gthelen@google.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@kernel.org
-Subject: Re: [BUGFIX][PATCH] memcg: fix race in file_mapped accouting flag
- management
-Message-Id: <20100913140803.b83d3fe1.akpm@linux-foundation.org>
-In-Reply-To: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Sep 2010 17:11:11 -0400
+Date: Mon, 13 Sep 2010 17:11:06 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Joe Perches <joe@perches.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: Re: [PATCH 18/25] drivers/serial/suncore.c: Use static const char
+ arrays
+Message-ID: <20100913211106.GA4200@elliptictech.com>
+Mail-Followup-To: Joe Perches <joe@perches.com>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+	"David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+References: <cover.1284406638.git.joe@perches.com>
+ <0ab674aa32a5fcc364982c78efdf44864a61523b.1284406639.git.joe@perches.com>
+ <20100913213613.223e10a5@lxorguk.ukuu.org.uk>
+ <1284409338.26719.47.camel@Joe-Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284409338.26719.47.camel@Joe-Laptop>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010 16:08:22 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On 2010-09-13 13:22 -0700, Joe Perches wrote:
+> It tries to standardize the style use and it avoids possible
+> future checkpatch warnings of:
+> 	char foo[] = "bar"
+> char array could possibly be static const.
 
-> 
-> I think this small race is not very critical but it's bug.
-> We have this race since 2.6.34. 
-> =
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Now. memory cgroup accounts file-mapped by counter and flag.
-> counter is working in the same way with zone_stat but FileMapped flag only
-> exists in memcg (for helping move_account).
-> 
-> This flag can be updated wrongly in a case. Assume CPU0 and CPU1
-> and a thread mapping a page on CPU0, another thread unmapping it on CPU1.
-> 
->     CPU0                   		CPU1
-> 				rmv rmap (mapcount 1->0)
->    add rmap (mapcount 0->1)
->    lock_page_cgroup()
->    memcg counter+1		(some delay)
->    set MAPPED FLAG.
->    unlock_page_cgroup()
-> 				lock_page_cgroup()
-> 				memcg counter-1
-> 				clear MAPPED flag
-> 
-> In above sequence, counter is properly updated but FLAG is not.
-> This means that representing a state by a flag which is maintained by
-> counter needs some specail care.
-> 
-> To handle this, at claering a flag, this patch check mapcount directly and
-> clear the flag only when mapcount == 0. (if mapcount >0, someone will make
-> it to zero later and flag will be cleared.)
-> 
-> Reverse case, dec-after-inc cannot be a problem because page_table_lock()
-> works well for it. (IOW, to make above sequence, 2 processes should touch
-> the same page at once with map/unmap.)
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> Index: lockless-update/mm/memcontrol.c
-> ===================================================================
-> --- lockless-update.orig/mm/memcontrol.c
-> +++ lockless-update/mm/memcontrol.c
-> @@ -1485,7 +1485,8 @@ void mem_cgroup_update_file_mapped(struc
->  		SetPageCgroupFileMapped(pc);
->  	} else {
->  		__this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> -		ClearPageCgroupFileMapped(pc);
-> +		if (page_mapped(page)) /* for race between dec->inc counter */
-> +			ClearPageCgroupFileMapped(pc);
->  	}
+Whoa, back up a second here.  I've seen patches to avoid questionable
+checkpatch warnings before, but I think this is the first time I've seen
+a patch to avoid *hypothetical checkpatch warnings that don't even
+exist*!
 
-This should be !page_mapped(), shouldn't it?
-
-And your second patch _does_ have !page_mapped() here, which is why the
-second patch didn't apply.
-
-I tried to fix things up.  Please check.
-
-
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
