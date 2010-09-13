@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062Ab0IMOLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:11:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754916Ab0IMOLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:11:54 -0400
-Date: Mon, 13 Sep 2010 10:11:40 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
- unknown NMI
-Message-ID: <20100913141140.GB27371@redhat.com>
-References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
- <1284087065-32722-5-git-send-email-ying.huang@intel.com>
- <20100910160211.GH4879@redhat.com>
- <20100910181929.4f35ab7c@basil.nowhere.org>
- <20100910184039.GK4879@redhat.com>
- <1284344389.3269.82.camel@yhuang-dev.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284344389.3269.82.camel@yhuang-dev.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1752107Ab0IMOQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:16:49 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:39897 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab0IMOQs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:16:48 -0400
+Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
+ nr_running
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+In-Reply-To: <20100913135621.GA13442@Krystal>
+References: <20100911173732.551632040@efficios.com>
+	 <20100911174003.051303123@efficios.com> <1284231470.2251.52.camel@laptop>
+	 <20100911195708.GA9273@Krystal> <1284288072.2251.91.camel@laptop>
+	 <20100912203712.GD32327@Krystal> <1284382387.2275.265.camel@laptop>
+	 <1284383758.2275.283.camel@laptop>  <20100913135621.GA13442@Krystal>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 13 Sep 2010 16:16:38 +0200
+Message-ID: <1284387398.2275.311.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 10:19:49AM +0800, Huang Ying wrote:
-> On Sat, 2010-09-11 at 02:40 +0800, Don Zickus wrote:
-> > On Fri, Sep 10, 2010 at 06:19:29PM +0200, Andi Kleen wrote:
-> > > 
-> > > > I am grasping for straws here, but is there a register that APEI/HEST
-> > > > can poke to see if it generated the NMI?
-> > > 
-> > > HEST knows this yes.
-> > > 
-> > > But this is not about HEST errors, but about those without HEST
-> > > handling.
+On Mon, 2010-09-13 at 09:56 -0400, Mathieu Desnoyers wrote:
+> 
+> > One option is to simply get rid of that stuff in check_preempt_tick()
+> > and instead do a wakeup-preempt check on the leftmost task instead.
 > > 
-> > Don't most unknown NMIs fall into the same boat, that they were not being
-> > handled properly?
+> > The code as it stands today does that delta_exec < min_gran check to
+> > ensure current gets some runtime before doing that second preemption
+> > check, which compares vruntime with a wall-time measure.
+> > 
+> > Making that gran more complex doesn't really buy us much because for a
+> > system with different weights in the gran and slice lengths don't match
+> > up anyway.
 > 
-> As far as I know, at least on some platforms, unknown NMIs are used for
-> hardware error reporting. They will cause "Blue Screen" in Windows.
+> So I bet this last sentence is about the example of a system with many nice 19
+> processes I told you about on IRC. Yes, this one is a bummer, as we would not
+> like to count them as running threads at all.
 
-Unfortunately, most of the bugzillas I deal with, unkown NMIs are the
-result of SERRs.  While you can consider that hardware error reporting,
-the easiest way for me to debug those problems currently is to have
-reporters run 'lspci -vvv' after the NMI is displayed to figure out who
-caused the NMI.
+Of course we would. But the same is true for -5 and 5 threads together.
 
-My fear is that panic'ing the box on unknown NMIs on those platforms will
-hinder my ability to easily debug those NMIs.
-
+> >  static void
+> >  check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+> >  {
+> > -     unsigned long ideal_runtime, delta_exec;
+> > +     unsigned long slice = sched_slice(cfs_rq, curr);
 > 
-> > On the other hand could you use the die_notifier_chain(DIE_UNKNOWNNMI) for
-> > the same purpose and keep the unknown_nmi_error() handler a little
-> > cleaner?
+> So you still compute the sched_slice(), based on sched_period(), based on
+> sysctl_sched_min_granularity *= nr_running when there are more than nr_latency
+> running threads.
+
+What's wrong with that? I keep asking you, you keep not giving an
+answer. Stop focussing on nr_latency, its an by produce not a
+fundamental entity.
+
+ period := max(latency, min_gran * nr_running)
+
+See, no nr_latency -- the one and only purpose of nr_latency is avoiding
+that multiplication when possible.
+
+
+> > -     if (delta_exec < sysctl_sched_min_granularity)
+> > -             return;
 > 
-> I think explicit function call has better readability than notifier
-> chain.
+> Well, the reason why this test is here seems to be that we don't want to trigger
+> "resched_task" more often than needed, and here it's defined by the granularity.
 
-Ok.  What criteria should we establish to determine which functions go on
-the notifier chain and which ones can explicitly called?
+Right, but its wrong for the weighted case. Letting a light task run
+that long will make its latency suck.
 
-Cheers,
-Don
+> I don't quite see with what you are replacing this, other than "let's set the
+> resched flag all the time to save a 32-bit division". I figure out it's more
+> expensive the call the scheduler than to do a 32-bit div.
+
+The more divs we put it, the more expensive it all becomes.
+
+
