@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab0IMOQz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:16:55 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39502 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752160Ab0IMOQw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:16:52 -0400
-Date: Mon, 13 Sep 2010 10:16:51 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jiri Slaby <jslaby@suse.cz>
-cc: phil@ipom.com, <stable@kernel.org>, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [34-stable regression] USB delay init quirk causes device events
- loss
-In-Reply-To: <4C8E0892.3000306@suse.cz>
-Message-ID: <Pine.LNX.4.44L0.1009131014460.1584-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751998Ab0IMOVm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:21:42 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41187 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751176Ab0IMOVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:21:41 -0400
+Date: Tue, 14 Sep 2010 00:21:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (maybe
+ percpu tree related)
+Message-Id: <20100914002132.bf17c19e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__14_Sep_2010_00_21_32_+1000_ESIOqtaAkNXw0hPH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010, Jiri Slaby wrote:
+--Signature=_Tue__14_Sep_2010_00_21_32_+1000_ESIOqtaAkNXw0hPH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hi,
-> 
-> this commit:
-> commit 93362a875fc69881ae69299efaf19a55a1f57db0
-> Author: Phil Dibowitz <phil@ipom.com>
-> Date:   Thu Jul 22 00:05:01 2010 +0200
-> 
->     USB delay init quirk for logitech Harmony 700-series devices
-> 
-> causes a lot of pain for users who loose events from their input devices:
-> https://bugzilla.novell.com/show_bug.cgi?id=638200
-> 
-> opensuse 11.3 uses 2.6.34 stable and that's how the patch got there.
-> Reverting it makes it work again.
-> 
-> The problem is that the patch shuffles with usb_detect_quirks which used
-> to disable autosuspend by default. Apparently it no longer does.
+Hi all,
 
-I don't see how that patch could have the effect you claim.  
-usb_detect_quirks still calls usb_disable_autosuspend.  Can you do a 
-little more debugging to find out why it isn't working as expected?  
-Reverting the commit is not a good solution.
+After merging the final tree, next-20100909 and next-20100910 builds (alpha
+defconfig) failed like this:
 
-Alan Stern
+In file included from mm/percpu.c:71:
+arch/alpha/include/asm/cacheflush.h: In function 'flush_icache_user_range':
+arch/alpha/include/asm/cacheflush.h:53: error: dereferencing pointer to inc=
+omplete type
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Tue__14_Sep_2010_00_21_32_+1000_ESIOqtaAkNXw0hPH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMjjNsAAoJEDMEi1NhKgbsvZoH/1RLUgfKE7NGmt7ODzXgtcdN
+o9RxjY/OJpzFqfRPCH3XaU8jD0IWWzTZ6AbjJ7Zqv6gNa1ixiqvBJk+jugI1FNA8
+6ShRtdTOul4yHSlwpyx8zKEk17p2bBzg9VQRBmQdFqS9BX80o/pFvOeWQhnXAtFf
+6RAbL/M6QCyZElvG87V0vh9IIp4Fmj2+hQV9RKfjIG1sctLZdipyrnI9P3WDk50N
+jYEf/GPzBpXUqrkkOHWHpKamin+r7aZdWYu4OZQSW0ZZH/dR0t9smZOvB2yNS3bl
+4wiMTPwbc03Z2tcD0q79gbuHeCP1ZhRP/VRe58pO3/bnLgZVjVw6WG7/pnhmsQY=
+=y2N+
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__14_Sep_2010_00_21_32_+1000_ESIOqtaAkNXw0hPH--
