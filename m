@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab0IMTW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:22:56 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46294 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871Ab0IMTWz convert rfc822-to-8bit (ORCPT
+	id S1755085Ab0IMTXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:23:13 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59681
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755050Ab0IMTXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:22:55 -0400
-Subject: Re: linux-next: build failure after merge of the final tree (tip
- tree related)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <20100913191729.GA6440@console-pimps.org>
-References: <20100914000613.51fdba90.sfr@canb.auug.org.au>
-	 <20100913191729.GA6440@console-pimps.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 13 Sep 2010 21:22:42 +0200
-Message-ID: <1284405762.2275.422.camel@laptop>
+	Mon, 13 Sep 2010 15:23:11 -0400
+Date: Mon, 13 Sep 2010 12:23:29 -0700 (PDT)
+Message-Id: <20100913.122329.39186333.davem@davemloft.net>
+To: tmb@mandriva.org
+Cc: stable@kernel.org, gregkh@suse.de, Larry.Finger@lwfinger.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [33-stable regression ssb/broadcom]
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C8E6192.2010003@mandriva.org>
+References: <4C8E6192.2010003@mandriva.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-13 at 20:17 +0100, Matt Fleming wrote:
-> 3f6da390 ("perf: Rework and fix the arch CPU-hotplug hooks") introduced
-> this breakage. sh_pmu_setup() is missing an opening curly brace, e.g.
+From: Thomas Backlund <tmb@mandriva.org>
+Date: Mon, 13 Sep 2010 20:38:26 +0300
+
+> In Mandriva 2010.1 we noticed that 2.6.33.7 broke ssb/Broadcom lan for
+> several users...
 > 
-> diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
-> index cf39c48..036f7a9 100644
-> --- a/arch/sh/kernel/perf_event.c
-> +++ b/arch/sh/kernel/perf_event.c
-> @@ -338,7 +338,7 @@ static struct pmu pmu = {
->  };
->  
->  static void sh_pmu_setup(int cpu)
-> -
-> +{
->         struct cpu_hw_events *cpuhw = &per_cpu(cpu_hw_events, cpu);
->  
->         memset(cpuhw, 0, sizeof(struct cpu_hw_events)); 
+> Issue is tracked at:
+> https://qa.mandriva.com/show_bug.cgi?id=60968
+> 
+> Reverting the commit restores a working lan.
+> 
+> The offending commit is:
 
+Please always CC: netdev on networking reports, otherwise you are
+very unlikely to get any experts looking into your issue.
 
-Gah, that's actually breakage from b0a873ebbf8 (perf: Register PMU
-implementations), which has the below fudge:
-
-
-+static struct pmu pmu = {
-+       .event_init     = sh_pmu_event_init,
-+       .enable         = sh_pmu_enable,
-+       .disable        = sh_pmu_disable,
-+       .read           = sh_pmu_read,
-+};
-+
- static void sh_pmu_setup(int cpu)
--{
-+
-        struct cpu_hw_events *cpuhw = &per_cpu(cpu_hw_events, cpu);
- 
-        memset(cpuhw, 0, sizeof(struct cpu_hw_events));
-
-
-Ingo, could you back-merge this?
+> --- cut ---
+> From 6fb037c2ed8378c7ab0c1e00536ba6b2a866503e Mon Sep 17 00:00:00 2001
+> From: Christoph Fritz <chf.fritz@googlemail.com>
+> Date: Sun, 11 Jul 2010 18:26:15 -0500
+> Subject: [PATCH] ssb: Handle Netbook devices where the SPROM address
+> is changed
+> 
+> For some Netbook computers with Broadcom BCM4312 wireless interfaces,
+> the SPROM has been moved to a new location. When the ssb driver tries
+> to
+> read the old location, the systems hangs when trying to read a
+> non-existent location. Such freezes are particularly bad as they do
+> not
+> log the failure.
+> 
+> This patch is modified from commit
+> da1fdb02d9200ff28b6f3a380d21930335fe5429 with some pieces from other
+> mainline changes so that it can be applied to stable 2.6.34.Y.
+> --- cut ---
+> 
+> --
+> Thomas
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
