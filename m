@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab0IMTIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:08:13 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:35103 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754997Ab0IMTIM (ORCPT
+	id S1755127Ab0IMTId (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:08:33 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:15583 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755079Ab0IMTIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:08:12 -0400
-Date: Mon, 13 Sep 2010 16:07:58 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [GIT PULL 0/1] perf/core ui browser improvement
-Message-ID: <20100913190758.GB31907@ghostprotocols.net>
-References: <1284395692-11298-1-git-send-email-acme@infradead.org>
- <20100913174845.GC18428@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100913174845.GC18428@elte.hu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 13 Sep 2010 15:08:32 -0400
+From: Benny Halevy <bhalevy@panasas.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Benny Halevy <bhalevy@panasas.com>,
+        Boaz Harrosh <bharrosh@panasas.com>
+Subject: [PATCH] block: fix blk_rq_map_kern bio direction flag
+Date: Mon, 13 Sep 2010 21:08:27 +0200
+Message-Id: <1284404907-14599-1-git-send-email-bhalevy@panasas.com>
+X-Mailer: git-send-email 1.7.2.2
+X-OriginalArrivalTime: 13 Sep 2010 19:08:30.0551 (UTC) FILETIME=[0DA7DE70:01CB5377]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Sep 13, 2010 at 07:48:45PM +0200, Ingo Molnar escreveu:
-> Nice, it's more economic with screen real estate now :-)
-> 
-> btw., a small detail: could we please rename [kernel.kallsyms] to 
-> [kernel]? The user is not really interested where the symbols came from 
-> (kallsyms or vmlinux), in 99.9% of the cases - and the many repetitive 
-> .kallsyms instances look uninformative and somewhat confusing.
+This bug was introduced in 7b6d91daee5cac6402186ff224c3af39d79f4a0e
+"block: unify flags for struct bio and struct request"
 
-Sure, I'll probably even remove the brackets :-)
+Cc: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Benny Halevy <bhalevy@panasas.com>
+---
+ block/blk-map.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-- Arnaldo
+diff --git a/block/blk-map.c b/block/blk-map.c
+index c65d759..ade0a08 100644
+--- a/block/blk-map.c
++++ b/block/blk-map.c
+@@ -307,7 +307,7 @@ int blk_rq_map_kern(struct request_queue *q, struct request *rq, void *kbuf,
+ 		return PTR_ERR(bio);
+ 
+ 	if (rq_data_dir(rq) == WRITE)
+-		bio->bi_rw |= (1 << REQ_WRITE);
++		bio->bi_rw |= REQ_WRITE;
+ 
+ 	if (do_copy)
+ 		rq->cmd_flags |= REQ_COPY_USER;
+-- 
+1.7.2.2
+
