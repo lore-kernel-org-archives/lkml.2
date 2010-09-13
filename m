@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab0IMPxI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:53:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20991 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630Ab0IMPxH (ORCPT
+	id S1753613Ab0IMPxZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:53:25 -0400
+Received: from caiajhbdcbhh.dreamhost.com ([208.97.132.177]:50124 "EHLO
+	homiemail-a61.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752219Ab0IMPxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:53:07 -0400
-Date: Mon, 13 Sep 2010 08:51:55 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Thomas Renninger <trenn@suse.de>,
-        Jason Baron <jbaron@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the final tree
- (driver-core tree related)
-Message-Id: <20100913085155.6b73c9cc.randy.dunlap@oracle.com>
-In-Reply-To: <20100907023404.GA11972@kroah.com>
-References: <20100907115426.fc0c3e13.sfr@canb.auug.org.au>
-	<20100907023404.GA11972@kroah.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Mon, 13 Sep 2010 11:53:24 -0400
+Subject: [PATCH] net/9p: fix memory handling/allocation in rdma_request()
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net
+Cc: v9fs-developer@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Sep 2010 11:53:18 -0400
+Message-ID: <1284393198.2055.1.camel@cowboy>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Sep 2010 19:34:04 -0700 Greg KH wrote:
+[PATCH] net/9p: fix memory handling/allocation in rdma_request()
 
-> On Tue, Sep 07, 2010 at 11:54:26AM +1000, Stephen Rothwell wrote:
-> > Hi Greg,
-> > 
-> > After merging the final tree, today's linux-next build (powerpc
-> > allnoconfig) produced this warning:
-> > 
-> > kernel/params.c: In function 'parse_args':
-> > kernel/params.c:233: warning: the frame size of 1032 bytes is larger than 1024 bytes
-> > 
-> > Introduced by commit 32e6407e9361cd1aac39ff6b744cad48d1802a08 ("Dynamic
-> > Debug: Introduce global fake module param module.ddebug") which added a
-> > 1024 byte array to the stack ...
-> 
-> Wierd, why didn't this show up yesterday?  The patch was in that tree
-> then, right?
-> 
-> Thomas, care to fix this up?
+Return -ENOMEM when erroring on kmalloc and fix memory leaks when returning on error.
 
-
-ping.  Is Thomas around??
-
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ net/9p/trans_rdma.c |   29 ++++++++++++++++++-----------
+ 1 files changed, 18 insertions(+), 11 deletions(-)
+
+diff --git a/net/9p/trans_rdma.c b/net/9p/trans_rdma.c
+index 0ea20c3..17c5ba7 100644
+--- a/net/9p/trans_rdma.c
++++ b/net/9p/trans_rdma.c
+@@ -426,8 +426,10 @@ static int rdma_request(struct p9_client *client, struct p9_req_t *req)
+ 
+ 	/* Allocate an fcall for the reply */
+ 	rpl_context = kmalloc(sizeof *rpl_context, GFP_KERNEL);
+-	if (!rpl_context)
++	if (!rpl_context) {
++		err = -ENOMEM;
+ 		goto err_close;
++	}
+ 
+ 	/*
+ 	 * If the request has a buffer, steal it, otherwise
+@@ -445,8 +447,8 @@ static int rdma_request(struct p9_client *client, struct p9_req_t *req)
+ 	}
+ 	rpl_context->rc = req->rc;
+ 	if (!rpl_context->rc) {
+-		kfree(rpl_context);
+-		goto err_close;
++		err = -ENOMEM;
++		goto err_free2;
+ 	}
+ 
+ 	/*
+@@ -458,11 +460,8 @@ static int rdma_request(struct p9_client *client, struct p9_req_t *req)
+ 	 */
+ 	if (atomic_inc_return(&rdma->rq_count) <= rdma->rq_depth) {
+ 		err = post_recv(client, rpl_context);
+-		if (err) {
+-			kfree(rpl_context->rc);
+-			kfree(rpl_context);
+-			goto err_close;
+-		}
++		if (err)
++			goto err_free1;
+ 	} else
+ 		atomic_dec(&rdma->rq_count);
+ 
+@@ -471,8 +470,10 @@ static int rdma_request(struct p9_client *client, struct p9_req_t *req)
+ 
+ 	/* Post the request */
+ 	c = kmalloc(sizeof *c, GFP_KERNEL);
+-	if (!c)
+-		goto err_close;
++	if (!c) {
++		err = -ENOMEM;
++		goto err_free1;
++	}
+ 	c->req = req;
+ 
+ 	c->busa = ib_dma_map_single(rdma->cm_id->device,
+@@ -499,9 +500,15 @@ static int rdma_request(struct p9_client *client, struct p9_req_t *req)
+ 	return ib_post_send(rdma->qp, &wr, &bad_wr);
+ 
+  error:
++	kfree(c);
++	kfree(rpl_context->rc);
++	kfree(rpl_context);
+ 	P9_DPRINTK(P9_DEBUG_ERROR, "EIO\n");
+ 	return -EIO;
+-
++ err_free1:
++	kfree(rpl_context->rc);
++ err_free2:
++	kfree(rpl_context);
+  err_close:
+ 	spin_lock_irqsave(&rdma->req_lock, flags);
+ 	if (rdma->state < P9_RDMA_CLOSING) {
+-- 
+1.7.0.4
+
+
+
