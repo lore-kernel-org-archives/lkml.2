@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab0IMBTG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 21:19:06 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:39709 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab0IMBTE (ORCPT
+	id S1754161Ab0IMBaw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 21:30:52 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:20893
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753530Ab0IMBau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 21:19:04 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h61h)
+	Sun, 12 Sep 2010 21:30:50 -0400
+X-SpamScore: -25
+X-BigFish: VPS-25(zzbb2cK936eK1432N98dNzz1202hzz8275bh8275dh5eeePz32i2a8h43h61h)
 X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L8NVK7-02-C20-02
+X-WSS-ID: 0L8NW75-02-CEZ-02
 X-M-MSG: 
-Date: Mon, 13 Sep 2010 03:16:55 +0200
+Date: Mon, 13 Sep 2010 03:30:41 +0200
 From: Robert Richter <robert.richter@amd.com>
-To: Huang Ying <ying.huang@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC 4/6] x86, NMI, Rewrite NMI handler
-Message-ID: <20100913011655.GI21909@erda.amd.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Huang Ying <ying.huang@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 1/6] x86, NMI, Add symbol definition for NMI magic
+ constants
+Message-ID: <20100913013041.GH13563@erda.amd.com>
 References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
- <1284087065-32722-4-git-send-email-ying.huang@intel.com>
+ <1284151027.402.123.camel@laptop>
+ <20100911105001.72b73ce8@basil.nowhere.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1284087065-32722-4-git-send-email-ying.huang@intel.com>
+In-Reply-To: <20100911105001.72b73ce8@basil.nowhere.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.09.10 22:51:03, Huang Ying wrote:
-> DIE_NMI_IPI is used to process CPU specific NMI sources, such as perf
-> event, oprofile, crash IPI, etc. While DIE_NMI is used to process
-> non-CPU-specific NMI sources, such as APEI (ACPI Platform Error
-> Interface) GHES (Generic Hardware Error Source), etc.
+On 11.09.10 04:50:01, Andi Kleen wrote:
+> On Fri, 10 Sep 2010 22:37:07 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> DIE_NMI_IPI must be processed before DIE_NMI. For example, perf event
-> trigger a NMI on CPU 1, at the same time, APEI GHES trigger another
-> NMI on CPU 0. If DIE_NMI is processed before DIE_NMI_IPI, it is
-> possible that APEI GHES is processed on CPU 1, while unknown NMI is
-> gotten on CPU 0.
+> > On Fri, 2010-09-10 at 10:51 +0800, Huang Ying wrote:
+> > > +       return inb(NMI_REASON_PORT);
+> > 
+> > I've always wondered, where is this magic stuff documented?
+> 
+> In the datasheet of the chipset. But sometimes you need
+> to dig deeper to get a global picture including all chipsets.
 
-Ingo, Peter,
+It is also here:
 
-couldn't this be the reason for the regression we are observing with
-unhandled nmis?
+ http://support.amd.com/us/Embedded_TechDocs/43009_sb7xx_rrg_pub_1.00.pdf
+ 2.3.3.1.1 IO-Mapped Control Registers
 
 -Robert
 
