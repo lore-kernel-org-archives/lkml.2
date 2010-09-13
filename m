@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab0IMUJC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 16:09:02 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:35412 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826Ab0IMUJA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 16:09:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=VCjIS87Je/Q4veMiNPi2p15JzJGQQ+JfOFnJaZZtLRCYHaXLGjpLKwX03v+HDtZZgh
-         +6V4hU94QXbPkgAU7nxHBSzkAhfAObczpLRMMss3zMhd3o9AywxCKcVj0qPYzMetoL9D
-         bfgRmoNgVEqPuv76bE5K+iChGY79pgeDRGYQY=
-Date: Mon, 13 Sep 2010 22:08:55 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Prasad <prasad@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Will Deacon <will.deacon@arm.com>,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/3] perf_events and hw_breakpoints fix and cleanup
-Message-ID: <20100913200852.GC6155@nowhere>
-References: <1284408080-2135-1-git-send-email-matthltc@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284408080-2135-1-git-send-email-matthltc@us.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754869Ab0IMUOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 16:14:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39660 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751708Ab0IMUOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 16:14:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,360,1280732400"; 
+   d="scan'208";a="656856225"
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Cc: Florian Mickler <florian@mickler.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Frysinger <vapier@gentoo.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [RFC PATCH 0/5] Bump gcc minimum version to 3.4, 4.1 for x86
+Date: Mon, 13 Sep 2010 13:14:35 -0700
+Message-Id: <1284408880-14414-1-git-send-email-hpa@linux.intel.com>
+X-Mailer: git-send-email 1.7.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 01:01:17PM -0700, Matt Helsley wrote:
-> Fixes a bug in the way that hardward breakpoints pass around [v]pids.
-> 
-> The last two patches move the pid resolution closer to the syscall
-> and avoid passing pids entirely so that the perf event code does not
-> need to worry about being in the wrong pid namespace when kernel
-> counters are created.
-> 
-> NOTE: Applies to -tip perf/core. Compile-tested only at the moment.
+This patchset bumps the minimum supported gcc version to 3.4 for the
+general kernel, and to 4.1 for x86.
 
+We have had a rash of bug reports related to these really old
+compilers and their associated binutils version lately, and it is
+clear that the support burden of these older compilers is getting to
+be excessive.  If you really want to build a kernel on a system that
+old you can build or obtain an updated gcc/binutils as well.
 
-
-Thanks a lot, I'll test that and push for -tip + backport in no big problem
-arise.
-
+ Documentation/Changes             |    2 +-
+ arch/x86/include/asm/bitops.h     |    7 -------
+ arch/x86/include/asm/cpufeature.h |    7 -------
+ arch/x86/include/asm/string_32.h  |   21 ---------------------
+ arch/x86/kernel/Makefile          |    3 ++-
+ arch/x86/kernel/compiler.c        |    5 +++++
+ include/linux/compiler-gcc3.h     |   15 +--------------
+ 7 files changed, 9 insertions(+), 51 deletions(-)
