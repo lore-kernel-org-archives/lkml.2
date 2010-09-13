@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab0IMLXx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 07:23:53 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34327 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754386Ab0IMLXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 07:23:52 -0400
-Date: Mon, 13 Sep 2010 13:23:46 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Lech Perczak <lech.perczak@multivision.pl>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Patch 1/1] hid: Fix for A4Tech RP-649 horizontal scrollwheel
-In-Reply-To: <4C891E9F.3040006@multivision.pl>
-Message-ID: <alpine.LNX.2.00.1009131323040.26813@pobox.suse.cz>
-References: <4C891E9F.3040006@multivision.pl>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754915Ab0IMLZI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 07:25:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:64400 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871Ab0IMLZH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 07:25:07 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Guillaume Chazarain <guichaz@gmail.com>
+Subject: Re: [PATCH] Fix hiddev's use of usb_find_interface
+Date: Mon, 13 Sep 2010 13:25:01 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jiri Kosina <jkosina@suse.cz>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+References: <1284319955-6014-1-git-send-email-guichaz@gmail.com>
+In-Reply-To: <1284319955-6014-1-git-send-email-guichaz@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009131325.01768.arnd@arndb.de>
+X-Provags-ID: V02:K0:XgQHok7XuJLOYPW20wvU/mdqJFCrQnXPfYBYgZRpLaR
+ 0DsmW2btCVTn4MYd6XBeeAt2+JW4ZUBuqTdoKIRqzVtXb3j3w/
+ cH2aRq0O/hCt+NEm9nnRN32X4PrGYgYEhulb1Epsp2twy7VxYD
+ pLZyfAMXIUgCuYhnUxdk/16xpXA0N4Z0Y/LStlgMD9JE5oEBHH
+ mqzAM8j7C2nFFKdnMJa7g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Sep 2010, Lech Perczak wrote:
+On Sunday 12 September 2010, Guillaume Chazarain wrote:
+> My macbook infrared remote control was broken by commit
+> bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a:
+> HID: hiddev: use usb_find_interface, get rid of BKL
 
->  From: Lech Perczak <lech.perczak@multivision.pl>
-> 
-> - Barely add USB device ID of A4Tech RF mouse receiver (09da:001a) used with
-> RP-649(Z) mice to enable fix for their horizontal scroll wheel behaviour, and
-> associate it with B8 hack.
-> 
-> Signed-off-by: Lech Perczak<lech.perczak@multivision.pl>
-> ---
-> diff -up hid/hid-a4tech.c.orig hid/hid-a4tech.c
-> --- hid/hid-a4tech.c.orig	2010-08-02 00:11:14.000000000 +0200
-> +++ hid/hid-a4tech.c	2010-09-09 17:51:23.000000000 +0200
-> @@ -133,6 +133,8 @@
->  		.driver_data = A4_2WHEEL_MOUSE_HACK_7 },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_X5_005D),
->  		.driver_data = A4_2WHEEL_MOUSE_HACK_B8 },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_RP_649),
-> +		.driver_data = A4_2WHEEL_MOUSE_HACK_B8 },
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(hid, a4_devices);
-> diff -up hid/hid-ids.h.orig hid/hid-ids.h
-> --- hid/hid-ids.h.orig	2010-09-09 17:48:28.000000000 +0200
-> +++ hid/hid-ids.h	2010-09-09 17:41:09.000000000 +0200
-> @@ -25,6 +25,7 @@
->  #define USB_VENDOR_ID_A4TECH		0x09da
->  #define USB_DEVICE_ID_A4TECH_WCP32PU	0x0006
->  #define USB_DEVICE_ID_A4TECH_X5_005D	0x000a
-> +#define USB_DEVICE_ID_A4TECH_RP_649	0x001a
-> 
->  #define USB_VENDOR_ID_AASHIMA		0x06d6
->  #define USB_DEVICE_ID_AASHIMA_GAMEPAD	0x0025
+Right, my bug. Sorry for the trouble you went through.
 
-You'd also need to add this device to hid_blacklist[] in hid-core.c, 
-otherwise hid-a4tech driver wouldn't automatically bind to the device.
+A few other people have reported the same and Jiri has done
+a fix that was merged in 2.6.36-rc2.
 
-Could you please fix that up in your patch and resend it to me?
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+	Arnd
