@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab0IMTfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:35:32 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46859 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab0IMTfb convert rfc822-to-8bit (ORCPT
+	id S1755134Ab0IMTfp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:35:45 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:60577 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755049Ab0IMTfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:35:31 -0400
-Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+	Mon, 13 Sep 2010 15:35:44 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: eranian@google.com
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
         perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
-        "markus.t.metzger" <markus.t.metzger@intel.com>
-In-Reply-To: <1284406463.2275.423.camel@laptop>
-References: <20100913150914.GA6155@nowhere>
-	 <AANLkTi=OR69sDbUMkSnx_-bpF=yHF_xNY1v=-BJgLpp5@mail.gmail.com>
-	 <1284391000.2275.338.camel@laptop>
-	 <AANLkTin35TXPcs9u3pLfo8QRUmGnftT1DPfswRUVEvJW@mail.gmail.com>
-	 <1284391480.2275.350.camel@laptop>
-	 <AANLkTik8r4moPy5muNyT2oKGH5aEaMOLL0Zqn=-hkpos@mail.gmail.com>
-	 <1284392476.2275.369.camel@laptop>
-	 <AANLkTimZTzCjea3KFxGcaQ7kscod7sOrz13LkNF_u38w@mail.gmail.com>
-	 <1284399329.2275.387.camel@laptop>
-	 <AANLkTi=DGnP-r++PhzWFMdwdu_ReUKAmGLCA2zPNBG5J@mail.gmail.com>
-	 <20100913193120.GA28294@Krystal>  <1284406463.2275.423.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 13 Sep 2010 21:35:21 +0200
-Message-ID: <1284406521.2275.424.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+        markus.t.metzger@intel.com
+Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
+References: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
+Date: Mon, 13 Sep 2010 21:35:39 +0200
+In-Reply-To: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com> (Stephane
+	Eranian's message of "Mon, 13 Sep 2010 16:55:01 +0200")
+Message-ID: <877hip4et0.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-13 at 21:34 +0200, Peter Zijlstra wrote:
-> On Mon, 2010-09-13 at 15:31 -0400, Mathieu Desnoyers wrote:
-> > > Ok, so can we play the same trick you're playing with the sampling
-> > > buffer, i.e., you use alloc_pages_node() for one page at a time, and
-> > > then you stitch them on demand via SW?
-> > 
-> > Well, a thought is striking me: it sounds like you are re-doing YAORB (short
-> > for Yet Another Ring Buffer, 
-> 
-> He's not.. the hardware needs a large (virtually) contiguous region to
-> poke data into, we need to read it out from NMI context.
+Stephane Eranian <eranian@google.com> writes:
 
-Which just made me realize, we really need vmalloc_sync_all() for this,
-the hardware will want to walk the pagetables as well, it cannot lazy
-fault the pages in.
+> The DS, BTS, and PEBS memory regions were allocated using kzalloc(), i.e.,
+> requesting contiguous physical memory. There is no such restriction on
+> DS, PEBS and BTS buffers. Using kzalloc() could lead to error in case
+> no contiguous physical memory is available. BTS is requesting 64KB,
+> thus it can cause issues. PEBS is currently only requesting one page.
+> Both PEBS and BTS are static buffers allocated for each CPU at the
+> first user. When the last user exists, the buffers are released.
 
+DS supports page tables, but I have some doubts it really 
+supports page faults. vmalloc today does page faults. 
 
+I think the change is a good idea, but it will need vmalloc_sync_all()
+everywhere.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
