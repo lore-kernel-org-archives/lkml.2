@@ -1,82 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab0IMTsj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:48:39 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:22643 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353Ab0IMTsh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:48:37 -0400
-Date: Mon, 13 Sep 2010 21:48:00 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/7] hwmon: (lm90) Introduce function to delete sysfs
- files
-Message-ID: <20100913214800.7b975fbb@hyperion.delvare>
-In-Reply-To: <1284038750-8833-4-git-send-email-guenter.roeck@ericsson.com>
-References: <1284038750-8833-1-git-send-email-guenter.roeck@ericsson.com>
-	<1284038750-8833-4-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755437Ab0IMTso (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:48:44 -0400
+Received: from mail.perches.com ([173.55.12.10]:1914 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755353Ab0IMTsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 15:48:42 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Winischhofer <thomas@winischhofer.net>,
+        Joseph Chan <JosephChan@via.com.tw>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Subject: [PATCH 21/25] drivers/video: Use static const char arrays
+Date: Mon, 13 Sep 2010 12:47:59 -0700
+Message-Id: <2435a9f5831685e3b7f06b93799a8836f4bfef61.1284406639.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.rc1
+In-Reply-To: <cover.1284406638.git.joe@perches.com>
+References: <cover.1284406638.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Sep 2010 06:25:46 -0700, Guenter Roeck wrote:
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> ---
->  drivers/hwmon/lm90.c |   18 +++++++++++-------
->  1 files changed, 11 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-> index a81a053..f21dde5 100644
-> --- a/drivers/hwmon/lm90.c
-> +++ b/drivers/hwmon/lm90.c
-> @@ -815,6 +815,15 @@ static int lm90_detect(struct i2c_client *new_client,
->  	return 0;
->  }
->  
-> +static void lm90_remove_files(struct i2c_client *client, struct lm90_data *data)
-> +{
-> +	if (data->flags & LM90_HAVE_OFFSET)
-> +		device_remove_file(&client->dev,
-> +				   &sensor_dev_attr_temp2_offset.dev_attr);
-> +	device_remove_file(&client->dev, &dev_attr_pec);
-> +	sysfs_remove_group(&client->dev.kobj, &lm90_group);
-> +}
-> +
->  static int lm90_probe(struct i2c_client *new_client,
->  		      const struct i2c_device_id *id)
->  {
-> @@ -889,8 +898,7 @@ static int lm90_probe(struct i2c_client *new_client,
->  	return 0;
->  
->  exit_remove_files:
-> -	sysfs_remove_group(&new_client->dev.kobj, &lm90_group);
-> -	device_remove_file(&new_client->dev, &dev_attr_pec);
-> +	lm90_remove_files(new_client, data);
->  exit_free:
->  	kfree(data);
->  exit:
-> @@ -937,11 +945,7 @@ static int lm90_remove(struct i2c_client *client)
->  	struct lm90_data *data = i2c_get_clientdata(client);
->  
->  	hwmon_device_unregister(data->hwmon_dev);
-> -	sysfs_remove_group(&client->dev.kobj, &lm90_group);
-> -	device_remove_file(&client->dev, &dev_attr_pec);
-> -	if (data->flags & LM90_HAVE_OFFSET)
-> -		device_remove_file(&client->dev,
-> -				   &sensor_dev_attr_temp2_offset.dev_attr);
-> +	lm90_remove_files(client, data);
->  
->  	/* Restore initial configuration */
->  	i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/video/sh_mipi_dsi.c  |    4 ++--
+ drivers/video/sis/sis_main.c |   10 +++++-----
+ drivers/video/via/viafbdev.c |    2 +-
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
-Looks good. Applied, thanks!
-
+diff --git a/drivers/video/sh_mipi_dsi.c b/drivers/video/sh_mipi_dsi.c
+index 5699ce0..4a8501b 100644
+--- a/drivers/video/sh_mipi_dsi.c
++++ b/drivers/video/sh_mipi_dsi.c
+@@ -319,7 +319,7 @@ static int __init sh_mipi_probe(struct platform_device *pdev)
+ 	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	unsigned long rate, f_current;
+ 	int idx = pdev->id, ret;
+-	char dsip_clk[] = "dsi.p_clk";
++	char dsip_clk[sizeof("dsiXp_clk")];
+ 
+ 	if (!res || idx >= ARRAY_SIZE(mipi_dsi) || !pdata)
+ 		return -ENODEV;
+@@ -370,7 +370,7 @@ static int __init sh_mipi_probe(struct platform_device *pdev)
+ 
+ 	dev_dbg(&pdev->dev, "DSI-T clk %lu -> %lu\n", f_current, rate);
+ 
+-	sprintf(dsip_clk, "dsi%1.1dp_clk", idx);
++	sprintf(dsip_clk, "dsi%cp_clk", idx + '0');
+ 	mipi->dsip_clk = clk_get(&pdev->dev, dsip_clk);
+ 	if (IS_ERR(mipi->dsip_clk)) {
+ 		ret = PTR_ERR(mipi->dsip_clk);
+diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
+index 559bf17..4be65d1 100644
+--- a/drivers/video/sis/sis_main.c
++++ b/drivers/video/sis/sis_main.c
+@@ -2387,8 +2387,8 @@ SiS_Sense30x(struct sis_video_info *ivideo)
+     u16 cvbs=0, cvbs_c=0;
+     u16 vga2=0, vga2_c=0;
+     int myflag, result;
+-    char stdstr[] = "sisfb: Detected";
+-    char tvstr[]  = "TV connected to";
++    static const char stdstr[] = "sisfb: Detected";
++    static const char tvstr[] = "TV connected to";
+ 
+     if(ivideo->vbflags2 & VB2_301) {
+        svhs = 0x00b9; cvbs = 0x00b3; vga2 = 0x00d1;
+@@ -2525,7 +2525,7 @@ SiS_SenseCh(struct sis_video_info *ivideo)
+ {
+ #if defined(CONFIG_FB_SIS_300) || defined(CONFIG_FB_SIS_315)
+     u8 temp1, temp2;
+-    char stdstr[] = "sisfb: Chrontel: Detected TV connected to";
++    static const char stdstr[] = "sisfb: Chrontel: Detected TV connected to";
+ #endif
+ #ifdef CONFIG_FB_SIS_300
+     unsigned char test[3];
+@@ -2648,8 +2648,8 @@ SiS_SenseCh(struct sis_video_info *ivideo)
+ static void __devinit
+ sisfb_get_VB_type(struct sis_video_info *ivideo)
+ {
+-	char stdstr[]    = "sisfb: Detected";
+-	char bridgestr[] = "video bridge";
++	static const char stdstr[] = "sisfb: Detected";
++	static const char bridgestr[] = "video bridge";
+ 	u8 vb_chipid;
+ 	u8 reg;
+ 
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index 5a947b0..394ef48 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -367,7 +367,7 @@ static int viafb_ioctl(struct fb_info *info, u_int cmd, u_long arg)
+ 	} u;
+ 	u32 state_info = 0;
+ 	u32 *viafb_gamma_table;
+-	char driver_name[] = "viafb";
++	static const char driver_name[] = "viafb";
+ 
+ 	u32 __user *argp = (u32 __user *) arg;
+ 	u32 gpu32;
 -- 
-Jean Delvare
+1.7.3.rc1
+
