@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033Ab0IMTCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:02:23 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:54157 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755009Ab0IMTCU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:02:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=bjm7USVpobZsw5jQJXtuR4pTDQggDAxxP3BPz+Qod7h1u60ckntFUj7ghAsEz8/lyp
-         e9ydha59PNCbR1fDS+qjxsSU+ouD0EB81d425x7/8w59c1hIknQwsIhz48YElqDR2uNm
-         CZ50mf+LUT9ZJ2wBm+DmzNp91fMp1gUAz2WdI=
+	id S1755001Ab0IMTCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:02:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14781 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754961Ab0IMTCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 15:02:09 -0400
+Date: Mon, 13 Sep 2010 15:01:38 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: Tejun Heo <tj@kernel.org>
+cc: Mike Snitzer <snitzer@redhat.com>, agk@redhat.com, jaxboe@fusionio.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-raid@vger.kernel.org, dm-devel@redhat.com, hch@lst.de,
+        konishi.ryusuke@lab.ntt.co.jp, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com, vst@vlnb.net,
+        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
+        rusty@rustcorp.com.au, mst@redhat.com, k-ueda@ct.jp.nec.com
+Subject: Re: [PATCH 23/41] dm: implement REQ_FLUSH/FUA support for bio-based
+ dm
+In-Reply-To: <4C8AC0F5.5080206@kernel.org>
+Message-ID: <Pine.LNX.4.64.1009131456100.14720@hs20-bc2-1.build.redhat.com>
+References: <1283509796-1510-1-git-send-email-tj@kernel.org>
+ <1283509796-1510-24-git-send-email-tj@kernel.org>
+ <Pine.LNX.4.64.1009101410570.7839@hs20-bc2-1.build.redhat.com>
+ <20100910184652.GA24470@redhat.com> <Pine.LNX.4.64.1009101456220.21834@hs20-bc2-1.build.redhat.com>
+ <20100910192403.GA24582@redhat.com> <Pine.LNX.4.64.1009101554300.5286@hs20-bc2-1.build.redhat.com>
+ <4C8AC0F5.5080206@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <87vd69v8v3.fsf@gmail.com>
-References: <20100912210444.76ebeee6@tron.localdomain> <20100912223724.GA15934@electric-eye.fr.zoreil.com>
- <20100913095912.74d7f0f1@tron.localdomain> <87vd69v8v3.fsf@gmail.com>
-From: dave b <db.pub.mail@gmail.com>
-Date: Tue, 14 Sep 2010 05:01:58 +1000
-Message-ID: <AANLkTinmAAhq8ffzKHearW48rkJZDdZH4uekW==uUh0y@mail.gmail.com>
-Subject: Re: Realtek Ethernet drivers
-To: Ben Gamari <bgamari@gmail.com>
-Cc: Heiko Bauke <heiko.bauke@snafu.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 September 2010 03:41, Ben Gamari <bgamari@gmail.com> wrote:
-> On Mon, 13 Sep 2010 09:59:12 +0200, Heiko Bauke <heiko.bauke@snafu.de> wrote:
->> > But it misses 81a95f049962ec20a9aed888e676208b206f0f2e and
->> > 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e
->>
->> I thank you for your reply. If there is time I will try a more recent
->> kernel. (For the moment the Realtek drivers are fine for me.) I
->> know how to (re-)compile distribution kernels and how to compile a
->> vanilla kernel from kernel.org. However, I have no idea what the
->> hex-codes you mentioned mean. Can you give me a hint?
->>
-> These are git (the version control system used for kernel development)
-> commit ids.
 
-Please add https://launchpad.net/~kernel-ppa/+archive/ppa
-and install the latest kernel available from that repository if you
-are unsure as to how to compile a kernel.org kernel.
+
+On Sat, 11 Sep 2010, Tejun Heo wrote:
+
+> On 09/10/2010 10:06 PM, Mikulas Patocka wrote:
+> > But I have my work rules that I learned: I use no git kernels and no 
+> > external patches (except Alasdair's patchset that I want to test). I only 
+> > use -rc or final kernels. I need a stable computer --- I don't want to 
+> > solve problems like "does it crash because I pulled something or does it 
+> > crash because I made a bug in my code?" So, put that into 2.6.37-rc1 and 
+> > I'll optimize flushes in dm for -rc2 or -rc3.
+> 
+> Alright, I'm sorry but this is as far as I would go for dm conversion
+> patches.  If you wanna split it further or do it your way, please feel
+> free to.  I think it would be beneficial to do things now but, hey,
+> you guys are maintaining dm part of the kernel, so it's up to you
+> guys.  But, I think it would be silly for everyone else to wait for
+> the rather special requirement for dm, so if we have to go forward
+> without dm updates, I suppose we will have to.  Jens, please feel free
+> to drop dm conversion patches.
+> 
+> Thanks.
+> -- 
+> tejun
+
+I think: take the first patch and submit it on your own, and send the rest 
+of patches to Alasdair to his tree. If I get such big patches I am unable 
+to immediatelly say if they are correct or not.
+
+Mikulas
