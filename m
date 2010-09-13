@@ -1,59 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab0IMRFu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 13:05:50 -0400
-Received: from kroah.org ([198.145.64.141]:46537 "EHLO coco.kroah.org"
+	id S1754089Ab0IMRF4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 13:05:56 -0400
+Received: from kroah.org ([198.145.64.141]:46547 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752332Ab0IMRFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753887Ab0IMRFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Sep 2010 13:05:49 -0400
-Date: Mon, 13 Sep 2010 10:05:15 -0700
+Date: Mon, 13 Sep 2010 10:05:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>,
-        Alan Stern <stern@rowland.harvard.edu>, Phil Dibowitz <phil@ipom.com>
-Subject: Linux 2.6.34.7
-Message-ID: <20100913170515.GA8943@kroah.com>
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net,
+        Jiri Slaby <jslaby@suse.cz>, Alan Stern <stern@rowland.harvard.edu>,
+        Phil Dibowitz <phil@ipom.com>
+Subject: Re: Linux 2.6.34.7
+Message-ID: <20100913170536.GB8943@kroah.com>
+References: <20100913170515.GA8943@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20100913170515.GA8943@kroah.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm announcing the release of the 2.6.34.7 kernel.
-
-It fixes a single bug that a number of users have reported in that their
-USB devices no longer work properly.  Sometimes it causes lost
-keystrokes, and other times X refuses to boot as it can not communicate
-properly with some tablet devices.
-
-Many thanks to Jiri Slaby for bisecting the problem down and dealing
-with hundreds of angry openSUSE users, and to Alan Stern for figuring
-out the root issue.
-
-This really should be the last .34 stable kernel release, unless
-something else major like this happens again.
-
-The updated 2.6.34.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.34.y.git
-and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.34.y.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                   |    2 +-
- drivers/usb/core/hub.c     |    6 +-----
- drivers/usb/core/quirks.c  |    3 ---
- include/linux/usb/quirks.h |    4 ----
- 4 files changed, 2 insertions(+), 13 deletions(-)
-
-Greg Kroah-Hartman (2):
-      Revert "USB delay init quirk for logitech Harmony 700-series devices"
-      Linux 2.6.34.7
-
+diff --git a/Makefile b/Makefile
+index e821f72..290f058 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 34
+-EXTRAVERSION = .6
++EXTRAVERSION = .7
+ NAME = Sheep on Meth
+ 
+ # *DOCUMENTATION*
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 91ddeba..3e28f92 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -23,7 +23,6 @@
+ #include <linux/mutex.h>
+ #include <linux/freezer.h>
+ #include <linux/pm_runtime.h>
+-#include <linux/usb/quirks.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/byteorder.h>
+@@ -1791,6 +1790,7 @@ int usb_new_device(struct usb_device *udev)
+ 	pm_runtime_set_active(&udev->dev);
+ 	pm_runtime_enable(&udev->dev);
+ 
++	usb_detect_quirks(udev);
+ 	err = usb_enumerate_device(udev);	/* Read descriptors */
+ 	if (err < 0)
+ 		goto fail;
+@@ -3100,10 +3100,6 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
+ 		if (status < 0)
+ 			goto loop;
+ 
+-		usb_detect_quirks(udev);
+-		if (udev->quirks & USB_QUIRK_DELAY_INIT)
+-			msleep(1000);
+-
+ 		/* consecutive bus-powered hubs aren't reliable; they can
+ 		 * violate the voltage drop budget.  if the new child has
+ 		 * a "powered" LED, users should notice we didn't enable it
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index efa3482..df5dda7 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -38,9 +38,6 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* Creative SB Audigy 2 NX */
+ 	{ USB_DEVICE(0x041e, 0x3020), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+-	/* Logitech Harmony 700-series */
+-	{ USB_DEVICE(0x046d, 0xc122), .driver_info = USB_QUIRK_DELAY_INIT },
+-
+ 	/* Philips PSC805 audio device */
+ 	{ USB_DEVICE(0x0471, 0x0155), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+diff --git a/include/linux/usb/quirks.h b/include/linux/usb/quirks.h
+index 8052e00..0a555dd 100644
+--- a/include/linux/usb/quirks.h
++++ b/include/linux/usb/quirks.h
+@@ -22,8 +22,4 @@
+ /*device will morph if reset, don't use reset for handling errors */
+ #define USB_QUIRK_RESET_MORPHS		0x00000010
+ 
+-/* device needs a pause during initialization, after we read the device
+-   descriptor */
+-#define USB_QUIRK_DELAY_INIT		0x00000040
+-
+ #endif /* __LINUX_USB_QUIRKS_H */
