@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab0IMO3k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:29:40 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55048 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970Ab0IMO3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:29:39 -0400
-Date: Tue, 14 Sep 2010 00:29:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: linux-next: build failure after merge of the final tree (tip tree
- related)
-Message-Id: <20100914002932.850d02f3.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__14_Sep_2010_00_29_32_+1000_KENko8ZxBOcKT4i2"
+	id S1751886Ab0IMObG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:31:06 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51734 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab0IMObF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:31:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=xb2LO2QBDCVE6Ct0YFsj6Qz2/QZEKrWyAFwtTfNPHuSc3TeWLLsh6fMtIdI4IcYKfV
+         GXc9y+tUmjLQvIx+0dRhahUUgD9ADKGvzoQ5LQL8tg1+MmH8HvFaCfL71kLZhqcPgydS
+         VmoBBV461FqCWkwVG0mS4R71aHsygjX6XComM=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTiksacwuOwqJGZ0F3M1jhZ6Srr88wbfBQodOGOAt@mail.gmail.com>
+References: <AANLkTi=tWwaFHB0DY=j0UaqbYdYJpGJpmWdGC4aMufSw@mail.gmail.com>
+	<20100913121247.GA4003@sig21.net>
+	<AANLkTiksacwuOwqJGZ0F3M1jhZ6Srr88wbfBQodOGOAt@mail.gmail.com>
+Date: Mon, 13 Sep 2010 16:31:04 +0200
+Message-ID: <AANLkTim4pJYMyRpb8SQddS_fiReQKKCvBCFrgEGUb+v+@mail.gmail.com>
+Subject: Fwd: ARM target not boot after remap memory
+From: Robin Theunis <robint91@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__14_Sep_2010_00_29_32_+1000_KENko8ZxBOcKT4i2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+hi Johannes
 
-Hi all,
+I have compiled  the kernel with early printk on and debug_LL, It
+still doesn't nothing after that line.
 
-After merging the final tree, today's linux-next build (arm
-assabet_defconfig and serveral other arm configs) failed like this:
+Robin
 
-arch/arm/mm/init.c: In function 'arm_memory_present':
-arch/arm/mm/init.c:260: warning: ISO C90 forbids mixed declarations and code
-arch/arm/mm/init.c:338: error: invalid storage class for function 'free_are=
-a'
-arch/arm/mm/init.c:357: error: invalid storage class for function 'free_mem=
-map'
-arch/arm/mm/init.c:386: error: invalid storage class for function 'free_unu=
-sed_memmap'
-arch/arm/mm/init.c:601: error: invalid storage class for function 'keepinit=
-rd_setup'
-arch/arm/mm/init.c:606: error: initializer element is not constant
-arch/arm/mm/init.c:606: error: (near initialization for '__setup_keepinitrd=
-_setup.setup_func')
-arch/arm/mm/init.c:606: error: expected declaration or statement at end of =
-input
-arch/arm/mm/init.c:252: warning: unused variable 'i'
-
-Caused by commit 719c1514f2fef5f01fcfa2bba81b7bb079c7c6a1 ("memblock/arm:
-Use new accessors") which forgot a closing brace on a new
-for_each_memblock() in arm_memory_present().
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__14_Sep_2010_00_29_32_+1000_KENko8ZxBOcKT4i2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMjjVMAAoJEDMEi1NhKgbs6SEH/ApGQ05bDflgCN9gD4qslw94
-KMqY1z67cYK90Akj0wx5cshotHdQEcXx4baCTfRIBqvEdlhOjn4o8B6KC5t1mrlf
-gonuoFTCHVhyZ6EBWItp5YgHNpsKM11meQIX1Odwt1z3au6pi1FFzOB++rWwVWKp
-rXr0W9ZqareuUi/W4hsa2Ura/tsG/gwu82vXj6dmGozygkwsyC41adiwG2XTFz/k
-nASFFKq1xjjNiA2xjM9txP7dlny/ihmDcV/MoLXNjB5eG9lwCW4YFO3CHXbX/NKz
-fwoWbZhEwAehz/opbJrsQI7mJauxFS/k3USwe/popJMLxxOh9wtYabkmWokba5o=
-=Oc/2
------END PGP SIGNATURE-----
-
---Signature=_Tue__14_Sep_2010_00_29_32_+1000_KENko8ZxBOcKT4i2--
+2010/9/13 Johannes Stezenbach <js@sig21.net>:
+> On Mon, Sep 13, 2010 at 01:25:26PM +0200, Robin Theunis wrote:
+>>
+>> Uncompressing Linux... done, booting the kernel.
+>> ---
+>>
+>> Here is stalls. With my jtag probe I can locate the problem.
+>>
+>> ---
+>> > halt
+>> target state: halted
+>> target halted in ARM state due to debug-request, current mode: Supervisor
+>> cpsr: 0x600000d3 pc: 0xc000af3c
+>> MMU: enabled, D-Cache: enabled, I-Cache: enabled
+>> >   arm disassemble 0xc000af3c
+>> 0xc000af3c    0xeafffffe      B 0xc000af3c
+>> ---
+>>
+>> This just loops at that address. Why does it that?
+>
+> Maybe it panicked but you can't see the message since
+> you have not enabled EARLY_PRINTK.
+>
+> Since you have JTAG, you could also dump the printk
+> buffer __log_buf to see the message.
+>
+>
+> HTH
+> Johannes
+>
