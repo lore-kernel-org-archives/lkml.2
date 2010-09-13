@@ -1,44 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab0IMPR5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:17:57 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56639 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751493Ab0IMPR4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:17:56 -0400
-Date: Mon, 13 Sep 2010 11:17:54 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Oliver Neukum <oneukum@suse.de>
-cc: Jiri Slaby <jslaby@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
-        <pingc@wacom.com>, linux-pm <linux-pm@lists.linux-foundation.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        <linux-input@vger.kernel.org>
-Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
-In-Reply-To: <201009131656.18199.oneukum@suse.de>
-Message-ID: <Pine.LNX.4.44L0.1009131114050.1315-100000@iolanthe.rowland.org>
+	id S1752557Ab0IMPTQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:19:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41979 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751836Ab0IMPTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 11:19:15 -0400
+Date: Mon, 13 Sep 2010 15:18:46 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
+        mingo@redhat.com, fweisbec@gmail.com, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Sanitize the RCU logic
+Message-ID: <tip-cde8e88498c8de69271fcb6d4dd974979368fa67@git.kernel.org>
+Git-Commit-ID: cde8e88498c8de69271fcb6d4dd974979368fa67
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 13 Sep 2010 15:18:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010, Oliver Neukum wrote:
+Commit-ID:  cde8e88498c8de69271fcb6d4dd974979368fa67
+Gitweb:     http://git.kernel.org/tip/cde8e88498c8de69271fcb6d4dd974979368fa67
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Mon, 13 Sep 2010 11:06:55 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 13 Sep 2010 17:08:42 +0200
 
-> PM in this driver looks broken. Please try this.
-> 
-> In short you want to drop the PM reference and depend on remote
-> wakeup and busy marking for this driver. Currently it gets a reference
-> on every open() but never drops it.
-> 
-> For locking you depend on the PM core's internal lock. You simply
-> make sure you have a PM reference during open() and close()
+perf: Sanitize the RCU logic
 
-Is there any point in resuming the device during close() just in order
-to kill the interrupt URB?  It seems counterproductive -- if the device 
-had been suspended then there wouldn't be any interrupt URB to kill in 
-the first place.
+Simplify things and simply synchronize against two RCU variants for
+PMU unregister -- we don't care about performance, its module unload
+if anything.
 
-Alan Stern
+Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |   17 +++++++++--------
+ 1 files changed, 9 insertions(+), 8 deletions(-)
 
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index f29b525..bc46bff 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -3810,7 +3810,7 @@ static void perf_event_task_event(struct perf_task_event *task_event)
+ 	struct pmu *pmu;
+ 	int ctxn;
+ 
+-	rcu_read_lock_sched();
++	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+ 		perf_event_task_ctx(&cpuctx->ctx, task_event);
+@@ -3825,7 +3825,7 @@ static void perf_event_task_event(struct perf_task_event *task_event)
+ 		if (ctx)
+ 			perf_event_task_ctx(ctx, task_event);
+ 	}
+-	rcu_read_unlock_sched();
++	rcu_read_unlock();
+ }
+ 
+ static void perf_event_task(struct task_struct *task,
+@@ -3943,7 +3943,7 @@ static void perf_event_comm_event(struct perf_comm_event *comm_event)
+ 
+ 	comm_event->event_id.header.size = sizeof(comm_event->event_id) + size;
+ 
+-	rcu_read_lock_sched();
++	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+ 		perf_event_comm_ctx(&cpuctx->ctx, comm_event);
+@@ -3956,7 +3956,7 @@ static void perf_event_comm_event(struct perf_comm_event *comm_event)
+ 		if (ctx)
+ 			perf_event_comm_ctx(ctx, comm_event);
+ 	}
+-	rcu_read_unlock_sched();
++	rcu_read_unlock();
+ }
+ 
+ void perf_event_comm(struct task_struct *task)
+@@ -4126,7 +4126,7 @@ got_name:
+ 
+ 	mmap_event->event_id.header.size = sizeof(mmap_event->event_id) + size;
+ 
+-	rcu_read_lock_sched();
++	rcu_read_lock();
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+ 		perf_event_mmap_ctx(&cpuctx->ctx, mmap_event,
+@@ -4142,7 +4142,7 @@ got_name:
+ 					vma->vm_flags & VM_EXEC);
+ 		}
+ 	}
+-	rcu_read_unlock_sched();
++	rcu_read_unlock();
+ 
+ 	kfree(buf);
+ }
+@@ -5218,10 +5218,11 @@ void perf_pmu_unregister(struct pmu *pmu)
+ 	mutex_unlock(&pmus_lock);
+ 
+ 	/*
+-	 * We use the pmu list either under SRCU or preempt_disable,
+-	 * synchronize_srcu() implies synchronize_sched() so we're good.
++	 * We dereference the pmu list under both SRCU and regular RCU, so
++	 * synchronize against both of those.
+ 	 */
+ 	synchronize_srcu(&pmus_srcu);
++	synchronize_rcu();
+ 
+ 	free_percpu(pmu->pmu_disable_count);
+ 	free_pmu_context(pmu->pmu_cpu_context);
