@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab0IMNw4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 09:52:56 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:53272 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751792Ab0IMNwz (ORCPT
+	id S1754679Ab0IMNyw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 09:54:52 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:48912 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab0IMNyv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 09:52:55 -0400
-Message-ID: <4C8E2CA2.9020703@stericsson.com>
-Date: Mon, 13 Sep 2010 15:52:34 +0200
-From: Mattias Wallin <mattias.wallin@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100824 Lightning/1.0b1 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 2/3] MFD: AB8500 debugfs
-References: <4C8DE1BE.30304@stericsson.com> <20100913132618.GB2555@sortiz-mobl>
-In-Reply-To: <20100913132618.GB2555@sortiz-mobl>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Sep 2010 09:54:51 -0400
+Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
+ nr_running
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mike Galbraith <efault@gmx.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+In-Reply-To: <1284385967.17152.13.camel@gandalf.stny.rr.com>
+References: <20100911173732.551632040@efficios.com>
+	 <20100911174003.051303123@efficios.com> <1284231470.2251.52.camel@laptop>
+	 <AANLkTin0LOuTOcJPiZcZGeZMdqsy2dohyrREw2GGhddJ@mail.gmail.com>
+	 <1284237380.2251.56.camel@laptop>
+	 <AANLkTi=a91QX-FLURFWNsjbCS1bDLr6GqSpC4_uzm3ta@mail.gmail.com>
+	 <1284282392.2251.81.camel@laptop>
+	 <1284352547.7321.51.camel@marge.simson.net>
+	 <1284367295.2275.31.camel@laptop>
+	 <1284385967.17152.13.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 13 Sep 2010 15:54:39 +0200
+Message-ID: <1284386079.2275.290.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 09/13/2010 03:26 PM, Samuel Ortiz wrote:
-> Hi Mattias,
+On Mon, 2010-09-13 at 09:52 -0400, Steven Rostedt wrote:
+> On Mon, 2010-09-13 at 10:41 +0200, Peter Zijlstra wrote:
 > 
-> I have some addtional comments:
+> > Yeah, without it you can starve the already running task on massive
+> > forks.
+> > 
+> > Still, I'm not quite sure why people really care about fork() on time
+> > sensitive paths, its a very expensive thing to do, pre-fork() and wake
+> > when you need it, is what I would say.
 > 
-> On Mon, Sep 13, 2010 at 10:33:02AM +0200, Mattias Wallin wrote:
->> +static struct platform_driver ab8500_debug_driver = {
->> +       .driver = {
->> +               .name = "ab8500-debug",
->> +               .owner = THIS_MODULE,
->> +       },
->> +       .probe  = ab8500_debug_probe,
->> +       .remove = __devexit_p(ab8500_debug_remove)
->> +};
->> +
->> +static int __init ab8500_debug_init(void)
->> +{
->> +       return platform_driver_register(&ab8500_debug_driver);
->> +}
->> +
->> +static void __exit ab8500_debug_exit(void)
->> +{
->> +       platform_driver_unregister(&ab8500_debug_driver);
->> +}
-> It seems a bit awkward to me to have this code as an actual platform driver.
-> Why not defining ab8500_debug_[probe|remove] in ab8500.h as no-op when
-> CONFIG_AB8500_DEBUG is not defined and as extern otherwise ?
-In the register access interface abx500_get_register_interruptible() the first
-argument is a struct *device. This struct *device needs to be a (platform) device "child" to
-the ab8500-core (dev->parent is used).
-The idea is that we want only devices started by the ab8500 core to
-be able to access the ab8500 registers. So all platform devices started by
-ab8500-core just pass in their own struct *device as first argument.
+> Fork is used all over the place in Linux. Every shell script uses it to
+> execute commands. Bad fork behavior shows up in just doing a build of
+> the kernel.
 
-So the register access restricted to device children is one reason. I also
-want the debugfs driver to use the same access method as all other subdrivers.
-
-BR,
-/Mattias Wallin
+Sure, but there's a difference between bad fork behaviour and the lowest
+possible latency. But maybe I'm too paranoid from doing -rt, but the
+first thing I'd do is get all resource allocations out from your fast
+path.
