@@ -1,85 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab0IMQKN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 12:10:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54268 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332Ab0IMQKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 12:10:12 -0400
-X-Authority-Analysis: v=1.1 cv=2ipXt8Ao/PPbK329gQN1nC6XU/V8QMABDttguNTIlb0= c=1 sm=0 a=C1JT1793vIUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=IqdN8cW2qiXuo5HI3TQA:9 a=-Cw2643ObA19phZm9qoA:7 a=DNb1-ZeAklAFxyQv0iGgdJbeVCcA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] trace-cmd: Use lseek64 and off64_t in
- tracecmd_append_cpu_data().
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Sharp <dhsharp@google.com>
-Cc: mrubin@google.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1284168258-24287-1-git-send-email-dhsharp@google.com>
-References: <1284168258-24287-1-git-send-email-dhsharp@google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 13 Sep 2010 12:10:10 -0400
-Message-ID: <1284394210.17152.58.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1753717Ab0IMQKf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 12:10:35 -0400
+Received: from mail.ipom.com ([74.207.225.167]:37360 "EHLO mail.ipom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753283Ab0IMQKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 12:10:34 -0400
+X-Greylist: delayed 468 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Sep 2010 12:10:34 EDT
+Message-ID: <4C8E4B14.7090904@ipom.com>
+Date: Mon, 13 Sep 2010 18:02:28 +0200
+From: Phil Dibowitz <phil@ipom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: Alan Stern <stern@rowland.harvard.edu>, Jiri Slaby <jslaby@suse.cz>,
+        stable@kernel.org, USB list <linux-usb@vger.kernel.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [34-stable regression] USB delay init quirk causes device events
+ loss
+References: <4C8E3C40.50808@suse.cz> <Pine.LNX.4.44L0.1009131118180.1315-100000@iolanthe.rowland.org> <20100913155608.GA27853@suse.de>
+In-Reply-To: <20100913155608.GA27853@suse.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig1DBAB5ABA11EA6A8687144C2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig1DBAB5ABA11EA6A8687144C2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2010-09-10 at 18:24 -0700, David Sharp wrote:
-> lseek64 returns 64-bit, but was being truncated to int. Large offsets would
-> cause the subsequent error checking to fail spuriously, leaving behind a bad
-> trace.dat and a collection of trace.dat.cpuX files.
+On 09/13/2010 05:56 PM, Greg KH wrote:
+> On Mon, Sep 13, 2010 at 11:37:49AM -0400, Alan Stern wrote:
+>> On Mon, 13 Sep 2010, Jiri Slaby wrote:
+>>
+>>> On 09/13/2010 04:48 PM, Alan Stern wrote:
+>>>> On Mon, 13 Sep 2010, Jiri Slaby wrote:
+>>>>> In other words, what I could do is to add some printks into
+>>>>> hub_port_connect_change if that's called at all. If you need some
+>>>>> thorough debugging printks, please send me a patch to test instead.=
+
+>>>>
+>>>> Hmm.  I'd prefer to explain how it's all supposed to work and let yo=
+u
+>>>> figure out where best to look.  Or try to debug it myself.  Does thi=
+s
+>>>> happen with other sorts of USB devices as well, or just wacom?
+>>>
+>>> With some sort of devices (I cannot reproduce myself). It's unrelated=
+ to
+>>> wacom -- people with wacom were unable to even start X with this kern=
+el.
+>>> If you look at the bugreport, there are several examples:
+>>> ID 046d:c517 Logitech, Inc. LX710 Cordless Desktop Laser defunct
+>>> Microsoft USB keyboard defunct x Logitech mice OK
+>>> 046a:0021 Cherry GmbH keyboard defunct
+>>> logitech wireless laptop mouse defunct
+>>> A$Tech wireless laptop mouse defunct
+>>> TypeMatrix USB 2030 (ID : 1e54:2030) defunct
+>>
+>> Okay, I see the problem.  By moving usb_detect_quirks earlier, we end =
+
+>> up calling usb_disable_autosuspend too soon -- before the=20
+>> pm_runtime_enable call in usb_new_device.  In 2.6.35 this doesn't=20
+>> matter because the implementation of usb_autosuspend_device has=20
+>> changed.
+>>
+>> So yes, in the end it looks like the best course is to revert this
+>> patch from 2.6.34.stable.  This is unfortunate but I don't see any way=
+
+>> around it without making changes that aren't present in the current
+>> kernel. For example, the pm_runtime_set_active and pm_runtime_enable
+>> calls could also be moved from usb_new_device into
+>> hub_port_connect_change.
+>=20
+> Ok, I'll go revert that from the .34-stable tree and do a new release,
+> as it's not nice to have a broken tree out there.
+
+Sorry to chime in late on the conversation on my patch.
+
+Thanks for figuring this out Alan. I think this is reasonable. However, I=
+
+think this also went into .32-stable and should probably be reverted ther=
+e
+as well.
+
+I'll advise my users to make sure they have at least .35.
+
+--=20
+Phil Dibowitz                             phil@ipom.com
+Open Source software and tech docs        Insanity Palace of Metallica
+http://www.phildev.net/                   http://www.ipom.com/
+
+"Be who you are and say what you feel, because those who mind don't matte=
+r
+ and those who matter don't mind."
+ - Dr. Seuss
 
 
-Could you resend with your SoB.
 
-Thanks!
+--------------enig1DBAB5ABA11EA6A8687144C2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
--- Steve
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-> ---
->  trace-output.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/trace-output.c b/trace-output.c
-> index 89b3954..0730a1e 100644
-> --- a/trace-output.c
-> +++ b/trace-output.c
-> @@ -705,9 +705,9 @@ out_free:
->  int tracecmd_append_cpu_data(struct tracecmd_output *handle,
->  			     int cpus, char * const *cpu_data_files)
->  {
-> -	unsigned long long *offsets = NULL;
-> +	off64_t *offsets = NULL;
->  	unsigned long long *sizes = NULL;
-> -	unsigned long long offset;
-> +	off64_t offset;
->  	unsigned long long endian8;
->  	off64_t check_size;
->  	char *file;
-> @@ -733,7 +733,7 @@ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
->  	if (!sizes)
->  		goto out_free;
->  
-> -	offset = lseek(handle->fd, 0, SEEK_CUR);
-> +	offset = lseek64(handle->fd, 0, SEEK_CUR);
->  
->  	/* hold any extra data for data */
->  	offset += cpus * (16);
-> @@ -761,8 +761,8 @@ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
->  
->  	for (i = 0; i < cpus; i++) {
->  		fprintf(stderr, "offset=%llx\n", offsets[i]);
-> -		ret = lseek64(handle->fd, offsets[i], SEEK_SET);
-> -		if (ret < 0) {
-> +		offset = lseek64(handle->fd, offsets[i], SEEK_SET);
-> +		if (offset == (off64_t)-1) {
->  			warning("could not seek to %lld\n", offsets[i]);
->  			goto out_free;
->  		}
+iEYEARECAAYFAkyOSxQACgkQN5XoxaHnMrv3vgCdGRUfx6WFAkDKtRvTeqZWWVSI
+hKEAoJItsQRTERPVfZwHPPYHP4lyJcso
+=pFLs
+-----END PGP SIGNATURE-----
 
-
+--------------enig1DBAB5ABA11EA6A8687144C2--
