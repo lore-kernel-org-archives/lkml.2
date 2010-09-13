@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab0IMPCe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:02:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52090 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836Ab0IMPCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:02:33 -0400
-Date: Mon, 13 Sep 2010 17:02:32 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: anil joshi <anilsjoshi123@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, arnd@arndb.de,
-        =?ISO-8859-15?Q?Peter_J=FAno=A8?= <petoju@gmail.com>,
-        linux-input@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        markus@trippelsdorf.de
-Subject: Re: HIDDEV: potential NULL dereference
-In-Reply-To: <AANLkTik0hZzwKU6QokgA5B7GzWtTDQWxhfog902ZS9XZ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1009131701590.26813@pobox.suse.cz>
-References: <4C82419C.3050903@suse.cz> <AANLkTikyW6q3tufYwwX4QEAkV0JGCWcvGr4EJyNGJOpk@mail.gmail.com> <AANLkTik0hZzwKU6QokgA5B7GzWtTDQWxhfog902ZS9XZ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+	id S1752611Ab0IMPJH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:09:07 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40319 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074Ab0IMPJF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 11:09:05 -0400
+Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
+From: Peter Zijlstra <peterz@infradead.org>
+To: eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        eranian@gmail.com, robert.richter@amd.com, markus.t.metzger@intel.com
+In-Reply-To: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
+References: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Mon, 13 Sep 2010 17:08:50 +0200
+Message-ID: <1284390530.2275.327.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Sep 2010, anil joshi wrote:
+On Mon, 2010-09-13 at 16:55 +0200, Stephane Eranian wrote:
+> The DS, BTS, and PEBS memory regions were allocated using kzalloc(), i.e.,
+> requesting contiguous physical memory. There is no such restriction on
+> DS, PEBS and BTS buffers. Using kzalloc() could lead to error in case
+> no contiguous physical memory is available. BTS is requesting 64KB,
+> thus it can cause issues. PEBS is currently only requesting one page.
+> Both PEBS and BTS are static buffers allocated for each CPU at the
+> first user. When the last user exists, the buffers are released.
+> 
+> All buffers are only accessed on the CPU they are attached to.
+> kzalloc() does not take into account NUMA, thus all allocations
+> are taking place on the NUMA node where the perf_event_open() is
+> made.
 
-> 
-> 
-> On Thu, Sep 9, 2010 at 7:59 PM, anil joshi <anilsjoshi123@gmail.com> wrote:
->        hid->dev.parent is "usb_interfae"  pointer is kfree  in  usb_release_interfece 
-> hid_to_usb_dev(dev) accessing hid->dev.parent 
-> 
-> I have tested this,while removing  hid device  
-> 
-> usb_release_interfece is belonging to khubd  process 
-> 
-> I get many use full information  from  Jiri Kosina, Markus Trippelsdorf, regarding this issue
-> from http://kerneltrap.org/mailarchive/linux-kernel/2010/8/12/4606155/thread#mid-4606155
-> 
-> To avoid  NULL deference problem 
-> 
-> hiddev->exist is zero before usb_deregister_dev  call in  hiddev_disconnected  function there fore
-> we could use
-> static long hiddev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-> {
-> 
-> 
->      if (hiddev->exist) {
->          hid_to_usb_dev(dev);
->        } else {
->             return -EIO
->    }
-> 
-> 
-> Thanks to Markus Trippelsdorf , Jiri Kosina 
+I guess that should have been a alloc_pages_node() indeed.
 
-Hi Anil,
+> This patch switches allocation to vmalloc_node() to use non-contiguous
+> physical memory and to allocate on the NUMA node corresponding to each
+> CPU. We switched DS and PEBS although they do not cause problems today,
+> to, at least, make the allocation on the correct NUMA node. In the future,
+> the PEBS buffer size may increase. DS may also grow bigger than a page.
+> This patch eliminates the memory allocation imbalance.
 
-could you please send a proper patch (diff against current kernel) and a 
-short changelog entry with the explanation, so that I could easily 
-understand what you are proposing?
+I'm not really a fan of vmalloc, have you actually observed allocation
+failures for these 64k (order-4) allocations?
 
-Thanks!
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
