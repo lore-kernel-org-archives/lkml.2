@@ -1,70 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab0IMUAr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 16:00:47 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60123 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754473Ab0IMUAp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 16:00:45 -0400
-Date: Mon, 13 Sep 2010 13:00:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, Huang Ying <ying.huang@intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] ACPI: apei: Cast u64 to unsigned long, fix compile
- warning
-Message-Id: <20100913130035.decb0d44.akpm@linux-foundation.org>
-In-Reply-To: <1284299305.7239.4.camel@lenovo>
-References: <1284299305.7239.4.camel@lenovo>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755656Ab0IMUBi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 16:01:38 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:43613 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754930Ab0IMUBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 16:01:36 -0400
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: containers@lists.linux-foundation.org, Matt Helsley <matthltc@us.ibm.com>,
+        Robin Green <greenrd@greenrd.org>, linux-kernel@vger.kernel.org,
+        Prasad <prasad@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Will Deacon <will.deacon@arm.com>,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Subject: [PATCH 2/3] perf events: Split out task search into helper
+Date: Mon, 13 Sep 2010 13:01:19 -0700
+Message-Id: <561205417b450b8a4bf7488374541d64b4690431.1284407762.git.matthltc@us.ibm.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <f63454af09fb1915717251570423eb9ddd338340.1284407762.git.matthltc@us.ibm.com>
+References: <1284408080-2135-1-git-send-email-matthltc@us.ibm.com>
+ <f63454af09fb1915717251570423eb9ddd338340.1284407762.git.matthltc@us.ibm.com>
+In-Reply-To: <f63454af09fb1915717251570423eb9ddd338340.1284407762.git.matthltc@us.ibm.com>
+References: <f63454af09fb1915717251570423eb9ddd338340.1284407762.git.matthltc@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Sep 2010 09:48:25 -0400
-Javier Martinez Canillas <martinez.javier@gmail.com> wrote:
+Split out the code which searches for non-exiting tasks into its own
+helper. Creating this helper not only makes the code slightly more
+readable it prepares to move the search out of find_get_context() in
+a subsequent commit.
 
-> In today linux-net I got a compile warning in acpi/apei
-> 
-> drivers/acpi/apei/erst.c: In function ___erst_exec_move_data___:
-> drivers/acpi/apei/erst.c:273: warning: cast to pointer from integer of different size
-> drivers/acpi/apei/erst.c:274: warning: cast to pointer from integer of different size
-> 
-> The problem is that apei_exec_context->dst_base type is u64.
-> But in 32 bits architecture void * is 32 bits long. 
-> Casting it to unsigned long solves the issue
-> 
-> Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
-> ---
->  drivers/acpi/apei/erst.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-> index a4904f1..37d7a05 100644
-> --- a/drivers/acpi/apei/erst.c
-> +++ b/drivers/acpi/apei/erst.c
-> @@ -270,8 +270,8 @@ static int erst_exec_move_data(struct apei_exec_context *ctx,
->  	rc = __apei_exec_read_register(entry, &offset);
->  	if (rc)
->  		return rc;
-> -	memmove((void *)ctx->dst_base + offset,
-> -		(void *)ctx->src_base + offset,
-> +	memmove((void *)(unsigned long)ctx->dst_base + offset,
-> +		(void *)(unsigned long)ctx->src_base + offset,
->  		ctx->var2);
->  
->  	return 0;
+Cc: Robin Green <greenrd@greenrd.org>
+Cc: linux-kernel@vger.kernel.org
+Cc: containers@lists.linux-foundation.org
+Cc: Prasad <prasad@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
+---
+ kernel/perf_event.c |   63 ++++++++++++++++++++++++++++++++------------------
+ 1 files changed, 40 insertions(+), 23 deletions(-)
 
-This might indicate that the incorrect types were used within the
-`struct apei_exec_context'.  I can't tell (or can't be bothered working
-it out), because whoever wrote that didn't bother documenting any of it
-at all.
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 440f9ca..3f5309d 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -2015,6 +2015,43 @@ alloc_perf_context(struct pmu *pmu, struct task_struct *task)
+ 	return ctx;
+ }
+ 
++static struct task_struct *
++find_lively_task_by_vpid(pid_t vpid)
++{
++	struct task_struct *task;
++	int err;
++
++	rcu_read_lock();
++	if (!vpid)
++		task = current;
++	else
++		task = find_task_by_vpid(vpid);
++	if (task)
++		get_task_struct(task);
++	rcu_read_unlock();
++
++	if (!task)
++		return ERR_PTR(-ESRCH);
++
++	/*
++	 * Can't attach events to a dying task.
++	 */
++	err = -ESRCH;
++	if (task->flags & PF_EXITING)
++		goto errout;
++
++	/* Reuse ptrace permission checks for now. */
++	err = -EACCES;
++	if (!ptrace_may_access(task, PTRACE_MODE_READ))
++		goto errout;
++
++	return task;
++errout:
++	put_task_struct(task);
++	return ERR_PTR(err);
++
++}
++
+ static struct perf_event_context *
+ find_get_context(struct pmu *pmu, pid_t pid, int cpu)
+ {
+@@ -2047,29 +2084,9 @@ find_get_context(struct pmu *pmu, pid_t pid, int cpu)
+ 		return ctx;
+ 	}
+ 
+-	rcu_read_lock();
+-	if (!pid)
+-		task = current;
+-	else
+-		task = find_task_by_vpid(pid);
+-	if (task)
+-		get_task_struct(task);
+-	rcu_read_unlock();
+-
+-	if (!task)
+-		return ERR_PTR(-ESRCH);
+-
+-	/*
+-	 * Can't attach events to a dying task.
+-	 */
+-	err = -ESRCH;
+-	if (task->flags & PF_EXITING)
+-		goto errout;
+-
+-	/* Reuse ptrace permission checks for now. */
+-	err = -EACCES;
+-	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+-		goto errout;
++	task = find_lively_task_by_vpid(pid);
++	if (IS_ERR(task))
++		return (void*)task;
+ 
+ 	err = -EINVAL;
+ 	ctxn = pmu->task_ctx_nr;
+-- 
+1.6.3.3
 
-Are those things kernel virtual addresses?  If so, a pointer type
-should have been used.
