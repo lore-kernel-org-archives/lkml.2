@@ -1,137 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab0IMQIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 12:08:18 -0400
-Received: from mailbigip.dreamhost.com ([208.97.132.5]:56933 "EHLO
-	homiemail-a6.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752219Ab0IMQIR (ORCPT
+	id S1753601Ab0IMQKN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 12:10:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54268 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab0IMQKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 12:08:17 -0400
-Subject: [PATCH] serial: max3107: Fix memory leaks when returning on error
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: jianwei.yang@intel.com, alan@linux.intel.com, gregkh@suse.de
-Cc: linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Sep 2010 12:08:11 -0400
-Message-ID: <1284394091.2055.5.camel@cowboy>
+	Mon, 13 Sep 2010 12:10:12 -0400
+X-Authority-Analysis: v=1.1 cv=2ipXt8Ao/PPbK329gQN1nC6XU/V8QMABDttguNTIlb0= c=1 sm=0 a=C1JT1793vIUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=IqdN8cW2qiXuo5HI3TQA:9 a=-Cw2643ObA19phZm9qoA:7 a=DNb1-ZeAklAFxyQv0iGgdJbeVCcA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] trace-cmd: Use lseek64 and off64_t in
+ tracecmd_append_cpu_data().
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: mrubin@google.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1284168258-24287-1-git-send-email-dhsharp@google.com>
+References: <1284168258-24287-1-git-send-email-dhsharp@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 13 Sep 2010 12:10:10 -0400
+Message-ID: <1284394210.17152.58.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH] serial: max3107: Fix memory leaks in max3107_probe() when returning on error.
+Hi David,
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- drivers/serial/max3107.c |   34 +++++++++++++++++++++++++---------
- 1 files changed, 25 insertions(+), 9 deletions(-)
+On Fri, 2010-09-10 at 18:24 -0700, David Sharp wrote:
+> lseek64 returns 64-bit, but was being truncated to int. Large offsets would
+> cause the subsequent error checking to fail spuriously, leaving behind a bad
+> trace.dat and a collection of trace.dat.cpuX files.
 
-diff --git a/drivers/serial/max3107.c b/drivers/serial/max3107.c
-index 67283c1..910870e 100644
---- a/drivers/serial/max3107.c
-+++ b/drivers/serial/max3107.c
-@@ -986,12 +986,14 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 	s->rxbuf = kzalloc(sizeof(u16) * (MAX3107_RX_FIFO_SIZE+2), GFP_KERNEL);
- 	if (!s->rxbuf) {
- 		pr_err("Allocating RX buffer failed\n");
--		return -ENOMEM;
-+		retval = -ENOMEM;
-+		goto err_free4;
- 	}
- 	s->rxstr = kzalloc(sizeof(u8) * MAX3107_RX_FIFO_SIZE, GFP_KERNEL);
- 	if (!s->rxstr) {
- 		pr_err("Allocating RX buffer failed\n");
--		return -ENOMEM;
-+		retval = -ENOMEM;
-+		goto err_free3;
- 	}
- 	/* SPI Tx buffer
- 	 * SPI transfer buffer
-@@ -1002,7 +1004,8 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 	s->txbuf = kzalloc(sizeof(u16) * MAX3107_TX_FIFO_SIZE + 3, GFP_KERNEL);
- 	if (!s->txbuf) {
- 		pr_err("Allocating TX buffer failed\n");
--		return -ENOMEM;
-+		retval = -ENOMEM;
-+		goto err_free2;
- 	}
- 	/* Initialize shared data lock */
- 	spin_lock_init(&s->data_lock);
-@@ -1021,13 +1024,15 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 	buf[0] = MAX3107_REVID_REG;
- 	if (max3107_rw(s, (u8 *)buf, (u8 *)buf, 2)) {
- 		dev_err(&s->spi->dev, "SPI transfer for REVID read failed\n");
--		return -EIO;
-+		retval = -EIO;
-+		goto err_free1;
- 	}
- 	if ((buf[0] & MAX3107_SPI_RX_DATA_MASK) != MAX3107_REVID1 &&
- 		(buf[0] & MAX3107_SPI_RX_DATA_MASK) != MAX3107_REVID2) {
- 		dev_err(&s->spi->dev, "REVID %x does not match\n",
- 				(buf[0] & MAX3107_SPI_RX_DATA_MASK));
--		return -ENODEV;
-+		retval = -ENODEV;
-+		goto err_free1;
- 	}
- 
- 	/* Disable all interrupts */
-@@ -1047,7 +1052,8 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 	/* Perform SPI transfer */
- 	if (max3107_rw(s, (u8 *)buf, NULL, 4)) {
- 		dev_err(&s->spi->dev, "SPI transfer for init failed\n");
--		return -EIO;
-+		retval = -EIO;
-+		goto err_free1;
- 	}
- 
- 	/* Register UART driver */
-@@ -1055,7 +1061,7 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 		retval = uart_register_driver(&max3107_uart_driver);
- 		if (retval) {
- 			dev_err(&s->spi->dev, "Registering UART driver failed\n");
--			return retval;
-+			goto err_free1;
- 		}
- 		driver_registered = 1;
- 	}
-@@ -1074,13 +1080,13 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 	retval = uart_add_one_port(&max3107_uart_driver, &s->port);
- 	if (retval < 0) {
- 		dev_err(&s->spi->dev, "Adding UART port failed\n");
--		return retval;
-+		goto err_free1;
- 	}
- 
- 	if (pdata->configure) {
- 		retval = pdata->configure(s);
- 		if (retval < 0)
--			return retval;
-+			goto err_free1;
- 	}
- 
- 	/* Go to suspend mode */
-@@ -1088,6 +1094,16 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 		pdata->hw_suspend(s, 1);
- 
- 	return 0;
-+
-+err_free1:
-+	kfree(s->txbuf);
-+err_free2:
-+	kfree(s->rxstr);
-+err_free3:
-+	kfree(s->rxbuf);
-+err_free4:
-+	kfree(s);
-+	return retval;
- }
- EXPORT_SYMBOL_GPL(max3107_probe);
- 
--- 
-1.7.0.4
 
+Could you resend with your SoB.
+
+Thanks!
+
+-- Steve
+
+> ---
+>  trace-output.c |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/trace-output.c b/trace-output.c
+> index 89b3954..0730a1e 100644
+> --- a/trace-output.c
+> +++ b/trace-output.c
+> @@ -705,9 +705,9 @@ out_free:
+>  int tracecmd_append_cpu_data(struct tracecmd_output *handle,
+>  			     int cpus, char * const *cpu_data_files)
+>  {
+> -	unsigned long long *offsets = NULL;
+> +	off64_t *offsets = NULL;
+>  	unsigned long long *sizes = NULL;
+> -	unsigned long long offset;
+> +	off64_t offset;
+>  	unsigned long long endian8;
+>  	off64_t check_size;
+>  	char *file;
+> @@ -733,7 +733,7 @@ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
+>  	if (!sizes)
+>  		goto out_free;
+>  
+> -	offset = lseek(handle->fd, 0, SEEK_CUR);
+> +	offset = lseek64(handle->fd, 0, SEEK_CUR);
+>  
+>  	/* hold any extra data for data */
+>  	offset += cpus * (16);
+> @@ -761,8 +761,8 @@ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
+>  
+>  	for (i = 0; i < cpus; i++) {
+>  		fprintf(stderr, "offset=%llx\n", offsets[i]);
+> -		ret = lseek64(handle->fd, offsets[i], SEEK_SET);
+> -		if (ret < 0) {
+> +		offset = lseek64(handle->fd, offsets[i], SEEK_SET);
+> +		if (offset == (off64_t)-1) {
+>  			warning("could not seek to %lld\n", offsets[i]);
+>  			goto out_free;
+>  		}
 
 
