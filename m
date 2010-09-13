@@ -1,43 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab0IMQiY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 12:38:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60450 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752611Ab0IMQiX (ORCPT
+	id S1753708Ab0IMQkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 12:40:10 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60001 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab0IMQkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 12:38:23 -0400
+	Mon, 13 Sep 2010 12:40:08 -0400
+Message-ID: <4C8E526C.8000209@oracle.com>
+Date: Mon, 13 Sep 2010 09:33:48 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <20100913161641.GA28707@Krystal>
-References: <20100911173732.551632040@efficios.com> <20100911174003.051303123@efficios.com>
- <1284231470.2251.52.camel@laptop> <20100911195708.GA9273@Krystal>
- <1284288072.2251.91.camel@laptop> <20100912203712.GD32327@Krystal>
- <1284382387.2275.265.camel@laptop> <1284383758.2275.283.camel@laptop>
- <20100913135621.GA13442@Krystal> <1284387398.2275.311.camel@laptop> <20100913161641.GA28707@Krystal>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 13 Sep 2010 09:36:56 -0700
-Message-ID: <AANLkTimB9CjH5SjeY9XmwhTp1tfFPwh-Q1Y4o918h7XD@mail.gmail.com>
-Subject: Re: [RFC PATCH] check_preempt_tick should not compare vruntime with
- wall time
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-next@vger.kernel.org,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH -next,-tip ] kprobes: Fix Kconfig dependency
+References: <4C8DCFAE.4020700@hitachi.com> <20100913102541.20260.85700.stgit@ltc236.sdl.hitachi.co.jp>
+In-Reply-To: <20100913102541.20260.85700.stgit@ltc236.sdl.hitachi.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 9:16 AM, Mathieu Desnoyers
-<mathieu.desnoyers@efficios.com> wrote:
->
-> OK, the long IRC discussions we just had convinced me that the current scheme
-> takes things into account by adapting the granularity dynamically, but also got
-> me to notice that check_preempt seems to compare vruntime with wall time, which
-> is utterly incorrect. So maybe all my patch was doing was to expose this bug:
+On 09/13/10 03:25, Masami Hiramatsu wrote:
+> Fix Kconfig dependency among Kprobes, optprobe and kallsyms.
+> 
+> Kprobes uses kallsyms_lookup for finding target function and checking
+> instruction boundary, thus CONFIG_KPROBES should select CONFIG_KALLSYMS.
+> 
+> Optprobe is an optional feature which is supported on x86 arch, and
+> it also uses kallsyms_lookup for checking instructions in the target
+> function. Since KALLSYMS_ALL just adds symbols of kernel variables,
+> it doesn't need to select KALLSYMS_ALL.
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Felipe Contreras <felipe.contreras@gmail.com>
+> Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+> Cc: linux-kernel@vger.kernel.org,
+> Cc: linux-next@vger.kernel.org,
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+> Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+> Cc: "David S. Miller" <davem@davemloft.net>,
+> Cc: akpm <akpm@linux-foundation.org>
+> ---
+> 
+>  arch/Kconfig |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index 4877a8c..fe48fc7 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -32,8 +32,9 @@ config HAVE_OPROFILE
+>  
+>  config KPROBES
+>  	bool "Kprobes"
+> -	depends on KALLSYMS && MODULES
+> +	depends on MODULES
+>  	depends on HAVE_KPROBES
+> +	select KALLSYMS
+>  	help
+>  	  Kprobes allows you to trap at almost any kernel address and
+>  	  execute a callback function.  register_kprobe() establishes
+> @@ -45,7 +46,6 @@ config OPTPROBES
+>  	def_bool y
+>  	depends on KPROBES && HAVE_OPTPROBES
+>  	depends on !PREEMPT
+> -	select KALLSYMS_ALL
+>  
+>  config HAVE_EFFICIENT_UNALIGNED_ACCESS
+>  	bool
+> 
 
-Do you have latency numbers for this patch?
+Fixes the kconfig dependency problem.  Thanks.
 
-                    Linus
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
