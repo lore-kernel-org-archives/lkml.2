@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab0IMTsb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:48:31 -0400
-Received: from mail.perches.com ([173.55.12.10]:1875 "EHLO mail.perches.com"
+	id S1755311Ab0IMTsc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:48:32 -0400
+Received: from mail.perches.com ([173.55.12.10]:1867 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166Ab0IMTsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:48:25 -0400
+	id S1755162Ab0IMTsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 15:48:24 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org
-Subject: [PATCH 06/25] drivers/isdn: Use static const char arrays
-Date: Mon, 13 Sep 2010 12:47:44 -0700
-Message-Id: <0456ee44384064d43253cf1b0837f88e318bddf2.1284406638.git.joe@perches.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH 03/25] drivers/acpi: Use static const char arrays
+Date: Mon, 13 Sep 2010 12:47:41 -0700
+Message-Id: <586912c51cea49db9bb042a9badae0bbe8cba529.1284406638.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.rc1
 In-Reply-To: <cover.1284406638.git.joe@perches.com>
 References: <cover.1284406638.git.joe@perches.com>
@@ -21,36 +21,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/isdn/hysdn/hycapi.c  |    2 +-
- drivers/isdn/mISDN/dsp_cmx.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/sleep.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/isdn/hysdn/hycapi.c b/drivers/isdn/hysdn/hycapi.c
-index 6299b06..5de3a93 100644
---- a/drivers/isdn/hysdn/hycapi.c
-+++ b/drivers/isdn/hysdn/hycapi.c
-@@ -151,7 +151,7 @@ static void
- hycapi_register_internal(struct capi_ctr *ctrl, __u16 appl,
- 			 capi_register_params *rp)
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index cf82989..566b1cdd 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -567,7 +567,7 @@ int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
  {
--	char ExtFeatureDefaults[] = "49  /0/0/0/0,*/1,*/2,*/3,*/4,*/5,*/6,*/7,*/8,*/9,*";
-+	static const char ExtFeatureDefaults[] = "49  /0/0/0/0,*/1,*/2,*/3,*/4,*/5,*/6,*/7,*/8,*/9,*";
- 	hycapictrl_info *cinfo = (hycapictrl_info *)(ctrl->driverdata);
- 	hysdn_card *card = cinfo->card;
- 	struct sk_buff *skb;
-diff --git a/drivers/isdn/mISDN/dsp_cmx.c b/drivers/isdn/mISDN/dsp_cmx.c
-index 76d9e67..3d80990 100644
---- a/drivers/isdn/mISDN/dsp_cmx.c
-+++ b/drivers/isdn/mISDN/dsp_cmx.c
-@@ -1155,7 +1155,7 @@ int delaycount;
- static void
- showdelay(struct dsp *dsp, int samples, int delay)
- {
--	char bar[] = "--------------------------------------------------|";
-+	static const char bar[] = "--------------------------------------------------|";
- 	int sdelay;
+ 	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
+ 	struct acpi_device *adev;
+-	char acpi_method[] = "_SxD";
++	char acpi_method[sizeof("_SxD")];
+ 	unsigned long long d_min, d_max;
  
- 	delaycount += samples;
+ 	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
+@@ -575,7 +575,7 @@ int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
+ 		return -ENODEV;
+ 	}
+ 
+-	acpi_method[2] = '0' + acpi_target_sleep_state;
++	sprintf(acpi_method, "_S%cD", '0' + acpi_target_sleep_state);
+ 	/*
+ 	 * If the sleep state is S0, we will return D3, but if the device has
+ 	 * _S0W, we will use the value from _S0W
 -- 
 1.7.3.rc1
 
