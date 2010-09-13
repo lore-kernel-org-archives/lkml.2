@@ -1,116 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755179Ab0IMMQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 08:16:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56312 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105Ab0IMMQV convert rfc822-to-8bit (ORCPT
+	id S1755156Ab0IMMTM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 08:19:12 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:35548 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671Ab0IMMTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 08:16:21 -0400
-Subject: Re: [tip:perf/core] perf: Rework the PMU methods
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael Cree <mcree@orcon.net.nz>
-Cc: mingo@redhat.com, dengcheng.zhu@gmail.com, yanmin_zhang@linux.intel.com,
-        gorcunov@gmail.com, fweisbec@gmail.com, robert.richter@amd.com,
-        ming.m.lin@intel.com, tglx@linutronix.de, hpa@zytor.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, eranian@googlemail.com,
-        will.deacon@arm.com, lethal@linux-sh.org, davem@davemloft.net,
-        mingo@elte.hu, linux-alpha@vger.kernel.org
-In-Reply-To: <4C8C6611.20206@orcon.net.nz>
-References: <new-submission>
-	 <tip-a4eaf7f14675cb512d69f0c928055e73d0c6d252@git.kernel.org>
-	 <4C8B3AD3.5050309@orcon.net.nz> <1284198035.2251.29.camel@laptop>
-	 <4C8C6611.20206@orcon.net.nz>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 13 Sep 2010 14:15:53 +0200
-Message-ID: <1284380153.2275.261.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 13 Sep 2010 08:19:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=nZxmkIlw6PNVgrbstXk7KeT9ZNgop3PmeUXruupXtwAWH/HfWkbHzEUwobjSWP+Vv2
+         RzafABzwj2WohqY61mzayrhKRCz/HRaolk53hsrYtODSYgjyO59F4vgIorNOkhSYWBpV
+         HTbm8t3P0KnAuATIFBY6Z88OkRt47fq4xcCJs=
+Date: Mon, 13 Sep 2010 20:19:03 +0800
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] remove unused PF_ALIGNWARN flag
+Message-ID: <20100913121903.GB22238@darkstar>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-09-12 at 17:33 +1200, Michael Cree wrote:
+PF_ALIGNWARN is not implemented and it is for 486 as the comment.
 
-> Yes, done.  I also took the liberty to fix an undefined variable and 
-> multiple defined variable errors that were exposed by compilation.  Will 
-> reply to this with the patch.
+It is not likely someone will implement this flag feature.
+So here remove this flag and leave the valuable 0x00000001 for future use.
 
-Thanks, and sorry for messing up Alpha that bad.. I have an alpha
-compiler and I really through I compile tested it :/
-
-> I've also tested it on a UP alpha.  It worked well for a little while 
-> but after running 'perf top' for a number of seconds I got the following 
-> warning:
-
-<snip warn>
-
-> which is from the line in alpha_pmu_start() that checks that 
-> PERF_HES_STOPPED is set.
-> 
-> I see that the backtrace is from the Alpha timer_interrupt() code which 
-> goes something like this:
-> 
-> [do some stuff updating timer deltas then...]
-> 
-> #ifndef CONFIG_SMP
->          while (nticks--)
->                  update_process_times(user_mode(get_irq_regs()));
-> #endif
-> 
->          if (test_perf_event_pending()) {
->                  clear_perf_event_pending();
->                  perf_event_do_pending();
->          }
-> 
->          return IRQ_HANDLED;
-> }
-> 
-> 
-> When I added the code for handle pending events to the timer interrupt I 
-> hadn't realised that update_process_times() could call back into the 
-> perf code.  I'm speculating here, but could it be that there is pending 
-> work to stop the HW counter, but the call to re-start it is beating the 
-> call to stop it?
-
-Right, so the ->start() call came from perf_ctx_adjust_freq(), which
-depending on whether perf_adjust_period() gets inlined, can have two
-such calls.
-
-Assuming it didn't inline (there's two callsites, which should defeat
-the inline static functions with a single callsite heuristic), you hit
-the unthrottle() call.
-
-Ahh, the alpha throttle call should be using the fancy new stop function
-too (will fold into your earlier patch if it indeed works):
-
-As to the point you raised above, yes, I think it would be prudent to
-call perf_event_do_pending() before update_process_times().
-
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
 ---
-Index: linux-2.6/arch/alpha/kernel/perf_event.c
-===================================================================
---- linux-2.6.orig/arch/alpha/kernel/perf_event.c
-+++ linux-2.6/arch/alpha/kernel/perf_event.c
-@@ -825,14 +825,14 @@ static void alpha_perf_event_irq_handler
- 			break;
- 	}
- 
-+	event = cpuc->event[j];
-+
- 	if (unlikely(j == cpuc->n_events)) {
- 		/* This can occur if the event is disabled right on a PMC overflow. */
--		wrperfmon(PERFMON_CMD_ENABLE, cpuc->idx_mask);
-+		alpha_pmu_stop(event, 0);
- 		return;
- 	}
- 
--	event = cpuc->event[j];
--
- 	if (unlikely(!event)) {
- 		/* This should never occur! */
- 		irq_err_count++;
+ include/linux/sched.h |    2 --
+ 1 file changed, 2 deletions(-)
 
+--- linux-2.6.orig/include/linux/sched.h	2010-08-20 10:29:22.000000000 +0800
++++ linux-2.6/include/linux/sched.h	2010-09-13 18:03:33.496667520 +0800
+@@ -1681,8 +1681,6 @@ extern void thread_group_times(struct ta
+ /*
+  * Per process flags
+  */
+-#define PF_ALIGNWARN	0x00000001	/* Print alignment warning msgs */
+-					/* Not implemented yet, only for 486*/
+ #define PF_STARTING	0x00000002	/* being created */
+ #define PF_EXITING	0x00000004	/* getting shut down */
+ #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
