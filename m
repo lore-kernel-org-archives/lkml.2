@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab0IMNgS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 09:36:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5337 "EHLO mga02.intel.com"
+	id S1754316Ab0IMNjd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 09:39:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:4704 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754316Ab0IMNgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 09:36:17 -0400
+	id S1751708Ab0IMNjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 09:39:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,359,1280732400"; 
-   d="scan'208";a="553992814"
-Date: Mon, 13 Sep 2010 15:36:40 +0200
+   d="scan'208";a="606429523"
+Date: Mon, 13 Sep 2010 15:39:52 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Arun MURTHY <arun.murthy@stericsson.com>
-Cc: "riku.voipio@iki.fi" <riku.voipio@iki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Mike Rapoport <mike@compulab.co.il>
-Subject: Re: [PATCHv3 1/1] u8500: ab8500-pwm: Add pwm driver
-Message-ID: <20100913133639.GC2555@sortiz-mobl>
-References: <1283756092-31473-1-git-send-email-arun.murthy@stericsson.com>
- <1283756092-31473-2-git-send-email-arun.murthy@stericsson.com>
- <4C8495E3.8040904@compulab.co.il>
- <F45880696056844FA6A73F415B568C69532D594148@EXDCVYMBSTM006.EQ1STM.local>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Richard =?iso-8859-1?Q?R=F6jfors?= 
+	<richard.rojfors@pelagicore.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Douglas Schilling Landgraf <dougsland@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RESEND][PATCH 0/2] media, mfd: Add timberdale video-in driver
+Message-ID: <20100913133951.GD2555@sortiz-mobl>
+References: <1283428572.23309.24.camel@debian>
+ <4C87E67E.2040807@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <F45880696056844FA6A73F415B568C69532D594148@EXDCVYMBSTM006.EQ1STM.local>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C87E67E.2040807@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arun,
+Hi Mauro,
 
-On Mon, Sep 13, 2010 at 08:00:27AM +0200, Arun MURTHY wrote:
-> Hi Samuel,
-> 	Can you please merge this patch through your MFD tree?
-Makes sense, yes. Patch applied, thanks for the patch and thanks to Mike for
-the review.
+On Wed, Sep 08, 2010 at 04:39:42PM -0300, Mauro Carvalho Chehab wrote:
+> Em 02-09-2010 08:56, Richard Röjfors escreveu:
+> > To follow are two patches.
+> > 
+> > The first adds the timberdale video-in driver to the media tree.
+> > 
+> > The second adds it to the timberdale MFD driver.
+> > 
+> > Samuel and Mauro hope you can support and solve the potential merge
+> > issue between your two trees.
+> 
+> If the conflicts are trivial, I can handle when merging upstream.
+Since the mfd part of this patchset has a build time dependency on the media
+part, would you mind pushing both patches upstream through your tree ?
+I'll ACK the mfd part.
 
 Cheers,
 Samuel.
+
+
+> > 
+> > Thanks
+> > --Richard
+> > 
+> 
 
 -- 
 Intel Open Source Technology Centre
