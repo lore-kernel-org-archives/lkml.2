@@ -1,36 +1,85 @@
+Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1754892Ab1BSBPj (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Fri, 18 Feb 2011 20:15:39 -0500
-Received: from gwfa01.gwf.one-mail.on.ca ([142.46.227.145]:59251 "EHLO
-        gwfa01.gwf.one-mail.on.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1752138Ab1BSBPf convert rfc822-to-8bit (ORCPT
-        <rfc822;linux-kernel@vger.kernel.org>);
-        Fri, 18 Feb 2011 20:15:35 -0500
-X-Greylist: delayed 3957 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Feb 2011 20:15:35 EST
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: Loan Offe Apply Now Contact us via email at loanapprova1118@9.cn
-Date: Fri, 18 Feb 2011 19:07:27 -0500
-Message-ID: <1B616F56DB311D4E8529584324CD617E01FF35D0@PCCCSVR77.pccchealth.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Loan Offe Apply Now Contact us via email at loanapprova1118@9.cn
-Thread-Index: AcvPyP3uX1Jql9cITIyqvfN2F6xwTw==
-From: "Ernst, Catherin" <ernstc@providencecare.ca>
-To: <info@loans.org>
-X-SEF-B3E9467F-7D8F-4CD5-A45C-194B7B5670E4: 1
-X-SEF-Processed: 7_2_0_00499__2011_02_18_19_07_28
-X-CT-Refid: str=0001.0A020209.4D5F09E1.0135,ss=1,fgs=0
+	id S1756148Ab1CVBKR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Mar 2011 21:10:17 -0400
+Received: from umbout1.umaryland.edu ([134.192.184.201]:13642 "EHLO
+	umbout1.umaryland.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093Ab1CVBKP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Mar 2011 21:10:15 -0400
+X-Greylist: delayed 678 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Mar 2011 21:10:15 EDT
+X-IronPort-AV: E=Sophos;i="4.63,222,1299474000"; 
+   d="scan'208";a="220099354"
+From: Ronald Kasl <rkasl@computer.org>
+To: gregkh@suse.de, arun.thomas@gmail.com
+Cc: darren.armstrong85@gmail.com, mithlesh@linsyssoft.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ronald Kasl <rkasl@computer.org>
+Subject: [PATCH 1/1] Staging: comedi: fix coding style / spaces
+Date: Mon, 13 Sep 2010 16:31:01 -0400
+Message-Id: <1284409861-3446-1-git-send-email-rkasl@computer.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Offer Private, Commercial and Personal Loans with Minimal annual Interest Rates of 3% within a 1year to 50years to any part of the world. Contact us via email at loanapprova1118@9.cn
+This is a patch to the ssv_dnp.c file that fixes up the extra space warning
+found by the checkpatch.pl tool
 
-NOTICE:
-This message, including any attachments, may contain privileged or confidential information and is intended for use only by the individual to whom it is specifically addressed (or those responsible for the delivery of the message to such person).  Any distribution, copying or disclosure is strictly prohibited without the written consent of the sender.  If you are not the intended recipient or have received this message in error, please notify us by reply email and permanently delete the original transmission from us.  Thank you for your cooperation.
+Signed-off-by: Ronald Kasl <rkasl@computer.org>
+---
+ drivers/staging/comedi/drivers/ssv_dnp.c |   40 +++++++++++++++---------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
 
+diff --git a/drivers/staging/comedi/drivers/ssv_dnp.c b/drivers/staging/comedi/drivers/ssv_dnp.c
+index 526de2e..cb72436 100644
+--- a/drivers/staging/comedi/drivers/ssv_dnp.c
++++ b/drivers/staging/comedi/drivers/ssv_dnp.c
+@@ -1,24 +1,24 @@
+ /*
+-    comedi/drivers/ssv_dnp.c
+-    generic comedi driver for SSV Embedded Systems' DIL/Net-PCs
+-    Copyright (C) 2001 Robert Schwebel <robert@schwebel.de>
+-
+-    COMEDI - Linux Control and Measurement Device Interface
+-    Copyright (C) 2000 David A. Schleef <ds@schleef.org>
+-
+-    This program is free software; you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation; either version 2 of the License, or
+-    (at your option) any later version.
+-
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    GNU General Public License for more details.
+-
+-    You should have received a copy of the GNU General Public License
+-    along with this program; if not, write to the Free Software
+-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++comedi/drivers/ssv_dnp.c
++generic comedi driver for SSV Embedded Systems' DIL/Net-PCs
++Copyright (C) 2001 Robert Schwebel <robert@schwebel.de>
++
++COMEDI - Linux Control and Measurement Device Interface
++Copyright (C) 2000 David A. Schleef <ds@schleef.org>
++
++This program is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2 of the License, or
++(at your option) any later version.
++
++This program is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this program; if not, write to the Free Software
++Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ 
+ */
+ /*
+-- 
+1.7.0.4
 
