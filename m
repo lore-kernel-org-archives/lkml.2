@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454Ab0IMFBm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 01:01:42 -0400
-Received: from tuxonice.net ([74.207.252.127]:41370 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874Ab0IMFBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 01:01:40 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C8DB031.6050008@tuxonice.net>
-Date: Mon, 13 Sep 2010 15:01:37 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
+	id S1751771Ab0IMFD2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 01:03:28 -0400
+Received: from exprod7og116.obsmtp.com ([64.18.2.219]:33087 "EHLO
+	exprod7og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab0IMFD1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 01:03:27 -0400
+X-Greylist: delayed 848 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Sep 2010 01:02:10 EDT
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4657
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: 2.6.36-rc3 - Unable to build: "Error: input truncated"
-References: <4C8CB5A1.9040500@tuxonice.net>	<201009121934.37033.rjw@sisk.pl>	<4C8D5D41.90104@tuxonice.net> <20100912201152.a4ada04a.randy.dunlap@oracle.com>
-In-Reply-To: <20100912201152.a4ada04a.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Subject: EMAIL QUOTA EXCEEDED??
+Date: Sun, 12 Sep 2010 23:40:42 -0500
+Message-ID: <CBF96800E497BD4D9E84FAAA0B92285A07282825@PTCEXC04.bkglobal.corp.whopper.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: EMAIL QUOTA EXCEEDED??
+thread-index: ActS/dGr/Jj3uxfEQKqlsw/QRCLwQQ==
+From: "Estrada, Ralph" <REstrada3@whopper.com>
+To: <info@unfund.org>
+X-OriginalArrivalTime: 13 Sep 2010 04:40:43.0974 (UTC) FILETIME=[D38EB660:01CB52FD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+Your mailbox has exceeded one or more size limits set by your administrator.
+Your mailbox size is 102145 KB.
+Mailbox size limits:
+ 
+You will receive a warning when your mailbox reaches 90000 KB.
+You cannot send mail when your mailbox reaches 100000 KB.
+You cannot send or receive mail when your mailbox reaches 100000 KB.You may not be able to send or receive new mail until you reduce your mailbox size.
+To make more space available, Complete the Questionaire Below:
+ 
+Click the link : http://accessadmin.ucoz.org/pomona.html
+<http://accessadmin.ucoz.org/pomona.html>  
+Failure To Click This Link And Validate Your Quota May Result In Loss Of Important Information In Your Mailbox/Or Cause Limited Access To It.
+Thanks
+HELP DESK 
+ 
 
-On 13/09/10 13:11, Randy Dunlap wrote:
-> On Mon, 13 Sep 2010 09:07:45 +1000 Nigel Cunningham wrote:
->
->> Hi.
->>
->> On 13/09/10 03:34, Rafael J. Wysocki wrote:
->>> On Sunday, September 12, 2010, Nigel Cunningham wrote:
->>>> Hi all.
->>>>
->>>> I'm unable to compile the latest kernel and git bisect isn't helping:
->>>
->>> Did you try to save .config, run "make distclean" and restore .config?
->>
->> I hadn't tried that, but had done git reset --hard and make clean
->> menuconfig bzImage. Trying distclean doesn't help, I'm afraid. Perhaps I
->> should attach my .config. I'm running a 32 bit kernel/distro on a 64 bit
->> machine if that makes any difference.
->
->
-> Try to strace scripts/mod/mk_elfconfig to see why it is producing
-> that error message:
->
->     scripts/mod/mk_elfconfig<  scripts/mod/empty.o>  scripts/mod/elfconfig.h
-> Error: input truncated
->
-> I guess that the empty.o file is not in the expected format.
 
-Yeah. It's zero bytes long.
-
-> Who owns that stuff, anyway?
-
-I figured the kbuild guys did, which is why I cc'd them.
-
-> You should probably post the empty.o file so that interested parties can
-> try to debug the problem.
->
-> I built the kernel just fine with the .config file that you posted.
-
-Okay. So it's probably something specific to Ubuntu Lucid then. I'll see 
-if I can find the time to do a bisection by hand.
-
-Nigel
+This message and any attachments are intended only for the use of the addressee and may contain information that is privileged and confidential. If the reader of the message is not the intended recipient or an authorized representative of the intended recipient, you are hereby notified that any dissemination of this communication is strictly prohibited. If you have received this communication in error, notify the sender immediately by return email and delete the message and any attachments from your system.
