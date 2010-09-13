@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab0IMWSF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 18:18:05 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:13433 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060Ab0IMWSD convert rfc822-to-8bit (ORCPT
+	id S1753320Ab0IMWVa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 18:21:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49882 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751808Ab0IMWV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 18:18:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=o2rTrijr2fHOI52Q5VTGhnD+hTuGmrfiVdRQX5FNmQlY7sJEWNRQ0lOVREuHXVO0vp
-         LtBd8iH4voQGvycS8GXg==
-MIME-Version: 1.0
-In-Reply-To: <20100913142017.2a426365.akpm@linux-foundation.org>
-References: <1284357493-20078-1-git-send-email-mrubin@google.com>
- <1284357493-20078-4-git-send-email-mrubin@google.com> <20100913142017.2a426365.akpm@linux-foundation.org>
-From: Michael Rubin <mrubin@google.com>
-Date: Mon, 13 Sep 2010 15:17:36 -0700
-Message-ID: <AANLkTinBs-fK4=fr+pc7aK0X+SBgkXDCB9n1aXsg=jyD@mail.gmail.com>
-Subject: Re: [PATCH 3/5] writeback: nr_dirtied and nr_written in /proc/vmstat
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, fengguang.wu@intel.com, jack@suse.cz,
-        riel@redhat.com, david@fromorbit.com, kosaki.motohiro@jp.fujitsu.com,
-        npiggin@kernel.dk, hch@lst.de, axboe@kernel.dk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 13 Sep 2010 18:21:29 -0400
+Date: Mon, 13 Sep 2010 15:21:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jarek Poplawski <jarkao2@gmail.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fbcon: fix lockdep warning from fbcon_deinit()
+Message-Id: <20100913152127.c2328034.akpm@linux-foundation.org>
+In-Reply-To: <20100913215850.GA2176@del.dom.local>
+References: <20100913215850.GA2176@del.dom.local>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 2:20 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sun, 12 Sep 2010 22:58:11 -0700
-> Michael Rubin <mrubin@google.com> wrote:
->
->> To help developers and applications gain visibility into writeback
->> behaviour adding two entries to vm_stat_items and /proc/vmstat. This
->> will allow us to track the "written" and "dirtied" counts.
->>
->>    # grep nr_dirtied /proc/vmstat
->>    nr_dirtied 3747
->>    # grep nr_written /proc/vmstat
->>    nr_written 3618
->>
->> Signed-off-by: Michael Rubin <mrubin@google.com>
->> Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
->> ---
->>  include/linux/mmzone.h |    2 ++
->>  mm/page-writeback.c    |    2 ++
->>  mm/vmstat.c            |    3 +++
->>  3 files changed, 7 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
->> index 6e6e626..d0d7454 100644
->> --- a/include/linux/mmzone.h
->> +++ b/include/linux/mmzone.h
->> @@ -104,6 +104,8 @@ enum zone_stat_item {
->>       NR_ISOLATED_ANON,       /* Temporary isolated pages from anon lru */
->>       NR_ISOLATED_FILE,       /* Temporary isolated pages from file lru */
->>       NR_SHMEM,               /* shmem pages (included tmpfs/GEM pages) */
->> +     NR_FILE_DIRTIED,        /* accumulated dirty pages */
->> +     NR_WRITTEN,             /* accumulated written pages */
->
-> I think we can make those comments less ambiguous>
->
-> --- a/include/linux/mmzone.h
-> +++ a/include/linux/mmzone.h
-> @@ -104,8 +104,8 @@ enum zone_stat_item {
->        NR_ISOLATED_ANON,       /* Temporary isolated pages from anon lru */
->        NR_ISOLATED_FILE,       /* Temporary isolated pages from file lru */
->        NR_SHMEM,               /* shmem pages (included tmpfs/GEM pages) */
-> -       NR_FILE_DIRTIED,        /* accumulated dirty pages */
-> -       NR_WRITTEN,             /* accumulated written pages */
-> +       NR_FILE_DIRTIED,        /* page dirtyings since bootup */
-> +       NR_WRITTEN,             /* page writings since bootup */
+On Mon, 13 Sep 2010 23:58:50 +0200
+Jarek Poplawski <jarkao2@gmail.com> wrote:
 
-Got it. Will fix.
+> This patch fixes the lockdep warning:
+> 
+> [   13.657164] INFO: trying to register non-static key.
+> [   13.657169] the code is fine but needs lockdep annotation.
+> [   13.657171] turning off the locking correctness validator.
+> [   13.657177] Pid: 622, comm: modprobe Not tainted 2.6.36-rc3c #8
+> [   13.657180] Call Trace:
+> [   13.657194]  [<c13002c8>] ? printk+0x18/0x20
+> [   13.657202]  [<c1056cf6>] register_lock_class+0x336/0x350
+> [   13.657208]  [<c1058bf9>] __lock_acquire+0x449/0x1180
+> [   13.657215]  [<c1059997>] lock_acquire+0x67/0x80
+> [   13.657222]  [<c1042bf1>] ? __cancel_work_timer+0x51/0x230
+> [   13.657227]  [<c1042c23>] __cancel_work_timer+0x83/0x230
+> [   13.657231]  [<c1042bf1>] ? __cancel_work_timer+0x51/0x230
+> [   13.657236]  [<c10582b2>] ? mark_held_locks+0x62/0x80
+> [   13.657243]  [<c10b3a2f>] ? kfree+0x7f/0xe0
+> [   13.657248]  [<c105853c>] ? trace_hardirqs_on_caller+0x11c/0x160
+> [   13.657253]  [<c105858b>] ? trace_hardirqs_on+0xb/0x10
+> [   13.657259]  [<c117f4cd>] ? fbcon_deinit+0x16d/0x1e0
+> [   13.657263]  [<c117f4cd>] ? fbcon_deinit+0x16d/0x1e0
+> [   13.657268]  [<c1042dea>] cancel_work_sync+0xa/0x10
+> [   13.657272]  [<c117f444>] fbcon_deinit+0xe4/0x1e0
+> ...
+> 
+> The warning is caused by trying to cancel an uninitialized work from
+> fbcon_exit(). Fix it by adding a check for queue.func, similarly to
+> other places in this code.
+> 
+> Signed-off-by: Jarek Poplawski <jarkao2@gmail.com>
+> ---
+> 
+> diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+> index 84f8423..7ccc967 100644
+> --- a/drivers/video/console/fbcon.c
+> +++ b/drivers/video/console/fbcon.c
+> @@ -3508,7 +3508,7 @@ static void fbcon_exit(void)
+>  	softback_buf = 0UL;
+>  
+>  	for (i = 0; i < FB_MAX; i++) {
+> -		int pending;
+> +		int pending = 0;
+>  
+>  		mapped = 0;
+>  		info = registered_fb[i];
+> @@ -3516,7 +3516,8 @@ static void fbcon_exit(void)
+>  		if (info == NULL)
+>  			continue;
+>  
+> -		pending = cancel_work_sync(&info->queue);
+> +		if (info->queue.func)
+> +			pending = cancel_work_sync(&info->queue);
+>  		DPRINTK("fbcon: %s pending work\n", (pending ? "canceled" :
+>  			"no"));
+>  
 
-> The mismatch between "NR_FILE_DIRTIED" and "nr_dirtied" is a bit, umm,
-> dirty.  I can kinda see the logic in the naming but still..
+Well.  It'd be better to just initialise the dang thing.
 
-Got it will fix.
+But all that code looks really hacky, fiddling around inside workqueue
+internals as a driver-private state variable.  Needs a rewrite, I suspect.
 
-mrubin
