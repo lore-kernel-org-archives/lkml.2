@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701Ab0IMK2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 06:28:41 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:56655 "EHLO
+	id S1754792Ab0IMKaP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 06:30:15 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:59014 "EHLO
 	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab0IMK2k convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Mon, 13 Sep 2010 06:28:40 -0400
-Message-Id: <4C8E18F30200007800015AFA@vpn.id2.novell.com>
+	with ESMTP id S1751838Ab0IMKaO convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Mon, 13 Sep 2010 06:30:14 -0400
+Message-Id: <4C8E19500200007800015B15@vpn.id2.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 13 Sep 2010 11:28:35 +0100
+Date: Mon, 13 Sep 2010 11:30:08 +0100
 From: "Jan Beulich" <JBeulich@novell.com>
-To: <fenghua.yu@intel.com>, <khali@linux-fr.org>
-Cc: <r.marek@assembler.cz>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86/hwmon: cosmetic cleanup for coretemp
+To: <khali@linux-fr.org>
+Cc: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86/hwmon: {core,pkg,via-cpu}temp_device_remove() can
+	 all be __cpuinit
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -23,30 +23,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"break" after "return" is at best bogus (good compilers even warn about
-the "break" being unreachable).
+... as they're being called only from a __cpuinit function.
 
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Rudolf Marek <r.marek@assembler.cz>
 
 ---
- drivers/hwmon/coretemp.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/hwmon/coretemp.c    |    2 +-
+ drivers/hwmon/pkgtemp.c     |    2 +-
+ drivers/hwmon/via-cputemp.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
 --- linux-2.6.36-rc4/drivers/hwmon/coretemp.c	2010-09-13 08:45:02.000000000 +0200
-+++ 2.6.36-rc4-x86-coretemp-cosmetic/drivers/hwmon/coretemp.c	2010-09-03 17:54:14.000000000 +0200
-@@ -279,11 +279,9 @@ static int __devinit get_tjmax(struct cp
- 	case 0x1a:
- 		dev_warn(dev, "TjMax is assumed as 100 C!\n");
- 		return 100000;
--		break;
- 	case 0x17:
- 	case 0x1c:		/* Atom CPUs */
- 		return adjust_tjmax(c, id, dev);
--		break;
- 	default:
- 		dev_warn(dev, "CPU (model=0x%x) is not supported yet,"
- 			" using default TjMax of 100C.\n", c->x86_model);
++++ 2.6.36-rc4-x86-hwmon-sections/drivers/hwmon/coretemp.c	2010-09-03 17:54:14.000000000 +0200
+@@ -480,7 +480,7 @@ exit:
+ 	return err;
+ }
+ 
+-static void coretemp_device_remove(unsigned int cpu)
++static void __cpuinit coretemp_device_remove(unsigned int cpu)
+ {
+ 	struct pdev_entry *p, *n;
+ 	mutex_lock(&pdev_list_mutex);
+--- linux-2.6.36-rc4/drivers/hwmon/pkgtemp.c	2010-09-13 08:45:03.000000000 +0200
++++ 2.6.36-rc4-x86-hwmon-sections/drivers/hwmon/pkgtemp.c	2010-09-01 09:00:45.000000000 +0200
+@@ -337,7 +337,7 @@ exit:
+ }
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+-static void pkgtemp_device_remove(unsigned int cpu)
++static void __cpuinit pkgtemp_device_remove(unsigned int cpu)
+ {
+ 	struct pdev_entry *p, *n;
+ 	unsigned int i;
+--- linux-2.6.36-rc4/drivers/hwmon/via-cputemp.c	2010-09-13 08:45:03.000000000 +0200
++++ 2.6.36-rc4-x86-hwmon-sections/drivers/hwmon/via-cputemp.c	2010-09-13 00:00:00.000000000 +0200
+@@ -238,7 +238,7 @@ exit:
+ }
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+-static void via_cputemp_device_remove(unsigned int cpu)
++static void __cpuinit via_cputemp_device_remove(unsigned int cpu)
+ {
+ 	struct pdev_entry *p, *n;
+ 	mutex_lock(&pdev_list_mutex);
 
 
 
