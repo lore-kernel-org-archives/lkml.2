@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257Ab0IMJVe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 05:21:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33437 "EHLO mx2.suse.de"
+	id S1752722Ab0IMJYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 05:24:09 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:47403 "EHLO cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750843Ab0IMJVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 05:21:33 -0400
-Message-ID: <4C8DED17.6080801@suse.de>
-Date: Mon, 13 Sep 2010 11:21:27 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
+	id S1751650Ab0IMJYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 05:24:07 -0400
+Date: Mon, 13 Sep 2010 11:23:55 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Li Shaohua <shaohua.li@intel.com>
+Subject: Re: [PATCH 01/17] writeback: remove the internal 5% low bound on
+ dirty_ratio
+Message-ID: <20100913092355.GA20954@cmpxchg.org>
+References: <20100912154945.758129106@intel.com>
+ <20100912155202.733389420@intel.com>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Vasu Dev <vasu.dev@linux.intel.com>, Joe Eykholt <jeykholt@cisco.com>
-Subject: Re: [PATCH 0/2] lio-target: Add support for libcrypto crc32c and
- crc32-intel offload
-References: <1284201076-22361-1-git-send-email-nab@linux-iscsi.org>
-In-Reply-To: <1284201076-22361-1-git-send-email-nab@linux-iscsi.org>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100912155202.733389420@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Sun, Sep 12, 2010 at 11:49:46PM +0800, Wu Fengguang wrote:
+> The dirty_ratio was siliently limited in global_dirty_limits() to >= 5%.
+> This is not a user expected behavior. And it's inconsistent with
+> calc_period_shift(), which uses the plain vm_dirty_ratio value.
 > 
-> Greetings all,
+> Let's rip the arbitrary internal bound. It may impact some very weird
+> user space applications. However we are going to dynamicly sizing the
+> dirty limits anyway, which may well break such applications, too.
 > 
-> This patch series converts the LIO-Target fabric module from using a legacy
-> internal slicing by 1x CRC32C algorithm to the slicing by 1x CRC32C available in
-> crc32c.ko, as well as initial support for the Nehalem series crc32c-intel.ko
-> instruction offload available since v2.6.27 in late 2008.
+> At the same time, fix balance_dirty_pages() to work with the
+> dirty_thresh=0 case. This allows applications to proceed when
+> dirty+writeback pages are all cleaned.
 > 
-> So far this series has been lightly tested with a handful of Open-iSCSI client VMs
-> with the optimized crc32c-intel.ko offload case, and there appears to be some
-> HeaderDigest failures for one case with RHEL6 B2 x86_64, while Ubuntu i686 on
-> v2.6.27 and OpenSuse 11.2 x86_64 on v2.6.31 work as expected with HeaderDigest=CRC32C
-> and DataDigest=CRC32C using the offload on the LIO-Target side.
+> And ">" fits with the name "exceeded" better than ">=" does. Neil
+> think it is an aesthetic improvement as well as a functional one :)
 > 
-> Currently this patch disables the new iSCSI TPG attribute crc32c_x86_offload
-> to force the crc32c.ko slicing by x1 CRC32C algorithm until these compatibility
-> issues with existing libcrc32c clients can be properly resolved with the Nehalem
-> CRC32C offload instructions running on the LIO-Target side.
-> 
-Due to a customer issue I had to revisit the CRC32 issue recently.
-And according to you the main reason for using your own CRC routines
-had been endianness issues.
-IE the in-kernel crc32c routines apparently weren't able to
-calculate the checksum in an endianness-independent manner.
-So a CRC calculated on a BE machine would fail to be validated by a
-LE machine and vice versa.
+> CC: Jan Kara <jack@suse.cz>
+> Proposed-by: Con Kolivas <kernel@kolivas.org>
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> Reviewed-by: Neil Brown <neilb@suse.de>
+> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 
-Has this been fixed / verified?
-
-Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: Markus Rex, HRB 16746 (AG Nürnberg)
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
