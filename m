@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab0IMOlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:41:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:58112 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815Ab0IMOlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:41:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,359,1280732400"; 
-   d="scan'208";a="837187007"
-Date: Mon, 13 Sep 2010 22:41:01 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 10/10] vmscan: Kick flusher threads to clean pages when
- reclaim is encountering dirty pages
-Message-ID: <20100913144101.GA15130@localhost>
-References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
- <1283770053-18833-11-git-send-email-mel@csn.ul.ie>
- <20100913134845.GB12355@localhost>
- <20100913141046.GI23508@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100913141046.GI23508@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752219Ab0IMOnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:43:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:44552 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab0IMOnM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:43:12 -0400
+X-Authority-Analysis: v=1.1 cv=0gh5jMB3jHrmQHbUKMg9KP0ZqNkm6dXs7xuA8CfKDuU= c=1 sm=0 a=mn088iM2194A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=FKs_MKGrtKnM0c616zgA:9 a=p7azvnBW7WiAX1xW5YSqSxXFyKMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
+ nr_running
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+In-Reply-To: <1284387398.2275.311.camel@laptop>
+References: <20100911173732.551632040@efficios.com>
+	 <20100911174003.051303123@efficios.com> <1284231470.2251.52.camel@laptop>
+	 <20100911195708.GA9273@Krystal> <1284288072.2251.91.camel@laptop>
+	 <20100912203712.GD32327@Krystal> <1284382387.2275.265.camel@laptop>
+	 <1284383758.2275.283.camel@laptop>  <20100913135621.GA13442@Krystal>
+	 <1284387398.2275.311.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 13 Sep 2010 10:43:10 -0400
+Message-ID: <1284388990.17152.19.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 10:10:46PM +0800, Mel Gorman wrote:
-> On Mon, Sep 13, 2010 at 09:48:45PM +0800, Wu Fengguang wrote:
-> > > +	/*
-> > > +	 * If reclaim is encountering dirty pages, it may be because
-> > > +	 * dirty pages are reaching the end of the LRU even though the
-> > > +	 * dirty_ratio may be satisified. In this case, wake flusher
-> > > +	 * threads to pro-actively clean up to a maximum of
-> > > +	 * 4 * SWAP_CLUSTER_MAX amount of data (usually 1/2MB) unless
-> > > +	 * !may_writepage indicates that this is a direct reclaimer in
-> > > +	 * laptop mode avoiding disk spin-ups
-> > > +	 */
-> > > +	if (file && nr_dirty_seen && sc->may_writepage)
-> > > +		wakeup_flusher_threads(nr_writeback_pages(nr_dirty));
+On Mon, 2010-09-13 at 16:16 +0200, Peter Zijlstra wrote:
+
+> > > -     if (delta_exec < sysctl_sched_min_granularity)
+> > > -             return;
 > > 
-> > wakeup_flusher_threads() works, but seems not the pertinent one.
-> > 
-> > - locally, it needs some luck to clean the pages that direct reclaim is waiting on
+> > Well, the reason why this test is here seems to be that we don't want to trigger
+> > "resched_task" more often than needed, and here it's defined by the granularity.
 > 
-> There is a certain amount of luck involved but it's depending on there being a
-> correlation between old inodes and old pages on the LRU list. As long as that
-> correlation is accurate, some relevant pages will get cleaned.  Testing on
-> previously released versions of this patch did show that the percentage of
-> dirty pages encountered during reclaim were reduced as a result of this patch.
-
-Yup.
-
-> > - globally, it cleans up some dirty pages, however some heavy dirtier
-> >   may quickly create new ones..
-> > 
-> > So how about taking the approaches in these patches?
-> > 
-> > - "[PATCH 4/4] vmscan: transfer async file writeback to the flusher"
-> > - "[PATCH 15/17] mm: lower soft dirty limits on memory pressure"
-> > 
+> Right, but its wrong for the weighted case. Letting a light task run
+> that long will make its latency suck.
 > 
-> There is a lot going on in those patches. It's going to take me a while to
-> figure them out and formulate an opinion.
-
-OK. I also need some time off for doing other works :)
-
-> > In particular the first patch should work very nicely with memcg, as
-> > all pages of an inode typically belong to the same memcg. So doing
-> > write-around helps clean lots of dirty pages in the target LRU list in
-> > one shot.
-> > 
+> > I don't quite see with what you are replacing this, other than "let's set the
+> > resched flag all the time to save a 32-bit division". I figure out it's more
+> > expensive the call the scheduler than to do a 32-bit div.
 > 
-> It might but as there is also a correlation between old dirty inodes and
-> the location of dirty pages, it is tricky to predict if it is better and
-> if so, by how much.
+> The more divs we put it, the more expensive it all becomes.
+> 
 
-It at least guarantees to clean the one page pageout() is running into :)
-Others will depend on the locality/sequentiality of the workload. But
-as the write-around pages are in the same LRU lists, the vmscan code
-will hit them sooner or later.
+What about:
 
-Thanks,
-Fengguang
+	if (delta_exec < sysctl_sched_min_granularity ||
+	    delta_exec < __sched_gran(cfs_rq->nr_running))
+
+This way we avoid the div when delta_exec is less than the
+min_granularity, and then we can do the div to perhaps avoid a needless
+resched?
+
+-- Steve
+
 
