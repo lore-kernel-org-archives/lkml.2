@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab0IMUAj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 16:00:39 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55230 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754719Ab0IMUAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 16:00:38 -0400
-Date: Mon, 13 Sep 2010 22:00:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH] sched: Improve latencies under load by decreasing
- minimum scheduling granularity
-Message-ID: <20100913200018.GA31186@elte.hu>
-References: <1284383758.2275.283.camel@laptop>
- <20100913135621.GA13442@Krystal>
- <1284387398.2275.311.camel@laptop>
- <20100913161641.GA28707@Krystal>
- <AANLkTimB9CjH5SjeY9XmwhTp1tfFPwh-Q1Y4o918h7XD@mail.gmail.com>
- <20100913174533.GA15653@Krystal>
- <20100913180348.GA20171@elte.hu>
- <20100913181925.GA15107@Krystal>
- <20100913182355.GC20171@elte.hu>
- <AANLkTi=TfU6PxDce9WbcQA7tFcT0yY+FqCOUC_cbfj+e@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=TfU6PxDce9WbcQA7tFcT0yY+FqCOUC_cbfj+e@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.2325]
+	id S1755618Ab0IMUAr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 16:00:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60123 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754473Ab0IMUAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 16:00:45 -0400
+Date: Mon, 13 Sep 2010 13:00:35 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Javier Martinez Canillas <martinez.javier@gmail.com>
+Cc: Len Brown <lenb@kernel.org>, Huang Ying <ying.huang@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] ACPI: apei: Cast u64 to unsigned long, fix compile
+ warning
+Message-Id: <20100913130035.decb0d44.akpm@linux-foundation.org>
+In-Reply-To: <1284299305.7239.4.camel@lenovo>
+References: <1284299305.7239.4.camel@lenovo>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 12 Sep 2010 09:48:25 -0400
+Javier Martinez Canillas <martinez.javier@gmail.com> wrote:
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Mon, Sep 13, 2010 at 11:23 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > Linus, Mathieu, you can test the granularity reduction patch via:
+> In today linux-net I got a compile warning in acpi/apei
 > 
-> Hmm. It's a bit hard to judge subjective feelings, especially when you 
-> have expectations of improvement, but yes, I think this does improve 
-> the the interactive feel when scroll-wheeling around in firefox or 
-> chrome.
+> drivers/acpi/apei/erst.c: In function ___erst_exec_move_data___:
+> drivers/acpi/apei/erst.c:273: warning: cast to pointer from integer of different size
+> drivers/acpi/apei/erst.c:274: warning: cast to pointer from integer of different size
+> 
+> The problem is that apei_exec_context->dst_base type is u64.
+> But in 32 bits architecture void * is 32 bits long. 
+> Casting it to unsigned long solves the issue
+> 
+> Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+> ---
+>  drivers/acpi/apei/erst.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+> index a4904f1..37d7a05 100644
+> --- a/drivers/acpi/apei/erst.c
+> +++ b/drivers/acpi/apei/erst.c
+> @@ -270,8 +270,8 @@ static int erst_exec_move_data(struct apei_exec_context *ctx,
+>  	rc = __apei_exec_read_register(entry, &offset);
+>  	if (rc)
+>  		return rc;
+> -	memmove((void *)ctx->dst_base + offset,
+> -		(void *)ctx->src_base + offset,
+> +	memmove((void *)(unsigned long)ctx->dst_base + offset,
+> +		(void *)(unsigned long)ctx->src_base + offset,
+>  		ctx->var2);
+>  
+>  	return 0;
 
-Yeah. Human perception generally notices the _gradient_ of behavior - 
-i.e. the difference between the best-case and worst-case behavior. I.e. 
-we notice the max latencies - and those came down distinctly in 
-everyone's measurements.
+This might indicate that the incorrect types were used within the
+`struct apei_exec_context'.  I can't tell (or can't be bothered working
+it out), because whoever wrote that didn't bother documenting any of it
+at all.
 
-Somewhat paradoxially, 'always slow' is generally felt as an improvement 
-over 'sometimes fast, sometimes slow' - even though the latter has a 
-better average. (as long as 'slow' is not 'intolerably slow')
-
-> So on the whole I'd trust the actual latency benchmark numbers more, 
-> but I _think_ it does translate into actually feeling better too.
-
-Ok, great - would you like to have this in v2.6.36 (in which case feel 
-free to pull it now), or v2.6.37?
-
-I'm hopeful that the other patches in the works will give more 
-improvements - i dont actually like the relatively high noise that the 
-max latencies produce - i think we should be more 
-deterministic/dependable there. But those changes are also more complex, 
-so they will take a bit more time to finish - and it's definitely 
-v2.6.37 fodder.
-
-Thanks,
-
-	Ingo
+Are those things kernel virtual addresses?  If so, a pointer type
+should have been used.
