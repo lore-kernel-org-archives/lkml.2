@@ -1,118 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab0IMEju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 00:39:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41149 "EHLO smtps.tip.net.au"
+	id S1751454Ab0IMFBm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 01:01:42 -0400
+Received: from tuxonice.net ([74.207.252.127]:41370 "EHLO mail.tuxonice.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864Ab0IMEjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 00:39:49 -0400
-Date: Mon, 13 Sep 2010 14:39:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: build warnings after merge of the final tree (tip
- treee related)
-Message-Id: <20100913143942.7344ada4.sfr@canb.auug.org.au>
-In-Reply-To: <4C8DA517.9000603@kernel.org>
-References: <20100913132721.5a02cfbc.sfr@canb.auug.org.au>
-	<4C8DA517.9000603@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__13_Sep_2010_14_39_42_+1000_LFB1mbA64F_p94jI"
+	id S1750874Ab0IMFBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 01:01:40 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4C8DB031.6050008@tuxonice.net>
+Date: Mon, 13 Sep 2010 15:01:37 +1000
+From: Nigel Cunningham <nigel@tuxonice.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: 2.6.36-rc3 - Unable to build: "Error: input truncated"
+References: <4C8CB5A1.9040500@tuxonice.net>	<201009121934.37033.rjw@sisk.pl>	<4C8D5D41.90104@tuxonice.net> <20100912201152.a4ada04a.randy.dunlap@oracle.com>
+In-Reply-To: <20100912201152.a4ada04a.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__13_Sep_2010_14_39_42_+1000_LFB1mbA64F_p94jI
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi.
 
-Hi Yinghai,
-
-On Sun, 12 Sep 2010 21:14:15 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
+On 13/09/10 13:11, Randy Dunlap wrote:
+> On Mon, 13 Sep 2010 09:07:45 +1000 Nigel Cunningham wrote:
 >
-> please check it, and it should get into core/memblock branch.
->=20
-> Thanks
->=20
-> Yinghai
->=20
-> [PATCH] memblock: Fix section mismatch warning
->=20
-> for arches that use memblock other than x86
->=20
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Yinghai Lu <Yinghai@kernel.org>
+>> Hi.
+>>
+>> On 13/09/10 03:34, Rafael J. Wysocki wrote:
+>>> On Sunday, September 12, 2010, Nigel Cunningham wrote:
+>>>> Hi all.
+>>>>
+>>>> I'm unable to compile the latest kernel and git bisect isn't helping:
+>>>
+>>> Did you try to save .config, run "make distclean" and restore .config?
+>>
+>> I hadn't tried that, but had done git reset --hard and make clean
+>> menuconfig bzImage. Trying distclean doesn't help, I'm afraid. Perhaps I
+>> should attach my .config. I'm running a 32 bit kernel/distro on a 64 bit
+>> machine if that makes any difference.
+>
+>
+> Try to strace scripts/mod/mk_elfconfig to see why it is producing
+> that error message:
+>
+>     scripts/mod/mk_elfconfig<  scripts/mod/empty.o>  scripts/mod/elfconfig.h
+> Error: input truncated
+>
+> I guess that the empty.o file is not in the expected format.
 
-Your patch fixes some of the warnings, but still leaves these for a
-powerpc allnoconfig build:
+Yeah. It's zero bytes long.
 
-WARNING: mm/built-in.o(.text+0x25d80): Section mismatch in reference from t=
-he function memblock_double_array() to the function .init.text:memblock_fre=
-e()
-The function memblock_double_array() references
-the function __init memblock_free().
-This is often because memblock_double_array lacks a __init=20
-annotation or the annotation of memblock_free is wrong.
+> Who owns that stuff, anyway?
 
-WARNING: mm/built-in.o(.text+0x26318): Section mismatch in reference from t=
-he function memblock_reserve_reserved_regions() to the function .init.text:=
-memblock_reserve()
-The function memblock_reserve_reserved_regions() references
-the function __init memblock_reserve().
-This is often because memblock_reserve_reserved_regions lacks a __init=20
-annotation or the annotation of memblock_reserve is wrong.
+I figured the kbuild guys did, which is why I cc'd them.
 
-WARNING: mm/built-in.o(.text+0x26490): Section mismatch in reference from t=
-he function memblock_free_reserved_regions() to the function .init.text:mem=
-block_free()
-The function memblock_free_reserved_regions() references
-the function __init memblock_free().
-This is often because memblock_free_reserved_regions lacks a __init=20
-annotation or the annotation of memblock_free is wrong.
+> You should probably post the empty.o file so that interested parties can
+> try to debug the problem.
+>
+> I built the kernel just fine with the .config file that you posted.
 
-And these for a i386 defconfig build:
+Okay. So it's probably something specific to Ubuntu Lucid then. I'll see 
+if I can find the time to do a bisection by hand.
 
-WARNING: mm/built-in.o(.text+0x1e261): Section mismatch in reference from t=
-he function memblock_is_memory() to the variable .init.data:memblock
-The function memblock_is_memory() references
-the variable __initdata memblock.
-This is often because memblock_is_memory lacks a __initdata=20
-annotation or the annotation of memblock is wrong.
-
-WARNING: mm/built-in.o(.text+0x1e27f): Section mismatch in reference from t=
-he function memblock_is_region_memory() to the variable .init.data:memblock
-The function memblock_is_region_memory() references
-the variable __initdata memblock.
-This is often because memblock_is_region_memory lacks a __initdata=20
-annotation or the annotation of memblock is wrong.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__13_Sep_2010_14_39_42_+1000_LFB1mbA64F_p94jI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMjasOAAoJEDMEi1NhKgbsz/4H/iB0Vmgh2Jrw0CadUixbRYZX
-a9Ch6JcU9KN1U74N7yG8o08r9CHb/BGjYIqnnAMfAh5HJfrF7+yNLzUXE76DpTrN
-rgbZBTgJf61hZKbtYrGdIjRDrbU1dL3NhJ8wStVD+oeUCJwQ9h0f6Kh3EHrHcCoe
-0zqrF8S4uR2uxIDzWQvyluUVg7Qlr34o5CKQxkh9XtIacHSgE6fI9DzZa05vYWHQ
-FUOIGZ+coT+zeCsQXy44Hfaxb6g8LB7YKQuvXEk6wvydkkgfeYry0rI1DLRfylYo
-j6QMjbbxU1rz7cYtpY3pPDVAcShf1mMZWFK1rixabGTnf9cL8s5vj5Mixj3z5P4=
-=TEN7
------END PGP SIGNATURE-----
-
---Signature=_Mon__13_Sep_2010_14_39_42_+1000_LFB1mbA64F_p94jI--
+Nigel
