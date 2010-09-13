@@ -1,37 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab0IMSw4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 14:52:56 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55993 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab0IMSwz (ORCPT
+	id S1754876Ab0IMSym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 14:54:42 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:53273 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754712Ab0IMSyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 14:52:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=B51VK8q1+O8/yWRGWM4i1GnkhXy7hQl8r1xc/zXeg2yjO+9Pv0DHVl53ZLqVWviDms
-         TqffUb7zYu/W2Hu/N71OrUWmBGWdEz03AyWbs38BovZgJYCTQP77KLtPIFA0KoBwSHXI
-         qf5CP2ATdyDFQfw3xCqSlTrP1wCKTq9v5PUtE=
+	Mon, 13 Sep 2010 14:54:40 -0400
+Date: Mon, 13 Sep 2010 20:54:36 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 2.6.36
+Message-ID: <alpine.DEB.2.00.1009132053060.22518@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Mon, 13 Sep 2010 22:52:54 +0400
-Message-ID: <AANLkTikVR1HYuuNW2ZaPHGOKqPBRJ4qz4tzBoNxeQpzi@mail.gmail.com>
-Subject: Flags in linux-2.6.33.6-rc4
-From: Pavel Panteleev <panteleevp@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+	Hi Linus,
 
-I have found, that some arch-independed functions use unsigned int
-(32-bits) flags instead of using unsigned long (64-bits) flags. But
-struct vm_area_struct includes the field vm_flags, that is unsinged
-long (64-bits). So, some archs, that use 64-bits flags, can miss some
-flags. The example of such functions: do_mlock, do_mlockall,
-mlock_fixup.
+The following changes since commit 49553c2ef88749dd502687f4eb9c258bb10a4f44:
+  Linus Torvalds (1):
+        Linux 2.6.36-rc4
 
-Best regards,
-Pavel
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+
+Geert Uytterhoeven (1):
+      m68k,m68knommu: Wire up fanotify_init, fanotify_mark, and prlimit64
+
+ arch/m68k/include/asm/unistd.h       |    5 ++++-
+ arch/m68k/kernel/entry.S             |    3 +++
+ arch/m68knommu/kernel/syscalltable.S |    3 +++
+ 3 files changed, 10 insertions(+), 1 deletions(-)
+
+Thanks for pulling!
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
