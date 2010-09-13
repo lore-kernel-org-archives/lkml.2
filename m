@@ -1,259 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab0IMKTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 06:19:19 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37801 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867Ab0IMKTR (ORCPT
+	id S1754689Ab0IMKUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 06:20:47 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59817 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843Ab0IMKUp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 06:19:17 -0400
+	Mon, 13 Sep 2010 06:20:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=AJZ5AdjTDVJcpMiq8N79uPVRfOWANWcgOPzxJa+E3SQok1x7QUgtRftf3p39Gcaj7t
-         YhazMegAS4VZpCpW0qSTPJqBymj/d7COr3LDAXw88nh69OTbYXVq9dU4wXYFO+Iijl/z
-         2rNX9CSvJ2xkuIUJnLDbmwxHfvfjRH38dgVfY=
-Message-ID: <4C8DFA84.4040501@gmail.com>
-Date: Mon, 13 Sep 2010 14:18:44 +0400
-From: Maxim Osipov <maxim.osipov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100903 Thunderbird/3.1.3
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=oHjCIRKD5gN3PJiSvKVnmcv7Sy3AVcDv+qpblilBa+ArrNGrFZod8u5wTVswiaUAC3
+         mgN/CXyRvIzsseZzBE8MSDKe3TLrswAhH/J0zD0PjR+abyj3iHcI8Jk1kI/LNVih5yZJ
+         0j0HSBXvs++vcXKvsQFgrpDmH/5XPhjO5cpYE=
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Antonio R. Costa" <costa.antonior@gmail.com>,
-        Ernst Schwab <eschwab@online.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Maxim Osipov <maxim.osipov@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] AT91: Add flexibity board support
+In-Reply-To: <20100913100759.GE23508@csn.ul.ie>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
+	<1283770053-18833-4-git-send-email-mel@csn.ul.ie>
+	<20100907152533.GB4620@barrios-desktop>
+	<20100908110403.GB29263@csn.ul.ie>
+	<20100908145245.GG4620@barrios-desktop>
+	<20100909085436.GJ29263@csn.ul.ie>
+	<20100912153744.GA3563@barrios-desktop>
+	<20100913085549.GA23508@csn.ul.ie>
+	<AANLkTimkSU5G1qO0JDp8An5ofM2BPoPY0SGUOuTvSuOL@mail.gmail.com>
+	<20100913100759.GE23508@csn.ul.ie>
+Date: Mon, 13 Sep 2010 19:20:37 +0900
+Message-ID: <AANLkTikz0uv_7tDYQ--WAT5g0SHaMhUeSmo0U7WkHonb@mail.gmail.com>
+Subject: Re: [PATCH 03/10] writeback: Do not congestion sleep if there are no
+ congested BDIs or significant writeback
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Sep 13, 2010 at 7:07 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> On Mon, Sep 13, 2010 at 06:48:10PM +0900, Minchan Kim wrote:
+>> >> > > > <SNIP>
+>> >> > > > I'm not saying it is. The objective is to identify a situation where
+>> >> > > > sleeping until the next write or congestion clears is pointless. We have
+>> >> > > > already identified that we are not congested so the question is "are we
+>> >> > > > writing a lot at the moment?". The assumption is that if there is a lot
+>> >> > > > of writing going on, we might as well sleep until one completes rather
+>> >> > > > than reclaiming more.
+>> >> > > >
+>> >> > > > This is the first effort at identifying pointless sleeps. Better ones
+>> >> > > > might be identified in the future but that shouldn't stop us making a
+>> >> > > > semi-sensible decision now.
+>> >> > >
+>> >> > > nr_bdi_congested is no problem since we have used it for a long time.
+>> >> > > But you added new rule about writeback.
+>> >> > >
+>> >> >
+>> >> > Yes, I'm trying to add a new rule about throttling in the page allocator
+>> >> > and from vmscan. As you can see from the results in the leader, we are
+>> >> > currently sleeping more than we need to.
+>> >>
+>> >> I can see the about avoiding congestion_wait but can't find about
+>> >> (writeback < incative / 2) hueristic result.
+>> >>
+>> >
+>> > See the leader and each of the report sections entitled
+>> > "FTrace Reclaim Statistics: congestion_wait". It provides a measure of
+>> > how sleep times are affected.
+>> >
+>> > "congest waited" are waits due to calling congestion_wait. "conditional waited"
+>> > are those related to wait_iff_congested(). As you will see from the reports,
+>> > sleep times are reduced overall while callers of wait_iff_congested() still
+>> > go to sleep. The reports entitled "FTrace Reclaim Statistics: vmscan" show
+>> > how reclaim is behaving and indicators so far are that reclaim is not hurt
+>> > by introducing wait_iff_congested().
+>>
+>> I saw  the result.
+>> It was a result about effectiveness _both_ nr_bdi_congested and
+>> (writeback < inactive/2).
+>> What I mean is just effectiveness (writeback < inactive/2) _alone_.
+>
+> I didn't measured it because such a change means that wait_iff_congested()
+> ignored BDI congestion. If we were reclaiming on a NUMA machine for example,
+> it could mean that a BDI gets flooded with requests if we only checked the
+> ratios of one zone if little writeback was happening in that zone at the
+> time. It did not seem like a good idea to ignore congestion.
 
-This patch adds support for AT91 Flexibity board.
+You seem to misunderstand my word.
+Sorry for not clear sentence.
 
-Kind regards,
-Maxim
+I don't mean ignore congestion.
+First of all, we should consider congestion of bdi.
+My meant is whether we need adding up (nr_writeback < nr_inacive /2)
+heuristic plus congestion bdi.
+It wasn't previous version in your patch but it showed up in this version.
+So I thought apparently you have any evidence why we should add such heuristic.
 
->From ccb19f0d6dbda5356e64c1ce5d0fe1396c548f1a Mon Sep 17 00:00:00 2001
-From: Maxim Osipov <maxim.osipov@gmail.com>
-Date: Sun, 12 Sep 2010 16:23:48 +0400
-Subject: [PATCH v2] AT91: Add flexibity board support
+>
+>> If we remove (writeback < inactive / 2) check and unconditionally
+>> return, how does the behavior changed?
+>>
+>
+> Based on just the workload Johannes sent, scanning and completion times both
+> increased without any improvement in the scanning/reclaim ratio (a bad result)
+> hence why this logic was introduced to back off where there is some
+> writeback taking place even if the BDI is not congested.
 
-Signed-off-by: Maxim Osipov <maxim.osipov@gmail.com>
----
- arch/arm/mach-at91/Kconfig           |    6 ++
- arch/arm/mach-at91/Makefile          |    1 +
- arch/arm/mach-at91/board-flexibity.c |  166 ++++++++++++++++++++++++++++++++++
- 3 files changed, 173 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-at91/board-flexibity.c
+Yes. That's what I want. At least, comment of function should have it
+to understand the logic.  In addition, It would be better to add the
+number to show how it back off well.
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 939bccd..ca33862 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -248,6 +248,12 @@ config MACH_CPU9260
- 	  Select this if you are using a Eukrea Electromatique's
- 	  CPU9260 Board <http://www.eukrea.com/>
- 
-+config MACH_FLEXIBITY
-+	bool "Flexibity Connect board"
-+	help
-+	  Select this if you are using Flexibity Connect board
-+	  <http://www.flexibity.com>
-+
- endif
- 
- # ----------------------------------------------------------
-diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-index ca2ac00..7cbe06d 100644
---- a/arch/arm/mach-at91/Makefile
-+++ b/arch/arm/mach-at91/Makefile
-@@ -46,6 +46,7 @@ obj-$(CONFIG_MACH_USB_A9260)	+= board-usb-a9260.o
- obj-$(CONFIG_MACH_QIL_A9260)	+= board-qil-a9260.o
- obj-$(CONFIG_MACH_AFEB9260)	+= board-afeb-9260v1.o
- obj-$(CONFIG_MACH_CPU9260)	+= board-cpu9krea.o
-+obj-$(CONFIG_MACH_FLEXIBITY)	+= board-flexibity.o
- 
- # AT91SAM9261 board-specific support
- obj-$(CONFIG_MACH_AT91SAM9261EK) += board-sam9261ek.o
-diff --git a/arch/arm/mach-at91/board-flexibity.c b/arch/arm/mach-at91/board-flexibity.c
-new file mode 100644
-index 0000000..a589077
---- /dev/null
-+++ b/arch/arm/mach-at91/board-flexibity.c
-@@ -0,0 +1,166 @@
-+/*
-+ * linux/arch/arm/mach-at91/board-flexibity.c
-+ *
-+ *  Copyright (C) 2010 Flexibity
-+ *  Copyright (C) 2005 SAN People
-+ *  Copyright (C) 2006 Atmel
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/spi/spi.h>
-+#include <linux/input.h>
-+
-+#include <asm/mach-types.h>
-+
-+#include <asm/mach/arch.h>
-+#include <asm/mach/map.h>
-+#include <asm/mach/irq.h>
-+
-+#include <mach/hardware.h>
-+#include <mach/board.h>
-+#include <mach/gpio.h>
-+
-+#include "generic.h"
-+
-+
-+static void __init flexibity_map_io(void)
-+{
-+	/* Initialize processor: 18.432 MHz crystal */
-+	at91sam9260_initialize(18432000);
-+
-+	/* DBGU on ttyS0. (Rx & Tx only) */
-+	at91_register_uart(0, 0, 0);
-+
-+	/* set serial console to ttyS0 (ie, DBGU) */
-+	at91_set_serial_console(0);
-+}
-+
-+static void __init flexibity_init_irq(void)
-+{
-+	at91sam9260_init_interrupts(NULL);
-+}
-+
-+
-+/* USB Host port */
-+static struct at91_usbh_data __initdata flexibity_usbh_data = {
-+	.ports		= 2,
-+};
-+
-+/* USB Device port */
-+static struct at91_udc_data __initdata flexibity_udc_data = {
-+	.vbus_pin	= AT91_PIN_PC5,
-+	.pullup_pin	= 0,		/* pull-up driven by UDC */
-+};
-+
-+/* SPI devices */
-+static struct spi_board_info flexibity_spi_devices[] = {
-+	{	/* DataFlash chip */
-+		.modalias	= "mtd_dataflash",
-+		.chip_select	= 1,
-+		.max_speed_hz	= 15 * 1000 * 1000,
-+		.bus_num	= 0,
-+	},
-+};
-+
-+/* MCI (SD/MMC) */
-+static struct at91_mmc_data __initdata flexibity_mmc_data = {
-+	.slot_b		= 0,
-+	.wire4		= 1,
-+	.det_pin	= AT91_PIN_PC9,
-+	.wp_pin		= AT91_PIN_PC4,
-+};
-+
-+/* LEDs */
-+static struct gpio_led flexibity_leds[] = {
-+	{
-+		.name			= "usb1:green",
-+		.gpio			= AT91_PIN_PA12,
-+		.active_low		= 1,
-+		.default_trigger	= "default-on",
-+	},
-+	{
-+		.name			= "usb1:red",
-+		.gpio			= AT91_PIN_PA13,
-+		.active_low		= 1,
-+		.default_trigger	= "default-on",
-+	},
-+	{
-+		.name			= "usb2:green",
-+		.gpio			= AT91_PIN_PB26,
-+		.active_low		= 1,
-+		.default_trigger	= "default-on",
-+	},
-+	{
-+		.name			= "usb2:red",
-+		.gpio			= AT91_PIN_PB27,
-+		.active_low		= 1,
-+		.default_trigger	= "default-on",
-+	},
-+	{
-+		.name			= "usb3:green",
-+		.gpio			= AT91_PIN_PC8,
-+		.active_low		= 1,
-+		.default_trigger	= "default-on",
-+	},
-+	{
-+		.name			= "usb3:red",
-+		.gpio			= AT91_PIN_PC6,
-+		.active_low		= 1,
-+		.default_trigger	= "default-on",
-+	},
-+	{
-+		.name			= "usb4:green",
-+		.gpio			= AT91_PIN_PB4,
-+		.active_low		= 1,
-+		.default_trigger	= "default-on",
-+	},
-+	{
-+		.name			= "usb4:red",
-+		.gpio			= AT91_PIN_PB5,
-+		.active_low		= 1,
-+		.default_trigger	= "default-on",
-+	}
-+};
-+
-+static void __init flexibity_board_init(void)
-+{
-+	/* Serial */
-+	at91_add_device_serial();
-+	/* USB Host */
-+	at91_add_device_usbh(&flexibity_usbh_data);
-+	/* USB Device */
-+	at91_add_device_udc(&flexibity_udc_data);
-+	/* SPI */
-+	at91_add_device_spi(flexibity_spi_devices,
-+		ARRAY_SIZE(flexibity_spi_devices));
-+	/* MMC */
-+	at91_add_device_mmc(0, &flexibity_mmc_data);
-+	/* LEDs */
-+	at91_gpio_leds(flexibity_leds, ARRAY_SIZE(flexibity_leds));
-+}
-+
-+MACHINE_START(FLEXIBITY, "Flexibity Connect")
-+	/* Maintainer: Maxim Osipov */
-+	.phys_io	= AT91_BASE_SYS,
-+	.io_pg_offst	= (AT91_VA_BASE_SYS >> 18) & 0xfffc,
-+	.boot_params	= AT91_SDRAM_BASE + 0x100,
-+	.timer		= &at91sam926x_timer,
-+	.map_io		= flexibity_map_io,
-+	.init_irq	= flexibity_init_irq,
-+	.init_machine	= flexibity_board_init,
-+MACHINE_END
+
+>
+> --
+> Mel Gorman
+> Part-time Phd Student                          Linux Technology Center
+> University of Limerick                         IBM Dublin Software Lab
+>
+
+
+
 -- 
-1.7.1
+Kind regards,
+Minchan Kim
