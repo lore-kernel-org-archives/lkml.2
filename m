@@ -1,284 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab0IMHSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 03:18:17 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45395 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab0IMHSP (ORCPT
+	id S1754498Ab0IMHSW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 03:18:22 -0400
+Received: from newpeace.netnation.com ([204.174.223.7]:40361 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754456Ab0IMHST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 03:18:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 13 Sep 2010 16:13:09 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        gthelen@google.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: [PATCH] memcg: fix race in file_mapped accouting flag management
-Message-Id: <20100913161309.9d733e6b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Sep 2010 03:18:19 -0400
+X-Greylist: delayed 1063 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Sep 2010 03:18:19 EDT
+Date: Mon, 13 Sep 2010 00:00:34 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [2.6.36-rc4/HEAD] unable to handle kernel NULL pointer dereference
+	(plist_add)
+Message-ID: <20100913070034.GA4820@hostway.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on mmtom + fix-race-in-file_mapped-accounting flag management patch.
-This patch is not for bug fix but for performance improvement.
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Hi!
 
-At accounting file events per memory cgroup, we need to find memory cgroup
-via page_cgroup->mem_cgroup. Now, we use lock_page_cgroup() for guarantee
-pc->mem_cgroup is not overwritten while we make use of it.
+At first I thought I hitting a suspend bug, but it was because I had an
+rmmod/modprobe of snd_ice1724 in my "gosleep" script to work around my
+sound sounding crackly after resume.  I can reproduce this same crash
+simply by using sound, rmmod snd_ice1724, modprobe snd_ice1724, and then
+using sound again.
 
-But, considering the context which page-cgroup for files are accessed,
-we can use alternative light-weight mutual execusion in the most case.
+I git-bisected to:
+82f682514a5df89ffb3890627eebf0897b7a84ec is the first bad commit
+commit 82f682514a5df89ffb3890627eebf0897b7a84ec
+Author: James Bottomley <James.Bottomley@suse.de>
+Date:   Mon Jul 5 22:53:06 2010 +0200
 
-At handling file-caches, the only race we have to take care of is "moving"
-account, IOW, overwriting page_cgroup->mem_cgroup. 
-(See comment in the patch)
+    pm_qos: Get rid of the allocation in pm_qos_add_request()
 
-Unlike charge/uncharge, "move" happens not so frequently. It happens only when
-rmdir() and task-moving (with a special settings.)
-This patch adds a race-checker for file-cache-status accounting v.s. account
-moving. The new per-cpu-per-memcg counter MEM_CGROUP_ON_MOVE is added.
-The routine for account move 
-  1. Increment it before start moving
-  2. Call synchronize_rcu()
-  3. Decrement it after the end of moving.
-By this, file-status-counting routine can check it needs to call
-lock_page_cgroup(). In most case, I doesn't need to call it.
+    All current users of pm_qos_add_request() have the ability to supply
+    the memory required by the pm_qos routines, so make them do this and
+    eliminate the kmalloc() with pm_qos_add_request().  This has the
+    double benefit of making the call never fail and allowing it to be
+    called from atomic context.
 
-Following is a perf data of a process which mmap()/munmap 32MB of file cache
-in a minute.
+    Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+    Signed-off-by: mark gross <markgross@thegnar.org>
+    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Before patch:
-    28.25%     mmap  mmap               [.] main
-    22.64%     mmap  [kernel.kallsyms]  [k] page_fault
-     9.96%     mmap  [kernel.kallsyms]  [k] mem_cgroup_update_file_mapped
-     3.67%     mmap  [kernel.kallsyms]  [k] filemap_fault
-     3.50%     mmap  [kernel.kallsyms]  [k] unmap_vmas
-     2.99%     mmap  [kernel.kallsyms]  [k] __do_fault
-     2.76%     mmap  [kernel.kallsyms]  [k] find_get_page
+:040000 040000 0370d037cfe56ae4079bc47713b98c5961de258f 92d6437da54649496c84bacc16ef4b17f8087bbd M      drivers
+:040000 040000 6ec551133758633de70e97b4a41d893a5c050e74 4ac17ea227c07d9cf7dae297a40bbbcc374c232f M      include
+:040000 040000 d0bb4b15e77a0976940af48588ef0e9b9fd7590b ac682974217c7e75a771b92c8efa7c83659d2916 M      kernel
+:040000 040000 9ab6e37ec622354cb93abc2b7424b10263bcd007 011680bad3da4b60aebb659eaeb85a037e2513f3 M      sound
 
-After patch:
-    30.00%     mmap  mmap               [.] main
-    23.78%     mmap  [kernel.kallsyms]  [k] page_fault
-     5.52%     mmap  [kernel.kallsyms]  [k] mem_cgroup_update_file_mapped
-     3.81%     mmap  [kernel.kallsyms]  [k] unmap_vmas
-     3.26%     mmap  [kernel.kallsyms]  [k] find_get_page
-     3.18%     mmap  [kernel.kallsyms]  [k] __do_fault
-     3.03%     mmap  [kernel.kallsyms]  [k] filemap_fault
-     2.40%     mmap  [kernel.kallsyms]  [k] handle_mm_fault
-     2.40%     mmap  [kernel.kallsyms]  [k] do_page_fault
+...but I can't revert this over HEAD due to conflicts and I can't see
+what's wrong in the diff.  2.6.35 is fine.
 
-This patch reduces memcg's cost to some extent.
-(mem_cgroup_update_file_mapped is called by both of map/unmap)
+Simon-
 
-Note: It seems some more improvements are required..but no idea.
-      maybe removing set/unset flag is required.
-
-Changelog: 20100913
- - decoupled with ID patches.
- - updated comments.
-
-Changelog: 20100901
- - changes id_to_memcg(pc, true) to be id_to_memcg(pc, false)
-   in update_file_mapped()
- - updated comments on lock rule of update_file_mapped()
-Changelog: 20100825
- - added a comment about mc.lock
- - fixed bad lock.
-Changelog: 20100804
- - added a comment for possible optimization hint.
-Changelog: 20100730
- - some cleanup.
-Changelog: 20100729
- - replaced __this_cpu_xxx() with this_cpu_xxx
-   (because we don't call spinlock)
- - added VM_BUG_ON().
-
-Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   99 ++++++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 85 insertions(+), 14 deletions(-)
-
-Index: lockless-update/mm/memcontrol.c
-===================================================================
---- lockless-update.orig/mm/memcontrol.c
-+++ lockless-update/mm/memcontrol.c
-@@ -90,6 +90,7 @@ enum mem_cgroup_stat_index {
- 	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
- 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
- 	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
-+	MEM_CGROUP_ON_MOVE,	/* someone is moving account between groups */
- 
- 	MEM_CGROUP_STAT_NSTATS,
- };
-@@ -1051,7 +1052,46 @@ static unsigned int get_swappiness(struc
- 	return swappiness;
- }
- 
--/* A routine for testing mem is not under move_account */
-+static void mem_cgroup_start_move(struct mem_cgroup *mem)
-+{
-+	int cpu;
-+	/* Because this is for moving account, reuse mc.lock */
-+	spin_lock(&mc.lock);
-+	for_each_possible_cpu(cpu)
-+		per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) += 1;
-+	spin_unlock(&mc.lock);
-+
-+	synchronize_rcu();
-+}
-+
-+static void mem_cgroup_end_move(struct mem_cgroup *mem)
-+{
-+	int cpu;
-+
-+	if (!mem)
-+		return;
-+	spin_lock(&mc.lock);
-+	for_each_possible_cpu(cpu)
-+		per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) -= 1;
-+	spin_unlock(&mc.lock);
-+}
-+/*
-+ * 2 routines for checking "mem" is under move_account() or not.
-+ *
-+ * mem_cgroup_stealed() - checking a cgroup is mc.from or not. This is used
-+ *			  for avoiding race in accounting. If true,
-+ *			  pc->mem_cgroup may be overwritten.
-+ *
-+ * mem_cgroup_under_move() - checking a cgroup is mc.from or mc.to or
-+ *			  under hierarchy of moving cgroups. This is for
-+ *			  waiting at hith-memory prressure caused by "move".
-+ */
-+
-+static bool mem_cgroup_stealed(struct mem_cgroup *mem)
-+{
-+	VM_BUG_ON(!rcu_read_lock_held());
-+	return this_cpu_read(mem->stat->count[MEM_CGROUP_ON_MOVE]) > 0;
-+}
- 
- static bool mem_cgroup_under_move(struct mem_cgroup *mem)
- {
-@@ -1462,35 +1502,62 @@ bool mem_cgroup_handle_oom(struct mem_cg
- /*
-  * Currently used to update mapped file statistics, but the routine can be
-  * generalized to update other statistics as well.
-+ *
-+ * Notes: Race condition
-+ *
-+ * We usually use page_cgroup_lock() for accessing page_cgroup member but
-+ * it tends to be costly. But considering some conditions, we doesn't need
-+ * to do so _always_.
-+ *
-+ * Considering "charge", lock_page_cgroup() is not required because all
-+ * file-stat operations happen after a page is attached to radix-tree. There
-+ * are no race with "charge".
-+ *
-+ * Considering "uncharge", we know that memcg doesn't clear pc->mem_cgroup
-+ * at "uncharge" intentionally. So, we always see valid pc->mem_cgroup even
-+ * if there are race with "uncharge". Statistics itself is properly handled
-+ * by flags.
-+ *
-+ * Considering "move", this is an only case we see a race. To make the race
-+ * small, we check MEM_CGROUP_ON_MOVE percpu value and detect there are
-+ * possibility of race condition. If there is, we take a lock.
-  */
- void mem_cgroup_update_file_mapped(struct page *page, int val)
- {
- 	struct mem_cgroup *mem;
--	struct page_cgroup *pc;
-+	struct page_cgroup *pc = lookup_page_cgroup(page);
-+	bool need_unlock = false;
- 
--	pc = lookup_page_cgroup(page);
- 	if (unlikely(!pc))
- 		return;
- 
--	lock_page_cgroup(pc);
-+	rcu_read_lock();
- 	mem = pc->mem_cgroup;
--	if (!mem || !PageCgroupUsed(pc))
--		goto done;
--
--	/*
--	 * Preemption is already disabled. We can use __this_cpu_xxx
--	 */
-+	if (unlikely(!mem || !PageCgroupUsed(pc)))
-+		goto out;
-+	/* pc->mem_cgroup is unstable ? */
-+	if (unlikely(mem_cgroup_stealed(mem))) {
-+		/* take a lock against to access pc->mem_cgroup */
-+		lock_page_cgroup(pc);
-+		need_unlock = true;
-+		mem = pc->mem_cgroup;
-+		if (!mem || !PageCgroupUsed(pc))
-+			goto out;
-+	}
- 	if (val > 0) {
--		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-+		this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
- 		SetPageCgroupFileMapped(pc);
- 	} else {
--		__this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-+		this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
- 		if (!page_mapped(page)) /* for race between dec->inc counter */
- 			ClearPageCgroupFileMapped(pc);
- 	}
- 
--done:
--	unlock_page_cgroup(pc);
-+out:
-+	if (unlikely(need_unlock))
-+		unlock_page_cgroup(pc);
-+	rcu_read_unlock();
-+	return;
- }
- 
- /*
-@@ -3039,6 +3106,7 @@ move_account:
- 		lru_add_drain_all();
- 		drain_all_stock_sync();
- 		ret = 0;
-+		mem_cgroup_start_move(mem);
- 		for_each_node_state(node, N_HIGH_MEMORY) {
- 			for (zid = 0; !ret && zid < MAX_NR_ZONES; zid++) {
- 				enum lru_list l;
-@@ -3052,6 +3120,7 @@ move_account:
- 			if (ret)
- 				break;
- 		}
-+		mem_cgroup_end_move(mem);
- 		memcg_oom_recover(mem);
- 		/* it seems parent cgroup doesn't have enough mem */
- 		if (ret == -ENOMEM)
-@@ -4510,6 +4579,7 @@ static void mem_cgroup_clear_mc(void)
- 	mc.to = NULL;
- 	mc.moving_task = NULL;
- 	spin_unlock(&mc.lock);
-+	mem_cgroup_end_move(from);
- 	memcg_oom_recover(from);
- 	memcg_oom_recover(to);
- 	wake_up_all(&mc.waitq);
-@@ -4540,6 +4610,7 @@ static int mem_cgroup_can_attach(struct 
- 			VM_BUG_ON(mc.moved_charge);
- 			VM_BUG_ON(mc.moved_swap);
- 			VM_BUG_ON(mc.moving_task);
-+			mem_cgroup_start_move(from);
- 			spin_lock(&mc.lock);
- 			mc.from = from;
- 			mc.to = mem;
-
-
+[   61.234230] ICE1724 0000:01:06.0: PCI INT A disabled
+[   61.240010] ICE1724 0000:01:06.0: PCI INT A -> GSI 21 (level, low) -> IRQ 21
+[   62.156008] BUG: unable to handle kernel NULL pointer dereference at (null)
+[   62.156008] IP: [<ffffffff81379706>] plist_add+0x36/0xa0
+[   62.156008] PGD 1ad813067 PUD 1ad989067 PMD 0 
+[   62.156008] Oops: 0000 [#1] SMP 
+[   62.156008] last sysfs file: /sys/devices/pci0000:00/0000:00:14.4/0000:01:06.0/sound/card0/uevent
+[   62.156118] CPU 1 
+[   62.156147] Modules linked in: snd_ice1724 sco bnep rfcomm l2cap bluetooth ppdev hwmon_vid usb_storage tun i2c_viapro snd_rawmidi snd_ice17xx_ak4xxx snd_ac97_codec ac97_bus snd_ak4xxx_adda snd_ak4114 snd_pt2258 snd_i2c parport_pc r8169 parport snd_ak4113 k10temp [last unloaded: snd_ice1724]
+[   62.156849] 
+[   62.156925] Pid: 3053, comm: mplayer Not tainted 2.6.36-rc4-oof+ #6 M4A79T Deluxe/System Product Name
+[   62.157058] RIP: 0010:[<ffffffff81379706>]  [<ffffffff81379706>] plist_add+0x36/0xa0
+[   62.157217] RSP: 0018:ffff8801ac7f3cd8  EFLAGS: 00010002
+[   62.157297] RAX: fffffffffffffff8 RBX: ffff8801a93eae40 RCX: ffff8801ac48e048
+[   62.157386] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff8801a93eae40
+[   62.157475] RBP: ffff8801ac7f3cf8 R08: 0000000000005356 R09: 0000000000004000
+[   62.157564] R10: 0000000000000000 R11: 00000000fffffffe R12: ffffffff8195a2a0
+[   62.157590] R13: ffff8801a93eae58 R14: 0000000000003e80 R15: ffffffff8195a2b0
+[   62.157590] FS:  00007f79749f5860(0000) GS:ffff880001c80000(0000) knlGS:0000000000000000
+[   62.157590] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   62.157590] CR2: 0000000000000000 CR3: 00000001aef63000 CR4: 00000000000006e0
+[   62.157590] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   62.157590] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   62.157590] Process mplayer (pid: 3053, threadinfo ffff8801ac7f2000, task ffff8801ac535cd0)
+[   62.157590] Stack:
+[   62.157590]  ffff8801ac7f3d18 ffffffff8195a2a0 ffff8801a93eae40 00000000ffffffff
+[   62.157590] <0> ffff8801ac7f3d48 ffffffff8105f35b ffff880100000000 0000000000000292
+[   62.157590] <0> ffff8801ac7f3d58 ffff8801a93eae40 ffff8801ad849400 ffff8801ad849c00
+[   62.157590] Call Trace:
+[   62.157590]  [<ffffffff8105f35b>] update_target+0x12b/0x140
+[   62.157590]  [<ffffffff8105f5aa>] pm_qos_add_request+0x4a/0x80
+[   62.157590]  [<ffffffff8157e8a4>] snd_pcm_hw_params+0x2d4/0x3a0
+[   62.157590]  [<ffffffff8157ed41>] snd_pcm_common_ioctl1+0xb1/0xb90
+[   62.157590]  [<ffffffff810bcbc2>] ? handle_mm_fault+0x192/0xa50
+[   62.157590]  [<ffffffff8157facd>] snd_pcm_playback_ioctl1+0x3d/0x220
+[   62.157590]  [<ffffffff81698b9f>] ? do_page_fault+0x17f/0x440
+[   62.157590]  [<ffffffff8158035d>] snd_pcm_playback_ioctl+0x3d/0x50
+[   62.157590]  [<ffffffff810e8787>] do_vfs_ioctl+0x97/0x530
+[   62.157590]  [<ffffffff810c493c>] ? do_mmap_pgoff+0x34c/0x3a0
+[   62.157590]  [<ffffffff810e8c6a>] sys_ioctl+0x4a/0x80
+[   62.157590]  [<ffffffff81002ceb>] system_call_fastpath+0x16/0x1b
+[   62.157590] Code: 54 49 89 f4 53 48 89 fb 48 83 ec 08 4c 3b 6f 18 75 69 49 8b 04 24 48 83 e8 08 eb 0f 90 8b 30 39 33 7c 18 66 90 74 4e 48 8d 42 f8 <48> 8b 50 08 48 8d 48 08 4c 39 e1 0f 18 0a 75 e2 48 8b 50 10 48 
+[   62.157590] RIP  [<ffffffff81379706>] plist_add+0x36/0xa0
+[   62.157590]  RSP <ffff8801ac7f3cd8>
+[   62.157590] CR2: 0000000000000000
+[   62.157590] ---[ end trace 853ed59ac5273c1f ]---
