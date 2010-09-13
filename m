@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630Ab0IMOXW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:23:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38543 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab0IMOXU (ORCPT
+	id S1751904Ab0IMOZk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:25:40 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:46593 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751208Ab0IMOZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:23:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=x3WUwSNUBcUcXIbvFK/Vc8LMYRURSohzvD1enTpCFkDkEMydXfbZp+4HXTcVd1MBmU
-         zRKK0XtEv5l9jxIjVehPuAqz6asm9+AhnbI+8zCebml0k940B2DaeY5WPZXT/wDKanHT
-         xEEQf2lBxr7/ii0l5sNXBSOx9AV0HePx7GTOs=
-Message-ID: <4C8E33CE.4010105@suse.cz>
-Date: Mon, 13 Sep 2010 16:23:10 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
+	Mon, 13 Sep 2010 10:25:39 -0400
+Date: Mon, 13 Sep 2010 10:25:38 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jiri Slaby <jslaby@suse.cz>
+cc: Oliver Neukum <oliver@neukum.org>, <pingc@wacom.com>,
+        Dmitry Torokhov <dtor@mail.ru>,
+        linux-pm <linux-pm@lists.linux-foundation.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        <linux-input@vger.kernel.org>
+Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
+In-Reply-To: <4C8E180D.4020309@suse.cz>
+Message-ID: <Pine.LNX.4.44L0.1009131019370.1584-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: phil@ipom.com, stable@kernel.org, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [34-stable regression] USB delay init quirk causes device events
- loss
-References: <Pine.LNX.4.44L0.1009131014460.1584-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1009131014460.1584-100000@iolanthe.rowland.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2010 04:16 PM, Alan Stern wrote:
-> On Mon, 13 Sep 2010, Jiri Slaby wrote:
->> The problem is that the patch shuffles with usb_detect_quirks which used
->> to disable autosuspend by default. Apparently it no longer does.
+On Mon, 13 Sep 2010, Jiri Slaby wrote:
+
+> Hi,
 > 
-> I don't see how that patch could have the effect you claim.  
-> usb_detect_quirks still calls usb_disable_autosuspend.  Can you do a 
-> little more debugging to find out why it isn't working as expected?  
-> Reverting the commit is not a good solution.
+> by mistake when runtime PM is enabled by default for input devices, X
+> hangs on wacom open:
+> [<ffffffff814a00ea>] mutex_lock+0x1a/0x40
+> [<ffffffffa02bc94b>] wacom_resume+0x3b/0x90 [wacom]
+> [<ffffffff81327a32>] usb_resume_interface+0xd2/0x190
+> [<ffffffff81327b5d>] usb_resume_both+0x6d/0x110
+> [<ffffffff81327c24>] usb_runtime_resume+0x24/0x40
+> [<ffffffff8130a2cf>] __pm_runtime_resume+0x26f/0x450
+> [<ffffffff8130a23a>] __pm_runtime_resume+0x1da/0x450
+> [<ffffffff8130a53a>] pm_runtime_resume+0x2a/0x50
+> [<ffffffff81328176>] usb_autopm_get_interface+0x26/0x60
+> [<ffffffffa02bc626>] wacom_open+0x36/0x90 [wacom]
+> 
+> wacom_open took wacom->lock and calls usb_autopm_get_interface which in
+> turn calls wacom_resume which tries to aquire the lock again.
+> 
+> More details (dmesg including) at:
+> https://bugzilla.novell.com/show_bug.cgi?id=638506
+> 
+> Any ideas how to fix that properly?
 
-Ok, I could, but I have a near-zero knowledge about usb core stuff. What
-I see is that usb_detect_quirks moved from usb_new_device to
-hub_port_connect_change. Might that be that there are broken devices
-which doesn't generate state changes properly?
+One possibility is for wacom_open simply not to acquire the lock until
+after the usb_autopm_get_interface call returns.  And why does
+wacom_open have that assignment to wacom->irq->dev?  The value was
+already set in wacom_probe.
 
-In other words, what I could do is to add some printks into
-hub_port_connect_change if that's called at all. If you need some
-thorough debugging printks, please send me a patch to test instead.
+BTW, does anybody know why wacom_open calls usb_autopm_get_interface 
+but wacom_close doesn't call usb_autopm_put_interface?
 
-thanks,
--- 
-js
-suse labs
+Alan Stern
+
