@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab0IMUvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 16:51:41 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:42181 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855Ab0IMUvk (ORCPT
+	id S1755017Ab0IMUxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 16:53:12 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:34390 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751399Ab0IMUxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 16:51:40 -0400
-Date: Mon, 13 Sep 2010 22:51:37 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
-        markus.t.metzger@intel.com
-Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
-Message-ID: <20100913225137.042ff889@basil.nowhere.org>
-In-Reply-To: <1284407360.2275.431.camel@laptop>
-References: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
-	<877hip4et0.fsf@basil.nowhere.org>
-	<1284407360.2275.431.camel@laptop>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 13 Sep 2010 16:53:11 -0400
+Message-ID: <4C8E8F31.2050108@bluewatersys.com>
+Date: Tue, 14 Sep 2010 08:53:05 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Maxim Osipov <maxim.osipov@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "Antonio R. Costa" <costa.antonior@gmail.com>,
+        Ernst Schwab <eschwab@online.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] AT91: Add flexibity board support
+References: <4C8DFA84.4040501@gmail.com>
+In-Reply-To: <4C8DFA84.4040501@gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010 21:49:20 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Mon, 2010-09-13 at 21:35 +0200, Andi Kleen wrote:
-> > Stephane Eranian <eranian@google.com> writes:
-> > 
-> > > The DS, BTS, and PEBS memory regions were allocated using
-> > > kzalloc(), i.e., requesting contiguous physical memory. There is
-> > > no such restriction on DS, PEBS and BTS buffers. Using kzalloc()
-> > > could lead to error in case no contiguous physical memory is
-> > > available. BTS is requesting 64KB, thus it can cause issues. PEBS
-> > > is currently only requesting one page. Both PEBS and BTS are
-> > > static buffers allocated for each CPU at the first user. When the
-> > > last user exists, the buffers are released.
-> > 
-> > DS supports page tables, but I have some doubts it really 
-> > supports page faults. vmalloc today does page faults. 
-> > 
-> > I think the change is a good idea, but it will need
-> > vmalloc_sync_all() everywhere.
+On 09/13/2010 10:18 PM, Maxim Osipov wrote:
+> Hello,
 > 
-> Right, I seem to remember from that last discussion on vmalloc vs NMI
-> that vmalloc_sync_all() had some issues, or am I totally
-> mis-remembering that?
+> This patch adds support for AT91 Flexibity board.
 
-Linus thought it was ugly, but he never explained why and it was
-not obvious to me. 
+Couple more comments below,
 
-His proposed replacement wouldn't work for this case.
+> From ccb19f0d6dbda5356e64c1ce5d0fe1396c548f1a Mon Sep 17 00:00:00 2001
+> From: Maxim Osipov <maxim.osipov@gmail.com>
+> Date: Sun, 12 Sep 2010 16:23:48 +0400
+> Subject: [PATCH v2] AT91: Add flexibity board support
+> 
+> Signed-off-by: Maxim Osipov <maxim.osipov@gmail.com>
+> ---
 
-I am not aware of any real technical issues, except that
-it needs to be done for both 32bit and 64bit.
+> +#include <linux/init.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/spi/spi.h>
+> +#include <linux/input.h>
+> +
+> +#include <asm/mach-types.h>
+> +
+> +#include <asm/mach/arch.h>
+> +#include <asm/mach/map.h>
+> +#include <asm/mach/irq.h>
+> +
+> +#include <mach/hardware.h>
+> +#include <mach/board.h>
+> +#include <mach/gpio.h>
 
--Andi
+Use linux/gpio.h
+
+> +
+> +#include "generic.h"
+> +
+> +
+
+Single blank line here, and between functions.
+
+> +
+> +static void __init flexibity_board_init(void)
+> +{
+> +	/* Serial */
+> +	at91_add_device_serial();
+> +	/* USB Host */
+> +	at91_add_device_usbh(&flexibity_usbh_data);
+> +	/* USB Device */
+> +	at91_add_device_udc(&flexibity_udc_data);
+> +	/* SPI */
+> +	at91_add_device_spi(flexibity_spi_devices,
+> +		ARRAY_SIZE(flexibity_spi_devices));
+> +	/* MMC */
+> +	at91_add_device_mmc(0, &flexibity_mmc_data);
+> +	/* LEDs */
+> +	at91_gpio_leds(flexibity_leds, ARRAY_SIZE(flexibity_leds));
+
+Can we drop all the comments inside this function please. They don't add
+any information and they make it harder to read the actual code.
+
+~Ryan
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
