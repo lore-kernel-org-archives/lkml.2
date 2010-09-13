@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab0IMKHt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 06:07:49 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:63224 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754534Ab0IMKHr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 06:07:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CjwNxQS+KIu3msZt9V4LlEDeiNYNhaRf4XswTriUXPzbmxSqYCPiufRgfdZ54wYsXY
-         ueOtPkn8KHVO1/8NIFgAHZRE5LQQSYjLT54Lw6WSxptI5SaakwQ2SnDoi33aDdWaFb31
-         BQsTmvd7fzxUw99tjgqki2aniNrg06oVyKFUU=
-Date: Mon, 13 Sep 2010 14:07:43 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
-        mingo@elte.hu, robert.richter@amd.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, ying.huang@intel.com,
-        ming.m.lin@intel.com, yinghai@kernel.org, andi@firstfloor.org
-Subject: Re: [PATCH 0/3 v2] nmi perf fixes
-Message-ID: <20100913100743.GF5728@lenovo>
-References: <1283454469-1909-1-git-send-email-dzickus@redhat.com> <1284118900.402.35.camel@laptop> <1284125693.402.58.camel@laptop> <1284126770.402.60.camel@laptop> <20100913085515.GC5728@lenovo> <AANLkTi=AceFvNNQmsDYE0MTbOX804P1+mewcr=bAFzXi@mail.gmail.com>
+	id S1754652Ab0IMKIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 06:08:15 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:56790 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750871Ab0IMKIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 06:08:13 -0400
+Date: Mon, 13 Sep 2010 11:07:59 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 03/10] writeback: Do not congestion sleep if there are
+	no congested BDIs or significant writeback
+Message-ID: <20100913100759.GE23508@csn.ul.ie>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie> <1283770053-18833-4-git-send-email-mel@csn.ul.ie> <20100907152533.GB4620@barrios-desktop> <20100908110403.GB29263@csn.ul.ie> <20100908145245.GG4620@barrios-desktop> <20100909085436.GJ29263@csn.ul.ie> <20100912153744.GA3563@barrios-desktop> <20100913085549.GA23508@csn.ul.ie> <AANLkTimkSU5G1qO0JDp8An5ofM2BPoPY0SGUOuTvSuOL@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=AceFvNNQmsDYE0MTbOX804P1+mewcr=bAFzXi@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTimkSU5G1qO0JDp8An5ofM2BPoPY0SGUOuTvSuOL@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 11:54:59AM +0200, Stephane Eranian wrote:
-> Robert,
+On Mon, Sep 13, 2010 at 06:48:10PM +0900, Minchan Kim wrote:
+> >> > > > <SNIP>
+> >> > > > I'm not saying it is. The objective is to identify a situation where
+> >> > > > sleeping until the next write or congestion clears is pointless. We have
+> >> > > > already identified that we are not congested so the question is "are we
+> >> > > > writing a lot at the moment?". The assumption is that if there is a lot
+> >> > > > of writing going on, we might as well sleep until one completes rather
+> >> > > > than reclaiming more.
+> >> > > >
+> >> > > > This is the first effort at identifying pointless sleeps. Better ones
+> >> > > > might be identified in the future but that shouldn't stop us making a
+> >> > > > semi-sensible decision now.
+> >> > >
+> >> > > nr_bdi_congested is no problem since we have used it for a long time.
+> >> > > But you added new rule about writeback.
+> >> > >
+> >> >
+> >> > Yes, I'm trying to add a new rule about throttling in the page allocator
+> >> > and from vmscan. As you can see from the results in the leader, we are
+> >> > currently sleeping more than we need to.
+> >>
+> >> I can see the about avoiding congestion_wait but can't find about
+> >> (writeback < incative / 2) hueristic result.
+> >>
+> >
+> > See the leader and each of the report sections entitled
+> > "FTrace Reclaim Statistics: congestion_wait". It provides a measure of
+> > how sleep times are affected.
+> >
+> > "congest waited" are waits due to calling congestion_wait. "conditional waited"
+> > are those related to wait_iff_congested(). As you will see from the reports,
+> > sleep times are reduced overall while callers of wait_iff_congested() still
+> > go to sleep. The reports entitled "FTrace Reclaim Statistics: vmscan" show
+> > how reclaim is behaving and indicators so far are that reclaim is not hurt
+> > by introducing wait_iff_congested().
 > 
-> I have able to reproduce very easily on:
-> 
-> processor	: 0
-> vendor_id	: AuthenticAMD
-> cpu family	: 16
-> model		: 2
-> model name	: AMD Phenom(tm) 8450 Triple-Core Processor
-> stepping	: 3
-> 
-> using:
-> 
-> $ perf record -g ./hackbench 10
-> Time: 0.415
-> [ perf record: Woken up 3 times to write data ]
-> [ perf record: Captured and wrote 0.706 MB perf.data (~30841 samples) ]
-> $ dmesg | tail
-> [  418.946001] Uhhuh. NMI received for unknown reason 3d on CPU 0.
-> [  418.946001] Do you have a strange power saving mode enabled?
-> [  418.946001] Dazed and confused, but trying to continue
-> 
-> This is with 2.6.36-rc4-tip as of this morning from tip-x86.
+> I saw  the result.
+> It was a result about effectiveness _both_ nr_bdi_congested and
+> (writeback < inactive/2).
+> What I mean is just effectiveness (writeback < inactive/2) _alone_.
+
+I didn't measured it because such a change means that wait_iff_congested()
+ignored BDI congestion. If we were reclaiming on a NUMA machine for example,
+it could mean that a BDI gets flooded with requests if we only checked the
+ratios of one zone if little writeback was happening in that zone at the
+time. It did not seem like a good idea to ignore congestion.
+
+> If we remove (writeback < inactive / 2) check and unconditionally
+> return, how does the behavior changed?
 > 
 
-Hi Stephane, the hackbench is Ingo's one? I've been using
-http://people.redhat.com/mingo/cfs-scheduler/tools/hackbench.c
+Based on just the workload Johannes sent, scanning and completion times both
+increased without any improvement in the scanning/reclaim ratio (a bad result)
+hence why this logic was introduced to back off where there is some
+writeback taking place even if the BDI is not congested.
 
-	-- Cyrill
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
