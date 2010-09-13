@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab0IMSCn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 14:02:43 -0400
-Received: from mga14.intel.com ([143.182.124.37]:2827 "EHLO mga14.intel.com"
+	id S1754648Ab0IMSEC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 14:04:02 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57235 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751933Ab0IMSCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 14:02:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,360,1280732400"; 
-   d="scan'208";a="324041137"
-Subject: Re: [PATCH] generic-ipi: fix deadlock in __smp_call_function_single
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
+	id S1751413Ab0IMSEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 14:04:01 -0400
+Date: Mon, 13 Sep 2010 20:03:48 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <AANLkTi=Vrd0g-64oRYLo6fTj1SYYa++VG57vGn608tkA@mail.gmail.com>
-References: <20100909135050.GB2228@osiris.boeblingen.de.ibm.com>
-	 <1284116817.402.33.camel@laptop>
-	 <20100910172805.a4fe5c7f.akpm@linux-foundation.org>
-	 <1284196838.2251.12.camel@laptop>
-	 <AANLkTi=Vrd0g-64oRYLo6fTj1SYYa++VG57vGn608tkA@mail.gmail.com>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Mon, 13 Sep 2010 11:02:21 -0700
-Message-Id: <1284400941.2684.19.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC PATCH] check_preempt_tick should not compare vruntime with
+ wall time
+Message-ID: <20100913180348.GA20171@elte.hu>
+References: <20100911195708.GA9273@Krystal>
+ <1284288072.2251.91.camel@laptop>
+ <20100912203712.GD32327@Krystal>
+ <1284382387.2275.265.camel@laptop>
+ <1284383758.2275.283.camel@laptop>
+ <20100913135621.GA13442@Krystal>
+ <1284387398.2275.311.camel@laptop>
+ <20100913161641.GA28707@Krystal>
+ <AANLkTimB9CjH5SjeY9XmwhTp1tfFPwh-Q1Y4o918h7XD@mail.gmail.com>
+ <20100913174533.GA15653@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100913174533.GA15653@Krystal>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0002]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-09-11 at 09:42 -0700, Venkatesh Pallipadi wrote:
-> Also, as we don't have rq lock around this point, it seems possible
-> that the CPU that was busy and wants to kick idle load balance on
-> remote CPU, could have become idle and nominated itself as idle load
-> balancer.
 
-A busy cpu (currently running something -- one task on the rq atleast)
-can't become idle in the middle of trigger_load_balance().
+* Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 
-What might be happening is similar what you said but the opposite of it.
+> * Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> > On Mon, Sep 13, 2010 at 9:16 AM, Mathieu Desnoyers
+> > <mathieu.desnoyers@efficios.com> wrote:
+> > >
+> > > OK, the long IRC discussions we just had convinced me that the current scheme
+> > > takes things into account by adapting the granularity dynamically, but also got
+> > > me to notice that check_preempt seems to compare vruntime with wall time, which
+> > > is utterly incorrect. So maybe all my patch was doing was to expose this bug:
+> > 
+> > Do you have latency numbers for this patch?
+> 
+> Sure, see below,
+> 
+> In addition to this patch, [...]
 
-cpu-x is idle which is also ilb_cpu
-got a scheduler tick during idle
-and the nohz_kick_needed() in trigger_load_balance() checks for
-rq_x->nr_running which might not be zero (because of someone waking a
-task on this rq etc) and this leads to the situation of the cpu-x
-sending a kick to itself.
+Note, which is a NOP for your latency workload.
 
-Perhaps the more appropriate patch would be(?):
+> [...] I also used Peter's approach of reducing the minimum granularity
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 134f7ed..5b5aa97 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3632,7 +3632,7 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
- 	if (time_before(now, nohz.next_balance))
- 		return 0;
- 
--	if (!rq->nr_running)
-+	if (rq->idle_at_tick)
- 		return 0;
- 
- 	first_pick_cpu = atomic_read(&nohz.first_pick_cpu);
+Ok, that's the very first patch i sent yesterday morning - so we also 
+have my numbers that it reduces latencies.
 
+To move things along i'll apply it with your Reported-by and Acked-by 
+line, ok?
 
+We can also work on the other, more complex things after that, but first 
+lets make some progress on the latency front ...
+
+Thanks,
+
+	Ingo
