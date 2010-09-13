@@ -1,97 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab0IMMPb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 08:15:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55059 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755138Ab0IMMPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 08:15:30 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: robert.richter@amd.com
-Cc: linux-kernel@vger.kernel.org, oprofile-list@lists.sourceforge.net,
-        tdm.rhbz@gmail.com, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] oprofile, x86: allow backtrace for 32bit apps under 64bit kernel
-Date: Mon, 13 Sep 2010 14:15:17 +0200
-Message-Id: <1284380117-6857-1-git-send-email-jolsa@redhat.com>
+	id S1755179Ab0IMMQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 08:16:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56312 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755105Ab0IMMQV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 08:16:21 -0400
+Subject: Re: [tip:perf/core] perf: Rework the PMU methods
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: mingo@redhat.com, dengcheng.zhu@gmail.com, yanmin_zhang@linux.intel.com,
+        gorcunov@gmail.com, fweisbec@gmail.com, robert.richter@amd.com,
+        ming.m.lin@intel.com, tglx@linutronix.de, hpa@zytor.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, eranian@googlemail.com,
+        will.deacon@arm.com, lethal@linux-sh.org, davem@davemloft.net,
+        mingo@elte.hu, linux-alpha@vger.kernel.org
+In-Reply-To: <4C8C6611.20206@orcon.net.nz>
+References: <new-submission>
+	 <tip-a4eaf7f14675cb512d69f0c928055e73d0c6d252@git.kernel.org>
+	 <4C8B3AD3.5050309@orcon.net.nz> <1284198035.2251.29.camel@laptop>
+	 <4C8C6611.20206@orcon.net.nz>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 13 Sep 2010 14:15:53 +0200
+Message-ID: <1284380153.2275.261.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
+On Sun, 2010-09-12 at 17:33 +1200, Michael Cree wrote:
 
-adding support for backtrace of ia32 applications under 64bit kernels.
+> Yes, done.  I also took the liberty to fix an undefined variable and 
+> multiple defined variable errors that were exposed by compilation.  Will 
+> reply to this with the patch.
 
-wbr,
-jirka
+Thanks, and sorry for messing up Alpha that bad.. I have an alpha
+compiler and I really through I compile tested it :/
+
+> I've also tested it on a UP alpha.  It worked well for a little while 
+> but after running 'perf top' for a number of seconds I got the following 
+> warning:
+
+<snip warn>
+
+> which is from the line in alpha_pmu_start() that checks that 
+> PERF_HES_STOPPED is set.
+> 
+> I see that the backtrace is from the Alpha timer_interrupt() code which 
+> goes something like this:
+> 
+> [do some stuff updating timer deltas then...]
+> 
+> #ifndef CONFIG_SMP
+>          while (nticks--)
+>                  update_process_times(user_mode(get_irq_regs()));
+> #endif
+> 
+>          if (test_perf_event_pending()) {
+>                  clear_perf_event_pending();
+>                  perf_event_do_pending();
+>          }
+> 
+>          return IRQ_HANDLED;
+> }
+> 
+> 
+> When I added the code for handle pending events to the timer interrupt I 
+> hadn't realised that update_process_times() could call back into the 
+> perf code.  I'm speculating here, but could it be that there is pending 
+> work to stop the HW counter, but the call to re-start it is beating the 
+> call to stop it?
+
+Right, so the ->start() call came from perf_ctx_adjust_freq(), which
+depending on whether perf_adjust_period() gets inlined, can have two
+such calls.
+
+Assuming it didn't inline (there's two callsites, which should defeat
+the inline static functions with a single callsite heuristic), you hit
+the unthrottle() call.
+
+Ahh, the alpha throttle call should be using the fancy new stop function
+too (will fold into your earlier patch if it indeed works):
+
+As to the point you raised above, yes, I think it would be prudent to
+call perf_event_do_pending() before update_process_times().
 
 
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Tom Marshall <tdm.rhbz@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- arch/x86/oprofile/backtrace.c |   42 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 42 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-index 3855096..3e443ad 100644
---- a/arch/x86/oprofile/backtrace.c
-+++ b/arch/x86/oprofile/backtrace.c
-@@ -73,6 +73,38 @@ static struct frame_head *dump_user_backtrace(struct frame_head *head)
- 	return bufhead[0].bp;
- }
+Index: linux-2.6/arch/alpha/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/arch/alpha/kernel/perf_event.c
++++ linux-2.6/arch/alpha/kernel/perf_event.c
+@@ -825,14 +825,14 @@ static void alpha_perf_event_irq_handler
+ 			break;
+ 	}
  
-+#ifdef CONFIG_X86_64
-+struct frame_head_32 {
-+	__u32 ebp;
-+	__u32 ret;
-+} __attribute__((packed));
++	event = cpuc->event[j];
 +
-+static struct frame_head *
-+dump_user_backtrace_32(struct frame_head *head)
-+{
-+	struct frame_head_32 bufhead_32[2];
-+	unsigned long bp, ret;
-+
-+	/* Also check accessibility of one struct frame_head beyond */
-+	if (!access_ok(VERIFY_READ, head, sizeof(bufhead_32)))
-+		return NULL;
-+	if (__copy_from_user_inatomic(bufhead_32, head, sizeof(bufhead_32)))
-+		return NULL;
-+
-+	bp  = bufhead_32[0].ebp;
-+	ret = bufhead_32[0].ret;
-+
-+	oprofile_add_trace(ret);
-+
-+	/* frame pointers should strictly progress back up the stack
-+	* (towards higher addresses) */
-+	if (head >= (struct frame_head *) bp)
-+		return NULL;
-+
-+	return (struct frame_head *) bp;
-+}
-+#endif
-+
- void
- x86_backtrace(struct pt_regs * const regs, unsigned int depth)
- {
-@@ -86,6 +118,16 @@ x86_backtrace(struct pt_regs * const regs, unsigned int depth)
+ 	if (unlikely(j == cpuc->n_events)) {
+ 		/* This can occur if the event is disabled right on a PMC overflow. */
+-		wrperfmon(PERFMON_CMD_ENABLE, cpuc->idx_mask);
++		alpha_pmu_stop(event, 0);
  		return;
  	}
  
-+#ifdef CONFIG_X86_64
-+	if (current && test_thread_flag(TIF_IA32)) {
-+		/* User process is 32-bit */
-+		head = (struct frame_head *)(regs->bp & 0xffffffff);
-+		while (depth-- && head)
-+			head = dump_user_backtrace_32(head);
-+		return;
-+	}
-+#endif
-+
- 	while (depth-- && head)
- 		head = dump_user_backtrace(head);
- }
--- 
-1.7.1
+-	event = cpuc->event[j];
+-
+ 	if (unlikely(!event)) {
+ 		/* This should never occur! */
+ 		irq_err_count++;
 
