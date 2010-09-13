@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab0IMDM5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 23:12:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43523 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab0IMDM4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 23:12:56 -0400
-Date: Sun, 12 Sep 2010 20:11:52 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Nigel Cunningham <nigel@tuxonice.net>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: 2.6.36-rc3 - Unable to build: "Error: input truncated"
-Message-Id: <20100912201152.a4ada04a.randy.dunlap@oracle.com>
-In-Reply-To: <4C8D5D41.90104@tuxonice.net>
-References: <4C8CB5A1.9040500@tuxonice.net>
-	<201009121934.37033.rjw@sisk.pl>
-	<4C8D5D41.90104@tuxonice.net>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754348Ab0IMDPb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 23:15:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36976 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754161Ab0IMDPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 23:15:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,357,1280732400"; 
+   d="scan'208";a="837069543"
+Date: Mon, 13 Sep 2010 11:15:24 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Michael Rubin <mrubin@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
+        "axboe@kernel.dk" <axboe@kernel.dk>
+Subject: Re: [PATCH 5/5] writeback: Reporting dirty thresholds in
+ /proc/vmstat
+Message-ID: <20100913031524.GD7697@localhost>
+References: <1284323440-23205-1-git-send-email-mrubin@google.com>
+ <1284323440-23205-6-git-send-email-mrubin@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284323440-23205-6-git-send-email-mrubin@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010 09:07:45 +1000 Nigel Cunningham wrote:
-
-> Hi.
+On Mon, Sep 13, 2010 at 04:30:40AM +0800, Michael Rubin wrote:
+> The kernel already exposes the user desired thresholds in /proc/sys/vm
+> with dirty_background_ratio and background_ratio. But the kernel may
+> alter the number requested without giving the user any indication that
+> is the case.
 > 
-> On 13/09/10 03:34, Rafael J. Wysocki wrote:
-> > On Sunday, September 12, 2010, Nigel Cunningham wrote:
-> >> Hi all.
-> >>
-> >> I'm unable to compile the latest kernel and git bisect isn't helping:
-> >
-> > Did you try to save .config, run "make distclean" and restore .config?
+> Knowing the actual ratios the kernel is honoring can help app developers
+> understand how their buffered IO will be sent to the disk.
 > 
-> I hadn't tried that, but had done git reset --hard and make clean 
-> menuconfig bzImage. Trying distclean doesn't help, I'm afraid. Perhaps I 
-> should attach my .config. I'm running a 32 bit kernel/distro on a 64 bit 
-> machine if that makes any difference.
+>         $ grep threshold /proc/vmstat
+>         nr_dirty_threshold 409111
+>         nr_dirty_background_threshold 818223
+> 
+> Signed-off-by: Michael Rubin <mrubin@google.com>
+> ---
+>  include/linux/mmzone.h |    2 ++
+>  mm/vmstat.c            |    4 ++++
+>  2 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index d0d7454..1e87936 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -106,6 +106,8 @@ enum zone_stat_item {
+>  	NR_SHMEM,		/* shmem pages (included tmpfs/GEM pages) */
+>  	NR_FILE_DIRTIED,	/* accumulated dirty pages */
+>  	NR_WRITTEN,		/* accumulated written pages */
+> +	NR_DIRTY_THRESHOLD,	/* writeback threshold */
 
+s/writeback/dirty throttling/
 
-Try to strace scripts/mod/mk_elfconfig to see why it is producing
-that error message:
+> +	NR_DIRTY_BG_THRESHOLD,	/* bg writeback threshold */
 
-   scripts/mod/mk_elfconfig < scripts/mod/empty.o > scripts/mod/elfconfig.h
-Error: input truncated
+I have no idea about this interface change. No ACK or NAK.
 
-I guess that the empty.o file is not in the expected format.
-Who owns that stuff, anyway?
+But technical wise, the above two enum items should better be removed
+to avoid possibly eating one more cache line. The two items can be
+printed by explicit code.
 
-You should probably post the empty.o file so that interested parties can
-try to debug the problem.
-
-I built the kernel just fine with the .config file that you posted.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks,
+Fengguang
