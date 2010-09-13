@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab0IMIIT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 04:08:19 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:43744 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab0IMIIS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 04:08:18 -0400
-Date: Mon, 13 Sep 2010 10:08:13 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] generic-ipi: fix deadlock in __smp_call_function_single
-Message-ID: <20100913080813.GB2310@osiris.boeblingen.de.ibm.com>
-References: <20100909135050.GB2228@osiris.boeblingen.de.ibm.com>
- <1284116817.402.33.camel@laptop>
- <20100910172805.a4fe5c7f.akpm@linux-foundation.org>
- <1284196838.2251.12.camel@laptop>
- <AANLkTi=Vrd0g-64oRYLo6fTj1SYYa++VG57vGn608tkA@mail.gmail.com>
+	id S1754633Ab0IMIIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 04:08:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35912 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754613Ab0IMIIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 04:08:36 -0400
+Message-ID: <4C8DDBEC.3010900@kernel.org>
+Date: Mon, 13 Sep 2010 10:08:12 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100825 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=Vrd0g-64oRYLo6fTj1SYYa++VG57vGn608tkA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dave Chinner <david@fromorbit.com>
+CC: Florian Mickler <florian@mickler.org>, lkml <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH UPDATED] workqueue: add documentation
+References: <4C87AE52.70401@kernel.org> <4C87B101.2080608@kernel.org> <20100909100229.250900f0@schatten.dmk.lab> <4C88B55E.90203@kernel.org> <20100909205056.1ac7989a@schatten.dmk.lab> <4C8A07B3.1050603@kernel.org> <20100910162658.254b224a@schatten.dmk.lab> <4C8A46D9.5020303@kernel.org> <20100913005151.GB411@dastard>
+In-Reply-To: <20100913005151.GB411@dastard>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 13 Sep 2010 08:08:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 11, 2010 at 09:42:16AM -0700, Venkatesh Pallipadi wrote:
-> On Sat, Sep 11, 2010 at 2:20 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, 2010-09-10 at 17:28 -0700, Andrew Morton wrote:
-> >> Where is this scheduler bug?  Did it occur because someone didn't
-> >> understand __smp_call_function_single()?  Or did it occur because the
-> >> scheduler code is doing something which its implementors did not expect
-> >> or intend?
-> >
-> >
-> > It comes from 83cd4fe2 (sched: Change nohz idle load balancing logic to
-> > push model), where nohz_balance_kick() simply needs to kick the
-> > designated driver into action.
-> >
-> > I take it Venki assumed __smp_call_function_single() works like
-> > smp_call_function_single() where you can use it for the local cpu as
-> > well.
-> 
-> Yes. This was an oversight while moving from using send_remote_softirq
-> to using __smp_call_function_single.
-> Also, as we don't have rq lock around this point, it seems possible
-> that the CPU that was busy and wants to kick idle load balance on
-> remote CPU, could have become idle and nominated itself as idle load
-> balancer.
-> 
-> Below patch looks good to me.
-> 
-> Acked-by: Venkatesh Pallipadi <venki@google.com>
-> 
-> I guess, we also need a WARN_ON_ONCE for (cpu == smp_processor_id())
-> in __smp_call_function_single(), as the eventual result of this bug
-> that Heiko saw was a deadlock
+Hello,
 
-Either that or my generic IPI patch should be applied. At least to me
-it was rather surprising to see that smp_call_function_single() and
-__smp_call_function_single() behave differently when the 'remote' cpu
-is the current cpu.
+On 09/13/2010 02:51 AM, Dave Chinner wrote:
+> We talked about this for XFS w.r.t. the xfslogd IO completion
+> work items to be promoted ahead of data IO completion items and
+> that has worked fine. This appears to gives us only two
+> levels of priority, or from an user point of view, two levels of
+> dependency between workqueue item execution.
+
+It's not priority per-se.  It's basically a bypass switch for
+workqueue work deferring mechanism.
+
+> Thinking about the XFS situation more, we actually have three levels
+> of dependency: xfslogd -> xfsdatad -> xfsconvertd. That is, we defer
+> long running, blocking items from xfsdatad to xfsconvertd so we
+> don't block the xfsdatad from continuing to process data IO
+> completion items. How do we guarantee that the xfsconvertd work
+> items won't prevent/excessively delay processing of xfsdatad items?
+
+What do you mean by "long running"?  Do you mean it would consume a
+lot of CPU cycles or it would block for locks and IOs a lot?  It's the
+latter, right?  There isn't much to worry about.
+
+>> +@max_active determines the maximum number of execution contexts per
+>> +CPU which can be assigned to the work items of a wq.  For example,
+>> +with @max_active of 16, at most 16 work items of the wq can be
+>> +executing at the same time per CPU.
+> 
+> I think the reason you were seeing XFS blow this out of the water is
+> that every IO completion for a write beyond EOF (i.e. every single
+> one for an extending streaming write) will require inode locking to
+> update file size. If the inode is locked, then the item will
+> delay(1), and the cmwq controller will run the next item in a new
+> worker. That will then block in delay(1) 'cause it can't get the
+> inode lock, as so on....
+> 
+> As such, I can't see that increasing the max_active count for XFS is
+> a good thing - all it will do is cause larger blockages to occur....
+
+>From the description above, it looks like xfs developed its own way of
+regulating work processing involving multiple workqueues and yielding
+queue positions with delay.  For now, it probably would be best to
+just keep things running as they are but in the long run it might be
+beneficial to replace those explicit mechanisms.
+
+>> +6. Guidelines
+>> +
+>> +* Do not forget to use WQ_RESCUER if a wq may process work items which
+>> +  are used during memory reclaim.  Each wq with WQ_RESCUER set has one
+>> +  rescuer thread reserved for it.  If there is dependency among
+>> +  multiple work items used during memory reclaim, they should be
+>> +  queued to separate wq each with WQ_RESCUER.
+>> +
+>> +* Unless strict ordering is required, there is no need to use ST wq.
+>> +
+>> +* Unless there is a specific need, using 0 for @nr_active is
+>                                                   max_active?
+
+Oops, thanks.  Updated.
+
+-- 
+tejun
