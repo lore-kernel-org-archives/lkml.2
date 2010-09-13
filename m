@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab0IMS6I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 14:58:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48496 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897Ab0IMS6E convert rfc822-to-8bit (ORCPT
+	id S1754900Ab0IMTBz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:01:55 -0400
+Received: from 217.59.140-88.rev.gaoland.net ([88.140.59.217]:46432 "EHLO
+	electric-eye.fr.zoreil.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754674Ab0IMTBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 14:58:04 -0400
-Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        robert.richter@amd.com,
-        "markus.t.metzger" <markus.t.metzger@intel.com>
-In-Reply-To: <AANLkTimsp5NphG3VuwO_FoWZhjF8crD3=bKhXDq-_wyn@mail.gmail.com>
-References: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
-	 <20100913150914.GA6155@nowhere>
-	 <AANLkTi=OR69sDbUMkSnx_-bpF=yHF_xNY1v=-BJgLpp5@mail.gmail.com>
-	 <1284391000.2275.338.camel@laptop>
-	 <AANLkTin35TXPcs9u3pLfo8QRUmGnftT1DPfswRUVEvJW@mail.gmail.com>
-	 <1284391480.2275.350.camel@laptop>
-	 <AANLkTik8r4moPy5muNyT2oKGH5aEaMOLL0Zqn=-hkpos@mail.gmail.com>
-	 <1284392476.2275.369.camel@laptop>
-	 <AANLkTimZTzCjea3KFxGcaQ7kscod7sOrz13LkNF_u38w@mail.gmail.com>
-	 <1284399329.2275.387.camel@laptop>
-	 <AANLkTi=DGnP-r++PhzWFMdwdu_ReUKAmGLCA2zPNBG5J@mail.gmail.com>
-	 <1284403335.2275.418.camel@laptop>
-	 <AANLkTimsp5NphG3VuwO_FoWZhjF8crD3=bKhXDq-_wyn@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 13 Sep 2010 20:57:52 +0200
-Message-ID: <1284404272.2275.419.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 13 Sep 2010 15:01:55 -0400
+Date: Mon, 13 Sep 2010 21:00:46 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Heiko Bauke <heiko.bauke@snafu.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Realtek Ethernet drivers
+Message-ID: <20100913190046.GA4470@electric-eye.fr.zoreil.com>
+References: <20100912210444.76ebeee6@tron.localdomain>
+ <20100912223724.GA15934@electric-eye.fr.zoreil.com>
+ <20100913095912.74d7f0f1@tron.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100913095912.74d7f0f1@tron.localdomain>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-13 at 20:49 +0200, Stephane Eranian wrote:
-> On Mon, Sep 13, 2010 at 8:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Mon, 2010-09-13 at 20:40 +0200, Stephane Eranian wrote:
-> >> Ok, so can we play the same trick you're playing with the sampling
-> >> buffer, i.e., you use alloc_pages_node() for one page at a time, and
-> >> then you stitch them on demand via SW?
-> >
-> > Not for BTS, it wants a linear range, getting the vmalloc vs NMI thing
-> > sorted would be best I think.
-> >
-> What is annoying in this is that you run into the problem even though
-> you may not be using BTS nor PEBS.
+Heiko Bauke <heiko.bauke@snafu.de> :
+> Francois Romieu <romieu@fr.zoreil.com> wrote:
+[...]
+> > But it misses 81a95f049962ec20a9aed888e676208b206f0f2e and
+> > 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e
+> 
+> I thank you for your reply. If there is time I will try a more recent
+> kernel. (For the moment the Realtek drivers are fine for me.) I
+> know how to (re-)compile distribution kernels and how to compile a
+> vanilla kernel from kernel.org. However, I have no idea what the
+> hex-codes you mentioned mean. Can you give me a hint?
 
-Yes, one thing we could do is simply disable BTS when we fail that
-alloc, instead of fail everything.
+They are commit ID. See :
 
-> What mitigates the problem, I think, is the NMI watchdog. It is the first
-> user of perf_events. As such, the BTS and PEBS buffers get allocated
-> during kernel initialization thereby increasing the chances of finding
-> contiguous chunks of memory. What would partly help would be to use of
-> kmalloc_node() to at least balance allocations amongst the various NUMA
-> nodes. That would be until the vmalloc() vs. NMI is sorted out.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=81a95f049962ec20a9aed888e676208b206f0f2e
 
-Right, that would be a simple change to make.
+-- 
+Ueimor
