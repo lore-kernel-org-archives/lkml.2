@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab0IMTsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:48:38 -0400
-Received: from mail.perches.com ([173.55.12.10]:1900 "EHLO mail.perches.com"
+	id S1755532Ab0IMTuH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:50:07 -0400
+Received: from mail.perches.com ([173.55.12.10]:1912 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755359Ab0IMTsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:48:36 -0400
+	id S1755401Ab0IMTsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 15:48:41 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Subject: [PATCH 16/25] drivers/s390/char: Use static const char arrays
-Date: Mon, 13 Sep 2010 12:47:54 -0700
-Message-Id: <5867e44ccd0f86902b2230f1e25a9bdaf16ec1e6.1284406639.git.joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
+Subject: [PATCH 20/25] drivers/usb: Use static const char arrays
+Date: Mon, 13 Sep 2010 12:47:58 -0700
+Message-Id: <d366844155ca5af8525058f3376737ad7f94943e.1284406639.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.rc1
 In-Reply-To: <cover.1284406638.git.joe@perches.com>
 References: <cover.1284406638.git.joe@perches.com>
@@ -23,31 +21,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/s390/char/vmlogrdr.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/atm/ueagle-atm.c   |   14 +++++---------
+ drivers/usb/otg/langwell_otg.c |    2 +-
+ 2 files changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/s390/char/vmlogrdr.c b/drivers/s390/char/vmlogrdr.c
-index e40a1b8..afd863c 100644
---- a/drivers/s390/char/vmlogrdr.c
-+++ b/drivers/s390/char/vmlogrdr.c
-@@ -214,7 +214,7 @@ static void vmlogrdr_iucv_message_pending(struct iucv_path *path,
+diff --git a/drivers/usb/atm/ueagle-atm.c b/drivers/usb/atm/ueagle-atm.c
+index ea071a5..00d2516 100644
+--- a/drivers/usb/atm/ueagle-atm.c
++++ b/drivers/usb/atm/ueagle-atm.c
+@@ -1574,20 +1574,16 @@ static int uea_stat_e4(struct uea_softc *sc)
  
- static int vmlogrdr_get_recording_class_AB(void)
+ static void cmvs_file_name(struct uea_softc *sc, char *const cmv_name, int ver)
  {
--	char cp_command[]="QUERY COMMAND RECORDING ";
-+	static const char cp_command[] = "QUERY COMMAND RECORDING ";
- 	char cp_response[80];
- 	char *tail;
- 	int len,i;
-@@ -637,7 +637,7 @@ static ssize_t vmlogrdr_recording_status_show(struct device_driver *driver,
- 					      char *buf)
- {
+-	char file_arr[] = "CMVxy.bin";
++	char file_arr[sizeof("CMVxy.bin")];
+ 	char *file;
  
--	char cp_command[] = "QUERY RECORDING ";
-+	static const char cp_command[] = "QUERY RECORDING ";
- 	int len;
+ 	kparam_block_sysfs_write(cmv_file);
+ 	/* set proper name corresponding modem version and line type */
+ 	if (cmv_file[sc->modem_index] == NULL) {
+-		if (UEA_CHIP_VERSION(sc) == ADI930)
+-			file_arr[3] = '9';
+-		else if (UEA_CHIP_VERSION(sc) == EAGLE_IV)
+-			file_arr[3] = '4';
+-		else
+-			file_arr[3] = 'e';
+-
+-		file_arr[4] = IS_ISDN(sc) ? 'i' : 'p';
++		sprintf(file_arr, "CMV%c%c.bin",
++			(UEA_CHIP_VERSION(sc) == ADI930) ? '9' :
++			(UEA_CHIP_VERSION(sc) == EAGLE_IV) ? '4' : 'e',
++			IS_ISDN(sc) ? 'i' : 'p');
+ 		file = file_arr;
+ 	} else
+ 		file = cmv_file[sc->modem_index];
+diff --git a/drivers/usb/otg/langwell_otg.c b/drivers/usb/otg/langwell_otg.c
+index 8791880..ce01172 100644
+--- a/drivers/usb/otg/langwell_otg.c
++++ b/drivers/usb/otg/langwell_otg.c
+@@ -2035,7 +2035,7 @@ static int langwell_otg_probe(struct pci_dev *pdev,
+ 	int			retval;
+ 	u32			val32;
+ 	struct langwell_otg	*lnw;
+-	char			qname[] = "langwell_otg_queue";
++	static const char	qname[] = "langwell_otg_queue";
  
- 	cpcmd(cp_command, buf, 4096, NULL);
+ 	retval = 0;
+ 	dev_dbg(&pdev->dev, "\notg controller is detected.\n");
 -- 
 1.7.3.rc1
 
