@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab0IMRRu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 13:17:50 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:49280 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521Ab0IMRRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 13:17:49 -0400
-Date: Mon, 13 Sep 2010 22:47:41 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        gthelen@google.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        stable@kernel.org
-Subject: Re: [BUGFIX][PATCH] memcg: fix race in file_mapped accouting flag
- management
-Message-ID: <20100913171741.GM17950@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
- <20100913084741.GD17950@balbir.in.ibm.com>
- <AANLkTimsUQuEeS2QvSwY_WhnQY7n=D73fNmOoqgrTqbZ@mail.gmail.com>
+	id S1754138Ab0IMRYi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 13:24:38 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:44963 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab0IMRYh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 13:24:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KEhbv07D3W46RhjtEd9uc8LrcwUgyk/2UO4yZiKkhO0TjqJpFdn99IQArxdn9ObOb8
+         DYYfZ9UhP7SO66n9MkHA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <AANLkTimsUQuEeS2QvSwY_WhnQY7n=D73fNmOoqgrTqbZ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1284392476.2275.369.camel@laptop>
+References: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
+	<20100913150914.GA6155@nowhere>
+	<AANLkTi=OR69sDbUMkSnx_-bpF=yHF_xNY1v=-BJgLpp5@mail.gmail.com>
+	<1284391000.2275.338.camel@laptop>
+	<AANLkTin35TXPcs9u3pLfo8QRUmGnftT1DPfswRUVEvJW@mail.gmail.com>
+	<1284391480.2275.350.camel@laptop>
+	<AANLkTik8r4moPy5muNyT2oKGH5aEaMOLL0Zqn=-hkpos@mail.gmail.com>
+	<1284392476.2275.369.camel@laptop>
+Date: Mon, 13 Sep 2010 19:24:19 +0200
+Message-ID: <AANLkTimi8=5LM+sx3OgzNCa8V0jG040qZLu=KdWOH945@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        robert.richter@amd.com,
+        "markus.t.metzger" <markus.t.metzger@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com> [2010-09-14 00:28:30]:
-
-> > In the situation above who has the PTE lock? Are we not synchronized
-> > via the PTE lock such that add rmap and rm rmap, will not happen
-> > simultaneously?
-> >
-> In this case, a process for map and one for unmap can be different.
-> 
-> Assume process A maps a file cache and process B not.
-> While process A unmap a file, process B can map it.
-> pte lock is no help.
+On Mon, Sep 13, 2010 at 5:41 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2010-09-13 at 17:31 +0200, Stephane Eranian wrote:
+>> On Mon, Sep 13, 2010 at 5:24 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Mon, 2010-09-13 at 17:20 +0200, Stephane Eranian wrote:
+>> >
+>> >> That is the case we the sizes you have chosen today. For DS, we
+>> >> could round up to one page for now.
+>> >
+>> > Markus chose the BTS size, for PEBS a single page was plenty since we do
+>> > single event things (although we could do multiple for attr.precise_ip <
+>> > 2).
+>> >
+>> > For DS there's:
+>> >  kmalloc_node(sizeof(struct ds), GFP_KERNEL | __GFP_ZERO, cpu_node(cpu));
+>> >
+>> Ok, let try again with alloc_pages_node() + kmalloc_node().
+>> I think we can stick with kmalloc() for DS because we are far from
+>> consuming a page.
 >
-
-Correct, so while the accounting is correct, the flag can definitely
-go wrong. I misread your race description earlier.
-
-Thanks! 
-
--- 
-	Three Cheers,
-	Balbir
+> Thing is, if you're really seeing allocation failures,
+> alloc_pages_node() isn't going to help. And the problem is, these
+> allocations aren't movable, so memory compaction and all the other fancy
+> stuff aren't really going to help much :/
+>
+Based on this comment, I assume that the only reason the allocation
+of the sampling buffer in perf_buffer_alloc() is immune to this is because
+you are allocating each page individually (order 0). Right?
