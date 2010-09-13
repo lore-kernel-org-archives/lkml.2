@@ -1,69 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab0IMObG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:31:06 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51734 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab0IMObF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:31:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=xb2LO2QBDCVE6Ct0YFsj6Qz2/QZEKrWyAFwtTfNPHuSc3TeWLLsh6fMtIdI4IcYKfV
-         GXc9y+tUmjLQvIx+0dRhahUUgD9ADKGvzoQ5LQL8tg1+MmH8HvFaCfL71kLZhqcPgydS
-         VmoBBV461FqCWkwVG0mS4R71aHsygjX6XComM=
+	id S1752046Ab0IMOdL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:33:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:4506 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751520Ab0IMOdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:33:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,359,1280732400"; 
+   d="scan'208";a="656740837"
+Date: Mon, 13 Sep 2010 22:33:01 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 09/10] vmscan: Do not writeback filesystem pages in
+ direct reclaim
+Message-ID: <20100913143301.GB14158@localhost>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
+ <1283770053-18833-10-git-send-email-mel@csn.ul.ie>
+ <20100913133156.GA12355@localhost>
+ <20100913135510.GH23508@csn.ul.ie>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTiksacwuOwqJGZ0F3M1jhZ6Srr88wbfBQodOGOAt@mail.gmail.com>
-References: <AANLkTi=tWwaFHB0DY=j0UaqbYdYJpGJpmWdGC4aMufSw@mail.gmail.com>
-	<20100913121247.GA4003@sig21.net>
-	<AANLkTiksacwuOwqJGZ0F3M1jhZ6Srr88wbfBQodOGOAt@mail.gmail.com>
-Date: Mon, 13 Sep 2010 16:31:04 +0200
-Message-ID: <AANLkTim4pJYMyRpb8SQddS_fiReQKKCvBCFrgEGUb+v+@mail.gmail.com>
-Subject: Fwd: ARM target not boot after remap memory
-From: Robin Theunis <robint91@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100913135510.GH23508@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Johannes
+> > >  	/* Check if we should syncronously wait for writeback */
+> > >  	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
+> > 
+> > It is possible to OOM if the LRU list is small and/or the storage is slow, so
+> > that the flusher cannot clean enough pages before the LRU is fully scanned.
+> > 
+> 
+> To go OOM, nr_reclaimed would have to be 0 and for that, the entire list
+> would have to be dirty or unreclaimable. If that situation happens, is
+> the dirty throttling not also broken?
 
-I have compiled  the kernel with early printk on and debug_LL, It
-still doesn't nothing after that line.
+My worry is, even if the dirty throttling limit is instantly set to 0,
+it may still take time to knock down the number of dirty pages. Think
+about 500MB dirty pages waiting to be flushed to a slow USB stick.
 
-Robin
+> > So we may need do waits on dirty/writeback pages on *order-0*
+> > direct reclaims, when priority goes rather low (such as < 3).
+> > 
+> 
+> In case this is really necessary, the necessary stalling could be done by
+> removing the check for lumpy reclaim in should_reclaim_stall().  What do
+> you think of the following replacement?
 
-2010/9/13 Johannes Stezenbach <js@sig21.net>:
-> On Mon, Sep 13, 2010 at 01:25:26PM +0200, Robin Theunis wrote:
->>
->> Uncompressing Linux... done, booting the kernel.
->> ---
->>
->> Here is stalls. With my jtag probe I can locate the problem.
->>
->> ---
->> > halt
->> target state: halted
->> target halted in ARM state due to debug-request, current mode: Supervisor
->> cpsr: 0x600000d3 pc: 0xc000af3c
->> MMU: enabled, D-Cache: enabled, I-Cache: enabled
->> >   arm disassemble 0xc000af3c
->> 0xc000af3c    0xeafffffe      B 0xc000af3c
->> ---
->>
->> This just loops at that address. Why does it that?
->
-> Maybe it panicked but you can't see the message since
-> you have not enabled EARLY_PRINTK.
->
-> Since you have JTAG, you could also dump the printk
-> buffer __log_buf to see the message.
->
->
-> HTH
-> Johannes
->
+I merely want to provide a guarantee, so it may be enough to add this:
+
+        if (nr_freed == nr_taken)
+                return false;
+
++       if (!priority)
++               return true;
+
+This ensures the last full LRU scan will do necessary waits to prevent
+the OOM.
+
+> /*
+>  * Returns true if the caller should wait to clean dirty/writeback pages.
+>  *
+>  * If we are direct reclaiming for contiguous pages and we do not reclaim
+>  * everything in the list, try again and wait for writeback IO to complete.
+>  * This will stall high-order allocations noticeably. Only do that when really
+>  * need to free the pages under high memory pressure.
+>  *
+>  * Alternatively, if priority is getting high, it may be because there are
+>  * too many dirty pages on the LRU. Rather than returning nr_reclaimed == 0
+>  * and potentially causing an OOM, we stall on writeback.
+>  */
+> static inline bool should_reclaim_stall(unsigned long nr_taken,
+>                                         unsigned long nr_freed,
+>                                         int priority,
+>                                         struct scan_control *sc)
+> {
+>         int stall_priority;
+> 
+>         /* kswapd should not stall on sync IO */
+>         if (current_is_kswapd())
+>                 return false;
+> 
+>         /* If we cannot writeback, there is no point stalling */
+>         if (!sc->may_writepage)
+>                 return false;
+> 
+>         /* If we have relaimed everything on the isolated list, no stall */
+>         if (nr_freed == nr_taken)
+>                 return false;
+> 
+>         /*
+>          * For high-order allocations, there are two stall thresholds.
+>          * High-cost allocations stall immediately where as lower
+>          * order allocations such as stacks require the scanning
+>          * priority to be much higher before stalling.
+>          */
+>         if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+>                 stall_priority = DEF_PRIORITY;
+>         else
+>                 stall_priority = DEF_PRIORITY / 3;
+> 
+>         return priority <= stall_priority;
+> }
+> 
+> 
+> > > +		int dirty_retry = MAX_SWAP_CLEAN_WAIT;
+> > >  		set_lumpy_reclaim_mode(priority, sc, true);
+> > > -		nr_reclaimed += shrink_page_list(&page_list, sc);
+> > > +
+> > > +		while (nr_reclaimed < nr_taken && nr_dirty && dirty_retry--) {
+> > > +			struct page *page, *tmp;
+> > > +
+> > 
+> > > +			/* Take off the clean pages marked for activation */
+> > > +			list_for_each_entry_safe(page, tmp, &page_list, lru) {
+> > > +				if (PageDirty(page) || PageWriteback(page))
+> > > +					continue;
+> > > +
+> > > +				list_del(&page->lru);
+> > > +				list_add(&page->lru, &putback_list);
+> > > +			}
+> > 
+> > nitpick: I guess the above loop is optional code to avoid overheads
+> > of shrink_page_list() repeatedly going through some unfreeable pages?
+> 
+> Pretty much, if they are to be activated, there is no point trying to reclaim
+> them again. It's unnecessary overhead. A strong motivation for this
+> series is to reduce overheads in the reclaim paths and unnecessary
+> retrying of unfreeable pages.
+
+We do so much waits in this loop, so that users will get upset by the
+iowait stalls much much more than the CPU overheads.. best option is
+always to avoid entering this loop in the first place, and if we
+succeeded on that, these lines of optimizations will be nothing but
+mind destroyers for newbie developers.
+
+> > Considering this is the slow code path, I'd prefer to keep the code
+> > simple than to do such optimizations.
+> > 
+> > > +			wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty);
+> > 
+> > how about 
+> >                         if (!laptop_mode)
+> >                                 wakeup_flusher_threads(nr_dirty);
+> > 
+> 
+> It's not the same thing. wakeup_flusher_threads(0) in laptop_mode is to
+> clean all pages if some need dirtying. laptop_mode cleans all pages to
+> minimise disk spinups.
+
+Ah.. that's sure fine. I wonder if the flusher could be more smart to
+automatically extend the number of pages to write in laptop mode. This
+could simplify some callers.
+
+Thanks,
+Fengguang
