@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693Ab0IMUTR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 16:19:17 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:44543 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752094Ab0IMUTQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 16:19:16 -0400
-Date: Mon, 13 Sep 2010 16:19:13 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
-	nr_running
-Message-ID: <20100913201913.GC28294@Krystal>
-References: <20100911173732.551632040@efficios.com> <20100911174003.051303123@efficios.com> <20100912061452.GA3383@elte.hu> <1284276098.9111.24.camel@marge.simson.net> <20100912181626.GB32327@Krystal> <1284351183.7321.36.camel@marge.simson.net> <20100913064153.GB14728@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20100913064153.GB14728@elte.hu>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 16:05:12 up 233 days, 22:41,  5 users,  load average: 0.03, 0.05,
-	0.04
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754458Ab0IMUWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 16:22:22 -0400
+Received: from mail.perches.com ([173.55.12.10]:1951 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751848Ab0IMUWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 16:22:21 -0400
+Subject: Re: [PATCH 18/25] drivers/serial/suncore.c: Use static const char
+ arrays
+From: Joe Perches <joe@perches.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org
+In-Reply-To: <20100913213613.223e10a5@lxorguk.ukuu.org.uk>
+References: <cover.1284406638.git.joe@perches.com>
+	 <0ab674aa32a5fcc364982c78efdf44864a61523b.1284406639.git.joe@perches.com>
+	 <20100913213613.223e10a5@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Sep 2010 13:22:18 -0700
+Message-ID: <1284409338.26719.47.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ingo Molnar (mingo@elte.hu) wrote:
-> 
-> * Mike Galbraith <efault@gmx.de> wrote:
-> 
-> > On Sun, 2010-09-12 at 14:16 -0400, Mathieu Desnoyers wrote:
-> 
-> > > Or am I missing your point ?
-> > 
-> > Yes and no.  I'm pondering the parent, but by the same token, the 
-> > vfork child shouldn't be penalized either.
-> > 
-> > Does your latency go down drastically if you turn START_DEBIT off? 
-> > Seems like it should.  Perhaps START_DEBIT should not start a task 
-> > further right than rightmost.  I've done that before.
-> > 
-> > maximum latency: 19221.5 탎
-> > average latency: 5159.0 탎
-> > missed timer events: 0
-> > 
-> > maximum latency: 43901.0 탎
-> > average latency: 8430.1 탎
-> > missed timer events: 0
-> > 
-> > Turning it off here cut latency roughly in half (i've piddled vfork 
-> > though, but not completely).  Limiting child placement to no further 
-> > right than rightmost should help quite a bit.
-> 
-> Very interesting observation. Mathieu, mind testing Mike's suggestion 
-> with wakeup-latency.c?
+On Mon, 2010-09-13 at 21:36 +0100, Alan Cox wrote:
+> On Mon, 13 Sep 2010 12:47:56 -0700
+> Joe Perches <joe@perches.com> wrote:
+> > diff --git a/drivers/serial/suncore.c b/drivers/serial/suncore.c
+> > @@ -106,7 +106,7 @@ void sunserial_console_termios(struct console *con, struct device_node *uart_dp)
+> >  		if (of_console_options)
+> >  			c = *of_console_options;
+> >  
+> > -		mode_prop[3] = c;
+> > +		sprintf(mode_prop, "tty%c-mode", c);
+> Whats the point of all this. It's trivial code being replaced by
+> something complicated, harder to understand and much slower ?
 
-Sure. this is with the smaller min_granularity:
+There are many cases of char foo[] = "bar" that
+should be actually be [static] const char foo[] etc.
+The patch set was done to change those cases.
 
-With START_DEBIT:
+This case isn't actually any sort of saving.
 
-maximum latency: 21111.1 탎
-average latency: 4188.2 탎
-missed timer events: 0
+As I just wrote in 5/25 to Jonathan Cameron:
 
-Without:
+It tries to standardize the style use and it avoids possible
+future checkpatch warnings of:
+	char foo[] = "bar"
+char array could possibly be static const.
 
-maximum latency: 6670.2 탎
-average latency: 1586.0 탎
-missed timer events: 0
+There was another use with "%1.1d" somewhere.
 
-So yes, as expected, it makes a huge difference. This is because SIGEV_THREAD
-creates a new thread each time the timer fires, and newly created tasks are put
-at the end of the runqueue with START_DEBIT.
+The end result is the same, so I don't really care much
+if this sort of change is applied or not.  The possible
+checkpatch message could just be considered noise but
+Mike Frysinger seemed to prefer it, so I thought I could
+try to accommodate him.
 
-However, removing START_DEBIT makes my Xorg feel less responsive (again, just my
-own impression). We might need a more suitable way to deal with forks than just
-putting the newly forked task at the end of the spread, but just putting it at
-the beginning of the spread does not seem to do well neither.
+cheers, Joe
 
-One idea: we could temporarily tweak the nice value of both the parent and the
-child after a fork to a lower nice value, but only apply this for their first
-slice after the fork. The goal behind this is that their respective vruntime
-will increment faster in the first slice after the fork, so a fork bomb
-(worse-case) will end up running with a very very low nice level. With this
-measure in place, START_DEBIT might not be needed. Thoughts ?
-
-Thanks,
-
-Mathieu
-
-> 
-> Thanks,
-> 
-> 	Ingo
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
