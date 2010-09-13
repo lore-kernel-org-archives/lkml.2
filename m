@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab0IMW4p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 18:56:45 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52935 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab0IMW4n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 18:56:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CS9f4+51OmTc7kfWeDKmqevId7SpMldcgOcbn6FzOaGgXhGq8uZD6VJrORXKs7LFcH
-         L2rcIdiAi0Ig6DpG6pJou+VRyM8cbNB3e/3W5rjhZrgJf3BMBa6CtyYk9TJmSJ+mWDUY
-         noYhh3zk08HkUION+AsBO7bODV5kSqA3V9Lg0=
+	id S1752073Ab0IMXBe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 19:01:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40053 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751792Ab0IMXBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 19:01:33 -0400
+Date: Mon, 13 Sep 2010 23:00:56 GMT
+From: "tip-bot for basile@opensource.dyc.edu" <basile@opensource.dyc.edu>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        mail@cleeus.de, zorry@gentoo.org, akpm@linux-foundation.org,
+        basile@opensource.dyc.edu, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, zorry@gentoo.org, mail@cleeus.de,
+        basile@opensource.dyc.edu, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20100913101319.748A1148E216@opensource.dyc.edu>
+References: <20100913101319.748A1148E216@opensource.dyc.edu>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, build: Disable -fPIE when compiling with CONFIG_CC_STACKPROTECTOR=y
+Message-ID: <tip-08c2b394b98786ebb067e2a54d08f1f6f0d247da@git.kernel.org>
+Git-Commit-ID: 08c2b394b98786ebb067e2a54d08f1f6f0d247da
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-In-Reply-To: <20100913084619.GC23741@elte.hu>
-References: <1284150773.402.122.camel@laptop>
-	<tip-55496c896b8a695140045099d4e0175cf09d4eae@git.kernel.org>
-	<20100913074233.GA2674@schottelius.org>
-	<20100913084619.GC23741@elte.hu>
-Date: Tue, 14 Sep 2010 06:56:42 +0800
-Message-ID: <AANLkTikN5AxqmdHhkkrE9SmhaMxkFjRXnOSguyeJDtXM@mail.gmail.com>
-Subject: Re: [tip:sched/urgent] x86, tsc: Fix a preemption leak in restore_sched_clock_state()
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Nico Schottelius <nico-linux-20100709@schottelius.org>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, peterz@infradead.org, flo@xssn.at,
-        lenb@kernel.org, jbarnes@virtuousgeek.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, rjw@sisk.pl, linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 13 Sep 2010 23:00:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 4:46 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Nico Schottelius <nico-linux-20100709@schottelius.org> wrote:
->
->> Good morning,
->>
->> tip-bot for Peter Zijlstra [Sat, Sep 11, 2010 at 07:49:07AM +0000]:
->> > Commit-ID:  55496c896b8a695140045099d4e0175cf09d4eae
->> > Gitweb:     http://git.kernel.org/tip/55496c896b8a695140045099d4e0175cf09d4eae
->> > Author:     Peter Zijlstra <peterz@infradead.org>
->> > AuthorDate: Fri, 10 Sep 2010 22:32:53 +0200
->> > Committer:  Ingo Molnar <mingo@elte.hu>
->> > CommitDate: Sat, 11 Sep 2010 09:47:07 +0200
->> >
->> > x86, tsc: Fix a preemption leak in restore_sched_clock_state()
+Commit-ID:  08c2b394b98786ebb067e2a54d08f1f6f0d247da
+Gitweb:     http://git.kernel.org/tip/08c2b394b98786ebb067e2a54d08f1f6f0d247da
+Author:     basile@opensource.dyc.edu <basile@opensource.dyc.edu>
+AuthorDate: Mon, 13 Sep 2010 06:13:19 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 13 Sep 2010 15:53:16 -0700
 
-> Might make sense to bisect it ... as long as you remember to do this at
-> every bisection step that has the hung-suspend bug:
+x86, build: Disable -fPIE when compiling with CONFIG_CC_STACKPROTECTOR=y
 
-Have you tried just running "echo mem >/sys/power/state" to see if that works?
+The arch/x86/Makefile uses scripts/gcc-x86_$(BITS)-has-stack-protector.sh
+to check if cc1 supports -fstack-protector.  When -fPIE is passed to cc1,
+these scripts fail causing stack protection to be disabled even when it
+is available.
 
-Jeff.
+This fix is similar to commit c47efe5548abbf53c2f66e06dcb46183b11d6b22
+
+Reported-by: Kai Dietrich <mail@cleeus.de>
+Signed-off-by: Magnus Granberg <zorry@gentoo.org>
+LKML-Reference: <20100913101319.748A1148E216@opensource.dyc.edu>
+Signed-off-by: Anthony G. Basile <basile@opensource.dyc.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 8aa1b59..e8c8881 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -74,7 +74,7 @@ endif
+ 
+ ifdef CONFIG_CC_STACKPROTECTOR
+ 	cc_has_sp := $(srctree)/scripts/gcc-x86_$(BITS)-has-stack-protector.sh
+-        ifeq ($(shell $(CONFIG_SHELL) $(cc_has_sp) $(CC) $(biarch)),y)
++        ifeq ($(shell $(CONFIG_SHELL) $(cc_has_sp) $(CC) $(KBUILD_CPPFLAGS) $(biarch)),y)
+                 stackp-y := -fstack-protector
+                 KBUILD_CFLAGS += $(stackp-y)
+         else
