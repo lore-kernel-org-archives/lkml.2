@@ -1,130 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab0IMGAP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 02:00:15 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:23937 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab0IMF71 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 01:59:27 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=oZUIoXwcEzfo5nCqO1lA4qlZAEHhek3s531PBKOkvlfWzBJAgmPKUksPfVlLfJGaY
-	4g4zZTtZn/aO+etLixq9w==
-From: Michael Rubin <mrubin@google.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: fengguang.wu@intel.com, jack@suse.cz, riel@redhat.com,
-        akpm@linux-foundation.org, david@fromorbit.com,
-        kosaki.motohiro@jp.fujitsu.com, npiggin@kernel.dk, hch@lst.de,
-        axboe@kernel.dk, Michael Rubin <mrubin@google.com>
-Subject: [PATCH 5/5] writeback: Reporting dirty thresholds in /proc/vmstat
-Date: Sun, 12 Sep 2010 22:58:13 -0700
-Message-Id: <1284357493-20078-6-git-send-email-mrubin@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1284357493-20078-1-git-send-email-mrubin@google.com>
-References: <1284357493-20078-1-git-send-email-mrubin@google.com>
+	id S1753675Ab0IMGBG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 02:01:06 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:45650 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752553Ab0IMGBE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 02:01:04 -0400
+From: Arun MURTHY <arun.murthy@stericsson.com>
+To: "sameo@linux.intel.com" <sameo@linux.intel.com>
+Cc: "riku.voipio@iki.fi" <riku.voipio@iki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Arun MURTHY <arun.murthy@stericsson.com>
+Date: Mon, 13 Sep 2010 08:00:27 +0200
+Subject: RE: [PATCHv3 1/1] u8500: ab8500-pwm: Add pwm driver
+Thread-Topic: [PATCHv3 1/1] u8500: ab8500-pwm: Add pwm driver
+Thread-Index: ActNk/bS9DXGPMc1Td+PPya2KEd59gFdJDHA
+Message-ID: <F45880696056844FA6A73F415B568C69532D594148@EXDCVYMBSTM006.EQ1STM.local>
+References: <1283756092-31473-1-git-send-email-arun.murthy@stericsson.com>
+ <1283756092-31473-2-git-send-email-arun.murthy@stericsson.com>
+ <4C8495E3.8040904@compulab.co.il>
+In-Reply-To: <4C8495E3.8040904@compulab.co.il>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel already exposes the user desired thresholds in /proc/sys/vm
-with dirty_background_ratio and background_ratio. But the kernel may
-alter the number requested without giving the user any indication that
-is the case.
+Hi Samuel,
+	Can you please merge this patch through your MFD tree?
 
-Knowing the actual ratios the kernel is honoring can help app developers
-understand how their buffered IO will be sent to the disk.
+> Arun Murthy wrote:
+> > This patch adds a Pulse Width Modulation driver for Analog Baseband
+> > Chip AB8500.
+> >
+> > Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+> > Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+> 
+> Acked-by: Mike Rapoport <mike@compulab.co.il>
 
-        $ grep threshold /proc/vmstat
-        nr_dirty_threshold 409111
-        nr_dirty_background_threshold 818223
-
-Signed-off-by: Michael Rubin <mrubin@google.com>
----
- mm/vmstat.c |   39 +++++++++++++++++++++++++--------------
- 1 files changed, 25 insertions(+), 14 deletions(-)
-
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index d448ef4..76c37cd 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -17,6 +17,7 @@
- #include <linux/vmstat.h>
- #include <linux/sched.h>
- #include <linux/math64.h>
-+#include <linux/writeback.h>
- 
- #ifdef CONFIG_VM_EVENT_COUNTERS
- DEFINE_PER_CPU(struct vm_event_state, vm_event_states) = {{0}};
-@@ -734,6 +735,8 @@ static const char * const vmstat_text[] = {
- 	"nr_shmem",
- 	"nr_dirtied",
- 	"nr_written",
-+	"nr_dirty_threshold",
-+	"nr_dirty_background_threshold",
- 
- #ifdef CONFIG_NUMA
- 	"numa_hit",
-@@ -894,36 +897,44 @@ static const struct file_operations proc_zoneinfo_file_operations = {
- 	.release	= seq_release,
- };
- 
-+enum writeback_stat_item {
-+	NR_DIRTY_THRESHOLD,
-+	NR_DIRTY_BG_THRESHOLD,
-+	NR_VM_WRITEBACK_STAT_ITEMS,
-+};
-+
- static void *vmstat_start(struct seq_file *m, loff_t *pos)
- {
- 	unsigned long *v;
--#ifdef CONFIG_VM_EVENT_COUNTERS
--	unsigned long *e;
--#endif
--	int i;
-+	int i, stat_items_size;
- 
- 	if (*pos >= ARRAY_SIZE(vmstat_text))
- 		return NULL;
-+	stat_items_size = NR_VM_ZONE_STAT_ITEMS * sizeof(unsigned long) +
-+			  NR_VM_WRITEBACK_STAT_ITEMS * sizeof(unsigned long);
- 
- #ifdef CONFIG_VM_EVENT_COUNTERS
--	v = kmalloc(NR_VM_ZONE_STAT_ITEMS * sizeof(unsigned long)
--			+ sizeof(struct vm_event_state), GFP_KERNEL);
--#else
--	v = kmalloc(NR_VM_ZONE_STAT_ITEMS * sizeof(unsigned long),
--			GFP_KERNEL);
-+	stat_items_size += sizeof(struct vm_event_state);
- #endif
-+
-+	v = kmalloc(stat_items_size, GFP_KERNEL);
- 	m->private = v;
- 	if (!v)
- 		return ERR_PTR(-ENOMEM);
- 	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
- 		v[i] = global_page_state(i);
-+	v += NR_VM_ZONE_STAT_ITEMS;
-+
-+	global_dirty_limits(v + NR_DIRTY_BG_THRESHOLD,
-+			    v + NR_DIRTY_THRESHOLD);
-+	v += NR_VM_WRITEBACK_STAT_ITEMS;
-+
- #ifdef CONFIG_VM_EVENT_COUNTERS
--	e = v + NR_VM_ZONE_STAT_ITEMS;
--	all_vm_events(e);
--	e[PGPGIN] /= 2;		/* sectors -> kbytes */
--	e[PGPGOUT] /= 2;
-+	all_vm_events(v);
-+	v[PGPGIN] /= 2;		/* sectors -> kbytes */
-+	v[PGPGOUT] /= 2;
- #endif
--	return v + *pos;
-+	return m->private + *pos;
- }
- 
- static void *vmstat_next(struct seq_file *m, void *arg, loff_t *pos)
--- 
-1.7.1
-
+Thanks and Regards,
+Arun R Murthy
+-------------
