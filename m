@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab0IMQkK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 12:40:10 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60001 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab0IMQkI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 12:40:08 -0400
-Message-ID: <4C8E526C.8000209@oracle.com>
-Date: Mon, 13 Sep 2010 09:33:48 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-next@vger.kernel.org,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH -next,-tip ] kprobes: Fix Kconfig dependency
-References: <4C8DCFAE.4020700@hitachi.com> <20100913102541.20260.85700.stgit@ltc236.sdl.hitachi.co.jp>
-In-Reply-To: <20100913102541.20260.85700.stgit@ltc236.sdl.hitachi.co.jp>
-Content-Type: text/plain; charset=UTF-8
+	id S1753708Ab0IMQrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 12:47:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56752 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752191Ab0IMQrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 12:47:05 -0400
+Subject: Re: Combined storage tree
+From: James Bottomley <James.Bottomley@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-ide <linux-ide@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        dm-devel@redhat.com, linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100913025807.GD411@dastard>
+References: <1284143247.6551.23.camel@mulgrave.site>
+	 <20100911082054.GF705@dastard> <1284213316.2986.7.camel@mulgrave.site>
+	 <20100913025807.GD411@dastard>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Sep 2010 11:46:59 -0500
+Message-ID: <1284396419.10388.342.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/10 03:25, Masami Hiramatsu wrote:
-> Fix Kconfig dependency among Kprobes, optprobe and kallsyms.
+On Mon, 2010-09-13 at 12:58 +1000, Dave Chinner wrote: 
+> On Sat, Sep 11, 2010 at 08:55:16AM -0500, James Bottomley wrote:
+> > On Sat, 2010-09-11 at 18:20 +1000, Dave Chinner wrote:
+> > > On Fri, Sep 10, 2010 at 01:27:27PM -0500, James Bottomley wrote:
+> > > > One of the requests from LSF10 in August was the production of a
+> > > > combined storage tree.  This is now ready at
+> > > > 
+> > > > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/storage-tree
+> > > > 
+> > > > It's actually a nightly built merge tree consisting of
+> > > > 
+> > > > scsi-misc; scsi-rc-fixes
+> > > > libata#upstream-fixes, libata#upstream
+> > > > block#for-linus, block#for-next
+> > > > and the dm quilt (which is empty at the moment).
+> > > > 
+> > > > I haven't yet added vfs or any of the fs trees, but if necessary, I can.
+> > > > 
+> > > > Note, because it's built nightly, like linux-next, it's hard (but not
+> > > > impossible) to use it as a basis for git trees (it is much easier to use
+> > > > it as a basis for quilts).
+> > > 
+> > > Hmmm. I was kind of hoping for an upstream maintainer tree, kind of
+> > > like the netdev tree.  I really don't see a tree like this getting
+> > > wide use - if I enjoyed the pain of rebasing against throw-away
+> > > merge trees every day, then I'd already be using linux-next....
+> > 
+> > Well, to be honest, that's what people wanted when the issue was raised
+> > at LSF10.  However, unlike net, storage has never had a single
+> > maintainer, so it's a bit more political than just doing that by fiat,
 > 
-> Kprobes uses kallsyms_lookup for finding target function and checking
-> instruction boundary, thus CONFIG_KPROBES should select CONFIG_KALLSYMS.
-> 
-> Optprobe is an optional feature which is supported on x86 arch, and
-> it also uses kallsyms_lookup for checking instructions in the target
-> function. Since KALLSYMS_ALL just adds symbols of kernel variables,
-> it doesn't need to select KALLSYMS_ALL.
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Felipe Contreras <felipe.contreras@gmail.com>
-> Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-> Cc: linux-kernel@vger.kernel.org,
-> Cc: linux-next@vger.kernel.org,
-> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-> Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-> Cc: "David S. Miller" <davem@davemloft.net>,
-> Cc: akpm <akpm@linux-foundation.org>
-> ---
-> 
->  arch/Kconfig |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 4877a8c..fe48fc7 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -32,8 +32,9 @@ config HAVE_OPROFILE
->  
->  config KPROBES
->  	bool "Kprobes"
-> -	depends on KALLSYMS && MODULES
-> +	depends on MODULES
->  	depends on HAVE_KPROBES
-> +	select KALLSYMS
->  	help
->  	  Kprobes allows you to trap at almost any kernel address and
->  	  execute a callback function.  register_kprobe() establishes
-> @@ -45,7 +46,6 @@ config OPTPROBES
->  	def_bool y
->  	depends on KPROBES && HAVE_OPTPROBES
->  	depends on !PREEMPT
-> -	select KALLSYMS_ALL
->  
->  config HAVE_EFFICIENT_UNALIGNED_ACCESS
->  	bool
-> 
+> Bah. Technical arguments win here, not politics.
 
-Fixes the kconfig dependency problem.  Thanks.
+Heh, who runs a tree is both politics and technical.
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Besides, what
+> possible political concern can anyone have about using a different
+> upstream tree for development? A storage maintainer tree would not
+> replace anyone's little fiefdom; what we need is an integration point
+> long before stuff gets to Linus....
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+For a storage git tree to be usable as a stable base, it has to be the
+upstream tree.  That would mean that, like net, the way upstream would
+be via this tree.  That's quite a shift in the way we currently work.
+
+> > plus not all of the current maintainers with storage trees were there.
+> 
+> If that's the barrier to discussion, then where else but a dedicated
+> storage workshop are you going to get a more representative sample
+> of storage developers in the same room?
+
+This sort of thing doesn't get decided by fiat.  If you can't get all of
+the relevant parties to agree, you have to demonstrate the need.  So
+doing a rollup tree to test how much of the problem is solvable that way
+seems like a reasonable first step.
+
+James
+
+
