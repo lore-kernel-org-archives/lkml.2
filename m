@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507Ab0IMOwx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:52:53 -0400
-Received: from pindarots.xs4all.nl ([80.101.128.228]:57448 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab0IMOww (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:52:52 -0400
-Message-ID: <4C8E3ABF.90309@xs4all.nl>
-Date: Mon, 13 Sep 2010 16:52:47 +0200
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+	id S1752691Ab0IMOxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:53:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56671 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751598Ab0IMOxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:53:41 -0400
+Message-ID: <4C8E3AB1.6010509@redhat.com>
+Date: Mon, 13 Sep 2010 10:52:33 -0400
+From: Peter Jones <pjones@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: hpet timers gone?
-References: <4BFA52C3.4080006@xs4all.nl>	<20100526120236.4a849b5b.randy.dunlap@oracle.com>	<4C021507.6020703@xs4all.nl>	<4C02B3AB.3040405@gmail.com>	<4C0324B8.8070304@xs4all.nl> <AANLkTikuaPxA9Xnzc1bCJ5YHRlPZ1AcBSrYJ5lqryaMY@mail.gmail.com>
-In-Reply-To: <AANLkTikuaPxA9Xnzc1bCJ5YHRlPZ1AcBSrYJ5lqryaMY@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Make efifb check that the base address is plausible
+ on pci systems.
+References: <1284059809-9973-1-git-send-email-pjones@redhat.com> <20100910171406.bdb4d90d.akpm@linux-foundation.org> <4C8E3853.70702@redhat.com>
+In-Reply-To: <4C8E3853.70702@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-05-31 06:00, Robert Hancock wrote:
-> On Sun, May 30, 2010 at 8:53 PM, Udo van den Heuvel <udovdh@xs4all.nl> wrote:
->> On 2010-05-30 20:51, Robert Hancock wrote:
->>> On 05/30/2010 01:34 AM, Udo van den Heuvel wrote:
->>>> The board has VIA C7 CPU and VIA CX700M2 Unified Digital Media IGP
->>>> chipset which supports HPET.
->>>>
->>>> Can it be that the kernel lacks support for CX700 hpet?
->>>> Or is it a matter of getting the BIOS upgrade to work?
->>>
->>> Your current BIOS doesn't provide an HPET ACPI table, which is the way
->>> it's supposed to indicate support. The kernel only supports
->>> force-enabling HPET on VIA for VT8235 and VT8237.
+On 09/13/2010 10:42 AM, Peter Jones wrote:
+> On 09/10/2010 08:14 PM, Andrew Morton wrote:
+>> On Thu,  9 Sep 2010 15:16:48 -0400
+>> Peter Jones <pjones@redhat.com> wrote:
 >>
->> So yes, I should try the BIOS upgrade first?
+>>> Some Apple machines have identical DMI data but different memory
+>>> configurations for the video. Given that, check that the address in our
+>>> table is actually within the range of a PCI BAR on a VGA deivce in the
+>>> machine.
+>>>
+>>> This also fixes up the return value from set_system(), which has
+>>> always been wrong, but never resulted in bad behavior since there's only
+>>> ever been one matching entry in the dmi table.
+>>>
+>>> This also adds me as the efifb maintainer, since I've effectively been
+>>> acting as such for quite some time.
+>>
+>> And what is the impact (and importance) of this patch?  Make some
+>> people's Mac displays work, I'd be guessing?
+>>
 > 
-> If they did add an HPET table entry, it should help, yes..
+> That's correct.
 
-Is there a workaround?
-VIA was not so helpfull: the bios flash tool they have on the site does
-not recognise the board as a VIA board.
-Also they state the latest BIOS will not add HPET to ACPI table.
+Actually, let me amend that statement to say something entirely different: it
+does two things:
 
-So what else can I do to enable HPET?
+1) stops people's machines from crashing when we get their display wrong,
+   which seems to be unfortunately inevitable,
+2) allows us to support identical dmi data with differing video memory
+   configurations
 
-Kind regards,
-Udo
+Sorry about the previous reply, I should have thought through your question
+for longer.
+
+-- 
+        Peter
+
+Hardware simply does not work like the manual says and no amount
+of Zen contemplation will ever make you at one with a 3c905B ethernet card.
+		-- Alan
+
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
