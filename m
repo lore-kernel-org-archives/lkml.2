@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab0IMG7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 02:59:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55710 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751906Ab0IMG7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 02:59:39 -0400
-Date: Mon, 13 Sep 2010 16:59:22 +1000
-From: Neil Brown <neilb@suse.de>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>, hch@infradead.org,
-        viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
-        npiggin@kernel.dk, hooanon05@yahoo.co.jp, bfields@fieldses.org,
-        linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V19 00/15] Generic name to handle and open by handle
- syscalls
-Message-ID: <20100913165922.09dc60dc@notabene>
-In-Reply-To: <E1Ov26Q-0000Hd-IT@pomaz-ex.szeredi.hu>
-References: <1282906982-26918-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<m31v95zweh.fsf@linux.vnet.ibm.com>
-	<E1OswT5-000709-U9@pomaz-ex.szeredi.hu>
-	<m3d3spvhdn.fsf@linux.vnet.ibm.com>
-	<E1OsyA1-0007Ct-KS@pomaz-ex.szeredi.hu>
-	<m3r5gyepho.fsf@linux.vnet.ibm.com>
-	<E1Ov26Q-0000Hd-IT@pomaz-ex.szeredi.hu>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1754273Ab0IMHIR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 03:08:17 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:39217 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752522Ab0IMHIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 03:08:16 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19e244wIAFe79bIiE8XK3KAIzlLIL6QV7hAkM8WNE
+	XOvgrUpSHuRbP6
+Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
+ nr_running
+From: Mike Galbraith <efault@gmx.de>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+In-Reply-To: <20100913064153.GB14728@elte.hu>
+References: <20100911173732.551632040@efficios.com>
+	 <20100911174003.051303123@efficios.com> <20100912061452.GA3383@elte.hu>
+	 <1284276098.9111.24.camel@marge.simson.net>
+	 <20100912181626.GB32327@Krystal>
+	 <1284351183.7321.36.camel@marge.simson.net>
+	 <20100913064153.GB14728@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Sep 2010 09:08:36 +0200
+Message-Id: <1284361716.25120.19.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010 08:01:18 +0200
-Miklos Szeredi <miklos@szeredi.hu> wrote:
-
-> On Mon, 13 Sep 2010, Aneesh Kumar K. V wrote:
-> > As per your suggestion i started looking at handlefs details and below
-> > is my take on the approach.
+On Mon, 2010-09-13 at 08:41 +0200, Ingo Molnar wrote:
+> * Mike Galbraith <efault@gmx.de> wrote:
+> 
+> > On Sun, 2010-09-12 at 14:16 -0400, Mathieu Desnoyers wrote:
+> 
+> > > Or am I missing your point ?
 > > 
-> > handlefs would be an internal kernel mount like pipefs and would have
-> > inode object mapping to the returned file descriptor of
-> > open_by_handle_at syscall for symlinks. For regular files we can do what
-> > we already does and for symlinks we will create inodes in handlefs and
-> > their inode operation will in turn result in call out of inode operations
-> > of the actual symlinks. Based on the above
+> > Yes and no.  I'm pondering the parent, but by the same token, the 
+> > vfork child shouldn't be penalized either.
 > > 
-> > a) We still need open_by_handle_at syscall
-> > b) We still need handle based link syscall, because we need to support
-> >    creating hardlinks based on handle, and the existing linkat syscall
-> >    takes the oldpath name.
-> > c) We still need handle based readlink syscall, because the existing
-> >    readlinkat syscall takes pathname.
-> 
-> You can implement ->read() on the symlink file instead.
-
-I would suggest that is a much uglier hack than changed readlinkat to accept
-a NULL pathname.
-
-NeilBrown
-
-
-> 
-> > d) we can drop stat, chown and xattr syscall because they are introduced
-> >    specially for symlinks as we don't allow open on symlinks.
-> > e) It would be nice to have handle based stat syscall to avoid two
-> >    syscall overhead for fetching file attributes when implementing a
-> >    file server, where fetching file attribute is a common operation. 
-> 
-> Syscall overhead is generally insignificant compared to other effects.
-> The server can also cache open files for commonly used handles.
-> 
+> > Does your latency go down drastically if you turn START_DEBIT off? 
+> > Seems like it should.  Perhaps START_DEBIT should not start a task 
+> > further right than rightmost.  I've done that before.
 > > 
-> > With the above from the current patch series we can drop chown and
-> > xattr syscalls. Would it be ok if we get the series with the those two
-> > syscall patches dropped upstream as i work on supporting symlinks with
-> > handlefs approach ?
+> > maximum latency: 19221.5 µs
+> > average latency: 5159.0 µs
+> > missed timer events: 0
+> > 
+> > maximum latency: 43901.0 µs
+> > average latency: 8430.1 µs
+> > missed timer events: 0
+> > 
+> > Turning it off here cut latency roughly in half (i've piddled vfork 
+> > though, but not completely).  Limiting child placement to no further 
+> > right than rightmost should help quite a bit.
 > 
-> Try it.
-> 
-> Al seems to only be active to the outside world around the merge
-> window, so that's the best time to ask him to pull.
-> 
-> Thanks,
-> Miklos
+> Very interesting observation. Mathieu, mind testing Mike's suggestion 
+> with wakeup-latency.c?
+
+I'm sure it will.  I think the problem is that light thread forks, the
+child takes vruntime hit, so the parent's lag isn't _useful_.  It may
+preempt, but the work it's trying to get done is delayed massively
+unfairly.
+
+btw, setting parent's lag to that of the child on parent wakeup for the
+vfork case seems to work fine, kbuild no longer gets the advantage it
+would vs static load if START_DEBIT were disabled.  That leaves what to
+do with plain old fork/clone though.  Leaving START_DEBIT in place for
+fork/clone vs a fair vfork load blows chunks, as does running a forky
+load vs some static load without START_DEBIT.
+
+Sticky wicket.  We need a better fork fairness gizmo.
+
+	-Mike
 
