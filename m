@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab0IMPck (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:32:40 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:40286 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751630Ab0IMPcj (ORCPT
+	id S1752962Ab0IMPhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:37:53 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:52506 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750920Ab0IMPhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:32:39 -0400
-X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Sep 2010 11:32:38 EDT
-X-IronPort-AV: E=Sophos;i="4.56,359,1280700000"; 
-   d="scan'208";a="59197388"
-Date: Mon, 13 Sep 2010 17:22:49 +0200
-From: Samuel Thibault <Samuel.Thibault@ens-lyon.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: =?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andres Salomon <dilinger@queued.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: EuroBraille/Iris power off
-Message-ID: <20100913152249.GC5364@const.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <Samuel.Thibault@ens-lyon.org>,
-	Valdis.Kletnieks@vt.edu,
-	=?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>,
-	"H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Andres Salomon <dilinger@queued.net>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <20100825094925.GA3632@pema> <alpine.LFD.2.00.1008261406480.2062@localhost.localdomain> <20100826210815.GA18131@pema> <4C76D9A0.2010907@zytor.com> <20100829205929.GA3309@pema> <20100913100719.GA3903@pema> <54870.1284390647@localhost>
+	Mon, 13 Sep 2010 11:37:52 -0400
+Date: Mon, 13 Sep 2010 11:37:49 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jiri Slaby <jslaby@suse.cz>
+cc: phil@ipom.com, <stable@kernel.org>, Greg KH <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [34-stable regression] USB delay init quirk causes device events
+ loss
+In-Reply-To: <4C8E3C40.50808@suse.cz>
+Message-ID: <Pine.LNX.4.44L0.1009131118180.1315-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54870.1284390647@localhost>
-User-Agent: Mutt/1.5.12-2006-07-14
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Valdis.Kletnieks@vt.edu, le Mon 13 Sep 2010 11:10:47 -0400, a écrit :
-> On Mon, 13 Sep 2010 12:07:19 +0200, Shérab said:
+On Mon, 13 Sep 2010, Jiri Slaby wrote:
+
+> On 09/13/2010 04:48 PM, Alan Stern wrote:
+> > On Mon, 13 Sep 2010, Jiri Slaby wrote:
+> >> In other words, what I could do is to add some printks into
+> >> hub_port_connect_change if that's called at all. If you need some
+> >> thorough debugging printks, please send me a patch to test instead.
+> > 
+> > Hmm.  I'd prefer to explain how it's all supposed to work and let you
+> > figure out where best to look.  Or try to debug it myself.  Does this
+> > happen with other sorts of USB devices as well, or just wacom?
 > 
-> > +static int iris_init(void)
-> > +{
-> > +	unsigned char status = inb(IRIS_GIO_INPUT);
-> > +	if (status == IRIS_GIO_NODEV) {
-> > +		printk(KERN_ERR "This machine does not seem to be an Iris. Power_off handler not installed.\n");
-> > +		return -ENODEV;
-> > +	}
-> 
-> Is it actually safe to assume that this will do the right thing on a machine that
-> is a non-Iris that has something *else* at that I/O  address?
+> With some sort of devices (I cannot reproduce myself). It's unrelated to
+> wacom -- people with wacom were unable to even start X with this kernel.
+> If you look at the bugreport, there are several examples:
+> ID 046d:c517 Logitech, Inc. LX710 Cordless Desktop Laser defunct
+> Microsoft USB keyboard defunct x Logitech mice OK
+> 046a:0021 Cherry GmbH keyboard defunct
+> logitech wireless laptop mouse defunct
+> A$Tech wireless laptop mouse defunct
+> TypeMatrix USB 2030 (ID : 1e54:2030) defunct
 
-No.
+Okay, I see the problem.  By moving usb_detect_quirks earlier, we end 
+up calling usb_disable_autosuspend too soon -- before the 
+pm_runtime_enable call in usb_new_device.  In 2.6.35 this doesn't 
+matter because the implementation of usb_autosuspend_device has 
+changed.
 
-> Any further sanity checking we can do?
+So yes, in the end it looks like the best course is to revert this
+patch from 2.6.34.stable.  This is unfortunate but I don't see any way
+around it without making changes that aren't present in the current
+kernel. For example, the pm_runtime_set_active and pm_runtime_enable
+calls could also be moved from usb_new_device into
+hub_port_connect_change.
 
-No. The format of the value there is quite unknown, it's just quite sure
-it won't be 0xff on the Iris.
+Alan Stern
 
-Again, I'm not sure we really should try hard to make it automatically
-detected (and thus always enabled).  Having to pass a kernel parameter
-to enable the functionality is completely fine, since installing Linux
-on this device requires quite some tinkering already.
-
-Samuel
