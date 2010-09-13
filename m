@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab0IMQrI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 12:47:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56752 "EHLO mx2.suse.de"
+	id S1753823Ab0IMQzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 12:55:52 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:37343 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752191Ab0IMQrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 12:47:05 -0400
-Subject: Re: Combined storage tree
-From: James Bottomley <James.Bottomley@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-ide <linux-ide@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        dm-devel@redhat.com, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100913025807.GD411@dastard>
-References: <1284143247.6551.23.camel@mulgrave.site>
-	 <20100911082054.GF705@dastard> <1284213316.2986.7.camel@mulgrave.site>
-	 <20100913025807.GD411@dastard>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Sep 2010 11:46:59 -0500
-Message-ID: <1284396419.10388.342.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1753283Ab0IMQzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 12:55:51 -0400
+Date: Mon, 13 Sep 2010 09:54:22 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/7] hwmon: Add tempX_emergency_alarm attribute to
+ sysfs ABI
+Message-ID: <20100913165422.GA1092@ericsson.com>
+References: <1284038750-8833-1-git-send-email-guenter.roeck@ericsson.com>
+ <1284038750-8833-2-git-send-email-guenter.roeck@ericsson.com>
+ <20100913181718.56ba6054@hyperion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100913181718.56ba6054@hyperion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-13 at 12:58 +1000, Dave Chinner wrote: 
-> On Sat, Sep 11, 2010 at 08:55:16AM -0500, James Bottomley wrote:
-> > On Sat, 2010-09-11 at 18:20 +1000, Dave Chinner wrote:
-> > > On Fri, Sep 10, 2010 at 01:27:27PM -0500, James Bottomley wrote:
-> > > > One of the requests from LSF10 in August was the production of a
-> > > > combined storage tree.  This is now ready at
-> > > > 
-> > > > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/storage-tree
-> > > > 
-> > > > It's actually a nightly built merge tree consisting of
-> > > > 
-> > > > scsi-misc; scsi-rc-fixes
-> > > > libata#upstream-fixes, libata#upstream
-> > > > block#for-linus, block#for-next
-> > > > and the dm quilt (which is empty at the moment).
-> > > > 
-> > > > I haven't yet added vfs or any of the fs trees, but if necessary, I can.
-> > > > 
-> > > > Note, because it's built nightly, like linux-next, it's hard (but not
-> > > > impossible) to use it as a basis for git trees (it is much easier to use
-> > > > it as a basis for quilts).
-> > > 
-> > > Hmmm. I was kind of hoping for an upstream maintainer tree, kind of
-> > > like the netdev tree.  I really don't see a tree like this getting
-> > > wide use - if I enjoyed the pain of rebasing against throw-away
-> > > merge trees every day, then I'd already be using linux-next....
+On Mon, Sep 13, 2010 at 12:17:18PM -0400, Jean Delvare wrote:
+> On Thu, 9 Sep 2010 06:25:44 -0700, Guenter Roeck wrote:
+> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > ---
+> >  Documentation/hwmon/sysfs-interface |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
 > > 
-> > Well, to be honest, that's what people wanted when the issue was raised
-> > at LSF10.  However, unlike net, storage has never had a single
-> > maintainer, so it's a bit more political than just doing that by fiat,
+> > diff --git a/Documentation/hwmon/sysfs-interface b/Documentation/hwmon/sysfs-interface
+> > index 101300b..22843cb 100644
+> > --- a/Documentation/hwmon/sysfs-interface
+> > +++ b/Documentation/hwmon/sysfs-interface
+> > @@ -513,6 +513,7 @@ fan[1-*]_max_alarm
+> >  temp[1-*]_min_alarm
+> >  temp[1-*]_max_alarm
+> >  temp[1-*]_crit_alarm
+> > +temp[1-*]_emergency_alarm
+> >  		Limit alarm
+> >  		0: no alarm
+> >  		1: alarm
 > 
-> Bah. Technical arguments win here, not politics.
-
-Heh, who runs a tree is both politics and technical.
-
-> Besides, what
-> possible political concern can anyone have about using a different
-> upstream tree for development? A storage maintainer tree would not
-> replace anyone's little fiefdom; what we need is an integration point
-> long before stuff gets to Linus....
-
-For a storage git tree to be usable as a stable base, it has to be the
-upstream tree.  That would mean that, like net, the way upstream would
-be via this tree.  That's quite a shift in the way we currently work.
-
-> > plus not all of the current maintainers with storage trees were there.
+> Looks good, I'll merge this into the following patch:
+> ftp://ftp.kernel.org/pub/linux/kernel/people/jdelvare/linux-2.6/jdelvare-hwmon/hwmon-add-tempx_emergency-attribute-to-sysfs-abi.patch
 > 
-> If that's the barrier to discussion, then where else but a dedicated
-> storage workshop are you going to get a more representative sample
-> of storage developers in the same room?
+> as they make more sense together than separated.
+> 
+Agreed.
 
-This sort of thing doesn't get decided by fiat.  If you can't get all of
-the relevant parties to agree, you have to demonstrate the need.  So
-doing a rollup tree to test how much of the problem is solvable that way
-seems like a reasonable first step.
-
-James
-
-
+Guenter
