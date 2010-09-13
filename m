@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab0IMTsv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:48:51 -0400
-Received: from mail.perches.com ([173.55.12.10]:1930 "EHLO mail.perches.com"
+	id S1755511Ab0IMTvN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:51:13 -0400
+Received: from mail.perches.com ([173.55.12.10]:1902 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755443Ab0IMTsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:48:45 -0400
+	id S1755133Ab0IMTsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 15:48:37 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 25/25] tools/perf/util: Use static const char arrays
-Date: Mon, 13 Sep 2010 12:48:03 -0700
-Message-Id: <fd8327a360bece26e07f210b8fa5645a5062facc.1284406639.git.joe@perches.com>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        James Smart <james.smart@emulex.com>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH 17/25] drivers/scsi: Use static const char arrays
+Date: Mon, 13 Sep 2010 12:47:55 -0700
+Message-Id: <f36b9f69b71b2c6efe3bee1a39722a1534338b92.1284406639.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.rc1
 In-Reply-To: <cover.1284406638.git.joe@perches.com>
 References: <cover.1284406638.git.joe@perches.com>
@@ -23,37 +23,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- tools/perf/util/ui/setup.c |    3 ++-
- tools/perf/util/ui/util.c  |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/scsi/bnx2i/bnx2i_hwi.c        |    6 +++---
+ drivers/scsi/lpfc/lpfc_init.c         |    2 +-
+ drivers/scsi/megaraid/megaraid_mbox.c |    6 +++---
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/ui/setup.c b/tools/perf/util/ui/setup.c
-index 6620850..9ff3ead 100644
---- a/tools/perf/util/ui/setup.c
-+++ b/tools/perf/util/ui/setup.c
-@@ -34,7 +34,8 @@ void exit_browser(bool wait_for_ok)
+diff --git a/drivers/scsi/bnx2i/bnx2i_hwi.c b/drivers/scsi/bnx2i/bnx2i_hwi.c
+index 90cef71..bd01994 100644
+--- a/drivers/scsi/bnx2i/bnx2i_hwi.c
++++ b/drivers/scsi/bnx2i/bnx2i_hwi.c
+@@ -1919,10 +1919,10 @@ static void bnx2i_process_iscsi_error(struct bnx2i_hba *hba,
  {
- 	if (use_browser > 0) {
- 		if (wait_for_ok) {
--			char title[] = "Fatal Error", ok[] = "Ok";
-+			static const char title[] = "Fatal Error";
-+			static const char ok[] = "Ok";
- 			newtWinMessage(title, ok, ui_helpline__last_msg);
- 		}
- 		newtFinished();
-diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
-index 9706d9d..fe2742e 100644
---- a/tools/perf/util/ui/util.c
-+++ b/tools/perf/util/ui/util.c
-@@ -107,6 +107,7 @@ out_destroy_form:
- bool ui__dialog_yesno(const char *msg)
- {
- 	/* newtWinChoice should really be accepting const char pointers... */
--	char yes[] = "Yes", no[] = "No";
-+	static const char yes[] = "Yes";
-+	static const char no[] = "No";
- 	return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
- }
+ 	struct bnx2i_conn *bnx2i_conn;
+ 	u32 iscsi_cid;
+-	char warn_notice[] = "iscsi_warning";
+-	char error_notice[] = "iscsi_error";
++	static const char warn_notice[] = "iscsi_warning";
++	static const char error_notice[] = "iscsi_error";
+ 	char additional_notice[64];
+-	char *message;
++	const char *message;
+ 	int need_recovery;
+ 	u64 err_mask64;
+ 
+diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+index da9ba06..7e61349 100644
+--- a/drivers/scsi/lpfc/lpfc_init.c
++++ b/drivers/scsi/lpfc/lpfc_init.c
+@@ -281,7 +281,7 @@ lpfc_dump_wakeup_param_cmpl(struct lpfc_hba *phba, LPFC_MBOXQ_t *pmboxq)
+ 	uint32_t prog_id_word;
+ 	char dist = ' ';
+ 	/* character array used for decoding dist type. */
+-	char dist_char[] = "nabx";
++	static const char dist_char[] = "nabx";
+ 
+ 	if (pmboxq->u.mb.mbxStatus != MBX_SUCCESS) {
+ 		mempool_free(pmboxq, phba->mbox_mem_pool);
+diff --git a/drivers/scsi/megaraid/megaraid_mbox.c b/drivers/scsi/megaraid/megaraid_mbox.c
+index a7810a1..7eddde3 100644
+--- a/drivers/scsi/megaraid/megaraid_mbox.c
++++ b/drivers/scsi/megaraid/megaraid_mbox.c
+@@ -1536,9 +1536,9 @@ megaraid_mbox_build_cmd(adapter_t *adapter, struct scsi_cmnd *scp, int *busy)
+ 	mbox64_t		*mbox64;
+ 	mbox_t			*mbox;
+ 	scb_t			*scb;
+-	char			skip[] = "skipping";
+-	char			scan[] = "scanning";
+-	char			*ss;
++	static const char	skip[] = "skipping";
++	static const char	scan[] = "scanning";
++	const char		*ss;
+ 
+ 
+ 	/*
 -- 
 1.7.3.rc1
 
