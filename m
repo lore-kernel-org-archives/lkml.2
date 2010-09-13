@@ -1,126 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab0IMRpK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 13:45:10 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:46322 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754266Ab0IMRpJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 13:45:09 -0400
-Subject: Re: [PATCH] ACPI: sleep: init_set_sci_en_on_resume for Dell Studio
- 155x
-From: Kamal Mostafa <kamal@canonical.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Zhang Rui <rui.zhang@intel.com>
-In-Reply-To: <201009131934.16027.rjw@sisk.pl>
-References: <1272498183-6094-1-git-send-email-kamal@canonical.com>
-	 <201009131934.16027.rjw@sisk.pl>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-T2c2KkFcCcmIPY158cUY"
-Date: Mon, 13 Sep 2010 10:44:59 -0700
-Message-ID: <1284399899.31551.275.camel@fourier>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754570Ab0IMRpi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 13:45:38 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:60033 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752474Ab0IMRpg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 13:45:36 -0400
+Date: Mon, 13 Sep 2010 13:45:33 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC PATCH] check_preempt_tick should not compare vruntime
+	with wall time
+Message-ID: <20100913174533.GA15653@Krystal>
+References: <1284231470.2251.52.camel@laptop> <20100911195708.GA9273@Krystal> <1284288072.2251.91.camel@laptop> <20100912203712.GD32327@Krystal> <1284382387.2275.265.camel@laptop> <1284383758.2275.283.camel@laptop> <20100913135621.GA13442@Krystal> <1284387398.2275.311.camel@laptop> <20100913161641.GA28707@Krystal> <AANLkTimB9CjH5SjeY9XmwhTp1tfFPwh-Q1Y4o918h7XD@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <AANLkTimB9CjH5SjeY9XmwhTp1tfFPwh-Q1Y4o918h7XD@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 12:40:01 up 233 days, 19:16,  5 users,  load average: 0.53, 0.22,
+	0.07
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> On Mon, Sep 13, 2010 at 9:16 AM, Mathieu Desnoyers
+> <mathieu.desnoyers@efficios.com> wrote:
+> >
+> > OK, the long IRC discussions we just had convinced me that the current scheme
+> > takes things into account by adapting the granularity dynamically, but also got
+> > me to notice that check_preempt seems to compare vruntime with wall time, which
+> > is utterly incorrect. So maybe all my patch was doing was to expose this bug:
+> 
+> Do you have latency numbers for this patch?
 
---=-T2c2KkFcCcmIPY158cUY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Sure, see below,
 
-On Mon, 2010-09-13 at 19:34 +0200, Rafael J. Wysocki wrote:
-> On Thursday, April 29, 2010, Kamal Mostafa wrote:
-> > Add Dell Studio models (1558, 1557, 1555) to the 'set_sci_en_on_resume'
-> > list to fix hang on resume.
-> >=20
-> > BugLink: http://bugs.launchpad.net/bugs/553498
->=20
-> This check was removed by commit b6dacf63e9fb2e7a1369843d6cef332f76fca6a3
-> (ACPI: Unconditionally set SCI_EN on resume), so the patch shouldn't be
-> necessary.
+In addition to this patch, I also used Peter's approach of reducing the minimum
+granularity (given that now I am confident that the value of
+sysctl_sched_min_granularity won't affect the preemption granularity directly,
+but rather indirectly through the period length). The result, succinctly, is
+that just the "check_preempt" fix does not seem to do much difference in terms
+of fork wakeup latency (the results below give an order of magnitude, but should
+be taken with a grain of salt due to the noise). I ran 3 the tests 3 times each,
+and took the average, but there is clearly some noise.
 
-That is correct Rafael.  I confirm that this Dell-specific patch is no
-longer relevant.  Thanks,
+FWIW, Xorg and firefox feel _much more_ responsive with the fix I propose when
+running with a make -j10. The system is even usable with a make -j20 on my UP
+machine, even though I can start feeling a some lag. This is probably a more
+important, yet less scientific, result.
 
- -Kamal
-
-
-> Thanks,
-> Rafael
->=20
->=20
-> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-> > Acked-by: Alex Chiang <achiang@canonical.com>
-> > Cc: stable@kernel.org
-> > ---
-> >  drivers/acpi/sleep.c |   24 ++++++++++++++++++++++++
-> >  1 files changed, 24 insertions(+), 0 deletions(-)
-> >=20
-> > diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-> > index f74834a..d907c8a 100644
-> > --- a/drivers/acpi/sleep.c
-> > +++ b/drivers/acpi/sleep.c
-> > @@ -458,6 +458,30 @@ static struct dmi_system_id __initdata acpisleep_d=
-mi_table[] =3D {
-> >  		DMI_MATCH(DMI_BOARD_NAME, "CF51-2L"),
-> >  		},
-> >  	},
-> > +	{
-> > +	.callback =3D init_set_sci_en_on_resume,
-> > +	.ident =3D "Dell Studio 1558",
-> > +	.matches =3D {
-> > +		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-> > +		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1558"),
-> > +		},
-> > +	},
-> > +	{
-> > +	.callback =3D init_set_sci_en_on_resume,
-> > +	.ident =3D "Dell Studio 1557",
-> > +	.matches =3D {
-> > +		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-> > +		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1557"),
-> > +		},
-> > +	},
-> > +	{
-> > +	.callback =3D init_set_sci_en_on_resume,
-> > +	.ident =3D "Dell Studio 1555",
-> > +	.matches =3D {
-> > +		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-> > +		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1555"),
-> > +		},
-> > +	},
-> >  	{},
-> >  };
-> >  #endif /* CONFIG_SUSPEND */
-> >=20
->=20
+It turns out that the min_granularity value (and hence the associated nr_latency
+values) have been brought from 20 down to 5
+(commit 722aab0c3bbd7648d66790515c14d95d10a15bf3), and then down to 3 lately
+(commit 21406928afe43f1db6acab4931bb8c886f4d04ce). I would not be surprised that
+this last change might have been trying to hide the vruntime vs wall time
+comparison bug, which has been introduced in
+commit f685ceacab07d3f6c236f04803e2f2f0dbcc5afb.
 
 
---=-T2c2KkFcCcmIPY158cUY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+2.0GHz Pentium M
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+* wakeup-latency.c (SIGEV_THREAD) with make -j10 
 
-iQIcBAABAgAGBQJMjmMWAAoJEOf3EFVUCeQiv38P/2vgtvLc3LpyZpTkcJQovN67
-O247zgGiUyQdZV9FyYCojvMV2x2jQsN0qdpXfSTU9nibO7ep+FC+QbfCbEXWQx4J
-iHVrZ+UtZGglpUKn6vkOJlluJ3g66zzSBaHLQCMZio0/+5g2tfQNsQA7JloVkL/q
-rVVNzgKIt2xdDtFKmnXcg/D3i0dAtu43KddT5AxEQvzszeTRZ39jm67jMMsXRn3x
-QUv2OElwYyUWB4xktEXL4JddCMYwOycT0xzy66EyYRAUAjm65BGnR6F4vmQm+tyl
-8HUdPqvk82/rONouM/YJpGPd1vcMkIQU/7SuOM3MiZOOW/DdfSvBco9jNYQozmPV
-1sB7DxXyB5e5MouSdg0fSxz6XgHXbfAHBwOBmTeJPf4xP9wnMo/lH+PpMOLPmDf+
-iiBYY4m1nj15dq7i7Me1RKPcyYQB7uSlb8vInnHvPaVJQb1BxLhtGTJ7qjN7wuTr
-V+qLt43ykal50PBlG3ujh9uEg6sAjwN8W/SyUf8FRm0Y6tAn2nVQ0eC3PImeWDf0
-5vdcR8DwmIGwUlHsofSoBd3I+QAXB/fnNf+b56C2cQlz24AZACiUEYB3sWF1KT9u
-qcAyV1dR3Z9rYISwKZQQG2uSYFYV1VW4GdlMNSM1o1jrw6e8q6VVlZN22Y5cJXM3
-Rrf7S5pERi4K1HrqLJ7l
-=VZYL
------END PGP SIGNATURE-----
+- Mainline 2.6.35.2 kernel
 
---=-T2c2KkFcCcmIPY158cUY--
+maximum latency: 45762.1 탎
+average latency: 7348.6 탎
+missed timer events: 0
 
+- check_preempt fix
+
+maximum latency: 39858.9 탎
+average latency: 7728.1 탎
+missed timer events: 0
+
+- With only Peter's smaller min_gran (shown below):
+
+maximum latency: 29100.6 탎
+average latency: 6684.1 탎
+missed timer events: 0
+
+- check_preempt fix + Peter's smaller min_gran:
+maximum latency: 20433.0 탎
+average latency: 5112.5 탎
+missed timer events: 0
+
+Thanks,
+
+Mathieu
+
+
+Diminish min granularity patch:
+
+---
+ kernel/sched_fair.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: linux-2.6-lttng.git/kernel/sched_fair.c
+===================================================================
+--- linux-2.6-lttng.git.orig/kernel/sched_fair.c
++++ linux-2.6-lttng.git/kernel/sched_fair.c
+@@ -54,13 +54,13 @@ enum sched_tunable_scaling sysctl_sched_
+  * Minimal preemption granularity for CPU-bound tasks:
+  * (default: 2 msec * (1 + ilog(ncpus)), units: nanoseconds)
+  */
+-unsigned int sysctl_sched_min_granularity = 2000000ULL;
+-unsigned int normalized_sysctl_sched_min_granularity = 2000000ULL;
++unsigned int sysctl_sched_min_granularity = 750000ULL;
++unsigned int normalized_sysctl_sched_min_granularity = 750000ULL;
+ 
+ /*
+  * is kept at sysctl_sched_latency / sysctl_sched_min_granularity
+  */
+-static unsigned int sched_nr_latency = 3;
++static unsigned int sched_nr_latency = 8;
+ 
+ /*
+  * After fork, child runs first. If set to 0 (default) then
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
