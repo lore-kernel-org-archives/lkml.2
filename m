@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab0IMDDF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 23:03:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41320 "EHLO mga09.intel.com"
+	id S1754471Ab0IMDDa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 23:03:30 -0400
+Received: from ozlabs.org ([203.10.76.45]:52357 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754284Ab0IMDDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 23:03:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,357,1280732400"; 
-   d="scan'208";a="656596301"
-Date: Mon, 13 Sep 2010 11:02:56 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Michael Rubin <mrubin@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "jack@suse.cz" <jack@suse.cz>, "riel@redhat.com" <riel@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>, "hch@lst.de" <hch@lst.de>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: Re: [PATCH 4/5] writeback: Adding
- /sys/devices/system/node/<node>/vmstat
-Message-ID: <20100913030256.GC7697@localhost>
-References: <1284323440-23205-1-git-send-email-mrubin@google.com>
- <1284323440-23205-5-git-send-email-mrubin@google.com>
+	id S1754284Ab0IMDD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 23:03:29 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: #2 (Re: More modaliases + patchtool)
+Date: Mon, 13 Sep 2010 12:33:22 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
+Cc: mahatma@eu.by, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <4C6BE292.3060307@bspu.unibel.by> <201009111144.34078.rusty@rustcorp.com.au> <4C8AF933.9060304@goop.org>
+In-Reply-To: <4C8AF933.9060304@goop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284323440-23205-5-git-send-email-mrubin@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009131233.23278.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 04:30:39AM +0800, Michael Rubin wrote:
-> For NUMA node systems it is important to have visibility in memory
-> characteristics. Two of the /proc/vmstat values "nr_cleaned" and
-
-s/nr_cleaned/nr_written/
-
-> "nr_dirtied" are added here.
+On Sat, 11 Sep 2010 01:06:19 pm Jeremy Fitzhardinge wrote:
+>  On 09/11/2010 12:14 PM, Rusty Russell wrote:
+> > On Thu, 19 Aug 2010 10:12:36 pm Dzianis Kahanovich wrote:
+> >> diff -pruN a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> >> --- a/drivers/block/xen-blkfront.c	2010-08-19 15:20:56.344764984 +0300
+> >> +++ b/drivers/block/xen-blkfront.c	2010-08-19 15:23:41.104764997 +0300
+> >> @@ -1306,6 +1306,9 @@ static int __init xlblk_init(void)
+> >>  
+> >>  	return xenbus_register_frontend(&blkfront);
+> >>  }
+> >> +
+> >> +MODULE_DEVICE_TABLE(xenbus, blkfront_ids);
+> >> +
+> >>  module_init(xlblk_init);
+> > This seems very logical.  Jeremy?
 > 
-> 	# cat /sys/devices/system/node/node20/vmstat
-> 	nr_cleaned 0
+> Looks OK.  What will the effect be?  Will it allow better module
+> auto-loading or something?
 
-ditto
+Normally yes.  Here's how it's supposed to work:
+1) The bus provides a "modalias" field for devices, to say what driver module
+   to probe for.  You already do this.
+2) The driver marks the device table so scripts/mod/file2alias.c can find it.
+   This is what this patch does.
+3) scripts/mod/file2alias.c creates the wildcard aliases for the module, based
+   on the device table.  You'd need to do this.
 
-> 	nr_dirtied 0
-> 
-> Signed-off-by: Michael Rubin <mrubin@google.com>
+Instead you have manual MODULE_ALIAS lines for your drivers.  Your bus
+matching is so simple and you have so few device types, that this works.
+But the Right Way is to use the infrastructure to generate them as above.
 
-Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
-
-> +static ssize_t node_read_vmstat(struct sys_device *dev,
-> +				struct sysdev_attribute *attr, char *buf)
-> +{
-> +	int nid = dev->id;
-> +	return sprintf(buf,
-> +		"nr_written %lu\n"
-> +		"nr_dirtied %lu\n",
-> +		node_page_state(nid, NR_WRITTEN),
-> +		node_page_state(nid, NR_FILE_DIRTIED));
-> +}
-
-Do you have plan to port more vmstat_text[] items? :)
-
-Thanks,
-Fengguang
+Hope that clarifies!
+Rusty.
