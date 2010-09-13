@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab0IMDw3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 23:52:29 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:47349 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348Ab0IMDv7 (ORCPT
+	id S1750881Ab0IMECj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 00:02:39 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:39627 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab0IMECi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 23:51:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=SCskAsvDMcXinMF/wZXbw/s06DYvxwO11LxgYS1OutQToFdtVtaBfX2ALUiE+hcplg
-         UYRe7CLcaAu/XIhSune3czv8PRwIz9dGZPLEzJXPd/TItlAO4YscGsNjkJ4zDi3isQ3E
-         nerReK+53caZb4Y28qKi5RCzKjWSb4g/LcZDM=
-From: "Mark F. Brown" <mark.brown314@gmail.com>
-To: eric.y.miao@gmail.com, marek.vasut@gmail.com, haojian.zhuang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        markb@marvell.com
-Cc: "Mark F. Brown" <mark.brown314@gmail.com>
-Subject: [PATCH v2 2/3] ARM: pxa168/teton bga: added keypad support
-Date: Sun, 12 Sep 2010 23:51:35 -0400
-Message-Id: <1284349896-14545-3-git-send-email-mark.brown314@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1284349896-14545-1-git-send-email-mark.brown314@gmail.com>
-References: <1284349896-14545-1-git-send-email-mark.brown314@gmail.com>
+	Mon, 13 Sep 2010 00:02:38 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Florian Mickler <florian@mickler.org>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
+        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by default
+In-Reply-To: Your message of "Fri, 10 Sep 2010 12:30:40 +0200."
+             <20100910123040.5a6f0128@schatten.dmk.lab>
+From: Valdis.Kletnieks@vt.edu
+References: <1284111212-10659-1-git-send-email-florian@mickler.org> <1284111767.1783.35.camel@Joe-Laptop>
+            <20100910123040.5a6f0128@schatten.dmk.lab>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1284350506_6472P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 13 Sep 2010 00:01:46 -0400
+Message-ID: <30366.1284350506@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020205.4C8DA22B.0174,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support for Matrix keypad ESC, ENTER, LEFT, and RIGHT
+--==_Exmh_1284350506_6472P
+Content-Type: text/plain; charset=us-ascii
 
-Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
----
- arch/arm/mach-mmp/teton_bga.c |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+On Fri, 10 Sep 2010 12:30:40 +0200, Florian Mickler said:
 
-diff --git a/arch/arm/mach-mmp/teton_bga.c b/arch/arm/mach-mmp/teton_bga.c
-index 49b746b..2966117 100644
---- a/arch/arm/mach-mmp/teton_bga.c
-+++ b/arch/arm/mach-mmp/teton_bga.c
-@@ -16,6 +16,8 @@
- #include <linux/kernel.h>
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
-+#include <linux/input.h>
-+#include <plat/pxa27x_keypad.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -30,6 +32,27 @@ static unsigned long teton_bga_pin_config[] __initdata = {
- 	/* UART1 */
- 	GPIO107_UART1_TXD,
- 	GPIO108_UART1_RXD,
-+
-+	/* Keypad */
-+	GPIO109_KP_MKIN1,
-+	GPIO110_KP_MKIN0,
-+	GPIO111_KP_MKOUT7,
-+	GPIO112_KP_MKOUT6,
-+};
-+
-+static unsigned int teton_bga_matrix_key_map[] = {
-+	KEY(0, 6, KEY_ESC),
-+	KEY(0, 7, KEY_ENTER),
-+	KEY(1, 6, KEY_LEFT),
-+	KEY(1, 7, KEY_RIGHT),
-+};
-+
-+static struct pxa27x_keypad_platform_data teton_bga_keypad_info __initdata = {
-+	.matrix_key_rows        = 2,
-+	.matrix_key_cols        = 8,
-+	.matrix_key_map         = teton_bga_matrix_key_map,
-+	.matrix_key_map_size    = ARRAY_SIZE(teton_bga_matrix_key_map),
-+	.debounce_interval      = 30,
- };
- 
- static void __init teton_bga_init(void)
-@@ -38,6 +61,7 @@ static void __init teton_bga_init(void)
- 
- 	/* on-chip devices */
- 	pxa168_add_uart(1);
-+	pxa168_add_keypad(&teton_bga_keypad_info);
- }
- 
- MACHINE_START(TETON_BGA, "PXA168-based Teton BGA Development Platform")
--- 
-1.7.0.4
+> Your mileage may vary of course, but I can't see any harm done by this
+> change. Anyone familiar with get_maintainer.pl can always just put
+> "--nogit" in his .get_maintainer.conf file. 
+
+Any chance of getting that to be ~/.get_maintainer.conf rather than
+./.get_maintainer.conf? I've just gotten bit like the 3rd or 4th time by "oh but
+you didn't create that file in *this* tree" (I usually have a linus git tree, a linux-next
+tree, and 3-4 -mm trees lying around).
+
+
+--==_Exmh_1284350506_6472P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMjaIqcC3lWbTT17ARAkVfAJ9j7jRoSq54UmozQnUg6apopDimCQCfffAh
+ESQVwa9y5JhJsJ2M21KqSZ0=
+=MmNN
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1284350506_6472P--
 
