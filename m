@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab0IMCln (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 22:41:43 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:41752 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754211Ab0IMClm (ORCPT
+	id S1754316Ab0IMCri (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 22:47:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37509 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab0IMCrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 22:41:42 -0400
-Date: Mon, 13 Sep 2010 12:41:28 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org
-Subject: Re: [2.6.36-rc1] unmount livelock due to racing with bdi-flusher
- threads
-Message-ID: <20100913024128.GC411@dastard>
-References: <20100821084126.GE31488@dastard>
+	Sun, 12 Sep 2010 22:47:37 -0400
+Message-ID: <4C8D9051.2070004@kernel.org>
+Date: Sun, 12 Sep 2010 19:45:37 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100821084126.GE31488@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: zersaa <zersaa@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <lenb@kernel.org>, Feng Tang <feng.tang@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [Bug #17772] Unable to locate IOAPIC for GSI *
+References: <QnCvudbe2FD.A.XiE.DgSjMB@chimera> <p44oKaOqEDM.A.I2E.VgSjMB@chimera> <20100912202950.GA16751@elte.hu>
+In-Reply-To: <20100912202950.GA16751@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
-
-On Sat, Aug 21, 2010 at 06:41:26PM +1000, Dave Chinner wrote:
-> Folks,
+On 09/12/2010 01:29 PM, Ingo Molnar wrote:
 > 
-> I just had an umount take a very long time burning a CPU the entire
-> time. It wasn't the unmount thread, either, it was the the bdi
-> flusher thread for the the filesystem being unmounted. It was
-> spinning with this perf top trace:
+> * Rafael J. Wysocki <rjw@sisk.pl> wrote:
 > 
->            553144.00 76.9% writeback_inodes_wb  [kernel.kallsyms]
->            106434.00 14.8% __ticket_spin_lock   [kernel.kallsyms]
->             25646.00  3.6% __ticket_spin_unlock [kernel.kallsyms]
->             10512.00  1.5% _raw_spin_lock       [kernel.kallsyms]
->              9606.00  1.3% put_super            [kernel.kallsyms]
->              7920.00  1.1% __put_super          [kernel.kallsyms]
->              5592.00  0.8% down_read_trylock    [kernel.kallsyms]
->                46.00  0.0% kfree                [kernel.kallsyms]
->                22.00  0.0% __do_softirq         [kernel.kallsyms]
->                19.00  0.0% wb_writeback         [kernel.kallsyms]
->                16.00  0.0% wb_do_writeback      [kernel.kallsyms]
->                 8.00  0.0% queue_io             [kernel.kallsyms]
->                 6.00  0.0% run_timer_softirq    [kernel.kallsyms]
->                 6.00  0.0% local_bh_enable_ip   [kernel.kallsyms]
+>> This message has been generated automatically as a part of a report
+>> of regressions introduced between 2.6.34 and 2.6.35.
+>>
+>> The following bug entry is on the current list of known regressions
+>> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+>> be listed and let the tracking team know (either way).
+>>
+>>
+>> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17772
+>> Subject		: Unable to locate IOAPIC for GSI *
+>> Submitter	: zersaa <zersaa@gmail.com>
+>> Date		: 2010-09-04 21:28 (9 days old)
 > 
-> This went on for ~7m25s (according to the pmchart trace I had on
-> screen) before something broke the livelock by writing the inodes to
-> disk (maybe the xfssyncd) and the unmount then completed a couple
-> of seconds later.
+> this is an error message introduced via ACPI commit:
 > 
-> From the above profile, I'm assuming that writeback_inodes_wb() was
-> seeing pin_sb_for_writeback(sb) failing and moving dirty inodes from
-> the the b_io to the b_more_io list, then being called again,
-> splicing the inodes on b_more_io back to b_io, and then failed again
-> to pin_sb_for_writeback() for each inode, moving them back to the
-> b_more_io list....
+> | commit 2a4ab640d3c28c2952967e5f63ea495555bf2a5f
+> | Author: Feng Tang <feng.tang@intel.com>
+> | Date:   Tue Jul 7 23:01:15 2009 -0400
+> |
+> |     ACPI, x86: expose some IO-APIC routines when CONFIG_ACPI=n
 > 
-> This is on 2.6.36-rc1 + the radix tree fixes for writeback.
-> 
-> Cheers,
-> 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> It's not clear from the bugzilla entry whether it's just a new error 
+> message, or an actual boot failure. It appears to me it's just a new 
+> message - i.e. not a regression.
 > 
 
--- 
-Dave Chinner
-david@fromorbit.com
+can you post whole bootlog with "debug apic=debug"?
+
+Thanks
+
+Yinghai
