@@ -1,41 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab0IMKKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 06:10:30 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:56906 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753007Ab0IMKK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 06:10:29 -0400
-Date: Mon, 13 Sep 2010 11:10:16 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [PATCH 01/17] writeback: remove the internal 5% low bound on
-	dirty_ratio
-Message-ID: <20100913101016.GF23508@csn.ul.ie>
-References: <20100912154945.758129106@intel.com> <20100912155202.733389420@intel.com> <20100913095130.GD23508@csn.ul.ie> <20100913095708.GA31310@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+	id S1754685Ab0IMKLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 06:11:12 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:60366 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab0IMKLK convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:1>);
+	Mon, 13 Sep 2010 06:11:10 -0400
+Message-Id: <4C8E14D90200007800015AAE@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 13 Sep 2010 11:11:05 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <khali@linux-fr.org>
+Cc: <fenghua.yu@intel.com>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86/hwmon: avoid deadlock on CPU removal in pkgtemp
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20100913095708.GA31310@localhost>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > i.e. * instead of +. With +, the value for dirty is almost always going
-> > to be simply 1%.
-> 
-> Where's the "+" come from?
-> 
+pkgtemp_device_remove(), holding the list protecting mutex, calls
+pkgtemp_device_add(), which itself wants to acquire the same mutex.
+Holding the mutex over the entire loop body in pkgtemp_device_remove()
+isn't really necessary, as long as the loop gets exited after
+processing the matched CPU.
 
-This is embarassing. I was reading mail on a small font that had reduced all *
-to look like +. Ignore the question.
+Once exiting the loop after removing an eventual match, there's no
+need for using the "safe" list iterator anymore.
+
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+
+---
+ drivers/hwmon/pkgtemp.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+--- linux-2.6.36-rc4/drivers/hwmon/pkgtemp.c	2010-09-13 08:45:03.000000000 +0200
++++ 2.6.36-rc4-x86-pkgtemp-remove-deadlock/drivers/hwmon/pkgtemp.c	2010-09-03 17:54:30.000000000 +0200
+@@ -339,17 +339,18 @@ exit:
+ #ifdef CONFIG_HOTPLUG_CPU
+ static void pkgtemp_device_remove(unsigned int cpu)
+ {
+-	struct pdev_entry *p, *n;
++	struct pdev_entry *p;
+ 	unsigned int i;
+ 	int err;
+ 
+ 	mutex_lock(&pdev_list_mutex);
+-	list_for_each_entry_safe(p, n, &pdev_list, list) {
++	list_for_each_entry(p, &pdev_list, list) {
+ 		if (p->cpu != cpu)
+ 			continue;
+ 
+ 		platform_device_unregister(p->pdev);
+ 		list_del(&p->list);
++		mutex_unlock(&pdev_list_mutex);
+ 		kfree(p);
+ 		for_each_cpu(i, cpu_core_mask(cpu)) {
+ 			if (i != cpu) {
+@@ -358,7 +359,7 @@ static void pkgtemp_device_remove(unsign
+ 					break;
+ 			}
+ 		}
+-		break;
++		return;
+ 	}
+ 	mutex_unlock(&pdev_list_mutex);
+ }
+
+
+
