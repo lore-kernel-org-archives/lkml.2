@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab0IMKYw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 06:24:52 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:50496 "EHLO
+	id S1754804Ab0IMK0k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 06:26:40 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:56566 "EHLO
 	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754765Ab0IMKYv convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Mon, 13 Sep 2010 06:24:51 -0400
-Message-Id: <4C8E180F0200007800015AF4@vpn.id2.novell.com>
+	with ESMTP id S1751838Ab0IMK0j convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Mon, 13 Sep 2010 06:26:39 -0400
+Message-Id: <4C8E18790200007800015AF7@vpn.id2.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 13 Sep 2010 11:24:47 +0100
+Date: Mon, 13 Sep 2010 11:26:33 +0100
 From: "Jan Beulich" <JBeulich@novell.com>
-To: <khali@linux-fr.org>
-Cc: <fenghua.yu@intel.com>, <lm-sensors@lm-sensors.org>,
+To: <fenghua.yu@intel.com>, <khali@linux-fr.org>
+Cc: <r.marek@assembler.cz>, <lm-sensors@lm-sensors.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86/hwmon: pkgtemp has no dependency on PCI
+Subject: [PATCH] x86/hwmon: conditionalize coretemp's dependency on PCI
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -23,38 +23,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Other than coretemp, from which this code was apparently derived, there
-is no PCI specific code in this driver.
+PCI specific code is needed only when Atom CPUs are potentially
+supported by the kernel.
 
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Rudolf Marek <r.marek@assembler.cz>
 
 ---
- drivers/hwmon/Kconfig   |    2 +-
- drivers/hwmon/pkgtemp.c |    1 -
- 2 files changed, 1 insertion(+), 2 deletions(-)
+ drivers/hwmon/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 --- linux-2.6.36-rc4/drivers/hwmon/Kconfig	2010-09-13 08:45:02.000000000 +0200
-+++ 2.6.36-rc4-x86-pkgtemp-no-pci/drivers/hwmon/Kconfig	2010-09-10 16:24:16.000000000 +0200
-@@ -409,7 +409,7 @@ config SENSORS_CORETEMP
++++ 2.6.36-rc4-x86-coretemp-maybe-pci/drivers/hwmon/Kconfig	2010-09-10 16:24:16.000000000 +0200
+@@ -401,7 +401,8 @@ config SENSORS_GL520SM
  
- config SENSORS_PKGTEMP
- 	tristate "Intel processor package temperature sensor"
+ config SENSORS_CORETEMP
+ 	tristate "Intel Core/Core2/Atom temperature sensor"
 -	depends on X86 && PCI && EXPERIMENTAL
 +	depends on X86 && EXPERIMENTAL
++	depends on PCI || (!MATOM && !GENERIC_CPU && !X86_GENERIC)
  	help
- 	  If you say yes here you get support for the package level temperature
- 	  sensor inside your CPU. Check documentation/driver for details.
---- linux-2.6.36-rc4/drivers/hwmon/pkgtemp.c	2010-09-13 08:45:03.000000000 +0200
-+++ 2.6.36-rc4-x86-pkgtemp-no-pci/drivers/hwmon/pkgtemp.c	2010-09-03 17:54:30.000000000 +0200
-@@ -33,7 +33,6 @@
- #include <linux/list.h>
- #include <linux/platform_device.h>
- #include <linux/cpu.h>
--#include <linux/pci.h>
- #include <asm/msr.h>
- #include <asm/processor.h>
- 
+ 	  If you say yes here you get support for the temperature
+ 	  sensor inside your CPU. Most of the family 6 CPUs
 
 
 
