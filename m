@@ -1,33 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab0IMUt6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 16:49:58 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:35328 "EHLO
+	id S1755396Ab0IMUvl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 16:51:41 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:42181 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab0IMUt5 (ORCPT
+	with ESMTP id S1751855Ab0IMUvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 16:49:57 -0400
-Date: Mon, 13 Sep 2010 22:49:52 +0200
+	Mon, 13 Sep 2010 16:51:40 -0400
+Date: Mon, 13 Sep 2010 22:51:37 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
- unknown NMI
-Message-ID: <20100913224952.442d7a24@basil.nowhere.org>
-In-Reply-To: <20100913193655.GF26290@redhat.com>
-References: <20100910184039.GK4879@redhat.com>
-	<1284344389.3269.82.camel@yhuang-dev.sh.intel.com>
-	<20100913141140.GB27371@redhat.com>
-	<20100913172438.37443bf7@basil.nowhere.org>
-	<20100913154750.GA26290@redhat.com>
-	<20100913185721.59ad9b4d@basil.nowhere.org>
-	<20100913175346.GC26290@redhat.com>
-	<20100913200707.3b31429e@basil.nowhere.org>
-	<20100913182354.GE26290@redhat.com>
-	<20100913203654.26724055@basil.nowhere.org>
-	<20100913193655.GF26290@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
+        markus.t.metzger@intel.com
+Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
+Message-ID: <20100913225137.042ff889@basil.nowhere.org>
+In-Reply-To: <1284407360.2275.431.camel@laptop>
+References: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
+	<877hip4et0.fsf@basil.nowhere.org>
+	<1284407360.2275.431.camel@laptop>
 X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -36,27 +28,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010 15:36:55 -0400
-Don Zickus <dzickus@redhat.com> wrote:
+On Mon, 13 Sep 2010 21:49:20 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On Mon, Sep 13, 2010 at 08:36:54PM +0200, Andi Kleen wrote:
+> On Mon, 2010-09-13 at 21:35 +0200, Andi Kleen wrote:
+> > Stephane Eranian <eranian@google.com> writes:
 > > 
-> > > > 
-> > > > But if it's generic if not on the screen it should
-> > > > be at least in the error serialization data and logged after
-> > > > boot.
-> > > 
-> > > I guess I don't know what that is, 'error serialization data'.  Is
-> > > there somewhere I can read more about it?
+> > > The DS, BTS, and PEBS memory regions were allocated using
+> > > kzalloc(), i.e., requesting contiguous physical memory. There is
+> > > no such restriction on DS, PEBS and BTS buffers. Using kzalloc()
+> > > could lead to error in case no contiguous physical memory is
+> > > available. BTS is requesting 64KB, thus it can cause issues. PEBS
+> > > is currently only requesting one page. Both PEBS and BTS are
+> > > static buffers allocated for each CPU at the first user. When the
+> > > last user exists, the buffers are released.
 > > 
-> > That's already supported in MCE -- saving the error record to NVRAM
-> > and logging it after reboot. NMI should probably do the same.
-> > It's much nicer than getting it from a console.
+> > DS supports page tables, but I have some doubts it really 
+> > supports page faults. vmalloc today does page faults. 
+> > 
+> > I think the change is a good idea, but it will need
+> > vmalloc_sync_all() everywhere.
 > 
-> Hmm, that assumes these boxes have NVRAM.  I am not sure if many of
-> the boxes I see with problems have NVRAM on them.
+> Right, I seem to remember from that last discussion on vmalloc vs NMI
+> that vmalloc_sync_all() had some issues, or am I totally
+> mis-remembering that?
 
-Practically every PC has a small amount of NVRAM.
+Linus thought it was ugly, but he never explained why and it was
+not obvious to me. 
+
+His proposed replacement wouldn't work for this case.
+
+I am not aware of any real technical issues, except that
+it needs to be done for both 32bit and 64bit.
 
 -Andi
 
+-- 
+ak@linux.intel.com -- Speaking for myself only.
