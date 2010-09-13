@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab0IMTud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:50:33 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:1604 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755424Ab0IMTu3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:50:29 -0400
-From: Bhavesh Davda <bhavesh@vmware.com>
-To: Joe Perches <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "VMware, Inc." <pv-drivers@vmware.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Mon, 13 Sep 2010 12:50:27 -0700
-Subject: RE: [Pv-drivers] [PATCH 14/25] drivers/net/vnxnet3: Use static
- const	char arrays
-Thread-Topic: [Pv-drivers] [PATCH 14/25] drivers/net/vnxnet3: Use static
- const	char arrays
-Thread-Index: ActTfKjI2wTXxNSIQCqy9frKRshC9gAABoaQ
-Message-ID: <8B1F619C9F5F454E81D90D3C161698D70337BB4D4D@EXCH-MBX-3.vmware.com>
+	id S1755559Ab0IMTu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:50:59 -0400
+Received: from mail.perches.com ([173.55.12.10]:1905 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755367Ab0IMTsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 15:48:37 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH 18/25] drivers/serial/suncore.c: Use static const char arrays
+Date: Mon, 13 Sep 2010 12:47:56 -0700
+Message-Id: <0ab674aa32a5fcc364982c78efdf44864a61523b.1284406639.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.rc1
+In-Reply-To: <cover.1284406638.git.joe@perches.com>
 References: <cover.1284406638.git.joe@perches.com>
- <a2e0d6f77c221ebf7f642dd02da85bcd41947242.1284406638.git.joe@perches.com>
-In-Reply-To: <a2e0d6f77c221ebf7f642dd02da85bcd41947242.1284406638.git.joe@perches.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/serial/suncore.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Signed-off-by: Bhavesh Davda <bhavesh@vmware.com>
+diff --git a/drivers/serial/suncore.c b/drivers/serial/suncore.c
+index 6381a02..f2a5b54 100644
+--- a/drivers/serial/suncore.c
++++ b/drivers/serial/suncore.c
+@@ -84,8 +84,8 @@ EXPORT_SYMBOL(sunserial_console_match);
+ 
+ void sunserial_console_termios(struct console *con, struct device_node *uart_dp)
+ {
++	char mode_prop[sizeof("ttyX-mode")];
+ 	const char *mode, *s;
+-	char mode_prop[] = "ttyX-mode";
+ 	int baud, bits, stop, cflag;
+ 	char parity;
+ 
+@@ -106,7 +106,7 @@ void sunserial_console_termios(struct console *con, struct device_node *uart_dp)
+ 		if (of_console_options)
+ 			c = *of_console_options;
+ 
+-		mode_prop[3] = c;
++		sprintf(mode_prop, "tty%c-mode", c);
+ 
+ 		dp = of_find_node_by_path("/options");
+ 		mode = of_get_property(dp, mode_prop, NULL);
+-- 
+1.7.3.rc1
 
-> -----Original Message-----
-> From: pv-drivers-bounces@vmware.com [mailto:pv-drivers-
-> bounces@vmware.com] On Behalf Of Joe Perches
-> Sent: Monday, September 13, 2010 12:48 PM
-> To: linux-kernel@vger.kernel.org
-> Cc: VMware, Inc.; netdev@vger.kernel.org
-> Subject: [Pv-drivers] [PATCH 14/25] drivers/net/vnxnet3: Use static
-> const char arrays
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/net/vmxnet3/vmxnet3_drv.c |    2 +-
->  drivers/net/vmxnet3/vmxnet3_int.h |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c
-> b/drivers/net/vmxnet3/vmxnet3_drv.c
-> index 198ce92..dfc0014 100644
-> --- a/drivers/net/vmxnet3/vmxnet3_drv.c
-> +++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-> @@ -28,7 +28,7 @@
-> 
->  #include "vmxnet3_int.h"
-> 
-> -char vmxnet3_driver_name[] = "vmxnet3";
-> +const char vmxnet3_driver_name[] = "vmxnet3";
->  #define VMXNET3_DRIVER_DESC "VMware vmxnet3 virtual NIC driver"
-> 
->  /*
-> diff --git a/drivers/net/vmxnet3/vmxnet3_int.h
-> b/drivers/net/vmxnet3/vmxnet3_int.h
-> index 2121c73..201fcf7 100644
-> --- a/drivers/net/vmxnet3/vmxnet3_int.h
-> +++ b/drivers/net/vmxnet3/vmxnet3_int.h
-> @@ -384,5 +384,5 @@ vmxnet3_create_queues(struct vmxnet3_adapter
-> *adapter,
->  extern void vmxnet3_set_ethtool_ops(struct net_device *netdev);
->  extern struct net_device_stats *vmxnet3_get_stats(struct net_device
-> *netdev);
-> 
-> -extern char vmxnet3_driver_name[];
-> +extern const char vmxnet3_driver_name[];
->  #endif
-> --
-> 1.7.3.rc1
-> 
-> _______________________________________________
-> Pv-drivers mailing list
-> Pv-drivers@vmware.com
-> http://mailman2.vmware.com/mailman/listinfo/pv-drivers
