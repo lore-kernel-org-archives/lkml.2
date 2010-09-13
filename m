@@ -1,55 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582Ab0IMEf0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 00:35:26 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:49595 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750712Ab0IMEfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 00:35:25 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19s3ywapnVsV6/0ja0Z05rSHyrkXViOvpiogYCCsA
-	/n3cvmPgWiexHq
-Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
- nr_running
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-In-Reply-To: <1284282392.2251.81.camel@laptop>
-References: <20100911173732.551632040@efficios.com>
-	 <20100911174003.051303123@efficios.com> <1284231470.2251.52.camel@laptop>
-	 <AANLkTin0LOuTOcJPiZcZGeZMdqsy2dohyrREw2GGhddJ@mail.gmail.com>
-	 <1284237380.2251.56.camel@laptop>
-	 <AANLkTi=a91QX-FLURFWNsjbCS1bDLr6GqSpC4_uzm3ta@mail.gmail.com>
-	 <1284282392.2251.81.camel@laptop>
-Content-Type: text/plain
-Date: Mon, 13 Sep 2010 06:35:47 +0200
-Message-Id: <1284352547.7321.51.camel@marge.simson.net>
+	id S1751916Ab0IMEju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 00:39:50 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41149 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750864Ab0IMEjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 00:39:49 -0400
+Date: Mon, 13 Sep 2010 14:39:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: build warnings after merge of the final tree (tip
+ treee related)
+Message-Id: <20100913143942.7344ada4.sfr@canb.auug.org.au>
+In-Reply-To: <4C8DA517.9000603@kernel.org>
+References: <20100913132721.5a02cfbc.sfr@canb.auug.org.au>
+	<4C8DA517.9000603@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__13_Sep_2010_14_39_42_+1000_LFB1mbA64F_p94jI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-09-12 at 11:06 +0200, Peter Zijlstra wrote:
-> On Sat, 2010-09-11 at 13:48 -0700, Linus Torvalds wrote:
+--Signature=_Mon__13_Sep_2010_14_39_42_+1000_LFB1mbA64F_p94jI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > And I don't like how you dismissed the measured latency improvement.
-> > And yes, I do think latency matters. A _lot_.
-> 
-> OK, we'll make it better and sacrifice some throughput, can do, no
-> problem.
+Hi Yinghai,
 
-I'm not seeing high wakeup latencies, even under hefty load.  Mathieu's
-testcase is bad, but apparently solely due to START_DEBIT placement.
-That's kind of a sticky wicket.  I've shot it in the heart before, but
-regretted doing so when I looked at kbuild vs static load fairness.
+On Sun, 12 Sep 2010 21:14:15 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
+>
+> please check it, and it should get into core/memblock branch.
+>=20
+> Thanks
+>=20
+> Yinghai
+>=20
+> [PATCH] memblock: Fix section mismatch warning
+>=20
+> for arches that use memblock other than x86
+>=20
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Yinghai Lu <Yinghai@kernel.org>
 
-	-Mike
+Your patch fixes some of the warnings, but still leaves these for a
+powerpc allnoconfig build:
 
+WARNING: mm/built-in.o(.text+0x25d80): Section mismatch in reference from t=
+he function memblock_double_array() to the function .init.text:memblock_fre=
+e()
+The function memblock_double_array() references
+the function __init memblock_free().
+This is often because memblock_double_array lacks a __init=20
+annotation or the annotation of memblock_free is wrong.
+
+WARNING: mm/built-in.o(.text+0x26318): Section mismatch in reference from t=
+he function memblock_reserve_reserved_regions() to the function .init.text:=
+memblock_reserve()
+The function memblock_reserve_reserved_regions() references
+the function __init memblock_reserve().
+This is often because memblock_reserve_reserved_regions lacks a __init=20
+annotation or the annotation of memblock_reserve is wrong.
+
+WARNING: mm/built-in.o(.text+0x26490): Section mismatch in reference from t=
+he function memblock_free_reserved_regions() to the function .init.text:mem=
+block_free()
+The function memblock_free_reserved_regions() references
+the function __init memblock_free().
+This is often because memblock_free_reserved_regions lacks a __init=20
+annotation or the annotation of memblock_free is wrong.
+
+And these for a i386 defconfig build:
+
+WARNING: mm/built-in.o(.text+0x1e261): Section mismatch in reference from t=
+he function memblock_is_memory() to the variable .init.data:memblock
+The function memblock_is_memory() references
+the variable __initdata memblock.
+This is often because memblock_is_memory lacks a __initdata=20
+annotation or the annotation of memblock is wrong.
+
+WARNING: mm/built-in.o(.text+0x1e27f): Section mismatch in reference from t=
+he function memblock_is_region_memory() to the variable .init.data:memblock
+The function memblock_is_region_memory() references
+the variable __initdata memblock.
+This is often because memblock_is_region_memory lacks a __initdata=20
+annotation or the annotation of memblock is wrong.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__13_Sep_2010_14_39_42_+1000_LFB1mbA64F_p94jI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMjasOAAoJEDMEi1NhKgbsz/4H/iB0Vmgh2Jrw0CadUixbRYZX
+a9Ch6JcU9KN1U74N7yG8o08r9CHb/BGjYIqnnAMfAh5HJfrF7+yNLzUXE76DpTrN
+rgbZBTgJf61hZKbtYrGdIjRDrbU1dL3NhJ8wStVD+oeUCJwQ9h0f6Kh3EHrHcCoe
+0zqrF8S4uR2uxIDzWQvyluUVg7Qlr34o5CKQxkh9XtIacHSgE6fI9DzZa05vYWHQ
+FUOIGZ+coT+zeCsQXy44Hfaxb6g8LB7YKQuvXEk6wvydkkgfeYry0rI1DLRfylYo
+j6QMjbbxU1rz7cYtpY3pPDVAcShf1mMZWFK1rixabGTnf9cL8s5vj5Mixj3z5P4=
+=TEN7
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__13_Sep_2010_14_39_42_+1000_LFB1mbA64F_p94jI--
