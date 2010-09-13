@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab0IMP6G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:58:06 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47906 "EHLO mx1.suse.de"
+	id S1753638Ab0IMP6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:58:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41018 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752250Ab0IMP6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:58:04 -0400
-Date: Mon, 13 Sep 2010 08:56:08 -0700
-From: Greg KH <gregkh@suse.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jiri Slaby <jslaby@suse.cz>, phil@ipom.com, stable@kernel.org,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [34-stable regression] USB delay init quirk causes device
- events loss
-Message-ID: <20100913155608.GA27853@suse.de>
-References: <4C8E3C40.50808@suse.cz>
- <Pine.LNX.4.44L0.1009131118180.1315-100000@iolanthe.rowland.org>
+	id S1753331Ab0IMP6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 11:58:22 -0400
+Message-ID: <4C8E49B7.7040104@zytor.com>
+Date: Mon, 13 Sep 2010 08:56:39 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1009131118180.1315-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: florian@mickler.org, x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Russell King <linux@arm.linux.org.uk>,
+        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] x86: don't compile with gcc-3.3.3
+References: <1284366708-30154-1-git-send-email-florian@mickler.org> <1284367195.2275.29.camel@laptop>
+In-Reply-To: <1284367195.2275.29.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 11:37:49AM -0400, Alan Stern wrote:
-> On Mon, 13 Sep 2010, Jiri Slaby wrote:
+On 09/13/2010 01:39 AM, Peter Zijlstra wrote:
+> On Mon, 2010-09-13 at 10:31 +0200, florian@mickler.org wrote:
+>> hpa commented on bug 16506[1] :
+>> "Please note that gcc-3.3.3 is known broken on x86; gcc-3.4 is the oldest
+>> version which is known to *not* be broken."
+>>
+>> References: 
+>> 	[0]: https://bugzilla.kernel.org/show_bug.cgi?id=16633
+>> 	[1]: https://bugzilla.kernel.org/show_bug.cgi?id=16506#c28
+>>
+>> If that is indeed so, we should abort the build? No?
 > 
-> > On 09/13/2010 04:48 PM, Alan Stern wrote:
-> > > On Mon, 13 Sep 2010, Jiri Slaby wrote:
-> > >> In other words, what I could do is to add some printks into
-> > >> hub_port_connect_change if that's called at all. If you need some
-> > >> thorough debugging printks, please send me a patch to test instead.
-> > > 
-> > > Hmm.  I'd prefer to explain how it's all supposed to work and let you
-> > > figure out where best to look.  Or try to debug it myself.  Does this
-> > > happen with other sorts of USB devices as well, or just wacom?
-> > 
-> > With some sort of devices (I cannot reproduce myself). It's unrelated to
-> > wacom -- people with wacom were unable to even start X with this kernel.
-> > If you look at the bugreport, there are several examples:
-> > ID 046d:c517 Logitech, Inc. LX710 Cordless Desktop Laser defunct
-> > Microsoft USB keyboard defunct x Logitech mice OK
-> > 046a:0021 Cherry GmbH keyboard defunct
-> > logitech wireless laptop mouse defunct
-> > A$Tech wireless laptop mouse defunct
-> > TypeMatrix USB 2030 (ID : 1e54:2030) defunct
-> 
-> Okay, I see the problem.  By moving usb_detect_quirks earlier, we end 
-> up calling usb_disable_autosuspend too soon -- before the 
-> pm_runtime_enable call in usb_new_device.  In 2.6.35 this doesn't 
-> matter because the implementation of usb_autosuspend_device has 
-> changed.
-> 
-> So yes, in the end it looks like the best course is to revert this
-> patch from 2.6.34.stable.  This is unfortunate but I don't see any way
-> around it without making changes that aren't present in the current
-> kernel. For example, the pm_runtime_set_active and pm_runtime_enable
-> calls could also be moved from usb_new_device into
-> hub_port_connect_change.
+> Does it in fact still build with 3.4? I seem to recall some talk about
+> pushing the minimum version to 4.x for x86, although I can't remember
+> where..
 
-Ok, I'll go revert that from the .34-stable tree and do a new release,
-as it's not nice to have a broken tree out there.
+It does indeed still build with 3.4, although it is giving us a bunch of
+headaches to *make it so*, and I would personally be really glad if the
+consensus is we can just axe it.
 
-thanks,
+The only reason to not abort the build for gcc 3.3.3 is that soem
+"enterprise" distros have been shipping gcc 3.3.3 with backported fixes
+from 3.4, which of course still identifies themselves as gcc 3.3.3, and
+so technically it is iompossioble to tell if any particular "gcc 3.3.3"
+is actually broken or not.
 
-greg k-h
+However, as far as I can tell, most of the people who build current x86
+kernels with gcc 3.x are people who are testing building current kernels
+with gcc 3.x.  Some of the embedded systems are different, because for
+some strange reasons most of the embedded world seem stuck on gcc 3.4 or so.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
