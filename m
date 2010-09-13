@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab0IMUHJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 16:07:09 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:2854 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752833Ab0IMUHI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 16:07:08 -0400
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-To: Joe Perches <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "VMware, Inc." <pv-drivers@vmware.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Mon, 13 Sep 2010 13:07:06 -0700
-Subject: RE: [PATCH 14/25] drivers/net/vnxnet3: Use static const char arrays
-Thread-Topic: [PATCH 14/25] drivers/net/vnxnet3: Use static const char arrays
-Thread-Index: ActTfKe3WD3e01rlTxyZGm1B863yfQAAnC3A
-Message-ID: <89E2752CFA8EC044846EB8499819134102BE8EEF9E@EXCH-MBX-4.vmware.com>
-References: <cover.1284406638.git.joe@perches.com>
- <a2e0d6f77c221ebf7f642dd02da85bcd41947242.1284406638.git.joe@perches.com>
-In-Reply-To: <a2e0d6f77c221ebf7f642dd02da85bcd41947242.1284406638.git.joe@perches.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755253Ab0IMUIC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 16:08:02 -0400
+Received: from ppsw-31.csi.cam.ac.uk ([131.111.8.131]:36211 "EHLO
+	ppsw-31.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754970Ab0IMUH7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 16:07:59 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C8E84A0.1010606@jic23.retrosnub.co.uk>
+Date: Mon, 13 Sep 2010 21:08:00 +0100
+From: Jonathan Cameron <arm@jic23.retrosnub.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100909 Lightning/1.0b3pre Thunderbird/3.1.3
 MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: linux-kernel@vger.kernel.org,
+        "Jean Delvare \(PC drivers, core\)" <khali@linux-fr.org>,
+        linux-i2c@vger.kernel.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 05/25] drivers/i2c: Use static const char arrays
+References: <cover.1284406638.git.joe@perches.com> <b0c83cb1b42c6adf38f6322066fb457693f7ac3b.1284406638.git.joe@perches.com>
+In-Reply-To: <b0c83cb1b42c6adf38f6322066fb457693f7ac3b.1284406638.git.joe@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Joe.
+ Commit message is  somewhat inaccurate...
 
-Acked-by: Shreyas Bhatewara <sbhatewara@vmware.com>
-
-> -----Original Message-----
-> From: Joe Perches [mailto:joe@perches.com]
-> Sent: Monday, September 13, 2010 12:48 PM
-> To: linux-kernel@vger.kernel.org
-> Cc: Shreyas Bhatewara; VMware, Inc.; netdev@vger.kernel.org
-> Subject: [PATCH 14/25] drivers/net/vnxnet3: Use static const char
-> arrays
-> 
+On 09/13/10 20:47, Joe Perches wrote:
 > Signed-off-by: Joe Perches <joe@perches.com>
 > ---
->  drivers/net/vmxnet3/vmxnet3_drv.c |    2 +-
->  drivers/net/vmxnet3/vmxnet3_int.h |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c
-> b/drivers/net/vmxnet3/vmxnet3_drv.c
-> index 198ce92..dfc0014 100644
-> --- a/drivers/net/vmxnet3/vmxnet3_drv.c
-> +++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-> @@ -28,7 +28,7 @@
-> 
->  #include "vmxnet3_int.h"
-> 
-> -char vmxnet3_driver_name[] = "vmxnet3";
-> +const char vmxnet3_driver_name[] = "vmxnet3";
->  #define VMXNET3_DRIVER_DESC "VMware vmxnet3 virtual NIC driver"
-> 
->  /*
-> diff --git a/drivers/net/vmxnet3/vmxnet3_int.h
-> b/drivers/net/vmxnet3/vmxnet3_int.h
-> index 2121c73..201fcf7 100644
-> --- a/drivers/net/vmxnet3/vmxnet3_int.h
-> +++ b/drivers/net/vmxnet3/vmxnet3_int.h
-> @@ -384,5 +384,5 @@ vmxnet3_create_queues(struct vmxnet3_adapter
-> *adapter,
->  extern void vmxnet3_set_ethtool_ops(struct net_device *netdev);
->  extern struct net_device_stats *vmxnet3_get_stats(struct net_device
-> *netdev);
-> 
-> -extern char vmxnet3_driver_name[];
-> +extern const char vmxnet3_driver_name[];
->  #endif
-> --
-> 1.7.3.rc1
+>  drivers/i2c/busses/i2c-stu300.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-stu300.c b/drivers/i2c/busses/i2c-stu300.c
+> index 495be45..2f7c09c 100644
+> --- a/drivers/i2c/busses/i2c-stu300.c
+> +++ b/drivers/i2c/busses/i2c-stu300.c
+> @@ -871,7 +871,7 @@ stu300_probe(struct platform_device *pdev)
+>  	struct resource *res;
+>  	int bus_nr;
+>  	int ret = 0;
+> -	char clk_name[] = "I2C0";
+> +	char clk_name[sizeof("I2Cx")];
+>  
+>  	dev = kzalloc(sizeof(struct stu300_dev), GFP_KERNEL);
+>  	if (!dev) {
+> @@ -881,7 +881,7 @@ stu300_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	bus_nr = pdev->id;
+> -	clk_name[3] += (char)bus_nr;
+> +	sprintf(clk_name, "I2C%c", '0' + bus_nr);
+I'm guessing that there are never more than a couple of these.
+Why is this method a better bet than just putting %d?
+>  	dev->clk = clk_get(&pdev->dev, clk_name);
+>  	if (IS_ERR(dev->clk)) {
+>  		ret = PTR_ERR(dev->clk);
 
