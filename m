@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab0IMNVy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 09:21:54 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:48126 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754440Ab0IMNVx (ORCPT
+	id S1754569Ab0IMNWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 09:22:19 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43187 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab0IMNWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 09:21:53 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Joe Perches <joe@perches.com>
-Cc: Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Stephen Hemminger (role:commit_signer)" <shemminger@vyatta.com>,
-        "Wolfram Sang (role:commit_signer)" <w.sang@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: Look for .get_maintainer.conf in lk, then $HOME then scripts
-In-Reply-To: Your message of "Sun, 12 Sep 2010 22:21:39 PDT."
-             <1284355299.22185.65.camel@Joe-Laptop>
-From: Valdis.Kletnieks@vt.edu
-References: <1284111212-10659-1-git-send-email-florian@mickler.org> <1284111767.1783.35.camel@Joe-Laptop> <20100910123040.5a6f0128@schatten.dmk.lab> <30366.1284350506@localhost>
-            <1284355299.22185.65.camel@Joe-Laptop>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1284384059_4646P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 13 Sep 2010 09:21:00 -0400
-Message-ID: <4706.1284384060@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A02020A.4C8E253C.01B8,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Mon, 13 Sep 2010 09:22:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=AwrPSBqjB5j/ws2jSho9bmnKb8Y09ZJ+yHUj5Q3wSBk1KMmztV6dreka8LWZiqtSyZ
+         jRDY/NhKg5RD9wOnBw8mjArD24q/yYaspTW7NoMFpo3mlPWbBYLywXbfpwmeh1Oo5sWG
+         f6+FtvU1q1MZ12qjF5hl1PYlDp10CVrvtLLvg=
+MIME-Version: 1.0
+In-Reply-To: <1284135579-13578-6-git-send-email-wellsk40@gmail.com>
+References: <1284135579-13578-1-git-send-email-wellsk40@gmail.com>
+	<1284135579-13578-6-git-send-email-wellsk40@gmail.com>
+Date: Mon, 13 Sep 2010 15:22:16 +0200
+Message-ID: <AANLkTimNnA=tNCE7pLiibwB66R86dNmCDpCuQMkTvw9J@mail.gmail.com>
+Subject: Re: [PATCH 5/5] spi: amba_pl022: Remove unused fields from pl022_config_chip
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: wellsk40@gmail.com
+Cc: spi-devel-general@lists.sourceforge.net, sameo@linux.intel.com,
+        rabin.vincent@stericsson.com, srinidhi.kasagar@stericsson.com,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        u.kleine-koenig@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        tj@kernel.org, grant.likely@secretlab.ca, Lukasz.Baj@tieto.com,
+        quentinyang05@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1284384059_4646P
-Content-Type: text/plain; charset=us-ascii
+2010/9/10  <wellsk40@gmail.com>:
 
-On Sun, 12 Sep 2010 22:21:39 PDT, Joe Perches said:
-> On Mon, 2010-09-13 at 00:01 -0400, Valdis.Kletnieks@vt.edu wrote:
-> > Any chance of getting that to be ~/.get_maintainer.conf rather than
-> > ./.get_maintainer.conf? I've just gotten bit like the 3rd or 4th time by "oh but
-> > you didn't create that file in *this* tree" (I usually have a linus git tree, a linux-next
-> > tree, and 3-4 -mm trees lying around).
-> 
-> Sure.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-> index b228198..ea54561 100755
+> From: Kevin Wells <wellsk40@gmail.com>
+>
+> Some of the fields in the pl022_config_chip structure are no
+> longer needed with the spi->mode updates. These fields have been
+> removed.
 
-Thanks dude, you rock. :)
+I think you have to do a more thorough patch:
 
---==_Exmh_1284384059_4646P
-Content-Type: application/pgp-signature
+drivers/spi/amba-pl022.c: In function 'verify_controller_parameters':
+drivers/spi/amba-pl022.c:1598: error: 'struct pl022_config_chip' has
+no member named 'lbm'
+drivers/spi/amba-pl022.c:1599: error: 'struct pl022_config_chip' has
+no member named 'lbm'
+drivers/spi/amba-pl022.c:1629: error: 'struct pl022_config_chip' has
+no member named 'endian_rx'
+(... etc)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMjiU7cC3lWbTT17ARAhhVAJ0XlDNDFV2lMMx/AdxpnDh8eT3zLgCdGafy
-ixegDRzNZID53DEAJ0Xb0tY=
-=bbeX
------END PGP SIGNATURE-----
-
---==_Exmh_1284384059_4646P--
-
+Yours,
+Linus Walleij
