@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab0IMTyo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:54:44 -0400
-Received: from smtp128.sbc.mail.sp1.yahoo.com ([69.147.65.187]:27057 "HELO
-	smtp128.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755260Ab0IMTym (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:54:42 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: zs.7U5cVM1noOTRUitUmeEiUBN5ebhTguDRdDrxzI2dEBwa
- 3phnzuEQNn_i6u9FTTpwSOZzmFLbUeBAufiIPrgrlbIZIsfvgMtI1x_.EeN6
- iOrBfF0Ldw1sC_Mk_nFe12ylqIOogGUi.wognOWs5IKZ8iajRftvEQY2DmH3
- RNydH7Q2h8NuiX9fpYNTGhSzODVVgE6_Gzv0R3pa_wnTaDyZ048at4.l64R2
- Iwj9__7PICVNQODaWKAH0h6_FTPKHcpxHEDwH.d4NriilWLPvF.6893U6gQn
- VvtZ445WNasXDw6M4UJO8uB4IeEr3i0VWgDCEt07bTplCEQTRbeB8NTOnKnh
- L5RyvhLEKCwTv1LrZsg--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH 0/2] lio-target: Add support for libcrypto crc32c and
-	crc32-intel offload
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Hannes Reinecke <hare@suse.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Vasu Dev <vasu.dev@linux.intel.com>, Joe Eykholt <jeykholt@cisco.com>
-In-Reply-To: <4C8DED17.6080801@suse.de>
-References: <1284201076-22361-1-git-send-email-nab@linux-iscsi.org>
-	 <4C8DED17.6080801@suse.de>
-Content-Type: text/plain
-Date: Mon, 13 Sep 2010 12:50:32 -0700
-Message-Id: <1284407432.8171.41.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1755305Ab0IMT4D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:56:03 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51124 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754439Ab0IMT4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 15:56:01 -0400
+Date: Mon, 13 Sep 2010 19:54:47 GMT
+From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        randy.dunlap@oracle.com, davem@davemloft.net,
+        anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
+        masami.hiramatsu.pt@hitachi.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, felipe.contreras@gmail.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        randy.dunlap@oracle.com, anil.s.keshavamurthy@intel.com,
+        davem@davemloft.net, ananth@in.ibm.com,
+        masami.hiramatsu.pt@hitachi.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, felipe.contreras@gmail.com, mingo@elte.hu
+In-Reply-To: <20100913102541.20260.85700.stgit@ltc236.sdl.hitachi.co.jp>
+References: <20100913102541.20260.85700.stgit@ltc236.sdl.hitachi.co.jp>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] kprobes: Fix Kconfig dependency
+Message-ID: <tip-05ed160e89baf7f5fb3432d527fec467d2493626@git.kernel.org>
+Git-Commit-ID: 05ed160e89baf7f5fb3432d527fec467d2493626
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 13 Sep 2010 19:54:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-13 at 11:21 +0200, Hannes Reinecke wrote:
-> Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > Greetings all,
-> > 
-> > This patch series converts the LIO-Target fabric module from using a legacy
-> > internal slicing by 1x CRC32C algorithm to the slicing by 1x CRC32C available in
-> > crc32c.ko, as well as initial support for the Nehalem series crc32c-intel.ko
-> > instruction offload available since v2.6.27 in late 2008.
-> > 
-> > So far this series has been lightly tested with a handful of Open-iSCSI client VMs
-> > with the optimized crc32c-intel.ko offload case, and there appears to be some
-> > HeaderDigest failures for one case with RHEL6 B2 x86_64, while Ubuntu i686 on
-> > v2.6.27 and OpenSuse 11.2 x86_64 on v2.6.31 work as expected with HeaderDigest=CRC32C
-> > and DataDigest=CRC32C using the offload on the LIO-Target side.
-> > 
-> > Currently this patch disables the new iSCSI TPG attribute crc32c_x86_offload
-> > to force the crc32c.ko slicing by x1 CRC32C algorithm until these compatibility
-> > issues with existing libcrc32c clients can be properly resolved with the Nehalem
-> > CRC32C offload instructions running on the LIO-Target side.
-> > 
-> Due to a customer issue I had to revisit the CRC32 issue recently.
-> And according to you the main reason for using your own CRC routines
-> had been endianness issues.
+Commit-ID:  05ed160e89baf7f5fb3432d527fec467d2493626
+Gitweb:     http://git.kernel.org/tip/05ed160e89baf7f5fb3432d527fec467d2493626
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Mon, 13 Sep 2010 19:25:41 +0900
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 13 Sep 2010 20:41:31 +0200
 
-Indeed, this has historically been the case for LIO-Target and
-Core-iSCSI.  I noticed the issue with libcrypto while porting the latter
-on a old G4 TI-book waaay back during v2.6.10-rc3 days.
+kprobes: Fix Kconfig dependency
 
-> IE the in-kernel crc32c routines apparently weren't able to
-> calculate the checksum in an endianness-independent manner.
-> So a CRC calculated on a BE machine would fail to be validated by a
-> LE machine and vice versa.
-> 
-> Has this been fixed / verified?
-> 
+Fix Kconfig dependency among Kprobes, optprobe and kallsyms.
 
->From taking a look at crypto/crc32c.c it still appears AFAICT to not be
-big endian safe.  I was planning to test this patch on some powerpc/ppc
-hardware with v2.6.36-rc4 in the next days, but it looks like
-lio-core-2.6.git will need a seperate crypto/crc32c.c patch to function
-properly on big endian arches.
+Kprobes uses kallsyms_lookup for finding target function and
+checking instruction boundary, thus CONFIG_KPROBES should select
+CONFIG_KALLSYMS.
 
-Thanks for mentioning this point Hannes!
+Optprobe is an optional feature which is supported on x86 arch,
+and it also uses kallsyms_lookup for checking instructions in
+the target function. Since KALLSYMS_ALL just adds symbols of
+kernel variables, it doesn't need to select KALLSYMS_ALL.
 
---nab
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>,
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: akpm <akpm@linux-foundation.org>
+LKML-Reference: <20100913102541.20260.85700.stgit@ltc236.sdl.hitachi.co.jp>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/Kconfig |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 4877a8c..fe48fc7 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -32,8 +32,9 @@ config HAVE_OPROFILE
+ 
+ config KPROBES
+ 	bool "Kprobes"
+-	depends on KALLSYMS && MODULES
++	depends on MODULES
+ 	depends on HAVE_KPROBES
++	select KALLSYMS
+ 	help
+ 	  Kprobes allows you to trap at almost any kernel address and
+ 	  execute a callback function.  register_kprobe() establishes
+@@ -45,7 +46,6 @@ config OPTPROBES
+ 	def_bool y
+ 	depends on KPROBES && HAVE_OPTPROBES
+ 	depends on !PREEMPT
+-	select KALLSYMS_ALL
+ 
+ config HAVE_EFFICIENT_UNALIGNED_ACCESS
+ 	bool
