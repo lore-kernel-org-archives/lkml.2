@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab0IMDDa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 23:03:30 -0400
-Received: from ozlabs.org ([203.10.76.45]:52357 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754284Ab0IMDD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 23:03:29 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: #2 (Re: More modaliases + patchtool)
-Date: Mon, 13 Sep 2010 12:33:22 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
-Cc: mahatma@eu.by, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <4C6BE292.3060307@bspu.unibel.by> <201009111144.34078.rusty@rustcorp.com.au> <4C8AF933.9060304@goop.org>
-In-Reply-To: <4C8AF933.9060304@goop.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	id S1754280Ab0IMDM5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 23:12:57 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43523 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab0IMDM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 23:12:56 -0400
+Date: Sun, 12 Sep 2010 20:11:52 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: 2.6.36-rc3 - Unable to build: "Error: input truncated"
+Message-Id: <20100912201152.a4ada04a.randy.dunlap@oracle.com>
+In-Reply-To: <4C8D5D41.90104@tuxonice.net>
+References: <4C8CB5A1.9040500@tuxonice.net>
+	<201009121934.37033.rjw@sisk.pl>
+	<4C8D5D41.90104@tuxonice.net>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009131233.23278.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Sep 2010 01:06:19 pm Jeremy Fitzhardinge wrote:
->  On 09/11/2010 12:14 PM, Rusty Russell wrote:
-> > On Thu, 19 Aug 2010 10:12:36 pm Dzianis Kahanovich wrote:
-> >> diff -pruN a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-> >> --- a/drivers/block/xen-blkfront.c	2010-08-19 15:20:56.344764984 +0300
-> >> +++ b/drivers/block/xen-blkfront.c	2010-08-19 15:23:41.104764997 +0300
-> >> @@ -1306,6 +1306,9 @@ static int __init xlblk_init(void)
-> >>  
-> >>  	return xenbus_register_frontend(&blkfront);
-> >>  }
-> >> +
-> >> +MODULE_DEVICE_TABLE(xenbus, blkfront_ids);
-> >> +
-> >>  module_init(xlblk_init);
-> > This seems very logical.  Jeremy?
+On Mon, 13 Sep 2010 09:07:45 +1000 Nigel Cunningham wrote:
+
+> Hi.
 > 
-> Looks OK.  What will the effect be?  Will it allow better module
-> auto-loading or something?
+> On 13/09/10 03:34, Rafael J. Wysocki wrote:
+> > On Sunday, September 12, 2010, Nigel Cunningham wrote:
+> >> Hi all.
+> >>
+> >> I'm unable to compile the latest kernel and git bisect isn't helping:
+> >
+> > Did you try to save .config, run "make distclean" and restore .config?
+> 
+> I hadn't tried that, but had done git reset --hard and make clean 
+> menuconfig bzImage. Trying distclean doesn't help, I'm afraid. Perhaps I 
+> should attach my .config. I'm running a 32 bit kernel/distro on a 64 bit 
+> machine if that makes any difference.
 
-Normally yes.  Here's how it's supposed to work:
-1) The bus provides a "modalias" field for devices, to say what driver module
-   to probe for.  You already do this.
-2) The driver marks the device table so scripts/mod/file2alias.c can find it.
-   This is what this patch does.
-3) scripts/mod/file2alias.c creates the wildcard aliases for the module, based
-   on the device table.  You'd need to do this.
 
-Instead you have manual MODULE_ALIAS lines for your drivers.  Your bus
-matching is so simple and you have so few device types, that this works.
-But the Right Way is to use the infrastructure to generate them as above.
+Try to strace scripts/mod/mk_elfconfig to see why it is producing
+that error message:
 
-Hope that clarifies!
-Rusty.
+   scripts/mod/mk_elfconfig < scripts/mod/empty.o > scripts/mod/elfconfig.h
+Error: input truncated
+
+I guess that the empty.o file is not in the expected format.
+Who owns that stuff, anyway?
+
+You should probably post the empty.o file so that interested parties can
+try to debug the problem.
+
+I built the kernel just fine with the .config file that you posted.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
