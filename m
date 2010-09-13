@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab0IMKJi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 06:09:38 -0400
-Received: from mail.lncsa.com ([213.215.28.11]:52217 "EHLO sargon.lncsa.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751585Ab0IMKJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 06:09:37 -0400
-Date: Mon, 13 Sep 2010 12:09:34 +0200
-From: Louis-David Mitterrand <vindex+lists-linux-kernel@apartia.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: ksoftirqd/n permanently eating 60% of a CPU
-Message-ID: <20100913100934.GA2864@apartia.fr>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-References: <20100912154138.GA23554@apartia.fr>
- <20100912185715.GA8775@rhlx01.hs-esslingen.de>
- <20100913075237.GA18081@apartia.fr>
+	id S1754487Ab0IMKKO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 06:10:14 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:34084 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475Ab0IMKKM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 06:10:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=EFPlwAHWidlsNHVRnNg4zZDLcoy/lSAzLIFdMgjB9fdB5z6vTZVUnyusKRbtIr/5cD
+         lpB1wjXpnYplO14zL0LQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100913075237.GA18081@apartia.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100913100743.GF5728@lenovo>
+References: <1283454469-1909-1-git-send-email-dzickus@redhat.com>
+	<1284118900.402.35.camel@laptop>
+	<1284125693.402.58.camel@laptop>
+	<1284126770.402.60.camel@laptop>
+	<20100913085515.GC5728@lenovo>
+	<AANLkTi=AceFvNNQmsDYE0MTbOX804P1+mewcr=bAFzXi@mail.gmail.com>
+	<20100913100743.GF5728@lenovo>
+Date: Mon, 13 Sep 2010 12:10:00 +0200
+Message-ID: <AANLkTimLRPe2T7pCo=33MWMjDg1qhAPdSmUA80kYAGrq@mail.gmail.com>
+Subject: Re: [PATCH 0/3 v2] nmi perf fixes
+From: Stephane Eranian <eranian@google.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
+        mingo@elte.hu, robert.richter@amd.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, ying.huang@intel.com,
+        ming.m.lin@intel.com, yinghai@kernel.org, andi@firstfloor.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 09:52:37AM +0200, Louis-David Mitterrand wrote:
-> On Sun, Sep 12, 2010 at 08:57:15PM +0200, Andreas Mohr wrote:
-> > > Examining /proc/interrupts shows that "Local timer interrupts" are
-> > > mainly firing.
-> > 
-> > > Strangely enough, the interrupt storm starts only 5 minutes or so after
-> > > bootup.
-> > 
-> > And have you tried running powertop or manually (perhaps via
-> > sophisticated shell script) keeping a watch on
-> > /proc/timer[list|stats]?
-> 
-> powertop seems to give a strong hint:
-> 
-> 	54.5% (250.2)   [kernel core] dsp_cmx_send (dsp_cmx_send)
-> 	25.8% (118.6)   usbhid-ups
-> 	5.8% ( 26.7)   [ahci] <interrupt>
-> 	2.6% ( 12.0)   [kernel core] usb_hcd_poll_rh_status (rh_timer_func)
-> 
-> Apparently dsp_cmx_send is in the mISDN stack which, in my kernel, is
-> compiled statically. This happens regardless of the box having isdn
-> hardware.
+On Mon, Sep 13, 2010 at 12:07 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Mon, Sep 13, 2010 at 11:54:59AM +0200, Stephane Eranian wrote:
+>> Robert,
+>>
+>> I have able to reproduce very easily on:
+>>
+>> processor     : 0
+>> vendor_id     : AuthenticAMD
+>> cpu family    : 16
+>> model         : 2
+>> model name    : AMD Phenom(tm) 8450 Triple-Core Processor
+>> stepping      : 3
+>>
+>> using:
+>>
+>> $ perf record -g ./hackbench 10
+>> Time: 0.415
+>> [ perf record: Woken up 3 times to write data ]
+>> [ perf record: Captured and wrote 0.706 MB perf.data (~30841 samples) ]
+>> $ dmesg | tail
+>> [  418.946001] Uhhuh. NMI received for unknown reason 3d on CPU 0.
+>> [  418.946001] Do you have a strange power saving mode enabled?
+>> [  418.946001] Dazed and confused, but trying to continue
+>>
+>> This is with 2.6.36-rc4-tip as of this morning from tip-x86.
+>>
+>
+> Hi Stephane, the hackbench is Ingo's one? I've been using
+> http://people.redhat.com/mingo/cfs-scheduler/tools/hackbench.c
+>
+No, it's one I found via google search:
 
-I can confirm that removing mISDN support from the kernel (or compiling
-it as module without loading it) fixes the irq storm. I sent a note to
-isdn4linux@listserv.isdn4linux.de about it.
+http://devresources.linuxfoundation.org/craiger/hackbench/
