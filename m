@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab0IMOZk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:25:40 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46593 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751208Ab0IMOZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:25:39 -0400
-Date: Mon, 13 Sep 2010 10:25:38 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jiri Slaby <jslaby@suse.cz>
-cc: Oliver Neukum <oliver@neukum.org>, <pingc@wacom.com>,
-        Dmitry Torokhov <dtor@mail.ru>,
-        linux-pm <linux-pm@lists.linux-foundation.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        <linux-input@vger.kernel.org>
-Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
-In-Reply-To: <4C8E180D.4020309@suse.cz>
-Message-ID: <Pine.LNX.4.44L0.1009131019370.1584-100000@iolanthe.rowland.org>
+	id S1752073Ab0IMO0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:26:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5815 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751951Ab0IMOZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:25:58 -0400
+Message-ID: <4C8E3460.3050504@redhat.com>
+Date: Mon, 13 Sep 2010 11:25:36 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: =?ISO-8859-1?Q?Richard_R=F6jfors?= <richard.rojfors@pelagicore.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Douglas Schilling Landgraf <dougsland@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RESEND][PATCH 0/2] media, mfd: Add timberdale video-in driver
+References: <1283428572.23309.24.camel@debian> <4C87E67E.2040807@redhat.com> <20100913133951.GD2555@sortiz-mobl>
+In-Reply-To: <20100913133951.GD2555@sortiz-mobl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010, Jiri Slaby wrote:
-
-> Hi,
+Em 13-09-2010 10:39, Samuel Ortiz escreveu:
+> Hi Mauro,
 > 
-> by mistake when runtime PM is enabled by default for input devices, X
-> hangs on wacom open:
-> [<ffffffff814a00ea>] mutex_lock+0x1a/0x40
-> [<ffffffffa02bc94b>] wacom_resume+0x3b/0x90 [wacom]
-> [<ffffffff81327a32>] usb_resume_interface+0xd2/0x190
-> [<ffffffff81327b5d>] usb_resume_both+0x6d/0x110
-> [<ffffffff81327c24>] usb_runtime_resume+0x24/0x40
-> [<ffffffff8130a2cf>] __pm_runtime_resume+0x26f/0x450
-> [<ffffffff8130a23a>] __pm_runtime_resume+0x1da/0x450
-> [<ffffffff8130a53a>] pm_runtime_resume+0x2a/0x50
-> [<ffffffff81328176>] usb_autopm_get_interface+0x26/0x60
-> [<ffffffffa02bc626>] wacom_open+0x36/0x90 [wacom]
-> 
-> wacom_open took wacom->lock and calls usb_autopm_get_interface which in
-> turn calls wacom_resume which tries to aquire the lock again.
-> 
-> More details (dmesg including) at:
-> https://bugzilla.novell.com/show_bug.cgi?id=638506
-> 
-> Any ideas how to fix that properly?
+> On Wed, Sep 08, 2010 at 04:39:42PM -0300, Mauro Carvalho Chehab wrote:
+>> Em 02-09-2010 08:56, Richard Röjfors escreveu:
+>>> To follow are two patches.
+>>>
+>>> The first adds the timberdale video-in driver to the media tree.
+>>>
+>>> The second adds it to the timberdale MFD driver.
+>>>
+>>> Samuel and Mauro hope you can support and solve the potential merge
+>>> issue between your two trees.
+>>
+>> If the conflicts are trivial, I can handle when merging upstream.
+> Since the mfd part of this patchset has a build time dependency on the media
+> part, would you mind pushing both patches upstream through your tree ?
+> I'll ACK the mfd part.
 
-One possibility is for wacom_open simply not to acquire the lock until
-after the usb_autopm_get_interface call returns.  And why does
-wacom_open have that assignment to wacom->irq->dev?  The value was
-already set in wacom_probe.
+Sure. This is probably a way simpler than the reverse ;)
 
-BTW, does anybody know why wacom_open calls usb_autopm_get_interface 
-but wacom_close doesn't call usb_autopm_put_interface?
-
-Alan Stern
-
+Cheers,
+Mauro
