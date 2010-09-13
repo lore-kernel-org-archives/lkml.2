@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab0IMQOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 12:14:44 -0400
-Received: from mail.tpi.com ([70.99.223.143]:3378 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751630Ab0IMQOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 12:14:43 -0400
-Message-ID: <4C8E4DEA.2050406@canonical.com>
-Date: Mon, 13 Sep 2010 10:14:34 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100826 Thunderbird/3.0.7
+	id S1753495Ab0IMQQo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 12:16:44 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:33341 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750920Ab0IMQQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 12:16:43 -0400
+Date: Mon, 13 Sep 2010 12:16:41 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [RFC PATCH] check_preempt_tick should not compare vruntime with
+	wall time
+Message-ID: <20100913161641.GA28707@Krystal>
+References: <20100911173732.551632040@efficios.com> <20100911174003.051303123@efficios.com> <1284231470.2251.52.camel@laptop> <20100911195708.GA9273@Krystal> <1284288072.2251.91.camel@laptop> <20100912203712.GD32327@Krystal> <1284382387.2275.265.camel@laptop> <1284383758.2275.283.camel@laptop> <20100913135621.GA13442@Krystal> <1284387398.2275.311.camel@laptop>
 MIME-Version: 1.0
-To: "stable@kernel.org" <stable@kernel.org>
-CC: Heiko Bauke <heiko.bauke@snafu.de>, linux-kernel@vger.kernel.org,
-        romieu@fr.zoreil.com, timo.teras@iki.fi
-Subject: Re: Realtek Ethernet drivers
-References: <20100912210444.76ebeee6@tron.localdomain>	<20100912223724.GA15934@electric-eye.fr.zoreil.com> <20100913095912.74d7f0f1@tron.localdomain>
-In-Reply-To: <20100913095912.74d7f0f1@tron.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284387398.2275.311.camel@laptop>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 12:09:01 up 233 days, 18:45,  5 users,  load average: 0.08, 0.06,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2010 01:59 AM, Heiko Bauke wrote:
-> Dear Francois,
->
-> On Mon, 13 Sep 2010 00:37:25 +0200
-> Francois Romieu<romieu@fr.zoreil.com>  wrote:
->
->> It's probably fixed with one of :
->> - 81a95f049962ec20a9aed888e676208b206f0f2e /
->> 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e
->> - 908ba2bfd22253f26fa910cd855e4ccffb1467d0
->> - 78f1cd02457252e1ffbc6caa44a17424a45286b8
->>
->> [...]
->>> P.S. I am running 2.6.32-24-generic on a 32-bit Ubuntu 10.04.1 LTS
->>> box.
->>
->> Your 2.6.32-24-generic includes :
->> - 908ba2bfd22253f26fa910cd855e4ccffb1467d0
->> - 78f1cd02457252e1ffbc6caa44a17424a45286b8
->>
->> But it misses 81a95f049962ec20a9aed888e676208b206f0f2e and
->> 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e
->
-> I thank you for your reply. If there is time I will try a more recent
-> kernel. (For the moment the Realtek drivers are fine for me.) I
-> know how to (re-)compile distribution kernels and how to compile a
-> vanilla kernel from kernel.org. However, I have no idea what the
-> hex-codes you mentioned mean. Can you give me a hint?
->
->
-> 	Regards,
->
-> 	Heiko
->
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Mon, 2010-09-13 at 09:56 -0400, Mathieu Desnoyers wrote:
+[...]
+> > >  static void
+> > >  check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+> > >  {
+> > > -     unsigned long ideal_runtime, delta_exec;
+> > > +     unsigned long slice = sched_slice(cfs_rq, curr);
+> > 
+> > So you still compute the sched_slice(), based on sched_period(), based on
+> > sysctl_sched_min_granularity *= nr_running when there are more than nr_latency
+> > running threads.
+> 
+> What's wrong with that? I keep asking you, you keep not giving an
+> answer. Stop focussing on nr_latency, its an by produce not a
+> fundamental entity.
+> 
+>  period := max(latency, min_gran * nr_running)
+> 
+> See, no nr_latency -- the one and only purpose of nr_latency is avoiding
+> that multiplication when possible.
 
-If not already staged, please consider including these commits for 2.6.32.y:
+OK, the long IRC discussions we just had convinced me that the current scheme
+takes things into account by adapting the granularity dynamically, but also got
+me to notice that check_preempt seems to compare vruntime with wall time, which
+is utterly incorrect. So maybe all my patch was doing was to expose this bug:
 
-024a07bacf8287a6ddfa83e9d5b951c5e8b4070e
-81a95f049962ec20a9aed888e676208b206f0f2e
+---
+ kernel/sched_fair.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-They are already included in 2.6.33.y and up, so its curious that they 
-are not also included in 2.6.32.y as they do apply cleanly.
+Index: linux-2.6-lttng.git/kernel/sched_fair.c
+===================================================================
+--- linux-2.6-lttng.git.orig/kernel/sched_fair.c
++++ linux-2.6-lttng.git/kernel/sched_fair.c
+@@ -869,7 +869,7 @@ check_preempt_tick(struct cfs_rq *cfs_rq
+ 		struct sched_entity *se = __pick_next_entity(cfs_rq);
+ 		s64 delta = curr->vruntime - se->vruntime;
+ 
+-		if (delta > ideal_runtime)
++		if (delta > calc_delta_fair(ideal_runtime, curr))
+ 			resched_task(rq_of(cfs_rq)->curr);
+ 	}
+ }
 
-rtg
 -- 
-Tim Gardner tim.gardner@canonical.com
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
