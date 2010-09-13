@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab0IMOLD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 10:11:03 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:49355 "EHLO gir.skynet.ie"
+	id S1755062Ab0IMOLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 10:11:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30624 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754594Ab0IMOLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 10:11:00 -0400
-Date: Mon, 13 Sep 2010 15:10:46 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 10/10] vmscan: Kick flusher threads to clean pages when
-	reclaim is encountering dirty pages
-Message-ID: <20100913141046.GI23508@csn.ul.ie>
-References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie> <1283770053-18833-11-git-send-email-mel@csn.ul.ie> <20100913134845.GB12355@localhost>
+	id S1754916Ab0IMOLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 10:11:54 -0400
+Date: Mon, 13 Sep 2010 10:11:40 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
+ unknown NMI
+Message-ID: <20100913141140.GB27371@redhat.com>
+References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
+ <1284087065-32722-5-git-send-email-ying.huang@intel.com>
+ <20100910160211.GH4879@redhat.com>
+ <20100910181929.4f35ab7c@basil.nowhere.org>
+ <20100910184039.GK4879@redhat.com>
+ <1284344389.3269.82.camel@yhuang-dev.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100913134845.GB12355@localhost>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1284344389.3269.82.camel@yhuang-dev.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 09:48:45PM +0800, Wu Fengguang wrote:
-> > +	/*
-> > +	 * If reclaim is encountering dirty pages, it may be because
-> > +	 * dirty pages are reaching the end of the LRU even though the
-> > +	 * dirty_ratio may be satisified. In this case, wake flusher
-> > +	 * threads to pro-actively clean up to a maximum of
-> > +	 * 4 * SWAP_CLUSTER_MAX amount of data (usually 1/2MB) unless
-> > +	 * !may_writepage indicates that this is a direct reclaimer in
-> > +	 * laptop mode avoiding disk spin-ups
-> > +	 */
-> > +	if (file && nr_dirty_seen && sc->may_writepage)
-> > +		wakeup_flusher_threads(nr_writeback_pages(nr_dirty));
+On Mon, Sep 13, 2010 at 10:19:49AM +0800, Huang Ying wrote:
+> On Sat, 2010-09-11 at 02:40 +0800, Don Zickus wrote:
+> > On Fri, Sep 10, 2010 at 06:19:29PM +0200, Andi Kleen wrote:
+> > > 
+> > > > I am grasping for straws here, but is there a register that APEI/HEST
+> > > > can poke to see if it generated the NMI?
+> > > 
+> > > HEST knows this yes.
+> > > 
+> > > But this is not about HEST errors, but about those without HEST
+> > > handling.
+> > 
+> > Don't most unknown NMIs fall into the same boat, that they were not being
+> > handled properly?
 > 
-> wakeup_flusher_threads() works, but seems not the pertinent one.
+> As far as I know, at least on some platforms, unknown NMIs are used for
+> hardware error reporting. They will cause "Blue Screen" in Windows.
+
+Unfortunately, most of the bugzillas I deal with, unkown NMIs are the
+result of SERRs.  While you can consider that hardware error reporting,
+the easiest way for me to debug those problems currently is to have
+reporters run 'lspci -vvv' after the NMI is displayed to figure out who
+caused the NMI.
+
+My fear is that panic'ing the box on unknown NMIs on those platforms will
+hinder my ability to easily debug those NMIs.
+
 > 
-> - locally, it needs some luck to clean the pages that direct reclaim is waiting on
-
-There is a certain amount of luck involved but it's depending on there being a
-correlation between old inodes and old pages on the LRU list. As long as that
-correlation is accurate, some relevant pages will get cleaned.  Testing on
-previously released versions of this patch did show that the percentage of
-dirty pages encountered during reclaim were reduced as a result of this patch.
-
-> - globally, it cleans up some dirty pages, however some heavy dirtier
->   may quickly create new ones..
+> > On the other hand could you use the die_notifier_chain(DIE_UNKNOWNNMI) for
+> > the same purpose and keep the unknown_nmi_error() handler a little
+> > cleaner?
 > 
-> So how about taking the approaches in these patches?
-> 
-> - "[PATCH 4/4] vmscan: transfer async file writeback to the flusher"
-> - "[PATCH 15/17] mm: lower soft dirty limits on memory pressure"
-> 
+> I think explicit function call has better readability than notifier
+> chain.
 
-There is a lot going on in those patches. It's going to take me a while to
-figure them out and formulate an opinion.
+Ok.  What criteria should we establish to determine which functions go on
+the notifier chain and which ones can explicitly called?
 
-> In particular the first patch should work very nicely with memcg, as
-> all pages of an inode typically belong to the same memcg. So doing
-> write-around helps clean lots of dirty pages in the target LRU list in
-> one shot.
-> 
-
-It might but as there is also a correlation between old dirty inodes and
-the location of dirty pages, it is tricky to predict if it is better and
-if so, by how much.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Cheers,
+Don
