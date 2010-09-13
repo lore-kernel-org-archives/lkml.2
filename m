@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458Ab0IMUWW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 16:22:22 -0400
-Received: from mail.perches.com ([173.55.12.10]:1951 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751848Ab0IMUWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 16:22:21 -0400
-Subject: Re: [PATCH 18/25] drivers/serial/suncore.c: Use static const char
- arrays
-From: Joe Perches <joe@perches.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        sparclinux@vger.kernel.org
-In-Reply-To: <20100913213613.223e10a5@lxorguk.ukuu.org.uk>
-References: <cover.1284406638.git.joe@perches.com>
-	 <0ab674aa32a5fcc364982c78efdf44864a61523b.1284406639.git.joe@perches.com>
-	 <20100913213613.223e10a5@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Sep 2010 13:22:18 -0700
-Message-ID: <1284409338.26719.47.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754185Ab0IMU2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 16:28:47 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:65501 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794Ab0IMU2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 16:28:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=PWiU5QVbmhpxSxMV5jLkznrYpHfUARuYURVLWMDqtEhuceAPmw/tqwgXuxJyr++ifx
+         v6YrqwtyPG0KyuvvCANp9rXh8GhkuVJpyv7EwW0Iqz8gbfHQONaUVzoRKxTmptLFcBiY
+         tk6g1kWJvUGobuL/QJuasI5cbAPgOoxhS2SMc=
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
+Date: Mon, 13 Sep 2010 13:28:31 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3+; KDE/4.4.5; x86_64; ; )
+Cc: Oliver Neukum <oliver@neukum.org>, Jiri Slaby <jslaby@suse.cz>,
+        pingc@wacom.com, "linux-pm" <linux-pm@lists.linux-foundation.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org
+References: <Pine.LNX.4.44L0.1009131600230.1315-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1009131600230.1315-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009131328.33600.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-13 at 21:36 +0100, Alan Cox wrote:
-> On Mon, 13 Sep 2010 12:47:56 -0700
-> Joe Perches <joe@perches.com> wrote:
-> > diff --git a/drivers/serial/suncore.c b/drivers/serial/suncore.c
-> > @@ -106,7 +106,7 @@ void sunserial_console_termios(struct console *con, struct device_node *uart_dp)
-> >  		if (of_console_options)
-> >  			c = *of_console_options;
-> >  
-> > -		mode_prop[3] = c;
-> > +		sprintf(mode_prop, "tty%c-mode", c);
-> Whats the point of all this. It's trivial code being replaced by
-> something complicated, harder to understand and much slower ?
+On Monday, September 13, 2010 01:02:16 pm Alan Stern wrote:
+> On Mon, 13 Sep 2010, Oliver Neukum wrote:
+> > Am Montag, 13. September 2010, 17:17:54 schrieb Alan Stern:
+> > > On Mon, 13 Sep 2010, Oliver Neukum wrote:
+> > > > PM in this driver looks broken. Please try this.
+> > > > 
+> > > > In short you want to drop the PM reference and depend on remote
+> > > > wakeup and busy marking for this driver. Currently it gets a
+> > > > reference on every open() but never drops it.
+> > > > 
+> > > > For locking you depend on the PM core's internal lock. You simply
+> > > > make sure you have a PM reference during open() and close()
+> > > 
+> > > Is there any point in resuming the device during close() just in order
+> > > to kill the interrupt URB?  It seems counterproductive -- if the device
+> > > had been suspended then there wouldn't be any interrupt URB to kill in
+> > > the first place.
+> > 
+> > Suppose the device does not support remote wakeup. It would never
+> > be autosuspended while it is open, but simply resetting the flag
+> > would never reach the PM layer.
+> 
+> Whoops, that's right.  I didn't see the assignment to
+> needs_remote_wakeup.
+> 
+> How come wacom_open doesn't check to see if wacom->open is already set?
 
-There are many cases of char foo[] = "bar" that
-should be actually be [static] const char foo[] etc.
-The patch set was done to change those cases.
+No need - input core will not call dev->open() twice.
 
-This case isn't actually any sort of saving.
-
-As I just wrote in 5/25 to Jonathan Cameron:
-
-It tries to standardize the style use and it avoids possible
-future checkpatch warnings of:
-	char foo[] = "bar"
-char array could possibly be static const.
-
-There was another use with "%1.1d" somewhere.
-
-The end result is the same, so I don't really care much
-if this sort of change is applied or not.  The possible
-checkpatch message could just be considered noise but
-Mike Frysinger seemed to prefer it, so I thought I could
-try to accommodate him.
-
-cheers, Joe
-
+-- 
+Dmitry
