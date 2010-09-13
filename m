@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab0IMSBT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 14:01:19 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:34835 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752508Ab0IMSBR (ORCPT
+	id S1754457Ab0IMR7s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 13:59:48 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39986 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753272Ab0IMR7q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 14:01:17 -0400
-Date: Mon, 13 Sep 2010 14:01:15 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC PATCH] check_preempt_tick should not compare vruntime
-	with wall time
-Message-ID: <20100913180115.GC15653@Krystal>
-References: <1284288072.2251.91.camel@laptop> <20100912203712.GD32327@Krystal> <1284382387.2275.265.camel@laptop> <1284383758.2275.283.camel@laptop> <20100913135621.GA13442@Krystal> <1284387398.2275.311.camel@laptop> <20100913161641.GA28707@Krystal> <AANLkTimB9CjH5SjeY9XmwhTp1tfFPwh-Q1Y4o918h7XD@mail.gmail.com> <20100913174533.GA15653@Krystal> <AANLkTi=8m4g01wZPacySoF7U0PevTNVgJoZZrHiUD-pN@mail.gmail.com>
+	Mon, 13 Sep 2010 13:59:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=JTdEQJYot4h7z6ww8DeCEtK2vwChNEpm83Px8alhWIPFoIhMIV9yhR1QXK9eKcD4ND
+         U5KJ7CQKlYBTAmqHKHThOnUAdilW5m+60V0oc1t4/ordi6ZL7uNUmGSigJU6A3Dksuod
+         XSNPlEOtT3XSrwRcidBLIyHKvqKqyM4y8Uiac=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=8m4g01wZPacySoF7U0PevTNVgJoZZrHiUD-pN@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:56:58 up 233 days, 20:33,  5 users,  load average: 0.02, 0.03,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100910161038.20226.59718.stgit@warthog.procyon.org.uk>
+References: <20100910161002.20226.27995.stgit@warthog.procyon.org.uk>
+	<20100910161038.20226.59718.stgit@warthog.procyon.org.uk>
+Date: Mon, 13 Sep 2010 19:59:44 +0200
+X-Google-Sender-Auth: ODmlzciE6zgEV2sMuiM0fae-oH4
+Message-ID: <AANLkTikpv5OhESRUbQ5f3MqwD0UgO2BrRLGjK1ricv42@mail.gmail.com>
+Subject: Re: [PATCH 07/17] Drop a couple of unnecessary asm/system.h inclusions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-arch@vger.kernel.org, torvalds@osdl.org,
+        linux-kernel@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> On Mon, Sep 13, 2010 at 10:45 AM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> >
-> > FWIW, Xorg and firefox feel _much more_ responsive with the fix I propose when
-> > running with a make -j10. The system is even usable with a make -j20 on my UP
-> > machine, even though I can start feeling a some lag. This is probably a more
-> > important, yet less scientific, result.
-> 
-> I'll test that myself (but in a bit - I need to go do voter
-> registration and socsec update first, though - I became a US citizen
-> last week).
+On Fri, Sep 10, 2010 at 18:10, David Howells <dhowells@redhat.com> wrote:
+> Drop inclusions of asm/system.h from linux/hardirq.h and linux/list.h as
+> they're no longer required and prevent the M68K arch's IRQ flag handling macros
+> from being made into inlined functions due to circular dependencies.
+>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> Acked-by: Greg Ungerer <gerg@uclinux.org>
 
-Congratulations!
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-> Because yes, that's the reason I'm personally interested in your
-> scheduler latency work: I think our X behavior under load is pitiful
-> (I do "make -j16" on my dual-core with HT Core i5, and web browsong
-> shouldn't start to lag as much as it does just because I overcommit
-> the CPU a bit). So if this makes a noticeable difference, I think it's
-> very important.
+> ---
+>
+>  include/linux/hardirq.h |    1 -
+>  include/linux/list.h    |    1 -
+>  2 files changed, 0 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+> index d5b3876..7dfdc06 100644
+> --- a/include/linux/hardirq.h
+> +++ b/include/linux/hardirq.h
+> @@ -8,7 +8,6 @@
+>  #include <linux/lockdep.h>
+>  #include <linux/ftrace_irq.h>
+>  #include <asm/hardirq.h>
+> -#include <asm/system.h>
+>
+>  /*
+>  * We put the hardirq and softirq counter into the preemption
+> diff --git a/include/linux/list.h b/include/linux/list.h
+> index d167b5d..88a0006 100644
+> --- a/include/linux/list.h
+> +++ b/include/linux/list.h
+> @@ -5,7 +5,6 @@
+>  #include <linux/stddef.h>
+>  #include <linux/poison.h>
+>  #include <linux/prefetch.h>
+> -#include <asm/system.h>
+>
+>  /*
+>  * Simple doubly linked list implementation.
 
-Please make sure to include the "smaller min_granularity" patch in your test
-too, because the "check_preempt_tick" fix seems to only affect threads with
-non-zero nice value. I suspect that most of the responsiveness improvement I got
-is mainly from lowering the min_granularity.
+Gr{oetje,eeting}s,
 
-Thanks,
+                        Geert
 
-Mathieu
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
