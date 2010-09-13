@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab0IMSnt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 14:43:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55997 "EHLO hera.kernel.org"
+	id S1754639Ab0IMSqq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 14:46:46 -0400
+Received: from www.tglx.de ([62.245.132.106]:51154 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754754Ab0IMSnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 14:43:47 -0400
-Date: Mon, 13 Sep 2010 18:42:46 GMT
-From: tip-bot for Dave Young <hidave.darkstar@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hidave.darkstar@gmail.com, hpa@zytor.com,
-        mingo@redhat.com, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, hidave.darkstar@gmail.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20100913121903.GB22238@darkstar>
-References: <20100913121903.GB22238@darkstar>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Remove unused PF_ALIGNWARN flag
-Message-ID: <tip-637bbdc5b83615ef9f45f50399d1c7f27473c713@git.kernel.org>
-Git-Commit-ID: 637bbdc5b83615ef9f45f50399d1c7f27473c713
-X-Mailer: tip-git-log-daemon
+	id S1754125Ab0IMSqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 14:46:45 -0400
+Date: Mon, 13 Sep 2010 20:45:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Greg KH <greg@kroah.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [patch 27/30] staging: Bulk convert the semaphore mess
+In-Reply-To: <20100908091141.GA1377@kroah.com>
+Message-ID: <alpine.LFD.2.00.1009132044590.2416@localhost6.localdomain6>
+References: <20100907124636.880953480@linutronix.de> <20100907125057.278833764@linutronix.de> <20100908023019.GA25440@kroah.com> <alpine.LFD.2.00.1009081058350.2477@localhost6.localdomain6> <20100908091141.GA1377@kroah.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 13 Sep 2010 18:42:48 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  637bbdc5b83615ef9f45f50399d1c7f27473c713
-Gitweb:     http://git.kernel.org/tip/637bbdc5b83615ef9f45f50399d1c7f27473c713
-Author:     Dave Young <hidave.darkstar@gmail.com>
-AuthorDate: Mon, 13 Sep 2010 20:19:03 +0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 13 Sep 2010 20:39:08 +0200
+On Wed, 8 Sep 2010, Greg KH wrote:
 
-sched: Remove unused PF_ALIGNWARN flag
+> On Wed, Sep 08, 2010 at 10:59:23AM +0200, Thomas Gleixner wrote:
+> > On Tue, 7 Sep 2010, Greg KH wrote:
+> > 
+> > > On Tue, Sep 07, 2010 at 02:33:47PM -0000, Thomas Gleixner wrote:
+> > > > init_MUTEX(_LOCKED) and DECLARE_MUTEX are going away. Bulk convert
+> > > > staging users.
+> > > 
+> > > I don't think you actually built this change:
+> > > 
+> > > > --- linux-2.6.orig/drivers/staging/comedi/drivers/usbdux.c
+> > > > +++ linux-2.6/drivers/staging/comedi/drivers/usbdux.c
+> > > > @@ -315,7 +315,7 @@ struct usbduxsub {
+> > > >   */
+> > > >  static struct usbduxsub usbduxsub[NUMUSBDUX];
+> > > >  
+> > > > -static DECLARE_MUTEX(start_stop_sem);
+> > > > +static DEFINE_SEMAPHORE(start_stop_sem);
+> > > >  
+> > > >  /*
+> > > >   * Stops the data acquision
+> > > 
+> > > I don't see DEFINE_SEMAPHORE() in Linus's tree, what should we use
+> > > instead?
+> > 
+> > It's the first patch in the series, which I want to get Linus wards
+> > now, so this does not trip over.
+> 
+> Ah, that makes sense.
+> 
+> Well, it didn't hurt for me to take the other portions of this patch,
+> right?
 
-PF_ALIGNWARN is not implemented and it is for 486 as the
-comment.
+Not at all. FYI, DEFINE_SEMAPHORE is now in Linus tree.
 
-It is not likely someone will implement this flag feature.
-So here remove this flag and leave the valuable 0x00000001 for
-future use.
+Thanks,
 
-Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-LKML-Reference: <20100913121903.GB22238@darkstar>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- include/linux/sched.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index b51c53c..cdf5669 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1682,8 +1682,6 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- /*
-  * Per process flags
-  */
--#define PF_ALIGNWARN	0x00000001	/* Print alignment warning msgs */
--					/* Not implemented yet, only for 486*/
- #define PF_STARTING	0x00000002	/* being created */
- #define PF_EXITING	0x00000004	/* getting shut down */
- #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
+	tglx
