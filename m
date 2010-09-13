@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab0IMTE7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:04:59 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:57004 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754818Ab0IMTE6 (ORCPT
+	id S1755085Ab0IMTFN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:05:13 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:34714 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab0IMTFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:04:58 -0400
-Message-ID: <4C8E75D7.4010205@panasas.com>
-Date: Mon, 13 Sep 2010 21:04:55 +0200
-From: Benny Halevy <bhalevy@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+	Mon, 13 Sep 2010 15:05:10 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
+Date: Mon, 13 Sep 2010 21:05:38 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Jiri Slaby <jslaby@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
+        pingc@wacom.com, "linux-pm" <linux-pm@lists.linux-foundation.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org
+References: <Pine.LNX.4.44L0.1009131114050.1315-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1009131114050.1315-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Benny Halevy <bhalevy@panasas.com>, Christoph Hellwig <hch@lst.de>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boaz Harrosh <bharrosh@panasas.com>
-Subject: Re: [PATCH] SQUASHME: pnfs-obj: fix REQ flags usage
-References: <1284404221-3673-1-git-send-email-bhalevy@panasas.com>
-In-Reply-To: <1284404221-3673-1-git-send-email-bhalevy@panasas.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Sep 2010 19:04:57.0580 (UTC) FILETIME=[8EB712C0:01CB5376]
+Message-Id: <201009132105.38204.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore this patch, pilot error...
-I'll send the right one momentarily.
-
-Benny
-
-On 2010-09-13 20:57, Benny Halevy wrote:
-> fixes "pnfs-obj use REQ flags rather than BIO flags"
+Am Montag, 13. September 2010, 17:17:54 schrieb Alan Stern:
+> On Mon, 13 Sep 2010, Oliver Neukum wrote:
 > 
-> Cc: Boaz Harrosh <bharrosh@panasas.com>
-> Signed-off-by: Benny Halevy <bhalevy@panasas.com>
-> ---
->  fs/nfs/objlayout/objio_osd.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> > PM in this driver looks broken. Please try this.
+> > 
+> > In short you want to drop the PM reference and depend on remote
+> > wakeup and busy marking for this driver. Currently it gets a reference
+> > on every open() but never drops it.
+> > 
+> > For locking you depend on the PM core's internal lock. You simply
+> > make sure you have a PM reference during open() and close()
 > 
-> diff --git a/fs/nfs/objlayout/objio_osd.c b/fs/nfs/objlayout/objio_osd.c
-> index 223980b..75d5df4 100644
-> --- a/fs/nfs/objlayout/objio_osd.c
-> +++ b/fs/nfs/objlayout/objio_osd.c
-> @@ -910,7 +910,7 @@ static int _write_mirrors(struct objio_state *ios, unsigned cur_comp)
->  		} else {
->  			bio = master_dev->bio;
->  			/* FIXME: bio_set_dir() */
-> -			bio->bi_rw |= (1 << REQ_WRITE);
-> +			bio->bi_rw |= REQ_WRITE;
->  		}
->  
->  		osd_req_write(or, &obj, per_dev->offset, bio, per_dev->length);
+> Is there any point in resuming the device during close() just in order
+> to kill the interrupt URB?  It seems counterproductive -- if the device 
+> had been suspended then there wouldn't be any interrupt URB to kill in 
+> the first place.
+
+Suppose the device does not support remote wakeup. It would never
+be autosuspended while it is open, but simply resetting the flag
+would never reach the PM layer.
+
+	Regards
+		Oliver
