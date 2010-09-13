@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab0IMLgr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 07:36:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38784 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754757Ab0IMLgq convert rfc822-to-8bit (ORCPT
+	id S1755006Ab0IMLi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 07:38:59 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:64805 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308Ab0IMLi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 07:36:46 -0400
-Subject: Re: [PATCH -tip -v4] irq_work: generic hard-irq context callbacks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, paulus <paulus@samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, dhowells <dhowells@redhat.com>,
-        Russell King <rmk@arm.linux.org.uk>, Kyle McMartin <kyle@mcmartin.ca>,
-        davem <davem@davemloft.net>, Linux-Arch <linux-arch@vger.kernel.org>
-In-Reply-To: <20100913123213.76b1b5fa@mschwide.boeblingen.de.ibm.com>
-References: <1284360648.3269.115.camel@yhuang-dev.sh.intel.com>
-	 <20100913123213.76b1b5fa@mschwide.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 13 Sep 2010 13:36:30 +0200
-Message-ID: <1284377790.2275.212.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 13 Sep 2010 07:38:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=aH4pvk2iB7+C0Ui5r4QKB9wqoVUtfQI64InaQNxr47qyCA6LmUq+GV8w2ntBRou3WH
+         FM9LY13qN+9XbVuXRBNrf7CDs+gkUNdlJ8iIRcKykIk6EbWJmM4elJqv83lgrCi8grbv
+         oThmJnnKJj8GvZ5N+WMx1LOVj5BGly/UwDEsY=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1009131327060.26813@pobox.suse.cz>
+References: <1284319955-6014-1-git-send-email-guichaz@gmail.com>
+	<201009131325.01768.arnd@arndb.de>
+	<alpine.LNX.2.00.1009131327060.26813@pobox.suse.cz>
+Date: Mon, 13 Sep 2010 13:38:57 +0200
+Message-ID: <AANLkTikQsu4qo=nkcr2N=_GLmtCgh8wmoRcZFaUJbwAs@mail.gmail.com>
+Subject: Re: [PATCH] Fix hiddev's use of usb_find_interface
+From: Guillaume Chazarain <guichaz@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-13 at 12:32 +0200, Martin Schwidefsky wrote:
-> On Mon, 13 Sep 2010 14:50:48 +0800
-> Huang Ying <ying.huang@intel.com> wrote:
-> 
-> > From:  Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > 
-> > In order for other NMI context users that want to run things from
-> > hard-IRQ context, extract the perf_event callback mechanism.
-> > 
-> > Huang Ying: some fixes
-> > 
-> > This patch is only tested on x86 platform.
-> > 
-> > 
-> > v4:
-> > 
-> > -rebased on latest -tip tree
-> > 
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> 
-> On s390 I get compile errors:
-> 
-> include/linux/perf_event.h:464:29: error: asm/perf_event.h: No such file or directory
-> 
-> Not a good idea to completely remove the perf_event.h from arch/s390/include/asm.
-> With an empty header file the kernel at least compiles.
+On Mon, Sep 13, 2010 at 1:28 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> Yeah -- Guillaume, I think that you are actually seeing symptoms of
+> intfdata being bogus. Could you please try with any kernel with commit
+> 9c9e54a8df0be48 ("HID: hiddev: fix memory corruption due to invalid
+> intfdata") applied (which is the one Arnd is talking about) and report
+> back whether the problem is fixed by it?
 
-Urgh, Huang, could you at least compile test the other arches?
+I also saw the problem with 2.6.36-rc3. My problem is with
+usb_find_interface(&hiddev_driver) not finding anything and
+9c9e54a8df0be48aa359744f412377cc55c3b7d2 did not change this line.
+
+In its current state I don't understand how hiddev_open() can possibly
+work. I see people reporting suspend issues and stack traces in dmesg
+but nobody reporting the driver being non-functioning, which is what
+I'm doing here.
+
+Thanks.
+
+-- 
+Guillaume
