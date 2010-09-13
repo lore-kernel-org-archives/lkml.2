@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab0IMGmI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 02:42:08 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45055 "EHLO mx2.mail.elte.hu"
+	id S1752583Ab0IMGs4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 02:48:56 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58258 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab0IMGmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 02:42:07 -0400
-Date: Mon, 13 Sep 2010 08:41:53 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
- nr_running
-Message-ID: <20100913064153.GB14728@elte.hu>
-References: <20100911173732.551632040@efficios.com>
- <20100911174003.051303123@efficios.com>
- <20100912061452.GA3383@elte.hu>
- <1284276098.9111.24.camel@marge.simson.net>
- <20100912181626.GB32327@Krystal>
- <1284351183.7321.36.camel@marge.simson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1284351183.7321.36.camel@marge.simson.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0130]
+	id S1751867Ab0IMGsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 02:48:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,358,1280732400"; 
+   d="scan'208";a="323825481"
+From: Feng Tang <feng.tang@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, alan@linux.intel.com, greg@kroah.com,
+        Feng Tang <feng.tang@intel.com>
+Subject: [PATCH v3 0/4] Enabling patches of 2 early consoles for Intel MID platforms 
+Date: Mon, 13 Sep 2010 15:08:52 +0800
+Message-Id: <1284361736-23011-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
-* Mike Galbraith <efault@gmx.de> wrote:
+This serie mainly enables 2 early consoles named mrst and hsu for
+Intel MID platforms. please help to review, thanks,
 
-> On Sun, 2010-09-12 at 14:16 -0400, Mathieu Desnoyers wrote:
+- Feng
 
-> > Or am I missing your point ?
-> 
-> Yes and no.  I'm pondering the parent, but by the same token, the 
-> vfork child shouldn't be penalized either.
-> 
-> Does your latency go down drastically if you turn START_DEBIT off? 
-> Seems like it should.  Perhaps START_DEBIT should not start a task 
-> further right than rightmost.  I've done that before.
-> 
-> maximum latency: 19221.5 탎
-> average latency: 5159.0 탎
-> missed timer events: 0
-> 
-> maximum latency: 43901.0 탎
-> average latency: 8430.1 탎
-> missed timer events: 0
-> 
-> Turning it off here cut latency roughly in half (i've piddled vfork 
-> though, but not completely).  Limiting child placement to no further 
-> right than rightmost should help quite a bit.
+Changelog:
+	v3:
+	     * Fix a warning for mrst.h
+	     * Add 2 helper funcs for fixed address mapping as
+	       suggested by Ingo
+	     * Rename the mrst_earlyprintk.c to early_printk_mrst.c
+	     * Clean the code and fix typoes upon Ingo's comments
+	v2:
+	     * Code clean as suggested by Ingo 
+----------------------------------------------------------------
 
-Very interesting observation. Mathieu, mind testing Mike's suggestion 
-with wakeup-latency.c?
+Feng Tang (4):
+  x86, mrst: make mrst_identify_cpu() inlne inside mrst.h
+  x86: add two helper macros for fixed address mapping
+  x86, earlyprintk: add earlyprintk for Intel Moorestown platform
+  x86, earlyprintk: add hsu early console for Intel Medfield platform
 
-Thanks,
+ arch/x86/Kconfig.debug              |    4 +
+ arch/x86/include/asm/fixmap.h       |   15 ++
+ arch/x86/include/asm/mrst.h         |   10 +-
+ arch/x86/kernel/Makefile            |    1 +
+ arch/x86/kernel/early_printk.c      |   13 ++
+ arch/x86/kernel/early_printk_mrst.c |  319 +++++++++++++++++++++++++++++++++++
+ 6 files changed, 361 insertions(+), 1 deletions(-)
+ mode change 100644 => 100755 arch/x86/include/asm/fixmap.h
+ create mode 100644 arch/x86/kernel/early_printk_mrst.c
 
-	Ingo
