@@ -1,280 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab0IMNz0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 09:55:26 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47871 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792Ab0IMNzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 09:55:24 -0400
-Date: Mon, 13 Sep 2010 14:55:11 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 09/10] vmscan: Do not writeback filesystem pages in
-	direct reclaim
-Message-ID: <20100913135510.GH23508@csn.ul.ie>
-References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie> <1283770053-18833-10-git-send-email-mel@csn.ul.ie> <20100913133156.GA12355@localhost>
+	id S1754818Ab0IMN4Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 09:56:25 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:39497 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751815Ab0IMN4Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 09:56:24 -0400
+Date: Mon, 13 Sep 2010 09:56:21 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
+	nr_running
+Message-ID: <20100913135621.GA13442@Krystal>
+References: <20100911173732.551632040@efficios.com> <20100911174003.051303123@efficios.com> <1284231470.2251.52.camel@laptop> <20100911195708.GA9273@Krystal> <1284288072.2251.91.camel@laptop> <20100912203712.GD32327@Krystal> <1284382387.2275.265.camel@laptop> <1284383758.2275.283.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100913133156.GA12355@localhost>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1284383758.2275.283.camel@laptop>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 09:30:25 up 233 days, 16:07,  3 users,  load average: 0.10, 0.04,
+	0.02
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 09:31:56PM +0800, Wu Fengguang wrote:
-> Mel,
-> 
-> Sorry for being late, I'm doing pretty much prework these days ;)
-> 
-
-No worries, I'm all over the place at the moment so cannot lecture on
-response times :)
-
-> On Mon, Sep 06, 2010 at 06:47:32PM +0800, Mel Gorman wrote:
-> > When memory is under enough pressure, a process may enter direct
-> > reclaim to free pages in the same manner kswapd does. If a dirty page is
-> > encountered during the scan, this page is written to backing storage using
-> > mapping->writepage. This can result in very deep call stacks, particularly
-> > if the target storage or filesystem are complex. It has already been observed
-> > on XFS that the stack overflows but the problem is not XFS-specific.
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Mon, 2010-09-13 at 14:53 +0200, Peter Zijlstra wrote:
+> > On Sun, 2010-09-12 at 16:37 -0400, Mathieu Desnoyers wrote:
+> > > The whole point of my patch is not to have to do this latency vs performance
+> > > tradeoff for low number of running threads. With your approach, lowering the
+> > > granularity even when there are few threads running will very likely hurt
+> > > performance, no ? 
 > > 
-> > This patch prevents direct reclaim writing back filesystem pages by checking
-> > if current is kswapd or the page is anonymous before writing back.  If the
-> > dirty pages cannot be written back, they are placed back on the LRU lists
-> > for either background writing by the BDI threads or kswapd. If in direct
-> > lumpy reclaim and dirty pages are encountered, the process will stall for
-> > the background flusher before trying to reclaim the pages again.
+> > But you presented it as a latency patch, not a throughput patch. And I'm
+> > not sure it will matter enough to offset the computational cost it
+> > introduces.
+
+Can we agree that the patch I proposed is a patch that try to improve _latency_
+under high load while preserving good throughput under lower load ? I find this
+"performance" XOR "latency" dichotomy itching: it's like looking at an american
+TV show where all bad guys are dressed in black, and the hero is in white.
+
+> 
+> 
+> ---
+> On Mon, 2010-09-13 at 14:53 +0200, Peter Zijlstra wrote:
+> On Sun, 2010-09-12 at 16:37 -0400, Mathieu Desnoyers wrote:
+> > > The whole point of my patch is not to have to do this latency vs performance
+> > > tradeoff for low number of running threads. With your approach, lowering the
+> > > granularity even when there are few threads running will very likely hurt
+> > > performance, no ? 
 > > 
-> > As the call-chain for writing anonymous pages is not expected to be deep
-> > and they are not cleaned by flusher threads, anonymous pages are still
-> > written back in direct reclaim.
+> > But you presented it as a latency patch, not a throughput patch. And I'm
+> > not sure it will matter enough to offset the computational cost it
+> > introduces.
 > > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-> > ---
-> >  mm/vmscan.c |   49 ++++++++++++++++++++++++++++++++++++++++++++++---
-> >  1 files changed, 46 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index ff52b46..408c101 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -145,6 +145,9 @@ static DECLARE_RWSEM(shrinker_rwsem);
-> >  #define scanning_global_lru(sc)	(1)
-> >  #endif
-> >  
-> > +/* Direct lumpy reclaim waits up to five seconds for background cleaning */
-> > +#define MAX_SWAP_CLEAN_WAIT 50
-> > +
-> >  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
-> >  						  struct scan_control *sc)
-> >  {
-> > @@ -682,11 +685,13 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
-> >   * shrink_page_list() returns the number of reclaimed pages
-> >   */
-> >  static unsigned long shrink_page_list(struct list_head *page_list,
-> > -				      struct scan_control *sc)
-> > +					struct scan_control *sc,
-> > +					unsigned long *nr_still_dirty)
-> >  {
-> >  	LIST_HEAD(ret_pages);
-> >  	LIST_HEAD(free_pages);
-> >  	int pgactivate = 0;
-> > +	unsigned long nr_dirty = 0;
-> >  	unsigned long nr_reclaimed = 0;
-> >  
-> >  	cond_resched();
-> > @@ -785,6 +790,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
-> >  		}
-> >  
-> >  		if (PageDirty(page)) {
-> > +			/*
-> > +			 * Only kswapd can writeback filesystem pages to
-> > +			 * avoid risk of stack overflow
-> > +			 */
-> > +			if (page_is_file_cache(page) && !current_is_kswapd()) {
-> > +				nr_dirty++;
-> > +				goto keep_locked;
-> > +			}
-> > +
-> >  			if (references == PAGEREF_RECLAIM_CLEAN)
-> >  				goto keep_locked;
-> >  			if (!may_enter_fs)
-> > @@ -908,6 +922,8 @@ keep_lumpy:
-> >  	free_page_list(&free_pages);
-> >  
-> >  	list_splice(&ret_pages, page_list);
-> > +
-> > +	*nr_still_dirty = nr_dirty;
-> >  	count_vm_events(PGACTIVATE, pgactivate);
-> >  	return nr_reclaimed;
-> >  }
-> > @@ -1312,6 +1328,10 @@ static inline bool should_reclaim_stall(unsigned long nr_taken,
-> >  	if (sc->lumpy_reclaim_mode == LUMPY_MODE_NONE)
-> >  		return false;
-> >  
-> > +	/* If we cannot writeback, there is no point stalling */
-> > +	if (!sc->may_writepage)
-> > +		return false;
-> > +
-> >  	/* If we have relaimed everything on the isolated list, no stall */
-> >  	if (nr_freed == nr_taken)
-> >  		return false;
-> > @@ -1339,11 +1359,13 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
-> >  			struct scan_control *sc, int priority, int file)
-> >  {
-> >  	LIST_HEAD(page_list);
-> > +	LIST_HEAD(putback_list);
-> >  	unsigned long nr_scanned;
-> >  	unsigned long nr_reclaimed = 0;
-> >  	unsigned long nr_taken;
-> >  	unsigned long nr_anon;
-> >  	unsigned long nr_file;
-> > +	unsigned long nr_dirty;
-> >  
-> >  	while (unlikely(too_many_isolated(zone, file, sc))) {
-> >  		congestion_wait(BLK_RW_ASYNC, HZ/10);
-> > @@ -1392,14 +1414,35 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
-> >  
-> >  	spin_unlock_irq(&zone->lru_lock);
-> >  
-> > -	nr_reclaimed = shrink_page_list(&page_list, sc);
-> > +	nr_reclaimed = shrink_page_list(&page_list, sc, &nr_dirty);
-> >  
-> >  	/* Check if we should syncronously wait for writeback */
-> >  	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
 > 
-> It is possible to OOM if the LRU list is small and/or the storage is slow, so
-> that the flusher cannot clean enough pages before the LRU is fully scanned.
+> One option is to simply get rid of that stuff in check_preempt_tick()
+> and instead do a wakeup-preempt check on the leftmost task instead.
 > 
-
-To go OOM, nr_reclaimed would have to be 0 and for that, the entire list
-would have to be dirty or unreclaimable. If that situation happens, is
-the dirty throttling not also broken?
-
-> So we may need do waits on dirty/writeback pages on *order-0*
-> direct reclaims, when priority goes rather low (such as < 3).
+> The code as it stands today does that delta_exec < min_gran check to
+> ensure current gets some runtime before doing that second preemption
+> check, which compares vruntime with a wall-time measure.
 > 
+> Making that gran more complex doesn't really buy us much because for a
+> system with different weights in the gran and slice lengths don't match
+> up anyway.
 
-In case this is really necessary, the necessary stalling could be done by
-removing the check for lumpy reclaim in should_reclaim_stall().  What do
-you think of the following replacement?
+So I bet this last sentence is about the example of a system with many nice 19
+processes I told you about on IRC. Yes, this one is a bummer, as we would not
+like to count them as running threads at all.
 
-/*
- * Returns true if the caller should wait to clean dirty/writeback pages.
- *
- * If we are direct reclaiming for contiguous pages and we do not reclaim
- * everything in the list, try again and wait for writeback IO to complete.
- * This will stall high-order allocations noticeably. Only do that when really
- * need to free the pages under high memory pressure.
- *
- * Alternatively, if priority is getting high, it may be because there are
- * too many dirty pages on the LRU. Rather than returning nr_reclaimed == 0
- * and potentially causing an OOM, we stall on writeback.
- */
-static inline bool should_reclaim_stall(unsigned long nr_taken,
-                                        unsigned long nr_freed,
-                                        int priority,
-                                        struct scan_control *sc)
-{
-        int stall_priority;
+More comments below,
 
-        /* kswapd should not stall on sync IO */
-        if (current_is_kswapd())
-                return false;
-
-        /* If we cannot writeback, there is no point stalling */
-        if (!sc->may_writepage)
-                return false;
-
-        /* If we have relaimed everything on the isolated list, no stall */
-        if (nr_freed == nr_taken)
-                return false;
-
-        /*
-         * For high-order allocations, there are two stall thresholds.
-         * High-cost allocations stall immediately where as lower
-         * order allocations such as stacks require the scanning
-         * priority to be much higher before stalling.
-         */
-        if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-                stall_priority = DEF_PRIORITY;
-        else
-                stall_priority = DEF_PRIORITY / 3;
-
-        return priority <= stall_priority;
-}
-
-
-> > +		int dirty_retry = MAX_SWAP_CLEAN_WAIT;
-> >  		set_lumpy_reclaim_mode(priority, sc, true);
-> > -		nr_reclaimed += shrink_page_list(&page_list, sc);
-> > +
-> > +		while (nr_reclaimed < nr_taken && nr_dirty && dirty_retry--) {
-> > +			struct page *page, *tmp;
-> > +
 > 
-> > +			/* Take off the clean pages marked for activation */
-> > +			list_for_each_entry_safe(page, tmp, &page_list, lru) {
-> > +				if (PageDirty(page) || PageWriteback(page))
-> > +					continue;
-> > +
-> > +				list_del(&page->lru);
-> > +				list_add(&page->lru, &putback_list);
-> > +			}
+> ---
+> Subject: sched: Simplify tick preemption
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Mon Jul 05 13:56:30 CEST 2010
 > 
-> nitpick: I guess the above loop is optional code to avoid overheads
-> of shrink_page_list() repeatedly going through some unfreeable pages?
-
-Pretty much, if they are to be activated, there is no point trying to reclaim
-them again. It's unnecessary overhead. A strong motivation for this
-series is to reduce overheads in the reclaim paths and unnecessary
-retrying of unfreeable pages.
-
-> Considering this is the slow code path, I'd prefer to keep the code
-> simple than to do such optimizations.
+> Check the current slice, if not expired, see if the leftmost task
+> would otherwise have preempted current.
 > 
-> > +			wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty);
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  kernel/sched_fair.c |   43 +++++++++++++++----------------------------
+>  1 file changed, 15 insertions(+), 28 deletions(-)
 > 
-> how about 
->                         if (!laptop_mode)
->                                 wakeup_flusher_threads(nr_dirty);
-> 
+> Index: linux-2.6/kernel/sched_fair.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched_fair.c
+> +++ linux-2.6/kernel/sched_fair.c
+> @@ -838,44 +838,34 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+>  		se->vruntime -= cfs_rq->min_vruntime;
+>  }
+>  
+> +static int
+> +wakeup_preempt_entity(struct sched_entity *curr, struct sched_entity *se);
+> +
+>  /*
+>   * Preempt the current task with a newly woken task if needed:
+>   */
+>  static void
+>  check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+>  {
+> -	unsigned long ideal_runtime, delta_exec;
+> +	unsigned long slice = sched_slice(cfs_rq, curr);
 
-It's not the same thing. wakeup_flusher_threads(0) in laptop_mode is to
-clean all pages if some need dirtying. laptop_mode cleans all pages to
-minimise disk spinups.
+So you still compute the sched_slice(), based on sched_period(), based on
+sysctl_sched_min_granularity *= nr_running when there are more than nr_latency
+running threads.
 
-> > +			wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
-> > +
-> > +			nr_reclaimed = shrink_page_list(&page_list, sc,
-> > +							&nr_dirty);
-> > +		}
-> >  	}
-> >  
-> > +	list_splice(&putback_list, &page_list);
-> > +
-> >  	local_irq_disable();
-> >  	if (current_is_kswapd())
-> >  		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
-> > -- 
-> > 1.7.1
+> +
+> +	if (curr->sum_exec_runtime - curr->prev_sum_exec_runtime < slice) {
+> +		struct sched_entity *pse = __pick_next_entity(cfs_rq);
+> +
+> +		if (pse && wakeup_preempt_entity(curr, pse) == 1)
+> +			goto preempt;
+>  
+> -	ideal_runtime = sched_slice(cfs_rq, curr);
+> -	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
+> -	if (delta_exec > ideal_runtime) {
+> -		resched_task(rq_of(cfs_rq)->curr);
+> -		/*
+> -		 * The current task ran long enough, ensure it doesn't get
+> -		 * re-elected due to buddy favours.
+> -		 */
+> -		clear_buddies(cfs_rq, curr);
+>  		return;
+>  	}
+>  
+>  	/*
+> -	 * Ensure that a task that missed wakeup preemption by a
+> -	 * narrow margin doesn't have to wait for a full slice.
+> -	 * This also mitigates buddy induced latencies under load.
+> +	 * The current task ran long enough, ensure it doesn't get
+> +	 * re-elected due to buddy favours.
+>  	 */
+> -	if (!sched_feat(WAKEUP_PREEMPT))
+> -		return;
+> -
+> -	if (delta_exec < sysctl_sched_min_granularity)
+> -		return;
+
+Well, the reason why this test is here seems to be that we don't want to trigger
+"resched_task" more often than needed, and here it's defined by the granularity.
+I don't quite see with what you are replacing this, other than "let's set the
+resched flag all the time to save a 32-bit division". I figure out it's more
+expensive the call the scheduler than to do a 32-bit div.
+
+Thanks,
+
+Mathieu
+
+> +	clear_buddies(cfs_rq, curr);
+>  
+> -	if (cfs_rq->nr_running > 1) {
+> -		struct sched_entity *se = __pick_next_entity(cfs_rq);
+> -		s64 delta = curr->vruntime - se->vruntime;
+> -
+> -		if (delta > ideal_runtime)
+> -			resched_task(rq_of(cfs_rq)->curr);
+> -	}
+> +preempt:
+> +	resched_task(rq_of(cfs_rq)->curr);
+>  }
+>  
+>  static void
+> @@ -908,9 +898,6 @@ set_next_entity(struct cfs_rq *cfs_rq, s
+>  	se->prev_sum_exec_runtime = se->sum_exec_runtime;
+>  }
+>  
+> -static int
+> -wakeup_preempt_entity(struct sched_entity *curr, struct sched_entity *se);
+> -
+>  static struct sched_entity *pick_next_entity(struct cfs_rq *cfs_rq)
+>  {
+>  	struct sched_entity *se = __pick_next_entity(cfs_rq);
 > 
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
