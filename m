@@ -1,112 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab0IMVmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 17:42:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40736 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752561Ab0IMVmR (ORCPT
+	id S1755486Ab0IMVmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 17:42:21 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39843 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab0IMVmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 17:42:17 -0400
-Date: Mon, 13 Sep 2010 14:41:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: linux-kernel@vger.kernel.org, bugzilla-daemon@bugzilla.kernel.org,
-        axboe@kernel.dk, linux-scsi@vger.kernel.org
-Subject: Re: [Bug 18252] spinlock lockup in __make_request <- submit_bio <-
- ondemand_readahead
-Message-Id: <20100913144139.b9e18133.akpm@linux-foundation.org>
-In-Reply-To: <4C8B50F1.4020502@s5r6.in-berlin.de>
-References: <bug-18252-4803@https.bugzilla.kernel.org/>
-	<4C8B50F1.4020502@s5r6.in-berlin.de>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 13 Sep 2010 17:42:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=pe83aKDCmkkwa0PgKQOgXl1o9m09nqZzs2efV6uK20+ek0Yw3dGlgaKKz9t8aOLdSv
+         lroAAYuQer1A8kkQOWoIBLbSHt2dYQ5NCFp8/M1ozy8DbXXwJDQ6LqlXtgmwOKuAW56w
+         up7ym6h/HmLrVX0nUbS17ThD1ydZGDQx30OJw=
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: Interrupt latency on some 945GM platforms
+Date: Tue, 14 Sep 2010 00:41:18 +0300
+User-Agent: KMail/1.13.5 (Linux/2.6.35-gentoo-r5-anarsoul; KDE/4.5.1; i686; ; )
+Cc: intel-gfx@lists.freedesktop.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+References: <201009132336.17310.anarsoul@gmail.com> <201009140010.14783.anarsoul@gmail.com> <20100913141955.752cbdea@jbarnes-desktop>
+In-Reply-To: <20100913141955.752cbdea@jbarnes-desktop>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1564341.KjfylMJfeW";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009140041.23645.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Sep 2010 11:50:41 +0200
-Stefan Richter <stefanr@s5r6.in-berlin.de> wrote:
+--nextPart1564341.KjfylMJfeW
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Full quote for lkml:
-> 
-> bugzilla-daemon@bugzilla.kernel.org wrote:
-> > https://bugzilla.kernel.org/show_bug.cgi?id=18252
-> > 
-> >            Summary: spinlock lockup in __make_request <- submit_bio <-
-> >                     ondemand_readahead
-> >            Product: IO/Storage
-> >            Version: 2.5
-> >     Kernel Version: 2.6.36-rc3
-> >           Platform: All
-> >         OS/Version: Linux
-> >               Tree: Mainline
-> >             Status: NEW
-> >           Severity: normal
-> >           Priority: P1
-> >          Component: Block Layer
-> >         AssignedTo: axboe@kernel.dk
-> >         ReportedBy: stefanr@s5r6.in-berlin.de
-> >         Regression: No
-> > 
-> > 
-> > Created an attachment (id=29562)
-> >  --> (https://bugzilla.kernel.org/attachment.cgi?id=29562)
-> > BUG screenshot
-> > 
-> > After a week uptime of 2.6.36-rc3 (I ran 2.6.35 before that),
-> 
-> Almost two weeks uptime actually.
-> 
-> > I was greeted by a black screen of death today in the morning:
-> > 
-> > (see screenshot in attachment; partial transcript:)
-> > 
-> > sending NMI to all CPUs:
-> > BUG: soinlock lockup on CPU#0, ktorrent/4313, ffff8802...
-> > PID: 4313, comm: ktorrent Tainted: G  M D W   2.6.36-rc3 #3
-> > Call Trace:
-> >  [...] do_raw_spin_lock+0x118/0x147
-> >  [...] _raw_spin_lock_irq+0x44/0x49
-> >  [...] ? __make_request+0x5c/0x400
-> >  [...] __make_request+0x5c/0x400
-> >  [...] generic_make_request+0x23a/0x2a9
-> >  [...] submit_bio+0xad/b6
-> >  [...] mpage_bio_submit...
-> >  [...] do_mpage_readpage...
-> >  [...] ? get_parent_ip...
-> >  [...] ? sub_preempt_count...
-> >  [...] ? __lru_cache_add...
-> >  [...] mpage_readpages...
-> >  [...] ? ext4_get_block...
-> >  [...] ? __alloc_pages_nodemask...
-> >  [...] ? ext4_get_block...
-> >  [...] ext4_readpages...
-> >  [...] __do_page_cache_readahead...
-> >  [...] ? __do_page_cache_readahead...
-> >  [...] ra_submit...
-> >  [...] ondemand_readahead...
-> > 
-> > This is a system with Phenom II x4 and Radeon graphics.  Since kernel mode
-> > setting is fairly new for radeon, it is possible that the lockup happened with
-> > earlier kernels too but simply ended in a lockup without trace dump to the
-> > screen.  IOW, it is not clear to me whether this is a regression or not.
-> > 
-> > The bug happened while kaffeine wrote an MPEG 2 TS to the same filesystem from
-> > which ktorrent was reading.  Of course this kind of commonplace workload
-> > happened without problem two or three times before during the week in which I
-> > ran 2.6.36-rc3.
-> > 
-> 
-> (The screenshot is a bit large, hence I reported in bugzilla instead of the list.)
-> 
+=D0=92 =D1=81=D0=BE=D0=BE=D0=B1=D1=89=D0=B5=D0=BD=D0=B8=D0=B8 =D0=BE=D1=82 =
+14 of September 2010 00:19:55 =D0=B0=D0=B2=D1=82=D0=BE=D1=80 Jesse Barnes =
+=D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=BB:
+> On Tue, 14 Sep 2010 00:10:08 +0300
+>=20
+> Vasily Khoruzhick <anarsoul@gmail.com> wrote:
+> > =D0=92 =D1=81=D0=BE=D0=BE=D0=B1=D1=89=D0=B5=D0=BD=D0=B8=D0=B8 =D0=BE=D1=
+=82 13 of September 2010 23:44:41 =D0=B0=D0=B2=D1=82=D0=BE=D1=80 Jesse Barn=
+es =D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=BB:
+> > > I remember seeing a similar problem on an Eee PC I had; it seemed to =
+be
+> > > timer/interrupt related somehow.  If I booted with clocksource=3Dtsc
+> > > (or maybe it was pit) I got nice smooth animations, but if I used the
+> > > HPET things were really slow.
+> > >=20
+> > > Does the same work for you?
+> >=20
+> > Yeah, it works for me (will use it as temporary workaround). But it
+> > definitely is not clean solution, as I can't use nohz mode with tsc
+> > clocksource :)
+>=20
+> Thomas, does this ring any bells for you?
+>=20
+> I think the root symptom of the issue is that we get a much reduced i915
+> interrupt frequency (or no interrupts) on some 945GM platforms when
+> using HPET as our clock source.
+>=20
+> In fact, on the platform I tested, it seemed that the i915 IRQs wouldn't
+> generate interrupts at all when HPET was used.  But shaking the mouse or
+> generating network traffic was enough to get i915 interrupts coming in,
+> even though neither of those interrupts were shared with the i915
+> device.
+>=20
+> Here's hoping you have some ideas to try...
+>=20
+> Thanks,
 
-What you've quoted above appears to be just the aftermath. 
-https://bugzilla.kernel.org/attachment.cgi?id=29562 indicates that the
-kernel earlier crashed in scsi code, perhaps under
-scsi_setup_fs_cmnd().
+Jesse, is it possible to disable wait for vsync somehow? cpufreq is not=20
+working for me with nohz=3Dno for some reason, as result cpu temperature an=
+d=20
+power usage are higher. I prefer to see tearing but with low power usage an=
+d=20
+without jerky keyboard :)
 
-The question is: was that actually the first crash, or did an even
-earlier one scroll off?
+Regards
+Vasily
 
+--nextPart1564341.KjfylMJfeW
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+
+iEYEABECAAYFAkyOmoMACgkQRM6pQpltKE5WFwCgvIK9Bb3sIzsIqhYAcun7bIxl
+FC8AoNVQ0Lh1S7oHf+A7XCQpXh/TULWD
+=pDik
+-----END PGP SIGNATURE-----
+
+--nextPart1564341.KjfylMJfeW--
