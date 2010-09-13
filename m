@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab0IMNsk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 09:48:40 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:54247 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab0IMNsj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 09:48:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=EOdCWa6YATbDh1BJsBUQliQGz1V172GpJ/nnAiK/txd5G1woN0yjS24Wg7dmkpawHs
-         NP+aIqJ/hVUDbyWLmGD4pvyn8ozrdUSAOEOlj3PlbDbfiv47+NwX0T5oi2Rs7K+5ov6h
-         UumYcvaOgqWdg6LOP5458WMsq3vpVgSk/+9KA=
-Date: Mon, 13 Sep 2010 16:48:47 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [Bug #16961] kernel BUG at
- arch/x86/kvm/../../../virt/kvm/kvm_main.c:1978
-Message-ID: <20100913134847.GA5263@swordfish.minsk.epam.com>
-References: <EP3NUDNWMO.A.O0.rrRjMB@chimera>
- <0c5PAlgnPrH.A.WOC.hsRjMB@chimera>
+	id S1754753Ab0IMNsx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 09:48:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54802 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754628Ab0IMNsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 09:48:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,359,1280732400"; 
+   d="scan'208";a="656729326"
+Date: Mon, 13 Sep 2010 21:48:45 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 10/10] vmscan: Kick flusher threads to clean pages when
+ reclaim is encountering dirty pages
+Message-ID: <20100913134845.GB12355@localhost>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
+ <1283770053-18833-11-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0c5PAlgnPrH.A.WOC.hsRjMB@chimera>
+In-Reply-To: <1283770053-18833-11-git-send-email-mel@csn.ul.ie>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> +	/*
+> +	 * If reclaim is encountering dirty pages, it may be because
+> +	 * dirty pages are reaching the end of the LRU even though the
+> +	 * dirty_ratio may be satisified. In this case, wake flusher
+> +	 * threads to pro-actively clean up to a maximum of
+> +	 * 4 * SWAP_CLUSTER_MAX amount of data (usually 1/2MB) unless
+> +	 * !may_writepage indicates that this is a direct reclaimer in
+> +	 * laptop mode avoiding disk spin-ups
+> +	 */
+> +	if (file && nr_dirty_seen && sc->may_writepage)
+> +		wakeup_flusher_threads(nr_writeback_pages(nr_dirty));
 
---2oS5YaxWCcQjTEyO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+wakeup_flusher_threads() works, but seems not the pertinent one.
 
-On (09/12/10 20:14), Rafael J. Wysocki wrote:
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D16961
-> Subject		: kernel BUG at arch/x86/kvm/../../../virt/kvm/kvm_main.c:1978
-> Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Date		: 2010-08-19 9:54 (25 days old)
-> Message-ID	: <<20100819095429.GA5201@swordfish.minsk.epam.com>>
-> References	: http://marc.info/?l=3Dlinux-kernel&m=3D128221169606214&w=3D2
-> Handled-By	: Avi Kivity <avi@redhat.com>
->=20
->=20
+- locally, it needs some luck to clean the pages that direct reclaim is waiting on
+- globally, it cleans up some dirty pages, however some heavy dirtier
+  may quickly create new ones..
 
-Hello,
-Fixed by
-commit da908f2fb4e783c2a4de751fb90f11a0dd041161
-Author: Zachary Amsden <zamsden@redhat.com>
+So how about taking the approaches in these patches?
 
+- "[PATCH 4/4] vmscan: transfer async file writeback to the flusher"
+- "[PATCH 15/17] mm: lower soft dirty limits on memory pressure"
 
-	Sergey
---2oS5YaxWCcQjTEyO
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+In particular the first patch should work very nicely with memcg, as
+all pages of an inode typically belong to the same memcg. So doing
+write-around helps clean lots of dirty pages in the target LRU list in
+one shot.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkyOK78ACgkQfKHnntdSXjTfYQP/YDtBVVkNy2wz54WrtlNx8Ilc
-3D9iWrEj5IIipPa1HUpiKxTMaokSGxKtsB8yDKL6pGT57DHqYZ0GQPBwFGqbKzjF
-WqlFLZQgAUkVOdvKIpk4sivan43hV93RCK4E14f4rWliyMI8GVCsvj8I0ahMft0X
-xsIOZhi3BfX0qenYyBs=
-=iMwO
------END PGP SIGNATURE-----
-
---2oS5YaxWCcQjTEyO--
+Thanks,
+Fengguang
