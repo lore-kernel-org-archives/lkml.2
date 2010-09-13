@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab0IMR4u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 13:56:50 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51031 "EHLO ogre.sisk.pl"
+	id S1754595Ab0IMSAN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 14:00:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51044 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751771Ab0IMR4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 13:56:48 -0400
+	id S1752508Ab0IMSAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 14:00:11 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jan Kara <jack@suse.cz>
-Subject: Re: [Bug #16312] WARNING: at fs/fs-writeback.c:1127 __mark_inode_dirty
-Date: Mon, 13 Sep 2010 19:56:03 +0200
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [Bug #16961] kernel BUG at arch/x86/kvm/../../../virt/kvm/kvm_main.c:1978
+Date: Mon, 13 Sep 2010 19:59:26 +0200
 User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Zdenek Kabelac <zdenek.kabelac@gmail.com>
-References: <QnCvudbe2FD.A.XiE.DgSjMB@chimera> <p44oKaOqEDM.A.QHG.AjSjMB@chimera> <20100913114229.GA4016@quack.suse.cz>
-In-Reply-To: <20100913114229.GA4016@quack.suse.cz>
+        Maciej Rutecki <maciej.rutecki@gmail.com>, Avi Kivity <avi@redhat.com>
+References: <EP3NUDNWMO.A.O0.rrRjMB@chimera> <0c5PAlgnPrH.A.WOC.hsRjMB@chimera> <20100913134847.GA5263@swordfish.minsk.epam.com>
+In-Reply-To: <20100913134847.GA5263@swordfish.minsk.epam.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009131956.03639.rjw@sisk.pl>
+Message-Id: <201009131959.26660.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 13, 2010, Jan Kara wrote:
->   Hi,
+On Monday, September 13, 2010, Sergey Senozhatsky wrote:
+> On (09/12/10 20:14), Rafael J. Wysocki wrote:
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16961
+> > Subject		: kernel BUG at arch/x86/kvm/../../../virt/kvm/kvm_main.c:1978
+> > Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > Date		: 2010-08-19 9:54 (25 days old)
+> > Message-ID	: <<20100819095429.GA5201@swordfish.minsk.epam.com>>
+> > References	: http://marc.info/?l=linux-kernel&m=128221169606214&w=2
+> > Handled-By	: Avi Kivity <avi@redhat.com>
+> > 
+> > 
 > 
-> On Sun 12-09-10 21:08:40, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.34 and 2.6.35.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16312
-> > Subject		: WARNING: at fs/fs-writeback.c:1127 __mark_inode_dirty
-> > Submitter	: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-> > Date		: 2010-06-28 9:40 (77 days old)
-> > Message-ID	: <AANLkTin24fr5O4_q5Xbo9Y_NKkEmtcp6Hgmr9_4qXaFz@mail.gmail.com>
-> > References	: http://marc.info/?l=linux-kernel&m=127771804806465&w=2
-> > 		  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/00884.html
-> > Handled-By	: Jan Kara <jack@suse.cz>
-> > Patch		: https://bugzilla.kernel.org/attachment.cgi?id=27272
->   Sorry, it isn't fixed yet. Christoph wanted to do the patch a bit
-> differently and I was busy with other work...
+> Hello,
+> Fixed by
+> commit da908f2fb4e783c2a4de751fb90f11a0dd041161
+> Author: Zachary Amsden <zamsden@redhat.com>
 
-OK, thanks for the update.
+Thanks, closing.
 
 Rafael
