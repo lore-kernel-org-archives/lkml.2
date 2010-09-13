@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab0IMVCe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 17:02:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37961 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895Ab0IMVCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 17:02:32 -0400
-Date: Mon, 13 Sep 2010 14:01:45 -0700
-From: Greg KH <gregkh@suse.de>
-To: Thomas Backlund <tmb@mandriva.org>
-Cc: "stable@kernel.org" <stable@kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>,
-        "Larry.Finger@lwfinger.net" <Larry.Finger@lwfinger.net>,
+	id S1755151Ab0IMVIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 17:08:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38764 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754578Ab0IMVIq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 17:08:46 -0400
+Date: Mon, 13 Sep 2010 14:08:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        gthelen@google.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [33-stable regression ssb/broadcom]
-Message-ID: <20100913210145.GA18969@suse.de>
-References: <4C8E6192.2010003@mandriva.org>
- <20100913.122329.39186333.davem@davemloft.net>
- <20100913193647.GD4052@tuxdriver.com>
- <4C8E8AC2.2030201@mandriva.org>
- <4C8E8C73.60306@mandriva.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C8E8C73.60306@mandriva.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        stable@kernel.org
+Subject: Re: [BUGFIX][PATCH] memcg: fix race in file_mapped accouting flag
+ management
+Message-Id: <20100913140803.b83d3fe1.akpm@linux-foundation.org>
+In-Reply-To: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 11:41:23PM +0300, Thomas Backlund wrote:
-> Thomas Backlund skrev 13.9.2010 23:34:
-> >John W. Linville skrev 13.9.2010 22:36:
-> >>On Mon, Sep 13, 2010 at 12:23:29PM -0700, David Miller wrote:
-> >>>From: Thomas Backlund<tmb@mandriva.org>
-> >>>Date: Mon, 13 Sep 2010 20:38:26 +0300
-> >>>
-> >>>>In Mandriva 2010.1 we noticed that 2.6.33.7 broke ssb/Broadcom lan for
-> >>>>several users...
-> >>>>
-> >>>>Issue is tracked at:
-> >>>>https://qa.mandriva.com/show_bug.cgi?id=60968
-> >>>>
-> >>>>Reverting the commit restores a working lan.
-> >>>>
-> >>>>The offending commit is:
-> >>>
-> >>>Please always CC: netdev on networking reports, otherwise you are
-> >>>very unlikely to get any experts looking into your issue.
-> >>
-> >>IIRC, there was a bad patch that got sent for the 2.6.33.y series.
-> >>I thought it had been reverted or fixed already?
-> >>
-> >
-> >Nope.
-> >
-> >It got added in 2.6.33.7
-> >http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.33.y.git;a=commit;h=6fb037c2ed8378c7ab0c1e00536ba6b2a866503e
-> >
+On Mon, 13 Sep 2010 16:08:22 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
 > 
-> After checking some more...
+> I think this small race is not very critical but it's bug.
+> We have this race since 2.6.34. 
+> =
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> I see the revert of the broken patch was done in 2.6.34.3 and a set
-> of ssb patches replacing it...
+> Now. memory cgroup accounts file-mapped by counter and flag.
+> counter is working in the same way with zone_stat but FileMapped flag only
+> exists in memcg (for helping move_account).
 > 
-> but it didn't happend for 2.6.33.y
+> This flag can be updated wrongly in a case. Assume CPU0 and CPU1
+> and a thread mapping a page on CPU0, another thread unmapping it on CPU1.
+> 
+>     CPU0                   		CPU1
+> 				rmv rmap (mapcount 1->0)
+>    add rmap (mapcount 0->1)
+>    lock_page_cgroup()
+>    memcg counter+1		(some delay)
+>    set MAPPED FLAG.
+>    unlock_page_cgroup()
+> 				lock_page_cgroup()
+> 				memcg counter-1
+> 				clear MAPPED flag
+> 
+> In above sequence, counter is properly updated but FLAG is not.
+> This means that representing a state by a flag which is maintained by
+> counter needs some specail care.
+> 
+> To handle this, at claering a flag, this patch check mapcount directly and
+> clear the flag only when mapcount == 0. (if mapcount >0, someone will make
+> it to zero later and flag will be cleared.)
+> 
+> Reverse case, dec-after-inc cannot be a problem because page_table_lock()
+> works well for it. (IOW, to make above sequence, 2 processes should touch
+> the same page at once with map/unmap.)
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> Index: lockless-update/mm/memcontrol.c
+> ===================================================================
+> --- lockless-update.orig/mm/memcontrol.c
+> +++ lockless-update/mm/memcontrol.c
+> @@ -1485,7 +1485,8 @@ void mem_cgroup_update_file_mapped(struc
+>  		SetPageCgroupFileMapped(pc);
+>  	} else {
+>  		__this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+> -		ClearPageCgroupFileMapped(pc);
+> +		if (page_mapped(page)) /* for race between dec->inc counter */
+> +			ClearPageCgroupFileMapped(pc);
+>  	}
 
-Yeah, I think I "dropped" support for .33 by then and I really didn't
-care anymore.
+This should be !page_mapped(), shouldn't it?
 
-Note, I have gotten a few rumblings that I should bring .33 back to life
-for some loving due to a few distros relying on it, but I need to find
-the time in my schedule to do so...
+And your second patch _does_ have !page_mapped() here, which is why the
+second patch didn't apply.
 
-thanks,
+I tried to fix things up.  Please check.
 
-greg k-h
+
