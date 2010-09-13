@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab0IMP2d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:28:33 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62844 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630Ab0IMP2c convert rfc822-to-8bit (ORCPT
+	id S1753012Ab0IMPaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:30:07 -0400
+Received: from pindarots.xs4all.nl ([80.101.128.228]:41090 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752311Ab0IMPaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:28:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qzjql2aaaKeg4lRuYgic+GFRaJEG78s0W6qlgCakcMX0DVyTTvGv5I5YRYgOd+CDxX
-         Rhk/nu0jX6FPJPWNpxkObW3A9B6hTFH+3NjAjV0AD/dX0YT0QRCPvi5I1c+qugPOa2bz
-         0P+2zypm7fZKXC7JNU3AJeU/PKWH086/KNv5Y=
+	Mon, 13 Sep 2010 11:30:06 -0400
+Message-ID: <4C8E437B.1060103@xs4all.nl>
+Date: Mon, 13 Sep 2010 17:30:03 +0200
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
 MIME-Version: 1.0
-In-Reply-To: <20100913084741.GD17950@balbir.in.ibm.com>
-References: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100913084741.GD17950@balbir.in.ibm.com>
-Date: Tue, 14 Sep 2010 00:28:30 +0900
-Message-ID: <AANLkTimsUQuEeS2QvSwY_WhnQY7n=D73fNmOoqgrTqbZ@mail.gmail.com>
-Subject: Re: [BUGFIX][PATCH] memcg: fix race in file_mapped accouting flag management
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: balbir@linux.vnet.ibm.com
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        gthelen@google.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        stable@kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: hpet timers gone?
+References: <4BFA52C3.4080006@xs4all.nl>	<20100526120236.4a849b5b.randy.dunlap@oracle.com>	<4C021507.6020703@xs4all.nl>	<4C02B3AB.3040405@gmail.com>	<4C0324B8.8070304@xs4all.nl> <AANLkTikuaPxA9Xnzc1bCJ5YHRlPZ1AcBSrYJ5lqryaMY@mail.gmail.com> <4C8E3ABF.90309@xs4all.nl>
+In-Reply-To: <4C8E3ABF.90309@xs4all.nl>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/13 Balbir Singh <balbir@linux.vnet.ibm.com>:
-> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-09-13 16:08:22]:
->
->>
->> I think this small race is not very critical but it's bug.
->> We have this race since 2.6.34.
->> =
->> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>
->> Now. memory cgroup accounts file-mapped by counter and flag.
->> counter is working in the same way with zone_stat but FileMapped flag only
->> exists in memcg (for helping move_account).
->>
->> This flag can be updated wrongly in a case. Assume CPU0 and CPU1
->> and a thread mapping a page on CPU0, another thread unmapping it on CPU1.
->>
->>     CPU0                              CPU1
->>                               rmv rmap (mapcount 1->0)
->>    add rmap (mapcount 0->1)
->>    lock_page_cgroup()
->>    memcg counter+1            (some delay)
->>    set MAPPED FLAG.
->>    unlock_page_cgroup()
->>                               lock_page_cgroup()
->>                               memcg counter-1
->>                               clear MAPPED flag
->>
->> In above sequence, counter is properly updated but FLAG is not.
->> This means that representing a state by a flag which is maintained by
->> counter needs some specail care.
->
-> In the situation above who has the PTE lock? Are we not synchronized
-> via the PTE lock such that add rmap and rm rmap, will not happen
-> simultaneously?
->
-In this case, a process for map and one for unmap can be different.
+On 2010-09-13 16:52, Udo van den Heuvel wrote:
+> On 2010-05-31 06:00, Robert Hancock wrote:
+>> If they did add an HPET table entry, it should help, yes..
+> 
+> Is there a workaround?
+> VIA was not so helpfull: the bios flash tool they have on the site does
+> not recognise the board as a VIA board.
+> Also they state the latest BIOS will not add HPET to ACPI table.
 
-Assume process A maps a file cache and process B not.
-While process A unmap a file, process B can map it.
-pte lock is no help.
+Could I adapt the old patch for 8237 to force-enable HPET?
 
-Thanks,
--Kame
+If so: I might need to find out in what ways the C700X2 and VT8237
+differ w.r.t. HPET and/or id. Anyone here that could help?
 
-Thanks,
--Kame
+Or should blindly enabling HPET (as in VT8237) help?
+
+Udo
