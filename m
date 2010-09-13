@@ -1,63 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab0IMNM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 09:12:57 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:44471 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab0IMNM4 (ORCPT
+	id S1753653Ab0IMNPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 09:15:19 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35469 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab0IMNPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 09:12:56 -0400
-Message-ID: <4C8E2355.60807@tilera.com>
-Date: Mon, 13 Sep 2010 09:12:53 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
+	Mon, 13 Sep 2010 09:15:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=ly6RR5EDw2qt8KibASIFS3grAj7NH0uFelS2MenOqPdPQ4xqR2ZdPR75LUAKevTnHn
+         6Zg7wkq6q4AVx3lJOQk2PWiNh5wya0IaSsulDyniH2+csceYx0lJVCuZ4Cunfy2G6uRA
+         yzBHZxGnGPX1u3ZlUMq8zZiP3c5IFOCeoY4xU=
+Date: Mon, 13 Sep 2010 06:15:24 -0700
+From: Kent Overstreet <kent.overstreet@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: tridge@tridgell.net, heinzm@redhat.com, jrdanczyk@gmail.com,
+        rvandolson@esri.com, laytonjb@gmail.com, jesper@krogh.cc,
+        wstearns@pobox.com
+Subject: [PATCH 1/2] Bcache: Version 7 - Writeback
+Message-ID: <20100913131523.GA18615@moria>
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: <kernel-janitors@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Paul Mundt <lethal@linux-sh.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] char: hvc: check for error case
-References: <1284317835-5086-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1284317835-5086-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 9/12/2010 2:57 PM, Vasiliy Kulikov wrote:
-> hvc_alloc() may fail, if so exit from init() with error.
->
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+Bcache is a patch for caching arbitrary block devices with other block devices
+- it's designed for SSDs. It's meant to be suitable for use in any situation,
+easy to flip on and not requiring any consideration for i.e. backups - by
+default sequential IO bypasses the cache. It also uses a btree (hybrid
+log/btree, really) for the index; it never does random writes and allocates in
+erase block sized buckets - it's designed for trim, and to work well with
+cheaper MLC drives.
 
-Thanks, accepted into my tree (for the next merge window).  In practice all
-this means is in debug mode we'll get a warning from do_one_initcall()
-rather than silence, but you're right, it's technically better. :-)
+Some rough numbers:
+bonnie++, seeks per second - 90% reads, 10% a read then a write:
+WD EARS Green hd: 269
+Corsair Nova: 10886
+Bcache: 15302
 
-> ---
->  I cannot compile this driver at all, so it is not tested.
->
->  drivers/char/hvc_tile.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/char/hvc_tile.c b/drivers/char/hvc_tile.c
-> index c4efb55..7a84a05 100644
-> --- a/drivers/char/hvc_tile.c
-> +++ b/drivers/char/hvc_tile.c
-> @@ -61,7 +61,8 @@ console_initcall(hvc_tile_console_init);
->  
->  static int __init hvc_tile_init(void)
->  {
-> -	hvc_alloc(0, 0, &hvc_tile_get_put_ops, 128);
-> -	return 0;
-> +	struct hvc_struct *s;
-> +	s = hvc_alloc(0, 0, &hvc_tile_get_put_ops, 128);
-> +	return IS_ERR(s) ? PTR_ERR(s) : 0;
->  }
->  device_initcall(hvc_tile_init);
+I've been stabilizing writeback for around almost two months now; it should be
+considered alpha quality, but it's been beaten on quite a bit and there's no
+known data corruption bugs. I wouldn't suggest running it on your desktop just
+yet, but outside testing would be very welcome.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Writeback is working well; in writeback mode, it'll use most of your SSD for
+buffering writes and write everything out sequentially, skipping what's been
+overwritten. If you want good RAID5/6 performance, when bcache is stable you
+won't need to buy a raid card with a battery backup - you'll get better
+performance with bcache and Linux software raid. Probably cheaper, too.
 
+It updates the index synchronously (unless you tell it not to), and it doesn't
+start the update to the index until after data's been written to the cache;
+the cache should always be consistent in the event of power failure, and once
+bcache returns a write as completed it won't get lost if the power goes out.
+Recovering from unclean shutdown has not been heavily tested though, it's
+likely to still be buggy.
+
+Code wise: The hooks in __generic_make_request were merely ugly for
+writethrough caching - for writeback it's become a hack far too ugly to live.
+I very much want the ability to turn on caching for a block device while it's
+in use, without prior planning - i.e. without require the user to already be
+using device mapper for everything - but that's going to have to be done a
+different way. The current code is functional, but I'm probably going to have
+to port it to device mapper to get something sane before I submit it for
+inclusion, and hopefully I'll eventually have the time to move some dm
+functionality into the generic block layer or somesuch.
+
+Error handling is unfinished, though I don't think there's a ton of left work
+now. Memory allocation is going to take more work, to make it deadlock free
+under memory pressure. There's still some needed cleanup (locking especially),
+but the code should be fairly sane in design. Quite a bit of work has gone
+into garbage collection; it doesn't do incremental garbage collection yet but
+locking shouldn't need any more work to make that happen.
+
+Further off, there's some new plans to use bcache's index to implement
+overcommitted/lazily allocated storage; by using the same index there'll be
+approximately 0 extra runtime overhead, and I think it'll work out pretty
+nicely. There's also been a surprising amount of interest in tiered storage,
+and with overcommited storage done that should be very little extra work.
+There's slightly more in the wiki.
+
+Main git repository:
+git://evilpiepirate.org/~kent/linux-bcache.git
+Userspace tools:
+git://evilpiepirate.org/~kent/bcache-tools.git
+Wiki
+http://bcache.evilpiepirate.org
+
+diff --git a/Documentation/bcache.txt b/Documentation/bcache.txt
+new file mode 100644
+index 0000000..bcd5b41
+--- /dev/null
++++ b/Documentation/bcache.txt
+@@ -0,0 +1,75 @@
++Say you've got a big slow raid 6, and an X-25E or three. Wouldn't it be
++nice if you could use them as cache... Hence bcache.
++
++Userspace tools and a wiki are at:
++  git://evilpiepirate.org/~kent/bcache-tools.git
++  http://bcache.evilpiepirate.org
++
++It's designed around the performance characteristics of SSDs - it only allocates
++in erase block sized buckets, and it uses a bare minimum btree to track cached
++extants (which can be anywhere from a single sector to the bucket size). It's
++also designed to be very lazy, and use garbage collection to clean stale
++pointers.
++
++Cache devices are used as a pool; all available cache devices are used for all
++the devices that are being cached.  The cache devices store the UUIDs of
++devices they have, allowing caches to safely persist across reboots.  There's
++space allocated for 256 UUIDs right after the superblock - which means for now
++that there's a hard limit of 256 devices being cached.
++
++Currently only writethrough caching is supported; data is transparently added
++to the cache on writes but the write is not returned as completed until it has
++reached the underlying storage. Writeback caching will be supported when
++journalling is implemented.
++
++To protect against stale data, the entire cache is invalidated if it wasn't
++cleanly shutdown, and if caching is turned on or off for a device while it is
++opened read/write, all data for that device is invalidated.
++
++Caching can be transparently enabled and disabled for devices while they are in
++use. All configuration is done via sysfs. To use our SSD sde to cache our
++raid md1:
++
++  make-bcache /dev/sde
++  echo "/dev/sde" > /sys/kernel/bcache/register_cache
++  echo "<UUID> /dev/md1" > /sys/kernel/bcache/register_dev
++
++And that's it.
++
++If md1 was a raid 1 or 10, that's probably all you want to do; there's no point
++in caching multiple copies of the same data. However, if you have a raid 5 or
++6, caching the raw devices will allow the p and q blocks to be cached, which
++will help your random write performance:
++  echo "<UUID> /dev/sda1" > /sys/kernel/bcache/register_dev
++  echo "<UUID> /dev/sda2" > /sys/kernel/bcache/register_dev
++  etc.
++
++To script the UUID lookup, you could do something like:
++  echo "`blkid /dev/md1 -s UUID -o value` /dev/md1"\
++	  > /sys/kernel/bcache/register_dev
++
++There are a number of other files in sysfs, some that provide statistics,
++others that allow tweaking of heuristics. Directories are also created
++for both cache devices and devices that are being cached, for per device
++statistics and device removal.
++
++Statistics: cache_hits, cache_misses, cache_hit_ratio
++These should be fairly obvious, they're simple counters.
++
++Cache hit heuristics: cache_priority_seek contributes to the new bucket
++priority once per cache hit; this lets us bias in favor of random IO.
++The file cache_priority_hit is scaled by the size of the cache hit, so
++we can give a 128k cache hit a higher weighting than a 4k cache hit.
++
++When new data is added to the cache, the initial priority is taken from
++cache_priority_initial. Every so often, we must rescale the priorities of
++all the in use buckets, so that the priority of stale data gradually goes to
++zero: this happens every N sectors, taken from cache_priority_rescale. The
++rescaling is currently hard coded at priority *= 7/8.
++
++For cache devices, there are a few more files. Most should be obvious;
++min_priority shows the priority of the bucket that will next be pulled off
++the heap, and tree_depth shows the current btree height.
++
++Writing to the unregister file in a device's directory will trigger the
++closing of that device.
+diff --git a/block/Kconfig b/block/Kconfig
+index 9be0b56..a6ae422 100644
+--- a/block/Kconfig
++++ b/block/Kconfig
+@@ -77,6 +77,19 @@ config BLK_DEV_INTEGRITY
+ 	T10/SCSI Data Integrity Field or the T13/ATA External Path
+ 	Protection.  If in doubt, say N.
+ 
++config BLK_CACHE
++	tristate "Block device as cache"
++	---help---
++	Allows a block device to be used as cache for other devices; uses
++	a btree for indexing and the layout is optimized for SSDs.
++
++	Caches are persistent, and store the UUID of devices they cache.
++	Hence, to open a device as cache, use
++	echo /dev/foo > /sys/kernel/bcache/register_cache
++	And to enable caching for a device
++	echo "<UUID> /dev/bar" > /sys/kernel/bcache/register_dev
++	See Documentation/bcache.txt for details.
++
+ endif # BLOCK
+ 
+ config BLOCK_COMPAT
