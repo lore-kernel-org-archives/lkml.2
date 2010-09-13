@@ -1,70 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab0IMTXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:23:13 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59681
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755050Ab0IMTXL (ORCPT
+	id S1754372Ab0IMTT5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:19:57 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:56864 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab0IMTT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:23:11 -0400
-Date: Mon, 13 Sep 2010 12:23:29 -0700 (PDT)
-Message-Id: <20100913.122329.39186333.davem@davemloft.net>
-To: tmb@mandriva.org
-Cc: stable@kernel.org, gregkh@suse.de, Larry.Finger@lwfinger.net,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [33-stable regression ssb/broadcom]
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4C8E6192.2010003@mandriva.org>
-References: <4C8E6192.2010003@mandriva.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 13 Sep 2010 15:19:56 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: linux-pm@lists.linux-foundation.org
+Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
+Date: Mon, 13 Sep 2010 21:20:23 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, pingc@wacom.com,
+        Jiri Slaby <jslaby@suse.cz>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org
+References: <4C8E180D.4020309@suse.cz> <201009131656.18199.oneukum@suse.de> <20100913171046.GA23116@core.coreip.homeip.net>
+In-Reply-To: <20100913171046.GA23116@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009132120.23372.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Backlund <tmb@mandriva.org>
-Date: Mon, 13 Sep 2010 20:38:26 +0300
+Am Montag, 13. September 2010, 19:10:47 schrieb Dmitry Torokhov:
 
-> In Mandriva 2010.1 we noticed that 2.6.33.7 broke ssb/Broadcom lan for
-> several users...
-> 
-> Issue is tracked at:
-> https://qa.mandriva.com/show_bug.cgi?id=60968
-> 
-> Reverting the commit restores a working lan.
-> 
-> The offending commit is:
+> I think this introduces significant change in behavior though - before
+> we did not do usb_autopm_put_interface() on successful open, basically
+> disabling autopm facilities, right?
 
-Please always CC: netdev on networking reports, otherwise you are
-very unlikely to get any experts looking into your issue.
+Right. Which makes no sense at all. You'd better remove anything related
+to runtime PM and not set supports_autosuspend for that.
 
-> --- cut ---
-> From 6fb037c2ed8378c7ab0c1e00536ba6b2a866503e Mon Sep 17 00:00:00 2001
-> From: Christoph Fritz <chf.fritz@googlemail.com>
-> Date: Sun, 11 Jul 2010 18:26:15 -0500
-> Subject: [PATCH] ssb: Handle Netbook devices where the SPROM address
-> is changed
-> 
-> For some Netbook computers with Broadcom BCM4312 wireless interfaces,
-> the SPROM has been moved to a new location. When the ssb driver tries
-> to
-> read the old location, the systems hangs when trying to read a
-> non-existent location. Such freezes are particularly bad as they do
-> not
-> log the failure.
-> 
-> This patch is modified from commit
-> da1fdb02d9200ff28b6f3a380d21930335fe5429 with some pieces from other
-> mainline changes so that it can be applied to stable 2.6.34.Y.
-> --- cut ---
-> 
-> --
-> Thomas
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	Regards
+		Oliver
