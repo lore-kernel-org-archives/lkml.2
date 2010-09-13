@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab0IMUQh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 16:16:37 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51615 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755666Ab0IMUQe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 16:16:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=VyoaPmUdtAb9kF6d/Pf/Rf6q3hwjeNUlfXA5GXdyBKIwuMGPy0MJAKXbhh34bApl8L
-         Vg14CQ5Dkk/8UONbP7VkVrogaps/iCznXnO56MOz+EL0Tbr6tUj/m5j6uVU7mrtTZHyW
-         eJU30AagALcgTKf8TfLvwHQGyYcDaKOR7ttxc=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        clemens@ladisch.de, "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 2/3 v2]sound/pci/ens1370.c Update broken web addresses.
-Date: Mon, 13 Sep 2010 13:17:02 -0700
-Message-Id: <1284409023-4419-2-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1284409023-4419-1-git-send-email-justinmattock@gmail.com>
-References: <1284409023-4419-1-git-send-email-justinmattock@gmail.com>
+	id S1754693Ab0IMUTR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 16:19:17 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:44543 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752094Ab0IMUTQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 16:19:16 -0400
+Date: Mon, 13 Sep 2010 16:19:13 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [RFC patch 1/2] sched: dynamically adapt granularity with
+	nr_running
+Message-ID: <20100913201913.GC28294@Krystal>
+References: <20100911173732.551632040@efficios.com> <20100911174003.051303123@efficios.com> <20100912061452.GA3383@elte.hu> <1284276098.9111.24.camel@marge.simson.net> <20100912181626.GB32327@Krystal> <1284351183.7321.36.camel@marge.simson.net> <20100913064153.GB14728@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20100913064153.GB14728@elte.hu>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 16:05:12 up 233 days, 22:41,  5 users,  load average: 0.03, 0.05,
+	0.04
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a resend from the original, due to Clemens Ladisch providing
-the right locations of the *.pdf's etc..
+* Ingo Molnar (mingo@elte.hu) wrote:
+> 
+> * Mike Galbraith <efault@gmx.de> wrote:
+> 
+> > On Sun, 2010-09-12 at 14:16 -0400, Mathieu Desnoyers wrote:
+> 
+> > > Or am I missing your point ?
+> > 
+> > Yes and no.  I'm pondering the parent, but by the same token, the 
+> > vfork child shouldn't be penalized either.
+> > 
+> > Does your latency go down drastically if you turn START_DEBIT off? 
+> > Seems like it should.  Perhaps START_DEBIT should not start a task 
+> > further right than rightmost.  I've done that before.
+> > 
+> > maximum latency: 19221.5 탎
+> > average latency: 5159.0 탎
+> > missed timer events: 0
+> > 
+> > maximum latency: 43901.0 탎
+> > average latency: 8430.1 탎
+> > missed timer events: 0
+> > 
+> > Turning it off here cut latency roughly in half (i've piddled vfork 
+> > though, but not completely).  Limiting child placement to no further 
+> > right than rightmost should help quite a bit.
+> 
+> Very interesting observation. Mathieu, mind testing Mike's suggestion 
+> with wakeup-latency.c?
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
----
- sound/pci/ens1370.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Sure. this is with the smaller min_granularity:
 
-diff --git a/sound/pci/ens1370.c b/sound/pci/ens1370.c
-index c7fba53..deffcc8 100644
---- a/sound/pci/ens1370.c
-+++ b/sound/pci/ens1370.c
-@@ -22,7 +22,7 @@
- /* Power-Management-Code ( CONFIG_PM )
-  * for ens1371 only ( FIXME )
-  * derived from cs4281.c, atiixp.c and via82xx.c
-- * using http://www.alsa-project.org/~iwai/writing-an-alsa-driver/c1540.htm
-+ * using http://www.kernel.org/pub/linux/kernel/people/tiwai/docs/writing-an-alsa-driver/index.html 
-  * by Kurt J. Bosch
-  */
- 
+With START_DEBIT:
+
+maximum latency: 21111.1 탎
+average latency: 4188.2 탎
+missed timer events: 0
+
+Without:
+
+maximum latency: 6670.2 탎
+average latency: 1586.0 탎
+missed timer events: 0
+
+So yes, as expected, it makes a huge difference. This is because SIGEV_THREAD
+creates a new thread each time the timer fires, and newly created tasks are put
+at the end of the runqueue with START_DEBIT.
+
+However, removing START_DEBIT makes my Xorg feel less responsive (again, just my
+own impression). We might need a more suitable way to deal with forks than just
+putting the newly forked task at the end of the spread, but just putting it at
+the beginning of the spread does not seem to do well neither.
+
+One idea: we could temporarily tweak the nice value of both the parent and the
+child after a fork to a lower nice value, but only apply this for their first
+slice after the fork. The goal behind this is that their respective vruntime
+will increment faster in the first slice after the fork, so a fork bomb
+(worse-case) will end up running with a very very low nice level. With this
+measure in place, START_DEBIT might not be needed. Thoughts ?
+
+Thanks,
+
+Mathieu
+
+> 
+> Thanks,
+> 
+> 	Ingo
+
 -- 
-1.7.2.1
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
