@@ -1,63 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab0IMJBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 05:01:13 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:39540 "EHLO mx01.d-labs.de"
+	id S1751792Ab0IMJOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 05:14:23 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:57164 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507Ab0IMJBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 05:01:12 -0400
-Date: Mon, 13 Sep 2010 11:01:10 +0200
-From: Florian Mickler <florian@mickler.org>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Christoph Hellwig <hch@infradead.org>, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Stephen Hemminger \(role\:commit_signer\)" <shemminger@vyatta.com>,
-        "Wolfram Sang \(role\:commit_signer\)" <w.sang@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
- default
-Message-ID: <20100913110110.3ed44f22@schatten.dmk.lab>
-In-Reply-To: <m1hbhucdv5.fsf@fess.ebiederm.org>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	<1284111767.1783.35.camel@Joe-Laptop>
-	<20100911001350.GA11478@infradead.org>
-	<1284165074.1783.213.camel@Joe-Laptop>
-	<20100911004550.GA30584@infradead.org>
-	<20100911112855.6ee6e929@schatten.dmk.lab>
-	<m1hbhucdv5.fsf@fess.ebiederm.org>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1750970Ab0IMJOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 05:14:20 -0400
+Date: Mon, 13 Sep 2010 10:14:05 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 05/10] vmscan: Synchrounous lumpy reclaim use
+	lock_page() instead trylock_page()
+Message-ID: <20100913091405.GB23508@csn.ul.ie>
+References: <20100909131211.C93C.A69D9226@jp.fujitsu.com> <20100909092203.GL29263@csn.ul.ie> <20100909182649.C94F.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100909182649.C94F.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010 00:16:30 -0700
-ebiederm@xmission.com (Eric W. Biederman) wrote:
-
-> Florian Mickler <florian@mickler.org> writes:
+On Fri, Sep 10, 2010 at 07:25:43PM +0900, KOSAKI Motohiro wrote:
+> > On Thu, Sep 09, 2010 at 01:13:22PM +0900, KOSAKI Motohiro wrote:
+> > > > On Thu, 9 Sep 2010 12:04:48 +0900
+> > > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > > 
+> > > > > On Mon,  6 Sep 2010 11:47:28 +0100
+> > > > > Mel Gorman <mel@csn.ul.ie> wrote:
+> > > > > 
+> > > > > > From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > > > > 
+> > > > > > With synchrounous lumpy reclaim, there is no reason to give up to reclaim
+> > > > > > pages even if page is locked. This patch uses lock_page() instead of
+> > > > > > trylock_page() in this case.
+> > > > > > 
+> > > > > > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > > > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > > > > 
+> > > > > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > > > 
+> > > > Ah......but can't this change cause dead lock ??
+> > > 
+> > > Yes, this patch is purely crappy. please drop. I guess I was poisoned
+> > > by poisonous mushroom of Mario Bros.
+> > > 
+> > 
+> > Lets be clear on what the exact dead lock conditions are. The ones I had
+> > thought about when I felt this patch was ok were;
+> > 
+> > o We are not holding the LRU lock (or any lock, we just called cond_resched())
+> > o We do not have another page locked because we cannot lock multiple pages
+> > o Kswapd will never be in LUMPY_MODE_SYNC so it is not getting blocked
+> > o lock_page() itself is not allocating anything that we could recurse on
+> 
+> True, all.
+> 
+> > 
+> > One potential dead lock would be if the direct reclaimer held a page
+> > lock and ended up here but is that situation even allowed?
+> 
+> example, 
+> 
+> __do_fault()
+> {
+> (snip)
+>         if (unlikely(!(ret & VM_FAULT_LOCKED)))
+>                 lock_page(vmf.page);
+>         else
+>                 VM_BUG_ON(!PageLocked(vmf.page));
+> 
+>         /*
+>          * Should we do an early C-O-W break?
+>          */
+>         page = vmf.page;
+>         if (flags & FAULT_FLAG_WRITE) {
+>                 if (!(vma->vm_flags & VM_SHARED)) {
+>                         anon = 1;
+>                         if (unlikely(anon_vma_prepare(vma))) {
+>                                 ret = VM_FAULT_OOM;
+>                                 goto out;
+>                         }
+>                         page = alloc_page_vma(GFP_HIGHUSER_MOVABLE,
+>                                                 vma, address);
 > 
 
-> Adding an "ignore me" tag to email addresses generated by
-> get_maintainer.pl would only encourage people to filter those emails
-> when they get them, which is not what we want. 
-
-If people get angry, we want them to have those emails filtered away.  
-
-I for one, would not filter them away. I doubt many people will filter
-them away. Postpone? Maybe. But filtering them to > /dev/null? I doubt
-it. And if they do, it is their choice.
-
-If you care about cc'ing someone deeply, you just put him manually on the
-cc list and thus bypass any get_maintainer.pl-provoked filtering.
-
-
-
-> This whole thing reminds me of a quote my father used to have hanging
-> in his study: "To err is human. To really foul things up use a computer"
-
-:)
+Correct, this is a problem. I already had dropped the patch but thanks for
+pointing out a deadlock because I was missing this case. Nothing stops the
+page being faulted being sent to shrink_page_list() when alloc_page_vma()
+is called. The deadlock might be hard to hit, but it's there.
 
 > 
-> Eric
+> Afaik, detailed rule is,
+> 
+> o kswapd can call lock_page() because they never take page lock outside vmscan
+
+lock_page_nosync as you point out in your next mail. While it can call
+it, kswapd shouldn't because normally it avoids stalls but it would not
+deadlock as a result of calling it.
+
+> o if try_lock() is successed, we can call lock_page_nosync() against its page after unlock.
+>   because the task have gurantee of no lock taken.
+> o otherwise, direct reclaimer can't call lock_page(). the task may have a lock already.
+> 
+
+I think the safer bet is simply to say "direct reclaimers should not
+call lock_page() because the fault path could be holding a lock on that
+page already".
+
+Thanks.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
