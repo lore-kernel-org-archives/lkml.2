@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073Ab0IMT67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:58:59 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54942 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754364Ab0IMT65 (ORCPT
+	id S1755515Ab0IMTyo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:54:44 -0400
+Received: from smtp128.sbc.mail.sp1.yahoo.com ([69.147.65.187]:27057 "HELO
+	smtp128.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755260Ab0IMTym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:58:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Ix6pHt2P2LTLA0pVlo1bAzjiTI4uwN4Bm8I0AP49sZ0OvxhBxSOI7XqNXZLItsgPkG
-         48JCZQk5aRp/QfbK4HYI/oX/UmjgX1zLvyfWcP4hQdeUr9VfwyeRPtQgv9Mhs3j9kVBt
-         mYTs9awU5B1Gh4driyZTk9tqAI8QAJeWcuRJE=
-MIME-Version: 1.0
-Date: Tue, 14 Sep 2010 04:58:56 +0900
-Message-ID: <AANLkTikHM+o_FCgnVzGhs8UtQ_geXFzKNQpGSZiEN7sx@mail.gmail.com>
-Subject: OMAP3 DSP MMU fault + off mode issue
-From: venki kaps <venkiece2005@gmail.com>
-To: omar.ramirez@ti.com, h-kanigeri2@ti.com, ameya.palande@nokia.com,
-        fernando.lugo@ti.com, x0hebbar@ti.com, ernesto@ti.com,
-        felipe.contreras@gmail.com, s-anna@ti.com, grgupta@ti.com,
-        ivan.gomez@ti.com, ext-andriy.shevchenko@nokia.com, x0095078@ti.com,
-        deepak.chitriki@ti.com, nm@ti.com, ext-phil.2.carmody@nokia.com,
-        ohad@wizery.com, greg@kroahDONOTSPAM.com, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 13 Sep 2010 15:54:42 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: zs.7U5cVM1noOTRUitUmeEiUBN5ebhTguDRdDrxzI2dEBwa
+ 3phnzuEQNn_i6u9FTTpwSOZzmFLbUeBAufiIPrgrlbIZIsfvgMtI1x_.EeN6
+ iOrBfF0Ldw1sC_Mk_nFe12ylqIOogGUi.wognOWs5IKZ8iajRftvEQY2DmH3
+ RNydH7Q2h8NuiX9fpYNTGhSzODVVgE6_Gzv0R3pa_wnTaDyZ048at4.l64R2
+ Iwj9__7PICVNQODaWKAH0h6_FTPKHcpxHEDwH.d4NriilWLPvF.6893U6gQn
+ VvtZ445WNasXDw6M4UJO8uB4IeEr3i0VWgDCEt07bTplCEQTRbeB8NTOnKnh
+ L5RyvhLEKCwTv1LrZsg--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 0/2] lio-target: Add support for libcrypto crc32c and
+	crc32-intel offload
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Hannes Reinecke <hare@suse.de>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Vasu Dev <vasu.dev@linux.intel.com>, Joe Eykholt <jeykholt@cisco.com>
+In-Reply-To: <4C8DED17.6080801@suse.de>
+References: <1284201076-22361-1-git-send-email-nab@linux-iscsi.org>
+	 <4C8DED17.6080801@suse.de>
+Content-Type: text/plain
+Date: Mon, 13 Sep 2010 12:50:32 -0700
+Message-Id: <1284407432.8171.41.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+On Mon, 2010-09-13 at 11:21 +0200, Hannes Reinecke wrote:
+> Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > Greetings all,
+> > 
+> > This patch series converts the LIO-Target fabric module from using a legacy
+> > internal slicing by 1x CRC32C algorithm to the slicing by 1x CRC32C available in
+> > crc32c.ko, as well as initial support for the Nehalem series crc32c-intel.ko
+> > instruction offload available since v2.6.27 in late 2008.
+> > 
+> > So far this series has been lightly tested with a handful of Open-iSCSI client VMs
+> > with the optimized crc32c-intel.ko offload case, and there appears to be some
+> > HeaderDigest failures for one case with RHEL6 B2 x86_64, while Ubuntu i686 on
+> > v2.6.27 and OpenSuse 11.2 x86_64 on v2.6.31 work as expected with HeaderDigest=CRC32C
+> > and DataDigest=CRC32C using the offload on the LIO-Target side.
+> > 
+> > Currently this patch disables the new iSCSI TPG attribute crc32c_x86_offload
+> > to force the crc32c.ko slicing by x1 CRC32C algorithm until these compatibility
+> > issues with existing libcrc32c clients can be properly resolved with the Nehalem
+> > CRC32C offload instructions running on the LIO-Target side.
+> > 
+> Due to a customer issue I had to revisit the CRC32 issue recently.
+> And according to you the main reason for using your own CRC routines
+> had been endianness issues.
 
-I have been facing an issue with OMAP3 PM with DSP MMU Fault (Kernel 2.6.32).
+Indeed, this has historically been the case for LIO-Target and
+Core-iSCSI.  I noticed the issue with libcrypto while porting the latter
+on a old G4 TI-book waaay back during v2.6.10-rc3 days.
 
-The issue is describing as below mentioned way,
-        1). The Device is getting DSP MMU Fault when playing MP4 video clip.
+> IE the in-kernel crc32c routines apparently weren't able to
+> calculate the checksum in an endianness-independent manner.
+> So a CRC calculated on a BE machine would fail to be validated by a
+> LE machine and vice versa.
+> 
+> Has this been fixed / verified?
+> 
 
-The system is not hitting off mode in the below scenario,
-        2). System boot ->play mp4 clip ->DSP MMU Fault -> allow off
-mode -----------> Never hits off mode
+>From taking a look at crypto/crc32c.c it still appears AFAICT to not be
+big endian safe.  I was planning to test this patch on some powerpc/ppc
+hardware with v2.6.36-rc4 in the next days, but it looks like
+lio-core-2.6.git will need a seperate crypto/crc32c.c patch to function
+properly on big endian arches.
 
-But surprisingly the system is hitting off mode in the below scenario,
-       3). System boot ->allow off mode ->play mp4 clip ->DSP MMU
-Fault -> allow off mode -----------> perfectly works
+Thanks for mentioning this point Hannes!
 
+--nab
 
- - Could you please describe the root cause about the above issues 1 & 2?
- - How could solve the above issues?
-
-Best Regards,
-Venkii
