@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab0IMTvN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:51:13 -0400
-Received: from mail.perches.com ([173.55.12.10]:1902 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755133Ab0IMTsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:48:37 -0400
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        James Smart <james.smart@emulex.com>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>, linux-scsi@vger.kernel.org
-Subject: [PATCH 17/25] drivers/scsi: Use static const char arrays
-Date: Mon, 13 Sep 2010 12:47:55 -0700
-Message-Id: <f36b9f69b71b2c6efe3bee1a39722a1534338b92.1284406639.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.3.rc1
-In-Reply-To: <cover.1284406638.git.joe@perches.com>
-References: <cover.1284406638.git.joe@perches.com>
+	id S1755301Ab0IMTtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:49:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47957 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755353Ab0IMTtj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 15:49:39 -0400
+Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
+        markus.t.metzger@intel.com
+In-Reply-To: <877hip4et0.fsf@basil.nowhere.org>
+References: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
+	 <877hip4et0.fsf@basil.nowhere.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 13 Sep 2010 21:49:20 +0200
+Message-ID: <1284407360.2275.431.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/scsi/bnx2i/bnx2i_hwi.c        |    6 +++---
- drivers/scsi/lpfc/lpfc_init.c         |    2 +-
- drivers/scsi/megaraid/megaraid_mbox.c |    6 +++---
- 3 files changed, 7 insertions(+), 7 deletions(-)
+On Mon, 2010-09-13 at 21:35 +0200, Andi Kleen wrote:
+> Stephane Eranian <eranian@google.com> writes:
+> 
+> > The DS, BTS, and PEBS memory regions were allocated using kzalloc(), i.e.,
+> > requesting contiguous physical memory. There is no such restriction on
+> > DS, PEBS and BTS buffers. Using kzalloc() could lead to error in case
+> > no contiguous physical memory is available. BTS is requesting 64KB,
+> > thus it can cause issues. PEBS is currently only requesting one page.
+> > Both PEBS and BTS are static buffers allocated for each CPU at the
+> > first user. When the last user exists, the buffers are released.
+> 
+> DS supports page tables, but I have some doubts it really 
+> supports page faults. vmalloc today does page faults. 
+> 
+> I think the change is a good idea, but it will need vmalloc_sync_all()
+> everywhere.
 
-diff --git a/drivers/scsi/bnx2i/bnx2i_hwi.c b/drivers/scsi/bnx2i/bnx2i_hwi.c
-index 90cef71..bd01994 100644
---- a/drivers/scsi/bnx2i/bnx2i_hwi.c
-+++ b/drivers/scsi/bnx2i/bnx2i_hwi.c
-@@ -1919,10 +1919,10 @@ static void bnx2i_process_iscsi_error(struct bnx2i_hba *hba,
- {
- 	struct bnx2i_conn *bnx2i_conn;
- 	u32 iscsi_cid;
--	char warn_notice[] = "iscsi_warning";
--	char error_notice[] = "iscsi_error";
-+	static const char warn_notice[] = "iscsi_warning";
-+	static const char error_notice[] = "iscsi_error";
- 	char additional_notice[64];
--	char *message;
-+	const char *message;
- 	int need_recovery;
- 	u64 err_mask64;
- 
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index da9ba06..7e61349 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -281,7 +281,7 @@ lpfc_dump_wakeup_param_cmpl(struct lpfc_hba *phba, LPFC_MBOXQ_t *pmboxq)
- 	uint32_t prog_id_word;
- 	char dist = ' ';
- 	/* character array used for decoding dist type. */
--	char dist_char[] = "nabx";
-+	static const char dist_char[] = "nabx";
- 
- 	if (pmboxq->u.mb.mbxStatus != MBX_SUCCESS) {
- 		mempool_free(pmboxq, phba->mbox_mem_pool);
-diff --git a/drivers/scsi/megaraid/megaraid_mbox.c b/drivers/scsi/megaraid/megaraid_mbox.c
-index a7810a1..7eddde3 100644
---- a/drivers/scsi/megaraid/megaraid_mbox.c
-+++ b/drivers/scsi/megaraid/megaraid_mbox.c
-@@ -1536,9 +1536,9 @@ megaraid_mbox_build_cmd(adapter_t *adapter, struct scsi_cmnd *scp, int *busy)
- 	mbox64_t		*mbox64;
- 	mbox_t			*mbox;
- 	scb_t			*scb;
--	char			skip[] = "skipping";
--	char			scan[] = "scanning";
--	char			*ss;
-+	static const char	skip[] = "skipping";
-+	static const char	scan[] = "scanning";
-+	const char		*ss;
- 
- 
- 	/*
--- 
-1.7.3.rc1
+Right, I seem to remember from that last discussion on vmalloc vs NMI
+that vmalloc_sync_all() had some issues, or am I totally mis-remembering
+that?
 
+But yes, a vmalloc_sync_all() after the vmalloc_node() and this should
+indeed work.
