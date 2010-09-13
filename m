@@ -1,68 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab0IMDqW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 23:46:22 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:45873 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754178Ab0IMDqV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 23:46:21 -0400
-X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Sep 2010 23:46:21 EDT
-Message-Id: <1284349152.15254.1394658481@webmail.messagingengine.com>
-X-Sasl-Enc: ICZ6uVBES6oxKWbVgrqoQSgSrwcAzwxkhrPCu04azOV2 1284349152
-From: "Robert Mueller" <robm@fastmail.fm>
-To: linux-kernel@vger.kernel.org
-Cc: "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
-        "Bron Gondwana" <brong@fastmail.fm>
+	id S1754291Ab0IMDsQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 23:48:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45068 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754161Ab0IMDsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 23:48:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,357,1280732400"; 
+   d="scan'208";a="837074378"
+Date: Mon, 13 Sep 2010 11:48:08 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Neil Brown <neilb@suse.de>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: [PATCH 05/17] writeback: quit throttling when signal pending
+Message-ID: <20100913034808.GA9196@localhost>
+References: <20100912154945.758129106@intel.com>
+ <20100912155203.355459925@intel.com>
+ <20100913064654.3cce885c@notabene>
+ <20100913015529.GB5312@localhost>
+ <20100913132116.3917e5d5@notabene>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: MessagingEngine.com Webmail Interface
-Subject: Default zone_reclaim_mode = 1 on NUMA kernel is bad for file/email/web
- servers
-Reply-To: robm@fastmail.fm
-Date: Mon, 13 Sep 2010 13:39:12 +1000
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100913132116.3917e5d5@notabene>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So over the last couple of weeks, I've noticed that our shiny new IMAP
-servers (Dual Xeon E5520 + Intel S5520UR MB) with 48G of RAM haven't
-been performing as well as expected, and there were some big oddities.
-Namely two things stuck out:
+On Mon, Sep 13, 2010 at 11:21:16AM +0800, Neil Brown wrote:
+> On Mon, 13 Sep 2010 09:55:29 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
+> 
+> > On Mon, Sep 13, 2010 at 04:46:54AM +0800, Neil Brown wrote:
+> > > On Sun, 12 Sep 2010 23:49:50 +0800
+> > > Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > > 
+> > > > This allows quick response to Ctrl-C etc. for impatient users.
+> > > > 
+> > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > > ---
+> > > >  mm/page-writeback.c |    3 +++
+> > > >  1 file changed, 3 insertions(+)
+> > > > 
+> > > > --- linux-next.orig/mm/page-writeback.c	2010-09-09 16:01:14.000000000 +0800
+> > > > +++ linux-next/mm/page-writeback.c	2010-09-09 16:02:27.000000000 +0800
+> > > > @@ -553,6 +553,9 @@ static void balance_dirty_pages(struct a
+> > > >  		__set_current_state(TASK_INTERRUPTIBLE);
+> > > >  		io_schedule_timeout(pause);
+> > > >  
+> > > > +		if (signal_pending(current))
+> > > > +			break;
+> > > > +
+> > > 
+> > > Given the patch description,  I think you might want "fatal_signal_pending()"
+> > > here ???
+> > 
+> > __fatal_signal_pending() tests SIGKILL only, while the one often used
+> > and need more quick responding is SIGINT..
+> >
+> 
+> I thought that at first too....  but I don't think that is the case.
+> 
+> In kernel/signal.c, in complete_signal, we have
+>   if (sig_fatal() ...)
+>            ....
+> 		sigaddset(&t->pending.signal, SIGKILL);
+> 
+> where sig_fatal is
+> 
+> #define sig_fatal(t, signr) \
+> 	(!siginmask(signr, SIG_KERNEL_IGNORE_MASK|SIG_KERNEL_STOP_MASK) && \
+> 	 (t)->sighand->action[(signr)-1].sa.sa_handler == SIG_DFL)
+> 
+> 
+> so (if I'm reading the code correctly), if a process receives a signal for
+> which the handler is SIG_DFL, then SIGKILL is set in the pending mask, so
+> __fatal_signal_pending will be true.
+> 
+> So it fatal_signal_pending should catch any signal that will cause the
+> process to exit.  I assume that it what you want...
 
-1. There was free memory. There's 20T of data on these machines. The
-   kernel should have used lots of memory for caching, but for some
-   reason, it wasn't. cache ~ 2G, buffers ~ 25G, unused ~ 5G
-2. The machine has an SSD for very hot data. In total, there's about 16G
-   of data on the SSD. Almost all of that 16G of data should end up
-   being cached, so there should be little reading from the SSDs at all.
-   Instead we saw at peak times 2k+ blocks read/s from the SSDs. Again a
-   sign that caching wasn't working.
+Ah yes, it does look so. Thanks for the detailed explanation!
+Here is the updated patch.
 
-After a bunch of googling, I found this thread.
+Thanks,
+Fengguang
+---
+Subject: writeback: quit throttling when fatal signal pending
+From: Wu Fengguang <fengguang.wu@intel.com>
+Date: Wed Sep 08 17:40:22 CST 2010
 
-http://lkml.org/lkml/2009/5/12/586
+This allows quick response to Ctrl-C etc. for impatient users.
 
-It appears that patch never went anywhere, and zone_reclaim_mode is
-still defaulting to 1 on our pretty standard file/email/web server type
-machine with a NUMA kernel.
+It mainly helps the rare bdi/global dirty exceeded cases.
+In the normal case of not exceeded, it will quit the loop anyway. 
 
-By changing it to 0, we saw an immediate massive change in caching
-behaviour. Now cache ~ 27G, buffers ~ 7G and unused ~ 0.2G, and IO reads
-from the SSD dropped to 100/s instead of 2000/s.
+CC: Neil Brown <neilb@suse.de>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Having very little knowledge of what this actually does, I'd just
-like to point out that from a users point of view, it's really
-annoying for your machine to be crippled by a default kernel setting
-that's pretty obscure.
-
-I don't think our usage scenario of serving lots of files is that
-uncommon, every file server/email server/web server will be doing pretty
-much that and expecting a large part of their memory to be used as a
-cache, which clearly isn't what actually happens.
-
-Rob
-Rob Mueller
-robm@fastmail.fm
-
+--- linux-next.orig/mm/page-writeback.c	2010-09-12 13:25:23.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-09-13 11:39:33.000000000 +0800
+@@ -552,6 +552,9 @@ static void balance_dirty_pages(struct a
+ 		__set_current_state(TASK_INTERRUPTIBLE);
+ 		io_schedule_timeout(pause);
+ 
++		if (fatal_signal_pending(current))
++			break;
++
+ check_exceeded:
+ 		/*
+ 		 * The bdi thresh is somehow "soft" limit derived from the
