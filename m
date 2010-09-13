@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab0IMPbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:31:39 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:3131 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab0IMPbi convert rfc822-to-8bit (ORCPT
+	id S1753154Ab0IMPck (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:32:40 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:40286 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751630Ab0IMPcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:31:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=unDD5IA8eKKfN1SKkSzm2Xqm+K5lZ7H/enQwDAXamu/iSvsKvqKsvEhnX0Gio361Sf
-         J5s8sdws3lgKIdBsAj/w==
+	Mon, 13 Sep 2010 11:32:39 -0400
+X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Sep 2010 11:32:38 EDT
+X-IronPort-AV: E=Sophos;i="4.56,359,1280700000"; 
+   d="scan'208";a="59197388"
+Date: Mon, 13 Sep 2010 17:22:49 +0200
+From: Samuel Thibault <Samuel.Thibault@ens-lyon.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: =?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andres Salomon <dilinger@queued.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: EuroBraille/Iris power off
+Message-ID: <20100913152249.GC5364@const.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <Samuel.Thibault@ens-lyon.org>,
+	Valdis.Kletnieks@vt.edu,
+	=?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>,
+	"H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Andres Salomon <dilinger@queued.net>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20100825094925.GA3632@pema> <alpine.LFD.2.00.1008261406480.2062@localhost.localdomain> <20100826210815.GA18131@pema> <4C76D9A0.2010907@zytor.com> <20100829205929.GA3309@pema> <20100913100719.GA3903@pema> <54870.1284390647@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1284391480.2275.350.camel@laptop>
-References: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
-	<20100913150914.GA6155@nowhere>
-	<AANLkTi=OR69sDbUMkSnx_-bpF=yHF_xNY1v=-BJgLpp5@mail.gmail.com>
-	<1284391000.2275.338.camel@laptop>
-	<AANLkTin35TXPcs9u3pLfo8QRUmGnftT1DPfswRUVEvJW@mail.gmail.com>
-	<1284391480.2275.350.camel@laptop>
-Date: Mon, 13 Sep 2010 17:31:35 +0200
-Message-ID: <AANLkTik8r4moPy5muNyT2oKGH5aEaMOLL0Zqn=-hkpos@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        robert.richter@amd.com,
-        "markus.t.metzger" <markus.t.metzger@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54870.1284390647@localhost>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 5:24 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2010-09-13 at 17:20 +0200, Stephane Eranian wrote:
->
->> That is the case we the sizes you have chosen today. For DS, we
->> could round up to one page for now.
->
-> Markus chose the BTS size, for PEBS a single page was plenty since we do
-> single event things (although we could do multiple for attr.precise_ip <
-> 2).
->
-> For DS there's:
-> Â kmalloc_node(sizeof(struct ds), GFP_KERNEL | __GFP_ZERO, cpu_node(cpu));
->
-Ok, let try again with alloc_pages_node() + kmalloc_node().
-I think we can stick with kmalloc() for DS because we are far from
-consuming a page.
+Valdis.Kletnieks@vt.edu, le Mon 13 Sep 2010 11:10:47 -0400, a écrit :
+> On Mon, 13 Sep 2010 12:07:19 +0200, Shérab said:
+> 
+> > +static int iris_init(void)
+> > +{
+> > +	unsigned char status = inb(IRIS_GIO_INPUT);
+> > +	if (status == IRIS_GIO_NODEV) {
+> > +		printk(KERN_ERR "This machine does not seem to be an Iris. Power_off handler not installed.\n");
+> > +		return -ENODEV;
+> > +	}
+> 
+> Is it actually safe to assume that this will do the right thing on a machine that
+> is a non-Iris that has something *else* at that I/O  address?
 
->
->
+No.
+
+> Any further sanity checking we can do?
+
+No. The format of the value there is quite unknown, it's just quite sure
+it won't be 0xff on the Iris.
+
+Again, I'm not sure we really should try hard to make it automatically
+detected (and thus always enabled).  Having to pass a kernel parameter
+to enable the functionality is completely fine, since installing Linux
+on this device requires quite some tinkering already.
+
+Samuel
