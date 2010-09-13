@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab0IMEX4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 00:23:56 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:35662 "EHLO
+	id S1752011Ab0IMEX7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 00:23:59 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:35698 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750712Ab0IMEXy (ORCPT
+	by vger.kernel.org with ESMTP id S1750864Ab0IMEXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 00:23:54 -0400
-Message-ID: <000901cb52fb$78a63ae0$66f8800a@maildom.okisemi.com>
+	Mon, 13 Sep 2010 00:23:55 -0400
+Message-ID: <000b01cb52fb$794d2940$66f8800a@maildom.okisemi.com>
 From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Micha? Nazarewicz" <m.nazarewicz@samsung.com>,
-        "Randy Dunlap" <randy.dunlap@oracle.com>,
+To: "Greg KH" <gregkh@suse.de>
+Cc: "Randy Dunlap" <randy.dunlap@oracle.com>,
         "Peter Korsgaard" <peter.korsgaard@barco.com>,
         "Nicolas Ferre" <nicolas.ferre@atmel.com>,
+        "Michal Nazarewicz" <m.nazarewicz@samsung.com>,
         "Maurus Cuelenaere" <mcuelenaere@gmail.com>,
         "linux-usb" <linux-usb@vger.kernel.org>,
         "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
         "Fabien Chouteau" <fabien.chouteau@barco.com>,
         "david Brownell" <dbrownell@users.sourceforge.net>,
         "Christoph Egger" <siccegge@stud.informatik.uni-erlangen.de>,
-        "LKML" <linux-kernel@vger.kernel.org>, "MeeGo" <meego-dev@meego.com>
-Cc: "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "LKML" <linux-kernel@vger.kernel.org>, "MeeGo" <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
         "Andrew" <andrew.chih.howe.khor@intel.com>,
         "Intel OTC" <joel.clark@intel.com>,
         "Foster, Margie" <margie.foster@intel.com>,
@@ -29,9 +29,9 @@ Cc: "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
         "Toshiharu Okada" <okada533@dsn.okisemi.com>,
         "Takahiro Shimizu" <shimizu394@dsn.okisemi.com>,
         "Tomoya Morinaga" <morinaga526@dsn.okisemi.com>
-References: <4C85EE6F.6000706@dsn.okisemi.com> <op.vioye2r17p4s8u@localhost>
+References: <4C85EE6F.6000706@dsn.okisemi.com> <20100908002229.GC15785@suse.de>
 Subject: Re: [PATCH] USB device driver of Topcliff PCH
-Date: Mon, 13 Sep 2010 13:23:07 +0900
+Date: Mon, 13 Sep 2010 13:23:40 +0900
 X-Priority: 3
 X-MSMail-Priority: Normal
 X-Mailer: Microsoft Outlook Express 6.00.2800.1983
@@ -42,543 +42,254 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal
+Hi Greg
+
+> > +#define PCH_UDC_BIT_CLR(reg, bitMask) \
+> > + iowrite32((ioread32((reg)) & (~(bitMask))), (reg))
+>
+>
+> Why not just use the iowrite32 functions directly?  Or surely there's
+> another built-in kernel macro for this somewhere, right?
+
+[masa]
+Which macro is it?
+Do you know?
 
 My reply comments are included in the following.
 
 Thanks Ohtake
-
-Date: Wed, 08 Sep 2010 03:58:04 +0200
-From: "Micha? Nazarewicz" <m.nazarewicz@samsung.com>
->Not sure why I'm on the "To" list, but here are a few of my comments:
+---------
+Date: Tue, 7 Sep 2010 17:22:29 -0700
+From: Greg KH <gregkh@suse.de>
+> On Tue, Sep 07, 2010 at 04:49:03PM +0900, Masayuki Ohtake wrote:
+> > This patch adds the USB device driver of Topcliff PCH.
+> >
+> > Topcliff PCH is the platform controller hub that is going to be used in
+> > Intel's upcoming general embedded platform. All IO peripherals in
+> > Topcliff PCH are actually devices sitting on AMBA bus.
+> > Topcliff PCH has USB device I/F. Using this I/F, it is able to access system
+> > devices connected to USB device.
+> >
+> > Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+> > ---
+> >  drivers/usb/gadget/Kconfig        |   24 +
+> >  drivers/usb/gadget/Makefile       |    2 +-
+> >  drivers/usb/gadget/gadget_chips.h |    7 +
+> >  drivers/usb/gadget/pch_udc.c      | 3153 +++++++++++++++++++++++++++++++++++++
+> >  drivers/usb/gadget/pch_udc.h      |  495 ++++++
+> >  5 files changed, 3680 insertions(+), 1 deletions(-)
+> >  create mode 100755 drivers/usb/gadget/pch_udc.c
+> >  create mode 100755 drivers/usb/gadget/pch_udc.h
+>
+> Heh, really?  executable .c and .h files?  I think you need to look at
+> your development system :)
 
 [masa]
-Your address was got the following scripts as maintainer.
-"./scripts/get_maintainer.pl"
-Whom should I submit patch to?
+"pch_udc.h" will be removed
+It includes in "pch_udc.c"
 
-
->On Tue, 07 Sep 2010 09:49:03 +0200, Masayuki Ohtake <masa-korg@dsn.okisemi.com> wrote:
->> +/**
->> + * pch_udc_write_csr - Write the command and status registers.
 >
->IIRC, the correct way to write kernel doc is:
 >
->+ * pch_udc_write_csr() - Write the command and status registers.
+> >
+> > diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+> > index 591ae9f..3bc839d 100644
+> > --- a/drivers/usb/gadget/Kconfig
+> > +++ b/drivers/usb/gadget/Kconfig
+> > @@ -220,6 +220,30 @@ config USB_OTG
+> >
+> >     Select this only if your OMAP board has a Mini-AB connector.
+> >
+> > +config USB_GADGET_PCH
+> > + boolean "PCH USB Dev"
 >
->Note the "()".  This applies to other functions as well.
->
-
-[masa]
-This will be modified.
-
-
->> + * @val: value to be written to CSR register
->> + * @addr: address of CSR register
->> + */
->> +inline void pch_udc_write_csr(unsigned long val, unsigned long addr)
->
->As it was pointed, unless those functions are extern, make them static and remove
->the inline.
-
-[masa]
-This will be modified as
-"static void pch_udc_write_csr(unsigned long val, unsigned long addr)"
-
-
->> +{
->> + int count = MAX_LOOP;
->> +
->> + /* Wait till idle */
->> + while ((count > 0) &&\
->> + (ioread32((u32 *)(PCH_UDC_CSR_BUSY_ADDR + pch_udc_base)) &
->> + PCH_UDC_CSR_BUSY))
->> + count--;
->
->I'd say: "while (ioread(...) && --count);"  Also, I'd make count to be unsigned.
-
-[masa]
-This will be modified.
-
-
->> +
->> + if (count < 0)
->> + pr_debug("%s: wait error; count = %x", __func__, count);
->
->Dead code.  If MAX_LOOP is >= 0 count will never get negative.  Did you mean
->if (!count)?
-
-[masa]
-This will be modified.
-
->> +
->> + iowrite32(val, (u32 *)addr);
->> + /* Wait till idle */
->> + count = MAX_LOOP;
->> + while ((count > 0) &&
->> + (ioread32((u32 *)(PCH_UDC_CSR_BUSY_ADDR + pch_udc_base)) &
->> + PCH_UDC_CSR_BUSY))
->> + count--;
->> +
->> + if (count < 0)
->> + pr_debug("%s: wait error; count = %x", __func__, count);
->
->Dead code.
-
-[masa]
-This will be modified.
-
->> +/**
->> + * pch_udc_read_csr - Read the command and status registers.
->> + * @addr: address of CSR register
->> + * Returns
->> + * content of CSR register
->> + */
->> +inline u32 pch_udc_read_csr(unsigned long addr)
->
->All comments to the pch_udc_write_csr() function apply here as well.
-
-[masa]
-This will be modified.
-
-
->> +/**
->> + * pch_udc_get_speed - Return the speed status
->> + * @dev: Reference to pch_udc_regs structure
->> + * Retern The speed(LOW=1, FULL=2, HIGH=3)
->> + */
->> +inline int pch_udc_get_speed(struct pch_udc_regs __iomem *dev)
->> +{
->> + u32 val;
->> +
->> + val = ioread32(&dev->devsts);
->
->It's just me, but why not join the two lines together:
->
->+ u32 val = ioread32(&dev->devsts);
->
->> + return (val & UDC_DEVSTS_ENUM_SPEED_MASK) >> UDC_DEVSTS_ENUM_SPEED_OFS;
->> +}
-
-[masa]
-This will be modified.
-
-
->> +/**
->> + * pch_udc_ep_clear_nak - Set the bit 8 (CNAK field)
->> + * of the endpoint control register
->> + * @ep: reference to structure of type pch_udc_ep_regs
->> + */
->> +void pch_udc_ep_clear_nak(struct pch_udc_ep_regs __iomem *ep)
->> +{
->> + unsigned int loopcnt = 0;
->> +
->> + if (ioread32(&ep->epctl) & (1 << UDC_EPCTL_NAK)) {
->
->if (!(ioread32(&ep->epctl) & (1 << UDC_EPCTL_NAK)))
->return;
->
->and then drop one indention level for the rest of the function.
->This will help to keep indention level nearer the recommended
->limit of 3.
-
-[masa]
-This will be modified.
-
-
->> +void pch_udc_ep_fifo_flush(struct pch_udc_ep_regs __iomem *ep, int dir)
->> +{
->> + unsigned int loopcnt = 0;
->> +
->> + pr_debug("%s: ep%d%s", __func__, EP_NUM(ep),
->> + (EP_IS_IN(ep) ? "in" : "out"));
->> + if (dir) { /* IN ep */
->> + PCH_UDC_BIT_SET(&ep->epctl, 1 << UDC_EPCTL_F);
->
->I'd add "return;" here and move the else part out of the else dropping
->one indention level.
-
-[masa]
-This will be modified.
-
->> + } else {
->> + if ((pch_udc_read_ep_status(ep) &
->> +     (1 << UDC_EPSTS_MRXFIFO_EMP)) == 0) {
->
->if (pch_udc_read_ep_status(ep) & (1 << UDC_EPSTS_MRXFIFO_EMP)
->return;
->
->and drop indention.
-
-[masa]
-This will be modified.
-
-
->> +/**
->> + * pch_udc_pcd_pullup - This API is invoked to make the device
->> + * visible/invisible to the host
->> + * @gadget: Reference to the gadget driver
->> + * @is_on: Specifies whether the pull up is made active or inactive
->> + * Returns
->> + * 0: Success
->> + * -EINVAL: If the gadget passed is NULL
->> + */
->> +static int pch_udc_pcd_pullup(struct usb_gadget *gadget, int is_on)
->> +{
->> + struct pch_udc_dev *dev;
->> +
->> + pr_debug("%s: enter", __func__);
->
->It just struck me.  Wouldn't it be feasible to use "dev_*" instead of "pr_*"?
-
-[masa]
-This will be modified.
-
-
->> + if (gadget == NULL) {
->> + pr_debug("%s: exit -EINVAL", __func__);
->> + return -EINVAL;
->> + }
->> + dev = container_of(gadget, struct pch_udc_dev, gadget);
->> + if (is_on == 0)
->> + pch_udc_set_disconnect(dev->regs);
->> + else
->> + pch_udc_clear_disconnect(dev->regs);
->
->There was function that did exactly that I think.  Wasn't there?
-
-[masa] ???
-
->> +/**
->> + * pch_udc_start_next_txrequest - This function starts
->> + * the next transmission requirement
->> + * @ep: Reference to the endpoint structure
->> + */
->> +static void pch_udc_start_next_txrequest(struct pch_udc_ep *ep)
->> +{
->> + struct pch_udc_request *req;
->> +
->> + pr_debug("%s: enter", __func__);
->> + if (pch_udc_read_ep_control(ep->regs) & (1 << UDC_EPCTL_P))
->> + return;
->> +
->> + if (!list_empty(&ep->queue)) {
->
->if (list_empty(...))
->return;
->
->and drop indention.
-
-[masa]
-This will be modified.
-
->> + /* next request */
->> + req = list_entry(ep->queue.next, struct pch_udc_request, queue);
->> + if (req && !req->dma_going) {
->
->Same here.
-
-[masa]
-This will be modified.
-
->> + pr_debug("%s: Set request: req=%p req->td_data=%p",
->> + __func__, req, req->td_data);
->> + if (req->td_data) {
->
->Same eher.
-
-[masa]
-This will be modified.
-
->> + struct pch_udc_data_dma_desc *td_data;
->> +
->> + while (pch_udc_read_ep_control(ep->regs) &
->> + (1 << UDC_EPCTL_S))
->> + udelay(100);
->> +
->> + req->dma_going = 1;
->> + /* Clear the descriptor pointer */
->> + pch_udc_ep_set_ddptr(ep->regs, 0);
->> +
->> + td_data = req->td_data;
->> + while (1) {
->> + td_data->status = (td_data->status &
->> + ~PCH_UDC_BUFF_STS) |
->> + PCH_UDC_BS_HST_RDY;
->> + if ((td_data->status &
->> + PCH_UDC_DMA_LAST) ==
->> + PCH_UDC_DMA_LAST)
->> + break;
->
->The line above has 6 levels of indention.  If you drop indentions the way
->described above you get back to 3.
-
-[masa]
-This will be modified.
-
->> +static void pch_udc_complete_transfer(struct pch_udc_ep *ep)
->
->Same as with the function above.
-
-[masa]
-This will be modified.
-
->> +/**
->> + * pch_udc_complete_receiver - This function completes a receiver
->> + * @ep: Reference to the endpoint structure
->> + */
->> +static void pch_udc_complete_receiver(struct pch_udc_ep *ep)
->
->This function would use some indention fixing as well.
-
-[masa]
-This will be modified.
-
->> + if (list_empty(&ep->queue)) {
->> + /* enable DMA */
->> + pch_udc_set_dma(dev->regs, DMA_DIR_RX);
->> + }
->
->Drop the "{" and "}". script/checkpatch.pl will find issues like this one.
-
-[masa]
-This will be deleted.
-
-
->> +static void pch_udc_read_all_epstatus(struct pch_udc_dev *dev, u32 ep_intr)
->> +{
->> + int i;
->> + struct pch_udc_ep *ep;
->> +
->> + for (i = 0; i < PCH_UDC_USED_EP_NUM; i++) {
->> + /* IN */
->> + if (ep_intr & (0x1 << i)) {
->> + ep = &dev->ep[2*i];
->> + ep->epsts = pch_udc_read_ep_status(ep->regs);
->> + pch_udc_clear_ep_status(ep->regs, ep->epsts);
->> + }
->> + /* OUT */
->> + if (ep_intr & (0x10000 << i)) {
->> + ep = &dev->ep[2*i+1];
->> + ep->epsts = pch_udc_read_ep_status(ep->regs);
->> + pch_udc_clear_ep_status(ep->regs, ep->epsts);
->> + }
->> + }
->> + return;
->
->Useless return.
-
-[masa]
-This will be deleted.
-
-
->> +/**
->> + * pch_udc_svc_enum_interrupt - This function handles a USB speed enumeration
->> + * done interrupt
->> + * @dev: Reference to driver structure
->> + */
->> +void
->> +pch_udc_svc_enum_interrupt(struct pch_udc_dev *dev)
->
->Useless line break.  This applies not only to this function.
+> Please spell this out a lot more as to what it is.
 
 [masa]
 This will be modified as
-"void pch_udc_svc_enum_interrupt(struct pch_udc_dev *dev)"
+"boolean "PCH USB Device controller""
 
 
->> +void
->> +pch_udc_svc_intf_interrupt(struct pch_udc_dev *dev)
->> +{
->> + u32 reg, dev_stat = 0;
->> + int i, ret;
->> +
->> + pr_debug("%s: enter", __func__);
->> + dev_stat = pch_udc_read_device_status(dev->regs);
->> + dev->cfg_data.cur_intf = (dev_stat & UDC_DEVSTS_INTF_MASK) >>
->> + UDC_DEVSTS_INTF_OFS;
->> + dev->cfg_data.cur_alt = (dev_stat & UDC_DEVSTS_ALT_MASK) >>
->> + UDC_DEVSTS_ALT_OFS;
->> + pr_debug("DVSTATUS=%08x, cfg=%d, intf=%d, alt=%d", dev_stat,
->> + (dev_stat & UDC_CSR_NE_CFG_MASK) >> UDC_CSR_NE_CFG_OFS,
->> + dev->cfg_data.cur_intf, dev->cfg_data.cur_alt);
->> +
->> + dev->set_cfg_not_acked = 1;
->> +
->> + /* Construct the usb request for gadget driver and inform it */
->> + memset(&setup_data, 0 , sizeof setup_data);
->> + setup_data.request.bRequest = USB_REQ_SET_INTERFACE;
->> + setup_data.request.bRequestType = USB_RECIP_INTERFACE;
->> + setup_data.request.wValue = cpu_to_le16(dev->cfg_data.cur_alt);
->> + setup_data.request.wIndex = cpu_to_le16(dev->cfg_data.cur_intf);
->> +
->> + /* programm the Endpoint Cfg registers */
->> + for (i = 0; i < PCH_UDC_USED_EP_NUM * 2; i++) {
->> + if (i == 1) { /* Only one end point cfg register */
->> + reg = pch_udc_read_csr((u32) (&dev->csr->ne[i]));
->> + reg = (reg & ~UDC_CSR_NE_INTF_MASK) |
->> + (dev->cfg_data.cur_intf << UDC_CSR_NE_INTF_OFS);
->> + reg = (reg & ~UDC_CSR_NE_ALT_MASK) |
->> + (dev->cfg_data.cur_alt << UDC_CSR_NE_ALT_OFS);
->> + pch_udc_write_csr(reg, (u32) (&dev->csr->ne[i]));
->> + }
 >
->Could this if be put outside of the loop? This applies not only to this function.
+> > + depends on PCI
+> > + select USB_GADGET_DUALSPEED
+> > + help
+> > +   This is a USB device driver for Topcliff PCH.
+> > +   Topcliff PCH is the platform controller hub that is used in Intel's
+> > +   general embedded platform.
+> > +   Topcliff PCH has USB device interface.
+> > +   Using this interface, it is able to access system devices connected
+> > +   to USB device.
+> > +   This driver enables USB device function.
+> > +   USB device is a USB peripheral controller which
+> > +   supports both full and high speed USB 2.0 data transfers.
+> > +   This driver supports for control transfer, and bulk transfer modes.
+> > +   This driver dose not support interrupt transfer, and isochronous
+> > +   transfer modes.
+> > +
+> > +config PCH_USBDEV
+> > + tristate
+> > + depends on USB_GADGET_PCH
+> > + default USB_GADGET
+> > + select USB_GADGET_SELECTED
+> > +
+> >  config USB_GADGET_PXA25X
+> >  boolean "PXA 25x or IXP 4xx"
+> >  depends on (ARCH_PXA && PXA25x) || ARCH_IXP4XX
+> > diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
+> > index 9bcde11..9473430 100644
+> > --- a/drivers/usb/gadget/Makefile
+> > +++ b/drivers/usb/gadget/Makefile
+> > @@ -63,4 +63,4 @@ obj-$(CONFIG_USB_G_HID) += g_hid.o
+> >  obj-$(CONFIG_USB_G_MULTI) += g_multi.o
+> >  obj-$(CONFIG_USB_G_NOKIA) += g_nokia.o
+> >  obj-$(CONFIG_USB_G_WEBCAM) += g_webcam.o
+> > -
+> > +obj-$(CONFIG_PCH_USBDEV) += pch_udc.o
+> > diff --git a/drivers/usb/gadget/gadget_chips.h b/drivers/usb/gadget/gadget_chips.h
+> > index e511fec..f67dd29 100644
+> > --- a/drivers/usb/gadget/gadget_chips.h
+> > +++ b/drivers/usb/gadget/gadget_chips.h
+> > @@ -142,6 +142,11 @@
+> >  #define gadget_is_s3c_hsotg(g)    0
+> >  #endif
+> >
+> > +#ifdef CONFIG_USB_GADGET_PCH
+> > +#define gadget_is_pch(g) (!strcmp("pch_udc", (g)->name))
+> > +#else
+> > +#define gadget_is_pch(g) 0
+> > +#endif
+> >
+> >  /**
+> >   * usb_gadget_controller_number - support bcdDevice id convention
+> > @@ -200,6 +205,8 @@ static inline int usb_gadget_controller_number(struct usb_gadget *gadget)
+> >  return 0x25;
+> >  else if (gadget_is_s3c_hsotg(gadget))
+> >  return 0x26;
+> > + else if (gadget_is_pch(gadget))
+> > + return 0x27;
+> >  return -ENOENT;
+> >  }
+> >
+> > diff --git a/drivers/usb/gadget/pch_udc.c b/drivers/usb/gadget/pch_udc.c
+> > new file mode 100755
+> > index 0000000..2065c11
+> > --- /dev/null
+> > +++ b/drivers/usb/gadget/pch_udc.c
+> > @@ -0,0 +1,3153 @@
+> > +/*
+> > + * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; version 2 of the License.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License
+> > + * along with this program; if not, write to the Free Software
+> > + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
+> > + */
+> > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > +#include <linux/types.h>
+> > +#include <linux/module.h>
+> > +#include <linux/pci.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/delay.h>
+> > +#include <linux/ioport.h>
+> > +#include <linux/sched.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/smp_lock.h>
+> > +#include <linux/errno.h>
+> > +#include <linux/init.h>
+> > +#include <linux/timer.h>
+> > +#include <linux/list.h>
+> > +#include <linux/interrupt.h>
+> > +#include <linux/ioctl.h>
+> > +#include <linux/fs.h>
+> > +#include <linux/dmapool.h>
+> > +#include <linux/moduleparam.h>
+> > +#include <linux/device.h>
+> > +#include <linux/io.h>
+> > +#include <linux/irq.h>
+> > +
+> > +#include <asm/byteorder.h>
+> > +#include <asm/system.h>
+> > +#include <asm/unaligned.h>
+> > +
+> > +/* gadget stack */
+> > +#include <linux/usb/ch9.h>
+> > +#include <linux/usb/gadget.h>
+> > +#include "pch_udc.h"
+>
+> Why do you need a .h file?
+
+
+[masa]
+"pch_udc.h" will be removed
+It includes in "pch_udc.c"
+
+
+>
+> > +/* macro to set a specified bit(mask) at the specified address */
+> > +#define PCH_UDC_BIT_SET(reg, bitmask) \
+> > + iowrite32(((ioread32((reg)) | (bitmask))), (reg))
+> > +/* macro to clear a specified bit(mask) at the specified address */
+> > +#define PCH_UDC_BIT_CLR(reg, bitMask) \
+> > + iowrite32((ioread32((reg)) & (~(bitMask))), (reg))
+>
+>
+> Why not just use the iowrite32 functions directly?  Or surely there's
+> another built-in kernel macro for this somewhere, right?
+
+[masa]
+Which macro is it?
+Do you know?
+
+>
+> > +#define MAX_LOOP 200
+> > +#define PCH_UDC_PCI_BAR 1
+> > +#define PCI_VENDOR_ID_INTEL 0x8086
+>
+> No need to define this, it's in pci_ids.h already.
+
+[masa]
+OK.
+This will be removed.
+
+>
+> > +#define PCI_DEVICE_ID_INTEL_PCH1_UDC 0x8808
+>
+> I think this is there too.
+
+[masa]
+This is not still in pci.h.
+
+>
+> > +
+> > +const char ep0_string[] = "ep0in";
+> > +static DEFINE_SPINLOCK(udc_stall_spinlock); /* stall spin lock */
+> > +static u32 pch_udc_base;
+> > +static union pch_udc_setup_data setup_data; /* received setup data */
+> > +static unsigned long ep0out_buf[64];
+> > +static dma_addr_t dma_addr;
+> > +struct pch_udc_dev *pch_udc; /* pointer to device object */
+> > +int speed_fs;
+>
+> Why are 2 of these not static variables?
 
 [masa]
 This will be modified.
 
->> +irqreturn_t pch_udc_isr(int irq, void *pdev)
->> +{
->> + struct pch_udc_dev *dev;
->> + u32 dev_intr, ep_intr;
->> + int i;
->> +
->> + pr_debug("%s: enter", __func__);
->> + dev = (struct pch_udc_dev *) pdev;
->> + dev_intr = pch_udc_read_device_interrupts(dev->regs);
->> + ep_intr = pch_udc_read_ep_interrupts(dev->regs);
->> +
->> + if (dev_intr != 0) {
->> + /* Clear device interrupts */
->> + pch_udc_write_device_interrupts(dev->regs, dev_intr);
->> + }
->> + if (ep_intr != 0) {
->> + /* Clear ep interrupts */
->> + pch_udc_write_ep_interrupts(dev->regs, ep_intr);
->> + }
 >
->Useless "{" and "}" in the two above ifs.
+> Have you run this driver through the sparse tool?  It will catch these
+> errors.  Please do so.
+>
 
 [masa]
-This will be deleted.
-
->> + /* Process data in end point interrupts */
->> + for (i = 1; i < PCH_UDC_USED_EP_NUM; i++) {
->> + if (ep_intr & (1 <<  i)) {
->> + pch_udc_svc_data_in(dev, i);
->> + pch_udc_postsvc_epinters(dev, i);
->> + }
->> + }
->> + /* Process data out end point interrupts */
->> + for (i = UDC_EPINT_OUT_EP1; i < (UDC_EPINT_OUT_EP0 +
->> + PCH_UDC_USED_EP_NUM); i++) {
->> + if (ep_intr & (1 <<  i))
->> + pch_udc_svc_data_out(dev, i -
->> + UDC_EPINT_OUT_EP0);
->> + }
->
->Useless "{" and "}" in for.
-
-[masa]
-This will be deleted.
-
->> +int pch_udc_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->> +{
->> + unsigned long resource;
->> + unsigned long len;
->> + int retval = 0;
->> + struct pch_udc_dev *dev;
->> +
->> + dev_dbg(&pdev->dev, "%s: enter", __func__);
->> + /* one udc only */
->> + if (pch_udc != NULL) {
->> + dev_err(&pdev->dev, "%s: already probed", __func__);
->> + return -EBUSY;
->> + }
->> +
->> + /* init */
->> + dev = kzalloc(sizeof(struct pch_udc_dev), GFP_KERNEL);
->
->I just noticed it here but it may apply to other places as well.  I recommend:
->
->+ dev = kzalloc(sizeof *dev, GFP_KERNEL);
-
-[masa]
-This will be modeified.
-
->> + if (dev == NULL) {
->> + dev_err(&pdev->dev, "%s: no memory for device structure",
->> + __func__);
->> + return -ENOMEM;
->> + }
->> + memset(dev, 0, sizeof(struct pch_udc_dev));
->
->kzalloc() does that.
-
-[masa]
-This will be deleted.
-
->> +/**
->> + * pch_udc_cfg_data - Structure to hold current configuration
->> + * and interface information
->
->This applies to other places as well.  The above should read:
->
->+ * struct pch_udc_cfg_data - ...
-
-[masa]
-This will be modeified.
-
->> + * @cur_cfg current configuration in use
->> + * @cur_intf current interface in use
->> + * @cur_alt current alt interface in use
->
->And there should be ":" after member name.
-
-[masa]
-This will be modeified.
-
-
->> +/**
->> + * pch_udc_dev - Structure holding complete information of the PCH USB device
->> + *
->> + * @gadget gadget driver data
->> + * @driver; reference to gadget driver bound
->> + * @pdev; reference to the PCI device
->> + * @ep[PCH_UDC_EP_NUM]; array of endpoints
->> + * @lock; protects all state
->> + * @active:1, enabled the PCI device
->> + * @stall:1, stall requested
->> + * @prot_stall:1, protcol stall requested
->> + * @irq_registered:1, irq registered with system
->> + * @mem_region:1, device memory mapped
->> + * @registered:1, driver regsitered with system
->> + * @suspended:1, driver in suspended state
->> + * @connected:1, gadget driver associated
->> + * @set_cfg_not_acked:1, pending acknowledgement 4 setup
->> + * @waiting_zlp_ack:1; pending acknowledgement 4 ZLP
->> + * @csr; address of config & status
->> + * @regs; address of device registers
->> + * @*ep_regs; address of endpoint registers
->> + * @data_requests; DMA pool for data requests
->> + * @stp_requests; DMA pool for setup requests
->> + * @phys_addr; of device memory
->> + * @virt_addr; for mapped device memory
->> + * @irq; IRQ line for the device
->> + * @cfg_data; current cfg, intf, and alt in use
->> + */
->
->Useless ":1", there should be ":" after member name and not nothing, ";" or ",".
-
-[masa]
-This will be modeified.
-
->> +
->
->Needless empty line.
->
->> +struct pch_udc_dev {
-
-[masa]
-This will be modeified.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Micha? "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
-
+I will do.
 
 
 
