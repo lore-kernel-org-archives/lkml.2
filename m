@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab0IMKYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 06:24:37 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:47341 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab0IMKYf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 06:24:35 -0400
-X-AuditID: b753bd60-a7f34ba000000226-28-4c8dfbe0c98f
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -next,-tip ] kprobes: Fix Kconfig dependency
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        akpm <akpm@linux-foundation.org>
-Date: Mon, 13 Sep 2010 19:25:41 +0900
-Message-ID: <20100913102541.20260.85700.stgit@ltc236.sdl.hitachi.co.jp>
-In-Reply-To: <4C8DCFAE.4020700@hitachi.com>
-References: <4C8DCFAE.4020700@hitachi.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
+	id S1754787Ab0IMKYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 06:24:52 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:50496 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754765Ab0IMKYv convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:1>);
+	Mon, 13 Sep 2010 06:24:51 -0400
+Message-Id: <4C8E180F0200007800015AF4@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 13 Sep 2010 11:24:47 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <khali@linux-fr.org>
+Cc: <fenghua.yu@intel.com>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86/hwmon: pkgtemp has no dependency on PCI
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix Kconfig dependency among Kprobes, optprobe and kallsyms.
+Other than coretemp, from which this code was apparently derived, there
+is no PCI specific code in this driver.
 
-Kprobes uses kallsyms_lookup for finding target function and checking
-instruction boundary, thus CONFIG_KPROBES should select CONFIG_KALLSYMS.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 
-Optprobe is an optional feature which is supported on x86 arch, and
-it also uses kallsyms_lookup for checking instructions in the target
-function. Since KALLSYMS_ALL just adds symbols of kernel variables,
-it doesn't need to select KALLSYMS_ALL.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-Cc: linux-kernel@vger.kernel.org,
-Cc: linux-next@vger.kernel.org,
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-Cc: "David S. Miller" <davem@davemloft.net>,
-Cc: akpm <akpm@linux-foundation.org>
 ---
+ drivers/hwmon/Kconfig   |    2 +-
+ drivers/hwmon/pkgtemp.c |    1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
- arch/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 4877a8c..fe48fc7 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -32,8 +32,9 @@ config HAVE_OPROFILE
+--- linux-2.6.36-rc4/drivers/hwmon/Kconfig	2010-09-13 08:45:02.000000000 +0200
++++ 2.6.36-rc4-x86-pkgtemp-no-pci/drivers/hwmon/Kconfig	2010-09-10 16:24:16.000000000 +0200
+@@ -409,7 +409,7 @@ config SENSORS_CORETEMP
  
- config KPROBES
- 	bool "Kprobes"
--	depends on KALLSYMS && MODULES
-+	depends on MODULES
- 	depends on HAVE_KPROBES
-+	select KALLSYMS
+ config SENSORS_PKGTEMP
+ 	tristate "Intel processor package temperature sensor"
+-	depends on X86 && PCI && EXPERIMENTAL
++	depends on X86 && EXPERIMENTAL
  	help
- 	  Kprobes allows you to trap at almost any kernel address and
- 	  execute a callback function.  register_kprobe() establishes
-@@ -45,7 +46,6 @@ config OPTPROBES
- 	def_bool y
- 	depends on KPROBES && HAVE_OPTPROBES
- 	depends on !PREEMPT
--	select KALLSYMS_ALL
+ 	  If you say yes here you get support for the package level temperature
+ 	  sensor inside your CPU. Check documentation/driver for details.
+--- linux-2.6.36-rc4/drivers/hwmon/pkgtemp.c	2010-09-13 08:45:03.000000000 +0200
++++ 2.6.36-rc4-x86-pkgtemp-no-pci/drivers/hwmon/pkgtemp.c	2010-09-03 17:54:30.000000000 +0200
+@@ -33,7 +33,6 @@
+ #include <linux/list.h>
+ #include <linux/platform_device.h>
+ #include <linux/cpu.h>
+-#include <linux/pci.h>
+ #include <asm/msr.h>
+ #include <asm/processor.h>
  
- config HAVE_EFFICIENT_UNALIGNED_ACCESS
- 	bool
+
+
 
