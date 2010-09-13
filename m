@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab0IMKIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 06:08:15 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:56790 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871Ab0IMKIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 06:08:13 -0400
-Date: Mon, 13 Sep 2010 11:07:59 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 03/10] writeback: Do not congestion sleep if there are
-	no congested BDIs or significant writeback
-Message-ID: <20100913100759.GE23508@csn.ul.ie>
-References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie> <1283770053-18833-4-git-send-email-mel@csn.ul.ie> <20100907152533.GB4620@barrios-desktop> <20100908110403.GB29263@csn.ul.ie> <20100908145245.GG4620@barrios-desktop> <20100909085436.GJ29263@csn.ul.ie> <20100912153744.GA3563@barrios-desktop> <20100913085549.GA23508@csn.ul.ie> <AANLkTimkSU5G1qO0JDp8An5ofM2BPoPY0SGUOuTvSuOL@mail.gmail.com>
+	id S1753284Ab0IMKJi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 06:09:38 -0400
+Received: from mail.lncsa.com ([213.215.28.11]:52217 "EHLO sargon.lncsa.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751585Ab0IMKJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 06:09:37 -0400
+Date: Mon, 13 Sep 2010 12:09:34 +0200
+From: Louis-David Mitterrand <vindex+lists-linux-kernel@apartia.org>
+To: linux-kernel@vger.kernel.org
+Subject: Re: ksoftirqd/n permanently eating 60% of a CPU
+Message-ID: <20100913100934.GA2864@apartia.fr>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+References: <20100912154138.GA23554@apartia.fr>
+ <20100912185715.GA8775@rhlx01.hs-esslingen.de>
+ <20100913075237.GA18081@apartia.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimkSU5G1qO0JDp8An5ofM2BPoPY0SGUOuTvSuOL@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100913075237.GA18081@apartia.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 06:48:10PM +0900, Minchan Kim wrote:
-> >> > > > <SNIP>
-> >> > > > I'm not saying it is. The objective is to identify a situation where
-> >> > > > sleeping until the next write or congestion clears is pointless. We have
-> >> > > > already identified that we are not congested so the question is "are we
-> >> > > > writing a lot at the moment?". The assumption is that if there is a lot
-> >> > > > of writing going on, we might as well sleep until one completes rather
-> >> > > > than reclaiming more.
-> >> > > >
-> >> > > > This is the first effort at identifying pointless sleeps. Better ones
-> >> > > > might be identified in the future but that shouldn't stop us making a
-> >> > > > semi-sensible decision now.
-> >> > >
-> >> > > nr_bdi_congested is no problem since we have used it for a long time.
-> >> > > But you added new rule about writeback.
-> >> > >
-> >> >
-> >> > Yes, I'm trying to add a new rule about throttling in the page allocator
-> >> > and from vmscan. As you can see from the results in the leader, we are
-> >> > currently sleeping more than we need to.
-> >>
-> >> I can see the about avoiding congestion_wait but can't find about
-> >> (writeback < incative / 2) hueristic result.
-> >>
-> >
-> > See the leader and each of the report sections entitled
-> > "FTrace Reclaim Statistics: congestion_wait". It provides a measure of
-> > how sleep times are affected.
-> >
-> > "congest waited" are waits due to calling congestion_wait. "conditional waited"
-> > are those related to wait_iff_congested(). As you will see from the reports,
-> > sleep times are reduced overall while callers of wait_iff_congested() still
-> > go to sleep. The reports entitled "FTrace Reclaim Statistics: vmscan" show
-> > how reclaim is behaving and indicators so far are that reclaim is not hurt
-> > by introducing wait_iff_congested().
+On Mon, Sep 13, 2010 at 09:52:37AM +0200, Louis-David Mitterrand wrote:
+> On Sun, Sep 12, 2010 at 08:57:15PM +0200, Andreas Mohr wrote:
+> > > Examining /proc/interrupts shows that "Local timer interrupts" are
+> > > mainly firing.
+> > 
+> > > Strangely enough, the interrupt storm starts only 5 minutes or so after
+> > > bootup.
+> > 
+> > And have you tried running powertop or manually (perhaps via
+> > sophisticated shell script) keeping a watch on
+> > /proc/timer[list|stats]?
 > 
-> I saw  the result.
-> It was a result about effectiveness _both_ nr_bdi_congested and
-> (writeback < inactive/2).
-> What I mean is just effectiveness (writeback < inactive/2) _alone_.
-
-I didn't measured it because such a change means that wait_iff_congested()
-ignored BDI congestion. If we were reclaiming on a NUMA machine for example,
-it could mean that a BDI gets flooded with requests if we only checked the
-ratios of one zone if little writeback was happening in that zone at the
-time. It did not seem like a good idea to ignore congestion.
-
-> If we remove (writeback < inactive / 2) check and unconditionally
-> return, how does the behavior changed?
+> powertop seems to give a strong hint:
 > 
+> 	54.5% (250.2)   [kernel core] dsp_cmx_send (dsp_cmx_send)
+> 	25.8% (118.6)   usbhid-ups
+> 	5.8% ( 26.7)   [ahci] <interrupt>
+> 	2.6% ( 12.0)   [kernel core] usb_hcd_poll_rh_status (rh_timer_func)
+> 
+> Apparently dsp_cmx_send is in the mISDN stack which, in my kernel, is
+> compiled statically. This happens regardless of the box having isdn
+> hardware.
 
-Based on just the workload Johannes sent, scanning and completion times both
-increased without any improvement in the scanning/reclaim ratio (a bad result)
-hence why this logic was introduced to back off where there is some
-writeback taking place even if the BDI is not congested.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+I can confirm that removing mISDN support from the kernel (or compiling
+it as module without loading it) fixes the irq storm. I sent a note to
+isdn4linux@listserv.isdn4linux.de about it.
