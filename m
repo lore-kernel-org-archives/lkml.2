@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab0IMPVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:21:50 -0400
-Received: from bar.sig21.net ([80.81.252.164]:33298 "EHLO bar.sig21.net"
+	id S1752507Ab0IMPYl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:24:41 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46416 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751904Ab0IMPVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:21:47 -0400
-Date: Mon, 13 Sep 2010 17:21:38 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Florian Mickler <florian@mickler.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: block cache replacement strategy?
-Message-ID: <20100913152138.GA16334@sig21.net>
-References: <20100907133429.GB3430@sig21.net>
- <20100909120044.GA27765@sig21.net>
- <20100910120235.455962c4@schatten.dmk.lab>
- <20100910160247.GA637@sig21.net>
+	id S1750920Ab0IMPYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 11:24:40 -0400
+Message-ID: <4C8E4236.6080108@suse.cz>
+Date: Mon, 13 Sep 2010 17:24:38 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100910160247.GA637@sig21.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-21-Score: -3.8 (---)
-X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.588,BAYES_00=-2.599 autolearn=no
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] make clean fixes
+References: <1283773696-3911-1-git-send-email-mmarek@suse.cz>
+In-Reply-To: <1283773696-3911-1-git-send-email-mmarek@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 06:02:48PM +0200, Johannes Stezenbach wrote:
+On 6.9.2010 13:48, Michal Marek wrote:
+> Two fixes and one cleanup of 'make clean'
 > 
-> Linear read heuristic might be a good guess, but it would
-> be nice to hear a comment from a vm/fs expert which
-> confirms this works as intended.
+> Michal
+> 
+> Michal Marek (3):
+>   kbuild: Really don't clean bounds.h and asm-offsets.h
+>   kbuild: Do not run make clean in $(srctree)
+>   kbuild: Use a single clean rule for kernel and external modules
+> 
+>  Documentation/kbuild/makefiles.txt |    7 +++++++
+>  Kbuild                             |    4 ++--
+>  Makefile                           |   33 +++++++++++++--------------------
+>  scripts/Makefile.clean             |    2 ++
+>  4 files changed, 24 insertions(+), 22 deletions(-)
 
-Apparently I'm unworthy to get a response from someone knowledgable :-(
+I added this to the kbuild tree.
 
-Anyway I found lmdd (from lmbench) can do random reads,
-and indeed causes the data to enter the block (page?) cache,
-replacing the previous data.
-
-
-Johannes
-
-
-zzz:~# echo 3 >/proc/sys/vm/drop_caches
-
-zzz:~# ./lmdd if=~js/qemu/test.img bs=1M count=1000
-1000.0000 MB in 17.7554 secs, 56.3210 MB/sec
-zzz:~# ./lmdd if=~js/qemu/test.img bs=1M count=1000
-1000.0000 MB in 0.9112 secs, 1097.4178 MB/sec
-
-zzz:~# ./lmdd if=~js/qemu/test2.img bs=1M count=1000 rand=1G norepeat=
-norepeat on 238035072
-norepeat on 724579648
-1000.0000 MB in 21.4419 secs, 46.6376 MB/sec
-zzz:~# ./lmdd if=~js/qemu/test2.img bs=1M count=1000 rand=1G norepeat=
-norepeat on 238035072
-norepeat on 724579648
-1000.0000 MB in 14.3859 secs, 69.5125 MB/sec
-zzz:~# ./lmdd if=~js/qemu/test2.img bs=1M count=1000 rand=1G norepeat=
-norepeat on 238035072
-norepeat on 724579648
-1000.0000 MB in 0.8764 secs, 1141.0810 MB/sec
+Michal
