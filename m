@@ -1,154 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab0IMRyC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 13:54:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50435 "EHLO mx1.redhat.com"
+	id S1754067Ab0IMRyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 13:54:00 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51012 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752474Ab0IMRx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751771Ab0IMRx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Sep 2010 13:53:59 -0400
-Date: Mon, 13 Sep 2010 13:53:46 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
- unknown NMI
-Message-ID: <20100913175346.GC26290@redhat.com>
-References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
- <1284087065-32722-5-git-send-email-ying.huang@intel.com>
- <20100910160211.GH4879@redhat.com>
- <20100910181929.4f35ab7c@basil.nowhere.org>
- <20100910184039.GK4879@redhat.com>
- <1284344389.3269.82.camel@yhuang-dev.sh.intel.com>
- <20100913141140.GB27371@redhat.com>
- <20100913172438.37443bf7@basil.nowhere.org>
- <20100913154750.GA26290@redhat.com>
- <20100913185721.59ad9b4d@basil.nowhere.org>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "M. Vefa Bicakci" <bicave@superonline.com>
+Subject: Re: [PATCH] PM / Hibernate: Make default image size depend on totalRAM size
+Date: Mon, 13 Sep 2010 19:52:57 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org,
+        Minchan Kim <minchan.kim@gmail.com>, stable@kernel.org,
+        "Greg Kroah-Hartman" <gregkh@suse.de>
+References: <201009062043.37819.rjw@sisk.pl> <201009120027.06470.rjw@sisk.pl> <4C8E45EB.8030408@superonline.com>
+In-Reply-To: <4C8E45EB.8030408@superonline.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100913185721.59ad9b4d@basil.nowhere.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009131952.57862.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 06:57:21PM +0200, Andi Kleen wrote:
-> On Mon, 13 Sep 2010 11:47:50 -0400
-> Don Zickus <dzickus@redhat.com> wrote:
-> 
+On Monday, September 13, 2010, M. Vefa Bicakci wrote:
+> On 11/09/10 06:27 PM, Rafael J. Wysocki wrote:
+> > On Saturday, September 11, 2010, Rafael J. Wysocki wrote:
+> >> On Saturday, September 11, 2010, M. Vefa Bicakci wrote:
+> > ...
+> >>>
+> >>> I would be glad to test that patch as well, to see if it brings speed-ups.
+> >>> Actually, I might test hibernation with a larger value written to
+> >>> /sys/power/image_size when I have time.
+> >>
+> >> I think that would improve things, as it probably is impossible to reduce the
+> >> image size to 500 MB on your system.
+> >>
+> >> Anyway, I'll let you know when the patch is ready.
 > > 
-> > > 
-> > > Then there isn't necessarily something to "debug": data corruption
-> > > can happen without any bugs being around (and in fact
-> > > that's the common case, assuming production systems)
-> > > 
-> > > So I'm not sure what you're debugging here. Are you being the
-> > > support technician for the system through bugzilla? That sounds
-> > > inefficient.
-> > 
-> > The problem I repeatedly deal with for RHEL systems is a customer
-> > sees an unknown NMI printed on their screen and sometimes the machine
-> > falls apart shortly after, sometimes it doesn't.  Obviously they are
-> > going to file a bug asking why.  A chunk of the problems are bad
-> > hardware/firmware.  But the problem is which one.
+> > OK, please try the patch below on top of the previous one and see if it makes
+> > hibernation run faster on your system.
 > 
-> NMIs are usually hardware.
+> Dear Rafael Wysocki,
 > 
-> BTW one big issue here is that we don't display anything
-> on the screen so the system seems hung. KMS solves this,
-> but unfortunately not for the video chipsets 
-> often used in servers.
-
-No most of our customer see messages being sent to the console or serial
-part.  I haven't seen KMS hiding the info yet.
-
+> I think I have good news. I took a clean 2.6.35.4 tree, and first applied
+> the latest version of your larger snapshot.c patch, and then the patch you
+> appended to your final e-mail in this thread.
 > 
-> Part of it is solved by serializing the error
-> and defaulting to reboot after panic (currently NMI doesn't do that,
-> MCE already does, NMI should too imho) 
+> Here is a comparison of the timings from a kernel without your patch, and
+> one with it.
 > 
-> > 
-> > Replacing a slot card is easy, replacing a motherboard is not.  So I
-> > usually try to determine which device is failing by walking the pci
-> > bus and looking for the serr bits or some of the pci-e status bits.
+> === 8< ===
+> Sep 11 10:22:24 debian kernel: [  499.968989] PM: Allocated 2531300 kbytes in 52.66 seconds (48.06 MB/s)
+> Sep 11 10:44:08 debian kernel: [  764.379131] PM: Allocated 2531308 kbytes in 143.41 seconds (17.65 MB/s)
+> Sep 11 10:48:41 debian kernel: [  920.626386] PM: Allocated 2531300 kbytes in 66.44 seconds (38.09 MB/s)
+> Sep 11 10:53:37 debian kernel: [ 1092.919140] PM: Allocated 2531316 kbytes in 81.28 seconds (31.14 MB/s)
+> ...
+> Sep 13 01:26:09 debian kernel: [   94.948054] PM: Allocated 1804008 kbytes in 28.72 seconds (62.81 MB/s)
+> Sep 13 01:29:58 debian kernel: [  176.678880] PM: Allocated 1803992 kbytes in 34.44 seconds (52.38 MB/s)
+> Sep 13 01:33:48 debian kernel: [  253.336405] PM: Allocated 1804000 kbytes in 27.35 seconds (65.95 MB/s)
+> === >8 ===
 > 
-> You don't necessarily need to replace anything, it could
-> be just unlucky data corruption (e.g. a big enough cosmic ray
-> that flipped enough bits that the normal error correction
-> couldn't fix it anymore)
-
-No, these are easily reproducible NMIs.  So far it they have been the
-result of bad firmware (either features that are marked supported but not,
-or register settings that changed between updates), nic cards that had
-issues, or bad motherboards.
-
-None of these issues went away because of a reboot.
-
+> I didn't have your latest patch applied on September 11, and it was applied
+> last night.
 > 
-> > 
-> > It is inefficient, but I haven't had time to figure out a way to
-> > clean it up.  And just for the record, I usually see an unknown NMI
-> > report every other week.
-> 
-> At least ignoring the data corruption is not the way to handle
-> it. I don't think you'll do your customers a favor this way.
+> It looks like there is a good improvement. I think the data rates look
+> faster on Sept. 13 because the kernel spent less time "thinking" less
+> while compacting the memory image. (I don't think I have changed anything
+> in my configuration that could affect the data rates that much.)
 
-I never said I ignore them.  We try to resolve them quickly.
+OK, thanks for testing and information.
 
->  
-> > > Anyways for hardware support we could probably dump some
-> > > more information at panic or better through error
-> > > serialization, but the word "debug" is IMHO an very wrong
-> > > way to think about that.
-> > 
-> > Well, I can use 'diagnos' or 'determine' if you want.  But at the end
-> > of the day, we have customers that see scary software messages and
-> > expect us to give them reasonable direction to fix their problems.
-> 
-> Usually these problems shouldn't be handled by kernel hackers,
-> it's something for a hardware technician. If kernel
-> hackers have to handle it something is very wrong.
-> 
-> IMHO the software should give the customer enough information
-> to fix (or rather let their hardware technician) work it out.
+> Is it possible to have these patches applied to the 2.6.35 tree so that
+> the regression I reported is fixed?
 
-Yes, I agree, but the hardware folks usually like it when we give them a
-better clue than 'hardware is broken'.  Something like the network stopped
-working or your storage controller's firmware went bad, is usually more
-helpful.
+The "snapshot.c" patch has just been included into the Linus' tree as
 
-And the thing is, the hardware usually leaves a bread cumb trail of where
-things went wrong.  It is just a matter of poking different chips to find
-out who generated the error and report that.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=6715045ddc7472a22be5e49d4047d2d89b391f45
 
-> 
-> BTW one issue is that the screen is not big enough for all
-> the information that is really useful for this. So I suspect
-> to have it really useful you need to accept that some information
-> will only be available through serialization (e.g. if you 
-> wanted to dump parts of the PCI config space)
+> Should I e-mail Greg Kroah-Hartman about this?
 
-Honestly, I don't think you need much screen real estate.  It would be
-nice when an unknown NMI comes in, if the kernel just pokes around the hardware
-registers and display a summary of what it found.  For example,
+and I've already told Greg that it should go into 2.6.35.y.
 
-The following devices had error bits set in the status registers:
-PCI device x:y.z - STATUS_BIT1 | STATUS_BIT2
-HW device xyz - STATUS_BIT3
-...
+The second patch, however, only changes the default value of image_size, so it
+is not -stable material.
 
-This at least gives the users some hardware they can remove/replace to see
-if the problem goes away.
+As a workaround, you can change the init scripts on your system to set
+/sys/power/image_size to the same value that's in it when the second patch is
+applied.
 
-Right now I feel like it is one giant guessing game.
-
-But I guess if we accept the fact that an unknown NMI will panic the box,
-then we can probably be a little more liberal in breaking spinlocks and
-poking around the hardware to display some userful info.
-
-Just some thoughts.
-
-Cheers,
-Don
+Thanks,
+Rafael
