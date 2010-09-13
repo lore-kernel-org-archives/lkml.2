@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab0IMPVg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:21:36 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:60079 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab0IMPVf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:21:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=IK/9Jdv5oSOgXiEIxLgmkroEfARXA39hWCbzzx0TjWb+oegPKAcXbqtOqswn1VpWI8
-         +HT02+UdawGvj4X8zoNw==
+	id S1753166Ab0IMPVu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:21:50 -0400
+Received: from bar.sig21.net ([80.81.252.164]:33298 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751904Ab0IMPVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 11:21:47 -0400
+Date: Mon, 13 Sep 2010 17:21:38 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Florian Mickler <florian@mickler.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: block cache replacement strategy?
+Message-ID: <20100913152138.GA16334@sig21.net>
+References: <20100907133429.GB3430@sig21.net>
+ <20100909120044.GA27765@sig21.net>
+ <20100910120235.455962c4@schatten.dmk.lab>
+ <20100910160247.GA637@sig21.net>
 MIME-Version: 1.0
-In-Reply-To: <1284390530.2275.327.camel@laptop>
-References: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
-	<1284390530.2275.327.camel@laptop>
-Date: Mon, 13 Sep 2010 17:21:31 +0200
-Message-ID: <AANLkTikV-RVd0ZUi97TLSeHAUKwmtoCP=fgB=GJJMxWz@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, markus.t.metzger@intel.com
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100910160247.GA637@sig21.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.8 (---)
+X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.588,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 5:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2010-09-13 at 16:55 +0200, Stephane Eranian wrote:
->> The DS, BTS, and PEBS memory regions were allocated using kzalloc(), i.e.,
->> requesting contiguous physical memory. There is no such restriction on
->> DS, PEBS and BTS buffers. Using kzalloc() could lead to error in case
->> no contiguous physical memory is available. BTS is requesting 64KB,
->> thus it can cause issues. PEBS is currently only requesting one page.
->> Both PEBS and BTS are static buffers allocated for each CPU at the
->> first user. When the last user exists, the buffers are released.
->>
->> All buffers are only accessed on the CPU they are attached to.
->> kzalloc() does not take into account NUMA, thus all allocations
->> are taking place on the NUMA node where the perf_event_open() is
->> made.
->
-> I guess that should have been a alloc_pages_node() indeed.
->
->> This patch switches allocation to vmalloc_node() to use non-contiguous
->> physical memory and to allocate on the NUMA node corresponding to each
->> CPU. We switched DS and PEBS although they do not cause problems today,
->> to, at least, make the allocation on the correct NUMA node. In the future,
->> the PEBS buffer size may increase. DS may also grow bigger than a page.
->> This patch eliminates the memory allocation imbalance.
->
-> I'm not really a fan of vmalloc, have you actually observed allocation
-> failures for these 64k (order-4) allocations?
->
-I did with small amount of memory in containers, after stressing
-the system with perf for instance.
+On Fri, Sep 10, 2010 at 06:02:48PM +0200, Johannes Stezenbach wrote:
+> 
+> Linear read heuristic might be a good guess, but it would
+> be nice to hear a comment from a vm/fs expert which
+> confirms this works as intended.
 
->
->
+Apparently I'm unworthy to get a response from someone knowledgable :-(
+
+Anyway I found lmdd (from lmbench) can do random reads,
+and indeed causes the data to enter the block (page?) cache,
+replacing the previous data.
+
+
+Johannes
+
+
+zzz:~# echo 3 >/proc/sys/vm/drop_caches
+
+zzz:~# ./lmdd if=~js/qemu/test.img bs=1M count=1000
+1000.0000 MB in 17.7554 secs, 56.3210 MB/sec
+zzz:~# ./lmdd if=~js/qemu/test.img bs=1M count=1000
+1000.0000 MB in 0.9112 secs, 1097.4178 MB/sec
+
+zzz:~# ./lmdd if=~js/qemu/test2.img bs=1M count=1000 rand=1G norepeat=
+norepeat on 238035072
+norepeat on 724579648
+1000.0000 MB in 21.4419 secs, 46.6376 MB/sec
+zzz:~# ./lmdd if=~js/qemu/test2.img bs=1M count=1000 rand=1G norepeat=
+norepeat on 238035072
+norepeat on 724579648
+1000.0000 MB in 14.3859 secs, 69.5125 MB/sec
+zzz:~# ./lmdd if=~js/qemu/test2.img bs=1M count=1000 rand=1G norepeat=
+norepeat on 238035072
+norepeat on 724579648
+1000.0000 MB in 0.8764 secs, 1141.0810 MB/sec
