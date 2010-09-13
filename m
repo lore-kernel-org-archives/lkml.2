@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab0IMSAN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 14:00:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51044 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508Ab0IMSAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 14:00:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [Bug #16961] kernel BUG at arch/x86/kvm/../../../virt/kvm/kvm_main.c:1978
-Date: Mon, 13 Sep 2010 19:59:26 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>, Avi Kivity <avi@redhat.com>
-References: <EP3NUDNWMO.A.O0.rrRjMB@chimera> <0c5PAlgnPrH.A.WOC.hsRjMB@chimera> <20100913134847.GA5263@swordfish.minsk.epam.com>
-In-Reply-To: <20100913134847.GA5263@swordfish.minsk.epam.com>
+	id S1754622Ab0IMSBT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 14:01:19 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:34835 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752508Ab0IMSBR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 14:01:17 -0400
+Date: Mon, 13 Sep 2010 14:01:15 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC PATCH] check_preempt_tick should not compare vruntime
+	with wall time
+Message-ID: <20100913180115.GC15653@Krystal>
+References: <1284288072.2251.91.camel@laptop> <20100912203712.GD32327@Krystal> <1284382387.2275.265.camel@laptop> <1284383758.2275.283.camel@laptop> <20100913135621.GA13442@Krystal> <1284387398.2275.311.camel@laptop> <20100913161641.GA28707@Krystal> <AANLkTimB9CjH5SjeY9XmwhTp1tfFPwh-Q1Y4o918h7XD@mail.gmail.com> <20100913174533.GA15653@Krystal> <AANLkTi=8m4g01wZPacySoF7U0PevTNVgJoZZrHiUD-pN@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009131959.26660.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=8m4g01wZPacySoF7U0PevTNVgJoZZrHiUD-pN@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:56:58 up 233 days, 20:33,  5 users,  load average: 0.02, 0.03,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 13, 2010, Sergey Senozhatsky wrote:
-> On (09/12/10 20:14), Rafael J. Wysocki wrote:
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16961
-> > Subject		: kernel BUG at arch/x86/kvm/../../../virt/kvm/kvm_main.c:1978
-> > Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > Date		: 2010-08-19 9:54 (25 days old)
-> > Message-ID	: <<20100819095429.GA5201@swordfish.minsk.epam.com>>
-> > References	: http://marc.info/?l=linux-kernel&m=128221169606214&w=2
-> > Handled-By	: Avi Kivity <avi@redhat.com>
-> > 
-> > 
+* Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> On Mon, Sep 13, 2010 at 10:45 AM, Mathieu Desnoyers
+> <mathieu.desnoyers@efficios.com> wrote:
+> >
+> > FWIW, Xorg and firefox feel _much more_ responsive with the fix I propose when
+> > running with a make -j10. The system is even usable with a make -j20 on my UP
+> > machine, even though I can start feeling a some lag. This is probably a more
+> > important, yet less scientific, result.
 > 
-> Hello,
-> Fixed by
-> commit da908f2fb4e783c2a4de751fb90f11a0dd041161
-> Author: Zachary Amsden <zamsden@redhat.com>
+> I'll test that myself (but in a bit - I need to go do voter
+> registration and socsec update first, though - I became a US citizen
+> last week).
 
-Thanks, closing.
+Congratulations!
 
-Rafael
+> Because yes, that's the reason I'm personally interested in your
+> scheduler latency work: I think our X behavior under load is pitiful
+> (I do "make -j16" on my dual-core with HT Core i5, and web browsong
+> shouldn't start to lag as much as it does just because I overcommit
+> the CPU a bit). So if this makes a noticeable difference, I think it's
+> very important.
+
+Please make sure to include the "smaller min_granularity" patch in your test
+too, because the "check_preempt_tick" fix seems to only affect threads with
+non-zero nice value. I suspect that most of the responsiveness improvement I got
+is mainly from lowering the min_granularity.
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
