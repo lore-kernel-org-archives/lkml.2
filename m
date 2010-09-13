@@ -1,109 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab0IMHJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 03:09:26 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51843 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab0IMHJZ (ORCPT
+	id S1753965Ab0IMHN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 03:13:57 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53016 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab0IMHN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 03:09:25 -0400
-Message-ID: <4C8DCE21.8080503@monstr.eu>
-Date: Mon, 13 Sep 2010 09:09:21 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Jiri Kosina <trivial@kernel.org>, microblaze-uclinux@itee.uq.edu.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] arch/microblaze: Remove pr_<level> uses of KERN_<level>
-References: <cover.1284267142.git.joe@perches.com> <72545a9af0fc4392d473e87b9e9120ba62eb3c87.1284267142.git.joe@perches.com>
-In-Reply-To: <72545a9af0fc4392d473e87b9e9120ba62eb3c87.1284267142.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 13 Sep 2010 03:13:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 13 Sep 2010 16:08:22 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        gthelen@google.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        stable@kernel.org
+Subject: [BUGFIX][PATCH] memcg: fix race in file_mapped accouting flag
+ management
+Message-Id: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
 
-Added to microblaze next branch.
+I think this small race is not very critical but it's bug.
+We have this race since 2.6.34. 
+=
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Thanks,
-Michal
+Now. memory cgroup accounts file-mapped by counter and flag.
+counter is working in the same way with zone_stat but FileMapped flag only
+exists in memcg (for helping move_account).
 
+This flag can be updated wrongly in a case. Assume CPU0 and CPU1
+and a thread mapping a page on CPU0, another thread unmapping it on CPU1.
 
-> ---
->  arch/microblaze/kernel/exceptions.c |   16 ++++++----------
->  1 files changed, 6 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/microblaze/kernel/exceptions.c b/arch/microblaze/kernel/exceptions.c
-> index b98ee8d..7dd4d12 100644
-> --- a/arch/microblaze/kernel/exceptions.c
-> +++ b/arch/microblaze/kernel/exceptions.c
-> @@ -86,8 +86,7 @@ asmlinkage void full_exception(struct pt_regs *regs, unsigned int type,
->  	switch (type & 0x1F) {
->  	case MICROBLAZE_ILL_OPCODE_EXCEPTION:
->  		if (user_mode(regs)) {
-> -			pr_debug(KERN_WARNING "Illegal opcode exception " \
-> -							"in user mode.\n");
-> +			pr_debug("Illegal opcode exception in user mode\n");
->  			_exception(SIGILL, regs, ILL_ILLOPC, addr);
->  			return;
->  		}
-> @@ -97,8 +96,7 @@ asmlinkage void full_exception(struct pt_regs *regs, unsigned int type,
->  		break;
->  	case MICROBLAZE_IBUS_EXCEPTION:
->  		if (user_mode(regs)) {
-> -			pr_debug(KERN_WARNING "Instruction bus error " \
-> -						"exception in user mode.\n");
-> +			pr_debug("Instruction bus error exception in user mode\n");
->  			_exception(SIGBUS, regs, BUS_ADRERR, addr);
->  			return;
->  		}
-> @@ -108,8 +106,7 @@ asmlinkage void full_exception(struct pt_regs *regs, unsigned int type,
->  		break;
->  	case MICROBLAZE_DBUS_EXCEPTION:
->  		if (user_mode(regs)) {
-> -			pr_debug(KERN_WARNING "Data bus error exception " \
-> -							"in user mode.\n");
-> +			pr_debug("Data bus error exception in user mode\n");
->  			_exception(SIGBUS, regs, BUS_ADRERR, addr);
->  			return;
->  		}
-> @@ -119,8 +116,7 @@ asmlinkage void full_exception(struct pt_regs *regs, unsigned int type,
->  		break;
->  	case MICROBLAZE_DIV_ZERO_EXCEPTION:
->  		if (user_mode(regs)) {
-> -			pr_debug(KERN_WARNING "Divide by zero exception " \
-> -							"in user mode\n");
-> +			pr_debug("Divide by zero exception in user mode\n");
->  			_exception(SIGILL, regs, FPE_INTDIV, addr);
->  			return;
->  		}
-> @@ -129,7 +125,7 @@ asmlinkage void full_exception(struct pt_regs *regs, unsigned int type,
->  		die("Divide by zero exception", regs, SIGBUS);
->  		break;
->  	case MICROBLAZE_FPU_EXCEPTION:
-> -		pr_debug(KERN_WARNING "FPU exception\n");
-> +		pr_debug("FPU exception\n");
->  		/* IEEE FP exception */
->  		/* I removed fsr variable and use code var for storing fsr */
->  		if (fsr & FSR_IO)
-> @@ -147,7 +143,7 @@ asmlinkage void full_exception(struct pt_regs *regs, unsigned int type,
->  
->  #ifdef CONFIG_MMU
->  	case MICROBLAZE_PRIVILEGED_EXCEPTION:
-> -		pr_debug(KERN_WARNING "Privileged exception\n");
-> +		pr_debug("Privileged exception\n");
->  		/* "brk r0,r0" - used as debug breakpoint - old toolchain */
->  		if (get_user(code, (unsigned long *)regs->pc) == 0
->  			&& code == 0x980c0000) {
+    CPU0                   		CPU1
+				rmv rmap (mapcount 1->0)
+   add rmap (mapcount 0->1)
+   lock_page_cgroup()
+   memcg counter+1		(some delay)
+   set MAPPED FLAG.
+   unlock_page_cgroup()
+				lock_page_cgroup()
+				memcg counter-1
+				clear MAPPED flag
 
+In above sequence, counter is properly updated but FLAG is not.
+This means that representing a state by a flag which is maintained by
+counter needs some specail care.
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+To handle this, at claering a flag, this patch check mapcount directly and
+clear the flag only when mapcount == 0. (if mapcount >0, someone will make
+it to zero later and flag will be cleared.)
+
+Reverse case, dec-after-inc cannot be a problem because page_table_lock()
+works well for it. (IOW, to make above sequence, 2 processes should touch
+the same page at once with map/unmap.)
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Index: lockless-update/mm/memcontrol.c
+===================================================================
+--- lockless-update.orig/mm/memcontrol.c
++++ lockless-update/mm/memcontrol.c
+@@ -1485,7 +1485,8 @@ void mem_cgroup_update_file_mapped(struc
+ 		SetPageCgroupFileMapped(pc);
+ 	} else {
+ 		__this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		ClearPageCgroupFileMapped(pc);
++		if (page_mapped(page)) /* for race between dec->inc counter */
++			ClearPageCgroupFileMapped(pc);
+ 	}
+ 
+ done:
+
