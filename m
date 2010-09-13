@@ -1,48 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab0IMFD2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 01:03:28 -0400
-Received: from exprod7og116.obsmtp.com ([64.18.2.219]:33087 "EHLO
-	exprod7og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab0IMFD1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 01:03:27 -0400
-X-Greylist: delayed 848 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Sep 2010 01:02:10 EDT
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4657
-Content-Class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: EMAIL QUOTA EXCEEDED??
-Date: Sun, 12 Sep 2010 23:40:42 -0500
-Message-ID: <CBF96800E497BD4D9E84FAAA0B92285A07282825@PTCEXC04.bkglobal.corp.whopper.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: EMAIL QUOTA EXCEEDED??
-thread-index: ActS/dGr/Jj3uxfEQKqlsw/QRCLwQQ==
-From: "Estrada, Ralph" <REstrada3@whopper.com>
-To: <info@unfund.org>
-X-OriginalArrivalTime: 13 Sep 2010 04:40:43.0974 (UTC) FILETIME=[D38EB660:01CB52FD]
+	id S1751708Ab0IMFTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 01:19:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53078 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751116Ab0IMFTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 01:19:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,357,1280732400"; 
+   d="scan'208";a="656618480"
+Subject: Re: high power consumption in recent kernels
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Norbert Preining <preining@logic.at>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "arjan@infradead.org" <arjan@infradead.org>,
+        "efault@gmx.de" <efault@gmx.de>, "Li, Shaohua" <shaohua.li@intel.com>,
+        tglx <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100910145451.GB21450@gamma.logic.tuwien.ac.at>
+References: <1283840425.26157.6486.camel@debian>
+	 <20100909093140.GC29648@gamma.logic.tuwien.ac.at>
+	 <EA929A9653AAE14F841771FB1DE5A1366008738EC2@rrsmsx501.amr.corp.intel.com>
+	 <20100909205115.GD11053@gamma.logic.tuwien.ac.at>
+	 <1284107099.402.30.camel@laptop>
+	 <6E3BC7F7C9A4BF4286DD4C043110F30B2991AF14FD@shsmsx502.ccr.corp.intel.com>
+	 <20100910145451.GB21450@gamma.logic.tuwien.ac.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Sep 2010 13:21:17 +0800
+Message-ID: <1284355277.26157.8109.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your mailbox has exceeded one or more size limits set by your administrator.
-Your mailbox size is 102145 KB.
-Mailbox size limits:
+On Fri, 2010-09-10 at 22:54 +0800, Norbert Preining wrote:
+> On Fr, 10 Sep 2010, Shi, Alex wrote:
+> > In the powertop source code, the "extra timer interrupt" come from /proc/timer_stats. If my understanding is correct, so many "extra timer interrupt" and the nohz_ratemlimit checking make your system can not go to deep C states. but don't know what the effect for "load balancing tick" come from "extra timer interrupt". So maybe reduce the "extra timer interrupt" is  helpful on your system. Could you like to try this? 
+> 
+> Can you be more specific how to do that?
+> 
+> - revert the nohz patch (can you send me a patch for that)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1e2a6db..e66c52e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -274,8 +274,14 @@ extern cpumask_var_t nohz_cpu_mask;
+ #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
+ extern void select_nohz_load_balancer(int stop_tick);
+ extern int get_nohz_timer_target(void);
++extern int nohz_ratelimit(int cpu);
+ #else
+ static inline void select_nohz_load_balancer(int stop_tick) { }
++static inline int nohz_ratelimit(int cpu)
++{
++       return 0;
++}
++
+ #endif
  
-You will receive a warning when your mailbox reaches 90000 KB.
-You cannot send mail when your mailbox reaches 100000 KB.
-You cannot send or receive mail when your mailbox reaches 100000 KB.You may not be able to send or receive new mail until you reduce your mailbox size.
-To make more space available, Complete the Questionaire Below:
+ /*
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ed09d4f..25399e7 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1182,6 +1182,17 @@ static void resched_task(struct task_struct *p)
+ 		smp_send_reschedule(cpu);
+ }
  
-Click the link : http://accessadmin.ucoz.org/pomona.html
-<http://accessadmin.ucoz.org/pomona.html>  
-Failure To Click This Link And Validate Your Quota May Result In Loss Of Important Information In Your Mailbox/Or Cause Limited Access To It.
-Thanks
-HELP DESK 
++int nohz_ratelimit(int cpu)
++{
++       struct rq *rq = cpu_rq(cpu);
++       u64 diff = rq->clock - rq->nohz_stamp;
++
++       rq->nohz_stamp = rq->clock;
++
++       return diff < (NSEC_PER_SEC / HZ) >> 1;
++}
++
++
+ static void resched_cpu(int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 3e216e0..d6bca17 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -325,7 +325,7 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 	} while (read_seqretry(&xtime_lock, seq));
  
+ 	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
+-	    arch_needs_cpu(cpu)) {
++	    arch_needs_cpu(cpu)|| nohz_ratelimit(cpu)) {
+ 		next_jiffies = last_jiffies + 1;
+ 		delta_jiffies = 1;
+ 	} else {
+
+> - how to reduce the "extra timer interrupt"?
+The timer was listed in /proc/timer_stats, you can post its contents,
+and let's see what is abnormal here. 
+
+> 
+> Thanks
+> 
+> Best wishes
+> 
+> Norbert
+> ------------------------------------------------------------------------
+> Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+> JAIST, Japan                                 TeX Live & Debian Developer
+> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+> ------------------------------------------------------------------------
+> CAIRNPAT (n.)
+> A large piece of dried dung found in mountainous terrain above the
+> cowline which leads the experienced tracker to believe that hikers
+> have recently passed.
+> 			--- Douglas Adams, The Meaning of Liff
 
 
-This message and any attachments are intended only for the use of the addressee and may contain information that is privileged and confidential. If the reader of the message is not the intended recipient or an authorized representative of the intended recipient, you are hereby notified that any dissemination of this communication is strictly prohibited. If you have received this communication in error, notify the sender immediately by return email and delete the message and any attachments from your system.
