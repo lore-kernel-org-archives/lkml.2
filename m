@@ -1,164 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab0IMNag (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 09:30:36 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:44945 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753903Ab0IMNae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 09:30:34 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>, James Bottomley <James.Bottomley@suse.de>,
-        bo yang <boyang1288@gmail.com>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>,
-        "Austria, Winston" <Winston.Austria@lsi.com>
-Date: Mon, 13 Sep 2010 07:20:10 -0600
-Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
- MegaRAID SAS driver
-Thread-Topic: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset
- to MegaRAID SAS driver
-Thread-Index: ActNJMv9FbPAvOJTSaaA3BWfoXrvtQBfvm8AAALt1mAAZTiY4ADAb4VA
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3DC0D5280@cosmail02.lsi.com>
-References: <AANLkTiktJycDkXu+FHQanTNe-djvvTe9V=9KfSkLcXZd@mail.gmail.com>
- <1283709850.15944.1277.camel@mulgrave.site>   
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1754647Ab0IMNcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 09:32:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10315 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751792Ab0IMNcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 09:32:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,359,1280732400"; 
+   d="scan'208";a="837171313"
+Date: Mon, 13 Sep 2010 21:31:56 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 09/10] vmscan: Do not writeback filesystem pages in
+ direct reclaim
+Message-ID: <20100913133156.GA12355@localhost>
+References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
+ <1283770053-18833-10-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1283770053-18833-10-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o8DDUniC008406
 
-James,
+Mel,
 
-Did you be able to successfully apply the patches?  I am idling if you feel more changes needed.
+Sorry for being late, I'm doing pretty much prework these days ;)
 
-Regards,
-
-Bo Yang
-
------Original Message-----
-From: Yang, Bo 
-Sent: Thursday, September 09, 2010 1:29 PM
-To: Yang, Bo; 'James Bottomley'; 'bo yang'
-Cc: 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'; Daftardar, Jayant
-Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
-
-James,
-
-Do you have any feedback for the patches?
-
-Thanks,
-
-Bo Yang
-
------Original Message-----
-From: Yang, Bo 
-Sent: Tuesday, September 07, 2010 1:12 PM
-To: Yang, Bo; 'James Bottomley'; 'bo yang'
-Cc: 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'; Daftardar, Jayant
-Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
-
-James,
-
-Those were corrected and submitted.  
-
-Thanks,
-
-Bo Yang
-
------Original Message-----
-From: Yang, Bo 
-Sent: Tuesday, September 07, 2010 11:54 AM
-To: 'James Bottomley'; bo yang
-Cc: linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Daftardar, Jayant
-Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
-
-Thanks James,
-
-The e-mail broken lines of the description.  I am changing the description to avoid re-submit all the patches(5 of them).
-
-Also 
-
->  megasas_complete_cmd(struct megasas_instance *instance, struct
-> megasas_cmd *cmd,
->  		     u8 alt_status);
-
-Not patch line(already in the src, but more than 80 chars).
-
-Regards,
-
-Bo Yang    
-
------Original Message-----
-From: James Bottomley [mailto:James.Bottomley@suse.de] 
-Sent: Sunday, September 05, 2010 2:04 PM
-To: bo yang
-Cc: Yang, Bo; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Daftardar, Jayant
-Subject: Re: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
-
-On Wed, 2010-08-11 at 16:45 -0400, bo yang wrote:
-> To add the Online Controller Reset  (OCR) support, driver need to do:
-> 		a). reset the controller chips -- Xscale and Gen2 which will change
-> the function calls and add the reset function
-> 		related to this two chips.
-> 		
-> 		b). during the reset, driver will store the pending cmds which not
-> returned by FW to driver's pending queue.  Driver
-> 		will re-issue those pending cmds again to FW after the OCR finished.
-> 		
-> 		c). In driver's timeout routine, driver will report to OS as reset.
-> Also driver's queue routine will block the
-> 		cmds until the OCR finished.
-> 		
-> 		d). in Driver's ISR routine, if driver get the FW state as state
-> change, FW in Failure status and FW support online controller
-> 		reset (OCR), driver will start to do the controller reset.
-> 		
-> 		e). In driver's IOCTL routine, the application cmds will wait for
-> the OCR to finish, then issue the cmds to FW.
+On Mon, Sep 06, 2010 at 06:47:32PM +0800, Mel Gorman wrote:
+> When memory is under enough pressure, a process may enter direct
+> reclaim to free pages in the same manner kswapd does. If a dirty page is
+> encountered during the scan, this page is written to backing storage using
+> mapping->writepage. This can result in very deep call stacks, particularly
+> if the target storage or filesystem are complex. It has already been observed
+> on XFS that the stack overflows but the problem is not XFS-specific.
 > 
-> Signed-off-by Bo Yang<bo.yang@lsi.com>
+> This patch prevents direct reclaim writing back filesystem pages by checking
+> if current is kswapd or the page is anonymous before writing back.  If the
+> dirty pages cannot be written back, they are placed back on the LRU lists
+> for either background writing by the BDI threads or kswapd. If in direct
+> lumpy reclaim and dirty pages are encountered, the process will stall for
+> the background flusher before trying to reclaim the pages again.
+> 
+> As the call-chain for writing anonymous pages is not expected to be deep
+> and they are not cleaned by flusher threads, anonymous pages are still
+> written back in direct reclaim.
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/vmscan.c |   49 ++++++++++++++++++++++++++++++++++++++++++++++---
+>  1 files changed, 46 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index ff52b46..408c101 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -145,6 +145,9 @@ static DECLARE_RWSEM(shrinker_rwsem);
+>  #define scanning_global_lru(sc)	(1)
+>  #endif
+>  
+> +/* Direct lumpy reclaim waits up to five seconds for background cleaning */
+> +#define MAX_SWAP_CLEAN_WAIT 50
+> +
+>  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
+>  						  struct scan_control *sc)
+>  {
+> @@ -682,11 +685,13 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
+>   * shrink_page_list() returns the number of reclaimed pages
+>   */
+>  static unsigned long shrink_page_list(struct list_head *page_list,
+> -				      struct scan_control *sc)
+> +					struct scan_control *sc,
+> +					unsigned long *nr_still_dirty)
+>  {
+>  	LIST_HEAD(ret_pages);
+>  	LIST_HEAD(free_pages);
+>  	int pgactivate = 0;
+> +	unsigned long nr_dirty = 0;
+>  	unsigned long nr_reclaimed = 0;
+>  
+>  	cond_resched();
+> @@ -785,6 +790,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  		}
+>  
+>  		if (PageDirty(page)) {
+> +			/*
+> +			 * Only kswapd can writeback filesystem pages to
+> +			 * avoid risk of stack overflow
+> +			 */
+> +			if (page_is_file_cache(page) && !current_is_kswapd()) {
+> +				nr_dirty++;
+> +				goto keep_locked;
+> +			}
+> +
+>  			if (references == PAGEREF_RECLAIM_CLEAN)
+>  				goto keep_locked;
+>  			if (!may_enter_fs)
+> @@ -908,6 +922,8 @@ keep_lumpy:
+>  	free_page_list(&free_pages);
+>  
+>  	list_splice(&ret_pages, page_list);
+> +
+> +	*nr_still_dirty = nr_dirty;
+>  	count_vm_events(PGACTIVATE, pgactivate);
+>  	return nr_reclaimed;
+>  }
+> @@ -1312,6 +1328,10 @@ static inline bool should_reclaim_stall(unsigned long nr_taken,
+>  	if (sc->lumpy_reclaim_mode == LUMPY_MODE_NONE)
+>  		return false;
+>  
+> +	/* If we cannot writeback, there is no point stalling */
+> +	if (!sc->may_writepage)
+> +		return false;
+> +
+>  	/* If we have relaimed everything on the isolated list, no stall */
+>  	if (nr_freed == nr_taken)
+>  		return false;
+> @@ -1339,11 +1359,13 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  			struct scan_control *sc, int priority, int file)
+>  {
+>  	LIST_HEAD(page_list);
+> +	LIST_HEAD(putback_list);
+>  	unsigned long nr_scanned;
+>  	unsigned long nr_reclaimed = 0;
+>  	unsigned long nr_taken;
+>  	unsigned long nr_anon;
+>  	unsigned long nr_file;
+> +	unsigned long nr_dirty;
+>  
+>  	while (unlikely(too_many_isolated(zone, file, sc))) {
+>  		congestion_wait(BLK_RW_ASYNC, HZ/10);
+> @@ -1392,14 +1414,35 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  
+>  	spin_unlock_irq(&zone->lru_lock);
+>  
+> -	nr_reclaimed = shrink_page_list(&page_list, sc);
+> +	nr_reclaimed = shrink_page_list(&page_list, sc, &nr_dirty);
+>  
+>  	/* Check if we should syncronously wait for writeback */
+>  	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
 
-This patch is full of line breaks which prevent application, like this
-one:
+It is possible to OOM if the LRU list is small and/or the storage is slow, so
+that the flusher cannot clean enough pages before the LRU is fully scanned.
 
-> diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas
-> new/Documentation/scsi/ChangeLog.megaraid_sas
-> --- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
-> 04:58:36.000000000 -0400
-> +++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
-> 04:56:30.000000000 -0400
-> @@ -1,3 +1,36 @@
-> +1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
-> +			(emaild-id:megaraidlinux@lsi.com)
-> +			Bo Yang
-[snip]
+So we may need do waits on dirty/writeback pages on *order-0*
+direct reclaims, when priority goes rather low (such as < 3).
 
-and this one
-> diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
-> new/drivers/scsi/megaraid/megaraid_sas.c
-> --- old/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:55:41.000000000 -0400
-> +++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:56:30.000000000 -0400
-> @@ -107,6 +107,12 @@ static void
->  megasas_complete_cmd(struct megasas_instance *instance, struct
-> megasas_cmd *cmd,
->  		     u8 alt_status);
+> +		int dirty_retry = MAX_SWAP_CLEAN_WAIT;
+>  		set_lumpy_reclaim_mode(priority, sc, true);
+> -		nr_reclaimed += shrink_page_list(&page_list, sc);
+> +
+> +		while (nr_reclaimed < nr_taken && nr_dirty && dirty_retry--) {
+> +			struct page *page, *tmp;
+> +
 
-Since not every long line is broken, this looks like some type of cut
-and paste error ... anyway, could you fix it up, please?
+> +			/* Take off the clean pages marked for activation */
+> +			list_for_each_entry_safe(page, tmp, &page_list, lru) {
+> +				if (PageDirty(page) || PageWriteback(page))
+> +					continue;
+> +
+> +				list_del(&page->lru);
+> +				list_add(&page->lru, &putback_list);
+> +			}
 
-Thanks,
+nitpick: I guess the above loop is optional code to avoid overheads
+of shrink_page_list() repeatedly going through some unfreeable pages?
+Considering this is the slow code path, I'd prefer to keep the code
+simple than to do such optimizations.
 
-James
+> +			wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty);
 
+how about 
+                        if (!laptop_mode)
+                                wakeup_flusher_threads(nr_dirty);
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> +			wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+> +
+> +			nr_reclaimed = shrink_page_list(&page_list, sc,
+> +							&nr_dirty);
+> +		}
+>  	}
+>  
+> +	list_splice(&putback_list, &page_list);
+> +
+>  	local_irq_disable();
+>  	if (current_is_kswapd())
+>  		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
+> -- 
+> 1.7.1
