@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab0IMByM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 21:54:12 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42651 "EHLO smtps.tip.net.au"
+	id S1754245Ab0IMBzh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 21:55:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65476 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753530Ab0IMByK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 21:54:10 -0400
-Date: Mon, 13 Sep 2010 11:54:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Hannemann <arnd@arndnet.de>, Paul Mundt <lethal@linux-sh.org>
-Subject: linux-next: manual merge of the mfd tree with Linus' tree
-Message-Id: <20100913115404.cfbe7182.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753530Ab0IMBzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 21:55:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,356,1280732400"; 
+   d="scan'208";a="656585528"
+Date: Mon, 13 Sep 2010 09:55:29 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Neil Brown <neilb@suse.de>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: [PATCH 05/17] writeback: quit throttling when signal pending
+Message-ID: <20100913015529.GB5312@localhost>
+References: <20100912154945.758129106@intel.com>
+ <20100912155203.355459925@intel.com>
+ <20100913064654.3cce885c@notabene>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100913064654.3cce885c@notabene>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On Mon, Sep 13, 2010 at 04:46:54AM +0800, Neil Brown wrote:
+> On Sun, 12 Sep 2010 23:49:50 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
+> 
+> > This allows quick response to Ctrl-C etc. for impatient users.
+> > 
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  mm/page-writeback.c |    3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > --- linux-next.orig/mm/page-writeback.c	2010-09-09 16:01:14.000000000 +0800
+> > +++ linux-next/mm/page-writeback.c	2010-09-09 16:02:27.000000000 +0800
+> > @@ -553,6 +553,9 @@ static void balance_dirty_pages(struct a
+> >  		__set_current_state(TASK_INTERRUPTIBLE);
+> >  		io_schedule_timeout(pause);
+> >  
+> > +		if (signal_pending(current))
+> > +			break;
+> > +
+> 
+> Given the patch description,  I think you might want "fatal_signal_pending()"
+> here ???
 
-Today's linux-next merge of the mfd tree got a conflict in
-arch/arm/mach-shmobile/board-ap4evb.c between commit
-410d878bd05315a19894b8b4685107f2cd0712a5 ("ARM: mach-shmobile: ap4evb:
-fix write protect for SDHI1") from Linus' tree and commit
-c3cfb4003377a3397b27de0efe910c9abd838ac3 ("ARM: mach-shmobile: ap4evb:
-Fix hotplug for SDHI1") from the mfd tree.
+__fatal_signal_pending() tests SIGKILL only, while the one often used
+and need more quick responding is SIGINT..
 
-Just context changes.  I fixed it up (see below) and can carry the fix
-for a while.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-shmobile/board-ap4evb.c
-index 95935c83,6c244a8..0000000
---- a/arch/arm/mach-shmobile/board-ap4evb.c
-+++ b/arch/arm/mach-shmobile/board-ap4evb.c
-@@@ -309,7 -320,8 +322,9 @@@ static struct sh_mobile_sdhi_info sdhi1
-  	.dma_slave_tx	= SHDMA_SLAVE_SDHI1_TX,
-  	.dma_slave_rx	= SHDMA_SLAVE_SDHI1_RX,
-  	.tmio_ocr_mask	= MMC_VDD_165_195,
- +	.tmio_flags	= TMIO_MMC_WRPROTECT_DISABLE,
-+ 	.tmio_caps	= MMC_CAP_NEEDS_POLL,
-+ 	.get_cd		= slot_cn7_get_cd,
-  };
-  
-  static struct resource sdhi1_resources[] = {
+Thanks,
+Fengguang
