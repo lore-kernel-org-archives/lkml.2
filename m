@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab0IMVzQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 17:55:16 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48635 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752011Ab0IMVzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 17:55:14 -0400
-Date: Mon, 13 Sep 2010 21:54:54 GMT
-From: tip-bot for Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        penguin-kernel@I-love.SAKURA.ne.jp, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        penguin-kernel@I-love.SAKURA.ne.jp, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <201008300127.o7U1RC6Z044051@www262.sakura.ne.jp>
-References: <201008300127.o7U1RC6Z044051@www262.sakura.ne.jp>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, cpufeature: Suppress compiler warning with gcc 3.x
-Message-ID: <tip-2fd818642a3c3a257f3b1262145a52bc1bfebd26@git.kernel.org>
-Git-Commit-ID: 2fd818642a3c3a257f3b1262145a52bc1bfebd26
-X-Mailer: tip-git-log-daemon
+	id S1753140Ab0IMVzo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 17:55:44 -0400
+Received: from relay03.digicable.hu ([92.249.128.185]:46437 "EHLO
+	relay03.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab0IMVzm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 17:55:42 -0400
+X-Greylist: delayed 2055 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Sep 2010 17:55:42 EDT
+Message-ID: <4C8E95D0.9040502@freemail.hu>
+Date: Mon, 13 Sep 2010 23:21:20 +0200
+From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
 MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>, autofs@linux.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] autofs: only declare function when CONFIG_COMPAT is defined
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 13 Sep 2010 21:54:55 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+X-Original: 94.21.187.141
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2fd818642a3c3a257f3b1262145a52bc1bfebd26
-Gitweb:     http://git.kernel.org/tip/2fd818642a3c3a257f3b1262145a52bc1bfebd26
-Author:     Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-AuthorDate: Mon, 30 Aug 2010 09:45:40 +0900
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 13 Sep 2010 14:48:41 -0700
+From: Márton Németh <nm127@freemail.hu>
 
-x86, cpufeature: Suppress compiler warning with gcc 3.x
+The patch solves tohe following warnings message when CONFIG_COMPAT is not defined:
+fs/autofs/root.c:30: warning: ‘autofs_root_compat_ioctl’ declared ‘static’ but never defined
 
-Gcc 3.x generates a warning
-
-  arch/x86/include/asm/cpufeature.h: In function `__static_cpu_has':
-  arch/x86/include/asm/cpufeature.h:326: warning: asm operand 1 probably doesn't match constraints
-
-on each file.
-But static_cpu_has() for gcc 3.x does not need __static_cpu_has().
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-LKML-Reference: <201008300127.o7U1RC6Z044051@www262.sakura.ne.jp>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Márton Németh <nm127@freemail.hu>
 ---
- arch/x86/include/asm/cpufeature.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+--- linux-2.6.36-rc4/fs/autofs/root.c.orig	2010-09-13 20:18:15.000000000 +0200
++++ linux-2.6.36-rc4/fs/autofs/root.c	2010-09-13 21:02:11.000000000 +0200
+@@ -27,7 +27,9 @@ static int autofs_root_unlink(struct ino
+ static int autofs_root_rmdir(struct inode *,struct dentry *);
+ static int autofs_root_mkdir(struct inode *,struct dentry *,int);
+ static long autofs_root_ioctl(struct file *,unsigned int,unsigned long);
++#ifdef CONFIG_COMPAT
+ static long autofs_root_compat_ioctl(struct file *,unsigned int,unsigned long);
++#endif
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 781a50b..c6fbb7b 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -296,6 +296,7 @@ extern const char * const x86_power_flags[32];
- 
- #endif /* CONFIG_X86_64 */
- 
-+#if __GNUC__ >= 4
- /*
-  * Static testing of CPU features.  Used the same as boot_cpu_has().
-  * These are only valid after alternatives have run, but will statically
-@@ -304,7 +305,7 @@ extern const char * const x86_power_flags[32];
-  */
- static __always_inline __pure bool __static_cpu_has(u16 bit)
- {
--#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
-+#if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
- 		asm goto("1: jmp %l[t_no]\n"
- 			 "2:\n"
- 			 ".section .altinstructions,\"a\"\n"
-@@ -345,7 +346,6 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- #endif
- }
- 
--#if __GNUC__ >= 4
- #define static_cpu_has(bit)					\
- (								\
- 	__builtin_constant_p(boot_cpu_has(bit)) ?		\
+ const struct file_operations autofs_root_operations = {
+ 	.llseek		= generic_file_llseek,
