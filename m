@@ -1,106 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab0IMHSW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 03:18:22 -0400
-Received: from newpeace.netnation.com ([204.174.223.7]:40361 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754456Ab0IMHST (ORCPT
+	id S1754525Ab0IMHS0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 03:18:26 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56910 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456Ab0IMHSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 03:18:19 -0400
-X-Greylist: delayed 1063 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Sep 2010 03:18:19 EDT
-Date: Mon, 13 Sep 2010 00:00:34 -0700
-From: Simon Kirby <sim@hostway.ca>
-To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [2.6.36-rc4/HEAD] unable to handle kernel NULL pointer dereference
-	(plist_add)
-Message-ID: <20100913070034.GA4820@hostway.ca>
+	Mon, 13 Sep 2010 03:18:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=jpmEKjg1RCp9YC628zXv5iEa7CTQiOoABEw3+cXWPw+u1Lvecw+TZl8vVMADpQB1Nk
+         rrVfrGu4Wcmj8q6v1Qc9iBlD8gLJJmj82f21uJHVR4MZYHI9iR2K0cZRegLhp2dyZZ2z
+         yc90nuO1sj1CQFd35rQZt0oYGyZTgPNGxfFF4=
+Message-ID: <4C8DD067.6060005@gmail.com>
+Date: Mon, 13 Sep 2010 00:19:03 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Nigel Cunningham <nigel@tuxonice.net>
+CC: Randy Dunlap <randy.dunlap@oracle.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
+Subject: Re: 2.6.36-rc3 - Unable to build: "Error: input truncated"
+References: <4C8CB5A1.9040500@tuxonice.net>	<201009121934.37033.rjw@sisk.pl>	<4C8D5D41.90104@tuxonice.net> <20100912201152.a4ada04a.randy.dunlap@oracle.com> <4C8DB031.6050008@tuxonice.net> <4C8DB674.5040200@gmail.com> <4C8DC01A.4030206@tuxonice.net> <4C8DC6B9.3050701@gmail.com> <4C8DCA43.5000608@tuxonice.net>
+In-Reply-To: <4C8DCA43.5000608@tuxonice.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 09/12/2010 11:52 PM, Nigel Cunningham wrote:
+> Hi.
+>
+> On 13/09/10 16:37, Justin P. Mattock wrote:
+>> On 09/12/2010 11:09 PM, Nigel Cunningham wrote:
+>>> Hi.
+>>>
+>>> On 13/09/10 15:28, Justin P. Mattock wrote:
+>>>> probably the same thing I was hitting last week or similar... bisected
+>>>> resulted in crazy numbers(way back in may) long story short
+>>>> git clean -fx resolved the error over here..(so tied up with other
+>>>> things something as simple as that, I forgot)
+>>>>
+>>>> hope this helps..
+>>>
+>>> 'fraid not.
+>>>
+>>> What I have since noticed, though, is that my currently running (2.6.34)
+>>> .config doesn't trigger it, whereas the one with some changes I made the
+>>> other day does. Looks like I have a couple of ways in which to find out
+>>> the cause :)
+>>>
+>>> Nigel
+>>>
+>>
+>>
+>> ahh.. I see.. yeah over here it was the same .config lots of commits
+>> here and there, numerous recompiles of a same module that probably
+>> triggered my error(stale files and such).. but if your hitting a .config
+>> change then that's different..(hopefully you remember what you
+>> changed...can be a bit daunting if going in and feeling generous and
+>> such..(but then again maybe that's just me..)).
+>
+> I still have the old one - I compile all my kernels with that option
+> that makes /proc/config.gz. Better go. Getting dinner ready :)
+>
+> Nigel
+>
 
-At first I thought I hitting a suspend bug, but it was because I had an
-rmmod/modprobe of snd_ice1724 in my "gosleep" script to work around my
-sound sounding crackly after resume.  I can reproduce this same crash
-simply by using sound, rmmod snd_ice1724, modprobe snd_ice1724, and then
-using sound again.
 
-I git-bisected to:
-82f682514a5df89ffb3890627eebf0897b7a84ec is the first bad commit
-commit 82f682514a5df89ffb3890627eebf0897b7a84ec
-Author: James Bottomley <James.Bottomley@suse.de>
-Date:   Mon Jul 5 22:53:06 2010 +0200
+yep..  hope you catch this...
 
-    pm_qos: Get rid of the allocation in pm_qos_add_request()
-
-    All current users of pm_qos_add_request() have the ability to supply
-    the memory required by the pm_qos routines, so make them do this and
-    eliminate the kmalloc() with pm_qos_add_request().  This has the
-    double benefit of making the call never fail and allowing it to be
-    called from atomic context.
-
-    Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-    Signed-off-by: mark gross <markgross@thegnar.org>
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-:040000 040000 0370d037cfe56ae4079bc47713b98c5961de258f 92d6437da54649496c84bacc16ef4b17f8087bbd M      drivers
-:040000 040000 6ec551133758633de70e97b4a41d893a5c050e74 4ac17ea227c07d9cf7dae297a40bbbcc374c232f M      include
-:040000 040000 d0bb4b15e77a0976940af48588ef0e9b9fd7590b ac682974217c7e75a771b92c8efa7c83659d2916 M      kernel
-:040000 040000 9ab6e37ec622354cb93abc2b7424b10263bcd007 011680bad3da4b60aebb659eaeb85a037e2513f3 M      sound
-
-...but I can't revert this over HEAD due to conflicts and I can't see
-what's wrong in the diff.  2.6.35 is fine.
-
-Simon-
-
-[   61.234230] ICE1724 0000:01:06.0: PCI INT A disabled
-[   61.240010] ICE1724 0000:01:06.0: PCI INT A -> GSI 21 (level, low) -> IRQ 21
-[   62.156008] BUG: unable to handle kernel NULL pointer dereference at (null)
-[   62.156008] IP: [<ffffffff81379706>] plist_add+0x36/0xa0
-[   62.156008] PGD 1ad813067 PUD 1ad989067 PMD 0 
-[   62.156008] Oops: 0000 [#1] SMP 
-[   62.156008] last sysfs file: /sys/devices/pci0000:00/0000:00:14.4/0000:01:06.0/sound/card0/uevent
-[   62.156118] CPU 1 
-[   62.156147] Modules linked in: snd_ice1724 sco bnep rfcomm l2cap bluetooth ppdev hwmon_vid usb_storage tun i2c_viapro snd_rawmidi snd_ice17xx_ak4xxx snd_ac97_codec ac97_bus snd_ak4xxx_adda snd_ak4114 snd_pt2258 snd_i2c parport_pc r8169 parport snd_ak4113 k10temp [last unloaded: snd_ice1724]
-[   62.156849] 
-[   62.156925] Pid: 3053, comm: mplayer Not tainted 2.6.36-rc4-oof+ #6 M4A79T Deluxe/System Product Name
-[   62.157058] RIP: 0010:[<ffffffff81379706>]  [<ffffffff81379706>] plist_add+0x36/0xa0
-[   62.157217] RSP: 0018:ffff8801ac7f3cd8  EFLAGS: 00010002
-[   62.157297] RAX: fffffffffffffff8 RBX: ffff8801a93eae40 RCX: ffff8801ac48e048
-[   62.157386] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff8801a93eae40
-[   62.157475] RBP: ffff8801ac7f3cf8 R08: 0000000000005356 R09: 0000000000004000
-[   62.157564] R10: 0000000000000000 R11: 00000000fffffffe R12: ffffffff8195a2a0
-[   62.157590] R13: ffff8801a93eae58 R14: 0000000000003e80 R15: ffffffff8195a2b0
-[   62.157590] FS:  00007f79749f5860(0000) GS:ffff880001c80000(0000) knlGS:0000000000000000
-[   62.157590] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   62.157590] CR2: 0000000000000000 CR3: 00000001aef63000 CR4: 00000000000006e0
-[   62.157590] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   62.157590] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   62.157590] Process mplayer (pid: 3053, threadinfo ffff8801ac7f2000, task ffff8801ac535cd0)
-[   62.157590] Stack:
-[   62.157590]  ffff8801ac7f3d18 ffffffff8195a2a0 ffff8801a93eae40 00000000ffffffff
-[   62.157590] <0> ffff8801ac7f3d48 ffffffff8105f35b ffff880100000000 0000000000000292
-[   62.157590] <0> ffff8801ac7f3d58 ffff8801a93eae40 ffff8801ad849400 ffff8801ad849c00
-[   62.157590] Call Trace:
-[   62.157590]  [<ffffffff8105f35b>] update_target+0x12b/0x140
-[   62.157590]  [<ffffffff8105f5aa>] pm_qos_add_request+0x4a/0x80
-[   62.157590]  [<ffffffff8157e8a4>] snd_pcm_hw_params+0x2d4/0x3a0
-[   62.157590]  [<ffffffff8157ed41>] snd_pcm_common_ioctl1+0xb1/0xb90
-[   62.157590]  [<ffffffff810bcbc2>] ? handle_mm_fault+0x192/0xa50
-[   62.157590]  [<ffffffff8157facd>] snd_pcm_playback_ioctl1+0x3d/0x220
-[   62.157590]  [<ffffffff81698b9f>] ? do_page_fault+0x17f/0x440
-[   62.157590]  [<ffffffff8158035d>] snd_pcm_playback_ioctl+0x3d/0x50
-[   62.157590]  [<ffffffff810e8787>] do_vfs_ioctl+0x97/0x530
-[   62.157590]  [<ffffffff810c493c>] ? do_mmap_pgoff+0x34c/0x3a0
-[   62.157590]  [<ffffffff810e8c6a>] sys_ioctl+0x4a/0x80
-[   62.157590]  [<ffffffff81002ceb>] system_call_fastpath+0x16/0x1b
-[   62.157590] Code: 54 49 89 f4 53 48 89 fb 48 83 ec 08 4c 3b 6f 18 75 69 49 8b 04 24 48 83 e8 08 eb 0f 90 8b 30 39 33 7c 18 66 90 74 4e 48 8d 42 f8 <48> 8b 50 08 48 8d 48 08 4c 39 e1 0f 18 0a 75 e2 48 8b 50 10 48 
-[   62.157590] RIP  [<ffffffff81379706>] plist_add+0x36/0xa0
-[   62.157590]  RSP <ffff8801ac7f3cd8>
-[   62.157590] CR2: 0000000000000000
-[   62.157590] ---[ end trace 853ed59ac5273c1f ]---
+Justin P. Mattock
