@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab0IMPtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:49:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47486 "EHLO mx1.suse.de"
+	id S1753444Ab0IMPtk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:49:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54707 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594Ab0IMPtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:49:31 -0400
-Date: Mon, 13 Sep 2010 08:29:05 -0700
-From: Greg KH <gregkh@suse.de>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Maurus Cuelenaere <mcuelenaere@gmail.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Fabien Chouteau <fabien.chouteau@barco.com>,
-        david Brownell <dbrownell@users.sourceforge.net>,
-        Christoph Egger <siccegge@stud.informatik.uni-erlangen.de>,
-        LKML <linux-kernel@vger.kernel.org>, MeeGo <meego-dev@meego.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        Arjan <arjan@linux.intel.com>,
-        Toshiharu Okada <okada533@dsn.okisemi.com>,
-        Takahiro Shimizu <shimizu394@dsn.okisemi.com>,
-        Tomoya Morinaga <morinaga526@dsn.okisemi.com>
-Subject: Re: [PATCH] USB device driver of Topcliff PCH
-Message-ID: <20100913152905.GB24329@suse.de>
-References: <4C85EE6F.6000706@dsn.okisemi.com>
- <20100908002229.GC15785@suse.de>
- <000b01cb52fb$794d2940$66f8800a@maildom.okisemi.com>
+	id S1753343Ab0IMPtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 11:49:39 -0400
+Message-ID: <4C8E47D9.6050005@zytor.com>
+Date: Mon, 13 Sep 2010 08:48:41 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000b01cb52fb$794d2940$66f8800a@maildom.okisemi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: =?UTF-8?B?U2jDqXJhYg==?= <Sebastien.Hinderer@ens-lyon.org>
+CC: Valdis.Kletnieks@vt.edu, Len Brown <lenb@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andres Salomon <dilinger@queued.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Samuel Thibault <Samuel.Thibault@ens-lyon.org>
+Subject: Re: [PATCH] x86: EuroBraille/Iris power off
+References: <20100825094925.GA3632@pema> <alpine.LFD.2.00.1008261406480.2062@localhost.localdomain> <20100826210815.GA18131@pema> <4C76D9A0.2010907@zytor.com> <20100829205929.GA3309@pema> <20100913100719.GA3903@pema> <54870.1284390647@localhost> <20100913152511.GA3916@pema>
+In-Reply-To: <20100913152511.GA3916@pema>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 01:23:40PM +0900, Masayuki Ohtake wrote:
-> Hi Greg
+On 09/13/2010 08:25 AM, Shérab wrote:
 > 
-> > > +#define PCH_UDC_BIT_CLR(reg, bitMask) \
-> > > + iowrite32((ioread32((reg)) & (~(bitMask))), (reg))
-> >
-> >
-> > Why not just use the iowrite32 functions directly?  Or surely there's
-> > another built-in kernel macro for this somewhere, right?
+>> (For that matter, are there machines that will get indigestion
+>> at this sort of unexpected inb() access?)
 > 
-> [masa]
-> Which macro is it?
-> Do you know?
 
-Nope, sorry, try digging around.
+Yes, there are... since it's an address which can contain any kind of
+I/O device.
 
-good luck,
+	-hpa
 
-greg k-h
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
