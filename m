@@ -1,264 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab0IMRwP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 13:52:15 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37634 "EHLO hera.kernel.org"
+	id S1754499Ab0IMRyC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 13:54:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50435 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754497Ab0IMRwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 13:52:13 -0400
-Date: Mon, 13 Sep 2010 17:51:44 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, hch@infradead.org,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, hch@infradead.org,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20100822082003.GB7365@infradead.org>
-References: <20100822082003.GB7365@infradead.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui browser: Don't use windows, slang is enough
-Message-ID: <tip-469917ce8717b9f8c5298bf279fa138859baab8d@git.kernel.org>
-Git-Commit-ID: 469917ce8717b9f8c5298bf279fa138859baab8d
-X-Mailer: tip-git-log-daemon
+	id S1752474Ab0IMRx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 13:53:59 -0400
+Date: Mon, 13 Sep 2010 13:53:46 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
+ unknown NMI
+Message-ID: <20100913175346.GC26290@redhat.com>
+References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
+ <1284087065-32722-5-git-send-email-ying.huang@intel.com>
+ <20100910160211.GH4879@redhat.com>
+ <20100910181929.4f35ab7c@basil.nowhere.org>
+ <20100910184039.GK4879@redhat.com>
+ <1284344389.3269.82.camel@yhuang-dev.sh.intel.com>
+ <20100913141140.GB27371@redhat.com>
+ <20100913172438.37443bf7@basil.nowhere.org>
+ <20100913154750.GA26290@redhat.com>
+ <20100913185721.59ad9b4d@basil.nowhere.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 13 Sep 2010 17:51:45 +0000 (UTC)
+In-Reply-To: <20100913185721.59ad9b4d@basil.nowhere.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  469917ce8717b9f8c5298bf279fa138859baab8d
-Gitweb:     http://git.kernel.org/tip/469917ce8717b9f8c5298bf279fa138859baab8d
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 13 Sep 2010 10:25:04 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Sep 2010 10:25:04 -0300
+On Mon, Sep 13, 2010 at 06:57:21PM +0200, Andi Kleen wrote:
+> On Mon, 13 Sep 2010 11:47:50 -0400
+> Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > 
+> > > 
+> > > Then there isn't necessarily something to "debug": data corruption
+> > > can happen without any bugs being around (and in fact
+> > > that's the common case, assuming production systems)
+> > > 
+> > > So I'm not sure what you're debugging here. Are you being the
+> > > support technician for the system through bugzilla? That sounds
+> > > inefficient.
+> > 
+> > The problem I repeatedly deal with for RHEL systems is a customer
+> > sees an unknown NMI printed on their screen and sometimes the machine
+> > falls apart shortly after, sometimes it doesn't.  Obviously they are
+> > going to file a bug asking why.  A chunk of the problems are bad
+> > hardware/firmware.  But the problem is which one.
+> 
+> NMIs are usually hardware.
+> 
+> BTW one big issue here is that we don't display anything
+> on the screen so the system seems hung. KMS solves this,
+> but unfortunately not for the video chipsets 
+> often used in servers.
 
-perf ui browser: Don't use windows, slang is enough
+No most of our customer see messages being sent to the console or serial
+part.  I haven't seen KMS hiding the info yet.
 
-They are useless and take away precious columns and lines, so stop using
-windows.
+> 
+> Part of it is solved by serializing the error
+> and defaulting to reboot after panic (currently NMI doesn't do that,
+> MCE already does, NMI should too imho) 
+> 
+> > 
+> > Replacing a slot card is easy, replacing a motherboard is not.  So I
+> > usually try to determine which device is failing by walking the pci
+> > bus and looking for the serr bits or some of the pci-e status bits.
+> 
+> You don't necessarily need to replace anything, it could
+> be just unlucky data corruption (e.g. a big enough cosmic ray
+> that flipped enough bits that the normal error correction
+> couldn't fix it anymore)
 
-One more step in removing newt code, that after all is not being useful
-at all for the coalescing TUI model in perf.
+No, these are easily reproducible NMIs.  So far it they have been the
+result of bad firmware (either features that are marked supported but not,
+or register settings that changed between updates), nic cards that had
+issues, or bad motherboards.
 
-Suggested-by: Christoph Hellwig <hch@infradead.org>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <20100822082003.GB7365@infradead.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/ui/browser.c        |   24 +++++++++-----------
- tools/perf/util/ui/browsers/hists.c |   41 ++++++++++++++++------------------
- tools/perf/util/ui/browsers/map.c   |    9 +++----
- 3 files changed, 34 insertions(+), 40 deletions(-)
+None of these issues went away because of a reboot.
 
-diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
-index 930c4ac..6d0df80 100644
---- a/tools/perf/util/ui/browser.c
-+++ b/tools/perf/util/ui/browser.c
-@@ -130,13 +130,10 @@ void ui_browser__refresh_dimensions(struct ui_browser *self)
- 	int cols, rows;
- 	newtGetScreenSize(&cols, &rows);
- 
--	if (self->width > cols - 4)
--		self->width = cols - 4;
--	self->height = rows - 5;
--	if (self->height > self->nr_entries)
--		self->height = self->nr_entries;
--	self->y  = (rows - self->height) / 2;
--	self->x = (cols - self->width) / 2;
-+	self->width = cols - 1;
-+	self->height = rows - 2;
-+	self->y = 1;
-+	self->x = 0;
- }
- 
- void ui_browser__reset_index(struct ui_browser *self)
-@@ -168,22 +165,24 @@ int ui_browser__show(struct ui_browser *self, const char *title,
- 		       NEWT_KEY_PGDN, NEWT_KEY_HOME, NEWT_KEY_END, ' ',
- 		       NEWT_KEY_LEFT, NEWT_KEY_ESCAPE, 'q', CTRL('c'), 0 };
- 
--	if (self->form != NULL) {
-+	if (self->form != NULL)
- 		newtFormDestroy(self->form);
--		newtPopWindow();
--	}
-+
- 	ui_browser__refresh_dimensions(self);
--	newtCenteredWindow(self->width, self->height, title);
- 	self->form = newtForm(NULL, NULL, 0);
- 	if (self->form == NULL)
- 		return -1;
- 
--	self->sb = newtVerticalScrollbar(self->width, 0, self->height,
-+	self->sb = newtVerticalScrollbar(self->width, 1, self->height,
- 					 HE_COLORSET_NORMAL,
- 					 HE_COLORSET_SELECTED);
- 	if (self->sb == NULL)
- 		return -1;
- 
-+	SLsmg_gotorc(0, 0);
-+	ui_browser__set_color(self, NEWT_COLORSET_ROOT);
-+	slsmg_write_nstring(title, self->width);
-+
- 	ui_browser__add_exit_keys(self, keys);
- 	newtFormAddComponent(self->form, self->sb);
- 
-@@ -196,7 +195,6 @@ int ui_browser__show(struct ui_browser *self, const char *title,
- void ui_browser__hide(struct ui_browser *self)
- {
- 	newtFormDestroy(self->form);
--	newtPopWindow();
- 	self->form = NULL;
- 	ui_helpline__pop();
- }
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 2fc1ba3..ebda8c3 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -293,19 +293,12 @@ static int hist_browser__run(struct hist_browser *self, const char *title)
- 	int key;
- 	int exit_keys[] = { 'a', '?', 'h', 'C', 'd', 'D', 'E', 't',
- 			    NEWT_KEY_ENTER, NEWT_KEY_RIGHT, NEWT_KEY_LEFT, 0, };
--	char str[256], unit;
--	unsigned long nr_events = self->hists->stats.nr_events[PERF_RECORD_SAMPLE];
- 
- 	self->b.entries = &self->hists->entries;
- 	self->b.nr_entries = self->hists->nr_entries;
- 
- 	hist_browser__refresh_dimensions(self);
- 
--	nr_events = convert_unit(nr_events, &unit);
--	snprintf(str, sizeof(str), "Events: %lu%c                            ",
--		 nr_events, unit);
--	newtDrawRootText(0, 0, str);
--
- 	if (ui_browser__show(&self->b, title,
- 			     "Press '?' for help on key bindings") < 0)
- 		return -1;
-@@ -782,21 +775,26 @@ static struct thread *hist_browser__selected_thread(struct hist_browser *self)
- 	return self->he_selection->thread;
- }
- 
--static int hist_browser__title(char *bf, size_t size, const char *ev_name,
--			       const struct dso *dso, const struct thread *thread)
-+static int hists__browser_title(struct hists *self, char *bf, size_t size,
-+				const char *ev_name, const struct dso *dso,
-+				const struct thread *thread)
- {
--	int printed = 0;
-+	char unit;
-+	int printed;
-+	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
-+
-+	nr_events = convert_unit(nr_events, &unit);
-+	printed = snprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
- 
- 	if (thread)
- 		printed += snprintf(bf + printed, size - printed,
--				    "Thread: %s(%d)",
--				    (thread->comm_set ?  thread->comm : ""),
-+				    ", Thread: %s(%d)",
-+				    (thread->comm_set ? thread->comm : ""),
- 				    thread->pid);
- 	if (dso)
- 		printed += snprintf(bf + printed, size - printed,
--				    "%sDSO: %s", thread ? " " : "",
--				    dso->short_name);
--	return printed ?: snprintf(bf, size, "Event: %s", ev_name);
-+				    ", DSO: %s", dso->short_name);
-+	return printed;
- }
- 
- int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
-@@ -817,9 +815,8 @@ int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
- 
- 	ui_helpline__push(helpline);
- 
--	hist_browser__title(msg, sizeof(msg), ev_name,
--			    dso_filter, thread_filter);
--
-+	hists__browser_title(self, msg, sizeof(msg), ev_name,
-+			     dso_filter, thread_filter);
- 	while (1) {
- 		const struct thread *thread;
- 		const struct dso *dso;
-@@ -957,8 +954,8 @@ zoom_out_dso:
- 				pstack__push(fstack, &dso_filter);
- 			}
- 			hists__filter_by_dso(self, dso_filter);
--			hist_browser__title(msg, sizeof(msg), ev_name,
--					    dso_filter, thread_filter);
-+			hists__browser_title(self, msg, sizeof(msg), ev_name,
-+					     dso_filter, thread_filter);
- 			hist_browser__reset(browser);
- 		} else if (choice == zoom_thread) {
- zoom_thread:
-@@ -975,8 +972,8 @@ zoom_out_thread:
- 				pstack__push(fstack, &thread_filter);
- 			}
- 			hists__filter_by_thread(self, thread_filter);
--			hist_browser__title(msg, sizeof(msg), ev_name,
--					    dso_filter, thread_filter);
-+			hists__browser_title(self, msg, sizeof(msg), ev_name,
-+					     dso_filter, thread_filter);
- 			hist_browser__reset(browser);
- 		}
- 	}
-diff --git a/tools/perf/util/ui/browsers/map.c b/tools/perf/util/ui/browsers/map.c
-index 1bf0979..e35437d 100644
---- a/tools/perf/util/ui/browsers/map.c
-+++ b/tools/perf/util/ui/browsers/map.c
-@@ -46,7 +46,6 @@ out_free_form:
- struct map_browser {
- 	struct ui_browser b;
- 	struct map	  *map;
--	u16		  namelen;
- 	u8		  addrlen;
- };
- 
-@@ -55,13 +54,16 @@ static void map_browser__write(struct ui_browser *self, void *nd, int row)
- 	struct symbol *sym = rb_entry(nd, struct symbol, rb_node);
- 	struct map_browser *mb = container_of(self, struct map_browser, b);
- 	bool current_entry = ui_browser__is_current_entry(self, row);
-+	int width;
- 
- 	ui_browser__set_percent_color(self, 0, current_entry);
- 	slsmg_printf("%*llx %*llx %c ",
- 		     mb->addrlen, sym->start, mb->addrlen, sym->end,
- 		     sym->binding == STB_GLOBAL ? 'g' :
- 		     sym->binding == STB_LOCAL  ? 'l' : 'w');
--	slsmg_write_nstring(sym->name, mb->namelen);
-+	width = self->width - ((mb->addrlen * 2) + 4);
-+	if (width > 0)
-+		slsmg_write_nstring(sym->name, width);
- }
- 
- /* FIXME uber-kludgy, see comment on cmd_report... */
-@@ -139,8 +141,6 @@ int map__browse(struct map *self)
- 	for (nd = rb_first(mb.b.entries); nd; nd = rb_next(nd)) {
- 		struct symbol *pos = rb_entry(nd, struct symbol, rb_node);
- 
--		if (mb.namelen < pos->namelen)
--			mb.namelen = pos->namelen;
- 		if (maxaddr < pos->end)
- 			maxaddr = pos->end;
- 		if (verbose) {
-@@ -151,6 +151,5 @@ int map__browse(struct map *self)
- 	}
- 
- 	mb.addrlen = snprintf(tmp, sizeof(tmp), "%llx", maxaddr);
--	mb.b.width += mb.addrlen * 2 + 4 + mb.namelen;
- 	return map_browser__run(&mb);
- }
+> 
+> > 
+> > It is inefficient, but I haven't had time to figure out a way to
+> > clean it up.  And just for the record, I usually see an unknown NMI
+> > report every other week.
+> 
+> At least ignoring the data corruption is not the way to handle
+> it. I don't think you'll do your customers a favor this way.
+
+I never said I ignore them.  We try to resolve them quickly.
+
+>  
+> > > Anyways for hardware support we could probably dump some
+> > > more information at panic or better through error
+> > > serialization, but the word "debug" is IMHO an very wrong
+> > > way to think about that.
+> > 
+> > Well, I can use 'diagnos' or 'determine' if you want.  But at the end
+> > of the day, we have customers that see scary software messages and
+> > expect us to give them reasonable direction to fix their problems.
+> 
+> Usually these problems shouldn't be handled by kernel hackers,
+> it's something for a hardware technician. If kernel
+> hackers have to handle it something is very wrong.
+> 
+> IMHO the software should give the customer enough information
+> to fix (or rather let their hardware technician) work it out.
+
+Yes, I agree, but the hardware folks usually like it when we give them a
+better clue than 'hardware is broken'.  Something like the network stopped
+working or your storage controller's firmware went bad, is usually more
+helpful.
+
+And the thing is, the hardware usually leaves a bread cumb trail of where
+things went wrong.  It is just a matter of poking different chips to find
+out who generated the error and report that.
+
+> 
+> BTW one issue is that the screen is not big enough for all
+> the information that is really useful for this. So I suspect
+> to have it really useful you need to accept that some information
+> will only be available through serialization (e.g. if you 
+> wanted to dump parts of the PCI config space)
+
+Honestly, I don't think you need much screen real estate.  It would be
+nice when an unknown NMI comes in, if the kernel just pokes around the hardware
+registers and display a summary of what it found.  For example,
+
+The following devices had error bits set in the status registers:
+PCI device x:y.z - STATUS_BIT1 | STATUS_BIT2
+HW device xyz - STATUS_BIT3
+...
+
+This at least gives the users some hardware they can remove/replace to see
+if the problem goes away.
+
+Right now I feel like it is one giant guessing game.
+
+But I guess if we accept the fact that an unknown NMI will panic the box,
+then we can probably be a little more liberal in breaking spinlocks and
+poking around the hardware to display some userful info.
+
+Just some thoughts.
+
+Cheers,
+Don
