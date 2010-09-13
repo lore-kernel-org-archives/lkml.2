@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009Ab0IMUlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 16:41:24 -0400
-Received: from mbox2.netikka.net ([213.250.81.203]:37994 "EHLO
-	mbox2.netikka.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895Ab0IMUlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 16:41:23 -0400
-X-Greylist: delayed 430 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Sep 2010 16:41:23 EDT
-Message-ID: <4C8E8C73.60306@mandriva.org>
-Date: Mon, 13 Sep 2010 23:41:23 +0300
-From: Thomas Backlund <tmb@mandriva.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; sv-SE; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
+	id S1755216Ab0IMUmb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 16:42:31 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60656 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754199Ab0IMUma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 16:42:30 -0400
+Date: Mon, 13 Sep 2010 22:42:17 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [GIT PULL 0/1] perf/core ui browser improvement
+Message-ID: <20100913204217.GA2505@elte.hu>
+References: <1284395692-11298-1-git-send-email-acme@infradead.org>
+ <20100913174845.GC18428@elte.hu>
+ <20100913190758.GB31907@ghostprotocols.net>
 MIME-Version: 1.0
-To: "stable@kernel.org" <stable@kernel.org>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>, "gregkh@suse.de" <gregkh@suse.de>,
-        "Larry.Finger@lwfinger.net" <Larry.Finger@lwfinger.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [33-stable regression ssb/broadcom]
-References: <4C8E6192.2010003@mandriva.org> <20100913.122329.39186333.davem@davemloft.net> <20100913193647.GD4052@tuxdriver.com> <4C8E8AC2.2030201@mandriva.org>
-In-Reply-To: <4C8E8AC2.2030201@mandriva.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100913190758.GB31907@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
+	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
+	[score: 0.1966]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Backlund skrev 13.9.2010 23:34:
-> John W. Linville skrev 13.9.2010 22:36:
->> On Mon, Sep 13, 2010 at 12:23:29PM -0700, David Miller wrote:
->>> From: Thomas Backlund<tmb@mandriva.org>
->>> Date: Mon, 13 Sep 2010 20:38:26 +0300
->>>
->>>> In Mandriva 2010.1 we noticed that 2.6.33.7 broke ssb/Broadcom lan for
->>>> several users...
->>>>
->>>> Issue is tracked at:
->>>> https://qa.mandriva.com/show_bug.cgi?id=60968
->>>>
->>>> Reverting the commit restores a working lan.
->>>>
->>>> The offending commit is:
->>>
->>> Please always CC: netdev on networking reports, otherwise you are
->>> very unlikely to get any experts looking into your issue.
->>
->> IIRC, there was a bad patch that got sent for the 2.6.33.y series.
->> I thought it had been reverted or fixed already?
->>
->
-> Nope.
->
-> It got added in 2.6.33.7
-> http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.33.y.git;a=commit;h=6fb037c2ed8378c7ab0c1e00536ba6b2a866503e
->
 
-After checking some more...
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-I see the revert of the broken patch was done in 2.6.34.3 and a set of 
-ssb patches replacing it...
+> Em Mon, Sep 13, 2010 at 07:48:45PM +0200, Ingo Molnar escreveu:
+> > Nice, it's more economic with screen real estate now :-)
+> > 
+> > btw., a small detail: could we please rename [kernel.kallsyms] to 
+> > [kernel]? The user is not really interested where the symbols came from 
+> > (kallsyms or vmlinux), in 99.9% of the cases - and the many repetitive 
+> > .kallsyms instances look uninformative and somewhat confusing.
+> 
+> Sure, I'll probably even remove the brackets :-)
 
-but it didn't happend for 2.6.33.y
+The brackets kind of make sense, they signal that it's a container 
+(which it is) - same for DSOs.
 
---
-Thomas
+Thanks,
+
+	Ingo
