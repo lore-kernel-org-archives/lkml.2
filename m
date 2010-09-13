@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab0IMPzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 11:55:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:10989 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab0IMPzt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 11:55:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PVVNC1melHInmhZf/Y1IEXoLXeEgbcrrAXHY5EUa005vX0Kmj2lgt05zd5vsP5NTjy
-         OawxOEZUSB/CZKqu1cTA==
+	id S1753448Ab0IMP46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 11:56:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54074 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750920Ab0IMP45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 11:56:57 -0400
+Message-ID: <4C8E49C8.6090003@suse.cz>
+Date: Mon, 13 Sep 2010 17:56:56 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <1284392476.2275.369.camel@laptop>
-References: <4c8e3c0c.12d1d80a.73d9.ffffcf21@mx.google.com>
-	<20100913150914.GA6155@nowhere>
-	<AANLkTi=OR69sDbUMkSnx_-bpF=yHF_xNY1v=-BJgLpp5@mail.gmail.com>
-	<1284391000.2275.338.camel@laptop>
-	<AANLkTin35TXPcs9u3pLfo8QRUmGnftT1DPfswRUVEvJW@mail.gmail.com>
-	<1284391480.2275.350.camel@laptop>
-	<AANLkTik8r4moPy5muNyT2oKGH5aEaMOLL0Zqn=-hkpos@mail.gmail.com>
-	<1284392476.2275.369.camel@laptop>
-Date: Mon, 13 Sep 2010 17:55:43 +0200
-Message-ID: <AANLkTimZTzCjea3KFxGcaQ7kscod7sOrz13LkNF_u38w@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: improve DS/BTS/PEBS buffer allocation
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        robert.richter@amd.com,
-        "markus.t.metzger" <markus.t.metzger@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]scripts/kconfig/gconf.glade Update broken web addresses.
+References: <1284184584-8647-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1284184584-8647-1-git-send-email-justinmattock@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 5:41 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2010-09-13 at 17:31 +0200, Stephane Eranian wrote:
->> On Mon, Sep 13, 2010 at 5:24 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Mon, 2010-09-13 at 17:20 +0200, Stephane Eranian wrote:
->> >
->> >> That is the case we the sizes you have chosen today. For DS, we
->> >> could round up to one page for now.
->> >
->> > Markus chose the BTS size, for PEBS a single page was plenty since we do
->> > single event things (although we could do multiple for attr.precise_ip <
->> > 2).
->> >
->> > For DS there's:
->> >  kmalloc_node(sizeof(struct ds), GFP_KERNEL | __GFP_ZERO, cpu_node(cpu));
->> >
->> Ok, let try again with alloc_pages_node() + kmalloc_node().
->> I think we can stick with kmalloc() for DS because we are far from
->> consuming a page.
->
-> Thing is, if you're really seeing allocation failures,
-> alloc_pages_node() isn't going to help. And the problem is, these
-> allocations aren't movable, so memory compaction and all the other fancy
-> stuff aren't really going to help much :/
->
+On 11.9.2010 07:56, Justin P. Mattock wrote:
+> Below fixes a broken web address. Note: not sure if this is correct
+> or not.. Let me know..
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  scripts/kconfig/gconf.glade |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/kconfig/gconf.glade b/scripts/kconfig/gconf.glade
+> index d52b0a7..8092dcf 100644
+> --- a/scripts/kconfig/gconf.glade
+> +++ b/scripts/kconfig/gconf.glade
+> @@ -1,5 +1,5 @@
+>  <?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+> -<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
+> +<!DOCTYPE glade-interface SYSTEM "http://library.gnome.org/devel/libglade/unstable/libglade-dtd.html">
 
-Ok, so you're saying there is no allocator that will give non-contiguous
-physical memory WITHOUT requiring a page fault to populate the pte.
+This URL does not host the dtd itself, so we can as well remove the
+DOCTYPE declaration alltogether. I guess libglade validates the file
+against it's own schema anyway.
 
-On the other hand, with vmalloc_node() the pte are populated when
-you first touch the memory. That happens as part of memset() right after
-the allocation and thus outside of NMI interrupt handler.
-
-Does this sound right?
-
-
-> There was some talk about a function that should sync all of vmalloc
-> space, but iirc it was broken for some configs.
->
+Michal
