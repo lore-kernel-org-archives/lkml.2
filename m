@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab0IMUxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 16:53:12 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:34390 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751399Ab0IMUxL (ORCPT
+	id S1755301Ab0IMUzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 16:55:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:44873 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab0IMUzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 16:53:11 -0400
-Message-ID: <4C8E8F31.2050108@bluewatersys.com>
-Date: Tue, 14 Sep 2010 08:53:05 +1200
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Maxim Osipov <maxim.osipov@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Antonio R. Costa" <costa.antonior@gmail.com>,
-        Ernst Schwab <eschwab@online.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] AT91: Add flexibity board support
-References: <4C8DFA84.4040501@gmail.com>
-In-Reply-To: <4C8DFA84.4040501@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Sep 2010 16:55:08 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=kldFlOL+yjyjAUw/CHDoEVEvAc4URmXT2gbljhDFnbvZFY921LbhWmMWpccnU03Er
+	hF837OtWKrPNrlV/Re0Kg==
+From: David Sharp <dhsharp@google.com>
+To: rostedt@goodmis.org
+Cc: mrubin@google.com, linux-kernel@vger.kernel.org,
+        David Sharp <dhsharp@google.com>
+Subject: [PATCH] trace-cmd: Use lseek64 and off64_t in tracecmd_append_cpu_data().
+Date: Mon, 13 Sep 2010 13:54:26 -0700
+Message-Id: <1284411266-30442-1-git-send-email-dhsharp@google.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1284394210.17152.58.camel@gandalf.stny.rr.com>
+References: <1284394210.17152.58.camel@gandalf.stny.rr.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2010 10:18 PM, Maxim Osipov wrote:
-> Hello,
-> 
-> This patch adds support for AT91 Flexibity board.
+lseek64 returns 64-bit, but was being truncated to int. Large offsets would
+cause the subsequent error checking to fail spuriously, leaving behind a bad
+trace.dat and a collection of trace.dat.cpuX files.
 
-Couple more comments below,
+Signed-off-by: David Sharp <dhsharp@google.com>
+---
+ trace-output.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-> From ccb19f0d6dbda5356e64c1ce5d0fe1396c548f1a Mon Sep 17 00:00:00 2001
-> From: Maxim Osipov <maxim.osipov@gmail.com>
-> Date: Sun, 12 Sep 2010 16:23:48 +0400
-> Subject: [PATCH v2] AT91: Add flexibity board support
-> 
-> Signed-off-by: Maxim Osipov <maxim.osipov@gmail.com>
-> ---
-
-> +#include <linux/init.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/spi/spi.h>
-> +#include <linux/input.h>
-> +
-> +#include <asm/mach-types.h>
-> +
-> +#include <asm/mach/arch.h>
-> +#include <asm/mach/map.h>
-> +#include <asm/mach/irq.h>
-> +
-> +#include <mach/hardware.h>
-> +#include <mach/board.h>
-> +#include <mach/gpio.h>
-
-Use linux/gpio.h
-
-> +
-> +#include "generic.h"
-> +
-> +
-
-Single blank line here, and between functions.
-
-> +
-> +static void __init flexibity_board_init(void)
-> +{
-> +	/* Serial */
-> +	at91_add_device_serial();
-> +	/* USB Host */
-> +	at91_add_device_usbh(&flexibity_usbh_data);
-> +	/* USB Device */
-> +	at91_add_device_udc(&flexibity_udc_data);
-> +	/* SPI */
-> +	at91_add_device_spi(flexibity_spi_devices,
-> +		ARRAY_SIZE(flexibity_spi_devices));
-> +	/* MMC */
-> +	at91_add_device_mmc(0, &flexibity_mmc_data);
-> +	/* LEDs */
-> +	at91_gpio_leds(flexibity_leds, ARRAY_SIZE(flexibity_leds));
-
-Can we drop all the comments inside this function please. They don't add
-any information and they make it harder to read the actual code.
-
-~Ryan
-
+diff --git a/trace-output.c b/trace-output.c
+index 89b3954..0730a1e 100644
+--- a/trace-output.c
++++ b/trace-output.c
+@@ -705,9 +705,9 @@ out_free:
+ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
+ 			     int cpus, char * const *cpu_data_files)
+ {
+-	unsigned long long *offsets = NULL;
++	off64_t *offsets = NULL;
+ 	unsigned long long *sizes = NULL;
+-	unsigned long long offset;
++	off64_t offset;
+ 	unsigned long long endian8;
+ 	off64_t check_size;
+ 	char *file;
+@@ -733,7 +733,7 @@ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
+ 	if (!sizes)
+ 		goto out_free;
+ 
+-	offset = lseek(handle->fd, 0, SEEK_CUR);
++	offset = lseek64(handle->fd, 0, SEEK_CUR);
+ 
+ 	/* hold any extra data for data */
+ 	offset += cpus * (16);
+@@ -761,8 +761,8 @@ int tracecmd_append_cpu_data(struct tracecmd_output *handle,
+ 
+ 	for (i = 0; i < cpus; i++) {
+ 		fprintf(stderr, "offset=%llx\n", offsets[i]);
+-		ret = lseek64(handle->fd, offsets[i], SEEK_SET);
+-		if (ret < 0) {
++		offset = lseek64(handle->fd, offsets[i], SEEK_SET);
++		if (offset == (off64_t)-1) {
+ 			warning("could not seek to %lld\n", offsets[i]);
+ 			goto out_free;
+ 		}
 -- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+1.7.1
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
