@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab0IMTBz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 15:01:55 -0400
-Received: from 217.59.140-88.rev.gaoland.net ([88.140.59.217]:46432 "EHLO
-	electric-eye.fr.zoreil.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754674Ab0IMTBz (ORCPT
+	id S1755033Ab0IMTCX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 15:02:23 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54157 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755009Ab0IMTCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 15:01:55 -0400
-Date: Mon, 13 Sep 2010 21:00:46 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Heiko Bauke <heiko.bauke@snafu.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Realtek Ethernet drivers
-Message-ID: <20100913190046.GA4470@electric-eye.fr.zoreil.com>
-References: <20100912210444.76ebeee6@tron.localdomain>
- <20100912223724.GA15934@electric-eye.fr.zoreil.com>
- <20100913095912.74d7f0f1@tron.localdomain>
+	Mon, 13 Sep 2010 15:02:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=bjm7USVpobZsw5jQJXtuR4pTDQggDAxxP3BPz+Qod7h1u60ckntFUj7ghAsEz8/lyp
+         e9ydha59PNCbR1fDS+qjxsSU+ouD0EB81d425x7/8w59c1hIknQwsIhz48YElqDR2uNm
+         CZ50mf+LUT9ZJ2wBm+DmzNp91fMp1gUAz2WdI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100913095912.74d7f0f1@tron.localdomain>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <87vd69v8v3.fsf@gmail.com>
+References: <20100912210444.76ebeee6@tron.localdomain> <20100912223724.GA15934@electric-eye.fr.zoreil.com>
+ <20100913095912.74d7f0f1@tron.localdomain> <87vd69v8v3.fsf@gmail.com>
+From: dave b <db.pub.mail@gmail.com>
+Date: Tue, 14 Sep 2010 05:01:58 +1000
+Message-ID: <AANLkTinmAAhq8ffzKHearW48rkJZDdZH4uekW==uUh0y@mail.gmail.com>
+Subject: Re: Realtek Ethernet drivers
+To: Ben Gamari <bgamari@gmail.com>
+Cc: Heiko Bauke <heiko.bauke@snafu.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heiko Bauke <heiko.bauke@snafu.de> :
-> Francois Romieu <romieu@fr.zoreil.com> wrote:
-[...]
-> > But it misses 81a95f049962ec20a9aed888e676208b206f0f2e and
-> > 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e
-> 
-> I thank you for your reply. If there is time I will try a more recent
-> kernel. (For the moment the Realtek drivers are fine for me.) I
-> know how to (re-)compile distribution kernels and how to compile a
-> vanilla kernel from kernel.org. However, I have no idea what the
-> hex-codes you mentioned mean. Can you give me a hint?
+On 14 September 2010 03:41, Ben Gamari <bgamari@gmail.com> wrote:
+> On Mon, 13 Sep 2010 09:59:12 +0200, Heiko Bauke <heiko.bauke@snafu.de> wrote:
+>> > But it misses 81a95f049962ec20a9aed888e676208b206f0f2e and
+>> > 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e
+>>
+>> I thank you for your reply. If there is time I will try a more recent
+>> kernel. (For the moment the Realtek drivers are fine for me.) I
+>> know how to (re-)compile distribution kernels and how to compile a
+>> vanilla kernel from kernel.org. However, I have no idea what the
+>> hex-codes you mentioned mean. Can you give me a hint?
+>>
+> These are git (the version control system used for kernel development)
+> commit ids.
 
-They are commit ID. See :
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=81a95f049962ec20a9aed888e676208b206f0f2e
-
--- 
-Ueimor
+Please add https://launchpad.net/~kernel-ppa/+archive/ppa
+and install the latest kernel available from that repository if you
+are unsure as to how to compile a kernel.org kernel.
