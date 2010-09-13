@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab0IMBzh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Sep 2010 21:55:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65476 "EHLO mga09.intel.com"
+	id S1754178Ab0IMCCK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Sep 2010 22:02:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:39439 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753530Ab0IMBzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Sep 2010 21:55:36 -0400
+	id S1753376Ab0IMCCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Sep 2010 22:02:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,356,1280732400"; 
-   d="scan'208";a="656585528"
-Date: Mon, 13 Sep 2010 09:55:29 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Neil Brown <neilb@suse.de>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [PATCH 05/17] writeback: quit throttling when signal pending
-Message-ID: <20100913015529.GB5312@localhost>
-References: <20100912154945.758129106@intel.com>
- <20100912155203.355459925@intel.com>
- <20100913064654.3cce885c@notabene>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100913064654.3cce885c@notabene>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+   d="scan'208";a="606302525"
+Subject: Re: [RFC 3/6] x86, NMI, Rename memory parity error to PCI SERR
+ error
+From: Huang Ying <ying.huang@intel.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20100913010248.GH21909@erda.amd.com>
+References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
+	 <1284087065-32722-3-git-send-email-ying.huang@intel.com>
+	 <20100913010248.GH21909@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Sep 2010 10:02:06 +0800
+Message-ID: <1284343326.3269.70.camel@yhuang-dev.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 04:46:54AM +0800, Neil Brown wrote:
-> On Sun, 12 Sep 2010 23:49:50 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > This allows quick response to Ctrl-C etc. for impatient users.
+On Mon, 2010-09-13 at 09:02 +0800, Robert Richter wrote:
+> On 09.09.10 22:51:02, Huang Ying wrote:
+> > memory parity error is only valid for IBM PC-AT, newer machine use 7
+> > bit (0x80) of 0x61 port for PCI SERR. While memory error is usually
+> > reported via MCE. So corresponding function name and kernel log string
+> > is changed.
 > > 
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
 > > ---
-> >  mm/page-writeback.c |    3 +++
-> >  1 file changed, 3 insertions(+)
+> >  arch/x86/include/asm/mach_traps.h |    6 +++---
+> >  arch/x86/kernel/traps.c           |   24 ++++++------------------
+> >  2 files changed, 9 insertions(+), 21 deletions(-)
 > > 
-> > --- linux-next.orig/mm/page-writeback.c	2010-09-09 16:01:14.000000000 +0800
-> > +++ linux-next/mm/page-writeback.c	2010-09-09 16:02:27.000000000 +0800
-> > @@ -553,6 +553,9 @@ static void balance_dirty_pages(struct a
-> >  		__set_current_state(TASK_INTERRUPTIBLE);
-> >  		io_schedule_timeout(pause);
+> > --- a/arch/x86/include/asm/mach_traps.h
+> > +++ b/arch/x86/include/asm/mach_traps.h
+> > @@ -9,11 +9,11 @@
 > >  
-> > +		if (signal_pending(current))
-> > +			break;
-> > +
+> >  #define NMI_REASON_PORT		0x61
+> >  
+> > -#define NMI_REASON_MEMPAR	0x80
+> > +#define NMI_REASON_SERR		0x80
+> >  #define NMI_REASON_IOCHK	0x40
+> > -#define NMI_REASON_MASK		(NMI_REASON_MEMPAR | NMI_REASON_IOCHK)
+> > +#define NMI_REASON_MASK		(NMI_REASON_SERR | NMI_REASON_IOCHK)
+> >  
+> > -#define NMI_REASON_CLEAR_MEMPAR	0x04
+> > +#define NMI_REASON_CLEAR_SERR	0x04
+> >  #define NMI_REASON_CLEAR_IOCHK	0x08
+> >  #define NMI_REASON_CLEAR_MASK	0x0f
 > 
-> Given the patch description,  I think you might want "fatal_signal_pending()"
-> here ???
+> Haven't you introduced *_MEMPAR with patch 1/6?
 
-__fatal_signal_pending() tests SIGKILL only, while the one often used
-and need more quick responding is SIGINT..
+Yes. And I suggest to rename it to *_SERR in this patch to reflect the
+contemporary hardware better. I think they are two steps: naming the
+magic number and changing the name of constant and function.
 
-Thanks,
-Fengguang
+Best Regards,
+Huang Ying
+
+
