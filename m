@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab0IMIDg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 04:03:36 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:52578 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754543Ab0IMIDe convert rfc822-to-8bit (ORCPT
+	id S1754588Ab0IMIEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 04:04:36 -0400
+Received: from mtagate4.uk.ibm.com ([194.196.100.164]:58543 "EHLO
+	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754231Ab0IMIEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 04:03:34 -0400
-X-Greylist: delayed 532 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Sep 2010 04:03:33 EDT
-X-Quarantine-ID: <05cqhsVFapW6>
-X-Amavis-Alert: BAD HEADER, Improper folded header field made up entirely of
-	whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n jycPrvgA\n\t\n
-	R1goSzOnkp14Y[...]
-Subject: Re: [PATCH] radeon: Expose backlight class device for legacy LVDS
- encoder
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-In-Reply-To: <1283963539-4039-3-git-send-email-mjg@redhat.com>
-References: <1283963539-4039-1-git-send-email-mjg@redhat.com>
-	 <1283963539-4039-3-git-send-email-mjg@redhat.com>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA	
- R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 13 Sep 2010 09:54:31 +0200
-Message-ID: <1284364471.6653.137.camel@thor.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 13 Sep 2010 04:04:34 -0400
+Date: Mon, 13 Sep 2010 10:04:27 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux390@de.ibm.com, linux-s390@vger.kernel.org
+Subject: Re: [PATCH] drivers: s390: remove custom implementation of
+ hex_to_bin()
+Message-ID: <20100913080427.GA2310@osiris.boeblingen.de.ibm.com>
+References: <1284212198-25849-1-git-send-email-andy.shevchenko@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284212198-25849-1-git-send-email-andy.shevchenko@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mit, 2010-09-08 at 12:32 -0400, Matthew Garrett wrote: 
-> From: Michel Dänzer <michel@daenzer.net>
+On Sat, Sep 11, 2010 at 04:36:38PM +0300, Andy Shevchenko wrote:
+> diff --git a/drivers/s390/cio/blacklist.c b/drivers/s390/cio/blacklist.c
+> index 13cb601..76058a5 100644
+> --- a/drivers/s390/cio/blacklist.c
+> +++ b/drivers/s390/cio/blacklist.c
+> @@ -79,17 +79,15 @@ static int pure_hex(char **cp, unsigned int *val, int min_digit,
+>  		    int max_digit, int max_val)
+>  {
+>  	int diff;
+> -	unsigned int value;
 > 
-> Allows e.g. power management daemons to control the backlight level. Inspired
-> by the corresponding code in radeonfb.
+>  	diff = 0;
+>  	*val = 0;
 > 
-> (Updated to add backlight type and make the connector the parent device - mjg)
+> -	while (isxdigit(**cp) && (diff <= max_digit)) {
+> +	while (diff <= max_digit) {
+> +		int value = hex_to_bin(**cp);
 > 
-> Signed-off-by: Michel Dänzer <daenzer@vmware.com>
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> -		if (isdigit(**cp))
+> -			value = **cp - '0';
+> -		else
+> -			value = tolower(**cp) - 'a' + 10;
+> +		if (value < 0)
+> +			break;
+>  		*val = *val * 16 + value;
+>  		(*cp)++;
+>  		diff++;
 
-Thanks for picking this up, Matthew.
-
-Unfortunately, it fails to build here:
-
-  CC [M]  drivers/gpu/drm/radeon/radeon_legacy_encoders.o
-drivers/gpu/drm/radeon/radeon_legacy_encoders.c: In function ‘radeon_legacy_backlight_init’:
-drivers/gpu/drm/radeon/radeon_legacy_encoders.c:358: error: implicit declaration of function ‘pmac_has_backlight_type’
-drivers/gpu/drm/radeon/radeon_legacy_encoders.c:403: error: implicit declaration of function ‘machine_is_compatible’
-make[1]: *** [drivers/gpu/drm/radeon/radeon_legacy_encoders.o] Error 1
-make: *** [_module_drivers/gpu/drm/radeon] Error 2
-
-Am I missing changes from another tree?
-
-
--- 
-Earthling Michel Dänzer           |                http://www.vmware.com
-Libre software enthusiast         |          Debian, X and DRI developer
+Applied, thanks!
