@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954Ab0IMXQg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 19:16:36 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40666 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab0IMXQf (ORCPT
+	id S1752220Ab0IMXQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 19:16:58 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:34617 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab0IMXQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 19:16:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=OB3y13ugnU25a85pAOl4pQG7UFgS5glHDmNXzF1BUySYRFWCdGtRhleNhbIq+ERyok
-         qEepm5wrpS9X/4GxZsLgSlPXMFWwxR8jPXkqFk5gKDuMOr3NXDuVUIJa2ECfFTsaD8Up
-         CIk1yLAe81pCnAa+Py8SrXSwpOTrrCA/sXCqQ=
+	Mon, 13 Sep 2010 19:16:57 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: "Simon Arlott" <simon@fire.lp0.eu>
+Subject: Re: GA-MA69VM-S2 requires pci=nocrs with 2.6.35.4
+Date: Mon, 13 Sep 2010 17:16:15 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, Jordan Crouse <jordan.crouse@amd.com>
+References: <de55082de958760245f23930b79ab42b7c54c838@8b5064a13e22126c1b9329f0dc35b8915774b7c3.invalid>
+In-Reply-To: <de55082de958760245f23930b79ab42b7c54c838@8b5064a13e22126c1b9329f0dc35b8915774b7c3.invalid>
 MIME-Version: 1.0
-In-Reply-To: <4C8E3ABF.90309@xs4all.nl>
-References: <4BFA52C3.4080006@xs4all.nl>
-	<20100526120236.4a849b5b.randy.dunlap@oracle.com>
-	<4C021507.6020703@xs4all.nl>
-	<4C02B3AB.3040405@gmail.com>
-	<4C0324B8.8070304@xs4all.nl>
-	<AANLkTikuaPxA9Xnzc1bCJ5YHRlPZ1AcBSrYJ5lqryaMY@mail.gmail.com>
-	<4C8E3ABF.90309@xs4all.nl>
-Date: Mon, 13 Sep 2010 17:16:33 -0600
-Message-ID: <AANLkTintq=gXvFC9BW_cv=MSqBWHCx7SD9o1CWHOYTsj@mail.gmail.com>
-Subject: Re: hpet timers gone?
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009131716.18197.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 8:52 AM, Udo van den Heuvel <udovdh@xs4all.nl> wrote:
-> On 2010-05-31 06:00, Robert Hancock wrote:
->> On Sun, May 30, 2010 at 8:53 PM, Udo van den Heuvel <udovdh@xs4all.nl> wrote:
->>> On 2010-05-30 20:51, Robert Hancock wrote:
->>>> On 05/30/2010 01:34 AM, Udo van den Heuvel wrote:
->>>>> The board has VIA C7 CPU and VIA CX700M2 Unified Digital Media IGP
->>>>> chipset which supports HPET.
->>>>>
->>>>> Can it be that the kernel lacks support for CX700 hpet?
->>>>> Or is it a matter of getting the BIOS upgrade to work?
->>>>
->>>> Your current BIOS doesn't provide an HPET ACPI table, which is the way
->>>> it's supposed to indicate support. The kernel only supports
->>>> force-enabling HPET on VIA for VT8235 and VT8237.
->>>
->>> So yes, I should try the BIOS upgrade first?
->>
->> If they did add an HPET table entry, it should help, yes..
->
-> Is there a workaround?
-> VIA was not so helpfull: the bios flash tool they have on the site does
-> not recognise the board as a VIA board.
-> Also they state the latest BIOS will not add HPET to ACPI table.
->
-> So what else can I do to enable HPET?
+On Thursday, September 09, 2010 06:16:33 am Simon Arlott wrote:
+> With a Gigabyte GA-MA69VM-S2 690V motherboard, it stalls in
+> qurk_usb_early_handoff unless pci=nocrs is used:
 
-At this point, not much, unless you can track down the chipset
-information that would allow us to implement force enabling HPET on
-that chipset..
+Huh.  It looks like the HPET appears as a PCI device, in addition to
+being described in the HPET table (and possibly in the ACPI namespace):
+
+[    0.000000] ACPI: HPET id: 0x10b9a201 base: 0xfed00000
+[    0.454232] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+[    0.461348] pci_root PNP0A03:00: host bridge window [io  0x0000-0x0cf7]
+[    0.468004] pci_root PNP0A03:00: host bridge window [io  0x0d00-0xffff]
+[    0.474004] pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
+[    0.481004] pci_root PNP0A03:00: host bridge window [mem 0x000c0000-0x000dffff]
+[    0.489004] pci_root PNP0A03:00: host bridge window [mem 0x80000000-0xfebfffff]
+[    1.034049] pci 0000:00:14.0: no compatible bridge window for [mem 0xfed00000-0xfed003ff]
+[    1.651998] pci 0000:00:14.0: BAR 1: assigned [mem 0x80000000-0x800003ff]
+
+Since the 00:14.0 BAR looks invalid (it's outside all the host bridge
+windows), we moved it to 0x80000000, and that probably broke the HPET
+driver, which still thinks it's at 0xfed00000.
+
+I've heard about this problem, but I haven't ever looked into it in
+detail.  The best way to handle this would be to figure out why Windows
+doesn't have this problem, since it also moves PCI devices in this
+situation.
+
+Simon, if you have a way to boot Windows, the output of Everest (free
+trial at http://www.lavalys.com/) would be a great help.
+
+I can see from the stalled.txt log that we did call sb600_disable_hpet_bar(),
+and it *looks* like that should have disabled BAR 1.  But apparently it
+didn't.  Would you mind collecting another log with the patch below?
+
+Bjorn
+
+
+diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+index 6dd8955..f793efd 100644
+--- a/arch/x86/pci/fixup.c
++++ b/arch/x86/pci/fixup.c
+@@ -510,6 +510,7 @@ static void sb600_disable_hpet_bar(struct pci_dev *dev)
+ 	 */
+ 
+ 	pci_read_config_byte(dev, 0x08, &val);
++	dev_info(&dev->dev, "read %#02x\n", val);
+ 
+ 	if (val < 0x2F) {
+ 		outb(0x55, 0xCD6);
+@@ -517,7 +518,9 @@ static void sb600_disable_hpet_bar(struct pci_dev *dev)
+ 
+ 		/* Set bit 7 in PM register 0x55 */
+ 		outb(0x55, 0xCD6);
+-		outb(val | 0x80, 0xCD7);
++		outb(val | 0x7f, 0xCD7);
++		dev_info(&dev->dev, "disabled BAR 1 (%pR)\n",
++			 &dev->resource[1]);
+ 	}
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
