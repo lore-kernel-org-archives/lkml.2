@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab0IMSnl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 14:43:41 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59843 "EHLO mx2.mail.elte.hu"
+	id S1754840Ab0IMSnt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 14:43:49 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55997 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752444Ab0IMSnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 14:43:40 -0400
-Date: Mon, 13 Sep 2010 20:43:25 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Greg KH <greg@kroah.com>
-Cc: Feng Tang <feng.tang@intel.com>, linux-kernel@vger.kernel.org,
-        alan@linux.intel.com, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v3 0/4] Enabling patches of 2 early consoles for Intel
- MID platforms
-Message-ID: <20100913184325.GB25367@elte.hu>
-References: <1284361736-23011-1-git-send-email-feng.tang@intel.com>
- <20100913084045.GA23741@elte.hu>
- <20100913165917.GC8509@kroah.com>
+	id S1754754Ab0IMSnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 14:43:47 -0400
+Date: Mon, 13 Sep 2010 18:42:46 GMT
+From: tip-bot for Dave Young <hidave.darkstar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hidave.darkstar@gmail.com, hpa@zytor.com,
+        mingo@redhat.com, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, hidave.darkstar@gmail.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20100913121903.GB22238@darkstar>
+References: <20100913121903.GB22238@darkstar>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Remove unused PF_ALIGNWARN flag
+Message-ID: <tip-637bbdc5b83615ef9f45f50399d1c7f27473c713@git.kernel.org>
+Git-Commit-ID: 637bbdc5b83615ef9f45f50399d1c7f27473c713
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100913165917.GC8509@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 13 Sep 2010 18:42:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  637bbdc5b83615ef9f45f50399d1c7f27473c713
+Gitweb:     http://git.kernel.org/tip/637bbdc5b83615ef9f45f50399d1c7f27473c713
+Author:     Dave Young <hidave.darkstar@gmail.com>
+AuthorDate: Mon, 13 Sep 2010 20:19:03 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 13 Sep 2010 20:39:08 +0200
 
-* Greg KH <greg@kroah.com> wrote:
+sched: Remove unused PF_ALIGNWARN flag
 
-> On Mon, Sep 13, 2010 at 10:40:45AM +0200, Ingo Molnar wrote:
-> > 
-> > * Feng Tang <feng.tang@intel.com> wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > This serie mainly enables 2 early consoles named mrst and hsu for
-> > > Intel MID platforms. please help to review, thanks,
-> > > 
-> > > - Feng
-> > > 
-> > > Changelog:
-> > > 	v3:
-> > > 	     * Fix a warning for mrst.h
-> > > 	     * Add 2 helper funcs for fixed address mapping as
-> > > 	       suggested by Ingo
-> > > 	     * Rename the mrst_earlyprintk.c to early_printk_mrst.c
-> > > 	     * Clean the code and fix typoes upon Ingo's comments
-> > > 	v2:
-> > > 	     * Code clean as suggested by Ingo 
-> > 
-> > Thanks, this series looks really good!
-> > 
-> > > Feng Tang (4):
-> > >   x86, mrst: make mrst_identify_cpu() inlne inside mrst.h
-> > >   x86: add two helper macros for fixed address mapping
-> > >   x86, earlyprintk: add earlyprintk for Intel Moorestown platform
-> > >   x86, earlyprintk: add hsu early console for Intel Medfield platform
-> > > 
-> > >  arch/x86/Kconfig.debug              |    4 +
-> > >  arch/x86/include/asm/fixmap.h       |   15 ++
-> > >  arch/x86/include/asm/mrst.h         |   10 +-
-> > >  arch/x86/kernel/Makefile            |    1 +
-> > >  arch/x86/kernel/early_printk.c      |   13 ++
-> > >  arch/x86/kernel/early_printk_mrst.c |  319 +++++++++++++++++++++++++++++++++++
-> > >  6 files changed, 361 insertions(+), 1 deletions(-)
-> > >  mode change 100644 => 100755 arch/x86/include/asm/fixmap.h
-> > >  create mode 100644 arch/x86/kernel/early_printk_mrst.c
-> > 
-> > Wrt. integration: i'd prefer to carry these four patches in the 
-> > tip:x86/early-printk tree (to be merged into v2.6.37), because
-> > there's some interaction with other x86 bits.
-> 
-> No objection from me.
-> 
-> > AFAICS the two serial patches:
-> > 
-> >  [PATCH 1/2] serial: mrst_max3110: some code cleanup
-> >  [PATCH 2/2] mrst_max3110: Make the IRQ option runtime
-> > 
-> > Are structurally independent from the earlyprintk patches and could be 
-> > carried separately in the serial tree.
-> > 
-> > Alan, Greg, what's your preference?
-> 
-> I can carry these in the tty tree fine.  They don't depend on the x86 
-> patches, right?
+PF_ALIGNWARN is not implemented and it is for 486 as the
+comment.
 
-Yeah, as far as i've checked they dont. (havent actually tested that 
-tho)
+It is not likely someone will implement this flag feature.
+So here remove this flag and leave the valuable 0x00000001 for
+future use.
 
-Thanks,
+Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <20100913121903.GB22238@darkstar>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ include/linux/sched.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-	Ingo
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index b51c53c..cdf5669 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1682,8 +1682,6 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ /*
+  * Per process flags
+  */
+-#define PF_ALIGNWARN	0x00000001	/* Print alignment warning msgs */
+-					/* Not implemented yet, only for 486*/
+ #define PF_STARTING	0x00000002	/* being created */
+ #define PF_EXITING	0x00000004	/* getting shut down */
+ #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
