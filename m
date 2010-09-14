@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab0INHhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 03:37:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38817 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab0INHhl convert rfc822-to-8bit (ORCPT
+	id S1753114Ab0INHhv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 03:37:51 -0400
+Received: from mail.karo-electronics.de ([213.146.116.110]:50295 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab0INHht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 03:37:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=DjrhVzs4Te38NtRwZqpN6D29xLkXAZzwPGaYBAwZRYwVw+0SOc+pWIq+EUcK26ZOv3
-         UXIhze9WxYsEw7e/ofuVNYpQYTIUFzT7FpgO7WY6B5atMT5/FjsZZqd5gB6o/uWznh31
-         mtrBYYin+0Z6H4gpeBFdY9H7pa//3AqQgF/o4=
-MIME-Version: 1.0
-In-Reply-To: <78519236782f0f4a848d67aefb5fe7b3ce375cee.1284267142.git.joe@perches.com>
-References: <cover.1284267142.git.joe@perches.com> <78519236782f0f4a848d67aefb5fe7b3ce375cee.1284267142.git.joe@perches.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Tue, 14 Sep 2010 15:37:20 +0800
-Message-ID: <AANLkTinmZbhre05GNcqOh1Sqv+vaN1MqLo4X7dGYuALO@mail.gmail.com>
-Subject: Re: [PATCH 01/11] arch/arm: Remove pr_<level> uses of KERN_<level>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Sep 2010 03:37:49 -0400
+Message-ID: <19599.9719.562406.692216@ipc1.ka-ro>
+Date: Tue, 14 Sep 2010 09:36:23 +0200
+From: =?iso-8859-15?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>
+To: Jonathan Cameron <arm@jic23.retrosnub.co.uk>
+Cc: Joe Perches <joe@perches.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
+        "Jean Delvare \(PC drivers\, core\)" <khali@linux-fr.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 05/25] drivers/i2c: Use static const char arrays
+In-Reply-To: <4C8E84A0.1010606@jic23.retrosnub.co.uk>
+References: <cover.1284406638.git.joe@perches.com>
+	<b0c83cb1b42c6adf38f6322066fb457693f7ac3b.1284406638.git.joe@perches.com>
+	<4C8E84A0.1010606@jic23.retrosnub.co.uk>
+X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 12, 2010 at 1:10 PM, Joe Perches <joe@perches.com> wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
+Hi,
 
-Applied to 'fix', with a little bit modification to the subject line to follow
-ARM patch title conventions.
+Jonathan Cameron writes:
+>  Commit message is  somewhat inaccurate...
+> 
+> On 09/13/10 20:47, Joe Perches wrote:
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > ---
+> >  drivers/i2c/busses/i2c-stu300.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/i2c/busses/i2c-stu300.c b/drivers/i2c/busses/i2c-stu300.c
+> > index 495be45..2f7c09c 100644
+> > --- a/drivers/i2c/busses/i2c-stu300.c
+> > +++ b/drivers/i2c/busses/i2c-stu300.c
+> > @@ -871,7 +871,7 @@ stu300_probe(struct platform_device *pdev)
+> >  	struct resource *res;
+> >  	int bus_nr;
+> >  	int ret = 0;
+> > -	char clk_name[] = "I2C0";
+> > +	char clk_name[sizeof("I2Cx")];
+> >  
+> >  	dev = kzalloc(sizeof(struct stu300_dev), GFP_KERNEL);
+> >  	if (!dev) {
+> > @@ -881,7 +881,7 @@ stu300_probe(struct platform_device *pdev)
+> >  	}
+> >  
+> >  	bus_nr = pdev->id;
+> > -	clk_name[3] += (char)bus_nr;
+> > +	sprintf(clk_name, "I2C%c", '0' + bus_nr);
+> I'm guessing that there are never more than a couple of these.
+> Why is this method a better bet than just putting %d?
+>
+'%c' will only ever produce one byte of output while '%d' may
+produce up to 11 bytes depending on the value of bus_nr thus
+overflowing the buffer.
 
-> ---
->  arch/arm/mach-pxa/cpufreq-pxa2xx.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/mach-pxa/cpufreq-pxa2xx.c b/arch/arm/mach-pxa/cpufreq-pxa2xx.c
-> index 50d5939..58093d9 100644
-> --- a/arch/arm/mach-pxa/cpufreq-pxa2xx.c
-> +++ b/arch/arm/mach-pxa/cpufreq-pxa2xx.c
-> @@ -312,8 +312,7 @@ static int pxa_set_target(struct cpufreq_policy *policy,
->        freqs.cpu = policy->cpu;
->
->        if (freq_debug)
-> -               pr_debug(KERN_INFO "Changing CPU frequency to %d Mhz, "
-> -                        "(SDRAM %d Mhz)\n",
-> +               pr_debug("Changing CPU frequency to %d Mhz, (SDRAM %d Mhz)\n",
->                         freqs.new / 1000, (pxa_freq_settings[idx].div2) ?
->                         (new_freq_mem / 2000) : (new_freq_mem / 1000));
->
-> --
-> 1.7.3.rc1
->
->
+
+Lothar Wa�mann
+-- 
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstra�e 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Gesch�ftsf�hrer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
