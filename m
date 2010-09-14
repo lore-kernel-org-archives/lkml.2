@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab0INPDi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 11:03:38 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:56640 "EHLO mxout1.idt.com"
+	id S1754861Ab0INPEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 11:04:01 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:56625 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754374Ab0INPDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 11:03:35 -0400
+	id S1754709Ab0INPDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 11:03:15 -0400
 From: Alexandre Bounine <alexandre.bounine@idt.com>
 To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org
@@ -14,9 +14,9 @@ Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
         Matt Porter <mporter@kernel.crashing.org>,
         Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
         Micha Nelissen <micha@neli.hopto.org>
-Subject: [PATCH v2 09/10] RapidIO: Add support for IDT CPS Gen2 switches
-Date: Tue, 14 Sep 2010 10:59:22 -0400
-Message-Id: <1284476363-1677-10-git-send-email-alexandre.bounine@idt.com>
+Subject: [PATCH v2 07/10] RapidIO: Add handling of orphan port-write message
+Date: Tue, 14 Sep 2010 10:59:20 -0400
+Message-Id: <1284476363-1677-8-git-send-email-alexandre.bounine@idt.com>
 X-Mailer: git-send-email 1.7.0.5
 In-Reply-To: <1284476363-1677-1-git-send-email-alexandre.bounine@idt.com>
 References: <1284476363-1677-1-git-send-email-alexandre.bounine@idt.com>
@@ -24,8 +24,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the RIO switch driver and definitions for IDT CPS-1848 and CPS-1616 Gen2
-devices.
+Add check for access to port-write (PW) message source device before processing
+the PW message. If source RIO device is not available (power down or RIO link
+failure) trace back to a last available switch/port on the PW message route
+and service failure at that point.
 
 Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
 Cc: Thomas Moll <thomas.moll@sysgo.com>
@@ -34,532 +36,168 @@ Cc: Li Yang <leoli@freescale.com>
 Cc: Kumar Gala <galak@kernel.crashing.org>
 Cc: Micha Nelissen <micha@neli.hopto.org>
 ---
- drivers/rapidio/switches/Kconfig    |    7 +
- drivers/rapidio/switches/Makefile   |    1 +
- drivers/rapidio/switches/idt_gen2.c |  447 +++++++++++++++++++++++++++++++++++
- include/linux/rio_ids.h             |    2 +
- include/linux/rio_regs.h            |    5 +
- 5 files changed, 462 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rapidio/switches/idt_gen2.c
+ drivers/rapidio/rio.c |  113 ++++++++++++++++++++++++++++++++++++++++++++++--
+ drivers/rapidio/rio.h |    2 +
+ 2 files changed, 110 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/rapidio/switches/Kconfig b/drivers/rapidio/switches/Kconfig
-index 2b4e9b2..f47fee5 100644
---- a/drivers/rapidio/switches/Kconfig
-+++ b/drivers/rapidio/switches/Kconfig
-@@ -20,6 +20,13 @@ config RAPIDIO_TSI568
- 	---help---
- 	  Includes support for IDT Tsi568 serial RapidIO switch.
+diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
+index 77bd416..aefc2a0 100644
+--- a/drivers/rapidio/rio.c
++++ b/drivers/rapidio/rio.c
+@@ -495,6 +495,92 @@ int rio_set_port_lockout(struct rio_dev *rdev, u32 pnum, int lock)
+ }
  
-+config RAPIDIO_CPS_GEN2
-+	bool "IDT CPS Gen.2 SRIO switch support"
-+	depends on RAPIDIO
-+	default n
-+	---help---
-+	  Includes support for ITD CPS Gen.2 serial RapidIO switches.
-+
- config RAPIDIO_TSI500
- 	bool "Tsi500 Parallel RapidIO switch support"
- 	depends on RAPIDIO
-diff --git a/drivers/rapidio/switches/Makefile b/drivers/rapidio/switches/Makefile
-index fe4adc3..48d67a6 100644
---- a/drivers/rapidio/switches/Makefile
-+++ b/drivers/rapidio/switches/Makefile
-@@ -6,6 +6,7 @@ obj-$(CONFIG_RAPIDIO_TSI57X)	+= tsi57x.o
- obj-$(CONFIG_RAPIDIO_CPS_XX)	+= idtcps.o
- obj-$(CONFIG_RAPIDIO_TSI568)	+= tsi568.o
- obj-$(CONFIG_RAPIDIO_TSI500)	+= tsi500.o
-+obj-$(CONFIG_RAPIDIO_CPS_GEN2)	+= idt_gen2.o
- 
- ifeq ($(CONFIG_RAPIDIO_DEBUG),y)
- EXTRA_CFLAGS += -DDEBUG
-diff --git a/drivers/rapidio/switches/idt_gen2.c b/drivers/rapidio/switches/idt_gen2.c
-new file mode 100644
-index 0000000..0bb871c
---- /dev/null
-+++ b/drivers/rapidio/switches/idt_gen2.c
-@@ -0,0 +1,447 @@
-+/*
-+ * IDT CPS Gen.2 Serial RapidIO switch family support
+ /**
++ * rio_chk_dev_route - Validate route to the specified device.
++ * @rdev:  RIO device failed to respond
++ * @nrdev: Last active device on the route to rdev
++ * @npnum: nrdev's port number on the route to rdev
 + *
-+ * Copyright 2010 Integrated Device Technology, Inc.
-+ * Alexandre Bounine <alexandre.bounine@idt.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
++ * Follows a route to the specified RIO device to determine the last available
++ * device (and corresponding RIO port) on the route.
 + */
-+
-+#include <linux/rio.h>
-+#include <linux/rio_drv.h>
-+#include <linux/rio_ids.h>
-+#include <linux/delay.h>
-+#include "../rio.h"
-+
-+#define LOCAL_RTE_CONF_DESTID_SEL	0x010070
-+#define LOCAL_RTE_CONF_DESTID_SEL_PSEL	0x0000001f
-+
-+#define IDT_LT_ERR_REPORT_EN	0x03100c
-+
-+#define IDT_PORT_ERR_REPORT_EN(n)	(0x031044 + (n)*0x40)
-+#define IDT_PORT_ERR_REPORT_EN_BC	0x03ff04
-+
-+#define IDT_PORT_ISERR_REPORT_EN(n)	(0x03104C + (n)*0x40)
-+#define IDT_PORT_ISERR_REPORT_EN_BC	0x03ff0c
-+#define IDT_PORT_INIT_TX_ACQUIRED	0x00000020
-+
-+#define IDT_LANE_ERR_REPORT_EN(n)	(0x038010 + (n)*0x100)
-+#define IDT_LANE_ERR_REPORT_EN_BC	0x03ff10
-+
-+#define IDT_DEV_CTRL_1		0xf2000c
-+#define IDT_DEV_CTRL_1_GENPW		0x02000000
-+#define IDT_DEV_CTRL_1_PRSTBEH		0x00000001
-+
-+#define IDT_CFGBLK_ERR_CAPTURE_EN	0x020008
-+#define IDT_CFGBLK_ERR_REPORT		0xf20014
-+#define IDT_CFGBLK_ERR_REPORT_GENPW		0x00000002
-+
-+#define IDT_AUX_PORT_ERR_CAP_EN	0x020000
-+#define IDT_AUX_ERR_REPORT_EN	0xf20018
-+#define IDT_AUX_PORT_ERR_LOG_I2C	0x00000002
-+#define IDT_AUX_PORT_ERR_LOG_JTAG	0x00000001
-+
-+#define	IDT_ISLTL_ADDRESS_CAP	0x021014
-+
-+#define IDT_RIO_DOMAIN		0xf20020
-+#define IDT_RIO_DOMAIN_MASK		0x000000ff
-+
-+#define IDT_PW_INFO_CSR		0xf20024
-+
-+#define IDT_SOFT_RESET		0xf20040
-+#define IDT_SOFT_RESET_REQ		0x00030097
-+
-+#define IDT_I2C_MCTRL		0xf20050
-+#define IDT_I2C_MCTRL_GENPW		0x04000000
-+
-+#define IDT_JTAG_CTRL		0xf2005c
-+#define IDT_JTAG_CTRL_GENPW		0x00000002
-+
-+#define IDT_LANE_CTRL(n)	(0xff8000 + (n)*0x100)
-+#define IDT_LANE_CTRL_BC	0xffff00
-+#define IDT_LANE_CTRL_GENPW		0x00200000
-+#define IDT_LANE_DFE_1_BC	0xffff18
-+#define IDT_LANE_DFE_2_BC	0xffff1c
-+
-+#define IDT_PORT_OPS(n)		(0xf40004 + (n)*0x100)
-+#define IDT_PORT_OPS_GENPW		0x08000000
-+#define IDT_PORT_OPS_PL_ELOG		0x00000040
-+#define IDT_PORT_OPS_LL_ELOG		0x00000020
-+#define IDT_PORT_OPS_LT_ELOG		0x00000010
-+#define IDT_PORT_OPS_BC		0xf4ff04
-+
-+#define IDT_PORT_ISERR_DET(n)	(0xf40008 + (n)*0x100)
-+
-+#define IDT_ERR_CAP		0xfd0000
-+#define IDT_ERR_CAP_LOG_OVERWR		0x00000004
-+
-+#define IDT_ERR_RD		0xfd0004
-+
-+#define IDT_DEFAULT_ROUTE	0xde
-+#define IDT_NO_ROUTE		0xdf
-+
 +static int
-+idtg2_route_add_entry(struct rio_mport *mport, u16 destid, u8 hopcount,
-+		       u16 table, u16 route_destid, u8 route_port)
-+{
-+	/*
-+	 * Select routing table to update
-+	 */
-+	if (table == RIO_GLOBAL_TABLE)
-+		table = 0;
-+	else
-+		table++;
-+
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  LOCAL_RTE_CONF_DESTID_SEL, table);
-+
-+	/*
-+	 * Program destination port for the specified destID
-+	 */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  RIO_STD_RTE_CONF_DESTID_SEL_CSR,
-+				  (u32)route_destid);
-+
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  RIO_STD_RTE_CONF_PORT_SEL_CSR,
-+				  (u32)route_port);
-+	udelay(10);
-+
-+	return 0;
-+}
-+
-+static int
-+idtg2_route_get_entry(struct rio_mport *mport, u16 destid, u8 hopcount,
-+		       u16 table, u16 route_destid, u8 *route_port)
++rio_chk_dev_route(struct rio_dev *rdev, struct rio_dev **nrdev, int *npnum)
 +{
 +	u32 result;
++	int p_port, rc = -EIO;
++	struct rio_dev *prev = NULL;
 +
-+	/*
-+	 * Select routing table to read
-+	 */
-+	if (table == RIO_GLOBAL_TABLE)
-+		table = 0;
-+	else
-+		table++;
-+
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  LOCAL_RTE_CONF_DESTID_SEL, table);
-+
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  RIO_STD_RTE_CONF_DESTID_SEL_CSR,
-+				  route_destid);
-+
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+				 RIO_STD_RTE_CONF_PORT_SEL_CSR, &result);
-+
-+	if (IDT_DEFAULT_ROUTE == (u8)result || IDT_NO_ROUTE == (u8)result)
-+		*route_port = RIO_INVALID_ROUTE;
-+	else
-+		*route_port = (u8)result;
-+
-+	return 0;
-+}
-+
-+static int
-+idtg2_route_clr_table(struct rio_mport *mport, u16 destid, u8 hopcount,
-+		       u16 table)
-+{
-+	u32 i;
-+
-+	/*
-+	 * Select routing table to read
-+	 */
-+	if (table == RIO_GLOBAL_TABLE)
-+		table = 0;
-+	else
-+		table++;
-+
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  LOCAL_RTE_CONF_DESTID_SEL, table);
-+
-+	for (i = RIO_STD_RTE_CONF_EXTCFGEN;
-+	     i <= (RIO_STD_RTE_CONF_EXTCFGEN | 0xff);) {
-+		rio_mport_write_config_32(mport, destid, hopcount,
-+			RIO_STD_RTE_CONF_DESTID_SEL_CSR, i);
-+		rio_mport_write_config_32(mport, destid, hopcount,
-+			RIO_STD_RTE_CONF_PORT_SEL_CSR,
-+			(IDT_DEFAULT_ROUTE << 24) | (IDT_DEFAULT_ROUTE << 16) |
-+			(IDT_DEFAULT_ROUTE << 8) | IDT_DEFAULT_ROUTE);
-+		i += 4;
-+	}
-+
-+	return 0;
-+}
-+
-+
-+static int
-+idtg2_set_domain(struct rio_mport *mport, u16 destid, u8 hopcount,
-+		       u8 sw_domain)
-+{
-+	/*
-+	 * Switch domain configuration operates only at global level
-+	 */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  IDT_RIO_DOMAIN, (u32)sw_domain);
-+	return 0;
-+}
-+
-+static int
-+idtg2_get_domain(struct rio_mport *mport, u16 destid, u8 hopcount,
-+		       u8 *sw_domain)
-+{
-+	u32 regval;
-+
-+	/*
-+	 * Switch domain configuration operates only at global level
-+	 */
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+				IDT_RIO_DOMAIN, &regval);
-+
-+	*sw_domain = (u8)(regval & 0xff);
-+
-+	return 0;
-+}
-+
-+static int
-+idtg2_em_init(struct rio_dev *rdev)
-+{
-+	struct rio_mport *mport = rdev->net->hport;
-+	u16 destid = rdev->rswitch->destid;
-+	u8 hopcount = rdev->rswitch->hopcount;
-+	u32 regval;
-+	int i, tmp;
-+
-+	/*
-+	 * This routine performs device-specific initialization only.
-+	 * All standard EM configuration should be performed at upper level.
-+	 */
-+
-+	pr_debug("RIO: %s [%d:%d]\n", __func__, destid, hopcount);
-+
-+	/* Set Port-Write info CSR: PRIO=3 and CRF=1 */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_PW_INFO_CSR, 0x0000e000);
-+
-+	/*
-+	 * Configure LT LAYER error reporting.
-+	 */
-+
-+	/* Enable standard (RIO.p8) error reporting */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_LT_ERR_REPORT_EN,
-+			REM_LTL_ERR_ILLTRAN | REM_LTL_ERR_UNSOLR |
-+			REM_LTL_ERR_UNSUPTR);
-+
-+	/* Use Port-Writes for LT layer error reporting.
-+	 * Enable per-port reset
-+	 */
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+			IDT_DEV_CTRL_1, &regval);
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_DEV_CTRL_1,
-+			regval | IDT_DEV_CTRL_1_GENPW | IDT_DEV_CTRL_1_PRSTBEH);
-+
-+	/*
-+	 * Configure PORT error reporting.
-+	 */
-+
-+	/* Report all RIO.p8 errors supported by device */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_PORT_ERR_REPORT_EN_BC, 0x807e8037);
-+
-+	/* Configure reporting of implementation specific errors/events */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_PORT_ISERR_REPORT_EN_BC, IDT_PORT_INIT_TX_ACQUIRED);
-+
-+	/* Use Port-Writes for port error reporting and enable error logging */
-+	tmp = RIO_GET_TOTAL_PORTS(rdev->swpinfo);
-+	for (i = 0; i < tmp; i++) {
-+		rio_mport_read_config_32(mport, destid, hopcount,
-+				IDT_PORT_OPS(i), &regval);
-+		rio_mport_write_config_32(mport, destid, hopcount,
-+				IDT_PORT_OPS(i), regval | IDT_PORT_OPS_GENPW |
-+				IDT_PORT_OPS_PL_ELOG |
-+				IDT_PORT_OPS_LL_ELOG |
-+				IDT_PORT_OPS_LT_ELOG);
-+	}
-+	/* Overwrite error log if full */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_ERR_CAP, IDT_ERR_CAP_LOG_OVERWR);
-+
-+	/*
-+	 * Configure LANE error reporting.
-+	 */
-+
-+	/* Disable line error reporting */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_LANE_ERR_REPORT_EN_BC, 0);
-+
-+	/* Use Port-Writes for lane error reporting (when enabled)
-+	 * (do per-lane update because lanes may have different configuration)
-+	 */
-+	tmp = (rdev->did == RIO_DID_IDTCPS1848) ? 48 : 16;
-+	for (i = 0; i < tmp; i++) {
-+		rio_mport_read_config_32(mport, destid, hopcount,
-+				IDT_LANE_CTRL(i), &regval);
-+		rio_mport_write_config_32(mport, destid, hopcount,
-+				IDT_LANE_CTRL(i), regval | IDT_LANE_CTRL_GENPW);
-+	}
-+
-+	/*
-+	 * Configure AUX error reporting.
-+	 */
-+
-+	/* Disable JTAG and I2C Error capture */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_AUX_PORT_ERR_CAP_EN, 0);
-+
-+	/* Disable JTAG and I2C Error reporting/logging */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_AUX_ERR_REPORT_EN, 0);
-+
-+	/* Disable Port-Write notification from JTAG */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_JTAG_CTRL, 0);
-+
-+	/* Disable Port-Write notification from I2C */
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+			IDT_I2C_MCTRL, &regval);
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_I2C_MCTRL,
-+			regval & ~IDT_I2C_MCTRL_GENPW);
-+
-+	/*
-+	 * Configure CFG_BLK error reporting.
-+	 */
-+
-+	/* Disable Configuration Block error capture */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_CFGBLK_ERR_CAPTURE_EN, 0);
-+
-+	/* Disable Port-Writes for Configuration Block error reporting */
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+			IDT_CFGBLK_ERR_REPORT, &regval);
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_CFGBLK_ERR_REPORT,
-+			regval & ~IDT_CFGBLK_ERR_REPORT_GENPW);
-+
-+	/* set TVAL = ~50us */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+		rdev->phys_efptr + RIO_PORT_LINKTO_CTL_CSR, 0x8e << 8);
-+
-+	return 0;
-+}
-+
-+static int
-+idtg2_em_handler(struct rio_dev *rdev, u8 portnum)
-+{
-+	struct rio_mport *mport = rdev->net->hport;
-+	u16 destid = rdev->rswitch->destid;
-+	u8 hopcount = rdev->rswitch->hopcount;
-+	u32 regval, em_perrdet, em_ltlerrdet;
-+
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+		rdev->em_efptr + RIO_EM_LTL_ERR_DETECT, &em_ltlerrdet);
-+	if (em_ltlerrdet) {
-+		/* Service Logical/Transport Layer Error(s) */
-+		if (em_ltlerrdet & REM_LTL_ERR_IMPSPEC) {
-+			/* Implementation specific error reported */
-+			rio_mport_read_config_32(mport, destid, hopcount,
-+					IDT_ISLTL_ADDRESS_CAP, &regval);
-+
-+			pr_debug("RIO: %s Implementation Specific LTL errors" \
-+				 " 0x%x @(0x%x)\n",
-+				 rio_name(rdev), em_ltlerrdet, regval);
-+
-+			/* Clear implementation specific address capture CSR */
-+			rio_mport_write_config_32(mport, destid, hopcount,
-+					IDT_ISLTL_ADDRESS_CAP, 0);
-+
-+		}
-+	}
-+
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+		rdev->em_efptr + RIO_EM_PN_ERR_DETECT(portnum), &em_perrdet);
-+	if (em_perrdet) {
-+		/* Service Port-Level Error(s) */
-+		if (em_perrdet & REM_PED_IMPL_SPEC) {
-+			/* Implementation Specific port error reported */
-+
-+			/* Get IS errors reported */
-+			rio_mport_read_config_32(mport, destid, hopcount,
-+					IDT_PORT_ISERR_DET(portnum), &regval);
-+
-+			pr_debug("RIO: %s Implementation Specific Port" \
-+				 " errors 0x%x\n", rio_name(rdev), regval);
-+
-+			/* Clear all implementation specific events */
-+			rio_mport_write_config_32(mport, destid, hopcount,
-+					IDT_PORT_ISERR_DET(portnum), 0);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static ssize_t
-+idtg2_show_errlog(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	struct rio_dev *rdev = to_rio_dev(dev);
-+	struct rio_mport *mport = rdev->net->hport;
-+	u16 destid = rdev->rswitch->destid;
-+	u8 hopcount = rdev->rswitch->hopcount;
-+	ssize_t len = 0;
-+	u32 regval;
-+
-+	while (!rio_mport_read_config_32(mport, destid, hopcount,
-+					 IDT_ERR_RD, &regval)) {
-+		if (!regval)    /* 0 = end of log */
++	/* Find switch with failed RIO link */
++	while (rdev->prev && (rdev->prev->pef & RIO_PEF_SWITCH)) {
++		if (!rio_read_config_32(rdev->prev, RIO_DEV_ID_CAR, &result)) {
++			prev = rdev->prev;
 +			break;
-+		len += snprintf(buf + len, PAGE_SIZE - len,
-+					"%08x\n", regval);
-+		if (len >= (PAGE_SIZE - 10))
-+			break;
++		}
++		rdev = rdev->prev;
 +	}
 +
-+	return len;
-+}
++	if (prev == NULL)
++		goto err_out;
 +
-+static DEVICE_ATTR(errlog, S_IRUGO, idtg2_show_errlog, NULL);
++	/* Find port with failed RIO link */
++	for (p_port = 0;
++	     p_port < RIO_GET_TOTAL_PORTS(prev->swpinfo); p_port++)
++		if (prev->rswitch->nextdev[p_port] == rdev)
++			break;
 +
-+static int idtg2_sysfs(struct rio_dev *rdev, int create)
-+{
-+	struct device *dev = &rdev->dev;
-+	int err = 0;
-+
-+	if (create == RIO_SW_SYSFS_CREATE) {
-+		/* Initialize sysfs entries */
-+		err = device_create_file(dev, &dev_attr_errlog);
-+		if (err)
-+			dev_err(dev, "Unable create sysfs errlog file\n");
++	if (p_port < RIO_GET_TOTAL_PORTS(prev->swpinfo)) {
++		pr_debug("RIO: link failed on [%s]-P%d\n",
++			 rio_name(prev), p_port);
++		*nrdev = prev;
++		*npnum = p_port;
++		rc = 0;
 +	} else
-+		device_remove_file(dev, &dev_attr_errlog);
-+
-+	return err;
++		pr_debug("RIO: failed to trace route to %s\n", rio_name(prev));
++err_out:
++	return rc;
 +}
 +
-+static int idtg2_switch_init(struct rio_dev *rdev, int do_enum)
++/**
++ * rio_mport_chk_dev_access - Validate access to the specified device.
++ * @mport: Master port to send transactions
++ * @destid: Device destination ID in network
++ * @hopcount: Number of hops into the network
++ */
++static int
++rio_mport_chk_dev_access(struct rio_mport *mport, u16 destid, u8 hopcount)
 +{
-+	pr_debug("RIO: %s for %s\n", __func__, rio_name(rdev));
-+	rdev->rswitch->add_entry = idtg2_route_add_entry;
-+	rdev->rswitch->get_entry = idtg2_route_get_entry;
-+	rdev->rswitch->clr_table = idtg2_route_clr_table;
-+	rdev->rswitch->set_domain = idtg2_set_domain;
-+	rdev->rswitch->get_domain = idtg2_get_domain;
-+	rdev->rswitch->em_init = idtg2_em_init;
-+	rdev->rswitch->em_handle = idtg2_em_handler;
-+	rdev->rswitch->sw_sysfs = idtg2_sysfs;
++	int i = 0;
++	u32 tmp;
++
++	while (rio_mport_read_config_32(mport, destid, hopcount,
++					RIO_DEV_ID_CAR, &tmp)) {
++		i++;
++		if (i == RIO_MAX_CHK_RETRY)
++			return -EIO;
++		mdelay(1);
++	}
 +
 +	return 0;
 +}
 +
-+DECLARE_RIO_SWITCH_INIT(RIO_VID_IDT, RIO_DID_IDTCPS1848, idtg2_switch_init);
-+DECLARE_RIO_SWITCH_INIT(RIO_VID_IDT, RIO_DID_IDTCPS1616, idtg2_switch_init);
-diff --git a/include/linux/rio_ids.h b/include/linux/rio_ids.h
-index db50e1c..ee7b6ad 100644
---- a/include/linux/rio_ids.h
-+++ b/include/linux/rio_ids.h
-@@ -34,5 +34,7 @@
- #define RIO_DID_IDTCPS16		0x035b
- #define RIO_DID_IDTCPS6Q		0x035f
- #define RIO_DID_IDTCPS10Q		0x035e
-+#define RIO_DID_IDTCPS1848		0x0374
-+#define RIO_DID_IDTCPS1616		0x0379
++/**
++ * rio_chk_dev_access - Validate access to the specified device.
++ * @rdev: Pointer to RIO device control structure
++ */
++static int rio_chk_dev_access(struct rio_dev *rdev)
++{
++	u8 hopcount = 0xff;
++	u16 destid = rdev->destid;
++
++	if (rdev->rswitch) {
++		destid = rdev->rswitch->destid;
++		hopcount = rdev->rswitch->hopcount;
++	}
++
++	return rio_mport_chk_dev_access(rdev->net->hport, destid, hopcount);
++}
++
++/**
+  * rio_get_input_status - Sends a Link-Request/Input-Status control symbol and
+  *                        returns link-response (if requested).
+  * @rdev: RIO devive to issue Input-status command
+@@ -654,8 +740,8 @@ int rio_inb_pwrite_handler(union rio_pw_msg *pw_msg)
  
- #endif				/* LINUX_RIO_IDS_H */
-diff --git a/include/linux/rio_regs.h b/include/linux/rio_regs.h
-index daa269d..a18b2e2 100644
---- a/include/linux/rio_regs.h
-+++ b/include/linux/rio_regs.h
-@@ -161,6 +161,7 @@
- #define RIO_COMPONENT_TAG_CSR	0x6c	/* [III] Component Tag CSR */
+ 	rdev = rio_get_comptag(pw_msg->em.comptag, NULL);
+ 	if (rdev == NULL) {
+-		/* Someting bad here (probably enumeration error) */
+-		pr_err("RIO: %s No matching device for CTag 0x%08x\n",
++		/* Device removed or enumeration error */
++		pr_debug("RIO: %s No matching device for CTag 0x%08x\n",
+ 			__func__, pw_msg->em.comptag);
+ 		return -EIO;
+ 	}
+@@ -686,6 +772,26 @@ int rio_inb_pwrite_handler(union rio_pw_msg *pw_msg)
+ 			return 0;
+ 	}
  
- #define RIO_STD_RTE_CONF_DESTID_SEL_CSR	0x70
-+#define  RIO_STD_RTE_CONF_EXTCFGEN		0x80000000
- #define RIO_STD_RTE_CONF_PORT_SEL_CSR	0x74
- #define RIO_STD_RTE_DEFAULT_PORT	0x78
++	portnum = pw_msg->em.is_port & 0xFF;
++
++	/* Check if device and route to it are functional:
++	 * Sometimes devices may send PW message(s) just before being
++	 * powered down (or link being lost).
++	 */
++	if (rio_chk_dev_access(rdev)) {
++		pr_debug("RIO: device access failed - get link partner\n");
++		/* Scan route to the device and identify failed link.
++		 * This will replace device and port reported in PW message.
++		 * PW message should not be used after this point.
++		 */
++		if (rio_chk_dev_route(rdev, &rdev, &portnum)) {
++			pr_err("RIO: Route trace for %s failed\n",
++				rio_name(rdev));
++			return -EIO;
++		}
++		pw_msg = NULL;
++	}
++
+ 	/* For End-point devices processing stops here */
+ 	if (!(rdev->pef & RIO_PEF_SWITCH))
+ 		return 0;
+@@ -703,9 +809,6 @@ int rio_inb_pwrite_handler(union rio_pw_msg *pw_msg)
+ 	/*
+ 	 * Process the port-write notification from switch
+ 	 */
+-
+-	portnum = pw_msg->em.is_port & 0xFF;
+-
+ 	if (rdev->rswitch->em_handle)
+ 		rdev->rswitch->em_handle(rdev, portnum);
  
-@@ -265,6 +266,10 @@
- #define RIO_EM_EFB_HEADER	0x000	/* Error Management Extensions Block Header */
- #define RIO_EM_LTL_ERR_DETECT	0x008	/* Logical/Transport Layer Error Detect CSR */
- #define RIO_EM_LTL_ERR_EN	0x00c	/* Logical/Transport Layer Error Enable CSR */
-+#define  REM_LTL_ERR_ILLTRAN		0x08000000 /* Illegal Transaction decode */
-+#define  REM_LTL_ERR_UNSOLR		0x00800000 /* Unsolicited Response */
-+#define  REM_LTL_ERR_UNSUPTR		0x00400000 /* Unsupported Transaction */
-+#define  REM_LTL_ERR_IMPSPEC		0x000000ff /* Implementation Specific */
- #define RIO_EM_LTL_HIADDR_CAP	0x010	/* Logical/Transport Layer High Address Capture CSR */
- #define RIO_EM_LTL_ADDR_CAP	0x014	/* Logical/Transport Layer Address Capture CSR */
- #define RIO_EM_LTL_DEVID_CAP	0x018	/* Logical/Transport Layer Device ID Capture CSR */
+diff --git a/drivers/rapidio/rio.h b/drivers/rapidio/rio.h
+index f27b7a9..bc71ba1 100644
+--- a/drivers/rapidio/rio.h
++++ b/drivers/rapidio/rio.h
+@@ -14,6 +14,8 @@
+ #include <linux/list.h>
+ #include <linux/rio.h>
+ 
++#define RIO_MAX_CHK_RETRY	3
++
+ /* Functions internal to the RIO core code */
+ 
+ extern u32 rio_mport_get_feature(struct rio_mport *mport, int local, u16 destid,
 -- 
 1.7.0.5
 
