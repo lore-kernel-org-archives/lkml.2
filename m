@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab0INFQe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 01:16:34 -0400
-Received: from toccata.ens-lyon.org ([140.77.166.68]:55456 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab0INFQd (ORCPT
+	id S1752200Ab0INFRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 01:17:22 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35456 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab0INFRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 01:16:33 -0400
-Date: Tue, 14 Sep 2010 07:16:12 +0200
-From: =?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Samuel Thibault <Samuel.Thibault@ens-lyon.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andres Salomon <dilinger@queued.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: EuroBraille/Iris power off
-Message-ID: <20100914051612.GA3247@pema>
-References: <20100825094925.GA3632@pema>
- <alpine.LFD.2.00.1008261406480.2062@localhost.localdomain>
- <20100826210815.GA18131@pema>
- <4C76D9A0.2010907@zytor.com>
- <20100829205929.GA3309@pema>
- <20100913100719.GA3903@pema>
- <54870.1284390647@localhost>
- <20100913152249.GC5364@const.bordeaux.inria.fr>
- <7925.1284428749@localhost>
+	Tue, 14 Sep 2010 01:17:20 -0400
+Message-ID: <4C8F04D2.8020206@oracle.com>
+Date: Mon, 13 Sep 2010 22:14:58 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7925.1284428749@localhost>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Thomas Renninger <trenn@suse.de>, Greg KH <greg@kroah.com>,
+        Jason Baron <jbaron@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the final tree (driver-core
+ tree related)
+References: <20100907115426.fc0c3e13.sfr@canb.auug.org.au>	<20100907023404.GA11972@kroah.com>	<20100913085155.6b73c9cc.randy.dunlap@oracle.com>	<201009132126.14115.trenn@suse.de> <20100914143159.dca830f0.sfr@canb.auug.org.au>
+In-Reply-To: <20100914143159.dca830f0.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/13/10 21:31, Stephen Rothwell wrote:
+> Hi Thomas,
+> 
+> On Mon, 13 Sep 2010 21:26:13 +0200 Thomas Renninger <trenn@suse.de> wrote:
+>>
+>> On Monday 13 September 2010 17:51:55 Randy Dunlap wrote:
+>>> On Mon, 6 Sep 2010 19:34:04 -0700 Greg KH wrote:
+>>>
+>>>> On Tue, Sep 07, 2010 at 11:54:26AM +1000, Stephen Rothwell wrote:
+>>>>>
+>>>>> After merging the final tree, today's linux-next build (powerpc
+>>>>> allnoconfig) produced this warning:
+>>>>>
+>>>>> kernel/params.c: In function 'parse_args':
+>>>>> kernel/params.c:233: warning: the frame size of 1032 bytes is larger than 1024 bytes
+>>>>>
+>>>>> Introduced by commit 32e6407e9361cd1aac39ff6b744cad48d1802a08 ("Dynamic
+>>>>> Debug: Introduce global fake module param module.ddebug") which added a
+>>>>> 1024 byte array to the stack ...
+>>>>
+>>>> Wierd, why didn't this show up yesterday?  The patch was in that tree
+>>>> then, right?
+>>>>
+>>>> Thomas, care to fix this up?
+>>>  
+>>> ping.  Is Thomas around??
+>> Yep, sorry for not responding.
+>>
+>> I tried to reproduce this on ppc64, but above file compiled without
+>> warning with dynamic debug set. Thus I thought this still came from the
+>> old patch.
+> 
+> The report is for a powerpc allnoconfig build (see above) i.e. ppc32.
 
-Valdis.Kletnieks@vt.edu (2010/09/13 21:45 -0400):
-> I'm agreeing that if iris_init() checks that the user passed 'irisinit.force=1'
-> on the command line or as a module parameter, and bailed immediately if it
-> wasn't passed, then doing the inb() and testing it should be safe enough. Doing
-> stuff that's only known safe on an Iris is no great sin if the user has said
-> "Yes, you're on a Iris" - at that point it's the user's fault.
 
-Fine. I'd be happy to submit another patch where the module takes a
-force argument if that's okay to you guys.
+It also happens on x86_32 (i386).
 
-Shérab.
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
