@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab0INQBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 12:01:30 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:41586 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753783Ab0INQB0 (ORCPT
+	id S1754081Ab0INQF1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 12:05:27 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43996 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753913Ab0INQFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 12:01:26 -0400
-From: Andy Whitcroft <apw@canonical.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@lst.de>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH 1/1] x86: ensure we correctly advertise 32 bit processes in a 64 bit kernel
-Date: Tue, 14 Sep 2010 17:00:57 +0100
-Message-Id: <1284480057-18120-2-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1284480057-18120-1-git-send-email-apw@canonical.com>
-References: <1284480057-18120-1-git-send-email-apw@canonical.com>
+	Tue, 14 Sep 2010 12:05:24 -0400
+Date: Tue, 14 Sep 2010 12:05:22 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Oliver Neukum <oneukum@suse.de>
+cc: Jiri Slaby <jslaby@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
+        <pingc@wacom.com>, linux-pm <linux-pm@lists.linux-foundation.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        <linux-input@vger.kernel.org>
+Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
+In-Reply-To: <201009141730.38215.oneukum@suse.de>
+Message-ID: <Pine.LNX.4.44L0.1009141203460.1648-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A number of generic system calls modify their behaviour for 32 bit
-processes when executed on a 64 bit kernel.  For example the uname
-family return i686 for 32 bit processes but x86_64 for 64 bit processes.
-These calls determine which return to use based on the personality,
-specifically they check for PER_LINUX32.  x86 does not currently set this
-personality type, using an x86 specific thread bit to distinguish.
+On Tue, 14 Sep 2010, Oliver Neukum wrote:
 
-Ensure we use personality PER_LINUX32 for 32 bit processes.
+> Am Dienstag, 14. September 2010, 17:23:15 schrieb Alan Stern:
+> > On Tue, 14 Sep 2010, Oliver Neukum wrote:
+> > 
+> > > > > Should I have used usb_autopm_get_interface_no_resume()?
+> > > > 
+> > > > That actually would work.  It's a good idea.  The only drawback (not a
+> > > > big one) is that if the device _was_ suspended with remote wakeup
+> > > > enabled, doing this wouldn't turn off remote wakeup.  I think that
+> > > > doesn't matter.
+> > > 
+> > > I am afraid it does matter as devices whose remote wakeup is enabled
+> > > may draw more power.
+> > 
+> > I doubt it, or at least, not very much more.  They are still limited by 
+> > the USB spec as to the total amount of current they can draw while 
+> > suspended.
+> 
+> 7.2.3 Sources of remote wakeup may draw 2.5mA when suspended
+> as opposed to 0.5 mA
 
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- arch/x86/kernel/process_64.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Okay, then we may as well wake it up in order to turn off remote 
+wakeup.  For drivers that don't need remote wakeup, it's better to use 
+the _no_resume form.
 
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 3d9ea53..3793a6a 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -518,7 +518,7 @@ void set_personality_ia32(void)
- 
- 	/* Make sure to be in 32bit mode */
- 	set_thread_flag(TIF_IA32);
--	current->personality |= force_personality32;
-+	current->personality |= force_personality32 | PER_LINUX32;
- 
- 	/* Prepare the first "return" to user space */
- 	current_thread_info()->status |= TS_COMPAT;
--- 
-1.7.0.4
+Alan Stern
 
