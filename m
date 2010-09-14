@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab0INTF5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 15:05:57 -0400
-Received: from void.printf.net ([89.145.121.20]:41450 "EHLO void.printf.net"
+	id S1754643Ab0INTIF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 15:08:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26246 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752560Ab0INTF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 15:05:56 -0400
-Date: Tue, 14 Sep 2010 20:05:49 +0100
-From: Chris Ball <cjb@laptop.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Saeed Bishara <saeed@marvell.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: Add architecture dependency for Marvell SoC
-	controller
-Message-ID: <20100914190549.GA21918@void.printf.net>
-References: <1284366279-17140-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1751712Ab0INTIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 15:08:02 -0400
+Date: Tue, 14 Sep 2010 21:01:56 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+Message-ID: <20100914190156.GA16037@redhat.com>
+References: <1284410580.13351.10.camel@localhost.localdomain>
+ <4C8F3C77.7010302@redhat.com>
+ <1284476719.13351.35.camel@localhost.localdomain>
+ <201009141721.13202.arnd@arndb.de>
+ <20100914152231.GA13105@redhat.com>
+ <1284480025.13351.49.camel@localhost.localdomain>
+ <20100914162952.GB13560@redhat.com>
+ <1284483745.13351.71.camel@localhost.localdomain>
+ <20100914182707.GB15549@redhat.com>
+ <1284490143.13351.82.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1284366279-17140-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1284490143.13351.82.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Sep 13, 2010 at 09:24:39AM +0100, Mark Brown wrote:
-> Since the driver is for controllers integrated into Marvells SoCs only
-> offer MMC_SDHCI_MV if we're building for one.
+On Tue, Sep 14, 2010 at 11:49:03AM -0700, Shirley Ma wrote:
+> On Tue, 2010-09-14 at 20:27 +0200, Michael S. Tsirkin wrote:
+> > As others said, the harder issues for TX are in determining that it's
+> > safe
+> > to unpin the memory, and how much memory is it safe to pin to beging
+> > with.  For RX we have some more complexity.
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mmc/host/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> I think unpin the memory is in kfree_skb() whenever the last reference
+> is gone for TX. What we discussed about here is when/how vhost get
+> notified to update ring buffer descriptors. Do I misunderstand something
+> here? 
+
+Right, that's a better way to put it.
+
+> > Well it's up to you of course, but this is not what I would try:
+> > if you look at the
+> > patchset vhost changes is not the largest part of it,
+> > so this sounds a bit like effort duplication.
+> > 
+> > TX only is also much less interesting than full zero copy.
 > 
-> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-> index ce099c4..5fa4e2b 100644
-> --- a/drivers/mmc/host/Kconfig
-> +++ b/drivers/mmc/host/Kconfig
-> @@ -133,6 +133,7 @@ config MMC_SDHCI_CNS3XXX
->  config MMC_SDHCI_MV
->  	tristate "SDHCI support on Marvell's SoC"
->  	depends on MMC_SDHCI
-> +	depends on (PLAT_PXA || PLAT_ORION)
->  	select MMC_SDHCI_IO_ACCESSORS
->  	help
->  	  This selects the Secure Digital Host Controller Interface in
-> -- 
-> 1.7.1
+> It's not true. From the performance, TX only has gained big improvement.
+> We need to identify how much gain from TX zero copy, and how much gain
+> from RX zero copy.
 
-This is fine with me.  Saeed, please can you ACK the choice of
-platforms if you agree?
+I was speaking from the code point of view:
+since we'll want both TX and RX eventually it's nice to
+see that some thought was given to RX even if we only merge
+TX as a first step.
 
-Thanks,
+>From the product POV, RX is already slower (more interrupts, etc)
+than TX so speeding it up might be more important,
+but I agree, every bit helps.
+
+> > I think that you should be able to simply combine
+> > the two drivers together, add an ioctl to
+> > enable/disable zero copy mode of operation. 
+> 
+> That could work. But what's the purpose to have two drivers if one
+> driver can handle it?
+> 
+> Thanks
+> Shirley
+
+This was just an idea: I thought it's a good way for people interested
+in this zero copy thing to combine forces and avoid making
+the same mistakes, but it's not a must of course.
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+MST
