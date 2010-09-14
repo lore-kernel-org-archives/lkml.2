@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab0INTzh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 15:55:37 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:49220 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142Ab0INTz1 (ORCPT
+	id S1755259Ab0INT4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 15:56:25 -0400
+Received: from reptilian.habets.pp.se ([193.151.93.131]:1709 "EHLO
+	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754941Ab0INT4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 15:55:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 13/18] i4l: kill big kernel lock
-Date: Tue, 14 Sep 2010 21:55:19 +0200
-Message-Id: <1284494124-7384-4-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1284493213-7263-1-git-send-email-arnd@arndb.de>
-References: <1284493213-7263-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:R1NCWNuZdRoMzS3iCjQgSFvRNFaq9kDlx5tFRP4NTRG
- 4YdA9ub/9znqZCsOlvkW1xmagisrkj4YB+dpnPRz7W0fQ9fkov
- sOhA/gAmncxl0ppMtNA0gNF14MXhik83uGCz3cQdUGXK4o/ejP
- WKUAEST7q23odHeXrji9L5tuRIM4CkwxgT/QGjNWQ/GlzgYBH+
- 2rjxFv211gfFxUguLbytg==
+	Tue, 14 Sep 2010 15:56:21 -0400
+Date: Tue, 14 Sep 2010 21:56:16 +0200 (CEST)
+From: Thomas Habets <thomas@habets.pp.se>
+X-X-Sender: thompa@red.crap.retrofitta.se
+To: Brian Haley <brian.haley@hp.com>
+cc: Matt Carlson <mcarlson@broadcom.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Michael Chan <mchan@broadcom.com>
+Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
+ to reset
+In-Reply-To: <4C7E65DA.5020106@hp.com>
+Message-ID: <alpine.DEB.1.10.1009142134440.25664@red.crap.retrofitta.se>
+References: <1282024802.2487.687.camel@edumazet-laptop> <alpine.DEB.1.10.1008171053230.21857@red.crap.retrofitta.se> <1282050920.2448.47.camel@edumazet-laptop> <alpine.DEB.1.10.1008171547090.21857@red.crap.retrofitta.se> <1282055659.2448.58.camel@edumazet-laptop>
+ <alpine.DEB.1.10.1008171737260.21857@red.crap.retrofitta.se> <20100817171115.GA4134@mcarlson.broadcom.com> <alpine.DEB.1.10.1008171928160.21857@red.crap.retrofitta.se> <20100817183112.GA4351@mcarlson.broadcom.com> <alpine.DEB.1.10.1008172035520.21857@red.crap.retrofitta.se>
+ <20100818012318.GA4630@mcarlson.broadcom.com> <alpine.DEB.1.10.1008180900350.21857@red.crap.retrofitta.se> <alpine.DEB.1.10.1009011034560.31938@red.crap.retrofitta.se> <4C7E65DA.5020106@hp.com>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The isdn4linux driver uses the big kernel lock only
-to serialize access to a few fields in its own
-modem_info structure.
 
-The easiest replacement is a driver-wide mutex.
-More fine-grained locking would be more appropriate
-here, but likely harder to implement.
+Sorry for the late reply. I've been swamped.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Karsten Keil <isdn@linux-pingi.de>
-Cc: netdev@vger.kernel.org
----
- drivers/isdn/i4l/isdn_tty.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+On Wed, 1 Sep 2010, Brian Haley wrote:
+> So are you running with this set to "Shared Network Port" mode?  I'm
+> guessing you are.
 
-diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
-index 51dc60d..981f7ab 100644
---- a/drivers/isdn/i4l/isdn_tty.c
-+++ b/drivers/isdn/i4l/isdn_tty.c
-@@ -14,7 +14,7 @@
- #include <linux/isdn.h>
- #include <linux/slab.h>
- #include <linux/delay.h>
--#include <linux/smp_lock.h>
-+#include <linux/mutex.h>
- #include "isdn_common.h"
- #include "isdn_tty.h"
- #ifdef CONFIG_ISDN_AUDIO
-@@ -28,6 +28,7 @@
- 
- /* Prototypes */
- 
-+static DEFINE_MUTEX(modem_info_mutex);
- static int isdn_tty_edit_at(const char *, int, modem_info *);
- static void isdn_tty_check_esc(const u_char *, u_char, int, int *, u_long *);
- static void isdn_tty_modem_reset_regs(modem_info *, int);
-@@ -1354,14 +1355,14 @@ isdn_tty_tiocmget(struct tty_struct *tty, struct file *file)
- 	if (tty->flags & (1 << TTY_IO_ERROR))
- 		return -EIO;
- 
--	lock_kernel();
-+	mutex_lock(&modem_info_mutex);
- #ifdef ISDN_DEBUG_MODEM_IOCTL
- 	printk(KERN_DEBUG "ttyI%d ioctl TIOCMGET\n", info->line);
- #endif
- 
- 	control = info->mcr;
- 	status = info->msr;
--	unlock_kernel();
-+	mutex_unlock(&modem_info_mutex);
- 	return ((control & UART_MCR_RTS) ? TIOCM_RTS : 0)
- 	    | ((control & UART_MCR_DTR) ? TIOCM_DTR : 0)
- 	    | ((status & UART_MSR_DCD) ? TIOCM_CAR : 0)
-@@ -1385,7 +1386,7 @@ isdn_tty_tiocmset(struct tty_struct *tty, struct file *file,
- 	printk(KERN_DEBUG "ttyI%d ioctl TIOCMxxx: %x %x\n", info->line, set, clear);
- #endif
- 
--	lock_kernel();
-+	mutex_lock(&modem_info_mutex);
- 	if (set & TIOCM_RTS)
- 		info->mcr |= UART_MCR_RTS;
- 	if (set & TIOCM_DTR) {
-@@ -1407,7 +1408,7 @@ isdn_tty_tiocmset(struct tty_struct *tty, struct file *file,
- 			isdn_tty_modem_hup(info, 1);
- 		}
- 	}
--	unlock_kernel();
-+	mutex_unlock(&modem_info_mutex);
- 	return 0;
- }
- 
--- 
-1.7.1
+Yes, there's no dedicated ILO port.
 
+> There was another report on netdev back in 11/2008 on this exact hardware,
+> with the same problem.
+
+I can't seem to find it. Do you happen to have the subject line or 
+something?
+
+> I dug-up my notes on the problem, and from what I can tell, the receive
+> multicast filters on the NIC were getting removed, causing both incoming
+> IPv6 and IPv4 multicast packets to get dropped.
+
+Sounds about right. From what I understand the relevant registers were 
+still the same for me when it wasn't working though (if that indeed is 
+how the filter is implemented).
+
+---------
+typedef struct me_s {
+   char name[]      = { "Thomas Habets" };
+   char email[]     = { "thomas@habets.pp.se" };
+   char kernel[]    = { "Linux" };
+   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
+   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
+   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
+} me_t;
