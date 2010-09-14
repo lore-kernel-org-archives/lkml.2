@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab0INUxq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 16:53:46 -0400
-Received: from ccmail.crestlinecapital.com ([98.190.191.169]:4133 "EHLO
-	ccmail.crestlinecapital.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752935Ab0INUxo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 16:53:44 -0400
-X-Greylist: delayed 1570 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Sep 2010 16:53:44 EDT
-X-AuditID: ac132015-000000cc0000062c-1d-4c8fd6c66530
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1755428Ab0INUy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 16:54:28 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45508 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751703Ab0INUy1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 16:54:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: Important: Email Account Verification Update!!!
-Date: Tue, 14 Sep 2010 16:10:43 -0400
-Message-ID: <610C2605D03A93498F8E479F47234D78040270FB@ex2k6.crestlinehotels.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Important: Email Account Verification Update!!!
-Thread-Index: ActUSOgyxbxO7kpAQnW4M0Bjt8uFFQ==
-From: "Perrell, Charles" <Charles.Perrell@crestlinehotels.com>
-X-Brightmail-Tracker: AAAAAA==
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <201009142239.02904.arnd@arndb.de>
+References: <201009142206.54130.arnd@arndb.de> <AANLkTimzFDdWbr2gtfmJmfGJVnyURcpvwnGf334ZHVYc@mail.gmail.com>
+ <201009142239.02904.arnd@arndb.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 14 Sep 2010 13:53:31 -0700
+Message-ID: <AANLkTimK5kesHJV3mspRch-YVe8uRT=ypqNMHr2L9wHC@mail.gmail.com>
+Subject: Re: [PATCH] Remove BKL from fs/locks.c
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Matthew Wilcox <willy@linux.intel.com>, Christoph Hellwig <hch@lst.de>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Computer Database Maintainance is currently going on our Webmail Message Center. Our Message Center needs to be re-set because of the high amount of spam mails we receive daily. A Quarantine Maintainance will help us prevent this everyday dilemma.
- 
-To revalidate your mailbox Please Click on the link below:
+On Tue, Sep 14, 2010 at 1:39 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>
+> Hmm, maybe I'm misunderstanding part of that plan, but I think it
+> won't work because the BKL in there seems to protect all struct file_lock
+> instances and they are passed around to other code, most importantly
+> lockd. The file_locks themselves can be accessed both using sys_flock()
+> etc locally and using afs/nfs/coda/... exported file systems from other
+> systems.
 
-http://accesportalinfo.ucoz.com/emailform1.html
+Ahh, so lockd actually walks those things itself too, not just using
+the fs/locks.c interfaces. Ok, scratch that then.
 
-Failure to revalidate your mailbox will render your e-mail in-active from our database.
- 
-Thanks
-System Administrator
+Oh well. I guess there's no incremental way to do things sanely. And
+nobody has patches to fix those users, I guess.
 
+                                Linus
