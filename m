@@ -1,135 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab0INQGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 12:06:11 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58835 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab0INQGE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 12:06:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=WpYh+01AA00H81WsbvIGNejXbZM+F1vt4U367JgP8sKqPhhkhSxCAq6qC6zJDEt5BA
-         LhgJGVj0eplY9+gFzLEjsr/47ndyOz4SOiDvxFuV5WFzFSTFiIfV4uLM0Nzp10VkesCC
-         ZI5zQCMK0P6683q3ToDpgUPWd3JHoiiyIid8k=
+	id S1754246Ab0INQHj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 12:07:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52915 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753356Ab0INQHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 12:07:37 -0400
+Date: Tue, 14 Sep 2010 18:01:02 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] vhost: max s/g to match qemu
+Message-ID: <20100914160102.GA13560@redhat.com>
+References: <20100914155305.3293.92519.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1282329921-24394-1-git-send-email-timur@freescale.com>
-References: <1282329921-24394-1-git-send-email-timur@freescale.com>
-From: Timur Tabi <timur@freescale.com>
-Date: Tue, 14 Sep 2010 11:05:32 -0500
-X-Google-Sender-Auth: e7AH8zjEU9fTE-mtoBOvLBWPI3w
-Message-ID: <AANLkTikn-DW6g9Zx07vR8hn7Zk3O=JMTe+r9CRbPe_YH@mail.gmail.com>
-Subject: Re: [PATCH] hvc_console: fix dropping of characters when output byte
- channel is full
-To: Andrew Morton <akpm@kernel.org>
-Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, kumar.gala@freescale.com,
-        amit.shah@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100914155305.3293.92519.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+On Tue, Sep 14, 2010 at 11:53:05PM +0800, Jason Wang wrote:
+> Qemu supports up to UIO_MAXIOV s/g so we have to match that because guest
+> drivers may rely on this.
+> 
+> Allocate indirect and log arrays dynamically to avoid using too much contigious
+> memory and make the length of hdr array to match the header length since each
+> iovec entry has a least one byte.
+> 
+> Test with copying large files w/ and w/o migration in both linux and windows
+> guests.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Would you please take a moment to review this patch I sent last month?
-I'd like for it to be incorporated into 2.6.37, but I'm having a hard
-time finding someone to consider it.
+Looks good, I'll queue this up for 2.6.37.
+Thanks!
 
-Thanks.
-
-On Fri, Aug 20, 2010 at 1:45 PM, Timur Tabi <timur@freescale.com> wrote:
-> hvc_console_print() calls the HVC client driver's put_chars() callback
-> to write some characters to the console.  If the callback returns 0, that
-> indicates that no characters were written (perhaps the output buffer is
-> full), but hvc_console_print() treats that as an error and discards the
-> rest of the buffer.
->
-> So change hvc_console_print() to just loop and call put_chars() again if it
-> returns a 0 return code.
->
-> This change makes hvc_console_print() behave more like hvc_push(), which
-> does check for a 0 return code and re-schedules itself.
->
-> Signed-off-by: Timur Tabi <timur@freescale.com>
 > ---
->  drivers/char/hvc_console.c |   19 ++++++++++++++++++-
->  1 files changed, 18 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/char/hvc_console.c b/drivers/char/hvc_console.c
-> index fa27d16..b4deffd 100644
-> --- a/drivers/char/hvc_console.c
-> +++ b/drivers/char/hvc_console.c
-> @@ -3,6 +3,7 @@
->  * Copyright (C) 2001 Paul Mackerras <paulus@au.ibm.com>, IBM
->  * Copyright (C) 2004 Benjamin Herrenschmidt <benh@kernel.crashing.org>, IBM Corp.
->  * Copyright (C) 2004 IBM Corporation
-> + * Copyright 2009 Freescale Semiconductor, Inc.
->  *
->  * Additional Author(s):
->  *  Ryan S. Arnold <rsa@us.ibm.com>
-> @@ -141,6 +142,7 @@ static void hvc_console_print(struct console *co, const char *b,
->        char c[N_OUTBUF] __ALIGNED__;
->        unsigned i = 0, n = 0;
->        int r, donecr = 0, index = co->index;
-> +       unsigned int timeout = 1000000; /* Keep trying for up to one second */
->
->        /* Console access attempt outside of acceptable console range. */
->        if (index >= MAX_NR_HVC_CONSOLES)
-> @@ -152,6 +154,10 @@ static void hvc_console_print(struct console *co, const char *b,
->
->        while (count > 0 || i > 0) {
->                if (count > 0 && i < sizeof(c)) {
-> +                       /* If the local buffer (c) is not full, then copy some
-> +                        * bytes from the input buffer to it. We stop when the
-> +                        * local buffer is full. \n is converted to \r\n.
-> +                        */
->                        if (b[n] == '\n' && !donecr) {
->                                c[i++] = '\r';
->                                donecr = 1;
-> @@ -162,14 +168,25 @@ static void hvc_console_print(struct console *co, const char *b,
->                        }
->                } else {
->                        r = cons_ops[index]->put_chars(vtermnos[index], c, i);
-> -                       if (r <= 0) {
-> +                       if (r < 0) {
->                                /* throw away chars on error */
->                                i = 0;
->                        } else if (r > 0) {
->                                i -= r;
->                                if (i > 0)
->                                        memmove(c, c+r, i);
-> +                       } else {
-> +                               /* If r == 0, then the client driver didn't do
-> +                                * anything, so wait 1us and try again.  If we
-> +                                * time out, then just exit.
-> +                                */
-> +                               if (!--timeout)
-> +                                       return;
-> +                               udelay(1);
-> +                               continue;
->                        }
-> +                       /* Reset the timeout */
-> +                       timeout = 1000000;
->                }
->        }
->  }
-> --
-> 1.7.0.1
->
->
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
->
+>  drivers/vhost/net.c   |    2 +-
+>  drivers/vhost/vhost.c |   49 ++++++++++++++++++++++++++++++++++++++++++++++++-
+>  drivers/vhost/vhost.h |   18 ++++++++----------
+>  3 files changed, 57 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 29e850a..e828ef1 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -243,7 +243,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
+>  	int r, nlogs = 0;
+>  
+>  	while (datalen > 0) {
+> -		if (unlikely(headcount >= VHOST_NET_MAX_SG)) {
+> +		if (unlikely(headcount >= UIO_MAXIOV)) {
+>  			r = -ENOBUFS;
+>  			goto err;
+>  		}
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index c579dcc..a45270e 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -212,6 +212,45 @@ static int vhost_worker(void *data)
+>  	}
+>  }
+>  
+> +/* Helper to allocate iovec buffers for all vqs. */
+> +static long vhost_dev_alloc_iovecs(struct vhost_dev *dev)
+> +{
+> +	int i;
+> +	for (i = 0; i < dev->nvqs; ++i) {
+> +		dev->vqs[i].indirect = kmalloc(sizeof *dev->vqs[i].indirect *
+> +					       UIO_MAXIOV, GFP_KERNEL);
+> +		dev->vqs[i].log = kmalloc(sizeof *dev->vqs[i].log * UIO_MAXIOV,
+> +					  GFP_KERNEL);
+> +		dev->vqs[i].heads = kmalloc(sizeof *dev->vqs[i].heads *
+> +					    UIO_MAXIOV, GFP_KERNEL);
+> +
+> +		if (!dev->vqs[i].indirect || !dev->vqs[i].log ||
+> +			!dev->vqs[i].heads)
+> +			goto err_nomem;
+> +	}
+> +	return 0;
+> +err_nomem:
+> +	for (; i >= 0; --i) {
+> +		kfree(dev->vqs[i].indirect);
+> +		kfree(dev->vqs[i].log);
+> +		kfree(dev->vqs[i].heads);
 
+We probably want to assign NULL values here, same as below.
+I have fixed this up in my tree.
 
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+> +	}
+> +	return -ENOMEM;
+> +}
+> +
+> +static void vhost_dev_free_iovecs(struct vhost_dev *dev)
+> +{
+> +	int i;
+> +	for (i = 0; i < dev->nvqs; ++i) {
+> +		kfree(dev->vqs[i].indirect);
+> +		dev->vqs[i].indirect = NULL;
+> +		kfree(dev->vqs[i].log);
+> +		dev->vqs[i].log = NULL;
+> +		kfree(dev->vqs[i].heads);
+> +		dev->vqs[i].heads = NULL;
+> +	}
+> +}
+> +
+>  long vhost_dev_init(struct vhost_dev *dev,
+>  		    struct vhost_virtqueue *vqs, int nvqs)
+>  {
+> @@ -229,6 +268,9 @@ long vhost_dev_init(struct vhost_dev *dev,
+>  	dev->worker = NULL;
+>  
+>  	for (i = 0; i < dev->nvqs; ++i) {
+> +		dev->vqs[i].log = NULL;
+> +		dev->vqs[i].indirect = NULL;
+> +		dev->vqs[i].heads = NULL;
+>  		dev->vqs[i].dev = dev;
+>  		mutex_init(&dev->vqs[i].mutex);
+>  		vhost_vq_reset(dev, dev->vqs + i);
+> @@ -295,6 +337,10 @@ static long vhost_dev_set_owner(struct vhost_dev *dev)
+>  	if (err)
+>  		goto err_cgroup;
+>  
+> +	err = vhost_dev_alloc_iovecs(dev);
+> +	if (err)
+> +		goto err_cgroup;
+> +
+>  	return 0;
+>  err_cgroup:
+>  	kthread_stop(worker);
+> @@ -345,6 +391,7 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+>  			fput(dev->vqs[i].call);
+>  		vhost_vq_reset(dev, dev->vqs + i);
+>  	}
+> +	vhost_dev_free_iovecs(dev);
+>  	if (dev->log_ctx)
+>  		eventfd_ctx_put(dev->log_ctx);
+>  	dev->log_ctx = NULL;
+> @@ -946,7 +993,7 @@ static int get_indirect(struct vhost_dev *dev, struct vhost_virtqueue *vq,
+>  	}
+>  
+>  	ret = translate_desc(dev, indirect->addr, indirect->len, vq->indirect,
+> -			     ARRAY_SIZE(vq->indirect));
+> +			     UIO_MAXIOV);
+>  	if (unlikely(ret < 0)) {
+>  		vq_err(vq, "Translation failure %d in indirect.\n", ret);
+>  		return ret;
+> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> index afd7729..edc8929 100644
+> --- a/drivers/vhost/vhost.h
+> +++ b/drivers/vhost/vhost.h
+> @@ -15,11 +15,6 @@
+>  
+>  struct vhost_device;
+>  
+> -enum {
+> -	/* Enough place for all fragments, head, and virtio net header. */
+> -	VHOST_NET_MAX_SG = MAX_SKB_FRAGS + 2,
+> -};
+> -
+>  struct vhost_work;
+>  typedef void (*vhost_work_fn_t)(struct vhost_work *work);
+>  
+> @@ -93,12 +88,15 @@ struct vhost_virtqueue {
+>  	bool log_used;
+>  	u64 log_addr;
+>  
+> -	struct iovec indirect[VHOST_NET_MAX_SG];
+> -	struct iovec iov[VHOST_NET_MAX_SG];
+> -	struct iovec hdr[VHOST_NET_MAX_SG];
+> +	struct iovec iov[UIO_MAXIOV];
+> +	/* hdr is used to store the virtio header.
+> +	 * Since each iovec has >= 1 byte length, we never need more than
+> +	 * header length entries to store the header. */
+> +	struct iovec hdr[sizeof(struct virtio_net_hdr_mrg_rxbuf)];
+> +	struct iovec *indirect;
+>  	size_t vhost_hlen;
+>  	size_t sock_hlen;
+> -	struct vring_used_elem heads[VHOST_NET_MAX_SG];
+> +	struct vring_used_elem *heads;
+>  	/* We use a kind of RCU to access private pointer.
+>  	 * All readers access it from worker, which makes it possible to
+>  	 * flush the vhost_work instead of synchronize_rcu. Therefore readers do
+> @@ -109,7 +107,7 @@ struct vhost_virtqueue {
+>  	void *private_data;
+>  	/* Log write descriptors */
+>  	void __user *log_base;
+> -	struct vhost_log log[VHOST_NET_MAX_SG];
+> +	struct vhost_log *log;
+>  };
+>  
+>  struct vhost_dev {
