@@ -1,123 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab0INRK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 13:10:58 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39104 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754419Ab0INRK4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 13:10:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=sU3LIYFXB8ew1cgLmr6NmucVqbuCqG5pug9OhCpIwaNM1/uTKNgEFFt/SFJgf/K5oi
-         9xY8thgQ/ypR0pdLBaX8yizDwrhJHEh4USvt4ZZQNiCtWMdE4wLkCvLp3VUTrjQhtHtg
-         iB4bIi/9ZEP5f2G+6HeH6+rkRIQol4RvHybCs=
+	id S1754458Ab0INRNf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 13:13:35 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46397 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753261Ab0INRNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 13:13:34 -0400
+From: Nikanth Karthikesan <knikanth@suse.de>
+Organization: suse.de
+To: Richard Guenther <rguenther@suse.de>
+Subject: Re: [PATCH] After swapout/swapin private dirty mappings become clean
+Date: Tue, 14 Sep 2010 22:42:29 +0530
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        balbir@linux.vnet.ibm.com, Michael Matz <matz@novell.com>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org
+References: <201009141640.55650.knikanth@suse.de> <alpine.LNX.2.00.1009141330030.28912@zhemvz.fhfr.qr>
+In-Reply-To: <alpine.LNX.2.00.1009141330030.28912@zhemvz.fhfr.qr>
 MIME-Version: 1.0
-In-Reply-To: <1284483964-2370-2-git-send-email-penberg@kernel.org>
-References: <1284483964-2370-1-git-send-email-penberg@kernel.org>
-	<1284483964-2370-2-git-send-email-penberg@kernel.org>
-Date: Tue, 14 Sep 2010 20:10:55 +0300
-X-Google-Sender-Auth: 8pEMPS4iLwlye-D5P_1jJezHSZw
-Message-ID: <AANLkTinxNbBQ3phKH8aoOSCO-+3FLn=te4OAqx4J8cU+@mail.gmail.com>
-Subject: Re: [PATCH 2/2] SLUB: Mark merged slab caches in /proc/slabinfo
-From: Pekka Enberg <penberg@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009142242.29245.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 8:06 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> SLUB uses the name of the first slab cache for all merged slab caches. To make
-> the output of /proc/slabinfo more obvious, append the name of each merged slab
-> cache to s->name.
->
-> An example output looks like this:
->
->  bip-16,ip_dst_cache,kioctx     42     42    [snip]
->
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Pekka Enberg <penberg@kernel.org>
+On Tuesday 14 September 2010 17:03:59 Richard Guenther wrote:
+> On Tue, 14 Sep 2010, Nikanth Karthikesan wrote:
+> > /proc/$pid/smaps broken: After swapout/swapin private dirty mappings
+> > become clean.
+> >
+> > When a page with private file mapping becomes dirty, the vma will be in
+> > both i_mmap tree and anon_vma list. The /proc/$pid/smaps will account
+> > these pages as dirty and backed by the file.
+> >
+> > But when those dirty pages gets swapped out, and when they are read back
+> > from swap, they would be marked as clean, as it should be, as they are
+> > part of swap cache now.
+> >
+> > But the /proc/$pid/smaps would report the vma as a mapping of a file and
+> > it is clean. The pages are actually in same state i.e., dirty with
+> > respect to file still, but which was once reported as dirty is now being
+> > reported as clean to user-space.
+> >
+> > This confuses tools like gdb which uses this information. Those tools
+> > think that those pages were never modified and it creates problem when
+> > they create dumps.
+> >
+> > The file mapping of the vma also cannot be broken as pages never read
+> > earlier, will still have to come from the file. Just that those dirty
+> > pages have become clean anonymous pages.
+> >
+> > During swaping in, restoring the exact state as dirty file-backed pages
+> > before swapout would be useless, as there in no real bug. Breaking the
+> > vma with only anonymous pages as seperate vmas unnecessary may not be a
+> > good thing as well. So let us just export the information that a
+> > file-backed vma has anonymous dirty pages.
+> >
+> > Export this information in smaps by prepending file-names with "[anon]+",
+> > when some of the pages in a file backed vma become anonymous.
+> 
+> For the sake of not breaking existing tools I'd prefer appending
+> " [anon]" instead.
+> 
 
-Unfortunately this breaks "slabtop". I guess we could try some other delimiter?
+A filename might have it as suffix!
 
-> ---
->  mm/slub.c |   41 ++++++++++++++++++++++++++++++-----------
->  1 files changed, 30 insertions(+), 11 deletions(-)
->
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 0704288..6b08256 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -3149,6 +3149,34 @@ void __init kmem_cache_init_late(void)
->  {
->  }
->
-> +static int kmem_merge_names(struct kmem_cache *s, const char *name)
-> +{
-> +       size_t new_size;
-> +       char *new_name;
-> +
-> +       /* Don't append name to merged name more than once */
-> +       if (strstr(s->name, name))
-> +               return 0;
-> +
-> +       /* Comma separated and NULL terminated. */
-> +       new_size = strlen(s->name) + strlen(name) + 2;
-> +
-> +       new_name = kmalloc(new_size, GFP_KERNEL);
-> +       if (!new_name)
-> +               return -ENOMEM;
-> +
-> +       snprintf(new_name, new_size, "%s,%s", s->name, name);
-> +
-> +       if (s->flags & SLAB_DYNAMIC_NAME)
-> +               kfree(s->name);
-> +
-> +       s->name = new_name;
-> +
-> +       s->flags |= SLAB_DYNAMIC_NAME;
-> +
-> +       return 0;
-> +}
-> +
->  /*
->  * Find a mergeable slab cache
->  */
-> @@ -3221,17 +3249,8 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
->        down_write(&slub_lock);
->        s = find_mergeable(size, align, flags, name, ctor);
->        if (s) {
-> -               if (!(s->flags & SLAB_DYNAMIC_NAME)) {
-> -                       const char *new_name;
-> -
-> -                       new_name = kstrdup(s->name, GFP_KERNEL);
-> -                       if (!new_name)
-> -                               goto err;
-> -
-> -                       s->name = new_name;
-> -
-> -                       s->flags |= SLAB_DYNAMIC_NAME;
-> -               }
-> +               if (kmem_merge_names(s, name))
-> +                       goto err;
->
->                s->refcount++;
->                /*
-> --
-> 1.6.3.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> Though a much simpler thing would be to account
+> the clean anon pages as Private_Dirty (with respect to the backing
+> file displayed).
+
+Agreed.
+
+> Anonymous vmas in /proc/smaps seem to contain
+> Private_Dirty pages as well.  So I still don't understand why this
+> isn't just an accounting bug.
+> 
+
+anonymous pages can be dirty as well. Even these pages now marked as clean 
+would be marked as dirty again, if they are re-dirtied.
+
+Thanks
+Nikanth
+
+> Thanks,
+> Richard.
+> 
+> > Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
+> >
+> > ---
+> >
+> > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> > index 439fc1f..68f9806 100644
+> > --- a/fs/proc/task_mmu.c
+> > +++ b/fs/proc/task_mmu.c
+> > @@ -242,6 +242,8 @@ static void show_map_vma(struct seq_file *m, struct
+> > vm_area_struct *vma) */
+> >  	if (file) {
+> >  		pad_len_spaces(m, len);
+> > +		if (vma->anon_vma)
+> > +			seq_puts(m, "[anon]+");
+> >  		seq_path(m, &file->f_path, "\n");
+> >  	} else {
+> >  		const char *name = arch_vma_name(vma);
+> 
