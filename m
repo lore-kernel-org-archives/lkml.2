@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab0INRBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 13:01:17 -0400
-Received: from mailout.uni-due.de ([132.252.185.19]:45798 "EHLO
-	mailout.uni-due.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab0INRBQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 13:01:16 -0400
-X-Greylist: delayed 1022 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Sep 2010 13:01:16 EDT
-From: Thomas Dreibholz <dreibh@iem.uni-due.de>
-Organization: University of Duisburg-Essen, Institute for Experimental Mathematics
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] net: SCTP NULL-pointer dereference problem description and fix
-Date: Tue, 14 Sep 2010 19:01:09 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-20-generic; KDE/4.5.1; x86_64; ; )
-Cc: Martin Becke <martin.becke@uni-due.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1754301Ab0INRCf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 13:02:35 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:53495 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751967Ab0INRCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 13:02:33 -0400
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100914162952.GB13560@redhat.com>
+References: <1284410580.13351.10.camel@localhost.localdomain>
+	 <4C8F3C77.7010302@redhat.com>
+	 <1284476719.13351.35.camel@localhost.localdomain>
+	 <201009141721.13202.arnd@arndb.de> <20100914152231.GA13105@redhat.com>
+	 <1284480025.13351.49.camel@localhost.localdomain>
+	 <20100914162952.GB13560@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Sep 2010 10:02:25 -0700
+Message-ID: <1284483745.13351.71.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009141901.13357.dreibh@iem.uni-due.de>
-X-Spam-Scanned: SpamAssassin: 3.002004 - http://www.spamassassin.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sctp_assoc_update_retran_path() in net/sctp/associola.c may dereference a 
-NULL-pointer when compiled with SCTP_DEBUG option: t will be NULL if there is 
-no usable path for retransmission. SCTP_DEBUG_PRINTK_IPADDR() makes an access 
-to t->ipaddr.v4.sin_port, without checking t before. t==NULL => oops.
+On Tue, 2010-09-14 at 18:29 +0200, Michael S. Tsirkin wrote:
+> Precisely. This is what the patch from Xin Xiaohui does.  That code
+> already seems to do most of what you are trying to do, right?
 
-The patch below against 2.6.36-rc4 (git repository) simply ensures that t is 
-checked for not being set to NULL before calling SCTP_DEBUG_PRINTK_IPADDR().
+I thought host pins guest kernel buffer pages was good enough for TX
+thought I didn't look up xiaohui's vhost asycn io patch in details.
 
+What's the performance data Xiaohui got from using kiocb? I haven't seen
+any performance number from him yet.
 
-Signed-off-by: Thomas Dreibholz <dreibh@iem.uni-due.de>
----
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index e41feff..b2688a4 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -1321,15 +1321,15 @@ void sctp_assoc_update_retran_path(struct 
-sctp_association *asoc)
- 		}
- 	}
+> The main thing missing seems to be macvtap integration, so that we can
+> fall back
+> on data copy if zero copy is unavailable?
+> How hard would it be to basically link the mp and macvtap modules
+> together to get us this functionality? Anyone? 
 
--	if (t)
-+	if (t) {
- 		asoc->peer.retran_path = t;
--
--	SCTP_DEBUG_PRINTK_IPADDR("sctp_assoc_update_retran_path:association"
--				 " %p addr: ",
--				 " port: %d\n",
--				 asoc,
--				 (&t->ipaddr),
--				 ntohs(t->ipaddr.v4.sin_port));
-+		SCTP_DEBUG_PRINTK_IPADDR("sctp_assoc_update_retran_path:association"
-+					 " %p addr: ",
-+					 " port: %d\n",
-+					 asoc,
-+					 (&t->ipaddr),
-+					 ntohs(t->ipaddr.v4.sin_port));
-+	}
- }
+The simple integration is using macvtap + xiaohui's vhost asycn io
+patch. I can make a try for TX only.
 
- /* Choose the transport for sending retransmit packet.  */
+Thanks
+Shirley
+
