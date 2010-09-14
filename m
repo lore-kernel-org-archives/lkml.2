@@ -1,214 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab0INSil (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 14:38:41 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:39581 "EHLO
+	id S1754283Ab0INSir (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 14:38:47 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:39588 "EHLO
 	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab0INSik (ORCPT
+	with ESMTP id S1753768Ab0INSil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 14:38:40 -0400
+	Tue, 14 Sep 2010 14:38:41 -0400
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: "Hans J. Koch" <hjk@linutronix.de>, <linux-kernel@vger.kernel.org>
 References: <m1y6b48973.fsf@fess.ebiederm.org>
-Date: Tue, 14 Sep 2010 11:38:36 -0700
+Date: Tue, 14 Sep 2010 11:38:06 -0700
 In-Reply-To: <m1y6b48973.fsf@fess.ebiederm.org> (Eric W. Biederman's message
 	of "Tue, 14 Sep 2010 11:35:28 -0700")
-Message-ID: <m18w34891v.fsf@fess.ebiederm.org>
+Message-ID: <m1eicw892p.fsf@fess.ebiederm.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
 X-SA-Exim-Connect-IP: 98.207.157.188
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	*  1.5 XMNoVowels Alpha-numberic number with no vowels
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
 	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@suse.de>
 X-Spam-Relay-Country: 
-Subject: [PATCH 5/5] uio: Statically allocate uio_class and use class .dev_attrs.
+Subject: [PATCH 4/5] uio: Support 2^MINOR_BITS minors
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Instead of adding uio class attributes manually after the uio device has
-been created and we have sent a uevent to userspace, use the class
-attribute mechanism.  This removes races and makes the code simpler.
+register_chrdev limits uio devices to 256 minor numbers which causes
+problems on one system I have with 384+ uio devices.  So instead set
+UIO_MAX_DEVICES to the maximum number of minors and use
+alloc_chrdev_region to reserve the uio minors.
 
-At the same time don't bother to dynamically allocate a struct class for
-uio, just declare one statically.  Less code is needed and it is easier
-to set the class parameters.tune the class
+The final result is that the code works the same but the uio driver now
+supports any minor the idr allocator comes up with.
 
 Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
 ---
- drivers/uio/uio.c |   55 ++++++++++++++++++----------------------------------
- 1 files changed, 19 insertions(+), 36 deletions(-)
+ drivers/uio/uio.c |   43 +++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 37 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index 3d4d65b..6285afb 100644
+index 0fd2cda..3d4d65b 100644
 --- a/drivers/uio/uio.c
 +++ b/drivers/uio/uio.c
-@@ -46,9 +46,6 @@ static struct cdev *uio_cdev;
+@@ -23,9 +23,10 @@
+ #include <linux/sched.h>
+ #include <linux/string.h>
+ #include <linux/kobject.h>
++#include <linux/cdev.h>
+ #include <linux/uio_driver.h>
+ 
+-#define UIO_MAX_DEVICES 255
++#define UIO_MAX_DEVICES		(1U << MINORBITS)
+ 
+ struct uio_device {
+ 	struct module		*owner;
+@@ -41,6 +42,7 @@ struct uio_device {
+ };
+ 
+ static int uio_major;
++static struct cdev *uio_cdev;
  static DEFINE_IDR(uio_idr);
  static const struct file_operations uio_fops;
  
--/* UIO class infrastructure */
--static struct class *uio_class;
--
- /* Protect idr accesses */
- static DEFINE_MUTEX(minor_lock);
+@@ -731,15 +733,44 @@ static const struct file_operations uio_fops = {
  
-@@ -233,7 +230,6 @@ static ssize_t show_name(struct device *dev,
- 	struct uio_device *idev = dev_get_drvdata(dev);
- 	return sprintf(buf, "%s\n", idev->info->name);
- }
--static DEVICE_ATTR(name, S_IRUGO, show_name, NULL);
- 
- static ssize_t show_version(struct device *dev,
- 			    struct device_attribute *attr, char *buf)
-@@ -241,7 +237,6 @@ static ssize_t show_version(struct device *dev,
- 	struct uio_device *idev = dev_get_drvdata(dev);
- 	return sprintf(buf, "%s\n", idev->info->version);
- }
--static DEVICE_ATTR(version, S_IRUGO, show_version, NULL);
- 
- static ssize_t show_event(struct device *dev,
- 			  struct device_attribute *attr, char *buf)
-@@ -249,17 +244,18 @@ static ssize_t show_event(struct device *dev,
- 	struct uio_device *idev = dev_get_drvdata(dev);
- 	return sprintf(buf, "%u\n", (unsigned int)atomic_read(&idev->event));
- }
--static DEVICE_ATTR(event, S_IRUGO, show_event, NULL);
- 
--static struct attribute *uio_attrs[] = {
--	&dev_attr_name.attr,
--	&dev_attr_version.attr,
--	&dev_attr_event.attr,
--	NULL,
-+static struct device_attribute uio_class_attributes[] = {
-+	__ATTR(name, S_IRUGO, show_name, NULL),
-+	__ATTR(version, S_IRUGO, show_version, NULL),
-+	__ATTR(event, S_IRUGO, show_event, NULL),
-+	{}
- };
- 
--static struct attribute_group uio_attr_grp = {
--	.attrs = uio_attrs,
-+/* UIO class infrastructure */
-+static struct class uio_class = {
-+	.name = "uio",
-+	.dev_attrs = uio_class_attributes,
- };
- 
- /*
-@@ -275,11 +271,7 @@ static int uio_dev_add_attributes(struct uio_device *idev)
- 	struct uio_map *map;
- 	struct uio_port *port;
- 	struct uio_portio *portio;
--
--	ret = sysfs_create_group(&idev->dev->kobj, &uio_attr_grp);
--	if (ret)
--		goto err_group;
--
-+	
- 	for (mi = 0; mi < MAX_UIO_MAPS; mi++) {
- 		mem = &idev->info->mem[mi];
- 		if (mem->size == 0)
-@@ -347,8 +339,6 @@ err_map:
- 		kobject_put(&map->kobj);
- 	}
- 	kobject_put(idev->map_dir);
--	sysfs_remove_group(&idev->dev->kobj, &uio_attr_grp);
--err_group:
- 	dev_err(idev->dev, "error creating sysfs files (%d)\n", ret);
- 	return ret;
- }
-@@ -374,8 +364,6 @@ static void uio_dev_del_attributes(struct uio_device *idev)
- 		kobject_put(&port->portio->kobj);
- 	}
- 	kobject_put(idev->portio_dir);
--
--	sysfs_remove_group(&idev->dev->kobj, &uio_attr_grp);
+ static int uio_major_init(void)
+ {
+-	uio_major = register_chrdev(0, "uio", &uio_fops);
+-	if (uio_major < 0)
+-		return uio_major;
+-	return 0;
++	static const char name[] = "uio";
++	struct cdev *cdev = NULL;
++	dev_t uio_dev = 0;
++	int result;
++
++	result = alloc_chrdev_region(&uio_dev, 0, UIO_MAX_DEVICES, name);
++	if (result)
++		goto out;
++
++	result = -ENOMEM;
++	cdev = cdev_alloc();
++	if (!cdev)
++		goto out_unregister;
++
++	cdev->owner = THIS_MODULE;
++	cdev->ops = &uio_fops;
++	kobject_set_name(&cdev->kobj, "%s", name);
++
++	result = cdev_add(cdev, uio_dev, UIO_MAX_DEVICES);
++	if (result)
++		goto out_put;
++
++	uio_major = MAJOR(uio_dev);
++	uio_cdev = cdev;
++	result = 0;
++out:
++	return result;
++out_put:
++	kobject_put(&cdev->kobj);
++out_unregister:
++	unregister_chrdev_region(uio_dev, UIO_MAX_DEVICES);
++	goto out;
  }
  
- static int uio_get_minor(struct uio_device *idev)
-@@ -775,7 +763,6 @@ static void uio_major_cleanup(void)
+ static void uio_major_cleanup(void)
+ {
+-	unregister_chrdev(uio_major, "uio");
++	unregister_chrdev_region(MKDEV(uio_major, 0), UIO_MAX_DEVICES);
++	cdev_del(uio_cdev);
+ }
  
  static int init_uio_class(void)
- {
--	struct class *class;
- 	int ret;
- 
- 	/* This is the first time in here, set everything up properly */
-@@ -783,16 +770,14 @@ static int init_uio_class(void)
- 	if (ret)
- 		goto exit;
- 
--	class = class_create(THIS_MODULE, "uio");
--	if (IS_ERR(class)) {
--		ret = IS_ERR(class);
--		printk(KERN_ERR "class_create failed for uio\n");
--		goto err_class_create;
-+	ret = class_register(&uio_class);
-+	if (ret) {
-+		printk(KERN_ERR "class_register failed for uio\n");
-+		goto err_class_register;
- 	}
--	uio_class = class;
- 	return 0;
- 
--err_class_create:
-+err_class_register:
- 	uio_major_cleanup();
- exit:
- 	return ret;
-@@ -800,9 +785,7 @@ exit:
- 
- static void release_uio_class(void)
- {
--	/* Ok, we cheat as we know we only have one uio_class */
--	class_destroy(uio_class);
--	uio_class = NULL;
-+	class_unregister(&uio_class);
- 	uio_major_cleanup();
- }
- 
-@@ -841,7 +824,7 @@ int __uio_register_device(struct module *owner,
- 	if (ret)
- 		goto err_get_minor;
- 
--	idev->dev = device_create(uio_class, parent,
-+	idev->dev = device_create(&uio_class, parent,
- 				  MKDEV(uio_major, idev->minor), idev,
- 				  "uio%d", idev->minor);
- 	if (IS_ERR(idev->dev)) {
-@@ -868,7 +851,7 @@ int __uio_register_device(struct module *owner,
- err_request_irq:
- 	uio_dev_del_attributes(idev);
- err_uio_dev_add_attributes:
--	device_destroy(uio_class, MKDEV(uio_major, idev->minor));
-+	device_destroy(&uio_class, MKDEV(uio_major, idev->minor));
- err_device_create:
- 	uio_free_minor(idev);
- err_get_minor:
-@@ -899,7 +882,7 @@ void uio_unregister_device(struct uio_info *info)
- 
- 	uio_dev_del_attributes(idev);
- 
--	device_destroy(uio_class, MKDEV(uio_major, idev->minor));
-+	device_destroy(&uio_class, MKDEV(uio_major, idev->minor));
- 	kfree(idev);
- 
- 	return;
 -- 
 1.7.2.2
 
