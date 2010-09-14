@@ -1,94 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab0INPms (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 11:42:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35572 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab0INPmr (ORCPT
+	id S1752837Ab0INPpt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 11:45:49 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:39794 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750932Ab0INPpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 11:42:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=D4gx0gtRcFdN5jbhhcsNfd1q/tYhXNMqwnNO49n8lgwg1dMvWjEXF3refmYrDvZyuB
-         O4Nd2SCMEECkRDFHhRp0wtBF1syJzyORgFga++UC8ACmX4YJzTLgx5cBVdnh7N+37raC
-         6qu+O21iy4KlBN7KzeK6Tx1trpOWv6jVFlKvE=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] block: fix an address space warning in blk-map.c
-Date: Wed, 15 Sep 2010 00:42:36 +0900
-Message-Id: <1284478956-13664-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+	Tue, 14 Sep 2010 11:45:46 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>, James Bottomley <James.Bottomley@suse.de>,
+        bo yang <boyang1288@gmail.com>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>,
+        "Austria, Winston" <Winston.Austria@lsi.com>,
+        "Maharana, Parag" <Parag.Maharana@lsi.com>
+Date: Tue, 14 Sep 2010 09:45:35 -0600
+Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
+ MegaRAID SAS driver
+Thread-Topic: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset
+ to MegaRAID SAS driver
+Thread-Index: ActNJMv9FbPAvOJTSaaA3BWfoXrvtQBfvm8AAALt1mAAZTiY4ADAb4VAADddyyA=
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3DC1500C3@cosmail02.lsi.com>
+References: <AANLkTiktJycDkXu+FHQanTNe-djvvTe9V=9KfSkLcXZd@mail.gmail.com>
+ <1283709850.15944.1277.camel@mulgrave.site>    
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o8EFk2ak016219
 
-Change type of 2nd parameter of blk_rq_aligned() into unsigned long
-and remove unnecessary casting. Now we can call it with 'uaddr'
-instead of 'ubuf' in __blk_rq_map_user() so that it can remove
-following warnings from sparse:
+Adding Parag...
 
- block/blk-map.c:57:31: warning: incorrect type in argument 2 (different address spaces)
- block/blk-map.c:57:31:    expected void *addr
- block/blk-map.c:57:31:    got void [noderef] <asn:1>*ubuf
+-----Original Message-----
+From: Yang, Bo 
+Sent: Monday, September 13, 2010 9:20 AM
+To: Yang, Bo; 'James Bottomley'; 'bo yang'
+Cc: 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'; Daftardar, Jayant; Austria, Winston
+Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
 
-However blk_rq_map_kern() needs one more local variable to handle it.
+James,
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- block/blk-map.c        |    5 +++--
- include/linux/blkdev.h |    4 ++--
- 2 files changed, 5 insertions(+), 4 deletions(-)
+Did you be able to successfully apply the patches?  I am idling if you feel more changes needed.
 
-diff --git a/block/blk-map.c b/block/blk-map.c
-index c65d759..ac0f7d4 100644
---- a/block/blk-map.c
-+++ b/block/blk-map.c
-@@ -54,7 +54,7 @@ static int __blk_rq_map_user(struct request_queue *q, struct request *rq,
- 	 * direct dma. else, set up kernel bounce buffers
- 	 */
- 	uaddr = (unsigned long) ubuf;
--	if (blk_rq_aligned(q, ubuf, len) && !map_data)
-+	if (blk_rq_aligned(q, uaddr, len) && !map_data)
- 		bio = bio_map_user(q, NULL, uaddr, len, reading, gfp_mask);
- 	else
- 		bio = bio_copy_user(q, map_data, uaddr, len, reading, gfp_mask);
-@@ -288,6 +288,7 @@ int blk_rq_map_kern(struct request_queue *q, struct request *rq, void *kbuf,
- 		    unsigned int len, gfp_t gfp_mask)
- {
- 	int reading = rq_data_dir(rq) == READ;
-+	unsigned long addr = (unsigned long) kbuf;
- 	int do_copy = 0;
- 	struct bio *bio;
- 	int ret;
-@@ -297,7 +298,7 @@ int blk_rq_map_kern(struct request_queue *q, struct request *rq, void *kbuf,
- 	if (!len || !kbuf)
- 		return -EINVAL;
- 
--	do_copy = !blk_rq_aligned(q, kbuf, len) || object_is_on_stack(kbuf);
-+	do_copy = !blk_rq_aligned(q, addr, len) || object_is_on_stack(kbuf);
- 	if (do_copy)
- 		bio = bio_copy_kern(q, kbuf, len, gfp_mask, reading);
- 	else
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 2c54906..71d7c9c 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1093,11 +1093,11 @@ static inline int queue_dma_alignment(struct request_queue *q)
- 	return q ? q->dma_alignment : 511;
- }
- 
--static inline int blk_rq_aligned(struct request_queue *q, void *addr,
-+static inline int blk_rq_aligned(struct request_queue *q, unsigned long addr,
- 				 unsigned int len)
- {
- 	unsigned int alignment = queue_dma_alignment(q) | q->dma_pad_mask;
--	return !((unsigned long)addr & alignment) && !(len & alignment);
-+	return !(addr & alignment) && !(len & alignment);
- }
- 
- /* assumes size > 256 */
--- 
-1.7.2.2
+Regards,
 
+Bo Yang
+
+-----Original Message-----
+From: Yang, Bo 
+Sent: Thursday, September 09, 2010 1:29 PM
+To: Yang, Bo; 'James Bottomley'; 'bo yang'
+Cc: 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'; Daftardar, Jayant
+Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
+
+James,
+
+Do you have any feedback for the patches?
+
+Thanks,
+
+Bo Yang
+
+-----Original Message-----
+From: Yang, Bo 
+Sent: Tuesday, September 07, 2010 1:12 PM
+To: Yang, Bo; 'James Bottomley'; 'bo yang'
+Cc: 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'; Daftardar, Jayant
+Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
+
+James,
+
+Those were corrected and submitted.  
+
+Thanks,
+
+Bo Yang
+
+-----Original Message-----
+From: Yang, Bo 
+Sent: Tuesday, September 07, 2010 11:54 AM
+To: 'James Bottomley'; bo yang
+Cc: linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Daftardar, Jayant
+Subject: RE: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
+
+Thanks James,
+
+The e-mail broken lines of the description.  I am changing the description to avoid re-submit all the patches(5 of them).
+
+Also 
+
+>  megasas_complete_cmd(struct megasas_instance *instance, struct
+> megasas_cmd *cmd,
+>  		     u8 alt_status);
+
+Not patch line(already in the src, but more than 80 chars).
+
+Regards,
+
+Bo Yang    
+
+-----Original Message-----
+From: James Bottomley [mailto:James.Bottomley@suse.de] 
+Sent: Sunday, September 05, 2010 2:04 PM
+To: bo yang
+Cc: Yang, Bo; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Daftardar, Jayant
+Subject: Re: [PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS driver
+
+On Wed, 2010-08-11 at 16:45 -0400, bo yang wrote:
+> To add the Online Controller Reset  (OCR) support, driver need to do:
+> 		a). reset the controller chips -- Xscale and Gen2 which will change
+> the function calls and add the reset function
+> 		related to this two chips.
+> 		
+> 		b). during the reset, driver will store the pending cmds which not
+> returned by FW to driver's pending queue.  Driver
+> 		will re-issue those pending cmds again to FW after the OCR finished.
+> 		
+> 		c). In driver's timeout routine, driver will report to OS as reset.
+> Also driver's queue routine will block the
+> 		cmds until the OCR finished.
+> 		
+> 		d). in Driver's ISR routine, if driver get the FW state as state
+> change, FW in Failure status and FW support online controller
+> 		reset (OCR), driver will start to do the controller reset.
+> 		
+> 		e). In driver's IOCTL routine, the application cmds will wait for
+> the OCR to finish, then issue the cmds to FW.
+> 
+> Signed-off-by Bo Yang<bo.yang@lsi.com>
+
+This patch is full of line breaks which prevent application, like this
+one:
+
+> diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas
+> new/Documentation/scsi/ChangeLog.megaraid_sas
+> --- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
+> 04:58:36.000000000 -0400
+> +++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-10
+> 04:56:30.000000000 -0400
+> @@ -1,3 +1,36 @@
+> +1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
+> +			(emaild-id:megaraidlinux@lsi.com)
+> +			Bo Yang
+[snip]
+
+and this one
+> diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
+> new/drivers/scsi/megaraid/megaraid_sas.c
+> --- old/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:55:41.000000000 -0400
+> +++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:56:30.000000000 -0400
+> @@ -107,6 +107,12 @@ static void
+>  megasas_complete_cmd(struct megasas_instance *instance, struct
+> megasas_cmd *cmd,
+>  		     u8 alt_status);
+
+Since not every long line is broken, this looks like some type of cut
+and paste error ... anyway, could you fix it up, please?
+
+Thanks,
+
+James
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
