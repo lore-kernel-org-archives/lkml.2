@@ -1,74 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab0INHBp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 03:01:45 -0400
-Received: from 68.mail-out.ovh.net ([91.121.185.69]:60150 "HELO
-	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751574Ab0INHBn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 03:01:43 -0400
-Date: Tue, 14 Sep 2010 09:00:29 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Maxim Osipov <maxim.osipov@gmail.com>
-Cc: Ryan Mallon <ryan@bluewatersys.com>, Russell King <linux@arm.linux.org.uk>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "Antonio R. Costa" <costa.antonior@gmail.com>,
-        Ernst Schwab <eschwab@online.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] AT91: Add flexibity board support
-Message-ID: <20100914070029.GG2138@game.jcrosoft.org>
-References: <4C8DFA84.4040501@gmail.com>
- <4C8E8F31.2050108@bluewatersys.com>
- <AANLkTi=-n0_uFMKGED-aOtuLEfUyVeMcm5FWX5xM_BT1@mail.gmail.com>
+	id S1752250Ab0INHGS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 03:06:18 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:37064 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751304Ab0INHGP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 03:06:15 -0400
+From: Arun MURTHY <arun.murthy@stericsson.com>
+To: Arun MURTHY <arun.murthy@stericsson.com>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux@simtec.co.uk" <linux@simtec.co.uk>,
+        "ben@simtec.co.uk" <ben@simtec.co.uk>, "tj@kernel.org" <tj@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
+Date: Tue, 14 Sep 2010 09:05:55 +0200
+Subject: RE: [PATCH] backlight: add low threshold to pwm backlight
+Thread-Topic: [PATCH] backlight: add low threshold to pwm backlight
+Thread-Index: ActQElHN2MlbRmOvQ+a8+cl1sdhDGQDyOvMw
+Message-ID: <F45880696056844FA6A73F415B568C69532D594BA2@EXDCVYMBSTM006.EQ1STM.local>
+References: <1284031772-3496-1-git-send-email-arun.murthy@stericsson.com>
+In-Reply-To: <1284031772-3496-1-git-send-email-arun.murthy@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=-n0_uFMKGED-aOtuLEfUyVeMcm5FWX5xM_BT1@mail.gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 2146528172763491298
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:57 Tue 14 Sep     , Maxim Osipov wrote:
-> Please see my comments below...
-> 
-> On Tue, Sep 14, 2010 at 12:53 AM, Ryan Mallon <ryan@bluewatersys.com> wrote:
-> > On 09/13/2010 10:18 PM, Maxim Osipov wrote:
-> >
-> >> +static void __init flexibity_board_init(void)
-> >> +{
-> >> +     /* Serial */
-> >> +     at91_add_device_serial();
-> >> +     /* USB Host */
-> >> +     at91_add_device_usbh(&flexibity_usbh_data);
-> >> +     /* USB Device */
-> >> +     at91_add_device_udc(&flexibity_udc_data);
-> >> +     /* SPI */
-> >> +     at91_add_device_spi(flexibity_spi_devices,
-> >> +             ARRAY_SIZE(flexibity_spi_devices));
-> >> +     /* MMC */
-> >> +     at91_add_device_mmc(0, &flexibity_mmc_data);
-> >> +     /* LEDs */
-> >> +     at91_gpio_leds(flexibity_leds, ARRAY_SIZE(flexibity_leds));
-> >
-> > Can we drop all the comments inside this function please. They don't add
-> > any information and they make it harder to read the actual code.
-> >
-> 
-> Ryan, thank you for the review. However I would like to keep these
-> comments - for some devices, like UDC - it really provides
-> clarification. Reading the code is not a problem with proper
-> highlighting scheme.
-agreed no need to change
+Any comments?
 
-Best Regards,
-J.
+> -----Original Message-----
+> From: Arun MURTHY
+> Sent: Thursday, September 09, 2010 5:00 PM
+> To: rpurdie@rpsys.net; linux@simtec.co.uk; ben@simtec.co.uk;
+> tj@kernel.org
+> Cc: linux-kernel@vger.kernel.org; STEricsson_nomadik_linux; Arun MURTHY
+> Subject: [PATCH] backlight: add low threshold to pwm backlight
+> 
+> The intensity of the backlight can be varied from a range of
+> max_brightness to zero. Though most, if not all the pwm based backlight
+> devices start flickering at lower brightness value. And also for each
+> device there exists a brightness value below which the backlight
+> appears
+> to be turned off though the value is not equal to zero.
+> 
+> If the range of brightness for a device is from zero to
+> max_brightness. A graph is plotted for brightness Vs intensity fo the
+> pwm based backlight device has to be a linear graph.
+> 
+> intensity
+> 	  |   /
+> 	  |  /
+> 	  | /
+> 	  |/
+> 	  ---------
+> 	 0	max_brightness
+> But pratically on measuring the above we note that the intensity of
+> backlight goes to zero(OFF) when the value in not zero almost nearing
+> to
+> zero(some x%). so the graph looks like
+> 
+> intensity
+> 	  |    /
+> 	  |   /
+> 	  |  /
+> 	  |  |
+> 	  ------------
+> 	 0   x	 max_brightness
+> 
+> In order to overcome this drawback knowing this x% i.e nothing but the
+> low threshold beyond which the backlight is off and will have no
+> effect,
+> the brightness value is being offset by the low threshold
+> value(retaining the linearity of the graph). Now the graph becomes
+> 
+> intensity
+> 	  |     /
+> 	  |    /
+> 	  |   /
+> 	  |  /
+> 	  -------------
+> 	   0	  max_brightness
+> With this for each and every digit increment in the brightness from
+> zero
+> there is a change in the intensity of backlight.
+> Devices having this behaviour can set the low threshold
+> brightness(lth_brightness) and pass the same as platform data else can
+> have it as zero.
+> 
+> Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+> ---
+>  drivers/video/backlight/pwm_bl.c |    7 ++++++-
+>  include/linux/pwm_backlight.h    |    1 +
+>  2 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/pwm_bl.c
+> b/drivers/video/backlight/pwm_bl.c
+> index 5504435..1f958ce 100644
+> --- a/drivers/video/backlight/pwm_bl.c
+> +++ b/drivers/video/backlight/pwm_bl.c
+> @@ -25,6 +25,7 @@ struct pwm_bl_data {
+>  	struct pwm_device	*pwm;
+>  	struct device		*dev;
+>  	unsigned int		period;
+> +	unsigned int		lth_brightness;
+>  	int			(*notify)(struct device *,
+>  					  int brightness);
+>  };
+> @@ -48,7 +49,9 @@ static int pwm_backlight_update_status(struct
+> backlight_device *bl)
+>  		pwm_config(pb->pwm, 0, pb->period);
+>  		pwm_disable(pb->pwm);
+>  	} else {
+> -		pwm_config(pb->pwm, brightness * pb->period / max, pb-
+> >period);
+> +		brightness = pb->lth_brightness +
+> +			(brightness * (pb->period - pb->lth_brightness)/
+> max);
+> +		pwm_config(pb->pwm, brightness, pb->period);
+>  		pwm_enable(pb->pwm);
+>  	}
+>  	return 0;
+> @@ -92,6 +95,8 @@ static int pwm_backlight_probe(struct platform_device
+> *pdev)
+> 
+>  	pb->period = data->pwm_period_ns;
+>  	pb->notify = data->notify;
+> +	pb->lth_brightness = data->lth_brightness *
+> +		(data->pwm_period_ns / data->max_brightness);
+>  	pb->dev = &pdev->dev;
+> 
+>  	pb->pwm = pwm_request(data->pwm_id, "backlight");
+> diff --git a/include/linux/pwm_backlight.h
+> b/include/linux/pwm_backlight.h
+> index 01b3d75..e031e1a 100644
+> --- a/include/linux/pwm_backlight.h
+> +++ b/include/linux/pwm_backlight.h
+> @@ -8,6 +8,7 @@ struct platform_pwm_backlight_data {
+>  	int pwm_id;
+>  	unsigned int max_brightness;
+>  	unsigned int dft_brightness;
+> +	unsigned int lth_brightness;
+>  	unsigned int pwm_period_ns;
+>  	int (*init)(struct device *dev);
+>  	int (*notify)(struct device *dev, int brightness);
+> --
+> 1.7.2.dirty
+
