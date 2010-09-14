@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab0INS7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 14:59:47 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:29309 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753840Ab0INS7q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 14:59:46 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: i9wjkR0VM1ky3EOkOBbm1RplZaDfUp0n4PJ0zvu78b3BpRu
- lukjM.cPDvD04IfDlaT7fnbDtifdx03GgzlxgKe6Z803EKiMdeACBxIQBC3R
- aGzNDzTdpC6BM41cDSd3aHRHXO68SvEXtZKUO2YTARB6BPHmp75zbEBUOehq
- wE.m7znLmaHJDEIgIlpKBqHVc2vZhq6s6lYco.IW7M2sV._TMwtm8HqP3bwz
- qI_A.Wzn3m6vvQ0v8bhvP0ImEM23lo99Z_M3ULCqYBv0K4O3grbZwzOPaE_G
- zzQ--
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 14 Sep 2010 13:59:43 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v2 1/2] SLUB: Fix merged slab cache names
-In-Reply-To: <1284490101-2362-1-git-send-email-penberg@kernel.org>
-Message-ID: <alpine.DEB.2.00.1009141357160.444@router.home>
-References: <1284490101-2362-1-git-send-email-penberg@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754596Ab0INTF5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 15:05:57 -0400
+Received: from void.printf.net ([89.145.121.20]:41450 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752560Ab0INTF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 15:05:56 -0400
+Date: Tue, 14 Sep 2010 20:05:49 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Saeed Bishara <saeed@marvell.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: Add architecture dependency for Marvell SoC
+	controller
+Message-ID: <20100914190549.GA21918@void.printf.net>
+References: <1284366279-17140-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284366279-17140-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Sep 2010, Pekka Enberg wrote:
+Hi,
 
-> @@ -3211,6 +3225,7 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
->  		size_t align, unsigned long flags, void (*ctor)(void *))
->  {
->  	struct kmem_cache *s;
-> +	char *dup_name;
+On Mon, Sep 13, 2010 at 09:24:39AM +0100, Mark Brown wrote:
+> Since the driver is for controllers integrated into Marvells SoCs only
+> offer MMC_SDHCI_MV if we're building for one.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mmc/host/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index ce099c4..5fa4e2b 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -133,6 +133,7 @@ config MMC_SDHCI_CNS3XXX
+>  config MMC_SDHCI_MV
+>  	tristate "SDHCI support on Marvell's SoC"
+>  	depends on MMC_SDHCI
+> +	depends on (PLAT_PXA || PLAT_ORION)
+>  	select MMC_SDHCI_IO_ACCESSORS
+>  	help
+>  	  This selects the Secure Digital Host Controller Interface in
+> -- 
+> 1.7.1
 
-Dont like the name. Its a short lived variables. So "n"?
+This is fine with me.  Saeed, please can you ACK the choice of
+platforms if you agree?
 
-Otherwise
+Thanks,
 
-Acked-by: Christoph Lameter <cl@linux.com>
-
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
