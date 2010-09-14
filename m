@@ -1,371 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab0INBi2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 21:38:28 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4247 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab0INBi1 (ORCPT
+	id S1752576Ab0INBq4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 21:46:56 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:47230 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab0INBqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 21:38:27 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp04.nvidia.com on Mon, 13 Sep 2010 18:38:19 -0700
-From: Gary King <gking@nvidia.com>
-To: linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, mike@compulab.co.il, gking@nvidia.com
-Subject: [PATCH v3] mfd: tps6586x: add basic interrupt support
-Date: Mon, 13 Sep 2010 18:37:42 -0700
-Message-Id: <1284428262-14158-1-git-send-email-gking@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 13 Sep 2010 21:46:55 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Samuel Thibault <Samuel.Thibault@ens-lyon.org>
+Cc: =?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andres Salomon <dilinger@queued.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: EuroBraille/Iris power off
+In-Reply-To: Your message of "Mon, 13 Sep 2010 17:22:49 +0200."
+             <20100913152249.GC5364@const.bordeaux.inria.fr>
+From: Valdis.Kletnieks@vt.edu
+References: <20100825094925.GA3632@pema> <alpine.LFD.2.00.1008261406480.2062@localhost.localdomain> <20100826210815.GA18131@pema> <4C76D9A0.2010907@zytor.com> <20100829205929.GA3309@pema> <20100913100719.GA3903@pema> <54870.1284390647@localhost>
+            <20100913152249.GC5364@const.bordeaux.inria.fr>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1284428749_4377P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 13 Sep 2010 21:45:49 -0400
+Message-ID: <7925.1284428749@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020208.4C8ED3CE.01AF,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel, Mike,
+--==_Exmh_1284428749_4377P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-This patch incorporates Mike's feedback to my v2 patch to add interrupt
-support to the tps6586x driver.
+On Mon, 13 Sep 2010 17:22:49 +0200, Samuel Thibault said:
 
-Changes since v2:
- * Remove stale comment in commit message
+> Again, I'm not sure we really should try hard to make it automatically
+> detected (and thus always enabled).  Having to pass a kernel parameter
+> to enable the functionality is completely fine, since installing Linux
+> on this device requires quite some tinkering already.
 
-Changes since v1:
- * Move the interrupt enum ordering to match the ACK register values
+I'm agreeing that if iris_init() checks that the user passed 'irisinit.fo=
+rce=3D1'
+on the command line or as a module parameter, and bailed immediately if i=
+t
+wasn't passed, then doing the inb() and testing it should be safe enough.=
+ Doing
+stuff that's only known safe on an Iris is no great sin if the user has s=
+aid
+=22Yes, you're on a Iris=22 - at that point it's the user's fault.
 
- * Treat the INT_ACK registers as a single 32b unsigned int.
+static int iris_init(void)
+=7B
+	unsigned char status;
 
- * Name and define all the interrupts on the device
+	if (=21irisinit.force) return; /* or whatever the appropriate test is */=
 
- * If reading the ACK registers in the interrupt thread fails, IRQ_NONE
-   is returned, rather than disabling the IRQ handler. This fixes
-   interrupts following suspend.
 
- * The cascaded IRQ is passed through the i2c_client's .irq field, rather
-   than through platform data.
+	status =3D inb(IRIS_GIO_INPUT);
+	if (status =3D=3D IRIS_GIO_NODEV) =7B
+		printk(KERN_ERR =22This machine does not seem to be an Iris. Power_off =
+handler not installed.=5Cn=22);
+		return -ENODEV;
+	=7D
 
-Thanks,
+That look safe enough to everybody?  That way, even if a distro turns on =
+every
+CONFIG_FOO that compiles (you guys know who you are ;), it should still D=
+TRT on
+all platforms.
 
-Gary
 
----
->From 2186648f26a82a3c2b8165110704f727ccb850d9 Mon Sep 17 00:00:00 2001
-From: Gary King <gking@nvidia.com>
-Date: Mon, 30 Aug 2010 16:16:55 -0700
-Subject: [PATCH] mfd: tps6586x: add basic interrupt support
+--==_Exmh_1284428749_4377P
+Content-Type: application/pgp-signature
 
-add support for enabling and disabling tps6586x subdevice interrupts
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-Signed-off-by: Gary King <gking@nvidia.com>
----
- drivers/mfd/tps6586x.c       |  202 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/tps6586x.h |   31 +++++++
- 2 files changed, 233 insertions(+), 0 deletions(-)
+iD8DBQFMjtPNcC3lWbTT17ARAvRiAJ0ZNxWJWGaCi3qMPjDWHmrmkukNowCgna8b
+ek0eVzET9gXFCzQtOu9n3Yw=
+=Y67R
+-----END PGP SIGNATURE-----
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index 4cde31e..626081c 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -15,6 +15,8 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/mutex.h>
-@@ -29,16 +31,76 @@
- #define TPS6586X_GPIOSET1	0x5d
- #define TPS6586X_GPIOSET2	0x5e
- 
-+/* interrupt control registers */
-+#define TPS6586X_INT_ACK1	0xb5
-+#define TPS6586X_INT_ACK2	0xb6
-+#define TPS6586X_INT_ACK3	0xb7
-+#define TPS6586X_INT_ACK4	0xb8
-+
-+/* interrupt mask registers */
-+#define TPS6586X_INT_MASK1	0xb0
-+#define TPS6586X_INT_MASK2	0xb1
-+#define TPS6586X_INT_MASK3	0xb2
-+#define TPS6586X_INT_MASK4	0xb3
-+#define TPS6586X_INT_MASK5	0xb4
-+
- /* device id */
- #define TPS6586X_VERSIONCRC	0xcd
- #define TPS658621A_VERSIONCRC	0x15
- 
-+struct tps6586x_irq_data {
-+	u8	mask_reg;
-+	u8	mask_mask;
-+};
-+
-+#define TPS6586X_IRQ(_reg, _mask)				\
-+	{							\
-+		.mask_reg = (_reg) - TPS6586X_INT_MASK1,	\
-+		.mask_mask = (_mask),				\
-+	}
-+
-+static const struct tps6586x_irq_data tps6586x_irqs[] = {
-+	[TPS6586X_INT_PLDO_0]	= TPS6586X_IRQ(TPS6586X_INT_MASK1, 1 << 0),
-+	[TPS6586X_INT_PLDO_1]	= TPS6586X_IRQ(TPS6586X_INT_MASK1, 1 << 1),
-+	[TPS6586X_INT_PLDO_2]	= TPS6586X_IRQ(TPS6586X_INT_MASK1, 1 << 2),
-+	[TPS6586X_INT_PLDO_3]	= TPS6586X_IRQ(TPS6586X_INT_MASK1, 1 << 3),
-+	[TPS6586X_INT_PLDO_4]	= TPS6586X_IRQ(TPS6586X_INT_MASK1, 1 << 4),
-+	[TPS6586X_INT_PLDO_5]	= TPS6586X_IRQ(TPS6586X_INT_MASK1, 1 << 5),
-+	[TPS6586X_INT_PLDO_6]	= TPS6586X_IRQ(TPS6586X_INT_MASK1, 1 << 6),
-+	[TPS6586X_INT_PLDO_7]	= TPS6586X_IRQ(TPS6586X_INT_MASK1, 1 << 7),
-+	[TPS6586X_INT_COMP_DET]	= TPS6586X_IRQ(TPS6586X_INT_MASK4, 1 << 0),
-+	[TPS6586X_INT_ADC]	= TPS6586X_IRQ(TPS6586X_INT_MASK2, 1 << 1),
-+	[TPS6586X_INT_PLDO_8]	= TPS6586X_IRQ(TPS6586X_INT_MASK2, 1 << 2),
-+	[TPS6586X_INT_PLDO_9]	= TPS6586X_IRQ(TPS6586X_INT_MASK2, 1 << 3),
-+	[TPS6586X_INT_PSM_0]	= TPS6586X_IRQ(TPS6586X_INT_MASK2, 1 << 4),
-+	[TPS6586X_INT_PSM_1]	= TPS6586X_IRQ(TPS6586X_INT_MASK2, 1 << 5),
-+	[TPS6586X_INT_PSM_2]	= TPS6586X_IRQ(TPS6586X_INT_MASK2, 1 << 6),
-+	[TPS6586X_INT_PSM_3]	= TPS6586X_IRQ(TPS6586X_INT_MASK2, 1 << 7),
-+	[TPS6586X_INT_RTC_ALM1]	= TPS6586X_IRQ(TPS6586X_INT_MASK5, 1 << 4),
-+	[TPS6586X_INT_ACUSB_OVP] = TPS6586X_IRQ(TPS6586X_INT_MASK5, 0x03),
-+	[TPS6586X_INT_USB_DET]	= TPS6586X_IRQ(TPS6586X_INT_MASK5, 1 << 2),
-+	[TPS6586X_INT_AC_DET]	= TPS6586X_IRQ(TPS6586X_INT_MASK5, 1 << 3),
-+	[TPS6586X_INT_BAT_DET]	= TPS6586X_IRQ(TPS6586X_INT_MASK3, 1 << 0),
-+	[TPS6586X_INT_CHG_STAT]	= TPS6586X_IRQ(TPS6586X_INT_MASK4, 0xfc),
-+	[TPS6586X_INT_CHG_TEMP]	= TPS6586X_IRQ(TPS6586X_INT_MASK3, 0x06),
-+	[TPS6586X_INT_PP]	= TPS6586X_IRQ(TPS6586X_INT_MASK3, 0xf0),
-+	[TPS6586X_INT_RESUME]	= TPS6586X_IRQ(TPS6586X_INT_MASK5, 1 << 5),
-+	[TPS6586X_INT_LOW_SYS]	= TPS6586X_IRQ(TPS6586X_INT_MASK5, 1 << 6),
-+	[TPS6586X_INT_RTC_ALM2] = TPS6586X_IRQ(TPS6586X_INT_MASK4, 1 << 1),
-+};
-+
- struct tps6586x {
- 	struct mutex		lock;
- 	struct device		*dev;
- 	struct i2c_client	*client;
- 
- 	struct gpio_chip	gpio;
-+	struct irq_chip		irq_chip;
-+	struct mutex		irq_lock;
-+	int			irq_base;
-+	u32			irq_en;
-+	u8			mask_cache[5];
-+	u8			mask_reg[5];
- };
- 
- static inline int __tps6586x_read(struct i2c_client *client,
-@@ -262,6 +324,129 @@ static int tps6586x_remove_subdevs(struct tps6586x *tps6586x)
- 	return device_for_each_child(tps6586x->dev, NULL, __remove_subdev);
- }
- 
-+static void tps6586x_irq_lock(unsigned int irq)
-+{
-+	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-+
-+	mutex_lock(&tps6586x->irq_lock);
-+}
-+
-+static void tps6586x_irq_enable(unsigned int irq)
-+{
-+	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-+	unsigned int __irq = irq - tps6586x->irq_base;
-+	const struct tps6586x_irq_data *data = &tps6586x_irqs[__irq];
-+
-+	tps6586x->mask_reg[data->mask_reg] &= ~data->mask_mask;
-+	tps6586x->irq_en |= (1 << __irq);
-+}
-+
-+static void tps6586x_irq_disable(unsigned int irq)
-+{
-+	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-+
-+	unsigned int __irq = irq - tps6586x->irq_base;
-+	const struct tps6586x_irq_data *data = &tps6586x_irqs[__irq];
-+
-+	tps6586x->mask_reg[data->mask_reg] |= data->mask_mask;
-+	tps6586x->irq_en &= ~(1 << __irq);
-+}
-+
-+static void tps6586x_irq_sync_unlock(unsigned int irq)
-+{
-+	struct tps6586x *tps6586x = get_irq_chip_data(irq);
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(tps6586x->mask_reg); i++) {
-+		if (tps6586x->mask_reg[i] != tps6586x->mask_cache[i]) {
-+			if (!WARN_ON(tps6586x_write(tps6586x->dev,
-+						    TPS6586X_INT_MASK1 + i,
-+						    tps6586x->mask_reg[i])))
-+				tps6586x->mask_cache[i] = tps6586x->mask_reg[i];
-+		}
-+	}
-+
-+	mutex_unlock(&tps6586x->irq_lock);
-+}
-+
-+static irqreturn_t tps6586x_irq(int irq, void *data)
-+{
-+	struct tps6586x *tps6586x = data;
-+	u32 acks;
-+	int ret = 0;
-+
-+	ret = tps6586x_reads(tps6586x->dev, TPS6586X_INT_ACK1,
-+			     sizeof(acks), (uint8_t *)&acks);
-+
-+	if (ret < 0) {
-+		dev_err(tps6586x->dev, "failed to read interrupt status\n");
-+		return IRQ_NONE;
-+	}
-+
-+	acks = le32_to_cpu(acks);
-+
-+	while (acks) {
-+		int i = __ffs(acks);
-+
-+		if (tps6586x->irq_en & (1 << i))
-+			handle_nested_irq(tps6586x->irq_base + i);
-+
-+		acks &= ~(1 << i);
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int __devinit tps6586x_irq_init(struct tps6586x *tps6586x, int irq,
-+				       int irq_base)
-+{
-+	int i, ret;
-+	u8 tmp[4];
-+
-+	if (!irq_base) {
-+		dev_warn(tps6586x->dev, "No interrupt support on IRQ base\n");
-+		return -EINVAL;
-+	}
-+
-+	mutex_init(&tps6586x->irq_lock);
-+	for (i = 0; i < 5; i++) {
-+		tps6586x->mask_cache[i] = 0xff;
-+		tps6586x->mask_reg[i] = 0xff;
-+		tps6586x_write(tps6586x->dev, TPS6586X_INT_MASK1 + i, 0xff);
-+	}
-+
-+	tps6586x_reads(tps6586x->dev, TPS6586X_INT_ACK1, sizeof(tmp), tmp);
-+
-+	tps6586x->irq_base = irq_base;
-+
-+	tps6586x->irq_chip.name = "tps6586x";
-+	tps6586x->irq_chip.enable = tps6586x_irq_enable;
-+	tps6586x->irq_chip.disable = tps6586x_irq_disable;
-+	tps6586x->irq_chip.bus_lock = tps6586x_irq_lock;
-+	tps6586x->irq_chip.bus_sync_unlock = tps6586x_irq_sync_unlock;
-+
-+	for (i = 0; i < ARRAY_SIZE(tps6586x_irqs); i++) {
-+		int __irq = i + tps6586x->irq_base;
-+		set_irq_chip_data(__irq, tps6586x);
-+		set_irq_chip_and_handler(__irq, &tps6586x->irq_chip,
-+					 handle_simple_irq);
-+		set_irq_nested_thread(__irq, 1);
-+#ifdef CONFIG_ARM
-+		set_irq_flags(__irq, IRQF_VALID);
-+#endif
-+	}
-+
-+	ret = request_threaded_irq(irq, NULL, tps6586x_irq, IRQF_ONESHOT,
-+				   "tps6586x", tps6586x);
-+
-+	if (!ret) {
-+		device_init_wakeup(tps6586x->dev, 1);
-+		enable_irq_wake(irq);
-+	}
-+
-+	return ret;
-+}
-+
- static int __devinit tps6586x_add_subdevs(struct tps6586x *tps6586x,
- 					  struct tps6586x_platform_data *pdata)
- {
-@@ -321,6 +506,15 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
- 
- 	mutex_init(&tps6586x->lock);
- 
-+	if (client->irq) {
-+		ret = tps6586x_irq_init(tps6586x, client->irq,
-+					pdata->irq_base);
-+		if (ret) {
-+			dev_err(&client->dev, "IRQ init failed: %d\n", ret);
-+			goto err_irq_init;
-+		}
-+	}
-+
- 	ret = tps6586x_add_subdevs(tps6586x, pdata);
- 	if (ret) {
- 		dev_err(&client->dev, "add devices failed: %d\n", ret);
-@@ -332,12 +526,20 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
- 	return 0;
- 
- err_add_devs:
-+	if (client->irq)
-+		free_irq(client->irq, tps6586x);
-+err_irq_init:
- 	kfree(tps6586x);
- 	return ret;
- }
- 
- static int __devexit tps6586x_i2c_remove(struct i2c_client *client)
- {
-+	struct tps6586x *tps6586x = i2c_get_clientdata(client);
-+
-+	if (client->irq)
-+		free_irq(client->irq, tps6586x);
-+
- 	return 0;
- }
- 
-diff --git a/include/linux/mfd/tps6586x.h b/include/linux/mfd/tps6586x.h
-index 772b3ae..b6bab1b 100644
---- a/include/linux/mfd/tps6586x.h
-+++ b/include/linux/mfd/tps6586x.h
-@@ -18,6 +18,36 @@ enum {
- 	TPS6586X_ID_LDO_RTC,
- };
- 
-+enum {
-+	TPS6586X_INT_PLDO_0,
-+	TPS6586X_INT_PLDO_1,
-+	TPS6586X_INT_PLDO_2,
-+	TPS6586X_INT_PLDO_3,
-+	TPS6586X_INT_PLDO_4,
-+	TPS6586X_INT_PLDO_5,
-+	TPS6586X_INT_PLDO_6,
-+	TPS6586X_INT_PLDO_7,
-+	TPS6586X_INT_COMP_DET,
-+	TPS6586X_INT_ADC,
-+	TPS6586X_INT_PLDO_8,
-+	TPS6586X_INT_PLDO_9,
-+	TPS6586X_INT_PSM_0,
-+	TPS6586X_INT_PSM_1,
-+	TPS6586X_INT_PSM_2,
-+	TPS6586X_INT_PSM_3,
-+	TPS6586X_INT_RTC_ALM1,
-+	TPS6586X_INT_ACUSB_OVP,
-+	TPS6586X_INT_USB_DET,
-+	TPS6586X_INT_AC_DET,
-+	TPS6586X_INT_BAT_DET,
-+	TPS6586X_INT_CHG_STAT,
-+	TPS6586X_INT_CHG_TEMP,
-+	TPS6586X_INT_PP,
-+	TPS6586X_INT_RESUME,
-+	TPS6586X_INT_LOW_SYS,
-+	TPS6586X_INT_RTC_ALM2,
-+};
-+
- struct tps6586x_subdev_info {
- 	int		id;
- 	const char	*name;
-@@ -29,6 +59,7 @@ struct tps6586x_platform_data {
- 	struct tps6586x_subdev_info *subdevs;
- 
- 	int gpio_base;
-+	int irq_base;
- };
- 
- /*
--- 
-1.7.0.4
+--==_Exmh_1284428749_4377P--
 
