@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab0INSsf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 14:48:35 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:34778 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab0INSs0 (ORCPT
+	id S1754649Ab0INStK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 14:49:10 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:49826 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab0INStI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 14:48:26 -0400
-From: Pekka Enberg <penberg@kernel.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
-Subject: [PATCH v2 2/2] SLUB: Mark merged slab caches in /proc/slabinfo
-Date: Tue, 14 Sep 2010 21:48:21 +0300
-Message-Id: <1284490101-2362-2-git-send-email-penberg@kernel.org>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1284490101-2362-1-git-send-email-penberg@kernel.org>
-References: <1284490101-2362-1-git-send-email-penberg@kernel.org>
+	Tue, 14 Sep 2010 14:49:08 -0400
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100914182707.GB15549@redhat.com>
+References: <1284410580.13351.10.camel@localhost.localdomain>
+	 <4C8F3C77.7010302@redhat.com>
+	 <1284476719.13351.35.camel@localhost.localdomain>
+	 <201009141721.13202.arnd@arndb.de> <20100914152231.GA13105@redhat.com>
+	 <1284480025.13351.49.camel@localhost.localdomain>
+	 <20100914162952.GB13560@redhat.com>
+	 <1284483745.13351.71.camel@localhost.localdomain>
+	 <20100914182707.GB15549@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Sep 2010 11:49:03 -0700
+Message-ID: <1284490143.13351.82.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SLUB uses the name of the first slab cache for all merged slab caches. To make
-the output of /proc/slabinfo more obvious, append the name of each merged slab
-cache to s->name.
+On Tue, 2010-09-14 at 20:27 +0200, Michael S. Tsirkin wrote:
+> As others said, the harder issues for TX are in determining that it's
+> safe
+> to unpin the memory, and how much memory is it safe to pin to beging
+> with.  For RX we have some more complexity.
 
-An example output of /proc/slabinfo with this patch looks like this:
+I think unpin the memory is in kfree_skb() whenever the last reference
+is gone for TX. What we discussed about here is when/how vhost get
+notified to update ring buffer descriptors. Do I misunderstand something
+here? 
 
-  kmalloc-8192         544    544   8192    4    8 : tunables    0
-  kmalloc-4096+names_cache+biovec-256+sgpool-128+ecryptfs_headers
-  kmalloc-2048+biovec-128+sgpool-64    400    416   2048   16    8
-  kmalloc-1024+biovec-64+sgpool-32    436    496   1024   16    4 :
-  kmalloc-512+task_xstate+skbuff_fclone_cache+sgpool-16   1060   10
-  kmalloc-256+mnt_cache+skbuff_head_cache+biovec-16+sgpool-8+arp_   [ snip ]
-  kmalloc-128+pid+bip-1+eventpoll_epi+request_sock_TCP+ip_mrt_cac
-  kmalloc-64+fs_cache+biovec-4+blkdev_ioc+inet_peer_cache+tcp_bin
-  kmalloc-32+ip_fib_alias+dnotify_struct+inotify_event_private_da
-  kmalloc-16+biovec-1+ecryptfs_file_cache+dm_rq_clone_bio_info+dm
-  kmalloc-8           5119   5120      8  512    1 : tunables    0
-  kmalloc-192+cred_jar+key_jar+filp+bip-4+bio-0+request_sock_TCPv
-  kmalloc-96           924   1008     96   42    1 : tunables    0
-  kmem_cache_node      128    128     64   64    1 : tunables    0
+> Well it's up to you of course, but this is not what I would try:
+> if you look at the
+> patchset vhost changes is not the largest part of it,
+> so this sounds a bit like effort duplication.
+> 
+> TX only is also much less interesting than full zero copy.
 
-Cc: Christoph Lameter <cl@linux.com>
-Cc: David Rientjes <rientjes@google.com>
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
----
- mm/slub.c |   37 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 37 insertions(+), 0 deletions(-)
+It's not true. From the performance, TX only has gained big improvement.
+We need to identify how much gain from TX zero copy, and how much gain
+from RX zero copy.
 
-diff --git a/mm/slub.c b/mm/slub.c
-index a31c033..77e4438 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3161,6 +3161,40 @@ void __init kmem_cache_init_late(void)
- }
- 
- /*
-+ * This limit is part of /proc/slabinfo ABI. It has never been enforced by the
-+ * kernel but userspace programs such as "slabtop" expect it.
-+ */
-+#define MAX_SLAB_NAME_LEN	63
-+
-+static int kmem_merge_names(struct kmem_cache *s, const char *name)
-+{
-+	size_t new_size;
-+	char *new_name;
-+
-+	if (strlen(s->name) >= MAX_SLAB_NAME_LEN)
-+		return 0;
-+
-+	/* Don't append name to merged name more than once */
-+	if (strstr(s->name, name))
-+		return 0;
-+
-+	new_size = strlen(s->name) + strlen(name) + 2;
-+	if (new_size > (MAX_SLAB_NAME_LEN + 1))
-+		new_size = MAX_SLAB_NAME_LEN + 1;	/* NULL terminate */
-+
-+	new_name = kmalloc(new_size, GFP_KERNEL);
-+	if (!new_name)
-+		return -ENOMEM;
-+
-+	snprintf(new_name, new_size, "%s+%s", s->name, name);
-+
-+	kfree(s->name);
-+	s->name = new_name;
-+
-+	return 0;
-+}
-+
-+/*
-  * Find a mergeable slab cache
-  */
- static int slab_unmergeable(struct kmem_cache *s)
-@@ -3233,6 +3267,9 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
- 	down_write(&slub_lock);
- 	s = find_mergeable(size, align, flags, name, ctor);
- 	if (s) {
-+		if (kmem_merge_names(s, name))
-+			goto err;
-+
- 		s->refcount++;
- 		/*
- 		 * Adjust the object sizes so that we clear
--- 
-1.6.3.3
+> I think that you should be able to simply combine
+> the two drivers together, add an ioctl to
+> enable/disable zero copy mode of operation. 
+
+That could work. But what's the purpose to have two drivers if one
+driver can handle it?
+
+Thanks
+Shirley
+
 
