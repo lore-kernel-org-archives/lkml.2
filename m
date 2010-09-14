@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab0INQZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 12:25:59 -0400
-Received: from tomts22-srv.bellnexxia.net ([209.226.175.184]:58206 "EHLO
-	tomts22-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751993Ab0INQZ6 (ORCPT
+	id S1753332Ab0INQ04 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 12:26:56 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56908 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab0INQ0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 12:25:58 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAM85j0xGGNlj/2dsb2JhbAChUHLEcYVABA
-Date: Tue, 14 Sep 2010 12:20:18 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
-Subject: [RELEASE] LTTng 0.230 for kernel 2.6.35.4
-Message-ID: <20100914162018.GA13035@Krystal>
-Mime-Version: 1.0
+	Tue, 14 Sep 2010 12:26:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=HPi0ZdpffsmU9McJt9XLajNwUIBNIhsDIiw8aBHWwBxbzyCqvCRzKG4+m2rLgzOCq2
+         qLacfJdY3YykqWSKMjFw2y3IfJxKgMgwkeV1Y4ylmXedYTeRceQqIf9M7zXxwHgQvXZ7
+         oId4U7+bQAxwe6RFai6JxoH6JUuVsHOlFCuS0=
+Date: Tue, 14 Sep 2010 18:26:02 +0200
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-edac@vger.kernel.org
+Subject: [PATCH] i7core_edac: fix panic in udimm sysfs attributes
+ registration
+Message-ID: <20100914162602.GA6047@joi.lan>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 12:13:05 up 160 days,  2:03,  4 users,  load average: 0.16, 0.17,
-	0.17
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng, the Linux Trace Toolkit Next Generation, is a project that aims
-at producing a highly efficient full system tracing solution.  It is
-composed of several components to allow tracing of the kernel, of
-userspace, trace viewing and analysis and trace streaming.  LTTng is
-open source software. It is being actively developed with the community.
+Array of udimm sysfs attributes was not ended with NULL marker.
 
-Changelog:
+EDAC DEBUG: edac_create_mci_instance_attributes: edac_create_mci_instance_attributes() file udimm0
+EDAC DEBUG: edac_create_mci_instance_attributes: edac_create_mci_instance_attributes() file udimm1
+EDAC DEBUG: edac_create_mci_instance_attributes: edac_create_mci_instance_attributes() file udimm2
+BUG: unable to handle kernel NULL pointer dereference at 00000000000001a4
+IP: [<ffffffff81330b36>] edac_create_mci_instance_attributes+0x148/0x1f1
+PGD 0
+Oops: 0000 [#1] PREEMPT SMP
+last sysfs file:
+CPU 3
+Modules linked in:
 
-LTTng 0.230 kernel tree:
+Pid: 1, comm: swapper Not tainted 2.6.36-rc3-nv+ #483 P6T SE/System Product Name
+RIP: 0010:[<ffffffff81330b36>]  [<ffffffff81330b36>] edac_create_mci_instance_attributes+0x148/0x1f1
+(...)
+Call Trace:
+ [<ffffffff81330b86>] edac_create_mci_instance_attributes+0x198/0x1f1
+ [<ffffffff81330c9a>] edac_create_sysfs_mci_device+0xbb/0x2b2
+ [<ffffffff8132f533>] edac_mc_add_mc+0x46b/0x557
+ [<ffffffff81428901>] i7core_probe+0xccf/0xec0
+ [<ffffffff81230193>] local_pci_probe+0x12/0x16
+ [<ffffffff8123097b>] pci_device_probe+0x60/0x8f
+ [<ffffffff812b65c9>] ? driver_sysfs_add+0x6b/0x90
+ [<ffffffff812b6711>] driver_probe_device+0xa7/0x136
+ [<ffffffff812b67f8>] __driver_attach+0x58/0x7c
+ [<ffffffff812b67a0>] ? __driver_attach+0x0/0x7c
+ [<ffffffff812b5ed4>] bus_for_each_dev+0x4e/0x83
+ [<ffffffff812b655c>] driver_attach+0x19/0x1b
+ [<ffffffff812b5834>] bus_add_driver+0x12b/0x277
+ [<ffffffff812b6ac1>] driver_register+0x99/0x10a
+ [<ffffffff81230be8>] __pci_register_driver+0x63/0xd3
+ [<ffffffff818bd6fa>] i7core_init+0x9a/0xbb
+ [<ffffffff818bd660>] ? i7core_init+0x0/0xbb
+ [<ffffffff81000210>] do_one_initcall+0x7a/0x12e
+ [<ffffffff81897689>] kernel_init+0x143/0x1cc
+ [<ffffffff8102edd4>] kernel_thread_helper+0x4/0x10
+ [<ffffffff814357ad>] ? restore_args+0x0/0x30
+ [<ffffffff81897546>] ? kernel_init+0x0/0x1cc
+ [<ffffffff8102edd0>] ? kernel_thread_helper+0x0/0x10
+Code: 24 49 89 44 24 08 4c 89 20 48 8b 43 10 4d 89 74 24 58 49 89 44 24 50 83 3d d7 13 53 00 00 78 22 48 8b 43 10 48 c7 c2 90 7e 66 81 <48> 8b 08 4d 89 f0 48 89 d6 48 c7 c7 7e a9 79 81 31 c0 e8 21 10
+RIP  [<ffffffff81330b36>] edac_create_mci_instance_attributes+0x148/0x1f1
+ RSP <ffff8801bfca7a30>
+CR2: 00000000000001a4
+Kernel panic - not syncing: Attempted to kill init!
 
-- moves the arch-specific KVM tracing headers to /include/trace, so
-  lttng-modules can access them. This is for the forthcoming KVM tracing
-  probes.
-- fix a recent rebase issue with Kconfig trace clock options (were under
-  the cgroups menu).
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: stable@kernel.org
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/edac/i7core_edac.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Project website: http://lttng.org
-Download link: http://lttng.org/content/download
-(please refer to the LTTng Manual for installation instructions)
-
+diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+index e0187d1..0fd5b85 100644
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -1140,6 +1140,7 @@ static struct mcidev_sysfs_attribute i7core_udimm_counters_attrs[] = {
+ 	ATTR_COUNTER(0),
+ 	ATTR_COUNTER(1),
+ 	ATTR_COUNTER(2),
++	{ .attr = { .name = NULL } }
+ };
+ 
+ static struct mcidev_sysfs_group i7core_udimm_counters = {
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.2.2
+
