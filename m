@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab0INMoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 08:44:19 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:48642 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab0INMoQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 08:44:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=F3lxUfZx7xGT4hK5S2EyXAOubrAbhbYVfu1+ss/I0X31GaGopft4EbGCMIdGAfGg8/
-         Zko2OvtgK4oGH13/pRr6wqYM0PAHEjzSZ+E712Opb6VCuVks+HyBnhpmMZ0zjXbtyMEf
-         iDSOwiiUqCoylxATuQ9BGcr896LjXluS0VhsI=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Darren Hart <dvhltc@us.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] futex: add lock context annotations
-Date: Tue, 14 Sep 2010 21:43:48 +0900
-Message-Id: <1284468228-8723-3-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1284468228-8723-1-git-send-email-namhyung@gmail.com>
-References: <1284468228-8723-1-git-send-email-namhyung@gmail.com>
+	id S1753918Ab0INMr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 08:47:59 -0400
+Received: from void.printf.net ([89.145.121.20]:45117 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752417Ab0INMr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 08:47:56 -0400
+Date: Tue, 14 Sep 2010 13:47:41 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-mmc@vger.kernel.org
+Subject: Re: [patch 21/30] mmc: Convert "mutex" to semaphore
+Message-ID: <20100914124741.GA17079@void.printf.net>
+References: <20100907124636.880953480@linutronix.de> <20100907125056.703221226@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100907125056.703221226@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-queue_lock/unlock/me() and unqueue_me_pi() grab/release spinlocks
-but were missing proper annotations. Add it.
+Hi,
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- kernel/futex.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+On Tue, Sep 07, 2010 at 02:33:22PM -0000, Thomas Gleixner wrote:
+> Get rid of init_MUTEX[_LOCKED]() and use sema_init() instead.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: linux-mmc@vger.kernel.org
+> 
+> ---
+>  drivers/mmc/card/queue.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux-2.6/drivers/mmc/card/queue.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/mmc/card/queue.c
+> +++ linux-2.6/drivers/mmc/card/queue.c
+> @@ -209,7 +209,7 @@ int mmc_init_queue(struct mmc_queue *mq,
+>  		sg_init_table(mq->sg, host->max_phys_segs);
+>  	}
+>  
+> -	init_MUTEX(&mq->thread_sem);
+> +	sema_init(&mq->thread_sem, 1);
+>  
+>  	mq->thread = kthread_run(mmc_queue_thread, mq, "mmcqd");
+>  	if (IS_ERR(mq->thread)) {
+> 
+> 
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 45e448a..92a31d4 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1360,6 +1360,7 @@ out:
- 
- /* The key must be already stored in q->key. */
- static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
-+	__acquires(&hb->lock)
- {
- 	struct futex_hash_bucket *hb;
- 
-@@ -1373,6 +1374,7 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
- 
- static inline void
- queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
-+	__releases(&hb->lock)
- {
- 	spin_unlock(&hb->lock);
- 	drop_futex_key_refs(&q->key);
-@@ -1391,6 +1393,7 @@ queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
-  * an example).
-  */
- static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb)
-+	__releases(&hb->lock)
- {
- 	int prio;
- 
-@@ -1471,6 +1474,7 @@ retry:
-  * and dropped here.
-  */
- static void unqueue_me_pi(struct futex_q *q)
-+	__releases(q->lock_ptr)
- {
- 	WARN_ON(plist_node_empty(&q->list));
- 	plist_del(&q->list, &q->list.plist);
+Thanks, applied to mmc-next.
+
 -- 
-1.7.2.2
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
