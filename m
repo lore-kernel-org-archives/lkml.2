@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab0INElK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 00:41:10 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57313 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab0INElH (ORCPT
+	id S1752060Ab0INEnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 00:43:32 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41125 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab0INEnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 00:41:07 -0400
+	Tue, 14 Sep 2010 00:43:32 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 14 Sep 2010 13:35:46 +0900
+Date: Tue, 14 Sep 2010 13:38:22 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
@@ -19,7 +19,7 @@ Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         stable@kernel.org
 Subject: Re: [BUGFIX][PATCH] memcg: fix race in file_mapped accouting flag
  management
-Message-Id: <20100914133546.35d90726.kamezawa.hiroyu@jp.fujitsu.com>
+Message-Id: <20100914133822.d2fcf65f.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <20100913140803.b83d3fe1.akpm@linux-foundation.org>
 References: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
 	<20100913140803.b83d3fe1.akpm@linux-foundation.org>
@@ -32,6 +32,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+Sorry, reposting..(because mail client died while sending..)
+==
 On Mon, 13 Sep 2010 14:08:03 -0700
 Andrew Morton <akpm@linux-foundation.org> wrote:
 
