@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab0INKsH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 06:48:07 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34034 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500Ab0INKsE (ORCPT
+	id S1753639Ab0INKv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 06:51:59 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:4448 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753548Ab0INKv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 06:48:04 -0400
-Message-ID: <4C8F527E.40408@ru.mvista.com>
-Date: Tue, 14 Sep 2010 14:46:22 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: Sergei Shtylyov <sshtylyov@mvista.com>, Ming Lei <tom.leiming@gmail.com>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [RESEND/PATCH 5/6] USB: musb-gadget: complete request only if
- data is transfered over
-References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com> <1283873014-32511-6-git-send-email-tom.leiming@gmail.com> <4C8E18AD.8000502@ru.mvista.com> <AANLkTinei3u1OZ-eBiUTDF=PDjwxLcL6rBpt7iNQJgHJ@mail.gmail.com> <4C8E4882.6040600@ru.mvista.com> <4C8E50CC.3080705@ru.mvista.com> <20100914065604.GD2601@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20100914065604.GD2601@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 14 Sep 2010 06:51:59 -0400
+Date: Tue, 14 Sep 2010 12:51:37 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/7] hwmon: (lm90) Introduce 3rd set of upper
+ temperature limits
+Message-ID: <20100914125137.0928875b@hyperion.delvare>
+In-Reply-To: <1284038750-8833-6-git-send-email-guenter.roeck@ericsson.com>
+References: <1284038750-8833-1-git-send-email-guenter.roeck@ericsson.com>
+	<1284038750-8833-6-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Guenter,
 
-On 14-09-2010 10:56, Felipe Balbi wrote:
+On Thu, 9 Sep 2010 06:25:48 -0700, Guenter Roeck wrote:
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> ---
+>  drivers/hwmon/lm90.c |   34 ++++++++++++++++++++++++++++++++--
+>  1 files changed, 32 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+> index 11b5701..d2bcb47 100644
+> --- a/drivers/hwmon/lm90.c
+> +++ b/drivers/hwmon/lm90.c
+> @@ -147,6 +147,7 @@ enum chips { lm90, adm1032, lm99, lm86, max6657, adt7461, max6680, max6646,
+>  #define	LM90_HAVE_OFFSET	0x02	/* temperature offset register	*/
+>  #define	LM90_HAVE_LOCAL_EXT	0x04	/* extended local temperature	*/
+>  #define	LM90_HAVE_REM_LIMIT_EXT	0x08	/* extended remote limit	*/
+> +#define	LM90_HAVE_EMERGENCY	0x10	/* 3rd upper (emergency) limit	*/
+>  
+>  /*
+>   * Functions declaration
+> @@ -213,10 +214,12 @@ struct lm90_data {
+>  	u8 alert_alarms;	/* Which alarm bits trigger ALERT# */
+>  
+>  	/* registers values */
+> -	s8 temp8[4];	/* 0: local low limit
+> +	s8 temp8[6];	/* 0: local low limit
+>  			   1: local high limit
+>  			   2: local critical limit
+> -			   3: remote critical limit */
+> +			   3: remote critical limit
+> +			   4: local emergency limit
+> +			   5: remote emergency limit */
+>  	s16 temp11[5];	/* 0: remote input
+>  			   1: remote low limit
+>  			   2: remote high limit
+> @@ -608,6 +611,24 @@ static const struct attribute_group lm90_group = {
+>  	.attrs = lm90_attributes,
+>  };
+>  
+> +/*
+> + * Additional attributes for devices with emergency sensors
+> + */
+> +static SENSOR_DEVICE_ATTR(temp1_emergency, S_IWUSR | S_IRUGO, show_temp8,
+> +	set_temp8, 4);
+> +static SENSOR_DEVICE_ATTR(temp2_emergency, S_IWUSR | S_IRUGO, show_temp8,
+> +	set_temp8, 5);
+> +
+> +static struct attribute *lm90_emergency_attributes[] = {
+> +	&sensor_dev_attr_temp1_emergency.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_emergency.dev_attr.attr,
+> +	NULL
+> +};
+> +
+> +static const struct attribute_group lm90_emergency_group = {
+> +	.attrs = lm90_emergency_attributes,
+> +};
+> +
+>  /* pec used for ADM1032 only */
+>  static ssize_t show_pec(struct device *dev, struct device_attribute *dummy,
+>  			char *buf)
+> @@ -818,6 +839,9 @@ static int lm90_detect(struct i2c_client *new_client,
+>  
+>  static void lm90_remove_files(struct i2c_client *client, struct lm90_data *data)
+>  {
+> +	if (data->flags & LM90_HAVE_EMERGENCY)
+> +		sysfs_remove_group(&client->dev.kobj,
+> +				   &lm90_emergency_group);
+>  	if (data->flags & LM90_HAVE_OFFSET)
+>  		device_remove_file(&client->dev,
+>  				   &sensor_dev_attr_temp2_offset.dev_attr);
 
->> Oops, I've been too fast and haven't realized that the check done here
->> _is_ actually wrong. It causes ZLP send to trigger too fast in the DMA
->> case. So please fix this patch. Felipe, please drop it for now.
+But this flag is never set?
 
-> patch is not even touching that part of the code,
+> @@ -889,6 +913,12 @@ static int lm90_probe(struct i2c_client *new_client,
+>  		if (err)
+>  			goto exit_remove_files;
+>  	}
+> +	if (data->flags & LM90_HAVE_EMERGENCY) {
+> +		err = sysfs_create_group(&new_client->dev.kobj,
+> +					 &lm90_emergency_group);
+> +		if (err)
+> +			goto exit_remove_files;
+> +	}
+>  
+>  	data->hwmon_dev = hwmon_device_register(&new_client->dev);
+>  	if (IS_ERR(data->hwmon_dev)) {
 
-    Yeah, and that's the problem.
-
-> not even
-> reading/writing TXCSR_TXPKTRDY bit care to explain please.
-
-    If a DMA interrupt comes when the whole transfer is not yet complete (and 
-other Ming Lei's patches are making this possible), it will pass due to the 
-'ís_dma' condition above the patched code:
-
-                 if (is_dma || request->actual == request->length) {
-
-and then it will hit the code sending the final ZLP (above this patched code too):
-
-                         /*
-                          * First, maybe a terminating short packet. Some DMA
-                          * engines might handle this by themselves.
-                          */
-                         if ((request->zero && request->length
-                                 && request->length % musb_ep->packet_sz == 0)
-#ifdef CONFIG_USB_INVENTRA_DMA
-                                 || (is_dma && (!dma->desired_mode ||
-                                         (request->actual &
-                                                 (musb_ep->packet_sz - 1))))
-#endif
-                         ) {
-
-before the transfer is complete while it should only be hit when and only when 
-the whole transfer is complete. The current code doesn't look correct as well 
-though, all due to this 'ís_dma' condition. Surely this needs fixing.
-
-WBR, Sergei
+-- 
+Jean Delvare
