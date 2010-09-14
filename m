@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab0INU5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 16:57:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37181 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752294Ab0INU5S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 16:57:18 -0400
+	id S1753856Ab0INVAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 17:00:23 -0400
+Received: from freeflow.nu ([178.79.134.28]:52366 "EHLO freeflow.nu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752751Ab0INVAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 17:00:22 -0400
+Message-ID: <4C8FE263.5070101@kernel.org>
+Date: Wed, 15 Sep 2010 00:00:19 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <4C8FD6E1.3040507@kernel.org>
-References: <1284490101-2362-1-git-send-email-penberg@kernel.org>
- <1284490101-2362-2-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1009141243290.1470@chino.kir.corp.google.com>
- <AANLkTinj2P_QbdgdLS3BweSMDzhQH5g4p2B3SqS=CNYc@mail.gmail.com> <4C8FD6E1.3040507@kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 14 Sep 2010 13:56:29 -0700
-Message-ID: <AANLkTimcy2Y3CZc_00axpRirHoidk49KS1hq-_p8a9jx@mail.gmail.com>
+To: David Rientjes <rientjes@google.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>
 Subject: Re: [PATCH v2 2/2] SLUB: Mark merged slab caches in /proc/slabinfo
-To: Pekka Enberg <penberg@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+References: <1284490101-2362-1-git-send-email-penberg@kernel.org> <1284490101-2362-2-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1009141243290.1470@chino.kir.corp.google.com> <AANLkTinj2P_QbdgdLS3BweSMDzhQH5g4p2B3SqS=CNYc@mail.gmail.com> <alpine.DEB.2.00.1009141320090.7123@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1009141320090.7123@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 1:11 PM, Pekka Enberg <penberg@kernel.org> wrote:
->
-> Are you happy with the patch? The output is indeed tad bit unreadable. Maybe
-> we should just limit the number of printed out names to two or three?
+  On 14.9.2010 23.56, David Rientjes wrote:
+>> In my not-so-humble opinion, either the merging needs to go away
+>> entirely, or the misleading output needs to be fixed.
+> Cache merging may have been advertised as a bigger performance improvement
+> than it actually is, and I don't do it in my own slab allocator for other
+> reasons, but it does lead to more effective memory use by reducing slab
+> fragmentation.  On one of my benchmarking servers, over 60% of caches are
+> merged and /sys/kernel/slab/.../partial reports roughly the same percent
+> of fewer total partial slabs over the system in comparison to
+> slub_nomerge.
+Last time I checked (and it's been a while), it did reduce _internal 
+fragmentation_ for the naive "memory used after boot" scenario. I don't 
+think I ever advertised it as a performance improvement. Dunno if 
+somebody else did.
 
-I think the patch looked fine. And limiting the printout to perhaps
-just two names (+ "..." if you have more) would work for me. At least
-at that point the output of /proc/slabinfo is no longer misleading and
-_incorrect_, it's just "incomplete" (and at that point the whole "you
-can get the full information from /sys" is a valid argument)
-
-                                   Linus
+             Pekka
