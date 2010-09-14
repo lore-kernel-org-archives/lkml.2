@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab0INNIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 09:08:07 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41876 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753755Ab0INNIE (ORCPT
+	id S1754126Ab0INNJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 09:09:59 -0400
+Received: from ppsw-30.csi.cam.ac.uk ([131.111.8.130]:42319 "EHLO
+	ppsw-30.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab0INNJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 09:08:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XaMkCh3yLMFexjdvYvghufLNXt23E2qpb0qS8SH5hcgjPCrMbh4+QkBBL33IJkub5p
-         2MU7BrbM19mOqXbB14eWbafmq63u4QUXK+z/y3hZpa7po9uwpmCID23DIPNahlzN8sJa
-         kAc3jG1ss9xucVHhJLN7cTw5aap63JLgO3hkc=
-Date: Tue, 14 Sep 2010 15:07:57 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [GIT PULL 0/1] perf/core ui browser improvement
-Message-ID: <20100914130753.GA5341@nowhere>
-References: <1284395692-11298-1-git-send-email-acme@infradead.org> <20100913174845.GC18428@elte.hu> <20100913190758.GB31907@ghostprotocols.net> <20100913204217.GA2505@elte.hu> <20100913212951.GI31907@ghostprotocols.net> <1284450852.2275.458.camel@laptop> <20100914121611.GD12425@elte.hu>
+	Tue, 14 Sep 2010 09:09:55 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C8F7429.1080105@jic23.retrosnub.co.uk>
+Date: Tue, 14 Sep 2010 14:10:01 +0100
+From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100909 Lightning/1.0b3pre Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100914121611.GD12425@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Hemanth V <hemanthv@ti.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH V3 1/2] input: CMA3000 Accelerometer driver
+References: <61033.10.24.255.18.1283926671.squirrel@dbdmail.itg.ti.com> <4C877584.7000902@jic23.retrosnub.co.uk> <20100914080003.GD15167@core.coreip.homeip.net>
+In-Reply-To: <20100914080003.GD15167@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 02:16:11PM +0200, Ingo Molnar wrote:
+On 09/14/10 09:00, Dmitry Torokhov wrote:
+> On Wed, Sep 08, 2010 at 12:37:40PM +0100, Jonathan Cameron wrote:
+>>
+>> I'm happy to see your driver go in as it is currently, what bothers me is that we will end
+>> up with incompatible interfaces for all the accelerometers Dmitry takes!
+>>
 > 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Mon, 2010-09-13 at 18:29 -0300, Arnaldo Carvalho de Melo wrote:
-> > > +      3.00%         find  [kernel.kallsyms]   [k] n_tty_write
-> > 
-> > > +      3.00%         find  kernel       k n_tty_write
-> > 
-> > I find that [k] is visually easier to separate from the symbol name.
-> 
-> me too. Something like:
-> 
-> before:
-> 
->      1.08%           cc1  libc-2.12.so                  [.] _int_malloc
->      0.94%           cc1  [kernel.kallsyms]             [k] clear_page_c
->      0.74%           cc1  libc-2.12.so                  [.] _int_free
->      0.69%           cc1  [kernel.kallsyms]             [k] page_fault
->      0.46%           cc1  libc-2.12.so                  [.] malloc_consolidate
-> 
-> after:
-> 
->      1.08%           cc1  # libc-2.12.so                [.] _int_malloc
->      0.94%           cc1  # kernel                      [k] clear_page_c
->      0.74%           cc1  # libc-2.12.so                [.] _int_free
->      0.69%           cc1  # kernel                      [k] page_fault
->      0.46%           cc1  # libc-2.12.so                [.] malloc_consolidate
-> 
-> 
-> Would largely do the trick i think. The comments delineate the DSO 
-> portion from the task portion nicely - while also being a familar 
-> pattern. The column of [.] and [k] gives kernel developers a quick 
-> glance wrt. whether it's kernel or user-space - and it also delineates 
-> the symbol column from the DSO column.
-> 
-> Thanks,
-> 
-> 	Ingo
+> This is a valid concern. How about I chicken out and will not merge any
+> new sysfs knobs until you guys decide on reasonable interface? Most set
+> up is done by board code anyways, sysfs is more of nice-to-have?
+Hemanth, would removing the sysfs hooks from this driver be ok with you?
+I'd personally have favoured a merge, add new interfaces when agreed and
+deprecate old ones approach, but it is Dmitry's call.  Perhaps it is better
+to get the majority of the device functionality in place now and add
+the bells and whistles later.
 
+For input device things are probably mostly fixed for a particular board
+design.  There are definitely interesting things one can do if the knobs
+are available but they (I think) mostly fall outside of using the device
+for input!
 
-<random ideas for the future>
-
-BTW, having [u] instead of [.] would perhaps be more clearer?
-And one day we might want to extend that with more granularity,
-like major contexts in uppercase: K=kernel, U=user, H=hypervisor
-and some minor in lowercase: h=hardirq, s=softirq, t=task.
-
-So you can get [Kh], [Ks], etc...
-
-User could then sort by context, which could be useful without
-callchains for example.
-
-
-</random ideas for the future>
-
+Jonathan
