@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab0INGJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 02:09:59 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41081 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab0INGJ4 (ORCPT
+	id S1752785Ab0INGL6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 02:11:58 -0400
+Received: from dhruva1.ncra.tifr.res.in ([158.144.12.129]:57405 "EHLO
+	dhruva1.ncra.tifr.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab0INGL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 02:09:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:in-reply-to:user-agent;
-        b=m7iqnyukjfY9/n3u/rm81Nns1WKHYIS4ORt8sqN8CPdqFOz+oBrMWSqs+BsO+k3/yz
-         KvCfvyflRIJNZqf+8jRD6MbRU9HWL6tSqkL6tcONXvPZQEM4KK1v0tXsnQzxDyGwoKFD
-         MMW9DVK1HCIMPThfdx5qygfDWoc682CgLQJ9Q=
-Date: Tue, 14 Sep 2010 06:09:48 +0000
-From: Jarek Poplawski <jarkao2@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kalle Valo <kalle.valo@iki.fi>, Felix Fietkau <nbd@openwrt.org>,
-        Jouni Malinen <j@w1.fi>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] mac80211: fix compilation warning
-Message-ID: <20100914060948.GA6908@ff.dom.local>
+	Tue, 14 Sep 2010 02:11:56 -0400
+From: "Raju Rameshwar Uprade" <rajsingh@ncra.tifr.res.in>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: Regarding USB-to-Serial device driver
+Date: Tue, 14 Sep 2010 11:41:42 +0530
+Message-Id: <20100914060649.M96376@admin-gateway.ncra.tifr.res.in>
+In-Reply-To: <20100913154843.GA27496@suse.de>
+References: <20100913091318.M67834@admin-gateway.ncra.tifr.res.in> <20100913154843.GA27496@suse.de>
+X-Mailer: OpenWebMail 2.53 (08:Aug:2008)
+X-OriginatingIP: 158.144.12.129
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284441432.3704.0.camel@jlt3.sipsolutions.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+	charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-14 07:17, Johannes Berg wrote:
-> On Sun, 2010-09-12 at 14:10 +0300, Felipe Contreras wrote:
-> 
->>  	struct ieee80211_hdr hdr;
->> -	struct ieee80211s_hdr mesh_hdr;
->>  	const u8 *encaps_data;
->>  	int encaps_len, skip_header_bytes;
->>  	int nh_pos, h_pos;
->> @@ -1755,7 +1754,9 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
->>  		hdrlen = 30;
->>  		break;
->>  #ifdef CONFIG_MAC80211_MESH
->> -	case NL80211_IFTYPE_MESH_POINT:
->> +	case NL80211_IFTYPE_MESH_POINT: {
->> +		struct ieee80211s_hdr mesh_hdr;
->> +
-> 
-> ...
-> 
-> might be nicer to just add __maybe_unused.
-> 
-> johannes
+ 
+> usb to serial devices are known for sending data in "chunks", that's the
+> way the devices work (cheap, tiny, 8bit microcontrollers in the device)
+> and they break things up like this all the time.
 > 
 
-Or at least more consistent with the fix in net-next ;-)
+ Greg,
+      I am able to send data bytes properly.One problem, I am currently facing is to
+enable Address parity and Data parity.
 
-Jarek P.
+For Address parity we have to give a mark parity ( 0x04 ).
+For Data parity we have to give a space parity ( 0x05 ).
+I don't know how I can enable parity in pl2303.c.
+
+plz help me.
+
+Thanks,
+ Raj    
+
+
