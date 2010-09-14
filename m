@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab0INTRk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 15:17:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49048 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753370Ab0INTRj (ORCPT
+	id S1754773Ab0INTUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 15:20:47 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:50608 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753533Ab0INTUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 15:17:39 -0400
-Date: Tue, 14 Sep 2010 12:17:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Timur Tabi <timur@freescale.com>
-Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, kumar.gala@freescale.com,
-        amit.shah@redhat.com
-Subject: Re: [PATCH] hvc_console: fix dropping of characters when output
- byte channel is full
-Message-Id: <20100914121721.c8671ed8.akpm@linux-foundation.org>
-In-Reply-To: <1282329921-24394-1-git-send-email-timur@freescale.com>
-References: <1282329921-24394-1-git-send-email-timur@freescale.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Tue, 14 Sep 2010 15:20:45 -0400
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100914190156.GA16037@redhat.com>
+References: <1284410580.13351.10.camel@localhost.localdomain>
+	 <4C8F3C77.7010302@redhat.com>
+	 <1284476719.13351.35.camel@localhost.localdomain>
+	 <201009141721.13202.arnd@arndb.de> <20100914152231.GA13105@redhat.com>
+	 <1284480025.13351.49.camel@localhost.localdomain>
+	 <20100914162952.GB13560@redhat.com>
+	 <1284483745.13351.71.camel@localhost.localdomain>
+	 <20100914182707.GB15549@redhat.com>
+	 <1284490143.13351.82.camel@localhost.localdomain>
+	 <20100914190156.GA16037@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Sep 2010 12:20:29 -0700
+Message-ID: <1284492029.13351.88.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010 13:45:21 -0500
-Timur Tabi <timur@freescale.com> wrote:
-
-> hvc_console_print() calls the HVC client driver's put_chars() callback
-> to write some characters to the console.  If the callback returns 0, that
-> indicates that no characters were written (perhaps the output buffer is
-> full), but hvc_console_print() treats that as an error and discards the
-> rest of the buffer.
+On Tue, 2010-09-14 at 21:01 +0200, Michael S. Tsirkin wrote:
+> On Tue, Sep 14, 2010 at 11:49:03AM -0700, Shirley Ma wrote:
+> > On Tue, 2010-09-14 at 20:27 +0200, Michael S. Tsirkin wrote:
+> > > As others said, the harder issues for TX are in determining that
+> it's
+> > > safe
+> > > to unpin the memory, and how much memory is it safe to pin to
+> beging
+> > > with.  For RX we have some more complexity.
+> > 
+> > I think unpin the memory is in kfree_skb() whenever the last
+> reference
+> > is gone for TX. What we discussed about here is when/how vhost get
+> > notified to update ring buffer descriptors. Do I misunderstand
+> something
+> > here? 
 > 
-> So change hvc_console_print() to just loop and call put_chars() again if it
-> returns a 0 return code.
+> Right, that's a better way to put it. 
 
-Seems rather dangerous.  The upper layer will sit there chewing 100%
-CPU for as long as the lower layer is congested.
+That's how this macvtap patch did. For how much pinned pages,it is
+limited by sk_wmem_alloc size in this patch.
 
-> This change makes hvc_console_print() behave more like hvc_push(), which
-> does check for a 0 return code and re-schedules itself.
+thanks
+Shirley
 
-Yes, hvc_push() reschedules.  It doesn't sit in a tight loop burning
-electrons!
-
-Can we do something safer&smarter here?
