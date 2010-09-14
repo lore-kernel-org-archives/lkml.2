@@ -1,31 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab0INWr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 18:47:59 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34047 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab0INWr6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 18:47:58 -0400
-Date: Tue, 14 Sep 2010 18:47:57 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 7/7] block: autoconvert trivial BKL users to private mutex
-Message-ID: <20100914224757.GA8925@infradead.org>
-References: <1284494022-7346-1-git-send-email-arnd@arndb.de>
- <1284494022-7346-8-git-send-email-arnd@arndb.de>
+	id S1755225Ab0INWw7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 18:52:59 -0400
+Received: from tuxonice.net ([74.207.252.127]:50895 "EHLO mail.tuxonice.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751954Ab0INWw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 18:52:58 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4C8FFCC6.1000806@tuxonice.net>
+Date: Wed, 15 Sep 2010 08:52:54 +1000
+From: Nigel Cunningham <nigel@tuxonice.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284494022-7346-8-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
+Subject: Re: 2.6.36-rc3 - Unable to build: "Error: input truncated"
+References: <4C8CB5A1.9040500@tuxonice.net>	<201009121934.37033.rjw@sisk.pl>	<4C8D5D41.90104@tuxonice.net> <20100912201152.a4ada04a.randy.dunlap@oracle.com> <4C8DB031.6050008@tuxonice.net> <4C8DB674.5040200@gmail.com> <4C8DC01A.4030206@tuxonice.net> <4C8DC6B9.3050701@gmail.com> <4C8DCA43.5000608@tuxonice.net> <4C8DD067.6060005@gmail.com>
+In-Reply-To: <4C8DD067.6060005@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FYI: virtio-blk just has the BKL because of an autoconversion from
-old ->ioctl to the unlocked version.  I have a patch pending to kill it.
+Hey all.
 
+It was corruption in my ccache cache. I eventually found that ccache -S 
+and make distclean (or git clean -fx) together make it work again.
+
+Sorry for the noise. Perhaps, though, this will help someone in future :)
+
+Nigel
