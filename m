@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab0INVZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 17:25:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57551 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918Ab0INVZ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 17:25:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Remove BKL from fs/locks.c
-Date: Tue, 14 Sep 2010 23:24:15 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc3+; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Matthew Wilcox <willy@linux.intel.com>, Christoph Hellwig <hch@lst.de>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <201009142206.54130.arnd@arndb.de> <201009142239.02904.arnd@arndb.de> <AANLkTimK5kesHJV3mspRch-YVe8uRT=ypqNMHr2L9wHC@mail.gmail.com>
-In-Reply-To: <AANLkTimK5kesHJV3mspRch-YVe8uRT=ypqNMHr2L9wHC@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009142324.16074.arnd@arndb.de>
-X-Provags-ID: V02:K0:pqh4iNYrwrxNCko6jNHg1ffmkbsP8KscLIPPP7OXcWZ
- gSIa5tIvJ7FMAKZl6zPXRVcHeOm5ymjRzqUkgrB2FcmvECIphR
- yPH+iNgzuETTOeCKHm7bPyLfiWEwfJvEuBcUUKThmUTdeIiCfD
- iP2FLqpZBvGefrdRyEL8omD7ERoTLR5k2TPARzSsXU06f1uKdY
- TI/QzRnmfgH7D6D21s6gA==
+	id S1754292Ab0INVei (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 17:34:38 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:56802 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750834Ab0INVeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 17:34:37 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Sep 2010 17:34:37 EDT
+/m: 
+From: Richard Weinberger <richard@nod.at>
+To: linux-kernel@vger.kernel.org
+Cc: jdike@addtoit.com, akpm@linux-foundation.org,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net, dhowells@redhat.com,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/1] uml: fix compile warning
+Date: Tue, 14 Sep 2010 23:27:46 +0200
+Message-Id: <1284499666-17568-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 September 2010 22:53:31 Linus Torvalds wrote:
-> Oh well. I guess there's no incremental way to do things sanely. And
-> nobody has patches to fix those users, I guess.
+This fixes:
+incompatible pointer type:  => 89
+       arch/um/kernel/exec.c: warning: passing argument 2 of 'execve1' from
+incompatible pointer type:  => 69, 85
+       arch/um/kernel/exec.c: warning: passing argument 3 of 'execve1' from
+incompatible pointer type:  => 69, 85
 
-The only critical user is fs/lockd, I can easily handle the rest.
-When I talked to Bruce and Trond during LinuxCon, they told me that
-it should be possible to separate the bits of fs/lockd that lock
-against fs/locks.c and convert the former to use lock_flocks().
+which was introduced by d7627467b7a8dd6944885290a03a07ceb28c10eb
+(Make do_execve() take a const filename pointer)
 
-That would be enough to actually apply this patch without the
-nasty CONFIG_BKL check and with changes to the few other
-consumers of file locks. My original plan was to have my current
-patch in -next until that happens.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/um/kernel/exec.c     |    6 +++---
+ arch/um/kernel/internal.h |    2 +-
+ arch/um/kernel/syscall.c  |    4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-	Arnd
+diff --git a/arch/um/kernel/exec.c b/arch/um/kernel/exec.c
+index cd145ed..49b5e1e 100644
+--- a/arch/um/kernel/exec.c
++++ b/arch/um/kernel/exec.c
+@@ -62,7 +62,7 @@ static long execve1(const char *file,
+ 	return error;
+ }
+ 
+-long um_execve(const char *file, char __user *__user *argv, char __user *__user *env)
++long um_execve(const char *file, const char __user *const __user *argv, const char __user *const __user *env)
+ {
+ 	long err;
+ 
+@@ -72,8 +72,8 @@ long um_execve(const char *file, char __user *__user *argv, char __user *__user
+ 	return err;
+ }
+ 
+-long sys_execve(const char __user *file, char __user *__user *argv,
+-		char __user *__user *env)
++long sys_execve(const char __user *file, const char __user *const __user *argv,
++		const char __user *const __user *env)
+ {
+ 	long error;
+ 	char *filename;
+diff --git a/arch/um/kernel/internal.h b/arch/um/kernel/internal.h
+index 1303a10..5bf97db 100644
+--- a/arch/um/kernel/internal.h
++++ b/arch/um/kernel/internal.h
+@@ -1 +1 @@
+-extern long um_execve(const char *file, char __user *__user *argv, char __user *__user *env);
++extern long um_execve(const char *file, const char __user *const __user *argv, const char __user *const __user *env);
+diff --git a/arch/um/kernel/syscall.c b/arch/um/kernel/syscall.c
+index 5ddb246..f958cb8 100644
+--- a/arch/um/kernel/syscall.c
++++ b/arch/um/kernel/syscall.c
+@@ -60,8 +60,8 @@ int kernel_execve(const char *filename,
+ 
+ 	fs = get_fs();
+ 	set_fs(KERNEL_DS);
+-	ret = um_execve(filename, (char __user *__user *)argv,
+-			(char __user *__user *) envp);
++	ret = um_execve(filename, (const char __user *const __user *)argv,
++			(const char __user *const __user *) envp);
+ 	set_fs(fs);
+ 
+ 	return ret;
+-- 
+1.6.6.1
+
