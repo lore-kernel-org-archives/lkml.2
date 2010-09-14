@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab0INTk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 15:40:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:55728 "EHLO
+	id S1755144Ab0INTkb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 15:40:31 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:65274 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755074Ab0INTk0 (ORCPT
+	with ESMTP id S1754747Ab0INTk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 15:40:26 -0400
+	Tue, 14 Sep 2010 15:40:29 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 07/18] m68k: remove big kernel lock
-Date: Tue, 14 Sep 2010 21:40:11 +0200
-Message-Id: <1284493213-7263-8-git-send-email-arnd@arndb.de>
+Subject: [PATCH 08/18] parisc: remove big kernel lock
+Date: Tue, 14 Sep 2010 21:40:12 +0200
+Message-Id: <1284493213-7263-9-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1284493139-7233-1-git-send-email-arnd@arndb.de>
 References: <1284493139-7233-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:PzApYKEF9KG192FsmrrDDC/pPT5b4OU3NEQnJO0U2uq
- 3DRps4uPWw7hUFkr7hOUHMjXGt9W6cmh2qHseHS2Ff7aKx+JgK
- fuWm/CLzjbwK5Qrtrc+Y+4pzxIyRDD377vHRzvwf2E1NeLf+NM
- x85olkAGgA+eWDCa0xRaDUrQ96JKIGMQ9vkOu+tSIjXfXG0dD3
- NrLM5rsbC9ZQeHy/3viaQ==
+X-Provags-ID: V02:K0:0vkTJS7m2amwwyXvfyO+Si0C5L8id936GwjrO8PQDvJ
+ tZn577XfZUN/+3sUW1rhf3ik1zsKGdtbd6UZs+nzcJTWqX3auW
+ CHEOfezI3zfjfnKouOxpxSqihEFX19SoXOyLXk+66keT3ncA+O
+ 5lw63fuIUVeTwzSBb8ZMiCEuavvfQwq0rqPyHJQTl7keaSyzq8
+ CQtndFDYwXPyCq1iWL5bw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cache flush code only locks against itself, so there
-is no excuse to use the BKL here. This replaces it with
-a local mutex in order to maintain serialization of flushes.
+The parisc version of the perf code is sufficiently
+protected by its own spinlock, no need to use the BKL.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Roman Zippel <zippel@linux-m68k.org>
-Cc: linux-m68k@lists.linux-m68k.org
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Helge Deller <deller@gmx.de>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: linux-parisc@vger.kernel.org
 ---
- arch/m68k/kernel/sys_m68k.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ arch/parisc/kernel/perf.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/arch/m68k/kernel/sys_m68k.c b/arch/m68k/kernel/sys_m68k.c
-index 2f431ec..f6aec52 100644
---- a/arch/m68k/kernel/sys_m68k.c
-+++ b/arch/m68k/kernel/sys_m68k.c
-@@ -12,7 +12,7 @@
- #include <linux/mm.h>
- #include <linux/fs.h>
- #include <linux/smp.h>
+diff --git a/arch/parisc/kernel/perf.c b/arch/parisc/kernel/perf.c
+index f9f6783..ba0c053 100644
+--- a/arch/parisc/kernel/perf.c
++++ b/arch/parisc/kernel/perf.c
+@@ -46,7 +46,6 @@
+ #include <linux/init.h>
+ #include <linux/proc_fs.h>
+ #include <linux/miscdevice.h>
 -#include <linux/smp_lock.h>
-+#include <linux/mutex.h>
- #include <linux/sem.h>
- #include <linux/msg.h>
- #include <linux/shm.h>
-@@ -374,10 +374,11 @@ cache_flush_060 (unsigned long addr, int scope, int cache, unsigned long len)
- asmlinkage int
- sys_cacheflush (unsigned long addr, int scope, int cache, unsigned long len)
+ #include <linux/spinlock.h>
+ 
+ #include <asm/uaccess.h>
+@@ -261,16 +260,13 @@ printk("Preparing to start counters\n");
+  */
+ static int perf_open(struct inode *inode, struct file *file)
  {
-+	static DEFINE_MUTEX(cacheflush_mutex);
- 	struct vm_area_struct *vma;
- 	int ret = -EINVAL;
- 
 -	lock_kernel();
-+	mutex_lock(&cacheflush_mutex);
- 	if (scope < FLUSH_SCOPE_LINE || scope > FLUSH_SCOPE_ALL ||
- 	    cache & ~FLUSH_CACHE_BOTH)
- 		goto out;
-@@ -446,7 +447,7 @@ sys_cacheflush (unsigned long addr, int scope, int cache, unsigned long len)
- 	    }
+ 	spin_lock(&perf_lock);
+ 	if (perf_enabled) {
+ 		spin_unlock(&perf_lock);
+-		unlock_kernel();
+ 		return -EBUSY;
  	}
- out:
+ 	perf_enabled = 1;
+  	spin_unlock(&perf_lock);
 -	unlock_kernel();
-+	mutex_unlock(&cacheflush_mutex);
- 	return ret;
- }
  
+ 	return 0;
+ }
 -- 
 1.7.1
 
