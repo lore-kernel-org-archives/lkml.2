@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab0INNiV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 09:38:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27756 "EHLO mx1.redhat.com"
+	id S1752033Ab0INNpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 09:45:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13538 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751616Ab0INNiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 09:38:18 -0400
-Date: Tue, 14 Sep 2010 09:37:56 -0400
+	id S1751499Ab0INNp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 09:45:29 -0400
+Date: Tue, 14 Sep 2010 09:45:14 -0400
 From: Don Zickus <dzickus@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 4/6] x86, NMI, Rewrite NMI handler
-Message-ID: <20100914133756.GI26290@redhat.com>
-References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
- <1284087065-32722-4-git-send-email-ying.huang@intel.com>
- <20100910155605.GG4879@redhat.com>
- <20100910180356.44ac7097@basil.nowhere.org>
- <20100910182952.GJ4879@redhat.com>
- <1284343770.3269.75.camel@yhuang-dev.sh.intel.com>
- <20100913140419.GA27371@redhat.com>
- <1284441161.2256.94.camel@yhuang-dev.sh.intel.com>
+Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
+ unknown NMI
+Message-ID: <20100914134514.GJ26290@redhat.com>
+References: <20100913141140.GB27371@redhat.com>
+ <20100913172438.37443bf7@basil.nowhere.org>
+ <20100913154750.GA26290@redhat.com>
+ <20100913185721.59ad9b4d@basil.nowhere.org>
+ <20100913175346.GC26290@redhat.com>
+ <20100913200707.3b31429e@basil.nowhere.org>
+ <20100913182354.GE26290@redhat.com>
+ <20100913203654.26724055@basil.nowhere.org>
+ <20100913193655.GF26290@redhat.com>
+ <20100914122131.GF12425@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1284441161.2256.94.camel@yhuang-dev.sh.intel.com>
+In-Reply-To: <20100914122131.GF12425@elte.hu>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 01:12:41PM +0800, Huang Ying wrote:
-> On Mon, 2010-09-13 at 22:04 +0800, Don Zickus wrote:
-> > On Mon, Sep 13, 2010 at 10:09:30AM +0800, Huang Ying wrote:
-> > > > The reason I asked was, I thought it would be easier to have a global
-> > > > variable that tells the nmi handler which cpu has the NMI's routed to its
-> > > > io port.  This way if you want to swap out the bsp cpu, you could perhaps
-> > > > just re-route the nmi to a new cpu and the global variable would be
-> > > > updated accordingly?
-> > > 
-> > > Then we need some kind of protection or race condition between
-> > > re-routing NMI and updating the variable. Do you think so?
-> > 
-> > Well, I thought the only reasonable place to update the variable is when
-> > the cpu is being taken offline, during the MTRR update.  Since no NMIs can
-> > be processed when the cpu's are syncing their MTRR, there shouldn't be a
-> > race condition, no?
-> > 
-> > Then again I am probably missing something obvious.  Like I don't know how
-> > cpu's deal with interrupts/NMIs when they are going offline.
-> > 
-> > It was just a thought to avoid the spinlock.
+On Tue, Sep 14, 2010 at 02:21:31PM +0200, Ingo Molnar wrote:
 > 
-> Why do you hate spinlock inside NMI handler? I think it is safe and
-> simple if only used in NMI handler.
+> * Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > > > > At least on PCI-E it may be enough to simply dump all recent AER 
+> > > > > data.
+> > > > 
+> > > > This assumes AER is supported on the bridge?  Which for newer 
+> > > > chips is probably true, but I wasn't sure about older ones.
+> > > 
+> > > Today's servers should usually have AER at least.
+> > > 
+> > > For old systems you only can get the few bits in PCI space.
+> > > 
+> > > > How would I dump AER data from within the kernel?
+> > > 
+> > > Would need a buffer that is dumped for past events and reading the 
+> > > registers for not yet reported. Right now some infrastructure is 
+> > > needed.
+> > 
+> > Oh ok.
+> 
+> The proper approach would be not to add hacks to the NMI code but to 
+> implement southbridge drivers - which would also have NMI callbacks. 
+> These are unchartered waters, but variance in that space is reducing 
+> systematically so it would be worth a shot.
 
-I guess I always had the mentality that spinlocks in an NMI context was a
-big no-no.  Never really thought about if there were safe use-cases or
-not.
+Interesting.  I think the only southbridge I see regularly are Intel, AMD
+and Nvidia (with Nvidia being more problematic than others).
+Unfortunately, getting specs for Nvidia is very difficult.
+
+But that might help narrow down where the NMI problem is.
 
 Cheers,
 Don
+
+> 
+> Thanks,
+> 
+> 	Ingo
