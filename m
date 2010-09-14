@@ -1,121 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab0INBYn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 21:24:43 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11935 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab0INBYm convert rfc822-to-8bit (ORCPT
+	id S1752693Ab0INB1M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 21:27:12 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51076 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200Ab0INB1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 21:24:42 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp04.nvidia.com on Mon, 13 Sep 2010 18:24:37 -0700
-From: Gary King <GKing@nvidia.com>
-To: Mike Rapoport <mike@compulab.co.il>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 13 Sep 2010 18:24:38 -0700
-Subject: Re: [PATCH v2] mfd: tps6586x: add basic interrupt support
-Thread-Topic: [PATCH v2] mfd: tps6586x: add basic interrupt support
-Thread-Index: ActTq5gKygDcgKzyRKGxYWky4zBbgw==
-Message-ID: <4C8ECED6.9030209@nvidia.com>
-References: <1283890548-29442-1-git-send-email-gking@nvidia.com>
- <4C8C88DD.5070406@compulab.co.il>
-In-Reply-To: <4C8C88DD.5070406@compulab.co.il>
-Reply-To: Gary King <GKing@nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12)
- Gecko/20100824 Lightning/1.0b1 Thunderbird/3.0.7
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Mon, 13 Sep 2010 21:27:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=hDKMeTRIXK2nZvN+Jw57nQKbqJoviZ6e12zec3jo4UnXaHDAaXWJcYhShKVOY3pEJ6
+         txkUnAE0GrWcn6jNN/fxWjmUuwn9olPQo2EL7ak2uIx0a0MBNVCA+DJxQSgmHagn9EZ0
+         dlmIA6eiROk3FFjfVWnZyJ4eB2XjNlEPIojLY=
+Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+In-Reply-To: <1284284969.2928.18.camel@maxim-laptop>
+References: <1284284969.2928.18.camel@maxim-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Sep 2010 03:27:01 +0200
+Message-ID: <1284427621.4127.7.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2010-09-12 at 11:49 +0200, Maxim Levitsky wrote: 
+> Hi,
+> 
+> After a switch between hal to devkit stack, a different strategy of
+> detecting a cdrom removal was applied.
+> Instead of polling it, userspace just tells the kernel not to lock the
+> dour (/proc/sys/dev/cdrom/lock) and as soon as user removes the disk,
+> udev notifies the userspace and it unmounts it. Since CDROMs are
+> readonly this is perfectly safe and fits the same procedure used for all
+> other removable disks. (usb, flash cards, etc..)
+> 
+> (Well, most cdroms aren't really read-only these days, but state of
+> packet writing is so sad these days that is doesn't matter).
+> 
+> However 2.6.36 doesn't detect that removal.
+> According to udevadm monitor --property no uevents are send on removal.
+Correction, this is regression between 2.6.34 and 2.6.35. This shows how
+much I use cd these days...
 
 
-On 09/12/2010 01:01 AM, Mike Rapoport wrote:
->
-> Hi Gary,
->
-> Gary King wrote:
-> > Hi Samuel, Mike,
-> >
-> > This patch incorporates Mike Rapoport's feedback on my initial patch
-> > to add interrupt support to the tps6586x driver.
->
-> Overall looks good to me, two nitpicking comments though.
->
-> > Changes since v1:
-> >
-> > * Move the interrupt enum ordering to match the ACK register values
-> >
-> > * Treat the INT_ACK registers as a single 32b unsigned int.
-> >
-> > * Name and define all the interrupts on the device
-> >
-> > * If reading the ACK registers in the interrupt thread fails, IRQ_NONE
-> >   is returned, rather than disabling the IRQ handler. This fixes
-> >   interrupts following suspend.
-> >
-> > * The cascaded IRQ is passed through the i2c_client's .irq field, rather
-> >   than through platform data.
-> >
-> > --
-> > From bf2f95da6f192e091d9ac0b30c186050aa5fd4e5 Mon Sep 17 00:00:00 2001
-> > From: Gary King <gking@nvidia.com>
-> > Date: Mon, 30 Aug 2010 16:16:55 -0700
-> > Subject: mfd: tps6586x: add basic interrupt support
-> >
-> > add support for enabling and disabling tps6586x subdevice interrupts,
-> > and add support for the RTC interrupts
->
-> I think the "add support for the RTC interrupts" is not relevant anymore
->
+I bisected it down to this:
 
-Oops, I meant to delete that.
+6b4517a7913a09d3259bb1d21c9cb300f12294bd is the first bad commit
+commit 6b4517a7913a09d3259bb1d21c9cb300f12294bd
+Author: Tejun Heo <tj@kernel.org>
+Date:   Wed Apr 7 18:53:59 2010 +0900
 
-> > Signed-off-by: Gary King <gking@nvidia.com>
-> > ---
-> >  drivers/mfd/tps6586x.c       |  202 
-> ++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mfd/tps6586x.h |   31 +++++++
-> >  2 files changed, 233 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-> > index 4cde31e..626081c 100644
-> > --- a/drivers/mfd/tps6586x.c
-> > +++ b/drivers/mfd/tps6586x.c
-> > @@ -15,6 +15,8 @@
-> >   * published by the Free Software Foundation.
-> >   */
-> >
-> > +#include <linux/interrupt.h>
-> > +#include <linux/irq.h>
-> >  #include <linux/kernel.h>
-> >  #include <linux/module.h>
-> >  #include <linux/mutex.h>
->
-> [ snip ]
->
-> >  struct tps6586x_subdev_info {
-> >       int             id;
-> >       const char      *name;
-> > @@ -29,6 +59,7 @@ struct tps6586x_platform_data {
-> >       struct tps6586x_subdev_info *subdevs;
-> >
-> >       int gpio_base;
-> > +     int irq_base;
->
-> not needed anymore
->
+    block: implement bd_claiming and claiming block
+    
+    Currently, device claiming for exclusive open is done after low level
+    open - disk->fops->open() - has completed successfully.  This means
+    that exclusive open attempts while a device is already exclusively
+    open will fail only after disk->fops->open() is called.
+    
+    cdrom driver issues commands during open() which means that O_EXCL
+    open attempt can unintentionally inject commands to in-progress
+    command stream for burning thus disturbing burning process.  In most
+    cases, this doesn't cause problems because the first command to be
+    issued is TUR which most devices can process in the middle of burning.
+    However, depending on how a device replies to TUR during burning,
+    cdrom driver may end up issuing further commands.
+    
+    This can't be resolved trivially by moving bd_claim() before doing
+    actual open() because that means an open attempt which will end up
+    failing could interfere other legit O_EXCL open attempts.
+    ie. unconfirmed open attempts can fail others.
+    
+    This patch resolves the problem by introducing claiming block which is
+    started by bd_start_claiming() and terminated either by bd_claim() or
+    bd_abort_claiming().  bd_claim() from inside a claiming block is
+    guaranteed to succeed and once a claiming block is started, other
+    bd_start_claiming() or bd_claim() attempts block till the current
+    claiming block is terminated.
+    
+    bd_claim() can still be used standalone although now it always
+    synchronizes against claiming blocks, so the existing users will keep
+    working without any change.
+    
+    blkdev_open() and open_bdev_exclusive() are converted to use claiming
+    blocks so that exclusive open attempts from these functions don't
+    interfere with the existing exclusive open.
+    
+    This problem was discovered while investigating bko#15403.
+    
+      https://bugzilla.kernel.org/show_bug.cgi?id=15403
+    
+    The burning problem itself can be resolved by updating userspace
+    probing tools to always open w/ O_EXCL.
+    
+    Signed-off-by: Tejun Heo <tj@kernel.org>
+    Reported-by: Matthias-Christian Ott <ott@mirix.org>
+    Cc: Kay Sievers <kay.sievers@vrfy.org>
+    Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
 
-This is still used; it is passed as the irq_base parameter to 
-tps6586x_irq_init.
+The bisect log:
 
-I will send out a v3 that fixes the commit message.
 
-- Gary
+maxim@maxim-laptop:~/software/kernel/linux-2.6$ git bisect log
+git bisect start
+# bad: [9fe6206f400646a2322096b56c59891d530e8d51] Linux 2.6.35
+git bisect bad 9fe6206f400646a2322096b56c59891d530e8d51
+# good: [e40152ee1e1c7a63f4777791863215e3faa37a86] Linus 2.6.34
+git bisect good e40152ee1e1c7a63f4777791863215e3faa37a86
+# good: [e0bc5d4a54938eedcde14005210e6c08aa9727e4] Merge branch 'i2c-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging
+git bisect good e0bc5d4a54938eedcde14005210e6c08aa9727e4
+# bad: [d30fda355188272430d3865db2ff9e24b4135ae3] posix-cpu-timers: avoid "task->signal != NULL" checks
+git bisect bad d30fda355188272430d3865db2ff9e24b4135ae3
+# bad: [d79df0b1eda0099a22cbcece01ce5e7d222450de] Merge git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
+git bisect bad d79df0b1eda0099a22cbcece01ce5e7d222450de
+# good: [6969a434737dd82f7343e3fcd529bc320508d9fc] Merge branch 'upstream' of git://ftp.linux-mips.org/pub/scm/upstream-linus
+git bisect good 6969a434737dd82f7343e3fcd529bc320508d9fc
+# good: [e34d2c5fa2254197b0a01925cc6f77e12552f9b9] staging:iio: ABI documentation (partial)
+git bisect good e34d2c5fa2254197b0a01925cc6f77e12552f9b9
+# good: [7fb794b32cbd7e97e37628cb67279b86c1436e84] Staging: vt6655: remove unused SUCCESS definition
+git bisect good 7fb794b32cbd7e97e37628cb67279b86c1436e84
+# bad: [fc8ce1941d668c70e57a07f13f5a63e73e5dbff3] drbd: Fix: Do not detach, if a bio with a barrier fails
+git bisect bad fc8ce1941d668c70e57a07f13f5a63e73e5dbff3
+# bad: [8d4ce82b3ccd755c8ba401469ced5286b1e02284] drbd: don't start a resync without access to up-to-date Data
+git bisect bad 8d4ce82b3ccd755c8ba401469ced5286b1e02284
+# good: [1a3cbbc5a5e8a66934aa0947896a4aca6fd77298] block: factor out bd_may_claim()
+git bisect good 1a3cbbc5a5e8a66934aa0947896a4aca6fd77298
+# bad: [0f3942a39ed768c967cb71ea0e9be7fc94112713] block: kill some useless goto's in blk-cgroup.c
+git bisect bad 0f3942a39ed768c967cb71ea0e9be7fc94112713
+# bad: [3f14d792f9a8fede64ce918dbb517f934497a4f8] blkdev: add blkdev_issue_zeroout helper function
+git bisect bad 3f14d792f9a8fede64ce918dbb517f934497a4f8
+# bad: [fbd9b09a177a481eda256447c881f014f29034fe] blkdev: generalize flags for blkdev_issue_fn functions
+git bisect bad fbd9b09a177a481eda256447c881f014f29034fe
+# bad: [6b4517a7913a09d3259bb1d21c9cb300f12294bd] block: implement bd_claiming and claiming block
+git bisect bad 6b4517a7913a09d3259bb1d21c9cb300f12294bd
+
+
+Best regards,
+	Maxim Levitsky
+
