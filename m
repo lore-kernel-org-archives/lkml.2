@@ -1,115 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab0INTkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 15:40:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61277 "EHLO
+	id S1755126Ab0INTk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 15:40:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55728 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755074Ab0INTkX (ORCPT
+	with ESMTP id S1755074Ab0INTk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 15:40:23 -0400
+	Tue, 14 Sep 2010 15:40:26 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 05/18] alpha: kill big kernel lock
-Date: Tue, 14 Sep 2010 21:40:09 +0200
-Message-Id: <1284493213-7263-6-git-send-email-arnd@arndb.de>
+Subject: [PATCH 07/18] m68k: remove big kernel lock
+Date: Tue, 14 Sep 2010 21:40:11 +0200
+Message-Id: <1284493213-7263-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1284493139-7233-1-git-send-email-arnd@arndb.de>
 References: <1284493139-7233-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:HvJ48oCKy6NqA4Lh3LGWnd6z1Lcc6Ycc94oZMtWlqTr
- 1xsiWExdOEJvlL42P14Q0M138i+/UV2dAvya+Btx9/7iXVYg2h
- FVBFQ8nouVCl8P/CvgkzFAuBy5dgpAJ5SmOOHtKzAuBrIhGEGr
- +fcTTCXrBz27LOzkGSO//fBYwIqEFRki98tZQtrbm1DRViffVp
- XbmQRrfNoVg8FdS8i7ysg==
+X-Provags-ID: V02:K0:PzApYKEF9KG192FsmrrDDC/pPT5b4OU3NEQnJO0U2uq
+ 3DRps4uPWw7hUFkr7hOUHMjXGt9W6cmh2qHseHS2Ff7aKx+JgK
+ fuWm/CLzjbwK5Qrtrc+Y+4pzxIyRDD377vHRzvwf2E1NeLf+NM
+ x85olkAGgA+eWDCa0xRaDUrQ96JKIGMQ9vkOu+tSIjXfXG0dD3
+ NrLM5rsbC9ZQeHy/3viaQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All uses of the BKL on alpha are totally bogus, nothing
-is really protected by this. Remove the remaining users
-so we don't have to mark alpha as 'depends on BKL'.
+The cache flush code only locks against itself, so there
+is no excuse to use the BKL here. This replaces it with
+a local mutex in order to maintain serialization of flushes.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: linux-alpha@vger.kernel.org
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Roman Zippel <zippel@linux-m68k.org>
+Cc: linux-m68k@lists.linux-m68k.org
 ---
- arch/alpha/kernel/osf_sys.c |    5 -----
- arch/alpha/kernel/traps.c   |    3 ---
- 2 files changed, 0 insertions(+), 8 deletions(-)
+ arch/m68k/kernel/sys_m68k.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
-index 5d1e6d6..49225dd 100644
---- a/arch/alpha/kernel/osf_sys.c
-+++ b/arch/alpha/kernel/osf_sys.c
-@@ -15,7 +15,6 @@
- #include <linux/kernel.h>
+diff --git a/arch/m68k/kernel/sys_m68k.c b/arch/m68k/kernel/sys_m68k.c
+index 2f431ec..f6aec52 100644
+--- a/arch/m68k/kernel/sys_m68k.c
++++ b/arch/m68k/kernel/sys_m68k.c
+@@ -12,7 +12,7 @@
  #include <linux/mm.h>
+ #include <linux/fs.h>
  #include <linux/smp.h>
 -#include <linux/smp_lock.h>
- #include <linux/stddef.h>
- #include <linux/syscalls.h>
- #include <linux/unistd.h>
-@@ -69,7 +68,6 @@ SYSCALL_DEFINE4(osf_set_program_attributes, unsigned long, text_start,
++#include <linux/mutex.h>
+ #include <linux/sem.h>
+ #include <linux/msg.h>
+ #include <linux/shm.h>
+@@ -374,10 +374,11 @@ cache_flush_060 (unsigned long addr, int scope, int cache, unsigned long len)
+ asmlinkage int
+ sys_cacheflush (unsigned long addr, int scope, int cache, unsigned long len)
  {
- 	struct mm_struct *mm;
++	static DEFINE_MUTEX(cacheflush_mutex);
+ 	struct vm_area_struct *vma;
+ 	int ret = -EINVAL;
  
 -	lock_kernel();
- 	mm = current->mm;
- 	mm->end_code = bss_start + bss_len;
- 	mm->start_brk = bss_start + bss_len;
-@@ -78,7 +76,6 @@ SYSCALL_DEFINE4(osf_set_program_attributes, unsigned long, text_start,
- 	printk("set_program_attributes(%lx %lx %lx %lx)\n",
- 		text_start, text_len, bss_start, bss_len);
- #endif
--	unlock_kernel();
- 	return 0;
- }
- 
-@@ -517,7 +514,6 @@ SYSCALL_DEFINE2(osf_proplist_syscall, enum pl_code, code,
- 	long error;
- 	int __user *min_buf_size_ptr;
- 
--	lock_kernel();
- 	switch (code) {
- 	case PL_SET:
- 		if (get_user(error, &args->set.nbytes))
-@@ -547,7 +543,6 @@ SYSCALL_DEFINE2(osf_proplist_syscall, enum pl_code, code,
- 		error = -EOPNOTSUPP;
- 		break;
- 	};
--	unlock_kernel();
- 	return error;
- }
- 
-diff --git a/arch/alpha/kernel/traps.c b/arch/alpha/kernel/traps.c
-index b14f015..0414e02 100644
---- a/arch/alpha/kernel/traps.c
-+++ b/arch/alpha/kernel/traps.c
-@@ -13,7 +13,6 @@
- #include <linux/sched.h>
- #include <linux/tty.h>
- #include <linux/delay.h>
--#include <linux/smp_lock.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/kallsyms.h>
-@@ -623,7 +622,6 @@ do_entUna(void * va, unsigned long opcode, unsigned long reg,
- 		return;
++	mutex_lock(&cacheflush_mutex);
+ 	if (scope < FLUSH_SCOPE_LINE || scope > FLUSH_SCOPE_ALL ||
+ 	    cache & ~FLUSH_CACHE_BOTH)
+ 		goto out;
+@@ -446,7 +447,7 @@ sys_cacheflush (unsigned long addr, int scope, int cache, unsigned long len)
+ 	    }
  	}
+ out:
+-	unlock_kernel();
++	mutex_unlock(&cacheflush_mutex);
+ 	return ret;
+ }
  
--	lock_kernel();
- 	printk("Bad unaligned kernel access at %016lx: %p %lx %lu\n",
- 		pc, va, opcode, reg);
- 	do_exit(SIGSEGV);
-@@ -646,7 +644,6 @@ got_exception:
- 	 * Yikes!  No one to forward the exception to.
- 	 * Since the registers are in a weird format, dump them ourselves.
-  	 */
--	lock_kernel();
- 
- 	printk("%s(%d): unhandled unaligned exception\n",
- 	       current->comm, task_pid_nr(current));
 -- 
 1.7.1
 
