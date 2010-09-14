@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab0INPDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 11:03:44 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:56642 "EHLO mxout1.idt.com"
+	id S1752587Ab0INPCo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 11:02:44 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:56574 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462Ab0INPDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 11:03:41 -0400
+	id S1751356Ab0INPCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 11:02:41 -0400
 From: Alexandre Bounine <alexandre.bounine@idt.com>
 To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org
@@ -14,9 +14,9 @@ Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
         Matt Porter <mporter@kernel.crashing.org>,
         Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
         Micha Nelissen <micha@neli.hopto.org>
-Subject: [PATCH v2 10/10] RapidIO: Add handling of redundant routes
-Date: Tue, 14 Sep 2010 10:59:23 -0400
-Message-Id: <1284476363-1677-11-git-send-email-alexandre.bounine@idt.com>
+Subject: [PATCH v2 04/10] RapidIO: Add relation links between RIO device structures
+Date: Tue, 14 Sep 2010 10:59:17 -0400
+Message-Id: <1284476363-1677-5-git-send-email-alexandre.bounine@idt.com>
 X-Mailer: git-send-email 1.7.0.5
 In-Reply-To: <1284476363-1677-1-git-send-email-alexandre.bounine@idt.com>
 References: <1284476363-1677-1-git-send-email-alexandre.bounine@idt.com>
@@ -24,14 +24,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Detects RIO link to the already enumerated device and properly sets links
-between device objects. Changes to the enumeration/discovery logic:
-1. Use Master Enable bit to signal end of the enumeration - agents may
-start their discovery process as soon as they see this bit set (Component
-Tag register was used before for this purpose).
-2. Enumerator sets Component Tag (!= 0) immediately during device setup.
-This allows to identify the device if the redundant route exists in a RIO
-system.
+Create back and forward links between RIO devices. These links are intended for
+use by error management and hot-plug extensions. Links for redundant RIO
+connections between switches are not set (will be fixed in a separate patch).
 
 Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
 Cc: Thomas Moll <thomas.moll@sysgo.com>
@@ -40,290 +35,181 @@ Cc: Li Yang <leoli@freescale.com>
 Cc: Kumar Gala <galak@kernel.crashing.org>
 Cc: Micha Nelissen <micha@neli.hopto.org>
 ---
- arch/powerpc/sysdev/fsl_rio.c |    8 ++++
- drivers/rapidio/rio-scan.c    |   88 +++++++++++++++++++++-------------------
- drivers/rapidio/rio.c         |   16 +++----
- drivers/rapidio/rio.h         |    1 +
- include/linux/rio.h           |    2 +
- 5 files changed, 64 insertions(+), 51 deletions(-)
+ drivers/rapidio/rio-scan.c |   56 ++++++++++++++++++--------------------------
+ include/linux/rio.h        |    4 +++
+ 2 files changed, 27 insertions(+), 33 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/fsl_rio.c b/arch/powerpc/sysdev/fsl_rio.c
-index 551e8e2..91b7b89 100644
---- a/arch/powerpc/sysdev/fsl_rio.c
-+++ b/arch/powerpc/sysdev/fsl_rio.c
-@@ -50,6 +50,7 @@
- #define RIO_ATMU_REGS_OFFSET	0x10c00
- #define RIO_P_MSG_REGS_OFFSET	0x11000
- #define RIO_S_MSG_REGS_OFFSET	0x13000
-+#define RIO_GCCSR		0x13c
- #define RIO_ESCSR		0x158
- #define RIO_CCSR		0x15c
- #define RIO_LTLEDCSR		0x0608
-@@ -1456,6 +1457,7 @@ int fsl_rio_setup(struct platform_device *dev)
- 	port->host_deviceid = fsl_rio_get_hdid(port->id);
- 
- 	port->priv = priv;
-+	port->phys_efptr = 0x100;
- 	rio_register_mport(port);
- 
- 	priv->regs_win = ioremap(regs.start, regs.end - regs.start + 1);
-@@ -1503,6 +1505,12 @@ int fsl_rio_setup(struct platform_device *dev)
- 	dev_info(&dev->dev, "RapidIO Common Transport System size: %d\n",
- 			port->sys_size ? 65536 : 256);
- 
-+	if (port->host_deviceid >= 0)
-+		out_be32(priv->regs_win + RIO_GCCSR, RIO_PORT_GEN_HOST |
-+			RIO_PORT_GEN_MASTER | RIO_PORT_GEN_DISCOVERED);
-+	else
-+		out_be32(priv->regs_win + RIO_GCCSR, 0x00000000);
-+
- 	priv->atmu_regs = (struct rio_atmu_regs *)(priv->regs_win
- 					+ RIO_ATMU_REGS_OFFSET);
- 	priv->maint_atmu_regs = priv->atmu_regs + 1;
 diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
-index e3efdf9..1eb82c4 100644
+index d09c359..d2ea018 100644
 --- a/drivers/rapidio/rio-scan.c
 +++ b/drivers/rapidio/rio-scan.c
-@@ -48,7 +48,7 @@ DEFINE_SPINLOCK(rio_global_list_lock);
- static int next_destid = 0;
- static int next_switchid = 0;
- static int next_net = 0;
--static int next_comptag;
-+static int next_comptag = 1;
+@@ -444,7 +444,10 @@ static struct rio_dev __devinit *rio_setup_device(struct rio_net *net,
  
- static struct timer_list rio_enum_timer =
- TIMER_INITIALIZER(rio_enum_timeout, 0, 0);
-@@ -121,27 +121,6 @@ static int rio_clear_locks(struct rio_mport *port)
- 	u32 result;
- 	int ret = 0;
- 
--	/* Assign component tag to all devices */
--	next_comptag = 1;
--	rio_local_write_config_32(port, RIO_COMPONENT_TAG_CSR, next_comptag++);
--
--	list_for_each_entry(rdev, &rio_devices, global_list) {
--		/* Mark device as discovered */
--		rio_read_config_32(rdev,
--				   rdev->phys_efptr + RIO_PORT_GEN_CTL_CSR,
--				   &result);
--		rio_write_config_32(rdev,
--				    rdev->phys_efptr + RIO_PORT_GEN_CTL_CSR,
--				    result | RIO_PORT_GEN_DISCOVERED);
--
--		rio_write_config_32(rdev, RIO_COMPONENT_TAG_CSR, next_comptag);
--		rdev->comp_tag = next_comptag++;
--		if (next_comptag >= 0x10000) {
--			pr_err("RIO: Component Tag Counter Overflow\n");
--			break;
--		}
--	}
--
- 	/* Release host device id locks */
- 	rio_local_write_config_32(port, RIO_HOST_DID_LOCK_CSR,
- 				  port->host_deviceid);
-@@ -162,6 +141,15 @@ static int rio_clear_locks(struct rio_mport *port)
- 			       rdev->vid, rdev->did);
- 			ret = -EINVAL;
- 		}
-+
-+		/* Mark device as discovered and enable master */
-+		rio_read_config_32(rdev,
-+				   rdev->phys_efptr + RIO_PORT_GEN_CTL_CSR,
-+				   &result);
-+		result |= RIO_PORT_GEN_DISCOVERED | RIO_PORT_GEN_MASTER;
-+		rio_write_config_32(rdev,
-+				    rdev->phys_efptr + RIO_PORT_GEN_CTL_CSR,
-+				    result);
- 	}
- 
- 	return ret;
-@@ -430,6 +418,17 @@ static struct rio_dev __devinit *rio_setup_device(struct rio_net *net,
- 	rio_mport_read_config_32(port, destid, hopcount, RIO_DST_OPS_CAR,
- 				 &rdev->dst_ops);
- 
-+	if (do_enum) {
-+		/* Assign component tag to device */
-+		if (next_comptag >= 0x10000) {
-+			pr_err("RIO: Component Tag Counter Overflow\n");
-+			goto cleanup;
-+		}
-+		rio_mport_write_config_32(port, destid, hopcount,
-+					  RIO_COMPONENT_TAG_CSR, next_comptag);
-+		rdev->comp_tag = next_comptag++;
-+	}
-+
- 	if (rio_device_has_destid(port, rdev->src_ops, rdev->dst_ops)) {
- 		if (do_enum) {
- 			rio_set_device_id(port, destid, hopcount, next_destid);
-@@ -726,21 +725,6 @@ static u16 rio_get_host_deviceid_lock(struct rio_mport *port, u8 hopcount)
+ 	/* If a PE has both switch and other functions, show it as a switch */
+ 	if (rio_is_switch(rdev)) {
+-		rswitch = kzalloc(sizeof(struct rio_switch), GFP_KERNEL);
++		rswitch = kzalloc(sizeof(*rswitch) +
++				  RIO_GET_TOTAL_PORTS(rdev->swpinfo) *
++				  sizeof(rswitch->nextdev[0]),
++				  GFP_KERNEL);
+ 		if (!rswitch)
+ 			goto cleanup;
+ 		rswitch->switchid = next_switchid;
+@@ -723,25 +726,6 @@ static u16 rio_get_host_deviceid_lock(struct rio_mport *port, u8 hopcount)
  }
  
  /**
-- * rio_net_add_mport- Add a master port to a RIO network
-- * @net: RIO network
-- * @port: Master port to add
+- * rio_get_swpinfo_tports- Gets total number of ports on the switch
+- * @mport: Master port to send transaction
+- * @destid: Destination ID associated with the switch
+- * @hopcount: Number of hops to the device
 - *
-- * Adds a master port to the network list of associated master
-- * ports..
+- * Returns total numbers of ports implemented by the switch device.
 - */
--static void rio_net_add_mport(struct rio_net *net, struct rio_mport *port)
+-static u8 rio_get_swpinfo_tports(struct rio_mport *mport, u16 destid,
+-				 u8 hopcount)
 -{
--	spin_lock(&rio_global_list_lock);
--	list_add_tail(&port->nnode, &net->mports);
--	spin_unlock(&rio_global_list_lock);
+-	u32 result;
+-
+-	rio_mport_read_config_32(mport, destid, hopcount, RIO_SWP_INFO_CAR,
+-				 &result);
+-
+-	return RIO_GET_TOTAL_PORTS(result);
 -}
 -
 -/**
-  * rio_enum_peer- Recursively enumerate a RIO network through a master port
+  * rio_net_add_mport- Add a master port to a RIO network
+  * @net: RIO network
+  * @port: Master port to add
+@@ -761,15 +745,16 @@ static void rio_net_add_mport(struct rio_net *net, struct rio_mport *port)
   * @net: RIO network being enumerated
   * @port: Master port to send transactions
-@@ -760,6 +744,7 @@ static int __devinit rio_enum_peer(struct rio_net *net, struct rio_mport *port,
- 	int sw_inport;
- 	struct rio_dev *rdev;
- 	u16 destid;
-+	u32 regval;
- 	int tmp;
- 
- 	if (rio_mport_chk_dev_access(port,
-@@ -772,9 +757,21 @@ static int __devinit rio_enum_peer(struct rio_net *net, struct rio_mport *port,
- 		pr_debug("RIO: PE already discovered by this host\n");
- 		/*
- 		 * Already discovered by this host. Add it as another
--		 * master port for the current network.
-+		 * link to the existing device.
- 		 */
--		rio_net_add_mport(net, port);
-+		rio_mport_read_config_32(port, RIO_ANY_DESTID(port->sys_size),
-+				hopcount, RIO_COMPONENT_TAG_CSR, &regval);
-+
-+		if (regval) {
-+			rdev = rio_get_comptag((regval & 0xffff), NULL);
-+
-+			if (rdev && prev && rio_is_switch(prev)) {
-+				pr_debug("RIO: redundant path to %s\n",
-+					 rio_name(rdev));
-+				prev->rswitch->nextdev[prev_port] = rdev;
-+			}
-+		}
-+
- 		return 0;
- 	}
- 
-@@ -925,10 +922,11 @@ static int __devinit rio_enum_peer(struct rio_net *net, struct rio_mport *port,
+  * @hopcount: Number of hops into the network
++ * @prev: Previous RIO device connected to the enumerated one
++ * @prev_port: Port on previous RIO device
+  *
+  * Recursively enumerates a RIO network.  Transactions are sent via the
+  * master port passed in @port.
   */
- static int rio_enum_complete(struct rio_mport *port)
+ static int __devinit rio_enum_peer(struct rio_net *net, struct rio_mport *port,
+-			 u8 hopcount)
++			 u8 hopcount, struct rio_dev *prev, int prev_port)
  {
--	u32 tag_csr;
-+	u32 regval;
+ 	int port_num;
+-	int num_ports;
+ 	int cur_destid;
+ 	int sw_destid;
+ 	int sw_inport;
+@@ -814,6 +799,9 @@ static int __devinit rio_enum_peer(struct rio_net *net, struct rio_mport *port,
+ 	if (rdev) {
+ 		/* Add device to the global and bus/net specific list. */
+ 		list_add_tail(&rdev->net_list, &net->devices);
++		rdev->prev = prev;
++		if (prev && rio_is_switch(prev))
++			prev->rswitch->nextdev[prev_port] = rdev;
+ 	} else
+ 		return -1;
  
--	rio_local_read_config_32(port, RIO_COMPONENT_TAG_CSR, &tag_csr);
--	return (tag_csr & 0xffff) ? 1 : 0;
-+	rio_local_read_config_32(port, port->phys_efptr + RIO_PORT_GEN_CTL_CSR,
-+				 &regval);
-+	return (regval & RIO_PORT_GEN_MASTER) ? 1 : 0;
- }
+@@ -832,14 +820,14 @@ static int __devinit rio_enum_peer(struct rio_net *net, struct rio_mport *port,
+ 			rdev->rswitch->route_table[destid] = sw_inport;
+ 		}
  
- /**
-@@ -991,6 +989,8 @@ rio_disc_peer(struct rio_net *net, struct rio_mport *port, u16 destid,
- 						break;
- 				}
+-		num_ports =
+-		    rio_get_swpinfo_tports(port, RIO_ANY_DESTID(port->sys_size),
+-						hopcount);
+ 		pr_debug(
+ 		    "RIO: found %s (vid %4.4x did %4.4x) with %d ports\n",
+-		    rio_name(rdev), rdev->vid, rdev->did, num_ports);
++		    rio_name(rdev), rdev->vid, rdev->did,
++		    RIO_GET_TOTAL_PORTS(rdev->swpinfo));
+ 		sw_destid = next_destid;
+-		for (port_num = 0; port_num < num_ports; port_num++) {
++		for (port_num = 0;
++		     port_num < RIO_GET_TOTAL_PORTS(rdev->swpinfo);
++		     port_num++) {
+ 			/*Enable Input Output Port (transmitter reviever)*/
+ 			rio_enable_rx_tx_port(port, 0,
+ 					      RIO_ANY_DESTID(port->sys_size),
+@@ -864,7 +852,8 @@ static int __devinit rio_enum_peer(struct rio_net *net, struct rio_mport *port,
+ 						RIO_ANY_DESTID(port->sys_size),
+ 						port_num, 0);
  
-+				if (ndestid == RIO_ANY_DESTID(port->sys_size))
-+					continue;
- 				rio_unlock_device(port, destid, hopcount);
- 				if (rio_disc_peer
- 				    (net, port, ndestid, hopcount + 1) < 0)
-@@ -1163,6 +1163,10 @@ int __devinit rio_enum_mport(struct rio_mport *mport)
+-				if (rio_enum_peer(net, port, hopcount + 1) < 0)
++				if (rio_enum_peer(net, port, hopcount + 1,
++						  rdev, port_num) < 0)
+ 					return -1;
+ 
+ 				/* Update routing tables */
+@@ -951,7 +940,6 @@ rio_disc_peer(struct rio_net *net, struct rio_mport *port, u16 destid,
+ 	      u8 hopcount)
+ {
+ 	u8 port_num, route_port;
+-	int num_ports;
+ 	struct rio_dev *rdev;
+ 	u16 ndestid;
+ 
+@@ -968,11 +956,13 @@ rio_disc_peer(struct rio_net *net, struct rio_mport *port, u16 destid,
+ 		/* Associated destid is how we accessed this switch */
+ 		rdev->rswitch->destid = destid;
+ 
+-		num_ports = rio_get_swpinfo_tports(port, destid, hopcount);
+ 		pr_debug(
+ 		    "RIO: found %s (vid %4.4x did %4.4x) with %d ports\n",
+-		    rio_name(rdev), rdev->vid, rdev->did, num_ports);
+-		for (port_num = 0; port_num < num_ports; port_num++) {
++		    rio_name(rdev), rdev->vid, rdev->did,
++		    RIO_GET_TOTAL_PORTS(rdev->swpinfo));
++		for (port_num = 0;
++		     port_num < RIO_GET_TOTAL_PORTS(rdev->swpinfo);
++		     port_num++) {
+ 			if (RIO_GET_PORT_NUM(rdev->swpinfo) == port_num)
+ 				continue;
+ 
+@@ -1167,7 +1157,7 @@ int __devinit rio_enum_mport(struct rio_mport *mport)
  		/* Enable Input Output Port (transmitter reviever) */
  		rio_enable_rx_tx_port(mport, 1, 0, 0, 0);
  
-+		/* Set component tag for host */
-+		rio_local_write_config_32(mport, RIO_COMPONENT_TAG_CSR,
-+					  next_comptag++);
-+
- 		if (rio_enum_peer(net, mport, 0, NULL, 0) < 0) {
+-		if (rio_enum_peer(net, mport, 0) < 0) {
++		if (rio_enum_peer(net, mport, 0, NULL, 0) < 0) {
  			/* A higher priority host won enumeration, bail. */
  			printk(KERN_INFO
-diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
-index fa5e3cb..7f18a65 100644
---- a/drivers/rapidio/rio.c
-+++ b/drivers/rapidio/rio.c
-@@ -443,7 +443,7 @@ rio_mport_get_physefb(struct rio_mport *port, int local,
-  * @from is not %NULL, searches continue from next device on the global
-  * list.
-  */
--static struct rio_dev *rio_get_comptag(u32 comp_tag, struct rio_dev *from)
-+struct rio_dev *rio_get_comptag(u32 comp_tag, struct rio_dev *from)
- {
- 	struct list_head *n;
- 	struct rio_dev *rdev;
-@@ -507,7 +507,7 @@ static int
- rio_chk_dev_route(struct rio_dev *rdev, struct rio_dev **nrdev, int *npnum)
- {
- 	u32 result;
--	int p_port, rc = -EIO;
-+	int p_port, dstid, rc = -EIO;
- 	struct rio_dev *prev = NULL;
- 
- 	/* Find switch with failed RIO link */
-@@ -522,20 +522,18 @@ rio_chk_dev_route(struct rio_dev *rdev, struct rio_dev **nrdev, int *npnum)
- 	if (prev == NULL)
- 		goto err_out;
- 
--	/* Find port with failed RIO link */
--	for (p_port = 0;
--	     p_port < RIO_GET_TOTAL_PORTS(prev->swpinfo); p_port++)
--		if (prev->rswitch->nextdev[p_port] == rdev)
--			break;
-+	dstid = (rdev->pef & RIO_PEF_SWITCH) ?
-+			rdev->rswitch->destid : rdev->destid;
-+	p_port = prev->rswitch->route_table[dstid];
- 
--	if (p_port < RIO_GET_TOTAL_PORTS(prev->swpinfo)) {
-+	if (p_port != RIO_INVALID_ROUTE) {
- 		pr_debug("RIO: link failed on [%s]-P%d\n",
- 			 rio_name(prev), p_port);
- 		*nrdev = prev;
- 		*npnum = p_port;
- 		rc = 0;
- 	} else
--		pr_debug("RIO: failed to trace route to %s\n", rio_name(prev));
-+		pr_debug("RIO: failed to trace route to %s\n", rio_name(rdev));
- err_out:
- 	return rc;
- }
-diff --git a/drivers/rapidio/rio.h b/drivers/rapidio/rio.h
-index d249a12..b1af414 100644
---- a/drivers/rapidio/rio.h
-+++ b/drivers/rapidio/rio.h
-@@ -38,6 +38,7 @@ extern int rio_std_route_get_entry(struct rio_mport *mport, u16 destid,
- extern int rio_std_route_clr_table(struct rio_mport *mport, u16 destid,
- 				   u8 hopcount, u16 table);
- extern int rio_set_port_lockout(struct rio_dev *rdev, u32 pnum, int lock);
-+extern struct rio_dev *rio_get_comptag(u32 comp_tag, struct rio_dev *from);
- 
- /* Structures internal to the RIO core code */
- extern struct device_attribute rio_dev_attrs[];
+ 			       "RIO: master port %d device has lost enumeration to a remote host\n",
 diff --git a/include/linux/rio.h b/include/linux/rio.h
-index 4fa5e3d..0bed941 100644
+index ffdfe5a..8d9e66d 100644
 --- a/include/linux/rio.h
 +++ b/include/linux/rio.h
-@@ -177,6 +177,7 @@ enum rio_phy_type {
-  * @index: Port index, unique among all port interfaces of the same type
-  * @sys_size: RapidIO common transport system size
-  * @phy_type: RapidIO phy type
-+ * @phys_efptr: RIO port extended features pointer
-  * @name: Port name string
-  * @priv: Master port private data
+@@ -99,6 +99,7 @@ union rio_pw_msg;
+  * @riores: RIO resources this device owns
+  * @pwcback: port-write callback function for this device
+  * @destid: Network destination ID
++ * @prev: Previous RIO device connected to the current one
   */
-@@ -198,6 +199,7 @@ struct rio_mport {
- 				 * 1 - Large size, 65536 devices.
- 				 */
- 	enum rio_phy_type phy_type;	/* RapidIO phy type */
-+	u32 phys_efptr;
- 	unsigned char name[40];
- 	void *priv;		/* Master port private data */
+ struct rio_dev {
+ 	struct list_head global_list;	/* node in list of all RIO devices */
+@@ -125,6 +126,7 @@ struct rio_dev {
+ 	struct resource riores[RIO_MAX_DEV_RESOURCES];
+ 	int (*pwcback) (struct rio_dev *rdev, union rio_pw_msg *msg, int step);
+ 	u16 destid;
++	struct rio_dev *prev;
  };
+ 
+ #define rio_dev_g(n) list_entry(n, struct rio_dev, global_list)
+@@ -232,6 +234,7 @@ struct rio_net {
+  * @get_domain: Callback for switch-specific domain get function
+  * @em_init: Callback for switch-specific error management initialization function
+  * @em_handle: Callback for switch-specific error management handler function
++ * @nextdev: Array of per-port pointers to the next attached device
+  */
+ struct rio_switch {
+ 	struct list_head node;
+@@ -253,6 +256,7 @@ struct rio_switch {
+ 			   u8 *sw_domain);
+ 	int (*em_init) (struct rio_dev *dev);
+ 	int (*em_handle) (struct rio_dev *dev, u8 swport);
++	struct rio_dev *nextdev[0];
+ };
+ 
+ /* Low-level architecture-dependent routines */
 -- 
 1.7.0.5
 
