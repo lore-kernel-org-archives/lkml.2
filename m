@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab0INAGG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 20:06:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47712 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751848Ab0INAGE (ORCPT
+	id S1752036Ab0INAL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 20:11:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44256 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab0INALz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 20:06:04 -0400
-Date: Mon, 13 Sep 2010 17:05:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Eric Paris <eparis@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: audit_tree: sleep inside atomic
-Message-Id: <20100913170522.f0b8b1e8.akpm@linux-foundation.org>
-In-Reply-To: <4C80FD9E.5040408@gmail.com>
-References: <4C1F8217.5020909@gmail.com>
-	<4C80FD9E.5040408@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Sep 2010 20:11:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=A8oszfKRP1J1mW8qRGeu8Jp3UNFTt2YnWNBTVyU5We8TW6pDjYeohm5zN9wZTjsAzu
+         47rHaeC8YZQgS9Q+aKXCYQ7kBRakxgbqmpINyN4tCADgYL6+po8QBGPhkPnU9vcIp2BF
+         /G08lb2LutwMnX11LkX3BlPEoMir0zu8q2+DI=
+MIME-Version: 1.0
+In-Reply-To: <1284408880-14414-1-git-send-email-hpa@linux.intel.com>
+References: <1284408880-14414-1-git-send-email-hpa@linux.intel.com>
+Date: Mon, 13 Sep 2010 20:11:53 -0400
+Message-ID: <AANLkTi=JpfhvyxC13U98x5me9U8dU6BHOcGkPC0KK7aW@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] Bump gcc minimum version to 3.4, 4.1 for x86
+From: Brian Gerst <brgerst@gmail.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 03 Sep 2010 15:52:30 +0200
-Jiri Slaby <jirislaby@gmail.com> wrote:
+On Mon, Sep 13, 2010 at 4:14 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> This patchset bumps the minimum supported gcc version to 3.4 for the
+> general kernel, and to 4.1 for x86.
+>
+> We have had a rash of bug reports related to these really old
+> compilers and their associated binutils version lately, and it is
+> clear that the support burden of these older compilers is getting to
+> be excessive.  If you really want to build a kernel on a system that
+> old you can build or obtain an updated gcc/binutils as well.
 
-> Ideas, comments?
+What version of binutils does this correspond to?  It would be nice to
+clean up some of the hacks for ancient binutils as well.
 
-Apparently not.
-
-The question is: why is nobody reporting this bug?  Obviously nobody's
-running that code path.  Why not?
-
-> On 06/21/2010 05:15 PM, Jiri Slaby wrote:
-> > Hi,
-> > 
-> > stanse found a sleep inside atomic added by the following commit:
-> > commit fb36de479642bc9bdd3af251ae48b882d8a1ad5d
-> > Author: Eric Paris <eparis@redhat.com>
-> > Date:   Thu Dec 17 20:12:05 2009 -0500
-> > 
-> >     audit: reimplement audit_trees using fsnotify rather than inotify
-> > 
-> >     Simply switch audit_trees from using inotify to using fsnotify for it's
-> >     inode pinning and disappearing act information.
-> > 
-> >     Signed-off-by: Eric Paris <eparis@redhat.com>
-> > 
-> > 
-> > In untag_chunk, there is
-> >   spin_lock(&entry->lock);
-> >   ...
-> >   new = alloc_chunk(size);
-> >   ...
-> >   spin_unlock(&entry->lock);
-> > 
-> > with
-> > static struct audit_chunk *alloc_chunk(int count)
-> > {
-> >   struct audit_chunk *chunk;
-> >   ...
-> >   chunk = kzalloc(size, GFP_KERNEL);
-> > 
-> > But this can sleep. How big the allocations are? Could it be ATOMIC or
-> > moved outside the spinlock?
-
-Yes, we could make it GFP_ATOMIC - the code tries to handle allocation
-failures.
-
-But if we did that we'd be adding a rarely-executed codepath to an
-apparently-never-executed code path.  We'd end up shipping stuff which
-nobody had tested, ever.
-
-Plus GFP_ATOMIC is unreliable and using it because we screwed up the
-locking is lame.
-
-untag_chunk() could be converted to use GFP_KERNEL outside hash_lock
-and ->entry_lock.  The usual way is to take a peek, see if it looks
-like we'll probably need to do an allocation and if so, do it outside
-the locks then free it again if it turned out that we didn't need it
-after all.  Or to maintain a one-deep static-local cache and preload
-that cache if it's empty.  Neither are particularly pretty.
+--
+Brian Gerst
