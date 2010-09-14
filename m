@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab0INHIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 03:08:34 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51228 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab0INHId convert rfc822-to-8bit (ORCPT
+	id S1752531Ab0INHI5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 03:08:57 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58118 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab0INHI4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 03:08:33 -0400
+	Tue, 14 Sep 2010 03:08:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=SzVIs/Gno+mmXfQ0tPvyiTXeMMCv2Zl/YwYyUfDZ9UHvsvgFBKBfMr2kSZiJ/r/U4J
-         bL9U6Ln67SHe0ditmQOuuAAk2g2ddRfU+0FSTGodqtTMmy7k9S19qzp2wl2Xl7y/RCig
-         Pn3rO07TuBXMeWCOZO8tn8BokoZCV9IurXR2Q=
+        b=BXY1ALRxYlscg58p1YkQT9E4SU759NwZPo6WvOsuh93xQhxINn5cIeVxrR9nsbi68I
+         D8olJeIVDOllGRn8Dn7dk0mxUQa5goSiQ8K9oNYDObixDLYOfMFW+IlOo/hTyc4vtZfY
+         RY3YY3Lh97s30T6BFYJVOOcwhM4rkggBsQ83A=
 MIME-Version: 1.0
-In-Reply-To: <1284349896-14545-2-git-send-email-mark.brown314@gmail.com>
-References: <1284349896-14545-1-git-send-email-mark.brown314@gmail.com> <1284349896-14545-2-git-send-email-mark.brown314@gmail.com>
+In-Reply-To: <1284349896-14545-3-git-send-email-mark.brown314@gmail.com>
+References: <1284349896-14545-1-git-send-email-mark.brown314@gmail.com> <1284349896-14545-3-git-send-email-mark.brown314@gmail.com>
 From: Eric Miao <eric.y.miao@gmail.com>
-Date: Tue, 14 Sep 2010 15:08:12 +0800
-Message-ID: <AANLkTi=gvk0TiQWs0778xFEy-FdsO1qNmc2gzb5mNq8Z@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] ARM: pxa168: added support for Teton BGA platform
+Date: Tue, 14 Sep 2010 15:08:35 +0800
+Message-ID: <AANLkTikjCiwAA_u0YP53KGLLZNiz+-PuodieSpOmsHxT@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] ARM: pxa168/teton bga: added keypad support
 To: "Mark F. Brown" <mark.brown314@gmail.com>
 Cc: marek.vasut@gmail.com, haojian.zhuang@marvell.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -32,157 +32,65 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Sep 13, 2010 at 11:51 AM, Mark F. Brown <mark.brown314@gmail.com> wrote:
-> Added board defintion, header, and debug UART support.
+> Support for Matrix keypad ESC, ENTER, LEFT, and RIGHT
 >
 > Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+
+Applied.
+
 > ---
->  MAINTAINERS                                |    5 +++
->  arch/arm/mach-mmp/Kconfig                  |    7 ++++
->  arch/arm/mach-mmp/Makefile                 |    1 +
->  arch/arm/mach-mmp/include/mach/teton_bga.h |   27 +++++++++++++++
->  arch/arm/mach-mmp/teton_bga.c              |   50 ++++++++++++++++++++++++++++
->  5 files changed, 90 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/mach-mmp/include/mach/teton_bga.h
->  create mode 100644 arch/arm/mach-mmp/teton_bga.c
+>  arch/arm/mach-mmp/teton_bga.c |   24 ++++++++++++++++++++++++
+>  1 files changed, 24 insertions(+), 0 deletions(-)
 >
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 433f353..d7a4481 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -967,6 +967,11 @@ M: Lennert Buytenhek <kernel@wantstofly.org>
->  L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->  S:     Maintained
->
-> +ARM/TETON BGA MACHINE SUPPORT
-> +M:     Mark F. Brown <mark.brown314@gmail.com>
-> +L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +S:     Maintained
-> +
->  ARM/THECUS N2100 MACHINE SUPPORT
->  M:     Lennert Buytenhek <kernel@wantstofly.org>
->  L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> diff --git a/arch/arm/mach-mmp/Kconfig b/arch/arm/mach-mmp/Kconfig
-> index 6ab843e..0711d3b 100644
-> --- a/arch/arm/mach-mmp/Kconfig
-> +++ b/arch/arm/mach-mmp/Kconfig
-> @@ -57,6 +57,13 @@ config MACH_MARVELL_JASPER
->          PXA910-based development board. Since MMP2 is compatible to
->          ARMv6 architecture.
->
-> +config MACH_TETON_BGA
-> +       bool "Marvell's PXA168 Teton BGA Development Board"
-> +       select CPU_PXA168
-> +       help
-> +         Say 'Y' here if you want to support the Marvell PXA168-based
-> +         Teton BGA Development Board.
-> +
->  endmenu
->
->  config CPU_PXA168
-> diff --git a/arch/arm/mach-mmp/Makefile b/arch/arm/mach-mmp/Makefile
-> index 8b66d06..751cdbf 100644
-> --- a/arch/arm/mach-mmp/Makefile
-> +++ b/arch/arm/mach-mmp/Makefile
-> @@ -17,3 +17,4 @@ obj-$(CONFIG_MACH_TAVOREVB)   += tavorevb.o
->  obj-$(CONFIG_MACH_TTC_DKB)     += ttc_dkb.o
->  obj-$(CONFIG_MACH_FLINT)       += flint.o
->  obj-$(CONFIG_MACH_MARVELL_JASPER) += jasper.o
-> +obj-$(CONFIG_MACH_TETON_BGA)   += teton_bga.o
-> diff --git a/arch/arm/mach-mmp/include/mach/teton_bga.h b/arch/arm/mach-mmp/include/mach/teton_bga.h
-> new file mode 100644
-> index 0000000..61a539b
-> --- /dev/null
-> +++ b/arch/arm/mach-mmp/include/mach/teton_bga.h
-> @@ -0,0 +1,27 @@
-> +/*
-> + *  linux/arch/arm/mach-mmp/include/mach/teton_bga.h
-> + *
-> + *  Support for the Marvell PXA168 Teton BGA Development Platform.
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2 as
-> + *  publishhed by the Free Software Foundation.
-> + */
-> +#ifndef __ASM_MACH_TETON_BGA_H
-> +#define __ASM_MACH_TETON_BGA_H
-> +
-> +/* GPIOs */
-> +#define MMC_PWENA_GPIO         27
-> +#define USBHPENB_GPIO          55
-> +#define RTC_INT_GPIO           78
-> +#define LCD_VBLK_EN_GPIO       79
-> +#define LCD_DVDD_EN_GPIO       80
-> +#define RST_WIFI_GPIO          81
-> +#define CF_PWEN_GPIO           82
-> +#define USB_OC_GPIO            83
-> +#define PWM_GPIO               84
-> +#define USBHPENA_GPIO          85
-> +#define TS_INT_GPIO            86
-> +#define CIR_GPIO               108
-> +
-> +#endif /* __ASM_MACH_TETON_BGA_H */
 > diff --git a/arch/arm/mach-mmp/teton_bga.c b/arch/arm/mach-mmp/teton_bga.c
-> new file mode 100644
-> index 0000000..49b746b
-> --- /dev/null
+> index 49b746b..2966117 100644
+> --- a/arch/arm/mach-mmp/teton_bga.c
 > +++ b/arch/arm/mach-mmp/teton_bga.c
-> @@ -0,0 +1,50 @@
-> +/*
-> + *  linux/arch/arm/mach-mmp/teton_bga.c
-> + *
-> + *  Support for the Marvell PXA168 Teton BGA Development Platform.
-> + *
-> + *  Author: Mark F. Brown <mark.brown314@gmail.com>
-> + *
-> + *  This code is based on aspenite.c
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2 as
-> + *  publishhed by the Free Software Foundation.
-> + */
+> @@ -16,6 +16,8 @@
+>  #include <linux/kernel.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/gpio.h>
+> +#include <linux/input.h>
+> +#include <plat/pxa27x_keypad.h>
+>
+>  #include <asm/mach-types.h>
+>  #include <asm/mach/arch.h>
+> @@ -30,6 +32,27 @@ static unsigned long teton_bga_pin_config[] __initdata = {
+>        /* UART1 */
+>        GPIO107_UART1_TXD,
+>        GPIO108_UART1_RXD,
 > +
-> +#include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/gpio.h>
-> +
-> +#include <asm/mach-types.h>
-> +#include <asm/mach/arch.h>
-> +#include <mach/addr-map.h>
-> +#include <mach/mfp-pxa168.h>
-> +#include <mach/pxa168.h>
-> +#include <mach/teton_bga.h>
-> +
-> +#include "common.h"
-> +
-> +static unsigned long teton_bga_pin_config[] __initdata = {
-> +       /* UART1 */
-> +       GPIO107_UART1_TXD,
-> +       GPIO108_UART1_RXD,
+> +       /* Keypad */
+> +       GPIO109_KP_MKIN1,
+> +       GPIO110_KP_MKIN0,
+> +       GPIO111_KP_MKOUT7,
+> +       GPIO112_KP_MKOUT6,
 > +};
 > +
-> +static void __init teton_bga_init(void)
-> +{
-> +       mfp_config(ARRAY_AND_SIZE(teton_bga_pin_config));
+> +static unsigned int teton_bga_matrix_key_map[] = {
+> +       KEY(0, 6, KEY_ESC),
+> +       KEY(0, 7, KEY_ENTER),
+> +       KEY(1, 6, KEY_LEFT),
+> +       KEY(1, 7, KEY_RIGHT),
+> +};
 > +
-> +       /* on-chip devices */
-> +       pxa168_add_uart(1);
-> +}
-> +
-> +MACHINE_START(TETON_BGA, "PXA168-based Teton BGA Development Platform")
-> +       .phys_io        = APB_PHYS_BASE,
-> +       .io_pg_offst    = (APB_VIRT_BASE >> 18) & 0xfffc,
-> +       .map_io         = mmp_map_io,
-
-Added .nr_irqs = IRQ_BOARD_START here, since I've merged Haojian's
-patch for enabling SPARSE_IRQ on MMP.
-
-Otherwise all good to me, applied to 'devel'.
-
-> +       .init_irq       = pxa168_init_irq,
-> +       .timer          = &pxa168_timer,
-> +       .init_machine   = teton_bga_init,
-> +MACHINE_END
+> +static struct pxa27x_keypad_platform_data teton_bga_keypad_info __initdata = {
+> +       .matrix_key_rows        = 2,
+> +       .matrix_key_cols        = 8,
+> +       .matrix_key_map         = teton_bga_matrix_key_map,
+> +       .matrix_key_map_size    = ARRAY_SIZE(teton_bga_matrix_key_map),
+> +       .debounce_interval      = 30,
+>  };
+>
+>  static void __init teton_bga_init(void)
+> @@ -38,6 +61,7 @@ static void __init teton_bga_init(void)
+>
+>        /* on-chip devices */
+>        pxa168_add_uart(1);
+> +       pxa168_add_keypad(&teton_bga_keypad_info);
+>  }
+>
+>  MACHINE_START(TETON_BGA, "PXA168-based Teton BGA Development Platform")
 > --
 > 1.7.0.4
 >
