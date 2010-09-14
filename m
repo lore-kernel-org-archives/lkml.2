@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab0INCK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 22:10:29 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:41929 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752415Ab0INCK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 22:10:28 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18V5J4AGTQV7A/H84s7uNIyucYe/+bE3MYkvlXk6F
-	CQNrDMt3WCZDf6
-Subject: Re: [RFC PATCH] check_preempt_tick should not compare vruntime
- with wall time
-From: Mike Galbraith <efault@gmx.de>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-In-Reply-To: <20100913161641.GA28707@Krystal>
-References: <20100911173732.551632040@efficios.com>
-	 <20100911174003.051303123@efficios.com> <1284231470.2251.52.camel@laptop>
-	 <20100911195708.GA9273@Krystal> <1284288072.2251.91.camel@laptop>
-	 <20100912203712.GD32327@Krystal> <1284382387.2275.265.camel@laptop>
-	 <1284383758.2275.283.camel@laptop> <20100913135621.GA13442@Krystal>
-	 <1284387398.2275.311.camel@laptop>  <20100913161641.GA28707@Krystal>
-Content-Type: text/plain
-Date: Tue, 14 Sep 2010 04:10:52 +0200
-Message-Id: <1284430252.7386.4.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+	id S1752948Ab0INCPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 22:15:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24081 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752295Ab0INCPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 22:15:43 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+From: Roland McGrath <roland@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+X-Fcc: ~/Mail/linus
+Cc: monstr@monstr.eu, Oleg Nesterov <oleg@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 14/24] ptrace: cleanup arch_ptrace() on microblaze
+In-Reply-To: Namhyung Kim's message of  Monday, 13 September 2010 19:07:13 +0900 <AANLkTi=oHVCoeuz20qkBHTUDEwTEDsN4mFdR8nE+CaNk@mail.gmail.com>
+References: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
+	<1283442391-23612-15-git-send-email-namhyung@gmail.com>
+	<4C8DCF72.4050701@monstr.eu>
+	<AANLkTi=oHVCoeuz20qkBHTUDEwTEDsN4mFdR8nE+CaNk@mail.gmail.com>
+X-Windows: a terminal disease.
+Message-Id: <20100914021532.9C53E403E6@magilla.sf.frob.com>
+Date: Mon, 13 Sep 2010 19:15:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-13 at 12:16 -0400, Mathieu Desnoyers wrote:
-> * Peter Zijlstra (peterz@infradead.org) wrote:
-> > On Mon, 2010-09-13 at 09:56 -0400, Mathieu Desnoyers wrote:
-> [...]
-> > > >  static void
-> > > >  check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
-> > > >  {
-> > > > -     unsigned long ideal_runtime, delta_exec;
-> > > > +     unsigned long slice = sched_slice(cfs_rq, curr);
-> > > 
-> > > So you still compute the sched_slice(), based on sched_period(), based on
-> > > sysctl_sched_min_granularity *= nr_running when there are more than nr_latency
-> > > running threads.
-> > 
-> > What's wrong with that? I keep asking you, you keep not giving an
-> > answer. Stop focussing on nr_latency, its an by produce not a
-> > fundamental entity.
-> > 
-> >  period := max(latency, min_gran * nr_running)
-> > 
-> > See, no nr_latency -- the one and only purpose of nr_latency is avoiding
-> > that multiplication when possible.
+> On Mon, Sep 13, 2010 at 16:14, Michal Simek <monstr@monstr.eu> wrote:
+> > Hi,
+> >
+> > just for my info how does it look like this patch series?
+> > I mean who should added that patches to mainline?
+> >
 > 
-> OK, the long IRC discussions we just had convinced me that the current scheme
-> takes things into account by adapting the granularity dynamically, but also got
-> me to notice that check_preempt seems to compare vruntime with wall time, which
-> is utterly incorrect. So maybe all my patch was doing was to expose this bug:
+> Hello,
+> 
+> I am not sure but I hope Roland will take care of it.
 
-It's not wall time, it's just a distance.  But I'm not attached to it by
-any means, if something else works better, do that :)
+Sorry, I didn't know you had any such expectation.  Oleg and I do not
+autonomously maintain any ptrace tree that gets automatically merged or
+anything like that.  Our Acked-by's are presumed to help your case and our
+objections to hurt it, but you just have to submit patches to linus, akpm,
+arch maintainers, or whatever other channels get merged regularly.  We're
+not that kind of authoritative ourselves, though we are listed as the
+ptrace maintainers.  We have to do the same with our own ptrace patches.
 
-	-Mike
 
+Thanks,
+Roland
