@@ -1,98 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab0INHJX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 03:09:23 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56805 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516Ab0INHJU convert rfc822-to-8bit (ORCPT
+	id S1752507Ab0INHMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 03:12:54 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:51027 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751848Ab0INHMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 03:09:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=nJxJzyy34lgF5XCtsTTns8F0z+dqgJ2JXGeUIAylVIBfqIhACJvxRtyBvJOSUX9oNp
-         rgOkuceBkpf/jOe4Jc8T4aKUb/4PDfh+Ybnq5D5zMZxWKpmm/cy6wnyO3dyrdIM+EphT
-         DUGv5noG9eLuhOVx96D0DPxQQtnJFqMarBoiY=
+	Tue, 14 Sep 2010 03:12:52 -0400
+Date: Tue, 14 Sep 2010 09:12:44 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Felipe Balbi <me@felipebalbi.com>,
+        Hemanth V <hemanthv@ti.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "igor.stoppa@nokia.com" <igor.stoppa@nokia.com>,
+        "kai.svahn@nokia.com" <kai.svahn@nokia.com>,
+        "matthias.nyman@nokia.com" <matthias.nyman@nokia.com>
+Subject: Re: Sensors and the input layer (was Re: [RFC] [PATCH V2 1/2]
+ input: CMA3000 Accelerometer driver)
+Message-ID: <20100914071244.GA2672@ucw.cz>
+References: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com>
+ <20100829184904.GC26209@core.coreip.homeip.net>
+ <36abcb34cfbf34724d9a581a75b53e76@secure211.sgcpanel.com>
+ <20100830214025.2f9677a1@lxorguk.ukuu.org.uk>
+ <20100830204412.GA28711@core.coreip.homeip.net>
+ <AANLkTims1CagvPZQjTmYrOVi8REeLVbyyt3kEY_tsCtx@mail.gmail.com>
+ <20100830214355.GB28865@core.coreip.homeip.net>
+ <AANLkTinPConD62Ky7mvMn2ZgS=V9+Q5YUdaF5Vma8mn+@mail.gmail.com>
+ <20100830224352.GF28865@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <1284349896-14545-4-git-send-email-mark.brown314@gmail.com>
-References: <1284349896-14545-1-git-send-email-mark.brown314@gmail.com> <1284349896-14545-4-git-send-email-mark.brown314@gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Tue, 14 Sep 2010 15:08:59 +0800
-Message-ID: <AANLkTi=DPkXtHNY9bP0VXVi1gUD=-kHm8fuouutTinUW@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] ARM: pxa168/teton bga: add board support for i2c
- and rtc-ds1337
-To: "Mark F. Brown" <mark.brown314@gmail.com>
-Cc: marek.vasut@gmail.com, haojian.zhuang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        markb@marvell.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100830224352.GF28865@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 13, 2010 at 11:51 AM, Mark F. Brown <mark.brown314@gmail.com> wrote:
-> Defined I2C/ALARM pin definitions
-> DS1337 RTC alarm support is tied to RTC_INT_GPIO
->
-> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+Hi!
 
-Applied with Acks.
+> > >> (or GPS device, for that matter) really be?
+> > >
+> > > But why GPS should be input device? It has nothing to do with user
+> > > input.
+> > 
+> > What? OF COURSE it is an input driver. It's the user moving the device
+> > around. It's EXACTLY the same thing as an accelerometer in that
+> > respect. Sure, it's a bit less precise and measures movement wrt some
+> > external frame, but technically they are almost exactly the same.
+> > 
+> > If you se doing a navigation app, the accelerometer, the compass and
+> > the GPS are all equally (but differently) important.
+> > 
+> > Again - it's not a user touching buttons. But it IS a user moving around.
+> 
+> Right, but do you expect that movement to cause an immediate action?
+> When you press a key - something happens; when you swing a Wii
+> controller - the device reacts. And really you can swap joysticks,
+> motion controllers, Sony's 6-axis and so forth and the application would
+> be hard pressed to tell the difference. I am unsure how you would play a
+> game with GPS as an input device.
 
-> ---
->  arch/arm/mach-mmp/teton_bga.c |   16 ++++++++++++++++
->  1 files changed, 16 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/mach-mmp/teton_bga.c b/arch/arm/mach-mmp/teton_bga.c
-> index 2966117..d631bbc 100644
-> --- a/arch/arm/mach-mmp/teton_bga.c
-> +++ b/arch/arm/mach-mmp/teton_bga.c
-> @@ -18,6 +18,7 @@
->  #include <linux/gpio.h>
->  #include <linux/input.h>
->  #include <plat/pxa27x_keypad.h>
-> +#include <linux/i2c.h>
->
->  #include <asm/mach-types.h>
->  #include <asm/mach/arch.h>
-> @@ -38,6 +39,13 @@ static unsigned long teton_bga_pin_config[] __initdata = {
->        GPIO110_KP_MKIN0,
->        GPIO111_KP_MKOUT7,
->        GPIO112_KP_MKOUT6,
-> +
-> +       /* I2C Bus */
-> +       GPIO105_CI2C_SDA,
-> +       GPIO106_CI2C_SCL,
-> +
-> +       /* RTC */
-> +       GPIO78_GPIO,
->  };
->
->  static unsigned int teton_bga_matrix_key_map[] = {
-> @@ -55,6 +63,13 @@ static struct pxa27x_keypad_platform_data teton_bga_keypad_info __initdata = {
->        .debounce_interval      = 30,
->  };
->
-> +static struct i2c_board_info teton_bga_i2c_info[] __initdata = {
-> +       {
-> +               I2C_BOARD_INFO("ds1337", 0x68),
-> +               .irq = gpio_to_irq(RTC_INT_GPIO)
-> +       },
-> +};
-> +
->  static void __init teton_bga_init(void)
->  {
->        mfp_config(ARRAY_AND_SIZE(teton_bga_pin_config));
-> @@ -62,6 +77,7 @@ static void __init teton_bga_init(void)
->        /* on-chip devices */
->        pxa168_add_uart(1);
->        pxa168_add_keypad(&teton_bga_keypad_info);
-> +       pxa168_add_twsi(0, NULL, ARRAY_AND_SIZE(teton_bga_i2c_info));
->  }
->
->  MACHINE_START(TETON_BGA, "PXA168-based Teton BGA Development Platform")
-> --
-> 1.7.0.4
->
->
+Well, there's cross between geocaching and game called 'whereigo'; I
+played it once, it is quite fun...
+
+"You bought a horse. Check if horse was fast enough by running to the
+trees you see north of you". And so you run. "Your horse is too
+slow. Try again".
+
+OTOH, for the GPS... I guess it is more complex because you have
+important and non-trivial metadata, such as precisions, fix type,
+#sats used and their positions. So NMEA might be right interface for
+that...
+
+...unless there are more chips like nokia n900 one that talk strange
+protocols. Or should we just translate them at kernel level?
+
+Anyway it would be good to have gps hardware abstraction one day.
+       	  	   	   	    	     		     Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
