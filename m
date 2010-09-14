@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab0INIeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 04:34:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25106 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab0INId5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 04:33:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,363,1280732400"; 
-   d="scan'208";a="606709607"
-Date: Tue, 14 Sep 2010 16:33:38 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Neil Brown <neilb@suse.de>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [PATCH 05/17] writeback: quit throttling when signal pending
-Message-ID: <20100914083338.GA20295@localhost>
-References: <20100913132116.3917e5d5@notabene>
- <20100913034808.GA9196@localhost>
- <20100914172028.C9B2.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100914172028.C9B2.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753388Ab0INIfV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 04:35:21 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:23238 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752315Ab0INIfS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 04:35:18 -0400
+Message-ID: <002501cb53e7$c2281a70$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Micha? Nazarewicz" <m.nazarewicz@samsung.com>,
+        "Maurus Cuelenaere" <mcuelenaere@gmail.com>
+Cc: "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "Peter Korsgaard" <peter.korsgaard@barco.com>,
+        "Nicolas Ferre" <nicolas.ferre@atmel.com>,
+        "linux-usb" <linux-usb@vger.kernel.org>,
+        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "Fabien Chouteau" <fabien.chouteau@barco.com>,
+        "david Brownell" <dbrownell@users.sourceforge.net>,
+        "Christoph Egger" <siccegge@stud.informatik.uni-erlangen.de>,
+        "LKML" <linux-kernel@vger.kernel.org>, "MeeGo" <meego-dev@meego.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Andrew" <andrew.chih.howe.khor@intel.com>,
+        "Intel OTC" <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        "Arjan" <arjan@linux.intel.com>,
+        "Toshiharu Okada" <okada533@dsn.okisemi.com>,
+        "Takahiro Shimizu" <shimizu394@dsn.okisemi.com>,
+        "Tomoya Morinaga" <morinaga526@dsn.okisemi.com>
+References: <4C85EE6F.6000706@dsn.okisemi.com> <AANLkTikSb-16eACaR16Uh2c7K=2yT3e+Vna=Z2Tt-x=6@mail.gmail.com> <000a01cb52fb$78fc2310$66f8800a@maildom.okisemi.com> <4C8DFC56.8020006@gmail.com> <op.viyyabj27p4s8u@pikus>
+Subject: Re: [PATCH] USB device driver of Topcliff PCH
+Date: Tue, 14 Sep 2010 17:35:00 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 04:23:56PM +0800, KOSAKI Motohiro wrote:
-> > Subject: writeback: quit throttling when fatal signal pending
-> > From: Wu Fengguang <fengguang.wu@intel.com>
-> > Date: Wed Sep 08 17:40:22 CST 2010
-> > 
-> > This allows quick response to Ctrl-C etc. for impatient users.
-> > 
-> > It mainly helps the rare bdi/global dirty exceeded cases.
-> > In the normal case of not exceeded, it will quit the loop anyway. 
-> > 
-> > CC: Neil Brown <neilb@suse.de>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  mm/page-writeback.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > --- linux-next.orig/mm/page-writeback.c	2010-09-12 13:25:23.000000000 +0800
-> > +++ linux-next/mm/page-writeback.c	2010-09-13 11:39:33.000000000 +0800
-> > @@ -552,6 +552,9 @@ static void balance_dirty_pages(struct a
-> >  		__set_current_state(TASK_INTERRUPTIBLE);
-> >  		io_schedule_timeout(pause);
-> >  
-> > +		if (fatal_signal_pending(current))
-> > +			break;
-> > +
-> >  check_exceeded:
-> >  		/*
-> >  		 * The bdi thresh is somehow "soft" limit derived from the
-> 
-> I think we need to change callers (e.g. generic_perform_write) too.
-> Otherwise, plenty write + SIGKILL combination easily exceed dirty limit.
-> It mean we can see strange OOM.
+Hi Michal and Maurus
 
-If it's dangerous, we can do without this patch.  The users can still
-get quick response in normal case after all.
+Thank you for your reply.
+I will resubmit patch so.
 
-However, I suspect the process is guaranteed to exit on
-fatal_signal_pending, so it won't dirty more pages :)
+Thanks Ohtake
+-----
+Date: Mon, 13 Sep 2010 13:31:13 +0200
+From: "Micha? Nazarewicz" <m.nazarewicz@samsung.com>
 
-Thanks,
-Fengguang
+
+On Mon, 13 Sep 2010 12:26:30 +0200, Maurus Cuelenaere <mcuelenaere@gmail.com> wrote:
+> If there are any mailing lists listed (linux-usb in this case), be sure to CC
+> them too (except LKML, I wouldn't CC them unless it's a special case like the
+> changes are kernel-wide or need to reviewed by a wide variation of audience or
+> ...)
+
+Actually, Documentation/SubmittingPatches says:
+
+Unless you have a reason NOT to do so, CC
+linux-kernel@vger.kernel.org.
+
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Micha? "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+
+
