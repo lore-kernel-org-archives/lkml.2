@@ -1,146 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab0INJsd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 05:48:33 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:43565 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228Ab0INJsc (ORCPT
+	id S1752580Ab0INJw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 05:52:29 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51540 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab0INJw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 05:48:32 -0400
-From: Keng-Yu Lin <keng-yu.lin@canonical.com>
-To: len.brown@intel.com, alan-jenkins@tuffmail.co.uk, superm1@ubuntu.com,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>
-Subject: [PATCH] dell-laptop: Add debugfs support
-Date: Tue, 14 Sep 2010 17:48:10 +0800
-Message-Id: <1284457690-32635-1-git-send-email-keng-yu.lin@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 14 Sep 2010 05:52:28 -0400
+MIME-Version: 1.0
+X-Originating-IP: [192.55.54.36]
+Date: Tue, 14 Sep 2010 17:52:26 +0800
+Message-ID: <AANLkTin9Ry6hCBciLkg2ExgERv9SHq5vO-Zvxy3Ei_JJ@mail.gmail.com>
+Subject: Why not make LKML-Reference useful?
+From: Lin Ming <lin@ming.vg>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export the status of RF killswitch through debugfs.
+What's LKML-Reference in the kernel git log?
+In my understanding, it's a link to the original discussion of the
+patch on LKML, for example
 
-Signed-off-by: Keng-Yu Lin <keng-yu.lin@canonical.com>
----
- drivers/platform/x86/dell-laptop.c |   83 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 83 insertions(+), 0 deletions(-)
+LKML-Reference: http://marc.info/?l=linux-kernel&m=128445596126705&w=2
 
-diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
-index 6110601..0d390b3 100644
---- a/drivers/platform/x86/dell-laptop.c
-+++ b/drivers/platform/x86/dell-laptop.c
-@@ -25,6 +25,8 @@
- #include <linux/mm.h>
- #include <linux/i8042.h>
- #include <linux/slab.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
- #include "../../firmware/dcdbas.h"
- 
- #define BRIGHTNESS_TOKEN 0x7d
-@@ -319,6 +321,77 @@ static const struct rfkill_ops dell_rfkill_ops = {
- 	.query = dell_rfkill_query,
- };
- 
-+#ifdef CONFIG_DEBUG_FS
-+static struct dentry *dell_laptop_dir;
-+
-+static int dell_debugfs_show(struct seq_file *s, void *data)
-+{
-+	int status;
-+
-+	get_buffer();
-+	dell_send_request(buffer, 17, 11);
-+	status = buffer->output[1];
-+	release_buffer();
-+
-+	seq_printf(s, "status:\t0x%X\n", status);
-+	seq_printf(s, "Hardware switch supported:   %lu\n",
-+		   status & BIT(0));
-+	seq_printf(s, "Wifi locator supported:      %lu\n",
-+		  (status & BIT(1)) >> 1);
-+	seq_printf(s, "Wifi is supported:           %lu\n",
-+		  (status & BIT(2)) >> 2);
-+	seq_printf(s, "Bluetooth is supported:      %lu\n",
-+		  (status & BIT(3)) >> 3);
-+	seq_printf(s, "WWAN is supported:           %lu\n",
-+		  (status & BIT(4)) >> 4);
-+	seq_printf(s, "Wireless keyboard supported: %lu\n",
-+		  (status & BIT(5)) >> 5);
-+	seq_printf(s, "Wifi is installed:           %lu\n",
-+		  (status & BIT(8)) >> 8);
-+	seq_printf(s, "Bluetooth is installed:      %lu\n",
-+		  (status & BIT(9)) >> 9);
-+	seq_printf(s, "WWAN is installed:           %lu\n",
-+		  (status & BIT(10)) >> 10);
-+	seq_printf(s, "Hardware switch is on:       %lu\n",
-+		  (status & BIT(16)) >> 16);
-+	seq_printf(s, "Wifi is blocked:             %lu\n",
-+		  (status & BIT(17)) >> 17);
-+	seq_printf(s, "Bluetooth is blocked:        %lu\n",
-+		  (status & BIT(18)) >> 18);
-+	seq_printf(s, "WWAN is blocked:             %lu\n",
-+		  (status & BIT(19)) >> 19);
-+
-+	seq_printf(s, "\nhwswitch_state:\t0x%X\n", hwswitch_state);
-+	seq_printf(s, "Wifi controlled by switch:      %lu\n",
-+		   hwswitch_state & BIT(0));
-+	seq_printf(s, "Bluetooth controlled by switch: %lu\n",
-+		   hwswitch_state & BIT(0) >> 1);
-+	seq_printf(s, "WWAN controlled by switch:      %lu\n",
-+		   hwswitch_state & BIT(0) >> 2);
-+	seq_printf(s, "Wireless switch config locked:  %lu\n",
-+		   hwswitch_state & BIT(0) >> 7);
-+	seq_printf(s, "Wifi locator enabled:           %lu\n",
-+		   hwswitch_state & BIT(0) >> 8);
-+	seq_printf(s, "Wifi locator setting locked:    %lu\n",
-+		   hwswitch_state & BIT(0) >> 15);
-+
-+	return 0;
-+}
-+
-+static int dell_debugfs_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, dell_debugfs_show, inode->i_private);
-+}
-+
-+static const struct file_operations dell_debugfs_fops = {
-+	.owner = THIS_MODULE,
-+	.open = dell_debugfs_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+#endif
-+
- static void dell_update_rfkill(struct work_struct *ignored)
- {
- 	if (wifi_rfkill)
-@@ -550,6 +623,13 @@ static int __init dell_init(void)
- 		goto fail_filter;
- 	}
- 
-+#ifdef CONFIG_DEBUG_FS
-+	dell_laptop_dir = debugfs_create_dir("dell_laptop", NULL);
-+	if (dell_laptop_dir != NULL)
-+		debugfs_create_file("rfkill", 0444, dell_laptop_dir, NULL,
-+				    &dell_debugfs_fops);
-+#endif
-+
- #ifdef CONFIG_ACPI
- 	/* In the event of an ACPI backlight being available, don't
- 	 * register the platform controller.
-@@ -609,6 +689,9 @@ fail_platform_driver:
- 
- static void __exit dell_exit(void)
- {
-+#ifdef CONFIG_DEBUG_FS
-+	debugfs_remove_recursive(dell_laptop_dir);
-+#endif
- 	i8042_remove_filter(dell_laptop_i8042_filter);
- 	cancel_delayed_work_sync(&dell_rfkill_work);
- 	backlight_device_unregister(dell_backlight_device);
--- 
-1.7.0.4
+But I never see such a link in the LKML-Reference of the git log.
 
+$cd linux-2.6
+$git log | grep LKML-Reference
+
+    LKML-Reference: <201008300127.o7U1RC6Z044051@www262.sakura.ne.jp>
+    LKML-Reference: <20100913102541.20260.85700.stgit@ltc236.sdl.hitachi.co.jp>
+    LKML-Reference: <20100913121903.GB22238@darkstar>
+    LKML-Reference:
+<AANLkTi=8m4g01wZPacySoF7U0PevTNVgJoZZrHiUD-pN@mail.gmail.com>
+    LKML-Reference: <new-submission>
+    LKML-Reference: <new-submission>
+    LKML-Reference: <20100822082003.GB7365@infradead.org>
+    LKML-Reference: <4c8a1686.aae9d80a.5aa4.5e35@mx.google.com>
+    LKML-Reference:
+<d40c60f4b036a26db8492848695bdafaa3b42791.1284267142.git.joe@perches.com>
+    LKML-Reference: <4C8B2AFA.2000705@kernel.org>
+    LKML-Reference: <4C8B2A9A.1040303@kernel.org>
+    LKML-Reference: <1284150773.402.122.camel@laptop>
+    LKML-Reference: <1284159350-19841-3-git-send-email-venki@google.com>
+    LKML-Reference: <1284159350-19841-2-git-send-email-venki@google.com>
+    LKML-Reference: <new-submission>
+......
+
+Those LKML-Reference are really useless.
+
+Why not put a link in LKML-Reference?
+
+Thanks,
+Lin Ming
