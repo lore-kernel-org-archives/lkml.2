@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab0INKZp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 06:25:45 -0400
-Received: from mail.landscapehd.com ([95.131.64.112]:37022 "EHLO
-	mail.landscapehd.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab0INKZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 06:25:42 -0400
-To: linux-kernel@vger.kernel.org
-Subject: Susannah Austin invites you to her gig in London
-Recieved: 
-Date: Tue, 14 Sep 2010 10:08:11 +0100
-From: nick@landscapetv.com
-Message-ID: <8ee7c6089d448c63064a98755573e4cf@www.landscapehd.com>
-X-Priority: 3
-X-Mailer: PHPMailer [version 1.73]
-X-Mailer: phplist v2.10.12
-X-MessageID: 27
-X-ListMember: linux-kernel@vger.kernel.org
+	id S1753420Ab0INKbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 06:31:44 -0400
+Received: from mx-1.vendo.no ([193.71.32.2]:59359 "EHLO mx-1.vendo.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752113Ab0INKbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 06:31:43 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Sep 2010 06:31:43 EDT
+Message-ID: <4C8F4D7C.3090608@uw.no>
+Date: Tue, 14 Sep 2010 12:25:00 +0200
+From: "Daniel K." <dk@uw.no>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+To: Lin Ming <lin@ming.vg>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Why not make LKML-Reference useful?
+References: <AANLkTin9Ry6hCBciLkg2ExgERv9SHq5vO-Zvxy3Ei_JJ@mail.gmail.com>
+In-Reply-To: <AANLkTin9Ry6hCBciLkg2ExgERv9SHq5vO-Zvxy3Ei_JJ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Susannah Austins Crooked Frame video can be seen here
-<http://www.youtube.com/watch?v=KwDQIuDrrRc&feature=related>
+Lin Ming wrote:
+> What's LKML-Reference in the kernel git log?
 
-and the new single with Hares Pink Radio here
-<http://www.youtube.com/watch?v=WVinVYwTY4I>
+The message id for the email sent to LKML.
 
-See her live Tuesday 21st September
+> In my understanding, it's a link to the original discussion of the
+> patch on LKML, for example
+> 
+> LKML-Reference: http://marc.info/?l=linux-kernel&m=128445596126705&w=2
+> 
+> But I never see such a link in the LKML-Reference of the git log.
+> 
+>     LKML-Reference: <201008300127.o7U1RC6Z044051@www262.sakura.ne.jp>
+>     LKML-Reference: <20100913102541.20260.85700.stgit@ltc236.sdl.hitachi.co.jp>
+>     LKML-Reference: <20100913121903.GB22238@darkstar>
+> 
+> Those LKML-Reference are really useless.
+> 
+> Why not put a link in LKML-Reference?
 
-Supporting Patch William, The Flowerpot, Kentish Town 8.30pm
+Domains come and go (marc.theaimsgroup.com => marc.info => ?), message
+id's are forever.
 
-Music Industry people will be there - be one of them. There isnt much
-talent about these days.
-
-
-
---
-If you do not want to receive any more newsletters, 
-http://www.landscapehd.com/lists/?p=unsubscribe&uid=c9b5ccc35887d688a2b64cfad9996e24
-
-To update your preferences and to unsubscribe visit
-http://www.landscapehd.com/lists/?p=preferences&uid=c9b5ccc35887d688a2b64cfad9996e24
-Forward a Message to Someone
-http://www.landscapehd.com/lists/?p=forward&uid=c9b5ccc35887d688a2b64cfad9996e24&mid=27
-
-
---
-Powered by PHPlist, www.phplist.com --
+Also, you should be able to look up the message on your favorite
+LKML-archive website or search engine using the message id.
 
 
+Daniel K.
