@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab0INSbt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 14:31:49 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:42995 "EHLO isrv.corpit.ru"
+	id S1753289Ab0INSdQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 14:33:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3070 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752191Ab0INSbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 14:31:48 -0400
-Message-ID: <4C8FBF8E.3060503@msgid.tls.msk.ru>
-Date: Tue, 14 Sep 2010 22:31:42 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+	id S1752079Ab0INSdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 14:33:15 -0400
+Date: Tue, 14 Sep 2010 20:27:07 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+Message-ID: <20100914182707.GB15549@redhat.com>
+References: <1284410580.13351.10.camel@localhost.localdomain>
+ <4C8F3C77.7010302@redhat.com>
+ <1284476719.13351.35.camel@localhost.localdomain>
+ <201009141721.13202.arnd@arndb.de>
+ <20100914152231.GA13105@redhat.com>
+ <1284480025.13351.49.camel@localhost.localdomain>
+ <20100914162952.GB13560@redhat.com>
+ <1284483745.13351.71.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Andy Whitcroft <apw@canonical.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] x86: should 32 bit processes be PER_LINUX32
-References: <1284480057-18120-1-git-send-email-apw@canonical.com> <4C8FBCCA.6060001@zytor.com>
-In-Reply-To: <4C8FBCCA.6060001@zytor.com>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284483745.13351.71.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-14.09.2010 22:19, H. Peter Anvin wrote:
-> On 09/14/2010 09:00 AM, Andy Whitcroft wrote:
->> While testing an x86 64 bit kernel on 32 bit userspace I noticed that I
-[...]
+On Tue, Sep 14, 2010 at 10:02:25AM -0700, Shirley Ma wrote:
+> On Tue, 2010-09-14 at 18:29 +0200, Michael S. Tsirkin wrote:
+> > Precisely. This is what the patch from Xin Xiaohui does.  That code
+> > already seems to do most of what you are trying to do, right?
+> 
+> I thought host pins guest kernel buffer pages was good enough for TX
+> thought I didn't look up xiaohui's vhost asycn io patch in details.
 
-Folks, while we're at it, can we also fix the ADDR_LIMIT_3GB personality?
-With all current kernels it just does not work, returning EINVAL to the
-second execve() call.  It never worked from within a 32bit process, but
-that at least can be worked around by introducing a small 64bit helper.
-Now that helper does not work too.
+As others said, the harder issues for TX are in determining that it's safe
+to unpin the memory, and how much memory is it safe to pin to beging
+with.  For RX we have some more complexity.
 
-Or just remove it altogether, to stop confusing people... :)
+> What's the performance data Xiaohui got from using kiocb? I haven't seen
+> any performance number from him yet.
+> 
+> > The main thing missing seems to be macvtap integration, so that we can
+> > fall back
+> > on data copy if zero copy is unavailable?
+> > How hard would it be to basically link the mp and macvtap modules
+> > together to get us this functionality? Anyone? 
+> 
+> The simple integration is using macvtap + xiaohui's vhost asycn io
+> patch. I can make a try for TX only.
+> 
+> Thanks
+> Shirley
 
-(We finally moved our legacy application from oracle8 (which only exist
-in 32bit for linux) to oracle10, so this problem has no relevance for
-us anymore.  Before it were quite problematic...)
+Well it's up to you of course, but this is not what I would try:
+if you look at the
+patchset vhost changes is not the largest part of it,
+so this sounds a bit like effort duplication.
 
-Thanks!
+TX only is also much less interesting than full zero copy.
 
-/mjt
+I think that you should be able to simply combine
+the two drivers together, add an ioctl to
+enable/disable zero copy mode of operation.
+
+-- 
+MST
