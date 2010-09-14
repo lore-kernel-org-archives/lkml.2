@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802Ab0INOec (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 10:34:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64791 "EHLO mx1.redhat.com"
+	id S1754048Ab0INOeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 10:34:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55581 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab0INOea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 10:34:30 -0400
-Date: Tue, 14 Sep 2010 16:28:15 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        Reinette Chatre <reinette.chatre@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>
-Subject: 2.6.36-rc4/iwl: warning triggered in net/mac80211/scan.c:266
-Message-ID: <20100914142814.GA8744@redhat.com>
+	id S1753963Ab0INOek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 10:34:40 -0400
+Date: Tue, 14 Sep 2010 16:35:14 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, stable@kernel.org,
+        Michael Chapman <redhat-bugzilla@very.puzzling.org>,
+        Ciriaco Garcia de Celis <sysman@etherpilot.com>
+Subject: [PATCH v2] sched: fix user time incorrectly accounted as system time
+ on 32 bit
+Message-ID: <20100914143513.GB8415@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,69 +25,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am running 2.6.36-rc4 on T60 with an iwlagn wireless card:
-03:00.0 Network controller: Intel Corporation PRO/Wireless 5100 AGN [Shiloh] Network Connection
+We have 32 bit variable overflow possibility when multiply in
+task_times() and thread_group_times() functions. If overflow happens
+calculated scaled utime value become wrongly small and scaled stime
+wrongly big.
 
-I was compiling a large file which stressed the box heavily, and the
-following warning in net/mac80211/scan.c triggered:
+Reported here:
+https://bugzilla.redhat.com/show_bug.cgi?id=633037
+https://bugzilla.kernel.org/show_bug.cgi?id=16559
 
-        /*
-         * It's ok to abort a not-yet-running scan (that
-         * we have one at all will be verified by checking
-         * local->scan_req next), but not to complete it
-         * successfully.
-         */
-        if (WARN_ON(!local->scanning && !aborted))
-                aborted = true;
+Reported-by: Michael Chapman <redhat-bugzilla@very.puzzling.org>
+Reported-by: Ciriaco Garcia de Celis <sysman@etherpilot.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: <stable@kernel.org>  # 2.6.32.19+ (partially) and 2.6.33+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+---
+v1 -> v2
+Fix mail recipients.
 
-dmesg below:
+ kernel/sched.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-[84379.361297] ------------[ cut here ]------------
-[84379.361307] WARNING: at net/mac80211/scan.c:266 ieee80211_scan_completed+0x43/0x17f()
-[84379.361311] Hardware name: 2241B48
-[84379.361313] Modules linked in: tun iwlagn kvm_intel kvm iwlcore e1000e thinkpad_acpi [last unloaded: scsi_wait_scan]
-[84379.361325] Pid: 8254, comm: kworker/u:0 Not tainted 2.6.36-rc4-mst #96
-[84379.361328] Call Trace:
-[84379.361334]  [<ffffffff815d1399>] ? ieee80211_scan_completed+0x43/0x17f
-[84379.361340]  [<ffffffff81042046>] warn_slowpath_common+0x80/0x99
-[84379.361354]  [<ffffffffa005d8e7>] ? iwl_generic_cmd_callback+0x0/0xe4 [iwlcore]
-[84379.361359]  [<ffffffff81042074>] warn_slowpath_null+0x15/0x17
-[84379.361363]  [<ffffffff815d1399>] ieee80211_scan_completed+0x43/0x17f
-[84379.361374]  [<ffffffffa0065212>] iwl_bg_scan_completed+0x1ce/0x1d7 [iwlcore]
-[84379.361380]  [<ffffffff81057153>] process_one_work+0x1e2/0x301
-[84379.361391]  [<ffffffffa0065044>] ? iwl_bg_scan_completed+0x0/0x1d7 [iwlcore]
-[84379.361395]  [<ffffffff8105752c>] worker_thread+0x130/0x243
-[84379.361400]  [<ffffffff810573fc>] ? worker_thread+0x0/0x243
-[84379.361404]  [<ffffffff8105bc1b>] kthread+0x81/0x89
-[84379.361409]  [<ffffffff81003914>] kernel_thread_helper+0x4/0x10
-[84379.361413]  [<ffffffff8105bb9a>] ? kthread+0x0/0x89
-[84379.361417]  [<ffffffff81003910>] ? kernel_thread_helper+0x0/0x10
-[84379.361420] ---[ end trace c5ebbd902daa4ea8 ]---
-[84379.361422] ------------[ cut here ]------------
-[84379.361426] WARNING: at net/mac80211/scan.c:269 ieee80211_scan_completed+0x62/0x17f()
-[84379.361429] Hardware name: 2241B48
-[84379.361431] Modules linked in: tun iwlagn kvm_intel kvm iwlcore e1000e thinkpad_acpi [last unloaded: scsi_wait_scan]
-[84379.361441] Pid: 8254, comm: kworker/u:0 Tainted: G        W   2.6.36-rc4-mst #96
-[84379.361461] Call Trace:
-[84379.361464]  [<ffffffff815d13b8>] ? ieee80211_scan_completed+0x62/0x17f
-[84379.361469]  [<ffffffff81042046>] warn_slowpath_common+0x80/0x99
-[84379.361479]  [<ffffffffa005d8e7>] ? iwl_generic_cmd_callback+0x0/0xe4 [iwlcore]
-[84379.361484]  [<ffffffff81042074>] warn_slowpath_null+0x15/0x17
-[84379.361488]  [<ffffffff815d13b8>] ieee80211_scan_completed+0x62/0x17f
-[84379.361503]  [<ffffffffa0065212>] iwl_bg_scan_completed+0x1ce/0x1d7 [iwlcore]
-[84379.361506]  [<ffffffff81057153>] process_one_work+0x1e2/0x301
-[84379.361512]  [<ffffffffa0065044>] ? iwl_bg_scan_completed+0x0/0x1d7 [iwlcore]
-[84379.361515]  [<ffffffff8105752c>] worker_thread+0x130/0x243
-[84379.361517]  [<ffffffff810573fc>] ? worker_thread+0x0/0x243
-[84379.361519]  [<ffffffff8105bc1b>] kthread+0x81/0x89
-[84379.361522]  [<ffffffff81003914>] kernel_thread_helper+0x4/0x10
-[84379.361524]  [<ffffffff8105bb9a>] ? kthread+0x0/0x89
-[84379.361526]  [<ffffffff81003910>] ? kernel_thread_helper+0x0/0x10
-[84379.361528] ---[ end trace c5ebbd902daa4ea9 ]---
-
-Should this happen? Does anyone care?
-I am not sure how reproducible this is.
-Thanks,
-
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 09b574e..eee9470 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3507,9 +3507,9 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
+ 
+ 	if (total) {
+-		u64 temp;
++		u64 temp = rtime;
+ 
+-		temp = (u64)(rtime * utime);
++		temp *= utime;
+ 		do_div(temp, total);
+ 		utime = (cputime_t)temp;
+ 	} else
+@@ -3540,9 +3540,9 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
+ 
+ 	if (total) {
+-		u64 temp;
++		u64 temp = rtime;
+ 
+-		temp = (u64)(rtime * cputime.utime);
++		temp *= cputime.utime;
+ 		do_div(temp, total);
+ 		utime = (cputime_t)temp;
+ 	} else
 -- 
-MST
+1.7.1
+
