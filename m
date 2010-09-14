@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab0INFPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 01:15:17 -0400
-Received: from pindarots.xs4all.nl ([80.101.128.228]:57145 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab0INFPO (ORCPT
+	id S1752033Ab0INFQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 01:16:34 -0400
+Received: from toccata.ens-lyon.org ([140.77.166.68]:55456 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab0INFQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 01:15:14 -0400
-Message-ID: <4C8F04DC.5060303@xs4all.nl>
-Date: Tue, 14 Sep 2010 07:15:08 +0200
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
+	Tue, 14 Sep 2010 01:16:33 -0400
+Date: Tue, 14 Sep 2010 07:16:12 +0200
+From: =?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Samuel Thibault <Samuel.Thibault@ens-lyon.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andres Salomon <dilinger@queued.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: EuroBraille/Iris power off
+Message-ID: <20100914051612.GA3247@pema>
+References: <20100825094925.GA3632@pema>
+ <alpine.LFD.2.00.1008261406480.2062@localhost.localdomain>
+ <20100826210815.GA18131@pema>
+ <4C76D9A0.2010907@zytor.com>
+ <20100829205929.GA3309@pema>
+ <20100913100719.GA3903@pema>
+ <54870.1284390647@localhost>
+ <20100913152249.GC5364@const.bordeaux.inria.fr>
+ <7925.1284428749@localhost>
 MIME-Version: 1.0
-To: Robert Hancock <hancockrwd@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: patch: HPET force enable for CX700 / VIA Epia LT  was: Re: hpet timers
- gone?
-References: <4BFA52C3.4080006@xs4all.nl>	<20100526120236.4a849b5b.randy.dunlap@oracle.com>	<4C021507.6020703@xs4all.nl>	<4C02B3AB.3040405@gmail.com>	<4C0324B8.8070304@xs4all.nl>	<AANLkTikuaPxA9Xnzc1bCJ5YHRlPZ1AcBSrYJ5lqryaMY@mail.gmail.com>	<4C8E3ABF.90309@xs4all.nl> <AANLkTintq=gXvFC9BW_cv=MSqBWHCx7SD9o1CWHOYTsj@mail.gmail.com>
-In-Reply-To: <AANLkTintq=gXvFC9BW_cv=MSqBWHCx7SD9o1CWHOYTsj@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/mixed;
- boundary="------------010401030007070906090905"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7925.1284428749@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010401030007070906090905
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Hi,
 
-On 2010-09-14 01:16, Robert Hancock wrote:
-> On Mon, Sep 13, 2010 at 8:52 AM, Udo van den Heuvel <udovdh@xs4all.nl> wrote:
->> So what else can I do to enable HPET?
-> 
-> At this point, not much, unless you can track down the chipset
-> information that would allow us to implement force enabling HPET on
-> that chipset..
+Valdis.Kletnieks@vt.edu (2010/09/13 21:45 -0400):
+> I'm agreeing that if iris_init() checks that the user passed 'irisinit.force=1'
+> on the command line or as a module parameter, and bailed immediately if it
+> wasn't passed, then doing the inb() and testing it should be safe enough. Doing
+> stuff that's only known safe on an Iris is no great sin if the user has said
+> "Yes, you're on a Iris" - at that point it's the user's fault.
 
-Signed-off-by: Udo van den Heuvel <udovdh@xs4all.nl>
+Fine. I'd be happy to submit another patch where the module takes a
+force argument if that's okay to you guys.
 
---- a/arch/x86/kernel/quirks.c	2010-09-13 18:02:14.639710309 +0200
-+++ b/arch/x86/kernel/quirks.c	2010-09-13 18:02:06.095280815 +0200
-@@ -344,6 +344,8 @@
- 			 vt8237_force_enable_hpet);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8237,
- 			 vt8237_force_enable_hpet);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_CX700,
-+			 vt8237_force_enable_hpet);
-
- static void ati_force_hpet_resume(void)
- {
-
-Patch does make hpet appear on VIA Epia LT (CX700M2 chipset) with
-hpet=force on kernel commandline.
-
-
-Udo
-
---------------010401030007070906090905
-Content-Type: text/plain;
- name="hpet-c700.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="hpet-c700.patch"
-
---- a/arch/x86/kernel/quirks.c	2010-09-13 18:02:14.639710309 +0200
-+++ b/arch/x86/kernel/quirks.c	2010-09-13 18:02:06.095280815 +0200
-@@ -344,6 +344,8 @@
- 			 vt8237_force_enable_hpet);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8237,
- 			 vt8237_force_enable_hpet);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_CX700,
-+			 vt8237_force_enable_hpet);
- 
- static void ati_force_hpet_resume(void)
- {
-
---------------010401030007070906090905--
+Shérab.
