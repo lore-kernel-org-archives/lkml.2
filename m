@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab0INXS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 19:18:57 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45390 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab0INXS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 19:18:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=ENf1GwCPgTzULrrTs8OOqwPmu8+/sE7brxr0O9keZ/vA2AHPNi/Ult5jzOryliLMzJ
-         TlF8u2FpXHuRR/gIFdJttlKLPiw2mGvzC2+nC3wj+rWSdQN58iWRHpldDmW57Pwg72Ty
-         CPqr2qEoW/gqwimnfyadZ1CwLkhI9U+NRetLg=
-MIME-Version: 1.0
-In-Reply-To: <1284115245-23876-1-git-send-email-ext-phil.2.carmody@nokia.com>
-References: <1284115245-23876-1-git-send-email-ext-phil.2.carmody@nokia.com>
-Date: Tue, 14 Sep 2010 16:18:55 -0700
-X-Google-Sender-Auth: vBYG9p_aem24Z1GrPkfcxM7bIu0
-Message-ID: <AANLkTi=RsA0tACWOg+8RTSuDHwa4LGOiyO-4TxpJ_rb5@mail.gmail.com>
-Subject: Re: [PATCH 0/2] ia64: possible module unwind table optimisation
-From: Tony Luck <tony.luck@intel.com>
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: fenghua.yu@intel.com, linux-ia64@vger.kernel.org,
+	id S1755851Ab0INXU4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 19:20:56 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:53528 "EHLO trinity.fluff.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755830Ab0INXUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 19:20:55 -0400
+Date: Wed, 15 Sep 2010 00:20:26 +0100
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>, Tejun Heo <tj@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH] I2C-GPIO: Don't include the asm/gpio.h directly
+Message-ID: <20100914232026.GB7494@trinity.fluff.org>
+References: <20100914073053.GA15611@july>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100914073053.GA15611@july>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 10, 2010 at 3:40 AM, Phil Carmody
-<ext-phil.2.carmody@nokia.com> wrote:
-> Alas I have no way to test this patch.
+On Tue, Sep 14, 2010 at 04:30:53PM +0900, Kyungmin Park wrote:
+> Don't include asm/gpio.h directly. Use the linux/gpio.h.
+> 
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Phil,
+will merge this, unless Jean wants to do it, at the next merge window.
 
-I have this built and booted on an ia64 ... what do you want me to measure? The
-number of iterations in:
+> ---
+> diff --git a/drivers/i2c/busses/i2c-gpio.c b/drivers/i2c/busses/i2c-gpio.c
+> index d9aa9a6..0c1cc37 100644
+> --- a/drivers/i2c/busses/i2c-gpio.c
+> +++ b/drivers/i2c/busses/i2c-gpio.c
+> @@ -15,7 +15,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/platform_device.h>
+>  
+> -#include <asm/gpio.h>
+> +#include <linux/gpio.h>
+>  
+>  /* Toggle SDA by changing the direction of the pin */
+>  static void i2c_gpio_setsda_dir(void *data, int state)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-  for (table = unw.tables; table; table = table->next)
+-- 
+-- 
+Ben
 
-before we find the right table to look?
+Q:      What's a light-year?
+A:      One-third less calories than a regular year.
 
--Tony
