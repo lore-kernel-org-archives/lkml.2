@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab0INStK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 14:49:10 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:49826 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630Ab0INStI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 14:49:08 -0400
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100914182707.GB15549@redhat.com>
-References: <1284410580.13351.10.camel@localhost.localdomain>
-	 <4C8F3C77.7010302@redhat.com>
-	 <1284476719.13351.35.camel@localhost.localdomain>
-	 <201009141721.13202.arnd@arndb.de> <20100914152231.GA13105@redhat.com>
-	 <1284480025.13351.49.camel@localhost.localdomain>
-	 <20100914162952.GB13560@redhat.com>
-	 <1284483745.13351.71.camel@localhost.localdomain>
-	 <20100914182707.GB15549@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Sep 2010 11:49:03 -0700
-Message-ID: <1284490143.13351.82.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1754434Ab0INSxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 14:53:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38255 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752049Ab0INSw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 14:52:58 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: pageexec@freemail.hu
+X-Fcc: ~/Mail/linus
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
+        Solar Designer <solar@openwall.com>,
+        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        linux-fsdevel@vger.kernel.org, Eugene Teo <eugene@redhat.com>
+Subject: Re: [PATCH 1/3] setup_arg_pages: diagnose excessive argument size
+In-Reply-To: pageexec@freemail.hu's message of  Saturday, 11 September 2010 15:39:30 +0200 <4C8B8692.7649.3E0895B@pageexec.freemail.hu>
+References: <20100908023549.BFFA8401AF@magilla.sf.frob.com>
+	<KOSAKI Motohiro's message of  Thursday, 9 September 2010 14:31:18 +0900 <20100909141534.C948.A69D9226@jp.fujitsu.com>
+	<20100910092541.2864A405D5@magilla.sf.frob.com>
+	<4C8B8692.7649.3E0895B@pageexec.freemail.hu>
+X-Windows: complex nonsolutions to simple nonproblems.
+Message-Id: <20100914185135.03DD6403E8@magilla.sf.frob.com>
+Date: Tue, 14 Sep 2010 11:51:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-14 at 20:27 +0200, Michael S. Tsirkin wrote:
-> As others said, the harder issues for TX are in determining that it's
-> safe
-> to unpin the memory, and how much memory is it safe to pin to beging
-> with.  For RX we have some more complexity.
+> no it doesn't have to, similarly to how it doesn't have to hardcode
+> _SC_PAGESIZE either, AT_PAGESZ tells userland what it needs to know
+> and i think AT_ARGMAX could exist just as well.
 
-I think unpin the memory is in kfree_skb() whenever the last reference
-is gone for TX. What we discussed about here is when/how vhost get
-notified to update ring buffer descriptors. Do I misunderstand something
-here? 
+I was referring to the ways available to userland heretofore.  Certainly,
+the kernel could add new ways and then userland could do different things
+(with new kernels).  
 
-> Well it's up to you of course, but this is not what I would try:
-> if you look at the
-> patchset vhost changes is not the largest part of it,
-> so this sounds a bit like effort duplication.
-> 
-> TX only is also much less interesting than full zero copy.
-
-It's not true. From the performance, TX only has gained big improvement.
-We need to identify how much gain from TX zero copy, and how much gain
-from RX zero copy.
-
-> I think that you should be able to simply combine
-> the two drivers together, add an ioctl to
-> enable/disable zero copy mode of operation. 
-
-That could work. But what's the purpose to have two drivers if one
-driver can handle it?
-
-Thanks
-Shirley
+auxv in particular is not a mechanism that could fit for this.  The actual
+limit depends on rlimits of the calling process, and rlimits can change
+during the life of the program.  auxv is only appropriate for things that
+are known at the time of the exec and won't change thereafter.
 
 
+Thanks,
+Roland
