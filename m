@@ -1,55 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab0INRCf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 13:02:35 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:53495 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751967Ab0INRCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 13:02:33 -0400
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100914162952.GB13560@redhat.com>
-References: <1284410580.13351.10.camel@localhost.localdomain>
-	 <4C8F3C77.7010302@redhat.com>
-	 <1284476719.13351.35.camel@localhost.localdomain>
-	 <201009141721.13202.arnd@arndb.de> <20100914152231.GA13105@redhat.com>
-	 <1284480025.13351.49.camel@localhost.localdomain>
-	 <20100914162952.GB13560@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Sep 2010 10:02:25 -0700
-Message-ID: <1284483745.13351.71.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1754410Ab0INRDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 13:03:38 -0400
+Received: from mailout.uni-due.de ([132.252.185.19]:45858 "EHLO
+	mailout.uni-due.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753900Ab0INRDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 13:03:36 -0400
+From: Thomas Dreibholz <dreibh@iem.uni-due.de>
+Organization: University of Duisburg-Essen, Institute for Experimental Mathematics
+Subject: [PATCH] net: SCTP remote/local Denial of Service vulnerability description and fix
+Date: Tue, 14 Sep 2010 18:43:38 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-20-generic; KDE/4.5.1; x86_64; ; )
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Martin Becke <martin.becke@uni-due.de>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201009141844.11080.dreibh@iem.uni-due.de>
+X-Spam-Scanned: SpamAssassin: 3.002004 - http://www.spamassassin.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-14 at 18:29 +0200, Michael S. Tsirkin wrote:
-> Precisely. This is what the patch from Xin Xiaohui does.  That code
-> already seems to do most of what you are trying to do, right?
+sctp_outq_flush() in net/sctp/outqueue.c may call sctp_packet_reset() on a 
+packet structure which has already been filled with chunks. sctp_packet_reset() 
+will not take care of the chunks in its list and only reset the packet length. 
+After that, the SCTP code assumes the packet to be re-initialized and adds 
+further chunks to the structure. The length will be wrong. When actually 
+trying to transmit the packet, the packet sk_buff structure may be exceeded 
+within sctp_packet_transmit(), resulting in skb_over_panic() => denial of 
+service.
 
-I thought host pins guest kernel buffer pages was good enough for TX
-thought I didn't look up xiaohui's vhost asycn io patch in details.
+Such a DoS can be triggered by a malicious remote SCTP instance, as follows:
+- The remote endpoint has to use two paths (i.e. 2 IP addresses); easy to 
+achieve using an IPv4 address and an IPv6 address -> path A and B.
+- The remote user has to trigger the transmission of a HEARTBEAT_ACK on path 
+A. This is trivial, by sending a HEARTBEAT chunk. sctp_outq_flush() will call 
+sctp_packet_config() for the packet on path A. The HEARTBEAT_ACK will be added 
+to this packet.
+- The remote user has to trigger a DATA chunk retransmission on path B. This 
+is trivial, since it only has to send appropriate SACK chunks. 
+sctp_outq_flush() notices that the retransmission is on a different path and 
+calls sctp_packet_config() for the packet on path B. The DATA chunk to be 
+retransmitted is added to this packet.
+- The local instance has to send another DATA chunk on path A. This depends on 
+the application, but should be easy to trigger from a remote instance. 
+sctp_outq_flush() notices that the path has changed again, and calls 
+sctp_packet_config() for the packet on path A. This resets the size of the 
+HEARTBEAT_ACK chunk, but the chunk remains in the packet. If 
+size(HEARTBEAT_ACK) + size(DATA) > MTU - overhead, the next call to 
+sctp_packet_transmit() causes the kernel panic => DoS.
+In a similar way, the problem can also be triggered by a local user, having 
+only the permission to establish SCTP associations. Of course, the problem can 
+also occur during normal network operation, just by a retransmission at the 
+wrong time.
 
-What's the performance data Xiaohui got from using kiocb? I haven't seen
-any performance number from him yet.
+The patch below against 2.6.36-rc4 (git repository) fixes sctp_outq_flush() by 
+ensuring that the packet on each path is initialized only once. Furthermore, a 
+BUG_ON() statement ensures that further problems by calling 
+sctp_packet_reset() on packets with chunks are detected directly.
 
-> The main thing missing seems to be macvtap integration, so that we can
-> fall back
-> on data copy if zero copy is unavailable?
-> How hard would it be to basically link the mp and macvtap modules
-> together to get us this functionality? Anyone? 
+Signed-off-by: Thomas Dreibholz <dreibh@iem.uni-due.de>
+---
+diff --git a/net/sctp/output.c b/net/sctp/output.c
+index a646681..744e667 100644
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -72,6 +72,7 @@ static sctp_xmit_t sctp_packet_will_fit(struct sctp_packet 
+*packet,
 
-The simple integration is using macvtap + xiaohui's vhost asycn io
-patch. I can make a try for TX only.
+ static void sctp_packet_reset(struct sctp_packet *packet)
+ {
++        BUG_ON(!list_empty(&packet->chunk_list));
+ 	packet->size = packet->overhead;
+ 	packet->has_cookie_echo = 0;
+ 	packet->has_sack = 0;
+diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+index c04b2eb..69296c8 100644
+--- a/net/sctp/outqueue.c
++++ b/net/sctp/outqueue.c
+@@ -799,13 +799,13 @@ static int sctp_outq_flush(struct sctp_outq *q, int 
+rtx_timeout)
+ 		 */
+ 		if (new_transport != transport) {
+ 			transport = new_transport;
++			packet = &transport->packet;
+ 			if (list_empty(&transport->send_ready)) {
+ 				list_add_tail(&transport->send_ready,
+ 					      &transport_list);
++				sctp_packet_config(packet, vtag,
++					      asoc->peer.ecn_capable);
+ 			}
+-			packet = &transport->packet;
+-			sctp_packet_config(packet, vtag,
+-					   asoc->peer.ecn_capable);
+ 		}
 
-Thanks
-Shirley
+ 		switch (chunk->chunk_hdr->type) {
+@@ -900,15 +900,14 @@ static int sctp_outq_flush(struct sctp_outq *q, int 
+rtx_timeout)
+ 			/* Switch transports & prepare the packet.  */
 
+ 			transport = asoc->peer.retran_path;
++			packet = &transport->packet;
+
+ 			if (list_empty(&transport->send_ready)) {
+ 				list_add_tail(&transport->send_ready,
+ 					      &transport_list);
++				sctp_packet_config(packet, vtag,
++						   asoc->peer.ecn_capable);
+ 			}
+-
+-			packet = &transport->packet;
+-			sctp_packet_config(packet, vtag,
+-					   asoc->peer.ecn_capable);
+ 		retran:
+ 			error = sctp_outq_flush_rtx(q, packet,
+ 						    rtx_timeout, &start_timer);
+@@ -970,6 +969,7 @@ static int sctp_outq_flush(struct sctp_outq *q, int 
+rtx_timeout)
+ 			/* Change packets if necessary.  */
+ 			if (new_transport != transport) {
+ 				transport = new_transport;
++				packet = &transport->packet;
+
+ 				/* Schedule to have this transport's
+ 				 * packet flushed.
+@@ -977,15 +977,14 @@ static int sctp_outq_flush(struct sctp_outq *q, int 
+rtx_timeout)
+ 				if (list_empty(&transport->send_ready)) {
+ 					list_add_tail(&transport->send_ready,
+ 						      &transport_list);
+-				}
++					sctp_packet_config(packet, vtag,
++							   asoc->peer.ecn_capable);
+
+-				packet = &transport->packet;
+-				sctp_packet_config(packet, vtag,
+-						   asoc->peer.ecn_capable);
+-				/* We've switched transports, so apply the
+-				 * Burst limit to the new transport.
+-				 */
+-				sctp_transport_burst_limited(transport);
++					/* We've switched transports, so apply the
++					 * Burst limit to the new transport.
++					 */
++					sctp_transport_burst_limited(transport);
++				}
+ 			}
+
+ 			SCTP_DEBUG_PRINTK("sctp_outq_flush(%p, %p[%s]), ",
