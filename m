@@ -1,162 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab0INCmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 22:42:24 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53169 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab0INCmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 22:42:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=jD+vRQ28EFODc9143gqwaxoOhn3CZ9vCGdadXiT1Eiukd2wnBuauFQR49FN186M0O/
-         qQzWBFmQbWFN43aPk213+zpFpfyeGWGJ/x1xCh89CsqB1c3ciqeQeMSzMC/XTcwhb6wV
-         mfHYCm5bNn8W5E11DIOLcQSgch68Whe2llu2g=
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: mjg59@srcf.ucam.org
-Cc: randy.dunlap@oracle.com, mjg@redhat.com, gregkh@suse.de, trenn@suse.de,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dennis.Jansen@web.de, "Lee, Chun-Yi" <jlee@novell.com>
-Subject: [PATCH] Add Intel Poulsbo Stub Driver
-Date: Tue, 14 Sep 2010 10:39:42 +0800
-Message-Id: <1284431982-7750-1-git-send-email-jlee@novell.com>
-X-Mailer: git-send-email 1.6.0.2
+	id S1753161Ab0INCwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 22:52:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:21791 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752177Ab0INCwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 22:52:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,361,1280732400"; 
+   d="scan'208";a="837374959"
+Date: Tue, 14 Sep 2010 10:33:51 +0800
+From: Yong Wang <yong.y.wang@linux.intel.com>
+To: Jean Delvare <khali@linux-fr.org>, Alan Cox <alan@linux.intel.com>,
+        Kalhan Trisal <kalhan.trisal@intel.com>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] hwmon/emc1403: remove unnecessary hwmon_device_unregister
+Message-ID: <20100914023351.GA27145@ywang-moblin2.bj.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, there have no Poulsbo native video driver to support
-intel opregion. So, use this stub driver to enable the acpi backlight
-control sysfs entry files by requrest acpi_video_register.
+It is unnecessary to call hwmon_device_unregister in error handling
+before hwmon_device_register is called.
 
-Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+Signed-off-by: Yong Wang <yong.y.wang@intel.com>
 ---
- drivers/gpu/Makefile       |    2 +-
- drivers/gpu/stub/Kconfig   |   13 +++++++++
- drivers/gpu/stub/Makefile  |    1 +
- drivers/gpu/stub/poulsbo.c |   63 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/video/Kconfig      |    2 +
- 5 files changed, 80 insertions(+), 1 deletions(-)
- create mode 100644 drivers/gpu/stub/Kconfig
- create mode 100644 drivers/gpu/stub/Makefile
- create mode 100644 drivers/gpu/stub/poulsbo.c
+ drivers/hwmon/emc1403.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
-index 30879df..cc92778 100644
---- a/drivers/gpu/Makefile
-+++ b/drivers/gpu/Makefile
-@@ -1 +1 @@
--obj-y			+= drm/ vga/
-+obj-y			+= drm/ vga/ stub/
-diff --git a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig
-new file mode 100644
-index 0000000..9795890
---- /dev/null
-+++ b/drivers/gpu/stub/Kconfig
-@@ -0,0 +1,13 @@
-+config STUB_POULSBO
-+	tristate "Intel Poulsbo Stub Driver"
-+	depends on PCI
-+        # Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
-+        # but for select to work, need to select ACPI_VIDEO's dependencies, ick
-+        select ACPI_VIDEO if ACPI
-+	help
-+	  Choose this option if you have a system that has Intel Poulsbo
-+	  integrated graphics. If M is selected, the module will be called
-+	  Poulsbo. This driver is a stub driver for Poulsbo that will call
-+	  poulsbo.ko to enable the acpi backlight control sysfs entry file
-+	  because there have no poulsbo native driver can support intel
-+	  opregion.
-diff --git a/drivers/gpu/stub/Makefile b/drivers/gpu/stub/Makefile
-new file mode 100644
-index 0000000..cd940cc
---- /dev/null
-+++ b/drivers/gpu/stub/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_STUB_POULSBO) += poulsbo.o
-diff --git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c
-new file mode 100644
-index 0000000..d8aa636
---- /dev/null
-+++ b/drivers/gpu/stub/poulsbo.c
-@@ -0,0 +1,63 @@
-+/*
-+ * Intel Poulsbo Stub driver
-+ *
-+ * Copyright (C) 2010 Novell <jlee@novell.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <acpi/video.h>
-+
-+#define DRIVER_NAME "poulsbo"
-+
-+enum {
-+	CHIP_PSB_8108 = 0,
-+	CHIP_PSB_8109 = 1,
-+};
-+
-+static struct pci_device_id pciidlist[] = {
-+	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
-+	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
-+	{0, 0, 0}
-+};
-+
-+static int poulsbo_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-+{
-+	return acpi_video_register();
-+}
-+
-+static void poulsbo_remove(struct pci_dev *pdev)
-+{
-+	acpi_video_unregister();
-+}
-+
-+static struct pci_driver poulsbo_driver = {
-+	.name = DRIVER_NAME,
-+	.id_table = pciidlist,
-+	.probe = poulsbo_probe,
-+	.remove = poulsbo_remove,
-+};
-+
-+static int __init poulsbo_init(void)
-+{
-+	return pci_register_driver(&poulsbo_driver);
-+}
-+
-+static void __exit poulsbo_exit(void)
-+{
-+	pci_unregister_driver(&poulsbo_driver);
-+}
-+
-+module_init(poulsbo_init);
-+module_exit(poulsbo_exit);
-+
-+MODULE_AUTHOR("Lee, Chun-Yi <jlee@novell.com>");
-+MODULE_DESCRIPTION("Poulsbo Stub Driver");
-+MODULE_LICENSE("GPL");
-+
-+MODULE_DEVICE_TABLE(pci, pciidlist);
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index 8b31fdf..8807ae5 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -17,6 +17,8 @@ source "drivers/gpu/vga/Kconfig"
- 
- source "drivers/gpu/drm/Kconfig"
- 
-+source "drivers/gpu/stub/Kconfig"
-+
- config VGASTATE
-        tristate
-        default n
+diff --git a/drivers/hwmon/emc1403.c b/drivers/hwmon/emc1403.c
+index 5b58b20..8dee3f3 100644
+--- a/drivers/hwmon/emc1403.c
++++ b/drivers/hwmon/emc1403.c
+@@ -308,7 +308,6 @@ static int emc1403_probe(struct i2c_client *client,
+ 	res = sysfs_create_group(&client->dev.kobj, &m_thermal_gr);
+ 	if (res) {
+ 		dev_warn(&client->dev, "create group failed\n");
+-		hwmon_device_unregister(data->hwmon_dev);
+ 		goto thermal_error1;
+ 	}
+ 	data->hwmon_dev = hwmon_device_register(&client->dev);
 -- 
-1.6.0.2
+1.5.5.1
 
