@@ -1,226 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab0INHHX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 03:07:23 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:56377 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751848Ab0INHHW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 03:07:22 -0400
-Date: Tue, 14 Sep 2010 03:07:19 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-Subject: [RFC PATCH] sched: START_NICE feature (temporarily niced forks)
-Message-ID: <20100914070718.GA25117@Krystal>
+	id S1752454Ab0INHIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 03:08:34 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51228 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065Ab0INHId convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 03:08:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=SzVIs/Gno+mmXfQ0tPvyiTXeMMCv2Zl/YwYyUfDZ9UHvsvgFBKBfMr2kSZiJ/r/U4J
+         bL9U6Ln67SHe0ditmQOuuAAk2g2ddRfU+0FSTGodqtTMmy7k9S19qzp2wl2Xl7y/RCig
+         Pn3rO07TuBXMeWCOZO8tn8BokoZCV9IurXR2Q=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+In-Reply-To: <1284349896-14545-2-git-send-email-mark.brown314@gmail.com>
+References: <1284349896-14545-1-git-send-email-mark.brown314@gmail.com> <1284349896-14545-2-git-send-email-mark.brown314@gmail.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Tue, 14 Sep 2010 15:08:12 +0800
+Message-ID: <AANLkTi=gvk0TiQWs0778xFEy-FdsO1qNmc2gzb5mNq8Z@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] ARM: pxa168: added support for Teton BGA platform
+To: "Mark F. Brown" <mark.brown314@gmail.com>
+Cc: marek.vasut@gmail.com, haojian.zhuang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        markb@marvell.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 02:52:23 up 234 days,  9:29,  3 users,  load average: 0.00, 0.03,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch tweaks the nice value of both the parent and the child after a fork
-to a higher nice value, but this is only applied to their first slice after the
-fork. The goal of this scheme is that their respective vruntime will increment
-faster in the first slice after the fork, so a workload doing many forks (e.g.
-make -j10) will have a limited impact on latency-sensitive workloads.
+On Mon, Sep 13, 2010 at 11:51 AM, Mark F. Brown <mark.brown314@gmail.com> wrote:
+> Added board defintion, header, and debug UART support.
+>
+> Signed-off-by: Mark F. Brown <mark.brown314@gmail.com>
+> ---
+>  MAINTAINERS                                |    5 +++
+>  arch/arm/mach-mmp/Kconfig                  |    7 ++++
+>  arch/arm/mach-mmp/Makefile                 |    1 +
+>  arch/arm/mach-mmp/include/mach/teton_bga.h |   27 +++++++++++++++
+>  arch/arm/mach-mmp/teton_bga.c              |   50 ++++++++++++++++++++++++++++
+>  5 files changed, 90 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/mach-mmp/include/mach/teton_bga.h
+>  create mode 100644 arch/arm/mach-mmp/teton_bga.c
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 433f353..d7a4481 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -967,6 +967,11 @@ M: Lennert Buytenhek <kernel@wantstofly.org>
+>  L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  S:     Maintained
+>
+> +ARM/TETON BGA MACHINE SUPPORT
+> +M:     Mark F. Brown <mark.brown314@gmail.com>
+> +L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> +S:     Maintained
+> +
+>  ARM/THECUS N2100 MACHINE SUPPORT
+>  M:     Lennert Buytenhek <kernel@wantstofly.org>
+>  L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> diff --git a/arch/arm/mach-mmp/Kconfig b/arch/arm/mach-mmp/Kconfig
+> index 6ab843e..0711d3b 100644
+> --- a/arch/arm/mach-mmp/Kconfig
+> +++ b/arch/arm/mach-mmp/Kconfig
+> @@ -57,6 +57,13 @@ config MACH_MARVELL_JASPER
+>          PXA910-based development board. Since MMP2 is compatible to
+>          ARMv6 architecture.
+>
+> +config MACH_TETON_BGA
+> +       bool "Marvell's PXA168 Teton BGA Development Board"
+> +       select CPU_PXA168
+> +       help
+> +         Say 'Y' here if you want to support the Marvell PXA168-based
+> +         Teton BGA Development Board.
+> +
+>  endmenu
+>
+>  config CPU_PXA168
+> diff --git a/arch/arm/mach-mmp/Makefile b/arch/arm/mach-mmp/Makefile
+> index 8b66d06..751cdbf 100644
+> --- a/arch/arm/mach-mmp/Makefile
+> +++ b/arch/arm/mach-mmp/Makefile
+> @@ -17,3 +17,4 @@ obj-$(CONFIG_MACH_TAVOREVB)   += tavorevb.o
+>  obj-$(CONFIG_MACH_TTC_DKB)     += ttc_dkb.o
+>  obj-$(CONFIG_MACH_FLINT)       += flint.o
+>  obj-$(CONFIG_MACH_MARVELL_JASPER) += jasper.o
+> +obj-$(CONFIG_MACH_TETON_BGA)   += teton_bga.o
+> diff --git a/arch/arm/mach-mmp/include/mach/teton_bga.h b/arch/arm/mach-mmp/include/mach/teton_bga.h
+> new file mode 100644
+> index 0000000..61a539b
+> --- /dev/null
+> +++ b/arch/arm/mach-mmp/include/mach/teton_bga.h
+> @@ -0,0 +1,27 @@
+> +/*
+> + *  linux/arch/arm/mach-mmp/include/mach/teton_bga.h
+> + *
+> + *  Support for the Marvell PXA168 Teton BGA Development Platform.
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  publishhed by the Free Software Foundation.
+> + */
+> +#ifndef __ASM_MACH_TETON_BGA_H
+> +#define __ASM_MACH_TETON_BGA_H
+> +
+> +/* GPIOs */
+> +#define MMC_PWENA_GPIO         27
+> +#define USBHPENB_GPIO          55
+> +#define RTC_INT_GPIO           78
+> +#define LCD_VBLK_EN_GPIO       79
+> +#define LCD_DVDD_EN_GPIO       80
+> +#define RST_WIFI_GPIO          81
+> +#define CF_PWEN_GPIO           82
+> +#define USB_OC_GPIO            83
+> +#define PWM_GPIO               84
+> +#define USBHPENA_GPIO          85
+> +#define TS_INT_GPIO            86
+> +#define CIR_GPIO               108
+> +
+> +#endif /* __ASM_MACH_TETON_BGA_H */
+> diff --git a/arch/arm/mach-mmp/teton_bga.c b/arch/arm/mach-mmp/teton_bga.c
+> new file mode 100644
+> index 0000000..49b746b
+> --- /dev/null
+> +++ b/arch/arm/mach-mmp/teton_bga.c
+> @@ -0,0 +1,50 @@
+> +/*
+> + *  linux/arch/arm/mach-mmp/teton_bga.c
+> + *
+> + *  Support for the Marvell PXA168 Teton BGA Development Platform.
+> + *
+> + *  Author: Mark F. Brown <mark.brown314@gmail.com>
+> + *
+> + *  This code is based on aspenite.c
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  publishhed by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/kernel.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/gpio.h>
+> +
+> +#include <asm/mach-types.h>
+> +#include <asm/mach/arch.h>
+> +#include <mach/addr-map.h>
+> +#include <mach/mfp-pxa168.h>
+> +#include <mach/pxa168.h>
+> +#include <mach/teton_bga.h>
+> +
+> +#include "common.h"
+> +
+> +static unsigned long teton_bga_pin_config[] __initdata = {
+> +       /* UART1 */
+> +       GPIO107_UART1_TXD,
+> +       GPIO108_UART1_RXD,
+> +};
+> +
+> +static void __init teton_bga_init(void)
+> +{
+> +       mfp_config(ARRAY_AND_SIZE(teton_bga_pin_config));
+> +
+> +       /* on-chip devices */
+> +       pxa168_add_uart(1);
+> +}
+> +
+> +MACHINE_START(TETON_BGA, "PXA168-based Teton BGA Development Platform")
+> +       .phys_io        = APB_PHYS_BASE,
+> +       .io_pg_offst    = (APB_VIRT_BASE >> 18) & 0xfffc,
+> +       .map_io         = mmp_map_io,
 
-This is an alternative to START_DEBIT which does not have the downside of moving
-newly forked threads to the end of the runqueue.
+Added .nr_irqs = IRQ_BOARD_START here, since I've merged Haojian's
+patch for enabling SPARSE_IRQ on MMP.
 
-Latency benchmark:
+Otherwise all good to me, applied to 'devel'.
 
-* wakeup-latency.c (SIGEV_THREAD) with make -j10 on UP 2.0GHz
-
-Kernel used: mainline 2.6.35.2 with smaller min_granularity and check_preempt
-vruntime vs runtime comparison patches applied.
-
-- START_DEBIT (vanilla setting)
-
-maximum latency: 26409.0 �s
-average latency: 6762.1 �s
-missed timer events: 0
-
-- NO_START_DEBIT, NO_START_NICE
-
-maximum latency: 10001.8 �s
-average latency: 1618.7 �s
-missed timer events: 0
-
-- START_NICE
-
-maximum latency: 9873.9 �s
-average latency: 901.2 �s
-missed timer events: 0
-
-On the Xorg interactivity aspect, I notice a major improvement with START_NICE
-compared to the two other settings. I just came up with a very simple repeatable
-low-tech test that takes into account both input and video update
-responsiveness:
-
-Start make -j10 in a gnome-terminal
-In another gnome-terminal, start pressing the space bar, holding it.
-Use the cursor speed (my cursor is a full rectangle) as latency indicator. With
-low latency, its speed should be constant, no stopping and no sudden
-acceleration.
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
----
- include/linux/sched.h   |    2 ++
- kernel/sched.c          |   16 ++++++++++++++--
- kernel/sched_fair.c     |   30 +++++++++++++++++++++++++++++-
- kernel/sched_features.h |    6 ++++++
- 4 files changed, 51 insertions(+), 3 deletions(-)
-
-Index: linux-2.6-lttng.git/kernel/sched_features.h
-===================================================================
---- linux-2.6-lttng.git.orig/kernel/sched_features.h
-+++ linux-2.6-lttng.git/kernel/sched_features.h
-@@ -12,6 +12,12 @@ SCHED_FEAT(GENTLE_FAIR_SLEEPERS, 1)
- SCHED_FEAT(START_DEBIT, 1)
- 
- /*
-+ * After a fork, ensure both the parent and the child get niced for their
-+ * following slice.
-+ */
-+SCHED_FEAT(START_NICE, 0)
-+
-+/*
-  * Should wakeups try to preempt running tasks.
-  */
- SCHED_FEAT(WAKEUP_PREEMPT, 1)
-Index: linux-2.6-lttng.git/include/linux/sched.h
-===================================================================
---- linux-2.6-lttng.git.orig/include/linux/sched.h
-+++ linux-2.6-lttng.git/include/linux/sched.h
-@@ -1132,6 +1132,8 @@ struct sched_entity {
- 	u64			prev_sum_exec_runtime;
- 
- 	u64			nr_migrations;
-+	u64			fork_nice_timeout;
-+	unsigned int		fork_nice_penality;
- 
- #ifdef CONFIG_SCHEDSTATS
- 	struct sched_statistics statistics;
-Index: linux-2.6-lttng.git/kernel/sched.c
-===================================================================
---- linux-2.6-lttng.git.orig/kernel/sched.c
-+++ linux-2.6-lttng.git/kernel/sched.c
-@@ -1829,6 +1829,8 @@ static void dec_nr_running(struct rq *rq
- 
- static void set_load_weight(struct task_struct *p)
- {
-+	unsigned int prio;
-+
- 	if (task_has_rt_policy(p)) {
- 		p->se.load.weight = 0;
- 		p->se.load.inv_weight = WMULT_CONST;
-@@ -1844,8 +1846,10 @@ static void set_load_weight(struct task_
- 		return;
- 	}
- 
--	p->se.load.weight = prio_to_weight[p->static_prio - MAX_RT_PRIO];
--	p->se.load.inv_weight = prio_to_wmult[p->static_prio - MAX_RT_PRIO];
-+	prio = min_t(unsigned int, MAX_PRIO,
-+		     p->static_prio + p->se.fork_nice_penality);
-+	p->se.load.weight = prio_to_weight[prio - MAX_RT_PRIO];
-+	p->se.load.inv_weight = prio_to_wmult[prio - MAX_RT_PRIO];
- }
- 
- static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
-@@ -2421,6 +2425,8 @@ static void __sched_fork(struct task_str
- 	p->se.sum_exec_runtime		= 0;
- 	p->se.prev_sum_exec_runtime	= 0;
- 	p->se.nr_migrations		= 0;
-+	p->se.fork_nice_timeout		= 0;
-+	p->se.fork_nice_penality	= 0;
- 
- #ifdef CONFIG_SCHEDSTATS
- 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
-@@ -2482,7 +2488,13 @@ void sched_fork(struct task_struct *p, i
- 
- 	if (p->sched_class->task_fork)
- 		p->sched_class->task_fork(p);
-+	if (sched_feat(START_NICE)) {
-+		struct rq *rq = this_rq();
- 
-+		p->sched_class->put_prev_task(rq, current);
-+		set_load_weight(p);
-+		p->sched_class->set_curr_task(rq);
-+	}
- 	/*
- 	 * The child is not yet in the pid-hash so no cgroup attach races,
- 	 * and the cgroup is pinned to this child due to cgroup_fork()
-Index: linux-2.6-lttng.git/kernel/sched_fair.c
-===================================================================
---- linux-2.6-lttng.git.orig/kernel/sched_fair.c
-+++ linux-2.6-lttng.git/kernel/sched_fair.c
-@@ -513,6 +513,16 @@ __update_curr(struct cfs_rq *cfs_rq, str
- 	delta_exec_weighted = calc_delta_fair(delta_exec, curr);
- 
- 	curr->vruntime += delta_exec_weighted;
-+	if (curr->fork_nice_penality && curr->fork_nice_timeout != -1UL) {
-+		curr->fork_nice_timeout -= delta_exec;
-+		/*
-+		 * We cannot update load here while task is enqueued, so
-+		 * perform the update lazily at the end of the current (or next)
-+		 * dequeue.
-+		 */
-+		if ((s64)curr->fork_nice_timeout < 0)
-+			curr->fork_nice_timeout = -1UL;
-+	}
- 	update_min_vruntime(cfs_rq);
- }
- 
-@@ -832,6 +842,16 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
- 	 */
- 	if (!(flags & DEQUEUE_SLEEP))
- 		se->vruntime -= cfs_rq->min_vruntime;
-+
-+	/*
-+	 * We can only set the weight back to its normal value when the task is
-+	 * dequeued.
-+	 */
-+	if (se->fork_nice_timeout == -1UL) {
-+		se->fork_nice_penality = 0;
-+		set_load_weight(task_of(se));
-+		se->fork_nice_timeout = 0;
-+	}
- }
- 
- /*
-@@ -3544,8 +3564,16 @@ static void task_fork_fair(struct task_s
- 
- 	update_curr(cfs_rq);
- 
--	if (curr)
-+	if (curr) {
- 		se->vruntime = curr->vruntime;
-+		if (sched_feat(START_NICE)) {
-+			curr->fork_nice_timeout += sched_slice(cfs_rq, curr);
-+			curr->fork_nice_penality += 3;	/* about 50% lighter */
-+			se->fork_nice_timeout = curr->fork_nice_timeout;
-+			se->fork_nice_penality = curr->fork_nice_penality;
-+			set_load_weight(p);
-+		}
-+	}
- 	place_entity(cfs_rq, se, 1);
- 
- 	if (sysctl_sched_child_runs_first && curr && entity_before(curr, se)) {
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+> +       .init_irq       = pxa168_init_irq,
+> +       .timer          = &pxa168_timer,
+> +       .init_machine   = teton_bga_init,
+> +MACHINE_END
+> --
+> 1.7.0.4
+>
+>
