@@ -1,51 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab0INXGG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 19:06:06 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:53206 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab0INXGE (ORCPT
+	id S1755808Ab0INXHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 19:07:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37658 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755135Ab0INXHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 19:06:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=DWuG0Ba3VAFbI3HLdNWqRdDQ/XcZ69zRlAm6d9PCmyPh+k09fYnsnH/Q7doqTM3hVl
-         N8F6jSjSSWvkcz4v5aywGL1MWER+qmooFT0WxNSO4q08JfRtM8mO7oWJQCFJZaStDlxN
-         SyOljGRvRzGKP6PqVZJ3HNrAz6wmT1J+mrb6E=
-Message-ID: <4C900007.1000806@gmail.com>
-Date: Tue, 14 Sep 2010 16:06:47 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
-MIME-Version: 1.0
-To: Nigel Cunningham <nigel@tuxonice.net>
-CC: Randy Dunlap <randy.dunlap@oracle.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
-Subject: Re: 2.6.36-rc3 - Unable to build: "Error: input truncated"
-References: <4C8CB5A1.9040500@tuxonice.net>	<201009121934.37033.rjw@sisk.pl>	<4C8D5D41.90104@tuxonice.net> <20100912201152.a4ada04a.randy.dunlap@oracle.com> <4C8DB031.6050008@tuxonice.net> <4C8DB674.5040200@gmail.com> <4C8DC01A.4030206@tuxonice.net> <4C8DC6B9.3050701@gmail.com> <4C8DCA43.5000608@tuxonice.net> <4C8DD067.6060005@gmail.com> <4C8FFCC6.1000806@tuxonice.net>
-In-Reply-To: <4C8FFCC6.1000806@tuxonice.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 14 Sep 2010 19:07:13 -0400
+Date: Tue, 14 Sep 2010 16:06:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Jan Beulich" <JBeulich@novell.com>
+Cc: <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Miklos Szeredi <miklos@szeredi.hu>
+Subject: Re: [PATCH] use clear_page()/copy_page() in favor of
+ memset()/memcpy() on whole pages
+Message-Id: <20100914160654.20c91c22.akpm@linux-foundation.org>
+In-Reply-To: <4C7FB50D0200007800013F36@vpn.id2.novell.com>
+References: <4C7FB50D0200007800013F36@vpn.id2.novell.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2010 03:52 PM, Nigel Cunningham wrote:
-> Hey all.
->
-> It was corruption in my ccache cache. I eventually found that ccache -S
-> and make distclean (or git clean -fx) together make it work again.
->
-> Sorry for the noise. Perhaps, though, this will help someone in future :)
->
-> Nigel
->
+On Thu, 02 Sep 2010 13:30:37 +0100
+"Jan Beulich" <JBeulich@novell.com> wrote:
 
+> After all that's what they are intended for.
+> 
+> ...
+>
+> --- linux-2.6.36-rc3/fs/fuse/dev.c
+> +++ 2.6.36-rc3-use-clear_page/fs/fuse/dev.c
+> @@ -811,7 +811,7 @@ static int fuse_copy_page(struct fuse_co
+>  
+>  	if (page && zeroing && count < PAGE_SIZE) {
+>  		void *mapaddr = kmap_atomic(page, KM_USER1);
+> -		memset(mapaddr, 0, PAGE_SIZE);
+> +		clear_page(mapaddr);
+>  		kunmap_atomic(mapaddr, KM_USER1);
+>  	}
+>  	while (count) {
 
-yeah same happened here.. bisecting this got me pushed all the way back 
-in May(even though in May everything was fine all the way up too present)..
+fuse wanted to use clear_highpage() here.  But clear_highpage() uses
+KM_USER0.  I don't immediately see why fuse uses KM_USER1 here?
 
-glad your up and running..
+>
+> ...
+>
+> --- linux-2.6.36-rc3/kernel/power/snapshot.c
+> +++ 2.6.36-rc3-use-clear_page/kernel/power/snapshot.c
+> @@ -988,7 +988,7 @@ static void copy_data_page(unsigned long
+>  			 */
+>  			safe_copy_page(buffer, s_page);
+>  			dst = kmap_atomic(d_page, KM_USER0);
+> -			memcpy(dst, buffer, PAGE_SIZE);
+> +			copy_page(dst, buffer);
+>  			kunmap_atomic(dst, KM_USER0);
+>  		} else {
+>  			safe_copy_page(page_address(d_page), s_page);
+> @@ -1636,7 +1636,7 @@ int snapshot_read_next(struct snapshot_h
+>  		memory_bm_position_reset(&orig_bm);
+>  		memory_bm_position_reset(&copy_bm);
+>  	} else if (handle->cur <= nr_meta_pages) {
+> -		memset(buffer, 0, PAGE_SIZE);
+> +		clear_page(buffer);
+>  		pack_pfns(buffer, &orig_bm);
+>  	} else {
+>  		struct page *page;
+> @@ -1650,7 +1650,7 @@ int snapshot_read_next(struct snapshot_h
+>  			void *kaddr;
+>  
+>  			kaddr = kmap_atomic(page, KM_USER0);
+> -			memcpy(buffer, kaddr, PAGE_SIZE);
+> +			copy_page(buffer, kaddr);
+>  			kunmap_atomic(kaddr, KM_USER0);
+>  			handle->buffer = buffer;
+>  		} else {
+> @@ -1933,7 +1933,7 @@ static void copy_last_highmem_page(void)
+>  		void *dst;
+>  
+>  		dst = kmap_atomic(last_highmem_page, KM_USER0);
+> -		memcpy(dst, buffer, PAGE_SIZE);
+> +		copy_page(dst, buffer);
+>  		kunmap_atomic(dst, KM_USER0);
+>  		last_highmem_page = NULL;
+>  	}
+> @@ -2219,9 +2219,9 @@ swap_two_pages_data(struct page *p1, str
+>  
+>  	kaddr1 = kmap_atomic(p1, KM_USER0);
+>  	kaddr2 = kmap_atomic(p2, KM_USER1);
+> -	memcpy(buf, kaddr1, PAGE_SIZE);
+> -	memcpy(kaddr1, kaddr2, PAGE_SIZE);
+> -	memcpy(kaddr2, buf, PAGE_SIZE);
+> +	copy_page(buf, kaddr1);
+> +	copy_page(kaddr1, kaddr2);
+> +	copy_page(kaddr2, buf);
+>  	kunmap_atomic(kaddr1, KM_USER0);
+>  	kunmap_atomic(kaddr2, KM_USER1);
+>  }
 
-Justin P. Mattock
+The page-copying functions in snapshot.c are magical.  The changes look
+OK to me but I'd ask Rafael to double-check, please.
+
+>
+> ...
+>
