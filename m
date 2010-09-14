@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab0INRv6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 13:51:58 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:63382 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086Ab0INRv5 (ORCPT
+	id S1754133Ab0INRzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 13:55:19 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56319 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab0INRzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 13:51:57 -0400
-Message-ID: <4C8FB60D.1080906@ru.mvista.com>
-Date: Tue, 14 Sep 2010 21:51:09 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: Sergei Shtylyov <sshtylyov@mvista.com>, Ming Lei <tom.leiming@gmail.com>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [RESEND/PATCH 5/6] USB: musb-gadget: complete request only if
- data is transfered over
-References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com> <1283873014-32511-6-git-send-email-tom.leiming@gmail.com> <4C8E18AD.8000502@ru.mvista.com> <AANLkTinei3u1OZ-eBiUTDF=PDjwxLcL6rBpt7iNQJgHJ@mail.gmail.com> <4C8E4882.6040600@ru.mvista.com> <4C8E50CC.3080705@ru.mvista.com> <20100914065604.GD2601@legolas.emea.dhcp.ti.com> <4C8F527E.40408@ru.mvista.com> <20100914105402.GD7554@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20100914105402.GD7554@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 14 Sep 2010 13:55:18 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Don Zickus <dzickus@redhat.com>, Huang Ying <ying.huang@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with unknown NMI
+In-Reply-To: Your message of "Tue, 14 Sep 2010 09:48:13 +0200."
+             <20100914094813.2601eb86@basil.nowhere.org>
+From: Valdis.Kletnieks@vt.edu
+References: <20100910184039.GK4879@redhat.com> <1284344389.3269.82.camel@yhuang-dev.sh.intel.com> <20100913141140.GB27371@redhat.com> <20100913172438.37443bf7@basil.nowhere.org> <20100913154750.GA26290@redhat.com> <20100913185721.59ad9b4d@basil.nowhere.org> <20100913175346.GC26290@redhat.com> <20100913200707.3b31429e@basil.nowhere.org> <20100913182354.GE26290@redhat.com> <20100913203654.26724055@basil.nowhere.org> <20100913193655.GF26290@redhat.com> <20100913224952.442d7a24@basil.nowhere.org> <74508.1284413121@localhost>
+            <20100914094813.2601eb86@basil.nowhere.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1284486875_4681P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 14 Sep 2010 13:54:35 -0400
+Message-ID: <16821.1284486875@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020203.4C8FB6DB.035F,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+--==_Exmh_1284486875_4681P
+Content-Type: text/plain; charset=us-ascii
 
-Felipe Balbi wrote:
+On Tue, 14 Sep 2010 09:48:13 +0200, Andi Kleen said:
 
->>    If a DMA interrupt comes when the whole transfer is not yet 
->> complete (and
->> other Ming Lei's patches are making this possible),
+> It's already implemented for MCE and it works on servers.
 
-    Oh, here I mixed some other patch with Ming Lei's ones...
+I'm OK with snarfing up some NVRAM, as long as we have some way to check "yes,
+there are NN bytes of NVRAM architected for our use".
 
->> it will pass due to the
+Did I miss the memo where it says "This code will only run on chipsets that
+have architected nvram space for this sort of use"?  Wouldn't be the first time
+I've misunderstood what code is really doing. ;)
 
-> than this is the actual problem, no ? If we're using mode1 dma (as we
-> are on tx path), we should only get dma interrupt when the whole
-> transfer has been completed.
 
-    The Inventra DMA controller has serious DMA length limitation, so the whole 
-transfer may take more than one DMA.
+--==_Exmh_1284486875_4681P
+Content-Type: application/pgp-signature
 
->> 'ís_dma' condition above the patched code:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
->>                 if (is_dma || request->actual == request->length) {
+iD8DBQFMj7bbcC3lWbTT17ARAk/wAJoDDs5RCxZccBN6cBe8Rit8xVeiyACeOnIc
+Rbr04Q2i7bj0ViEYOdIrM6U=
+=v2SF
+-----END PGP SIGNATURE-----
 
->> and then it will hit the code sending the final ZLP (above this 
->> patched code too):
+--==_Exmh_1284486875_4681P--
 
-> but this was already there before the patch.
-
-    Yes, and here lies the problem.
-
->>                         /*
->>                          * First, maybe a terminating short packet. 
->> Some DMA
->>                          * engines might handle this by themselves.
->>                          */
->>                         if ((request->zero && request->length
->>                                 && request->length % 
->> musb_ep->packet_sz == 0)
->> #ifdef CONFIG_USB_INVENTRA_DMA
->>                                 || (is_dma && (!dma->desired_mode ||
->>                                         (request->actual &
->>                                                 (musb_ep->packet_sz - 
->> 1))))
->> #endif
->>                         ) {
-
->> before the transfer is complete while it should only be hit when and 
->> only when
->> the whole transfer is complete. The current code doesn't look correct 
->> as well
->> though, all due to this 'ís_dma' condition. Surely this needs fixing.
-
-> likewise, this was there before the patch. I don't think the real
-> problem lies with this patch, it's been there for a while, don't you
-> agree ?
-
-    Then what problem this patch fixes, if not this one?
-
-> the problem is not on the extra if () added below the quoted code,
-> it's on the quoted code itself, which wasn't changed in any way.
-
-    Let me repeat: in the PIO mode the added check is just duplicate, in the DMA 
-mode it's added too late in the code, after ZLP/short packet send is triggered.
-We should modify the check at the top of that code instead.
-
-WBR, Sergei
