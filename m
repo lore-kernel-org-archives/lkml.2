@@ -1,50 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab0INCjt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 22:39:49 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:43501 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab0INCjs (ORCPT
+	id S1753006Ab0INCmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 22:42:24 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53169 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab0INCmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 22:39:48 -0400
+	Mon, 13 Sep 2010 22:42:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=IFCynpd7BoD7nw4xB1PhjIzKczvL9Z09EESMaDp+CgtgdOyE9KJUunJsmfZKc5RMkq
-         XUSDGN+SbzH/E7CmFh9EMiLV11erIEJEVConKwnM/FXd0cfzJ8kLWhe7/mY4lXF/FEM2
-         h3q1cIZnNr9Bh1asZan4DgoHgCstk/d9RrRto=
-MIME-Version: 1.0
-In-Reply-To: <20100914023129.8ACE9403E6@magilla.sf.frob.com>
-References: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
- <1283442391-23612-15-git-send-email-namhyung@gmail.com> <4C8DCF72.4050701@monstr.eu>
- <AANLkTi=oHVCoeuz20qkBHTUDEwTEDsN4mFdR8nE+CaNk@mail.gmail.com>
- <20100914021532.9C53E403E6@magilla.sf.frob.com> <AANLkTikWqmxob31RjTxu3zwypxJ29KO=zVEko-157iLB@mail.gmail.com>
- <20100914023129.8ACE9403E6@magilla.sf.frob.com>
-From: Namhyung Kim <namhyung@gmail.com>
-Date: Tue, 14 Sep 2010 11:39:24 +0900
-Message-ID: <AANLkTinceMB0YKcaCBSo9qnt2uZngf3gbuDzB4tPDCMc@mail.gmail.com>
-Subject: Re: [PATCH v2 14/24] ptrace: cleanup arch_ptrace() on microblaze
-To: Roland McGrath <roland@redhat.com>
-Cc: monstr@monstr.eu, Oleg Nesterov <oleg@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jD+vRQ28EFODc9143gqwaxoOhn3CZ9vCGdadXiT1Eiukd2wnBuauFQR49FN186M0O/
+         qQzWBFmQbWFN43aPk213+zpFpfyeGWGJ/x1xCh89CsqB1c3ciqeQeMSzMC/XTcwhb6wV
+         mfHYCm5bNn8W5E11DIOLcQSgch68Whe2llu2g=
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: mjg59@srcf.ucam.org
+Cc: randy.dunlap@oracle.com, mjg@redhat.com, gregkh@suse.de, trenn@suse.de,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dennis.Jansen@web.de, "Lee, Chun-Yi" <jlee@novell.com>
+Subject: [PATCH] Add Intel Poulsbo Stub Driver
+Date: Tue, 14 Sep 2010 10:39:42 +0800
+Message-Id: <1284431982-7750-1-git-send-email-jlee@novell.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 11:31, Roland McGrath <roland@redhat.com> wrote:
-> The cosmetic-only version of the generic patches was fine with me,
-> i.e. where you don't replace put_user with copy_to_user et al.
-> I don't have a particular say on the various arch code (a few of the arch
-> maintainers tend to listen to me about this stuff, but it's up to them), so
-> I didn't respond to those.
->
+Currently, there have no Poulsbo native video driver to support
+intel opregion. So, use this stub driver to enable the acpi backlight
+control sysfs entry files by requrest acpi_video_register.
 
-OK. That means I can add your Acked-by's on architecture independent
-part in this series
-which are 01, 03 and (resended) 02, right?
+Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+---
+ drivers/gpu/Makefile       |    2 +-
+ drivers/gpu/stub/Kconfig   |   13 +++++++++
+ drivers/gpu/stub/Makefile  |    1 +
+ drivers/gpu/stub/poulsbo.c |   63 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/video/Kconfig      |    2 +
+ 5 files changed, 80 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/gpu/stub/Kconfig
+ create mode 100644 drivers/gpu/stub/Makefile
+ create mode 100644 drivers/gpu/stub/poulsbo.c
 
+diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
+index 30879df..cc92778 100644
+--- a/drivers/gpu/Makefile
++++ b/drivers/gpu/Makefile
+@@ -1 +1 @@
+-obj-y			+= drm/ vga/
++obj-y			+= drm/ vga/ stub/
+diff --git a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig
+new file mode 100644
+index 0000000..9795890
+--- /dev/null
++++ b/drivers/gpu/stub/Kconfig
+@@ -0,0 +1,13 @@
++config STUB_POULSBO
++	tristate "Intel Poulsbo Stub Driver"
++	depends on PCI
++        # Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
++        # but for select to work, need to select ACPI_VIDEO's dependencies, ick
++        select ACPI_VIDEO if ACPI
++	help
++	  Choose this option if you have a system that has Intel Poulsbo
++	  integrated graphics. If M is selected, the module will be called
++	  Poulsbo. This driver is a stub driver for Poulsbo that will call
++	  poulsbo.ko to enable the acpi backlight control sysfs entry file
++	  because there have no poulsbo native driver can support intel
++	  opregion.
+diff --git a/drivers/gpu/stub/Makefile b/drivers/gpu/stub/Makefile
+new file mode 100644
+index 0000000..cd940cc
+--- /dev/null
++++ b/drivers/gpu/stub/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_STUB_POULSBO) += poulsbo.o
+diff --git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c
+new file mode 100644
+index 0000000..d8aa636
+--- /dev/null
++++ b/drivers/gpu/stub/poulsbo.c
+@@ -0,0 +1,63 @@
++/*
++ * Intel Poulsbo Stub driver
++ *
++ * Copyright (C) 2010 Novell <jlee@novell.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <acpi/video.h>
++
++#define DRIVER_NAME "poulsbo"
++
++enum {
++	CHIP_PSB_8108 = 0,
++	CHIP_PSB_8109 = 1,
++};
++
++static struct pci_device_id pciidlist[] = {
++	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
++	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
++	{0, 0, 0}
++};
++
++static int poulsbo_probe(struct pci_dev *pdev, const struct pci_device_id *id)
++{
++	return acpi_video_register();
++}
++
++static void poulsbo_remove(struct pci_dev *pdev)
++{
++	acpi_video_unregister();
++}
++
++static struct pci_driver poulsbo_driver = {
++	.name = DRIVER_NAME,
++	.id_table = pciidlist,
++	.probe = poulsbo_probe,
++	.remove = poulsbo_remove,
++};
++
++static int __init poulsbo_init(void)
++{
++	return pci_register_driver(&poulsbo_driver);
++}
++
++static void __exit poulsbo_exit(void)
++{
++	pci_unregister_driver(&poulsbo_driver);
++}
++
++module_init(poulsbo_init);
++module_exit(poulsbo_exit);
++
++MODULE_AUTHOR("Lee, Chun-Yi <jlee@novell.com>");
++MODULE_DESCRIPTION("Poulsbo Stub Driver");
++MODULE_LICENSE("GPL");
++
++MODULE_DEVICE_TABLE(pci, pciidlist);
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 8b31fdf..8807ae5 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -17,6 +17,8 @@ source "drivers/gpu/vga/Kconfig"
+ 
+ source "drivers/gpu/drm/Kconfig"
+ 
++source "drivers/gpu/stub/Kconfig"
++
+ config VGASTATE
+        tristate
+        default n
 -- 
-Regards,
-Namhyung Kim
+1.6.0.2
+
