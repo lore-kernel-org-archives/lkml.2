@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab0INP2j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 11:28:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30370 "EHLO mx1.redhat.com"
+	id S1752671Ab0INPaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 11:30:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:42156 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750973Ab0INP2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 11:28:37 -0400
-Date: Tue, 14 Sep 2010 17:22:31 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Shirley Ma <mashirle@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        David Miller <davem@davemloft.net>, xiaohui.xin@intel.com,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-Message-ID: <20100914152231.GA13105@redhat.com>
-References: <1284410580.13351.10.camel@localhost.localdomain>
- <4C8F3C77.7010302@redhat.com>
- <1284476719.13351.35.camel@localhost.localdomain>
- <201009141721.13202.arnd@arndb.de>
+	id S1751327Ab0INPaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 11:30:07 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
+Date: Tue, 14 Sep 2010 17:30:38 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Jiri Slaby <jslaby@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
+        pingc@wacom.com, "linux-pm" <linux-pm@lists.linux-foundation.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org
+References: <Pine.LNX.4.44L0.1009141119340.1648-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1009141119340.1648-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009141721.13202.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009141730.38215.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 05:21:13PM +0200, Arnd Bergmann wrote:
-> On Tuesday 14 September 2010, Shirley Ma wrote:
-> > On Tue, 2010-09-14 at 11:12 +0200, Avi Kivity wrote:
-> >
-> > > That's what io_submit() is for.  Then io_getevents() tells you what
-> > > "a 
-> > > while" actually was.
+Am Dienstag, 14. September 2010, 17:23:15 schrieb Alan Stern:
+> On Tue, 14 Sep 2010, Oliver Neukum wrote:
+> 
+> > > > Should I have used usb_autopm_get_interface_no_resume()?
+> > > 
+> > > That actually would work.  It's a good idea.  The only drawback (not a
+> > > big one) is that if the device _was_ suspended with remote wakeup
+> > > enabled, doing this wouldn't turn off remote wakeup.  I think that
+> > > doesn't matter.
 > > 
-> > This macvtap zero copy uses iov buffers from vhost ring, which is
-> > allocated from guest kernel. In host kernel, vhost calls macvtap
-> > sendmsg. macvtap sendmsg calls get_user_pages_fast to pin these buffers'
-> > pages for zero copy.
-> > 
-> > The patch is relying on how vhost handle these buffers. I need to look
-> > at vhost code (qemu) first for addressing the questions here.
+> > I am afraid it does matter as devices whose remote wakeup is enabled
+> > may draw more power.
 > 
-> I guess the best solution would be to make macvtap_aio_write return
-> -EIOCBQUEUED when a packet gets passed down to the adapter, and
-> call aio_complete when the adapter is done with it.
-> 
-> This would change the regular behavior of macvtap into a model where
-> every write on the file blocks until the packet has left the machine,
-> which gives us better flow control, but does slow down the traffic
-> when we only put one packet at a time into the queue.
-> 
-> It also allows the user to call io_submit instead of write in order
-> to do an asynchronous submission as Avi was suggesting.
-> 
-> 	Arnd
+> I doubt it, or at least, not very much more.  They are still limited by 
+> the USB spec as to the total amount of current they can draw while 
+> suspended.
 
-I would expect this to hurt performance significantly.
-We could do this for asynchronous requests only to avoid the
-slowdown.
+7.2.3 Sources of remote wakeup may draw 2.5mA when suspended
+as opposed to 0.5 mA
 
--- 
-MST
+	Regards
+		Oliver
