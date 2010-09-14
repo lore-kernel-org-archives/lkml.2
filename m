@@ -1,183 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750743Ab0INEYm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 00:24:42 -0400
-Received: from mail.perches.com ([173.55.12.10]:1977 "EHLO mail.perches.com"
+	id S1752185Ab0INEcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 00:32:09 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34489 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755Ab0INEYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 00:24:11 -0400
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org
-Subject: [PATCH next 01/16] arch/alpha: Use static const char * const where possible
-Date: Mon, 13 Sep 2010 21:23:47 -0700
-Message-Id: <3b211935182d8ac989fbdfde01fbdc25077151a9.1284435709.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.3.rc1
-In-Reply-To: <cover.1284435709.git.joe@perches.com>
-References: <cover.1284435709.git.joe@perches.com>
+	id S1751571Ab0INEcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 00:32:05 -0400
+Date: Tue, 14 Sep 2010 14:31:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Greg KH <greg@kroah.com>,
+        Jason Baron <jbaron@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the final tree
+ (driver-core tree related)
+Message-Id: <20100914143159.dca830f0.sfr@canb.auug.org.au>
+In-Reply-To: <201009132126.14115.trenn@suse.de>
+References: <20100907115426.fc0c3e13.sfr@canb.auug.org.au>
+	<20100907023404.GA11972@kroah.com>
+	<20100913085155.6b73c9cc.randy.dunlap@oracle.com>
+	<201009132126.14115.trenn@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__14_Sep_2010_14_31_59_+1000_mNmsoJrePHf+t=Lf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- arch/alpha/kernel/err_ev6.c    |   12 +++++++-----
- arch/alpha/kernel/err_marvel.c |   33 +++++++++++++++++----------------
- arch/alpha/kernel/err_titan.c  |   35 ++++++++++++++++++++---------------
- arch/alpha/kernel/osf_sys.c    |    4 ++--
- 4 files changed, 46 insertions(+), 38 deletions(-)
+--Signature=_Tue__14_Sep_2010_14_31_59_+1000_mNmsoJrePHf+t=Lf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/alpha/kernel/err_ev6.c b/arch/alpha/kernel/err_ev6.c
-index 8ca6345..253cf1a 100644
---- a/arch/alpha/kernel/err_ev6.c
-+++ b/arch/alpha/kernel/err_ev6.c
-@@ -90,11 +90,13 @@ static int
- ev6_parse_cbox(u64 c_addr, u64 c1_syn, u64 c2_syn, 
- 	       u64 c_stat, u64 c_sts, int print)
- {
--	char *sourcename[] = { "UNKNOWN", "UNKNOWN", "UNKNOWN",
--			       "MEMORY", "BCACHE", "DCACHE", 
--			       "BCACHE PROBE", "BCACHE PROBE" };
--	char *streamname[] = { "D", "I" };
--	char *bitsname[] = { "SINGLE", "DOUBLE" };
-+	static const char * const sourcename[] = {
-+		"UNKNOWN", "UNKNOWN", "UNKNOWN",
-+		"MEMORY", "BCACHE", "DCACHE",
-+		"BCACHE PROBE", "BCACHE PROBE"
-+	};
-+	static const char * const streamname[] = { "D", "I" };
-+	static const char * const bitsname[] = { "SINGLE", "DOUBLE" };
- 	int status = MCHK_DISPOSITION_REPORT;
- 	int source = -1, stream = -1, bits = -1;
- 
-diff --git a/arch/alpha/kernel/err_marvel.c b/arch/alpha/kernel/err_marvel.c
-index 5c905aa..648ae88 100644
---- a/arch/alpha/kernel/err_marvel.c
-+++ b/arch/alpha/kernel/err_marvel.c
-@@ -589,22 +589,23 @@ marvel_print_pox_spl_cmplt(u64 spl_cmplt)
- static void
- marvel_print_pox_trans_sum(u64 trans_sum)
- {
--	char *pcix_cmd[] = { "Interrupt Acknowledge",
--			     "Special Cycle",
--			     "I/O Read",
--			     "I/O Write",
--			     "Reserved",
--			     "Reserved / Device ID Message",
--			     "Memory Read",
--			     "Memory Write",
--			     "Reserved / Alias to Memory Read Block",
--			     "Reserved / Alias to Memory Write Block",
--			     "Configuration Read",
--			     "Configuration Write",
--			     "Memory Read Multiple / Split Completion",
--			     "Dual Address Cycle",
--			     "Memory Read Line / Memory Read Block",
--			     "Memory Write and Invalidate / Memory Write Block"
-+	static const char * const pcix_cmd[] = {
-+		"Interrupt Acknowledge",
-+		"Special Cycle",
-+		"I/O Read",
-+		"I/O Write",
-+		"Reserved",
-+		"Reserved / Device ID Message",
-+		"Memory Read",
-+		"Memory Write",
-+		"Reserved / Alias to Memory Read Block",
-+		"Reserved / Alias to Memory Write Block",
-+		"Configuration Read",
-+		"Configuration Write",
-+		"Memory Read Multiple / Split Completion",
-+		"Dual Address Cycle",
-+		"Memory Read Line / Memory Read Block",
-+		"Memory Write and Invalidate / Memory Write Block"
- 	};
- 
- #define IO7__POX_TRANSUM__PCI_ADDR__S		(0)
-diff --git a/arch/alpha/kernel/err_titan.c b/arch/alpha/kernel/err_titan.c
-index f7ed97c..c3b3781 100644
---- a/arch/alpha/kernel/err_titan.c
-+++ b/arch/alpha/kernel/err_titan.c
-@@ -75,8 +75,12 @@ titan_parse_p_serror(int which, u64 serror, int print)
- 	int status = MCHK_DISPOSITION_REPORT;
- 
- #ifdef CONFIG_VERBOSE_MCHECK
--	char *serror_src[] = {"GPCI", "APCI", "AGP HP", "AGP LP"};
--	char *serror_cmd[] = {"DMA Read", "DMA RMW", "SGTE Read", "Reserved"};
-+	static const char * const serror_src[] = {
-+		"GPCI", "APCI", "AGP HP", "AGP LP"
-+	};
-+	static const char * const serror_cmd[] = {
-+		"DMA Read", "DMA RMW", "SGTE Read", "Reserved"
-+	};
- #endif /* CONFIG_VERBOSE_MCHECK */
- 
- #define TITAN__PCHIP_SERROR__LOST_UECC	(1UL << 0)
-@@ -140,14 +144,15 @@ titan_parse_p_perror(int which, int port, u64 perror, int print)
- 	int status = MCHK_DISPOSITION_REPORT;
- 
- #ifdef CONFIG_VERBOSE_MCHECK
--	char *perror_cmd[] = { "Interrupt Acknowledge", "Special Cycle",
--			       "I/O Read",	       	"I/O Write",
--			       "Reserved",	       	"Reserved",
--			       "Memory Read",		"Memory Write",
--			       "Reserved",		"Reserved",
--			       "Configuration Read",	"Configuration Write",
--			       "Memory Read Multiple",	"Dual Address Cycle",
--			       "Memory Read Line","Memory Write and Invalidate"
-+	static const char * const perror_cmd[] = {
-+		"Interrupt Acknowledge", "Special Cycle",
-+		"I/O Read",		"I/O Write",
-+		"Reserved",		"Reserved",
-+		"Memory Read",		"Memory Write",
-+		"Reserved",		"Reserved",
-+		"Configuration Read",	"Configuration Write",
-+		"Memory Read Multiple",	"Dual Address Cycle",
-+		"Memory Read Line",	"Memory Write and Invalidate"
- 	};
- #endif /* CONFIG_VERBOSE_MCHECK */
- 
-@@ -273,11 +278,11 @@ titan_parse_p_agperror(int which, u64 agperror, int print)
- 	int cmd, len;
- 	unsigned long addr;
- 
--	char *agperror_cmd[] = { "Read (low-priority)",	"Read (high-priority)",
--				 "Write (low-priority)",
--				 "Write (high-priority)",
--				 "Reserved",		"Reserved",
--				 "Flush",		"Fence"
-+	static const char * const agperror_cmd[] = {
-+		"Read (low-priority)",	"Read (high-priority)",
-+		"Write (low-priority)",	"Write (high-priority)",
-+		"Reserved",		"Reserved",
-+		"Flush",		"Fence"
- 	};
- #endif /* CONFIG_VERBOSE_MCHECK */
- 
-diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
-index 5d1e6d6..16bc1f5 100644
---- a/arch/alpha/kernel/osf_sys.c
-+++ b/arch/alpha/kernel/osf_sys.c
-@@ -594,7 +594,7 @@ SYSCALL_DEFINE2(osf_sigstack, struct sigstack __user *, uss,
- 
- SYSCALL_DEFINE3(osf_sysinfo, int, command, char __user *, buf, long, count)
- {
--	char *sysinfo_table[] = {
-+	const char *sysinfo_table[] = {
- 		utsname()->sysname,
- 		utsname()->nodename,
- 		utsname()->release,
-@@ -606,7 +606,7 @@ SYSCALL_DEFINE3(osf_sysinfo, int, command, char __user *, buf, long, count)
- 		"dummy",	/* secure RPC domain */
- 	};
- 	unsigned long offset;
--	char *res;
-+	const char *res;
- 	long len, err = -EINVAL;
- 
- 	offset = command-1;
--- 
-1.7.3.rc1
+Hi Thomas,
 
+On Mon, 13 Sep 2010 21:26:13 +0200 Thomas Renninger <trenn@suse.de> wrote:
+>
+> On Monday 13 September 2010 17:51:55 Randy Dunlap wrote:
+> > On Mon, 6 Sep 2010 19:34:04 -0700 Greg KH wrote:
+> >=20
+> > > On Tue, Sep 07, 2010 at 11:54:26AM +1000, Stephen Rothwell wrote:
+> > > >=20
+> > > > After merging the final tree, today's linux-next build (powerpc
+> > > > allnoconfig) produced this warning:
+> > > >=20
+> > > > kernel/params.c: In function 'parse_args':
+> > > > kernel/params.c:233: warning: the frame size of 1032 bytes is large=
+r than 1024 bytes
+> > > >=20
+> > > > Introduced by commit 32e6407e9361cd1aac39ff6b744cad48d1802a08 ("Dyn=
+amic
+> > > > Debug: Introduce global fake module param module.ddebug") which add=
+ed a
+> > > > 1024 byte array to the stack ...
+> > >=20
+> > > Wierd, why didn't this show up yesterday?  The patch was in that tree
+> > > then, right?
+> > >=20
+> > > Thomas, care to fix this up?
+> > =20
+> > ping.  Is Thomas around??
+> Yep, sorry for not responding.
+>=20
+> I tried to reproduce this on ppc64, but above file compiled without
+> warning with dynamic debug set. Thus I thought this still came from the
+> old patch.
+
+The report is for a powerpc allnoconfig build (see above) i.e. ppc32.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__14_Sep_2010_14_31_59_+1000_mNmsoJrePHf+t=Lf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMjvq/AAoJEDMEi1NhKgbsgr8IAJ2iXvcVhOnyMS9VN1YUJipB
+45qFw9C+srXBg3lDJAZ3UdJX7QGpoQ+zH/vlqUVlZwScXX99sm4T2pb9ySNc02pB
+HOhH9qP77e/syFD+dsOZqL4Lc+9cIU1Mmr+umtOxxNoHeXhUJ8bhd8dbJGzvuNq+
+0kxVc6u5z/LAFC/37GX0sKLNauIEWq72t7Cu41AsJa0wZliIdLBaalFoW36TRjam
+laE1Q0LzRCa1ct6nDzAbqcq+YrNbvOOYLYo+hEk/yp2kE/jcDiqGJ1qYxlzheUFn
+lovfRakYMR1oC4HDnu5s0QBT0zqHOG/A3c+M2ULcXGNDiJPCTbS57ShsuHbwpPI=
+=y7+H
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__14_Sep_2010_14_31_59_+1000_mNmsoJrePHf+t=Lf--
