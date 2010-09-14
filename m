@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985Ab0INTgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 15:36:24 -0400
-Received: from complete.lackof.org ([198.49.126.79]:34587 "EHLO
-	complete.lackof.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949Ab0INTgX (ORCPT
+	id S1755021Ab0INTga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 15:36:30 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:33400 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754999Ab0INTg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 15:36:23 -0400
-Date: Tue, 14 Sep 2010 13:36:10 -0600
-From: Grant Grundler <grundler@parisc-linux.org>
-To: Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        David Miller <davem@davemloft.net>
-Cc: grundler@parisc-linux.org, kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
-        security@kernel.org
-Subject: Re: [PATCH] drivers/net/tulip/de4x5.c: prevent reading
-	uninitialized stack memory
-Message-ID: <20100914193610.GB24373@lackof.org>
-References: <AANLkTiki4bNP83B2WEPcKnnDqHibxqYyi6V2CjiG9GEO@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTiki4bNP83B2WEPcKnnDqHibxqYyi6V2CjiG9GEO@mail.gmail.com>
-X-Home-Page: http://www.parisc-linux.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 14 Sep 2010 15:36:27 -0400
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100914190156.GA16037@redhat.com>
+References: <1284410580.13351.10.camel@localhost.localdomain>
+	 <4C8F3C77.7010302@redhat.com>
+	 <1284476719.13351.35.camel@localhost.localdomain>
+	 <201009141721.13202.arnd@arndb.de> <20100914152231.GA13105@redhat.com>
+	 <1284480025.13351.49.camel@localhost.localdomain>
+	 <20100914162952.GB13560@redhat.com>
+	 <1284483745.13351.71.camel@localhost.localdomain>
+	 <20100914182707.GB15549@redhat.com>
+	 <1284490143.13351.82.camel@localhost.localdomain>
+	 <20100914190156.GA16037@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Sep 2010 12:36:23 -0700
+Message-ID: <1284492983.13351.95.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 11, 2010 at 07:46:38PM -0400, Dan Rosenberg wrote:
-> The DE4X5_GET_REG device ioctl allows unprivileged users to read 32
-> bytes of uninitialized stack memory, because it copies the
-> uninitialized "addr" member instead of the intended "lval" member.
-> This patch takes care of it.
-
-Dan, Good catch.
-
-Dave, please apply.
-
+On Tue, 2010-09-14 at 21:01 +0200, Michael S. Tsirkin wrote:
+> > > I think that you should be able to simply combine
+> > > the two drivers together, add an ioctl to
+> > > enable/disable zero copy mode of operation. 
+> > 
+> > That could work. But what's the purpose to have two drivers if one
+> > driver can handle it?
+> > 
+> > Thanks
+> > Shirley
 > 
-> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+> This was just an idea: I thought it's a good way for people interested
+> in this zero copy thing to combine forces and avoid making
+> the same mistakes, but it's not a must of course. 
 
-Acked-by: Grant Grundler <grundler@parisc-linux.org>
+Ok, I will make a simple patch by reusing Xiaohui's some vhost code on
+handling vhost_add_used_and_signal() to see any performance changes.
 
-thanks,
-grant
+The interesting thing here when I run 32 instances netperf/netserver I
+didn't see any issue w/i this patch.
 
-> 
-> --- linux-2.6.35.4.orig/drivers/net/tulip/de4x5.c	2010-09-11
-> 19:12:27.000000000 -0400
-> +++ linux-2.6.35.4/drivers/net/tulip/de4x5.c	2010-09-11 19:17:12.000000000 -0400
-> @@ -5474,7 +5474,7 @@ de4x5_ioctl(struct net_device *dev, stru
->  	tmp.lval[6] = inl(DE4X5_STRR); j+=4;
->  	tmp.lval[7] = inl(DE4X5_SIGR); j+=4;
->  	ioc->len = j;
-> -	if (copy_to_user(ioc->data, tmp.addr, ioc->len)) return -EFAULT;
-> +	if (copy_to_user(ioc->data, tmp.lval, ioc->len)) return -EFAULT;
->  	break;
-> 
->  #define DE4X5_DUMP              0x0f /* Dump the DE4X5 Status */
+Thanks
+Shirley
+
