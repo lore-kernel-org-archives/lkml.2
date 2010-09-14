@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751130Ab0INEFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 00:05:08 -0400
-Received: from lo.gmane.org ([80.91.229.12]:57511 "EHLO lo.gmane.org"
+	id S1751276Ab0INEO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 00:14:27 -0400
+Received: from kroah.org ([198.145.64.141]:58509 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707Ab0INEFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 00:05:06 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Brett Russ <icycle+lkml@gmail.com>
-Subject: O_DIRECT reads appear to be cached on block device partition file?
-Date: Mon, 13 Sep 2010 23:49:32 -0400
-Message-ID: <i6mrcc$ers$1@dough.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 68-187-222-30.dhcp.oxfr.ma.charter.com
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1750743Ab0INEO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 00:14:26 -0400
+Date: Mon, 13 Sep 2010 21:03:36 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mihai Don??u <mihai.dontu@gmail.com>,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: Re: linux-next: build failure after merge of the usb tree
+Message-ID: <20100914040336.GA11972@kroah.com>
+References: <20100914125431.1603ffd1.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100914125431.1603ffd1.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running a 2.6.31 kernel on a blade chassis system with multiple blades 
-sharing common JBOD storage.  The application intelligently divides the 
-drives up among the blades, but one blade in particular is charged with 
-monitoring.  As part of this, this one monitoring blade can perform 
-reads of a certain 512B sector of all disks in the system.  This sector 
-is often written by other blades, these writes are sync'd to disk.  To 
-work around the lack of cache coherency between the distinct blades, I'm 
-using O_DIRECT on the monitoring blade such that it always reads from 
-the media to get the latest copy of this sector.  The basic steps are:
+On Tue, Sep 14, 2010 at 12:54:31PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> In file included from drivers/usb/gadget/ether.c:123:
+> drivers/usb/gadget/rndis.c: In function 'rndis_init':
+> drivers/usb/gadget/rndis.c:1163: error: expected ';' before 'if'
+> 
+> Caused by commit c8feb3bad134f927a624cc19da13f57627b905e2 ("USB: gadget:
+> rndis: fix up coding style issues in the file").
+> 
+> I used the version of the usb tree from next-20100913 for today.
 
-# grab a 512B aligned buffer (use 4KB to be safe)
-posix_memalign(&ptr, getpagesize(), 512B)
-open(/dev/sdX3, O_RDONLY|O_DIRECT)
-lseek(fd, offset, SEEK_SET)
-read(fd, ptr, 512B)
+Wierd, I haven't added any patches to my tree in a while, I guess this
+didn't get pulled into the previous linux-next tree.  I'll go fix this
+up now.
 
-If I run the above on the monitoring blade, then sync an update to the 
-sector in question from another blade, then re-reun the above code on 
-the monitoring blade, believe it or not I appear to be reading stale 
-data.  If I use dd with iflag=direct, reading the same sector offset at 
-the /dev/sdX3 partition file, I see the same stale data as seen from the 
-code above.  If, however, I instead access this sector offset from the 
-/dev/sdX device file using the (offset of partition 3 + offset of the 
-sector) I see the intended data, which makes me believe some caching 
-occurred locally for /dev/sdX3.
-
-I've searched google for too long, coming up empty.  I've tried changing 
-the open flags to O_RDWR|O_DIRECT in case the kernel was doing something 
-special b/c it believed there to be no writing to this fd.  Perhaps 
-there is an issue with reading only 512B rather than the 1KB Linux block 
-size or 4KB page size?
-
-Am I missing something about O_DIRECT, especially as it pertains to a 
-device (and a partition on that device) file?  I thought NO caching 
-would be involved.
-
-Any clues appreciated,
 thanks,
-Brett
 
+greg k-h
