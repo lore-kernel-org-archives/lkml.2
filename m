@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab0INWSc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 18:18:32 -0400
-Received: from www.tglx.de ([62.245.132.106]:38682 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752471Ab0INWSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 18:18:31 -0400
-Date: Wed, 15 Sep 2010 00:18:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Nix <nix@esperi.org.uk>
-cc: Artur Skawina <art.08.09@gmail.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Damien Wyart <damien.wyart@free.fr>,
-        John Drescher <drescherjm@gmail.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [BISECTED] 2.6.35.*: horrible (exponential? >linear) slowdown
- to unusability (HPET)
-In-Reply-To: <878w34qdu0.fsf@spindle.srvr.nix>
-Message-ID: <alpine.LFD.2.00.1009150015500.2416@localhost6.localdomain6>
-References: <87eid282pj.fsf@spindle.srvr.nix> <alpine.LFD.2.00.1009101022400.2477@localhost6.localdomain6> <alpine.LFD.2.00.1009141207310.2416@localhost6.localdomain6> <878w34qdu0.fsf@spindle.srvr.nix>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754889Ab0INWUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 18:20:20 -0400
+Received: from fabiana.iplannetworks.net ([201.216.250.248]:35108 "EHLO
+	fabiana.iplannetworks.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752415Ab0INWUT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 18:20:19 -0400
+X-Greylist: delayed 1299 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Sep 2010 18:20:19 EDT
+Date: Tue, 14 Sep 2010 14:58:36 -0700
+Message-ID: <4AFFC54800039DC7@ms1.iplannetworks.net>
+From: "Webmail Support Team" <copracoperaciones@iplanmail.com.ar>
+Subject: Please Confirm Your Account Information!!
+Reply-To: supportidesk@w.cn
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Sep 2010, Nix wrote:
 
-> On 14 Sep 2010, Thomas Gleixner said:
-> 
-> > On Fri, 10 Sep 2010, Thomas Gleixner wrote:
-> >> On Fri, 10 Sep 2010, Nix wrote:
-> >> > 
-> >> > I suspect current_clocksource doesn't do what we think it does, or the
-> >> > clocksource and 'clock event device' are not the same.)
-> >> 
-> >> Right, they are not the same. clocksource provides us a read out
-> >> device for timekeeping (usually a simple increasing counter). clock
-> >> event device is used to generate timer interrupts.
-> >> 
-> >> HPET provides both functionalities.
-> >> 
-> >> The patch you bisected is affecting the clock events part of the
-> >> HPET. So yes, it's not a clock source problem.
-> >
-> > Another question. If you add hpet=verbose (or revert that commit) does
-> > the printk_once in hpet_set_next_event() show up in dmesg ?
-> >
-> >     "hpet: compare register read back failed."
-> 
-> Well, given that I reverted that commit in the past (during the
-> bisection) and also added hpet=verbose[1], I'd have expected it to turn
-> up in my past syslogs. There is no sign of it, in syslogs back to 2009.
-> 
-> 
-> [1] and indeed am running 2.6.35.4 with hpet=verbose and no symptoms
->     on the affected system *now* -- a mystery because I thought the
->     hpet=verbose-turns-it-off code was removed, but turning on verbose
->     still seems to quash the bug?! or perhaps it's slightly
->     intermittent and every N boots I'm lucky enough to miss it. I'm
->     slightly chary of rebooting to find out ;}
+Dear Webmail Subscriber,
 
-hpet=verbose forces the read back.
+We regret to announce to you that we will be making some vital maintenance
+on our Webmail service. During this process you might have login problems
+in signing into your webmail account, to prevent this, you will have to confirm
+your account immediately after you receive this notification.
 
-FYI, we got a reasonable explanation now what's going on in hardware
-land. Patch is in the works.
+To confirm and to keep your account active during and after this maintenance
+process, please reply to this message with the below account information.
 
-Thanks,
+Failure to do this might result to a permanent deactivation of your account
+from our database to enable us create more spaces for new users and to also
+reduce spam input.
 
-	tglx
+Confirm Your Account Details
+Webmail Email ID:
+Email Password:
+Date of birth:
+
+Your account shall remain active after you must have successfully confirmed
+your account details.
+
+Thanks for bearing with us.
+
+Webmail Support Team.
+
 
