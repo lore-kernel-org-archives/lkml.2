@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab0IMXQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 19:16:58 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:34617 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab0IMXQ5 (ORCPT
+	id S1752094Ab0INAGG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 20:06:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47712 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751848Ab0INAGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 19:16:57 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: "Simon Arlott" <simon@fire.lp0.eu>
-Subject: Re: GA-MA69VM-S2 requires pci=nocrs with 2.6.35.4
-Date: Mon, 13 Sep 2010 17:16:15 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, Jordan Crouse <jordan.crouse@amd.com>
-References: <de55082de958760245f23930b79ab42b7c54c838@8b5064a13e22126c1b9329f0dc35b8915774b7c3.invalid>
-In-Reply-To: <de55082de958760245f23930b79ab42b7c54c838@8b5064a13e22126c1b9329f0dc35b8915774b7c3.invalid>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Mon, 13 Sep 2010 20:06:04 -0400
+Date: Mon, 13 Sep 2010 17:05:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Eric Paris <eparis@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: audit_tree: sleep inside atomic
+Message-Id: <20100913170522.f0b8b1e8.akpm@linux-foundation.org>
+In-Reply-To: <4C80FD9E.5040408@gmail.com>
+References: <4C1F8217.5020909@gmail.com>
+	<4C80FD9E.5040408@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009131716.18197.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 09, 2010 06:16:33 am Simon Arlott wrote:
-> With a Gigabyte GA-MA69VM-S2 690V motherboard, it stalls in
-> qurk_usb_early_handoff unless pci=nocrs is used:
+On Fri, 03 Sep 2010 15:52:30 +0200
+Jiri Slaby <jirislaby@gmail.com> wrote:
 
-Huh.  It looks like the HPET appears as a PCI device, in addition to
-being described in the HPET table (and possibly in the ACPI namespace):
+> Ideas, comments?
 
-[    0.000000] ACPI: HPET id: 0x10b9a201 base: 0xfed00000
-[    0.454232] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
-[    0.461348] pci_root PNP0A03:00: host bridge window [io  0x0000-0x0cf7]
-[    0.468004] pci_root PNP0A03:00: host bridge window [io  0x0d00-0xffff]
-[    0.474004] pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
-[    0.481004] pci_root PNP0A03:00: host bridge window [mem 0x000c0000-0x000dffff]
-[    0.489004] pci_root PNP0A03:00: host bridge window [mem 0x80000000-0xfebfffff]
-[    1.034049] pci 0000:00:14.0: no compatible bridge window for [mem 0xfed00000-0xfed003ff]
-[    1.651998] pci 0000:00:14.0: BAR 1: assigned [mem 0x80000000-0x800003ff]
+Apparently not.
 
-Since the 00:14.0 BAR looks invalid (it's outside all the host bridge
-windows), we moved it to 0x80000000, and that probably broke the HPET
-driver, which still thinks it's at 0xfed00000.
+The question is: why is nobody reporting this bug?  Obviously nobody's
+running that code path.  Why not?
 
-I've heard about this problem, but I haven't ever looked into it in
-detail.  The best way to handle this would be to figure out why Windows
-doesn't have this problem, since it also moves PCI devices in this
-situation.
+> On 06/21/2010 05:15 PM, Jiri Slaby wrote:
+> > Hi,
+> > 
+> > stanse found a sleep inside atomic added by the following commit:
+> > commit fb36de479642bc9bdd3af251ae48b882d8a1ad5d
+> > Author: Eric Paris <eparis@redhat.com>
+> > Date:   Thu Dec 17 20:12:05 2009 -0500
+> > 
+> >     audit: reimplement audit_trees using fsnotify rather than inotify
+> > 
+> >     Simply switch audit_trees from using inotify to using fsnotify for it's
+> >     inode pinning and disappearing act information.
+> > 
+> >     Signed-off-by: Eric Paris <eparis@redhat.com>
+> > 
+> > 
+> > In untag_chunk, there is
+> >   spin_lock(&entry->lock);
+> >   ...
+> >   new = alloc_chunk(size);
+> >   ...
+> >   spin_unlock(&entry->lock);
+> > 
+> > with
+> > static struct audit_chunk *alloc_chunk(int count)
+> > {
+> >   struct audit_chunk *chunk;
+> >   ...
+> >   chunk = kzalloc(size, GFP_KERNEL);
+> > 
+> > But this can sleep. How big the allocations are? Could it be ATOMIC or
+> > moved outside the spinlock?
 
-Simon, if you have a way to boot Windows, the output of Everest (free
-trial at http://www.lavalys.com/) would be a great help.
+Yes, we could make it GFP_ATOMIC - the code tries to handle allocation
+failures.
 
-I can see from the stalled.txt log that we did call sb600_disable_hpet_bar(),
-and it *looks* like that should have disabled BAR 1.  But apparently it
-didn't.  Would you mind collecting another log with the patch below?
+But if we did that we'd be adding a rarely-executed codepath to an
+apparently-never-executed code path.  We'd end up shipping stuff which
+nobody had tested, ever.
 
-Bjorn
+Plus GFP_ATOMIC is unreliable and using it because we screwed up the
+locking is lame.
 
-
-diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-index 6dd8955..f793efd 100644
---- a/arch/x86/pci/fixup.c
-+++ b/arch/x86/pci/fixup.c
-@@ -510,6 +510,7 @@ static void sb600_disable_hpet_bar(struct pci_dev *dev)
- 	 */
- 
- 	pci_read_config_byte(dev, 0x08, &val);
-+	dev_info(&dev->dev, "read %#02x\n", val);
- 
- 	if (val < 0x2F) {
- 		outb(0x55, 0xCD6);
-@@ -517,7 +518,9 @@ static void sb600_disable_hpet_bar(struct pci_dev *dev)
- 
- 		/* Set bit 7 in PM register 0x55 */
- 		outb(0x55, 0xCD6);
--		outb(val | 0x80, 0xCD7);
-+		outb(val | 0x7f, 0xCD7);
-+		dev_info(&dev->dev, "disabled BAR 1 (%pR)\n",
-+			 &dev->resource[1]);
- 	}
- }
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
+untag_chunk() could be converted to use GFP_KERNEL outside hash_lock
+and ->entry_lock.  The usual way is to take a peek, see if it looks
+like we'll probably need to do an allocation and if so, do it outside
+the locks then free it again if it turned out that we didn't need it
+after all.  Or to maintain a one-deep static-local cache and preload
+that cache if it's empty.  Neither are particularly pretty.
