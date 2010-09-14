@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab0INTga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 15:36:30 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:33400 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754999Ab0INTg1 (ORCPT
+	id S1755030Ab0INTht (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 15:37:49 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57237 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754931Ab0INThr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 15:36:27 -0400
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100914190156.GA16037@redhat.com>
-References: <1284410580.13351.10.camel@localhost.localdomain>
-	 <4C8F3C77.7010302@redhat.com>
-	 <1284476719.13351.35.camel@localhost.localdomain>
-	 <201009141721.13202.arnd@arndb.de> <20100914152231.GA13105@redhat.com>
-	 <1284480025.13351.49.camel@localhost.localdomain>
-	 <20100914162952.GB13560@redhat.com>
-	 <1284483745.13351.71.camel@localhost.localdomain>
-	 <20100914182707.GB15549@redhat.com>
-	 <1284490143.13351.82.camel@localhost.localdomain>
-	 <20100914190156.GA16037@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Sep 2010 12:36:23 -0700
-Message-ID: <1284492983.13351.95.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Sep 2010 15:37:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=XeewqDjr8Nov6YSLNziRxJFFbt3D6jICmGbw99X5d+PppApnzCgopiNlNG1iLvKBTk
+         syfBUaaAX+VJyjaXX25rGFKQGhGJdHLOeFhW3gQE6Gyl6OhZ98S3XvB63G/hXFo8Xf5Q
+         4ybfZijGoguVgS4du9W7QZUuK1xc0CKPFG9bM=
+Date: Tue, 14 Sep 2010 23:34:49 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Don Zickus <dzickus@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Huang Ying <ying.huang@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
+	unknown NMI
+Message-ID: <20100914193449.GA9797@lenovo>
+References: <20100913141140.GB27371@redhat.com> <20100913172438.37443bf7@basil.nowhere.org> <20100913154750.GA26290@redhat.com> <20100913185721.59ad9b4d@basil.nowhere.org> <20100913175346.GC26290@redhat.com> <20100913200707.3b31429e@basil.nowhere.org> <20100913182354.GE26290@redhat.com> <20100913203654.26724055@basil.nowhere.org> <20100913193655.GF26290@redhat.com> <20100914122131.GF12425@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100914122131.GF12425@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-14 at 21:01 +0200, Michael S. Tsirkin wrote:
-> > > I think that you should be able to simply combine
-> > > the two drivers together, add an ioctl to
-> > > enable/disable zero copy mode of operation. 
-> > 
-> > That could work. But what's the purpose to have two drivers if one
-> > driver can handle it?
-> > 
-> > Thanks
-> > Shirley
+On Tue, Sep 14, 2010 at 02:21:31PM +0200, Ingo Molnar wrote:
 > 
-> This was just an idea: I thought it's a good way for people interested
-> in this zero copy thing to combine forces and avoid making
-> the same mistakes, but it's not a must of course. 
+... 
+> The proper approach would be not to add hacks to the NMI code but to 
+> implement southbridge drivers - which would also have NMI callbacks. 
+> These are unchartered waters, but variance in that space is reducing 
+> systematically so it would be worth a shot.
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Ok, I will make a simple patch by reusing Xiaohui's some vhost code on
-handling vhost_add_used_and_signal() to see any performance changes.
+Hi Ingo,
 
-The interesting thing here when I run 32 instances netperf/netserver I
-didn't see any issue w/i this patch.
+while there is a conversation about makeing NMI handler robust/modern or
+whatever, I think the naming Huang has implemented for NMI Stat&Ctrl
+registers/ports look quite good and convenient (I thought about this times
+ago when being merging nmi-32/64 code but didn't implemented it properly).
+So I presume perhaps we could merge this snippets first? Or I miss something
+on discussion in general?
 
-Thanks
-Shirley
-
+	-- Cyrill
