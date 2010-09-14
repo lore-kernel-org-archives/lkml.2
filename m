@@ -1,40 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab0INPtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 11:49:45 -0400
-Received: from b.mail.sonic.net ([64.142.19.5]:34296 "EHLO b.mail.sonic.net"
+	id S1753687Ab0INPye (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 11:54:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64166 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752770Ab0INPtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 11:49:43 -0400
-X-Greylist: delayed 723 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Sep 2010 11:49:43 EDT
-Message-ID: <4C8F96BB.2040609@twiddle.net>
-Date: Tue, 14 Sep 2010 08:37:31 -0700
-From: Richard Henderson <rth@twiddle.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Thunderbird/3.1.2
+	id S1751665Ab0INPyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 11:54:32 -0400
+Subject: [PATCH] vhost: max s/g to match qemu
+To: virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mst@redhat.com
+From: Jason Wang <jasowang@redhat.com>
+Date: Tue, 14 Sep 2010 23:53:05 +0800
+Message-ID: <20100914155305.3293.92519.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org, Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org
-Subject: Re: [PATCH next 01/16] arch/alpha: Use static const char * const
- where possible
-References: <cover.1284435709.git.joe@perches.com> <3b211935182d8ac989fbdfde01fbdc25077151a9.1284435709.git.joe@perches.com>
-In-Reply-To: <3b211935182d8ac989fbdfde01fbdc25077151a9.1284435709.git.joe@perches.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2010 09:23 PM, Joe Perches wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  arch/alpha/kernel/err_ev6.c    |   12 +++++++-----
->  arch/alpha/kernel/err_marvel.c |   33 +++++++++++++++++----------------
->  arch/alpha/kernel/err_titan.c  |   35 ++++++++++++++++++++---------------
->  arch/alpha/kernel/osf_sys.c    |    4 ++--
->  4 files changed, 46 insertions(+), 38 deletions(-)
+Qemu supports up to UIO_MAXIOV s/g so we have to match that because guest
+drivers may rely on this.
 
-Acked-by: Richard Henderson  <rth@twiddle.net>
+Allocate indirect and log arrays dynamically to avoid using too much contigious
+memory and make the length of hdr array to match the header length since each
+iovec entry has a least one byte.
 
+Test with copying large files w/ and w/o migration in both linux and windows
+guests.
 
-r~
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/vhost/net.c   |    2 +-
+ drivers/vhost/vhost.c |   49 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/vhost/vhost.h |   18 ++++++++----------
+ 3 files changed, 57 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 29e850a..e828ef1 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -243,7 +243,7 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
+ 	int r, nlogs = 0;
+ 
+ 	while (datalen > 0) {
+-		if (unlikely(headcount >= VHOST_NET_MAX_SG)) {
++		if (unlikely(headcount >= UIO_MAXIOV)) {
+ 			r = -ENOBUFS;
+ 			goto err;
+ 		}
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index c579dcc..a45270e 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -212,6 +212,45 @@ static int vhost_worker(void *data)
+ 	}
+ }
+ 
++/* Helper to allocate iovec buffers for all vqs. */
++static long vhost_dev_alloc_iovecs(struct vhost_dev *dev)
++{
++	int i;
++	for (i = 0; i < dev->nvqs; ++i) {
++		dev->vqs[i].indirect = kmalloc(sizeof *dev->vqs[i].indirect *
++					       UIO_MAXIOV, GFP_KERNEL);
++		dev->vqs[i].log = kmalloc(sizeof *dev->vqs[i].log * UIO_MAXIOV,
++					  GFP_KERNEL);
++		dev->vqs[i].heads = kmalloc(sizeof *dev->vqs[i].heads *
++					    UIO_MAXIOV, GFP_KERNEL);
++
++		if (!dev->vqs[i].indirect || !dev->vqs[i].log ||
++			!dev->vqs[i].heads)
++			goto err_nomem;
++	}
++	return 0;
++err_nomem:
++	for (; i >= 0; --i) {
++		kfree(dev->vqs[i].indirect);
++		kfree(dev->vqs[i].log);
++		kfree(dev->vqs[i].heads);
++	}
++	return -ENOMEM;
++}
++
++static void vhost_dev_free_iovecs(struct vhost_dev *dev)
++{
++	int i;
++	for (i = 0; i < dev->nvqs; ++i) {
++		kfree(dev->vqs[i].indirect);
++		dev->vqs[i].indirect = NULL;
++		kfree(dev->vqs[i].log);
++		dev->vqs[i].log = NULL;
++		kfree(dev->vqs[i].heads);
++		dev->vqs[i].heads = NULL;
++	}
++}
++
+ long vhost_dev_init(struct vhost_dev *dev,
+ 		    struct vhost_virtqueue *vqs, int nvqs)
+ {
+@@ -229,6 +268,9 @@ long vhost_dev_init(struct vhost_dev *dev,
+ 	dev->worker = NULL;
+ 
+ 	for (i = 0; i < dev->nvqs; ++i) {
++		dev->vqs[i].log = NULL;
++		dev->vqs[i].indirect = NULL;
++		dev->vqs[i].heads = NULL;
+ 		dev->vqs[i].dev = dev;
+ 		mutex_init(&dev->vqs[i].mutex);
+ 		vhost_vq_reset(dev, dev->vqs + i);
+@@ -295,6 +337,10 @@ static long vhost_dev_set_owner(struct vhost_dev *dev)
+ 	if (err)
+ 		goto err_cgroup;
+ 
++	err = vhost_dev_alloc_iovecs(dev);
++	if (err)
++		goto err_cgroup;
++
+ 	return 0;
+ err_cgroup:
+ 	kthread_stop(worker);
+@@ -345,6 +391,7 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+ 			fput(dev->vqs[i].call);
+ 		vhost_vq_reset(dev, dev->vqs + i);
+ 	}
++	vhost_dev_free_iovecs(dev);
+ 	if (dev->log_ctx)
+ 		eventfd_ctx_put(dev->log_ctx);
+ 	dev->log_ctx = NULL;
+@@ -946,7 +993,7 @@ static int get_indirect(struct vhost_dev *dev, struct vhost_virtqueue *vq,
+ 	}
+ 
+ 	ret = translate_desc(dev, indirect->addr, indirect->len, vq->indirect,
+-			     ARRAY_SIZE(vq->indirect));
++			     UIO_MAXIOV);
+ 	if (unlikely(ret < 0)) {
+ 		vq_err(vq, "Translation failure %d in indirect.\n", ret);
+ 		return ret;
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index afd7729..edc8929 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -15,11 +15,6 @@
+ 
+ struct vhost_device;
+ 
+-enum {
+-	/* Enough place for all fragments, head, and virtio net header. */
+-	VHOST_NET_MAX_SG = MAX_SKB_FRAGS + 2,
+-};
+-
+ struct vhost_work;
+ typedef void (*vhost_work_fn_t)(struct vhost_work *work);
+ 
+@@ -93,12 +88,15 @@ struct vhost_virtqueue {
+ 	bool log_used;
+ 	u64 log_addr;
+ 
+-	struct iovec indirect[VHOST_NET_MAX_SG];
+-	struct iovec iov[VHOST_NET_MAX_SG];
+-	struct iovec hdr[VHOST_NET_MAX_SG];
++	struct iovec iov[UIO_MAXIOV];
++	/* hdr is used to store the virtio header.
++	 * Since each iovec has >= 1 byte length, we never need more than
++	 * header length entries to store the header. */
++	struct iovec hdr[sizeof(struct virtio_net_hdr_mrg_rxbuf)];
++	struct iovec *indirect;
+ 	size_t vhost_hlen;
+ 	size_t sock_hlen;
+-	struct vring_used_elem heads[VHOST_NET_MAX_SG];
++	struct vring_used_elem *heads;
+ 	/* We use a kind of RCU to access private pointer.
+ 	 * All readers access it from worker, which makes it possible to
+ 	 * flush the vhost_work instead of synchronize_rcu. Therefore readers do
+@@ -109,7 +107,7 @@ struct vhost_virtqueue {
+ 	void *private_data;
+ 	/* Log write descriptors */
+ 	void __user *log_base;
+-	struct vhost_log log[VHOST_NET_MAX_SG];
++	struct vhost_log *log;
+ };
+ 
+ struct vhost_dev {
+
