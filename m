@@ -1,110 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab0INOip (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 10:38:45 -0400
-Received: from medousa.rus.uni-stuttgart.de ([129.69.1.57]:32999 "EHLO
-	medousa.rus.uni-stuttgart.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751950Ab0INOio (ORCPT
+	id S1754262Ab0INOiz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 10:38:55 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:62783 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754030Ab0INOiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 10:38:44 -0400
-Message-ID: <4C8F88EC.2020009@math.tu-berlin.de>
-Date: Tue, 14 Sep 2010 16:38:36 +0200
-From: Thomas Richter <thor@math.tu-berlin.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Tue, 14 Sep 2010 10:38:50 -0400
+Message-ID: <4C8F88EB.8070608@vlnb.net>
+Date: Tue, 14 Sep 2010 18:38:35 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: parport_pc: irq= parameter with limited usefulness, kernel hang on
- PPC/OldWorldMac
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: linux-scsi@vger.kernel.org
+CC: linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jeff Garzik <jeff@garzik.org>,
+        Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>
+Subject: [PATCH 2/17]: SCST core's Makefile and Kconfig
+References: <4C8F886E.2080407@vlnb.net>
+In-Reply-To: <4C8F886E.2080407@vlnb.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:DIB4PCoJTC5h+1Ir2a6TSBq1RYjcS8EouPmu+uyhVY/
+ ER70TlRRFI4htfNQT3VBpL4vt0rNIrK4hOFwwv4aCqGfp5pY4n
+ LanAu+4vwGfM3EgP/PDIY/C0CCi0MhcJtlRB6IBe2DVqwnBR5i
+ 6nZB4sUDE46oOzkgKOCugsWbLrxOkV4rsGFonDpUTQ7+GN4VNV
+ CuRn5ChswlXmjf5jO4xow==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks, (please reply to thor@math.tu-berlin.de for additional 
-questions or feedback),
+This patch contains SCST core's Makefile and Kconfig.
 
-this is a bug report concerning the parport_pc driver on a somewhat 
-exotic hardware that seems to be related
-to the unability to switch the module into polling mode:
+Signed-off-by: Vladislav Bolkhovitin <vst@vlnb.net>
+---
+ Kconfig  |  243 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ Makefile |   11 ++
+ 2 files changed, 254 insertions(+)
 
-The system is a beige G3 old-world PPC mac with PCI slots, one of the 
-slots contains a NetMOS-based parallel port
-card. The system worked happily in this configuration for kernel 2.6.28, 
-but things broke on (at least) 2.6.31 and
-are (at least) still broken on 2.6.32.21. Symptoms are that the system 
-hangs completely as soon as data is
-printed out over /dev/lp0. It does then not even react on the 
-SysReq-keys (option of course compiled into the kernel),
-though if you're lucky, you get a stack-dump. Unfortunately, there is no 
-way to get it out of the system as you need
-to shut down the power the tough way to get it back working, so I only 
-took notes manually:
-
-Exception: 501 at handle_IRQ_event+0x34/0x124
-    LR=handle_edge_irq+0x138/0x180
-Exception: 501 at __do_softirq+0x68/0x120
-    LR=do_softirq+0x48/0x58
-Exceptin: 901 at parport_ieee1284_write_compat+0x1a8/0x250
-    LR=parport_ieee1284_write_compat+0x19c/0x250
-
-There are several strange things with these:
-
-*) Under at least 2.6.31 and up, the kernel assigns IRQ 25 to the card. 
-Under 2.6.28 and below, the card
-was run in polling mode (i.e. irq was -1, not 25).
-
-*) Furthermore, the above report suggests that the system wants to 
-handle an edge-triggered IRQ, though
-according to /proc/interrupts, IRQ 25 is level-triggered.
-
-I was then hoping to persuade the system back into a working stage by 
-passing a module parameter to parport_pc:
-
-irq=none dma=none
-
-should, according to the documentation and the parport_pc.c source do 
-that. For reasons beyond me, the kernel module wants
-to be smarter than I and *still* enables the IRQ. I'm pretty sure that 
-shouldn't happen, and a irq=none should be
-definite, and not just a suggestion, but please correct me if I'm wrong.
-
-I can get the system back to working with the following trick (urgh!, 
-don't try this at home):
-
-*) First, load parport_pc without any parameters. It will then detect an 
-SPP port at 0x540 and will enable the irq 25 for
-the card.
-
-*) Unload parport_pc,
-
-and reload it as follows:
-
-*) modprobe parport_pc io=0x450 dma=none irq=none
-
-It then "moans" a bit:
-
-Caused by (from SRR1=49030): Transfer error ack signal
-IN from bad port 852 at d1a4e898
-Machine check in kernel mode.
-Caused by (from SRR1=49030): Transfer error ack signal
-IN from bad port 852 at d1a4e93c
-
-however, the parport is then successfully in polling mode and works 
-happily (well, maybe not happily, but it works at least).
-
-Thus, for me, there seem to be at least two unrelated bugs:
-
-*) parport_pc should take irq=none seriously and should not silently 
-override it,
-*) parport_pc should at least not crash the system completely in case 
-the IRQ is enabled.
-
-The latter *might* be an issue with the G3 powermac hardware, which is 
-of course weird and has a couple of hardware
-issues of its own.
-
-Thanks,
-    Thomas
+diff -uprN orig/linux-2.6.35/drivers/scst/Kconfig linux-2.6.35/drivers/scst/Kconfig
+--- orig/linux-2.6.35/drivers/scst/Kconfig
++++ linux-2.6.35/drivers/scst/Kconfig
+@@ -0,0 +1,243 @@
++menu "SCSI target (SCST) support"
++
++config SCST
++	tristate "SCSI target (SCST) support"
++	depends on SCSI
++	help
++	  SCSI target (SCST) is designed to provide unified, consistent
++	  interface between SCSI target drivers and Linux kernel and
++	  simplify target drivers development as much as possible. Visit
++	  http://scst.sourceforge.net for more info about it.
++
++config SCST_DISK
++	tristate "SCSI target disk support"
++	default SCST
++	depends on SCSI && SCST
++	help
++	  SCST pass-through device handler for disk device.
++
++config SCST_TAPE
++	tristate "SCSI target tape support"
++	default SCST
++	depends on SCSI && SCST
++	help
++	  SCST pass-through device handler for tape device.
++
++config SCST_CDROM
++	tristate "SCSI target CDROM support"
++	default SCST
++	depends on SCSI && SCST
++	help
++	  SCST pass-through device handler for CDROM device.
++
++config SCST_MODISK
++	tristate "SCSI target MO disk support"
++	default SCST
++	depends on SCSI && SCST
++	help
++	  SCST pass-through device handler for MO disk device.
++
++config SCST_CHANGER
++	tristate "SCSI target changer support"
++	default SCST
++	depends on SCSI && SCST
++	help
++	  SCST pass-through device handler for changer device.
++
++config SCST_PROCESSOR
++	tristate "SCSI target processor support"
++	default SCST
++	depends on SCSI && SCST
++	help
++	  SCST pass-through device handler for processor device.
++
++config SCST_RAID
++	tristate "SCSI target storage array controller (RAID) support"
++	default SCST
++	depends on SCSI && SCST
++	help
++	  SCST pass-through device handler for raid storage array controller (RAID) device.
++
++config SCST_VDISK
++	tristate "SCSI target virtual disk and/or CDROM support"
++	default SCST
++	depends on SCSI && SCST
++	help
++	  SCST device handler for virtual disk and/or CDROM device.
++
++config SCST_STRICT_SERIALIZING
++	bool "Strict serialization"
++	depends on SCST
++	help
++	  Enable strict SCSI command serialization. When enabled, SCST sends
++	  all SCSI commands to the underlying SCSI device synchronously, one
++	  after one. This makes task management more reliable, at the cost of
++	  a performance penalty. This is most useful for stateful SCSI devices
++	  like tapes, where the result of the execution of a command
++	  depends on the device settings configured by previous commands. Disk
++	  and RAID devices are stateless in most cases. The current SCSI core
++	  in Linux doesn't allow to abort all commands reliably if they have
++	  been sent asynchronously to a stateful device.
++	  Enable this option if you use stateful device(s) and need as much
++	  error recovery reliability as possible.
++
++	  If unsure, say "N".
++
++config SCST_STRICT_SECURITY
++	bool "Strict security"
++	depends on SCST
++	help
++	  Makes SCST clear (zero-fill) allocated data buffers. Note: this has a
++	  significant performance penalty.
++
++	  If unsure, say "N".
++
++config SCST_TEST_IO_IN_SIRQ
++	bool "Allow test I/O from soft-IRQ context"
++	depends on SCST
++	help
++	  Allows SCST to submit selected SCSI commands (TUR and
++	  READ/WRITE) from soft-IRQ context (tasklets). Enabling it will
++	  decrease amount of context switches and slightly improve
++	  performance. The goal of this option is to be able to measure
++	  overhead of the context switches. See more info about it in
++	  README.scst.
++
++	  WARNING! Improperly used, this option can lead you to a kernel crash!
++
++	  If unsure, say "N".
++
++config SCST_ABORT_CONSIDER_FINISHED_TASKS_AS_NOT_EXISTING
++	bool "Send back UNKNOWN TASK when an already finished task is aborted"
++	depends on SCST
++	help
++	  Controls which response is sent by SCST to the initiator in case
++	  the initiator attempts to abort (ABORT TASK) an already finished
++	  request. If this option is enabled, the response UNKNOWN TASK is
++	  sent back to the initiator. However, some initiators, particularly
++	  the VMware iSCSI initiator, interpret the UNKNOWN TASK response as
++	  if the target got crazy and try to RESET it. Then sometimes the
++	  initiator gets crazy itself.
++
++	  If unsure, say "N".
++
++config SCST_USE_EXPECTED_VALUES
++	bool "Prefer initiator-supplied SCSI command attributes"
++	depends on SCST
++	help
++	  When SCST receives a SCSI command from an initiator, such a SCSI
++	  command has both data transfer length and direction attributes.
++	  There are two possible sources for these attributes: either the
++	  values computed by SCST from its internal command translation table
++	  or the values supplied by the initiator. The former are used by
++	  default because of security reasons. Invalid initiator-supplied
++	  attributes can crash the target, especially in pass-through mode.
++	  Only consider enabling this option when SCST logs the following
++	  message: "Unknown opcode XX for YY. Should you update
++	  scst_scsi_op_table?" and when the initiator complains. Please
++	  report any unrecognized commands to scst-devel@lists.sourceforge.net.
++
++	  If unsure, say "N".
++
++config SCST_EXTRACHECKS
++	bool "Extra consistency checks"
++	depends on SCST
++	help
++	  Enable additional consistency checks in the SCSI middle level target
++	  code. This may be helpful for SCST developers. Enable it if you have
++	  any problems.
++
++	  If unsure, say "N".
++
++config SCST_TRACING
++	bool "Tracing support"
++	depends on SCST
++	default y
++	help
++	  Enable SCSI middle level tracing support. Tracing can be controlled
++	  dynamically via sysfs interface. The traced information
++	  is sent to the kernel log and may be very helpful when analyzing
++	  the cause of a communication problem between initiator and target.
++
++	  If unsure, say "Y".
++
++config SCST_DEBUG
++	bool "Debugging support"
++	depends on SCST
++	select DEBUG_BUGVERBOSE
++	help
++	  Enables support for debugging SCST. This may be helpful for SCST
++	  developers.
++
++	  If unsure, say "N".
++
++config SCST_DEBUG_OOM
++	bool "Out-of-memory debugging support"
++	depends on SCST
++	help
++	  Let SCST's internal memory allocation function
++	  (scst_alloc_sg_entries()) fail about once in every 10000 calls, at
++	  least if the flag __GFP_NOFAIL has not been set. This allows SCST
++	  developers to test the behavior of SCST in out-of-memory conditions.
++	  This may be helpful for SCST developers.
++
++	  If unsure, say "N".
++
++config SCST_DEBUG_RETRY
++	bool "SCSI command retry debugging support"
++	depends on SCST
++	help
++	  Let SCST's internal SCSI command transfer function
++	  (scst_rdy_to_xfer()) fail about once in every 100 calls. This allows
++	  SCST developers to test the behavior of SCST when SCSI queues fill
++	  up. This may be helpful for SCST developers.
++
++	  If unsure, say "N".
++
++config SCST_DEBUG_SN
++	bool "SCSI sequence number debugging support"
++	depends on SCST
++	help
++	  Allows to test SCSI command ordering via sequence numbers by
++	  randomly changing the type of SCSI commands into
++	  SCST_CMD_QUEUE_ORDERED, SCST_CMD_QUEUE_HEAD_OF_QUEUE or
++	  SCST_CMD_QUEUE_SIMPLE for about one in 300 SCSI commands.
++	  This may be helpful for SCST developers.
++
++	  If unsure, say "N".
++
++config SCST_DEBUG_TM
++	bool "Task management debugging support"
++	depends on SCST_DEBUG
++	help
++	  Enables support for debugging of SCST's task management functions.
++	  When enabled, some of the commands on LUN 0 in the default access
++	  control group will be delayed for about 60 seconds. This will
++	  cause the remote initiator send SCSI task management functions,
++	  e.g. ABORT TASK and TARGET RESET.
++
++	  If unsure, say "N".
++
++config SCST_TM_DBG_GO_OFFLINE
++	bool "Let devices become completely unresponsive"
++	depends on SCST_DEBUG_TM
++	help
++	  Enable this option if you want that the device eventually becomes
++	  completely unresponsive. When disabled, the device will receive
++	  ABORT and RESET commands.
++
++config SCST_MEASURE_LATENCY
++	bool "Commands processing latency measurement facility"
++	depends on SCST
++	help
++	  This option enables commands processing latency measurement
++	  facility in SCST. It will provide in the sysfs interface
++	  average commands processing latency statistics. You can clear
++	  already measured results by writing 0 in the corresponding sysfs file.
++	  Note, you need a non-preemtible kernel to have correct results.
++
++	  If unsure, say "N".
++
++source "drivers/scst/scst_local/Kconfig"
++source "drivers/scst/srpt/Kconfig"
++
++endmenu
+diff -uprN orig/linux-2.6.35/drivers/scst/Makefile linux-2.6.35/drivers/scst/Makefile
+--- orig/linux-2.6.35/drivers/scst/Makefile
++++ linux-2.6.35/drivers/scst/Makefile
+@@ -0,0 +1,11 @@
++ccflags-y += -Wno-unused-parameter
++
++scst-y        += scst_main.o
++scst-y        += scst_pres.o
++scst-y        += scst_targ.o
++scst-y        += scst_lib.o
++scst-y        += scst_sysfs.o
++scst-y        += scst_mem.o
++scst-y        += scst_debug.o
++
++obj-$(CONFIG_SCST)   += scst.o dev_handlers/ srpt/ scst_local/
 
 
