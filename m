@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab0INSxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 14:53:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38255 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752049Ab0INSw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 14:52:58 -0400
+	id S1754552Ab0INS7r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 14:59:47 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:29309 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753840Ab0INS7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 14:59:46 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: i9wjkR0VM1ky3EOkOBbm1RplZaDfUp0n4PJ0zvu78b3BpRu
+ lukjM.cPDvD04IfDlaT7fnbDtifdx03GgzlxgKe6Z803EKiMdeACBxIQBC3R
+ aGzNDzTdpC6BM41cDSd3aHRHXO68SvEXtZKUO2YTARB6BPHmp75zbEBUOehq
+ wE.m7znLmaHJDEIgIlpKBqHVc2vZhq6s6lYco.IW7M2sV._TMwtm8HqP3bwz
+ qI_A.Wzn3m6vvQ0v8bhvP0ImEM23lo99Z_M3ULCqYBv0K4O3grbZwzOPaE_G
+ zzQ--
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 14 Sep 2010 13:59:43 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v2 1/2] SLUB: Fix merged slab cache names
+In-Reply-To: <1284490101-2362-1-git-send-email-penberg@kernel.org>
+Message-ID: <alpine.DEB.2.00.1009141357160.444@router.home>
+References: <1284490101-2362-1-git-send-email-penberg@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: pageexec@freemail.hu
-X-Fcc: ~/Mail/linus
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, oss-security@lists.openwall.com,
-        Solar Designer <solar@openwall.com>,
-        Kees Cook <kees.cook@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Oleg Nesterov <oleg@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        linux-fsdevel@vger.kernel.org, Eugene Teo <eugene@redhat.com>
-Subject: Re: [PATCH 1/3] setup_arg_pages: diagnose excessive argument size
-In-Reply-To: pageexec@freemail.hu's message of  Saturday, 11 September 2010 15:39:30 +0200 <4C8B8692.7649.3E0895B@pageexec.freemail.hu>
-References: <20100908023549.BFFA8401AF@magilla.sf.frob.com>
-	<KOSAKI Motohiro's message of  Thursday, 9 September 2010 14:31:18 +0900 <20100909141534.C948.A69D9226@jp.fujitsu.com>
-	<20100910092541.2864A405D5@magilla.sf.frob.com>
-	<4C8B8692.7649.3E0895B@pageexec.freemail.hu>
-X-Windows: complex nonsolutions to simple nonproblems.
-Message-Id: <20100914185135.03DD6403E8@magilla.sf.frob.com>
-Date: Tue, 14 Sep 2010 11:51:34 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> no it doesn't have to, similarly to how it doesn't have to hardcode
-> _SC_PAGESIZE either, AT_PAGESZ tells userland what it needs to know
-> and i think AT_ARGMAX could exist just as well.
+On Tue, 14 Sep 2010, Pekka Enberg wrote:
 
-I was referring to the ways available to userland heretofore.  Certainly,
-the kernel could add new ways and then userland could do different things
-(with new kernels).  
+> @@ -3211,6 +3225,7 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+>  		size_t align, unsigned long flags, void (*ctor)(void *))
+>  {
+>  	struct kmem_cache *s;
+> +	char *dup_name;
 
-auxv in particular is not a mechanism that could fit for this.  The actual
-limit depends on rlimits of the calling process, and rlimits can change
-during the life of the program.  auxv is only appropriate for things that
-are known at the time of the exec and won't change thereafter.
+Dont like the name. Its a short lived variables. So "n"?
 
+Otherwise
 
-Thanks,
-Roland
+Acked-by: Christoph Lameter <cl@linux.com>
+
