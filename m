@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab0INRsa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 13:48:30 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38400 "EHLO mx2.mail.elte.hu"
+	id S1754667Ab0INRtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 13:49:07 -0400
+Received: from freeflow.nu ([178.79.134.28]:33241 "EHLO freeflow.nu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751763Ab0INRs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 13:48:29 -0400
-Date: Tue, 14 Sep 2010 19:48:14 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Don Zickus <dzickus@redhat.com>, Huang Ying <ying.huang@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
- unknown NMI
-Message-ID: <20100914174814.GC3822@elte.hu>
-References: <45864.91.60.148.9.1284474680.squirrel@www.firstfloor.org>
+	id S1752837Ab0INRtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 13:49:06 -0400
+Message-ID: <4C8FB58F.8010706@kernel.org>
+Date: Tue, 14 Sep 2010 20:49:03 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <45864.91.60.148.9.1284474680.squirrel@www.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 1.0
-X-ELTE-SpamLevel: s
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
-	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
-	[score: 0.4947]
+To: Christoph Lameter <cl@linux.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 1/2] SLUB: Fix merged slab cache names
+References: <1284483964-2370-1-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1009141221310.31857@router.home> <4C8FB2AC.1030107@kernel.org> <alpine.DEB.2.00.1009141244330.444@router.home>
+In-Reply-To: <alpine.DEB.2.00.1009141244330.444@router.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  On 14.9.2010 20.47, Christoph Lameter wrote:
+> On Tue, 14 Sep 2010, Pekka Enberg wrote:
+>
+>>> Put this into mm/slub.c as slub only flag? What is the difference from
+>>> refcount == 1?
+>> I can put it in mm/slub.c but I was worried about someone reusing the bit for
+>> something else.
+> Allocate from the other end like __OBJECT_POISON.
+I'll do that. Thanks!
+>> Do you mean refcount == 2? You don't know during kmem cache release time if
+>> someone was merged to the cache or not.
+>>> Ok. Keeping the original name. Why dont we do strdup by default and always
+>>> do a kfree(s->name) on close?
+>>>
+>> I tried that. It gets very nasty during bootstrap.
+> Add it only to kmem_cache_create() not to kmem_cache_open. That is not
+> used during bootstrap. The bootstrap caches do not matter since they are
+> never freed
+I tried that too. It doesn't work because we get merged to kmalloc 
+caches and can't do kfree() on them.
 
-* Some One <some@where> stripped out all quoted identities and wrote:
-
-> >
-> > The proper approach would be not to add hacks to the NMI code but to 
-> > implement southbridge drivers - which would also have NMI callbacks.
-> 
-> BTW southbridges do less and less regarding PCI.
-
-Except WICTCR.
-
-> > These are unchartered waters, but variance in that space is reducing 
-> > systematically so it would be worth a shot.
-> 
-> You don't really need special drivers for AER [...]
-
-On the contrary, we need proper driverization for _everything_ new. 
-Embedded x86 is here to stay, so we are abstracting away each and every 
-bit of the platform. See struct x86_ops for a highlevel platform driver 
-- but a more specific, southbridge-encompassing driver framework can be 
-created too.
-
-Thanks,
-
-	Ingo
+             Pekka
