@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943Ab0INGa3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 02:30:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:41119 "EHLO mga03.intel.com"
+	id S1752011Ab0INGe7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 02:34:59 -0400
+Received: from mga03.intel.com ([143.182.124.21]:8782 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235Ab0INGa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 02:30:26 -0400
+	id S1751499Ab0INGe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 02:34:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,362,1280732400"; 
-   d="scan'208";a="324256746"
-Message-ID: <4C8F167E.40506@linux.intel.com>
-Date: Tue, 14 Sep 2010 14:30:22 +0800
+   d="scan'208";a="324258027"
+Message-ID: <4C8F178F.2080306@linux.intel.com>
+Date: Tue, 14 Sep 2010 14:34:55 +0800
 From: Chen Gong <gong.chen@linux.intel.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
 MIME-Version: 1.0
 To: Jan Beulich <JBeulich@novell.com>
 CC: fenghua.yu@intel.com, khali@linux-fr.org, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH] x86/hwmon: fix module init for		hotplug-but-no-device-found
- case
-References: <4C8E139F0200007800015AA5@vpn.id2.novell.com>
-In-Reply-To: <4C8E139F0200007800015AA5@vpn.id2.novell.com>
+        lm-sensors@lm-sensors.org, hpa@zytor.com, mingo@elte.hu,
+        tglx@linutronix.de
+Subject: Re: [lm-sensors] [PATCH] x86/hwmon: fix initialization of coretemp
+References: <4C8E16770200007800015ACC@vpn.id2.novell.com>
+In-Reply-To: <4C8E16770200007800015ACC@vpn.id2.novell.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 9/13/2010 6:05 PM, Jan Beulich 写道:
-> In commit 0dca94baeab4a1a514841b0a4c8e3a51dfb4d5ae the call to
-> platform_driver_unregister() was made conditional upon !HOTPLUG_CPU,
-> but the return value from coretemp_init() was left to indicate an
-> error. This isn't correct, as the negative return value indicates to
-> the module loader that initialization failed, which isn't intended
-
-only !HOTPLUG_CPU can remove the driver. That is what we need to do 
-because under the hotplug condition, we need to consider those "offline"
-cpus. I don't understand what you are afraid. Can you give me a scinario ?
-
-> here and results in dangling pointers.
+于 9/13/2010 6:17 PM, Jan Beulich 写道:
+> Using cpuid_eax() to determine feature availability on other than
+> the current CPU is invalid. And feature availability should also be
+> checked in the hotplug code path.
 >
 > Signed-off-by: Jan Beulich<jbeulich@novell.com>
-> Cc: Chen Gong<gong.chen@linux.intel.com>
+> Cc: Rudolf Marek<r.marek@assembler.cz>
 >
 > ---
->   drivers/hwmon/coretemp.c |    5 ++++-
->   1 file changed, 4 insertions(+), 1 deletion(-)
+>   arch/x86/include/asm/cpufeature.h |    1 +
+>   arch/x86/kernel/cpu/scattered.c   |    1 +
+>   drivers/hwmon/coretemp.c          |   29 +++++++++++++----------------
+>   3 files changed, 15 insertions(+), 16 deletions(-)
 >
-> --- linux-2.6.36-rc4/drivers/hwmon/coretemp.c	2010-09-13 08:45:02.000000000 +0200
-> +++ 2.6.36-rc4-x86-coretemp-hotplug-init-return/drivers/hwmon/coretemp.c	2010-09-03 17:54:14.000000000 +0200
-> @@ -541,16 +541,19 @@ static int __init coretemp_init(void)
->   				" has no thermal sensor.\n", c->x86_model);
->   		}
->   	}
-> +
-> +#ifndef CONFIG_HOTPLUG_CPU
->   	if (list_empty(&pdev_list)) {
->   		err = -ENODEV;
->   		goto exit_driver_unreg;
->   	}
-> +#endif
->
->   	register_hotcpu_notifier(&coretemp_cpu_notifier);
->   	return 0;
->
-> -exit_driver_unreg:
->   #ifndef CONFIG_HOTPLUG_CPU
-> +exit_driver_unreg:
->   	platform_driver_unregister(&coretemp_driver);
->   #endif
->   exit:
->
->
->
->
+> --- linux-2.6.36-rc4/arch/x86/include/asm/cpufeature.h	2010-09-13 08:44:55.000000000 +0200
+> +++ 2.6.36-rc4-x86-coretemp-feature-check/arch/x86/include/asm/cpufeature.h	2010-09-01 09:18:17.000000000 +0200
+> @@ -168,6 +168,7 @@
+>   #define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
+>   #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
+>   #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
+> +#define X86_FEATURE_DTS		(7*32+ 7) /* Digital Thermal Sensor */
+
+Do we really need a new CPU flag ?
