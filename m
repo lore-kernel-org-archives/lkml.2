@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab0INMoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 08:44:14 -0400
+	id S1754021Ab0INMoT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 08:44:19 -0400
 Received: from mail-px0-f174.google.com ([209.85.212.174]:48642 "EHLO
 	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab0INMoK (ORCPT
+	with ESMTP id S1753890Ab0INMoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 08:44:10 -0400
+	Tue, 14 Sep 2010 08:44:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=HUP2stZu0KHNV7egxsMJSHltqov+Kw4uD9yqWZhbLgFQz1hYIdkyhh3ZeQyS+u5Pzp
-         MDYyf6MVZL6zjGekP9AjWJ2PMMKgNQ/1vXPAvAQeOOJkdol6pN19o09Qd1CPH5od4/I5
-         lsplF+8weWdUGu4tAreyI+hE2dZ9Pe3UdMB0Q=
+        b=F3lxUfZx7xGT4hK5S2EyXAOubrAbhbYVfu1+ss/I0X31GaGopft4EbGCMIdGAfGg8/
+         Zko2OvtgK4oGH13/pRr6wqYM0PAHEjzSZ+E712Opb6VCuVks+HyBnhpmMZ0zjXbtyMEf
+         iDSOwiiUqCoylxATuQ9BGcr896LjXluS0VhsI=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Darren Hart <dvhltc@us.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] futex: mark restart_block.futex.uaddr as a __user pointer
-Date: Tue, 14 Sep 2010 21:43:47 +0900
-Message-Id: <1284468228-8723-2-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 3/3] futex: add lock context annotations
+Date: Tue, 14 Sep 2010 21:43:48 +0900
+Message-Id: <1284468228-8723-3-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1284468228-8723-1-git-send-email-namhyung@gmail.com>
 References: <1284468228-8723-1-git-send-email-namhyung@gmail.com>
@@ -27,56 +27,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@uaddr field in restart_block.futex is a user pointer but was
-missing __user markup. Add it and remove unnecessary castings.
+queue_lock/unlock/me() and unqueue_me_pi() grab/release spinlocks
+but were missing proper annotations. Add it.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- include/linux/thread_info.h |    4 ++--
- kernel/futex.c              |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/futex.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
-index a8cc4e1..c906965 100644
---- a/include/linux/thread_info.h
-+++ b/include/linux/thread_info.h
-@@ -23,12 +23,12 @@ struct restart_block {
- 		};
- 		/* For futex_wait and futex_wait_requeue_pi */
- 		struct {
--			u32 *uaddr;
-+			u32 __user *uaddr;
- 			u32 val;
- 			u32 flags;
- 			u32 bitset;
- 			u64 time;
--			u32 *uaddr2;
-+			u32 __user *uaddr2;
- 		} futex;
- 		/* For nanosleep */
- 		struct {
 diff --git a/kernel/futex.c b/kernel/futex.c
-index 464de27..45e448a 100644
+index 45e448a..92a31d4 100644
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
-@@ -1843,7 +1843,7 @@ retry:
+@@ -1360,6 +1360,7 @@ out:
  
- 	restart = &current_thread_info()->restart_block;
- 	restart->fn = futex_wait_restart;
--	restart->futex.uaddr = (u32 *)uaddr;
-+	restart->futex.uaddr = uaddr;
- 	restart->futex.val = val;
- 	restart->futex.time = abs_time->tv64;
- 	restart->futex.bitset = bitset;
-@@ -1869,7 +1869,7 @@ out:
- 
- static long futex_wait_restart(struct restart_block *restart)
+ /* The key must be already stored in q->key. */
+ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
++	__acquires(&hb->lock)
  {
--	u32 __user *uaddr = (u32 __user *)restart->futex.uaddr;
-+	u32 __user *uaddr = restart->futex.uaddr;
- 	int fshared = 0;
- 	ktime_t t, *tp = NULL;
+ 	struct futex_hash_bucket *hb;
  
+@@ -1373,6 +1374,7 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
+ 
+ static inline void
+ queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
++	__releases(&hb->lock)
+ {
+ 	spin_unlock(&hb->lock);
+ 	drop_futex_key_refs(&q->key);
+@@ -1391,6 +1393,7 @@ queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
+  * an example).
+  */
+ static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb)
++	__releases(&hb->lock)
+ {
+ 	int prio;
+ 
+@@ -1471,6 +1474,7 @@ retry:
+  * and dropped here.
+  */
+ static void unqueue_me_pi(struct futex_q *q)
++	__releases(q->lock_ptr)
+ {
+ 	WARN_ON(plist_node_empty(&q->list));
+ 	plist_del(&q->list, &q->list.plist);
 -- 
 1.7.2.2
 
