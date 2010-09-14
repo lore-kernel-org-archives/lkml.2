@@ -1,115 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab0INWYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 18:24:53 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56270 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754935Ab0INWYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 18:24:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 2/2] PM / Hibernate: Make default image size depend on total RAM size
-Date: Wed, 15 Sep 2010 00:23:30 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "M. Vefa Bicakci" <bicave@superonline.com>
-References: <201009150021.45101.rjw@sisk.pl>
-In-Reply-To: <201009150021.45101.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1754672Ab0INW0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 18:26:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31560 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754313Ab0INWZ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 18:25:59 -0400
+Date: Tue, 14 Sep 2010 15:23:59 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH -next] staging: cx25821 and go7007 depend on IR_CORE
+Message-Id: <20100914152359.f871d000.randy.dunlap@oracle.com>
+In-Reply-To: <20100914135802.c99d3672.sfr@canb.auug.org.au>
+References: <20100914135802.c99d3672.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201009150023.30635.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM / Hibernate: Make default image size depend on total RAM size
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-The default hibernation image size is currently hard coded and euqal
-to 500 MB, which is not a reasonable default on many contemporary
-systems.  Make it equal 2/5 of the total RAM size (this is slightly
-below the maximum, i.e. 1/2 of the total RAM size, and seems to be
-generally suitable).
+Fix build errors in cx25821 and go7007.
+They both use IR functions, so they should depend on IR_CORE.
+(It's not safe to select VIDEO_IR when IR_CORE is not enabled.)
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Tested-by: M. Vefa Bicakci <bicave@superonline.com>
+(.text+0x39065a): undefined reference to `ir_core_debug'
+(.text+0x3906a4): undefined reference to `ir_core_debug'
+ir-functions.c:(.text+0x39080b): undefined reference to `ir_core_debug'
+(.text+0x390893): undefined reference to `ir_g_keycode_from_table'
+(.text+0x390942): undefined reference to `ir_core_debug'
+(.text+0x3909f5): undefined reference to `ir_core_debug'
+(.text+0x390a3a): undefined reference to `ir_core_debug'
+(.text+0x390ab1): undefined reference to `ir_core_debug'
+(.text+0x390b36): undefined reference to `ir_core_debug'
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: devel@driverdev.osuosl.org
 ---
- Documentation/power/interface.txt |    2 +-
- kernel/power/main.c               |    1 +
- kernel/power/power.h              |    9 ++++++++-
- kernel/power/snapshot.c           |    7 ++++++-
- 4 files changed, 16 insertions(+), 3 deletions(-)
+ drivers/staging/cx25821/Kconfig |    2 +-
+ drivers/staging/go7007/Kconfig  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux-2.6/kernel/power/snapshot.c
-===================================================================
---- linux-2.6.orig/kernel/power/snapshot.c
-+++ linux-2.6/kernel/power/snapshot.c
-@@ -46,7 +46,12 @@ static void swsusp_unset_page_forbidden(
-  * size will not exceed N bytes, but if that is impossible, it will
-  * try to create the smallest image possible.
-  */
--unsigned long image_size = 500 * 1024 * 1024;
-+unsigned long image_size;
-+
-+void __init hibernate_image_size_init(void)
-+{
-+	image_size = ((totalram_pages * 2) / 5) * PAGE_SIZE;
-+}
- 
- /* List of PBEs needed for restoring the pages that were allocated before
-  * the suspend and included in the suspend image, but have also been
-Index: linux-2.6/kernel/power/power.h
-===================================================================
---- linux-2.6.orig/kernel/power/power.h
-+++ linux-2.6/kernel/power/power.h
-@@ -14,6 +14,9 @@ struct swsusp_info {
- } __attribute__((aligned(PAGE_SIZE)));
- 
- #ifdef CONFIG_HIBERNATION
-+/* kernel/power/snapshot.c */
-+extern void __init hibernate_image_size_init(void);
-+
- #ifdef CONFIG_ARCH_HIBERNATION_HEADER
- /* Maximum size of architecture specific data in a hibernation header */
- #define MAX_ARCH_HEADER_SIZE	(sizeof(struct new_utsname) + 4)
-@@ -49,7 +52,11 @@ static inline char *check_image_kernel(s
- extern int hibernation_snapshot(int platform_mode);
- extern int hibernation_restore(int platform_mode);
- extern int hibernation_platform_enter(void);
--#endif
-+
-+#else /* !CONFIG_HIBERNATION */
-+
-+static inline void hibernate_image_size_init(void) {}
-+#endif /* !CONFIG_HIBERNATION */
- 
- extern int pfn_is_nosave(unsigned long);
- 
-Index: linux-2.6/kernel/power/main.c
-===================================================================
---- linux-2.6.orig/kernel/power/main.c
-+++ linux-2.6/kernel/power/main.c
-@@ -321,6 +321,7 @@ static int __init pm_init(void)
- 	int error = pm_start_workqueue();
- 	if (error)
- 		return error;
-+	hibernate_image_size_init();
- 	power_kobj = kobject_create_and_add("power", NULL);
- 	if (!power_kobj)
- 		return -ENOMEM;
-Index: linux-2.6/Documentation/power/interface.txt
-===================================================================
---- linux-2.6.orig/Documentation/power/interface.txt
-+++ linux-2.6/Documentation/power/interface.txt
-@@ -57,7 +57,7 @@ smallest image possible.  In particular,
- suspend image will be as small as possible.
- 
- Reading from this file will display the current image size limit, which
--is set to 500 MB by default.
-+is set to 2/5 of available RAM by default.
- 
- /sys/power/pm_trace controls the code which saves the last PM event point in
- the RTC across reboots, so that you can debug a machine that just hangs
-
+--- linux-next-20100914.orig/drivers/staging/cx25821/Kconfig
++++ linux-next-20100914/drivers/staging/cx25821/Kconfig
+@@ -1,6 +1,6 @@
+ config VIDEO_CX25821
+ 	tristate "Conexant cx25821 support"
+-	depends on DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT
++	depends on DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && IR_CORE
+ 	select I2C_ALGOBIT
+ 	select VIDEO_BTCX
+ 	select VIDEO_TVEEPROM
+--- linux-next-20100914.orig/drivers/staging/go7007/Kconfig
++++ linux-next-20100914/drivers/staging/go7007/Kconfig
+@@ -1,6 +1,6 @@
+ config VIDEO_GO7007
+ 	tristate "WIS GO7007 MPEG encoder support"
+-	depends on VIDEO_DEV && PCI && I2C && INPUT
++	depends on VIDEO_DEV && PCI && I2C && INPUT && IR_CORE
+ 	depends on SND
+ 	select VIDEOBUF_DMA_SG
+ 	select VIDEO_IR
