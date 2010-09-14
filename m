@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab0INToz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 15:44:55 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:32018 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093Ab0INTox (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 15:44:53 -0400
-X-SpamScore: -12
-X-BigFish: VS-12(zz1432N98dNzz1202hzzz2dh2a8h62h)
-X-Spam-TCS-SCL: 1:0
-Message-ID: <4C8FD0B0.70500@freescale.com>
-Date: Tue, 14 Sep 2010 14:44:48 -0500
-From: Timur Tabi <timur@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/2.0.6-1.fc13 SeaMonkey/2.0.6
+	id S1755006Ab0INTqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 15:46:51 -0400
+Received: from thunk.org ([69.25.196.29]:60339 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754423Ab0INTqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 15:46:49 -0400
+Date: Tue, 14 Sep 2010 15:46:41 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Jan Kara <jack@suse.cz>,
+        Eric Sandeen <sandeen@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NULL pointer dereference in print_daily_error_info
+Message-ID: <20100914194641.GB3730@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+	Andreas Dilger <adilger.kernel@dilger.ca>, Jan Kara <jack@suse.cz>,
+	Eric Sandeen <sandeen@redhat.com>, Christoph Hellwig <hch@lst.de>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100914125102.GA5318@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Andrew Morton <akpm@linux-foundation.org>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        kumar.gala@freescale.com, amit.shah@redhat.com
-Subject: Re: [PATCH] hvc_console: fix dropping of characters when output byte
- channel is full
-References: <1282329921-24394-1-git-send-email-timur@freescale.com>	<20100914121721.c8671ed8.akpm@linux-foundation.org>	<20100914204410.71942cdc@lxorguk.ukuu.org.uk>	<4C8FCC2E.1020107@freescale.com> <20100914205246.0e35c9af@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100914205246.0e35c9af@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Sep 2010 19:44:49.0225 (UTC) FILETIME=[4AA8E390:01CB5445]
-X-Reverse-DNS: de01egw02.freescale.net
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100914125102.GA5318@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
-> If you want to make that change then I guess you need to audit every
-> other hvc driver first.
-> 
-> But I never understood the point of the hvc layer anyway 8)
+On Tue, Sep 14, 2010 at 03:51:02PM +0300, Sergey Senozhatsky wrote:
+> Hello,
+>       
+> This patch fixes NULL pointer dereference in print_daily_error_info, when   
+> called
+> on unmounted fs (EXT4_SB(sb) returns NULL). Deleting error reporting timer  
+> in
+> ext4_put_super fixes oops.
 
-We've come to the same conclusion here.  I think we're just going to drop
-the hvc layer and make the driver a standard console driver.
+Good catch!  Thanks for the patch.  I will include this into ext4
+tree, and I will probably push it separately to Linus so that it gets
+into 2.6.36, since this is a regresssion.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+You didn't add a Signed-off-by: line, which is needed for Developer's
+Certification of Origin (see section 1, subsection 16 of
+Documentation/SubmittingPatches in the Linux source tree).  Can you
+send confirmation that it's OK for me to add a Signed-off-by line for
+you?  Thanks!!
 
+> By the way, isn't print_daily_error_info racy? Is it safe to call           
+> print_daily_error_info
+> (by timer event (softirq)) when we'are remounting fs, etc.?
+
+It should be fine.  Remounting doesn't actually change out the struct
+superblock.  There is a chance that the information might not be fully
+complete if an error is printed exactly as the same time as
+print_daily_error_info() is run, but I'm not sure it's worth trying to
+protect against that race, since the worst that this will mean is a
+confusing report in the /var/log/messages file, and the ext4 error
+message will be printed right next to it, which will have all of the
+information the system administrator will need.
+
+						- Ted
+						
