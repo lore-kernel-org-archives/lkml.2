@@ -1,74 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab0INJ1c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 05:27:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61639 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752283Ab0INJ1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 05:27:30 -0400
-Message-ID: <4C8F3FF3.9080803@redhat.com>
-Date: Tue, 14 Sep 2010 11:27:15 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Zachary Amsden <zamsden@redhat.com>, kvm@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping 10/35] Fix deep C-state TSC desynchronization
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-11-git-send-email-zamsden@redhat.com> <4C8F3C03.50306@siemens.com>
-In-Reply-To: <4C8F3C03.50306@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752540Ab0INJsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 05:48:33 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:43565 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab0INJsc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 05:48:32 -0400
+From: Keng-Yu Lin <keng-yu.lin@canonical.com>
+To: len.brown@intel.com, alan-jenkins@tuffmail.co.uk, superm1@ubuntu.com,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>
+Subject: [PATCH] dell-laptop: Add debugfs support
+Date: Tue, 14 Sep 2010 17:48:10 +0800
+Message-Id: <1284457690-32635-1-git-send-email-keng-yu.lin@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/14/2010 11:10 AM, Jan Kiszka wrote:
-> Am 20.08.2010 10:07, Zachary Amsden wrote:
->> When CPUs with unstable TSCs enter deep C-state, TSC may stop
->> running.  This causes us to require resynchronization.  Since
->> we can't tell when this may potentially happen, we assume the
->> worst by forcing re-compensation for it at every point the VCPU
->> task is descheduled.
->>
->> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
->> ---
->>   arch/x86/kvm/x86.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index 7fc4a55..52b6c21 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -1866,7 +1866,7 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
->>   	}
->>
->>   	kvm_x86_ops->vcpu_load(vcpu, cpu);
->> -	if (unlikely(vcpu->cpu != cpu)) {
->> +	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
->>   		/* Make sure TSC doesn't go backwards */
->>   		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 :
->>   				native_read_tsc() - vcpu->arch.last_host_tsc;
-> For yet unknown reason, this commit breaks Linux guests here if they are
-> started with only a single VCPU. They hang during boot, obviously no
-> longer receiving interrupts.
->
-> I'm using kvm-kmod against a 2.6.34 host kernel, so this may be a side
-> effect of the wrapping, though I cannot imagine how.
->
-> Anyone any ideas?
->
->
+Export the status of RF killswitch through debugfs.
 
-Most likely, time went backwards, and some 'future - past' calculation 
-resulted in a negative sleep value which was then interpreted as 
-unsigned and resulted in a 2342525634 year sleep.
+Signed-off-by: Keng-Yu Lin <keng-yu.lin@canonical.com>
+---
+ drivers/platform/x86/dell-laptop.c |   83 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 83 insertions(+), 0 deletions(-)
 
-Does your guest use kvmclock, tsc, or some other time source?
-
+diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
+index 6110601..0d390b3 100644
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -25,6 +25,8 @@
+ #include <linux/mm.h>
+ #include <linux/i8042.h>
+ #include <linux/slab.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
+ #include "../../firmware/dcdbas.h"
+ 
+ #define BRIGHTNESS_TOKEN 0x7d
+@@ -319,6 +321,77 @@ static const struct rfkill_ops dell_rfkill_ops = {
+ 	.query = dell_rfkill_query,
+ };
+ 
++#ifdef CONFIG_DEBUG_FS
++static struct dentry *dell_laptop_dir;
++
++static int dell_debugfs_show(struct seq_file *s, void *data)
++{
++	int status;
++
++	get_buffer();
++	dell_send_request(buffer, 17, 11);
++	status = buffer->output[1];
++	release_buffer();
++
++	seq_printf(s, "status:\t0x%X\n", status);
++	seq_printf(s, "Hardware switch supported:   %lu\n",
++		   status & BIT(0));
++	seq_printf(s, "Wifi locator supported:      %lu\n",
++		  (status & BIT(1)) >> 1);
++	seq_printf(s, "Wifi is supported:           %lu\n",
++		  (status & BIT(2)) >> 2);
++	seq_printf(s, "Bluetooth is supported:      %lu\n",
++		  (status & BIT(3)) >> 3);
++	seq_printf(s, "WWAN is supported:           %lu\n",
++		  (status & BIT(4)) >> 4);
++	seq_printf(s, "Wireless keyboard supported: %lu\n",
++		  (status & BIT(5)) >> 5);
++	seq_printf(s, "Wifi is installed:           %lu\n",
++		  (status & BIT(8)) >> 8);
++	seq_printf(s, "Bluetooth is installed:      %lu\n",
++		  (status & BIT(9)) >> 9);
++	seq_printf(s, "WWAN is installed:           %lu\n",
++		  (status & BIT(10)) >> 10);
++	seq_printf(s, "Hardware switch is on:       %lu\n",
++		  (status & BIT(16)) >> 16);
++	seq_printf(s, "Wifi is blocked:             %lu\n",
++		  (status & BIT(17)) >> 17);
++	seq_printf(s, "Bluetooth is blocked:        %lu\n",
++		  (status & BIT(18)) >> 18);
++	seq_printf(s, "WWAN is blocked:             %lu\n",
++		  (status & BIT(19)) >> 19);
++
++	seq_printf(s, "\nhwswitch_state:\t0x%X\n", hwswitch_state);
++	seq_printf(s, "Wifi controlled by switch:      %lu\n",
++		   hwswitch_state & BIT(0));
++	seq_printf(s, "Bluetooth controlled by switch: %lu\n",
++		   hwswitch_state & BIT(0) >> 1);
++	seq_printf(s, "WWAN controlled by switch:      %lu\n",
++		   hwswitch_state & BIT(0) >> 2);
++	seq_printf(s, "Wireless switch config locked:  %lu\n",
++		   hwswitch_state & BIT(0) >> 7);
++	seq_printf(s, "Wifi locator enabled:           %lu\n",
++		   hwswitch_state & BIT(0) >> 8);
++	seq_printf(s, "Wifi locator setting locked:    %lu\n",
++		   hwswitch_state & BIT(0) >> 15);
++
++	return 0;
++}
++
++static int dell_debugfs_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, dell_debugfs_show, inode->i_private);
++}
++
++static const struct file_operations dell_debugfs_fops = {
++	.owner = THIS_MODULE,
++	.open = dell_debugfs_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++#endif
++
+ static void dell_update_rfkill(struct work_struct *ignored)
+ {
+ 	if (wifi_rfkill)
+@@ -550,6 +623,13 @@ static int __init dell_init(void)
+ 		goto fail_filter;
+ 	}
+ 
++#ifdef CONFIG_DEBUG_FS
++	dell_laptop_dir = debugfs_create_dir("dell_laptop", NULL);
++	if (dell_laptop_dir != NULL)
++		debugfs_create_file("rfkill", 0444, dell_laptop_dir, NULL,
++				    &dell_debugfs_fops);
++#endif
++
+ #ifdef CONFIG_ACPI
+ 	/* In the event of an ACPI backlight being available, don't
+ 	 * register the platform controller.
+@@ -609,6 +689,9 @@ fail_platform_driver:
+ 
+ static void __exit dell_exit(void)
+ {
++#ifdef CONFIG_DEBUG_FS
++	debugfs_remove_recursive(dell_laptop_dir);
++#endif
+ 	i8042_remove_filter(dell_laptop_i8042_filter);
+ 	cancel_delayed_work_sync(&dell_rfkill_work);
+ 	backlight_device_unregister(dell_backlight_device);
 -- 
-error compiling committee.c: too many arguments to function
+1.7.0.4
 
