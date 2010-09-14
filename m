@@ -1,44 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab0INEOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 00:14:50 -0400
-Received: from kroah.org ([198.145.64.141]:58526 "EHLO coco.kroah.org"
+	id S1751852Ab0INEYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 00:24:13 -0400
+Received: from mail.perches.com ([173.55.12.10]:1972 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751389Ab0INEO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 00:14:28 -0400
-Date: Mon, 13 Sep 2010 21:09:15 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arun Murthy <arun.murthy@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Subject: Re: linux-next: manual merge of the driver-core tree with the mfd
-	tree
-Message-ID: <20100914040915.GD11972@kroah.com>
-References: <20100914122510.99c3e3b3.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100914122510.99c3e3b3.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1750743Ab0INEYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 00:24:10 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org,
+        microblaze-uclinux@itee.uq.edu.au, kvm@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        linux-scsi@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-usb@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: [PATCH next 00/16] treewide: Use static const char * const where possible
+Date: Mon, 13 Sep 2010 21:23:46 -0700
+Message-Id: <cover.1284435709.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 12:25:10PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the driver-core tree got a conflict in
-> drivers/misc/Makefile between commit
-> 03f582a93ecca6e9584b622570022abf08ed03ec ("misc: Add ab8500 pwm driver")
-> from the mfd tree and commit b6de6c8f5a6fc18c5c67bb4e53f3d0cfd266b07b
-> ("add Packet hub driver for Topcliff Platform controller hub") from the
-> driver-core tree.
-> 
-> Just overlapping additions.  I fixed it up (see below) and can carry the
-> fix as necessary.
+Convert the uses that should be const of
+	char *foo[] = {"bar", "baz"};
+to
+	const char * const foo[] = {"bar", "baz"};
+or
+	static const char * const foo[] = {"bar", "baz"};
 
-Fix looks fine to me, thanks.
+Joe Perches (16):
+  arch/alpha: Use static const char * const where possible
+  arch/ia64: Use static const char * const where possible
+  arch/microblaze: Use static const char * const where possible
+  arch/x86: Use static const char * const where possible
+  drivers/gpu: Use static const char * const where possible
+  drivers/isdn: Use static const char * const where possible
+  drivers/net: Use static const char * const where possible
+  drivers/net/pcmcia: Use static const char * const where possible
+  drivers/net/wireless: Use static const char * const where possible
+  drivers/scsi: Use static const char * const where possible
+  drivers/staging: Use static const char * const where possible
+  drivers/usb: Use static const char * const where possible
+  drivers/watchdog: Use static const char * const where possible
+  fs: Use static const char * const where possible
+  net/irda: Use static const char * const where possible
+  sound: Use static const char * const where possible
 
-greg k-h
+ arch/alpha/kernel/err_ev6.c                  |   12 +++++---
+ arch/alpha/kernel/err_marvel.c               |   33 ++++++++++++------------
+ arch/alpha/kernel/err_titan.c                |   35 ++++++++++++++-----------
+ arch/alpha/kernel/osf_sys.c                  |    4 +-
+ arch/ia64/kernel/palinfo.c                   |    2 +-
+ arch/microblaze/kernel/heartbeat.c           |   10 +++---
+ arch/microblaze/kernel/timer.c               |   12 ++++----
+ arch/x86/kernel/smpboot.c                    |    2 +-
+ arch/x86/kvm/mmu.c                           |    2 +-
+ drivers/gpu/drm/ttm/ttm_page_alloc.c         |    4 ++-
+ drivers/isdn/pcbit/edss1.c                   |    2 +-
+ drivers/isdn/pcbit/edss1.h                   |    2 +-
+ drivers/net/3c515.c                          |    4 ++-
+ drivers/net/eth16i.c                         |    4 ++-
+ drivers/net/pcmcia/3c589_cs.c                |    2 +-
+ drivers/net/wireless/rt2x00/rt2x00debug.c    |    2 +-
+ drivers/scsi/bfa/rport.c                     |    4 ++-
+ drivers/scsi/pcmcia/nsp_debug.c              |    2 +-
+ drivers/scsi/qla2xxx/qla_nx.c                |    4 +-
+ drivers/scsi/qla4xxx/ql4_nx.c                |    2 +-
+ drivers/staging/ath6kl/os/linux/ar6000_drv.c |   14 +++++-----
+ drivers/staging/bcm/Debug.c                  |    5 ++-
+ drivers/usb/host/oxu210hp-hcd.c              |    2 +-
+ drivers/watchdog/machzwd.c                   |    2 +-
+ fs/binfmt_flat.c                             |    4 ++-
+ include/net/irda/irlan_event.h               |    2 +-
+ net/irda/irlan/irlan_event.c                 |    2 +-
+ sound/core/misc.c                            |    5 +---
+ sound/core/pcm_native.c                      |    2 +-
+ 29 files changed, 99 insertions(+), 83 deletions(-)
+
+-- 
+1.7.3.rc1
+
