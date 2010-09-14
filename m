@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab0INO2f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 10:28:35 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31169 "EHLO mga01.intel.com"
+	id S1752730Ab0INO2y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 10:28:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47816 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab0INO2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 10:28:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,365,1280732400"; 
-   d="scan'208";a="606786930"
-Date: Tue, 14 Sep 2010 14:43:45 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, greg@kroah.com,
-        x86@kernel.org
-Subject: Re: [PATCH v3 1/4] x86, mrst: make mrst_identify_cpu() inlne inside
- mrst.h
-Message-ID: <20100914144345.49e05674@linux.intel.com>
-In-Reply-To: <1284361736-23011-2-git-send-email-feng.tang@intel.com>
-References: <1284361736-23011-1-git-send-email-feng.tang@intel.com>
-	<1284361736-23011-2-git-send-email-feng.tang@intel.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751215Ab0INO2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 10:28:52 -0400
+Date: Tue, 14 Sep 2010 16:29:31 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] sched: fix user time incorrectly accounted as system
+ time on 32 bit
+Message-ID: <20100914142930.GA8415@redhat.com>
+References: <1284471892-8433-1-git-send-email-sgruszka@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284471892-8433-1-git-send-email-sgruszka@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Sep 2010 15:08:53 +0800
-Feng Tang <feng.tang@intel.com> wrote:
+On Tue, Sep 14, 2010 at 03:44:52PM +0200, Stanislaw Gruszka wrote:
+> We have 32 bit variable overflow possibility when multiply in
+> task_times() and thread_group_times() functions. If overflow happens
+> calculated scaled utime value become wrongly small and scaled stime
+> wrongly big.
+> 
+> Reported here:
+> https://bugzilla.redhat.com/show_bug.cgi?id=633037
+> https://bugzilla.kernel.org/show_bug.cgi?id=16559
+> 
+> Reported-by: Michael Chapman <redhat-bugzilla@very.puzzling.org>
+> Reported-by: Ciriaco Garcia de Celis <sysman@etherpilot.com>
+> Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: stable@kernel.org  # 2.6.32.19+ (partially), 2.6.33+
 
-> Otherwise there will be some compilation warning for those .c
-> files which include mrst.h
+Seems my send-email script screwed recipients, I will repost.
 
-I've sent this to Ingo four or five times already and been ignored.
+Stanislaw
