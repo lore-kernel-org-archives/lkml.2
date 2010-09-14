@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab0INCPo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 22:15:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24081 "EHLO mx1.redhat.com"
+	id S1752874Ab0INCZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 22:25:14 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39318 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752295Ab0INCPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 22:15:43 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751151Ab0INCZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 22:25:12 -0400
+Date: Tue, 14 Sep 2010 12:25:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arun Murthy <arun.murthy@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+Subject: linux-next: manual merge of the driver-core tree with the mfd tree
+Message-Id: <20100914122510.99c3e3b3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-X-Fcc: ~/Mail/linus
-Cc: monstr@monstr.eu, Oleg Nesterov <oleg@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 14/24] ptrace: cleanup arch_ptrace() on microblaze
-In-Reply-To: Namhyung Kim's message of  Monday, 13 September 2010 19:07:13 +0900 <AANLkTi=oHVCoeuz20qkBHTUDEwTEDsN4mFdR8nE+CaNk@mail.gmail.com>
-References: <1283442391-23612-1-git-send-email-namhyung@gmail.com>
-	<1283442391-23612-15-git-send-email-namhyung@gmail.com>
-	<4C8DCF72.4050701@monstr.eu>
-	<AANLkTi=oHVCoeuz20qkBHTUDEwTEDsN4mFdR8nE+CaNk@mail.gmail.com>
-X-Windows: a terminal disease.
-Message-Id: <20100914021532.9C53E403E6@magilla.sf.frob.com>
-Date: Mon, 13 Sep 2010 19:15:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Sep 13, 2010 at 16:14, Michal Simek <monstr@monstr.eu> wrote:
-> > Hi,
-> >
-> > just for my info how does it look like this patch series?
-> > I mean who should added that patches to mainline?
-> >
-> 
-> Hello,
-> 
-> I am not sure but I hope Roland will take care of it.
+Hi Greg,
 
-Sorry, I didn't know you had any such expectation.  Oleg and I do not
-autonomously maintain any ptrace tree that gets automatically merged or
-anything like that.  Our Acked-by's are presumed to help your case and our
-objections to hurt it, but you just have to submit patches to linus, akpm,
-arch maintainers, or whatever other channels get merged regularly.  We're
-not that kind of authoritative ourselves, though we are listed as the
-ptrace maintainers.  We have to do the same with our own ptrace patches.
+Today's linux-next merge of the driver-core tree got a conflict in
+drivers/misc/Makefile between commit
+03f582a93ecca6e9584b622570022abf08ed03ec ("misc: Add ab8500 pwm driver")
+from the mfd tree and commit b6de6c8f5a6fc18c5c67bb4e53f3d0cfd266b07b
+("add Packet hub driver for Topcliff Platform controller hub") from the
+driver-core tree.
 
+Just overlapping additions.  I fixed it up (see below) and can carry the
+fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks,
-Roland
+P.S. Greg, I noticed that the driver-core patch above does not have a SOB
+from its author.
+
+diff --cc drivers/misc/Makefile
+index 33bc441,21b4761..0000000
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@@ -35,4 -35,4 +35,5 @@@ obj-y				+= eeprom
+  obj-y				+= cb710/
+  obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
+  obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
+ +obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
++ obj-$(CONFIG_PCH_PHUB)		+= pch_phub.o
