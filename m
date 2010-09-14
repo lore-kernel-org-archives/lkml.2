@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab0INIrr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 04:47:47 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57183 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab0INIro convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 04:47:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=aosyuf2umr90vbnOP2HSP1e8gz4wjyqB8jOfNJ8/oZw7GTimSfJs60GsKxedzk3muG
-         d1dIJWSJ3rrpxhsELzi059wcGVdSzE1aRcrx0E25pVWDPlWPpOi43kwcRLlOmUJ1XqbO
-         UvN9q1RWDgU9PewBLmT7XTKbn+FNr8d2+nTOU=
+	id S1753304Ab0INI7W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 04:59:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58917 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752517Ab0INI7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 04:59:21 -0400
+Date: Tue, 14 Sep 2010 10:59:19 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Guillaume Chazarain <guichaz@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix hiddev's use of usb_find_interface
+In-Reply-To: <AANLkTikQsu4qo=nkcr2N=_GLmtCgh8wmoRcZFaUJbwAs@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1009141059000.26813@pobox.suse.cz>
+References: <1284319955-6014-1-git-send-email-guichaz@gmail.com> <201009131325.01768.arnd@arndb.de> <alpine.LNX.2.00.1009131327060.26813@pobox.suse.cz> <AANLkTikQsu4qo=nkcr2N=_GLmtCgh8wmoRcZFaUJbwAs@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4C8ECDFE.6010906@snapgear.com>
-References: <20100914105129.02eb5b13.sfr@canb.auug.org.au>
-	<4C8ECDFE.6010906@snapgear.com>
-Date: Tue, 14 Sep 2010 10:47:42 +0200
-X-Google-Sender-Auth: 2APvERt9MlAqDFj-7tMWkYR9UXA
-Message-ID: <AANLkTim+7Q79hVv+r1PO2LeiiSCxb12CaqO3YuR8taL9@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the m68knommu tree with the m68k tree
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 03:21, Greg Ungerer <gerg@snapgear.com> wrote:
-> Stephen Rothwell wrote:
->>
->> Today's linux-next merge of the m68knommu tree got a conflict in
->> arch/m68k/sun3/sun3ints.c between commit
->> 72fe185cd9acbfc6e8a7afa884ae1152be706e52 ("m68k/m68knommu: Remove dead
->> SMP config option") from the m68k tree and commit
->> 5313b581e4efc214c6132d32f580db6668e5c5a8 ("arch/m68k{,nommu}: Removing
->> dead SMP config option") from the m68knommu tree.
->>
->> These appear to be the same patch with some formatting differences.  I
->> used the version from the m68k tree.
->
-> Looks like Geert added the same patch to the m68k git tree.
-> I'll drop it from the m68knommu git tree.
+On Mon, 13 Sep 2010, Guillaume Chazarain wrote:
 
-Sorry, I should have checked explicitly which patches were already in
-the m68knommu git tree.
-I did leave out one patch I knew (from email) Greg was going to take.
+> > Yeah -- Guillaume, I think that you are actually seeing symptoms of
+> > intfdata being bogus. Could you please try with any kernel with commit
+> > 9c9e54a8df0be48 ("HID: hiddev: fix memory corruption due to invalid
+> > intfdata") applied (which is the one Arnd is talking about) and report
+> > back whether the problem is fixed by it?
+> 
+> I also saw the problem with 2.6.36-rc3. My problem is with
+> usb_find_interface(&hiddev_driver) not finding anything and
+> 9c9e54a8df0be48aa359744f412377cc55c3b7d2 did not change this line.
+> 
+> In its current state I don't understand how hiddev_open() can possibly
+> work. I see people reporting suspend issues and stack traces in dmesg
+> but nobody reporting the driver being non-functioning, which is what
+> I'm doing here.
 
-Gr{oetje,eeting}s,
+You are right. I have now applied your patch, thanks a lot for tracking it 
+down.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
