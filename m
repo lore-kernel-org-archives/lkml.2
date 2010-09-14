@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab0INQ04 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 12:26:56 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56908 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab0INQ0z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 12:26:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=HPi0ZdpffsmU9McJt9XLajNwUIBNIhsDIiw8aBHWwBxbzyCqvCRzKG4+m2rLgzOCq2
-         qLacfJdY3YykqWSKMjFw2y3IfJxKgMgwkeV1Y4ylmXedYTeRceQqIf9M7zXxwHgQvXZ7
-         oId4U7+bQAxwe6RFai6JxoH6JUuVsHOlFCuS0=
-Date: Tue, 14 Sep 2010 18:26:02 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-edac@vger.kernel.org
-Subject: [PATCH] i7core_edac: fix panic in udimm sysfs attributes
- registration
-Message-ID: <20100914162602.GA6047@joi.lan>
+	id S1753491Ab0INQgC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 12:36:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33335 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752671Ab0INQf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 12:35:58 -0400
+Date: Tue, 14 Sep 2010 18:29:52 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+Message-ID: <20100914162952.GB13560@redhat.com>
+References: <1284410580.13351.10.camel@localhost.localdomain>
+ <4C8F3C77.7010302@redhat.com>
+ <1284476719.13351.35.camel@localhost.localdomain>
+ <201009141721.13202.arnd@arndb.de>
+ <20100914152231.GA13105@redhat.com>
+ <1284480025.13351.49.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1284480025.13351.49.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Array of udimm sysfs attributes was not ended with NULL marker.
+On Tue, Sep 14, 2010 at 09:00:25AM -0700, Shirley Ma wrote:
+> On Tue, 2010-09-14 at 17:22 +0200, Michael S. Tsirkin wrote:
+> > I would expect this to hurt performance significantly.
+> > We could do this for asynchronous requests only to avoid the
+> > slowdown. 
+> 
+> Is kiocb in sendmsg helpful here? It is not used now.
+> 
+> Shirley
 
-EDAC DEBUG: edac_create_mci_instance_attributes: edac_create_mci_instance_attributes() file udimm0
-EDAC DEBUG: edac_create_mci_instance_attributes: edac_create_mci_instance_attributes() file udimm1
-EDAC DEBUG: edac_create_mci_instance_attributes: edac_create_mci_instance_attributes() file udimm2
-BUG: unable to handle kernel NULL pointer dereference at 00000000000001a4
-IP: [<ffffffff81330b36>] edac_create_mci_instance_attributes+0x148/0x1f1
-PGD 0
-Oops: 0000 [#1] PREEMPT SMP
-last sysfs file:
-CPU 3
-Modules linked in:
+Precisely. This is what the patch from Xin Xiaohui does.  That code
+already seems to do most of what you are trying to do, right?
 
-Pid: 1, comm: swapper Not tainted 2.6.36-rc3-nv+ #483 P6T SE/System Product Name
-RIP: 0010:[<ffffffff81330b36>]  [<ffffffff81330b36>] edac_create_mci_instance_attributes+0x148/0x1f1
-(...)
-Call Trace:
- [<ffffffff81330b86>] edac_create_mci_instance_attributes+0x198/0x1f1
- [<ffffffff81330c9a>] edac_create_sysfs_mci_device+0xbb/0x2b2
- [<ffffffff8132f533>] edac_mc_add_mc+0x46b/0x557
- [<ffffffff81428901>] i7core_probe+0xccf/0xec0
- [<ffffffff81230193>] local_pci_probe+0x12/0x16
- [<ffffffff8123097b>] pci_device_probe+0x60/0x8f
- [<ffffffff812b65c9>] ? driver_sysfs_add+0x6b/0x90
- [<ffffffff812b6711>] driver_probe_device+0xa7/0x136
- [<ffffffff812b67f8>] __driver_attach+0x58/0x7c
- [<ffffffff812b67a0>] ? __driver_attach+0x0/0x7c
- [<ffffffff812b5ed4>] bus_for_each_dev+0x4e/0x83
- [<ffffffff812b655c>] driver_attach+0x19/0x1b
- [<ffffffff812b5834>] bus_add_driver+0x12b/0x277
- [<ffffffff812b6ac1>] driver_register+0x99/0x10a
- [<ffffffff81230be8>] __pci_register_driver+0x63/0xd3
- [<ffffffff818bd6fa>] i7core_init+0x9a/0xbb
- [<ffffffff818bd660>] ? i7core_init+0x0/0xbb
- [<ffffffff81000210>] do_one_initcall+0x7a/0x12e
- [<ffffffff81897689>] kernel_init+0x143/0x1cc
- [<ffffffff8102edd4>] kernel_thread_helper+0x4/0x10
- [<ffffffff814357ad>] ? restore_args+0x0/0x30
- [<ffffffff81897546>] ? kernel_init+0x0/0x1cc
- [<ffffffff8102edd0>] ? kernel_thread_helper+0x0/0x10
-Code: 24 49 89 44 24 08 4c 89 20 48 8b 43 10 4d 89 74 24 58 49 89 44 24 50 83 3d d7 13 53 00 00 78 22 48 8b 43 10 48 c7 c2 90 7e 66 81 <48> 8b 08 4d 89 f0 48 89 d6 48 c7 c7 7e a9 79 81 31 c0 e8 21 10
-RIP  [<ffffffff81330b36>] edac_create_mci_instance_attributes+0x148/0x1f1
- RSP <ffff8801bfca7a30>
-CR2: 00000000000001a4
-Kernel panic - not syncing: Attempted to kill init!
+The main thing missing seems to be macvtap integration, so that we can fall back
+on data copy if zero copy is unavailable?
+How hard would it be to basically link the mp and macvtap modules
+together to get us this functionality? Anyone?
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: stable@kernel.org
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/i7core_edac.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index e0187d1..0fd5b85 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1140,6 +1140,7 @@ static struct mcidev_sysfs_attribute i7core_udimm_counters_attrs[] = {
- 	ATTR_COUNTER(0),
- 	ATTR_COUNTER(1),
- 	ATTR_COUNTER(2),
-+	{ .attr = { .name = NULL } }
- };
- 
- static struct mcidev_sysfs_group i7core_udimm_counters = {
 -- 
-1.7.2.2
-
+MST
