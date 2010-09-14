@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab0INOD3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 10:03:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41857 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751284Ab0INOD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 10:03:28 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
-Date: Tue, 14 Sep 2010 16:03:59 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Jiri Slaby <jslaby@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
-        pingc@wacom.com, "linux-pm" <linux-pm@lists.linux-foundation.org>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org
-References: <Pine.LNX.4.44L0.1009140954180.1648-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1009140954180.1648-100000@iolanthe.rowland.org>
+	id S1753976Ab0INODc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 10:03:32 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41190 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753496Ab0INODa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 10:03:30 -0400
+Date: Tue, 14 Sep 2010 10:03:29 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Oliver Neukum <oneukum@suse.de>
+cc: Jiri Slaby <jslaby@suse.cz>, <phil@ipom.com>, <stable@kernel.org>,
+        Greg KH <gregkh@suse.de>, USB list <linux-usb@vger.kernel.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [34-stable regression] USB delay init quirk causes device events
+ loss
+In-Reply-To: <201009141403.00600.oneukum@suse.de>
+Message-ID: <Pine.LNX.4.44L0.1009141001220.1648-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009141603.59338.oneukum@suse.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 14. September 2010, 16:01:14 schrieb Alan Stern:
-> On Tue, 14 Sep 2010, Oliver Neukum wrote:
-> 
-> > Am Montag, 13. September 2010, 22:02:16 schrieb Alan Stern:
-> > > > > Is there any point in resuming the device during close() just in order
-> > > > > to kill the interrupt URB?  It seems counterproductive -- if the device 
-> > > > > had been suspended then there wouldn't be any interrupt URB to kill in 
-> > > > > the first place.
-> > > > 
-> > > > Suppose the device does not support remote wakeup. It would never
-> > > > be autosuspended while it is open, but simply resetting the flag
-> > > > would never reach the PM layer.
-> > > 
-> > > Whoops, that's right.  I didn't see the assignment to 
-> > > needs_remote_wakeup.
+On Tue, 14 Sep 2010, Oliver Neukum wrote:
+
+> Am Montag, 13. September 2010, 17:37:49 schrieb Alan Stern:
+> > Okay, I see the problem.  By moving usb_detect_quirks earlier, we end 
+> > up calling usb_disable_autosuspend too soon -- before the 
+> > pm_runtime_enable call in usb_new_device.  In 2.6.35 this doesn't 
+> > matter because the implementation of usb_autosuspend_device has 
+> > changed.
 > > 
-> > Should I have used usb_autopm_get_interface_no_resume()?
+> > So yes, in the end it looks like the best course is to revert this
+> > patch from 2.6.34.stable.  This is unfortunate but I don't see any way
+> > around it without making changes that aren't present in the current
+> > kernel. For example, the pm_runtime_set_active and pm_runtime_enable
+> > calls could also be moved from usb_new_device into
+> > hub_port_connect_change.
 > 
-> That actually would work.  It's a good idea.  The only drawback (not a
-> big one) is that if the device _was_ suspended with remote wakeup
-> enabled, doing this wouldn't turn off remote wakeup.  I think that
-> doesn't matter.
+> Calling usb_detect_quirks() twice?
 
-I am afraid it does matter as devices whose remote wakeup is enabled
-may draw more power.
+The issue is moot now since Greg has already done the reversion.
 
-	Regards
-		Oliver
+But no, usb_detect_quirks should still be called only once.  The idea 
+was to make sure this happens _after_ pm_runtime_set_active and 
+pm_runtime_enable, by moving those two calls earlier.
+
+Alan Stern
+
