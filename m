@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab0INEnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 00:43:32 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41125 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab0INEnc (ORCPT
+	id S1751485Ab0INErt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 00:47:49 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49525 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab0INErs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 00:43:32 -0400
+	Tue, 14 Sep 2010 00:47:48 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 14 Sep 2010 13:38:22 +0900
+Date: Tue, 14 Sep 2010 13:42:34 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        gthelen@google.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@kernel.org
-Subject: Re: [BUGFIX][PATCH] memcg: fix race in file_mapped accouting flag
- management
-Message-Id: <20100914133822.d2fcf65f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100913140803.b83d3fe1.akpm@linux-foundation.org>
-References: <20100913160822.0c2cd732.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100913140803.b83d3fe1.akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+        Nick Piggin <npiggin@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] devmem: change vread()/vwrite() prototype to return
+ success or error code
+Message-Id: <20100914134234.b8d861cc.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20090916014958.722014998@intel.com>
+References: <20090916013939.656308742@intel.com>
+	<20090916014958.722014998@intel.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -32,55 +33,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 16 Sep 2009 09:39:40 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-Sorry, reposting..(because mail client died while sending..)
-==
-On Mon, 13 Sep 2010 14:08:03 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Mon, 13 Sep 2010 16:08:22 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-<snip>
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  mm/memcontrol.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > Index: lockless-update/mm/memcontrol.c
-> > ===================================================================
-> > --- lockless-update.orig/mm/memcontrol.c
-> > +++ lockless-update/mm/memcontrol.c
-> > @@ -1485,7 +1485,8 @@ void mem_cgroup_update_file_mapped(struc
-> >  		SetPageCgroupFileMapped(pc);
-> >  	} else {
-> >  		__this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> > -		ClearPageCgroupFileMapped(pc);
-> > +		if (page_mapped(page)) /* for race between dec->inc counter */
-> > +			ClearPageCgroupFileMapped(pc);
-> >  	}
+> Silently ignore all vmalloc area holes in vread()/vwrite(),
+> and report success (or error code in future) to the caller.
 > 
-> This should be !page_mapped(), shouldn't it?
+> The original intention is to fix a vwrite() related bug, where
+> it could return 0 which cannot be handled correctly by its caller
+> write_kmem(). Then KAMEZAWA recommends to change the prototype
+> to make the semantics clear.
 > 
+> CC: Andi Kleen <andi@firstfloor.org>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Christoph Lameter <cl@linux-foundation.org>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Nick Piggin <npiggin@suse.de>
+> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 
-Ahhhh, yes. reflesh miss..
+Okay, maybe it's good to change for now.
 
-> And your second patch _does_ have !page_mapped() here, which is why the
-> second patch didn't apply.
-> 
-Very sorry.
+I sometimes wonder we should use copy_to/from_user to access vmalloc area...
+but we have IO_REMAP. So, maybe vread/vwrite is required one.
 
-> I tried to fix things up.  Please check.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Thank you. 
-
+Thanks,
 -Kame
-
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
