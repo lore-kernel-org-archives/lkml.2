@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab0INKyU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 06:54:20 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52694 "EHLO arroyo.ext.ti.com"
+	id S1752995Ab0INLIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 07:08:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34203 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753633Ab0INKyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 06:54:17 -0400
-Date: Tue, 14 Sep 2010 13:54:02 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>, Ming Lei <tom.leiming@gmail.com>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [RESEND/PATCH 5/6] USB: musb-gadget: complete request only if
- data is transfered over
-Message-ID: <20100914105402.GD7554@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
- <1283873014-32511-6-git-send-email-tom.leiming@gmail.com>
- <4C8E18AD.8000502@ru.mvista.com>
- <AANLkTinei3u1OZ-eBiUTDF=PDjwxLcL6rBpt7iNQJgHJ@mail.gmail.com>
- <4C8E4882.6040600@ru.mvista.com>
- <4C8E50CC.3080705@ru.mvista.com>
- <20100914065604.GD2601@legolas.emea.dhcp.ti.com>
- <4C8F527E.40408@ru.mvista.com>
+	id S1752412Ab0INLIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 07:08:12 -0400
+From: Nikanth Karthikesan <knikanth@suse.de>
+Organization: suse.de
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] After swapout/swapin private dirty mappings become clean
+Date: Tue, 14 Sep 2010 16:40:55 +0530
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        balbir@linux.vnet.ibm.com, rguenther@novell.com, matz@novell.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C8F527E.40408@ru.mvista.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009141640.55650.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+/proc/$pid/smaps broken: After swapout/swapin private dirty mappings become
+clean.
 
-On Tue, Sep 14, 2010 at 05:46:22AM -0500, Sergei Shtylyov wrote:
->    If a DMA interrupt comes when the whole transfer is not yet complete (and
->other Ming Lei's patches are making this possible), it will pass due to the
+When a page with private file mapping becomes dirty, the vma will be in both
+i_mmap tree and anon_vma list. The /proc/$pid/smaps will account these pages
+as dirty and backed by the file.
 
-than this is the actual problem, no ? If we're using mode1 dma (as we
-are on tx path), we should only get dma interrupt when the whole
-transfer has been completed.
+But when those dirty pages gets swapped out, and when they are read back from
+swap, they would be marked as clean, as it should be, as they are part of swap
+cache now.
 
->'ís_dma' condition above the patched code:
->
->                 if (is_dma || request->actual == request->length) {
->
->and then it will hit the code sending the final ZLP (above this patched code too):
+But the /proc/$pid/smaps would report the vma as a mapping of a file and it is
+clean. The pages are actually in same state i.e., dirty with respect to file
+still, but which was once reported as dirty is now being reported as clean to
+user-space.
 
-but this was already there before the patch.
+This confuses tools like gdb which uses this information. Those tools think
+that those pages were never modified and it creates problem when they create
+dumps.
 
->                         /*
->                          * First, maybe a terminating short packet. Some DMA
->                          * engines might handle this by themselves.
->                          */
->                         if ((request->zero && request->length
->                                 && request->length % musb_ep->packet_sz == 0)
->#ifdef CONFIG_USB_INVENTRA_DMA
->                                 || (is_dma && (!dma->desired_mode ||
->                                         (request->actual &
->                                                 (musb_ep->packet_sz - 1))))
->#endif
->                         ) {
->
->before the transfer is complete while it should only be hit when and only when
->the whole transfer is complete. The current code doesn't look correct as well
->though, all due to this 'ís_dma' condition. Surely this needs fixing.
+The file mapping of the vma also cannot be broken as pages never read earlier,
+will still have to come from the file. Just that those dirty pages have become
+clean anonymous pages.
 
-likewise, this was there before the patch. I don't think the real
-problem lies with this patch, it's been there for a while, don't you
-agree ?
+During swaping in, restoring the exact state as dirty file-backed pages before
+swapout would be useless, as there in no real bug. Breaking the vma with only
+anonymous pages as seperate vmas unnecessary may not be a good thing as well.
+So let us just export the information that a file-backed vma has anonymous
+dirty pages.
 
-the problem is not on the extra if () added below the quoted code,
-it's on the quoted code itself, which wasn't changed in any way.
+Export this information in smaps by prepending file-names with "[anon]+", when
+some of the pages in a file backed vma become anonymous.
 
--- 
-balbi
+Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
+
+---
+
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 439fc1f..68f9806 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -242,6 +242,8 @@ static void show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
+ 	 */
+ 	if (file) {
+ 		pad_len_spaces(m, len);
++		if (vma->anon_vma)
++			seq_puts(m, "[anon]+");
+ 		seq_path(m, &file->f_path, "\n");
+ 	} else {
+ 		const char *name = arch_vma_name(vma);
+
+
