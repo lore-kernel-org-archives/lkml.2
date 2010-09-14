@@ -1,131 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab0INSir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 14:38:47 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:39588 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753768Ab0INSil (ORCPT
+	id S1754046Ab0INSpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 14:45:00 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:60493 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab0INSo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 14:38:41 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: "Hans J. Koch" <hjk@linutronix.de>, <linux-kernel@vger.kernel.org>
-References: <m1y6b48973.fsf@fess.ebiederm.org>
-Date: Tue, 14 Sep 2010 11:38:06 -0700
-In-Reply-To: <m1y6b48973.fsf@fess.ebiederm.org> (Eric W. Biederman's message
-	of "Tue, 14 Sep 2010 11:35:28 -0700")
-Message-ID: <m1eicw892p.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 14 Sep 2010 14:44:59 -0400
+Date: Tue, 14 Sep 2010 14:41:43 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 15/25] drivers/net/wireless/ipw2x00: Use static const
+ char arrays
+Message-ID: <20100914184142.GE2484@tuxdriver.com>
+References: <cover.1284406638.git.joe@perches.com>
+ <9c135a60c2ed3431ee59c8de0b39414f6c10299a.1284406638.git.joe@perches.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@suse.de>
-X-Spam-Relay-Country: 
-Subject: [PATCH 4/5] uio: Support 2^MINOR_BITS minors
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Disposition: inline
+In-Reply-To: <9c135a60c2ed3431ee59c8de0b39414f6c10299a.1284406638.git.joe@perches.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 13, 2010 at 12:47:53PM -0700, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/net/wireless/ipw2x00/ipw2100.c       |    2 +-
+>  drivers/net/wireless/ipw2x00/ipw2200.c       |    2 +-
+>  drivers/net/wireless/ipw2x00/libipw_module.c |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/ipw2x00/ipw2100.c b/drivers/net/wireless/ipw2x00/ipw2100.c
+> index 61915f3..f64103c 100644
+> --- a/drivers/net/wireless/ipw2x00/ipw2100.c
+> +++ b/drivers/net/wireless/ipw2x00/ipw2100.c
+> @@ -4261,7 +4261,7 @@ static ssize_t store_scan_age(struct device *d, struct device_attribute *attr,
+>  {
+>  	struct ipw2100_priv *priv = dev_get_drvdata(d);
+>  	struct net_device *dev = priv->net_dev;
+> -	char buffer[] = "00000000";
+> +	char buffer[sizeof("00000000")];
+>  	unsigned long len =
+>  	    (sizeof(buffer) - 1) > count ? count : sizeof(buffer) - 1;
+>  	unsigned long val;
 
-register_chrdev limits uio devices to 256 minor numbers which causes
-problems on one system I have with 384+ uio devices.  So instead set
-UIO_MAX_DEVICES to the maximum number of minors and use
-alloc_chrdev_region to reserve the uio minors.
+Had to look twice, since you replaced an initialization with a
+declaration.  But in all these cases the initial value was already
+being overwritten before use anyway.
 
-The final result is that the code works the same but the uio driver now
-supports any minor the idr allocator comes up with.
+Acked-by: John W. Linville <linville@tuxdriver.com>
 
-Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
----
- drivers/uio/uio.c |   43 +++++++++++++++++++++++++++++++++++++------
- 1 files changed, 37 insertions(+), 6 deletions(-)
+> diff --git a/drivers/net/wireless/ipw2x00/ipw2200.c b/drivers/net/wireless/ipw2x00/ipw2200.c
+> index 0f25083..75e83c9 100644
+> --- a/drivers/net/wireless/ipw2x00/ipw2200.c
+> +++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+> @@ -1486,7 +1486,7 @@ static ssize_t store_scan_age(struct device *d, struct device_attribute *attr,
+>  {
+>  	struct ipw_priv *priv = dev_get_drvdata(d);
+>  	struct net_device *dev = priv->net_dev;
+> -	char buffer[] = "00000000";
+> +	char buffer[sizeof("00000000")];
+>  	unsigned long len =
+>  	    (sizeof(buffer) - 1) > count ? count : sizeof(buffer) - 1;
+>  	unsigned long val;
+> diff --git a/drivers/net/wireless/ipw2x00/libipw_module.c b/drivers/net/wireless/ipw2x00/libipw_module.c
+> index 32dee2c..d0c8a67 100644
+> --- a/drivers/net/wireless/ipw2x00/libipw_module.c
+> +++ b/drivers/net/wireless/ipw2x00/libipw_module.c
+> @@ -261,7 +261,7 @@ static int debug_level_proc_open(struct inode *inode, struct file *file)
+>  static ssize_t debug_level_proc_write(struct file *file,
+>  		const char __user *buffer, size_t count, loff_t *pos)
+>  {
+> -	char buf[] = "0x00000000\n";
+> +	char buf[sizeof("0x00000000\n")];
+>  	size_t len = min(sizeof(buf) - 1, count);
+>  	unsigned long val;
+>  
+> -- 
+> 1.7.3.rc1
+> 
+> 
 
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index 0fd2cda..3d4d65b 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -23,9 +23,10 @@
- #include <linux/sched.h>
- #include <linux/string.h>
- #include <linux/kobject.h>
-+#include <linux/cdev.h>
- #include <linux/uio_driver.h>
- 
--#define UIO_MAX_DEVICES 255
-+#define UIO_MAX_DEVICES		(1U << MINORBITS)
- 
- struct uio_device {
- 	struct module		*owner;
-@@ -41,6 +42,7 @@ struct uio_device {
- };
- 
- static int uio_major;
-+static struct cdev *uio_cdev;
- static DEFINE_IDR(uio_idr);
- static const struct file_operations uio_fops;
- 
-@@ -731,15 +733,44 @@ static const struct file_operations uio_fops = {
- 
- static int uio_major_init(void)
- {
--	uio_major = register_chrdev(0, "uio", &uio_fops);
--	if (uio_major < 0)
--		return uio_major;
--	return 0;
-+	static const char name[] = "uio";
-+	struct cdev *cdev = NULL;
-+	dev_t uio_dev = 0;
-+	int result;
-+
-+	result = alloc_chrdev_region(&uio_dev, 0, UIO_MAX_DEVICES, name);
-+	if (result)
-+		goto out;
-+
-+	result = -ENOMEM;
-+	cdev = cdev_alloc();
-+	if (!cdev)
-+		goto out_unregister;
-+
-+	cdev->owner = THIS_MODULE;
-+	cdev->ops = &uio_fops;
-+	kobject_set_name(&cdev->kobj, "%s", name);
-+
-+	result = cdev_add(cdev, uio_dev, UIO_MAX_DEVICES);
-+	if (result)
-+		goto out_put;
-+
-+	uio_major = MAJOR(uio_dev);
-+	uio_cdev = cdev;
-+	result = 0;
-+out:
-+	return result;
-+out_put:
-+	kobject_put(&cdev->kobj);
-+out_unregister:
-+	unregister_chrdev_region(uio_dev, UIO_MAX_DEVICES);
-+	goto out;
- }
- 
- static void uio_major_cleanup(void)
- {
--	unregister_chrdev(uio_major, "uio");
-+	unregister_chrdev_region(MKDEV(uio_major, 0), UIO_MAX_DEVICES);
-+	cdev_del(uio_cdev);
- }
- 
- static int init_uio_class(void)
 -- 
-1.7.2.2
-
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
