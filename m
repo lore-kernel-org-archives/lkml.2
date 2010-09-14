@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab0INSdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 14:33:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3070 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752079Ab0INSdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 14:33:15 -0400
-Date: Tue, 14 Sep 2010 20:27:07 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-Message-ID: <20100914182707.GB15549@redhat.com>
-References: <1284410580.13351.10.camel@localhost.localdomain>
- <4C8F3C77.7010302@redhat.com>
- <1284476719.13351.35.camel@localhost.localdomain>
- <201009141721.13202.arnd@arndb.de>
- <20100914152231.GA13105@redhat.com>
- <1284480025.13351.49.camel@localhost.localdomain>
- <20100914162952.GB13560@redhat.com>
- <1284483745.13351.71.camel@localhost.localdomain>
+	id S1753461Ab0INSfi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 14:35:38 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:48258 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752457Ab0INSfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 14:35:36 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Greg Kroah-Hartman <gregkh@suse.de>, "Hans J. Koch" <hjk@linutronix.de>
+Cc: <linux-kernel@vger.kernel.org>
+Date: Tue, 14 Sep 2010 11:35:28 -0700
+Message-ID: <m1y6b48973.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284483745.13351.71.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@suse.de>, "Hans J. Koch"
+	<hjk@linutronix.de>
+X-Spam-Relay-Country: 
+Subject: [PATCH 0/5] Uio enhancements
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 10:02:25AM -0700, Shirley Ma wrote:
-> On Tue, 2010-09-14 at 18:29 +0200, Michael S. Tsirkin wrote:
-> > Precisely. This is what the patch from Xin Xiaohui does.  That code
-> > already seems to do most of what you are trying to do, right?
-> 
-> I thought host pins guest kernel buffer pages was good enough for TX
-> thought I didn't look up xiaohui's vhost asycn io patch in details.
 
-As others said, the harder issues for TX are in determining that it's safe
-to unpin the memory, and how much memory is it safe to pin to beging
-with.  For RX we have some more complexity.
+Looking through my patch queue I stumbled upon some uio changes
+that I have been using for a while and I forgot to push upstream.
 
-> What's the performance data Xiaohui got from using kiocb? I haven't seen
-> any performance number from him yet.
-> 
-> > The main thing missing seems to be macvtap integration, so that we can
-> > fall back
-> > on data copy if zero copy is unavailable?
-> > How hard would it be to basically link the mp and macvtap modules
-> > together to get us this functionality? Anyone? 
-> 
-> The simple integration is using macvtap + xiaohui's vhost asycn io
-> patch. I can make a try for TX only.
-> 
-> Thanks
-> Shirley
+Ultimately I am working on making uio devices hoptlugable, but I figure
+I should get these enhancements in first.
 
-Well it's up to you of course, but this is not what I would try:
-if you look at the
-patchset vhost changes is not the largest part of it,
-so this sounds a bit like effort duplication.
-
-TX only is also much less interesting than full zero copy.
-
-I think that you should be able to simply combine
-the two drivers together, add an ioctl to
-enable/disable zero copy mode of operation.
-
--- 
-MST
+Eric W. Biederman (5):
+      uio: Fix lack of locking in init_uio_class
+      uio: Don't clear driver data
+      uio: Cleanup irq handling.
+      uio: Support 2^MINOR_BITS minors
+      uio: Statically allocate uio_class and use class .dev_attrs.
+---
+ drivers/uio/uio.c          |  165 +++++++++++++++++++-------------------------
+ include/linux/uio_driver.h |    2 +-
+ 2 files changed, 71 insertions(+), 96 deletions(-)
