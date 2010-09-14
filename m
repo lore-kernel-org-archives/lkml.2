@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab0INFcl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 01:32:41 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51945 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab0INFci convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 01:32:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UBHtsVgf4KzrpkCG0yqYrJnk2rw72/ohv3YiDEDUE4R40hOGYFO34XyoNdLcakDZlW
-         DCgGWJ4rWA3g2enbarDF00EpP/XAUvpa067Q+LWG89uwRCzvKETew2ordg9HuyAAgu0t
-         OqIzv9Nq0E6zN3k3S8GFHI0RElgcuOKN/wahc=
-MIME-Version: 1.0
-In-Reply-To: <20100913214132.0438615242D@gemini.denx.de>
-References: <AANLkTi=tWwaFHB0DY=j0UaqbYdYJpGJpmWdGC4aMufSw@mail.gmail.com>
-	<20100913214132.0438615242D@gemini.denx.de>
-Date: Tue, 14 Sep 2010 07:32:37 +0200
-Message-ID: <AANLkTimWLpazRTDdGsXRrTYCjJQURM8ydv2TcX_PycWM@mail.gmail.com>
-Subject: Re: ARM target not boot after remap memory
-From: Robin Theunis <robint91@gmail.com>
-To: Wolfgang Denk <wd@denx.de>
-Cc: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752385Ab0INFeT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 01:34:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6434 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751135Ab0INFeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 01:34:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,362,1280732400"; 
+   d="scan'208";a="837401452"
+Subject: Re:  [PATCH 00/20] mm: Preemptibility -v4
+From: "Alex,Shi" <alex.shi@intel.com>
+To: a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+In-Reply-To: <AANLkTikSm2Mq8hGNac9rpFH-3pvryw2kW57EP45Ny6Vp@mail.gmail.com>
+References: <20100828141637.421594670@chello.nl>
+	 <AANLkTikSm2Mq8hGNac9rpFH-3pvryw2kW57EP45Ny6Vp@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Sep 2010 13:36:25 +0800
+Message-ID: <1284442585.26157.8150.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Wolfgang,
+Peter:
+We tested your tree base on 2.6.36-rc3 kernel. The testing covered on
+Core2 2P, NHM-EP/WSM-EP machines, no clear performance regression found
+on your patch compare to 36-rc3, and also no clear improvements on our
+benchmarks. 
 
-I messed up the buildroot and u-boot version!
-u-boot = 2010.06
-and
-buildroot = 2010.08
+The benchmarks are listed in the following website, and plus some of
+FFSB/FIO scenarios.  http://kernel-perf.sourceforge.net/ 
 
-Sorry all, my fault.
+Regards! 
+Alex 
 
-Best regards,
-
-Robin Theunis
-
-2010/9/13 Wolfgang Denk <wd@denx.de>:
-> Dear Robin Theunis,
->
-> In message <AANLkTi=tWwaFHB0DY=j0UaqbYdYJpGJpmWdGC4aMufSw@mail.gmail.com> you wrote:
->>
->> The U-boot version is 2010.08. I have build the whole system on a
->
-> There is no such version of U-Boot.
->
-> Best regards,
->
-> Wolfgang Denk
->
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Sat, Aug 28, 2010 at 10:16 PM
+> Subject: [PATCH 00/20] mm: Preemptibility -v4
+> To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity
+> <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>, Rik van Riel
+> <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+> akpm@linux-foundation.org, Linus Torvalds
+> <torvalds@linux-foundation.org>
+> Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, Benjamin
+> Herrenschmidt <benh@kernel.crashing.org>, David Miller
+> <davem@davemloft.net>, Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel
+> Gorman <mel@csn.ul.ie>, Nick Piggin <npiggin@suse.de>, Peter Zijlstra
+> <a.p.zijlstra@chello.nl>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+> Yanmin Zhang <yanmin_zhang@linux.intel.com>, Stephen Rothwell
+> <sfr@canb.auug.org.au>
+> 
+> 
+> This patch-set makes part of the mm a lot more preemptible. It converts
+> i_mmap_lock and anon_vma->lock to mutexes and makes mmu_gather fully
+> preemptible.
+> 
+> The main motivation was making mm_take_all_locks() preemptible, since it
+> appears people are nesting hundreds of spinlocks there.
+> 
+> The side-effects are that can finally make mmu_gather preemptible,
+> something which lots of people have wanted to do for a long time.
+> 
+> It also gets us anon_vma refcounting, which seems to result in a nice
+> cleanup of the anon_vma lifetime rules wrt KSM and compaction.
+> 
+> This patch-set it build and boot-tested on x86_64 (a previous version was
+> also tested on Dave's Niagra2 machines, and I suppose s390 did too when
+> Martin provided the conversion patch for his arch).
+> 
+> There are no known architectures left unconverted, although some arch code
+> never did see a compiler (superh and ia64 come to mind, I'll try and
+> update my toolchains next week).
+> 
+> Yanmin ran the last posting through the comprehensive Intel test farm
+> and didn't find any regressions.
+> 
+> ( Not included in this posting are the 4 Sparc64 patches that implement
+>  gup_fast, those can be applied separately after this series gets
+>  anywhere. )
+> 
+> Full series (including the Sparc64 gup_fast bits) also available in -git
+> form from (against Linus' tree as of about an hour ago):
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-mmu_preempt.git
+> mmu_preempt
+> 
+> Do people feel its ready to get added to -next?
+> 
+> 
 > --
-> DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-> HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
-> Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
-> What is tolerance? -- it is the consequence of humanity. We  are  all
-> formed  of frailty and error; let us pardon reciprocally each other's
-> folly -- that is the first law of nature.                  - Voltaire
->
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
