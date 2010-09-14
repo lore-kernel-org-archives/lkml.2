@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab0INOeo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 10:34:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55581 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753963Ab0INOek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 10:34:40 -0400
-Date: Tue, 14 Sep 2010 16:35:14 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, stable@kernel.org,
-        Michael Chapman <redhat-bugzilla@very.puzzling.org>,
-        Ciriaco Garcia de Celis <sysman@etherpilot.com>
-Subject: [PATCH v2] sched: fix user time incorrectly accounted as system time
- on 32 bit
-Message-ID: <20100914143513.GB8415@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753917Ab0INOg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 10:36:56 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:40184 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab0INOgy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 10:36:54 -0400
+Subject: Re: 2.6.36-rc4/iwl: warning triggered in net/mac80211/scan.c:266
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        Reinette Chatre <reinette.chatre@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+In-Reply-To: <20100914142814.GA8744@redhat.com>
+References: <20100914142814.GA8744@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Sep 2010 16:36:28 +0200
+Message-ID: <1284474988.3704.10.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have 32 bit variable overflow possibility when multiply in
-task_times() and thread_group_times() functions. If overflow happens
-calculated scaled utime value become wrongly small and scaled stime
-wrongly big.
+On Tue, 2010-09-14 at 16:28 +0200, Michael S. Tsirkin wrote:
+> I am running 2.6.36-rc4 on T60 with an iwlagn wireless card:
+> 03:00.0 Network controller: Intel Corporation PRO/Wireless 5100 AGN [Shiloh] Network Connection
+> 
+> I was compiling a large file which stressed the box heavily, and the
+> following warning in net/mac80211/scan.c triggered:
+> 
+>         /*
+>          * It's ok to abort a not-yet-running scan (that
+>          * we have one at all will be verified by checking
+>          * local->scan_req next), but not to complete it
+>          * successfully.
+>          */
+>         if (WARN_ON(!local->scanning && !aborted))
+>                 aborted = true;
+> 
+> dmesg below:
+> 
+> [84379.361297] ------------[ cut here ]------------
+> [84379.361307] WARNING: at net/mac80211/scan.c:266 ieee80211_scan_completed+0x43/0x17f()
 
-Reported here:
-https://bugzilla.redhat.com/show_bug.cgi?id=633037
-https://bugzilla.kernel.org/show_bug.cgi?id=16559
+> Should this happen? Does anyone care?
+> I am not sure how reproducible this is.
 
-Reported-by: Michael Chapman <redhat-bugzilla@very.puzzling.org>
-Reported-by: Ciriaco Garcia de Celis <sysman@etherpilot.com>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: <stable@kernel.org>  # 2.6.32.19+ (partially) and 2.6.33+
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
-v1 -> v2
-Fix mail recipients.
+No, it shouldn't happen. But there are various races in iwlwifi that can
+cause this. Stanislaw has fixed them recently, but it's a fairly large
+patchset. I'm not sure, but I don't think this is really new in .36.
 
- kernel/sched.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 09b574e..eee9470 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3507,9 +3507,9 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
- 
- 	if (total) {
--		u64 temp;
-+		u64 temp = rtime;
- 
--		temp = (u64)(rtime * utime);
-+		temp *= utime;
- 		do_div(temp, total);
- 		utime = (cputime_t)temp;
- 	} else
-@@ -3540,9 +3540,9 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
- 
- 	if (total) {
--		u64 temp;
-+		u64 temp = rtime;
- 
--		temp = (u64)(rtime * cputime.utime);
-+		temp *= cputime.utime;
- 		do_div(temp, total);
- 		utime = (cputime_t)temp;
- 	} else
--- 
-1.7.1
+johannes
 
