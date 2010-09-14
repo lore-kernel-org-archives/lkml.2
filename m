@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab0INHfF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 03:35:05 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:48890 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab0INHfB (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Tue, 14 Sep 2010 03:35:01 -0400
-Message-Id: <4C8F41EB0200007800015E8D@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 14 Sep 2010 08:35:39 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Chen Gong" <gong.chen@linux.intel.com>
-Cc: <khali@linux-fr.org>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [lm-sensors] [PATCH] x86/hwmon:
-	 {core,pkg,via-cpu}temp_device_remove() can all be __cpuinit
-References: <4C8E19500200007800015B15@vpn.id2.novell.com>
- <4C8F2317.60506@linux.intel.com>
-In-Reply-To: <4C8F2317.60506@linux.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752837Ab0INHgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 03:36:49 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:47766 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752297Ab0INHgr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 03:36:47 -0400
+Date: Tue, 14 Sep 2010 17:36:43 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Brett Russ <icycle+lkml@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: O_DIRECT reads appear to be cached on block device partition
+ file?
+Message-ID: <20100914073643.GB15695@dastard>
+References: <i6mrcc$ers$1@dough.gmane.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <i6mrcc$ers$1@dough.gmane.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 14.09.10 at 09:24, Chen Gong <gong.chen@linux.intel.com> wrote:
-> 于 9/13/2010 6:30 PM, Jan Beulich 写道:
->> ... as they're being called only from a __cpuinit function.
->>
->> Signed-off-by: Jan Beulich<jbeulich@novell.com>
->>
->> ---
->>   drivers/hwmon/coretemp.c    |    2 +-
->>   drivers/hwmon/pkgtemp.c     |    2 +-
->>   drivers/hwmon/via-cputemp.c |    2 +-
->>   3 files changed, 3 insertions(+), 3 deletions(-)
->>
->> --- linux-2.6.36-rc4/drivers/hwmon/coretemp.c	2010-09-13 08:45:02.000000000 
-> +0200
->> +++ 2.6.36-rc4-x86-hwmon-sections/drivers/hwmon/coretemp.c	2010-09-03 
-> 17:54:14.000000000 +0200
->> @@ -480,7 +480,7 @@ exit:
->>   	return err;
->>   }
->>
->> -static void coretemp_device_remove(unsigned int cpu)
->> +static void __cpuinit coretemp_device_remove(unsigned int cpu)
->>   {
->>   	struct pdev_entry *p, *n;
->>   	mutex_lock(&pdev_list_mutex);
->> --- linux-2.6.36-rc4/drivers/hwmon/pkgtemp.c	2010-09-13 08:45:03.000000000 
-> +0200
->> +++ 2.6.36-rc4-x86-hwmon-sections/drivers/hwmon/pkgtemp.c	2010-09-01 
-> 09:00:45.000000000 +0200
->> @@ -337,7 +337,7 @@ exit:
->>   }
->>
->>   #ifdef CONFIG_HOTPLUG_CPU
->> -static void pkgtemp_device_remove(unsigned int cpu)
->> +static void __cpuinit pkgtemp_device_remove(unsigned int cpu)
->>   {
->>   	struct pdev_entry *p, *n;
->>   	unsigned int i;
->> --- linux-2.6.36-rc4/drivers/hwmon/via-cputemp.c	2010-09-13 
-> 08:45:03.000000000 +0200
->> +++ 2.6.36-rc4-x86-hwmon-sections/drivers/hwmon/via-cputemp.c	2010-09-13 
-> 00:00:00.000000000 +0200
->> @@ -238,7 +238,7 @@ exit:
->>   }
->>
->>   #ifdef CONFIG_HOTPLUG_CPU
->> -static void via_cputemp_device_remove(unsigned int cpu)
->> +static void __cpuinit via_cputemp_device_remove(unsigned int cpu)
->>   {
->>   	struct pdev_entry *p, *n;
->>   	mutex_lock(&pdev_list_mutex);
->>
->>
->>
->>
+On Mon, Sep 13, 2010 at 11:49:32PM -0400, Brett Russ wrote:
+> Running a 2.6.31 kernel on a blade chassis system with multiple
+> blades sharing common JBOD storage.  The application intelligently
+> divides the drives up among the blades, but one blade in particular
+> is charged with monitoring.  As part of this, this one monitoring
+> blade can perform reads of a certain 512B sector of all disks in the
+> system.  This sector is often written by other blades, these writes
+> are sync'd to disk.  To work around the lack of cache coherency
+> between the distinct blades, I'm using O_DIRECT on the monitoring
+> blade such that it always reads from the media to get the latest
+> copy of this sector.  The basic steps are:
 > 
-> I think the change in the coretemp.c is needed but other 2 are 
-> unnecessary because CONFIG_HOTPLUG_CPU has covered the codes final
-> status after init done.
+> # grab a 512B aligned buffer (use 4KB to be safe)
+> posix_memalign(&ptr, getpagesize(), 512B)
+> open(/dev/sdX3, O_RDONLY|O_DIRECT)
+> lseek(fd, offset, SEEK_SET)
+> read(fd, ptr, 512B)
+> 
+> If I run the above on the monitoring blade, then sync an update to
+> the sector in question from another blade, then re-reun the above
+> code on the monitoring blade, believe it or not I appear to be
+> reading stale data.  If I use dd with iflag=direct, reading the same
+> sector offset at the /dev/sdX3 partition file, I see the same stale
+> data as seen from the code above.  If, however, I instead access
+> this sector offset from the /dev/sdX device file using the (offset
+> of partition 3 + offset of the sector) I see the intended data,
+> which makes me believe some caching occurred locally for /dev/sdX3.
 
-Perhaps you're right, but (just like was done for coretemp) these
-CONFIG_HOTPLUG_CPU conditionals are really superfluous and should
-go away.
+What does blktrace tell you?
 
-Jan
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
