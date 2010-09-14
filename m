@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab0INPYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 11:24:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36443 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab0INPYX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 11:24:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=BYYdCfuZGmI68Gl0YP959sXdUdM7xgBk2BGc7CPMHwV/mfOUhQdFhs3bLxDnyefyub
-         wDDKc1q/1aH8IwsoH3DumIM7CRaTlBxYiREYBEgKfSsLcMBwJEZJ4k7LUzo0r+7yaD/4
-         R12/CmqpbEHsjwIzZiaWZtgpKhldgTMGWR5Xg=
+	id S1751740Ab0INP0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 11:26:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40765 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932Ab0INP0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 11:26:32 -0400
+Date: Tue, 14 Sep 2010 17:20:25 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] tun: orphan an skb on tx
+Message-ID: <20100914152025.GB13028@redhat.com>
+References: <20100413145944.GA7716@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikHM+o_FCgnVzGhs8UtQ_geXFzKNQpGSZiEN7sx@mail.gmail.com>
-References: <AANLkTikHM+o_FCgnVzGhs8UtQ_geXFzKNQpGSZiEN7sx@mail.gmail.com>
-Date: Tue, 14 Sep 2010 20:54:22 +0530
-Message-ID: <AANLkTimd_sRpOYaurOT0iSbfd0pMZvhxgUcaqbQvSobu@mail.gmail.com>
-Subject: Re: OMAP3 DSP MMU fault + off mode issue
-From: venki kaps <venkiece2005@gmail.com>
-To: omar.ramirez@ti.com, h-kanigeri2@ti.com, ameya.palande@nokia.com,
-        fernando.lugo@ti.com, x0hebbar@ti.com, ernesto@ti.com,
-        felipe.contreras@gmail.com, s-anna@ti.com, grgupta@ti.com,
-        ivan.gomez@ti.com, ext-andriy.shevchenko@nokia.com, x0095078@ti.com,
-        deepak.chitriki@ti.com, nm@ti.com, ext-phil.2.carmody@nokia.com,
-        ohad@wizery.com, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100413145944.GA7716@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 1:28 AM, venki kaps <venkiece2005@gmail.com> wrote:
-> Dear all,
->
-> I have been facing an issue with OMAP3 PM with DSP MMU Fault (Kernel 2.6.32).
->
-> The issue is describing as below mentioned way,
->        1). The Device is getting DSP MMU Fault when playing MP4 video clip.
->
-> The system is not hitting off mode in the below scenario,
->        2). System boot ->play mp4 clip ->DSP MMU Fault -> allow off
-> mode -----------> Never hits off mode
->
-> But surprisingly the system is hitting off mode in the below scenario,
->       3). System boot ->allow off mode ->play mp4 clip ->DSP MMU
-> Fault -> allow off mode -----------> perfectly works
->
->
->  - Could you please describe the root cause about the above issues 1 & 2?
->  - How could solve the above issues?
+I looked at the macvtap driver and it seems that it should
+have the below issue, same as tap.
+Arnd?
 
-I have found the issue with UART3.
-In System configuration register (SYSC),-
-             IDLEMODE  - Smart idle -------> working scenario  ------>
-system hits off mode.
-             IDLEMODE  - No idle -------> Non working scenario
-------> system never hits off mode.
-
-Could you please explain why UART3 is not able to hit smart idle after
-DSP MMU fault ( System boot ->play mp4 clip ->DSP MMU Fault -> allow
-off -----------> Never hits off mode).,
-
-Thanks in advance.
-
-> Best Regards,
-> Venkii
->
+On Tue, Apr 13, 2010 at 05:59:44PM +0300, Michael S. Tsirkin wrote:
+> The following situation was observed in the field:
+> tap1 sends packets, tap2 does not consume them, as a result
+> tap1 can not be closed. This happens because
+> tun/tap devices can hang on to skbs undefinitely.
+> 
+> As noted by Herbert, possible solutions include a timeout followed by a
+> copy/change of ownership of the skb, or always copying/changing
+> ownership if we're going into a hostile device.
+> 
+> This patch implements the second approach.
+> 
+> Note: one issue still remaining is that since skbs
+> keep reference to tun socket and tun socket has a
+> reference to tun device, we won't flush backlog,
+> instead simply waiting for all skbs to get transmitted.
+> At least this is not user-triggerable, and
+> this was not reported in practice, my assumption is
+> other devices besides tap complete an skb
+> within finite time after it has been queued.
+> 
+> A possible solution for the second issue
+> would not to have socket reference the device,
+> instead, implement dev->destructor for tun, and
+> wait for all skbs to complete there, but this
+> needs some thought, probably too risky for 2.6.34.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Tested-by: Yan Vugenfirer <yvugenfi@redhat.com>
+> 
+> ---
+> 
+> Please review the below, and consider for 2.6.34,
+> and stable trees.
+> 
+>  drivers/net/tun.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 96c39bd..4326520 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -387,6 +387,10 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+>  		}
+>  	}
+>  
+> +	/* Orphan the skb - required as we might hang on to it
+> +	 * for indefinite time. */
+> +	skb_orphan(skb);
+> +
+>  	/* Enqueue packet */
+>  	skb_queue_tail(&tun->socket.sk->sk_receive_queue, skb);
+>  	dev->trans_start = jiffies;
+> -- 
+> 1.7.0.2.280.gc6f05
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
