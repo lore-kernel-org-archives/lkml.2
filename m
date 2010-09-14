@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab0INFtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 01:49:49 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:41778 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286Ab0INFtr (ORCPT
+	id S1752693Ab0INF5a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 01:57:30 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47378 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094Ab0INF52 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 01:49:47 -0400
-Message-ID: <4C8F0CF8.1050309@cs.helsinki.fi>
-Date: Tue, 14 Sep 2010 08:49:44 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
+	Tue, 14 Sep 2010 01:57:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JfwrYNPWQfu8m70HN7d0mjiJa1YqzRn+4L1ol3cKlqiUHnfR+yCth6HG0mHgboPrZ2
+         DhGOXnuBPM4wGw98BLYfUPwRBc4NRdctmSHPy4OrYUvTUDi+etiqdEM64n/bsJq/n/j1
+         djHCUyPod2ItVPLf1thKAtmJWNqY/R+xkCJrs=
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Linus Walleij <linus.ml.walleij@gmail.com>,
-        linux kernel <linux-kernel@vger.kernel.org>, tj@linux.com,
-        "=?ISO-8859-1?Q?Jonas_=C5berg?=" <jonas.aberg@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Regression on UP ARM from commit e18d65f0500b95d8724b17d8ea9f1116cf390bbe
-References: <AANLkTimC5Vz7x9+MNJcewijoyw=Nyr6WWP=YR8cxqarH@mail.gmail.com> <alpine.DEB.2.00.1009130855430.26275@router.home>
-In-Reply-To: <alpine.DEB.2.00.1009130855430.26275@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4C8E8F31.2050108@bluewatersys.com>
+References: <4C8DFA84.4040501@gmail.com>
+	<4C8E8F31.2050108@bluewatersys.com>
+Date: Tue, 14 Sep 2010 09:57:27 +0400
+Message-ID: <AANLkTi=-n0_uFMKGED-aOtuLEfUyVeMcm5FWX5xM_BT1@mail.gmail.com>
+Subject: Re: [PATCH v2] AT91: Add flexibity board support
+From: Maxim Osipov <maxim.osipov@gmail.com>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "Antonio R. Costa" <costa.antonior@gmail.com>,
+        Ernst Schwab <eschwab@online.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/13/10 4:58 PM, Christoph Lameter wrote:
-> On Sun, 12 Sep 2010, Linus Walleij wrote:
->
->> commit e18d65f0500b95d8724b17d8ea9f1116cf390bbe
->> "slub: Remove static kmem_cache_cpu array for boot"
->> made my ARM 926 UP system hang at boot, if I revert this (have
->> to back out a lot of SLUB patches for that) it comes back up. (Same if I
->> switch to SLAB.)
->>
->> Any hints on how I can get patch around this in a nice way?
->
-> This is UP right? Any more details on this one? Does ARM have
-> earlyprintk?
->
-> Tejun also has some patches that make the percpu allocator work on UP so
-> that we do not need the hack (you must have the hack which is commit
-> c23e5ad729ac43f5e2fbc080f94cf61f07b4d45f as well to make UP work right!).
->
-> I am not sure if they are already in -next though.
+Please see my comments below...
 
-Yes, they should be in linux-next. I haven't pulled the changes to 
-slab.git, though. Linus, do things work in linux-next if you revert 
-commit 5249d039500f05a5ab379286b1d23ab9b04d3f2c ("Slub: UP bandaid")?
+On Tue, Sep 14, 2010 at 12:53 AM, Ryan Mallon <ryan@bluewatersys.com> wrote:
+> On 09/13/2010 10:18 PM, Maxim Osipov wrote:
+>
+>> +static void __init flexibity_board_init(void)
+>> +{
+>> +     /* Serial */
+>> +     at91_add_device_serial();
+>> +     /* USB Host */
+>> +     at91_add_device_usbh(&flexibity_usbh_data);
+>> +     /* USB Device */
+>> +     at91_add_device_udc(&flexibity_udc_data);
+>> +     /* SPI */
+>> +     at91_add_device_spi(flexibity_spi_devices,
+>> +             ARRAY_SIZE(flexibity_spi_devices));
+>> +     /* MMC */
+>> +     at91_add_device_mmc(0, &flexibity_mmc_data);
+>> +     /* LEDs */
+>> +     at91_gpio_leds(flexibity_leds, ARRAY_SIZE(flexibity_leds));
+>
+> Can we drop all the comments inside this function please. They don't add
+> any information and they make it harder to read the actual code.
+>
 
-			Pekka
+Ryan, thank you for the review. However I would like to keep these
+comments - for some devices, like UDC - it really provides
+clarification. Reading the code is not a problem with proper
+highlighting scheme.
+
+Kind regards,
+Maxim
