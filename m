@@ -1,94 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab0INKOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 06:14:52 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50235 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517Ab0INKOs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 06:14:48 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 05/10] vmscan: Synchrounous lumpy reclaim use lock_page() instead trylock_page()
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20100913091405.GB23508@csn.ul.ie>
-References: <20100909182649.C94F.A69D9226@jp.fujitsu.com> <20100913091405.GB23508@csn.ul.ie>
-Message-Id: <20100914191250.C9C7.A69D9226@jp.fujitsu.com>
+	id S1753464Ab0INKR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 06:17:57 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:59710 "EHLO vps.mortis.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752733Ab0INKRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 06:17:53 -0400
+Date: Tue, 14 Sep 2010 12:17:51 +0200
+From: Giel van Schijndel <me@mortis.eu>
+To: Lin Ming <lin@ming.vg>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Why not make LKML-Reference useful?
+Message-ID: <20100914101751.GH29094@salidar.me.mortis.eu>
+References: <AANLkTin9Ry6hCBciLkg2ExgERv9SHq5vO-Zvxy3Ei_JJ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 14 Sep 2010 19:14:44 +0900 (JST)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xjyYRNSh/RebjC6o"
+Content-Disposition: inline
+In-Reply-To: <AANLkTin9Ry6hCBciLkg2ExgERv9SHq5vO-Zvxy3Ei_JJ@mail.gmail.com>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > example, 
-> > 
-> > __do_fault()
-> > {
-> > (snip)
-> >         if (unlikely(!(ret & VM_FAULT_LOCKED)))
-> >                 lock_page(vmf.page);
-> >         else
-> >                 VM_BUG_ON(!PageLocked(vmf.page));
-> > 
-> >         /*
-> >          * Should we do an early C-O-W break?
-> >          */
-> >         page = vmf.page;
-> >         if (flags & FAULT_FLAG_WRITE) {
-> >                 if (!(vma->vm_flags & VM_SHARED)) {
-> >                         anon = 1;
-> >                         if (unlikely(anon_vma_prepare(vma))) {
-> >                                 ret = VM_FAULT_OOM;
-> >                                 goto out;
-> >                         }
-> >                         page = alloc_page_vma(GFP_HIGHUSER_MOVABLE,
-> >                                                 vma, address);
-> > 
-> 
-> Correct, this is a problem. I already had dropped the patch but thanks for
-> pointing out a deadlock because I was missing this case. Nothing stops the
-> page being faulted being sent to shrink_page_list() when alloc_page_vma()
-> is called. The deadlock might be hard to hit, but it's there.
 
-Yup, unfortunatelly.
+--xjyYRNSh/RebjC6o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, Sep 14, 2010 at 05:52:26PM +0800, Lin Ming wrote:
+> What's LKML-Reference in the kernel git log?
+> In my understanding, it's a link to the original discussion of the
+> patch on LKML, for example
+>=20
+> LKML-Reference: http://marc.info/?l=3Dlinux-kernel&m=3D128445596126705&w=
+=3D2
+>=20
+> But I never see such a link in the LKML-Reference of the git log.
+>=20
+> Those LKML-Reference are really useless.
 
+No they're not, those are the Message-IDs of the referenced headers
+which can be used to search archives with.
 
-> > Afaik, detailed rule is,
-> > 
-> > o kswapd can call lock_page() because they never take page lock outside vmscan
-> 
-> lock_page_nosync as you point out in your next mail. While it can call
-> it, kswapd shouldn't because normally it avoids stalls but it would not
-> deadlock as a result of calling it.
+> Why not put a link in LKML-Reference?
 
-Agreed.
+Now, links OTOH *would* be useless on the long run as there's no single
+entity maintaining LKML archives, so whatever entity you link to, you
+become dependent on.  Having Message-IDs at least allows you to search
+any available archive (provided it allows searching on Message-IDs).
 
+--=20
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
+--
+"Always code as if the guy who ends up maintaining your code will be a
+ violent psychopath who knows where you live."
+  -- Rick Osborne
 
-> > o if try_lock() is successed, we can call lock_page_nosync() against its page after unlock.
-> >   because the task have gurantee of no lock taken.
-> > o otherwise, direct reclaimer can't call lock_page(). the task may have a lock already.
-> > 
-> 
-> I think the safer bet is simply to say "direct reclaimers should not
-> call lock_page() because the fault path could be holding a lock on that
-> page already".
+--xjyYRNSh/RebjC6o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-Yup, agreed.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iEYEARECAAYFAkyPS88ACgkQZBYm/87l50IO6ACgroeIZuOFGVfmqbAMqW06zO2x
+INoAoIsSKJV9oLdTXpQSW3i6rkQQWFBd
+=8Lzx
+-----END PGP SIGNATURE-----
 
-
+--xjyYRNSh/RebjC6o--
