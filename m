@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab0INQgC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 12:36:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33335 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab0INQf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 12:35:58 -0400
-Date: Tue, 14 Sep 2010 18:29:52 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-Message-ID: <20100914162952.GB13560@redhat.com>
-References: <1284410580.13351.10.camel@localhost.localdomain>
- <4C8F3C77.7010302@redhat.com>
- <1284476719.13351.35.camel@localhost.localdomain>
- <201009141721.13202.arnd@arndb.de>
- <20100914152231.GA13105@redhat.com>
- <1284480025.13351.49.camel@localhost.localdomain>
+	id S1753652Ab0INQpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 12:45:44 -0400
+Received: from mailfe01.swip.net ([212.247.154.1]:43668 "EHLO swip.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752354Ab0INQpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 12:45:43 -0400
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Sep 2010 12:45:42 EDT
+X-Cloudmark-Score: 0.000000 []
+X-Cloudmark-Analysis: v=1.1 cv=j7CamwTYPdqpPEStuXsO3NuINpGH0vD6OqI73Hu9mOs= c=1 sm=1 a=Dyoqhi_TatcA:10 a=zEx2QMy-I08A:10 a=WHsXhg87phMA:10 a=Cfj4BQAnxiAA:10 a=-sq9_qZHtQEA:10 a=14gLM2GLVWzyHRtMPGPqPA==:17 a=69EAbJreAAAA:8 a=JHjDsQE_XdNQgAfkItoA:9 a=aiEkSN4XBHNPcO77lP4mfmjM9fsA:4 a=Ft8UYL4EG9YA:10 a=EfJqPEOeqlMA:10 a=cmC6wDXMmaOF4R6o:21 a=7Yr31XdGJV7RryOi:21 a=14gLM2GLVWzyHRtMPGPqPA==:117
+X-Reverse-Check: address rejected with reverse-check
+Reply-To: <claims.008@hotmail.com>
+From: "Microsoft" <info@uknl.com>
+Subject: Email selected
+Date: Tue, 14 Sep 2010 22:10:34 +0530
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284480025.13351.49.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 100914-0, 09/14/2010), Outbound message
+X-Antivirus-Status: Clean
+Message-ID: <auto-000021915964@mailfe01.swip.net>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 09:00:25AM -0700, Shirley Ma wrote:
-> On Tue, 2010-09-14 at 17:22 +0200, Michael S. Tsirkin wrote:
-> > I would expect this to hurt performance significantly.
-> > We could do this for asynchronous requests only to avoid the
-> > slowdown. 
-> 
-> Is kiocb in sendmsg helpful here? It is not used now.
-> 
-> Shirley
 
-Precisely. This is what the patch from Xin Xiaohui does.  That code
-already seems to do most of what you are trying to do, right?
+Your Email Id has won 1,000,000.00 GBP in the British MICROSOFT Promo 2010. send your 
 
-The main thing missing seems to be macvtap integration, so that we can fall back
-on data copy if zero copy is unavailable?
-How hard would it be to basically link the mp and macvtap modules
-together to get us this functionality? Anyone?
+Names.
+Address.
+Sex.
+Age.
+Tel.
+Occupation.
 
-
--- 
-MST
+to our claims department: claims.008@hotmail.com
++447010039919.
