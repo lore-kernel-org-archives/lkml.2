@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab0INMoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 08:44:07 -0400
+	id S1753949Ab0INMoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 08:44:14 -0400
 Received: from mail-px0-f174.google.com ([209.85.212.174]:48642 "EHLO
 	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab0INMoE (ORCPT
+	with ESMTP id S1753890Ab0INMoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 08:44:04 -0400
+	Tue, 14 Sep 2010 08:44:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Lfdt0SXw4gHekZ+VpF9DnGn9q7rVjMh0veZzg7839ESszna3hkxFXGoF4iKCFxSCRe
-         zTalQAvaFAD+rH+A0UQoHwiyQo5SmB58eFgucoblMFQ6C4nrZ6g8lFZivDez8aR4myw0
-         jcv5bTNhi474dGbKFesEpX+TaFcZa3+Ej28KQ=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=HUP2stZu0KHNV7egxsMJSHltqov+Kw4uD9yqWZhbLgFQz1hYIdkyhh3ZeQyS+u5Pzp
+         MDYyf6MVZL6zjGekP9AjWJ2PMMKgNQ/1vXPAvAQeOOJkdol6pN19o09Qd1CPH5od4/I5
+         lsplF+8weWdUGu4tAreyI+hE2dZ9Pe3UdMB0Q=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Darren Hart <dvhltc@us.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] futex: change signature of fetch_robust_entry()
-Date: Tue, 14 Sep 2010 21:43:46 +0900
-Message-Id: <1284468228-8723-1-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 2/3] futex: mark restart_block.futex.uaddr as a __user pointer
+Date: Tue, 14 Sep 2010 21:43:47 +0900
+Message-Id: <1284468228-8723-2-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1284468228-8723-1-git-send-email-namhyung@gmail.com>
+References: <1284468228-8723-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make 3rd argument of fetch_robust_entry() 'unsigned int' in order to
-remove following warnings from sparse:
-
- kernel/futex.c:2495:59: warning: incorrect type in argument 3 (different signedness)
- kernel/futex.c:2495:59:    expected int *pi
- kernel/futex.c:2495:59:    got unsigned int *<noident>
- kernel/futex.c:2506:67: warning: incorrect type in argument 3 (different signedness)
- kernel/futex.c:2506:67:    expected int *pi
- kernel/futex.c:2506:67:    got unsigned int *<noident>
- kernel/futex.c:2515:69: warning: incorrect type in argument 3 (different signedness)
- kernel/futex.c:2515:69:    expected int *pi
- kernel/futex.c:2515:69:    got unsigned int *<noident>
-
-Since all of its users were using 'unsigned int' already, it could
-be changed safely.
+@uaddr field in restart_block.futex is a user pointer but was
+missing __user markup. Add it and remove unnecessary castings.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- kernel/futex.c        |    2 +-
- kernel/futex_compat.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/thread_info.h |    4 ++--
+ kernel/futex.c              |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
+diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
+index a8cc4e1..c906965 100644
+--- a/include/linux/thread_info.h
++++ b/include/linux/thread_info.h
+@@ -23,12 +23,12 @@ struct restart_block {
+ 		};
+ 		/* For futex_wait and futex_wait_requeue_pi */
+ 		struct {
+-			u32 *uaddr;
++			u32 __user *uaddr;
+ 			u32 val;
+ 			u32 flags;
+ 			u32 bitset;
+ 			u64 time;
+-			u32 *uaddr2;
++			u32 __user *uaddr2;
+ 		} futex;
+ 		/* For nanosleep */
+ 		struct {
 diff --git a/kernel/futex.c b/kernel/futex.c
-index 6a3a5fa..464de27 100644
+index 464de27..45e448a 100644
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
-@@ -2458,7 +2458,7 @@ retry:
-  */
- static inline int fetch_robust_entry(struct robust_list __user **entry,
- 				     struct robust_list __user * __user *head,
--				     int *pi)
-+				     unsigned int *pi)
- {
- 	unsigned long uentry;
+@@ -1843,7 +1843,7 @@ retry:
  
-diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
-index d49afb2..06da4df 100644
---- a/kernel/futex_compat.c
-+++ b/kernel/futex_compat.c
-@@ -19,7 +19,7 @@
-  */
- static inline int
- fetch_robust_entry(compat_uptr_t *uentry, struct robust_list __user **entry,
--		   compat_uptr_t __user *head, int *pi)
-+		   compat_uptr_t __user *head, unsigned int *pi)
+ 	restart = &current_thread_info()->restart_block;
+ 	restart->fn = futex_wait_restart;
+-	restart->futex.uaddr = (u32 *)uaddr;
++	restart->futex.uaddr = uaddr;
+ 	restart->futex.val = val;
+ 	restart->futex.time = abs_time->tv64;
+ 	restart->futex.bitset = bitset;
+@@ -1869,7 +1869,7 @@ out:
+ 
+ static long futex_wait_restart(struct restart_block *restart)
  {
- 	if (get_user(*uentry, head))
- 		return -EFAULT;
+-	u32 __user *uaddr = (u32 __user *)restart->futex.uaddr;
++	u32 __user *uaddr = restart->futex.uaddr;
+ 	int fshared = 0;
+ 	ktime_t t, *tp = NULL;
+ 
 -- 
 1.7.2.2
 
