@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665Ab0INNfj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 09:35:39 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:40959 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab0INNfi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 09:35:38 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
-	b=aBNNKd9GE+vgsuyZ5RcAPOiTwVeAXd+GnKttGgE4MkSbkjIQM0oeAXKzaaOj1fnYc
-	Ajq3ikRkxkyXXGTXcQUCQ==
-Message-ID: <4c8f7a23.cae9d80a.2c11.0bb4@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Tue, 14 Sep 2010 15:34:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        eranian@google.com, robert.richter@amd.com, dzickus@redhat.com
-Subject: [PATCH] watchdog: avoid kernel crash when disabling watchdog
-X-System-Of-Record: true
+	id S1751929Ab0INNiV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 09:38:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27756 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751616Ab0INNiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 09:38:18 -0400
+Date: Tue, 14 Sep 2010 09:37:56 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 4/6] x86, NMI, Rewrite NMI handler
+Message-ID: <20100914133756.GI26290@redhat.com>
+References: <1284087065-32722-1-git-send-email-ying.huang@intel.com>
+ <1284087065-32722-4-git-send-email-ying.huang@intel.com>
+ <20100910155605.GG4879@redhat.com>
+ <20100910180356.44ac7097@basil.nowhere.org>
+ <20100910182952.GJ4879@redhat.com>
+ <1284343770.3269.75.camel@yhuang-dev.sh.intel.com>
+ <20100913140419.GA27371@redhat.com>
+ <1284441161.2256.94.camel@yhuang-dev.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284441161.2256.94.camel@yhuang-dev.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case you boot with the watchdog disabled, i.e., nowatchdog, then,
-if you try to disable it via /proc/sys/kernel/watchdog, you get
-a kernel crash. The reason is that you are trying to cancel a hrtimer
-which has never been initialized.
+On Tue, Sep 14, 2010 at 01:12:41PM +0800, Huang Ying wrote:
+> On Mon, 2010-09-13 at 22:04 +0800, Don Zickus wrote:
+> > On Mon, Sep 13, 2010 at 10:09:30AM +0800, Huang Ying wrote:
+> > > > The reason I asked was, I thought it would be easier to have a global
+> > > > variable that tells the nmi handler which cpu has the NMI's routed to its
+> > > > io port.  This way if you want to swap out the bsp cpu, you could perhaps
+> > > > just re-route the nmi to a new cpu and the global variable would be
+> > > > updated accordingly?
+> > > 
+> > > Then we need some kind of protection or race condition between
+> > > re-routing NMI and updating the variable. Do you think so?
+> > 
+> > Well, I thought the only reasonable place to update the variable is when
+> > the cpu is being taken offline, during the MTRR update.  Since no NMIs can
+> > be processed when the cpu's are syncing their MTRR, there shouldn't be a
+> > race condition, no?
+> > 
+> > Then again I am probably missing something obvious.  Like I don't know how
+> > cpu's deal with interrupts/NMIs when they are going offline.
+> > 
+> > It was just a thought to avoid the spinlock.
+> 
+> Why do you hate spinlock inside NMI handler? I think it is safe and
+> simple if only used in NMI handler.
 
-This patch fixes this by skipping execution of
-watchdog_disable_all_cpus() when the watchdog is marked
-disabled from boot.
+I guess I always had the mentality that spinlocks in an NMI context was a
+big no-no.  Never really thought about if there were safe use-cases or
+not.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
---
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 69a3d44..f335067 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -473,6 +473,9 @@ static void watchdog_disable_all_cpus(void)
- {
- 	int cpu;
- 
-+	if (no_watchdog)
-+		return;
-+
- 	for_each_online_cpu(cpu)
- 		watchdog_disable(cpu);
- 
+Cheers,
+Don
