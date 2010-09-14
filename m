@@ -1,73 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab0INOx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 10:53:27 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56904 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753776Ab0INOx0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 10:53:26 -0400
-Date: Tue, 14 Sep 2010 16:14:33 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Thomas Richter <thor@math.tu-berlin.de>
-Cc: linux-kernel@vger.kernel.org, benh@kernel.crashing.org
-Subject: Re: parport_pc: irq= parameter with limited usefulness, kernel hang
- on PPC/OldWorldMac
-Message-ID: <20100914161433.55457b6f@lxorguk.ukuu.org.uk>
-In-Reply-To: <4C8F88EC.2020009@math.tu-berlin.de>
-References: <4C8F88EC.2020009@math.tu-berlin.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754592Ab0INPC6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 11:02:58 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:56588 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754080Ab0INPCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 11:02:47 -0400
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Thomas Moll <thomas.moll@sysgo.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Micha Nelissen <micha@neli.hopto.org>
+Subject: [PATCH v2 06/10] RapidIO: Modify sysfs initialization for switches
+Date: Tue, 14 Sep 2010 10:59:19 -0400
+Message-Id: <1284476363-1677-7-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.0.5
+In-Reply-To: <1284476363-1677-1-git-send-email-alexandre.bounine@idt.com>
+References: <1284476363-1677-1-git-send-email-alexandre.bounine@idt.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> *) Under at least 2.6.31 and up, the kernel assigns IRQ 25 to the card. 
-> Under 2.6.28 and below, the card
-> was run in polling mode (i.e. irq was -1, not 25).
-> 
-> *) Furthermore, the above report suggests that the system wants to 
-> handle an edge-triggered IRQ, though
-> according to /proc/interrupts, IRQ 25 is level-triggered.
+1. Change to create attribute "routes" only for switches.
+2. Add a switch-specific callback to create/remove proprietary attributes.
 
-The parport_pc code just asks for the IRQ so any level/edge mismatch
-would appear to be coming from the firmware or architecture code. The
-older kernel didn't know to use the IRQ on PCI devices which stopped some
-things working and hurt performance. That would also have masked the bug
-you see - so the report makes total sense.
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Thomas Moll <thomas.moll@sysgo.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Li Yang <leoli@freescale.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Micha Nelissen <micha@neli.hopto.org>
+---
+ drivers/rapidio/rio-sysfs.c |   26 +++++++++++++++++++-------
+ include/linux/rio.h         |    6 ++++++
+ 2 files changed, 25 insertions(+), 7 deletions(-)
 
-> should, according to the documentation and the parport_pc.c source do 
-> that. For reasons beyond me, the kernel module wants
-> to be smarter than I and *still* enables the IRQ. I'm pretty sure that 
+diff --git a/drivers/rapidio/rio-sysfs.c b/drivers/rapidio/rio-sysfs.c
+index 00b4756..137ed93 100644
+--- a/drivers/rapidio/rio-sysfs.c
++++ b/drivers/rapidio/rio-sysfs.c
+@@ -40,9 +40,6 @@ static ssize_t routes_show(struct device *dev, struct device_attribute *attr, ch
+ 	char *str = buf;
+ 	int i;
+ 
+-	if (!rdev->rswitch)
+-		goto out;
+-
+ 	for (i = 0; i < RIO_MAX_ROUTE_ENTRIES(rdev->net->hport->sys_size);
+ 			i++) {
+ 		if (rdev->rswitch->route_table[i] == RIO_INVALID_ROUTE)
+@@ -52,7 +49,6 @@ static ssize_t routes_show(struct device *dev, struct device_attribute *attr, ch
+ 			    rdev->rswitch->route_table[i]);
+ 	}
+ 
+-      out:
+ 	return (str - buf);
+ }
+ 
+@@ -63,10 +59,11 @@ struct device_attribute rio_dev_attrs[] = {
+ 	__ATTR_RO(asm_did),
+ 	__ATTR_RO(asm_vid),
+ 	__ATTR_RO(asm_rev),
+-	__ATTR_RO(routes),
+ 	__ATTR_NULL,
+ };
+ 
++static DEVICE_ATTR(routes, S_IRUGO, routes_show, NULL);
++
+ static ssize_t
+ rio_read_config(struct file *filp, struct kobject *kobj,
+ 		struct bin_attribute *bin_attr,
+@@ -218,7 +215,17 @@ int rio_create_sysfs_dev_files(struct rio_dev *rdev)
+ {
+ 	int err = 0;
+ 
+-	err = sysfs_create_bin_file(&rdev->dev.kobj, &rio_config_attr);
++	err = device_create_bin_file(&rdev->dev, &rio_config_attr);
++
++	if (!err && rdev->rswitch) {
++		err = device_create_file(&rdev->dev, &dev_attr_routes);
++		if (!err && rdev->rswitch->sw_sysfs)
++			err = rdev->rswitch->sw_sysfs(rdev, RIO_SW_SYSFS_CREATE);
++	}
++
++	if (err)
++		pr_warning("RIO: Failed to create attribute file(s) for %s\n",
++			   rio_name(rdev));
+ 
+ 	return err;
+ }
+@@ -231,5 +238,10 @@ int rio_create_sysfs_dev_files(struct rio_dev *rdev)
+  */
+ void rio_remove_sysfs_dev_files(struct rio_dev *rdev)
+ {
+-	sysfs_remove_bin_file(&rdev->dev.kobj, &rio_config_attr);
++	device_remove_bin_file(&rdev->dev, &rio_config_attr);
++	if (rdev->rswitch) {
++		device_remove_file(&rdev->dev, &dev_attr_routes);
++		if (rdev->rswitch->sw_sysfs)
++			rdev->rswitch->sw_sysfs(rdev, RIO_SW_SYSFS_REMOVE);
++	}
+ }
+diff --git a/include/linux/rio.h b/include/linux/rio.h
+index 8d9e66d..4fa5e3d 100644
+--- a/include/linux/rio.h
++++ b/include/linux/rio.h
+@@ -218,6 +218,10 @@ struct rio_net {
+ 	unsigned char id;	/* RIO network ID */
+ };
+ 
++/* Definitions used by switch sysfs initialization callback */
++#define RIO_SW_SYSFS_CREATE	1	/* Create switch attributes */
++#define RIO_SW_SYSFS_REMOVE	0	/* Remove switch attributes */
++
+ /**
+  * struct rio_switch - RIO switch info
+  * @node: Node in global list of switches
+@@ -234,6 +238,7 @@ struct rio_net {
+  * @get_domain: Callback for switch-specific domain get function
+  * @em_init: Callback for switch-specific error management initialization function
+  * @em_handle: Callback for switch-specific error management handler function
++ * @sw_sysfs: Callback that initializes switch-specific sysfs attributes
+  * @nextdev: Array of per-port pointers to the next attached device
+  */
+ struct rio_switch {
+@@ -256,6 +261,7 @@ struct rio_switch {
+ 			   u8 *sw_domain);
+ 	int (*em_init) (struct rio_dev *dev);
+ 	int (*em_handle) (struct rio_dev *dev, u8 swport);
++	int (*sw_sysfs) (struct rio_dev *dev, int create);
+ 	struct rio_dev *nextdev[0];
+ };
+ 
+-- 
+1.7.0.5
 
-The options only apply to legacy ports - it has always been that way.
-It's not clear how you would specify which port to affect otherwise.
-
-> *) parport_pc should take irq=none seriously and should not silently 
-> override it,
-
-parport_pc could do with a way to specify whether to use the IRQ or DMA
-on PCI ports but really this shouldn't be needed if the rest of the
-kernel logic is right.
-
-> *) parport_pc should at least not crash the system completely in case 
-> the IRQ is enabled.
-> 
-> The latter *might* be an issue with the G3 powermac hardware, which is 
-> of course weird and has a couple of hardware
-
-The latter looks like a bug in the PPC side support, perhaps misreporting
-an IRQ, or mislabelling it in some way. I think the first step is to find
-a PPC hacker who can figure out why the apparently sane IRQ request from
-the parport layer is exploding.
-
-Even if there is some technical reason the IRQ can't be used then the arch
-code shouldn't be reporting an IRQ for it, and the parport_pc could ought
-to just work.
-
-Adding Ben to the Cc: so we it can get hunted down.
-
-Alan
