@@ -1,106 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab0INJRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 05:17:38 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8438 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751664Ab0INJRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 05:17:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,363,1280732400"; 
-   d="scan'208";a="837447602"
-Date: Tue, 14 Sep 2010 17:17:20 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Neil Brown <neilb@suse.de>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [PATCH 05/17] writeback: quit throttling when signal pending
-Message-ID: <20100914091720.GA23042@localhost>
-References: <20100914172028.C9B2.A69D9226@jp.fujitsu.com>
- <20100914083338.GA20295@localhost>
- <20100914174017.C9BB.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100914174017.C9BB.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753114Ab0INJTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 05:19:08 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:44623 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664Ab0INJTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 05:19:03 -0400
+Date: Tue, 14 Sep 2010 11:18:39 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/7] hwmon: (lm90) Simplify set_temp11 register
+ calculations
+Message-ID: <20100914111839.1ef08638@hyperion.delvare>
+In-Reply-To: <1284038750-8833-5-git-send-email-guenter.roeck@ericsson.com>
+References: <1284038750-8833-1-git-send-email-guenter.roeck@ericsson.com>
+	<1284038750-8833-5-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 04:44:37PM +0800, KOSAKI Motohiro wrote:
-> > On Tue, Sep 14, 2010 at 04:23:56PM +0800, KOSAKI Motohiro wrote:
-> > > > Subject: writeback: quit throttling when fatal signal pending
-> > > > From: Wu Fengguang <fengguang.wu@intel.com>
-> > > > Date: Wed Sep 08 17:40:22 CST 2010
-> > > > 
-> > > > This allows quick response to Ctrl-C etc. for impatient users.
-> > > > 
-> > > > It mainly helps the rare bdi/global dirty exceeded cases.
-> > > > In the normal case of not exceeded, it will quit the loop anyway. 
-> > > > 
-> > > > CC: Neil Brown <neilb@suse.de>
-> > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > > ---
-> > > >  mm/page-writeback.c |    3 +++
-> > > >  1 file changed, 3 insertions(+)
-> > > > 
-> > > > --- linux-next.orig/mm/page-writeback.c	2010-09-12 13:25:23.000000000 +0800
-> > > > +++ linux-next/mm/page-writeback.c	2010-09-13 11:39:33.000000000 +0800
-> > > > @@ -552,6 +552,9 @@ static void balance_dirty_pages(struct a
-> > > >  		__set_current_state(TASK_INTERRUPTIBLE);
-> > > >  		io_schedule_timeout(pause);
-> > > >  
-> > > > +		if (fatal_signal_pending(current))
-> > > > +			break;
-> > > > +
-> > > >  check_exceeded:
-> > > >  		/*
-> > > >  		 * The bdi thresh is somehow "soft" limit derived from the
-> > > 
-> > > I think we need to change callers (e.g. generic_perform_write) too.
-> > > Otherwise, plenty write + SIGKILL combination easily exceed dirty limit.
-> > > It mean we can see strange OOM.
-> > 
-> > If it's dangerous, we can do without this patch.  
+On Thu, 9 Sep 2010 06:25:47 -0700, Guenter Roeck wrote:
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> ---
+>  drivers/hwmon/lm90.c |   55 +++++++++++++++++++++++++------------------------
+>  1 files changed, 28 insertions(+), 27 deletions(-)
 > 
-> How?
+> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+> index f21dde5..11b5701 100644
+> --- a/drivers/hwmon/lm90.c
+> +++ b/drivers/hwmon/lm90.c
+> @@ -418,7 +418,7 @@ static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+>  static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+>  			   char *buf)
+>  {
+> -	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+> +	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+>  	struct lm90_data *data = lm90_update_device(dev);
+>  	int temp;
+>  
+> @@ -439,19 +439,20 @@ static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+>  static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+>  			  const char *buf, size_t count)
+>  {
+> -	static const u8 reg[6] = {
+> -		LM90_REG_W_REMOTE_LOWH,
+> -		LM90_REG_W_REMOTE_LOWL,
+> -		LM90_REG_W_REMOTE_HIGHH,
+> -		LM90_REG_W_REMOTE_HIGHL,
+> -		LM90_REG_W_REMOTE_OFFSH,
+> -		LM90_REG_W_REMOTE_OFFSL,
+> +	struct {
+> +		u8 high;
+> +		u8 low;
+> +	} reg[3] = {
+> +		{ LM90_REG_W_REMOTE_LOWH, LM90_REG_W_REMOTE_LOWL },
+> +		{ LM90_REG_W_REMOTE_HIGHH, LM90_REG_W_REMOTE_HIGHL },
+> +		{ LM90_REG_W_REMOTE_OFFSH, LM90_REG_W_REMOTE_OFFSL }
+>  	};
+>  
+> -	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+> +	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+>  	struct i2c_client *client = to_i2c_client(dev);
+>  	struct lm90_data *data = i2c_get_clientdata(client);
+> -	int nr = attr->index;
+> +	int nr = attr->nr;
+> +	int index = attr->index;
+>  	long val;
+>  	int err;
+>  
+> @@ -460,24 +461,24 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+>  		return err;
+>  
+>  	/* +16 degrees offset for temp2 for the LM99 */
+> -	if (data->kind == lm99 && attr->index <= 2)
+> +	if (data->kind == lm99 && index <= 2)
+>  		val -= 16000;
+>  
+>  	mutex_lock(&data->update_lock);
+>  	if (data->kind == adt7461)
+> -		data->temp11[nr] = temp_to_u16_adt7461(data, val);
+> +		data->temp11[index] = temp_to_u16_adt7461(data, val);
+>  	else if (data->kind == max6646)
+> -		data->temp11[nr] = temp_to_u8(val) << 8;
+> +		data->temp11[index] = temp_to_u8(val) << 8;
+>  	else if (!(data->flags & LM90_HAVE_REM_LIMIT_EXT))
+> -		data->temp11[nr] = temp_to_s8(val) << 8;
+> +		data->temp11[index] = temp_to_s8(val) << 8;
+>  	else
+> -		data->temp11[nr] = temp_to_s16(val);
+> +		data->temp11[index] = temp_to_s16(val);
+>  
+> -	i2c_smbus_write_byte_data(client, reg[(nr - 1) * 2],
+> -				  data->temp11[nr] >> 8);
+> +	i2c_smbus_write_byte_data(client, reg[nr].high,
+> +				  data->temp11[index] >> 8);
+>  	if (data->flags & LM90_HAVE_REM_LIMIT_EXT)
+> -		i2c_smbus_write_byte_data(client, reg[(nr - 1) * 2 + 1],
+> -					  data->temp11[nr] & 0xff);
+> +		i2c_smbus_write_byte_data(client, reg[nr].low,
+> +					  data->temp11[index] & 0xff);
+>  	mutex_unlock(&data->update_lock);
+>  	return count;
+>  }
+> @@ -549,16 +550,16 @@ static ssize_t show_alarm(struct device *dev, struct device_attribute
+>  	return sprintf(buf, "%d\n", (data->alarms >> bitnr) & 1);
+>  }
+>  
+> -static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp11, NULL, 4);
+> -static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, show_temp11, NULL, 0);
+> +static SENSOR_DEVICE_ATTR_2(temp1_input, S_IRUGO, show_temp11, NULL, 0, 4);
+> +static SENSOR_DEVICE_ATTR_2(temp2_input, S_IRUGO, show_temp11, NULL, 0, 0);
+>  static SENSOR_DEVICE_ATTR(temp1_min, S_IWUSR | S_IRUGO, show_temp8,
+>  	set_temp8, 0);
+> -static SENSOR_DEVICE_ATTR(temp2_min, S_IWUSR | S_IRUGO, show_temp11,
+> -	set_temp11, 1);
+> +static SENSOR_DEVICE_ATTR_2(temp2_min, S_IWUSR | S_IRUGO, show_temp11,
+> +	set_temp11, 0, 1);
+>  static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_temp8,
+>  	set_temp8, 1);
+> -static SENSOR_DEVICE_ATTR(temp2_max, S_IWUSR | S_IRUGO, show_temp11,
+> -	set_temp11, 2);
+> +static SENSOR_DEVICE_ATTR_2(temp2_max, S_IWUSR | S_IRUGO, show_temp11,
+> +	set_temp11, 1, 2);
+>  static SENSOR_DEVICE_ATTR(temp1_crit, S_IWUSR | S_IRUGO, show_temp8,
+>  	set_temp8, 2);
+>  static SENSOR_DEVICE_ATTR(temp2_crit, S_IWUSR | S_IRUGO, show_temp8,
+> @@ -566,8 +567,8 @@ static SENSOR_DEVICE_ATTR(temp2_crit, S_IWUSR | S_IRUGO, show_temp8,
+>  static SENSOR_DEVICE_ATTR(temp1_crit_hyst, S_IWUSR | S_IRUGO, show_temphyst,
+>  	set_temphyst, 2);
+>  static SENSOR_DEVICE_ATTR(temp2_crit_hyst, S_IRUGO, show_temphyst, NULL, 3);
+> -static SENSOR_DEVICE_ATTR(temp2_offset, S_IWUSR | S_IRUGO, show_temp11,
+> -	set_temp11, 3);
+> +static SENSOR_DEVICE_ATTR_2(temp2_offset, S_IWUSR | S_IRUGO, show_temp11,
+> +	set_temp11, 2, 3);
+>  
+>  /* Individual alarm files */
+>  static SENSOR_DEVICE_ATTR(temp1_crit_alarm, S_IRUGO, show_alarm, NULL, 0);
 
-As you described.
+Looks good, applied, thanks.
 
-> > The users can still
-> > get quick response in normal case after all.
-> > 
-> > However, I suspect the process is guaranteed to exit on
-> > fatal_signal_pending, so it won't dirty more pages :)
-> 
-> Process exiting is delayed until syscall exiting. So, we exit write syscall
-> manually if necessary.
-
-Got it, you mean this fix. It looks good. I didn't add "status =
--EINTR" in the patch because the bottom line "written ? : status" will
-always select the non-zero written.
-
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 3d4df44..f6d2740 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2304,7 +2304,8 @@ again:
- 		written += copied;
- 
- 		balance_dirty_pages_ratelimited(mapping);
--
-+		if (fatal_signal_pending(current))
-+			break;
- 	} while (iov_iter_count(i));
- 
- 	return written ? written : status;
-
-Thanks,
-Fengguang
+-- 
+Jean Delvare
