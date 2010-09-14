@@ -1,297 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab0INRLM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 13:11:12 -0400
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:39924 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754397Ab0INRLI (ORCPT
+	id S1754485Ab0INRK6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 13:10:58 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39104 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754419Ab0INRK4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 13:11:08 -0400
-Subject: Re: [PATCH 2/2] drivers/char/tpm/tpm_stm_st19_i2c.c: Add missing
- break and neatening
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-To: Joe Perches <joe@perches.com>
-Cc: Christophe Henri RICARD <christophe-h.ricard@st.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>, tpmdd-devel@lists.sourceforge.net,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <9637426b310cdf113712a7a1dfd22843839dfc08.1283556028.git.joe@perches.com>
-References: <0B9F1C5B86169C4EA9D042C251022E49105CD81DE1@SAFEX1MAIL3.st.com>
-	 <cover.1283556028.git.joe@perches.com>
-	 <9637426b310cdf113712a7a1dfd22843839dfc08.1283556028.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Sep 2010 14:11:04 -0300
-Message-ID: <1284484264.17585.5.camel@blackbox>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Sep 2010 13:10:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=sU3LIYFXB8ew1cgLmr6NmucVqbuCqG5pug9OhCpIwaNM1/uTKNgEFFt/SFJgf/K5oi
+         9xY8thgQ/ypR0pdLBaX8yizDwrhJHEh4USvt4ZZQNiCtWMdE4wLkCvLp3VUTrjQhtHtg
+         iB4bIi/9ZEP5f2G+6HeH6+rkRIQol4RvHybCs=
+MIME-Version: 1.0
+In-Reply-To: <1284483964-2370-2-git-send-email-penberg@kernel.org>
+References: <1284483964-2370-1-git-send-email-penberg@kernel.org>
+	<1284483964-2370-2-git-send-email-penberg@kernel.org>
+Date: Tue, 14 Sep 2010 20:10:55 +0300
+X-Google-Sender-Auth: 8pEMPS4iLwlye-D5P_1jJezHSZw
+Message-ID: <AANLkTinxNbBQ3phKH8aoOSCO-+3FLn=te4OAqx4J8cU+@mail.gmail.com>
+Subject: Re: [PATCH 2/2] SLUB: Mark merged slab caches in /proc/slabinfo
+From: Pekka Enberg <penberg@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris, did you have the chance to test it against this specific TPM?
-Despite this, the patch looks pretty good, thanks Joe.
+On Tue, Sep 14, 2010 at 8:06 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> SLUB uses the name of the first slab cache for all merged slab caches. To make
+> the output of /proc/slabinfo more obvious, append the name of each merged slab
+> cache to s->name.
+>
+> An example output looks like this:
+>
+>  bip-16,ip_dst_cache,kioctx     42     42    [snip]
+>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Pekka Enberg <penberg@kernel.org>
 
-Acked-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Unfortunately this breaks "slabtop". I guess we could try some other delimiter?
 
-On Fri, 2010-09-03 at 16:29 -0700, Joe Perches wrote:
-> Add missing break in wait_until_good_shape
-> Use init; while (test) loops not for(init;test;)
-> Calculate bytes to transfer using if and min_t not multiple ?:
-> Miscellaneous function whitespace aliging
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
 > ---
->  drivers/char/tpm/tpm_stm_st19_i2c.c |  158 +++++++++++++++++++----------------
->  1 files changed, 85 insertions(+), 73 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm_stm_st19_i2c.c b/drivers/char/tpm/tpm_stm_st19_i2c.c
-> index cdf2eb3..4b1ed05 100644
-> --- a/drivers/char/tpm/tpm_stm_st19_i2c.c
-> +++ b/drivers/char/tpm/tpm_stm_st19_i2c.c
-> @@ -158,8 +158,10 @@ static int wait_until_good_shape(void)
->  		else if (!signal_pending(current)) {
->  			ret = schedule_timeout(time);
->  			wait_time += time;
-> -		} else
-> +		} else {
->  			ret = -ERESTARTSYS;
-> +			break;
-> +		}
->  	} while (1);
->  	finish_wait(&queue, &__wait);
-> 
-> @@ -204,10 +206,10 @@ static int wait_event_interruptible_on_gpio(wait_queue_head_t queue,
->  		else if (wait_time >= timeout)
->  			break;
->  		else if (!signal_pending(current)) {
-> -			ret =
-> -			    schedule_timeout(msecs_to_jiffies
-> -					     (TICK_GPIO_SPOOLING));
-> -			wait_time += msecs_to_jiffies(TICK_GPIO_SPOOLING);
-> +			int time = msecs_to_jiffies(TICK_GPIO_SPOOLING);
+>  mm/slub.c |   41 ++++++++++++++++++++++++++++++-----------
+>  1 files changed, 30 insertions(+), 11 deletions(-)
+>
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 0704288..6b08256 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -3149,6 +3149,34 @@ void __init kmem_cache_init_late(void)
+>  {
+>  }
+>
+> +static int kmem_merge_names(struct kmem_cache *s, const char *name)
+> +{
+> +       size_t new_size;
+> +       char *new_name;
 > +
-> +			ret = schedule_timeout(time);
-> +			wait_time += time;
->  		} else {
->  			ret = -ERESTARTSYS;
->  			break;
-> @@ -286,9 +288,9 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
->  	/* sending data (data_avail_pin hight) */
->  	/* If data are available, we read the data */
->  	init_waitqueue_head(&pin_infos->write_queue);
-> -	pin = wait_event_interruptible_on_gpio(pin_infos->write_queue,
-> -					       tpm_calc_ordinal_duration
-> -					       (chip, ordinal));
-> +	pin = wait_event_interruptible_on_gpio(
-> +			pin_infos->write_queue,
-> +			tpm_calc_ordinal_duration(chip, ordinal));
->  	if (pin < 0) {
->  		ret = pin;
->  		goto end;
-> @@ -297,25 +299,30 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
->  	client->flags = I2C_M_RD;
-> 
->  	size = TPM_HEADER_SIZE;
-> -	for (i = 0; pin == DATA_ON && i < size;) {
-> -		ret = i2c_master_recv(client,
-> -				      pin_infos->tpm_i2c_buffer[1],
-> -				      (i == 0) ? TPM_HEADER_SIZE :
-> -				      count - i > TPM_I2C_BLOCK_SIZE ?
-> -				      TPM_I2C_BLOCK_SIZE : count - i);
-> +	i = 0;
-> +	while (i < size && pin == DATA_ON) {
-> +		int bytes;
+> +       /* Don't append name to merged name more than once */
+> +       if (strstr(s->name, name))
+> +               return 0;
 > +
-> +		if (i == 0)
-> +			bytes = TPM_HEADER_SIZE;
-> +		else
-> +			bytes = min_t(int, count - i, TPM_I2C_BLOCK_SIZE);
+> +       /* Comma separated and NULL terminated. */
+> +       new_size = strlen(s->name) + strlen(name) + 2;
 > +
-> +		ret = i2c_master_recv(client, pin_infos->tpm_i2c_buffer[1],
-> +				      bytes);
->  		if (ret < 0)
->  			goto end;
-> -		if (i == 0)
-> -			size =
-> -			    responseSize(pin_infos->tpm_i2c_buffer[1], count);
-> -		(i == 0) ? (i += TPM_HEADER_SIZE) : (i += TPM_I2C_BLOCK_SIZE);
-> +		if (i == 0) {
-> +			size = responseSize(pin_infos->tpm_i2c_buffer[1],
-> +					    count);
-> +			i += TPM_HEADER_SIZE;
-> +		} else
-> +			i += TPM_I2C_BLOCK_SIZE;
-> 
->  		if (i < size)
-> -			pin =
-> -			    wait_event_interruptible_on_gpio(pin_infos->
-> -							     write_queue,
-> -							     msecs_to_jiffies
-> -							     (TPM_I2C_SHORT));
-> +			pin = wait_event_interruptible_on_gpio(
-> +					pin_infos->write_queue,
-> +					msecs_to_jiffies(TPM_I2C_SHORT));
->  	}
-> 
->  	pin = wait_event_interruptible_on_gpio(pin_infos->write_queue,
-> @@ -325,36 +332,41 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
->  	client->flags = 0;
-> 
->  	size = TPM_HEADER_SIZE;
-> -	for (i = 0; i < size && pin == COMMAND_ON;) {
-> -		memcpy(pin_infos->tpm_i2c_buffer[0], buf + i,
-> -		       (i == 0) ? TPM_HEADER_SIZE : count - i >
-> -		       TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE : count - i);
-> +	i = 0;
-> +	while (i < size && pin == COMMAND_ON) {
-> +		int bytes;
+> +       new_name = kmalloc(new_size, GFP_KERNEL);
+> +       if (!new_name)
+> +               return -ENOMEM;
 > +
-> +		if (i == 0)
-> +			bytes = TPM_HEADER_SIZE;
-> +		else
-> +			bytes = min_t(int, count - i, TPM_I2C_BLOCK_SIZE);
+> +       snprintf(new_name, new_size, "%s,%s", s->name, name);
 > +
-> +		memcpy(pin_infos->tpm_i2c_buffer[0], buf + i, bytes);
-> 
->  		if (i == 0) {
->  			size = responseSize(buf, count);
-> -			size = (size < count ? size : count);
-> +			size = size < count ? size : count;
->  		}
-> -		ret =
-> -		    i2c_master_send(client,
-> -				    pin_infos->tpm_i2c_buffer[0],
-> -				    count >= TPM_HEADER_SIZE ? (i ==
-> -								0) ?
-> -				    TPM_HEADER_SIZE : count - i >
-> -				    TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE :
-> -				    count - i : count);
+> +       if (s->flags & SLAB_DYNAMIC_NAME)
+> +               kfree(s->name);
 > +
-> +		if (count < TPM_HEADER_SIZE)
-> +			bytes = count;
+> +       s->name = new_name;
 > +
-> +		ret = i2c_master_send(client, pin_infos->tpm_i2c_buffer[0],
-> +				      bytes);
->  		if (ret < 0) {
->  			pr_info("Failed to send data\n");
->  			goto end;
->  		}
-> 
-> -		(i == 0) ? (i += TPM_HEADER_SIZE) : (i += TPM_I2C_BLOCK_SIZE);
-> +		if (i == 0)
-> +			i += TPM_HEADER_SIZE;
-> +		else
-> +			i += TPM_I2C_BLOCK_SIZE;
->  		/* Wait for AcceptCmd signal hight */
->  		if (i < size)
-> -			pin =
-> -			    wait_event_interruptible_on_gpio(pin_infos->
-> -							     write_queue,
-> -							     msecs_to_jiffies
-> -							     (TPM_I2C_SHORT));
-> +			pin = wait_event_interruptible_on_gpio(
-> +					pin_infos->write_queue,
-> +					msecs_to_jiffies(TPM_I2C_SHORT));
-> 
->  		if (pin != COMMAND_ON) {
->  			pr_info("Failed to read gpio pin (AcceptCmd)\n");
-> @@ -362,6 +374,7 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
->  			goto end;
->  		}
->  	}
+> +       s->flags |= SLAB_DYNAMIC_NAME;
 > +
->  	if (i == 0) {
->  		pr_info("Failed to read gpio pin (AcceptCmd)\n");
->  		ret = -EIO;
-> @@ -412,49 +425,48 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
-> 
->  	/* Spool on the good gpio as long as pin GPIO 3 not HIGHT */
->  	init_waitqueue_head(&chip->vendor.read_queue);
-> -	pin = wait_event_interruptible_on_gpio(chip->vendor.read_queue,
-> -					       tpm_calc_ordinal_duration
-> -					       (chip, TPM_I2C_ORDINAL_LONG));
-> +	pin = wait_event_interruptible_on_gpio(
-> +			chip->vendor.read_queue,
-> +			tpm_calc_ordinal_duration(chip, TPM_I2C_ORDINAL_LONG));
-> 
->  	size = TPM_HEADER_SIZE;
-> -	for (i = 0; i < size && pin == DATA_ON;) {
-> -		ret =
-> -		    i2c_master_recv(client,
-> -				    pin_infos->tpm_i2c_buffer[1],
-> -				    (count >= TPM_HEADER_SIZE ? i ==
-> -				     0 ? TPM_HEADER_SIZE : (size - i) >
-> -				     TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE :
-> -				     size - i : count));
-> +	i = 0;
-> +	while (i < size && pin == DATA_ON) {
-> +		int bytes;
+> +       return 0;
+> +}
 > +
-> +		if (count < TPM_HEADER_SIZE)
-> +			bytes = count;
-> +		else if (i == 0)
-> +			bytes = TPM_HEADER_SIZE;
-> +		else
-> +			bytes = min_t(int, size - i, TPM_I2C_BLOCK_SIZE);
-> +
-> +		ret = i2c_master_recv(client, pin_infos->tpm_i2c_buffer[1],
-> +				      bytes);
->  		if (ret < 0) {
->  			pr_info("Failed to read gpio pin (DataAvailable)\n");
->  			goto end;
->  		}
-> 
-> -		if (buf != NULL) {
-> -			memcpy(buf + i, pin_infos->tpm_i2c_buffer[1],
-> -			       (count >= TPM_HEADER_SIZE ? i == 0 ?
-> -				TPM_HEADER_SIZE : (size - i) >
-> -				TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE : size -
-> -				i : count));
+>  /*
+>  * Find a mergeable slab cache
+>  */
+> @@ -3221,17 +3249,8 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+>        down_write(&slub_lock);
+>        s = find_mergeable(size, align, flags, name, ctor);
+>        if (s) {
+> -               if (!(s->flags & SLAB_DYNAMIC_NAME)) {
+> -                       const char *new_name;
 > -
-> -			if (i == 0) {
-> -				size = responseSize(buf, size);
-> -				if (size > count)
-> -					size = count;
-> -			}
-> -		} else {
-> +		if (!buf) {
->  			pr_info("read buffer is NULL\n");
->  			goto end;
->  		}
-> 
-> -		(i == 0) ? (i += TPM_HEADER_SIZE) : (i += TPM_I2C_BLOCK_SIZE);
-> +		memcpy(buf + i, pin_infos->tpm_i2c_buffer[1], size);
-> +
-> +		if (i == 0) {
-> +			size = responseSize(buf, size);
-> +			if (size > count)
-> +				size = count;
-> +			i += TPM_HEADER_SIZE;
-> +		} else
-> +			i += TPM_I2C_BLOCK_SIZE;
-> 
->  		if (i < size)
-> -			pin =
-> -			    wait_event_interruptible_on_gpio(chip->vendor.
-> -							     read_queue,
-> -							     msecs_to_jiffies
-> -							     (TPM_I2C_SHORT));
-> +			pin = wait_event_interruptible_on_gpio(
-> +					chip->vendor.read_queue,
-> +					msecs_to_jiffies(TPM_I2C_SHORT));
->  	}
-> 
->  	if (i == 0) {
-> @@ -532,7 +544,7 @@ static ssize_t tpm_st19_i2c_ioctl(struct inode *inode, struct file *file,
->  		return -ENOSYS;
->  	case TPMIOC_TRANSMIT:
->  		if (copy_from_user(pin_infos->tpm_i2c_buffer[0],
-> -		    (const char *)arg, TPM_HEADER_SIZE))
-> +				   (const char *)arg, TPM_HEADER_SIZE))
->  			return -EFAULT;
->  		in_size = responseSize(pin_infos->tpm_i2c_buffer[0],
->  				      TPM_HEADER_SIZE);
-
-
+> -                       new_name = kstrdup(s->name, GFP_KERNEL);
+> -                       if (!new_name)
+> -                               goto err;
+> -
+> -                       s->name = new_name;
+> -
+> -                       s->flags |= SLAB_DYNAMIC_NAME;
+> -               }
+> +               if (kmem_merge_names(s, name))
+> +                       goto err;
+>
+>                s->refcount++;
+>                /*
+> --
+> 1.6.3.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
