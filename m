@@ -1,38 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab0INDtX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 23:49:23 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:35656 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753071Ab0INDtW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 23:49:22 -0400
-Date: Tue, 14 Sep 2010 09:19:08 +0530
-From: Rabin Vincent <rabin.vincent@stericsson.com>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, Luotao Fu <l.fu@pengutronix.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: stmpe: fix error path
-Message-ID: <20100914034907.GA18875@bnru01.bnr.st.com>
-References: <1284317840-5131-1-git-send-email-segooon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1284317840-5131-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753673Ab0IND6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 23:58:11 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42304 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752200Ab0IND6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Sep 2010 23:58:09 -0400
+Date: Tue, 14 Sep 2010 13:58:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for September 14
+Message-Id: <20100914135802.c99d3672.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__14_Sep_2010_13_58_02_+1000_cu7Pqz3kU+9rfg4l"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 12, 2010 at 20:57:19 +0200, Vasiliy Kulikov wrote:
-> Free allocated memory.  Call stmpe_disable() if it was enabled.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+--Signature=_Tue__14_Sep_2010_13_58_02_+1000_cu7Pqz3kU+9rfg4l
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Hi all,
 
-Thanks,
-Rabin
+Changes since 20100913:
+
+The m68knommu tree gained a conflict against the m68k tree.
+
+The powerpc tree still has its build failure for which I applied a patch.
+
+The mmc tree lost its conflicts.
+
+The kgdb tree still has its build failure for which I applied a patch.
+
+The mfd tree lost its conflict, but gained a build failure for which I
+reverted a commit.
+
+I still have a patch to the drivers-x86 tree to remove a Kconfig warning.
+
+The tip tree lost its conflict.
+
+The driver-core tree gained a conflict against the mfd tree.
+
+The usb tree gained a conflict against the trivial tree and a build
+failure so I used the version from next-20100913.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 171 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/Makefile
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/mach-smdk6410.c
+CONFLICT (content): Merge conflict in arch/arm/plat-samsung/Kconfig
+CONFLICT (content): Merge conflict in drivers/input/touchscreen/s3c2410_ts.c
+Merging s5p/for-next
+Merging tegra/for-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+CONFLICT (content): Merge conflict in arch/m68k/sun3/sun3ints.c
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Applying: powerpc: define a compat_sys_recv cond_syscall
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/platforms/85xx/mpc85xx_m=
+ds.c
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+CONFLICT (content): Merge conflict in drivers/media/IR/ir-keytable.c
+CONFLICT (content): Merge conflict in drivers/media/IR/ir-lirc-codec.c
+CONFLICT (content): Merge conflict in drivers/media/IR/ir-raw-event.c
+CONFLICT (add/add): Merge conflict in drivers/media/IR/streamzap.c
+CONFLICT (content): Merge conflict in drivers/media/dvb/siano/smscoreapi.c
+CONFLICT (add/add): Merge conflict in drivers/media/video/s5p-fimc/fimc-cor=
+e.c
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+CONFLICT (content): Merge conflict in arch/x86/include/asm/kvm_emulate.h
+CONFLICT (content): Merge conflict in virt/kvm/kvm_main.c
+Merging dlm/next
+Merging swiotlb/master
+Merging swiotlb-xen/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging mtd/master
+Merging crypto/master
+Merging sound-asoc/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/mach-smdk6410.c
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Applying: kgdb: merge fix for mode_set_base_atomic API change
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging catalin/for-next
+CONFLICT (content): Merge conflict in arch/arm/kernel/Makefile
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+Merging i7core_edac/linux_next
+CONFLICT (content): Merge conflict in MAINTAINERS
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging limits/writable_limits
+Merging omap_dss2/for-next
+Merging xen/upstream/xen
+Merging rcu/rcu/next
+Merging tip/auto-latest
+Merging lost-spurious-irq/lost-spurious-irq
+CONFLICT (content): Merge conflict in drivers/ata/libata-core.c
+CONFLICT (content): Merge conflict in include/linux/libata.h
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Applying: Fix Kconfig mistaken update
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+Merging quilt/driver-core
+CONFLICT (content): Merge conflict in drivers/misc/Makefile
+Merging quilt/tty
+Merging quilt/usb
+CONFLICT (content): Merge conflict in drivers/usb/gadget/rndis.c
+$ git reset --hard HEAD^
+Merging refs/next/20100913/usb
+CONFLICT (content): Merge conflict in drivers/misc/Makefile
+[master a8805aa] Merge commit 'refs/next/20100913/usb'
+Merging staging-next/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/Makefile
+CONFLICT (content): Merge conflict in drivers/staging/batman-adv/hard-inter=
+face.c
+CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/Makefile deleted=
+ in HEAD and modified in staging-next/staging-next. Version staging-next/st=
+aging-next of drivers/staging/mrst-touchscreen/Makefile left in tree.
+CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/intel-mid-touch.=
+c deleted in HEAD and modified in staging-next/staging-next. Version stagin=
+g-next/staging-next of drivers/staging/mrst-touchscreen/intel-mid-touch.c l=
+eft in tree.
+$ git rm -f drivers/staging/mrst-touchscreen/Makefile drivers/staging/mrst-=
+touchscreen/intel-mid-touch.c
+Merging slabh/slabh
+Merging scsi-post-merge/merge-base:master
+[master 5aab981] Revert "misc: Add ab8500 pwm driver"
+
+--Signature=_Tue__14_Sep_2010_13_58_02_+1000_cu7Pqz3kU+9rfg4l
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMjvLKAAoJEDMEi1NhKgbsnMAH/1zJJbUayfWCTGAHagE5iSPO
+llalajGCW7vgd7D92KUoGjEU7mbGTfCE6uOLOIu/L3u49PKgQPmRoIWz4+rsYLYG
+0npEoi2GAu6mRHlU6G5JqJUl2dvd5IaeYjQLf3x0l7YgwcSY3sKOUuQ9CdzzEYSG
+6tSf5KoVOj6vMUmpfcu2q+eloixjDa2dhTW8RevG0jS0y2BZVa6w1YTDRmzk28tF
+FS0SpDfkc0KeAHzU2sOlbKchOH08ESQ+s3K8clxocKW4NPSMmqkc1pw7re6xcS1S
+Y2LZCLBS3kTvpQMONN3DpBtj02n5sOpJtC3VXRV6mvoN2z0albVUxOjUrOEKB30=
+=6vt7
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__14_Sep_2010_13_58_02_+1000_cu7Pqz3kU+9rfg4l--
