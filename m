@@ -1,118 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab0INUjc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 16:39:32 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56035 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752171Ab0INUja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 16:39:30 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Simon Kirby <sim@hostway.ca>
-Subject: Re: [linux-pm] [2.6.36-rc4/HEAD] unable to handle kernel NULL pointer 
- =?iso-8859-1?q?dereference=09?=(plist_add)
-Date: Tue, 14 Sep 2010 22:38:25 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@suse.de>,
-        mark gross <markgross@thegnar.org>, Takashi Iwai <tiwai@suse.de>
-References: <20100913070034.GA4820@hostway.ca>
-In-Reply-To: <20100913070034.GA4820@hostway.ca>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009142238.25840.rjw@sisk.pl>
+	id S1755411Ab0INUj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 16:39:57 -0400
+Received: from vms173011pub.verizon.net ([206.46.173.11]:58824 "EHLO
+	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab0INUjz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 16:39:55 -0400
+Message-id: <4C8FDD8A.8090009@acm.org>
+Date: Tue, 14 Sep 2010 15:39:38 -0500
+From: Corey Minyard <minyard@acm.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
+ Gecko/20100713 Thunderbird/3.0.6
+MIME-version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, openipmi-developer@lists.sourceforge.net
+Subject: Re: [PATCH 4/7] ipmi: autoconvert trivial BKL users to private mutex
+References: <1284494022-7346-1-git-send-email-arnd@arndb.de>
+ <1284494022-7346-5-git-send-email-arnd@arndb.de>
+In-reply-to: <1284494022-7346-5-git-send-email-arnd@arndb.de>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 13, 2010, Simon Kirby wrote:
-> Hi!
-> 
-> At first I thought I hitting a suspend bug, but it was because I had an
-> rmmod/modprobe of snd_ice1724 in my "gosleep" script to work around my
-> sound sounding crackly after resume.  I can reproduce this same crash
-> simply by using sound, rmmod snd_ice1724, modprobe snd_ice1724, and then
-> using sound again.
-> 
-> I git-bisected to:
-> 82f682514a5df89ffb3890627eebf0897b7a84ec is the first bad commit
-> commit 82f682514a5df89ffb3890627eebf0897b7a84ec
-> Author: James Bottomley <James.Bottomley@suse.de>
-> Date:   Mon Jul 5 22:53:06 2010 +0200
-> 
->     pm_qos: Get rid of the allocation in pm_qos_add_request()
-> 
->     All current users of pm_qos_add_request() have the ability to supply
->     the memory required by the pm_qos routines, so make them do this and
->     eliminate the kmalloc() with pm_qos_add_request().  This has the
->     double benefit of making the call never fail and allowing it to be
->     called from atomic context.
-> 
->     Signed-off-by: James Bottomley <James.Bottomley@suse.de>
->     Signed-off-by: mark gross <markgross@thegnar.org>
->     Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> :040000 040000 0370d037cfe56ae4079bc47713b98c5961de258f 92d6437da54649496c84bacc16ef4b17f8087bbd M      drivers
-> :040000 040000 6ec551133758633de70e97b4a41d893a5c050e74 4ac17ea227c07d9cf7dae297a40bbbcc374c232f M      include
-> :040000 040000 d0bb4b15e77a0976940af48588ef0e9b9fd7590b ac682974217c7e75a771b92c8efa7c83659d2916 M      kernel
-> :040000 040000 9ab6e37ec622354cb93abc2b7424b10263bcd007 011680bad3da4b60aebb659eaeb85a037e2513f3 M      sound
-> 
-> ...but I can't revert this over HEAD due to conflicts and I can't see
-> what's wrong in the diff.  2.6.35 is fine.
-> 
-> Simon-
-> 
-> [   61.234230] ICE1724 0000:01:06.0: PCI INT A disabled
-> [   61.240010] ICE1724 0000:01:06.0: PCI INT A -> GSI 21 (level, low) -> IRQ 21
-> [   62.156008] BUG: unable to handle kernel NULL pointer dereference at (null)
-> [   62.156008] IP: [<ffffffff81379706>] plist_add+0x36/0xa0
-> [   62.156008] PGD 1ad813067 PUD 1ad989067 PMD 0 
-> [   62.156008] Oops: 0000 [#1] SMP 
-> [   62.156008] last sysfs file: /sys/devices/pci0000:00/0000:00:14.4/0000:01:06.0/sound/card0/uevent
-> [   62.156118] CPU 1 
-> [   62.156147] Modules linked in: snd_ice1724 sco bnep rfcomm l2cap bluetooth ppdev hwmon_vid usb_storage tun i2c_viapro snd_rawmidi snd_ice17xx_ak4xxx snd_ac97_codec ac97_bus snd_ak4xxx_adda snd_ak4114 snd_pt2258 snd_i2c parport_pc r8169 parport snd_ak4113 k10temp [last unloaded: snd_ice1724]
-> [   62.156849] 
-> [   62.156925] Pid: 3053, comm: mplayer Not tainted 2.6.36-rc4-oof+ #6 M4A79T Deluxe/System Product Name
-> [   62.157058] RIP: 0010:[<ffffffff81379706>]  [<ffffffff81379706>] plist_add+0x36/0xa0
-> [   62.157217] RSP: 0018:ffff8801ac7f3cd8  EFLAGS: 00010002
-> [   62.157297] RAX: fffffffffffffff8 RBX: ffff8801a93eae40 RCX: ffff8801ac48e048
-> [   62.157386] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff8801a93eae40
-> [   62.157475] RBP: ffff8801ac7f3cf8 R08: 0000000000005356 R09: 0000000000004000
-> [   62.157564] R10: 0000000000000000 R11: 00000000fffffffe R12: ffffffff8195a2a0
-> [   62.157590] R13: ffff8801a93eae58 R14: 0000000000003e80 R15: ffffffff8195a2b0
-> [   62.157590] FS:  00007f79749f5860(0000) GS:ffff880001c80000(0000) knlGS:0000000000000000
-> [   62.157590] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [   62.157590] CR2: 0000000000000000 CR3: 00000001aef63000 CR4: 00000000000006e0
-> [   62.157590] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [   62.157590] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [   62.157590] Process mplayer (pid: 3053, threadinfo ffff8801ac7f2000, task ffff8801ac535cd0)
-> [   62.157590] Stack:
-> [   62.157590]  ffff8801ac7f3d18 ffffffff8195a2a0 ffff8801a93eae40 00000000ffffffff
-> [   62.157590] <0> ffff8801ac7f3d48 ffffffff8105f35b ffff880100000000 0000000000000292
-> [   62.157590] <0> ffff8801ac7f3d58 ffff8801a93eae40 ffff8801ad849400 ffff8801ad849c00
-> [   62.157590] Call Trace:
-> [   62.157590]  [<ffffffff8105f35b>] update_target+0x12b/0x140
-> [   62.157590]  [<ffffffff8105f5aa>] pm_qos_add_request+0x4a/0x80
-> [   62.157590]  [<ffffffff8157e8a4>] snd_pcm_hw_params+0x2d4/0x3a0
-> [   62.157590]  [<ffffffff8157ed41>] snd_pcm_common_ioctl1+0xb1/0xb90
-> [   62.157590]  [<ffffffff810bcbc2>] ? handle_mm_fault+0x192/0xa50
-> [   62.157590]  [<ffffffff8157facd>] snd_pcm_playback_ioctl1+0x3d/0x220
-> [   62.157590]  [<ffffffff81698b9f>] ? do_page_fault+0x17f/0x440
-> [   62.157590]  [<ffffffff8158035d>] snd_pcm_playback_ioctl+0x3d/0x50
-> [   62.157590]  [<ffffffff810e8787>] do_vfs_ioctl+0x97/0x530
-> [   62.157590]  [<ffffffff810c493c>] ? do_mmap_pgoff+0x34c/0x3a0
-> [   62.157590]  [<ffffffff810e8c6a>] sys_ioctl+0x4a/0x80
-> [   62.157590]  [<ffffffff81002ceb>] system_call_fastpath+0x16/0x1b
-> [   62.157590] Code: 54 49 89 f4 53 48 89 fb 48 83 ec 08 4c 3b 6f 18 75 69 49 8b 04 24 48 83 e8 08 eb 0f 90 8b 30 39 33 7c 18 66 90 74 4e 48 8d 42 f8 <48> 8b 50 08 48 8d 48 08 4c 39 e1 0f 18 0a 75 e2 48 8b 50 10 48 
-> [   62.157590] RIP  [<ffffffff81379706>] plist_add+0x36/0xa0
-> [   62.157590]  RSP <ffff8801ac7f3cd8>
-> [   62.157590] CR2: 0000000000000000
-> [   62.157590] ---[ end trace 853ed59ac5273c1f ]---
+This patch is good with me.
 
-Hmm, interesting.  This looks like a plist corruption to me, but can you please
-check (using gdb) what line of code corresponds to the address
-plist_add+0x36/0xa0 ?
+Acked-by: Corey Minyard <cminyard@mvista.com>
 
-Thanks,
-Rafael
+On 09/14/2010 02:53 PM, Arnd Bergmann wrote:
+> All these files use the big kernel lock in a trivial
+> way to serialize their private file operations,
+> typically resulting from an earlier semi-automatic
+> pushdown from VFS.
+>
+> None of these drivers appears to want to lock against
+> other code, and they all use the BKL as the top-level
+> lock in their file operations, meaning that there
+> is no lock-order inversion problem.
+>
+> Consequently, we can remove the BKL completely,
+> replacing it with a per-file mutex in every case.
+> Using a scripted approach means we can avoid
+> typos.
+>
+> file=$1
+> name=$2
+> if grep -q lock_kernel ${file} ; then
+>      if grep -q 'include.*linux.mutex.h' ${file} ; then
+>              sed -i '/include.*<linux\/smp_lock.h>/d' ${file}
+>      else
+>              sed -i 's/include.*<linux\/smp_lock.h>.*$/include<linux\/mutex.h>/g' ${file}
+>      fi
+>      sed -i ${file} \
+>          -e "/^#include.*linux.mutex.h/,$ {
+>                  1,/^\(static\|int\|long\)/ {
+>                       /^\(static\|int\|long\)/istatic DEFINE_MUTEX(${name}_mutex);
+>
+> } }"  \
+>      -e "s/\(un\)*lock_kernel\>[ ]*()/mutex_\1lock(\&${name}_mutex)/g" \
+>      -e '/[      ]*cycle_kernel_lock();/d'
+> else
+>      sed -i -e '/include.*\<smp_lock.h\>/d' ${file}  \
+>                  -e '/cycle_kernel_lock()/d'
+> fi
+>
+> Signed-off-by: Arnd Bergmann<arnd@arndb.de>
+> Cc: Corey Minyard<minyard@acm.org>
+> Cc: openipmi-developer@lists.sourceforge.net
+> ---
+>   drivers/char/ipmi/ipmi_devintf.c  |   14 +++++++-------
+>   drivers/char/ipmi/ipmi_watchdog.c |    8 ++++----
+>   2 files changed, 11 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
+> index d8ec92a..44833de 100644
+> --- a/drivers/char/ipmi/ipmi_devintf.c
+> +++ b/drivers/char/ipmi/ipmi_devintf.c
+> @@ -44,7 +44,6 @@
+>   #include<linux/init.h>
+>   #include<linux/device.h>
+>   #include<linux/compat.h>
+> -#include<linux/smp_lock.h>
+>
+>   struct ipmi_file_private
+>   {
+> @@ -59,6 +58,7 @@ struct ipmi_file_private
+>   	unsigned int         default_retry_time_ms;
+>   };
+>
+> +static DEFINE_MUTEX(ipmi_mutex);
+>   static void file_receive_handler(struct ipmi_recv_msg *msg,
+>   				 void                 *handler_data)
+>   {
+> @@ -102,9 +102,9 @@ static int ipmi_fasync(int fd, struct file *file, int on)
+>   	struct ipmi_file_private *priv = file->private_data;
+>   	int                      result;
+>
+> -	lock_kernel(); /* could race against open() otherwise */
+> +	mutex_lock(&ipmi_mutex); /* could race against open() otherwise */
+>   	result = fasync_helper(fd, file, on,&priv->fasync_queue);
+> -	unlock_kernel();
+> +	mutex_unlock(&ipmi_mutex);
+>
+>   	return (result);
+>   }
+> @@ -125,7 +125,7 @@ static int ipmi_open(struct inode *inode, struct file *file)
+>   	if (!priv)
+>   		return -ENOMEM;
+>
+> -	lock_kernel();
+> +	mutex_lock(&ipmi_mutex);
+>   	priv->file = file;
+>
+>   	rv = ipmi_create_user(if_num,
+> @@ -150,7 +150,7 @@ static int ipmi_open(struct inode *inode, struct file *file)
+>   	priv->default_retry_time_ms = 0;
+>
+>   out:
+> -	unlock_kernel();
+> +	mutex_unlock(&ipmi_mutex);
+>   	return rv;
+>   }
+>
+> @@ -639,9 +639,9 @@ static long ipmi_unlocked_ioctl(struct file   *file,
+>   {
+>   	int ret;
+>
+> -	lock_kernel();
+> +	mutex_lock(&ipmi_mutex);
+>   	ret = ipmi_ioctl(file, cmd, data);
+> -	unlock_kernel();
+> +	mutex_unlock(&ipmi_mutex);
+>
+>   	return ret;
+>   }
+> diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
+> index 654d566..ed10b74 100644
+> --- a/drivers/char/ipmi/ipmi_watchdog.c
+> +++ b/drivers/char/ipmi/ipmi_watchdog.c
+> @@ -35,7 +35,7 @@
+>   #include<linux/moduleparam.h>
+>   #include<linux/ipmi.h>
+>   #include<linux/ipmi_smi.h>
+> -#include<linux/smp_lock.h>
+> +#include<linux/mutex.h>
+>   #include<linux/watchdog.h>
+>   #include<linux/miscdevice.h>
+>   #include<linux/init.h>
+> @@ -149,6 +149,7 @@
+>   #define	WDIOC_GET_PRETIMEOUT     _IOW(WATCHDOG_IOCTL_BASE, 22, int)
+>   #endif
+>
+> +static DEFINE_MUTEX(ipmi_watchdog_mutex);
+>   static int nowayout = WATCHDOG_NOWAYOUT;
+>
+>   static ipmi_user_t watchdog_user;
+> @@ -748,9 +749,9 @@ static long ipmi_unlocked_ioctl(struct file *file,
+>   {
+>   	int ret;
+>
+> -	lock_kernel();
+> +	mutex_lock(&ipmi_watchdog_mutex);
+>   	ret = ipmi_ioctl(file, cmd, arg);
+> -	unlock_kernel();
+> +	mutex_unlock(&ipmi_watchdog_mutex);
+>
+>   	return ret;
+>   }
+> @@ -844,7 +845,6 @@ static int ipmi_open(struct inode *ino, struct file *filep)
+>   		if (test_and_set_bit(0,&ipmi_wdog_open))
+>   			return -EBUSY;
+>
+> -		cycle_kernel_lock();
+>
+>   		/*
+>   		 * Don't start the timer now, let it start on the
+>    
+
