@@ -1,56 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab0INBWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Sep 2010 21:22:51 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:10520 "HELO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752073Ab0INBWt (ORCPT
+	id S1752382Ab0INBYn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Sep 2010 21:24:43 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11935 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab0INBYm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Sep 2010 21:22:49 -0400
-Message-ID: <4C8ECDFE.6010906@snapgear.com>
-Date: Tue, 14 Sep 2010 11:21:02 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Mon, 13 Sep 2010 21:24:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp04.nvidia.com on Mon, 13 Sep 2010 18:24:37 -0700
+From: Gary King <GKing@nvidia.com>
+To: Mike Rapoport <mike@compulab.co.il>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 13 Sep 2010 18:24:38 -0700
+Subject: Re: [PATCH v2] mfd: tps6586x: add basic interrupt support
+Thread-Topic: [PATCH v2] mfd: tps6586x: add basic interrupt support
+Thread-Index: ActTq5gKygDcgKzyRKGxYWky4zBbgw==
+Message-ID: <4C8ECED6.9030209@nvidia.com>
+References: <1283890548-29442-1-git-send-email-gking@nvidia.com>
+ <4C8C88DD.5070406@compulab.co.il>
+In-Reply-To: <4C8C88DD.5070406@compulab.co.il>
+Reply-To: Gary King <GKing@nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12)
+ Gecko/20100824 Lightning/1.0b1 Thunderbird/3.0.7
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: linux-next: manual merge of the m68knommu tree with the m68k
- tree
-References: <20100914105129.02eb5b13.sfr@canb.auug.org.au>
-In-Reply-To: <20100914105129.02eb5b13.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Sep 2010 01:22:21.0353 (UTC) FILETIME=[4774A190:01CB53AB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi Stephen,
 
-Stephen Rothwell wrote:
-> Today's linux-next merge of the m68knommu tree got a conflict in
-> arch/m68k/sun3/sun3ints.c between commit
-> 72fe185cd9acbfc6e8a7afa884ae1152be706e52 ("m68k/m68knommu: Remove dead
-> SMP config option") from the m68k tree and commit
-> 5313b581e4efc214c6132d32f580db6668e5c5a8 ("arch/m68k{,nommu}: Removing
-> dead SMP config option") from the m68knommu tree.
-> 
-> These appear to be the same patch with some formatting differences.  I
-> used the version from the m68k tree.
+On 09/12/2010 01:01 AM, Mike Rapoport wrote:
+>
+> Hi Gary,
+>
+> Gary King wrote:
+> > Hi Samuel, Mike,
+> >
+> > This patch incorporates Mike Rapoport's feedback on my initial patch
+> > to add interrupt support to the tps6586x driver.
+>
+> Overall looks good to me, two nitpicking comments though.
+>
+> > Changes since v1:
+> >
+> > * Move the interrupt enum ordering to match the ACK register values
+> >
+> > * Treat the INT_ACK registers as a single 32b unsigned int.
+> >
+> > * Name and define all the interrupts on the device
+> >
+> > * If reading the ACK registers in the interrupt thread fails, IRQ_NONE
+> >   is returned, rather than disabling the IRQ handler. This fixes
+> >   interrupts following suspend.
+> >
+> > * The cascaded IRQ is passed through the i2c_client's .irq field, rather
+> >   than through platform data.
+> >
+> > --
+> > From bf2f95da6f192e091d9ac0b30c186050aa5fd4e5 Mon Sep 17 00:00:00 2001
+> > From: Gary King <gking@nvidia.com>
+> > Date: Mon, 30 Aug 2010 16:16:55 -0700
+> > Subject: mfd: tps6586x: add basic interrupt support
+> >
+> > add support for enabling and disabling tps6586x subdevice interrupts,
+> > and add support for the RTC interrupts
+>
+> I think the "add support for the RTC interrupts" is not relevant anymore
+>
 
-Looks like Geert added the same patch to the m68k git tree.
-I'll drop it from the m68knommu git tree.
+Oops, I meant to delete that.
 
-Thanks
-Greg
+> > Signed-off-by: Gary King <gking@nvidia.com>
+> > ---
+> >  drivers/mfd/tps6586x.c       |  202 
+> ++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/mfd/tps6586x.h |   31 +++++++
+> >  2 files changed, 233 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+> > index 4cde31e..626081c 100644
+> > --- a/drivers/mfd/tps6586x.c
+> > +++ b/drivers/mfd/tps6586x.c
+> > @@ -15,6 +15,8 @@
+> >   * published by the Free Software Foundation.
+> >   */
+> >
+> > +#include <linux/interrupt.h>
+> > +#include <linux/irq.h>
+> >  #include <linux/kernel.h>
+> >  #include <linux/module.h>
+> >  #include <linux/mutex.h>
+>
+> [ snip ]
+>
+> >  struct tps6586x_subdev_info {
+> >       int             id;
+> >       const char      *name;
+> > @@ -29,6 +59,7 @@ struct tps6586x_platform_data {
+> >       struct tps6586x_subdev_info *subdevs;
+> >
+> >       int gpio_base;
+> > +     int irq_base;
+>
+> not needed anymore
+>
 
+This is still used; it is passed as the irq_base parameter to 
+tps6586x_irq_init.
 
+I will send out a v3 that fixes the commit message.
 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+- Gary
