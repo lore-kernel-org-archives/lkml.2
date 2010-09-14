@@ -1,21 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab0INWJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 18:09:13 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36411 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201Ab0INWJM (ORCPT
+	id S1754769Ab0INWKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 18:10:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51053 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752201Ab0INWKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 18:09:12 -0400
-Date: Tue, 14 Sep 2010 15:08:51 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, Naohiro Aota <naota@elisp.net>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] docbook: add idr/ida to kernel-api docbook
-Message-Id: <20100914150851.f5ae1da2.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Tue, 14 Sep 2010 18:10:52 -0400
+Date: Tue, 14 Sep 2010 15:10:26 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Thomas Moll <thomas.moll@sysgo.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Micha Nelissen <micha@neli.hopto.org>
+Subject: Re: [PATCH v2 06/10] RapidIO: Modify sysfs initialization for
+ switches
+Message-Id: <20100914151026.4d9599b4.akpm@linux-foundation.org>
+In-Reply-To: <1284476363-1677-7-git-send-email-alexandre.bounine@idt.com>
+References: <1284476363-1677-1-git-send-email-alexandre.bounine@idt.com>
+	<1284476363-1677-7-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -23,237 +29,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, 14 Sep 2010 10:59:19 -0400
+Alexandre Bounine <alexandre.bounine@idt.com> wrote:
 
-Add idr/ida to kernel-api docbook.
-Fix typos and kernel-doc notation.
+> 1. Change to create attribute "routes" only for switches.
 
-Includes idr patches from Naohiro Aota <naota@elisp.net> (for
-completeness only; will wait for those to be merged via the trivial tree).
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Naohiro Aota <naota@elisp.net>
-Cc: Jiri Kosina <jkosina@suse.cz>
----
- Documentation/DocBook/kernel-api.tmpl |    6 ++
- include/linux/idr.h                   |    1 
- lib/idr.c                             |   62 ++++++++++++------------
- 3 files changed, 39 insertions(+), 30 deletions(-)
-
---- lnx-2636-rc4.orig/Documentation/DocBook/kernel-api.tmpl
-+++ lnx-2636-rc4/Documentation/DocBook/kernel-api.tmpl
-@@ -93,6 +93,12 @@ X!Ilib/string.c
- !Elib/crc32.c
- !Elib/crc-ccitt.c
-      </sect1>
-+
-+     <sect1 id="idr"><title>idr/ida Functions</title>
-+!Pinclude/linux/idr.h idr sync
-+!Plib/idr.c IDA description
-+!Elib/idr.c
-+     </sect1>
-   </chapter>
- 
-   <chapter id="mm">
---- lnx-2636-rc4.orig/include/linux/idr.h
-+++ lnx-2636-rc4/include/linux/idr.h
-@@ -81,6 +81,7 @@ struct idr {
- #define _idr_rc_to_errno(rc) ((rc) == -1 ? -EAGAIN : -ENOSPC)
- 
- /**
-+ * DOC: idr sync
-  * idr synchronization (stolen from radix-tree.h)
-  *
-  * idr_find() is able to be called locklessly, using RCU. The caller must
---- lnx-2636-rc4.orig/lib/idr.c
-+++ lnx-2636-rc4/lib/idr.c
-@@ -106,7 +106,7 @@ static void idr_mark_full(struct idr_lay
- }
- 
- /**
-- * idr_pre_get - reserver resources for idr allocation
-+ * idr_pre_get - reserve resources for idr allocation
-  * @idp:	idr handle
-  * @gfp_mask:	memory allocation flags
-  *
-@@ -114,8 +114,8 @@ static void idr_mark_full(struct idr_lay
-  * idr_get_new* functions. It preallocates enough memory to satisfy
-  * the worst possible allocation.
-  *
-- * If the system is REALLY out of memory this function returns 0,
-- * otherwise 1.
-+ * If the system is REALLY out of memory this function returns %0,
-+ * otherwise %1.
-  */
- int idr_pre_get(struct idr *idp, gfp_t gfp_mask)
- {
-@@ -284,17 +284,17 @@ static int idr_get_new_above_int(struct 
-  * idr_get_new_above - allocate new idr entry above or equal to a start id
-  * @idp: idr handle
-  * @ptr: pointer you want associated with the id
-- * @start_id: id to start search at
-+ * @starting_id: id to start search at
-  * @id: pointer to the allocated handle
-  *
-  * This is the allocate id function.  It should be called with any
-  * required locks.
-  *
-- * If memory is required, it will return -EAGAIN, you should unlock
-+ * If memory is required, it will return %-EAGAIN, you should unlock
-  * and go back to the idr_pre_get() call.  If the idr is full, it will
-- * return -ENOSPC.
-+ * return %-ENOSPC.
-  *
-- * @id returns a value in the range @starting_id ... 0x7fffffff
-+ * @id returns a value in the range @starting_id ... %0x7fffffff
-  */
- int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id)
- {
-@@ -321,11 +321,11 @@ EXPORT_SYMBOL(idr_get_new_above);
-  * This is the allocate id function.  It should be called with any
-  * required locks.
-  *
-- * If memory is required, it will return -EAGAIN, you should unlock
-+ * If memory is required, it will return %-EAGAIN, you should unlock
-  * and go back to the idr_pre_get() call.  If the idr is full, it will
-- * return -ENOSPC.
-+ * return %-ENOSPC.
-  *
-- * @id returns a value in the range 0 ... 0x7fffffff
-+ * @id returns a value in the range %0 ... %0x7fffffff
-  */
- int idr_get_new(struct idr *idp, void *ptr, int *id)
- {
-@@ -388,7 +388,7 @@ static void sub_remove(struct idr *idp, 
- }
- 
- /**
-- * idr_remove - remove the given id and free it's slot
-+ * idr_remove - remove the given id and free its slot
-  * @idp: idr handle
-  * @id: unique key
-  */
-@@ -437,7 +437,7 @@ EXPORT_SYMBOL(idr_remove);
-  * function will remove all id mappings and leave all idp_layers
-  * unused.
-  *
-- * A typical clean-up sequence for objects stored in an idr tree, will
-+ * A typical clean-up sequence for objects stored in an idr tree will
-  * use idr_for_each() to free all objects, if necessay, then
-  * idr_remove_all() to remove all ids, and idr_destroy() to free
-  * up the cached idr_layers.
-@@ -479,7 +479,7 @@ EXPORT_SYMBOL(idr_remove_all);
- 
- /**
-  * idr_destroy - release all cached layers within an idr tree
-- * idp: idr handle
-+ * @idp: idr handle
-  */
- void idr_destroy(struct idr *idp)
- {
-@@ -542,7 +542,7 @@ EXPORT_SYMBOL(idr_find);
-  * not allowed.
-  *
-  * We check the return of @fn each time. If it returns anything other
-- * than 0, we break out and return that value.
-+ * than %0, we break out and return that value.
-  *
-  * The caller must serialize idr_for_each() vs idr_get_new() and idr_remove().
-  */
-@@ -586,10 +586,11 @@ EXPORT_SYMBOL(idr_for_each);
- /**
-  * idr_get_next - lookup next object of id to given id.
-  * @idp: idr handle
-- * @id:  pointer to lookup key
-+ * @nextidp:  pointer to lookup key
-  *
-  * Returns pointer to registered object with id, which is next number to
-- * given id.
-+ * given id. After being looked up, *@nextidp will be updated for the next
-+ * iteration.
-  */
- 
- void *idr_get_next(struct idr *idp, int *nextidp)
-@@ -636,8 +637,8 @@ EXPORT_SYMBOL(idr_get_next);
-  * @id: lookup key
-  *
-  * Replace the pointer registered with an id and return the old value.
-- * A -ENOENT return indicates that @id was not found.
-- * A -EINVAL return indicates that @id was not within valid constraints.
-+ * A %-ENOENT return indicates that @id was not found.
-+ * A %-EINVAL return indicates that @id was not within valid constraints.
-  *
-  * The caller must serialize with writers.
-  */
-@@ -695,10 +696,11 @@ void idr_init(struct idr *idp)
- EXPORT_SYMBOL(idr_init);
- 
- 
--/*
-+/**
-+ * DOC: IDA description
-  * IDA - IDR based ID allocator
-  *
-- * this is id allocator without id -> pointer translation.  Memory
-+ * This is id allocator without id -> pointer translation.  Memory
-  * usage is much lower than full blown idr because each id only
-  * occupies a bit.  ida uses a custom leaf node which contains
-  * IDA_BITMAP_BITS slots.
-@@ -731,8 +733,8 @@ static void free_bitmap(struct ida *ida,
-  * following function.  It preallocates enough memory to satisfy the
-  * worst possible allocation.
-  *
-- * If the system is REALLY out of memory this function returns 0,
-- * otherwise 1.
-+ * If the system is REALLY out of memory this function returns %0,
-+ * otherwise %1.
-  */
- int ida_pre_get(struct ida *ida, gfp_t gfp_mask)
- {
-@@ -758,17 +760,17 @@ EXPORT_SYMBOL(ida_pre_get);
- /**
-  * ida_get_new_above - allocate new ID above or equal to a start id
-  * @ida:	ida handle
-- * @staring_id:	id to start search at
-+ * @starting_id: id to start search at
-  * @p_id:	pointer to the allocated handle
-  *
-  * Allocate new ID above or equal to @ida.  It should be called with
-  * any required locks.
-  *
-- * If memory is required, it will return -EAGAIN, you should unlock
-+ * If memory is required, it will return %-EAGAIN, you should unlock
-  * and go back to the ida_pre_get() call.  If the ida is full, it will
-- * return -ENOSPC.
-+ * return %-ENOSPC.
-  *
-- * @p_id returns a value in the range @starting_id ... 0x7fffffff.
-+ * @p_id returns a value in the range @starting_id ... %0x7fffffff.
-  */
- int ida_get_new_above(struct ida *ida, int starting_id, int *p_id)
- {
-@@ -850,11 +852,11 @@ EXPORT_SYMBOL(ida_get_new_above);
-  *
-  * Allocate new ID.  It should be called with any required locks.
-  *
-- * If memory is required, it will return -EAGAIN, you should unlock
-+ * If memory is required, it will return %-EAGAIN, you should unlock
-  * and go back to the idr_pre_get() call.  If the idr is full, it will
-- * return -ENOSPC.
-+ * return %-ENOSPC.
-  *
-- * @id returns a value in the range 0 ... 0x7fffffff.
-+ * @id returns a value in the range %0 ... %0x7fffffff.
-  */
- int ida_get_new(struct ida *ida, int *p_id)
- {
-@@ -912,7 +914,7 @@ EXPORT_SYMBOL(ida_remove);
- 
- /**
-  * ida_destroy - release all cached layers within an ida tree
-- * ida:		ida handle
-+ * @ida:	ida handle
-  */
- void ida_destroy(struct ida *ida)
- {
+This is also a non-back compatible userspace-visible change?
