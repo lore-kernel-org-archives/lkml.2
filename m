@@ -1,81 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab0INTuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 15:50:20 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41476 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab0INTuT (ORCPT
+	id S1755162Ab0INTxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 15:53:55 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:57562 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753648Ab0INTxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 15:50:19 -0400
-Date: Tue, 14 Sep 2010 20:48:06 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-Cc: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Jonathan Cameron <arm@jic23.retrosnub.co.uk>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        linux-i2c@vger.kernel.org,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Joe Perches <joe@perches.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 05/25] drivers/i2c: Use static const char arrays
-Message-ID: <20100914194806.GA26693@n2100.arm.linux.org.uk>
-References: <cover.1284406638.git.joe@perches.com> <b0c83cb1b42c6adf38f6322066fb457693f7ac3b.1284406638.git.joe@perches.com> <4C8E84A0.1010606@jic23.retrosnub.co.uk> <19599.9719.562406.692216@ipc1.ka-ro> <4C8F7157.9060005@jic23.retrosnub.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C8F7157.9060005@jic23.retrosnub.co.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 14 Sep 2010 15:53:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@ozlabs.org
+Subject: [PATCH 3/7] mac: autoconvert trivial BKL users to private mutex
+Date: Tue, 14 Sep 2010 21:53:38 +0200
+Message-Id: <1284494022-7346-4-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1284494022-7346-1-git-send-email-arnd@arndb.de>
+References: <1284494022-7346-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:EkXNbgIEtujFRPMIkrNtBKM7fHwUDttbXqpkK5dFysi
+ 7dz7IctKVucbfj2GhzAXW8q6K+VNLA1lEJuQfI8qk4zk/bNGMJ
+ LWSY7Ks23EKi1FKCHWu/Yz4C6YE30YODhpwUlooc7Ei5tZqMGV
+ 8y0X9XGZBFZxoKnQN2V0CA3IyVLtCBZKz+w/yB2KR6C9o4OEL6
+ 5i6ktar68UlXFLuU8bEwQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 01:57:59PM +0100, Jonathan Cameron wrote:
-> On 09/14/10 08:36, Lothar Waßmann wrote:
-> > Hi,
-> > 
-> > Jonathan Cameron writes:
-> >>  Commit message is  somewhat inaccurate...
-> >>
-> >> On 09/13/10 20:47, Joe Perches wrote:
-> >>> Signed-off-by: Joe Perches <joe@perches.com>
-> >>> ---
-> >>>  drivers/i2c/busses/i2c-stu300.c |    4 ++--
-> >>>  1 files changed, 2 insertions(+), 2 deletions(-)
-> >>>
-> >>> diff --git a/drivers/i2c/busses/i2c-stu300.c b/drivers/i2c/busses/i2c-stu300.c
-> >>> index 495be45..2f7c09c 100644
-> >>> --- a/drivers/i2c/busses/i2c-stu300.c
-> >>> +++ b/drivers/i2c/busses/i2c-stu300.c
-> >>> @@ -871,7 +871,7 @@ stu300_probe(struct platform_device *pdev)
-> >>>  	struct resource *res;
-> >>>  	int bus_nr;
-> >>>  	int ret = 0;
-> >>> -	char clk_name[] = "I2C0";
-> >>> +	char clk_name[sizeof("I2Cx")];
-> >>>  
-> >>>  	dev = kzalloc(sizeof(struct stu300_dev), GFP_KERNEL);
-> >>>  	if (!dev) {
-> >>> @@ -881,7 +881,7 @@ stu300_probe(struct platform_device *pdev)
-> >>>  	}
-> >>>  
-> >>>  	bus_nr = pdev->id;
-> >>> -	clk_name[3] += (char)bus_nr;
-> >>> +	sprintf(clk_name, "I2C%c", '0' + bus_nr);
-> >> I'm guessing that there are never more than a couple of these.
-> >> Why is this method a better bet than just putting %d?
-> >>
-> > '%c' will only ever produce one byte of output while '%d' may
-> > produce up to 11 bytes depending on the value of bus_nr thus
-> > overflowing the buffer.
-> Then use an snprintf, or apply a check to ensure it isn't bigger than
-> 9.
-> 
-> If you don't mind having clocks named i2c$ or something equally
-> silly then I guess this is fine.  To my mind, if that is possible
-> this is a bug that should be fixed rather than avoided.
+All these files use the big kernel lock in a trivial
+way to serialize their private file operations,
+typically resulting from an earlier semi-automatic
+pushdown from VFS.
 
-Even better, fix the implementation so that it conforms to the API
-spec rather than doing its own thing with the consumer connection ID
-argument and ignoring the struct device argument.
+None of these drivers appears to want to lock against
+other code, and they all use the BKL as the top-level
+lock in their file operations, meaning that there
+is no lock-order inversion problem.
+
+Consequently, we can remove the BKL completely,
+replacing it with a per-file mutex in every case.
+Using a scripted approach means we can avoid
+typos.
+
+file=$1
+name=$2
+if grep -q lock_kernel ${file} ; then
+    if grep -q 'include.*linux.mutex.h' ${file} ; then
+            sed -i '/include.*<linux\/smp_lock.h>/d' ${file}
+    else
+            sed -i 's/include.*<linux\/smp_lock.h>.*$/include <linux\/mutex.h>/g' ${file}
+    fi
+    sed -i ${file} \
+        -e "/^#include.*linux.mutex.h/,$ {
+                1,/^\(static\|int\|long\)/ {
+                     /^\(static\|int\|long\)/istatic DEFINE_MUTEX(${name}_mutex);
+
+} }"  \
+    -e "s/\(un\)*lock_kernel\>[ ]*()/mutex_\1lock(\&${name}_mutex)/g" \
+    -e '/[      ]*cycle_kernel_lock();/d'
+else
+    sed -i -e '/include.*\<smp_lock.h\>/d' ${file}  \
+                -e '/cycle_kernel_lock()/d'
+fi
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev@ozlabs.org
+---
+ drivers/macintosh/adb.c     |   10 +++++-----
+ drivers/macintosh/smu.c     |    6 +++---
+ drivers/macintosh/via-pmu.c |   11 ++++++-----
+ 3 files changed, 14 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/macintosh/adb.c b/drivers/macintosh/adb.c
+index 1c4ee6e..e75e3be 100644
+--- a/drivers/macintosh/adb.c
++++ b/drivers/macintosh/adb.c
+@@ -24,7 +24,6 @@
+ #include <linux/fs.h>
+ #include <linux/mm.h>
+ #include <linux/sched.h>
+-#include <linux/smp_lock.h>
+ #include <linux/adb.h>
+ #include <linux/cuda.h>
+ #include <linux/pmu.h>
+@@ -55,6 +54,7 @@ extern struct adb_driver adb_iop_driver;
+ extern struct adb_driver via_pmu_driver;
+ extern struct adb_driver macio_adb_driver;
+ 
++static DEFINE_MUTEX(adb_mutex);
+ static struct adb_driver *adb_driver_list[] = {
+ #ifdef CONFIG_ADB_MACII
+ 	&via_macii_driver,
+@@ -647,7 +647,7 @@ static int adb_open(struct inode *inode, struct file *file)
+ 	struct adbdev_state *state;
+ 	int ret = 0;
+ 
+-	lock_kernel();
++	mutex_lock(&adb_mutex);
+ 	if (iminor(inode) > 0 || adb_controller == NULL) {
+ 		ret = -ENXIO;
+ 		goto out;
+@@ -665,7 +665,7 @@ static int adb_open(struct inode *inode, struct file *file)
+ 	state->inuse = 1;
+ 
+ out:
+-	unlock_kernel();
++	mutex_unlock(&adb_mutex);
+ 	return ret;
+ }
+ 
+@@ -674,7 +674,7 @@ static int adb_release(struct inode *inode, struct file *file)
+ 	struct adbdev_state *state = file->private_data;
+ 	unsigned long flags;
+ 
+-	lock_kernel();
++	mutex_lock(&adb_mutex);
+ 	if (state) {
+ 		file->private_data = NULL;
+ 		spin_lock_irqsave(&state->lock, flags);
+@@ -687,7 +687,7 @@ static int adb_release(struct inode *inode, struct file *file)
+ 			spin_unlock_irqrestore(&state->lock, flags);
+ 		}
+ 	}
+-	unlock_kernel();
++	mutex_unlock(&adb_mutex);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/macintosh/smu.c b/drivers/macintosh/smu.c
+index e58c3d3..290cb32 100644
+--- a/drivers/macintosh/smu.c
++++ b/drivers/macintosh/smu.c
+@@ -19,7 +19,6 @@
+  *    the userland interface
+  */
+ 
+-#include <linux/smp_lock.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/device.h>
+@@ -97,6 +96,7 @@ struct smu_device {
+  * I don't think there will ever be more than one SMU, so
+  * for now, just hard code that
+  */
++static DEFINE_MUTEX(smu_mutex);
+ static struct smu_device	*smu;
+ static DEFINE_MUTEX(smu_part_access);
+ static int smu_irq_inited;
+@@ -1095,12 +1095,12 @@ static int smu_open(struct inode *inode, struct file *file)
+ 	pp->mode = smu_file_commands;
+ 	init_waitqueue_head(&pp->wait);
+ 
+-	lock_kernel();
++	mutex_lock(&smu_mutex);
+ 	spin_lock_irqsave(&smu_clist_lock, flags);
+ 	list_add(&pp->list, &smu_clist);
+ 	spin_unlock_irqrestore(&smu_clist_lock, flags);
+ 	file->private_data = pp;
+-	unlock_kernel();
++	mutex_unlock(&smu_mutex);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/macintosh/via-pmu.c b/drivers/macintosh/via-pmu.c
+index 2d17e76..7b8b1de 100644
+--- a/drivers/macintosh/via-pmu.c
++++ b/drivers/macintosh/via-pmu.c
+@@ -18,7 +18,7 @@
+  *
+  */
+ #include <stdarg.h>
+-#include <linux/smp_lock.h>
++#include <linux/mutex.h>
+ #include <linux/types.h>
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+@@ -73,6 +73,7 @@
+ /* How many iterations between battery polls */
+ #define BATTERY_POLLING_COUNT	2
+ 
++static DEFINE_MUTEX(pmu_info_proc_mutex);
+ static volatile unsigned char __iomem *via;
+ 
+ /* VIA registers - spaced 0x200 bytes apart */
+@@ -2078,7 +2079,7 @@ pmu_open(struct inode *inode, struct file *file)
+ 	pp->rb_get = pp->rb_put = 0;
+ 	spin_lock_init(&pp->lock);
+ 	init_waitqueue_head(&pp->wait);
+-	lock_kernel();
++	mutex_lock(&pmu_info_proc_mutex);
+ 	spin_lock_irqsave(&all_pvt_lock, flags);
+ #if defined(CONFIG_INPUT_ADBHID) && defined(CONFIG_PMAC_BACKLIGHT)
+ 	pp->backlight_locker = 0;
+@@ -2086,7 +2087,7 @@ pmu_open(struct inode *inode, struct file *file)
+ 	list_add(&pp->list, &all_pmu_pvt);
+ 	spin_unlock_irqrestore(&all_pvt_lock, flags);
+ 	file->private_data = pp;
+-	unlock_kernel();
++	mutex_unlock(&pmu_info_proc_mutex);
+ 	return 0;
+ }
+ 
+@@ -2343,9 +2344,9 @@ static long pmu_unlocked_ioctl(struct file *filp,
+ {
+ 	int ret;
+ 
+-	lock_kernel();
++	mutex_lock(&pmu_info_proc_mutex);
+ 	ret = pmu_ioctl(filp, cmd, arg);
+-	unlock_kernel();
++	mutex_unlock(&pmu_info_proc_mutex);
+ 
+ 	return ret;
+ }
+-- 
+1.7.1
+
