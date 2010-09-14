@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab0INHq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 03:46:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61060 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751965Ab0INHq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 03:46:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,363,1280732400"; 
-   d="scan'208";a="657060295"
-Message-ID: <4C8F2863.5070003@linux.intel.com>
-Date: Tue, 14 Sep 2010 15:46:43 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Jan Beulich <JBeulich@novell.com>
-CC: fenghua.yu@intel.com, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH] x86/hwmon: fix module init		for		hotplug-but-no-device-found
- case
-References: <4C8E139F0200007800015AA5@vpn.id2.novell.com>	<4C8F167E.40506@linux.intel.com> <4C8F36B40200007800015E6B@vpn.id2.novell.com>
-In-Reply-To: <4C8F36B40200007800015E6B@vpn.id2.novell.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752769Ab0INHsV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 03:48:21 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:36132 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065Ab0INHsU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 03:48:20 -0400
+Date: Tue, 14 Sep 2010 09:48:13 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Don Zickus <dzickus@redhat.com>, Huang Ying <ying.huang@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 5/6] x86, NMI, Add support to notify hardware error with
+ unknown NMI
+Message-ID: <20100914094813.2601eb86@basil.nowhere.org>
+In-Reply-To: <74508.1284413121@localhost>
+References: <20100910184039.GK4879@redhat.com>
+	<1284344389.3269.82.camel@yhuang-dev.sh.intel.com>
+	<20100913141140.GB27371@redhat.com>
+	<20100913172438.37443bf7@basil.nowhere.org>
+	<20100913154750.GA26290@redhat.com>
+	<20100913185721.59ad9b4d@basil.nowhere.org>
+	<20100913175346.GC26290@redhat.com>
+	<20100913200707.3b31429e@basil.nowhere.org>
+	<20100913182354.GE26290@redhat.com>
+	<20100913203654.26724055@basil.nowhere.org>
+	<20100913193655.GF26290@redhat.com>
+	<20100913224952.442d7a24@basil.nowhere.org>
+	<74508.1284413121@localhost>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 9/14/2010 2:47 PM, Jan Beulich 写道:
->>>> On 14.09.10 at 08:30, Chen Gong<gong.chen@linux.intel.com>  wrote:
->> 于 9/13/2010 6:05 PM, Jan Beulich 写道:
->>> In commit 0dca94baeab4a1a514841b0a4c8e3a51dfb4d5ae the call to
->>> platform_driver_unregister() was made conditional upon !HOTPLUG_CPU,
->>> but the return value from coretemp_init() was left to indicate an
->>> error. This isn't correct, as the negative return value indicates to
->>> the module loader that initialization failed, which isn't intended
->>
->> only !HOTPLUG_CPU can remove the driver. That is what we need to do
->> because under the hotplug condition, we need to consider those "offline"
->> cpus. I don't understand what you are afraid. Can you give me a scinario ?
->
-> If the driver's init routine returns -ENODEV (like is the case without this
-> change when HOTPLUG_CPU is enabled and there is no device found),
-> the platform driver will remain registered, yet the driver memory will
-> get freed (leaving dangling pointers into the driver's former image). Or
+On Mon, 13 Sep 2010 17:25:21 -0400
+Valdis.Kletnieks@vt.edu wrote:
 
-Under this condition, I can't fine who frees the memory of the platform
-driver
+> > Practically every PC has a small amount of NVRAM.
+> 
+> The big question is how much NVRAM the PC has that is safe for our
+> NMI code to hijack/borrow across the reboot without scrogging
+> something that the BIOS has squirreled away in there. I recall one
+> patch that saved progress indicators during early boot or something -
+> but at the expense of stomping on the saved clock settings or
+> whatever so you rebooted and then you knew where your previos boot
+> wedged, but your system thought it was 1970 again. 
 
-> in other words - when leaving the driver registered, the return value
-> of the init function must be zero.
+It's already implemented for MCE and it works on servers.
 
-Is it mandotary or just some kind of convention ?
+-Andi
 
->
-> Jan
->
->>> here and results in dangling pointers.
->>>
->>> Signed-off-by: Jan Beulich<jbeulich@novell.com>
->>> Cc: Chen Gong<gong.chen@linux.intel.com>
->>>
->>> ---
->>>    drivers/hwmon/coretemp.c |    5 ++++-
->>>    1 file changed, 4 insertions(+), 1 deletion(-)
->>>
->>> --- linux-2.6.36-rc4/drivers/hwmon/coretemp.c	2010-09-13 08:45:02.000000000
->> +0200
->>> +++
->> 2.6.36-rc4-x86-coretemp-hotplug-init-return/drivers/hwmon/coretemp.c	2010-
->> 09-03 17:54:14.000000000 +0200
->>> @@ -541,16 +541,19 @@ static int __init coretemp_init(void)
->>>    				" has no thermal sensor.\n", c->x86_model);
->>>    		}
->>>    	}
->>> +
->>> +#ifndef CONFIG_HOTPLUG_CPU
->>>    	if (list_empty(&pdev_list)) {
->>>    		err = -ENODEV;
->>>    		goto exit_driver_unreg;
->>>    	}
->>> +#endif
->>>
->>>    	register_hotcpu_notifier(&coretemp_cpu_notifier);
->>>    	return 0;
->>>
->>> -exit_driver_unreg:
->>>    #ifndef CONFIG_HOTPLUG_CPU
->>> +exit_driver_unreg:
->>>    	platform_driver_unregister(&coretemp_driver);
->>>    #endif
->>>    exit:
->>>
->>>
->>>
->>>
+-- 
+ak@linux.intel.com -- Speaking for myself only.
