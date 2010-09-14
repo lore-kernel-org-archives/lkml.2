@@ -1,111 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab0INRqZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 13:46:25 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58501 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752113Ab0INRqY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 13:46:24 -0400
-Date: Tue, 14 Sep 2010 13:46:21 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1754397Ab0INRqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 13:46:51 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:45071 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754027Ab0INRqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 13:46:49 -0400
+Date: Tue, 14 Sep 2010 19:46:46 +0200
+From: Florian Mickler <florian@mickler.org>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: Joe Perches <joe@perches.com>, Christoph Hellwig <hch@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [RFC PATCH] sched: START_NICE feature (temporarily niced forks)
-Message-ID: <20100914174621.GA28620@Krystal>
-References: <20100914070718.GA25117@Krystal> <20100914174345.GB3822@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20100914174345.GB3822@elte.hu>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:44:23 up 234 days, 20:21,  4 users,  load average: 0.21, 0.15,
-	0.10
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
+ default
+Message-ID: <20100914194646.52d4bf96@schatten.dmk.lab>
+In-Reply-To: <m1lj749ra2.fsf@fess.ebiederm.org>
+References: <1284111212-10659-1-git-send-email-florian@mickler.org>
+	<1284111767.1783.35.camel@Joe-Laptop>
+	<20100911001350.GA11478@infradead.org>
+	<1284165074.1783.213.camel@Joe-Laptop>
+	<20100911004550.GA30584@infradead.org>
+	<20100911112855.6ee6e929@schatten.dmk.lab>
+	<m1hbhucdv5.fsf@fess.ebiederm.org>
+	<1284364665.22185.116.camel@Joe-Laptop>
+	<20100913105434.62b150f7@schatten.dmk.lab>
+	<m1lj749ra2.fsf@fess.ebiederm.org>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ingo Molnar (mingo@elte.hu) wrote:
-> 
-> * Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> 
-> > This patch tweaks the nice value of both the parent and the child 
-> > after a fork to a higher nice value, but this is only applied to their 
-> > first slice after the fork. The goal of this scheme is that their 
-> > respective vruntime will increment faster in the first slice after the 
-> > fork, so a workload doing many forks (e.g. make -j10) will have a 
-> > limited impact on latency-sensitive workloads.
-> > 
-> > This is an alternative to START_DEBIT which does not have the downside 
-> > of moving newly forked threads to the end of the runqueue.
-> > 
-> > Latency benchmark:
-> > 
-> > * wakeup-latency.c (SIGEV_THREAD) with make -j10 on UP 2.0GHz
-> > 
-> > Kernel used: mainline 2.6.35.2 with smaller min_granularity and check_preempt
-> > vruntime vs runtime comparison patches applied.
-> > 
-> > - START_DEBIT (vanilla setting)
-> > 
-> > maximum latency: 26409.0 탎
-> > average latency: 6762.1 탎
-> > missed timer events: 0
-> > 
-> > - NO_START_DEBIT, NO_START_NICE
-> > 
-> > maximum latency: 10001.8 탎
-> > average latency: 1618.7 탎
-> > missed timer events: 0
-> 
-> Tempting ...
-> 
-> > 
-> > - START_NICE
-> > 
-> > maximum latency: 9873.9 탎
-> > average latency: 901.2 탎
-> > missed timer events: 0
-> 
-> Even more tempting! :)
-> 
-> > On the Xorg interactivity aspect, I notice a major improvement with 
-> > START_NICE compared to the two other settings. I just came up with a 
-> > very simple repeatable low-tech test that takes into account both 
-> > input and video update responsiveness:
-> > 
-> > Start make -j10 in a gnome-terminal In another gnome-terminal, start 
-> > pressing the space bar, holding it. Use the cursor speed (my cursor is 
-> > a full rectangle) as latency indicator. With low latency, its speed 
-> > should be constant, no stopping and no sudden acceleration.
-> 
-> You may want to run this by Mike - he's the expert on finding 
-> interactivity corner-case workloads with scheduler patches. Mike,
-> got time to try out Mathieu's patch?
+On Tue, 14 Sep 2010 10:19:33 -0700
+ebiederm@xmission.com (Eric W. Biederman) wrote:
+> Florian Mickler <florian@mickler.org> writes:
+>
 
-I'm working on a new version at the moment. The previous one had a few bugs in
-it when it comes to weight updates, and I fear some of the latency improvements
-I've seen were caused by the whole build process ending up being niced all the
-time. I'm currently working on a "simplified but not optimal" version, with
-added sched_debug output, to make sure I get it right.
 
-I'll keep you posted.
 
-Thanks!
+> What is needed is something other than output that is a list of
+> email addresses.
+> 
+> email address foo had x% of non-author signed off bys
+> email address foo had y% of author signed off bys
+> email address foo had y% of author commits.
+> email address foo came from the Maintainers file.
 
-Mathieu
+Currently get_maintainer.pl only does signed-off-by counting, it doesn't
+take authorship in account, IIRC. That is a good point. It's
+information that is easily available. 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+> 
+> Additionally for email addresses that hit less often a list
+> of patch subject titles, and truncated sha1 patch ids.  So
+> with luck you can tell at a glance the person is of interest
+> and if not you can look at their commits quickly and see.
+
+An interactive mode in git shortlog form of the last year should be
+possible, i guess. 
+
+I wonder, if git send-email --cc-cmd allows for directing input towards
+get_maintainer.pl. That would be awesome.
+
+> 
+> That is all pretty trivial, it should be fast and it should with
+> a little care let the bogus results be filtered out quickly.
+> 
+> > As far as I can see, Andrew is in favor of not caring about
+> > false-positives in order to not sacrifice the detection rate of the
+> > tool. 
+> 
+> Which means in time every long time developer will be copied on every
+> patch.  That is what we have lkml for.  I don't have a problem with the
+> tool returning false positives.  I do have a problem with the tool
+> taking away the ability and the responsibility of developers to pay
+> attention to which human beings they are sending their patches to.
+
+Fair enough. It does a one year cut-off for the history. But maybe that
+is not the best approach. 
+
+> 
+> I don't want the tool to do the filtering.  I want the tool to give
+> enough information that the person using the tool can get a feel for the
+> development history of the affected files and suggestions with a couple
+> of metrics how useful someone is when Cc'd on a commit.
+
+I think this is a good approach. 
+
+> 
+> > My approach tried to lower the impact of false positives by allowing
+> > people to filter between "cc'd as maintainer" and "cc'd as
+> > commit_signer".  The former is pretty much never a false positive (as
+> > long as MAINTAINERS is up to date) while the latter is more of a
+> > hit'n'miss kind of method. 
+> 
+> And right now get_maintainer.pl is decreasing the relevancy of cc lines
+> in commits, which if get_maintainers.pl is used enough could be a
+> vicious circle.
+> 
+> The problem as I see it is you present of a list of email addresses
+> without enough information for someone using the tool to guess how
+> accurate the results are.
+
+Yes. I guess my patch adresses that somewhat, as it puts more
+information in the output by default. But it only uses the information
+already present in the script. 
+
+Regards,
+Flo
+
+> 
+> Eric
+> 
