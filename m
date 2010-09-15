@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab0IOQLF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 12:11:05 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:44594 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab0IOQLB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754626Ab0IOQLE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 12:11:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23662 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753501Ab0IOQLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Sep 2010 12:11:01 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/3] tracing: Remove leftover FTRACE_ENABLE/DISABLE_MCOUNT enums
-In-Reply-To: Your message of "Tue, 14 Sep 2010 23:01:42 EDT."
-             <20100915030402.346004778@goodmis.org>
-From: Valdis.Kletnieks@vt.edu
-References: <20100915030139.444219083@goodmis.org>
-            <20100915030402.346004778@goodmis.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1284567033_4463P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Message-ID: <4C90EFEE.4060905@redhat.com>
+Date: Wed, 15 Sep 2010 18:10:22 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Christopher Yeoh <cyeoh@au1.ibm.com>, linux-kernel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC][PATCH] Cross Memory Attach
+References: <20100915104855.41de3ebf@lilo> <4C90A6C7.9050607@redhat.com> <20100915135155.GA25210@elte.hu>
+In-Reply-To: <20100915135155.GA25210@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Wed, 15 Sep 2010 12:10:33 -0400
-Message-ID: <11102.1284567033@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020206.4C90EFF9.022A,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1284567033_4463P
-Content-Type: text/plain; charset=us-ascii
+  On 09/15/2010 03:51 PM, Ingo Molnar wrote:
+> * Avi Kivity<avi@redhat.com>  wrote:
+>
+>>   On 09/15/2010 03:18 AM, Christopher Yeoh wrote:
+>>
+>>> The basic idea behind cross memory attach is to allow MPI programs
+>>> doing intra-node communication to do a single copy of the message
+>>> rather than a double copy of the message via shared memory.
+>> If the host has a dma engine (many modern ones do) you can reduce this
+>> to zero copies (at least, zero processor copies).
+>>
+>>> The following patch attempts to achieve this by allowing a
+>>> destination process, given an address and size from a source
+>>> process, to copy memory directly from the source process into its
+>>> own address space via a system call. There is also a symmetrical
+>>> ability to copy from the current process's address space into a
+>>> destination process's address space.
+>> Instead of those two syscalls, how about a vmfd(pid_t pid, ulong
+>> start, ulong len) system call which returns an file descriptor that
+>> represents a portion of the process address space.  You can then use
+>> preadv() and pwritev() to copy memory, and io_submit(IO_CMD_PREADV)
+>> and io_submit(IO_CMD_PWRITEV) for asynchronous variants (especially
+>> useful with a dma engine, since that adds latency).
+>>
+>> With some care (and use of mmu_notifiers) you can even mmap() your
+>> vmfd and access remote process memory directly.
+>>
+>> A nice property of file descriptors is that you can pass them around
+>> securely via SCM_RIGHTS.  So a process can create a window into its
+>> address space and pass it to other processes.
+>>
+>> (or you could just use a shared memory object and pass it around)
+> Interesting, but how will that work in a scalable way with lots of
+> non-thread tasks?
+>
+> Say we have 100 processes. We'd have to have 100 fd's - each has to be
+> passed to a new worker process.
+>
+> In that sense a PID is just as good of a reference as an fd - it can be
+> looked up lockless, etc. - but has the added advantage that it can be
+> passed along just by number.
+>
+>
 
-On Tue, 14 Sep 2010 23:01:42 EDT, Steven Rostedt said:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> The enums for FTRACE_ENABLE_MCOUNT and FTRACE_DISABLE_MCOUNT were
-> used as commands to ftrace_run_update_code(). But these commands
-> were used by the old nasty ftrace daemon that has long been slain.
+It also has better life-cycle control (with just a pid, you never know 
+what it refers to unless you're its parent).  Would have been better if 
+clone() returned an fd from which you could derive the pid if you wanted 
+to present it to the user.
 
-> -	FTRACE_START_FUNC_RET		= (1 << 5),
-> -	FTRACE_STOP_FUNC_RET		= (1 << 6),
-> +	FTRACE_START_FUNC_RET		= (1 << 3),
-> +	FTRACE_STOP_FUNC_RET		= (1 << 4),
-
-This renumber isn't visible to user space, correct? (Asking because the enable/
-disable apparently *were* visible to the since-slain userspace daemon)
-
-
---==_Exmh_1284567033_4463P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMkO/5cC3lWbTT17ARAh8YAKClxHNxQ7P625qAygKaw8AD5asqXQCgsl4d
-3aCf6mj6wAE0p254BNGwrxw=
-=MmHI
------END PGP SIGNATURE-----
-
---==_Exmh_1284567033_4463P--
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
