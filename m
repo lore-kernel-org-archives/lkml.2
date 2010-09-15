@@ -1,155 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab0IOUGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 16:06:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23809 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab0IOUGo (ORCPT
+	id S1754106Ab0IOUG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 16:06:27 -0400
+Received: from smtp104.sbc.mail.gq1.yahoo.com ([67.195.15.63]:47014 "HELO
+	smtp104.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753957Ab0IOUG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 16:06:44 -0400
-Message-ID: <4C912709.2090201@kernel.org>
-Date: Wed, 15 Sep 2010 13:05:29 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCH -v4] memblock: Fix section mismatch warnings
-References: <20100913132721.5a02cfbc.sfr@canb.auug.org.au> <4C8DA517.9000603@kernel.org> <20100913143942.7344ada4.sfr@canb.auug.org.au> <4C8DDFB4.1020508@kernel.org> <20100914145025.977ec2a6.sfr@canb.auug.org.au> <4C8FFE76.8070801@kernel.org> <20100915150047.42551e34.sfr@canb.auug.org.au> <20100915092532.GH16593@elte.hu>
-In-Reply-To: <20100915092532.GH16593@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 15 Sep 2010 16:06:26 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: HCs3ZtwVM1mgV42_t7RrNADFM3Q4M_vYMRllnq8Hd.8HJyL
+ STEddbAIyLM0MYB_J0YOnTve8wHKFzTs5V_BmaXFHe0zeTbjEWZr9.51BHUD
+ salgVh6cy7gNppasefwAubpaGKDeB._nlZfiqqIFuBQ_N8j2sZNgybb0f0.6
+ Zt.HmRfFPQpfjMLj5Qhy5q9ImTtjp7nbwkAo.JrFrjCdAJW4V99PGbMezUeT
+ nHSFwRyxp_n4DtwNyEXreFlp6qd5RZDPPodC.YIpWzUdSKnnFBqs9aNkm577
+ OlTUGZBd8XFaKMq5vYs4yVW7L27HAdgwo_asU8yABYQmEw6tgVF49coDCIC7
+ JjSHMr6dOPlUGuaxTjA--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 2/2] tcm_loop: Add DMA_BIDIRECTIONAL CDB support
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Joe Eykholt <jeykholt@cisco.com>
+In-Reply-To: <4C90D346.1030907@panasas.com>
+References: <1284552412-30567-1-git-send-email-nab@linux-iscsi.org>
+	 <4C90D346.1030907@panasas.com>
+Content-Type: text/plain
+Date: Wed, 15 Sep 2010 13:02:17 -0700
+Message-Id: <1284580937.13344.9.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-09-15 at 16:08 +0200, Boaz Harrosh wrote:
+> On 09/15/2010 02:06 PM, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > This patch series adds DMA_BIDIRECTIONAL CDB to the TCM_Loop Virtual SCSI
+> > LLD module.  This includes the following changes:
+> > 
+> > 	*) Add call to include/scsi/scsi_cmnd.h:scsi_bidi_cmnd() to set
+> > 	   TCM struct se_cmd internal data_direction in tcm_loop_allocate_core_cmd()
+> > 	*) Update tcm_loop_new_cmd_map() to handle BIDI READ payload from scsi_in()
+> > 	*) Drop DMA_BIDIRECTIONAL usage check from tcm_loop_queuecommand()
+> > 	*) Add tcm_loop_slave_alloc() and tcm_loop_slave_configure() handlers for
+> > 	   struct scsi_host_template to set QUEUE_FLAG_BIDI in the former.
+> > 
+> > So far this has been tested together with commit 1f8f3eda132c using XDWRITE_READ_10
+> > via BSG userspace code on a v2.6.36-rc3 kernel.
+> > 
+> 
+> I'll start the review with this patch. Then we'll move on to the bigger harder one.
+> 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > ---
+> >  drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |   48 ++++++++++++++++++------
+> >  1 files changed, 36 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+> > index 644f978..c4139d8 100644
+> > --- a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+> > +++ b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+> > @@ -64,6 +64,7 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
+> >  	struct tcm_loop_nexus *tl_nexus = tl_hba->tl_nexus;
+> >  	struct tcm_loop_cmd *tl_cmd;
+> >  	int sam_task_attr;
+> > +	enum dma_data_direction data_direction;
+> >  
+> >  	if (!(tl_nexus)) {
+> >  		scmd_printk(KERN_ERR, sc, "TCM_Loop I_T Nexus"
+> > @@ -81,6 +82,13 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
+> >  	 * Save the pointer to struct scsi_cmnd *sc
+> >  	 */
+> >  	tl_cmd->sc = sc;
+> > +	/*
+> > +	 * Check for scsi_bidi_cmnd() to signal TCM Core for DMA_BIDIRECTIONAL
+> > +	 */
+> > +	if (scsi_bidi_cmnd(sc))
+> > +		data_direction = 
+> > +	else
+> > +		data_direction = sc->sc_data_direction;
+> 
+> So you noticed that scsi-ml has a data_direction = DMA_TO_DEVICE and
+> scsi_bidi_cmnd(sc) == true. I think you could do the same and code will
+> be more simple, see below.
+> 
+> So for start this here is just droped
+
+Hi Boaz,
+
+Thanks for the previous emails wrt to your comments about
+DMA_BIDIRECTIONAL and actual BIDI-COMMAND usage.  This definately
+clarifies things for me now, and I will go ahead and drop the incorrect
+DMA_BIDIRECTIONAL here.
+
+> 
+> >  
+> >  	/*
+> >  	 * Locate the SAM Task Attr from struct scsi_cmnd *
+> > @@ -105,7 +113,7 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
+> >  	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
+> >  	 */
+> >  	transport_init_se_cmd(se_cmd, se_tpg->se_tpg_tfo, se_sess,
+> > -			scsi_bufflen(sc), sc->sc_data_direction, sam_task_attr,
+> > +			scsi_bufflen(sc), data_direction, sam_task_attr,
+> 
+> And this is dropped
+
+Ditto
+
+> 
+> >  			&tl_cmd->tl_sense_buf[0]);
+> >  	/*
+> >  	 * Locate the struct se_lun pointer and attach it to struct se_cmd
+> > @@ -128,14 +136,16 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
+> >  /*
+> >   * Called by struct target_core_fabric_ops->new_cmd_map()
+> >   *
+> > - * Always called in process context
+> > + * Always called in process context.  A non zero return value
+> > + * here will signal to handle an exception based on the return code.
+> >   */
+> >  int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
+> >  {
+> >  	struct tcm_loop_cmd *tl_cmd = container_of(se_cmd,
+> >  				struct tcm_loop_cmd, tl_se_cmd);
+> >  	struct scsi_cmnd *sc = tl_cmd->sc;
+> > -	void *mem_ptr;
+> > +	void *mem_ptr, *mem_bidi_ptr = NULL;
+> > +	u32 sg_no_bidi = 0;
+> >  	int ret;
+> >  	/*
+> >  	 * Allocate the necessary tasks to complete the received CDB+data
+> > @@ -163,6 +173,16 @@ int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
+> >  	if (scsi_sg_count(sc)) {
+> >  		se_cmd->se_cmd_flags |= SCF_PASSTHROUGH_SG_TO_MEM;
+> >  		mem_ptr = (void *)scsi_sglist(sc);
+> > +		/*
+> > +		 * For BIDI commands, pass in the extra READ buffer
+> > +		 * to transport_generic_map_mem_to_cmd() below..
+> > +		 */
+> > +		if (se_cmd->data_direction == DMA_BIDIRECTIONAL) {
+> 
+> Just change to if (scsi_bidi_cmnd(sc))
+> [remember data_direction == DMA_TO_DEVICE]
+
+<nod>
+
+> 
+> > +			struct scsi_data_buffer *sdb = scsi_in(sc);
+> > +
+> > +			mem_bidi_ptr = (void *)sdb->table.sgl;
+> > +			sg_no_bidi = sdb->table.nents;
+> 
+> This is the all bidi secret the presence of the  scsi_in buffer
+
+Makes sense..
+
+> 
+> > +		}
+> >  	} else {
+> >  		/*
+> >  		 * Used for DMA_NONE
+> > @@ -322,15 +342,6 @@ static int tcm_loop_queuecommand(
+> >  	}
+> >  	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];transport_get_task
+> >  	se_tpg = &tl_tpg->tl_se_tpg;
+> > -
+> > -	if (sc->sc_data_direction == DMA_BIDIRECTIONAL) {
+> > -		spin_lock_irq(host->host_lock);
+> > -		printk(KERN_ERR "Unsupported BIDI sc->sc_data_direction: %d\n",
+> > -			sc->sc_data_direction);	
+> > -		sc->result = host_byte(DID_ERROR);
+> > -		(*done)(sc);
+> > -		return 0;
+> > -	}
+> >  	/*
+> >  	 * Determine the SAM Task Attribute and allocate tl_cmd and
+> >  	 * tl_cmd->tl_se_cmd from TCM infrastructure
+> > @@ -446,6 +457,17 @@ release:
+> >  	return ret;
+> >  }
+> >  
+> > +static int tcm_loop_slave_alloc(struct scsi_device *sd)
+> > +{
+> > +	set_bit(QUEUE_FLAG_BIDI, &sd->request_queue->queue_flags);
+> 
+> Thank got, another new one. We are up to 4
+
+Perfect, I will make these changes to TCM_Loop and follow up on the
+larger patch in a moment.
+
+Thanks!
+
+--nab
 
 
-Stephen found bunch of section mismatch warnings with memblock new changes.
-
-Use __init_memblock to replace __init in memblock.c and remove __init in memblock.h.
-We should not use __init in header files.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Yinghai Lu <Yinghai@kernel.org>
-
----
- include/linux/memblock.h |   24 ++++++++++++------------
- mm/memblock.c            |   14 +++++++-------
- 2 files changed, 19 insertions(+), 19 deletions(-)
-
-Index: linux-2.6/mm/memblock.c
-===================================================================
---- linux-2.6.orig/mm/memblock.c
-+++ linux-2.6/mm/memblock.c
-@@ -125,8 +125,8 @@ static phys_addr_t __init memblock_find_
- 	return MEMBLOCK_ERROR;
- }
- 
--static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align,
--					phys_addr_t start, phys_addr_t end)
-+static phys_addr_t __init_memblock memblock_find_base(phys_addr_t size,
-+			phys_addr_t align, phys_addr_t start, phys_addr_t end)
- {
- 	long i;
- 
-@@ -439,12 +439,12 @@ long __init_memblock memblock_remove(phy
- 	return __memblock_remove(&memblock.memory, base, size);
- }
- 
--long __init memblock_free(phys_addr_t base, phys_addr_t size)
-+long __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
- {
- 	return __memblock_remove(&memblock.reserved, base, size);
- }
- 
--long __init memblock_reserve(phys_addr_t base, phys_addr_t size)
-+long __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
- {
- 	struct memblock_type *_rgn = &memblock.reserved;
- 
-@@ -671,12 +671,12 @@ int __init memblock_is_reserved(phys_add
- 	return memblock_search(&memblock.reserved, addr) != -1;
- }
- 
--int memblock_is_memory(phys_addr_t addr)
-+int __init_memblock memblock_is_memory(phys_addr_t addr)
- {
- 	return memblock_search(&memblock.memory, addr) != -1;
- }
- 
--int memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
-+int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
- {
- 	int idx = memblock_search(&memblock.reserved, base);
- 
-@@ -693,7 +693,7 @@ int __init_memblock memblock_is_region_r
- }
- 
- 
--void __init memblock_set_current_limit(phys_addr_t limit)
-+void __init_memblock memblock_set_current_limit(phys_addr_t limit)
- {
- 	memblock.current_limit = limit;
- }
-Index: linux-2.6/include/linux/memblock.h
-===================================================================
---- linux-2.6.orig/include/linux/memblock.h
-+++ linux-2.6/include/linux/memblock.h
-@@ -51,39 +51,39 @@ u64 memblock_find_in_range(u64 start, u6
- int memblock_free_reserved_regions(void);
- int memblock_reserve_reserved_regions(void);
- 
--extern void __init memblock_init(void);
--extern void __init memblock_analyze(void);
-+extern void memblock_init(void);
-+extern void memblock_analyze(void);
- extern long memblock_add(phys_addr_t base, phys_addr_t size);
- extern long memblock_remove(phys_addr_t base, phys_addr_t size);
--extern long __init memblock_free(phys_addr_t base, phys_addr_t size);
--extern long __init memblock_reserve(phys_addr_t base, phys_addr_t size);
-+extern long memblock_free(phys_addr_t base, phys_addr_t size);
-+extern long memblock_reserve(phys_addr_t base, phys_addr_t size);
- 
- /* The numa aware allocator is only available if
-  * CONFIG_ARCH_POPULATES_NODE_MAP is set
-  */
--extern phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align,
-+extern phys_addr_t memblock_alloc_nid(phys_addr_t size, phys_addr_t align,
- 					int nid);
--extern phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align,
-+extern phys_addr_t memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align,
- 					    int nid);
- 
--extern phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align);
-+extern phys_addr_t memblock_alloc(phys_addr_t size, phys_addr_t align);
- 
- /* Flags for memblock_alloc_base() amd __memblock_alloc_base() */
- #define MEMBLOCK_ALLOC_ANYWHERE	(~(phys_addr_t)0)
- #define MEMBLOCK_ALLOC_ACCESSIBLE	0
- 
--extern phys_addr_t __init memblock_alloc_base(phys_addr_t size,
-+extern phys_addr_t memblock_alloc_base(phys_addr_t size,
- 					 phys_addr_t align,
- 					 phys_addr_t max_addr);
--extern phys_addr_t __init __memblock_alloc_base(phys_addr_t size,
-+extern phys_addr_t __memblock_alloc_base(phys_addr_t size,
- 					   phys_addr_t align,
- 					   phys_addr_t max_addr);
--extern phys_addr_t __init memblock_phys_mem_size(void);
-+extern phys_addr_t memblock_phys_mem_size(void);
- extern phys_addr_t memblock_end_of_DRAM(void);
--extern void __init memblock_enforce_memory_limit(phys_addr_t memory_limit);
-+extern void memblock_enforce_memory_limit(phys_addr_t memory_limit);
- extern int memblock_is_memory(phys_addr_t addr);
- extern int memblock_is_region_memory(phys_addr_t base, phys_addr_t size);
--extern int __init memblock_is_reserved(phys_addr_t addr);
-+extern int memblock_is_reserved(phys_addr_t addr);
- extern int memblock_is_region_reserved(phys_addr_t base, phys_addr_t size);
- 
- extern void memblock_dump_all(void);
