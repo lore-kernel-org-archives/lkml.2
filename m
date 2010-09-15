@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab0IOLGc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 07:06:32 -0400
-Received: from galiil.marvell.com ([199.203.130.254]:3607 "EHLO
-	galiil.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab0IOLGa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 07:06:30 -0400
-From: Saeed Bishara <saeed@marvell.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-CC: Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 15 Sep 2010 13:06:26 +0300
-Subject: RE: [PATCH] mmc: Add architecture dependency for Marvell SoC
- controller
-Thread-Topic: [PATCH] mmc: Add architecture dependency for Marvell SoC
- controller
-Thread-Index: ActUxSoQvBoSb+gvQYGpaGTHY28PPwAADJ9w
-Message-ID: <FCBE654890C0334289D0AD3AF4EF009FD18EE74AC7@IL-MB01.marvell.com>
-References: <1284366279-17140-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20100914190549.GA21918@void.printf.net>
- <20100915094006.GA21620@sirena.org.uk>
- <FCBE654890C0334289D0AD3AF4EF009FD18EE74AA8@IL-MB01.marvell.com>
- <20100915110001.GA4254@rakim.wolfsonmicro.main>
-In-Reply-To: <20100915110001.GA4254@rakim.wolfsonmicro.main>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753204Ab0IOLHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 07:07:14 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:47006 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752381Ab0IOLHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 07:07:13 -0400
+Message-ID: <4C90A8E0.4050807@kernel.dk>
+Date: Wed, 15 Sep 2010 13:07:12 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
+To: Namhyung Kim <namhyung@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: fix an address space warning in blk-map.c
+References: <1284478956-13664-1-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1284478956-13664-1-git-send-email-namhyung@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
->Which CPUs does the driver actually support?  The Kconfig and 
->commit log
->just say "Marvell" so I went for the conservative option and included
->all Marvell CPUs I was aware of.
-The Marvell Dove SoC includes this device, this SoC defined by ARCH_DOVE
-I guess it found also only on mmp (defined by ARCH_MMP), Haojian, can you confirm?
-saeed
+On 2010-09-14 17:42, Namhyung Kim wrote:
+> Change type of 2nd parameter of blk_rq_aligned() into unsigned long
+> and remove unnecessary casting. Now we can call it with 'uaddr'
+> instead of 'ubuf' in __blk_rq_map_user() so that it can remove
+> following warnings from sparse:
+> 
+>  block/blk-map.c:57:31: warning: incorrect type in argument 2 (different address spaces)
+>  block/blk-map.c:57:31:    expected void *addr
+>  block/blk-map.c:57:31:    got void [noderef] <asn:1>*ubuf
+> 
+> However blk_rq_map_kern() needs one more local variable to handle it.
+
+Thanks, applied to for-2.6.37/core
+
+-- 
+Jens Axboe
+
