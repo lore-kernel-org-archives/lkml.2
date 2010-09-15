@@ -1,78 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab0IOQQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 12:16:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25054 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701Ab0IOQQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 12:16:15 -0400
-Date: Wed, 15 Sep 2010 18:16:10 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
-To: Mike Snitzer <snitzer@redhat.com>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
-        tytso@mit.edu, sandeen@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: Make blkdev_issue_discard() interruptible
-In-Reply-To: <AANLkTinmJyJOqgSe6G0RiNUgT59wtxeT6y+0b3GivQem@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1009151815190.3162@dhcp-lab-213.englab.brq.redhat.com>
-References: <1284561161-22278-1-git-send-email-lczerner@redhat.com> <AANLkTinmJyJOqgSe6G0RiNUgT59wtxeT6y+0b3GivQem@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754447Ab0IOQVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 12:21:12 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:54148 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402Ab0IOQVK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 12:21:10 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zzbb2cK98dNzz1202hzz8275bhz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L8SQQ9-01-2HV-02
+X-M-MSG: 
+Date: Wed, 15 Sep 2010 18:20:34 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+CC: Don Zickus <dzickus@redhat.com>, "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "eranian@google.com" <eranian@google.com>
+Subject: [PATCH] perf, x86: catch spurious interrupts after disabling
+ counters
+Message-ID: <20100915162034.GO13563@erda.amd.com>
+References: <1284118900.402.35.camel@laptop>
+ <20100910132741.GB4879@redhat.com>
+ <20100910144634.GA1060@elte.hu>
+ <20100910155659.GD13563@erda.amd.com>
+ <20100911094157.GA11521@elte.hu>
+ <20100911114404.GE13563@erda.amd.com>
+ <20100911124537.GA22850@elte.hu>
+ <20100912095202.GF13563@erda.amd.com>
+ <20100913143713.GK13563@erda.amd.com>
+ <20100914174132.GN13563@erda.amd.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="571141147-1924175857-1284567373=:3162"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100914174132.GN13563@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 14.09.10 19:41:32, Robert Richter wrote:
+> I found the reason why we get the unknown nmi. For some reason
+> cpuc->active_mask in x86_pmu_handle_irq() is zero. Thus, no counters
+> are handled when we get an nmi. It seems there is somewhere a race
+> accessing the active_mask. So far I don't have a fix available.
+> Changing x86_pmu_stop() did not help:
 
---571141147-1924175857-1284567373=:3162
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+The patch below for tip/perf/urgent fixes this.
 
-On Wed, 15 Sep 2010, Mike Snitzer wrote:
+-Robert
 
-> On Wed, Sep 15, 2010 at 10:32 AM, Lukas Czerner <lczerner@redhat.com> wrote:
-> > Since the discard may take quite long time, especially with really big
-> > extents (like the whole device for example), it would be nice to give to
-> > users the opportunity to abort it. This is especially useful for mkfs,
-> > when user can not know in advance how long it will take.
-> >
-> > In conjunction with mke2fs patch "Inform user about ongoing discard"
-> > it gives the user all the comfort of being informed about discard and
-> > being able to abort the operation.
-> >
-> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> > ---
-> >  block/blk-lib.c |    5 +++++
-> >  1 files changed, 5 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/block/blk-lib.c b/block/blk-lib.c
-> > index d0216b9..4f54a1a 100644
-> > --- a/block/blk-lib.c
-> > +++ b/block/blk-lib.c
-> > @@ -102,6 +102,11 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
-> >                else if (!bio_flagged(bio, BIO_UPTODATE))
-> >                        ret = -EIO;
-> >                bio_put(bio);
-> > +
-> > +               if (signal_pending(current)) {
-> > +                       ret = -ERESTARTSYS;
-> > +                       break;
-> > +               }
-> >        }
-> >        return ret;
-> >  out_free_page:
-> 
-> Neil Brown recently suggested the use of fatal_signal_pending() rather
-> than signal_epnding() in another thread:
-> http://lkml.org/lkml/2010/9/12/232
-> 
-> I think Neil's suggestion applies here too?
-> 
-> Mike
+>From 4206a086f5b37efc1b4d94f1d90b55802b299ca0 Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Wed, 15 Sep 2010 16:12:59 +0200
+Subject: [PATCH] perf, x86: catch spurious interrupts after disabling counters
 
-Good to know, thanks a lot. I'll resend the patch shortly.
+Some cpus still deliver spurious interrupts after disabling a counter.
+This caused 'undelivered NMI' messages. This patch fixes this.
 
--Lukas
---571141147-1924175857-1284567373=:3162--
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 3efdf28..df7aabd 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -102,6 +102,7 @@ struct cpu_hw_events {
+ 	 */
+ 	struct perf_event	*events[X86_PMC_IDX_MAX]; /* in counter order */
+ 	unsigned long		active_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
++	unsigned long		running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+ 	int			enabled;
+ 
+ 	int			n_events;
+@@ -1010,6 +1011,7 @@ static int x86_pmu_start(struct perf_event *event)
+ 	x86_perf_event_set_period(event);
+ 	cpuc->events[idx] = event;
+ 	__set_bit(idx, cpuc->active_mask);
++	__set_bit(idx, cpuc->running);
+ 	x86_pmu.enable(event);
+ 	perf_event_update_userpage(event);
+ 
+@@ -1141,8 +1143,17 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+-		if (!test_bit(idx, cpuc->active_mask))
++		if (!test_bit(idx, cpuc->active_mask)) {
++			if (__test_and_clear_bit(idx, cpuc->running))
++				/*
++				 * Though we deactivated the counter
++				 * some cpus might still deliver
++				 * spurious interrupts. Catching them
++				 * here.
++				 */
++				handled++;
+ 			continue;
++		}
+ 
+ 		event = cpuc->events[idx];
+ 		hwc = &event->hw;
+-- 
+1.7.2.2
+
+
+
+
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
