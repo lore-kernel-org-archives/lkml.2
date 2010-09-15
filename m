@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab0IOTUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 15:20:09 -0400
-Received: from mail.tpi.com ([70.99.223.143]:3598 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754028Ab0IOTUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 15:20:07 -0400
-Message-ID: <4C911C60.4030105@canonical.com>
-Date: Wed, 15 Sep 2010 13:20:00 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100826 Thunderbird/3.0.7
+	id S1755053Ab0IOTZC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 15:25:02 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:54487 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab0IOTZB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 15:25:01 -0400
+From: "Tim Pepper" <lnxninja@linux.vnet.ibm.com>
+Date: Wed, 15 Sep 2010 12:24:55 -0700
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, lnxninja@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH] update /proc/sys/vm/drop_caches documentation
+Message-ID: <20100915192454.GD5585@tpepper-t61p.dolavim.us>
+References: <20100914234714.8AF506EA@kernel.beaverton.ibm.com>
+ <20100915133303.0b232671.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: jbarnes@virtuousgeek.org
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: MCP limit log messages, 2.6.36-rc4
-References: <4C9106C1.4080505@canonical.com>
-In-Reply-To: <4C9106C1.4080505@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100915133303.0b232671.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2010 11:47 AM, Tim Gardner wrote:
-> I've been getting regular MCP limit log messages on a Dell Studio 1458
-> (i5 CPU) with an A02 BIOS. With the attached debug hack it prints the
-> following values:
->
-> [ 33.605098] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
-> 30123, limit 1023
-> [ 38.597998] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
-> 21697, limit 1023
-> [ 43.590917] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
-> 15390, limit 1023
-> [ 48.583821] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
-> 43370, limit 1023
-> [ 53.576740] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power
-> 64728, limit 1023
->
-> This is an idle machine which starts printing these messages about 30
-> seconds after boot. Any thoughts?
->
-> rtg
+On Wed 15 Sep at 13:33:03 +0900 kamezawa.hiroyu@jp.fujitsu.com said:
+> >  
+> > diff -puN fs/drop_caches.c~update-drop_caches-documentation fs/drop_caches.c
+> > --- linux-2.6.git/fs/drop_caches.c~update-drop_caches-documentation	2010-09-14 15:44:29.000000000 -0700
+> > +++ linux-2.6.git-dave/fs/drop_caches.c	2010-09-14 15:58:31.000000000 -0700
+> > @@ -47,6 +47,8 @@ int drop_caches_sysctl_handler(ctl_table
+> >  {
+> >  	proc_dointvec_minmax(table, write, buffer, length, ppos);
+> >  	if (write) {
+> > +		WARN_ONCE(1, "kernel caches forcefully dropped, "
+> > +			     "see Documentation/sysctl/vm.txt\n");
+> 
+> Documentation updeta seems good but showing warning seems to be meddling to me.
 
-More clues:
+We already have examples of things where we warn in order to turn up
+"interesting" userspace code, in the hope of starting dialog and getting
+things fixed for the future.  I don't see this so much as meddling as
+one of the fundamental aspects of open source.
 
-[   13.426064] intel ips 0000:00:1f.6: Warning: CPU TDP doesn't match 
-expected value (found 25, expected 35)
-[   13.426086] intel ips 0000:00:1f.6: PCI INT C -> GSI 18 (level, low) 
--> IRQ 18
-[   13.426933] intel ips 0000:00:1f.6: IPS driver initialized, MCP temp 
-limit 95
+drop_caches probably originally should have gone in under a CONFIG_DEBUG
+(even if all the distros would have turned it on), and had a WARN_ON
+(personally I'd argue for this compared to WARN_ONCE()), and even have
+been exposed in debugfs not procfs...but it's part of the "the interface"
+at this point.
+
+Somebody doing debug and testing which leverages drop_caches should not
+be bothered by a WARN_ON().  Somebody using it to "fix" the kernel with
+repeated/regular calls to drop_caches should get called out for fixing
+themselves and the WARN_*()'s noting the comm could help that, unless
+somebody has a use case where repeated/regular calls to drop_caches
+is valid and not connected to buggy usage or explicit performance
+debug/testing?
 
 -- 
-Tim Gardner tim.gardner@canonical.com
+Tim Pepper  <lnxninja@linux.vnet.ibm.com>
+IBM Linux Technology Center
