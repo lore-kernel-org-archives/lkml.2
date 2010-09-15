@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab0IOPbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 11:31:53 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:60993 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754417Ab0IOPbw convert rfc822-to-8bit (ORCPT
+	id S1754499Ab0IOPeI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 11:34:08 -0400
+Received: from usmamail.tilera.com ([72.1.168.231]:33380 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753600Ab0IOPeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 11:31:52 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Wed, 15 Sep 2010 11:34:07 -0400
+Message-ID: <4C90E768.3070607@tilera.com>
+Date: Wed, 15 Sep 2010 11:34:00 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH v2 09/10] RapidIO: Add support for IDT CPS Gen2 switches
-Date: Wed, 15 Sep 2010 08:30:57 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E5520130321F@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <20100914152049.8d42783f.akpm@linux-foundation.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH v2 09/10] RapidIO: Add support for IDT CPS Gen2 switches
-thread-index: ActUWruG03q/83K1SHqhkR/gwuIGNQAh6CIw
-References: <1284476363-1677-1-git-send-email-alexandre.bounine@idt.com><1284476363-1677-10-git-send-email-alexandre.bounine@idt.com> <20100914152049.8d42783f.akpm@linux-foundation.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Andrew Morton" <akpm@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        "Thomas Moll" <thomas.moll@sysgo.com>,
-        "Matt Porter" <mporter@kernel.crashing.org>,
-        "Li Yang" <leoli@freescale.com>,
-        "Kumar Gala" <galak@kernel.crashing.org>,
-        "Micha Nelissen" <micha@neli.hopto.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [GIT PULL] arch/tile fixes for 2.6.36
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> wrote:
 
-> The handling of `table' is strange.  One would expect the caller of
-> this function to provide the correct table index, and for the caller
-to
-> increment that index at an appropriate time.
 
-Handling of the 'table' parameter is hardware-dependent.
-RIO switches (at least all that I know) have a per-port routing tables
-(RT)
-which can be configured independently. The 'table' parameter is expected
-to match
-to the port number (or broadcast if GLOBAL).
-The route set/get routines in this file use the standard route setting
-registers
-defined by RapidIO spec, but switches have internal mapping into an
-individual
-port RT or broadcast capability into all port RTs.
-Unfortunately, this HW design uses index 0 as a broadcast option that
-offsets
-per-port RT numbering by +1 (port 0 == table index 1, etc.).    
+Linus,
 
-> So I take a look around but cannot find any means by which
-> ->add_entry() is called with anything other than RIO_GLOBAL_TABLE.
-> Maybe I missed something.  Is this all dead code?
+Please pull from
 
-The current RIO enumeration uses only the global routing table concept.
-In the past, I had a temptation to remove the 'table' parameter and make
-RT settings simpler. But now I see scenarios when per-port routing
-tables 
-may be configured by usermode apps. This capability may be implemented 
-through sysfs attributes (probably I have to add them to make standard).
-Example: system that uses dual-port endpoints which can be enumerated by
-the host through one RIO port (management) and have individual routes
-configured for the second port (data path).
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git stable
 
+to get bug fixes for arch/tile/ for 2.6.36.  The first one listed
+below completes the change to use "const" arguments for sys_execve(),
+which was only partially applied to arch/tile.  The second change is a
+minor public-header change that we decided to do to make porting glibc
+easier.  The remaining three changes fix bugs that have been discovered
+internally.
+
+Thanks!
+
+Chris Metcalf (5):
+      arch/tile: finish const-ifying sys_execve()
+      arch/tile: Change struct sigcontext to be more useful
+      arch/tile: Save and restore extra user state for tilegx
+      arch/tile: fix memcpy_fromio()/memcpy_toio() signatures
+      arch/tile: fix formatting bug in register dumps
+
+ arch/tile/include/arch/chip_tile64.h  |    3 +++
+ arch/tile/include/arch/chip_tilepro.h |    3 +++
+ arch/tile/include/asm/compat.h        |    5 +++--
+ arch/tile/include/asm/io.h            |    8 ++++----
+ arch/tile/include/asm/processor.h     |   12 ++++++++++++
+ arch/tile/include/asm/ptrace.h        |   15 ++++++---------
+ arch/tile/include/asm/sigcontext.h    |   18 +++++++++++++-----
+ arch/tile/include/asm/signal.h        |    1 +
+ arch/tile/include/asm/syscalls.h      |   21 +++++++++++++--------
+ arch/tile/kernel/process.c            |   30 ++++++++++++++++++++----------
+ arch/tile/kernel/signal.c             |   27 +++++++++++++++------------
+ arch/tile/kernel/stack.c              |    2 +-
+ 12 files changed, 94 insertions(+), 51 deletions(-)
+
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
