@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab0IOEpw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 00:45:52 -0400
-Received: from mail.perches.com ([173.55.12.10]:2044 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751244Ab0IOEpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 00:45:51 -0400
-Subject: Re: [PATCH] get_maintainer.pl: append reason for cc to the name by
- default
-From: Joe Perches <joe@perches.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
+	id S1752615Ab0IOEqm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 00:46:42 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41074 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095Ab0IOEql (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 00:46:41 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Nikanth Karthikesan <knikanth@suse.de>
+Subject: Re: [PATCH] After swapout/swapin private dirty mappings become clean
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>
-In-Reply-To: <20100915063445.7d8ccd4d@schatten.dmk.lab>
-References: <1284111212-10659-1-git-send-email-florian@mickler.org>
-	 <1284111767.1783.35.camel@Joe-Laptop>
-	 <20100911001350.GA11478@infradead.org>
-	 <1284165074.1783.213.camel@Joe-Laptop>
-	 <20100911004550.GA30584@infradead.org>
-	 <20100911112855.6ee6e929@schatten.dmk.lab>
-	 <m1hbhucdv5.fsf@fess.ebiederm.org> <1284364665.22185.116.camel@Joe-Laptop>
-	 <20100913105434.62b150f7@schatten.dmk.lab>
-	 <m1lj749ra2.fsf@fess.ebiederm.org>
-	 <20100914194646.52d4bf96@schatten.dmk.lab>
-	 <1284521324.26719.146.camel@Joe-Laptop>
-	 <20100915063445.7d8ccd4d@schatten.dmk.lab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Sep 2010 21:45:49 -0700
-Message-ID: <1284525949.26719.153.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        balbir@linux.vnet.ibm.com, rguenther@novell.com, matz@novell.com
+In-Reply-To: <201009151007.43232.knikanth@suse.de>
+References: <20100915092239.C9D9.A69D9226@jp.fujitsu.com> <201009151007.43232.knikanth@suse.de>
+Message-Id: <20100915134347.C9EB.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 15 Sep 2010 13:46:36 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-15 at 06:34 +0200, Florian Mickler wrote:
-> But for the interactive mode I had STDIN in mind. 
-> And now that I checked, it is indeed possible. I have a quick prove of
-> concept for an get_maintainer.pl --interactive mode that shows you the
-> cc's, lists their commits  and let's you choose whom to add to the cc
-> (using STDERR, as git-send-email.pl obviously expects adresses on
-> STDOUT).
-> I haven't experimented much with it, but if it works out expect a
-> patch. But first I need some coffee and breakfast, as it's morning
-> over here. :-)
+> On Wednesday 15 September 2010 05:54:31 KOSAKI Motohiro wrote:
+> > > /proc/$pid/smaps broken: After swapout/swapin private dirty mappings
+> > > become clean.
+> > >
+> > > When a page with private file mapping becomes dirty, the vma will be in
+> > > both i_mmap tree and anon_vma list. The /proc/$pid/smaps will account
+> > > these pages as dirty and backed by the file.
+> > >
+> > > But when those dirty pages gets swapped out, and when they are read back
+> > > from swap, they would be marked as clean, as it should be, as they are
+> > > part of swap cache now.
+> > >
+> > > But the /proc/$pid/smaps would report the vma as a mapping of a file and
+> > > it is clean. The pages are actually in same state i.e., dirty with
+> > > respect to file still, but which was once reported as dirty is now being
+> > > reported as clean to user-space.
+> > >
+> > > This confuses tools like gdb which uses this information. Those tools
+> > > think that those pages were never modified and it creates problem when
+> > > they create dumps.
+> > >
+> > > The file mapping of the vma also cannot be broken as pages never read
+> > > earlier, will still have to come from the file. Just that those dirty
+> > > pages have become clean anonymous pages.
+> > >
+> > > During swaping in, restoring the exact state as dirty file-backed pages
+> > > before swapout would be useless, as there in no real bug. Breaking the
+> > > vma with only anonymous pages as seperate vmas unnecessary may not be a
+> > > good thing as well. So let us just export the information that a
+> > > file-backed vma has anonymous dirty pages.
+> > 
+> > Why can't gdb check Swap: field in smaps? I think Swap!=0 mean we need dump
+> >  out.
+> > 
+> 
+> Yes. When the page is swapped out it is accounted in "Swap:".
+> 
+> > Am I missing anything?
+> > 
+> 
+> But when it gets swapped in back to memory, it is removed from "Swap:" and 
+> added to "Private_Clean:" instead of "Private_Dirty:".
 
-I suggest you don't need to patch get_maintainer.pl,
-but should add another script that calls it and/or
-uses git commands directly.
+Here is the code.
+I think the page will become dirty, again.
 
-cheers, Joe
+--------------------------------------------------------------
+int try_to_free_swap(struct page *page)
+{
+        VM_BUG_ON(!PageLocked(page));
+
+        if (!PageSwapCache(page))
+                return 0;
+        if (PageWriteback(page))
+                return 0;
+        if (page_swapcount(page))
+                return 0;
+
+        delete_from_swap_cache(page);
+        SetPageDirty(page);
+        return 1;
+}
+
 
 
