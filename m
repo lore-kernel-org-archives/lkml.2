@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab0IOWl7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 18:41:59 -0400
-Received: from smtp102.sbc.mail.re3.yahoo.com ([66.196.96.85]:21219 "HELO
-	smtp102.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754760Ab0IOWl5 (ORCPT
+	id S1754866Ab0IOWmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 18:42:08 -0400
+Received: from smtp105.sbc.mail.gq1.yahoo.com ([67.195.14.108]:25344 "HELO
+	smtp105.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754818Ab0IOWmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 18:41:57 -0400
+	Wed, 15 Sep 2010 18:42:05 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: zPUL5rYVM1leUjJCKEr.bpbb_9JGj4vdoqNqngm_gnFnTvJ
- EMrPGpJZ9mEzMQzXEDhUwVYxQRhSZNH1IM2yBmxx8DwOLn99ZeBlv.woKWUN
- 1.F2CBmTML2amSPzEzID77Xix826xJJDJpJWJZ5RM0WBF.wTgsbvh1dM0ulN
- Z.sYsXWrIxilrDN3WUotnGy91qUeP1a7mjnLG.OlrvIbHAp2xVxGI0itNxgC
- meXNkzSMgeoeXx617wvy_ZaqvhwJNuU5R1s_3.roX10Dn9bxm3tqStBjMnXz
- hK1TX40h5JOM0CeWC1YNWh2IGyEuSAB3lcZbpFOf3Az3N4Mn_JLPJk6twwTu
- LdGerg8ZNT_rrLLK1PJhjyDmIhj6aXfPB9j7lcvmULJLoh5JSQ_1rqHltjL4
- lnexUlXbGoGqCyrWBcBPxkPbQWGgk0.SmrPoH3FogxrigyVawGNqvGKohsLD
- oH90Fny7V_3fZ
+X-YMail-OSG: xbjLvFAVM1lmsUvgw9pumGZul3uDyet6rApzDIMKJEPFGUI
+ 5dEOxt29pGONWGKY9GWLrMc.2.0gAUJRWgvTeVgOz1zrpkc6GGweT8oN14Lt
+ LWNMJW9Zm_YEfw1zh5D8baIRmm4W_mR03vXP4NdCdE4zmrkCWY1zNkNR2vFJ
+ VBfOwmCi6HXkP9P3DbM_CNBmsOH2RRGPiP2grr4msCypzclwxKMNT8Cbmn4f
+ jicuyMV64r0kToJisaxlTreMk0mxSSTsFlGJqOG9jnIrPNg0n1QFRyjK6Sk.
+ Sjv9y68hP2edYxM40qG6.U21vZ2P6d3qPGLlRA_HMqaksZ1U_Ulp_ctquB4Y
+ Z8WpCw2JvaEg.7e592Q--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -29,9 +27,9 @@ Cc: Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
         Douglas Gilbert <dgilbert@interlog.com>,
         Joe Eykholt <jeykholt@cisco.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH v2 1/2] tcm: Add support for BIDI-COMMANDS and XDWRITE_READ_10 emulation
-Date: Wed, 15 Sep 2010 15:41:52 -0700
-Message-Id: <1284590512-6233-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH v2 1/2] tcm: Add support for BIDI operation and XDWRITE_READ_10 emulation
+Date: Wed, 15 Sep 2010 15:42:01 -0700
+Message-Id: <1284590521-6254-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -52,8 +50,8 @@ and sets up the new struct se_cmd->transport_xor_callback() completion function
 at transport_xor_callback().  It then updates transport_new_cmd_obj() to handle the
 BIDI READ case.
 
-It also adds support for checking BIDI READ data poaylods in transport_generic_map_mem_to_cmd()
-to signal the allocation of struct se_transport_task->t_mem_bidi_list in the same function.
+It also adds support for DMA_BIDIRECTIONAL to transport_generic_map_mem_to_cmd()
+to setup struct se_transport_task->t_mem_bidi_list for BIDI READ payloads
 
 *) memory mapping:
 
