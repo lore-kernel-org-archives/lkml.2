@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab0IOPpn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 11:45:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45490 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754672Ab0IOPpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 11:45:41 -0400
-Date: Wed, 15 Sep 2010 17:39:27 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-Message-ID: <20100915153927.GA1065@redhat.com>
-References: <1284483745.13351.71.camel@localhost.localdomain>
- <20100914182707.GB15549@redhat.com>
- <1284490143.13351.82.camel@localhost.localdomain>
- <20100914190156.GA16037@redhat.com>
- <1284492983.13351.95.camel@localhost.localdomain>
- <20100915051241.GA25340@redhat.com>
- <1284531675.24603.259.camel@localhost.localdomain>
- <20100915101000.GB28016@redhat.com>
- <1284562354.2573.12.camel@localhost.localdomain>
- <20100915150412.GA679@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100915150412.GA679@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754484Ab0IOQAu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 12:00:50 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34288 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754350Ab0IOQAt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 12:00:49 -0400
+Date: Wed, 15 Sep 2010 08:59:10 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for September 15 (bkl-related)
+Message-Id: <20100915085910.a137904f.randy.dunlap@oracle.com>
+In-Reply-To: <20100915142954.6a36f52d.sfr@canb.auug.org.au>
+References: <20100915142954.6a36f52d.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 05:04:12PM +0200, Michael S. Tsirkin wrote:
-> On Wed, Sep 15, 2010 at 07:52:34AM -0700, Shirley Ma wrote:
-> > On Wed, 2010-09-15 at 12:10 +0200, Michael S. Tsirkin wrote:
-> > > Another issue is that macvtap can be bound to almost
-> > > anything, including e.g. a tap device or a bridge,
-> > > which might hang on to skb fragments for unlimited time.
-> > > Zero copy TX won't easily work there.
-> > > I can imagine either somehow triggering a data copy after the
-> > > fact (hard), or detecting such devices and avoiding
-> > > zero copy (unfortunate for guest to guest, and drivers
-> > > will need tuning).
-> > 
-> > So far macvtap zero copy patch is limited to lower devices supports high
-> > memory DMA, it doesn't apply to a tap device or a bridge.
+On Wed, 15 Sep 2010 14:29:54 +1000 Stephen Rothwell wrote:
+
+> Hi all,
 > 
-> Okay. What about macvtap in bridge mode?
+> Changes since 20100914:
+> 
+> New Trees:
+> 	bkl-config
+> 	bkl-trivial
+> 	bkl-llseek
+> 	bkl-vfs
+> 
+> Removed trees:  (at maintainer's request)
+> 	limits
+> 	bkl-core
+> 	bkl-procfs
+> 	bkl-ioctl
+> 
+> The bkl-trivial tree gained a conflict against Linus' tree.
+> 
+> The bkl-llseek tree gained a conflict against the rr tree.
+> 
+> The bkl-vfs tree gained conflicts against the usb and nilfs2 trees.
+> 
+> ----------------------------------------------------------------------------
 
-In fact, I rechecked: both bridge and loopback have NETIF_F_HIGHDMA set.
-So maybe we should check NETIF_F_NETNS_LOCAL ...
+(1)
+drivers/pnp/isapnp/proc.c:50: error: expected '}' before 'else'
 
-macvtap in bridged mode is interesting as well.
+(2) when CONFIG_SCSI_PROC_FS is not enabled:
+drivers/scsi/sg.c:233: error: 'sg_mutex' undeclared (first use in this function)
+drivers/scsi/sg.c:1096: error: 'sg_mutex' undeclared (first use in this function)
 
-> > > >  Don't you think once I address vhost_add_used_and_signal update
-> > > > issue, it is a simple and complete patch for macvtap TX zero copy?
-> > > > 
-> > > > Thanks
-> > > > Shirley
-> > > 
-> > > I like the fact that the patch is simple. Unfortunately
-> > > I suspect it'll stop being simple by the time it's complete :) 
-> > 
-> > I can make a try. :)
-> > 
-> > Thanks
-> > Shirley
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
