@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab0IOLHO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 07:07:14 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:47006 "EHLO kernel.dk"
+	id S1753262Ab0IOLIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 07:08:01 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37143 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752381Ab0IOLHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 07:07:13 -0400
-Message-ID: <4C90A8E0.4050807@kernel.dk>
-Date: Wed, 15 Sep 2010 13:07:12 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752381Ab0IOLIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 07:08:00 -0400
+Date: Wed, 15 Sep 2010 14:07:45 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: "Balbi, Felipe" <balbi@ti.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [Discussion] USB: musb-gadget: how to fix ZLP issue in
+ musb_g_tx
+Message-ID: <20100915110745.GP3393@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <AANLkTinPVUBNJoOR496KgSy2TT0f6i1f5xEKVhKod2R=@mail.gmail.com>
+ <20100915105641.GO3393@legolas.emea.dhcp.ti.com>
+ <AANLkTi=gYSsxSHqAur+isj_UinVLC-YWkdmi5j_vkSUV@mail.gmail.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: fix an address space warning in blk-map.c
-References: <1284478956-13664-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1284478956-13664-1-git-send-email-namhyung@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=gYSsxSHqAur+isj_UinVLC-YWkdmi5j_vkSUV@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-14 17:42, Namhyung Kim wrote:
-> Change type of 2nd parameter of blk_rq_aligned() into unsigned long
-> and remove unnecessary casting. Now we can call it with 'uaddr'
-> instead of 'ubuf' in __blk_rq_map_user() so that it can remove
-> following warnings from sparse:
-> 
->  block/blk-map.c:57:31: warning: incorrect type in argument 2 (different address spaces)
->  block/blk-map.c:57:31:    expected void *addr
->  block/blk-map.c:57:31:    got void [noderef] <asn:1>*ubuf
-> 
-> However blk_rq_map_kern() needs one more local variable to handle it.
+Hi,
 
-Thanks, applied to for-2.6.37/core
+On Wed, Sep 15, 2010 at 06:02:22AM -0500, Ming Lei wrote:
+>If so, once the dma interrupt comes, will request->actual be same
+>with request->length in musb_g_tx?  And if it is true, could we remove the
+>check for 'is_dma'?
+
+see that is_dma is set to true by just checking if dma in enabled in
+txcsr, it might be that dma didn't complete everything and you need to
+write txpktrdy by hand to send last short packet. So to remove that you
+would need to re-work a bit more code.
+
+You need to know when this is a dma IRQ or an endpoint IRQ.
 
 -- 
-Jens Axboe
-
+balbi
