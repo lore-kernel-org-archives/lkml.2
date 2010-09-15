@@ -1,101 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab0IOKOV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 06:14:21 -0400
-Received: from mail-ww0-f66.google.com ([74.125.82.66]:50629 "EHLO
-	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab0IOKOT (ORCPT
+	id S1753090Ab0IOKOz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 06:14:55 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35382 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab0IOKOy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 06:14:19 -0400
+	Wed, 15 Sep 2010 06:14:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:reply-to:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=CkD+N8H6wH5AHTaJS+EgqO8hnBTKBwjs9kxOPuPdrMrPzAqbUMZekH8ekK6qQi4Hnl
-         Eei5cul3u/7u0gpwtEKthBgd1rOxkQ0KcXaanuwcs0uYrCXOXovykb//wfHlTBy+nGrZ
-         Kva5QorlBAYIaEOqw21q3mPFPyqA9/+DXzK4s=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FQEjyBFAl+7wFGzEldN8fqC3+4FyF4C+jNuyznyZIm+7BvEfKORe51IqCrQZ5GNPUa
+         eKPDpoiao7SkhuxM8RXIRXH2GD0MKBeZuQ47WOg+hiS5lVjUfz7JXmKdeMx4chh+t3fA
+         s5GGzbYOAddXTjvZiEFi6EsPCuI9GKArNiW0U=
 MIME-Version: 1.0
-Reply-To: pghatwork@gmail.com
-In-Reply-To: <AANLkTinctyN3d4o8vq-8pAH67FaoAXOiX3=kobWkNTms@mail.gmail.com>
-References: <AANLkTikTBdr4U1bPtfXWhgLgdvWDMPJrFjBCktPL40dg@mail.gmail.com>
-	<20100910143813.4af0a3ce@lxorguk.ukuu.org.uk>
-	<AANLkTikXFmaZs+XzrOWjWoLPhyUy0CEXfOQMqP=Xp1cO@mail.gmail.com>
-	<AANLkTinctyN3d4o8vq-8pAH67FaoAXOiX3=kobWkNTms@mail.gmail.com>
-Date: Wed, 15 Sep 2010 12:14:17 +0200
-X-Google-Sender-Auth: 4ypo9GFAIEQouxGXmsB1EddVRxo
-Message-ID: <AANLkTi=CNdDYVGNmx17miVBXfPgnWY0X59Ao1pRQDN=S@mail.gmail.com>
-Subject: Re: Request for input regarding new driver in MFD for
- GPS_Bluetooth_FM controller CG2900
-From: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
-To: Pavan Savoy <pavan_savoy@sify.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+In-Reply-To: <4C909B2E.3000909@ru.mvista.com>
+References: <4C8E18AD.8000502@ru.mvista.com>
+	<AANLkTinei3u1OZ-eBiUTDF=PDjwxLcL6rBpt7iNQJgHJ@mail.gmail.com>
+	<4C8E4882.6040600@ru.mvista.com>
+	<4C8E50CC.3080705@ru.mvista.com>
+	<20100914065604.GD2601@legolas.emea.dhcp.ti.com>
+	<4C8F527E.40408@ru.mvista.com>
+	<20100914105402.GD7554@legolas.emea.dhcp.ti.com>
+	<4C8FB60D.1080906@ru.mvista.com>
+	<20100915065345.GC3393@legolas.emea.dhcp.ti.com>
+	<4C909961.10001@ru.mvista.com>
+	<20100915100553.GJ3393@legolas.emea.dhcp.ti.com>
+	<4C909B2E.3000909@ru.mvista.com>
+Date: Wed, 15 Sep 2010 18:14:51 +0800
+Message-ID: <AANLkTi=A+1ThrRTNjWoFbXr-G1OUnpThEwG5rCgGirzC@mail.gmail.com>
+Subject: Re: [RESEND/PATCH 5/6] USB: musb-gadget: complete request only if
+ data is transfered over
+From: Ming Lei <tom.leiming@gmail.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: balbi@ti.com, "greg@kroah.com" <greg@kroah.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        "Gadiyar, Anand" <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavan,
-
-Thanks for your comments and sorry for me taking time to answer your mail.
-See below for answers.
-
+2010/9/15 Sergei Shtylyov <sshtylyov@mvista.com>:
+> Hello.
 >
-> ok bit more of information ....
-> We don;t use the hciattach, instead we have our own daemon which opens
-> up the UART and installs the line discipline (not N_HCI, but similar
-> one called N_SHARED) when the hciconfig hci0 up happens or even when
-> /dev/radio0 (FM V4L2 device) happens or when generic GPS character
-> device (/dev/tigps) happens...
-
-:-) We also have our own user space application for opening the UART
-and setting the line disc since we don't  want to depend completely on
-hciattach, which contains more than we need, and also misses stuff
-that we want to do towards our specific controller. I just used it as
-an example since that is the common BlueZ way to open the Bluetooth
-transport.
-
+> On 15-09-2010 14:05, Felipe Balbi wrote:
 >
-> There is non-mailine driver which gets modified to get into mainline @
-> http://git.omapzoom.org/?p=kernel/omap.git;a=tree;f=drivers/misc/ti-
-> st;h=028ff4a739d7b59b94d0c613b5ef510ff338b65d;hb=refs/heads/p-android-
-> omap-2.6.32
+>>> I didn't say it was duplicate for DMA, just too late.
 >
-> feel free to have a look at it...
-> Yes our solution too works with BlueZ and non-exactly a MFD driver but
-> it is a simple platform device driver .. by looks of things the driver
-> can run as is for your chip too .. (except for the firmware search and
-> download part .. may be...).
-
-Your code is in a lot of ways similar to ours (which is not so strange
-since you address the same market with your chip as we do with ours),
-but there are several differences that would at least for now make it
-impossible for us to use your driver. When we post our first patches
-(which will hopefully be in a few days) you can see for yourself. But
-I don't think there is a simple way for us to re-use your driver.
-
+>> how come ? we need to send ZLP before giving back the request.
 >
-> and note when we would want to support SPI transport for the same, we
-> plan a SPI-TTY driver ('ala usb-serial) where-in we can install this
-> N_TI_WL line discipline on that /dev/ttySPI0 device, and the SPI
-> related stuff to be handled by the spi-tty.c which registers itself as
-> a tty_device and a tty_driver ....
+>   Well, look at the code ionce again. We need to send ZLP *after*
+> request->actual == request->length, but as the check is inserted after the
+> ZLP send, ZLP *may* be sent once the first DMA completes, not the last.
 
-Our SPI usage will be a bit different, where we don't use TTY for our
-driver. We will use the SPI directly instead.
+Yes, it is really a problem, as said by balbi.  And the problem should be
+in the check for zlp or the 'is_dma' condition.
 
->
-> regards,
-> Pavan
->
-> On Fri, Sep 10, 2010 at 2:07 PM, Pavan Savoy <pavan_savoy@sify.com>
-> wrote:
-> > Can you directly make use of the ti-st driver which is currently
-> staged?
-> > It has _EXACTLY_ the same thing.... which is REALLY REALLY surprising
-> !!!
+But this patch is not addressed for the zlp problem, and is is only for
+completing the request only if the data transfer in usb_request
+is over, as explained before, right?
 
-:-) As I said earlier this is quite natural since both TI and
-ST-Ericsson address the same market segments.
-
-/P-G
+-- 
+Lei Ming
