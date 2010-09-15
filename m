@@ -1,49 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab0IOCz4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 22:55:56 -0400
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:50828 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752094Ab0IOCzx (ORCPT
+	id S1753292Ab0IODAR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 23:00:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4409 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752083Ab0IODAP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 22:55:53 -0400
-X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Sep 2010 22:55:53 EDT
-Date: Tue, 14 Sep 2010 20:48:40 -0600
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Simon Arlott <simon@fire.lp0.eu>, Jordan Crouse <jcrouse@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: GA-MA69VM-S2 requires pci=nocrs with 2.6.35.4
-Message-ID: <20100915024840.GA28781@helgaas.com>
-References: <de55082de958760245f23930b79ab42b7c54c838@8b5064a13e22126c1b9329f0dc35b8915774b7c3.invalid>
- <201009131716.18197.bjorn.helgaas@hp.com>
- <f041c95ed553edce2bb319fd31a9dc5402863437@8b5064a13e22126c1b9329f0dc35b8915774b7c3.invalid>
- <201009140817.18988.bjorn.helgaas@hp.com>
+	Tue, 14 Sep 2010 23:00:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,368,1280732400"; 
+   d="scan'208";a="554562460"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
+        "jdike@linux.intel.com" <jdike@linux.intel.com>
+Date: Wed, 15 Sep 2010 10:59:55 +0800
+Subject: RE: [RFC PATCH v10 00/16] Provide a zero-copy method on KVM
+ virtio-net.
+Thread-Topic: [RFC PATCH v10 00/16] Provide a zero-copy method on KVM
+ virtio-net.
+Thread-Index: ActRlOYtH68YtZ09T+2kSRiE9ExrjQC7PaDA
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D792B8C81533A@shsmsx502.ccr.corp.intel.com>
+References: <1284198789-5358-1-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1284198789-5358-1-git-send-email-xiaohui.xin@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201009140817.18988.bjorn.helgaas@hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 08:17:16AM -0600, Bjorn Helgaas wrote:
-> On Tuesday, September 14, 2010 05:38:49 am Simon Arlott wrote:
-> > On Tue, September 14, 2010 00:16, Bjorn Helgaas wrote:
+Herbert,
+Any comments on the modifications of the net core and driver side of this patch?
 
-> > > I can see from the stalled.txt log that we did call sb600_disable_hpet_bar(),
-> > > and it *looks* like that should have disabled BAR 1.  But apparently it
-> > > didn't.  Would you mind collecting another log with the patch below?
-> > 
-> > Whenever I next need to reboot, I can try the patch, but that won't be soon...
-> 
-> OK.  Just let me know if/when you have any more information.  I opened
-> this bugzilla for this problem:
-> 
->   https://bugzilla.kernel.org/show_bug.cgi?id=18482
+Thanks
+Xiaohui
 
-I attached an updated patch to this bugzilla, so please give it
-a try when it's convenient for you.
-
-Bjorn
+>-----Original Message-----
+>From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On
+>Behalf Of xiaohui.xin@intel.com
+>Sent: Saturday, September 11, 2010 5:53 PM
+>To: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
+>mst@redhat.com; mingo@elte.hu; davem@davemloft.net; herbert@gondor.apana.org.au;
+>jdike@linux.intel.com
+>Subject: [RFC PATCH v10 00/16] Provide a zero-copy method on KVM virtio-net.
+>
+>We provide an zero-copy method which driver side may get external
+>buffers to DMA. Here external means driver don't use kernel space
+>to allocate skb buffers. Currently the external buffer can be from
+>guest virtio-net driver.
+>
+>The idea is simple, just to pin the guest VM user space and then
+>let host NIC driver has the chance to directly DMA to it.
+>The patches are based on vhost-net backend driver. We add a device
+>which provides proto_ops as sendmsg/recvmsg to vhost-net to
+>send/recv directly to/from the NIC driver. KVM guest who use the
+>vhost-net backend may bind any ethX interface in the host side to
+>get copyless data transfer thru guest virtio-net frontend.
+>
+>patch 01-10:  	net core and kernel changes.
+>patch 11-13:  	new device as interface to mantpulate external buffers.
+>patch 14: 	for vhost-net.
+>patch 15:	An example on modifying NIC driver to using napi_gro_frags().
+>patch 16:	An example how to get guest buffers based on driver
+>		who using napi_gro_frags().
+>
+>The guest virtio-net driver submits multiple requests thru vhost-net
+>backend driver to the kernel. And the requests are queued and then
+>completed after corresponding actions in h/w are done.
+>
+>For read, user space buffers are dispensed to NIC driver for rx when
+>a page constructor API is invoked. Means NICs can allocate user buffers
+>from a page constructor. We add a hook in netif_receive_skb() function
+>to intercept the incoming packets, and notify the zero-copy device.
+>
+>For write, the zero-copy deivce may allocates a new host skb and puts
+>payload on the skb_shinfo(skb)->frags, and copied the header to skb->data.
+>The request remains pending until the skb is transmitted by h/w.
+>
+>We provide multiple submits and asynchronous notifiicaton to
+>vhost-net too.
+>
+>Our goal is to improve the bandwidth and reduce the CPU usage.
+>Exact performance data will be provided later.
+>
+>What we have not done yet:
+>	Performance tuning
+>
+>what we have done in v1:
+>	polish the RCU usage
+>	deal with write logging in asynchroush mode in vhost
+>	add notifier block for mp device
+>	rename page_ctor to mp_port in netdevice.h to make it looks generic
+>	add mp_dev_change_flags() for mp device to change NIC state
+>	add CONIFG_VHOST_MPASSTHRU to limit the usage when module is not load
+>	a small fix for missing dev_put when fail
+>	using dynamic minor instead of static minor number
+>	a __KERNEL__ protect to mp_get_sock()
+>
+>what we have done in v2:
+>
+>	remove most of the RCU usage, since the ctor pointer is only
+>	changed by BIND/UNBIND ioctl, and during that time, NIC will be
+>	stopped to get good cleanup(all outstanding requests are finished),
+>	so the ctor pointer cannot be raced into wrong situation.
+>
+>	Remove the struct vhost_notifier with struct kiocb.
+>	Let vhost-net backend to alloc/free the kiocb and transfer them
+>	via sendmsg/recvmsg.
+>
+>	use get_user_pages_fast() and set_page_dirty_lock() when read.
+>
+>	Add some comments for netdev_mp_port_prep() and handle_mpassthru().
+>
+>what we have done in v3:
+>	the async write logging is rewritten
+>	a drafted synchronous write function for qemu live migration
+>	a limit for locked pages from get_user_pages_fast() to prevent Dos
+>	by using RLIMIT_MEMLOCK
+>
+>
+>what we have done in v4:
+>	add iocb completion callback from vhost-net to queue iocb in mp device
+>	replace vq->receiver by mp_sock_data_ready()
+>	remove stuff in mp device which access structures from vhost-net
+>	modify skb_reserve() to ignore host NIC driver reserved space
+>	rebase to the latest vhost tree
+>	split large patches into small pieces, especially for net core part.
+>
+>
+>what we have done in v5:
+>	address Arnd Bergmann's comments
+>		-remove IFF_MPASSTHRU_EXCL flag in mp device
+>		-Add CONFIG_COMPAT macro
+>		-remove mp_release ops
+>	move dev_is_mpassthru() as inline func
+>	fix a bug in memory relinquish
+>	Apply to current git (2.6.34-rc6) tree.
+>
+>what we have done in v6:
+>	move create_iocb() out of page_dtor which may happen in interrupt context
+>	-This remove the potential issues which lock called in interrupt context
+>	make the cache used by mp, vhost as static, and created/destoryed during
+>	modules init/exit functions.
+>	-This makes multiple mp guest created at the same time.
+>
+>what we have done in v7:
+>	some cleanup prepared to suppprt PS mode
+>
+>what we have done in v8:
+>	discarding the modifications to point skb->data to guest buffer directly.
+>	Add code to modify driver to support napi_gro_frags() with Herbert's comments.
+>	To support PS mode.
+>	Add mergeable buffer support in mp device.
+>	Add GSO/GRO support in mp deice.
+>	Address comments from Eric Dumazet about cache line and rcu usage.
+>
+>what we have done in v9:
+>	v8 patch is based on a fix in dev_gro_receive().
+>	But Herbert did not agree with the fix we have sent out.
+>	And he suggest another fix. v9 is modified to base on that fix.
+>
+>
+>what we have done in v10:
+>	Fix a partial csum error.
+>	Cleanup some unused fields with struct page_info{} in mp device.
+>	Modify kmem_cache_zalloc() to kmem_cache_alloc() based on Michael S. Thirkin.
+>
+>Performance:
+>	We have seen the performance data request from mailling-list.
+>	And we are now looking into this.
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
