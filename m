@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab0IONwO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 09:52:14 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59014 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752344Ab0IONwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 09:52:13 -0400
-Date: Wed, 15 Sep 2010 15:51:55 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: Christopher Yeoh <cyeoh@au1.ibm.com>, linux-kernel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC][PATCH] Cross Memory Attach
-Message-ID: <20100915135155.GA25210@elte.hu>
-References: <20100915104855.41de3ebf@lilo>
- <4C90A6C7.9050607@redhat.com>
+	id S1753840Ab0IONzD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 09:55:03 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38003 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344Ab0IONzA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 09:55:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=UQGI2uSMn5+1gGl7veqHIfNF2pL3LYVrkI3U4Obsnb8MLBo6UdbVwDoRgjeSTpDJcp
+         AryGNRaU6+ColkFGyRv4ZVgW1lG+thD9T1sV3RuWHrb5/+N/LALOIPL6xmHpc+wgs/s5
+         9EA2PA5FHN2gd2MSoRo4WPran47+4BhR2QF9I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C90A6C7.9050607@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
-	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
-	[score: 0.1099]
+In-Reply-To: <alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
+References: <tip-54ff7e595d763d894104d421b103a89f7becf47c@git.kernel.org>
+	<alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
+Date: Wed, 15 Sep 2010 09:54:59 -0400
+Message-ID: <AANLkTineVitetJgKS2AsZUMvuuxDhcPF45dFWK8rtFfd@mail.gmail.com>
+Subject: Re: [PATCH RFC] x86: hpet: Avoid the readback penalty
+From: John Drescher <drescherjm@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Nix <nix@esperi.org.uk>,
+        Artur Skawina <art.08.09@gmail.com>,
+        Damien Wyart <damien.wyart@free.fr>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Avi Kivity <avi@redhat.com> wrote:
-
->  On 09/15/2010 03:18 AM, Christopher Yeoh wrote:
+On Wed, Sep 15, 2010 at 9:11 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 14 Sep 2010, tip-bot for Thomas Gleixner wrote:
+>> x86: hpet: Work around hardware stupidity
 >
-> > The basic idea behind cross memory attach is to allow MPI programs 
-> > doing intra-node communication to do a single copy of the message 
-> > rather than a double copy of the message via shared memory.
-> 
-> If the host has a dma engine (many modern ones do) you can reduce this 
-> to zero copies (at least, zero processor copies).
-> 
-> > The following patch attempts to achieve this by allowing a 
-> > destination process, given an address and size from a source 
-> > process, to copy memory directly from the source process into its 
-> > own address space via a system call. There is also a symmetrical 
-> > ability to copy from the current process's address space into a 
-> > destination process's address space.
-> 
-> Instead of those two syscalls, how about a vmfd(pid_t pid, ulong 
-> start, ulong len) system call which returns an file descriptor that 
-> represents a portion of the process address space.  You can then use 
-> preadv() and pwritev() to copy memory, and io_submit(IO_CMD_PREADV) 
-> and io_submit(IO_CMD_PWRITEV) for asynchronous variants (especially 
-> useful with a dma engine, since that adds latency).
-> 
-> With some care (and use of mmu_notifiers) you can even mmap() your 
-> vmfd and access remote process memory directly.
-> 
-> A nice property of file descriptors is that you can pass them around 
-> securely via SCM_RIGHTS.  So a process can create a window into its 
-> address space and pass it to other processes.
-> 
-> (or you could just use a shared memory object and pass it around)
+> After my brain recovered from yesterdays exposure with the x86 timer
+> horror, I came up with a different solution for this problem, which
+> avoids the readback of the compare register completely. It works
+> nicely on my affected ATI system, but needs some exposure to the other
+> machines.
+>
+> Comments ?
+>
 
-Interesting, but how will that work in a scalable way with lots of 
-non-thread tasks?
+I can test this on my i7 machine in tonight (around 12 hours from now).
 
-Say we have 100 processes. We'd have to have 100 fd's - each has to be 
-passed to a new worker process.
-
-In that sense a PID is just as good of a reference as an fd - it can be 
-looked up lockless, etc. - but has the added advantage that it can be 
-passed along just by number.
-
-Thanks,
-
-	Ingo
+John
