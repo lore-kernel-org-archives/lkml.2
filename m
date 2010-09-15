@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097Ab0IOW1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 18:27:47 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:32729 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab0IOW1q (ORCPT
+	id S1754231Ab0IOWeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 18:34:06 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47063 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942Ab0IOWeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 18:27:46 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz1432N98dNzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L8T7PD-01-CL7-02
-X-M-MSG: 
-Date: Thu, 16 Sep 2010 00:27:12 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
- counters
-Message-ID: <20100915222712.GU13563@erda.amd.com>
-References: <20100912095202.GF13563@erda.amd.com>
- <20100913143713.GK13563@erda.amd.com>
- <20100914174132.GN13563@erda.amd.com>
- <20100915162034.GO13563@erda.amd.com>
- <AANLkTimWoE5XiYSr8jx=RFS5Nb9d4_wWe=c-W3oMj8dH@mail.gmail.com>
- <20100915203948.GB28455@lenovo>
+	Wed, 15 Sep 2010 18:34:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=WOZdcqNceKg0uUMZRqD1aXpb8fT1XmwNFSApIneRWCiPZsz4NuPAk+ou5n6yDQ6+lC
+         xLdaLcXBkMSBXlyYNsvgdCD7oq7HfLlt8l2hnHT6b6txubQgsgtX7/9Zcy0wYLvtoGi4
+         O5O4OFgg8bTNJbkW0gr5yzbGxheDWjbrKYwqU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100915203948.GB28455@lenovo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+In-Reply-To: <AANLkTi=wydMEm4=kEuxLvNMfAWE6kzAKQ4wBHKFfgXGZ@mail.gmail.com>
+References: <AANLkTikHM+o_FCgnVzGhs8UtQ_geXFzKNQpGSZiEN7sx@mail.gmail.com>
+	<AANLkTimd_sRpOYaurOT0iSbfd0pMZvhxgUcaqbQvSobu@mail.gmail.com>
+	<AANLkTimO1UK+WA8Mc3Myi3gWBpD=D7tXDOX104a8NMKW@mail.gmail.com>
+	<87mxrjgjre.fsf@deeprootsystems.com>
+	<AANLkTi=oSTBhceK+oMKH8r9ybeMo4XYcQ+hYQOTRY94u@mail.gmail.com>
+	<AANLkTi=wydMEm4=kEuxLvNMfAWE6kzAKQ4wBHKFfgXGZ@mail.gmail.com>
+Date: Thu, 16 Sep 2010 01:34:04 +0300
+Message-ID: <AANLkTi=cH+P6v1t2K5SCBY7EV08egqV2j6b0avJomv7u@mail.gmail.com>
+Subject: Re: OMAP3 DSP MMU fault + off mode issue
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: venki kaps <venkiece2005@gmail.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>, omar.ramirez@ti.com,
+        h-kanigeri2@ti.com, ameya.palande@nokia.com, fernando.lugo@ti.com,
+        x0hebbar@ti.com, ernesto@ti.com, s-anna@ti.com, grgupta@ti.com,
+        ivan.gomez@ti.com, ext-andriy.shevchenko@nokia.com, x0095078@ti.com,
+        deepak.chitriki@ti.com, nm@ti.com, ext-phil.2.carmody@nokia.com,
+        ohad@wizery.com, devel@driverdev.osuosl.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Sep 15, 2010 at 10:21:10PM +0200, Stephane Eranian wrote:
-> > When you do perf record foo, it's equivalent to
-> > perf record -e cycles:uk -F 1000 foo
+On Wed, Sep 15, 2010 at 7:03 PM, venki kaps <venkiece2005@gmail.com> wrote:
+> In latest kernels (Eg, linux-2.6.36-rc3),The MMU-Fault debugging
+> enhancements code is moved under CONFIG_TIDSPBRIDGE_BACKTRACE.
 
-Yes, thanks.
-
-I am asking because I have observed up to 4 back-to-back nmis from the
-same counter when enabling an event. The period is not yet adjusted.
-We should avoid those short sampling periods in the beginning and
-better start with too long periods. Didn't look at the implementation
-so far. I know this is not easy to handle because this very much
-depends on the event we measure.
-
-Maybe we start the counter with a delay and then calculate period =
-duration - delay, later decreasing the delay until the frequency is
-adjusted but keeping the total sampling rate more or less constant.
-
--Robert
+Indeed, I added that configuration in order to avoid that possibly
+troublesome code in a production system. I haven't seen it working
+properly yet.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Felipe Contreras
