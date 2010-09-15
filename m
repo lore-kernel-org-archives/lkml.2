@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab0IOHIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 03:08:16 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47093 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab0IOHIP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 03:08:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=dQHLUF5x/Q1kZ9lVvEN7C3ltsZ0b9tvc9a/9yWb2AjbnQnUNbNSD/1EnwBnDgds1IM
-         f52HULiSmP7XsEvDtY+Xig7j0lvptXa//1rffMpl2+ZCvGertTaD1ZCtGO8yjJPOPkVv
-         TVzOquSMPSxlGlprgbC3PcW4v5ITZgTKtT7z4=
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Subject: Re: Interrupt latency on some 945GM platforms
-Date: Wed, 15 Sep 2010 10:07:09 +0300
-User-Agent: KMail/1.13.5 (Linux/2.6.35-gentoo-r5-anarsoul; KDE/4.5.1; i686; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <201009132336.17310.anarsoul@gmail.com> <201009141529.53179.anarsoul@gmail.com> <20100914224111.GA14467@sucs.org>
-In-Reply-To: <20100914224111.GA14467@sucs.org>
+	id S1752565Ab0IOHJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 03:09:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55786 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752163Ab0IOHJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 03:09:55 -0400
+Date: Wed, 15 Sep 2010 10:09:37 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: "tom.leiming@gmail.com" <tom.leiming@gmail.com>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Felipe Balbi <me@felipebalbi.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [RESEND/PATCH 6/6] USB: musb-gadget: fix dma length in txstate
+Message-ID: <20100915070936.GD3393@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1283873014-32511-1-git-send-email-tom.leiming@gmail.com>
+ <1283873014-32511-7-git-send-email-tom.leiming@gmail.com>
+ <4C8FB43D.5020604@ru.mvista.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2859747.OCWnCCh9yA";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009151007.14212.anarsoul@gmail.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <4C8FB43D.5020604@ru.mvista.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2859747.OCWnCCh9yA
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 14, 2010 at 12:43:25PM -0500, Sergei Shtylyov wrote:
+>Hello.
+>
+>tom.leiming@gmail.com wrote:
+>
+>> From: Ming Lei <tom.leiming@gmail.com>
+>
+>> DMA length should not go beyond the availabe space of request buffer,
+>> so fix it.
+>
+>> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+>> Cc: David Brownell <dbrownell@users.sourceforge.net>
+>> Cc: Felipe Balbi <me@felipebalbi.com>
+>> Cc: Anand Gadiyar <gadiyar@ti.com>
+>> Cc: Mike Frysinger <vapier@gentoo.org>
+>> Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+>
+>[...]
+>
+>> diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+>> index fa826f9..cacae96 100644
+>> --- a/drivers/usb/musb/musb_gadget.c
+>> +++ b/drivers/usb/musb/musb_gadget.c
+>> @@ -300,6 +300,11 @@ static void txstate(struct musb *musb, struct musb_request *req)
+>>  #ifndef	CONFIG_MUSB_PIO_ONLY
+>>  	if (is_dma_capable() && musb_ep->dma) {
+>>  		struct dma_controller	*c = musb->dma_controller;
+>> +		size_t request_size;
+>> +
+>> +		/* setup DMA, then program endpoint CSR */
+>> +		request_size = min_t(size_t, request->length - request->actual,
+>> +					musb_ep->dma->max_len);
+>
+>    Er, you're moving this from under #ifdef CONFIG_USB_INVENTRA_DMA to the
+>common code, right? Do you know that not all DMA drivers initialize max_len? For
+>example CPPI driver doesn't, so it's left at zero. You're going to break DMA for
+>CPPI. Please extend your patch, adding cppi_dma.c to it.
 
-=D0=92 =D1=81=D0=BE=D0=BE=D0=B1=D1=89=D0=B5=D0=BD=D0=B8=D0=B8 =D0=BE=D1=82 =
-15 of September 2010 01:41:11 =D0=B0=D0=B2=D1=82=D0=BE=D1=80 Sitsofe Wheele=
-r =D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=BB:
-> On Tue, Sep 14, 2010 at 03:29:48PM +0300, Vasily Khoruzhick wrote:
-> > =D0=92 =D1=81=D0=BE=D0=BE=D0=B1=D1=89=D0=B5=D0=BD=D0=B8=D0=B8 =D0=BE=D1=
-=82 14 of September 2010 12:52:57 =D0=B0=D0=B2=D1=82=D0=BE=D1=80 Thomas Gle=
-ixner=20
-=D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=BB:
-> > > Can you try with NOHZ enabled and the following on the kernel command=
-=20
-line:
-> > >     processor.max_cstate=3D1
-> >=20
-> > It works in this case (gears in glxgears move smoothly)
-> >=20
-> > > If that works, then try
-> > >=20
-> > >     processor.max_cstate=3D2
-> >=20
-> > Nope, it doesn't work with max_cstate=3D2
->=20
-> Perhaps intel_idle is being used? Any mention of it in dmesg?
+yes, please set some value on cppi_dma.c max_len field.
 
-Nope, acpi_idle is being used, intel_idle doesn't support my CPU (it's c2d=
-=20
-t5500):
-
-[    0.653279] intel_idle: does not run on family 6 model 15
-
-Regards
-Vasily
-
---nextPart2859747.OCWnCCh9yA
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEABECAAYFAkyQcKIACgkQRM6pQpltKE7cxACfXLp0iVRlxazmUnJINtstDaPw
-ETQAn0k7uo7Udgqt6VUkH8f67kHfE9RQ
-=Odja
------END PGP SIGNATURE-----
-
---nextPart2859747.OCWnCCh9yA--
+-- 
+balbi
