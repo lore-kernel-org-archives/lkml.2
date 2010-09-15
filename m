@@ -1,43 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab0IOH4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 03:56:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40268 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752288Ab0IOH4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 03:56:07 -0400
-Message-ID: <4C907C0A.7060607@redhat.com>
-Date: Wed, 15 Sep 2010 09:55:54 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+	id S1752409Ab0IOICi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:02:38 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:46725 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab0IOICe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 04:02:34 -0400
+Date: Wed, 15 Sep 2010 10:03:26 +0200
+From: Nico Schottelius <nico-linux-20100709@schottelius.org>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Nico Schottelius <nico-linux-20100709@schottelius.org>,
+        mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        peterz@infradead.org, flo@xssn.at, lenb@kernel.org,
+        jbarnes@virtuousgeek.org, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, rjw@sisk.pl, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/urgent] x86, tsc: Fix a preemption leak in
+ restore_sched_clock_state()
+Message-ID: <20100915080326.GB2666@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20100709@schottelius.org>,
+	Jeff Chua <jeff.chua.linux@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+	mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+	a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+	peterz@infradead.org, flo@xssn.at, lenb@kernel.org,
+	jbarnes@virtuousgeek.org, suresh.b.siddha@intel.com,
+	tglx@linutronix.de, rjw@sisk.pl, linux-tip-commits@vger.kernel.org
+References: <1284150773.402.122.camel@laptop>
+ <tip-55496c896b8a695140045099d4e0175cf09d4eae@git.kernel.org>
+ <20100913074233.GA2674@schottelius.org>
+ <20100913084619.GC23741@elte.hu>
+ <AANLkTikN5AxqmdHhkkrE9SmhaMxkFjRXnOSguyeJDtXM@mail.gmail.com>
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@web.de>
-CC: Zachary Amsden <zamsden@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [KVM timekeeping 10/35] Fix deep C-state TSC desynchronization
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-11-git-send-email-zamsden@redhat.com> <4C8F3C03.50306@siemens.com> <4C8F3FF3.9080803@redhat.com> <4C8F5125.5060505@siemens.com> <4C8FCDE2.3000202@redhat.com> <4C8FF690.7030107@web.de> <4C9007F2.9020205@redhat.com> <4C905AFC.5020706@web.de>
-In-Reply-To: <4C905AFC.5020706@web.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K8nIJk4ghYZn606h"
+Content-Disposition: inline
+In-Reply-To: <AANLkTikN5AxqmdHhkkrE9SmhaMxkFjRXnOSguyeJDtXM@mail.gmail.com>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.36-rc3-00464-g84e1d83 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 09/15/2010 07:34 AM, Jan Kiszka wrote:
-> Do you think kvm-kmod could contribute to this? As I said, I'm on a 34
-> kernel, namely SUSE's 2.6.34.4-0.1-desktop. Any feature missing in that
-> kernel latest KVM depends for proper tsc/kvm-clock handling? If you have
-> any concerns, I could try to run kvm.git natively later on.
 
-In case you aren't aware of it, 'make localmodconfig' is an easy way to 
-transition from a distro kernel to a locally built kernel.
+--K8nIJk4ghYZn606h
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Jeff Chua [Tue, Sep 14, 2010 at 06:56:42AM +0800]:
+> On Mon, Sep 13, 2010 at 4:46 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Nico Schottelius <nico-linux-20100709@schottelius.org> wrote:
+> >
+> >> Good morning,
+> >>
+> >> tip-bot for Peter Zijlstra [Sat, Sep 11, 2010 at 07:49:07AM +0000]:
+> >> > Commit-ID: =A055496c896b8a695140045099d4e0175cf09d4eae
+> >> > Gitweb: =A0 =A0 http://git.kernel.org/tip/55496c896b8a695140045099d4=
+e0175cf09d4eae
+> >> > Author: =A0 =A0 Peter Zijlstra <peterz@infradead.org>
+> >> > AuthorDate: Fri, 10 Sep 2010 22:32:53 +0200
+> >> > Committer: =A0Ingo Molnar <mingo@elte.hu>
+> >> > CommitDate: Sat, 11 Sep 2010 09:47:07 +0200
+> >> >
+> >> > x86, tsc: Fix a preemption leak in restore_sched_clock_state()
+>=20
+> > Might make sense to bisect it ... as long as you remember to do this at
+> > every bisection step that has the hung-suspend bug:
+>=20
+> Have you tried just running "echo mem >/sys/power/state" to see if that w=
+orks?
 
+I'm using pm-suspend, which probably does nothing else.
+
+The strange thing though is that I cannot reproduce the bachlight off
+situation anymore :-/
+
+Will keep an eye on it and report back if I see anything not working.
+
+Regarding suspend: No crash so far! (after about 10-15 suspend & resumes)
+
+Cheers,
+
+Nico
+
+--=20
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+
+--K8nIJk4ghYZn606h
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkyQfc4ACgkQ19zI5DGHffCzTgCeKJGLomfesoB3iI1kCPVdO2HT
+7aIAn2NsOTqSs33Hh6p/Lkbc9fnXwxwz
+=B4ZG
+-----END PGP SIGNATURE-----
+
+--K8nIJk4ghYZn606h--
