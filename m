@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab0IOIuX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:50:23 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58809 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab0IOIuW (ORCPT
+	id S1752984Ab0IOIvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:51:54 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:21326 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385Ab0IOIvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:50:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH] virtio_blk: remove BKL leftovers
-Date: Wed, 15 Sep 2010 10:50:07 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-References: <20100914232723.GA14175@lst.de>
-In-Reply-To: <20100914232723.GA14175@lst.de>
+	Wed, 15 Sep 2010 04:51:52 -0400
+X-SpamScore: -21
+X-BigFish: VS-21(zz1432N98dNzz1202hzz15d4Rz32i2a8h87h43h)
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L8S5RM-02-876-02
+X-M-MSG: 
+Date: Wed, 15 Sep 2010 10:48:33 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] KVM: MMU: Use base_role.nxe for mmu.nx
+Message-ID: <20100915084833.GH17759@amd.com>
+References: <1284479173-4515-1-git-send-email-joerg.roedel@amd.com>
+ <1284479173-4515-3-git-send-email-joerg.roedel@amd.com>
+ <20100914220836.GA3553@amt.cnet>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009151050.07833.arnd@arndb.de>
-X-Provags-ID: V02:K0:iycSX+oIUPL/5YyDwKl4y6bJ0VIo83CUVh6uNpATfKp
- su0KCX22GJ801qRaUyK0J1HgjmNx1gt0hLTw2a5RS1j3NEPigL
- ZGG1k97MCp299XihZZ6iROS1ixnV/7QjUUDEk2iS1xqo2I7oDD
- TlBRf/U6/6KmSCDHLzpAXKNjURAbd8LcgDmGhmPTletO4wiyfY
- zEPhfWYhnm4FfBogOEwVw==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100914220836.GA3553@amt.cnet>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 September 2010, Christoph Hellwig wrote:
-> Remove the BKL usage added in "block: push down BKL into .locked_ioctl".
-> Virtio-blk doesn't use the BKL for anything, and doesn't implement any
-> ioctl command by itself, but only uses the generic scsi_cmd_ioctl
-> which is fine without the BKL.
+On Tue, Sep 14, 2010 at 06:08:37PM -0400, Marcelo Tosatti wrote:
 > 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> For tdp better set base_role.nxe to zero, otherwise duplicate tdp
+> pagetables can be created if the guest switches between nx/non-nx.
+>
 
-Looks good. Rusty, do you have a tree you want to stick this into?
-If not, I can add it to my 'config' series' and drop my other patch
-from the 'trivial' series.
+This does not work because bit 63 is marked as reserved if base_role.nxe
+is 0. If the walk_addr_generic function then runs with tdp enabled it
+would report a set nx bit as a rsvd fault.
+We also can't use is_nx() in those path because it does not distinguish
+between l1 and l2 nx. Are there guests that switch the efer.nx bit
+regularly enough so that it matters? If so I would suggest to drop this
+patch and keep mmu.nx.
 
-	Arnd
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
