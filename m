@@ -1,94 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab0IOHyf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 03:54:35 -0400
-Received: from purin.rz.uni-konstanz.de ([134.34.240.45]:10978 "EHLO
-	purin.rz.uni-konstanz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666Ab0IOHye (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 03:54:34 -0400
-X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Sep 2010 03:54:34 EDT
-X-IronPort-AV: E=Sophos;i="4.56,370,1280707200"; 
-   d="scan'208";a="9177848"
-From: Alexander Holupirek <alex@holupirek.de>
-To: john@johnmccutchan.com
-Cc: rlove@rlove.org, linux-kernel@vger.kernel.org,
-        Alexander Holupirek <alex@holupirek.de>
-Subject: [PATCH] include: linux: [fan|fs|i]notify: Fixed typos and a coding style issue
-Date: Wed, 15 Sep 2010 09:21:21 +0200
-Message-Id: <1284535281-32085-1-git-send-email-alex@holupirek.de>
-X-Mailer: git-send-email 1.7.1
+	id S1752506Ab0IOH4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 03:56:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40268 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752288Ab0IOH4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 03:56:07 -0400
+Message-ID: <4C907C0A.7060607@redhat.com>
+Date: Wed, 15 Sep 2010 09:55:54 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Jan Kiszka <jan.kiszka@web.de>
+CC: Zachary Amsden <zamsden@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [KVM timekeeping 10/35] Fix deep C-state TSC desynchronization
+References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-11-git-send-email-zamsden@redhat.com> <4C8F3C03.50306@siemens.com> <4C8F3FF3.9080803@redhat.com> <4C8F5125.5060505@siemens.com> <4C8FCDE2.3000202@redhat.com> <4C8FF690.7030107@web.de> <4C9007F2.9020205@redhat.com> <4C905AFC.5020706@web.de>
+In-Reply-To: <4C905AFC.5020706@web.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-s/Writtable/Writeable
-s/Unwrittable/Unwriteable
+  On 09/15/2010 07:34 AM, Jan Kiszka wrote:
+> Do you think kvm-kmod could contribute to this? As I said, I'm on a 34
+> kernel, namely SUSE's 2.6.34.4-0.1-desktop. Any feature missing in that
+> kernel latest KVM depends for proper tsc/kvm-clock handling? If you have
+> any concerns, I could try to run kvm.git natively later on.
 
-While there fixed an coding style issue reported by
-./scripts/checkpatch.pl --file include/linux/fanotify.h
+In case you aren't aware of it, 'make localmodconfig' is an easy way to 
+transition from a distro kernel to a locally built kernel.
 
-Signed-off-by: Alexander Holupirek <alex@holupirek.de>
----
- include/linux/fanotify.h         |    6 +++---
- include/linux/fsnotify_backend.h |    4 ++--
- include/linux/inotify.h          |    4 ++--
- 3 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
-index 63531a6..e36baba 100644
---- a/include/linux/fanotify.h
-+++ b/include/linux/fanotify.h
-@@ -6,8 +6,8 @@
- /* the following events that user-space can register for */
- #define FAN_ACCESS		0x00000001	/* File was accessed */
- #define FAN_MODIFY		0x00000002	/* File was modified */
--#define FAN_CLOSE_WRITE		0x00000008	/* Unwrittable file closed */
--#define FAN_CLOSE_NOWRITE	0x00000010	/* Writtable file closed */
-+#define FAN_CLOSE_WRITE		0x00000008	/* Unwriteable file closed */
-+#define FAN_CLOSE_NOWRITE	0x00000010	/* Writeable file closed */
- #define FAN_OPEN		0x00000020	/* File was opened */
- 
- #define FAN_EVENT_ON_CHILD	0x08000000	/* interested in child events */
-@@ -88,7 +88,7 @@ struct fanotify_response {
- #define FAN_EVENT_METADATA_LEN (sizeof(struct fanotify_event_metadata))
- 
- #define FAN_EVENT_NEXT(meta, len) ((len) -= (meta)->event_len, \
--				   (struct fanotify_event_metadata*)(((char *)(meta)) + \
-+				   (struct fanotify_event_metadata *)(((char *)(meta)) + \
- 				   (meta)->event_len))
- 
- #define FAN_EVENT_OK(meta, len)	((long)(len) >= (long)FAN_EVENT_METADATA_LEN && \
-diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
-index e40190d..0403fc4 100644
---- a/include/linux/fsnotify_backend.h
-+++ b/include/linux/fsnotify_backend.h
-@@ -27,8 +27,8 @@
- #define FS_ACCESS		0x00000001	/* File was accessed */
- #define FS_MODIFY		0x00000002	/* File was modified */
- #define FS_ATTRIB		0x00000004	/* Metadata changed */
--#define FS_CLOSE_WRITE		0x00000008	/* Writtable file was closed */
--#define FS_CLOSE_NOWRITE	0x00000010	/* Unwrittable file closed */
-+#define FS_CLOSE_WRITE		0x00000008	/* Writeable file was closed */
-+#define FS_CLOSE_NOWRITE	0x00000010	/* Unwriteable file closed */
- #define FS_OPEN			0x00000020	/* File was opened */
- #define FS_MOVED_FROM		0x00000040	/* File was moved from X */
- #define FS_MOVED_TO		0x00000080	/* File was moved to Y */
-diff --git a/include/linux/inotify.h b/include/linux/inotify.h
-index d33041e..134082b 100644
---- a/include/linux/inotify.h
-+++ b/include/linux/inotify.h
-@@ -29,8 +29,8 @@ struct inotify_event {
- #define IN_ACCESS		0x00000001	/* File was accessed */
- #define IN_MODIFY		0x00000002	/* File was modified */
- #define IN_ATTRIB		0x00000004	/* Metadata changed */
--#define IN_CLOSE_WRITE		0x00000008	/* Writtable file was closed */
--#define IN_CLOSE_NOWRITE	0x00000010	/* Unwrittable file closed */
-+#define IN_CLOSE_WRITE		0x00000008	/* Writeable file was closed */
-+#define IN_CLOSE_NOWRITE	0x00000010	/* Unwriteable file closed */
- #define IN_OPEN			0x00000020	/* File was opened */
- #define IN_MOVED_FROM		0x00000040	/* File was moved from X */
- #define IN_MOVED_TO		0x00000080	/* File was moved to Y */
 -- 
-1.7.1
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
