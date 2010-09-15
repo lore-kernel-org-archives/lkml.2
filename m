@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957Ab0IOOwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 10:52:41 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:56786 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753015Ab0IOOwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 10:52:39 -0400
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100915101000.GB28016@redhat.com>
-References: <20100914152231.GA13105@redhat.com>
-	 <1284480025.13351.49.camel@localhost.localdomain>
-	 <20100914162952.GB13560@redhat.com>
-	 <1284483745.13351.71.camel@localhost.localdomain>
-	 <20100914182707.GB15549@redhat.com>
-	 <1284490143.13351.82.camel@localhost.localdomain>
-	 <20100914190156.GA16037@redhat.com>
-	 <1284492983.13351.95.camel@localhost.localdomain>
-	 <20100915051241.GA25340@redhat.com>
-	 <1284531675.24603.259.camel@localhost.localdomain>
-	 <20100915101000.GB28016@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Sep 2010 07:52:34 -0700
-Message-ID: <1284562354.2573.12.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754360Ab0IOOxR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 10:53:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42165 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753350Ab0IOOxP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 10:53:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100916001232.0c496b02@lilo>
+References: <20100915104855.41de3ebf@lilo> <4C90A6C7.9050607@redhat.com> <20100916001232.0c496b02@lilo>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 15 Sep 2010 07:52:39 -0700
+Message-ID: <AANLkTikkAs5jUPhsq5=_Efv-MbbfCNmT10rcV6VUc54D@mail.gmail.com>
+Subject: Re: [RFC][PATCH] Cross Memory Attach
+To: Christopher Yeoh <cyeoh@au1.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-15 at 12:10 +0200, Michael S. Tsirkin wrote:
-> Another issue is that macvtap can be bound to almost
-> anything, including e.g. a tap device or a bridge,
-> which might hang on to skb fragments for unlimited time.
-> Zero copy TX won't easily work there.
-> I can imagine either somehow triggering a data copy after the
-> fact (hard), or detecting such devices and avoiding
-> zero copy (unfortunate for guest to guest, and drivers
-> will need tuning).
+On Wed, Sep 15, 2010 at 7:42 AM, Christopher Yeoh <cyeoh@au1.ibm.com> wrote:
+> On Wed, 15 Sep 2010 12:58:15 +0200
+> Avi Kivity <avi@redhat.com> wrote:
+>
+>>   On 09/15/2010 03:18 AM, Christopher Yeoh wrote:
+>> > The basic idea behind cross memory attach is to allow MPI programs
+>> > doing intra-node communication to do a single copy of the message
+>> > rather than a double copy of the message via shared memory.
+>>
+>> If the host has a dma engine (many modern ones do) you can reduce
+>> this to zero copies (at least, zero processor copies).
+>
+> Yes, this interface doesn't really support that. I've tried to keep
+> things really simple here, but I see potential for increasing
+> level/complexity of support with diminishing returns:
 
-So far macvtap zero copy patch is limited to lower devices supports high
-memory DMA, it doesn't apply to a tap device or a bridge.
+I think keeping things simple is a good goal. The vmfd() approach
+might be worth looking into, but your patch certainly is pretty simple
+as-is.
 
-> >  Don't you think once I address vhost_add_used_and_signal update
-> > issue, it is a simple and complete patch for macvtap TX zero copy?
-> > 
-> > Thanks
-> > Shirley
-> 
-> I like the fact that the patch is simple. Unfortunately
-> I suspect it'll stop being simple by the time it's complete :) 
+That said, it's also buggy. You can't just get a task and then do
 
-I can make a try. :)
+  down_read(task->mm->mmap_sem)
 
-Thanks
-Shirley
+on it. Not even if you have a refcount. The mm may well go away. You
+need to do the same thing "get_task_mm()" does, ie look up the mm
+under task_lock, and get a reference to it. You already get the
+task-lock for permission testing, so it looks like doing it there
+would likely work out.
 
+> 3. ability to map part of another process's address space directly into
+>   the current one. Would have setup/tear down overhead, but this would
+>   be useful specifically for reduction operations where we don't even
+>   need to really copy the data once at all, but use it directly in
+>   arithmetic/logical operations on the receiver.
+
+Don't even think about this. If you want to map another tasks memory,
+use shared memory. The shared memory code knows about that. The races
+for anything else are crazy.
+
+                   Linus
