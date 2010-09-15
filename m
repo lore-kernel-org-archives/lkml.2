@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab0IODXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 23:23:07 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46275 "EHLO smtps.tip.net.au"
+	id S1754248Ab0IOD0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 23:26:49 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46405 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753517Ab0IODXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 23:23:05 -0400
-Date: Wed, 15 Sep 2010 13:23:03 +1000
+	id S1752244Ab0IOD0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 23:26:48 -0400
+Date: Wed, 15 Sep 2010 13:26:46 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Arnd Bergmann <arnd@arndb.de>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>
-Subject: linux-next: manual merge of the bkl-trivial tree with the  tree
-Message-Id: <20100915132303.1b97756c.sfr@canb.auug.org.au>
+        Amit Shah <amit.shah@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: linux-next: manual merge of the bkl-llseek tree with the rr tree
+Message-Id: <20100915132646.4aef58f8.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,29 +24,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Arnd,
 
-Today's linux-next merge of the bkl-trivial tree got a conflict in
-drivers/staging/spectra/ffsport.c between commit
-f8d261d39a24f9f612cb8b2d5ad68654727543cd ("staging: spectra needs
-<linux/slab.h>") from Linus' tree and commit
-a0293f8b84de7525083a97c7215c74ce1a066aeb ("block: autoconvert trivial BKL
-users to private mutex") from the bkl-trivial tree.
+Today's linux-next merge of the bkl-llseek tree got a conflict in
+drivers/char/virtio_console.c between commit
+a0e1acd65fa6c2da3b039a67ac30cc3b73466c37 ("virtio: console: Send SIGIO to
+processes that request it for host events") from the rr tree and commit
+7f09912dd2169ca9ce56c5e3428c7b4c5e92e727 ("llseek: automatically
+add .llseek fop") from the bkl-llseek tree.
 
-Just context changes.  I fixed it up (see below) and can carry it for a
-while.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 -- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/staging/spectra/ffsport.c
-index fa21a0f,905a67c..0000000
---- a/drivers/staging/spectra/ffsport.c
-+++ b/drivers/staging/spectra/ffsport.c
-@@@ -27,8 -27,6 +27,7 @@@
-  #include <linux/kthread.h>
-  #include <linux/log2.h>
-  #include <linux/init.h>
-- #include <linux/smp_lock.h>
- +#include <linux/slab.h>
+diff --cc drivers/char/virtio_console.c
+index f7adfd3,524907b..0000000
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@@ -824,7 -728,7 +824,8 @@@ static const struct file_operations por
+  	.write = port_fops_write,
+  	.poll  = port_fops_poll,
+  	.release = port_fops_release,
+ +	.fasync = port_fops_fasync,
++ 	.llseek = noop_llseek,/* read and write both use no f_pos */
+  };
   
-  /**** Helper functions used for Div, Remainder operation on u64 ****/
-  
+  /*
