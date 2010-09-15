@@ -1,96 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab0IOLqX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 07:46:23 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35796 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907Ab0IOLqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 07:46:21 -0400
-Date: Wed, 15 Sep 2010 13:45:56 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        will.deacon@arm.com, matthltc@us.ibm.com, mahesh@linux.vnet.ibm.com,
-        rostedt@goodmis.org, tglx@linutronix.de, prasad@linux.vnet.ibm.com,
-        greenrd@greenrd.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] hw breakpoints: Fix pid namespace bug
-Message-ID: <20100915114556.GA18760@elte.hu>
-References: <f63454af09fb1915717251570423eb9ddd338340.1284407762.git.matthltc@us.ibm.com>
- <tip-d958077d007d98125766d11e82da2fd6497b91d6@git.kernel.org>
- <20100915114150.GA5621@nowhere>
+	id S1752309Ab0IOLt4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 07:49:56 -0400
+Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:43473 "EHLO
+	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab0IOLtw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 07:49:52 -0400
+Date: Wed, 15 Sep 2010 13:48:20 +0200
+From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 0/8] [Resend] ideapad: using EC command to control
+ rf/camera power
+Message-ID: <20100915114820.GA22415@darkside.kls.lan>
+Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
+	Ike Panhc <ike.pan@canonical.com>,
+	David Woodhouse <dwmw2@infradead.org>,
+	"platform-driver-x86@vger.kernel.org" <platform-driver-x86@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+	Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Corentin Chary <corentincj@iksaif.net>,
+	Randy Dunlap <randy.dunlap@oracle.com>,
+	"Brown, Len" <len.brown@intel.com>,
+	Matthew Garrett <mjg@redhat.com>
+References: <20100820090824.GA23186@darkside.kls.lan>
+ <4C7505A2.3000402@canonical.com>
+ <20100830181954.GE31068@darkside.kls.lan>
+ <4C7E3DE0.7030209@canonical.com>
+ <20100901195617.GD32589@darkside.kls.lan>
+ <4C80BA81.20701@canonical.com>
+ <20100909181714.GA14951@darkside.kls.lan>
+ <4C89D3C0.7040105@canonical.com>
+ <20100910071155.GA1263@darkside.kls.lan>
+ <4C909C57.5030107@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
 Content-Disposition: inline
-In-Reply-To: <20100915114150.GA5621@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -0.4
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-0.4 required=5.9 tests=BAYES_00,URG_BIZ autolearn=no SpamAssassin version=3.2.5
-	1.6 URG_BIZ                BODY: Contains urgent matter
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4C909C57.5030107@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+--Q68bSM7Ycu6FN28Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, Sep 15, 2010 at 10:03:06AM +0000, tip-bot for Matt Helsley wrote:
-> > Commit-ID:  d958077d007d98125766d11e82da2fd6497b91d6
-> > Gitweb:     http://git.kernel.org/tip/d958077d007d98125766d11e82da2fd6497b91d6
-> > Author:     Matt Helsley <matthltc@us.ibm.com>
-> > AuthorDate: Mon, 13 Sep 2010 13:01:18 -0700
-> > Committer:  Ingo Molnar <mingo@elte.hu>
-> > CommitDate: Wed, 15 Sep 2010 10:43:59 +0200
-> > 
-> > hw breakpoints: Fix pid namespace bug
-> > 
-> > Hardware breakpoints can't be registered within pid namespaces
-> > because tsk->pid is passed rather than the pid in the current
-> > namespace.
-> > 
-> > (See https://bugzilla.kernel.org/show_bug.cgi?id=17281 )
-> > 
-> > This is a quick fix demonstrating the problem but is not the
-> > best method of solving the problem since passing pids internally
-> > is not the best way to avoid pid namespace bugs. Subsequent patches
-> > will show a better solution.
-> > 
-> > Much thanks to Frederic Weisbecker <fweisbec@gmail.com> for doing the
-> > bulk of the work finding this bug.
-> > 
-> > Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Robin Green <greenrd@greenrd.org>
-> > Cc: Prasad <prasad@linux.vnet.ibm.com>
-> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Will Deacon <will.deacon@arm.com>
-> > Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-> > LKML-Reference: <f63454af09fb1915717251570423eb9ddd338340.1284407762.git.matthltc@us.ibm.com>
-> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> > ---
-> 
-> 
-> Aiie, you have been too fast too apply that on -tip, [...]
+On Wed, Sep 15, 2010 at 06:13:43PM +0800, Ike Panhc wrote:
+> On 09/10/2010 03:11 PM, Mario 'BitKoenig' Holbe wrote:
+> > 	rfkill_init_sw_state(priv->rfk[dev], 0);
+> eh.. after review the code, the rfkill_init_sw_state shall not give 0 as =
+the default
+> value. I shall read the value from EC and set reasonable value.
 
-Came from Peter.
+Well - probably :)
+The current behaviour results in each device becoming unblocked no
+matter what state it had before.
 
-> [...] especially it should go to perf/urgent with some stable backport 
-> tags. And I need to test them as he said that was only compile tested.
+> > 	if (no_bt_rfkill && (ideapad_rfk_data[dev].type =3D=3D RFKILL_TYPE_BLU=
+ETOOTH))
+> > 		ideapad_rfk_set(???, 0);
+> Do you mean driver still setup the rfkill for bluetooth, but we can not b=
+lock
+> bluetooth when module parameter set to 1? This idea is better then no_bt_=
+rfkill.
+> Will modify the driver.
 
-No problem, mind cherry-picking it into an urgent pull request? The 
-overlap is not an issue.
+Well, not really... I mean: in the no_bt_rfkill=3D1 case the driver should
+(try to) unblock the bluetooth device in order to activate it to make it
+further manageable via it's own (hci) rfkill switch.
+I don't think setting up the ideapad_bluetooth rfkill is necessary for
+that. Not setting it up is IMHO the right direction. Just the device
+activation is missing.
 
-> Lemme just check it really fixes the issue and I'll package his three 
-> patches in according pull requests.
 
-Ok!
+Mario
+--=20
+Tower: "Say fuelstate." Pilot: "Fuelstate."
+Tower: "Say again." Pilot: "Again."
+Tower: "Arghl, give me your fuel!" Pilot: "Sorry, need it by myself..."
 
-Thanks,
+--Q68bSM7Ycu6FN28Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-	Ingo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEVAwUBTJCyhBS+e2HeSPbpAQKllgf/a37tMSBXNoEgyUayAp7cn5/vt/wMUSTs
+dJHRZiJb4Mvp1m+/7v41+TOW8HAMEqFfuCv8WgVugE027BbVS7yNWRAJuJJuoaMW
+7obwBYsLM6PyqCyAOQ/L/y4L3mg+Grfw+PF1rsqxMlLKqU4rx9j1BWlNxjcObrEw
+oi2naSaRw1MzzA690HEDyXlNtE4ZLc9iOKQek3SNFy76u5tOqTFn+G1IlGRQfpAf
+4hgYwIi2yOCXDk7KdvP9fihgkmyAZg9pKlbCzzlvEtkyublsg9eNWcyE6DfWOCVI
+QJWpAeYXKkbtq5zRvqqrlvq5CmgoAIZKpaGVnAz52I9EG2cvLyrqwg==
+=TJAN
+-----END PGP SIGNATURE-----
+
+--Q68bSM7Ycu6FN28Q--
