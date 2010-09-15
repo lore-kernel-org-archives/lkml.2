@@ -1,81 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab0IOS1Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 14:27:25 -0400
-Received: from fmmailgate01.web.de ([217.72.192.221]:45771 "EHLO
-	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754937Ab0IOS1X (ORCPT
+	id S1754902Ab0IOSh1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 14:37:27 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:39969 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab0IOSh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 14:27:23 -0400
-Message-ID: <4C911002.8060807@web.de>
-Date: Wed, 15 Sep 2010 20:27:14 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Wed, 15 Sep 2010 14:37:26 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        lnxninja@linux.vnet.ibm.com
+References: <20100914234714.8AF506EA@kernel.beaverton.ibm.com>
+	<20100915133303.0b232671.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100915135016.C9F1.A69D9226@jp.fujitsu.com>
+	<1284531262.27089.15725.camel@nimitz>
+Date: Wed, 15 Sep 2010 11:37:18 -0700
+In-Reply-To: <1284531262.27089.15725.camel@nimitz> (Dave Hansen's message of
+	"Tue, 14 Sep 2010 23:14:22 -0700")
+Message-ID: <m1d3se7t0h.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: Zachary Amsden <zamsden@redhat.com>, kvm@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [KVM timekeeping 10/35] Fix deep C-state TSC desynchronization
-References: <1282291669-25709-1-git-send-email-zamsden@redhat.com> <1282291669-25709-11-git-send-email-zamsden@redhat.com> <4C8F3C03.50306@siemens.com> <4C904685.9090402@redhat.com> <4C907F3D.6070709@web.de> <20100915123215.GC3688@mothafucka.localdomain>
-In-Reply-To: <20100915123215.GC3688@mothafucka.localdomain>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigEE01C0A1315678CF4B7531C2"
-X-Provags-ID: V01U2FsdGVkX1+iSacU4mosy+BuNDw5kPgvczCAl7/wafuovP3o
-	locow4qrbMsMPGy53PinZte9VznH7BD6DR+f6PD2a+oay9E6cg
-	yN5aHjOrM=
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Dave Hansen <dave@linux.vnet.ibm.com>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC][PATCH] update /proc/sys/vm/drop_caches documentation
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigEE01C0A1315678CF4B7531C2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Dave Hansen <dave@linux.vnet.ibm.com> writes:
 
-Am 15.09.2010 14:32, Glauber Costa wrote:
-> On Wed, Sep 15, 2010 at 10:09:33AM +0200, Jan Kiszka wrote:
->>> In any case, I'll proceed with the forcing of unstable TSC and HPET
->>> clocksource and see what happens.
->>
->> I tried that before, but it did not trigger the issue that kvm-clock
->> guests no longer boot properly. This only happens if the TSC is marked=
+> On Wed, 2010-09-15 at 13:53 +0900, KOSAKI Motohiro wrote:
+>> > >  ==============================================================
+>> > >  
+>> > > diff -puN fs/drop_caches.c~update-drop_caches-documentation fs/drop_caches.c
+>> > > --- linux-2.6.git/fs/drop_caches.c~update-drop_caches-documentation	2010-09-14 15:44:29.000000000 -0700
+>> > > +++ linux-2.6.git-dave/fs/drop_caches.c	2010-09-14 15:58:31.000000000 -0700
+>> > > @@ -47,6 +47,8 @@ int drop_caches_sysctl_handler(ctl_table
+>> > >  {
+>> > >  	proc_dointvec_minmax(table, write, buffer, length, ppos);
+>> > >  	if (write) {
+>> > > +		WARN_ONCE(1, "kernel caches forcefully dropped, "
+>> > > +			     "see Documentation/sysctl/vm.txt\n");
+>> > 
+>> > Documentation updeta seems good but showing warning seems to be meddling to me.
+>> 
+>> Agreed.
+>> 
+>> If the motivation is blog's bogus rumor, this is no effective. I easily
+>> imazine they will write "Hey, drop_caches may output strange message, 
+>> but please ignore it!".
+>
+> Fair enough.  But, is there a point that we _should_ be warning?  If
+> someone is doing this every minute, or every hour, something is pretty
+> broken.  Should we at least be doing a WARN_ON() so that the TAINT_WARN
+> is set?
+>
+> I'm worried that there are users out there experiencing real problems
+> that aren't reporting it because "workarounds" like this just paper over
+> the issue.
 
->> unstable.
->=20
-> even artificially marked unstable ?
->=20
+For what it is worth.  I had a friend ask me about a system that had 50%
+of it's memory consumed by slab caches.  20GB out of 40GB.  The kernel
+was suse? 2.6.27 so it's old, but if you are curious.
+/proc/sys/vm/drop_caches does nothing in that case.
 
-Yes. As soon as I hack tsc_unstable to 1, things go wrong. When I hack
-it back to 0, guest that wants kvm-clock boots again and seem to run fine=
-=2E
+Thinking about it drop_caches is sufficiently limited I don't see
+drop_caches being even to mask problems so Dave I think your basic
+concern is overrated.
 
-This is issue #2, I guess. Issue #2 remains that the TSC is marked
-unstable. I have the feeling that this is bogus, maybe due to lacking
-suspend/resume awareness? The tsc clocksource does
+As for your documentation update your wording change seems to me to be
+more obtuse, and in a scolding tone.  If you want people not to use
+this facility you should educate people not scold them.
 
-	clocksource_tsc.cycle_last =3D 0;
+Perhaps something like:
 
-on resume...
+Calling /proc/sys/vm/drop_caches pessimizes system performance.  The
+pages freed by writing to drop_caches are easily repurposed when the
+need arises, but the kernel instead of wasting those pages by leaving
+them holding nothing, instead uses those pages to increase the size
+of the filesystem cache.  The larger filesystem cache increases
+the likely hood any filesystem access will get a cache hit and will not
+need to read from disk.
 
-Jan
-
-
---------------enigEE01C0A1315678CF4B7531C2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkyREAgACgkQitSsb3rl5xSxKQCfTEU0IbTC+pM5yLGTkhxWq2zI
-P1IAoN7BiZ7wvYgdon0Jq5PaxGKq7uRl
-=okRr
------END PGP SIGNATURE-----
-
---------------enigEE01C0A1315678CF4B7531C2--
+Eric
