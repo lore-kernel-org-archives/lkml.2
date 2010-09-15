@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab0IONpG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 09:45:06 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:40544 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab0IONpF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 09:45:05 -0400
+	id S1753478Ab0IONwO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 09:52:14 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59014 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752344Ab0IONwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 09:52:13 -0400
+Date: Wed, 15 Sep 2010 15:51:55 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Christopher Yeoh <cyeoh@au1.ibm.com>, linux-kernel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC][PATCH] Cross Memory Attach
+Message-ID: <20100915135155.GA25210@elte.hu>
+References: <20100915104855.41de3ebf@lilo>
+ <4C90A6C7.9050607@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20100915132731.GA20558@khazad-dum.debian.net>
-References: <1284284969.2928.18.camel@maxim-laptop> <1284427621.4127.7.camel@maxim-laptop>
- <4C8F2699.3020509@kernel.org> <AANLkTinGHB9fbLw1Cm5wvPLGy8QEuoBBmFiqpnvXiZ8R@mail.gmail.com>
- <1284507516.4963.2.camel@maxim-laptop> <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>
- <1284511071.3551.1.camel@maxim-laptop> <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>
- <20100915132731.GA20558@khazad-dum.debian.net>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 15 Sep 2010 15:44:48 +0200
-Message-ID: <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
-Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C90A6C7.9050607@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
+	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
+	[score: 0.1099]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 15:27, Henrique de Moraes Holschuh
-<hmh@hmh.eng.br> wrote:
-> On Wed, 15 Sep 2010, Kay Sievers wrote:
->> It's only the polling that should be able to trigger these events for
->> the device. the device itself can't report any changes to the host,
->> unless you have a SATA drive which can send AN (async notification)
->> events. But we disabled the AN support recently, because it was
->> running in loops on some boxes.
+
+* Avi Kivity <avi@redhat.com> wrote:
+
+>  On 09/15/2010 03:18 AM, Christopher Yeoh wrote:
 >
-> Is it so widespread or extremely difficult to detect, that it justifies
-> breaking AN for all users?
+> > The basic idea behind cross memory attach is to allow MPI programs 
+> > doing intra-node communication to do a single copy of the message 
+> > rather than a double copy of the message via shared memory.
+> 
+> If the host has a dma engine (many modern ones do) you can reduce this 
+> to zero copies (at least, zero processor copies).
+> 
+> > The following patch attempts to achieve this by allowing a 
+> > destination process, given an address and size from a source 
+> > process, to copy memory directly from the source process into its 
+> > own address space via a system call. There is also a symmetrical 
+> > ability to copy from the current process's address space into a 
+> > destination process's address space.
+> 
+> Instead of those two syscalls, how about a vmfd(pid_t pid, ulong 
+> start, ulong len) system call which returns an file descriptor that 
+> represents a portion of the process address space.  You can then use 
+> preadv() and pwritev() to copy memory, and io_submit(IO_CMD_PREADV) 
+> and io_submit(IO_CMD_PWRITEV) for asynchronous variants (especially 
+> useful with a dma engine, since that adds latency).
+> 
+> With some care (and use of mmu_notifiers) you can even mmap() your 
+> vmfd and access remote process memory directly.
+> 
+> A nice property of file descriptors is that you can pass them around 
+> securely via SCM_RIGHTS.  So a process can create a window into its 
+> address space and pass it to other processes.
+> 
+> (or you could just use a shared memory object and pass it around)
 
-Yes. It's not properly implemented, and many drives just always send
-an event on access, regardless if the media is changed or not. To work
-properly, it will need in-kernel media presence polling, which is
-being worked on. The current AN events, the stuff the drives send, and
-the way it is handled in the kernel, is just not usable.
+Interesting, but how will that work in a scalable way with lots of 
+non-thread tasks?
 
-> Anyway, if userspace thinks AN is available, it won't pool or touch
-> /dev/sr*, which would explain the problem (but one still would have to find
-> the root cause: why userspace thinks it doesn't need to pool?).
+Say we have 100 processes. We'd have to have 100 fd's - each has to be 
+passed to a new worker process.
 
-There is no userspace checking for AN support right now. It wouldn't
-work anyway. And the only thing that makes sense is to move the
-polling in the kernel regardless of AN support or not, and make
-userspace check for that and skip polling when the kernel takes care.
+In that sense a PID is just as good of a reference as an fd - it can be 
+looked up lockless, etc. - but has the added advantage that it can be 
+passed along just by number.
 
-Kay
+Thanks,
+
+	Ingo
