@@ -1,105 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409Ab0IOICi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:02:38 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:46725 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab0IOICe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:02:34 -0400
-Date: Wed, 15 Sep 2010 10:03:26 +0200
-From: Nico Schottelius <nico-linux-20100709@schottelius.org>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Nico Schottelius <nico-linux-20100709@schottelius.org>,
-        mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        peterz@infradead.org, flo@xssn.at, lenb@kernel.org,
-        jbarnes@virtuousgeek.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, rjw@sisk.pl, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/urgent] x86, tsc: Fix a preemption leak in
- restore_sched_clock_state()
-Message-ID: <20100915080326.GB2666@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20100709@schottelius.org>,
-	Jeff Chua <jeff.chua.linux@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-	mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-	a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-	peterz@infradead.org, flo@xssn.at, lenb@kernel.org,
-	jbarnes@virtuousgeek.org, suresh.b.siddha@intel.com,
-	tglx@linutronix.de, rjw@sisk.pl, linux-tip-commits@vger.kernel.org
-References: <1284150773.402.122.camel@laptop>
- <tip-55496c896b8a695140045099d4e0175cf09d4eae@git.kernel.org>
- <20100913074233.GA2674@schottelius.org>
- <20100913084619.GC23741@elte.hu>
- <AANLkTikN5AxqmdHhkkrE9SmhaMxkFjRXnOSguyeJDtXM@mail.gmail.com>
+	id S1752601Ab0IOIC5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:02:57 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45252 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752522Ab0IOICw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 04:02:52 -0400
+Date: Wed, 15 Sep 2010 10:02:35 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Christopher Yeoh <cyeoh@au1.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-mm@kvack.org
+Subject: Re: [RFC][PATCH] Cross Memory Attach
+Message-ID: <20100915080235.GA13152@elte.hu>
+References: <20100915104855.41de3ebf@lilo>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K8nIJk4ghYZn606h"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikN5AxqmdHhkkrE9SmhaMxkFjRXnOSguyeJDtXM@mail.gmail.com>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: kr (Linux 2.6.36-rc3-00464-g84e1d83 x86_64)
+In-Reply-To: <20100915104855.41de3ebf@lilo>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---K8nIJk4ghYZn606h
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(Interesting patch found on lkml, more folks Cc:-ed)
 
-Jeff Chua [Tue, Sep 14, 2010 at 06:56:42AM +0800]:
-> On Mon, Sep 13, 2010 at 4:46 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Nico Schottelius <nico-linux-20100709@schottelius.org> wrote:
-> >
-> >> Good morning,
-> >>
-> >> tip-bot for Peter Zijlstra [Sat, Sep 11, 2010 at 07:49:07AM +0000]:
-> >> > Commit-ID: =A055496c896b8a695140045099d4e0175cf09d4eae
-> >> > Gitweb: =A0 =A0 http://git.kernel.org/tip/55496c896b8a695140045099d4=
-e0175cf09d4eae
-> >> > Author: =A0 =A0 Peter Zijlstra <peterz@infradead.org>
-> >> > AuthorDate: Fri, 10 Sep 2010 22:32:53 +0200
-> >> > Committer: =A0Ingo Molnar <mingo@elte.hu>
-> >> > CommitDate: Sat, 11 Sep 2010 09:47:07 +0200
-> >> >
-> >> > x86, tsc: Fix a preemption leak in restore_sched_clock_state()
->=20
-> > Might make sense to bisect it ... as long as you remember to do this at
-> > every bisection step that has the hung-suspend bug:
->=20
-> Have you tried just running "echo mem >/sys/power/state" to see if that w=
-orks?
+* Christopher Yeoh <cyeoh@au1.ibm.com> wrote:
 
-I'm using pm-suspend, which probably does nothing else.
+> The basic idea behind cross memory attach is to allow MPI programs 
+> doing intra-node communication to do a single copy of the message 
+> rather than a double copy of the message via shared memory.
+> 
+> The following patch attempts to achieve this by allowing a destination 
+> process, given an address and size from a source process, to copy 
+> memory directly from the source process into its own address space via 
+> a system call. There is also a symmetrical ability to copy from the 
+> current process's address space into a destination process's address 
+> space.
+> 
+> Use of vmsplice instead was considered, but has problems. Since you 
+> need the reader and writer working co-operatively if the pipe is not 
+> drained then you block. Which requires some wrapping to do non 
+> blocking on the send side or polling on the receive. In all to all 
+> communication it requires ordering otherwise you can deadlock. And in 
+> the example of many MPI tasks writing to one MPI task vmsplice 
+> serialises the copying.
+> 
+> I've added the use of this capability to OpenMPI and run some MPI 
+> benchmarks on a 64-way (with SMT off) Power6 machine which see 
+> improvements in the following areas:
+> 
+> HPCC results:
+> =============
+> 
+> MB/s			Num Processes	
+> Naturally Ordered	4	8	16	32
+> Base			1235	935	622	419
+> CMA			4741	3769	1977	703
+> 
+> 			
+> MB/s			Num Processes	
+> Randomly Ordered	4	8	16	32
+> Base			1227	947	638	412
+> CMA			4666	3682	1978	710
+> 				
+> MB/s			Num Processes	
+> Max Ping Pong		4	8	16	32
+> Base			2028	1938	1928	1882
+> CMA			7424	7510	7598	7708
+> 
+> 
+> NPB:
+> ====
+> BT - 12% improvement
+> FT - 15% improvement
+> IS - 30% improvement
+> SP - 34% improvement
+> 
+> IMB:
+> ===
+> 		
+> Ping Pong - ~30% improvement
+> Ping Ping - ~120% improvement
+> SendRecv - ~100% improvement
+> Exchange - ~150% improvement
+> Gather(v) - ~20% improvement
+> Scatter(v) - ~20% improvement
+> AlltoAll(v) - 30-50% improvement
+> 
+> Patch is as below. Any comments?
 
-The strange thing though is that I cannot reproduce the bachlight off
-situation anymore :-/
+Impressive numbers!
 
-Will keep an eye on it and report back if I see anything not working.
+What did those OpenMPI facilities use before your patch - shared memory 
+or sockets?
 
-Regarding suspend: No crash so far! (after about 10-15 suspend & resumes)
+I have an observation about the interface:
 
-Cheers,
+> +asmlinkage long sys_copy_from_process(pid_t pid, unsigned long addr,
+> +				      unsigned long len,
+> +				      char __user *buf, int flags);
+> +asmlinkage long sys_copy_to_process(pid_t pid, unsigned long addr,
+> +				    unsigned long len,
+> +				    char __user *buf, int flags);
 
-Nico
+A small detail: 'int flags' should probably be 'unsigned long flags' - 
+it leaves more space.
 
---=20
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+Also, note that there is a further performance optimization possible 
+here: if the other task's ->mm is the same as this task's (they share 
+the MM), then the copy can be done straight in this process context, 
+without GUP. User-space might not necessarily be aware of this so it 
+might make sense to express this special case in the kernel too.
 
---K8nIJk4ghYZn606h
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+More fundamentally, wouldnt it make sense to create an iovec interface 
+here? If the Gather(v) / Scatter(v) / AlltoAll(v) workloads have any 
+fragmentation on the user-space buffer side then the copy of multiple 
+areas could be done in a single syscall. (the MM lock has to be touched 
+only once, target task only be looked up only once, etc.)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Plus, a small naming detail, shouldnt the naming be more IO like:
 
-iEYEARECAAYFAkyQfc4ACgkQ19zI5DGHffCzTgCeKJGLomfesoB3iI1kCPVdO2HT
-7aIAn2NsOTqSs33Hh6p/Lkbc9fnXwxwz
-=B4ZG
------END PGP SIGNATURE-----
+  sys_process_vm_read()
+  sys_process_vm_write()
 
---K8nIJk4ghYZn606h--
+Basically a regular read()/write() interface, but instead of fd's we'd 
+have (PID,addr) identifiers for remote buffers, and instant execution 
+(no buffering).
+
+This makes these somewhat special syscalls a bit less special :-)
+
+[ In theory we could also use this new ABI in a way to help the various 
+  RDMA efforts as well - but it looks way too complex. RDMA is rather 
+  difficult from an OS design POV - and this special case you have 
+  implemented is much easier to do, as we are in a single trust domain. ]
+
+Thanks,
+
+	Ingo
