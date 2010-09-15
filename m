@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab0IOMs1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 08:48:27 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:44497 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752475Ab0IOMs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 08:48:26 -0400
-Message-ID: <4C90C098.6070404@kernel.dk>
-Date: Wed, 15 Sep 2010 14:48:24 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1753721Ab0IOMtr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 08:49:47 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:52760 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab0IOMtq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 08:49:46 -0400
+Date: Wed, 15 Sep 2010 15:48:31 +0300
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Tony Luck <tony.luck@intel.com>
+Cc: "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] ia64: possible module unwind table optimisation
+Message-ID: <20100915124831.GB27658@esdhcp04044.research.nokia.com>
+References: <1284115245-23876-1-git-send-email-ext-phil.2.carmody@nokia.com> <AANLkTi=RsA0tACWOg+8RTSuDHwa4LGOiyO-4TxpJ_rb5@mail.gmail.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: add assert_spin_locked() to ensure lock is held
-References: <1284554007-13077-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1284554007-13077-1-git-send-email-namhyung@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=RsA0tACWOg+8RTSuDHwa4LGOiyO-4TxpJ_rb5@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 15 Sep 2010 12:49:38.0175 (UTC) FILETIME=[74EE10F0:01CB54D4]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-09-15 14:33, Namhyung Kim wrote:
-> Use assert_spin_locked() macro in order to ensure that queue_lock
-> must be held prior to calling some EXPORTed functions.
+On 15/09/10 01:18 +0200, ext Tony Luck wrote:
+> On Fri, Sep 10, 2010 at 3:40 AM, Phil Carmody
+> <ext-phil.2.carmody@nokia.com> wrote:
+> > Alas I have no way to test this patch.
+> 
+> Phil,
+> 
+> I have this built and booted on an ia64 ... what do you want me to measure? The
+> number of iterations in:
+> 
+>   for (table = unw.tables; table; table = table->next)
+> 
+> before we find the right table to look?
 
-As far as I know, no such bug has ever occurred that I know
-of. So while I don't mind adding such instrumentation, there's
-little point to doing it when you are not seeing any usability
-problems in there. And all these paths (requeue less) are
-heavily used, so problems would appear quickly.
+Yes, that's the one. Sorry I wasn't more explicit.
 
-Locking in the block layer is still fairly trivial, we just
-have the one lock per queue.
-
--- 
-Jens Axboe
-
+Phil
