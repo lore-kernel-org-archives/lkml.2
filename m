@@ -1,106 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab0IOVjO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 17:39:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48752 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754286Ab0IOVjM convert rfc822-to-8bit (ORCPT
+	id S1754869Ab0IOVro (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 17:47:44 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:17899 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab0IOVrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 17:39:12 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: "Savoy, Pavan" <pavan_savoy@ti.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 16 Sep 2010 03:08:51 +0530
-Subject: RE: [PATCH] drivers:staging:ti-st: fix kim platform device id
-Thread-Topic: [PATCH] drivers:staging:ti-st: fix kim platform device id
-Thread-Index: ActRGKcQ5fnZWvv1Rd291nEHmNzlaACdoUJgAGOtkRA=
-Message-ID: <19F8576C6E063C45BE387C64729E73940468913CCA@dbde02.ent.ti.com>
-References: <1284148738-21643-1-git-send-email-pavan_savoy@ti.com>
- <1284148738-21643-2-git-send-email-pavan_savoy@ti.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 15 Sep 2010 17:47:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=FLdk9djJ/En5NT+SmWUIKoqJg6QJjQ9AGs+p8haTHXNWW/gozgnlgG4rLM4umFWbwB
+         vHOzMCOZ3cpvWcJADi7A==
 MIME-Version: 1.0
+In-Reply-To: <1284579969.21906.451.camel@calx>
+References: <20100915134724.C9EE.A69D9226@jp.fujitsu.com>
+	<201009151034.22497.knikanth@suse.de>
+	<20100915141710.C9F7.A69D9226@jp.fujitsu.com>
+	<201009151201.11359.knikanth@suse.de>
+	<20100915140911.GC4383@balbir.in.ibm.com>
+	<alpine.LNX.2.00.1009151612450.28912@zhemvz.fhfr.qr>
+	<1284561982.21906.280.camel@calx>
+	<alpine.LNX.2.00.1009151648390.28912@zhemvz.fhfr.qr>
+	<1284571473.21906.428.camel@calx>
+	<AANLkTimYQgm6nKZ4TantPiL4kmUP9FtMQwzqeetVnGrr@mail.gmail.com>
+	<1284579969.21906.451.camel@calx>
+Date: Wed, 15 Sep 2010 14:47:39 -0700
+X-Google-Sender-Auth: xSZOcdHULoUV1VzVTdAQQv1-TFw
+Message-ID: <AANLkTini3k1hK-9RM6io0mOf4VoDzGpbUEpiv=WHfhEW@mail.gmail.com>
+Subject: Re: [PATCH v2] After swapout/swapin private dirty mappings are
+ reported clean in smaps
+From: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+To: Matt Mackall <mpm@selenic.com>
+Cc: Richard Guenther <rguenther@suse.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michael Matz <matz@novell.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 15, 2010 at 12:46 PM, Matt Mackall <mpm@selenic.com> wrote:
+> On Wed, 2010-09-15 at 12:18 -0700, Hugh Dickins wrote:
+>> The problem is that /proc/pid/smaps exports a simplified view of the
+>> VM, and Richard and Nikanth were hoping that it gave them some info
+>> which it has never pretended to give them,
+>>
+>> It happens to use a pte_dirty(ptent) test: you could argue that that
+>> should be pte_dirty(ptent) || PageDirty(page) (which would then "fix
+>> the issue" which Richard sees with swapoff/swapon),
+>
+> That might be interesting. Are there any other notable cases where
+> pte_dirty() differs from PageDirty()?
 
-Greg,
+I don't know about "other notable".  A page may very well be PageDirty
+(e.g. modified by a write system call) without any of the ptes
+pointing to it (if there even are any) marked as pte_dirty.  A page
+may very well not be marked PageDirty yet, though one or more of the
+ptes pointing to it have been marked pte_dirty when userspace made a
+write access to the page via that pte.   Traditionally (when
+/proc/pid/smaps was first reporting dirty versus clean ptes) the pte
+dirtiness would later be found and propagated through to PageDirtiness
+(clearing the pte dirtiness), which would later be cleaned when the
+page was written out to backing store (file or swap).
 
-Any updates?
-Please ... Please find some time to have a look at it!!
+PeterZ's writeback work in 2.6.19 (set_page_dirty_balance,
+clear_page_dirty_for_io etc.) tightened up writeback from (most: tmpfs
+is one exception) shared file mmaps, synchronizing the PageDirty more
+carefully with the pte_dirty; and perhaps there is some inconsistency
+there, that we never felt compelled to keep pte and Page so tightly in
+synch in the anonymous/Swap case - it would have been unnecessary
+overhead (though I repeatedly forget the essence of why not - file
+syncing, and pdflush activity,  were relevant considerations; but I
+cannot now put my finger on precisely why shared file writing needed
+to be fixed, but anonymous dirtying could be left unchanged).
 
-Alan,
+But even if you replace smaps's pte_dirty(ptent) tests by
+pte_dirty(ptent) || PageDirty(page) tests, it wouldn't be doing what
+Richard and Nikanth want - they want clean ptes of clean PageSwapCache
+to be reported as dirty, despite being clean copies of backing store;
+and I can understand your reluctance to go that far.  I think
+reporting "Anon:" pages is more useful - in part because we have no
+counts of Anon+Swap, yet that's the quantity which vm_enough_memory
+may place a limit upon (but beware, it does of course get more
+complicated: tmpfs files come out of that tally too, but would not
+show up in this way).
 
-Please have a look at it too. I've dealt with most of the comments, device context has been provided, spin-locks have been reviewed and documented multiple devices also can be easily supported if required.
-
- 
-
-> -----Original Message-----
-> From: Savoy, Pavan
-> Sent: Monday, September 13, 2010 5:02 PM
-> To: gregkh@suse.de; alan@lxorguk.ukuu.org.uk
-> Cc: devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH] drivers:staging:ti-st: fix kim platform device id
-> 
-> Greg,
-> 
-> 
-> ----------------
-> Thanks & Regards,
-> Pavan Savoy | x0099669
-> 
-> > -----Original Message-----
-> > From: Savoy, Pavan
-> > Sent: Friday, September 10, 2010 2:59 PM
-> > To: gregkh@suse.de; alan@lxorguk.ukuu.org.uk
-> > Cc: devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org; Savoy, Pavan
-> > Subject: [PATCH] drivers:staging:ti-st: fix kim platform device id
-> >
-> > From: Pavan Savoy <pavan_savoy@ti.com>
-> >
-> > Platform devices tend to have id as -1 when only 1 device exist and
-> > a value >=0 when multiple devices exist, since we plan to store all
-> > these platform devices if multiple exist, there was a requirement to
-> > have id to be >=0.
-> > The patch fixes this problem.
-> 
-> Please merge this patch, and I hope you find some time to review the rest of
-> them.
-> 
-> 
-> > Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> > ---
-> >  drivers/staging/ti-st/st_kim.c |    9 ++++++++-
-> >  1 files changed, 8 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/staging/ti-st/st_kim.c b/drivers/staging/ti-st/st_kim.c
-> > index 9e99463..be18c7a 100644
-> > --- a/drivers/staging/ti-st/st_kim.c
-> > +++ b/drivers/staging/ti-st/st_kim.c
-> > @@ -638,7 +638,14 @@ static int kim_probe(struct platform_device *pdev)
-> >  	long *gpios = pdev->dev.platform_data;
-> >  	struct kim_data_s	*kim_gdata;
-> >
-> > -	st_kim_devices[pdev->id] = pdev;
-> > +	if ((pdev->id != -1) && (pdev->id < MAX_ST_DEVICES)) {
-> > +		/* multiple devices could exist */
-> > +		st_kim_devices[pdev->id] = pdev;
-> > +	} else {
-> > +		/* platform's sure about existance of 1 device */
-> > +		st_kim_devices[0] = pdev;
-> > +	}
-> > +
-> >  	kim_gdata = kzalloc(sizeof(struct kim_data_s), GFP_ATOMIC);
-> >  	if (!kim_gdata) {
-> >  		pr_err("no mem to allocate");
-> > --
-> > 1.6.5
-
+Hugh
