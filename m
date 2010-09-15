@@ -1,44 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab0IOBeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 21:34:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60659 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab0IOBeG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 21:34:06 -0400
-Message-ID: <4C90226E.4050306@kernel.org>
-Date: Tue, 14 Sep 2010 18:33:34 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1752421Ab0IOBpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 21:45:14 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:51965 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751536Ab0IOBpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 21:45:12 -0400
+Date: Wed, 15 Sep 2010 02:44:59 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1009150239580.18320@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: build warnings after merge of the final tree (tip
- treee related)
-References: <20100913132721.5a02cfbc.sfr@canb.auug.org.au>	<4C8DA517.9000603@kernel.org>	<20100913143942.7344ada4.sfr@canb.auug.org.au>	<4C8DDFB4.1020508@kernel.org>	<20100914145025.977ec2a6.sfr@canb.auug.org.au>	<4C8FFE76.8070801@kernel.org> <20100915102930.5e4d59cb.sfr@canb.auug.org.au>
-In-Reply-To: <20100915102930.5e4d59cb.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-405548144-1284515099=:18320"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2010 05:29 PM, Stephen Rothwell wrote:
-> Hi Yinghai,
-> 
-> On Tue, 14 Sep 2010 16:00:06 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
->>
->> Also, we may need to remove all extern and __init and __initdata etc in .h files.
-> 
-> Do not remove the "extern" key word.
-> 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-why? you got another warning?
+--29444707-405548144-1284515099=:18320
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-Yinghai
+
+Hi Linus,
+
+This is slightly larger than I'd like but Chris's patch to limit polling 
+devices thats can be destructive solves a lot of problems on Intel but it 
+requires an api change across drivers. The other worrisome one is a race 
+condition fixer between device nodes being openable and the driver 
+being loaded that I can't say why we started seeing it (bkl removal 
+maybe, userspace timing change maybe), I started working on an alternate 
+fix but it grew too large for this point in a release cycle.
+
+Other updates are fixes for radeon from Alex and Marek, adding the 
+copyright headers probably a/c for 1/4 of the patchset.
+
+The following changes since commit 49553c2ef88749dd502687f4eb9c258bb10a4f44:
+
+  Linux 2.6.36-rc4 (2010-09-12 16:07:37 -0700)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Alex Deucher (7):
+      drm/radeon/kms: fix regression in RMX code (v2)
+      drm/radeon/kms: add connector table for Mac x800
+      drm/radeon/kms: don't enable underscan with interlaced modes
+      drm/radeon: add some missing copyright headers
+      drm/radeon/kms/evergreen: fix backend setup
+      drm/radeon/kms: force legacy pll algo for RV620 LVDS
+      drm/radeon/kms: only warn on mipmap size checks in r600 cs checker (v2)
+
+Chris Wilson (4):
+      drm: Fix regression in disable polling e58f637
+      drm: Only decouple the old_fb from the crtc is we call mode_set*
+      drm: Use a nondestructive mode for output detect when polling
+      drm: Use a nondestructive mode for output detect when polling (v2)
+
+Dave Airlie (1):
+      drm: fix race between driver loading and userspace open.
+
+Marek Ol¨ák (2):
+      drm/radeon/kms: increase lockup detection interval to 10 sec for r100-r500
+      drm/radeon/kms: fix the colorbuffer CS checker for r300-r500
+
+ drivers/gpu/drm/drm_crtc_helper.c           |   10 +++---
+ drivers/gpu/drm/drm_pci.c                   |    4 ++
+ drivers/gpu/drm/drm_platform.c              |    5 +++
+ drivers/gpu/drm/drm_sysfs.c                 |    2 +-
+ drivers/gpu/drm/i915/intel_crt.c            |    6 +++-
+ drivers/gpu/drm/i915/intel_dp.c             |    2 +-
+ drivers/gpu/drm/i915/intel_dvo.c            |    3 +-
+ drivers/gpu/drm/i915/intel_hdmi.c           |    2 +-
+ drivers/gpu/drm/i915/intel_lvds.c           |    7 +++-
+ drivers/gpu/drm/i915/intel_sdvo.c           |    5 ++-
+ drivers/gpu/drm/i915/intel_tv.c             |   11 +++---
+ drivers/gpu/drm/nouveau/nouveau_connector.c |    6 ++--
+ drivers/gpu/drm/radeon/atombios_crtc.c      |    5 ++-
+ drivers/gpu/drm/radeon/evergreen.c          |   27 +++++++++++----
+ drivers/gpu/drm/radeon/r100.c               |   24 ++++----------
+ drivers/gpu/drm/radeon/r600_blit_kms.c      |   25 ++++++++++++++
+ drivers/gpu/drm/radeon/r600_blit_shaders.h  |   24 ++++++++++++++
+ drivers/gpu/drm/radeon/r600_cs.c            |    5 +--
+ drivers/gpu/drm/radeon/radeon_combios.c     |   47 +++++++++++++++++++++++++++
+ drivers/gpu/drm/radeon/radeon_connectors.c  |   15 ++++++---
+ drivers/gpu/drm/radeon/radeon_display.c     |    9 +++--
+ drivers/gpu/drm/radeon/radeon_mode.h        |    3 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c         |    7 ++--
+ include/drm/drm_crtc.h                      |   10 +++++-
+ 24 files changed, 197 insertions(+), 67 deletions(-)
+--29444707-405548144-1284515099=:18320--
