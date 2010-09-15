@@ -1,175 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985Ab0IOWmQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 18:42:16 -0400
-Received: from smtp111.sbc.mail.mud.yahoo.com ([68.142.198.207]:24212 "HELO
-	smtp111.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754894Ab0IOWmN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 18:42:13 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: GiHaOO8VM1l7SKCQjSQWErAet1P4TxYKec_KNe5IA1Kf8Pa
- XHsX3L2Xplb8GJ2Aw5tSO.cfpEO12OOS7Xm_HqtGFtxxSmubis3lZYAozuwe
- uCTOBML98zBCkMKj4Fe6xKLsXelYVnOyoWefvn4TgH4MtCqGojFbzyxJy_Zt
- byUQv85EfDWzKxOwOskZ48pOqaMaiG6Pe_aZVm7ECRzPeZyusRpYzIvFOfDX
- KjfYtEf5iUqnJhoBR7Tlrt9QTSwamTYHy06M3gdTpamjhQaOCAZC6wwKmZU5
- dMLmeuAUByfIHBzp1IFxE6NTbnSeFzcPXDUpReo5L1FQIKYsi7zH6jJ4-
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Joe Eykholt <jeykholt@cisco.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH v2 2/2] tcm_loop: Add BIDI-COMMAND CDB support
-Date: Wed, 15 Sep 2010 15:42:10 -0700
-Message-Id: <1284590530-6275-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	id S1755176Ab0IOWmV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 18:42:21 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:39228 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754939Ab0IOWmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 18:42:17 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18SVXkB3SISfb+cRxv7DQBkEZxvxypjGnu2vFOURi
+	VCDJVv/QF2jKtV
+Message-ID: <4C914BC4.8070809@gmx.de>
+Date: Thu, 16 Sep 2010 00:42:12 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+MIME-Version: 1.0
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+CC: JosephChan@via.com.tw, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, security@kernel.org, stable@kernel.org
+Subject: Re: [PATCH] drivers/video/via/ioctl.c: prevent reading uninitialized
+ stack memory
+References: <1284587059.6275.101.camel@dan>
+In-Reply-To: <1284587059.6275.101.camel@dan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+Hi,
 
-This v2 patch series adds BIDI-COMMAND CDB to the TCM_Loop Virtual SCSI
-LLD module.  This includes the following changes:
+Dan Rosenberg schrieb:
+> The VIAFB_GET_INFO device ioctl allows unprivileged users to read 1968
+> bytes of uninitialized stack memory, because the "reserved" member of
+> the viafb_ioctl_info struct declared on the stack is not altered or
+> zeroed before being copied back to the user.  This patch takes care of
+> it.
 
-        *) Add call to include/scsi/scsi_cmnd.h:scsi_bidi_cmnd() to set
-           TCM T_TASK(cmd)->t_task_bidi=1 in tcm_loop_allocate_core_cmd()
-        *) Update tcm_loop_new_cmd_map() to handle BIDI READ payload from scsi_in()
-        *) Drop DMA_BIDIRECTIONAL usage check from tcm_loop_queuecommand()
-        *) Add tcm_loop_slave_alloc() and tcm_loop_slave_configure() handlers for
-           struct scsi_host_template to set QUEUE_FLAG_BIDI in the former.
+I am wondering about the number of bytes as sizeof(struct viafb_ioctl_info) = 
+256 so it should be a bit less. But that's just nitpicking, the issue is 
+certainly real. Your patch does the right thing but there is a bug in it:
 
-So far this has been tested together with commit 1f8f3eda132c using XDWRITE_READ_10
-via BSG userspace code on a v2.6.36-rc3 kernel.
+> Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+> 
+> --- linux-2.6.35.4.orig/drivers/video/via/ioctl.c	2010-08-26 19:47:12.000000000 -0400
+> +++ linux-2.6.35.4/drivers/video/via/ioctl.c	2010-09-15 11:53:29.997375748 -0400
+> @@ -25,6 +25,8 @@ int viafb_ioctl_get_viafb_info(u_long ar
+>  {
+>  	struct viafb_ioctl_info viainfo;
+>  
+> +	memset(&viainfo, 0, sizeof(struct viafb_ioctl));
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |   47 +++++++++++++++++-------
- 1 files changed, 34 insertions(+), 13 deletions(-)
+Shouldn't it be sizeof(struct viafb_ioctl_info) or sizeof(viainfo) ?
+At least here it does not even compile otherwise....
 
-diff --git a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-index 644f978..b95ed03 100644
---- a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-+++ b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-@@ -77,11 +77,11 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
- 		printk(KERN_ERR "Unable to allocate struct tcm_loop_cmd\n");
- 		return NULL;
- 	}
-+	se_cmd = &tl_cmd->tl_se_cmd;
- 	/*
- 	 * Save the pointer to struct scsi_cmnd *sc
- 	 */
- 	tl_cmd->sc = sc;
--
- 	/*
- 	 * Locate the SAM Task Attr from struct scsi_cmnd *
- 	 */
-@@ -100,13 +100,18 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
- 	} else
- 		sam_task_attr = TASK_ATTR_SIMPLE;
- 
--	se_cmd = &tl_cmd->tl_se_cmd;
- 	/*
- 	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
- 	 */
- 	transport_init_se_cmd(se_cmd, se_tpg->se_tpg_tfo, se_sess,
- 			scsi_bufflen(sc), sc->sc_data_direction, sam_task_attr,
- 			&tl_cmd->tl_sense_buf[0]);
-+
-+	/*
-+	 * Signal BIDI usage with T_TASK(cmd)->t_tasks_bidi
-+	 */
-+	if (scsi_bidi_cmnd(sc))
-+		T_TASK(se_cmd)->t_tasks_bidi = 1;
- 	/*
- 	 * Locate the struct se_lun pointer and attach it to struct se_cmd
- 	 */
-@@ -128,14 +133,16 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
- /*
-  * Called by struct target_core_fabric_ops->new_cmd_map()
-  *
-- * Always called in process context
-+ * Always called in process context.  A non zero return value
-+ * here will signal to handle an exception based on the return code.
-  */
- int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
- {
- 	struct tcm_loop_cmd *tl_cmd = container_of(se_cmd,
- 				struct tcm_loop_cmd, tl_se_cmd);
- 	struct scsi_cmnd *sc = tl_cmd->sc;
--	void *mem_ptr;
-+	void *mem_ptr, *mem_bidi_ptr = NULL;
-+	u32 sg_no_bidi = 0;
- 	int ret;
- 	/*
- 	 * Allocate the necessary tasks to complete the received CDB+data
-@@ -163,6 +170,16 @@ int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
- 	if (scsi_sg_count(sc)) {
- 		se_cmd->se_cmd_flags |= SCF_PASSTHROUGH_SG_TO_MEM;
- 		mem_ptr = (void *)scsi_sglist(sc);
-+		/*
-+		 * For BIDI commands, pass in the extra READ buffer
-+		 * to transport_generic_map_mem_to_cmd() below..
-+		 */
-+		if (T_TASK(se_cmd)->t_tasks_bidi) {
-+			struct scsi_data_buffer *sdb = scsi_in(sc);
-+
-+			mem_bidi_ptr = (void *)sdb->table.sgl;
-+			sg_no_bidi = sdb->table.nents;
-+		}
- 	} else {
- 		/*
- 		 * Used for DMA_NONE
-@@ -322,15 +339,6 @@ static int tcm_loop_queuecommand(
- 	}
- 	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
- 	se_tpg = &tl_tpg->tl_se_tpg;
--
--	if (sc->sc_data_direction == DMA_BIDIRECTIONAL) {
--		spin_lock_irq(host->host_lock);
--		printk(KERN_ERR "Unsupported BIDI sc->sc_data_direction: %d\n",
--			sc->sc_data_direction);	
--		sc->result = host_byte(DID_ERROR);
--		(*done)(sc);
--		return 0;
--	}
- 	/*
- 	 * Determine the SAM Task Attribute and allocate tl_cmd and
- 	 * tl_cmd->tl_se_cmd from TCM infrastructure
-@@ -446,6 +454,17 @@ release:
- 	return ret;
- }
- 
-+static int tcm_loop_slave_alloc(struct scsi_device *sd)
-+{
-+	set_bit(QUEUE_FLAG_BIDI, &sd->request_queue->queue_flags);
-+	return 0;
-+}
-+
-+static int tcm_loop_slave_configure(struct scsi_device *sd)
-+{
-+	return 0;
-+}
-+
- static struct scsi_host_template tcm_loop_driver_template = {
- 	.proc_info		= tcm_loop_proc_info,
- 	.proc_name		= "tcm_loopback",
-@@ -468,6 +487,8 @@ static struct scsi_host_template tcm_loop_driver_template = {
- 	.cmd_per_lun		= TL_SCSI_CMD_PER_LUN,
- 	.max_sectors		= TL_SCSI_MAX_SECTORS,
- 	.use_clustering		= DISABLE_CLUSTERING,
-+	.slave_alloc		= tcm_loop_slave_alloc,
-+	.slave_configure	= tcm_loop_slave_configure,
- 	.module			= THIS_MODULE,
- };
- 
--- 
-1.5.6.5
 
+Thanks,
+
+Florian Tobias Schandinat
