@@ -1,37 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab0IOJu0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 05:50:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34993 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752384Ab0IOJuY (ORCPT
+	id S1752448Ab0IOJyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 05:54:09 -0400
+Received: from mbox1.netikka.net ([213.250.81.202]:53592 "EHLO
+	mbox1.netikka.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab0IOJyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 05:50:24 -0400
-Date: Wed, 15 Sep 2010 10:50:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: Re: linux-next: manual merge of the sound-asoc tree with the
- genesis tree
-Message-ID: <20100915095021.GB1866@rakim.wolfsonmicro.main>
-References: <20100915121128.d8fbc4bb.sfr@canb.auug.org.au>
+	Wed, 15 Sep 2010 05:54:07 -0400
+Message-ID: <4C9097BA.1080208@mandriva.org>
+Date: Wed, 15 Sep 2010 12:54:02 +0300
+From: Thomas Backlund <tmb@mandriva.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; sv-SE; rv:1.9.2.9) Gecko/20100825 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100915121128.d8fbc4bb.sfr@canb.auug.org.au>
-X-Cookie: Subject to change without notice.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@suse.de>
+CC: "stable@kernel.org" <stable@kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>,
+        "Larry.Finger@lwfinger.net" <Larry.Finger@lwfinger.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [33-stable regression ssb/broadcom]
+References: <4C8E6192.2010003@mandriva.org> <20100913.122329.39186333.davem@davemloft.net> <20100913193647.GD4052@tuxdriver.com> <4C8E8AC2.2030201@mandriva.org> <4C8E8C73.60306@mandriva.org> <20100913210145.GA18969@suse.de>
+In-Reply-To: <20100913210145.GA18969@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 12:11:28PM +1000, Stephen Rothwell wrote:
+Greg KH skrev 14.9.2010 00:01:
+> On Mon, Sep 13, 2010 at 11:41:23PM +0300, Thomas Backlund wrote:
+>> Thomas Backlund skrev 13.9.2010 23:34:
+>>> John W. Linville skrev 13.9.2010 22:36:
+>>>> On Mon, Sep 13, 2010 at 12:23:29PM -0700, David Miller wrote:
+>>>>> From: Thomas Backlund<tmb@mandriva.org>
+>>>>> Date: Mon, 13 Sep 2010 20:38:26 +0300
+>>>>>
+>>>>>> In Mandriva 2010.1 we noticed that 2.6.33.7 broke ssb/Broadcom lan for
+>>>>>> several users...
+>>>>>>
+>>>>>> Issue is tracked at:
+>>>>>> https://qa.mandriva.com/show_bug.cgi?id=60968
+>>>>>>
+>>>>>> Reverting the commit restores a working lan.
+>>>>>>
+>>>>>> The offending commit is:
+>>>>>
+>>>>> Please always CC: netdev on networking reports, otherwise you are
+>>>>> very unlikely to get any experts looking into your issue.
+>>>>
+>>>> IIRC, there was a bad patch that got sent for the 2.6.33.y series.
+>>>> I thought it had been reverted or fixed already?
+>>>>
+>>>
+>>> Nope.
+>>>
+>>> It got added in 2.6.33.7
+>>> http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.33.y.git;a=commit;h=6fb037c2ed8378c7ab0c1e00536ba6b2a866503e
+>>>
+>>
+>> After checking some more...
+>>
+>> I see the revert of the broken patch was done in 2.6.34.3 and a set
+>> of ssb patches replacing it...
+>>
+>> but it didn't happend for 2.6.33.y
+>
+> Yeah, I think I "dropped" support for .33 by then and I really didn't
+> care anymore.
+>
 
-> I fixed it up (I think - see below) and can carry the fix as necessary.
+Yep.
+final 2.6.33.7 was released 8 days before 2.6.34.3.
 
-Looks reasonable to me, though Guennadi and Morimoto-san are the experts
-here.  Thanks!
+> Note, I have gotten a few rumblings that I should bring .33 back to life
+> for some loving due to a few distros relying on it, but I need to find
+> the time in my schedule to do so...
+>
+
+Well,
+if you dont want to really bring it back to life, I'd suggest to simply
+released a 2.6.33.8 with only reverting the broken patch as it would 
+"unbreak" the tree and call it a day :-)
+
+Otherwise...
+I now have merged the ssb fixes from 26.34.3:
+19bfed793ee38ce027326a3c518ff6201f673a8d ssb: do not read SPROM if it 
+does not exist
+3ca696ca403b2715018bd5c693ab105c3a3ea888 ssb: Look for SPROM at 
+different offset on higher rev CC
+a8515c84db1a9c9be19d8d873b059473474b6dab ssb: fix NULL ptr deref when 
+pcihost_wrapper is used
+8235ddc2cd7a3367b688e0ed52ab377eac6cfad4 ssb: Handle alternate SSPROM 
+location
+
+into 2.6.33.7 after reverting the broken commit and have confirmation 
+from users that it still works, so thats what I'll do for Mandriva 2010.1
+
+--
+Thomas
