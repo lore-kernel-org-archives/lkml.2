@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053Ab0IOTZC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 15:25:02 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:54487 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620Ab0IOTZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 15:25:01 -0400
-From: "Tim Pepper" <lnxninja@linux.vnet.ibm.com>
-Date: Wed, 15 Sep 2010 12:24:55 -0700
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, lnxninja@linux.vnet.ibm.com
+	id S1755186Ab0IOT1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 15:27:09 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:44040 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753710Ab0IOT1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 15:27:06 -0400
 Subject: Re: [RFC][PATCH] update /proc/sys/vm/drop_caches documentation
-Message-ID: <20100915192454.GD5585@tpepper-t61p.dolavim.us>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        lnxninja@linux.vnet.ibm.com
+In-Reply-To: <m1d3se7t0h.fsf@fess.ebiederm.org>
 References: <20100914234714.8AF506EA@kernel.beaverton.ibm.com>
- <20100915133303.0b232671.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100915133303.0b232671.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	 <20100915133303.0b232671.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100915135016.C9F1.A69D9226@jp.fujitsu.com>
+	 <1284531262.27089.15725.camel@nimitz>  <m1d3se7t0h.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Wed, 15 Sep 2010 12:27:01 -0700
+Message-ID: <1284578821.27089.17409.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 15 Sep at 13:33:03 +0900 kamezawa.hiroyu@jp.fujitsu.com said:
-> >  
-> > diff -puN fs/drop_caches.c~update-drop_caches-documentation fs/drop_caches.c
-> > --- linux-2.6.git/fs/drop_caches.c~update-drop_caches-documentation	2010-09-14 15:44:29.000000000 -0700
-> > +++ linux-2.6.git-dave/fs/drop_caches.c	2010-09-14 15:58:31.000000000 -0700
-> > @@ -47,6 +47,8 @@ int drop_caches_sysctl_handler(ctl_table
-> >  {
-> >  	proc_dointvec_minmax(table, write, buffer, length, ppos);
-> >  	if (write) {
-> > +		WARN_ONCE(1, "kernel caches forcefully dropped, "
-> > +			     "see Documentation/sysctl/vm.txt\n");
+On Wed, 2010-09-15 at 11:37 -0700, Eric W. Biederman wrote:
+> > I'm worried that there are users out there experiencing real problems
+> > that aren't reporting it because "workarounds" like this just paper over
+> > the issue.
 > 
-> Documentation updeta seems good but showing warning seems to be meddling to me.
+> For what it is worth.  I had a friend ask me about a system that had 50%
+> of it's memory consumed by slab caches.  20GB out of 40GB.  The kernel
+> was suse? 2.6.27 so it's old, but if you are curious.
+> /proc/sys/vm/drop_caches does nothing in that case. 
 
-We already have examples of things where we warn in order to turn up
-"interesting" userspace code, in the hope of starting dialog and getting
-things fixed for the future.  I don't see this so much as meddling as
-one of the fundamental aspects of open source.
+Was it the reclaimable caches doing it, though?  The other really common
+cause is kmalloc() leaks.
 
-drop_caches probably originally should have gone in under a CONFIG_DEBUG
-(even if all the distros would have turned it on), and had a WARN_ON
-(personally I'd argue for this compared to WARN_ONCE()), and even have
-been exposed in debugfs not procfs...but it's part of the "the interface"
-at this point.
+-- Dave
 
-Somebody doing debug and testing which leverages drop_caches should not
-be bothered by a WARN_ON().  Somebody using it to "fix" the kernel with
-repeated/regular calls to drop_caches should get called out for fixing
-themselves and the WARN_*()'s noting the comm could help that, unless
-somebody has a use case where repeated/regular calls to drop_caches
-is valid and not connected to buggy usage or explicit performance
-debug/testing?
-
--- 
-Tim Pepper  <lnxninja@linux.vnet.ibm.com>
-IBM Linux Technology Center
