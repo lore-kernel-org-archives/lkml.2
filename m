@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab0IOEis (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 00:38:48 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40718 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab0IOEir (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 00:38:47 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 15 Sep 2010 13:33:03 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        lnxninja@linux.vnet.ibm.com
-Subject: Re: [RFC][PATCH] update /proc/sys/vm/drop_caches documentation
-Message-Id: <20100915133303.0b232671.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100914234714.8AF506EA@kernel.beaverton.ibm.com>
-References: <20100914234714.8AF506EA@kernel.beaverton.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1752422Ab0IOEjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 00:39:13 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41570 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983Ab0IOEjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 00:39:12 -0400
+Date: Wed, 15 Sep 2010 14:39:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: build warnings after merge of the final tree (tip
+ treee related)
+Message-Id: <20100915143904.ca226c83.sfr@canb.auug.org.au>
+In-Reply-To: <4C90226E.4050306@kernel.org>
+References: <20100913132721.5a02cfbc.sfr@canb.auug.org.au>
+	<4C8DA517.9000603@kernel.org>
+	<20100913143942.7344ada4.sfr@canb.auug.org.au>
+	<4C8DDFB4.1020508@kernel.org>
+	<20100914145025.977ec2a6.sfr@canb.auug.org.au>
+	<4C8FFE76.8070801@kernel.org>
+	<20100915102930.5e4d59cb.sfr@canb.auug.org.au>
+	<4C90226E.4050306@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__15_Sep_2010_14_39_04_+1000_/zC80piBEq1tdWF3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Sep 2010 16:47:14 -0700
-Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+--Signature=_Wed__15_Sep_2010_14_39_04_+1000_/zC80piBEq1tdWF3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> There seems to be an epidemic spreading around.  People get the idea
-> in their heads that the kernel caches are evil.  They eat too much
-> memory, and there's no way to set a size limit on them!  Stupid
-> kernel!
-> 
-> There is plenty of anecdotal evidence and a load of blog posts
-> suggesting that using "drop_caches" periodically keeps your system
-> running in "tip top shape".  I do not think that is true.
-> 
-> If we are not shrinking caches effectively, then we have real bugs.
-> Using drop_caches will simply mask the bugs and make them harder
-> to find, but certainly does not fix them, nor is it an appropriate
-> "workaround" to limit the size of the caches.
-> 
-> It's a great debugging tool, and is really handy for doing things
-> like repeatable benchmark runs.  So, add a bit more documentation
-> about it, and add a WARN_ONCE().  Maybe the warning will scare
-> some sense into people.
-> 
-> 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> ---
-> 
->  linux-2.6.git-dave/Documentation/sysctl/vm.txt |   14 ++++++++++++--
->  linux-2.6.git-dave/fs/drop_caches.c            |    2 ++
->  2 files changed, 14 insertions(+), 2 deletions(-)
-> 
-> diff -puN Documentation/sysctl/vm.txt~update-drop_caches-documentation Documentation/sysctl/vm.txt
-> --- linux-2.6.git/Documentation/sysctl/vm.txt~update-drop_caches-documentation	2010-09-14 15:30:19.000000000 -0700
-> +++ linux-2.6.git-dave/Documentation/sysctl/vm.txt	2010-09-14 16:40:58.000000000 -0700
-> @@ -145,8 +145,18 @@ To free dentries and inodes:
->  To free pagecache, dentries and inodes:
->  	echo 3 > /proc/sys/vm/drop_caches
->  
-> -As this is a non-destructive operation and dirty objects are not freeable, the
-> -user should run `sync' first.
-> +This is a non-destructive operation and will not free any dirty objects.
-> +To increase the number of objects freed by this operation, the user may run
-> +`sync' prior to writing to /proc/sys/vm/drop_caches.  This will minimize the
-> +number of dirty objects on the system and create more candidates to be
-> +dropped.
-> +
-> +This file is not a means to control the growth of the various kernel caches
-> +(inodes, dentries, pagecache, etc...)  These objects are automatically
-> +reclaimed by the kernel when memory is needed elsewhere on the system.
-> +
-> +Outside of a testing or debugging environment, use of
-> +/proc/sys/vm/drop_caches is not recommended.
->  
->  ==============================================================
->  
-> diff -puN fs/drop_caches.c~update-drop_caches-documentation fs/drop_caches.c
-> --- linux-2.6.git/fs/drop_caches.c~update-drop_caches-documentation	2010-09-14 15:44:29.000000000 -0700
-> +++ linux-2.6.git-dave/fs/drop_caches.c	2010-09-14 15:58:31.000000000 -0700
-> @@ -47,6 +47,8 @@ int drop_caches_sysctl_handler(ctl_table
->  {
->  	proc_dointvec_minmax(table, write, buffer, length, ppos);
->  	if (write) {
-> +		WARN_ONCE(1, "kernel caches forcefully dropped, "
-> +			     "see Documentation/sysctl/vm.txt\n");
+Hi Yinghai,
 
-Documentation updeta seems good but showing warning seems to be meddling to me.
+On Tue, 14 Sep 2010 18:33:34 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
+>
+> On 09/14/2010 05:29 PM, Stephen Rothwell wrote:
+> >=20
+> > Do not remove the "extern" key word.
+>=20
+> why? you got another warning?
 
-Thanks,
--Kame
+It is normal C coding practice to mark declarations in header files with
+extern.  It probably doesn't strictly matter for functions, but I have
+seen a case where not doing so to a variable lead to multiple definitions
+of the variable.  Consistency is also good.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__15_Sep_2010_14_39_04_+1000_/zC80piBEq1tdWF3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMkE3oAAoJEDMEi1NhKgbs9tsH/36cUc0lhYxCRoio5m3qer2a
+QRPUy/IAcYC5lp+O3NHzCEvCm3051G9b5A0E5TSMKlTD83JRMoA3ek+zEoQ4dRQY
+SKbVqaiWrpw+WLk8oXG8aEW1F+DiTeFUGgsnuG8qEGpPGQ152CRuD028Mfp5bMGW
+Rz+FzpnG+KEpQW6X+ouZk+kaYWaDhjXeC5sYEbBann8pVzeLBqXgWtSkR42qHuKh
+UAvo360pjYLNQ9FEb61NU51Lxh1Qz5YuQ1538ABGIK9/rHc3KNrDyxJH5BSsKCaY
+vI2tgVQXrdBevfeSouUgdP6du5sdykWkiDjFneEY/i4eDqF/i1XOKzdRvCgr2t4=
+=hM6n
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__15_Sep_2010_14_39_04_+1000_/zC80piBEq1tdWF3--
