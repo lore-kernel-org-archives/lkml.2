@@ -1,115 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab0IODSg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Sep 2010 23:18:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18686 "EHLO mga02.intel.com"
+	id S1754972Ab0IODXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Sep 2010 23:23:07 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46275 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754963Ab0IODSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Sep 2010 23:18:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,368,1280732400"; 
-   d="scan'208";a="657399734"
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-From: Shaohua Li <shaohua.li@intel.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <20100915031343.GA12005@localhost>
-References: <20100915091118.3dbdc961@notabene> <4C90139A.1080809@redhat.com>
-	 <20100915122334.3fa7b35f@notabene> <20100915023735.GA9175@localhost>
-	 <20100915025454.GA10230@localhost> <20100915030640.GA11141@localhost>
-	 <20100915031343.GA12005@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Sep 2010 11:18:32 +0800
-Message-ID: <1284520712.30133.1.camel@sli10-conroe.sh.intel.com>
+	id S1753517Ab0IODXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Sep 2010 23:23:05 -0400
+Date: Wed, 15 Sep 2010 13:23:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>
+Subject: linux-next: manual merge of the bkl-trivial tree with the  tree
+Message-Id: <20100915132303.1b97756c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-09-15 at 11:13 +0800, Wu Fengguang wrote:
-> On Wed, Sep 15, 2010 at 11:06:40AM +0800, Wu Fengguang wrote:
-> > On Wed, Sep 15, 2010 at 10:54:54AM +0800, Wu Fengguang wrote:
-> > > On Wed, Sep 15, 2010 at 10:37:35AM +0800, Wu Fengguang wrote:
-> > > > On Wed, Sep 15, 2010 at 10:23:34AM +0800, Neil Brown wrote:
-> > > > > On Tue, 14 Sep 2010 20:30:18 -0400
-> > > > > Rik van Riel <riel@redhat.com> wrote:
-> > > > > 
-> > > > > > On 09/14/2010 07:11 PM, Neil Brown wrote:
-> > > > > > 
-> > > > > > > Index: linux-2.6.32-SLE11-SP1/mm/vmscan.c
-> > > > > > > ===================================================================
-> > > > > > > --- linux-2.6.32-SLE11-SP1.orig/mm/vmscan.c	2010-09-15 08:37:32.000000000 +1000
-> > > > > > > +++ linux-2.6.32-SLE11-SP1/mm/vmscan.c	2010-09-15 08:38:57.000000000 +1000
-> > > > > > > @@ -1106,6 +1106,11 @@ static unsigned long shrink_inactive_lis
-> > > > > > >   		/* We are about to die and free our memory. Return now. */
-> > > > > > >   		if (fatal_signal_pending(current))
-> > > > > > >   			return SWAP_CLUSTER_MAX;
-> > > > > > > +		if (!(sc->gfp_mask&  __GFP_IO))
-> > > > > > > +			/* Not allowed to do IO, so mustn't wait
-> > > > > > > +			 * on processes that might try to
-> > > > > > > +			 */
-> > > > > > > +			return SWAP_CLUSTER_MAX;
-> > > > > > >   	}
-> > > > > > >
-> > > > > > >   	/*
-> > > > > > 
-> > > > > > Close.  We must also be sure that processes without __GFP_FS
-> > > > > > set in their gfp_mask do not wait on processes that do have
-> > > > > > __GFP_FS set.
-> > > > > > 
-> > > > > > Considering how many times we've run into a bug like this,
-> > > > > > I'm kicking myself for not having thought of it :(
-> > > > > > 
-> > > > > 
-> > > > > So maybe this?  I've added the test for __GFP_FS, and moved the test before
-> > > > > the congestion_wait on the basis that we really want to get back up the stack
-> > > > > and try the mempool ASAP.
-> > > > 
-> > > > The patch may well fail the !__GFP_IO page allocation and then
-> > > > quickly exhaust the mempool.
-> > > > 
-> > > > Another approach may to let too_many_isolated() use much higher
-> > > > thresholds for !__GFP_IO/FS and lower ones for __GFP_IO/FS. ie. to
-> > > > allow at least nr2 NOIO/FS tasks to be blocked independent of the
-> > > > IO/FS ones.  Since NOIO vmscans typically completes fast, it will then
-> > > > very hard to accumulate enough NOIO processes to be actually blocked.
-> > > > 
-> > > > 
-> > > >                   IO/FS tasks                NOIO/FS tasks           full
-> > > >                   block here                 block here              LRU size
-> > > > |-----------------|--------------------------|-----------------------|
-> > > > |      nr1        |           nr2            |
-> > > 
-> > > How about this fix? We may need very high threshold for NOIO/NOFS to
-> > > prevent possible regressions.
-> > 
-> > Plus __GFP_WAIT..
-> 
-> Ah sorry! __GFP_WAIT cannot afford to wait by definition..
-> 
-> ---
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 225a759..becc63a 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1135,10 +1135,14 @@ static int too_many_isolated(struct zone *zone, int file,
->  		struct scan_control *sc)
->  {
->  	unsigned long inactive, isolated;
-> +	int ratio;
->  
->  	if (current_is_kswapd())
->  		return 0;
->  
-> +	if (!(sc->gfp_mask & __GFP_WAIT))
-> +		return 0;
-> +
-it appears __GFP_WAIT allocation doesn't go to direct reclaim.
+Hi Arnd,
 
+Today's linux-next merge of the bkl-trivial tree got a conflict in
+drivers/staging/spectra/ffsport.c between commit
+f8d261d39a24f9f612cb8b2d5ad68654727543cd ("staging: spectra needs
+<linux/slab.h>") from Linus' tree and commit
+a0293f8b84de7525083a97c7215c74ce1a066aeb ("block: autoconvert trivial BKL
+users to private mutex") from the bkl-trivial tree.
+
+Just context changes.  I fixed it up (see below) and can carry it for a
+while.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/staging/spectra/ffsport.c
+index fa21a0f,905a67c..0000000
+--- a/drivers/staging/spectra/ffsport.c
++++ b/drivers/staging/spectra/ffsport.c
+@@@ -27,8 -27,6 +27,7 @@@
+  #include <linux/kthread.h>
+  #include <linux/log2.h>
+  #include <linux/init.h>
+- #include <linux/smp_lock.h>
+ +#include <linux/slab.h>
+  
+  /**** Helper functions used for Div, Remainder operation on u64 ****/
+  
