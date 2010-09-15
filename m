@@ -1,93 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab0IORC1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 13:02:27 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59460 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab0IORC0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 13:02:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XaJsIisIVuKDnxhnm2n2s28hixeehsSoWkaaFpfOr4+daiPQFeA6nKdaXr+Anzo4ne
-         vOB9DNqOdwUvUDhFR8RyKefoq/PwtCJvw7vUn+2f1KHlnAhfYW1bWZU6lCvWmahD0EmM
-         Npqg3ReZW1wkhwq+uSyrpkghPjh6N9HL4D/MU=
-Date: Wed, 15 Sep 2010 21:02:22 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+	id S1754584Ab0IORMx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 13:12:53 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:53299 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752665Ab0IORMw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 13:12:52 -0400
+From: Arun MURTHY <arun.murthy@stericsson.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
-	counters
-Message-ID: <20100915170222.GB5959@lenovo>
-References: <20100910155659.GD13563@erda.amd.com> <20100911094157.GA11521@elte.hu> <20100911114404.GE13563@erda.amd.com> <20100911124537.GA22850@elte.hu> <20100912095202.GF13563@erda.amd.com> <20100913143713.GK13563@erda.amd.com> <20100914174132.GN13563@erda.amd.com> <20100915162034.GO13563@erda.amd.com> <20100915164610.GA5959@lenovo> <AANLkTim5knbg8GdUAYyx_i5WQUwnez8tHkU1SfiJJ+L7@mail.gmail.com>
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Date: Wed, 15 Sep 2010 19:12:33 +0200
+Subject: RE: [PATCH] mfd: ab8500: update kconfig for ab8500 core driver
+Thread-Topic: [PATCH] mfd: ab8500: update kconfig for ab8500 core driver
+Thread-Index: ActU6krmFg5etulFQ9Kvj0XyEGpf4wADjfew
+Message-ID: <F45880696056844FA6A73F415B568C69532D96AA36@EXDCVYMBSTM006.EQ1STM.local>
+References: <1284549823-6246-1-git-send-email-arun.murthy@stericsson.com>
+ <20100915082014.99d702e4.randy.dunlap@oracle.com>
+In-Reply-To: <20100915082014.99d702e4.randy.dunlap@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim5knbg8GdUAYyx_i5WQUwnez8tHkU1SfiJJ+L7@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 06:47:51PM +0200, Stephane Eranian wrote:
-> On Wed, Sep 15, 2010 at 6:46 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> > On Wed, Sep 15, 2010 at 06:20:34PM +0200, Robert Richter wrote:
-> >> On 14.09.10 19:41:32, Robert Richter wrote:
-> >> > I found the reason why we get the unknown nmi. For some reason
-> >> > cpuc->active_mask in x86_pmu_handle_irq() is zero. Thus, no counters
-> >> > are handled when we get an nmi. It seems there is somewhere a race
-> >> > accessing the active_mask. So far I don't have a fix available.
-> >> > Changing x86_pmu_stop() did not help:
-> >>
-> >> The patch below for tip/perf/urgent fixes this.
-> >>
-> >> -Robert
-> >>
-> >> From 4206a086f5b37efc1b4d94f1d90b55802b299ca0 Mon Sep 17 00:00:00 2001
-> >> From: Robert Richter <robert.richter@amd.com>
-> >> Date: Wed, 15 Sep 2010 16:12:59 +0200
-> >> Subject: [PATCH] perf, x86: catch spurious interrupts after disabling counters
-> >>
-> >> Some cpus still deliver spurious interrupts after disabling a counter.
-> >> This caused 'undelivered NMI' messages. This patch fixes this.
-> >>
-> >> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> >> ---
-> > ...
-> >
-> > Hi Robert, thanks a lot for tracking this issue! I might be missing
-> > something but why don't you clean this ->running mask bits on pmu-stop?
-> > What if counter gets disabled/freed or whatever before issue any nmis?
-> > Another question I have still -- is this an hardware issue in general?
-> >
-> what's for sure, is that you can have an interrupt in flight by the time
-> you disable.
+Hi Randy,
+
+> On Wed, 15 Sep 2010 16:53:43 +0530 Arun Murthy wrote:
 > 
+> > This patch add a dependancy for ab8500-core driver so as to depend on
+> > u8500 platform.
+> >
+> > This patch also fixes the build issues(powerpc_allyesconfig) for the
+> > patch 03f582a93ecca6e9584b622570022abf08ed03ec (misc: Add ab8500 pwm
+> > driver)
+> 
+> Please list build errors/warnings that are fixed in your patch
+> description.
+> 
+Please find the build error log below (http://www.spinics.net/lists/kernel/msg1083549.html)
 
-I fear you can x86_pmu_stop()
+drivers/mfd/built-in.o: In function `__crc_pwm_free':
+(*ABS*+0x24ba6d1e): multiple definition of `__crc_pwm_free'
+drivers/mfd/built-in.o: In function `.pwm_free':
+(.text+0x1ab3c): multiple definition of `.pwm_free'
+drivers/misc/built-in.o:(.text+0x2620c): first defined here
+drivers/mfd/built-in.o: In function `__crc_pwm_request':
+(*ABS*+0xc1f4ec93): multiple definition of `__crc_pwm_request'
+drivers/mfd/built-in.o: In function `__crc_pwm_enable':
+(*ABS*+0x9d09808d): multiple definition of `__crc_pwm_enable'
+drivers/mfd/built-in.o: In function `.pwm_enable':
+(.text+0x1abc8): multiple definition of `.pwm_enable'
+drivers/misc/built-in.o:(.text+0x26278): first defined here
+drivers/mfd/built-in.o: In function `.pwm_request':
+(.text+0x1a774): multiple definition of `.pwm_request'
+drivers/misc/built-in.o:(.text+0x2604c): first defined here
+drivers/mfd/built-in.o: In function `pwm_config':
+(.opd+0x1ce0): multiple definition of `pwm_config'
+drivers/misc/built-in.o:(.opd+0x3000): first defined here
+drivers/mfd/built-in.o: In function `pwm_free':
+(.opd+0x1d28): multiple definition of `pwm_free'
+drivers/misc/built-in.o:(.opd+0x2fd0): first defined here
+drivers/mfd/built-in.o: In function `pwm_request':
+(.opd+0x1cf8): multiple definition of `pwm_request'
+drivers/misc/built-in.o:(.opd+0x2f58): first defined here
+drivers/mfd/built-in.o: In function `__crc_pwm_disable':
+(*ABS*+0xb0493b18): multiple definition of `__crc_pwm_disable'
+drivers/mfd/built-in.o: In function `.pwm_disable':
+(.text+0x1aa24): multiple definition of `.pwm_disable'
+drivers/misc/built-in.o:(.text+0x2613c): first defined here
+drivers/mfd/built-in.o: In function `pwm_enable':
+(.opd+0x1d40): multiple definition of `pwm_enable'
+drivers/misc/built-in.o:(.opd+0x2fe8): first defined here
+drivers/mfd/built-in.o: In function `.pwm_config':
+(.text+0x1a648): multiple definition of `.pwm_config'
+drivers/misc/built-in.o:(.text+0x26358): first defined here
+drivers/mfd/built-in.o: In function `pwm_disable':
+(.opd+0x1d10): multiple definition of `pwm_disable'
+drivers/misc/built-in.o:(.opd+0x2fb8): first defined here
+drivers/mfd/built-in.o: In function `__crc_pwm_config':
+(*ABS*+0xc23f5b9): multiple definition of `__crc_pwm_config
 
-	if (__test_and_clear_bit(hwc->idx, cpuc->active_mask)) {
+> This patch will certainly keep i386 builds from failing, like I saw
+> yesterday.  However, since this driver uses some spi_*() functions,
+> it should also depend on SPI_MASTER IMO.
+> See this patch:  http://lkml.org/lkml/2010/9/14/412
+> 
+I saw your patch for fixing the same @ (http://www.spinics.net/lists/kernel/msg1083970.html)
+Hence I have'nt included this.
 
---->		active_mask will be cleared here for sure
---->		but counter still ticks, say nmi happens active_mask
---->		is cleared, but NMI can still happen and gets buffered
---->		before you disable counter in real
-
-		x86_pmu.disable(event);
-		cpuc->events[hwc->idx] = NULL;
-		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
-		hwc->state |= PERF_HES_STOPPED;
-	}
-
-No?
-
-	-- Cyrill
+Thanks and Regards,
+Arun R Murthy
+--------------
