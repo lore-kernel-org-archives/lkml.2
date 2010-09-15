@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab0IOFSt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 01:18:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33700 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752406Ab0IOFSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 01:18:48 -0400
-Date: Wed, 15 Sep 2010 07:12:41 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-Message-ID: <20100915051241.GA25340@redhat.com>
-References: <1284476719.13351.35.camel@localhost.localdomain>
- <201009141721.13202.arnd@arndb.de>
- <20100914152231.GA13105@redhat.com>
- <1284480025.13351.49.camel@localhost.localdomain>
- <20100914162952.GB13560@redhat.com>
- <1284483745.13351.71.camel@localhost.localdomain>
- <20100914182707.GB15549@redhat.com>
- <1284490143.13351.82.camel@localhost.localdomain>
- <20100914190156.GA16037@redhat.com>
- <1284492983.13351.95.camel@localhost.localdomain>
+	id S1753279Ab0IOFUb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 01:20:31 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42151 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409Ab0IOFUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 01:20:30 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Nikanth Karthikesan <knikanth@suse.de>
+Subject: Re: [PATCH v2] After swapout/swapin private dirty mappings are reported clean in smaps
+Cc: kosaki.motohiro@jp.fujitsu.com, Richard Guenther <rguenther@suse.de>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        balbir@linux.vnet.ibm.com, Michael Matz <matz@novell.com>,
+        Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <201009151034.22497.knikanth@suse.de>
+References: <20100915134724.C9EE.A69D9226@jp.fujitsu.com> <201009151034.22497.knikanth@suse.de>
+Message-Id: <20100915141710.C9F7.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1284492983.13351.95.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 15 Sep 2010 14:20:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 14, 2010 at 12:36:23PM -0700, Shirley Ma wrote:
-> On Tue, 2010-09-14 at 21:01 +0200, Michael S. Tsirkin wrote:
-> > > > I think that you should be able to simply combine
-> > > > the two drivers together, add an ioctl to
-> > > > enable/disable zero copy mode of operation. 
-> > > 
-> > > That could work. But what's the purpose to have two drivers if one
-> > > driver can handle it?
-> > > 
-> > > Thanks
-> > > Shirley
+> On Wednesday 15 September 2010 10:18:11 KOSAKI Motohiro wrote:
+> > > On Wednesday 15 September 2010 05:56:36 KOSAKI Motohiro wrote:
+> > > > > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> > > > > index 439fc1f..06fc468 100644
+> > > > > --- a/fs/proc/task_mmu.c
+> > > > > +++ b/fs/proc/task_mmu.c
+> > > > > @@ -368,7 +368,11 @@ static int smaps_pte_range(pmd_t *pmd, unsigned
+> > > > > long addr, unsigned long end, mss->shared_clean += PAGE_SIZE;
+> > > > >  			mss->pss += (PAGE_SIZE << PSS_SHIFT) / mapcount;
+> > > > >  		} else {
+> > > > > -			if (pte_dirty(ptent))
+> > > > > +			/*
+> > > > > +			 * File-backed pages, now anonymous are dirty
+> > > > > +			 * with respect to the file.
+> > > > > +			 */
+> > > > > +			if (pte_dirty(ptent) || (vma->vm_file && PageAnon(page)))
+> > > > >  				mss->private_dirty += PAGE_SIZE;
+> > > > >  			else
+> > > > >  				mss->private_clean += PAGE_SIZE;
+> > > >
+> > > > This is risky than v1. number of dirties are used a lot of application.
+> > >
+> > > This is exactly to help those applications, as currently after swap-out
+> > > and swap-in, the same pages are accounted as "Private_Clean:" instead of
+> > > "Private_Dirty:".
 > > 
-> > This was just an idea: I thought it's a good way for people interested
-> > in this zero copy thing to combine forces and avoid making
-> > the same mistakes, but it's not a must of course. 
+> > I don't think so.
 > 
-> Ok, I will make a simple patch by reusing Xiaohui's some vhost code on
-> handling vhost_add_used_and_signal() to see any performance changes.
-> 
-> The interesting thing here when I run 32 instances netperf/netserver I
-> didn't see any issue w/i this patch.
-> 
-> Thanks
-> Shirley
+> Actually this behaviour is observed. With a simple memhog, you can see pages 
+> which are "Private_Dirty:", become "Swap:" and then to "Private_Clean:". And 
+> that confused GDB.
 
-Yes, I agree this patch is useful for demo purposes:
-simple, and shows what kind of performance gains
-we can expect for TX.
+As I said, incorrect information is always no good solustion. We should concern
+how to provide good and enough information, but not how to lie.
+If currect gdb is crappy, it should fix. 
 
--- 
-MST
+
+> > incorrect infomation bring a lot of confusion rather than
+> >  its worth.
+
+
