@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab0IOTbE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 15:31:04 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60440 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639Ab0IOTbB convert rfc822-to-8bit (ORCPT
+	id S1755368Ab0IOTbJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 15:31:09 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:48091 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753639Ab0IOTbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 15:31:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Qqay0HLpowGKxYFUbpM7MNJGuoPvfO2GLcVyii+C2qkvVaWV9fbiwZWy8my1eVXfgp
-         Fkd3wSRzQKRXSj+5IeDvZaI4dEszirOPSZNp6tgutUgCHvzi1Vow+2dAmnppUiM0gix7
-         JCZxh22ba8Q+lNPv7FDzceYyktIyHsHPb6nmA=
-MIME-Version: 1.0
-In-Reply-To: <37141.91.60.150.116.1284563403.squirrel@www.firstfloor.org>
-References: <37141.91.60.150.116.1284563403.squirrel@www.firstfloor.org>
-Date: Wed, 15 Sep 2010 21:30:56 +0200
-X-Google-Sender-Auth: yW1XSGKMGhT8bXn_dmFYg_-7_Gs
-Message-ID: <AANLkTik=rm-Y1BMAP6qOM-ppLrptP_hP-6jMeNV1uVkx@mail.gmail.com>
-Subject: Re: [PATCH -tip -v4] irq_work: generic hard-irq context callbacks
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Huang Ying <ying.huang@intel.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        paulus <paulus@samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dhowells <dhowells@redhat.com>, Russell King <rmk@arm.linux.org.uk>,
-        Kyle McMartin <kyle@mcmartin.ca>, davem <davem@davemloft.net>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Matt Fleming <matt@console-pimps.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 15 Sep 2010 15:31:07 -0400
+Subject: Re: [RFC PATCH] drivers/net/tg3.c: Raise Jumbo Frame MTU to 9216?
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Joe Perches <joe@perches.com>
+Cc: Michael Chan <mchan@broadcom.com>, Matthew Carlson <mcarlson@broadcom.com>,
+        Benjamin Li <benli@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1284578095.10223.27.camel@Joe-Laptop>
+References: <1284572516.10223.12.camel@Joe-Laptop>
+	 <1284573454.8929.221.camel@HP1>  <1284578095.10223.27.camel@Joe-Laptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Wed, 15 Sep 2010 20:31:03 +0100
+Message-ID: <1284579063.2293.28.camel@achroite.uk.solarflarecom.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Sep 2010 19:36:00.0005 (UTC) FILETIME=[39A21350:01CB550D]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17638.005
+X-TM-AS-Result: No--27.674000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 15, 2010 at 17:10, Andi Kleen <andi@firstfloor.org> wrote:
->> On Wed, 2010-09-15 at 13:29 +0800, Huang Ying wrote:
->>> I uses the cross build tool from:
->>>
->>> http://www.kernel.org/pub/tools/crosstool/
->>
->> I'm not familiar with those, I build my own gcc-4.5.1 toolchains for all
->> targets that would actually build a gcc toolchains, for those that don't
->> I simply don't care about.
->
-> I don't think it's a reasonable requirement to have every contributor
-> compile on all architectures. If that was a general requirement
-> soon nobody would send patches anymore.
->
-> Cross arch breakages happen rarely and can be usually repaired after
-> the fact.
+On Wed, 2010-09-15 at 12:14 -0700, Joe Perches wrote:
+> On Wed, 2010-09-15 at 10:57 -0700, Michael Chan wrote:
+> > On Wed, 2010-09-15 at 10:41 -0700, Joe Perches wrote:
+> > > The TG3 apparently supports 9K frame sizes.
+> > > http://www.broadcom.com/collateral/pb/5704C-PB05-R.pdf
+> > > Is exactly 9000 a hardware limit?
+> > > Should the jumbo frame MTU be raised to 9216 or 9216
+> > > less the size of MAC, VLAN, IP and TCP headers?
+> > 9000 has been the de facto standard, has it been changed recently?
+> 
+> I know of a performance lab that's trying to use 9216 as a "standard"
+> jumbo frame length.
+[...]
 
-As long as "the fact" is linux-next and not Linus' tree, we can live
-with that ;-)
+We also use 9000 as the 'normal' jumbo MTU, though hard limit in sfc is
+a bit higher than this.
 
-Gr{oetje,eeting}s,
+The frame length limit is not defined only by the DMA engine and FIFOs
+but also by the MAC and PHY.  On the receive side, the MAC and/or PHY
+need to handle skew between the remote and local clocks which can grow
+proportionally with frame length.  For a controller which is used with
+several different PHYs, I would be hesitant to raise the driver's limit.
 
-                        Geert
+Ben.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
