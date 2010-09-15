@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab0IOXFl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 19:05:41 -0400
-Received: from kroah.org ([198.145.64.141]:39144 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab0IOXFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 19:05:38 -0400
-Date: Wed, 15 Sep 2010 15:48:36 -0700
-From: Greg KH <greg@kroah.com>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-kernel@vger.kernel.org, "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Joe Perches <joe@perches.com>, Jean Tourrilhes <jt@hpl.hp.com>,
-        Tejun Heo <tj@kernel.org>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [vendor-sec] [PATCH] wireless: fix 64K kernel heap content
- leak via ioctl
-Message-ID: <20100915224836.GF19835@kroah.com>
-References: <20100827210240.GC4703@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100827210240.GC4703@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753498Ab0IOXIb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 19:08:31 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:60646 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666Ab0IOXIa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 19:08:30 -0400
+Subject: [PATCH v2] drivers/video/via/ioctl.c: prevent reading
+ uninitialized stack memory
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: JosephChan@via.com.tw, ScottFang@viatech.com.cn, FlorianSchandinat@gmx.de
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        security@kernel.org, stable@kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Sep 2010 19:08:24 -0400
+Message-ID: <1284592104.10727.12.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 27, 2010 at 02:02:41PM -0700, Kees Cook wrote:
-> This problem was originally tracked down by Brad Spengler.
-> 
-> When calling wireless ioctls, if a driver does not correctly
-> validate/shrink iwp->length, the resulting copy_to_user can leak up to
-> 64K of kernel heap contents.
-> 
-> It seems that this is triggerable[1] in 2.6.32 at least on ath5k, but
-> I was not able to track down how. The twisty maze of ioctl handlers
-> stumped me. :) Other drivers I checked did not appear to have any problems,
-> but the potential remains. I'm not sure if this patch is the right approach;
-> it was fixed differently[2] in grsecurity.
-> 
-> [1] http://forums.grsecurity.net/viewtopic.php?f=3&t=2290&start=0
-> [2] http://grsecurity.net/~spender/wireless-infoleak-fix2.patch
+Disregard previous version, which had a typo and wouldn't compile.
+Also, math is fun: the ioctl allows reading of 1968 BITS = 246 bytes,
+not 1968 bytes as previously reported.
 
-Is this fixed differently upstream in the kernel with commit id
-42da2f948d949efd0111309f5827bf0298bcc9a4?
+The VIAFB_GET_INFO device ioctl allows unprivileged users to read 246
+bytes of uninitialized stack memory, because the "reserved" member of
+the viafb_ioctl_info struct declared on the stack is not altered or
+zeroed before being copied back to the user.  This patch takes care of
+it.
 
-thanks,
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 
-greg k-h
+--- linux-2.6.35.4.orig/drivers/video/via/ioctl.c	2010-08-26 19:47:12.000000000 -0400
++++ linux-2.6.35.4/drivers/video/via/ioctl.c	2010-09-15 11:53:29.997375748 -0400
+@@ -25,6 +25,8 @@ int viafb_ioctl_get_viafb_info(u_long ar
+ {
+ 	struct viafb_ioctl_info viainfo;
+ 
++	memset(&viainfo, 0, sizeof(struct viafb_ioctl_info));
++
+ 	viainfo.viafb_id = VIAID;
+ 	viainfo.vendor_id = PCI_VIA_VENDOR_ID;
+ 
+
+
