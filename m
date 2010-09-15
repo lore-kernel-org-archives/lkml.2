@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab0IORYo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 13:24:44 -0400
-Received: from waste.org ([173.11.57.241]:39465 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754473Ab0IORYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 13:24:41 -0400
-Subject: Re: [PATCH v2] After swapout/swapin private dirty mappings are
- reported clean in smaps
-From: Matt Mackall <mpm@selenic.com>
-To: Richard Guenther <rguenther@suse.de>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Matz <matz@novell.com>, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>
-In-Reply-To: <alpine.LNX.2.00.1009151648390.28912@zhemvz.fhfr.qr>
-References: <20100915134724.C9EE.A69D9226@jp.fujitsu.com>
-	 <201009151034.22497.knikanth@suse.de>
-	 <20100915141710.C9F7.A69D9226@jp.fujitsu.com>
-	 <201009151201.11359.knikanth@suse.de>
-	 <20100915140911.GC4383@balbir.in.ibm.com>
-	 <alpine.LNX.2.00.1009151612450.28912@zhemvz.fhfr.qr>
-	 <1284561982.21906.280.camel@calx>
-	 <alpine.LNX.2.00.1009151648390.28912@zhemvz.fhfr.qr>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Sep 2010 12:24:33 -0500
-Message-ID: <1284571473.21906.428.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1754755Ab0IOR2n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 13:28:43 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:43237 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab0IOR2l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 13:28:41 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L8STUR-01-4EC-02
+X-M-MSG: 
+Date: Wed, 15 Sep 2010 19:28:05 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
+ counters
+Message-ID: <20100915172805.GR13563@erda.amd.com>
+References: <20100911094157.GA11521@elte.hu>
+ <20100911114404.GE13563@erda.amd.com>
+ <20100911124537.GA22850@elte.hu>
+ <20100912095202.GF13563@erda.amd.com>
+ <20100913143713.GK13563@erda.amd.com>
+ <20100914174132.GN13563@erda.amd.com>
+ <20100915162034.GO13563@erda.amd.com>
+ <20100915164610.GA5959@lenovo>
+ <AANLkTim5knbg8GdUAYyx_i5WQUwnez8tHkU1SfiJJ+L7@mail.gmail.com>
+ <20100915170222.GB5959@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100915170222.GB5959@lenovo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding Hugh]
-
-On Wed, 2010-09-15 at 16:53 +0200, Richard Guenther wrote:
-> On Wed, 15 Sep 2010, Matt Mackall wrote:
-> 
-> > On Wed, 2010-09-15 at 16:14 +0200, Richard Guenther wrote:
-> > > On Wed, 15 Sep 2010, Balbir Singh wrote:
-> > > 
-> > > > * Nikanth Karthikesan <knikanth@suse.de> [2010-09-15 12:01:11]:
-> > > > 
-> > > > > How? Current smaps information without this patch provides incorrect 
-> > > > > information. Just because a private dirty page became part of swap cache, it 
-> > > > > shown as clean and backed by a file. If it is shown as clean and backed by 
-> > > > > swap then it is fine.
-> > > > >
-> > > > 
-> > > > How is GDB using this information?  
-> > > 
-> > > GDB counts the number of dirty and swapped pages in a private mapping and
-> > > based on that decides whether it needs to dump it to a core file or not.
-> > > If there are no dirty or swapped pages gdb assumes it can reconstruct
-> > > the mapping from the original backing file.  This way for example
-> > > shared libraries do not end up in the core file.
+On 15.09.10 13:02:22, Cyrill Gorcunov wrote:
+> > what's for sure, is that you can have an interrupt in flight by the time
+> > you disable.
 > > 
-> > This whole discussion is a little disturbing.
-> >
-> > The page is being reported clean as per the kernel's definition of
-> > clean, full stop.
-> > 
-> > So either there's a latent bug/inconsistency in the kernel VM or
-> > external tools are misinterpreting this data. But smaps is just
-> > reporting what's there, the fault doesn't lie in smaps. So fixing smaps
-> > just hides the problem, wherever it is.
-> > 
-> > Richard's report that the page is still clean after swapoff suggests the
-> > inconsistency lies in the VM.
 > 
-> Well - the discussion is about the /proc/smaps interface and
-> inconsistencies in what it reports.  In particular the interface
-> does not have the capability of reporting all details the kernel
-> has, so it might make sense to not "report a page clean as per
-> the kernel's definition of clean", but only in a /proc/smaps
-> context definition of clean that makes sense.
+> I fear you can x86_pmu_stop()
 > 
-> So, for
+> 	if (__test_and_clear_bit(hwc->idx, cpuc->active_mask)) {
 > 
-> 7ffff81ff000-7ffff8201000 r--p 000a8000 08:01 16376 /bin/bash
-> Size:                  8 kB
-> Rss:                   8 kB
-> Pss:                   8 kB
-> Shared_Clean:          0 kB
-> Shared_Dirty:          0 kB
-> Private_Clean:         8 kB
-> Private_Dirty:         0 kB
-> Referenced:            4 kB
-> Swap:                  0 kB
+> --->		active_mask will be cleared here for sure
+> --->		but counter still ticks, say nmi happens active_mask
+> --->		is cleared, but NMI can still happen and gets buffered
+> --->		before you disable counter in real
 > 
-> I expect both pages of that mapping to be file-backed by /bin/bash.
-> But surprisingly one page is actually backed by anonymous memory
-> (it was changed, then mapped readonly, swapped out and swapped in
-> again).
+> 		x86_pmu.disable(event);
+> 		cpuc->events[hwc->idx] = NULL;
+> 		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
+> 		hwc->state |= PERF_HES_STOPPED;
+> 	}
 > 
-> Thus, the bug is the above inconsistency in /proc/smaps.
+> No?
 
-But that's my point: the consistency problem is NOT in smaps. The page
-is NOT marked dirty, ergo smaps doesn't report it as dirty. Whether or
-not there is MORE information smaps could be reporting is irrelevant,
-the information it IS reporting is consistent with the underlying VM
-data. If there's an inconsistency about what it means to be clean, it's
-either in the VM or in your head.
+I tried reordering this too, but it didn't fix it.
 
-And I frankly think it's in the VM.
-
-In any case, I don't think Nikanth's fix is the right fix, as it
-basically says "you can't trust any of this". Either swap should return
-the pages to their pre-swap dirty state in the VM, or we should add
-another field here:
-
-Weird_Anon_Page_You_Should_Pretend_Is_Private_Dirty: 8 kB 
-
-See?
+-Robert
 
 -- 
-Mathematics is the supreme nostalgia of our time.
-
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
