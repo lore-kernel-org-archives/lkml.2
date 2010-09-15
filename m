@@ -1,79 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab0IOG2U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 02:28:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42195 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750733Ab0IOG2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 02:28:19 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-Organization: suse.de
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH v2] After swapout/swapin private dirty mappings are reported clean in smaps
-Date: Wed, 15 Sep 2010 12:01:11 +0530
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
-Cc: Richard Guenther <rguenther@suse.de>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, balbir@linux.vnet.ibm.com,
-        Michael Matz <matz@novell.com>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org
-References: <20100915134724.C9EE.A69D9226@jp.fujitsu.com> <201009151034.22497.knikanth@suse.de> <20100915141710.C9F7.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100915141710.C9F7.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009151201.11359.knikanth@suse.de>
+	id S1752152Ab0IOGdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 02:33:00 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:37398 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab0IOGc7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 02:32:59 -0400
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: JBeulich@novell.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        miklos@szeredi.hu
+In-reply-to: <20100914160654.20c91c22.akpm@linux-foundation.org> (message from
+	Andrew Morton on Tue, 14 Sep 2010 16:06:54 -0700)
+Subject: Re: [PATCH] use clear_page()/copy_page() in favor of
+ memset()/memcpy() on whole pages
+References: <4C7FB50D0200007800013F36@vpn.id2.novell.com> <20100914160654.20c91c22.akpm@linux-foundation.org>
+Message-Id: <E1OvlY2-0004Vd-Ss@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Wed, 15 Sep 2010 08:32:50 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 September 2010 10:50:25 KOSAKI Motohiro wrote:
-> > On Wednesday 15 September 2010 10:18:11 KOSAKI Motohiro wrote:
-> > > > On Wednesday 15 September 2010 05:56:36 KOSAKI Motohiro wrote:
-> > > > > > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> > > > > > index 439fc1f..06fc468 100644
-> > > > > > --- a/fs/proc/task_mmu.c
-> > > > > > +++ b/fs/proc/task_mmu.c
-> > > > > > @@ -368,7 +368,11 @@ static int smaps_pte_range(pmd_t *pmd,
-> > > > > > unsigned long addr, unsigned long end, mss->shared_clean +=
-> > > > > > PAGE_SIZE; mss->pss += (PAGE_SIZE << PSS_SHIFT) / mapcount;
-> > > > > >  		} else {
-> > > > > > -			if (pte_dirty(ptent))
-> > > > > > +			/*
-> > > > > > +			 * File-backed pages, now anonymous are dirty
-> > > > > > +			 * with respect to the file.
-> > > > > > +			 */
-> > > > > > +			if (pte_dirty(ptent) || (vma->vm_file && PageAnon(page)))
-> > > > > >  				mss->private_dirty += PAGE_SIZE;
-> > > > > >  			else
-> > > > > >  				mss->private_clean += PAGE_SIZE;
-> > > > >
-> > > > > This is risky than v1. number of dirties are used a lot of
-> > > > > application.
-> > > >
-> > > > This is exactly to help those applications, as currently after
-> > > > swap-out and swap-in, the same pages are accounted as
-> > > > "Private_Clean:" instead of "Private_Dirty:".
-> > >
-> > > I don't think so.
+On Tue, 14 Sep 2010, Andrew Morton wrote:
+> On Thu, 02 Sep 2010 13:30:37 +0100
+> "Jan Beulich" <JBeulich@novell.com> wrote:
+> 
+> > After all that's what they are intended for.
+> > 
+> > ...
 > >
-> > Actually this behaviour is observed. With a simple memhog, you can see
-> > pages which are "Private_Dirty:", become "Swap:" and then to
-> > "Private_Clean:". And that confused GDB.
+> > --- linux-2.6.36-rc3/fs/fuse/dev.c
+> > +++ 2.6.36-rc3-use-clear_page/fs/fuse/dev.c
+> > @@ -811,7 +811,7 @@ static int fuse_copy_page(struct fuse_co
+> >  
+> >  	if (page && zeroing && count < PAGE_SIZE) {
+> >  		void *mapaddr = kmap_atomic(page, KM_USER1);
+> > -		memset(mapaddr, 0, PAGE_SIZE);
+> > +		clear_page(mapaddr);
+> >  		kunmap_atomic(mapaddr, KM_USER1);
+> >  	}
+> >  	while (count) {
 > 
-> As I said, incorrect information is always no good solustion. We should
->  concern how to provide good and enough information, but not how to lie.
-> If currect gdb is crappy, it should fix.
-> 
+> fuse wanted to use clear_highpage() here.  But clear_highpage() uses
+> KM_USER0.  I don't immediately see why fuse uses KM_USER1 here?
 
-How? Current smaps information without this patch provides incorrect 
-information. Just because a private dirty page became part of swap cache, it 
-shown as clean and backed by a file. If it is shown as clean and backed by 
-swap then it is fine.
+There used to be KM_USER0 kmaps in there, but now they've been
+replaced with plain kmaps.  So switching to clear_highpage() should be
+fine.
 
-Thanks
-Nikanth
+Incremental patch appended.
 
-> > > incorrect infomation bring a lot of confusion rather than
-> > >  its worth.
-> 
+Thanks,
+Miklos
+----
+
+Subject: fuse: use clear_highpage() and  KM_USER0 instead of KM_USER1
+From: Miklos Szeredi <mszeredi@suse.cz>
+
+Commit 7909b1c640 (fuse: don't use atomic kmap) removed KM_USER0 usage
+from fuse/dev.c.  Switch KM_USER1 uses to KM_USER0 for clarity.  Also
+replace open coded clear_highpage().
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/fuse/dev.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+Index: linux-2.6/fs/fuse/dev.c
+===================================================================
+--- linux-2.6.orig/fs/fuse/dev.c	2010-09-15 08:22:34.000000000 +0200
++++ linux-2.6/fs/fuse/dev.c	2010-09-15 08:24:30.000000000 +0200
+@@ -809,11 +809,9 @@ static int fuse_copy_page(struct fuse_co
+ 	int err;
+ 	struct page *page = *pagep;
+ 
+-	if (page && zeroing && count < PAGE_SIZE) {
+-		void *mapaddr = kmap_atomic(page, KM_USER1);
+-		clear_page(mapaddr);
+-		kunmap_atomic(mapaddr, KM_USER1);
+-	}
++	if (page && zeroing && count < PAGE_SIZE)
++		clear_highpage(page);
++
+ 	while (count) {
+ 		if (cs->write && cs->pipebufs && page) {
+ 			return fuse_ref_page(cs, page, offset, count);
+@@ -830,10 +828,10 @@ static int fuse_copy_page(struct fuse_co
+ 			}
+ 		}
+ 		if (page) {
+-			void *mapaddr = kmap_atomic(page, KM_USER1);
++			void *mapaddr = kmap_atomic(page, KM_USER0);
+ 			void *buf = mapaddr + offset;
+ 			offset += fuse_copy_do(cs, &buf, &count);
+-			kunmap_atomic(mapaddr, KM_USER1);
++			kunmap_atomic(mapaddr, KM_USER0);
+ 		} else
+ 			offset += fuse_copy_do(cs, NULL, &count);
+ 	}
