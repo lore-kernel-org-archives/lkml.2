@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab0IORpm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 13:45:42 -0400
-Received: from lnx141.hrz.tu-darmstadt.de ([130.83.156.236]:52614 "EHLO
-	lnx141.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753847Ab0IORpl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 13:45:41 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Sep 2010 13:45:40 EDT
-From: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+	id S1754804Ab0IORr7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 13:47:59 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3245 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754503Ab0IORr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 13:47:58 -0400
+Message-ID: <4C9106C1.4080505@canonical.com>
+Date: Wed, 15 Sep 2010 11:47:45 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100826 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>
-Date: Wed, 15 Sep 2010 19:40:37 +0200
-To: linux-kernel@vger.kernel.org
-Subject: Any SYSRQ key to force mode switch to console mode when using KMS?
-X-Mailer: VM 7.19 under Emacs 21.3.1
-X-PMX-TU: seen v0.99a by 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.9.15.173014
-X-PMX-RELAY: mailout
+To: jbarnes@virtuousgeek.org
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: MCP limit log messages, 2.6.36-rc4
+Content-Type: multipart/mixed;
+ boundary="------------060604070902080400060307"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This is a multi-part message in MIME format.
+--------------060604070902080400060307
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-is there any SYSRQ key that forces the video system to console mode,
-especially when using KMS and allows to work on. 
+I've been getting regular MCP limit log messages on a Dell Studio 1458 
+(i5 CPU) with an A02 BIOS. With the attached debug hack it prints the 
+following values:
 
-Since going to KMS on a Thinkpad R50 with ATI Radeon RV250 via going from
-Opensuse-11.2 to Opensuse-11.3 I experience frequent situations where I am
-left with a black screen, with only ALT-SYSREQ-C switching the screen back
-on and hard reboot as only chance to escape that situation.
+[   33.605098] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
+30123, limit 1023
+[   38.597998] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
+21697, limit 1023
+[   43.590917] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
+15390, limit 1023
+[   48.583821] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
+43370, limit 1023
+[   53.576740] intel ips 0000:00:1f.6: MCP limit exceeded: Avg power 
+64728, limit 1023
 
-Situations that result in a black screen are:
+This is an idle machine which starts printing these messages about 30 
+seconds after boot. Any thoughts?
 
-* Going with the mouse over the NOSCRIPT buttom in firefox. Load goes up and
-screen goes black after some seconds. xorg.log ends with "Backtrace", but no
-backtrace output...
-
-* Calling pm-hibernate on a system that has hibernated before. First
-  pm-hibernate/wake-up-per power buttom sequence is successfull.
-
-Disabling KMS results in very slow "kaffeine" full screen output...
-
-pm-hibernate and firefox/noscript worked pre-KMS on opensuse-11.2.
-
-Some traces of other people hitting the NOSCRIPT xorg crash and others
-hitting the black unresponsive screen with KMS on RV250 are
-found on the net, but I didn't find a conclusive resolution.
-
-Opensuse default kernel and the recent Opensuse 2.6.36-rc3 kernel-of-the day
-were tested with no difference
-
-Thanks
-
-PS: I only follow linux-kernel via gmane.org, so if you need fast feedback,
-please CC me. 
+rtg
 -- 
-Uwe Bonnes                bon@elektron.ikp.physik.tu-darmstadt.de
+Tim Gardner tim.gardner@canonical.com
 
-Institut fuer Kernphysik  Schlossgartenstrasse 9  64289 Darmstadt
---------- Tel. 06151 162516 -------- Fax. 06151 164321 ----------
+--------------060604070902080400060307
+Content-Type: text/x-patch;
+ name="0001-intel_ips-Print-overage-values.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-intel_ips-Print-overage-values.patch"
+
+>From 89d9d47cc85a7a692f7f5e56549438086c36cc98 Mon Sep 17 00:00:00 2001
+From: Tim Gardner <tim.gardner@canonical.com>
+Date: Wed, 15 Sep 2010 09:35:35 -0600
+Subject: [PATCH] intel_ips: Print overage values
+
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/platform/x86/intel_ips.c |   26 ++++++++++++++++++++------
+ 1 files changed, 20 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
+index 9024480..4b8e6e2 100644
+--- a/drivers/platform/x86/intel_ips.c
++++ b/drivers/platform/x86/intel_ips.c
+@@ -598,17 +598,31 @@ static bool mcp_exceeded(struct ips_driver *ips)
+ {
+ 	unsigned long flags;
+ 	bool ret = false;
++	u32 temp_limit;
++	u32 avg_power;
++	const char *msg = "MCP limit exceeded: ";
+ 
+ 	spin_lock_irqsave(&ips->turbo_status_lock, flags);
+-	if (ips->mcp_avg_temp > (ips->mcp_temp_limit * 100))
+-		ret = true;
+-	if (ips->cpu_avg_power + ips->mch_avg_power > ips->mcp_power_limit)
++
++	temp_limit = ips->mcp_temp_limit;
++	temp_limit *= 100;
++	if (ips->mcp_avg_temp > temp_limit) {
++		dev_info(&ips->dev->dev,
++			"%sAvg temp %u, limit %u\n", msg, ips->mcp_avg_temp,
++			temp_limit);
+ 		ret = true;
+-	spin_unlock_irqrestore(&ips->turbo_status_lock, flags);
++	}
+ 
+-	if (ret)
++	avg_power = ips->cpu_avg_power;
++	avg_power += ips->mch_avg_power;
++	if (avg_power > ips->mcp_power_limit) {
+ 		dev_info(&ips->dev->dev,
+-			 "MCP power or thermal limit exceeded\n");
++			"%sAvg power %u, limit %u\n", msg, avg_power,
++			ips->mcp_power_limit);
++		ret = true;
++	}
++
++	spin_unlock_irqrestore(&ips->turbo_status_lock, flags);
+ 
+ 	return ret;
+ }
+-- 
+1.7.0.4
+
+
+--------------060604070902080400060307--
