@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab0IOQ2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 12:28:25 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16709 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab0IOQ2Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 12:28:24 -0400
-Date: Wed, 15 Sep 2010 09:26:46 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        driverdevel <devel@driverdev.osuosl.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        gregkh@suse.de, Brett Rudley <brudley@broadcom.com>,
-        Henry Ptasinski <henryp@broadcom.com>, Nohee Ko <noheek@broadcom.com>
-Subject: Re: linux-next: Tree for September 15 (brcm80211)
-Message-Id: <20100915092646.63fe20fd.randy.dunlap@oracle.com>
-In-Reply-To: <20100915142954.6a36f52d.sfr@canb.auug.org.au>
-References: <20100915142954.6a36f52d.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754649Ab0IOQaJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 12:30:09 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:36625 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753577Ab0IOQaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 12:30:07 -0400
+Date: Wed, 15 Sep 2010 18:25:03 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: linux-pcmcia@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [RFC] PCMCIA patches for 2.6.36-rc5
+Message-ID: <20100915162503.GA15043@comet.dominikbrodowski.net>
+Mail-Followup-To: linux-pcmcia@lists.infradead.org,
+	linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+	linux-serial@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010 14:29:54 +1000 Stephen Rothwell wrote:
+Hey,
 
-> Hi all,
-> 
-> Changes since 20100914:
+in order to solve a severe bug rendering many serial PCMCIA cards
+unuseable, and to let pcnet_cs work on more cards, I intend to submit
+a pull request for three patches tomorrow. They're available at
 
+git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
 
-When BRCM80211_PCI is not enabled:
+As usual, I'm interested in your input to this patch series. The individual
+patches will be sent out (at least) to the PCMCIA list in a few moments.
 
-make[4]: *** No rule to make target `drivers/staging/brcm80211/brcm80211.c', needed by `drivers/staging/brcm80211/brcm80211.o'.
+Best,
+	Dominik
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Dominik Brodowski (3):
+      pcmcia serial_cs.c: fix multifunction card handling
+      pcmcia: per-device, not per-socket debug messages
+      pcmcia pcnet_cs: try setting io_lines to 16 if card setup fails
+
+ drivers/net/pcmcia/pcnet_cs.c    |  139 ++++++++++++++++++++++---------------
+ drivers/pcmcia/pcmcia_resource.c |   51 +++++++-------
+ drivers/serial/serial_cs.c       |   62 ++++++++++-------
+ 3 files changed, 146 insertions(+), 106 deletions(-)
