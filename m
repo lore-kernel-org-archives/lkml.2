@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab0IOOjD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 10:39:03 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:34392 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab0IOOjB (ORCPT
+	id S1754079Ab0IOOmq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 10:42:46 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:56868 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604Ab0IOOmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 10:39:01 -0400
-X-SpamScore: -21
-X-BigFish: VPS-21(zz1432N98dNzz1202hzz15d4Rz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L8SM0D-01-RF1-02
-X-M-MSG: 
-Date: Wed, 15 Sep 2010 16:40:34 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Nix <nix@esperi.org.uk>,
-        Artur Skawina <art.08.09@gmail.com>,
-        Damien Wyart <damien.wyart@free.fr>,
-        John Drescher <drescherjm@gmail.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH RFC] x86: hpet: Avoid the readback penalty
-Message-ID: <20100915144034.GC968@aftab>
-References: <tip-54ff7e595d763d894104d421b103a89f7becf47c@git.kernel.org>
- <alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	Wed, 15 Sep 2010 10:42:45 -0400
+Date: Thu, 16 Sep 2010 00:12:32 +0930
+From: Christopher Yeoh <cyeoh@au1.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC][PATCH] Cross Memory Attach
+Message-ID: <20100916001232.0c496b02@lilo>
+In-Reply-To: <4C90A6C7.9050607@redhat.com>
+References: <20100915104855.41de3ebf@lilo>
+ <4C90A6C7.9050607@redhat.com>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, Sep 15, 2010 at 09:11:57AM -0400
+On Wed, 15 Sep 2010 12:58:15 +0200
+Avi Kivity <avi@redhat.com> wrote:
 
-> On Tue, 14 Sep 2010, tip-bot for Thomas Gleixner wrote:
-> > x86: hpet: Work around hardware stupidity
+>   On 09/15/2010 03:18 AM, Christopher Yeoh wrote:
+> > The basic idea behind cross memory attach is to allow MPI programs
+> > doing intra-node communication to do a single copy of the message
+> > rather than a double copy of the message via shared memory.
 > 
-> After my brain recovered from yesterdays exposure with the x86 timer
-> horror, I came up with a different solution for this problem, which
-> avoids the readback of the compare register completely. It works
-> nicely on my affected ATI system, but needs some exposure to the other
-> machines.
+> If the host has a dma engine (many modern ones do) you can reduce
+> this to zero copies (at least, zero processor copies).
 
-Will run in on a couple of SBx00 machines I got here.
+Yes, this interface doesn't really support that. I've tried to keep
+things really simple here, but I see potential for increasing
+level/complexity of support with diminishing returns:
 
-...
+1. single copy (basically what the current implementation does)
+2. support for async dma offload (rather arch specific)
+3. ability to map part of another process's address space directly into
+   the current one. Would have setup/tear down overhead, but this would
+   be useful specifically for reduction operations where we don't even
+   need to really copy the data once at all, but use it directly in
+   arithmetic/logical operations on the receiver.
 
-> If cmp is less than 8 HPET clock cycles, then we decide that the event
-> has happened already and return -ETIME. That covers the above #1 and
-> #2 problems which would cause a wait for HPET wraparound (~306
-> seconds).
+For reference, there is also knem http://runtime.bordeaux.inria.fr/knem/
+which does implement (2) for I/OAT, though it looks to me the interface
+and implementation are relatively speaking quite a bit more complex.
 
-Make sense. I guess you're choosing a value of 8 just to be on the safe
-side wrt to HPET clock cycles it takes to write the cmp register?
+> Instead of those two syscalls, how about a vmfd(pid_t pid, ulong
+> start, ulong len) system call which returns an file descriptor that
+> represents a portion of the process address space.  You can then use
+> preadv() and pwritev() to copy memory, and io_submit(IO_CMD_PREADV)
+> and io_submit(IO_CMD_PWRITEV) for asynchronous variants (especially
+> useful with a dma engine, since that adds latency).
+> 
+> With some care (and use of mmu_notifiers) you can even mmap() your
+> vmfd and access remote process memory directly.
 
+That interface sounds interesting (I'm not sure I understand how
+this would be implemented), though this would mean that a file
+descriptor would need to be created for every message that
+each process sent wouldn't it?
+
+Regards,
+
+Chris
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
-
+cyeoh@au.ibm.com
