@@ -1,85 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab0IOSmH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 14:42:07 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38089 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455Ab0IOSmF (ORCPT
+	id S1755006Ab0IOSmq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 14:42:46 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61770 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754568Ab0IOSmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 14:42:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:from:date:message-id:subject:to:content-type;
-        b=fBaUNk3juE2i1W144qGnomeJHaBO59GHnjnGH4i/0VsxtYhPfcELOwhjlb8cM/TK0O
-         K+XZiJprTGL3NZHab9uUeG4do6SH+hgDJXTBV44L2rdrwxnP2z7AO6sopKPpvNnpKSAb
-         +CimUa/hDRtAbSAVv9bbykEIMTTAfzWpv8LpA=
+	Wed, 15 Sep 2010 14:42:45 -0400
+Date: Wed, 15 Sep 2010 15:42:35 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Mat Martineau <mathewm@codeaurora.org>
+Cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, marcel@holtmann.org, davem@davemloft.net
+Subject: Re: Possible regression with skb_clone() in 2.6.36
+Message-ID: <20100915184235.GA31685@vigoh>
+References: <1283988727-1456-1-git-send-email-padovan@profusion.mobi>
+ <alpine.DEB.2.00.1009100920270.14322@linux-sea-02>
+ <20100910194509.GC19693@vigoh>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Wed, 15 Sep 2010 20:41:44 +0200
-Message-ID: <AANLkTim1frqcmW7xLvOYkm75+Aci5CzaK3TfB=7_+txb@mail.gmail.com>
-Subject: man-pages-3.26 is released
-To: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100910194509.GC19693@vigoh>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gidday,
+Hi Mat,
 
-I've released man-pages-3.26.tar.gz - man pages for Linux
+* Gustavo F. Padovan <padovan@profusion.mobi> [2010-09-10 16:45:09 -0300]:
 
-This release is now available for download at:
+> Hi Mat,
+> 
+> * Mat Martineau <mathewm@codeaurora.org> [2010-09-10 09:53:31 -0700]:
+> 
+> > 
+> > Gustavo -
+> > 
+> > I'm not sure why the streaming code used to work, but this does not 
+> > look like an skb_clone() problem.  Your patch to remove the 
+> > skb_clone() call in l2cap_streaming_send() addresses the root cause of 
+> > this crash.
+> > 
+> > On Wed, 8 Sep 2010, Gustavo F. Padovan wrote:
+> > 
+> > > I've been experiencing some problems when running the L2CAP Streaming mode in
+> > > 2.6.36. The system quickly runs in an Out Of Memory condition and crash. That
+> > > wasn't happening before, so I think we may have a regression here (I didn't
+> > > find where yet). The crash log is below.
+> > >
+> > > The following patch does not fix the regression, but shows that removing the
+> > > skb_clone() call from l2cap_streaming_send() we workaround the problem. The
+> > > patch is good anyway because it saves memory and time.
+> > >
+> > > By now I have no idea on how to fix this.
+> > >
+> > > <snip>
+> > 
+> > This has to do with the sk->sk_wmem_alloc accounting that controls the 
+> > amount of write buffer space used on the socket.
+> > 
+> > When the L2CAP streaming mode socket segments its data, it allocates 
+> > memory using sock_alloc_send_skb() (via bt_skb_send_alloc()).  Before 
+> > that allocation call returns, skb_set_owner_w() is called on the new 
+> > skb.  This adds to sk->sk_wmem_alloc and sets skb->destructor so that 
+> > sk->sk_wmem_alloc is correctly updated when the skb is freed.
+> > 
+> > When that skb is cloned, the clone is not "owned" by the write buffer. 
+> > The clone's destructor is set to NULL in __skb_clone().  The version 
+> > of l2cap_streaming_send() that runs out of memory is passing the 
+> > non-owned skb clone down to the HCI layer.  The original skb (the one 
+> > that's "owned by w") is immediately freed, which adjusts 
+> > sk->sk_wmem_alloc back down - the socket thinks it has unlimited write 
+> > buffer space.  As a result, bt_skb_send_alloc() never blocks waiting 
+> > for buffer space (or returns EAGAIN for nonblocking writes) and the 
+> > HCI send queue keeps growing.
+> 
+> If the problem is what you are saying, add a skb_set_owner_w(skb, sk) on
+> the cloned skb should solve the problem, but it doesn't. That's exactly
+> what tcp_transmit_skb() does. Also that just appeared in 2.6.36, is was
+> working fine before, i.e, we have a regression here. 
 
-http://www.kernel.org/pub/linux/docs/man-pages
-or ftp://ftp.kernel.org/pub/linux/docs/man-pages
+I've run some other tests and what you said also fixes the problem for
+Streaming Mode. If I use skb_set_owner_w() on the cloned skb, everything
+works fine. But we still have the problem for ERTM as I described.
+send() blocks wainting for memory. The regression is there yet.
+:(
 
-The man-pages git repository is here:
+> 
+> > 
+> > This isn't a problem for the ERTM sends, because the original skbs are 
+> > kept in the ERTM tx queue until they are acked.  Once they're acked, 
+> > the write buffer space is freed and additional skbs can be allocated.
+> 
+> It affects ERTM as well, but in that case the kernel doesn't crash
+> because ERTM block on sending trying to allocate memory. Then we are not
+> able to receive any ack (everything stays queued in sk_backlog_queue as
+> the sk is owned by the user) and ERTM stalls.
+> 
 
-git://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
-
-The online changelog is available at
-http://www.kernel.org/doc/man-pages/changelog.html (blogged at
-http://linux-man-pages.blogspot.com/2010/09/man-pages-326-is-released.html
-) and the current version of the pages is browsable at
-http://www.kernel.org/doc/man-pages/
-This release mainly contains minor fixes to existing pages.
-A few changes that may be of interest to readers of this
-list are listed below.
-
-Cheers,
-
-Michael
-
-==================== Changes in man-pages-3.26 ====================
-
-Newly documented interfaces in existing pages
----------------------------------------------
-
-eventfd.2
-    Michael Kerrisk
-        Document EFD_SEMAPHORE
-            Document the EFD_SEMAPHORE flag, added in kernel 2.6.30.
-            Also restructured some parts of the text to fit with the
-            addition of the EFD_SEMAPHORE text.
-
-Changes to individual pages
----------------------------
-
-sysfs.2
-    Michael Kerrisk
-        Clarify that this syscall is obsolete.
-            And strengthen recommendation to use /proc/filesystems instead.
-
-tzfile.5
-    Michael Kerrisk
-        Add information on version 2 format timezone files
-            Updated using information from the tzcode 2010l release at
-            ftp://elsie.nci.nih.gov/pub.
-            (It's an open question whether or not a version of tzfile.5
-            should live independently in man-pages. It was added to the
-            man-pages set many years ago. For now, I'll follow a
-            conservative course that causes least pain to downstream,
-            by continuing to maintain a separate copy in man-pages.)
-
-            See http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=594219
+-- 
+Gustavo F. Padovan
+ProFUSION embedded systems - http://profusion.mobi
