@@ -1,167 +1,453 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab0IOIoq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:44:46 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42472 "EHLO mx1.suse.de"
+	id S1752798Ab0IOIsn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:48:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:1463 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752367Ab0IOIop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:44:45 -0400
-Date: Wed, 15 Sep 2010 18:44:34 +1000
-From: Neil Brown <neilb@suse.de>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Li Shaohua <shaohua.li@intel.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Message-ID: <20100915184434.18e2d933@notabene>
-In-Reply-To: <20100915082843.GA17252@localhost>
-References: <20100915091118.3dbdc961@notabene>
-	<4C90139A.1080809@redhat.com>
-	<20100915122334.3fa7b35f@notabene>
-	<20100915082843.GA17252@localhost>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751699Ab0IOIsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 04:48:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,370,1280732400"; 
+   d="scan'208";a="837791829"
+From: ling.ma@intel.com
+To: mingo@elte.hu
+Cc: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        Ma Ling <ling.ma@intel.com>
+Subject: [PATCH V3] [X86] Fix potential issue on memmove
+Date: Wed, 15 Sep 2010 09:50:26 +0800
+Message-Id: <1284515426-7417-1-git-send-email-ling.ma@intel.com>
+X-Mailer: git-send-email 1.6.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010 16:28:43 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
+From: Ma Ling <ling.ma@intel.com>
 
-> Neil,
-> 
-> Sorry for the rushed and imaginary ideas this morning..
-> 
-> > @@ -1101,6 +1101,12 @@ static unsigned long shrink_inactive_lis
-> >  	int lumpy_reclaim = 0;
-> >  
-> >  	while (unlikely(too_many_isolated(zone, file, sc))) {
-> > +		if ((sc->gfp_mask & GFP_IOFS) != GFP_IOFS)
-> > +			/* Not allowed to do IO, so mustn't wait
-> > +			 * on processes that might try to
-> > +			 */
-> > +			return SWAP_CLUSTER_MAX;
-> > +
-> 
-> The above patch should behavior like this: it returns SWAP_CLUSTER_MAX
-> to cheat all the way up to believe "enough pages have been reclaimed".
-> So __alloc_pages_direct_reclaim() see non-zero *did_some_progress and
-> go on to call get_page_from_freelist(). That normally fails because
-> the task didn't really scanned the LRU lists. However it does have the
-> possibility to succeed -- when so many processes are doing concurrent
-> direct reclaims, it may luckily get one free page reclaimed by other
-> tasks. What's more, if it does fail to get a free page, the upper
-> layer __alloc_pages_slowpath() will be repeat recalling
-> __alloc_pages_direct_reclaim(). So, sooner or later it will succeed in
-> "stealing" a free page reclaimed by other tasks.
-> 
-> In summary, the patch behavior for !__GFP_IO/FS is
-> - won't do any page reclaim
-> - won't fail the page allocation (unexpected)
-> - will wait and steal one free page from others (unreasonable)
-> 
-> So it will address the problem you encountered, however it sounds
-> pretty unexpected and illogical behavior, right?
-> 
-> I believe this patch will address the problem equally well.
-> What do you think?
+memmove allow source and destination address to be overlap, 
+but no limitation for memcpy. So memmove use forward or
+backward copy mode to handle src > dest and dest > src cases respectively.
+However memcpy has not address overlap, it may use any copy mode
+theoretically. Our original memmove will call memcpy and assume
+it must use forward copy mode, otherwise the system will crash,
+it is potential issue. The patch based on tip/x86/mem avoids
+this assumption.
 
-Thank you for the detailed explanation.  Is agree with your reasoning and
-now understand why your patch is sufficient.
+Signed-off-by: Ma Ling <ling.ma@intel.com>
+---
+In this version we optimized original 32 and 64bit memmove.
 
-I will get it tested and let you know how that goes.
+ arch/x86/lib/memcpy_32.c  |  199 +++++++++++++++++++++++++++++++++++++++++----
+ arch/x86/lib/memmove_64.c |  189 ++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 362 insertions(+), 26 deletions(-)
 
-Thanks,
-NeilBrown
-
-
-> 
-> Thanks,
-> Fengguang
-> ---
-> 
-> mm: Avoid possible deadlock caused by too_many_isolated()
-> 
-> Neil finds that if too_many_isolated() returns true while performing
-> direct reclaim we can end up waiting for other threads to complete their
-> direct reclaim.  If those threads are allowed to enter the FS or IO to
-> free memory, but this thread is not, then it is possible that those
-> threads will be waiting on this thread and so we get a circular
-> deadlock.
-> 
-> some task enters direct reclaim with GFP_KERNEL
->   => too_many_isolated() false
->     => vmscan and run into dirty pages
->       => pageout()
->         => take some FS lock
-> 	  => fs/block code does GFP_NOIO allocation
-> 	    => enter direct reclaim again
-> 	      => too_many_isolated() true
-> 		=> waiting for others to progress, however the other
-> 		   tasks may be circular waiting for the FS lock..
-> 
-> The fix is to let !__GFP_IO and !__GFP_FS direct reclaims enjoy higher
-> priority than normal ones, by honouring them higher throttle threshold.
-> 
-> Now !__GFP_IO/FS reclaims won't be waiting for __GFP_IO/FS reclaims to
-> progress. They will be blocked only when there are too many concurrent
-> !__GFP_IO/FS reclaims, however that's very unlikely because the IO-less
-> direct reclaims is able to progress much more faster, and they won't
-> deadlock each other. The threshold is raised high enough for them, so
-> that there can be sufficient parallel progress of !__GFP_IO/FS reclaims.
-> 
-> Reported-by: NeilBrown <neilb@suse.de>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  mm/vmscan.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> --- linux-next.orig/mm/vmscan.c	2010-09-15 11:58:58.000000000 +0800
-> +++ linux-next/mm/vmscan.c	2010-09-15 15:36:14.000000000 +0800
-> @@ -1141,36 +1141,39 @@ int isolate_lru_page(struct page *page)
->  	return ret;
->  }
->  
->  /*
->   * Are there way too many processes in the direct reclaim path already?
->   */
->  static int too_many_isolated(struct zone *zone, int file,
->  		struct scan_control *sc)
->  {
->  	unsigned long inactive, isolated;
-> +	int ratio;
->  
->  	if (current_is_kswapd())
->  		return 0;
->  
->  	if (!scanning_global_lru(sc))
->  		return 0;
->  
->  	if (file) {
->  		inactive = zone_page_state(zone, NR_INACTIVE_FILE);
->  		isolated = zone_page_state(zone, NR_ISOLATED_FILE);
->  	} else {
->  		inactive = zone_page_state(zone, NR_INACTIVE_ANON);
->  		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
->  	}
->  
-> -	return isolated > inactive;
-> +	ratio = sc->gfp_mask & (__GFP_IO | __GFP_FS) ? 1 : 8;
-> +
-> +	return isolated > inactive * ratio;
->  }
->  
->  /*
->   * TODO: Try merging with migrations version of putback_lru_pages
->   */
->  static noinline_for_stack void
->  putback_lru_pages(struct zone *zone, struct scan_control *sc,
->  				unsigned long nr_anon, unsigned long nr_file,
->  				struct list_head *page_list)
->  {
+diff --git a/arch/x86/lib/memcpy_32.c b/arch/x86/lib/memcpy_32.c
+index 5415a9d..5b2c4e4 100644
+--- a/arch/x86/lib/memcpy_32.c
++++ b/arch/x86/lib/memcpy_32.c
+@@ -22,22 +22,187 @@ EXPORT_SYMBOL(memset);
+ 
+ void *memmove(void *dest, const void *src, size_t n)
+ {
+-	int d0, d1, d2;
+-
+-	if (dest < src) {
+-		memcpy(dest, src, n);
+-	} else {
+-		__asm__ __volatile__(
+-			"std\n\t"
+-			"rep\n\t"
+-			"movsb\n\t"
+-			"cld"
+-			: "=&c" (d0), "=&S" (d1), "=&D" (d2)
+-			:"0" (n),
+-			 "1" (n-1+src),
+-			 "2" (n-1+dest)
+-			:"memory");
+-	}
+-	return dest;
++
++	int d0,d1,d2,d3,d4,d5;
++	char *ret = dest;
++
++	__asm__ __volatile__(
++		/* Handle more 16bytes in loop */
++		"cmp $0x10, %0\n\t"
++		"jb	1f\n\t"
++
++		/* Decide forward/backward copy mode */
++		"cmp %2, %1\n\t"
++		"jb	2f\n\t"
++
++		/*
++		 * movs instruction have many startup latency
++		 * so we handle small size by general register.
++		 */
++		"cmp  $680, %0\n\t"
++		"jb 3f\n\t"
++		/*
++		 * movs instruction is only good for aligned case.
++		 */
++		"mov %1, %3\n\t"
++		"xor %2, %3\n\t"
++		"and $0xff, %3\n\t"
++		"jz 4f\n\t"
++		"3:\n\t"
++		"sub $0x10, %0\n\t"
++
++		/*
++		 * We gobble 16byts forward in each loop.
++		 */
++		"3:\n\t"
++		"sub $0x10, %0\n\t"
++		"mov 0*4(%1), %3\n\t"
++		"mov 1*4(%1), %4\n\t"
++		"mov  %3, 0*4(%2)\n\t"
++		"mov  %4, 1*4(%2)\n\t"
++		"mov 2*4(%1), %3\n\t"
++		"mov 3*4(%1), %4\n\t"
++		"mov  %3, 2*4(%2)\n\t"
++		"mov  %4, 3*4(%2)\n\t"
++		"lea  0x10(%1), %1\n\t"
++		"lea  0x10(%2), %2\n\t"
++		"jae 3b\n\t"
++		"add $0x10, %0\n\t"
++		"jmp 1f\n\t"
++
++		/*
++		 * Handle data forward by movs.
++		 */
++		".p2align 4\n\t"
++		"4:\n\t"
++		"mov -4(%1, %0), %3\n\t"
++		"lea -4(%2, %0), %4\n\t"
++		"shr $2, %0\n\t"
++		"rep movsl\n\t"
++		"mov %3, (%4)\n\t"
++		"jmp 11f\n\t"
++		/*
++		 * Handle data backward by movs.
++		 */
++		".p2align 4\n\t"
++		"6:\n\t"
++		"mov (%1), %3\n\t"
++		"mov %2, %4\n\t"
++		"lea -4(%1, %0), %1\n\t"
++		"lea -4(%2, %0), %2\n\t"
++		"shr $2, %0\n\t"
++		"std\n\t"
++		"rep movsl\n\t"
++		"mov %3,(%4)\n\t"
++		"cld\n\t"
++		"jmp 11f\n\t"
++
++		/*
++		 * Start to prepare for backward copy.
++		 */
++		".p2align 4\n\t"
++		"2:\n\t"
++		"cmp  $680, %0\n\t"
++		"jb 5f\n\t"
++		"mov %1, %3\n\t"
++		"xor %2, %3\n\t"
++		"and $0xff, %3\n\t"
++		"jz 6b\n\t"
++
++		/*
++		 * Calculate copy position to tail.
++		 */
++		"5:\n\t"
++		"add %0, %1\n\t"
++		"add %0, %2\n\t"
++		"sub $0x10, %0\n\t"
++
++		/*
++		 * We gobble 16byts backward in each loop.
++		 */
++		"7:\n\t"
++		"sub $0x10, %0\n\t"
++
++		"mov -1*4(%1), %3\n\t"
++		"mov -2*4(%1), %4\n\t"
++		"mov  %3, -1*4(%2)\n\t"
++		"mov  %4, -2*4(%2)\n\t"
++		"mov -3*4(%1), %3\n\t"
++		"mov -4*4(%1), %4\n\t"
++		"mov  %3, -3*4(%2)\n\t"
++		"mov  %4, -4*4(%2)\n\t"
++		"lea  -0x10(%1), %1\n\t"
++		"lea  -0x10(%2), %2\n\t"
++		"jae 7b\n\t"
++		/*
++		 * Calculate copy position to head.
++		 */
++		"add $0x10, %0\n\t"
++		"sub %0, %1\n\t"
++		"sub %0, %2\n\t"
++
++		/*
++		 * Move data from 8 bytes to 15 bytes.
++		 */
++		".p2align 4\n\t"
++		"1:\n\t"
++		"cmp $8, %0\n\t"
++		"jb 8f\n\t"
++		"mov 0*4(%1), %3\n\t"
++		"mov 1*4(%1), %4\n\t"
++		"mov -2*4(%1, %0), %5\n\t"
++		"mov -1*4(%1, %0), %1\n\t"
++
++		"mov  %3, 0*4(%2)\n\t"
++		"mov  %4, 1*4(%2)\n\t"
++		"mov  %5, -2*4(%2, %0)\n\t"
++		"mov  %1, -1*4(%2, %0)\n\t"
++		"jmp 11f\n\t"
++
++		/*
++		 * Move data from 4 bytes to 7 bytes.
++		 */
++		".p2align 4\n\t"
++		"8:\n\t"
++		"cmp $4, %0\n\t"
++		"jb 9f\n\t"
++		"mov 0*4(%1), %3\n\t"
++		"mov -1*4(%1, %0), %4\n\t"
++		"mov  %3, 0*4(%2)\n\t"
++		"mov  %4, -1*4(%2, %0)\n\t"
++		"jmp 11f\n\t"
++
++		/*
++		 * Move data from 2 bytes to 3 bytes.
++		 */
++		".p2align 4\n\t"
++		"9:\n\t"
++		"cmp $2, %0\n\t"
++		"jb 10f\n\t"
++		"movw 0*2(%1), %%dx\n\t"
++		"movw -1*2(%1, %0), %%bx\n\t"
++		"movw %%dx, 0*2(%2)\n\t"
++		"movw %%bx, -1*2(%2, %0)\n\t"
++		"jmp 11f\n\t"
++
++		/*
++		 * Move data for 1 byte.
++		 */
++		".p2align 4\n\t"
++		"10:\n\t"
++		"cmp $1, %0\n\t"
++		"jb 11f\n\t"
++		"movb (%1), %%cl\n\t"
++		"movb %%cl, (%2)\n\t"
++		".p2align 4\n\t"
++		"11:"
++		: "=&c" (d0), "=&S" (d1), "=&D" (d2),
++		  "=r" (d3),"=r" (d4), "=r"(d5)
++		:"0" (n),
++		"1" (src),
++		"2" (dest)
++		:"memory");
++
++
+ }
+ EXPORT_SYMBOL(memmove);
+diff --git a/arch/x86/lib/memmove_64.c b/arch/x86/lib/memmove_64.c
+index 0a33909..a6d7808 100644
+--- a/arch/x86/lib/memmove_64.c
++++ b/arch/x86/lib/memmove_64.c
+@@ -8,14 +8,185 @@
+ #undef memmove
+ void *memmove(void *dest, const void *src, size_t count)
+ {
+-	if (dest < src) {
+-		return memcpy(dest, src, count);
+-	} else {
+-		char *p = dest + count;
+-		const char *s = src + count;
+-		while (count--)
+-			*--p = *--s;
+-	}
+-	return dest;
++
++	unsigned long d0,d1,d2,d3,d4,d5,d6,d7;
++	char *ret;
++
++	__asm__ __volatile__(
++		/* Handle more 32bytes in loop */
++		"mov %2, %3\n\t"
++		"cmp $0x20, %0\n\t"
++		"jb	1f\n\t"
++
++		/* Decide forward/backward copy mode */
++		"cmp %2, %1\n\t"
++		"jb	2f\n\t"
++
++		/*
++		 * movsq instruction have many startup latency
++		 * so we handle small size by general register.
++		 */
++		"cmp  $680, %0\n\t"
++		"jb 3f\n\t"
++		/*
++		 * movsq instruction is only good for aligned case.
++		 */
++		"cmpb %%dil, %%sil\n\t"
++		"je 4f\n\t"
++		"3:\n\t"
++		"sub $0x20, %0\n\t"
++		/*
++		 * We gobble 32byts forward in each loop.
++		 */
++		"5:\n\t"
++		"sub $0x20, %0\n\t"
++		"movq 0*8(%1), %4\n\t"
++		"movq 1*8(%1), %5\n\t"
++		"movq 2*8(%1), %6\n\t"
++		"movq 3*8(%1), %7\n\t"
++		"leaq 4*8(%1), %1\n\t"
++
++		"movq %4, 0*8(%2)\n\t"
++		"movq %5, 1*8(%2)\n\t"
++		"movq %6, 2*8(%2)\n\t"
++		"movq %7, 3*8(%2)\n\t"
++		"leaq 4*8(%2), %2\n\t"
++		"jae 5b\n\t"
++		"addq $0x20, %0\n\t"
++		"jmp 1f\n\t"
++		/*
++		 * Handle data forward by movsq.
++		 */
++		".p2align 4\n\t"
++		"4:\n\t"
++		"movq %0, %8\n\t"
++		"movq -8(%1, %0), %4\n\t"
++		"lea -8(%2, %0), %5\n\t"
++		"shrq $3, %8\n\t"
++		"rep movsq\n\t"
++		"movq %4, (%5)\n\t"
++		"jmp 13f\n\t"
++		/*
++		 * Handle data backward by movsq.
++		 */
++		".p2align 4\n\t"
++		"7:\n\t"
++		"movq %0, %8\n\t"
++		"movq (%1), %4\n\t"
++		"movq %2, %5\n\t"
++		"leaq -8(%1, %0), %1\n\t"
++		"leaq -8(%2, %0), %2\n\t"
++		"shrq $3, %8\n\t"
++		"std\n\t"
++		"rep movsq\n\t"
++		"cld\n\t"
++		"movq %4, (%5)\n\t"
++		"jmp 13f\n\t"
++
++		/*
++		 * Start to prepare for backward copy.
++		 */
++		".p2align 4\n\t"
++		"2:\n\t"
++		"cmp $680, %0\n\t"
++		//"jb 6f \n\t"
++		"cmp %%dil, %%sil\n\t"
++		"je 7b \n\t"
++		"6:\n\t"
++		/*
++		 * Calculate copy position to tail.
++		 */
++		"addq %0, %1\n\t"
++		"addq %0, %2\n\t"
++		"subq $0x20, %0\n\t"
++		/*
++		 * We gobble 32byts backward in each loop.
++		 */
++		"8:\n\t"
++		"subq $0x20, %0\n\t"
++		"movq -1*8(%1), %4\n\t"
++		"movq -2*8(%1), %5\n\t"
++		"movq -3*8(%1), %6\n\t"
++		"movq -4*8(%1), %7\n\t"
++		"leaq -4*8(%1), %1\n\t"
++
++		"movq %4, -1*8(%2)\n\t"
++		"movq %5, -2*8(%2)\n\t"
++		"movq %6, -3*8(%2)\n\t"
++		"movq %7, -4*8(%2)\n\t"
++		"leaq -4*8(%2), %2\n\t"
++		"jae 8b\n\t"
++		/*
++		 * Calculate copy position to head.
++		 */
++		"addq $0x20, %0\n\t"
++		"subq %0, %1\n\t"
++		"subq %0, %2\n\t"
++		"1:\n\t"
++		"cmpq $16, %0\n\t"
++		"jb 9f\n\t"
++		/*
++		 * Move data from 16 bytes to 31 bytes.
++		 */
++		"movq 0*8(%1), %4\n\t"
++		"movq 1*8(%1), %5\n\t"
++		"movq -2*8(%1, %0), %6\n\t"
++		"movq -1*8(%1, %0), %7\n\t"
++		"movq %4, 0*8(%2)\n\t"
++		"movq %5, 1*8(%2)\n\t"
++		"movq %6, -2*8(%2, %0)\n\t"
++		"movq %7, -1*8(%2, %0)\n\t"
++		"jmp 13f\n\t"
++		".p2align 4\n\t"
++		"9:\n\t"
++		"cmpq $8, %0\n\t"
++		"jb 10f\n\t"
++		/*
++		 * Move data from 8 bytes to 15 bytes.
++		 */
++		"movq 0*8(%1), %4\n\t"
++		"movq -1*8(%1, %0), %5\n\t"
++		"movq %4, 0*8(%2)\n\t"
++		"movq %5, -1*8(%2, %0)\n\t"
++		"jmp 13f\n\t"
++		"10:\n\t"
++		"cmpq $4, %0\n\t"
++		"jb 11f\n\t"
++		/*
++		 * Move data from 4 bytes to 7 bytes.
++		 */
++		"movl (%1), %4d\n\t"
++		"movl -4(%1, %0), %5d\n\t"
++		"movl %4d, (%2)\n\t"
++		"movl %5d, -4(%2, %0)\n\t"
++		"jmp 13f\n\t"
++		"11:\n\t"
++		"cmp $2, %0\n\t"
++		"jb 12f\n\t"
++		/*
++		 * Move data from 2 bytes to 3 bytes.
++		 */
++		"movw (%1), %4w\n\t"
++		"movw -2(%1, %0), %5w\n\t"
++		"movw %4w, (%2)\n\t"
++		"movw %5w, -2(%2, %0)\n\t"
++		"jmp 13f\n\t"
++		"12:\n\t"
++		"cmp $1, %0\n\t"
++		"jb 13f\n\t"
++		/*
++		 * Move data for 1 byte.
++		 */
++		"movb (%1), %4b\n\t"
++		"movb %4b, (%2)\n\t"
++		"13:\n\t"
++		: "=&d" (d0), "=&S" (d1), "=&D" (d2), "=&a" (ret) ,
++		  "=r"(d3), "=r"(d4), "=r"(d5), "=r"(d6), "=&c" (d7)
++		:
++		:"memory");
++
++		return ret;
++
++
+ }
+ EXPORT_SYMBOL(memmove);
+-- 
+1.6.5.2
 
