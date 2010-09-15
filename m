@@ -1,453 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab0IOIsn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:48:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1463 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab0IOIsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:48:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,370,1280732400"; 
-   d="scan'208";a="837791829"
-From: ling.ma@intel.com
-To: mingo@elte.hu
-Cc: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        Ma Ling <ling.ma@intel.com>
-Subject: [PATCH V3] [X86] Fix potential issue on memmove
-Date: Wed, 15 Sep 2010 09:50:26 +0800
-Message-Id: <1284515426-7417-1-git-send-email-ling.ma@intel.com>
-X-Mailer: git-send-email 1.6.5.2
+	id S1752896Ab0IOIs4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:48:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58274 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab0IOIsy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 04:48:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the bkl-vfs tree with the nilfs2 tree
+Date: Wed, 15 Sep 2010 10:48:43 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Blunck <jblunck@infradead.org>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+References: <20100915140114.81406c4f.sfr@canb.auug.org.au>
+In-Reply-To: <20100915140114.81406c4f.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009151048.44071.arnd@arndb.de>
+X-Provags-ID: V02:K0:yuAIvxfQRIbilf8sHzM596ApXKb3vBKjBbYKeeKclc1
+ h4jYdaWYb9n7y09Szw8oIz9iTgWOkZC+9qULzAKU1QS6Gnus1a
+ xnNB/BonBhI23bsfPIsTsNinA+Qq6z5WQujWhJsLiNokQA6yDy
+ pbuZa6BarcUlro89A+SmUskbVCBOzfRkURjsiEOF22fbxvpFu1
+ dnwXORNdFkDZ9EBHnNBog==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ma Ling <ling.ma@intel.com>
+On Wednesday 15 September 2010, Stephen Rothwell wrote:
+> Today's linux-next merge of the bkl-vfs tree got a conflict in
+> fs/nilfs2/super.c between commit 38999dca4fdc4a0d1b92a540bc0772a32b07388a
+> ("nilfs2: do not allocate multiple super block instances for a device")
+> from the nilfs2 tree and commit 3fec873dc6e9026d98e2359202fa50fd06ee7b64
+> ("BKL: Remove BKL from NILFS2") from the bkl-vfs tree.
+> 
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-memmove allow source and destination address to be overlap, 
-but no limitation for memcpy. So memmove use forward or
-backward copy mode to handle src > dest and dest > src cases respectively.
-However memcpy has not address overlap, it may use any copy mode
-theoretically. Our original memmove will call memcpy and assume
-it must use forward copy mode, otherwise the system will crash,
-it is potential issue. The patch based on tip/x86/mem avoids
-this assumption.
+Ok, thanks!
 
-Signed-off-by: Ma Ling <ling.ma@intel.com>
----
-In this version we optimized original 32 and 64bit memmove.
+> P.S. Arndt, the first of the above bkl/vfs commits does not have a SOB
+> line from you and has a bug (missing open brace) that is fixed in the
+> second.  Just in case you decide to rebase this branch at any point ...
 
- arch/x86/lib/memcpy_32.c  |  199 +++++++++++++++++++++++++++++++++++++++++----
- arch/x86/lib/memmove_64.c |  189 ++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 362 insertions(+), 26 deletions(-)
+I'm still rebasing all the branches while people take patches into their
+own trees, so I'll fix this up soon. Thanks for the info.
 
-diff --git a/arch/x86/lib/memcpy_32.c b/arch/x86/lib/memcpy_32.c
-index 5415a9d..5b2c4e4 100644
---- a/arch/x86/lib/memcpy_32.c
-+++ b/arch/x86/lib/memcpy_32.c
-@@ -22,22 +22,187 @@ EXPORT_SYMBOL(memset);
- 
- void *memmove(void *dest, const void *src, size_t n)
- {
--	int d0, d1, d2;
--
--	if (dest < src) {
--		memcpy(dest, src, n);
--	} else {
--		__asm__ __volatile__(
--			"std\n\t"
--			"rep\n\t"
--			"movsb\n\t"
--			"cld"
--			: "=&c" (d0), "=&S" (d1), "=&D" (d2)
--			:"0" (n),
--			 "1" (n-1+src),
--			 "2" (n-1+dest)
--			:"memory");
--	}
--	return dest;
-+
-+	int d0,d1,d2,d3,d4,d5;
-+	char *ret = dest;
-+
-+	__asm__ __volatile__(
-+		/* Handle more 16bytes in loop */
-+		"cmp $0x10, %0\n\t"
-+		"jb	1f\n\t"
-+
-+		/* Decide forward/backward copy mode */
-+		"cmp %2, %1\n\t"
-+		"jb	2f\n\t"
-+
-+		/*
-+		 * movs instruction have many startup latency
-+		 * so we handle small size by general register.
-+		 */
-+		"cmp  $680, %0\n\t"
-+		"jb 3f\n\t"
-+		/*
-+		 * movs instruction is only good for aligned case.
-+		 */
-+		"mov %1, %3\n\t"
-+		"xor %2, %3\n\t"
-+		"and $0xff, %3\n\t"
-+		"jz 4f\n\t"
-+		"3:\n\t"
-+		"sub $0x10, %0\n\t"
-+
-+		/*
-+		 * We gobble 16byts forward in each loop.
-+		 */
-+		"3:\n\t"
-+		"sub $0x10, %0\n\t"
-+		"mov 0*4(%1), %3\n\t"
-+		"mov 1*4(%1), %4\n\t"
-+		"mov  %3, 0*4(%2)\n\t"
-+		"mov  %4, 1*4(%2)\n\t"
-+		"mov 2*4(%1), %3\n\t"
-+		"mov 3*4(%1), %4\n\t"
-+		"mov  %3, 2*4(%2)\n\t"
-+		"mov  %4, 3*4(%2)\n\t"
-+		"lea  0x10(%1), %1\n\t"
-+		"lea  0x10(%2), %2\n\t"
-+		"jae 3b\n\t"
-+		"add $0x10, %0\n\t"
-+		"jmp 1f\n\t"
-+
-+		/*
-+		 * Handle data forward by movs.
-+		 */
-+		".p2align 4\n\t"
-+		"4:\n\t"
-+		"mov -4(%1, %0), %3\n\t"
-+		"lea -4(%2, %0), %4\n\t"
-+		"shr $2, %0\n\t"
-+		"rep movsl\n\t"
-+		"mov %3, (%4)\n\t"
-+		"jmp 11f\n\t"
-+		/*
-+		 * Handle data backward by movs.
-+		 */
-+		".p2align 4\n\t"
-+		"6:\n\t"
-+		"mov (%1), %3\n\t"
-+		"mov %2, %4\n\t"
-+		"lea -4(%1, %0), %1\n\t"
-+		"lea -4(%2, %0), %2\n\t"
-+		"shr $2, %0\n\t"
-+		"std\n\t"
-+		"rep movsl\n\t"
-+		"mov %3,(%4)\n\t"
-+		"cld\n\t"
-+		"jmp 11f\n\t"
-+
-+		/*
-+		 * Start to prepare for backward copy.
-+		 */
-+		".p2align 4\n\t"
-+		"2:\n\t"
-+		"cmp  $680, %0\n\t"
-+		"jb 5f\n\t"
-+		"mov %1, %3\n\t"
-+		"xor %2, %3\n\t"
-+		"and $0xff, %3\n\t"
-+		"jz 6b\n\t"
-+
-+		/*
-+		 * Calculate copy position to tail.
-+		 */
-+		"5:\n\t"
-+		"add %0, %1\n\t"
-+		"add %0, %2\n\t"
-+		"sub $0x10, %0\n\t"
-+
-+		/*
-+		 * We gobble 16byts backward in each loop.
-+		 */
-+		"7:\n\t"
-+		"sub $0x10, %0\n\t"
-+
-+		"mov -1*4(%1), %3\n\t"
-+		"mov -2*4(%1), %4\n\t"
-+		"mov  %3, -1*4(%2)\n\t"
-+		"mov  %4, -2*4(%2)\n\t"
-+		"mov -3*4(%1), %3\n\t"
-+		"mov -4*4(%1), %4\n\t"
-+		"mov  %3, -3*4(%2)\n\t"
-+		"mov  %4, -4*4(%2)\n\t"
-+		"lea  -0x10(%1), %1\n\t"
-+		"lea  -0x10(%2), %2\n\t"
-+		"jae 7b\n\t"
-+		/*
-+		 * Calculate copy position to head.
-+		 */
-+		"add $0x10, %0\n\t"
-+		"sub %0, %1\n\t"
-+		"sub %0, %2\n\t"
-+
-+		/*
-+		 * Move data from 8 bytes to 15 bytes.
-+		 */
-+		".p2align 4\n\t"
-+		"1:\n\t"
-+		"cmp $8, %0\n\t"
-+		"jb 8f\n\t"
-+		"mov 0*4(%1), %3\n\t"
-+		"mov 1*4(%1), %4\n\t"
-+		"mov -2*4(%1, %0), %5\n\t"
-+		"mov -1*4(%1, %0), %1\n\t"
-+
-+		"mov  %3, 0*4(%2)\n\t"
-+		"mov  %4, 1*4(%2)\n\t"
-+		"mov  %5, -2*4(%2, %0)\n\t"
-+		"mov  %1, -1*4(%2, %0)\n\t"
-+		"jmp 11f\n\t"
-+
-+		/*
-+		 * Move data from 4 bytes to 7 bytes.
-+		 */
-+		".p2align 4\n\t"
-+		"8:\n\t"
-+		"cmp $4, %0\n\t"
-+		"jb 9f\n\t"
-+		"mov 0*4(%1), %3\n\t"
-+		"mov -1*4(%1, %0), %4\n\t"
-+		"mov  %3, 0*4(%2)\n\t"
-+		"mov  %4, -1*4(%2, %0)\n\t"
-+		"jmp 11f\n\t"
-+
-+		/*
-+		 * Move data from 2 bytes to 3 bytes.
-+		 */
-+		".p2align 4\n\t"
-+		"9:\n\t"
-+		"cmp $2, %0\n\t"
-+		"jb 10f\n\t"
-+		"movw 0*2(%1), %%dx\n\t"
-+		"movw -1*2(%1, %0), %%bx\n\t"
-+		"movw %%dx, 0*2(%2)\n\t"
-+		"movw %%bx, -1*2(%2, %0)\n\t"
-+		"jmp 11f\n\t"
-+
-+		/*
-+		 * Move data for 1 byte.
-+		 */
-+		".p2align 4\n\t"
-+		"10:\n\t"
-+		"cmp $1, %0\n\t"
-+		"jb 11f\n\t"
-+		"movb (%1), %%cl\n\t"
-+		"movb %%cl, (%2)\n\t"
-+		".p2align 4\n\t"
-+		"11:"
-+		: "=&c" (d0), "=&S" (d1), "=&D" (d2),
-+		  "=r" (d3),"=r" (d4), "=r"(d5)
-+		:"0" (n),
-+		"1" (src),
-+		"2" (dest)
-+		:"memory");
-+
-+
- }
- EXPORT_SYMBOL(memmove);
-diff --git a/arch/x86/lib/memmove_64.c b/arch/x86/lib/memmove_64.c
-index 0a33909..a6d7808 100644
---- a/arch/x86/lib/memmove_64.c
-+++ b/arch/x86/lib/memmove_64.c
-@@ -8,14 +8,185 @@
- #undef memmove
- void *memmove(void *dest, const void *src, size_t count)
- {
--	if (dest < src) {
--		return memcpy(dest, src, count);
--	} else {
--		char *p = dest + count;
--		const char *s = src + count;
--		while (count--)
--			*--p = *--s;
--	}
--	return dest;
-+
-+	unsigned long d0,d1,d2,d3,d4,d5,d6,d7;
-+	char *ret;
-+
-+	__asm__ __volatile__(
-+		/* Handle more 32bytes in loop */
-+		"mov %2, %3\n\t"
-+		"cmp $0x20, %0\n\t"
-+		"jb	1f\n\t"
-+
-+		/* Decide forward/backward copy mode */
-+		"cmp %2, %1\n\t"
-+		"jb	2f\n\t"
-+
-+		/*
-+		 * movsq instruction have many startup latency
-+		 * so we handle small size by general register.
-+		 */
-+		"cmp  $680, %0\n\t"
-+		"jb 3f\n\t"
-+		/*
-+		 * movsq instruction is only good for aligned case.
-+		 */
-+		"cmpb %%dil, %%sil\n\t"
-+		"je 4f\n\t"
-+		"3:\n\t"
-+		"sub $0x20, %0\n\t"
-+		/*
-+		 * We gobble 32byts forward in each loop.
-+		 */
-+		"5:\n\t"
-+		"sub $0x20, %0\n\t"
-+		"movq 0*8(%1), %4\n\t"
-+		"movq 1*8(%1), %5\n\t"
-+		"movq 2*8(%1), %6\n\t"
-+		"movq 3*8(%1), %7\n\t"
-+		"leaq 4*8(%1), %1\n\t"
-+
-+		"movq %4, 0*8(%2)\n\t"
-+		"movq %5, 1*8(%2)\n\t"
-+		"movq %6, 2*8(%2)\n\t"
-+		"movq %7, 3*8(%2)\n\t"
-+		"leaq 4*8(%2), %2\n\t"
-+		"jae 5b\n\t"
-+		"addq $0x20, %0\n\t"
-+		"jmp 1f\n\t"
-+		/*
-+		 * Handle data forward by movsq.
-+		 */
-+		".p2align 4\n\t"
-+		"4:\n\t"
-+		"movq %0, %8\n\t"
-+		"movq -8(%1, %0), %4\n\t"
-+		"lea -8(%2, %0), %5\n\t"
-+		"shrq $3, %8\n\t"
-+		"rep movsq\n\t"
-+		"movq %4, (%5)\n\t"
-+		"jmp 13f\n\t"
-+		/*
-+		 * Handle data backward by movsq.
-+		 */
-+		".p2align 4\n\t"
-+		"7:\n\t"
-+		"movq %0, %8\n\t"
-+		"movq (%1), %4\n\t"
-+		"movq %2, %5\n\t"
-+		"leaq -8(%1, %0), %1\n\t"
-+		"leaq -8(%2, %0), %2\n\t"
-+		"shrq $3, %8\n\t"
-+		"std\n\t"
-+		"rep movsq\n\t"
-+		"cld\n\t"
-+		"movq %4, (%5)\n\t"
-+		"jmp 13f\n\t"
-+
-+		/*
-+		 * Start to prepare for backward copy.
-+		 */
-+		".p2align 4\n\t"
-+		"2:\n\t"
-+		"cmp $680, %0\n\t"
-+		//"jb 6f \n\t"
-+		"cmp %%dil, %%sil\n\t"
-+		"je 7b \n\t"
-+		"6:\n\t"
-+		/*
-+		 * Calculate copy position to tail.
-+		 */
-+		"addq %0, %1\n\t"
-+		"addq %0, %2\n\t"
-+		"subq $0x20, %0\n\t"
-+		/*
-+		 * We gobble 32byts backward in each loop.
-+		 */
-+		"8:\n\t"
-+		"subq $0x20, %0\n\t"
-+		"movq -1*8(%1), %4\n\t"
-+		"movq -2*8(%1), %5\n\t"
-+		"movq -3*8(%1), %6\n\t"
-+		"movq -4*8(%1), %7\n\t"
-+		"leaq -4*8(%1), %1\n\t"
-+
-+		"movq %4, -1*8(%2)\n\t"
-+		"movq %5, -2*8(%2)\n\t"
-+		"movq %6, -3*8(%2)\n\t"
-+		"movq %7, -4*8(%2)\n\t"
-+		"leaq -4*8(%2), %2\n\t"
-+		"jae 8b\n\t"
-+		/*
-+		 * Calculate copy position to head.
-+		 */
-+		"addq $0x20, %0\n\t"
-+		"subq %0, %1\n\t"
-+		"subq %0, %2\n\t"
-+		"1:\n\t"
-+		"cmpq $16, %0\n\t"
-+		"jb 9f\n\t"
-+		/*
-+		 * Move data from 16 bytes to 31 bytes.
-+		 */
-+		"movq 0*8(%1), %4\n\t"
-+		"movq 1*8(%1), %5\n\t"
-+		"movq -2*8(%1, %0), %6\n\t"
-+		"movq -1*8(%1, %0), %7\n\t"
-+		"movq %4, 0*8(%2)\n\t"
-+		"movq %5, 1*8(%2)\n\t"
-+		"movq %6, -2*8(%2, %0)\n\t"
-+		"movq %7, -1*8(%2, %0)\n\t"
-+		"jmp 13f\n\t"
-+		".p2align 4\n\t"
-+		"9:\n\t"
-+		"cmpq $8, %0\n\t"
-+		"jb 10f\n\t"
-+		/*
-+		 * Move data from 8 bytes to 15 bytes.
-+		 */
-+		"movq 0*8(%1), %4\n\t"
-+		"movq -1*8(%1, %0), %5\n\t"
-+		"movq %4, 0*8(%2)\n\t"
-+		"movq %5, -1*8(%2, %0)\n\t"
-+		"jmp 13f\n\t"
-+		"10:\n\t"
-+		"cmpq $4, %0\n\t"
-+		"jb 11f\n\t"
-+		/*
-+		 * Move data from 4 bytes to 7 bytes.
-+		 */
-+		"movl (%1), %4d\n\t"
-+		"movl -4(%1, %0), %5d\n\t"
-+		"movl %4d, (%2)\n\t"
-+		"movl %5d, -4(%2, %0)\n\t"
-+		"jmp 13f\n\t"
-+		"11:\n\t"
-+		"cmp $2, %0\n\t"
-+		"jb 12f\n\t"
-+		/*
-+		 * Move data from 2 bytes to 3 bytes.
-+		 */
-+		"movw (%1), %4w\n\t"
-+		"movw -2(%1, %0), %5w\n\t"
-+		"movw %4w, (%2)\n\t"
-+		"movw %5w, -2(%2, %0)\n\t"
-+		"jmp 13f\n\t"
-+		"12:\n\t"
-+		"cmp $1, %0\n\t"
-+		"jb 13f\n\t"
-+		/*
-+		 * Move data for 1 byte.
-+		 */
-+		"movb (%1), %4b\n\t"
-+		"movb %4b, (%2)\n\t"
-+		"13:\n\t"
-+		: "=&d" (d0), "=&S" (d1), "=&D" (d2), "=&a" (ret) ,
-+		  "=r"(d3), "=r"(d4), "=r"(d5), "=r"(d6), "=&c" (d7)
-+		:
-+		:"memory");
-+
-+		return ret;
-+
-+
- }
- EXPORT_SYMBOL(memmove);
--- 
-1.6.5.2
-
+	Arnd
