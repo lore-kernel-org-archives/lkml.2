@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab0IOSUa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 14:20:30 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:39835 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937Ab0IOSU2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 14:20:28 -0400
-Date: Wed, 15 Sep 2010 11:22:01 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Matthew Wilcox <willy@linux.intel.com>, Christoph Hellwig <hch@lst.de>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, gregf@hq.newdream.net
-Subject: Re: [PATCH] Remove BKL from fs/locks.c
-In-Reply-To: <201009151917.25589.arnd@arndb.de>
-Message-ID: <Pine.LNX.4.64.1009151121080.16996@cobra.newdream.net>
-References: <201009142206.54130.arnd@arndb.de> <201009151830.43470.arnd@arndb.de>
- <Pine.LNX.4.64.1009150948190.24081@cobra.newdream.net> <201009151917.25589.arnd@arndb.de>
+	id S1754861Ab0IOSV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 14:21:26 -0400
+Received: from mga11.intel.com ([192.55.52.93]:22463 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754370Ab0IOSVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 14:21:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,372,1280732400"; 
+   d="scan'208";a="607237582"
+Date: Wed, 15 Sep 2010 20:21:46 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Arun MURTHY <arun.murthy@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH] mfd: ab8500: update kconfig for ab8500 core driver
+Message-ID: <20100915182145.GF2597@sortiz-mobl>
+References: <1284549823-6246-1-git-send-email-arun.murthy@stericsson.com>
+ <20100915082014.99d702e4.randy.dunlap@oracle.com>
+ <F45880696056844FA6A73F415B568C69532D96AA36@EXDCVYMBSTM006.EQ1STM.local>
+ <20100915104105.e77dfe8c.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100915104105.e77dfe8c.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010, Arnd Bergmann wrote:
+Hi Randy,
 
-> On Wednesday 15 September 2010, Sage Weil wrote:
-> > > @@ -2362,7 +2362,7 @@ static int encode_caps_cb(struct inode *inode, struct ceph_cap *cap,
-> > >       if (recon_state->flock) {
-> > >               int num_fcntl_locks, num_flock_locks;
-> > >  
-> > > -             lock_kernel();
-> > > +             lock_flocks();
-> > >               ceph_count_locks(inode, &num_fcntl_locks, &num_flock_locks);
-> > >               rec.v2.flock_len = (2*sizeof(u32) +
-> > >                                   (num_fcntl_locks+num_flock_locks) *
-> > > @@ -2373,7 +2373,7 @@ static int encode_caps_cb(struct inode *inode, struct ceph_cap *cap,
-> > >                       err = ceph_encode_locks(inode, pagelist,
-> > >                                               num_fcntl_locks,
-> > >                                               num_flock_locks);
-> > > -             unlock_kernel();
-> > > +             unlock_flocks();
-> > >       }
-> > 
-> > The Ceph code won't currently behave with lock_flocks() taking a spinlock.  
-> > We're preparing a patch to fix that now.  As long as there is a window 
-> > between lock_flocks() being defined and the spinlock conversion, I can 
-> > send the fix upstream then and avoid any breakage.  Or send the patches 
-> > your way to include in your tree, whatever you prefer!
+On Wed, Sep 15, 2010 at 10:41:05AM -0700, Randy Dunlap wrote:
+> I don't know what the __crc_* symbols are (I can't find them anywhere).
 > 
-> I'd be happy to just integrate the fix in this patch, or as a separate patch
-> in the series.
+> The other functions (pwm_config, pwm_free, pwm_request, pwm_disable,
+> pwm_enable) exist in multiple places.  This is not good.
+> They are very generically named.  The instances of these that are
+> provided by platform code are OK (these):
 > 
-> I certainly don't want to break any file system in the middle of the series,
-> I'm sure we can find a way to do it right.
+> ./include/linux/pwm.h:19:int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
+> ./arch/arm/plat-pxa/pwm.c:64:int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
+> ./arch/arm/plat-pxa/pwm.c:101:EXPORT_SYMBOL(pwm_config);
+> ./arch/arm/plat-samsung/pwm.c:194:int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
+> ./arch/arm/plat-samsung/pwm.c:281:EXPORT_SYMBOL(pwm_config);
+> ./arch/arm/plat-mxc/pwm.c:55:int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
+> ./arch/arm/plat-mxc/pwm.c:114:EXPORT_SYMBOL(pwm_config);
+> ./arch/mips/jz4740/pwm.c:94:int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
 > 
-> What is the problem? I just saw ceph_pagelist_addpage potentially sleeping,
-> is that what you are thinking of?
+> but the instances of these that are defined in
+> drivers/mfd/twl6030-pwm.c should not be named so generically.
+> 
+> Changing (Fixing) the function names in twl6030-pwm.c should fix the build problem
+> that you reported, I think.  
+The pwm "API" relies on someone providing the pwm_* symbols, and then you have
+leds_pwm or backlight_pwm calling those symbols out of the blue.
+If we change the twl6030-pwm.c function names, no pwm users (backlight, led or
+input) will actually be able to use the twl6030 PWM driver.
+The pwm API is very poorly designed in my opinion and should provide a way for
+pwm drivers to register against it. pwm users will then call into the pwm
+framework who would select which driver to use.
 
-Yeah.  The pagelist code needs to be adjusted to handle preallocation of 
-potentially multiple pages.  We'll send the fix your way shortly.
+> And it will still allow the ab8500 driver to be
+> built on other platforms, which is what we prefer when that is possible.
+I agree with that, but couldnt see any other fix with the current pwm
+situation.
 
-Thanks!
-sage
+Cheers,
+Samuel.
 
-
-> 
-> > > +void unlock_flocks(void)
-> > > +{
-> > > +     unlock_kernel();
-> > > +}
-> > 
-> > EXPORT_SYMBOL(unlock_flocks); ?
-> 
-> Right, thanks!
-> 
-> 	Arnd
-> 
-> 
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
