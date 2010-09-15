@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab0IOUJD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 16:09:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753339Ab0IOUJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 16:09:01 -0400
-Subject: Re: audit_tree: sleep inside atomic
-From: Eric Paris <eparis@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-In-Reply-To: <20100913170522.f0b8b1e8.akpm@linux-foundation.org>
-References: <4C1F8217.5020909@gmail.com> <4C80FD9E.5040408@gmail.com>
-	 <20100913170522.f0b8b1e8.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Sep 2010 16:08:25 -0400
-Message-ID: <1284581305.2703.127.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754180Ab0IOUVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 16:21:15 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:39606 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629Ab0IOUVO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 16:21:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xi4f1qF/ybeCgWjlcc/Ye/u5od06BqgNOtdiJaUChH92nyHkd0YoMJDRifi5zIu7Cq
+         OizYabRvL69EFrgFzdWA==
+MIME-Version: 1.0
+In-Reply-To: <20100915193437.GA28455@lenovo>
+References: <20100911114404.GE13563@erda.amd.com>
+	<20100911124537.GA22850@elte.hu>
+	<20100912095202.GF13563@erda.amd.com>
+	<20100913143713.GK13563@erda.amd.com>
+	<20100914174132.GN13563@erda.amd.com>
+	<20100915162034.GO13563@erda.amd.com>
+	<AANLkTimWoE5XiYSr8jx=RFS5Nb9d4_wWe=c-W3oMj8dH@mail.gmail.com>
+	<20100915170057.GQ13563@erda.amd.com>
+	<AANLkTi=yvDF34e5rYqJt=Av7dhSwBLjXp=r_EfEAMLJY@mail.gmail.com>
+	<20100915184424.GS13563@erda.amd.com>
+	<20100915193437.GA28455@lenovo>
+Date: Wed, 15 Sep 2010 22:21:10 +0200
+Message-ID: <AANLkTimPh7bo1XxTK8bnisvLq8pCySUV6XJspw8m-Wwa@mail.gmail.com>
+Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling counters
+From: Stephane Eranian <eranian@google.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-13 at 17:05 -0700, Andrew Morton wrote:
-> On Fri, 03 Sep 2010 15:52:30 +0200
-> Jiri Slaby <jirislaby@gmail.com> wrote:
-> 
-> > Ideas, comments?
-> 
-> Apparently not.
+When you do perf record foo, it's equivalent to
+perf record -e cycles:uk -F 1000 foo
 
-Sorry, I've been slacking off on vacation the last couple weeks.
-
-> The question is: why is nobody reporting this bug?  Obviously nobody's
-> running that code path.  Why not?
-
-The only people who run this code path, that I know of, are govt orgs
-who run in certified environments.  I don't know of any upstream kernel
-users who really would hit it.
-
-In any case I don't think it would be particularly painful to just
-always allocate a chunk between the two locks.  this is not a hot path
-by any stretch of the imagination.  I'll see if I can't code something
-up today/tomorrow.
-
--Eric
-
-> > On 06/21/2010 05:15 PM, Jiri Slaby wrote:
-> > > Hi,
-> > > 
-> > > stanse found a sleep inside atomic added by the following commit:
-> > > commit fb36de479642bc9bdd3af251ae48b882d8a1ad5d
-> > > Author: Eric Paris <eparis@redhat.com>
-> > > Date:   Thu Dec 17 20:12:05 2009 -0500
-> > > 
-> > >     audit: reimplement audit_trees using fsnotify rather than inotify
-> > > 
-> > >     Simply switch audit_trees from using inotify to using fsnotify for it's
-> > >     inode pinning and disappearing act information.
-> > > 
-> > >     Signed-off-by: Eric Paris <eparis@redhat.com>
-> > > 
-> > > 
-> > > In untag_chunk, there is
-> > >   spin_lock(&entry->lock);
-> > >   ...
-> > >   new = alloc_chunk(size);
-> > >   ...
-> > >   spin_unlock(&entry->lock);
-> > > 
-> > > with
-> > > static struct audit_chunk *alloc_chunk(int count)
-> > > {
-> > >   struct audit_chunk *chunk;
-> > >   ...
-> > >   chunk = kzalloc(size, GFP_KERNEL);
-> > > 
-> > > But this can sleep. How big the allocations are? Could it be ATOMIC or
-> > > moved outside the spinlock?
-> 
-> Yes, we could make it GFP_ATOMIC - the code tries to handle allocation
-> failures.
-> 
-> But if we did that we'd be adding a rarely-executed codepath to an
-> apparently-never-executed code path.  We'd end up shipping stuff which
-> nobody had tested, ever.
-> 
-> Plus GFP_ATOMIC is unreliable and using it because we screwed up the
-> locking is lame.
-> 
-> untag_chunk() could be converted to use GFP_KERNEL outside hash_lock
-> and ->entry_lock.  The usual way is to take a peek, see if it looks
-> like we'll probably need to do an allocation and if so, do it outside
-> the locks then free it again if it turned out that we didn't need it
-> after all.  Or to maintain a one-deep static-local cache and preload
-> that cache if it's empty.  Neither are particularly pretty.
+I think there is a problem with perf record in case you provide
+multiple events. It is going to sample on all of them at the same
+frequency. You may not always want that, but I don't think there
+is a way to change that.
 
 
+On Wed, Sep 15, 2010 at 9:34 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Wed, Sep 15, 2010 at 08:44:24PM +0200, Robert Richter wrote:
+> ...
+>>
+>> Do you know at which period the counters running for the following?
+>>
+>>  perf record ./hackbench 10
+>>  perf record -e cycles -e instructions -e cache-references \
+>>      -e cache-misses -e branch-misses -a -- <cmd>
+>>
+>> I couldn't find something about this in the man page.
+>>
+>
+> It's on top of tools/perf/builtin-record.c so by default they
+> should be sampled with frequency 1KHz. Frederic or Peter knows
+> for sure ;)
+>
+>        -- Cyrill
+>
