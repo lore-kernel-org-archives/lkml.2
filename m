@@ -1,194 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab0IOOIR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 10:08:17 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:18159 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754040Ab0IOOIP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 10:08:15 -0400
-Message-ID: <4C90D346.1030907@panasas.com>
-Date: Wed, 15 Sep 2010 16:08:06 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	id S1754106Ab0IOOIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 10:08:55 -0400
+Received: from void.printf.net ([89.145.121.20]:54706 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753181Ab0IOOIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 10:08:54 -0400
+Date: Wed, 15 Sep 2010 15:08:40 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Haavard Skinnemoen <haavard.skinnemoen@atmel.com>
+Cc: Ben Nizette <bn@niasdigital.com>, linux-mmc@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pierre Ossman <pierre@ossman.eu>
+Subject: Re: [PATCH] mmc: Reduce fOD to 200 kHz if possible
+Message-ID: <20100915140840.GB1677@void.printf.net>
+References: <1284541140-7328-1-git-send-email-haavard.skinnemoen@atmel.com> <9348108E-1108-46FE-8437-6F1271025C61@niasdigital.com> <20100915125138.1f25e4b1@hskinnemoen-d830>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Joe Eykholt <jeykholt@cisco.com>
-Subject: Re: [PATCH 2/2] tcm_loop: Add DMA_BIDIRECTIONAL CDB support
-References: <1284552412-30567-1-git-send-email-nab@linux-iscsi.org>
-In-Reply-To: <1284552412-30567-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Sep 2010 14:08:09.0771 (UTC) FILETIME=[6D428FB0:01CB54DF]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100915125138.1f25e4b1@hskinnemoen-d830>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2010 02:06 PM, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+Hi Haavard,
+
+On Wed, Sep 15, 2010 at 12:51:38PM +0200, Haavard Skinnemoen wrote:
+> Thanks for the references. IMO Hein's patch is overkill. There is
+> absolutely no reason why 200 kHz should be a problem on any setup, and
+> I haven't found any indication in any discussions that it is.
+
+Pierre was worried that we'd ping-pong between having an f_min too high
+for some cards and too low for others, and be breaking a new set of
+cards each time we changed the value.  He may have been being overly
+pessimistic, but I don't think being cautious comes with any significant
+downsides here.
+
+There's also a (small) performance concern when f_min gets low, though
+I agree that it wouldn't be a problem at 200 kHz.
+
+> The reason why fOD was set to 400 kHz in the first place is that some
+> controllers have a very low f_min so running the initialization at that
+> frequency causes problems. Which makes sense because the SD standard
+> clearly says that the clock can't be slower than 100 kHz.
 > 
-> This patch series adds DMA_BIDIRECTIONAL CDB to the TCM_Loop Virtual SCSI
-> LLD module.  This includes the following changes:
-> 
-> 	*) Add call to include/scsi/scsi_cmnd.h:scsi_bidi_cmnd() to set
-> 	   TCM struct se_cmd internal data_direction in tcm_loop_allocate_core_cmd()
-> 	*) Update tcm_loop_new_cmd_map() to handle BIDI READ payload from scsi_in()
-> 	*) Drop DMA_BIDIRECTIONAL usage check from tcm_loop_queuecommand()
-> 	*) Add tcm_loop_slave_alloc() and tcm_loop_slave_configure() handlers for
-> 	   struct scsi_host_template to set QUEUE_FLAG_BIDI in the former.
-> 
-> So far this has been tested together with commit 1f8f3eda132c using XDWRITE_READ_10
-> via BSG userspace code on a v2.6.36-rc3 kernel.
-> 
+> But I have never seen any reasons why we absolutely _have_ to run the
+> clock at the maximum frequency allowed by the spec. In fact, Sascha
+> Hauer, who was the one who changed the minimum clock frequency to 400
+> kHz, said he would be fine with any frequency between 50 kHz and 400
+> kHz [1].
 
-I'll start the review with this patch. Then we'll move on to the bigger harder one.
+I agree that we aren't trying to run at the maximum possible frequency,
+just trying to avoid having to choose a single perfect value without
+enough information on what it is.
 
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> ---
->  drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |   48 ++++++++++++++++++------
->  1 files changed, 36 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-> index 644f978..c4139d8 100644
-> --- a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-> +++ b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-> @@ -64,6 +64,7 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
->  	struct tcm_loop_nexus *tl_nexus = tl_hba->tl_nexus;
->  	struct tcm_loop_cmd *tl_cmd;
->  	int sam_task_attr;
-> +	enum dma_data_direction data_direction;
->  
->  	if (!(tl_nexus)) {
->  		scmd_printk(KERN_ERR, sc, "TCM_Loop I_T Nexus"
-> @@ -81,6 +82,13 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
->  	 * Save the pointer to struct scsi_cmnd *sc
->  	 */
->  	tl_cmd->sc = sc;
-> +	/*
-> +	 * Check for scsi_bidi_cmnd() to signal TCM Core for DMA_BIDIRECTIONAL
-> +	 */
-> +	if (scsi_bidi_cmnd(sc))
-> +		data_direction = DMA_BIDIRECTIONAL;
-> +	else
-> +		data_direction = sc->sc_data_direction;
+Thanks,
 
-So you noticed that scsi-ml has a data_direction = DMA_TO_DEVICE and
-scsi_bidi_cmnd(sc) == true. I think you could do the same and code will
-be more simple, see below.
-
-So for start this here is just droped
-
->  
->  	/*
->  	 * Locate the SAM Task Attr from struct scsi_cmnd *
-> @@ -105,7 +113,7 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
->  	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
->  	 */
->  	transport_init_se_cmd(se_cmd, se_tpg->se_tpg_tfo, se_sess,
-> -			scsi_bufflen(sc), sc->sc_data_direction, sam_task_attr,
-> +			scsi_bufflen(sc), data_direction, sam_task_attr,
-
-And this is dropped
-
->  			&tl_cmd->tl_sense_buf[0]);
->  	/*
->  	 * Locate the struct se_lun pointer and attach it to struct se_cmd
-> @@ -128,14 +136,16 @@ static struct se_cmd *tcm_loop_allocate_core_cmd(
->  /*
->   * Called by struct target_core_fabric_ops->new_cmd_map()
->   *
-> - * Always called in process context
-> + * Always called in process context.  A non zero return value
-> + * here will signal to handle an exception based on the return code.
->   */
->  int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
->  {
->  	struct tcm_loop_cmd *tl_cmd = container_of(se_cmd,
->  				struct tcm_loop_cmd, tl_se_cmd);
->  	struct scsi_cmnd *sc = tl_cmd->sc;
-> -	void *mem_ptr;
-> +	void *mem_ptr, *mem_bidi_ptr = NULL;
-> +	u32 sg_no_bidi = 0;
->  	int ret;
->  	/*
->  	 * Allocate the necessary tasks to complete the received CDB+data
-> @@ -163,6 +173,16 @@ int tcm_loop_new_cmd_map(struct se_cmd *se_cmd)
->  	if (scsi_sg_count(sc)) {
->  		se_cmd->se_cmd_flags |= SCF_PASSTHROUGH_SG_TO_MEM;
->  		mem_ptr = (void *)scsi_sglist(sc);
-> +		/*
-> +		 * For BIDI commands, pass in the extra READ buffer
-> +		 * to transport_generic_map_mem_to_cmd() below..
-> +		 */
-> +		if (se_cmd->data_direction == DMA_BIDIRECTIONAL) {
-
-Just change to if (scsi_bidi_cmnd(sc))
-[remember data_direction == DMA_TO_DEVICE]
-
-> +			struct scsi_data_buffer *sdb = scsi_in(sc);
-> +
-> +			mem_bidi_ptr = (void *)sdb->table.sgl;
-> +			sg_no_bidi = sdb->table.nents;
-
-This is the all bidi secret the presence of the  scsi_in buffer
-
-> +		}
->  	} else {
->  		/*
->  		 * Used for DMA_NONE
-> @@ -322,15 +342,6 @@ static int tcm_loop_queuecommand(
->  	}
->  	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];transport_get_task
->  	se_tpg = &tl_tpg->tl_se_tpg;
-> -
-> -	if (sc->sc_data_direction == DMA_BIDIRECTIONAL) {
-> -		spin_lock_irq(host->host_lock);
-> -		printk(KERN_ERR "Unsupported BIDI sc->sc_data_direction: %d\n",
-> -			sc->sc_data_direction);	
-> -		sc->result = host_byte(DID_ERROR);
-> -		(*done)(sc);
-> -		return 0;
-> -	}
->  	/*
->  	 * Determine the SAM Task Attribute and allocate tl_cmd and
->  	 * tl_cmd->tl_se_cmd from TCM infrastructure
-> @@ -446,6 +457,17 @@ release:
->  	return ret;
->  }
->  
-> +static int tcm_loop_slave_alloc(struct scsi_device *sd)
-> +{
-> +	set_bit(QUEUE_FLAG_BIDI, &sd->request_queue->queue_flags);
-
-Thank got, another new one. We are up to 4
-
-> +	return 0;
-> +}
-> +
-> +static int tcm_loop_slave_configure(struct scsi_device *sd)
-> +{
-> +	return 0;
-> +}
-> +
->  static struct scsi_host_template tcm_loop_driver_template = {
->  	.proc_info		= tcm_loop_proc_info,
->  	.proc_name		= "tcm_loopback",
-> @@ -468,6 +490,8 @@ static struct scsi_host_template tcm_loop_driver_template = {
->  	.cmd_per_lun		= TL_SCSI_CMD_PER_LUN,
->  	.max_sectors		= TL_SCSI_MAX_SECTORS,
->  	.use_clustering		= DISABLE_CLUSTERING,
-> +	.slave_alloc		= tcm_loop_slave_alloc,
-> +	.slave_configure	= tcm_loop_slave_configure,
->  	.module			= THIS_MODULE,
->  };
->  
-
-Boaz
-
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
