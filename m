@@ -1,101 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab0IOIkU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 04:40:20 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42357 "EHLO mx1.suse.de"
+	id S1752724Ab0IOIlr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 04:41:47 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34998 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752152Ab0IOIkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 04:40:17 -0400
-Date: Wed, 15 Sep 2010 10:40:12 +0200 (CEST)
-From: Richard Guenther <rguenther@suse.de>
-To: Nikanth Karthikesan <knikanth@suse.de>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, balbir@linux.vnet.ibm.com,
-        Michael Matz <matz@novell.com>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] After swapout/swapin private dirty mappings become
- clean
-In-Reply-To: <201009151030.36012.knikanth@suse.de>
-Message-ID: <alpine.LNX.2.00.1009151039160.28912@zhemvz.fhfr.qr>
-References: <20100915092239.C9D9.A69D9226@jp.fujitsu.com> <201009151007.43232.knikanth@suse.de> <20100915134347.C9EB.A69D9226@jp.fujitsu.com> <201009151030.36012.knikanth@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752358Ab0IOIlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Sep 2010 04:41:46 -0400
+Date: Wed, 15 Sep 2010 08:41:27 GMT
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
+In-Reply-To: <20100907145344.GC1912@jolsa.brq.redhat.com>
+References: <20100907145344.GC1912@jolsa.brq.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing: Add funcgraph-irq option for function graph tracer.
+Message-ID: <tip-2bd16212b8eb86f9574e78d6605a5ba9e9aa8c4e@git.kernel.org>
+Git-Commit-ID: 2bd16212b8eb86f9574e78d6605a5ba9e9aa8c4e
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 15 Sep 2010 08:41:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010, Nikanth Karthikesan wrote:
+Commit-ID:  2bd16212b8eb86f9574e78d6605a5ba9e9aa8c4e
+Gitweb:     http://git.kernel.org/tip/2bd16212b8eb86f9574e78d6605a5ba9e9aa8c4e
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Tue, 7 Sep 2010 16:53:44 +0200
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Tue, 14 Sep 2010 20:18:07 -0400
 
-> On Wednesday 15 September 2010 10:16:36 KOSAKI Motohiro wrote:
-> > > On Wednesday 15 September 2010 05:54:31 KOSAKI Motohiro wrote:
-> > > > > /proc/$pid/smaps broken: After swapout/swapin private dirty mappings
-> > > > > become clean.
-> > > > >
-> > > > > When a page with private file mapping becomes dirty, the vma will be
-> > > > > in both i_mmap tree and anon_vma list. The /proc/$pid/smaps will
-> > > > > account these pages as dirty and backed by the file.
-> > > > >
-> > > > > But when those dirty pages gets swapped out, and when they are read
-> > > > > back from swap, they would be marked as clean, as it should be, as
-> > > > > they are part of swap cache now.
-> > > > >
-> > > > > But the /proc/$pid/smaps would report the vma as a mapping of a file
-> > > > > and it is clean. The pages are actually in same state i.e., dirty
-> > > > > with respect to file still, but which was once reported as dirty is
-> > > > > now being reported as clean to user-space.
-> > > > >
-> > > > > This confuses tools like gdb which uses this information. Those tools
-> > > > > think that those pages were never modified and it creates problem
-> > > > > when they create dumps.
-> > > > >
-> > > > > The file mapping of the vma also cannot be broken as pages never read
-> > > > > earlier, will still have to come from the file. Just that those dirty
-> > > > > pages have become clean anonymous pages.
-> > > > >
-> > > > > During swaping in, restoring the exact state as dirty file-backed
-> > > > > pages before swapout would be useless, as there in no real bug.
-> > > > > Breaking the vma with only anonymous pages as seperate vmas
-> > > > > unnecessary may not be a good thing as well. So let us just export
-> > > > > the information that a file-backed vma has anonymous dirty pages.
-> > > >
-> > > > Why can't gdb check Swap: field in smaps? I think Swap!=0 mean we need
-> > > > dump out.
-> > >
-> > > Yes. When the page is swapped out it is accounted in "Swap:".
-> > >
-> > > > Am I missing anything?
-> > >
-> > > But when it gets swapped in back to memory, it is removed from "Swap:"
-> > > and added to "Private_Clean:" instead of "Private_Dirty:".
-> > 
-> > Here is the code.
-> > I think the page will become dirty, again.
-> > 
-> > --------------------------------------------------------------
-> > int try_to_free_swap(struct page *page)
-> > {
-> >         VM_BUG_ON(!PageLocked(page));
-> > 
-> >         if (!PageSwapCache(page))
-> >                 return 0;
-> >         if (PageWriteback(page))
-> >                 return 0;
-> >         if (page_swapcount(page))
-> >                 return 0;
-> > 
-> >         delete_from_swap_cache(page);
-> >         SetPageDirty(page);
-> >         return 1;
-> > }
-> > 
-> 
-> I think this gets called only when the swap space gets freed. But when the 
-> page is just swapped out and swapped in, and the page is still part of 
-> SwapCache, it will be marked as clean, when the I/O read from swap completes.
+tracing: Add funcgraph-irq option for function graph tracer.
 
-And it will be still marked clean if I do a swapoff -a after it has
-been swapped in again.  Thus /proc/smaps shows it as file-backed,
-private, clean and not swapped.  Which is wrong.
+It's handy to be able to disable the irq related output
+and not to have to jump over each irq related code, when
+you have no interrest in it.
 
-Richard.
+The option is by default enabled, so there's no change to
+current behaviour. It affects only the final output, so all
+the irq related data stay in the ring buffer.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+LKML-Reference: <20100907145344.GC1912@jolsa.brq.redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_functions_graph.c |  101 +++++++++++++++++++++++++++++++++-
+ 1 files changed, 100 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index c93bcb2..8674750 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -18,6 +18,7 @@
+ struct fgraph_cpu_data {
+ 	pid_t		last_pid;
+ 	int		depth;
++	int		depth_irq;
+ 	int		ignore;
+ 	unsigned long	enter_funcs[FTRACE_RETFUNC_DEPTH];
+ };
+@@ -41,6 +42,7 @@ struct fgraph_data {
+ #define TRACE_GRAPH_PRINT_PROC		0x8
+ #define TRACE_GRAPH_PRINT_DURATION	0x10
+ #define TRACE_GRAPH_PRINT_ABS_TIME	0x20
++#define TRACE_GRAPH_PRINT_IRQS		0x40
+ 
+ static struct tracer_opt trace_opts[] = {
+ 	/* Display overruns? (for self-debug purpose) */
+@@ -55,13 +57,15 @@ static struct tracer_opt trace_opts[] = {
+ 	{ TRACER_OPT(funcgraph-duration, TRACE_GRAPH_PRINT_DURATION) },
+ 	/* Display absolute time of an entry */
+ 	{ TRACER_OPT(funcgraph-abstime, TRACE_GRAPH_PRINT_ABS_TIME) },
++	/* Display interrupts */
++	{ TRACER_OPT(funcgraph-irqs, TRACE_GRAPH_PRINT_IRQS) },
+ 	{ } /* Empty entry */
+ };
+ 
+ static struct tracer_flags tracer_flags = {
+ 	/* Don't display overruns and proc by default */
+ 	.val = TRACE_GRAPH_PRINT_CPU | TRACE_GRAPH_PRINT_OVERHEAD |
+-	       TRACE_GRAPH_PRINT_DURATION,
++	       TRACE_GRAPH_PRINT_DURATION | TRACE_GRAPH_PRINT_IRQS,
+ 	.opts = trace_opts
+ };
+ 
+@@ -855,6 +859,92 @@ print_graph_prologue(struct trace_iterator *iter, struct trace_seq *s,
+ 	return 0;
+ }
+ 
++/*
++ * Entry check for irq code
++ *
++ * returns 1 if
++ *  - we are inside irq code
++ *  - we just extered irq code
++ *
++ * retunns 0 if
++ *  - funcgraph-interrupts option is set
++ *  - we are not inside irq code
++ */
++static int
++check_irq_entry(struct trace_iterator *iter, u32 flags,
++		unsigned long addr, int depth)
++{
++	int cpu = iter->cpu;
++	struct fgraph_data *data = iter->private;
++	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
++
++	if (flags & TRACE_GRAPH_PRINT_IRQS)
++		return 0;
++
++	/*
++	 * We are inside the irq code
++	 */
++	if (*depth_irq >= 0)
++		return 1;
++
++	if ((addr < (unsigned long)__irqentry_text_start) ||
++	    (addr >= (unsigned long)__irqentry_text_end))
++		return 0;
++
++	/*
++	 * We are entering irq code.
++	 */
++	*depth_irq = depth;
++	return 1;
++}
++
++/*
++ * Return check for irq code
++ *
++ * returns 1 if
++ *  - we are inside irq code
++ *  - we just left irq code
++ *
++ * returns 0 if
++ *  - funcgraph-interrupts option is set
++ *  - we are not inside irq code
++ */
++static int
++check_irq_return(struct trace_iterator *iter, u32 flags, int depth)
++{
++	int cpu = iter->cpu;
++	struct fgraph_data *data = iter->private;
++	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
++
++	if (flags & TRACE_GRAPH_PRINT_IRQS)
++		return 0;
++
++	/*
++	 * We are not inside the irq code.
++	 */
++	if (*depth_irq == -1)
++		return 0;
++
++	/*
++	 * We are inside the irq code, and this is returning entry.
++	 * Let's not trace it and clear the entry depth, since
++	 * we are out of irq code.
++	 *
++	 * This condition ensures that we 'leave the irq code' once
++	 * we are out of the entry depth. Thus protecting us from
++	 * the RETURN entry loss.
++	 */
++	if (*depth_irq >= depth) {
++		*depth_irq = -1;
++		return 1;
++	}
++
++	/*
++	 * We are inside the irq code, and this is not the entry.
++	 */
++	return 1;
++}
++
+ static enum print_line_t
+ print_graph_entry(struct ftrace_graph_ent_entry *field, struct trace_seq *s,
+ 			struct trace_iterator *iter, u32 flags)
+@@ -865,6 +955,9 @@ print_graph_entry(struct ftrace_graph_ent_entry *field, struct trace_seq *s,
+ 	static enum print_line_t ret;
+ 	int cpu = iter->cpu;
+ 
++	if (check_irq_entry(iter, flags, call->func, call->depth))
++		return TRACE_TYPE_HANDLED;
++
+ 	if (print_graph_prologue(iter, s, TRACE_GRAPH_ENT, call->func, flags))
+ 		return TRACE_TYPE_PARTIAL_LINE;
+ 
+@@ -902,6 +995,9 @@ print_graph_return(struct ftrace_graph_ret *trace, struct trace_seq *s,
+ 	int ret;
+ 	int i;
+ 
++	if (check_irq_return(iter, flags, trace->depth))
++		return TRACE_TYPE_HANDLED;
++
+ 	if (data) {
+ 		struct fgraph_cpu_data *cpu_data;
+ 		int cpu = iter->cpu;
+@@ -1210,9 +1306,12 @@ void graph_trace_open(struct trace_iterator *iter)
+ 		pid_t *pid = &(per_cpu_ptr(data->cpu_data, cpu)->last_pid);
+ 		int *depth = &(per_cpu_ptr(data->cpu_data, cpu)->depth);
+ 		int *ignore = &(per_cpu_ptr(data->cpu_data, cpu)->ignore);
++		int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
++
+ 		*pid = -1;
+ 		*depth = 0;
+ 		*ignore = 0;
++		*depth_irq = -1;
+ 	}
+ 
+ 	iter->private = data;
