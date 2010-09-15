@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab0IOVJN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Sep 2010 17:09:13 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:35388 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754699Ab0IOVJK (ORCPT
+	id S1753405Ab0IOVJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Sep 2010 17:09:07 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:1229 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab0IOVJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Sep 2010 17:09:10 -0400
-Subject: [PATCH 2/3] resources: allocate space within a region from the top
-	down
+	Wed, 15 Sep 2010 17:09:04 -0400
+Subject: [PATCH 1/3] x86/PCI: allocate space from the end of a region,
+	not the beginning
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 Cc: Brian Bloniarz <phunge0@hotmail.com>,
@@ -19,8 +19,8 @@ Cc: Brian Bloniarz <phunge0@hotmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>
-Date: Wed, 15 Sep 2010 15:09:07 -0600
-Message-ID: <20100915210907.12365.81888.stgit@bob.kio>
+Date: Wed, 15 Sep 2010 15:09:02 -0600
+Message-ID: <20100915210902.12365.19911.stgit@bob.kio>
 In-Reply-To: <20100915210818.12365.58732.stgit@bob.kio>
 References: <20100915210818.12365.58732.stgit@bob.kio>
 User-Agent: StGit/0.15
@@ -32,99 +32,43 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Allocate space from the top of a region first, then work downward.
+Allocate from the end of a region, not the beginning.
 
-When we allocate space from a resource, we look for gaps between children
-of the resource.  Previously, we looked at gaps from the bottom up.  For
-example, given this:
+For example, if we need to allocate 0x800 bytes for a device on bus
+0000:00 given these resources:
 
-    [mem 0xbff00000-0xf7ffffff] PCI Bus 0000:00
+    [mem 0xbff00000-0xdfffffff] PCI Bus 0000:00
       [mem 0xc0000000-0xdfffffff] PCI Bus 0000:02
 
-we attempted to allocate from the [mem 0xbff00000-0xbfffffff] gap first,
-then the [mem 0xe0000000-0xf7ffffff] gap.
+the available space at [mem 0xbff00000-0xbfffffff] is passed to the
+alignment callback (pcibios_align_resource()).  Prior to this patch, we
+would put the new 0x800 byte resource at the beginning of that available
+space, i.e., at [mem 0xbff00000-0xbff007ff].
 
-With this patch, we allocate from [mem 0xe0000000-0xf7ffffff] first.
+With this patch, we put it at the end, at [mem 0xbffff800-0xbfffffff].
 
-Low addresses are generally scarce, so it's better to use high addresses
-when possible.  This follows Windows practice for PCI allocation.
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c42
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c41
 Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 ---
 
- kernel/resource.c |   40 ++++++++++++++++++++++++----------------
- 1 files changed, 24 insertions(+), 16 deletions(-)
+ arch/x86/pci/i386.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
 
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 7b36976..e83ff7c 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -358,6 +358,20 @@ int __weak page_is_ram(unsigned long pfn)
- }
- 
- /*
-+ * Find the resource before "child" in the sibling list of "root" children.
-+ */
-+static struct resource *find_sibling_prev(struct resource *root, struct resource *child)
-+{
-+	struct resource *this;
-+
-+	for (this = root->child; this; this = this->sibling)
-+		if (this->sibling == child)
-+			return this;
-+
-+	return NULL;
-+}
-+
-+/*
-  * Find empty slot in the resource tree given range and alignment.
-  */
- static int find_resource(struct resource *root, struct resource *new,
-@@ -369,23 +383,17 @@ static int find_resource(struct resource *root, struct resource *new,
- 						   resource_size_t),
- 			 void *alignf_data)
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index 5525309..1ff3e9f 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -65,7 +65,10 @@ pcibios_align_resource(void *data, const struct resource *res,
+ 			resource_size_t size, resource_size_t align)
  {
--	struct resource *this = root->child;
-+	struct resource *this;
- 	struct resource tmp = *new;
- 
--	tmp.start = root->start;
--	/*
--	 * Skip past an allocated resource that starts at 0, since the assignment
--	 * of this->start - 1 to tmp->end below would cause an underflow.
--	 */
--	if (this && this->start == 0) {
--		tmp.start = this->end + 1;
--		this = this->sibling;
--	}
--	for(;;) {
-+	tmp.end = root->end;
+ 	struct pci_dev *dev = data;
+-	resource_size_t start = res->start;
++	resource_size_t start = ALIGN(res->end - size + 1, align);
 +
-+	this = find_sibling_prev(root, NULL);
-+	for (;;) {
- 		if (this)
--			tmp.end = this->start - 1;
-+			tmp.start = this->end + 1;
- 		else
--			tmp.end = root->end;
-+			tmp.start = root->start;
- 		if (tmp.start < min)
- 			tmp.start = min;
- 		if (tmp.end > max)
-@@ -398,10 +406,10 @@ static int find_resource(struct resource *root, struct resource *new,
- 			new->end = tmp.start + size - 1;
- 			return 0;
- 		}
--		if (!this)
-+		if (!this || this->start == root->start)
- 			break;
--		tmp.start = this->end + 1;
--		this = this->sibling;
-+		tmp.end = this->start - 1;
-+		this = find_sibling_prev(root, this);
- 	}
- 	return -EBUSY;
- }
++	if (start < res->start)
++		start = res->start;
+ 
+ 	if (res->flags & IORESOURCE_IO) {
+ 		if (skip_isa_ioresource_align(dev))
 
